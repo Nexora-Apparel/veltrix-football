@@ -31,15 +31,20 @@ def format_report(report: dict[str, Any]) -> str:
         lines.append("No betting slips generated. No picks are being forced.")
     for item in usable:
         probs = item.get("probabilities", {})
+        # The model emits home_win/draw/away_win; accept home/draw/away too
+        # for older reports and simple test fixtures.
+        home_probability = probs.get("home_win", probs.get("home", 0))
+        draw_probability = probs.get("draw", 0)
+        away_probability = probs.get("away_win", probs.get("away", 0))
         kickoff = str(item.get("kickoff_local", "Kickoff time unavailable"))
         lines.extend([
             f"{item.get('home_team', 'Home')} vs {item.get('away_team', 'Away')}",
             f"League: {item.get('league') or 'Unknown competition'}",
             f"Kickoff: {kickoff}",
             "1X2 estimate: "
-            f"Home {float(probs.get('home', 0)):.0%} | "
-            f"Draw {float(probs.get('draw', 0)):.0%} | "
-            f"Away {float(probs.get('away', 0)):.0%}",
+            f"Home {float(home_probability):.0%} | "
+            f"Draw {float(draw_probability):.0%} | "
+            f"Away {float(away_probability):.0%}",
             f"Estimated goals: {item.get('expected_goals', {}).get('home', '—')} - "
             f"{item.get('expected_goals', {}).get('away', '—')}",
             "Status: experimental only; do not treat as a recommendation.",
@@ -56,8 +61,6 @@ def format_report(report: dict[str, Any]) -> str:
     message = "\n".join(lines)
     if len(message) <= MAX_MESSAGE_LENGTH:
         return message
-    # Keep each fixture block intact where possible; Telegram has a hard message cap.
-    header = "\n".join(lines[:5])
     footer = "\n\nFurther fixtures omitted to fit Telegram's message limit."
     return message[: MAX_MESSAGE_LENGTH - len(footer)] + footer
 
