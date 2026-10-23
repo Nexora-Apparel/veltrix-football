@@ -16,9 +16,9 @@ permissions:
 
 jobs:
   daily-predictions:
-    # Configure API_FOOTBALL_KEY in repository Actions secrets to enable scheduled runs.
-    if: ${{ secrets.API_FOOTBALL_KEY != '' }}
     runs-on: ubuntu-latest
+    env:
+      API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
     timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
@@ -30,15 +30,16 @@ jobs:
       - name: Run unit tests
         run: python -m pytest -q
       - name: Import historical matches
+        if: env.API_FOOTBALL_KEY != ''
         run: python scripts/import_open_dataset.py --from 2020-01-01 --to "$(date -u +%F)" --output data/open_historical_matches.csv
       - name: Generate daily fixture report
-        env:
-          API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
+        if: env.API_FOOTBALL_KEY != ''
         run: |
           TARGET_DATE="${{ inputs.date }}"
           if [ -z "$TARGET_DATE" ]; then TARGET_DATE="$(TZ=Africa/Lagos date +%F)"; fi
           python scripts/run_daily_predictions.py --date "$TARGET_DATE" --history data/open_historical_matches.csv --output reports/daily_predictions.json
       - name: Upload daily prediction report
+        if: env.API_FOOTBALL_KEY != ''
         uses: actions/upload-artifact@v4
         with:
           name: veltrix-daily-predictions
