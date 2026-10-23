@@ -6,7 +6,6 @@ outputs as value bets and refuses teams with too little historical data.
 from __future__ import annotations
 
 import csv
-import math
 import re
 from collections import defaultdict, deque
 from datetime import date, datetime, timezone
@@ -98,13 +97,13 @@ def predict_fixtures(
     if overall_baseline <= 0:
         overall_baseline = 1.0
 
-    team_history: dict[str, deque[tuple[int, int, str]]] = defaultdict(
-        lambda: deque(maxlen=team_window)
-    )
-    # Keep only history before the target date; predictions are built per date.
+    # Rebuild histories per target date so earlier dates are never duplicated.
     output: list[dict[str, Any]] = []
     parsed_fixtures = [p for item in fixtures if (p := _fixture_parts(item))]
     for target_date in sorted({p["kickoff_date"] for p in parsed_fixtures}):
+        team_history: dict[str, deque[tuple[int, int, str]]] = defaultdict(
+            lambda: deque(maxlen=team_window)
+        )
         for match in usable:
             if match["date"] >= target_date:
                 continue
