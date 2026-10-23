@@ -8,6 +8,7 @@ on:
       - "scripts/run_daily_predictions.py"
       - "scripts/send_telegram_report.py"
       - "tests/test_live_predictions.py"
+      - "tests/test_telegram_report.py"
       - ".github/workflows/daily-fixture-predictions.yml"
   workflow_dispatch:
     inputs:
