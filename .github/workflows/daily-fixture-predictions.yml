@@ -6,6 +6,7 @@ on:
     paths:
       - "app/live_predictions.py"
       - "scripts/run_daily_predictions.py"
+      - "scripts/send_telegram_report.py"
       - "tests/test_live_predictions.py"
       - ".github/workflows/daily-fixture-predictions.yml"
   workflow_dispatch:
@@ -26,6 +27,8 @@ jobs:
     runs-on: ubuntu-latest
     env:
       API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
+      TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+      TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
     timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
@@ -45,6 +48,9 @@ jobs:
           TARGET_DATE="${{ inputs.date }}"
           if [ -z "$TARGET_DATE" ]; then TARGET_DATE="$(TZ=Africa/Lagos date +%F)"; fi
           python scripts/run_daily_predictions.py --date "$TARGET_DATE" --history data/open_historical_matches.csv --output reports/daily_predictions.json
+      - name: Send daily report to Telegram
+        if: github.event_name != 'push' && env.API_FOOTBALL_KEY != '' && env.TELEGRAM_BOT_TOKEN != '' && env.TELEGRAM_CHAT_ID != ''
+        run: python scripts/send_telegram_report.py --report reports/daily_predictions.json
       - name: Upload daily prediction report
         if: github.event_name != 'push' && env.API_FOOTBALL_KEY != ''
         uses: actions/upload-artifact@v4
