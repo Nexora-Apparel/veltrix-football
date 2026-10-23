@@ -47,3 +47,15 @@ Use `python -m app.cli history --from YYYY-MM-DD --to YYYY-MM-DD --output data/h
 5. Backtest chronologically with no future-data leakage
 6. Compare probabilities with timestamped odds and filter for value
 7. Telegram alerts, mobile-first dashboard, paper tracking and calibration
+
+
+## Open historical dataset import (2024–present)
+Veltrix can import completed match records from the public [Club-Football-Match-Data dataset](https://github.com/xgabora/Club-Football-Match-Data), whose repository identifies an MIT license. The raw dataset is **not** committed to this repository. Run:
+
+```bash
+python -m scripts.import_open_dataset --from 2024-01-01 --to 2026-10-23 --output data/open_historical_matches.csv
+```
+
+The importer discovers the source CSV path from the repository tree, validates required fields, normalizes scores, team names, date, available Elo/form/odds/statistics, skips malformed rows, and deduplicates by competition/date/home/away. Optional odds and statistics remain empty when missing. The GitHub Actions workflow can run manually or weekly and uploads the generated CSV as an artifact for 30 days; this artifact is not a permanent database.
+
+**Model safety:** use only pre-match fields (for example Elo and form) as predictors. Full-time/half-time scores, shots and cards are outcome fields and must not be used as pre-match features. Validate time ordering and source coverage before backtesting; historical odds availability varies by league/season. This dataset does not cover every competition worldwide.
