@@ -68,11 +68,17 @@ def format_report(report: dict[str, Any]) -> str:
 def send_message(token: str, chat_id: str, message: str, *, timeout: int = 15) -> None:
     if not token.strip() or not chat_id.strip():
         raise ValueError("TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID are both required.")
-    response = requests.post(
-        f"https://api.telegram.org/bot{token}/sendMessage",
-        json={"chat_id": chat_id, "text": message, "disable_web_page_preview": True},
-        timeout=timeout,
-    )
+    try:
+        response = requests.post(
+            f"https://api.telegram.org/bot{token}/sendMessage",
+            json={"chat_id": chat_id, "text": message, "disable_web_page_preview": True},
+            timeout=timeout,
+        )
+    except requests.RequestException as exc:
+        # Never print the exception itself: request errors may contain the token-bearing URL.
+        raise RuntimeError(
+            f"Telegram network request failed ({exc.__class__.__name__})."
+        ) from None
     try:
         payload = response.json()
     except ValueError as exc:
