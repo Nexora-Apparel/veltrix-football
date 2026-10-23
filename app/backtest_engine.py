@@ -91,7 +91,6 @@ def chronological_backtest(matches: Iterable[dict[str, Any]], *, min_training_ma
 
     # Per-league team history stores (goals scored, goals conceded) split by venue.
     venue_history: dict[tuple[str, str, str], deque[tuple[int, int]]] = defaultdict(lambda: deque(maxlen=form_window))
-    overall_history: dict[str, deque[tuple[int, int]]] = defaultdict(lambda: deque(maxlen=form_window))
     ratings: dict[tuple[str, str], float] = defaultdict(lambda: 1500.0)
     league_totals: dict[str, list[int]] = defaultdict(lambda: [0, 0, 0]) # matches, home goals, away goals
     league_draws: dict[str, list[int]] = defaultdict(lambda: [0, 0])
@@ -144,8 +143,6 @@ def chronological_backtest(matches: Iterable[dict[str, Any]], *, min_training_ma
             ratings[(lid, away)] = ra - delta
             venue_history[(lid, home, "home")].append((hg, ag))
             venue_history[(lid, away, "away")].append((ag, hg))
-            overall_history[(lid, home)].append((hg, ag))
-            overall_history[(lid, away)].append((ag, hg))
             league_totals[lid][0] += 1
             league_totals[lid][1] += hg
             league_totals[lid][2] += ag
