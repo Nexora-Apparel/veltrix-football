@@ -109,10 +109,11 @@ def import_dataset(start_date: str, end_date: str, output: str, timeout: int = 9
     session = requests.Session()
     session.headers.update({"User-Agent": USER_AGENT, "Accept": "text/csv,application/json"})
     csv_url = find_matches_csv(session)
-    response = session.get(csv_url, timeout=timeout, stream=True)
+    response = session.get(csv_url, timeout=timeout)
     response.raise_for_status()
-    response.raw.decode_content = True
-    text_stream = io.TextIOWrapper(response.raw, encoding="utf-8-sig", newline="")
+    # Decode the completed response into a managed text stream. Wrapping the
+    # requests raw socket in TextIOWrapper caused a close-order failure in CI.
+    text_stream = io.StringIO(response.content.decode("utf-8-sig"))
     reader = csv.DictReader(text_stream)
     if not reader.fieldnames or not REQUIRED_COLUMNS.issubset(set(reader.fieldnames)):
         raise RuntimeError(f"Unexpected CSV schema. Found columns: {reader.fieldnames}")
