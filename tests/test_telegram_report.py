@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import requests
+import pytest
+
 from scripts.send_telegram_report import format_report, send_message
 
 
@@ -41,6 +44,18 @@ def test_telegram_report_handles_no_usable_predictions():
 
 
 def test_telegram_send_requires_credentials():
-    import pytest
     with pytest.raises(ValueError, match="TELEGRAM_BOT_TOKEN"):
         send_message("", "", "test")
+
+
+def test_telegram_network_errors_do_not_echo_token(monkeypatch):
+    token = "123456:TOP_SECRET_TEST_TOKEN"
+
+    def fail_request(*args, **kwargs):
+        raise requests.ConnectionError(f"connection failed for https://api.telegram.org/bot{token}/sendMessage")
+
+    monkeypatch.setattr("scripts.send_telegram_report.requests.post", fail_request)
+    with pytest.raises(RuntimeError) as error:
+        send_message(token, "12345", "hello")
+    assert token not in str(error.value)
+    assert "ConnectionError" in str(error.value)
