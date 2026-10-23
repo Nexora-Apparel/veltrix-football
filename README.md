@@ -57,6 +57,16 @@ The importer discovers the source CSV path from the repository tree, validates r
 
 The `model_validated` switch is a safety gate, not proof of validation. It must remain false until a chronological, out-of-sample backtest and calibration review have passed. The expected-return calculation is theoretical and does not account for odds movement, limits, execution, or bookmaker restrictions. Do not publish selections as "value bets" merely because this mathematical filter passes.
 
+## Chronological model comparison (new)
+Run a historical evaluation after importing the CSV:
+
+```bash
+python -m pytest -q
+python -m scripts.run_backtest --input data/open_historical_matches.csv --output reports/backtest_summary.json
+```
+
+The backtest compares two separate baselines: a venue-specific Poisson attack/defence estimate with shrinkage toward league averages, and an Elo-based 1X2 estimate. It predicts all matches on a date before ingesting results from that date, then reports multiclass Brier score, log loss and result accuracy on later matches. GitHub Actions runs tests, imports the dataset and uploads a compact report artifact. The report is an evaluation snapshot, not evidence of profitability; compare against market probabilities and audit odds timestamps before enabling value alerts.
+
 ## Model safety
 Use only information available before kickoff as predictors. Full-time/half-time scores, shots and cards are post-match outcomes and must not be used as pre-match features. Never randomly split time-series match data; train on earlier matches and evaluate on later matches. Report Brier score/log loss, calibration, number of selections, ROI, yield, and drawdown alongside a market baseline. Historical odds coverage varies by league and season, and the open dataset does not cover every competition worldwide.
 
