@@ -67,6 +67,19 @@ python -m scripts.run_backtest --input data/open_historical_matches.csv --output
 
 The backtest compares two separate baselines: a venue-specific Poisson attack/defence estimate with shrinkage toward league averages, and an Elo-based 1X2 estimate. It predicts all matches on a date before ingesting results from that date, then reports multiclass Brier score, log loss, result accuracy and one-vs-rest reliability diagnostics. It also reports a recent-period evaluation using the latest 20% of unique forecast dates, plus a market comparison on the same fixtures with usable odds. GitHub Actions runs tests, imports the dataset and uploads a compact report artifact. The report is an evaluation snapshot, not evidence of profitability; compare against market probabilities and audit odds timestamps before enabling value alerts.
 
+## Daily fixture-to-prediction pipeline (experimental)
+
+The daily workflow is scheduled for 08:00 Africa/Lagos (07:00 UTC) and can also be started manually. Add `API_FOOTBALL_KEY` under repository Settings → Secrets and variables → Actions → New repository secret for the job to run. The workflow imports historical scores, runs the unit tests, fetches fixtures for the requested Nigeria-time date, and uploads a JSON report artifact.
+
+Run locally after importing historical data:
+
+```bash
+python scripts/import_open_dataset.py --from 2020-01-01 --to YYYY-MM-DD --output data/open_historical_matches.csv
+python scripts/run_daily_predictions.py --date YYYY-MM-DD --history data/open_historical_matches.csv --output reports/daily_predictions.json
+```
+
+The initial live fixture model uses recent team goals with shrinkage and an independent Poisson calculation. It is **experimental and not validated for betting**: competition-specific adjustment, live odds retrieval, independent recent-season validation, Telegram delivery/commands, and the mobile dashboard are not implemented. It suppresses probabilities for teams with fewer than five matching historical records. It does not generate normal 10.00-odds slips or 50.00–100.00-odds value slips; both remain disabled until the model beats a suitable market benchmark and odds can be checked. The daily workflow currently uploads a report artifact; it does not send Telegram messages.
+
 ## Model safety
 Use only information available before kickoff as predictors. Full-time/half-time scores, shots and cards are post-match outcomes and must not be used as pre-match features. Never randomly split time-series match data; train on earlier matches and evaluate on later matches. Report Brier score/log loss, calibration, number of selections, ROI, yield, and drawdown alongside a market baseline. Historical odds coverage varies by league and season, and the open dataset does not cover every competition worldwide.
 
@@ -77,4 +90,5 @@ Use only information available before kickoff as predictors. Full-time/half-time
 4. Baseline modelling: Poisson attack/defence and Elo are implemented and evaluated chronologically.
 5. Backtesting and calibration diagnostics: implemented; CI runs tests, imports data, produces full-period and recent-period reports, and uploads the report artifact.
 6. Value screening: implemented but deliberately gated off. Current evidence shows the de-vigged historical market baseline outperforming both tested models on the same fixtures, so model-driven value alerts are not approved.
-7. Remaining before a public MVP: build the mobile-first web dashboard and live fixture-to-prediction flow, audit per-league/recent-season performance and odds timestamps, and paper-track predictions before considering any value-alert gate.
+7. Experimental daily fixture-to-prediction flow: implemented with minimum-history suppression; a scheduled GitHub Actions workflow creates a report artifact at 08:00 Nigeria time when the API secret is configured. It is not a validated betting model and does not send Telegram messages.
+8. Remaining before a public MVP: validate recent performance by league, retrieve and audit live odds, paper-track predictions, then build Telegram delivery/commands and the mobile-first dashboard. Normal 10.00-odds slips and 50.00–100.00-odds value slips stay disabled until validation supports them.
