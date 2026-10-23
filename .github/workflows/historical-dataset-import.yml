@@ -48,7 +48,7 @@ jobs:
           if [ -z "$END_DATE" ]; then END_DATE="$(TZ=Africa/Lagos date +%F)"; fi
           python -m scripts.import_open_dataset --from "$START_DATE" --to "$END_DATE" --output data/open_historical_matches.csv
       - name: Upload imported CSV
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: veltrix-historical-matches
           path: data/open_historical_matches.csv
