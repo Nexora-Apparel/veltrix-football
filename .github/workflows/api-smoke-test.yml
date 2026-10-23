@@ -40,6 +40,11 @@ jobs:
           fi
           python -m app.cli status
 
+      - name: Audit free-plan historical coverage (sample)
+        env:
+          API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
+        run: python -m scripts.audit_historical_coverage
+
       - name: Fetch today's fixtures (Africa/Lagos)
         env:
           API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
