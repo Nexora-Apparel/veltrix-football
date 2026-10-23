@@ -50,6 +50,14 @@ def _elo_probs(home_rating: float, away_rating: float, home_advantage: float, dr
     return {"H": non_draw * expected_home, "D": draw, "A": non_draw * (1.0 - expected_home)}
 
 
+def _safe_float(value: Any) -> float | None:
+    try:
+        number = float(value)
+        return number if math.isfinite(number) else None
+    except (TypeError, ValueError):
+        return None
+
+
 def _normalize_match(row: dict[str, Any]) -> dict[str, Any] | None:
     try:
         day = str(row.get("match_date") or row.get("date") or "")[:10]
@@ -62,8 +70,22 @@ def _normalize_match(row: dict[str, Any]) -> dict[str, Any] | None:
         date.fromisoformat(day)
         if not division or not home or not away or home.casefold() == away.casefold() or min(hg, ag) < 0:
             return None
-        return {"match_date": day, "division": division, "home_team": home, "away_team": away,
+        normalized = {"match_date": day, "division": division, "home_team": home, "away_team": away,
                 "home_goals": hg, "away_goals": ag, "result": "H" if hg > ag else "A" if hg < ag else "D"}
+        existing_market = row.get("market")
+        if isinstance(existing_market, dict) and all(_safe_float(existing_market.get(k)) is not None for k in ("H", "D", "A")):
+            vals = [_safe_float(existing_market[k]) for k in ("H", "D", "A")]
+            if all(v >= 0 for v in vals) and sum(vals) > 0:
+                total = sum(vals)
+                normalized["market"] = {k: v / total for k, v in zip(("H", "D", "A"), vals)}
+        else:
+            odds = [_safe_float(row.get(key)) for key in ("home_odds", "draw_odds", "away_odds")]
+            if all(value is not None and value > 1.0 for value in odds):
+                implied = [1.0 / value for value in odds]
+                total = sum(implied)
+                if total > 0:
+                    normalized["market"] = {key: value / total for key, value in zip(("H", "D", "A"), implied)}
+        return normalized
     except (TypeError, ValueError):
         return None
 
@@ -129,7 +151,8 @@ def chronological_backtest(matches: Iterable[dict[str, Any]], *, min_training_ma
                 scored.append({"match_date": day, "division": lid, "home_team": home, "away_team": away,
                     "actual": m["result"], "home_goals": m["home_goals"], "away_goals": m["away_goals"],
                     "home_expected_goals": home_lambda, "away_expected_goals": away_lambda,
-                    "poisson": poisson, "elo": elo})
+                    "poisson": poisson, "elo": elo,
+                    **({"market": m["market"]} if "market" in m else {})})
         # Update ratings and form only after all fixtures on this date were forecast.
         for m in todays:
             lid, home, away = m["division"], m["home_team"], m["away_team"]
@@ -163,9 +186,24 @@ def chronological_backtest(matches: Iterable[dict[str, Any]], *, min_training_ma
         metrics[model_name] = {"matches": len(scored), "brier_score": sum(brier) / len(brier),
             "log_loss": sum(logloss) / len(logloss), "result_accuracy": correct / len(scored)}
     winner = min(metrics, key=lambda name: metrics[name]["log_loss"])
+    # Compare de-vigged odds against both models on the same covered fixtures.
+    odds_rows = [row for row in scored if "market" in row]
+    odds_subset_metrics = {}
+    if odds_rows:
+        for model_name in ("poisson", "elo", "market"):
+            brier, logloss, correct = [], [], 0
+            for row in odds_rows:
+                probs = row[model_name]
+                brier.append(sum((probs[outcome] - float(row["actual"] == outcome)) ** 2 for outcome in ("H", "D", "A")))
+                logloss.append(-math.log(max(1e-15, probs[row["actual"]])))
+                correct += int(max(probs, key=probs.get) == row["actual"])
+            odds_subset_metrics[model_name] = {"matches": len(odds_rows), "brier_score": sum(brier) / len(brier),
+                "log_loss": sum(logloss) / len(logloss), "result_accuracy": correct / len(odds_rows)}
     return {"status": "BACKTESTED_NOT_PROOF_OF_PROFIT", "test_matches": len(scored),
         "first_test_date": scored[0]["match_date"], "last_test_date": scored[-1]["match_date"],
         "models": metrics, "lower_log_loss_model": winner,
+        "historical_odds_subset": {"matches_with_valid_1x2_odds": len(odds_rows), "models_compared_on_same_matches": odds_subset_metrics,
+            "warning": "Historical odds are indicative only; timestamp and closing-line quality are not verified."},
         "notes": ["Chronological test; matches on the same date are predicted before that date's results are added.",
                   "Poisson model uses shrunk historical venue-specific goals for/against; Elo is a separate baseline.",
                   "No ROI claim: odds coverage, timestamp quality and probability calibration must be audited separately."],
