@@ -2,17 +2,24 @@ name: Historical Model Backtest
 
 on:
   workflow_dispatch:
-  workflow_run:
-    workflows: ["Historical Dataset Import"]
-    types: [completed]
+  schedule:
+    - cron: "40 4 * * 1"
+  push:
+    branches: [main]
+    paths:
+      - "app/backtest_engine.py"
+      - "scripts/run_backtest.py"
+      - "tests/**"
+      - "requirements.txt"
+      - ".github/workflows/historical-model-backtest.yml"
 
 permissions:
   contents: read
 
 jobs:
   backtest:
-    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -22,7 +29,7 @@ jobs:
         run: python -m pip install -r requirements.txt
       - name: Run unit tests
         run: python -m pytest -q
-      - name: Import recent historical dataset
+      - name: Import historical dataset
         run: python scripts/import_open_dataset.py --from 2000-01-01 --to "$(date -u +%F)" --output data/open_historical_matches.csv
       - name: Run chronological model comparison
         run: python scripts/run_backtest.py --input data/open_historical_matches.csv --output reports/backtest_summary.json
@@ -31,4 +38,5 @@ jobs:
         with:
           name: veltrix-backtest-report
           path: reports/backtest_summary.json
+          if-no-files-found: error
           retention-days: 30
