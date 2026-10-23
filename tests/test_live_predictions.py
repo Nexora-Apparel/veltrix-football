@@ -57,3 +57,25 @@ def test_history_from_prediction_date_is_not_used():
     result = predict_fixtures([_fixture()], rows, as_of=date(2026, 10, 23))
     assert result[0]["status"] == "EXPERIMENTAL_ONLY"
     assert result[0]["historical_matches"] == {"home": 6, "away": 6}
+
+
+def test_only_fixtures_on_target_nigeria_day_are_included():
+    same_day = _fixture("2026-10-23T15:00:00+01:00")
+    tomorrow = _fixture("2026-10-24T00:30:00+01:00")
+    tomorrow["fixture"]["id"] = 456
+    result = predict_fixtures(
+        [same_day, tomorrow], _history(), as_of=date(2026, 10, 23),
+        timezone_name="Africa/Lagos",
+    )
+    assert [item["fixture_id"] for item in result] == [123]
+    assert result[0]["kickoff_local"].startswith("2026-10-23")
+
+
+def test_utc_kickoff_is_converted_to_nigeria_calendar_date():
+    fixture = _fixture("2026-10-22T23:30:00Z")
+    result = predict_fixtures(
+        [fixture], _history(), as_of=date(2026, 10, 23),
+        timezone_name="Africa/Lagos",
+    )
+    assert len(result) == 1
+    assert result[0]["kickoff_local"].startswith("2026-10-23")
