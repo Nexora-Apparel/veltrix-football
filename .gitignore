@@ -5,3 +5,6 @@ __pycache__/
 .pytest_cache/
 .coverage
 .DS_Store
+
+# Imported datasets are generated artifacts; do not commit large CSVs.
+data/*.csv
