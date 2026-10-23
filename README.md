@@ -70,11 +70,11 @@ The backtest compares two separate baselines: a venue-specific Poisson attack/de
 ## Model safety
 Use only information available before kickoff as predictors. Full-time/half-time scores, shots and cards are post-match outcomes and must not be used as pre-match features. Never randomly split time-series match data; train on earlier matches and evaluate on later matches. Report Brier score/log loss, calibration, number of selections, ROI, yield, and drawdown alongside a market baseline. Historical odds coverage varies by league and season, and the open dataset does not cover every competition worldwide.
 
-## Project roadmap
-1. API connection and response validation (verified)
-2. Historical fixture export and leakage-safe rolling features (implemented; CI verification pending)
-3. Open historical data import (implemented; import run and coverage still need verification)
-4. Estimate team strengths and expected goals from historical data
-5. Chronological backtest and calibration
-6. Validate value screening against historical odds and market baseline
-7. Only then enable Telegram alerts, mobile-first dashboard, paper tracking and ongoing calibration
+## Project status and remaining work
+1. API connection and response validation: implemented; live smoke checks are subject to API-Football quota/rate limits.
+2. Historical fixture export and leakage-safe rolling features: implemented and covered by automated tests.
+3. Open historical data import: implemented; CI successfully imported the available historical dataset.
+4. Baseline modelling: Poisson attack/defence and Elo are implemented and evaluated chronologically.
+5. Backtesting and calibration diagnostics: implemented; CI runs tests, imports data, produces full-period and recent-period reports, and uploads the report artifact.
+6. Value screening: implemented but deliberately gated off. Current evidence shows the de-vigged historical market baseline outperforming both tested models on the same fixtures, so model-driven value alerts are not approved.
+7. Remaining before a public MVP: build the mobile-first web dashboard and live fixture-to-prediction flow, audit per-league/recent-season performance and odds timestamps, and paper-track predictions before considering any value-alert gate.
