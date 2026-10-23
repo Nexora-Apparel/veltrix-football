@@ -28,6 +28,11 @@ def test_backtest_predicts_only_after_training_and_is_deterministic():
     assert set(result["models"]) == {"poisson", "elo"}
     assert result["models"]["poisson"]["matches"] == result["test_matches"]
     assert result["models"]["elo"]["brier_score"] >= 0
+    holdout = result["recent_holdout"]
+    assert holdout["matches"] > 0
+    assert holdout["start_date"] <= holdout["end_date"]
+    assert holdout["matches"] <= result["test_matches"]
+    assert set(holdout["models"]) == {"poisson", "elo"}
 
 
 def test_market_reference_is_reported_on_covered_fixtures():
@@ -46,6 +51,9 @@ def test_market_reference_is_reported_on_covered_fixtures():
     assert subset["matches_with_valid_1x2_odds"] == result["test_matches"]
     assert set(subset["models_compared_on_same_matches"]) == {"poisson", "elo", "market"}
     assert subset["models_compared_on_same_matches"]["market"]["matches"] == result["test_matches"]
+    holdout_market = result["recent_holdout"]["historical_odds_subset"]
+    assert holdout_market["matches_with_valid_1x2_odds"] == result["recent_holdout"]["matches"]
+    assert set(holdout_market["models_compared_on_same_matches"]) == {"poisson", "elo", "market"}
     for model in ("poisson", "elo", "market"):
         calibration = subset["models_compared_on_same_matches"][model]["calibration"]
         assert set(calibration) == {"H", "D", "A"}
