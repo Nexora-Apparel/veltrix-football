@@ -111,7 +111,7 @@ def import_dataset(start_date: str, end_date: str, output: str, timeout: int = 9
     csv_url = find_matches_csv(session)
     response = session.get(csv_url, timeout=timeout, stream=True)
     response.raise_for_status()
-    response.encoding = "utf-8-sig"
+    response.raw.decode_content = True
     text_stream = io.TextIOWrapper(response.raw, encoding="utf-8-sig", newline="")
     reader = csv.DictReader(text_stream)
     if not reader.fieldnames or not REQUIRED_COLUMNS.issubset(set(reader.fieldnames)):
