@@ -229,17 +229,36 @@ def chronological_backtest(matches: Iterable[dict[str, Any]], *, min_training_ma
         raise ValueError("No test predictions produced; lower min_training_matches or supply more history")
     metrics = {name: _score_probabilities(scored, name) for name in ("poisson", "elo")}
     winner = min(metrics, key=lambda name: metrics[name]["log_loss"])
+
+    # Reserve the latest 20% of unique forecast dates as a final-period diagnostic.
+    # Forecasts remain walk-forward: each match is predicted before same-day results
+    # are ingested. The cutoff is date-based so matches on one date cannot split.
+    forecast_dates = sorted({row["match_date"] for row in scored})
+    holdout_index = min(len(forecast_dates) - 1, max(0, int(len(forecast_dates) * 0.8)))
+    holdout_start = forecast_dates[holdout_index]
+    holdout_rows = [row for row in scored if row["match_date"] >= holdout_start]
+    holdout_metrics = {name: _score_probabilities(holdout_rows, name) for name in ("poisson", "elo")}
+
     # Compare de-vigged odds against both models on the same covered fixtures.
     odds_rows = [row for row in scored if "market" in row]
     odds_subset_metrics = {}
+    holdout_odds_rows = [row for row in holdout_rows if "market" in row]
+    holdout_odds_metrics = {}
     if odds_rows:
         odds_subset_metrics = {name: _score_probabilities(odds_rows, name) for name in ("poisson", "elo", "market")}
+    if holdout_odds_rows:
+        holdout_odds_metrics = {name: _score_probabilities(holdout_odds_rows, name) for name in ("poisson", "elo", "market")}
     return {"status": "BACKTESTED_NOT_PROOF_OF_PROFIT", "test_matches": len(scored),
         "first_test_date": scored[0]["match_date"], "last_test_date": scored[-1]["match_date"],
         "models": metrics, "lower_log_loss_model": winner,
+        "recent_holdout": {"method": "latest 20% of unique forecast dates", "start_date": holdout_start,
+            "end_date": forecast_dates[-1], "matches": len(holdout_rows), "models": holdout_metrics,
+            "historical_odds_subset": {"matches_with_valid_1x2_odds": len(holdout_odds_rows),
+                "models_compared_on_same_matches": holdout_odds_metrics}},
         "historical_odds_subset": {"matches_with_valid_1x2_odds": len(odds_rows), "models_compared_on_same_matches": odds_subset_metrics,
             "warning": "Historical odds are indicative only; timestamp and closing-line quality are not verified."},
         "notes": ["Chronological test; matches on the same date are predicted before that date's results are added.",
+                  "Recent holdout is the latest 20% of forecast dates, evaluated from walk-forward predictions.",
                   "Poisson model uses shrunk historical venue-specific goals for/against; Elo is a separate baseline.",
                   "No ROI claim: odds coverage, timestamp quality and closing-line quality must be audited separately.",
                   "Calibration is diagnostic only; no fitted recalibration is applied to predictions."],
