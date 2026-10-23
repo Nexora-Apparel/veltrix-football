@@ -100,6 +100,58 @@ def load_matches(path: str | Path) -> list[dict[str, Any]]:
     return valid
 
 
+def _score_probabilities(rows: list[dict[str, Any]], model_name: str, *, bins: int = 10) -> dict[str, Any]:
+    """Score multiclass forecasts and report one-vs-rest reliability by probability bin."""
+    outcomes = ("H", "D", "A")
+    brier_values: list[float] = []
+    logloss_values: list[float] = []
+    correct = 0
+    calibration: dict[str, Any] = {}
+    for row in rows:
+        probs = row[model_name]
+        actual = row["actual"]
+        brier_values.append(sum((probs[outcome] - float(actual == outcome)) ** 2 for outcome in outcomes))
+        logloss_values.append(-math.log(max(1e-15, min(1.0, probs[actual]))))
+        correct += int(max(probs, key=probs.get) == actual)
+    for outcome in outcomes:
+        bucket_counts = [0] * bins
+        predicted_sums = [0.0] * bins
+        observed_sums = [0] * bins
+        for row in rows:
+            probability = min(1.0, max(0.0, float(row[model_name][outcome])))
+            index = min(bins - 1, int(probability * bins))
+            bucket_counts[index] += 1
+            predicted_sums[index] += probability
+            observed_sums[index] += float(row["actual"] == outcome)
+        reliability = []
+        weighted_gap = 0.0
+        for index, count in enumerate(bucket_counts):
+            if not count:
+                continue
+            mean_predicted = predicted_sums[index] / count
+            observed_rate = observed_sums[index] / count
+            weighted_gap += count / len(rows) * abs(mean_predicted - observed_rate)
+            reliability.append({
+                "bin_lower": index / bins,
+                "bin_upper": (index + 1) / bins,
+                "matches": count,
+                "mean_predicted_probability": mean_predicted,
+                "observed_frequency": observed_rate,
+                "absolute_gap": abs(mean_predicted - observed_rate),
+            })
+        calibration[outcome] = {
+            "expected_calibration_error": weighted_gap,
+            "reliability_bins": reliability,
+        }
+    return {
+        "matches": len(rows),
+        "brier_score": sum(brier_values) / len(brier_values),
+        "log_loss": sum(logloss_values) / len(logloss_values),
+        "result_accuracy": correct / len(rows),
+        "calibration": calibration,
+    }
+
+
 def chronological_backtest(matches: Iterable[dict[str, Any]], *, min_training_matches: int = 100,
                            form_window: int = 10, elo_k: float = 20.0,
                            home_elo_advantage: float = 55.0) -> dict[str, Any]:
@@ -175,30 +227,13 @@ def chronological_backtest(matches: Iterable[dict[str, Any]], *, min_training_ma
 
     if not scored:
         raise ValueError("No test predictions produced; lower min_training_matches or supply more history")
-    metrics = {}
-    for model_name in ("poisson", "elo"):
-        brier, logloss, correct = [], [], 0
-        for row in scored:
-            probs = row[model_name]
-            brier.append(sum((probs[outcome] - float(row["actual"] == outcome)) ** 2 for outcome in ("H", "D", "A")))
-            logloss.append(-math.log(max(1e-15, probs[row["actual"]])))
-            correct += int(max(probs, key=probs.get) == row["actual"])
-        metrics[model_name] = {"matches": len(scored), "brier_score": sum(brier) / len(brier),
-            "log_loss": sum(logloss) / len(logloss), "result_accuracy": correct / len(scored)}
+    metrics = {name: _score_probabilities(scored, name) for name in ("poisson", "elo")}
     winner = min(metrics, key=lambda name: metrics[name]["log_loss"])
     # Compare de-vigged odds against both models on the same covered fixtures.
     odds_rows = [row for row in scored if "market" in row]
     odds_subset_metrics = {}
     if odds_rows:
-        for model_name in ("poisson", "elo", "market"):
-            brier, logloss, correct = [], [], 0
-            for row in odds_rows:
-                probs = row[model_name]
-                brier.append(sum((probs[outcome] - float(row["actual"] == outcome)) ** 2 for outcome in ("H", "D", "A")))
-                logloss.append(-math.log(max(1e-15, probs[row["actual"]])))
-                correct += int(max(probs, key=probs.get) == row["actual"])
-            odds_subset_metrics[model_name] = {"matches": len(odds_rows), "brier_score": sum(brier) / len(brier),
-                "log_loss": sum(logloss) / len(logloss), "result_accuracy": correct / len(odds_rows)}
+        odds_subset_metrics = {name: _score_probabilities(odds_rows, name) for name in ("poisson", "elo", "market")}
     return {"status": "BACKTESTED_NOT_PROOF_OF_PROFIT", "test_matches": len(scored),
         "first_test_date": scored[0]["match_date"], "last_test_date": scored[-1]["match_date"],
         "models": metrics, "lower_log_loss_model": winner,
@@ -206,7 +241,8 @@ def chronological_backtest(matches: Iterable[dict[str, Any]], *, min_training_ma
             "warning": "Historical odds are indicative only; timestamp and closing-line quality are not verified."},
         "notes": ["Chronological test; matches on the same date are predicted before that date's results are added.",
                   "Poisson model uses shrunk historical venue-specific goals for/against; Elo is a separate baseline.",
-                  "No ROI claim: odds coverage, timestamp quality and probability calibration must be audited separately."],
+                  "No ROI claim: odds coverage, timestamp quality and closing-line quality must be audited separately.",
+                  "Calibration is diagnostic only; no fitted recalibration is applied to predictions."],
         "predictions": scored}
 
 
