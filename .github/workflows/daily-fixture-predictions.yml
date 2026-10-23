@@ -26,10 +26,6 @@ permissions:
 jobs:
   daily-predictions:
     runs-on: ubuntu-latest
-    env:
-      API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
-      TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-      TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
     timeout-minutes: 25
     steps:
       - uses: actions/checkout@v7
@@ -41,23 +37,43 @@ jobs:
       - name: Run unit tests
         run: python -m pytest -q
       - name: Import historical matches
-        if: github.event_name != 'push' && env.API_FOOTBALL_KEY != ''
+        if: github.event_name != 'push'
         run: python scripts/import_open_dataset.py --from 2020-01-01 --to "$(date -u +%F)" --output data/open_historical_matches.csv
       - name: Generate daily fixture report
-        if: github.event_name != 'push' && env.API_FOOTBALL_KEY != ''
+        if: github.event_name != 'push'
         env:
+          API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
           PYTHONPATH: .
         run: |
+          if [ -z "$API_FOOTBALL_KEY" ]; then
+            echo "::error::Repository secret API_FOOTBALL_KEY is missing."
+            exit 1
+          fi
           TARGET_DATE="${{ inputs.date }}"
           if [ -z "$TARGET_DATE" ]; then TARGET_DATE="$(TZ=Africa/Lagos date +%F)"; fi
           python scripts/run_daily_predictions.py --date "$TARGET_DATE" --history data/open_historical_matches.csv --output reports/daily_predictions.json
-      - name: Send daily report to Telegram
-        if: github.event_name != 'push' && env.API_FOOTBALL_KEY != '' && env.TELEGRAM_BOT_TOKEN != '' && env.TELEGRAM_CHAT_ID != ''
+      - name: Check Telegram configuration
+        if: github.event_name != 'push'
+        id: telegram-config
         env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          if [ -n "$TELEGRAM_BOT_TOKEN" ] && [ -n "$TELEGRAM_CHAT_ID" ]; then
+            echo "configured=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::Telegram delivery skipped because its two secrets are not both configured."
+          fi
+      - name: Send daily report to Telegram
+        if: github.event_name != 'push' && steps.telegram-config.outputs.configured == 'true'
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           PYTHONPATH: .
         run: python scripts/send_telegram_report.py --report reports/daily_predictions.json
       - name: Upload daily prediction report
-        if: github.event_name != 'push' && env.API_FOOTBALL_KEY != ''
+        if: github.event_name != 'push'
         uses: actions/upload-artifact@v4
         with:
           name: veltrix-daily-predictions
