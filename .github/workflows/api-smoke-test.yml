@@ -2,9 +2,8 @@ name: API-Football smoke test
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - main
+  schedule:
+    - cron: "25 5 * * 1"
 
 permissions:
   contents: read
