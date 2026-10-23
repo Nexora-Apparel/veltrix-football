@@ -17,7 +17,7 @@ def format_report(report: dict[str, Any]) -> str:
     day = str(report.get("as_of_date", "unknown date"))
     timezone_name = str(report.get("timezone", "Africa/Lagos"))
     predictions = report.get("predictions", [])
-    lines = [
+    header = [
         "⚽ VELTRIX FOOTBALL — DAILY REPORT",
         f"Date: {day} ({timezone_name})",
         "MODEL STATUS: EXPERIMENTAL — NOT VALIDATED FOR BETTING",
@@ -27,8 +27,13 @@ def format_report(report: dict[str, Any]) -> str:
     usable = [p for p in predictions if p.get("status") == "EXPERIMENTAL_ONLY"]
     insufficient = [p for p in predictions if p.get("status") == "INSUFFICIENT_HISTORY"]
     if not usable:
-        lines.append("NO USABLE EXPERIMENTAL FORECASTS TODAY.")
-        lines.append("No betting slips generated. No picks are being forced.")
+        header.extend([
+            "NO USABLE EXPERIMENTAL FORECASTS TODAY.",
+            "No betting slips generated. No picks are being forced.",
+        ])
+
+    # Keep each fixture as a block so a long report never ends mid-fixture.
+    blocks: list[list[str]] = []
     for item in usable:
         probs = item.get("probabilities", {})
         # The model emits home_win/draw/away_win; accept home/draw/away too
@@ -37,7 +42,7 @@ def format_report(report: dict[str, Any]) -> str:
         draw_probability = probs.get("draw", 0)
         away_probability = probs.get("away_win", probs.get("away", 0))
         kickoff = str(item.get("kickoff_local", "Kickoff time unavailable"))
-        lines.extend([
+        blocks.append([
             f"{item.get('home_team', 'Home')} vs {item.get('away_team', 'Away')}",
             f"League: {item.get('league') or 'Unknown competition'}",
             f"Kickoff: {kickoff}",
@@ -50,19 +55,50 @@ def format_report(report: dict[str, Any]) -> str:
             "Status: experimental only; do not treat as a recommendation.",
             "",
         ])
+
+    footer = []
     if insufficient:
-        lines.append(f"{len(insufficient)} fixture(s) withheld because historical team data was insufficient.")
-    lines.extend([
+        footer.append(
+            f"{len(insufficient)} fixture(s) withheld because historical team data was insufficient."
+        )
+    footer.extend([
         "",
         "Normal 10.00-odds slips: DISABLED.",
         "Value slips (50.00–100.00 odds): DISABLED.",
         "Reason: current models have not beaten the historical market benchmark.",
     ])
-    message = "\n".join(lines)
-    if len(message) <= MAX_MESSAGE_LENGTH:
-        return message
-    footer = "\n\nFurther fixtures omitted to fit Telegram's message limit."
-    return message[: MAX_MESSAGE_LENGTH - len(footer)] + footer
+
+    def render(selected: list[list[str]], omitted: int = 0) -> str:
+        lines = list(header)
+        for block in selected:
+            lines.extend(block)
+        if omitted:
+            lines.extend([
+                "",
+                f"{omitted} additional fixture(s) omitted to fit Telegram's message limit.",
+            ])
+        lines.extend(footer)
+        return "\n".join(lines)
+
+    full_message = render(blocks)
+    if len(full_message) <= MAX_MESSAGE_LENGTH:
+        return full_message
+
+    selected: list[list[str]] = []
+    for block in blocks:
+        remaining_after_add = len(blocks) - len(selected) - 1
+        candidate = render(selected + [block], remaining_after_add)
+        if len(candidate) > MAX_MESSAGE_LENGTH:
+            break
+        selected.append(block)
+
+    omitted = len(blocks) - len(selected)
+    message = render(selected, omitted)
+    # The header/footer and omission note are small; this is a defensive fallback
+    # for unusually long external team/league names.
+    if len(message) > MAX_MESSAGE_LENGTH:
+        return message[: MAX_MESSAGE_LENGTH - 1].rstrip() + "…"
+    return message
 
 
 def send_message(token: str, chat_id: str, message: str, *, timeout: int = 15) -> None:
