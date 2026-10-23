@@ -1,0 +1,47 @@
+name: Daily Fixture Predictions
+
+on:
+  workflow_dispatch:
+    inputs:
+      date:
+        description: "Fixture date (YYYY-MM-DD); blank means today in workflow's UTC date"
+        required: false
+        type: string
+  schedule:
+    # 08:00 Africa/Lagos (WAT, UTC+1) = 07:00 UTC.
+    - cron: "0 7 * * *"
+
+permissions:
+  contents: read
+
+jobs:
+  daily-predictions:
+    # Configure API_FOOTBALL_KEY in repository Actions secrets to enable scheduled runs.
+    if: ${{ secrets.API_FOOTBALL_KEY != '' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install dependencies
+        run: python -m pip install -r requirements.txt
+      - name: Run unit tests
+        run: python -m pytest -q
+      - name: Import historical matches
+        run: python scripts/import_open_dataset.py --from 2020-01-01 --to "$(date -u +%F)" --output data/open_historical_matches.csv
+      - name: Generate daily fixture report
+        env:
+          API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
+        run: |
+          TARGET_DATE="${{ inputs.date }}"
+          if [ -z "$TARGET_DATE" ]; then TARGET_DATE="$(TZ=Africa/Lagos date +%F)"; fi
+          python scripts/run_daily_predictions.py --date "$TARGET_DATE" --history data/open_historical_matches.csv --output reports/daily_predictions.json
+      - name: Upload daily prediction report
+        uses: actions/upload-artifact@v4
+        with:
+          name: veltrix-daily-predictions
+          path: reports/daily_predictions.json
+          if-no-files-found: error
+          retention-days: 14
