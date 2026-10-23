@@ -40,6 +40,7 @@ jobs:
         if: github.event_name != 'push'
         run: python scripts/import_open_dataset.py --from 2020-01-01 --to "$(date -u +%F)" --output data/open_historical_matches.csv
       - name: Generate daily fixture report
+        id: generate-report
         if: github.event_name != 'push'
         env:
           API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
@@ -73,7 +74,7 @@ jobs:
           PYTHONPATH: .
         run: python scripts/send_telegram_report.py --report reports/daily_predictions.json
       - name: Upload daily prediction report
-        if: github.event_name != 'push'
+        if: always() && github.event_name != 'push' && steps.generate-report.outcome == 'success'
         uses: actions/upload-artifact@v7
         with:
           name: veltrix-daily-predictions
