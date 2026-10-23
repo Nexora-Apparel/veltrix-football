@@ -9,6 +9,7 @@ import csv
 import re
 from collections import defaultdict, deque
 from datetime import date, datetime, timezone
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 from pathlib import Path
 from typing import Any, Iterable
 
@@ -43,7 +44,7 @@ def load_historical_matches(path: str | Path) -> list[dict[str, Any]]:
     return sorted(rows, key=lambda row: row["date"])
 
 
-def _fixture_parts(item: dict[str, Any]) -> dict[str, Any] | None:
+def _fixture_parts(item: dict[str, Any], timezone_name: str = "Africa/Lagos") -> dict[str, Any] | None:
     fixture = item.get("fixture") or {}
     teams = item.get("teams") or {}
     league = item.get("league") or {}
@@ -58,12 +59,14 @@ def _fixture_parts(item: dict[str, Any]) -> dict[str, Any] | None:
         parsed = datetime.fromisoformat(str(kickoff).replace("Z", "+00:00"))
         if parsed.tzinfo is None:
             parsed = parsed.replace(tzinfo=timezone.utc)
-    except ValueError:
+        local_kickoff = parsed.astimezone(ZoneInfo(timezone_name))
+    except (ValueError, ZoneInfoNotFoundError):
         return None
     return {
         "fixture_id": fixture.get("id"),
         "kickoff": parsed.isoformat(),
-        "kickoff_date": parsed.date(),
+        "kickoff_local": local_kickoff.isoformat(),
+        "kickoff_date": local_kickoff.date(),
         "home_team": home,
         "away_team": away,
         "league": league.get("name"),
@@ -78,6 +81,7 @@ def predict_fixtures(
     as_of: date | None = None,
     min_team_matches: int = MIN_TEAM_MATCHES,
     team_window: int = TEAM_WINDOW,
+    timezone_name: str = "Africa/Lagos",
 ) -> list[dict[str, Any]]:
     """Estimate experimental 1X2 probabilities from prior team goal averages.
 
@@ -87,7 +91,11 @@ def predict_fixtures(
     """
     if min_team_matches < 1 or team_window < min_team_matches:
         raise ValueError("team_window must be >= min_team_matches >= 1")
-    today = as_of or date.today()
+    try:
+        local_zone = ZoneInfo(timezone_name)
+    except ZoneInfoNotFoundError as exc:
+        raise ValueError(f"Unknown timezone: {timezone_name}") from exc
+    today = as_of or datetime.now(local_zone).date()
     usable = sorted((m for m in historical_matches if m["date"] < today), key=lambda row: row["date"])
     if not usable:
         return []
@@ -101,8 +109,12 @@ def predict_fixtures(
 
     # Rebuild histories per target date so earlier dates are never duplicated.
     output: list[dict[str, Any]] = []
-    parsed_fixtures = [p for item in fixtures if (p := _fixture_parts(item))]
-    for target_date in sorted({p["kickoff_date"] for p in parsed_fixtures}):
+    parsed_fixtures = [
+        p for item in fixtures
+        if (p := _fixture_parts(item, timezone_name)) and p["kickoff_date"] == today
+    ]
+    # Strict same-local-calendar-day rule: never include tomorrow or later dates.
+    for target_date in ([today] if parsed_fixtures else []):
         team_history: dict[str, deque[tuple[int, int, str]]] = defaultdict(
             lambda: deque(maxlen=team_window)
         )
@@ -171,16 +183,18 @@ def predict_fixtures(
     return output
 
 
-def build_daily_report(fixtures_payload: dict[str, Any], history_path: str | Path, *, as_of: date | None = None) -> dict[str, Any]:
+def build_daily_report(fixtures_payload: dict[str, Any], history_path: str | Path, *, as_of: date | None = None, timezone_name: str = "Africa/Lagos") -> dict[str, Any]:
     fixtures = fixtures_payload.get("response")
     if not isinstance(fixtures, list):
         raise ValueError("Fixture API payload is missing a response list.")
     historical = load_historical_matches(history_path)
-    predictions = predict_fixtures(fixtures, historical, as_of=as_of)
+    predictions = predict_fixtures(fixtures, historical, as_of=as_of, timezone_name=timezone_name)
     return {
         "product": "Veltrix Football",
         "generated_at_utc": datetime.now(timezone.utc).isoformat(),
-        "as_of_date": (as_of or date.today()).isoformat(),
+        "as_of_date": (as_of or datetime.now(ZoneInfo(timezone_name)).date()).isoformat(),
+        "timezone": timezone_name,
+        "same_day_only": True,
         "model_status": "EXPERIMENTAL_NOT_VALIDATED",
         "fixtures_received": len(fixtures),
         "predictions_created": sum(p["status"] == "EXPERIMENTAL_ONLY" for p in predictions),
