@@ -11,7 +11,7 @@ on:
   workflow_dispatch:
     inputs:
       date:
-        description: "Fixture date (YYYY-MM-DD); blank means today in workflow's UTC date"
+        description: "Nigeria-local fixture date (YYYY-MM-DD); blank means today in Africa/Lagos"
         required: false
         type: string
   schedule:
