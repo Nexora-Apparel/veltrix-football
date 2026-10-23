@@ -86,7 +86,7 @@ def predict_fixtures(
     if min_team_matches < 1 or team_window < min_team_matches:
         raise ValueError("team_window must be >= min_team_matches >= 1")
     today = as_of or date.today()
-    usable = [m for m in historical_matches if m["date"] < today]
+    usable = sorted((m for m in historical_matches if m["date"] < today), key=lambda row: row["date"])
     if not usable:
         return []
 
