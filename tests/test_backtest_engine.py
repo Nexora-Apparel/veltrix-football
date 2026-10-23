@@ -46,3 +46,9 @@ def test_market_reference_is_reported_on_covered_fixtures():
     assert subset["matches_with_valid_1x2_odds"] == result["test_matches"]
     assert set(subset["models_compared_on_same_matches"]) == {"poisson", "elo", "market"}
     assert subset["models_compared_on_same_matches"]["market"]["matches"] == result["test_matches"]
+    for model in ("poisson", "elo", "market"):
+        calibration = subset["models_compared_on_same_matches"][model]["calibration"]
+        assert set(calibration) == {"H", "D", "A"}
+        for outcome in calibration.values():
+            assert 0 <= outcome["expected_calibration_error"] <= 1
+            assert outcome["reliability_bins"]
