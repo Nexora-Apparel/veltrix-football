@@ -50,7 +50,9 @@ def _fixture_parts(item: dict[str, Any]) -> dict[str, Any] | None:
     home = (teams.get("home") or {}).get("name")
     away = (teams.get("away") or {}).get("name")
     kickoff = fixture.get("date")
-    if not home or not away or not kickoff:
+    status = (fixture.get("status") or {}).get("short")
+    # Never issue a pre-match forecast for live, finished, cancelled, or postponed games.
+    if not home or not away or not kickoff or status not in {"NS", "TBD"}:
         return None
     try:
         parsed = datetime.fromisoformat(str(kickoff).replace("Z", "+00:00"))
@@ -65,7 +67,7 @@ def _fixture_parts(item: dict[str, Any]) -> dict[str, Any] | None:
         "home_team": home,
         "away_team": away,
         "league": league.get("name"),
-        "status": (fixture.get("status") or {}).get("short"),
+        "fixture_status": status,
     }
 
 
