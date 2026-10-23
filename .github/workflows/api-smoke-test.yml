@@ -2,6 +2,9 @@ name: API-Football smoke test
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - main
 
 permissions:
   contents: read
