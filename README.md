@@ -39,16 +39,6 @@ The available leagues, seasons, statistics, odds, and request quota depend on th
 ## Historical data export
 Use `python -m app.cli history --from YYYY-MM-DD --to YYYY-MM-DD --output data/historical_features.csv` to retrieve fixtures and export completed matches. Each row includes rolling team form features computed strictly from earlier completed matches; a match result is added to team history only after that match’s pre-match features are calculated. This avoids direct target leakage. The default rolling window is five matches and can be changed with `--window 8`. Keep date ranges to 366 calendar days or less per request. API plan coverage, quota and historical availability still apply. CSV files are local outputs and are not committed automatically.
 
-## Project roadmap
-1. API connection and response validation (verified)
-2. Historical fixture export and leakage-safe rolling features (implemented; CI verification pending)
-3. Store fixtures and results in PostgreSQL
-4. Estimate team strengths and expected goals from historical data
-5. Backtest chronologically with no future-data leakage
-6. Compare probabilities with timestamped odds and filter for value
-7. Telegram alerts, mobile-first dashboard, paper tracking and calibration
-
-
 ## Open historical dataset import (2024–present)
 Veltrix can import completed match records from the public [Club-Football-Match-Data dataset](https://github.com/xgabora/Club-Football-Match-Data), whose repository identifies an MIT license. The raw dataset is **not** committed to this repository. Run:
 
@@ -58,4 +48,23 @@ python -m scripts.import_open_dataset --from 2024-01-01 --to 2026-10-23 --output
 
 The importer discovers the source CSV path from the repository tree, validates required fields, normalizes scores, team names, date, available Elo/form/odds/statistics, skips malformed rows, and deduplicates by competition/date/home/away. Optional odds and statistics remain empty when missing. The GitHub Actions workflow can run manually or weekly and uploads the generated CSV as an artifact for 30 days; this artifact is not a permanent database.
 
-**Model safety:** use only pre-match fields (for example Elo and form) as predictors. Full-time/half-time scores, shots and cards are outcome fields and must not be used as pre-match features. Validate time ordering and source coverage before backtesting; historical odds availability varies by league/season. This dataset does not cover every competition worldwide.
+## Value screening safeguards
+`app/value_bets.py` provides a conservative candidate filter, not a proven prediction model. It:
+- removes the proportional bookmaker margin from a complete set of market odds before calculating probability edge;
+- requires a minimum 4 percentage-point edge and 5% theoretical expected return by default, with an odds range of 1.50–4.00;
+- returns no candidates by default unless the caller explicitly marks the model as validated;
+- labels passing selections `CANDIDATE_NOT_GUARANTEED`.
+
+The `model_validated` switch is a safety gate, not proof of validation. It must remain false until a chronological, out-of-sample backtest and calibration review have passed. The expected-return calculation is theoretical and does not account for odds movement, limits, execution, or bookmaker restrictions. Do not publish selections as "value bets" merely because this mathematical filter passes.
+
+## Model safety
+Use only information available before kickoff as predictors. Full-time/half-time scores, shots and cards are post-match outcomes and must not be used as pre-match features. Never randomly split time-series match data; train on earlier matches and evaluate on later matches. Report Brier score/log loss, calibration, number of selections, ROI, yield, and drawdown alongside a market baseline. Historical odds coverage varies by league and season, and the open dataset does not cover every competition worldwide.
+
+## Project roadmap
+1. API connection and response validation (verified)
+2. Historical fixture export and leakage-safe rolling features (implemented; CI verification pending)
+3. Open historical data import (implemented; import run and coverage still need verification)
+4. Estimate team strengths and expected goals from historical data
+5. Chronological backtest and calibration
+6. Validate value screening against historical odds and market baseline
+7. Only then enable Telegram alerts, mobile-first dashboard, paper tracking and ongoing calibration
