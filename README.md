@@ -69,7 +69,7 @@ The backtest compares two separate baselines: a venue-specific Poisson attack/de
 
 ## Daily fixture-to-prediction pipeline (experimental)
 
-The daily workflow is scheduled for 08:00 Africa/Lagos (07:00 UTC) and can also be started manually. Add `API_FOOTBALL_KEY` under repository Settings → Secrets and variables → Actions → New repository secret for the job to run. The workflow imports historical scores, runs the unit tests, fetches fixtures for the requested Nigeria-time date, and uploads a JSON report artifact.
+The daily workflow is scheduled for 08:00 Africa/Lagos (07:00 UTC) and can also be started manually. It strictly includes only fixtures whose kickoff date is the same calendar date in Africa/Lagos as the report date; tomorrow and later fixtures are excluded even when the API returns UTC timestamps. Add `API_FOOTBALL_KEY` under repository Settings → Secrets and variables → Actions → New repository secret for the job to run. The workflow imports historical scores, runs the unit tests, fetches fixtures for the requested Nigeria-time date, and uploads a JSON report artifact.
 
 Run locally after importing historical data:
 
