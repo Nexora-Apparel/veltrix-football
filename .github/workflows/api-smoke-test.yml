@@ -1,0 +1,45 @@
+name: API-Football smoke test
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  smoke-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run local sanity tests
+        run: python -m pytest -q
+
+      - name: Verify API-Football account
+        env:
+          API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
+        run: |
+          if [ -z "$API_FOOTBALL_KEY" ]; then
+            echo "::error::Repository secret API_FOOTBALL_KEY is not configured."
+            exit 1
+          fi
+          python -m app.cli status
+
+      - name: Fetch today's fixtures (Africa/Lagos)
+        env:
+          API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
+        run: |
+          TODAY="$(TZ=Africa/Lagos date +%F)"
+          python -m app.cli fixtures --date "$TODAY" --timezone Africa/Lagos
