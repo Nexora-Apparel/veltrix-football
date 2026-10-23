@@ -12,7 +12,7 @@ permissions:
 jobs:
   smoke-test:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 10
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
@@ -40,7 +40,7 @@ jobs:
           fi
           python -m app.cli status
 
-      - name: Audit free-plan historical coverage (sample)
+      - name: Audit 2025/26 and 2026/27 season access (sample)
         env:
           API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
         run: python -m scripts.audit_historical_coverage
