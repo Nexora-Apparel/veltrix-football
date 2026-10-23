@@ -1,0 +1,49 @@
+name: Import open historical football dataset
+
+on:
+  workflow_dispatch:
+    inputs:
+      start_date:
+        description: "Start date (YYYY-MM-DD)"
+        required: true
+        default: "2024-01-01"
+        type: string
+      end_date:
+        description: "End date (YYYY-MM-DD)"
+        required: true
+        default: "2026-10-23"
+        type: string
+  schedule:
+    - cron: "20 3 * * 1"
+
+permissions:
+  contents: read
+
+jobs:
+  import:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out Veltrix Football
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install dependencies
+        run: python -m pip install -r requirements.txt
+      - name: Run importer tests
+        run: python -m pytest -q
+      - name: Import historical matches
+        env:
+          START_DATE: ${{ inputs.start_date || '2024-01-01' }}
+          END_DATE: ${{ inputs.end_date || '2026-10-23' }}
+        run: |
+          python -m scripts.import_open_dataset --from "$START_DATE" --to "$END_DATE" --output data/open_historical_matches.csv
+      - name: Upload imported CSV
+        uses: actions/upload-artifact@v4
+        with:
+          name: veltrix-historical-matches
+          path: data/open_historical_matches.csv
+          if-no-files-found: error
+          retention-days: 30
