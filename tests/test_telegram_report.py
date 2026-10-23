@@ -3,7 +3,7 @@ from __future__ import annotations
 import requests
 import pytest
 
-from scripts.send_telegram_report import format_report, send_message
+from scripts.send_telegram_report import MAX_MESSAGE_LENGTH, format_report, send_message
 
 
 def sample_report():
@@ -41,6 +41,24 @@ def test_telegram_report_handles_no_usable_predictions():
     message = format_report(report)
     assert "NO USABLE EXPERIMENTAL FORECASTS TODAY." in message
     assert "No picks are being forced." in message
+
+
+def test_telegram_report_truncates_only_between_fixture_blocks():
+    report = sample_report()
+    report["predictions"] = [
+        {
+            **sample_report()["predictions"][0],
+            "home_team": f"Home Club {i:02d} " + ("A" * 30),
+            "away_team": f"Away Club {i:02d} " + ("B" * 30),
+        }
+        for i in range(80)
+    ]
+    message = format_report(report)
+    assert len(message) <= MAX_MESSAGE_LENGTH
+    assert "additional fixture(s) omitted" in message
+    assert message.count("League: Example League") == message.count(
+        "Status: experimental only; do not treat as a recommendation."
+    )
 
 
 def test_telegram_send_requires_credentials():
