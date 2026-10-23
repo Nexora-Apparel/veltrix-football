@@ -45,12 +45,16 @@ jobs:
         run: python scripts/import_open_dataset.py --from 2020-01-01 --to "$(date -u +%F)" --output data/open_historical_matches.csv
       - name: Generate daily fixture report
         if: github.event_name != 'push' && env.API_FOOTBALL_KEY != ''
+        env:
+          PYTHONPATH: .
         run: |
           TARGET_DATE="${{ inputs.date }}"
           if [ -z "$TARGET_DATE" ]; then TARGET_DATE="$(TZ=Africa/Lagos date +%F)"; fi
           python scripts/run_daily_predictions.py --date "$TARGET_DATE" --history data/open_historical_matches.csv --output reports/daily_predictions.json
       - name: Send daily report to Telegram
         if: github.event_name != 'push' && env.API_FOOTBALL_KEY != '' && env.TELEGRAM_BOT_TOKEN != '' && env.TELEGRAM_CHAT_ID != ''
+        env:
+          PYTHONPATH: .
         run: python scripts/send_telegram_report.py --report reports/daily_predictions.json
       - name: Upload daily prediction report
         if: github.event_name != 'push' && env.API_FOOTBALL_KEY != ''
