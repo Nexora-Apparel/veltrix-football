@@ -1,6 +1,13 @@
 name: Daily Fixture Predictions
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - "app/live_predictions.py"
+      - "scripts/run_daily_predictions.py"
+      - "tests/test_live_predictions.py"
+      - ".github/workflows/daily-fixture-predictions.yml"
   workflow_dispatch:
     inputs:
       date:
