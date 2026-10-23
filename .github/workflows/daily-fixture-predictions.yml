@@ -40,13 +40,13 @@ jobs:
         if: github.event_name != 'push' && env.API_FOOTBALL_KEY != ''
         run: python scripts/import_open_dataset.py --from 2020-01-01 --to "$(date -u +%F)" --output data/open_historical_matches.csv
       - name: Generate daily fixture report
-        if: env.API_FOOTBALL_KEY != ''
+        if: github.event_name != 'push' && env.API_FOOTBALL_KEY != ''
         run: |
           TARGET_DATE="${{ inputs.date }}"
           if [ -z "$TARGET_DATE" ]; then TARGET_DATE="$(TZ=Africa/Lagos date +%F)"; fi
           python scripts/run_daily_predictions.py --date "$TARGET_DATE" --history data/open_historical_matches.csv --output reports/daily_predictions.json
       - name: Upload daily prediction report
-        if: env.API_FOOTBALL_KEY != ''
+        if: github.event_name != 'push' && env.API_FOOTBALL_KEY != ''
         uses: actions/upload-artifact@v4
         with:
           name: veltrix-daily-predictions
