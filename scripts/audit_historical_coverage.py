@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import time
 from app.config import get_settings
 from app.football_api import FootballAPI, FootballAPIError
 
@@ -13,13 +14,25 @@ SAMPLES = {
 }
 SEASONS = (2023, 2024, 2025)
 COMPLETED = {"FT", "AET", "PEN"}
+_LAST_REQUEST = 0.0
+
+
+def paced_get(api: FootballAPI, endpoint: str, params: dict | None = None) -> dict:
+    """Stay below the free-plan 10-requests/minute burst limit."""
+    global _LAST_REQUEST
+    wait = 6.5 - (time.monotonic() - _LAST_REQUEST)
+    if _LAST_REQUEST and wait > 0:
+        time.sleep(wait)
+    result = api.get(endpoint, params)
+    _LAST_REQUEST = time.monotonic()
+    return result
 
 
 def main() -> int:
     api = FootballAPI(get_settings())
     report = {"plan_status": None, "samples": [], "errors": []}
 
-    status = api.status()
+    status = paced_get(api, "status")
     response = status.get("response", {})
     report["plan_status"] = {
         "plan": response.get("subscription", {}).get("plan"),
@@ -30,7 +43,7 @@ def main() -> int:
 
     for league_id, (country, league_name) in SAMPLES.items():
         try:
-            meta = api.get("leagues", {"id": league_id})
+            meta = paced_get(api, "leagues", {"id": league_id})
             league_items = meta.get("response", [])
             seasons_available = set()
             coverage_by_season = {}
@@ -50,7 +63,7 @@ def main() -> int:
                     "coverage": coverage_by_season.get(str(year)),
                 }
                 try:
-                    payload = api.get("fixtures", {"league": league_id, "season": year})
+                    payload = paced_get(api, "fixtures", {"league": league_id, "season": year})
                     fixtures = payload.get("response", [])
                     completed = [
                         f for f in fixtures
@@ -64,8 +77,11 @@ def main() -> int:
                         "completed_with_scores": len(completed),
                     })
                 except FootballAPIError as exc:
-                    row.update({"request_ok": False, "error": str(exc)})
-                    report["errors"].append(f"{league_name} {year}: {exc}")
+                    message = str(exc)
+                    limited_by_plan = "do not have access to this season" in message.lower()
+                    row.update({"request_ok": False, "plan_limited": limited_by_plan, "error": message})
+                    if not limited_by_plan:
+                        report["errors"].append(f"{league_name} {year}: {exc}")
                 report["samples"].append(row)
         except FootballAPIError as exc:
             report["errors"].append(f"{league_name} metadata: {exc}")
@@ -75,6 +91,7 @@ def main() -> int:
     with_data = sum(1 for row in report["samples"] if row.get("completed_with_scores", 0) > 0)
     print(f"AUDIT_SUMMARY: successful season requests={successful}/{len(report['samples'])}; seasons with completed scored fixtures={with_data}; errors={len(report['errors'])}")
     # A zero-data response is a finding, not a workflow failure. Actual API errors are failures.
+    # Plan-restricted seasons are expected findings; transport/rate-limit errors are not.
     return 1 if report["errors"] else 0
 
 
