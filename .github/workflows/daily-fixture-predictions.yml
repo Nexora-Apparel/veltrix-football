@@ -43,14 +43,14 @@ jobs:
         if: github.event_name != 'push'
         env:
           API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
+          TARGET_DATE: ${{ inputs.date }}
           PYTHONPATH: .
         run: |
           if [ -z "$API_FOOTBALL_KEY" ]; then
             echo "::error::Repository secret API_FOOTBALL_KEY is missing."
             exit 1
           fi
-          TARGET_DATE="${{ inputs.date }}"
-          if [ -z "$TARGET_DATE" ]; then TARGET_DATE="$(TZ=Africa/Lagos date +%F)"; fi
+          if [ -z "${TARGET_DATE:-}" ]; then TARGET_DATE="$(TZ=Africa/Lagos date +%F)"; fi
           python scripts/run_daily_predictions.py --date "$TARGET_DATE" --history data/open_historical_matches.csv --output reports/daily_predictions.json
       - name: Check Telegram configuration
         if: github.event_name != 'push'
