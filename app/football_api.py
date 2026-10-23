@@ -61,5 +61,9 @@ class FootballAPI:
     def fixtures(self, date: str, timezone: str = "Africa/Lagos") -> dict[str, Any]:
         return self.get("fixtures", {"date": date, "timezone": timezone})
 
+    def fixtures_between(self, start_date: str, end_date: str, timezone: str = "Africa/Lagos") -> dict[str, Any]:
+        """Fetch fixtures in an inclusive date range; coverage depends on API plan."""
+        return self.get("fixtures", {"from": start_date, "to": end_date, "timezone": timezone})
+
     def leagues(self, current: bool = True) -> dict[str, Any]:
         return self.get("leagues", {"current": str(current).lower()})
