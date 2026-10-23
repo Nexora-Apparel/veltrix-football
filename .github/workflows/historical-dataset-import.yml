@@ -15,6 +15,12 @@ on:
         type: string
   schedule:
     - cron: "20 3 * * 1"
+  push:
+    branches: [main]
+    paths:
+      - "scripts/import_open_dataset.py"
+      - "tests/test_import_open_dataset.py"
+      - ".github/workflows/historical-dataset-import.yml"
 
 permissions:
   contents: read
