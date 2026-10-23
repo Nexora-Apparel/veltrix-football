@@ -28,3 +28,21 @@ def test_backtest_predicts_only_after_training_and_is_deterministic():
     assert set(result["models"]) == {"poisson", "elo"}
     assert result["models"]["poisson"]["matches"] == result["test_matches"]
     assert result["models"]["elo"]["brier_score"] >= 0
+
+
+def test_market_reference_is_reported_on_covered_fixtures():
+    from datetime import date, timedelta
+    matches = []
+    start = date(2025, 1, 1)
+    for i in range(130):
+        matches.append({
+            "match_date": (start + timedelta(days=i)).isoformat(),
+            "division": "L1", "home_team": "Alpha", "away_team": "Beta",
+            "home_goals": 2 if i % 2 else 0, "away_goals": 0 if i % 2 else 1,
+            "home_odds": 2.0, "draw_odds": 3.2, "away_odds": 4.0,
+        })
+    result = chronological_backtest(matches, min_training_matches=50)
+    subset = result["historical_odds_subset"]
+    assert subset["matches_with_valid_1x2_odds"] == result["test_matches"]
+    assert set(subset["models_compared_on_same_matches"]) == {"poisson", "elo", "market"}
+    assert subset["models_compared_on_same_matches"]["market"]["matches"] == result["test_matches"]
