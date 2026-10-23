@@ -12,7 +12,7 @@ SAMPLES = {
     140: ("Spain", "La Liga"),
     135: ("Italy", "Serie A"),
 }
-SEASONS = (2023, 2024, 2025)
+SEASONS = (2022, 2023, 2024)
 COMPLETED = {"FT", "AET", "PEN"}
 _LAST_REQUEST = 0.0
 
