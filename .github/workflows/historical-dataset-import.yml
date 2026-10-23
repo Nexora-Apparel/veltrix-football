@@ -10,8 +10,8 @@ on:
         type: string
       end_date:
         description: "End date (YYYY-MM-DD)"
-        required: true
-        default: "2026-10-23"
+        required: false
+        default: ""
         type: string
   schedule:
     - cron: "20 3 * * 1"
@@ -37,8 +37,9 @@ jobs:
       - name: Import historical matches
         env:
           START_DATE: ${{ inputs.start_date || '2024-01-01' }}
-          END_DATE: ${{ inputs.end_date || '2026-10-23' }}
+          END_DATE: ${{ inputs.end_date }}
         run: |
+          if [ -z "$END_DATE" ]; then END_DATE="$(TZ=Africa/Lagos date +%F)"; fi
           python -m scripts.import_open_dataset --from "$START_DATE" --to "$END_DATE" --output data/open_historical_matches.csv
       - name: Upload imported CSV
         uses: actions/upload-artifact@v4
