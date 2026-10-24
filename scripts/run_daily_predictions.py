@@ -51,6 +51,7 @@ def main() -> None:
             "predictions_created": report["predictions_created"],
             "insufficient_history": report["insufficient_history"],
             "unsupported_competitions": report.get("unsupported_competitions", 0),
+            "unsupported_competition_breakdown": report.get("unsupported_competition_breakdown", {}),
             "possible_team_name_mismatches": report["possible_team_name_mismatches"],
             "historical_data_through": report.get("historical_data_through"),
             "historical_matches_available": report.get("historical_matches_available", 0),
