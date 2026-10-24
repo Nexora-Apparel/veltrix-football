@@ -11,6 +11,67 @@ COMPLETED_STATUSES = {"FT", "AET", "PEN"}
 OUTCOMES = ("H", "D", "A")
 
 
+def summarize_scored_matches(matches: list[dict[str, Any]]) -> dict[str, Any]:
+    """Aggregate proper scoring metrics over already validated forecast/result pairs."""
+    count = len(matches)
+    if not count:
+        return {"matches": 0, "result_accuracy": None, "brier_score": None, "log_loss": None}
+    brier = 0.0
+    log_loss = 0.0
+    correct = 0
+    for row in matches:
+        probabilities = row["probabilities"]
+        actual = row["actual"]
+        brier += sum(
+            (float(probabilities[key]) - float(actual == key)) ** 2
+            for key in OUTCOMES
+        )
+        log_loss += -math.log(max(1e-15, float(probabilities[actual])))
+        correct += int(row.get("correct", max(probabilities, key=probabilities.get) == actual))
+    return {
+        "matches": count,
+        "result_accuracy": correct / count,
+        "brier_score": brier / count,
+        "log_loss": log_loss / count,
+    }
+
+
+def merge_paper_ledger(ledger: dict[str, Any], evaluation: dict[str, Any]) -> dict[str, Any]:
+    """Add one report-date evaluation idempotently and recompute cumulative metrics."""
+    current = dict(ledger)
+    current.setdefault("evaluations", [])
+    current.setdefault("scored_matches", [])
+    report_date = evaluation.get("report_date")
+    if not report_date:
+        raise ValueError("Evaluation must include a report_date.")
+    already_recorded = any(row.get("report_date") == report_date for row in current["evaluations"])
+    if not already_recorded:
+        current["evaluations"].append({
+            "report_date": report_date,
+            "completed_forecasts_scored": evaluation.get("completed_forecasts_scored", 0),
+            "awaiting_result_or_match": evaluation.get("awaiting_result_or_match", 0),
+            "withheld_or_invalid_forecasts": evaluation.get("withheld_or_invalid_forecasts", 0),
+            "metrics": evaluation.get("metrics", {}),
+        })
+        for match in evaluation.get("matches", []):
+            current["scored_matches"].append({**match, "report_date": report_date})
+    # A report-date + fixture ID pair is the stable identity for ledger rows.
+    unique: dict[tuple[str, int], dict[str, Any]] = {}
+    for row in current["scored_matches"]:
+        try:
+            key = (str(row["report_date"]), int(row["fixture_id"]))
+        except (KeyError, TypeError, ValueError):
+            continue
+        unique[key] = row
+    current["scored_matches"] = list(unique.values())
+    current["product"] = "Veltrix Football"
+    current["model_status"] = "PAPER_TRACKING_ONLY"
+    current["cumulative_metrics"] = summarize_scored_matches(current["scored_matches"])
+    current["evaluated_report_dates"] = len(current["evaluations"])
+    current["notice"] = "Retrospective paper evaluation only; no betting recommendation or profitability claim."
+    return current
+
+
 def evaluate_report(report: dict[str, Any], results_payload: dict[str, Any]) -> dict[str, Any]:
     """Score report forecasts matched by fixture ID to completed API results."""
     predictions = report.get("predictions")
@@ -81,19 +142,8 @@ def evaluate_report(report: dict[str, Any], results_payload: dict[str, Any]) -> 
             "away_goals": result["away_goals"],
         })
 
-    count = len(scored)
-    if count:
-        brier = sum(
-            sum((row["probabilities"][key] - float(row["actual"] == key)) ** 2 for key in OUTCOMES)
-            for row in scored
-        ) / count
-        log_loss = sum(
-            -math.log(max(1e-15, row["probabilities"][row["actual"]]))
-            for row in scored
-        ) / count
-        accuracy = sum(row["correct"] for row in scored) / count
-    else:
-        brier = log_loss = accuracy = None
+    metrics = summarize_scored_matches(scored)
+    count = metrics["matches"]
 
     return {
         "product": report.get("product", "Veltrix Football"),
@@ -105,9 +155,9 @@ def evaluate_report(report: dict[str, Any], results_payload: dict[str, Any]) -> 
         "withheld_or_invalid_forecasts": withheld,
         "forecasts_missing_fixture_id": missing_fixture_id,
         "metrics": {
-            "result_accuracy": accuracy,
-            "brier_score": brier,
-            "log_loss": log_loss,
+            "result_accuracy": metrics["result_accuracy"],
+            "brier_score": metrics["brier_score"],
+            "log_loss": metrics["log_loss"],
         },
         "matches": scored,
         "notice": "Retrospective paper evaluation only; no betting recommendation or profitability claim.",
