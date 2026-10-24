@@ -1,4 +1,5 @@
-from datetime import date
+from datetime import date, datetime
+from zoneinfo import ZoneInfo
 
 from app.live_predictions import predict_fixtures
 
@@ -28,7 +29,7 @@ def _fixture(kickoff="2026-10-23T15:00:00+01:00"):
 
 
 def test_prediction_uses_minimum_history_and_never_claims_validated():
-    result = predict_fixtures([_fixture()], _history(), as_of=date(2026, 10, 23))
+    result = predict_fixtures([_fixture()], _history(), as_of=date(2026, 10, 23), now=datetime(2026, 10, 23, 12, 0, tzinfo=ZoneInfo("Africa/Lagos")))
     assert len(result) == 1
     prediction = result[0]
     assert prediction["status"] == "EXPERIMENTAL_ONLY"
@@ -66,6 +67,7 @@ def test_only_fixtures_on_target_nigeria_day_are_included():
     result = predict_fixtures(
         [same_day, tomorrow], _history(), as_of=date(2026, 10, 23),
         timezone_name="Africa/Lagos",
+        now=datetime(2026, 10, 23, 12, 0, tzinfo=ZoneInfo("Africa/Lagos")),
     )
     assert [item["fixture_id"] for item in result] == [123]
     assert result[0]["kickoff_local"].startswith("2026-10-23")
@@ -76,6 +78,21 @@ def test_utc_kickoff_is_converted_to_nigeria_calendar_date():
     result = predict_fixtures(
         [fixture], _history(), as_of=date(2026, 10, 23),
         timezone_name="Africa/Lagos",
+        now=datetime(2026, 10, 23, 0, 0, tzinfo=ZoneInfo("Africa/Lagos")),
     )
     assert len(result) == 1
     assert result[0]["kickoff_local"].startswith("2026-10-23")
+
+
+def test_past_kickoffs_are_excluded_from_pre_match_report():
+    past = _fixture("2026-10-23T11:00:00+01:00")
+    past["fixture"]["id"] = 100
+    future = _fixture("2026-10-23T15:00:00+01:00")
+    future["fixture"]["id"] = 200
+    result = predict_fixtures(
+        [past, future], _history(), as_of=date(2026, 10, 23),
+        timezone_name="Africa/Lagos",
+        now=datetime(2026, 10, 23, 12, 0, tzinfo=ZoneInfo("Africa/Lagos")),
+    )
+    assert [item["fixture_id"] for item in result] == [200]
+    assert result[0]["kickoff_local"].startswith("2026-10-23T15:00:00")
