@@ -175,3 +175,18 @@ def test_ledger_keeps_metrics_separate_when_model_versions_change():
     assert ledger["cumulative_metrics_by_model"]["experimental_v1"]["matches"] == 1
     assert ledger["cumulative_metrics_by_model"]["experimental_v2"]["matches"] == 1
     assert ledger["model_versions"] == ["experimental_v1", "experimental_v2"]
+
+
+
+def test_evaluator_accepts_actual_live_model_probability_field_names():
+    report = {"as_of_date": "2026-10-23", "predictions": [{
+        "fixture_id": 21,
+        "model": "experimental_recent_goals_poisson",
+        "home_team": "Alpha FC",
+        "away_team": "Beta FC",
+        "status": "EXPERIMENTAL_ONLY",
+        "probabilities": {"home_win": 0.6, "draw": 0.25, "away_win": 0.15},
+    }]}
+    result = evaluate_report(report, {"response": [_result(21, 2, 0)]})
+    assert result["completed_forecasts_scored"] == 1
+    assert result["matches"][0]["probabilities"] == {"H": 0.6, "D": 0.25, "A": 0.15}
