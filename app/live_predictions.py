@@ -18,6 +18,20 @@ from app.prediction import match_probabilities
 
 MIN_TEAM_MATCHES = 5
 TEAM_WINDOW = 10
+HOME_ELO_ADVANTAGE = 55.0
+ELO_K = 20.0
+
+# API-Football league IDs mapped to division codes in the open historical CSV.
+LEAGUE_DIVISION_BY_ID = {
+    39: "E0", 40: "E1", 41: "E2", 42: "E3", 43: "EC",
+    140: "SP1", 141: "SP2", 135: "I1", 136: "I2",
+    78: "D1", 79: "D2", 61: "F1", 62: "F2", 88: "N1",
+    94: "P1", 179: "SC0", 180: "SC1", 183: "SC2", 184: "SC3",
+    144: "B1", 203: "T1", 197: "G1", 128: "ARG", 71: "BRA",
+    169: "CHN", 98: "JAP", 253: "USA", 262: "MEX", 119: "DEN",
+    103: "NOR", 113: "SWE", 218: "AUT", 244: "FIN", 357: "IRL",
+    106: "POL", 283: "ROM", 235: "RUS", 207: "SUI",
+}
 
 
 def _name_key(name: Any) -> str:
@@ -66,7 +80,8 @@ def load_historical_matches(path: str | Path) -> list[dict[str, Any]]:
                 if not home or not away or hg < 0 or ag < 0 or _name_key(home) == _name_key(away):
                     continue
                 rows.append({
-                    "date": match_date, "home": home, "away": away,
+                    "date": match_date, "division": str(raw.get("division") or "").strip(),
+                    "home": home, "away": away,
                     "home_key": _name_key(home), "away_key": _name_key(away),
                     "home_goals": hg, "away_goals": ag,
                 })
@@ -102,8 +117,73 @@ def _fixture_parts(item: dict[str, Any], timezone_name: str = "Africa/Lagos") ->
         "home_team": home,
         "away_team": away,
         "league": league.get("name"),
+        "league_id": league.get("id"),
+        "division_code": LEAGUE_DIVISION_BY_ID.get(league.get("id")),
         "fixture_status": status,
     }
+
+
+def _elo_probabilities(
+    historical_matches: list[dict[str, Any]],
+    home_name: str,
+    away_name: str,
+    division_code: str | None,
+    *,
+    min_team_matches: int = MIN_TEAM_MATCHES,
+) -> tuple[dict[str, float] | None, dict[str, Any]]:
+    """Calculate an Elo estimate from prior matches only."""
+    if division_code:
+        scoped = [row for row in historical_matches if row.get("division") == division_code]
+        scope = "COMPETITION"
+    else:
+        scoped = historical_matches
+        scope = "GLOBAL_FALLBACK"
+
+    home_key, away_key = _name_key(home_name), _name_key(away_name)
+    ratings: dict[str, float] = defaultdict(lambda: 1500.0)
+    match_counts: dict[str, int] = defaultdict(int)
+    total_matches = 0
+    draws = 0
+    for match in sorted(scoped, key=lambda row: row["date"]):
+        h_key, a_key = match["home_key"], match["away_key"]
+        hg, ag = match["home_goals"], match["away_goals"]
+        home_rating, away_rating = ratings[h_key], ratings[a_key]
+        expected_home = 1.0 / (
+            1.0 + 10.0 ** (-(home_rating + HOME_ELO_ADVANTAGE - away_rating) / 400.0)
+        )
+        actual_score = 1.0 if hg > ag else 0.5 if hg == ag else 0.0
+        goal_weight = min(2.0, 1.0 + abs(hg - ag) * 0.1)
+        delta = ELO_K * goal_weight * (actual_score - expected_home)
+        ratings[h_key] = home_rating + delta
+        ratings[a_key] = away_rating - delta
+        match_counts[h_key] += 1
+        match_counts[a_key] += 1
+        total_matches += 1
+        draws += int(hg == ag)
+
+    metadata = {
+        "scope": scope,
+        "division_code": division_code,
+        "home_prior_matches": match_counts[home_key],
+        "away_prior_matches": match_counts[away_key],
+    }
+    if (
+        total_matches < 10
+        or match_counts[home_key] < min_team_matches
+        or match_counts[away_key] < min_team_matches
+    ):
+        return None, metadata
+
+    draw_rate = (draws + 3.0) / (total_matches + 10.0)
+    expected_home = 1.0 / (
+        1.0 + 10.0 ** (-(ratings[home_key] + HOME_ELO_ADVANTAGE - ratings[away_key]) / 400.0)
+    )
+    non_draw = 1.0 - draw_rate
+    return {
+        "home_win": non_draw * expected_home,
+        "draw": draw_rate,
+        "away_win": non_draw * (1.0 - expected_home),
+    }, metadata
 
 
 def predict_fixtures(
@@ -255,8 +335,24 @@ def predict_fixtures(
             home_xg = min(5.0, max(0.05, home_xg))
             away_xg = min(5.0, max(0.05, away_xg))
             probabilities = match_probabilities(home_xg, away_xg)
+            elo_probabilities, elo_metadata = _elo_probabilities(
+                usable,
+                fixture["home_team"],
+                fixture["away_team"],
+                fixture.get("division_code"),
+                min_team_matches=min_team_matches,
+            )
             record.update({
                 "status": "EXPERIMENTAL_ONLY",
+                "elo_model": (
+                    "experimental_elo_by_competition"
+                    if elo_metadata["scope"] == "COMPETITION"
+                    else "experimental_elo_global_fallback"
+                ),
+                "elo_history": elo_metadata,
+                **({"elo_probabilities": {
+                    key: round(value, 4) for key, value in elo_probabilities.items()
+                }} if elo_probabilities is not None else {}),
                 "expected_goals": {"home": round(home_xg, 3), "away": round(away_xg, 3)},
                 "probabilities": {
                     key: round(value, 4)
