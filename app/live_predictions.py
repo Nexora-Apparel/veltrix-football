@@ -427,6 +427,7 @@ def build_daily_report(
     now: datetime | None = None,
     additional_historical_matches: list[dict[str, Any]] | None = None,
     base_historical_matches: list[dict[str, Any]] | None = None,
+    market_odds_by_fixture: dict[int, dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     """Build a daily report with explicit fixture-filter and history-freshness diagnostics."""
     fixtures = fixtures_payload.get("response")
@@ -477,6 +478,16 @@ def build_daily_report(
         timezone_name=timezone_name,
         now=current_time,
     )
+    if market_odds_by_fixture:
+        for prediction in predictions:
+            odds = market_odds_by_fixture.get(prediction.get("fixture_id"))
+            if not odds:
+                continue
+            prediction["market_model"] = odds.get("model", "market_consensus")
+            prediction["market_probabilities"] = odds.get("probabilities")
+            prediction["market_bookmakers_count"] = odds.get("bookmakers_count", 0)
+            prediction["market_updated_at"] = odds.get("updated_at")
+            prediction["market_method"] = odds.get("method")
     return {
         "product": "Veltrix Football",
         "generated_at_utc": datetime.now(timezone.utc).isoformat(),
@@ -497,6 +508,9 @@ def build_daily_report(
         "predictions_created": sum(p["status"] == "EXPERIMENTAL_ONLY" for p in predictions),
         "insufficient_history": sum(p["status"] == "INSUFFICIENT_HISTORY" for p in predictions),
         "unsupported_competitions": sum(p["status"] == "UNSUPPORTED_COMPETITION" for p in predictions),
+        "fixtures_with_market_odds": sum(
+            isinstance(p.get("market_probabilities"), dict) for p in predictions
+        ),
         "unsupported_competition_breakdown": {
             str(league_name): sum(
                 p.get("status") == "UNSUPPORTED_COMPETITION" and p.get("league") == league_name
