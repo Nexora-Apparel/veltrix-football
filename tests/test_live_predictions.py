@@ -11,10 +11,10 @@ def _history():
         d = date(2026, 10, day)
         rows.extend([
             {"date": d, "home": "Alpha FC", "away": f"Opponent {day}",
-             "home_key": "alphafc", "away_key": f"opponent{day}",
+             "home_key": _name_key("Alpha FC"), "away_key": f"opponent{day}",
              "home_goals": 2, "away_goals": 0},
             {"date": d, "home": f"Rival {day}", "away": "Beta FC",
-             "home_key": f"rival{day}", "away_key": "betafc",
+             "home_key": f"rival{day}", "away_key": _name_key("Beta FC"),
              "home_goals": 1, "away_goals": 1},
         ])
     return rows
@@ -66,7 +66,7 @@ def test_history_from_prediction_date_is_not_used():
     rows = _history()
     rows.append({
         "date": date(2026, 10, 23), "home": "Alpha FC", "away": "Beta FC",
-        "home_key": "alphafc", "away_key": "betafc",
+        "home_key": _name_key("Alpha FC"), "away_key": _name_key("Beta FC"),
         "home_goals": 8, "away_goals": 0,
     })
     result = predict_fixtures([_fixture()], rows, as_of=date(2026, 10, 23), now=datetime(2026, 10, 23, 12, 0, tzinfo=ZoneInfo("Africa/Lagos")))
@@ -167,12 +167,12 @@ def test_goal_estimates_prefer_relevant_home_and_away_venue_history():
         d = date(2026, 10, day)
         rows.append({
             "date": d, "home": "Alpha FC", "away": f"Opponent {day}",
-            "home_key": "alphafc", "away_key": f"opponent{day}",
+            "home_key": _name_key("Alpha FC"), "away_key": f"opponent{day}",
             "home_goals": 3, "away_goals": 0,
         })
         rows.append({
             "date": d, "home": f"Rival {day}", "away": "Beta FC",
-            "home_key": f"rival{day}", "away_key": "betafc",
+            "home_key": f"rival{day}", "away_key": _name_key("Beta FC"),
             "home_goals": 1, "away_goals": 1,
         })
     # Add away-only Alpha matches and home-only Beta matches. Their weaker
@@ -181,12 +181,12 @@ def test_goal_estimates_prefer_relevant_home_and_away_venue_history():
         d = date(2026, 10, day)
         rows.append({
             "date": d, "home": f"Opponent Away {day}", "away": "Alpha FC",
-            "home_key": f"opponentaway{day}", "away_key": "alphafc",
+            "home_key": f"opponentaway{day}", "away_key": "alpha",
             "home_goals": 3, "away_goals": 0,
         })
         rows.append({
             "date": d, "home": "Beta FC", "away": f"Rival Away {day}",
-            "home_key": "betafc", "away_key": f"rivalaway{day}",
+            "home_key": "beta", "away_key": f"rivalaway{day}",
             "home_goals": 0, "away_goals": 2,
         })
     result = predict_fixtures(
@@ -323,10 +323,10 @@ def test_competition_elo_uses_only_matching_division_history():
         d = date(2026, 10, day)
         rows.extend([
             {"date": d, "division": "SP1", "home": "Alpha FC", "away": f"Spanish Opponent {day}",
-             "home_key": "alphafc", "away_key": f"spanishopponent{day}",
+             "home_key": _name_key("Alpha FC"), "away_key": f"spanishopponent{day}",
              "home_goals": 0, "away_goals": 4},
             {"date": d, "division": "SP1", "home": f"Spanish Rival {day}", "away": "Beta FC",
-             "home_key": f"spanishrival{day}", "away_key": "betafc",
+             "home_key": f"spanishrival{day}", "away_key": _name_key("Beta FC"),
              "home_goals": 4, "away_goals": 0},
         ])
     fixture = _fixture()
