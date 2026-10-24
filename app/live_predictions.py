@@ -479,7 +479,10 @@ def build_daily_report(
         now=current_time,
     )
     if market_odds_by_fixture:
+        eligible_statuses = {"EXPERIMENTAL_ONLY", "INSUFFICIENT_HISTORY", "UNSUPPORTED_COMPETITION"}
         for prediction in predictions:
+            if prediction.get("status") not in eligible_statuses:
+                continue
             odds = market_odds_by_fixture.get(prediction.get("fixture_id"))
             if not odds:
                 continue
