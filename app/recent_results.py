@@ -119,7 +119,7 @@ def fetch_recent_results(
                 range_start.isoformat(), range_end.isoformat(), "Africa/Lagos"
             )
             rows = extract_completed_results(payload)
-        except FootballAPIError as exc:
+        except (FootballAPIError, ValueError) as exc:
             warning = str(exc)
             break
         fetched.extend(
