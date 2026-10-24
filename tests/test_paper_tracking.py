@@ -305,3 +305,55 @@ def test_evaluator_scores_poisson_alternative_when_competition_elo_is_primary():
     assert evaluation["metrics_by_model"]["experimental_elo_by_competition"]["result_accuracy"] == 1.0
     assert evaluation["metrics_by_model"]["experimental_recent_goals_poisson"]["result_accuracy"] == 1.0
     assert len(evaluation["matches"]) == 2
+
+
+
+def test_tracking_runner_evaluates_saved_report_and_writes_per_model_ledger(tmp_path, monkeypatch):
+    monkeypatch.setenv("GITHUB_REPOSITORY", "owner/repo")
+    monkeypatch.setenv("GITHUB_TOKEN", "test-token")
+    monkeypatch.setenv("GITHUB_RUN_ID", "999")
+    monkeypatch.setenv("API_FOOTBALL_KEY", "test-api-key")
+    monkeypatch.setattr(tracking_runner, "get_settings", lambda: object())
+    monkeypatch.setattr(
+        tracking_runner, "list_relevant_runs",
+        lambda session, repo: [{"id": 123, "created_at": "2026-10-23T07:00:00Z"}],
+    )
+    monkeypatch.setattr(
+        tracking_runner, "find_latest_ledger",
+        lambda session, repo, runs, current_run_id: {
+            "product": "Veltrix Football", "model_status": "PAPER_TRACKING_ONLY",
+            "evaluations": [], "scored_matches": [],
+        },
+    )
+    monkeypatch.setattr(
+        tracking_runner, "find_daily_report",
+        lambda session, repo, runs, report_date, current_run_id: {
+            "as_of_date": report_date,
+            "predictions": [{
+                "fixture_id": 61,
+                "status": "EXPERIMENTAL_ONLY",
+                "model": "experimental_elo_by_competition",
+                "probabilities": {"home_win": 0.6, "draw": 0.25, "away_win": 0.15},
+                "poisson_model": "experimental_recent_goals_poisson",
+                "poisson_probabilities": {"home_win": 0.35, "draw": 0.3, "away_win": 0.35},
+            }],
+        },
+    )
+
+    class FakeFootballAPI:
+        def __init__(self, settings):
+            pass
+        def fixtures(self, date, timezone):
+            return {"response": [_result(61, 2, 0)]}
+
+    monkeypatch.setattr(tracking_runner, "FootballAPI", FakeFootballAPI)
+    output = tmp_path / "paper_ledger.json"
+    ledger = tracking_runner.run(date(2026, 10, 23), str(output))
+    assert ledger["last_attempt"]["status"] == "EVALUATED"
+    assert ledger["last_attempt"]["completed_forecasts_scored"] == 2
+    assert set(ledger["last_attempt"]["metrics_by_model"]) == {
+        "experimental_elo_by_competition", "experimental_recent_goals_poisson"
+    }
+    assert ledger["cumulative_metrics_by_model"]["experimental_elo_by_competition"]["matches"] == 1
+    assert ledger["cumulative_metrics_by_model"]["experimental_recent_goals_poisson"]["matches"] == 1
+    assert output.exists()
