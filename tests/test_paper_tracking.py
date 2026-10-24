@@ -190,3 +190,19 @@ def test_evaluator_accepts_actual_live_model_probability_field_names():
     result = evaluate_report(report, {"response": [_result(21, 2, 0)]})
     assert result["completed_forecasts_scored"] == 1
     assert result["matches"][0]["probabilities"] == {"H": 0.6, "D": 0.25, "A": 0.15}
+
+
+
+def test_latest_ledger_searches_past_45_daily_runs(monkeypatch):
+    runs = [{"id": 1000 - index, "created_at": f"2026-10-{(index % 28) + 1:02d}T07:00:00Z"} for index in range(60)]
+    found_id = runs[59]["id"]
+    monkeypatch.setattr(
+        tracking_runner, "artifact_for_run",
+        lambda session, repo, run_id, name: {"archive_download_url": "ledger-zip"} if run_id == found_id and name == "veltrix-paper-ledger" else None,
+    )
+    monkeypatch.setattr(
+        tracking_runner, "read_artifact_json",
+        lambda session, url: {"evaluations": [{"report_date": "2026-08-01"}], "scored_matches": []},
+    )
+    ledger = tracking_runner.find_latest_ledger(object(), "owner/repo", runs, "9999")
+    assert ledger["evaluations"][0]["report_date"] == "2026-08-01"
