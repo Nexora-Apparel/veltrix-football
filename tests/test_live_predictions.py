@@ -239,6 +239,9 @@ def test_daily_report_explains_fixture_filtering(tmp_path):
     assert report["fixtures_excluded_other_date_or_status"] == 2
     assert len(report["predictions"]) == 1
     assert report["predictions"][0]["fixture_id"] == 200
+    assert report["primary_model_counts"] == {"experimental_recent_goals_poisson": 1}
+    assert report["poisson_alternative_available"] == 0
+    assert report["elo_alternative_available"] == 1
 
 
 
