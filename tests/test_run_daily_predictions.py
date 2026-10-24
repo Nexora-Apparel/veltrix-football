@@ -3,8 +3,6 @@ from __future__ import annotations
 import json
 from datetime import date
 
-import pytest
-
 from scripts import run_daily_predictions as daily_runner
 
 
@@ -24,6 +22,7 @@ def _report(future_fixtures: int) -> dict:
         "possible_team_name_mismatches": 0,
         "historical_data_through": "2026-10-22",
         "historical_matches_available": 100,
+        "predictions": [],
     }
 
 
@@ -34,56 +33,8 @@ def _run_args(monkeypatch, output):
     )
 
 
-def test_daily_runner_skips_extra_history_requests_when_no_future_fixtures(tmp_path, monkeypatch):
-    output = tmp_path / "reports" / "daily.json"
-    _run_args(monkeypatch, output)
-    monkeypatch.setattr(daily_runner, "get_settings", lambda: object())
-
-    class FakeAPI:
-        def __init__(self, settings):
-            pass
-        def fixtures(self, target_date, timezone):
-            return {"response": []}
-        def fixtures_between(self, *args):
-            pytest.fail("Recent history should not be queried without future fixtures.")
-
-    monkeypatch.setattr(daily_runner, "FootballAPI", FakeAPI)
-    monkeypatch.setattr(daily_runner, "load_historical_matches", lambda path: [])
-    monkeypatch.setattr(daily_runner, "build_daily_report", lambda *args, **kwargs: _report(0))
-    monkeypatch.setattr(
-        daily_runner, "fetch_recent_results",
-        lambda *args, **kwargs: pytest.fail("Recent history should not be refreshed."),
-    )
-
-    daily_runner.main()
-    report = json.loads(output.read_text(encoding="utf-8"))
-    assert report["recent_results_sync"]["status"] == "SKIPPED_NO_FUTURE_FIXTURES"
-    assert report["recent_results_sync"]["results_added"] == 0
-
-
-def test_daily_runner_refreshes_history_only_when_future_fixtures_exist(tmp_path, monkeypatch):
-    output = tmp_path / "reports" / "daily.json"
-    _run_args(monkeypatch, output)
-    monkeypatch.setattr(daily_runner, "get_settings", lambda: object())
-    base_history = [{"date": date(2026, 10, 20)}]
-    monkeypatch.setattr(daily_runner, "load_historical_matches", lambda path: base_history)
-
-    class FakeAPI:
-        def __init__(self, settings):
-            pass
-        def fixtures(self, target_date, timezone):
-            return {"response": [{"fixture": {"id": 1}}]}
-        def odds_for_date(self, target_date, timezone):
-            return {"response": []}
-
-    monkeypatch.setattr(daily_runner, "FootballAPI", FakeAPI)
-    calls = []
-    def fake_build(payload, history_path, **kwargs):
-        calls.append(kwargs)
-        return _report(1)
-    monkeypatch.setattr(daily_runner, "build_daily_report", fake_build)
-    recent_rows = [{"date": date(2026, 10, 22), "home": "A", "away": "B"}]
-    sync = {
+def _sync():
+    return {
         "status": "COMPLETE",
         "results_added": 1,
         "requested_start": "2026-10-21",
@@ -93,14 +44,84 @@ def test_daily_runner_refreshes_history_only_when_future_fixtures_exist(tmp_path
         "ranges_succeeded": 1,
         "warning": None,
     }
+
+
+def test_daily_runner_refreshes_history_even_when_no_future_fixtures(tmp_path, monkeypatch):
+    output = tmp_path / "reports" / "daily.json"
+    _run_args(monkeypatch, output)
+    monkeypatch.setattr(daily_runner, "get_settings", lambda: object())
+    base_history = [{"date": date(2026, 10, 20)}]
+    recent_rows = [{"date": date(2026, 10, 22), "home": "A", "away": "B"}]
+    monkeypatch.setattr(daily_runner, "load_historical_matches", lambda path: base_history)
+
+    class FakeAPI:
+        def __init__(self, settings):
+            pass
+        def fixtures(self, target_date, timezone):
+            return {"response": []}
+        def odds_for_date(self, *args):
+            raise AssertionError("Odds should not be requested when no future fixtures remain.")
+
+    monkeypatch.setattr(daily_runner, "FootballAPI", FakeAPI)
+    refresh_calls = []
     monkeypatch.setattr(
         daily_runner, "fetch_recent_results",
-        lambda api, history, end_date, **kwargs: (recent_rows, sync),
+        lambda api, history, end_date, **kwargs: (
+            refresh_calls.append((history, end_date, kwargs)) or (recent_rows, _sync())
+        ),
+    )
+    build_calls = []
+    monkeypatch.setattr(
+        daily_runner, "build_daily_report",
+        lambda *args, **kwargs: (build_calls.append(kwargs) or _report(0)),
     )
 
     daily_runner.main()
     report = json.loads(output.read_text(encoding="utf-8"))
-    assert len(calls) == 2
-    assert calls[0].get("additional_historical_matches") is None
-    assert calls[1]["additional_historical_matches"] == recent_rows
+    assert len(refresh_calls) == 1
+    assert refresh_calls[0][1] == date(2026, 10, 22)
+    assert refresh_calls[0][2]["timezone_name"] == "Africa/Lagos"
+    assert len(build_calls) == 1
+    assert build_calls[0]["additional_historical_matches"] == recent_rows
     assert report["recent_results_sync"]["status"] == "COMPLETE"
+    assert report["recent_results_sync"]["results_added"] == 1
+    assert report["live_odds_sync"]["status"] == "SKIPPED_NO_FUTURE_FIXTURES"
+
+
+def test_daily_runner_refreshes_history_and_requests_odds_for_future_fixtures(tmp_path, monkeypatch):
+    output = tmp_path / "reports" / "daily.json"
+    _run_args(monkeypatch, output)
+    monkeypatch.setattr(daily_runner, "get_settings", lambda: object())
+    base_history = [{"date": date(2026, 10, 20)}]
+    recent_rows = [{"date": date(2026, 10, 22), "home": "A", "away": "B"}]
+    monkeypatch.setattr(daily_runner, "load_historical_matches", lambda path: base_history)
+
+    class FakeAPI:
+        def __init__(self, settings):
+            pass
+        def fixtures(self, target_date, timezone):
+            # Deliberately malformed fixture data means it cannot be counted as a future match.
+            return {"response": []}
+        def odds_for_date(self, target_date, timezone):
+            return {"response": []}
+
+    monkeypatch.setattr(daily_runner, "FootballAPI", FakeAPI)
+    monkeypatch.setattr(
+        daily_runner, "_has_future_fixtures", lambda payload, target_date, timezone_name: True
+    )
+    monkeypatch.setattr(
+        daily_runner, "fetch_recent_results",
+        lambda api, history, end_date, **kwargs: (recent_rows, _sync()),
+    )
+    build_calls = []
+    monkeypatch.setattr(
+        daily_runner, "build_daily_report",
+        lambda *args, **kwargs: (build_calls.append(kwargs) or _report(1)),
+    )
+
+    daily_runner.main()
+    report = json.loads(output.read_text(encoding="utf-8"))
+    assert len(build_calls) == 1
+    assert build_calls[0]["additional_historical_matches"] == recent_rows
+    assert report["recent_results_sync"]["status"] == "COMPLETE"
+    assert report["live_odds_sync"]["status"] == "NO_VALID_1X2_ODDS"
