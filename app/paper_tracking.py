@@ -57,10 +57,10 @@ def merge_paper_ledger(ledger: dict[str, Any], evaluation: dict[str, Any]) -> di
         for match in evaluation.get("matches", []):
             current["scored_matches"].append({**match, "report_date": report_date})
     # A report-date + fixture ID pair is the stable identity for ledger rows.
-    unique: dict[tuple[str, int], dict[str, Any]] = {}
+    unique: dict[tuple[str, int, str], dict[str, Any]] = {}
     for row in current["scored_matches"]:
         try:
-            key = (str(row["report_date"]), int(row["fixture_id"]))
+            key = (str(row["report_date"]), int(row["fixture_id"]), str(row.get("model", "unknown")))
         except (KeyError, TypeError, ValueError):
             continue
         unique[key] = row
@@ -169,6 +169,42 @@ def evaluate_report(report: dict[str, Any], results_payload: dict[str, Any]) -> 
             "away_goals": result["away_goals"],
         })
 
+        # Score the Elo alternative independently, keeping its metrics separate
+        # from the primary Poisson forecast for the same fixture.
+        elo_payload = prediction.get("elo_probabilities")
+        if isinstance(elo_payload, dict):
+            try:
+                if all(key in elo_payload for key in OUTCOMES):
+                    elo_values = {key: float(elo_payload[key]) for key in OUTCOMES}
+                else:
+                    elo_values = {
+                        "H": float(elo_payload["home_win"]),
+                        "D": float(elo_payload["draw"]),
+                        "A": float(elo_payload["away_win"]),
+                    }
+            except (KeyError, TypeError, ValueError):
+                elo_values = None
+            if elo_values is None or (
+                any(not math.isfinite(value) or not 0 <= value <= 1 for value in elo_values.values())
+                or abs(sum(elo_values.values()) - 1.0) > 0.02
+            ):
+                withheld += 1
+            else:
+                elo_model = str(prediction.get("elo_model", "experimental_elo"))
+                elo_predicted = max(elo_values, key=elo_values.get)
+                scored.append({
+                    "fixture_id": fixture_id,
+                    "model": elo_model,
+                    "home_team": prediction.get("home_team"),
+                    "away_team": prediction.get("away_team"),
+                    "actual": actual,
+                    "predicted": elo_predicted,
+                    "probabilities": elo_values,
+                    "correct": elo_predicted == actual,
+                    "home_goals": result["home_goals"],
+                    "away_goals": result["away_goals"],
+                })
+
     metrics = summarize_scored_matches(scored)
     count = metrics["matches"]
 
@@ -178,6 +214,7 @@ def evaluate_report(report: dict[str, Any], results_payload: dict[str, Any]) -> 
         "model_status": "PAPER_TRACKING_ONLY",
         "predictions_in_report": len(predictions),
         "completed_forecasts_scored": count,
+        "unique_fixtures_scored": len({row["fixture_id"] for row in scored}),
         "awaiting_result_or_match": awaiting_result,
         "withheld_or_invalid_forecasts": withheld,
         "forecasts_missing_fixture_id": missing_fixture_id,
