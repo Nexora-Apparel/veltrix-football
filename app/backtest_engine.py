@@ -246,7 +246,7 @@ def chronological_backtest(matches: Iterable[dict[str, Any]], *, min_training_ma
                         **({"market": m["market"]} if "market" in m else {}),
                     })
     
-                lid, home, away = m["division"], m["home_team"], m["away_team"]
+            lid, home, away = m["division"], m["home_team"], m["away_team"]
             totals = league_totals[lid]
             if history_count >= min_training_matches and totals[0] >= 10:
                 avg_home = max(0.15, totals[1] / totals[0])
