@@ -96,7 +96,8 @@ def format_report_messages(report: dict[str, Any], ledger: dict[str, Any] | None
                 f"Recent API refresh: {sync.get('status', 'UNKNOWN')} "
                 f"| completed results added: {sync.get('results_added', 0)}"
             )
-            header.append("Date coverage is not a guarantee that every league is available on the API plan.")
+            if sync.get("status") != "SKIPPED_NO_FUTURE_FIXTURES":
+                header.append("Date coverage is not a guarantee that every league is available on the API plan.")
             if sync.get("covered_from") and sync.get("covered_through"):
                 header.append(
                     f"API results coverage: {sync['covered_from']} to {sync['covered_through']}"
