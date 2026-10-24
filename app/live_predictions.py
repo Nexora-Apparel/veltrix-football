@@ -67,6 +67,7 @@ def _fixture_parts(item: dict[str, Any], timezone_name: str = "Africa/Lagos") ->
         "kickoff": parsed.isoformat(),
         "kickoff_local": local_kickoff.isoformat(),
         "kickoff_date": local_kickoff.date(),
+        "kickoff_datetime": local_kickoff,
         "home_team": home,
         "away_team": away,
         "league": league.get("name"),
@@ -82,6 +83,7 @@ def predict_fixtures(
     min_team_matches: int = MIN_TEAM_MATCHES,
     team_window: int = TEAM_WINDOW,
     timezone_name: str = "Africa/Lagos",
+    now: datetime | None = None,
 ) -> list[dict[str, Any]]:
     """Estimate experimental 1X2 probabilities from prior team goal averages.
 
@@ -95,7 +97,11 @@ def predict_fixtures(
         local_zone = ZoneInfo(timezone_name)
     except ZoneInfoNotFoundError as exc:
         raise ValueError(f"Unknown timezone: {timezone_name}") from exc
-    today = as_of or datetime.now(local_zone).date()
+    current_time = now or datetime.now(local_zone)
+    if current_time.tzinfo is None:
+        current_time = current_time.replace(tzinfo=local_zone)
+    current_time = current_time.astimezone(local_zone)
+    today = as_of or current_time.date()
     usable = sorted((m for m in historical_matches if m["date"] < today), key=lambda row: row["date"])
     if not usable:
         return []
@@ -111,7 +117,9 @@ def predict_fixtures(
     output: list[dict[str, Any]] = []
     parsed_fixtures = [
         p for item in fixtures
-        if (p := _fixture_parts(item, timezone_name)) and p["kickoff_date"] == today
+        if (p := _fixture_parts(item, timezone_name))
+        and p["kickoff_date"] == today
+        and p["kickoff_datetime"] > current_time
     ]
     # Strict same-local-calendar-day rule: never include tomorrow or later dates.
     for target_date in ([today] if parsed_fixtures else []):
@@ -132,7 +140,7 @@ def predict_fixtures(
             home_key, away_key = _name_key(fixture["home_team"]), _name_key(fixture["away_team"])
             home_hist, away_hist = list(team_history[home_key]), list(team_history[away_key])
             record: dict[str, Any] = {
-                **{k: v for k, v in fixture.items() if k != "kickoff_date"},
+                **{k: v for k, v in fixture.items() if k not in {"kickoff_date", "kickoff_datetime"}},
                 "model": "experimental_recent_goals_poisson",
                 "model_validated": False,
                 "betting_recommendation": False,
