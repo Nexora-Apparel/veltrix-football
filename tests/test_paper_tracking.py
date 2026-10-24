@@ -1,4 +1,4 @@
-from app.paper_tracking import evaluate_report
+from app.paper_tracking import evaluate_report, merge_paper_ledger
 
 
 def _prediction(fixture_id, status="EXPERIMENTAL_ONLY", probabilities=None):
@@ -67,3 +67,24 @@ def test_evaluator_reports_unmatched_and_missing_fixture_ids():
     result = evaluate_report(report, {"response": []})
     assert result["awaiting_result_or_match"] == 1
     assert result["forecasts_missing_fixture_id"] == 1
+
+
+
+def test_ledger_accumulates_metrics_and_deduplicates_report_dates():
+    report = {"as_of_date": "2026-10-22", "predictions": [_prediction(1)]}
+    first = evaluate_report(report, {"response": [_result(1, 2, 0)]})
+    ledger = merge_paper_ledger({}, first)
+    assert ledger["cumulative_metrics"]["matches"] == 1
+    assert ledger["evaluated_report_dates"] == 1
+
+    # Replaying the same report date must not double-count the same match.
+    replay = merge_paper_ledger(ledger, first)
+    assert replay["cumulative_metrics"]["matches"] == 1
+    assert replay["evaluated_report_dates"] == 1
+
+    second_report = {"as_of_date": "2026-10-23", "predictions": [_prediction(2)]}
+    second = evaluate_report(second_report, {"response": [_result(2, 0, 1)]})
+    updated = merge_paper_ledger(replay, second)
+    assert updated["cumulative_metrics"]["matches"] == 2
+    assert updated["evaluated_report_dates"] == 2
+    assert updated["cumulative_metrics"]["result_accuracy"] == 1.0
