@@ -388,3 +388,47 @@ def test_pending_report_date_is_updated_as_more_fixtures_finish():
     replay = merge_paper_ledger(ledger, second)
     assert replay["evaluations"][0]["completed_forecasts_scored"] == 2
     assert len(replay["scored_matches"]) == 2
+
+
+
+def test_tracking_runner_retries_report_already_in_ledger_when_fixtures_are_pending(tmp_path, monkeypatch):
+    monkeypatch.setenv("GITHUB_REPOSITORY", "owner/repo")
+    monkeypatch.setenv("GITHUB_TOKEN", "test-token")
+    monkeypatch.setenv("GITHUB_RUN_ID", "999")
+    monkeypatch.setenv("API_FOOTBALL_KEY", "test-api-key")
+    monkeypatch.setattr(tracking_runner, "get_settings", lambda: object())
+    monkeypatch.setattr(tracking_runner, "list_relevant_runs", lambda session, repo: [])
+    monkeypatch.setattr(
+        tracking_runner, "find_latest_ledger",
+        lambda session, repo, runs, current_run_id: {
+            "product": "Veltrix Football",
+            "model_status": "PAPER_TRACKING_ONLY",
+            "evaluations": [{
+                "report_date": "2026-10-23",
+                "completed_forecasts_scored": 0,
+                "awaiting_result_or_match": 1,
+                "withheld_or_invalid_forecasts": 0,
+                "metrics": {},
+            }],
+            "scored_matches": [],
+        },
+    )
+    monkeypatch.setattr(
+        tracking_runner, "find_daily_report",
+        lambda session, repo, runs, report_date, current_run_id: {
+            "as_of_date": report_date,
+            "predictions": [_prediction(81)],
+        },
+    )
+
+    class FakeFootballAPI:
+        def __init__(self, settings):
+            pass
+        def fixtures(self, date, timezone):
+            return {"response": [_result(81, 2, 0)]}
+
+    monkeypatch.setattr(tracking_runner, "FootballAPI", FakeFootballAPI)
+    ledger = tracking_runner.run(date(2026, 10, 23), str(tmp_path / "ledger.json"))
+    assert ledger["last_attempt"]["status"] == "EVALUATED"
+    assert ledger["evaluations"][0]["awaiting_result_or_match"] == 0
+    assert ledger["evaluations"][0]["completed_forecasts_scored"] == 1
