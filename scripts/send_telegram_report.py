@@ -44,7 +44,7 @@ def _format_kickoff(value: Any, timezone_name: str) -> str:
     return f"{parsed:%H:%M} {abbreviation}" if abbreviation else f"{parsed:%H:%M}"
 
 
-def format_report(report: dict[str, Any], ledger: dict[str, Any] | None = None) -> str:
+def format_report_messages(report: dict[str, Any], ledger: dict[str, Any] | None = None) -> list[str]:
     day = str(report.get("as_of_date", "unknown date"))
     timezone_name = str(report.get("timezone", "Africa/Lagos"))
     predictions = report.get("predictions", [])
@@ -224,36 +224,42 @@ def format_report(report: dict[str, Any], ledger: dict[str, Any] | None = None) 
         "Please do not use these experimental estimates as betting advice.",
     ])
 
-    def render(selected: list[list[str]], omitted: int = 0) -> str:
+    def render(selected: list[list[str]]) -> str:
         lines = list(header)
         for block in selected:
             lines.extend(block)
-        if omitted:
-            lines.extend([
-                "",
-                f"{omitted} additional fixture(s) omitted to fit Telegram's message limit.",
-            ])
         lines.extend(footer)
         return "\n".join(lines)
 
-    full_message = render(blocks)
-    if len(full_message) <= MAX_MESSAGE_LENGTH:
-        return full_message
-
+    # Keep every fixture. Split between complete fixture blocks instead of
+    # silently dropping later matches when the Telegram message limit is reached.
+    chunks: list[str] = []
     selected: list[list[str]] = []
     for block in blocks:
-        remaining_after_add = len(blocks) - len(selected) - 1
-        candidate = render(selected + [block], remaining_after_add)
-        if len(candidate) > MAX_MESSAGE_LENGTH:
-            break
-        selected.append(block)
+        candidate = render(selected + [block])
+        if len(candidate) <= MAX_MESSAGE_LENGTH:
+            selected.append(block)
+            continue
+        if selected:
+            chunks.append(render(selected))
+            selected = [block]
+        else:
+            # Defensive fallback for an unusually long single fixture block.
+            lines = list(header) + block + footer
+            message = "\n".join(lines)
+            chunks.append(message[: MAX_MESSAGE_LENGTH - 1].rstrip() + "…")
+            selected = []
+    if selected or not chunks:
+        message = render(selected)
+        if len(message) > MAX_MESSAGE_LENGTH:
+            message = message[: MAX_MESSAGE_LENGTH - 1].rstrip() + "…"
+        chunks.append(message)
+    return chunks
 
-    omitted = len(blocks) - len(selected)
-    message = render(selected, omitted)
-    # Defensive fallback for unusually long external team/league names.
-    if len(message) > MAX_MESSAGE_LENGTH:
-        return message[: MAX_MESSAGE_LENGTH - 1].rstrip() + "…"
-    return message
+
+def format_report(report: dict[str, Any], ledger: dict[str, Any] | None = None) -> str:
+    """Compatibility helper returning the first Telegram-sized report chunk."""
+    return format_report_messages(report, ledger)[0]
 
 
 def send_message(token: str, chat_id: str, message: str, *, timeout: int = 15) -> None:
@@ -300,8 +306,10 @@ def main() -> None:
                     ledger = loaded_ledger
             except (OSError, json.JSONDecodeError):
                 ledger = None
-        message = format_report(report, ledger)
-        send_message(token, chat_id, message)
+        messages = format_report_messages(report, ledger)
+        for index, message in enumerate(messages, start=1):
+            send_message(token, chat_id, message)
+            print(f"Telegram report part {index}/{len(messages)} delivered.")
         print(f"Telegram report delivered for {report.get('as_of_date', 'unknown date')}.")
     except (OSError, json.JSONDecodeError, ValueError, RuntimeError, requests.RequestException) as exc:
         print(f"TELEGRAM REPORT FAILED: {exc}", file=sys.stderr)
