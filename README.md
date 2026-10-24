@@ -69,7 +69,7 @@ The backtest compares two separate baselines: a venue-specific Poisson attack/de
 
 ## Retrospective paper tracking
 
-A saved daily report can be scored against the completed-fixture response for the same date without placing bets. The scheduled/manual daily workflow now attempts to evaluate the previous day's report, matches forecasts by fixture ID, excludes withheld/invalid predictions and unfinished fixtures, and updates a cumulative ledger with result accuracy, multiclass Brier score, and log loss, separated by model version so results from different algorithms are not mixed. The ledger is uploaded as a 90-day artifact; this is not a permanent database, and an evaluation is skipped if the previous report cannot be found or results cannot be fetched. This is a scoring tool, not a betting approval gate.
+A saved daily report can be scored against the completed-fixture response for the same date without placing bets. The scheduled/manual daily workflow now attempts to evaluate the previous day's report, matches forecasts by fixture ID, excludes withheld/invalid predictions and unfinished fixtures, and updates a cumulative ledger with result accuracy, multiclass Brier score, and log loss, separated by model version so results from different algorithms are not mixed. When a ledger is available, the Telegram report also shows cumulative paper metrics for each model version. The ledger is uploaded as a 90-day artifact; this is not a permanent database, and an evaluation is skipped if the previous report cannot be found or results cannot be fetched. This is a scoring tool, not a betting approval gate.
 
 Example after saving the API-Football results JSON for that date:
 
