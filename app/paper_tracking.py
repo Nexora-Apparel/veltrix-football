@@ -52,6 +52,7 @@ def merge_paper_ledger(ledger: dict[str, Any], evaluation: dict[str, Any]) -> di
             "awaiting_result_or_match": evaluation.get("awaiting_result_or_match", 0),
             "withheld_or_invalid_forecasts": evaluation.get("withheld_or_invalid_forecasts", 0),
             "metrics": evaluation.get("metrics", {}),
+            "model_versions": sorted({str(row.get("model", "unknown")) for row in evaluation.get("matches", [])}),
         })
         for match in evaluation.get("matches", []):
             current["scored_matches"].append({**match, "report_date": report_date})
@@ -66,7 +67,23 @@ def merge_paper_ledger(ledger: dict[str, Any], evaluation: dict[str, Any]) -> di
     current["scored_matches"] = list(unique.values())
     current["product"] = "Veltrix Football"
     current["model_status"] = "PAPER_TRACKING_ONLY"
-    current["cumulative_metrics"] = summarize_scored_matches(current["scored_matches"])
+    model_names = sorted({str(row.get("model", "unknown")) for row in current["scored_matches"]})
+    current["cumulative_metrics_by_model"] = {
+        model_name: summarize_scored_matches([
+            row for row in current["scored_matches"]
+            if str(row.get("model", "unknown")) == model_name
+        ])
+        for model_name in model_names
+    }
+    # Do not publish one combined score as if it described a single model when
+    # the ledger contains forecasts from different model versions.
+    current["cumulative_metrics"] = (
+        current["cumulative_metrics_by_model"][model_names[0]]
+        if len(model_names) == 1
+        else summarize_scored_matches(current["scored_matches"]) if not model_names
+        else None
+    )
+    current["model_versions"] = model_names
     current["evaluated_report_dates"] = len(current["evaluations"])
     current["notice"] = "Retrospective paper evaluation only; no betting recommendation or profitability claim."
     return current
@@ -132,6 +149,7 @@ def evaluate_report(report: dict[str, Any], results_payload: dict[str, Any]) -> 
         actual = result["actual"]
         scored.append({
             "fixture_id": fixture_id,
+            "model": prediction.get("model", "unknown"),
             "home_team": prediction.get("home_team"),
             "away_team": prediction.get("away_team"),
             "actual": actual,
