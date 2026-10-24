@@ -230,3 +230,26 @@ def test_evaluator_scores_poisson_and_elo_alternatives_separately():
     ledger = merge_paper_ledger({}, result)
     assert ledger["cumulative_metrics_by_model"]["experimental_recent_goals_poisson"]["matches"] == 1
     assert ledger["cumulative_metrics_by_model"]["experimental_elo_by_competition"]["matches"] == 1
+
+
+
+def test_evaluator_scores_poisson_and_elo_separately_for_same_fixture():
+    prediction = _prediction(31)
+    prediction["model"] = "experimental_recent_goals_poisson"
+    prediction["elo_model"] = "experimental_elo_by_competition"
+    prediction["elo_probabilities"] = {"home_win": 0.2, "draw": 0.3, "away_win": 0.5}
+    evaluation = evaluate_report(
+        {"as_of_date": "2026-10-24", "predictions": [prediction]},
+        {"response": [_result(31, 0, 1)]},
+    )
+    assert evaluation["fixtures_scored"] == 1
+    assert evaluation["completed_forecasts_scored"] == 2
+    assert evaluation["metrics"] is None
+    assert evaluation["metrics_by_model"]["experimental_recent_goals_poisson"]["matches"] == 1
+    assert evaluation["metrics_by_model"]["experimental_elo_by_competition"]["matches"] == 1
+    assert evaluation["metrics_by_model"]["experimental_elo_by_competition"]["result_accuracy"] == 1.0
+
+    ledger = merge_paper_ledger({}, evaluation)
+    assert ledger["cumulative_metrics_by_model"]["experimental_recent_goals_poisson"]["matches"] == 1
+    assert ledger["cumulative_metrics_by_model"]["experimental_elo_by_competition"]["matches"] == 1
+    assert len(ledger["scored_matches"]) == 2
