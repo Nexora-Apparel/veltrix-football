@@ -178,12 +178,6 @@ def evaluate_report(report: dict[str, Any], results_payload: dict[str, Any]) -> 
                 str(prediction.get("poisson_model", "experimental_poisson_unknown")),
                 prediction.get("poisson_probabilities"),
             ))
-        if isinstance(prediction.get("poisson_probabilities"), dict):
-            forecast_models.append((
-                str(prediction.get("poisson_model", "experimental_recent_goals_poisson")),
-                prediction.get("poisson_probabilities"),
-            ))
-
         scored_this_fixture = False
         for model_name, raw_probabilities in forecast_models:
             values = _canonical_probabilities(raw_probabilities)
