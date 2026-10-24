@@ -52,7 +52,7 @@ jobs:
         run: python -m pytest -q
       - name: Evaluate previous day's forecasts
         id: paper-tracking
-        if: github.event_name != 'push'
+        if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
         env:
           API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -65,11 +65,11 @@ jobs:
           PAPER_DATE="$(TZ=Africa/Lagos date -d "$TARGET_DATE - 1 day" +%F)"
           python scripts/run_paper_tracking.py --date "$PAPER_DATE" --output reports/paper_tracking_ledger.json
       - name: Import historical matches
-        if: github.event_name != 'push'
+        if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
         run: python scripts/import_open_dataset.py --from 2020-01-01 --to "$(date -u +%F)" --output data/open_historical_matches.csv
       - name: Generate daily fixture report
         id: generate-report
-        if: github.event_name != 'push'
+        if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
         env:
           API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
           TARGET_DATE: ${{ inputs.date }}
@@ -82,7 +82,7 @@ jobs:
           if [ -z "${TARGET_DATE:-}" ]; then TARGET_DATE="$(TZ=Africa/Lagos date +%F)"; fi
           python scripts/run_daily_predictions.py --date "$TARGET_DATE" --history data/open_historical_matches.csv --output reports/daily_predictions.json
       - name: Check Telegram configuration
-        if: github.event_name != 'push'
+        if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
         id: telegram-config
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
@@ -95,14 +95,14 @@ jobs:
             echo "::notice::Telegram delivery skipped because its two secrets are not both configured."
           fi
       - name: Send daily report to Telegram
-        if: github.event_name != 'push' && steps.telegram-config.outputs.configured == 'true'
+        if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' && steps.telegram-config.outputs.configured == 'true'
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           PYTHONPATH: .
         run: python scripts/send_telegram_report.py --report reports/daily_predictions.json
       - name: Upload daily prediction report
-        if: always() && github.event_name != 'push' && steps.generate-report.outcome == 'success'
+        if: always() && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && steps.generate-report.outcome == 'success'
         uses: actions/upload-artifact@v7
         with:
           name: veltrix-daily-predictions
@@ -111,7 +111,7 @@ jobs:
           retention-days: 90
 
       - name: Upload cumulative paper-tracking ledger
-        if: always() && github.event_name != 'push' && steps.paper-tracking.outcome != 'skipped'
+        if: always() && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && steps.paper-tracking.outcome != 'skipped'
         uses: actions/upload-artifact@v7
         with:
           name: veltrix-paper-ledger
