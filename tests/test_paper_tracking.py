@@ -82,7 +82,7 @@ def test_ledger_accumulates_metrics_and_deduplicates_report_dates():
     assert replay["cumulative_metrics"]["matches"] == 1
     assert replay["evaluated_report_dates"] == 1
 
-    second_report = {"as_of_date": "2026-10-23", "predictions": [_prediction(2)]}
+    second_report = {"as_of_date": "2026-10-23", "predictions": [_prediction(2, probabilities={"H": 0.15, "D": 0.25, "A": 0.6})]}
     second = evaluate_report(second_report, {"response": [_result(2, 0, 1)]})
     updated = merge_paper_ledger(replay, second)
     assert updated["cumulative_metrics"]["matches"] == 2
