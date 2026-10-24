@@ -1,7 +1,7 @@
 from datetime import date, datetime
 from zoneinfo import ZoneInfo
 
-from app.live_predictions import _name_key, predict_fixtures
+from app.live_predictions import _name_key, build_daily_report, predict_fixtures
 
 
 def _history():
@@ -197,3 +197,45 @@ def test_zero_goal_history_keeps_estimates_finite():
     assert prediction["expected_goals"]["home"] > 0
     assert prediction["expected_goals"]["away"] > 0
     assert all(0 <= p <= 1 for p in prediction["probabilities"].values())
+
+
+
+def test_daily_report_explains_fixture_filtering(tmp_path):
+    history_path = tmp_path / "history.csv"
+    import csv
+    rows = _history()
+    with history_path.open("w", newline="", encoding="utf-8") as handle:
+        writer = csv.DictWriter(
+            handle, fieldnames=["match_date", "home_team", "away_team", "home_goals", "away_goals"]
+        )
+        writer.writeheader()
+        for row in rows:
+            writer.writerow({
+                "match_date": row["date"].isoformat(),
+                "home_team": row["home"],
+                "away_team": row["away"],
+                "home_goals": row["home_goals"],
+                "away_goals": row["away_goals"],
+            })
+    past = _fixture("2026-10-23T11:00:00+01:00")
+    past["fixture"]["id"] = 100
+    future = _fixture("2026-10-23T15:00:00+01:00")
+    future["fixture"]["id"] = 200
+    tomorrow = _fixture("2026-10-24T15:00:00+01:00")
+    tomorrow["fixture"]["id"] = 300
+    finished = _fixture("2026-10-23T16:00:00+01:00")
+    finished["fixture"]["id"] = 400
+    finished["fixture"]["status"]["short"] = "FT"
+    report = build_daily_report(
+        {"response": [past, future, tomorrow, finished]},
+        history_path,
+        as_of=date(2026, 10, 23),
+        now=datetime(2026, 10, 23, 12, 0, tzinfo=ZoneInfo("Africa/Lagos")),
+    )
+    assert report["fixtures_received"] == 4
+    assert report["same_day_pre_match_fixtures"] == 2
+    assert report["past_kickoffs_excluded"] == 1
+    assert report["future_fixtures_considered"] == 1
+    assert report["fixtures_excluded_other_date_or_status"] == 2
+    assert len(report["predictions"]) == 1
+    assert report["predictions"][0]["fixture_id"] == 200
