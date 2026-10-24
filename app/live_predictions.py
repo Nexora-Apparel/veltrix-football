@@ -22,6 +22,12 @@ HOME_ELO_ADVANTAGE = 55.0
 ELO_K = 20.0
 
 # API-Football league IDs mapped to division codes in the open historical CSV.
+LEAGUE_DIVISION_BY_CODE = {
+    "PL": "E0", "ELC": "E1", "EL1": "E2", "EL2": "E3",
+    "PD": "SP1", "SD": "SP2", "SA": "I1", "SB": "I2",
+    "BL1": "D1", "BL2": "D2", "FL1": "F1", "FL2": "F2",
+    "DED": "N1", "PPL": "P1", "SPL": "SC0", "BSA": "B1",
+}
 LEAGUE_DIVISION_BY_ID = {
     39: "E0", 40: "E1", 41: "E2", 42: "E3", 43: "EC",
     140: "SP1", 141: "SP2", 135: "I1", 136: "I2",
@@ -118,7 +124,7 @@ def _fixture_parts(item: dict[str, Any], timezone_name: str = "Africa/Lagos") ->
         "away_team": away,
         "league": league.get("name"),
         "league_id": league.get("id"),
-        "division_code": LEAGUE_DIVISION_BY_ID.get(league.get("id")),
+        "division_code": LEAGUE_DIVISION_BY_CODE.get(str(league.get("code") or "").upper()) or LEAGUE_DIVISION_BY_ID.get(league.get("id")),
         "fixture_status": status,
     }
 
