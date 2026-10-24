@@ -194,8 +194,12 @@ def evaluate_report(report: dict[str, Any], results_payload: dict[str, Any]) -> 
     missing_fixture_id = 0
     fixtures_scored: set[int] = set()
     for prediction in predictions:
-        if prediction.get("status") != "EXPERIMENTAL_ONLY":
+        status = prediction.get("status")
+        has_model_forecast = status == "EXPERIMENTAL_ONLY"
+        has_market_forecast = isinstance(prediction.get("market_probabilities"), dict)
+        if status in {"INSUFFICIENT_HISTORY", "UNSUPPORTED_COMPETITION"}:
             withheld += 1
+        if not has_model_forecast and not has_market_forecast:
             continue
         fixture_id = prediction.get("fixture_id")
         if not isinstance(fixture_id, int):
@@ -206,21 +210,27 @@ def evaluate_report(report: dict[str, Any], results_payload: dict[str, Any]) -> 
             awaiting_result += 1
             continue
 
-        forecast_models: list[tuple[str, Any]] = [
-            (str(prediction.get("model", "unknown")), prediction.get("probabilities"))
-        ]
-        # Support both report layouts: Poisson primary + Elo alternative, or
-        # competition Elo primary + Poisson alternative.
-        if isinstance(prediction.get("elo_probabilities"), dict):
+        forecast_models: list[tuple[str, Any]] = []
+        if has_model_forecast:
             forecast_models.append((
-                str(prediction.get("elo_model", "experimental_elo_unknown")),
-                prediction.get("elo_probabilities"),
+                str(prediction.get("model", "unknown")),
+                prediction.get("probabilities"),
             ))
-        if isinstance(prediction.get("poisson_probabilities"), dict):
-            forecast_models.append((
-                str(prediction.get("poisson_model", "experimental_poisson_unknown")),
-                prediction.get("poisson_probabilities"),
-            ))
+            # Support both report layouts: Poisson primary + Elo alternative, or
+            # competition Elo primary + Poisson alternative.
+            if isinstance(prediction.get("elo_probabilities"), dict):
+                forecast_models.append((
+                    str(prediction.get("elo_model", "experimental_elo_unknown")),
+                    prediction.get("elo_probabilities"),
+                ))
+            if isinstance(prediction.get("poisson_probabilities"), dict):
+                forecast_models.append((
+                    str(prediction.get("poisson_model", "experimental_poisson_unknown")),
+                    prediction.get("poisson_probabilities"),
+                ))
+        if has_market_forecast:
+            forecast_models.append(("market_consensus", prediction.get("market_probabilities")))
+
         scored_this_fixture = False
         for model_name, raw_probabilities in forecast_models:
             values = _canonical_probabilities(raw_probabilities)
@@ -228,7 +238,7 @@ def evaluate_report(report: dict[str, Any], results_payload: dict[str, Any]) -> 
                 withheld += 1
                 continue
             actual = result["actual"]
-            scored.append({
+            scored_row = {
                 "fixture_id": fixture_id,
                 "model": model_name,
                 "home_team": prediction.get("home_team"),
@@ -239,7 +249,12 @@ def evaluate_report(report: dict[str, Any], results_payload: dict[str, Any]) -> 
                 "correct": max(values, key=values.get) == actual,
                 "home_goals": result["home_goals"],
                 "away_goals": result["away_goals"],
-            })
+            }
+            if model_name == "market_consensus":
+                scored_row["market_updated_at"] = prediction.get("market_updated_at")
+                scored_row["market_bookmakers_count"] = prediction.get("market_bookmakers_count", 0)
+                scored_row["market_method"] = prediction.get("market_method")
+            scored.append(scored_row)
             scored_this_fixture = True
         if scored_this_fixture:
             fixtures_scored.add(fixture_id)
