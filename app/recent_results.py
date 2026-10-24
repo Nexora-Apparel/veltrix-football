@@ -77,6 +77,7 @@ def fetch_recent_results(
     end_date: date,
     *,
     max_chunk_days: int = 7,
+    timezone_name: str = "Africa/Lagos",
 ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     """Fetch results newer than the open CSV, stopping safely on API-plan errors.
 
@@ -116,7 +117,7 @@ def fetch_recent_results(
     for range_start, range_end in ranges:
         try:
             payload = api.fixtures_between(
-                range_start.isoformat(), range_end.isoformat(), "Africa/Lagos"
+                range_start.isoformat(), range_end.isoformat(), timezone_name
             )
             rows = extract_completed_results(payload)
         except (FootballAPIError, ValueError) as exc:
