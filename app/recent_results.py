@@ -1,11 +1,11 @@
-"""Refresh stale historical scores from API-Football without using current-day results."""
+"""Refresh stale historical scores from football-data.org without using current-day results."""
 from __future__ import annotations
 
 from datetime import date, timedelta
 from typing import Any
 
 from app.football_api import FootballAPIError
-from app.live_predictions import LEAGUE_DIVISION_BY_ID, _name_key
+from app.live_predictions import LEAGUE_DIVISION_BY_CODE, LEAGUE_DIVISION_BY_ID, _name_key
 
 COMPLETED_STATUSES = {"FT", "AET", "PEN"}
 
@@ -59,7 +59,7 @@ def extract_completed_results(payload: dict[str, Any]) -> list[dict[str, Any]]:
             continue
         rows.append({
             "date": match_date,
-            "division": LEAGUE_DIVISION_BY_ID.get(league_id, ""),
+            "division": LEAGUE_DIVISION_BY_CODE.get(str(league.get("code") or "").upper()) or LEAGUE_DIVISION_BY_ID.get(league_id, ""),
             "home": home_name,
             "away": away_name,
             "home_key": _name_key(home_name),
