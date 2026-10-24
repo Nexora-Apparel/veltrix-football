@@ -59,7 +59,7 @@ def test_evaluator_rejects_invalid_probability_vectors():
     result = evaluate_report(report, {"response": [_result(1, 1, 0)]})
     assert result["completed_forecasts_scored"] == 0
     assert result["withheld_or_invalid_forecasts"] == 1
-    assert result["metrics"] is None
+    assert result["metrics"]["log_loss"] is None
     assert result["metrics_by_model"] == {}
 
 
