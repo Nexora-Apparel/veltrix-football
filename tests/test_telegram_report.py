@@ -132,3 +132,25 @@ def test_telegram_report_shows_fixture_filter_counts_when_available():
     assert "Today/future fixtures considered: 12" in message
     assert "Past kickoffs excluded: 3" in message
     assert "Other dates/status excluded: 85" in message
+
+
+
+def test_telegram_report_includes_cumulative_paper_metrics_by_model():
+    ledger = {
+        "last_attempt": {"status": "EVALUATED", "report_date": "2026-10-23"},
+        "cumulative_metrics_by_model": {
+            "experimental_recent_goals_poisson": {
+                "matches": 12,
+                "result_accuracy": 0.5,
+                "brier_score": 0.62,
+                "log_loss": 1.04,
+            }
+        },
+    }
+    message = format_report(sample_report(), ledger)
+    assert "PAPER TRACKING — CUMULATIVE" in message
+    assert "Latest evaluation status: EVALUATED" in message
+    assert "12 scored" in message
+    assert "accuracy 50.0%" in message
+    assert "Brier 0.620 | log loss 1.040" in message
+    assert "not proof of profitability" in message
