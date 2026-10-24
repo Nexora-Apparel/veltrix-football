@@ -62,6 +62,17 @@ def format_report(report: dict[str, Any]) -> str:
         f"MATCH FORECASTS: {len(usable)}",
         "",
     ]
+    if "fixtures_received" in report:
+        header.extend([
+            "FIXTURE FILTER",
+            f"API fixtures received: {report.get('fixtures_received', 0)}",
+            (
+                f"Today/future fixtures considered: {report.get('future_fixtures_considered', 0)}"
+                f"  |  Past kickoffs excluded: {report.get('past_kickoffs_excluded', 0)}"
+            ),
+            f"Other dates/status excluded: {report.get('fixtures_excluded_other_date_or_status', 0)}",
+            "",
+        ])
     if not usable:
         header.extend([
             "NO USABLE EXPERIMENTAL FORECASTS TODAY.",
