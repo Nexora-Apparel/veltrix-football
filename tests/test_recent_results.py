@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import date
+from datetime import date, timedelta
 
 import pytest
 
@@ -25,7 +25,7 @@ def test_split_date_ranges_is_non_overlapping_and_newest_first():
     assert ranges[-1][0] == date(2026, 9, 4)
     assert all((end - start).days < 7 for start, end in ranges)
     for previous, current in zip(ranges, ranges[1:]):
-        assert current[1] + __import__("datetime").timedelta(days=1) == previous[0]
+        assert current[1] + timedelta(days=1) == previous[0]
 
 
 def test_extract_completed_results_maps_competition_and_ignores_unfinished():
