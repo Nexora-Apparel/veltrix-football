@@ -147,7 +147,7 @@ def test_aliases_allow_known_fixture_name_variant_to_use_history():
 
 
 
-def test_fuzzy_name_matches_are_suggestions_only_not_automatic_predictions():
+def test_high_confidence_fuzzy_team_name_is_automatically_matched():
     fixture = _fixture()
     fixture["league"]["id"] = 39
     fixture["teams"]["home"]["name"] = "Alph FC"
@@ -155,9 +155,18 @@ def test_fuzzy_name_matches_are_suggestions_only_not_automatic_predictions():
         [fixture], _history(), as_of=date(2026, 10, 23),
         now=datetime(2026, 10, 23, 12, 0, tzinfo=ZoneInfo("Africa/Lagos")),
     )
-    assert result[0]["status"] == "INSUFFICIENT_HISTORY"
-    assert "probabilities" not in result[0]
-    assert "Alpha FC" in result[0]["team_name_match_suggestions"]["home"]
+    assert result[0]["status"] == "EXPERIMENTAL_ONLY"
+    assert result[0]["historical_matches"]["home"] == 6
+    assert result[0]["team_name_matches"]["home"]["historical_key"] == "alpha"
+    assert result[0]["team_name_matches"]["home"]["auto_matched"] is True
+
+
+def test_ambiguous_fuzzy_team_name_is_not_automatically_merged():
+    from app.live_predictions import _resolve_team_key
+
+    # Similar candidates are deliberately ambiguous; never pick one at random.
+    resolved = _resolve_team_key("united", {"manchesterunited", "newcastleunited"})
+    assert resolved == "united"
 
 
 
