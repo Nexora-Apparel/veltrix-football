@@ -73,6 +73,26 @@ def format_report_messages(report: dict[str, Any], ledger: dict[str, Any] | None
             f"Other dates/status excluded: {report.get('fixtures_excluded_other_date_or_status', 0)}",
             "",
         ])
+    if "historical_data_through" in report:
+        sync = report.get("recent_results_sync") or {}
+        header.extend([
+            "HISTORICAL DATA FRESHNESS",
+            f"Historical results through: {report.get('historical_data_through') or 'unknown'}",
+            f"Historical matches available: {report.get('historical_matches_available', 0)}",
+        ])
+        if sync:
+            header.append(
+                f"Recent API refresh: {sync.get('status', 'UNKNOWN')} "
+                f"| completed results added: {sync.get('results_added', 0)}"
+            )
+            if sync.get("covered_from") and sync.get("covered_through"):
+                header.append(
+                    f"API results coverage: {sync['covered_from']} to {sync['covered_through']}"
+                )
+            if sync.get("warning"):
+                header.append("Warning: recent history refresh was incomplete; predictions use available history.")
+        header.append("")
+
     if "primary_model_counts" in report:
         model_counts = report.get("primary_model_counts") or {}
         header.extend(["MODEL MIX"])
