@@ -274,3 +274,19 @@ def test_telegram_report_discloses_historical_data_freshness():
     assert "API results coverage: 2026-10-09 to 2026-10-22" in message
     assert "predictions use available history" in message
     assert "not a guarantee that every league is available on the API plan" in message
+
+
+
+def test_telegram_report_summarizes_unsupported_competition_fixtures():
+    report = sample_report()
+    report["predictions"].append({
+        "fixture_id": 999,
+        "status": "UNSUPPORTED_COMPETITION",
+        "reason": "This competition is not mapped to the historical dataset.",
+        "home_team": "Unknown A",
+        "away_team": "Unknown B",
+    })
+    message = format_report(report)
+    assert "WITHHELD: insufficient team history 0 | unsupported competition 1" in message
+    assert "1 fixture(s) withheld: competition is outside current historical coverage." in message
+    assert "Unknown A vs Unknown B" not in message
