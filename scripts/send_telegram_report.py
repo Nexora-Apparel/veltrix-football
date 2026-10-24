@@ -113,7 +113,7 @@ def format_report(report: dict[str, Any], ledger: dict[str, Any] | None = None) 
         away_probability = probs.get("away_win", probs.get("away", 0))
         kickoff = _format_kickoff(item.get("kickoff_local"), timezone_name)
         expected_goals = item.get("expected_goals", {})
-        blocks.append([
+        block = [
             DIVIDER,
             f"⚽ {item.get('home_team', 'Home')} vs {item.get('away_team', 'Away')}",
             f"🏆 {item.get('league') or 'Unknown competition'}",
@@ -123,12 +123,24 @@ def format_report(report: dict[str, Any], ledger: dict[str, Any] | None = None) 
             f"Home  {float(home_probability):.0%}",
             f"Draw  {float(draw_probability):.0%}",
             f"Away  {float(away_probability):.0%}",
+        ]
+        elo_probs = item.get("elo_probabilities")
+        if isinstance(elo_probs, dict):
+            block.extend([
+                "",
+                "ELO ALTERNATIVE (EXPERIMENTAL)",
+                f"Home  {float(elo_probs.get('home_win', 0)):.0%}",
+                f"Draw  {float(elo_probs.get('draw', 0)):.0%}",
+                f"Away  {float(elo_probs.get('away_win', 0)):.0%}",
+            ])
+        block.extend([
             "",
             f"Expected goals: {_format_goals(expected_goals.get('home'))} - "
             f"{_format_goals(expected_goals.get('away'))}",
             "Status: experimental estimate only",
             "",
         ])
+        blocks.append(block)
 
     footer = [
         DIVIDER,
