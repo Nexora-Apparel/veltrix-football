@@ -285,8 +285,15 @@ def test_telegram_report_summarizes_unsupported_competition_fixtures():
         "reason": "This competition is not mapped to the historical dataset.",
         "home_team": "Unknown A",
         "away_team": "Unknown B",
+        "league": "Lower League A",
     })
+    report["unsupported_competition_breakdown"] = {
+        "Lower League A": 1,
+        "Lower League B": 3,
+        "Lower League C": 2,
+    }
     message = format_report(report)
     assert "WITHHELD: insufficient team history 0 | unsupported competition 1" in message
     assert "1 fixture(s) withheld: competition is outside current historical coverage." in message
+    assert "Unsupported leagues (top): Lower League B (3) | Lower League C (2) | Lower League A (1)" in message
     assert "Unknown A vs Unknown B" not in message
