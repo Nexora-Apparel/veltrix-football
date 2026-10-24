@@ -152,3 +152,26 @@ def test_latest_ledger_lookup_skips_current_run(monkeypatch):
     )
     ledger = tracking_runner.find_latest_ledger(object(), "owner/repo", runs, "99")
     assert ledger["evaluations"][0]["report_date"] == "2026-10-22"
+
+
+
+def test_ledger_keeps_metrics_separate_when_model_versions_change():
+    first_prediction = _prediction(11)
+    first_prediction["model"] = "experimental_v1"
+    first = evaluate_report(
+        {"as_of_date": "2026-10-20", "predictions": [first_prediction]},
+        {"response": [_result(11, 2, 0)]},
+    )
+    ledger = merge_paper_ledger({}, first)
+
+    second_prediction = _prediction(12, probabilities={"H": 0.15, "D": 0.25, "A": 0.6})
+    second_prediction["model"] = "experimental_v2"
+    second = evaluate_report(
+        {"as_of_date": "2026-10-21", "predictions": [second_prediction]},
+        {"response": [_result(12, 0, 1)]},
+    )
+    ledger = merge_paper_ledger(ledger, second)
+    assert ledger["cumulative_metrics"] is None
+    assert ledger["cumulative_metrics_by_model"]["experimental_v1"]["matches"] == 1
+    assert ledger["cumulative_metrics_by_model"]["experimental_v2"]["matches"] == 1
+    assert ledger["model_versions"] == ["experimental_v1", "experimental_v2"]
