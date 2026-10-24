@@ -464,6 +464,24 @@ def build_daily_report(
         "predictions_created": sum(p["status"] == "EXPERIMENTAL_ONLY" for p in predictions),
         "insufficient_history": sum(p["status"] == "INSUFFICIENT_HISTORY" for p in predictions),
         "possible_team_name_mismatches": sum(bool(p.get("team_name_match_suggestions")) for p in predictions),
+        "primary_model_counts": {
+            model_name: sum(
+                p.get("status") == "EXPERIMENTAL_ONLY" and p.get("model") == model_name
+                for p in predictions
+            )
+            for model_name in sorted({
+                str(p.get("model")) for p in predictions
+                if p.get("status") == "EXPERIMENTAL_ONLY" and p.get("model")
+            })
+        },
+        "poisson_alternative_available": sum(
+            p.get("status") == "EXPERIMENTAL_ONLY" and isinstance(p.get("poisson_probabilities"), dict)
+            for p in predictions
+        ),
+        "elo_alternative_available": sum(
+            p.get("status") == "EXPERIMENTAL_ONLY" and isinstance(p.get("elo_probabilities"), dict)
+            for p in predictions
+        ),
         "normal_bets": {"target_combined_decimal_odds": 10.0, "status": "NOT_GENERATED_MODEL_NOT_VALIDATED"},
         "value_bets": {"target_combined_decimal_odds": [50.0, 100.0], "status": "NOT_GENERATED_MODEL_NOT_VALIDATED"},
         "predictions": predictions,
