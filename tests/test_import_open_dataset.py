@@ -48,3 +48,11 @@ def test_rejects_same_team_and_requires_schema():
         assert "missing required columns" in str(exc)
     else:
         raise AssertionError("Expected schema validation error")
+
+
+
+def test_rejects_negative_or_fractional_full_time_scores():
+    assert normalize_row(base_row(FTHome="-1")) is None
+    assert normalize_row(base_row(FTAway="-1")) is None
+    assert normalize_row(base_row(FTHome="2.5")) is None
+    assert normalize_row(base_row(FTAway="1.25")) is None
