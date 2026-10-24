@@ -288,7 +288,7 @@ def test_daily_report_warns_backtest_does_not_validate_live_pipeline(tmp_path):
         as_of=date(2026, 10, 23),
         now=datetime(2026, 10, 23, 12, 0, tzinfo=ZoneInfo("Africa/Lagos")),
     )
-    assert "underperforms the market benchmark" in report["notice"]
+    assert "underperforms the historical market benchmark" in report["notice"]
     assert "unvalidated for betting" in report["notice"]
 
 
