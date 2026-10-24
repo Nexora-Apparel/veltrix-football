@@ -117,3 +117,38 @@ def test_run_discovery_queries_schedule_and_dispatch_separately(monkeypatch):
     runs = tracking_runner.list_relevant_runs(object(), "owner/repo")
     assert len(calls) == 2
     assert [run["id"] for run in runs] == [2, 1]
+
+
+
+def test_report_lookup_matches_saved_report_date_and_skips_current_run(monkeypatch):
+    runs = [
+        {"id": 99, "created_at": "2026-10-23T07:00:00Z"},
+        {"id": 12, "created_at": "2026-10-23T07:00:00Z"},
+    ]
+    monkeypatch.setattr(
+        tracking_runner, "artifact_for_run",
+        lambda session, repo, run_id, name: {"archive_download_url": "report-zip"} if run_id == 12 and name == "veltrix-daily-predictions" else None,
+    )
+    monkeypatch.setattr(
+        tracking_runner, "read_artifact_json",
+        lambda session, url: {"as_of_date": "2026-10-23", "predictions": []},
+    )
+    report = tracking_runner.find_daily_report(object(), "owner/repo", runs, "2026-10-23", "99")
+    assert report["as_of_date"] == "2026-10-23"
+
+
+def test_latest_ledger_lookup_skips_current_run(monkeypatch):
+    runs = [
+        {"id": 99, "created_at": "2026-10-24T07:00:00Z"},
+        {"id": 12, "created_at": "2026-10-23T07:00:00Z"},
+    ]
+    monkeypatch.setattr(
+        tracking_runner, "artifact_for_run",
+        lambda session, repo, run_id, name: {"archive_download_url": "ledger-zip"} if run_id == 12 and name == "veltrix-paper-ledger" else None,
+    )
+    monkeypatch.setattr(
+        tracking_runner, "read_artifact_json",
+        lambda session, url: {"evaluations": [{"report_date": "2026-10-22"}], "scored_matches": []},
+    )
+    ledger = tracking_runner.find_latest_ledger(object(), "owner/repo", runs, "99")
+    assert ledger["evaluations"][0]["report_date"] == "2026-10-22"
