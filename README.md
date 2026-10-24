@@ -65,7 +65,7 @@ python -m pytest -q
 python -m scripts.run_backtest --input data/open_historical_matches.csv --output reports/backtest_summary.json
 ```
 
-The backtest compares two league-aware research baselines (venue-specific Poisson and Elo), the live recent-goals Poisson pipeline, and the competition-scoped Elo model. Daily reports promote competition Elo to the primary forecast only when the fixture maps to a supported historical division and has enough team history; otherwise Poisson remains primary. It uses walk-forward predictions made before same-day results are ingested, and reports multiclass Brier score, log loss, result accuracy, calibration diagnostics, a recent-date holdout and market comparisons on identical fixtures with usable odds. GitHub Actions uploads a report artifact.
+The backtest compares two league-aware research baselines (venue-specific Poisson and Elo), the live recent-goals Poisson pipeline, and the competition-scoped Elo model. Daily reports promote competition Elo to the primary forecast only when the fixture maps to a supported historical division and has enough team history; otherwise Poisson remains primary. It uses walk-forward predictions made before same-day results are ingested, and reports multiclass Brier score, log loss, result accuracy, calibration diagnostics, a recent-date holdout, per-competition live-model metrics, and market comparisons on identical fixtures with usable odds. GitHub Actions uploads a report artifact.
 
 **Latest live-model evaluation (historical snapshot through 2026-09-03):**
 - **Recent-goals Poisson:** 67,544 forecasts; 45.02% accuracy, Brier 0.6441, log loss 1.0680. On 67,486 fixtures with odds, the model scored 44.99% / 0.6443 / 1.0684 versus the de-vigged market at 50.21% / 0.6003 / 1.0037.
