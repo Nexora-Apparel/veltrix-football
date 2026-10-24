@@ -104,12 +104,16 @@ def _canonical_probabilities(probabilities: Any) -> dict[str, float] | None:
             }
     except (KeyError, TypeError, ValueError):
         return None
+    total = sum(values.values())
     if (
         any(not math.isfinite(value) or not 0 <= value <= 1 for value in values.values())
-        or abs(sum(values.values()) - 1.0) > 0.02
+        or total <= 0
+        or abs(total - 1.0) > 0.02
     ):
         return None
-    return values
+    # Rounded production probabilities may sum to 0.9999 or 1.0001. Normalize
+    # small rounding drift so Brier score and log loss use a proper distribution.
+    return {key: value / total for key, value in values.items()}
 
 
 def evaluate_report(report: dict[str, Any], results_payload: dict[str, Any]) -> dict[str, Any]:
