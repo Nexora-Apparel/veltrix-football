@@ -297,6 +297,14 @@ def predict_fixtures(
                 "historical_matches": {"home": len(home_hist), "away": len(away_hist)},
             }
             if len(home_hist) < min_team_matches or len(away_hist) < min_team_matches:
+                if not fixture.get("division_code"):
+                    record.update({
+                        "status": "UNSUPPORTED_COMPETITION",
+                        "reason": "This competition is not mapped to the historical dataset and the teams do not have enough exact-match history for a safe global estimate.",
+                        "team_name_match_suggestions": {},
+                    })
+                    output.append(record)
+                    continue
                 suggestions: dict[str, list[str]] = {}
                 for side, team_name, team_key, history in (
                     ("home", fixture["home_team"], home_key, home_hist),
@@ -487,6 +495,7 @@ def build_daily_report(
         "fixtures_excluded_other_date_or_status": len(fixtures) - len(parsed_for_date),
         "predictions_created": sum(p["status"] == "EXPERIMENTAL_ONLY" for p in predictions),
         "insufficient_history": sum(p["status"] == "INSUFFICIENT_HISTORY" for p in predictions),
+        "unsupported_competitions": sum(p["status"] == "UNSUPPORTED_COMPETITION" for p in predictions),
         "possible_team_name_mismatches": sum(bool(p.get("team_name_match_suggestions")) for p in predictions),
         "primary_model_counts": {
             model_name: sum(
