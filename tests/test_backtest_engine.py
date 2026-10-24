@@ -40,7 +40,9 @@ def test_backtest_predicts_only_after_training_and_is_deterministic():
     competition = live["metrics_by_competition"]["L1"]
     assert competition["live_eligible_matches"] == live["matches"]
     assert competition["poisson"]["matches"] == live["matches"]
+    assert abs(competition["poisson"]["brier_score"] - live["metrics"]["brier_score"]) < 1e-12
     assert competition["elo"]["matches"] == live["elo_alternative"]["matches"]
+    assert abs(competition["elo"]["brier_score"] - live["elo_alternative"]["metrics"]["brier_score"]) < 1e-12
     assert result["models"]["poisson"]["matches"] == result["test_matches"]
     assert result["models"]["elo"]["brier_score"] >= 0
     holdout = result["recent_holdout"]
