@@ -94,9 +94,10 @@ def find_daily_report(
 def find_latest_ledger(
     session: requests.Session, repo: str, runs: list[dict[str, Any]], current_run_id: str
 ) -> dict[str, Any]:
-    # Only schedule/dispatch runs produce this artifact. Bound API work if older
-    # workflows predate paper tracking and have no ledger artifact.
-    for run in runs[:45]:
+    # Ledger artifacts are retained for 90 days; search at least 100 relevant
+    # runs so daily scheduled executions cannot reset the ledger before expiry.
+    # Stop at the first ledger found, keeping API calls bounded.
+    for run in runs[:100]:
         if str(run.get("id")) == current_run_id:
             continue
         artifact = artifact_for_run(session, repo, int(run["id"]), "veltrix-paper-ledger")
