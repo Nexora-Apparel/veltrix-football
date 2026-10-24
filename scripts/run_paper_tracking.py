@@ -139,11 +139,19 @@ def run(report_date: date, output_path: str) -> dict[str, Any]:
             })
             runs = list_relevant_runs(session, repo)
             ledger = find_latest_ledger(session, repo, runs, current_run_id)
-            existing_dates = {
-                str(item.get("report_date")) for item in ledger.get("evaluations", [])
-            }
-            if report_date.isoformat() in existing_dates:
-                attempt.update({"status": "ALREADY_EVALUATED", "detail": "This report date is already in the ledger."})
+            existing_evaluation = next(
+                (
+                    item for item in ledger.get("evaluations", [])
+                    if str(item.get("report_date")) == report_date.isoformat()
+                ),
+                None,
+            )
+            has_pending_fixtures = bool(
+                existing_evaluation
+                and int(existing_evaluation.get("awaiting_result_or_match", 0)) > 0
+            )
+            if existing_evaluation and not has_pending_fixtures:
+                attempt.update({"status": "ALREADY_EVALUATED", "detail": "This report date is already complete in the ledger."})
             else:
                 report = find_daily_report(
                     session, repo, runs, report_date.isoformat(), current_run_id
