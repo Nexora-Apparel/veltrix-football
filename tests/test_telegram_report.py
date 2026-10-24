@@ -116,3 +116,19 @@ def test_telegram_report_discloses_non_automatic_name_match_suggestions():
     message = format_report(report)
     assert "possible team-name variants to review" in message
     assert "suggestions only and are never auto-matched" in message
+
+
+
+def test_telegram_report_shows_fixture_filter_counts_when_available():
+    report = sample_report()
+    report.update({
+        "fixtures_received": 100,
+        "future_fixtures_considered": 12,
+        "past_kickoffs_excluded": 3,
+        "fixtures_excluded_other_date_or_status": 85,
+    })
+    message = format_report(report)
+    assert "API fixtures received: 100" in message
+    assert "Today/future fixtures considered: 12" in message
+    assert "Past kickoffs excluded: 3" in message
+    assert "Other dates/status excluded: 85" in message
