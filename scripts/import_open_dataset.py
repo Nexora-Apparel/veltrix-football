@@ -48,7 +48,8 @@ def normalize_row(row: dict[str, Any]) -> dict[str, Any] | None:
     except ValueError:
         return None
     home_goals, away_goals = _number(row.get("FTHome")), _number(row.get("FTAway"))
-    if home_goals is None or away_goals is None or not home_goals.is_integer() or not away_goals.is_integer():
+    if (home_goals is None or away_goals is None or not home_goals.is_integer()
+            or not away_goals.is_integer() or home_goals < 0 or away_goals < 0):
         return None
     home_team, away_team = str(row.get("HomeTeam") or "").strip(), str(row.get("AwayTeam") or "").strip()
     division = str(row.get("Division") or "").strip()
