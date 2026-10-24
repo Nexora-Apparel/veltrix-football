@@ -44,7 +44,7 @@ def _format_kickoff(value: Any, timezone_name: str) -> str:
     return f"{parsed:%H:%M} {abbreviation}" if abbreviation else f"{parsed:%H:%M}"
 
 
-def format_report(report: dict[str, Any]) -> str:
+def format_report(report: dict[str, Any], ledger: dict[str, Any] | None = None) -> str:
     day = str(report.get("as_of_date", "unknown date"))
     timezone_name = str(report.get("timezone", "Africa/Lagos"))
     predictions = report.get("predictions", [])
@@ -73,6 +73,28 @@ def format_report(report: dict[str, Any]) -> str:
             f"Other dates/status excluded: {report.get('fixtures_excluded_other_date_or_status', 0)}",
             "",
         ])
+    if ledger is not None:
+        paper_lines = [DIVIDER, "PAPER TRACKING — CUMULATIVE"]
+        attempt = ledger.get("last_attempt") or {}
+        paper_lines.append(f"Latest evaluation status: {attempt.get('status', 'UNKNOWN')}")
+        model_metrics = ledger.get("cumulative_metrics_by_model") or {}
+        if model_metrics:
+            for model_name, metrics in sorted(model_metrics.items()):
+                accuracy = metrics.get("result_accuracy")
+                brier = metrics.get("brier_score")
+                log_loss = metrics.get("log_loss")
+                paper_lines.append(
+                    f"{model_name}: {metrics.get('matches', 0)} scored | "
+                    f"accuracy {accuracy:.1%}" if isinstance(accuracy, (int, float))
+                    else f"{model_name}: {metrics.get('matches', 0)} scored | accuracy unavailable"
+                )
+                if isinstance(brier, (int, float)) and isinstance(log_loss, (int, float)):
+                    paper_lines.append(f"  Brier {brier:.3f} | log loss {log_loss:.3f}")
+        else:
+            paper_lines.append("No completed forecasts scored yet.")
+        paper_lines.append("Paper metrics are retrospective, not proof of profitability.")
+        header.extend(paper_lines + [""])
+
     if not usable:
         header.extend([
             "NO USABLE EXPERIMENTAL FORECASTS TODAY.",
@@ -189,6 +211,7 @@ def send_message(token: str, chat_id: str, message: str, *, timeout: int = 15) -
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--report", default="reports/daily_predictions.json")
+    parser.add_argument("--ledger", default="reports/paper_tracking_ledger.json")
     args = parser.parse_args()
     token = os.environ.get("TELEGRAM_BOT_TOKEN", "")
     chat_id = os.environ.get("TELEGRAM_CHAT_ID", "")
@@ -196,7 +219,16 @@ def main() -> None:
         report = json.loads(Path(args.report).read_text(encoding="utf-8"))
         if not isinstance(report, dict) or not report.get("same_day_only"):
             raise ValueError("Report is invalid or does not enforce same-day fixture filtering.")
-        message = format_report(report)
+        ledger = None
+        ledger_path = Path(args.ledger)
+        if ledger_path.exists():
+            try:
+                loaded_ledger = json.loads(ledger_path.read_text(encoding="utf-8"))
+                if isinstance(loaded_ledger, dict):
+                    ledger = loaded_ledger
+            except (OSError, json.JSONDecodeError):
+                ledger = None
+        message = format_report(report, ledger)
         send_message(token, chat_id, message)
         print(f"Telegram report delivered for {report.get('as_of_date', 'unknown date')}.")
     except (OSError, json.JSONDecodeError, ValueError, RuntimeError, requests.RequestException) as exc:
