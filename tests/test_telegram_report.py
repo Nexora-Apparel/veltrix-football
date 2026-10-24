@@ -96,3 +96,9 @@ def test_telegram_network_errors_do_not_echo_token(monkeypatch):
         send_message(token, "12345", "hello")
     assert token not in str(error.value)
     assert "ConnectionError" in str(error.value)
+
+
+def test_telegram_report_converts_utc_kickoff_to_lagos_time():
+    report = sample_report()
+    report["predictions"][0]["kickoff_local"] = "2026-10-23T16:00:00Z"
+    assert "Kickoff: 17:00 WAT" in format_report(report)
