@@ -130,37 +130,50 @@ def _elo_probabilities(
     division_code: str | None,
     *,
     min_team_matches: int = MIN_TEAM_MATCHES,
+    cache: dict[str, dict[str, Any]] | None = None,
 ) -> tuple[dict[str, float] | None, dict[str, Any]]:
-    """Calculate an Elo estimate from prior matches only."""
-    if division_code:
-        scoped = [row for row in historical_matches if row.get("division") == division_code]
-        scope = "COMPETITION"
-    else:
-        scoped = historical_matches
-        scope = "GLOBAL_FALLBACK"
-
-    home_key, away_key = _name_key(home_name), _name_key(away_name)
-    ratings: dict[str, float] = defaultdict(lambda: 1500.0)
-    match_counts: dict[str, int] = defaultdict(int)
-    total_matches = 0
-    draws = 0
-    for match in sorted(scoped, key=lambda row: row["date"]):
-        h_key, a_key = match["home_key"], match["away_key"]
-        hg, ag = match["home_goals"], match["away_goals"]
-        home_rating, away_rating = ratings[h_key], ratings[a_key]
-        expected_home = 1.0 / (
-            1.0 + 10.0 ** (-(home_rating + HOME_ELO_ADVANTAGE - away_rating) / 400.0)
+    """Calculate an Elo estimate from prior matches only, caching each history scope."""
+    scope = "COMPETITION" if division_code else "GLOBAL_FALLBACK"
+    cache_key = division_code or "__GLOBAL__"
+    state = cache.get(cache_key) if cache is not None else None
+    if state is None:
+        scoped = (
+            [row for row in historical_matches if row.get("division") == division_code]
+            if division_code else historical_matches
         )
-        actual_score = 1.0 if hg > ag else 0.5 if hg == ag else 0.0
-        goal_weight = min(2.0, 1.0 + abs(hg - ag) * 0.1)
-        delta = ELO_K * goal_weight * (actual_score - expected_home)
-        ratings[h_key] = home_rating + delta
-        ratings[a_key] = away_rating - delta
-        match_counts[h_key] += 1
-        match_counts[a_key] += 1
-        total_matches += 1
-        draws += int(hg == ag)
+        ratings: dict[str, float] = defaultdict(lambda: 1500.0)
+        match_counts: dict[str, int] = defaultdict(int)
+        total_matches = 0
+        draws = 0
+        for match in sorted(scoped, key=lambda row: row["date"]):
+            h_key, a_key = match["home_key"], match["away_key"]
+            hg, ag = match["home_goals"], match["away_goals"]
+            home_rating, away_rating = ratings[h_key], ratings[a_key]
+            expected_home = 1.0 / (
+                1.0 + 10.0 ** (-(home_rating + HOME_ELO_ADVANTAGE - away_rating) / 400.0)
+            )
+            actual_score = 1.0 if hg > ag else 0.5 if hg == ag else 0.0
+            goal_weight = min(2.0, 1.0 + abs(hg - ag) * 0.1)
+            delta = ELO_K * goal_weight * (actual_score - expected_home)
+            ratings[h_key] = home_rating + delta
+            ratings[a_key] = away_rating - delta
+            match_counts[h_key] += 1
+            match_counts[a_key] += 1
+            total_matches += 1
+            draws += int(hg == ag)
+        state = {
+            "ratings": ratings,
+            "match_counts": match_counts,
+            "total_matches": total_matches,
+            "draws": draws,
+        }
+        if cache is not None:
+            cache[cache_key] = state
 
+    ratings = state["ratings"]
+    match_counts = state["match_counts"]
+    total_matches = state["total_matches"]
+    home_key, away_key = _name_key(home_name), _name_key(away_name)
     metadata = {
         "scope": scope,
         "division_code": division_code,
@@ -174,7 +187,7 @@ def _elo_probabilities(
     ):
         return None, metadata
 
-    draw_rate = (draws + 3.0) / (total_matches + 10.0)
+    draw_rate = (state["draws"] + 3.0) / (total_matches + 10.0)
     expected_home = 1.0 / (
         1.0 + 10.0 ** (-(ratings[home_key] + HOME_ELO_ADVANTAGE - ratings[away_key]) / 400.0)
     )
@@ -341,6 +354,7 @@ def predict_fixtures(
                 fixture["away_team"],
                 fixture.get("division_code"),
                 min_team_matches=min_team_matches,
+                cache=elo_cache,
             )
             record.update({
                 "status": "EXPERIMENTAL_ONLY",
