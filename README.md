@@ -46,7 +46,7 @@ Veltrix can import completed match records from the public [Club-Football-Match-
 python -m scripts.import_open_dataset --from 2020-01-01 --to 2026-10-23 --output data/open_historical_matches.csv
 ```
 
-The importer discovers the source CSV path from the repository tree, validates required fields, normalizes scores, team names, date, available Elo/form/odds/statistics, skips malformed rows, and deduplicates by competition/date/home/away. Optional odds and statistics remain empty when missing. The GitHub Actions workflow can run manually or weekly and uploads the generated CSV as an artifact for 30 days; this artifact is not a permanent database.
+The importer discovers the source CSV path from the repository tree, validates required fields, normalizes scores, team names, date, available Elo/form/odds/statistics, skips malformed rows, and deduplicates by competition/date/home/away. Its summary reports match counts by competition code and calendar year so coverage gaps can be diagnosed. Optional odds and statistics remain empty when missing. A successful import on 2026-10-24 produced 70,444 completed matches across 38 competition codes from 2020-01-01 through 2026-10-24 (one malformed row skipped). The GitHub Actions workflow can run manually or weekly and uploads the generated CSV as an artifact for 30 days; this artifact is not a permanent database.
 
 ## Value screening safeguards
 `app/value_bets.py` provides a conservative candidate filter, not a proven prediction model. It:
