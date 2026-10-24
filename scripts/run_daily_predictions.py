@@ -35,6 +35,7 @@ def main() -> None:
             as_of=target_date,
             timezone_name=args.timezone,
             additional_historical_matches=recent_rows,
+            base_historical_matches=base_history,
         )
         report["recent_results_sync"] = recent_sync
         output = Path(args.output)
