@@ -317,9 +317,11 @@ def test_competition_elo_uses_only_matching_division_history():
         now=datetime(2026, 10, 23, 12, 0, tzinfo=ZoneInfo("Africa/Lagos")),
     )
     prediction = result[0]
-    assert prediction["elo_model"] == "experimental_elo_by_competition"
+    assert prediction["model"] == "experimental_elo_by_competition"
+    assert prediction["elo_history"]["scope"] == "COMPETITION"
     assert prediction["elo_history"]["division_code"] == "E0"
     assert prediction["elo_history"]["home_prior_matches"] == 6
     assert prediction["elo_history"]["away_prior_matches"] == 6
-    assert set(prediction["elo_probabilities"]) == {"home_win", "draw", "away_win"}
-    assert abs(sum(prediction["elo_probabilities"].values()) - 1) < 0.0002
+    assert set(prediction["probabilities"]) == {"home_win", "draw", "away_win"}
+    assert abs(sum(prediction["probabilities"].values()) - 1) < 0.0002
+    assert set(prediction["poisson_probabilities"]) == {"home_win", "draw", "away_win"}
