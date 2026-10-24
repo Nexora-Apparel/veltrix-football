@@ -56,3 +56,41 @@ def test_rejects_negative_or_fractional_full_time_scores():
     assert normalize_row(base_row(FTAway="-1")) is None
     assert normalize_row(base_row(FTHome="2.5")) is None
     assert normalize_row(base_row(FTAway="1.25")) is None
+
+
+
+def test_import_summary_reports_competition_and_season_coverage(tmp_path, monkeypatch):
+    import csv
+    import io
+    from scripts import import_open_dataset as importer
+
+    fields = ["Division", "MatchDate", "HomeTeam", "AwayTeam", "FTHome", "FTAway"]
+    buffer = io.StringIO()
+    writer = csv.DictWriter(buffer, fieldnames=fields)
+    writer.writeheader()
+    writer.writerows([
+        {"Division": "E0", "MatchDate": "2025-08-01", "HomeTeam": "A", "AwayTeam": "B", "FTHome": "1", "FTAway": "0"},
+        {"Division": "E0", "MatchDate": "2025-08-08", "HomeTeam": "C", "AwayTeam": "D", "FTHome": "2", "FTAway": "2"},
+        {"Division": "SP1", "MatchDate": "2026-01-02", "HomeTeam": "E", "AwayTeam": "F", "FTHome": "0", "FTAway": "1"},
+    ])
+
+    class FakeResponse:
+        content = buffer.getvalue().encode("utf-8")
+        def raise_for_status(self):
+            return None
+        def close(self):
+            return None
+
+    class FakeSession:
+        def __init__(self):
+            self.headers = {}
+        def get(self, *args, **kwargs):
+            return FakeResponse()
+        def close(self):
+            return None
+
+    monkeypatch.setattr(importer.requests, "Session", FakeSession)
+    monkeypatch.setattr(importer, "find_matches_csv", lambda session: "https://example.test/matches.csv")
+    report = importer.import_dataset("2025-01-01", "2026-12-31", str(tmp_path / "history.csv"))
+    assert report["matches_by_competition"] == {"E0": 2, "SP1": 1}
+    assert report["matches_by_season"] == {"2025": 2, "2026": 1}
