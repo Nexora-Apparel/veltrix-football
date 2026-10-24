@@ -444,6 +444,7 @@ def chronological_backtest(matches: Iterable[dict[str, Any]], *, min_training_ma
             "historical_odds_subset": live_odds_subset,
             "elo_alternative": {"model": "experimental_elo_by_competition", "matches": len(live_elo_rows),
                 "metrics": live_elo_metrics, "historical_odds_subset": live_elo_odds_subset,
+                "recent_holdout": live_holdout.get("elo_alternative") if live_holdout else None,
                 "note": "Competition-scoped Elo forecast evaluated only where the production live pipeline would emit a fixture record; scores are independent from Poisson."},
             "note": "Separate walk-forward evaluation of live prediction logic, using only matches dated 2020-01-01 onward. Same-day results are added only after all forecasts for that date."},
         "recent_holdout": {"method": "latest 20% of unique forecast dates", "start_date": holdout_start,
