@@ -116,7 +116,7 @@ def predict_fixtures(
     timezone_name: str = "Africa/Lagos",
     now: datetime | None = None,
 ) -> list[dict[str, Any]]:
-    """Estimate experimental 1X2 probabilities from prior team goal averages.
+    """Estimate experimental 1X2 probabilities from prior venue-aware team goal averages.
 
     Historical matches on or after the fixture's kickoff date are excluded.
     Team rates are shrunk toward historical home/away scoring baselines.
@@ -206,20 +206,33 @@ def predict_fixtures(
                 output.append(record)
                 continue
 
-            def shrunk_rates(history: list[tuple[int, int, str]]) -> tuple[float, float]:
-                # Four pseudo-matches pull small samples toward a broad baseline.
-                weight = len(history) / (len(history) + 4.0)
-                scored = sum(x[0] for x in history) / len(history)
-                conceded = sum(x[1] for x in history) / len(history)
+            def shrunk_venue_rates(
+                history: list[tuple[int, int, str]],
+                venue: str,
+                scored_prior: float,
+                conceded_prior: float,
+            ) -> tuple[float, float]:
+                # Prefer the team's relevant venue split; fall back to all recent
+                # matches only when no venue-specific sample exists.
+                relevant = [row for row in history if row[2] == venue] or history
+                weight = len(relevant) / (len(relevant) + 4.0)
+                scored = sum(row[0] for row in relevant) / len(relevant)
+                conceded = sum(row[1] for row in relevant) / len(relevant)
                 return (
-                    weight * scored + (1 - weight) * overall_baseline,
-                    weight * conceded + (1 - weight) * overall_baseline,
+                    weight * scored + (1 - weight) * scored_prior,
+                    weight * conceded + (1 - weight) * conceded_prior,
                 )
 
-            home_scored, home_conceded = shrunk_rates(home_hist)
-            away_scored, away_conceded = shrunk_rates(away_hist)
-            home_xg = home_baseline * (home_scored / overall_baseline) * (away_conceded / overall_baseline)
-            away_xg = away_baseline * (away_scored / overall_baseline) * (home_conceded / overall_baseline)
+            # Home-team home performance and away-team away performance are
+            # estimated separately, with venue-appropriate league priors.
+            home_scored, home_conceded = shrunk_venue_rates(
+                home_hist, "home", home_baseline, away_baseline
+            )
+            away_scored, away_conceded = shrunk_venue_rates(
+                away_hist, "away", away_baseline, home_baseline
+            )
+            home_xg = home_baseline * (home_scored / home_baseline) * (away_conceded / home_baseline)
+            away_xg = away_baseline * (away_scored / away_baseline) * (home_conceded / away_baseline)
             home_xg = min(5.0, max(0.05, home_xg))
             away_xg = min(5.0, max(0.05, away_xg))
             probabilities = match_probabilities(home_xg, away_xg)
