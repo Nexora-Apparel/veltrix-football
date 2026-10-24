@@ -17,22 +17,29 @@ def sample_report():
             "away_team": "Beta FC",
             "league": "Example League",
             "kickoff_local": "2026-10-23T17:00:00+01:00",
-            # These are the exact keys emitted by app.live_predictions.
             "probabilities": {"home_win": 0.5, "draw": 0.25, "away_win": 0.25},
             "expected_goals": {"home": 1.4, "away": 0.8},
         }],
     }
 
 
-def test_telegram_report_is_explicitly_experimental_and_same_day():
+def test_telegram_report_is_organized_and_explicitly_experimental():
     message = format_report(sample_report())
-    assert "EXPERIMENTAL — NOT VALIDATED FOR BETTING" in message
+    assert "⚽ VELTRIX FOOTBALL" in message
+    assert "DAILY MATCH ANALYTICS" in message
+    assert "2026-10-23" in message
+    assert "EXPERIMENTAL MODEL — NOT VALIDATED FOR BETTING" in message
+    assert "MATCH FORECASTS: 1" in message
     assert "Alpha FC vs Beta FC" in message
-    assert "Home 50% | Draw 25% | Away 25%" in message
-    assert "Home 0%" not in message
-    assert "Normal 10.00-odds slips: DISABLED." in message
+    assert "Example League" in message
+    assert "Home  50%" in message
+    assert "Draw  25%" in message
+    assert "Away  25%" in message
+    assert "Expected goals: 1.40 - 0.80" in message
+    assert "Standard 10.00-odds slips: DISABLED." in message
     assert "Value slips (50.00–100.00 odds): DISABLED." in message
-    assert "betting tips" in message
+    assert "historical market benchmark" in message
+    assert "not betting tips" in message
 
 
 def test_telegram_report_handles_no_usable_predictions():
@@ -41,6 +48,17 @@ def test_telegram_report_handles_no_usable_predictions():
     message = format_report(report)
     assert "NO USABLE EXPERIMENTAL FORECASTS TODAY." in message
     assert "No picks are being forced." in message
+    assert "MATCH FORECASTS: 0" in message
+
+
+def test_telegram_report_counts_fixtures_with_insufficient_history():
+    report = sample_report()
+    report["predictions"].append({
+        "status": "INSUFFICIENT_HISTORY",
+        "home_team": "Unknown FC",
+        "away_team": "Mystery FC",
+    })
+    assert "1 fixture(s) withheld: insufficient historical team data." in format_report(report)
 
 
 def test_telegram_report_truncates_only_between_fixture_blocks():
@@ -56,8 +74,8 @@ def test_telegram_report_truncates_only_between_fixture_blocks():
     message = format_report(report)
     assert len(message) <= MAX_MESSAGE_LENGTH
     assert "additional fixture(s) omitted" in message
-    assert message.count("League: Example League") == message.count(
-        "Status: experimental only; do not treat as a recommendation."
+    assert message.count("Expected goals:") == message.count(
+        "Status: experimental estimate only"
     )
 
 
