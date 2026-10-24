@@ -11,25 +11,39 @@ from typing import Any
 import requests
 
 MAX_MESSAGE_LENGTH = 3900
+DIVIDER = "━━━━━━━━━━━━━━━━━━━━"
+
+
+def _format_goals(value: Any) -> str:
+    """Render numeric expected-goal estimates consistently without hiding missing data."""
+    if isinstance(value, (int, float)) and not isinstance(value, bool):
+        return f"{value:.2f}"
+    return str(value) if value is not None else "—"
 
 
 def format_report(report: dict[str, Any]) -> str:
     day = str(report.get("as_of_date", "unknown date"))
     timezone_name = str(report.get("timezone", "Africa/Lagos"))
     predictions = report.get("predictions", [])
-    header = [
-        "⚽ VELTRIX FOOTBALL — DAILY REPORT",
-        f"Date: {day} ({timezone_name})",
-        "MODEL STATUS: EXPERIMENTAL — NOT VALIDATED FOR BETTING",
-        "These are probability estimates for research, not betting tips.",
-        "",
-    ]
     usable = [p for p in predictions if p.get("status") == "EXPERIMENTAL_ONLY"]
     insufficient = [p for p in predictions if p.get("status") == "INSUFFICIENT_HISTORY"]
+
+    header = [
+        "⚽ VELTRIX FOOTBALL",
+        "DAILY MATCH ANALYTICS",
+        f"📅 {day}  |  Timezone: {timezone_name}",
+        DIVIDER,
+        "⚠️ EXPERIMENTAL MODEL — NOT VALIDATED FOR BETTING",
+        "Probabilities are research estimates, not betting tips.",
+        "",
+        f"MATCH FORECASTS: {len(usable)}",
+        "",
+    ]
     if not usable:
         header.extend([
             "NO USABLE EXPERIMENTAL FORECASTS TODAY.",
             "No betting slips generated. No picks are being forced.",
+            "",
         ])
 
     # Keep each fixture as a block so a long report never ends mid-fixture.
@@ -42,30 +56,38 @@ def format_report(report: dict[str, Any]) -> str:
         draw_probability = probs.get("draw", 0)
         away_probability = probs.get("away_win", probs.get("away", 0))
         kickoff = str(item.get("kickoff_local", "Kickoff time unavailable"))
+        expected_goals = item.get("expected_goals", {})
         blocks.append([
-            f"{item.get('home_team', 'Home')} vs {item.get('away_team', 'Away')}",
-            f"League: {item.get('league') or 'Unknown competition'}",
-            f"Kickoff: {kickoff}",
-            "1X2 estimate: "
-            f"Home {float(home_probability):.0%} | "
-            f"Draw {float(draw_probability):.0%} | "
-            f"Away {float(away_probability):.0%}",
-            f"Estimated goals: {item.get('expected_goals', {}).get('home', '—')} - "
-            f"{item.get('expected_goals', {}).get('away', '—')}",
-            "Status: experimental only; do not treat as a recommendation.",
+            DIVIDER,
+            f"⚽ {item.get('home_team', 'Home')} vs {item.get('away_team', 'Away')}",
+            f"🏆 {item.get('league') or 'Unknown competition'}",
+            f"🕒 Kickoff: {kickoff}",
+            "",
+            "1X2 PROBABILITY ESTIMATE",
+            f"Home  {float(home_probability):.0%}",
+            f"Draw  {float(draw_probability):.0%}",
+            f"Away  {float(away_probability):.0%}",
+            "",
+            f"Expected goals: {_format_goals(expected_goals.get('home'))} - "
+            f"{_format_goals(expected_goals.get('away'))}",
+            "Status: experimental estimate only",
             "",
         ])
 
-    footer = []
+    footer = [
+        DIVIDER,
+        "MODEL & DATA NOTES",
+    ]
     if insufficient:
         footer.append(
-            f"{len(insufficient)} fixture(s) withheld because historical team data was insufficient."
+            f"• {len(insufficient)} fixture(s) withheld: insufficient historical team data."
         )
     footer.extend([
+        "• Standard 10.00-odds slips: DISABLED.",
+        "• Value slips (50.00–100.00 odds): DISABLED.",
+        "• Reason: models have not beaten the historical market benchmark.",
         "",
-        "Normal 10.00-odds slips: DISABLED.",
-        "Value slips (50.00–100.00 odds): DISABLED.",
-        "Reason: current models have not beaten the historical market benchmark.",
+        "Please do not use these experimental estimates as betting advice.",
     ])
 
     def render(selected: list[list[str]], omitted: int = 0) -> str:
@@ -94,8 +116,7 @@ def format_report(report: dict[str, Any]) -> str:
 
     omitted = len(blocks) - len(selected)
     message = render(selected, omitted)
-    # The header/footer and omission note are small; this is a defensive fallback
-    # for unusually long external team/league names.
+    # Defensive fallback for unusually long external team/league names.
     if len(message) > MAX_MESSAGE_LENGTH:
         return message[: MAX_MESSAGE_LENGTH - 1].rstrip() + "…"
     return message
