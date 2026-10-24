@@ -260,6 +260,9 @@ def predict_fixtures(
     home_baseline = max(0.05, sum(m["home_goals"] for m in usable) / len(usable))
     away_baseline = max(0.05, sum(m["away_goals"] for m in usable) / len(usable))
 
+    # Cache Elo ratings once per competition for this report date; all fixtures
+    # share the same strictly pre-date history, so recomputing it per fixture is wasteful.
+    elo_cache: dict[str, dict[str, Any]] = {}
     # Rebuild histories per target date so earlier dates are never duplicated.
     output: list[dict[str, Any]] = []
     parsed_fixtures = [
