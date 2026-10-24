@@ -149,6 +149,7 @@ def test_aliases_allow_known_fixture_name_variant_to_use_history():
 
 def test_fuzzy_name_matches_are_suggestions_only_not_automatic_predictions():
     fixture = _fixture()
+    fixture["league"]["id"] = 39
     fixture["teams"]["home"]["name"] = "Alph FC"
     result = predict_fixtures(
         [fixture], _history(), as_of=date(2026, 10, 23),
