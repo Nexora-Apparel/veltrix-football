@@ -73,6 +73,8 @@ def test_daily_runner_refreshes_history_only_when_future_fixtures_exist(tmp_path
             pass
         def fixtures(self, target_date, timezone):
             return {"response": [{"fixture": {"id": 1}}]}
+        def odds_for_date(self, target_date, timezone):
+            return {"response": []}
 
     monkeypatch.setattr(daily_runner, "FootballAPI", FakeAPI)
     calls = []
