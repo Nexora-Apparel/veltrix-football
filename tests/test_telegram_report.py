@@ -3,7 +3,7 @@ from __future__ import annotations
 import requests
 import pytest
 
-from scripts.send_telegram_report import MAX_MESSAGE_LENGTH, format_report, send_message
+from scripts.send_telegram_report import MAX_MESSAGE_LENGTH, format_report, format_report_messages, send_message
 
 
 def sample_report():
@@ -62,22 +62,22 @@ def test_telegram_report_counts_fixtures_with_insufficient_history():
     assert "1 fixture(s) withheld: insufficient historical team data." in format_report(report)
 
 
-def test_telegram_report_truncates_only_between_fixture_blocks():
+def test_telegram_report_splits_between_fixture_blocks_without_dropping_fixtures():
     report = sample_report()
-    report["predictions"] = [
-        {
-            **sample_report()["predictions"][0],
-            "home_team": f"Home Club {i:02d} " + ("A" * 30),
-            "away_team": f"Away Club {i:02d} " + ("B" * 30),
-        }
-        for i in range(80)
-    ]
-    message = format_report(report)
-    assert len(message) <= MAX_MESSAGE_LENGTH
-    assert "additional fixture(s) omitted" in message
-    assert message.count("Expected goals:") == message.count(
-        "Status: experimental estimate only"
-    )
+    report["predictions"] = []
+    for index in range(30):
+        item = dict(sample_report()["predictions"][0])
+        item["home_team"] = f"Home Team {index:02d} with a longer name"
+        item["away_team"] = f"Away Team {index:02d} with another longer name"
+        report["predictions"].append(item)
+
+    messages = format_report_messages(report)
+    assert len(messages) > 1
+    assert all(len(message) <= MAX_MESSAGE_LENGTH for message in messages)
+    combined = "\n".join(messages)
+    for index in range(30):
+        assert f"Home Team {index:02d} with a longer name vs Away Team {index:02d} with another longer name" in combined
+    assert "additional fixture(s) omitted" not in combined
 
 
 def test_telegram_send_requires_credentials():
