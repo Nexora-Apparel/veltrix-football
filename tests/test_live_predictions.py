@@ -1,7 +1,7 @@
 from datetime import date, datetime
 from zoneinfo import ZoneInfo
 
-from app.live_predictions import predict_fixtures
+from app.live_predictions import _name_key, predict_fixtures
 
 
 def _history():
@@ -96,3 +96,37 @@ def test_past_kickoffs_are_excluded_from_pre_match_report():
     )
     assert [item["fixture_id"] for item in result] == [200]
     assert result[0]["kickoff_local"].startswith("2026-10-23T15:00:00")
+
+
+
+def test_known_team_aliases_match_without_fuzzy_guessing():
+    assert _name_key("Man Utd") == _name_key("Manchester United")
+    assert _name_key("Spurs") == _name_key("Tottenham Hotspur")
+    assert _name_key("Paris SG") == _name_key("PSG")
+    assert _name_key("Unknown Athletic") == "unknownathletic"
+
+
+def test_aliases_allow_known_fixture_name_variant_to_use_history():
+    rows = _history()
+    # Simulate source data spelling out Manchester United while the fixture API
+    # abbreviates it as Man Utd. Keys are produced by the same normalizer used
+    # by the real historical CSV loader.
+    rows = []
+    for day in range(1, 7):
+        d = date(2026, 10, day)
+        rows.extend([
+            {"date": d, "home": "Manchester United", "away": f"Opponent {day}",
+             "home_key": _name_key("Manchester United"), "away_key": _name_key(f"Opponent {day}"),
+             "home_goals": 2, "away_goals": 0},
+            {"date": d, "home": f"Rival {day}", "away": "Beta FC",
+             "home_key": _name_key(f"Rival {day}"), "away_key": _name_key("Beta FC"),
+             "home_goals": 1, "away_goals": 1},
+        ])
+    fixture = _fixture()
+    fixture["teams"]["home"]["name"] = "Man Utd"
+    result = predict_fixtures(
+        [fixture], rows, as_of=date(2026, 10, 23),
+        now=datetime(2026, 10, 23, 12, 0, tzinfo=ZoneInfo("Africa/Lagos")),
+    )
+    assert result[0]["status"] == "EXPERIMENTAL_ONLY"
+    assert result[0]["historical_matches"]["home"] == 6
