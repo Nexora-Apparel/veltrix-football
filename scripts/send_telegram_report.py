@@ -236,6 +236,14 @@ def format_report_messages(report: dict[str, Any], ledger: dict[str, Any] | None
     chunks: list[str] = []
     selected: list[list[str]] = []
     for block in blocks:
+        single_block_message = render([block])
+        if len(single_block_message) > MAX_MESSAGE_LENGTH:
+            if selected:
+                chunks.append(render(selected))
+                selected = []
+            # Defensive fallback for an unusually long single fixture block.
+            chunks.append(single_block_message[: MAX_MESSAGE_LENGTH - 1].rstrip() + "…")
+            continue
         candidate = render(selected + [block])
         if len(candidate) <= MAX_MESSAGE_LENGTH:
             selected.append(block)
@@ -243,12 +251,6 @@ def format_report_messages(report: dict[str, Any], ledger: dict[str, Any] | None
         if selected:
             chunks.append(render(selected))
             selected = [block]
-        else:
-            # Defensive fallback for an unusually long single fixture block.
-            lines = list(header) + block + footer
-            message = "\n".join(lines)
-            chunks.append(message[: MAX_MESSAGE_LENGTH - 1].rstrip() + "…")
-            selected = []
     if selected or not chunks:
         message = render(selected)
         if len(message) > MAX_MESSAGE_LENGTH:
