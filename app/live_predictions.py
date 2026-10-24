@@ -417,8 +417,9 @@ def build_daily_report(
     as_of: date | None = None,
     timezone_name: str = "Africa/Lagos",
     now: datetime | None = None,
+    additional_historical_matches: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
-    """Build a daily report with explicit fixture-filter diagnostics."""
+    """Build a daily report with explicit fixture-filter and history-freshness diagnostics."""
     fixtures = fixtures_payload.get("response")
     if not isinstance(fixtures, list):
         raise ValueError("Fixture API payload is missing a response list.")
@@ -444,6 +445,22 @@ def build_daily_report(
         part["kickoff_datetime"] > current_time for part in parsed_for_date
     )
     historical = load_historical_matches(history_path)
+    if additional_historical_matches:
+        existing = {
+            (row["date"].isoformat(), row.get("division", ""), row["home_key"], row["away_key"])
+            for row in historical
+        }
+        for row in additional_historical_matches:
+            if row.get("date") >= target_date:
+                continue
+            key = (
+                row["date"].isoformat(), row.get("division", ""),
+                row["home_key"], row["away_key"],
+            )
+            if key not in existing:
+                historical.append(row)
+                existing.add(key)
+        historical.sort(key=lambda row: row["date"])
     predictions = predict_fixtures(
         fixtures,
         historical,
@@ -458,6 +475,11 @@ def build_daily_report(
         "timezone": timezone_name,
         "same_day_only": True,
         "model_status": "EXPERIMENTAL_NOT_VALIDATED",
+        "historical_matches_available": sum(row["date"] < target_date for row in historical),
+        "historical_data_through": max(
+            (row["date"].isoformat() for row in historical if row["date"] < target_date),
+            default=None,
+        ),
         "fixtures_received": len(fixtures),
         "same_day_pre_match_fixtures": len(parsed_for_date),
         "past_kickoffs_excluded": past_kickoffs,
