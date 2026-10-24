@@ -273,3 +273,4 @@ def test_telegram_report_discloses_historical_data_freshness():
     assert "Recent API refresh: PARTIAL | completed results added: 37" in message
     assert "API results coverage: 2026-10-09 to 2026-10-22" in message
     assert "predictions use available history" in message
+    assert "not a guarantee that every league is available on the API plan" in message
