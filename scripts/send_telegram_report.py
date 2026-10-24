@@ -73,6 +73,20 @@ def format_report(report: dict[str, Any], ledger: dict[str, Any] | None = None) 
             f"Other dates/status excluded: {report.get('fixtures_excluded_other_date_or_status', 0)}",
             "",
         ])
+    if "primary_model_counts" in report:
+        model_counts = report.get("primary_model_counts") or {}
+        header.extend(["MODEL MIX"])
+        if model_counts:
+            for model_name, count in sorted(model_counts.items()):
+                header.append(f"{model_name}: {count} primary forecast(s)")
+        else:
+            header.append("No experimental model produced a forecast.")
+        header.append(
+            f"Alternative forecasts available — Elo: {report.get('elo_alternative_available', 0)}"
+            f" | Poisson: {report.get('poisson_alternative_available', 0)}"
+        )
+        header.append("")
+
     if ledger is not None:
         paper_lines = [DIVIDER, "PAPER TRACKING — CUMULATIVE"]
         attempt = ledger.get("last_attempt") or {}
