@@ -53,6 +53,7 @@ jobs:
       - name: Evaluate previous day's forecasts
         id: paper-tracking
         if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+        continue-on-error: true
         env:
           API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
