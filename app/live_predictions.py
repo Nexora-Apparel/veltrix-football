@@ -41,12 +41,19 @@ LEAGUE_DIVISION_BY_ID = {
 
 
 def _name_key(name: Any) -> str:
-    """Normalize punctuation and a small, explicit set of common team aliases.
+    """Normalize common provider naming wrappers and explicit club aliases.
 
-    Deliberately avoid fuzzy matching: a wrong team merge is worse than
-    withholding a forecast when historical identity is uncertain.
+    Only generic legal/club markers at the edges are stripped. Ambiguous
+    fuzzy matches remain suggestions only; a wrong team merge is worse than
+    withholding a forecast.
     """
-    key = re.sub(r"[^a-z0-9]+", "", str(name or "").casefold())
+    tokens = re.findall(r"[a-z0-9]+", str(name or "").casefold())
+    edge_markers = {"fc", "afc", "cf", "sc", "ac", "as", "ec", "sbv", "acf", "cd", "ud"}
+    while tokens and tokens[0] in edge_markers:
+        tokens.pop(0)
+    while tokens and tokens[-1] in edge_markers:
+        tokens.pop()
+    key = "".join(tokens)
     aliases = {
         "manutd": "manchesterunited",
         "manunited": "manchesterunited",
@@ -60,7 +67,6 @@ def _name_key(name: Any) -> str:
         "psg": "parissaintgermain",
         "parissg": "parissaintgermain",
         "barca": "barcelona",
-        "fcbarcelona": "barcelona",
         "bayern": "bayernmunich",
         "bayernmunchen": "bayernmunich",
         "juve": "juventus",
@@ -70,6 +76,14 @@ def _name_key(name: Any) -> str:
         "newcastleutd": "newcastleunited",
         "westham": "westhamunited",
         "westhamutd": "westhamunited",
+        "athleticclub": "athleticbilbao",
+        "athbilbao": "athleticbilbao",
+        "internazionale": "intermilan",
+        "internazionalemilano": "intermilan",
+        "inter": "intermilan",
+        "psveindhoven": "psv",
+        "feyenoordrotterdam": "feyenoord",
+        "nec": "necnijmegen",
     }
     return aliases.get(key, key)
 
