@@ -43,8 +43,8 @@ def test_extract_completed_results_maps_competition_and_ignores_unfinished():
     assert len(rows) == 1
     assert rows[0]["date"] == date(2026, 10, 20)
     assert rows[0]["division"] == "E0"
-    assert rows[0]["home_key"] == "alphafc"
-    assert rows[0]["away_key"] == "betafc"
+    assert rows[0]["home_key"] == "alpha"
+    assert rows[0]["away_key"] == "beta"
     assert rows[0]["home_goals"] == 1
 
 
