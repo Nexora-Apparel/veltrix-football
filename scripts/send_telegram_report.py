@@ -62,8 +62,17 @@ def format_report_messages(report: dict[str, Any], ledger: dict[str, Any] | None
         "",
         f"MATCH FORECASTS: {len(usable)}",
         f"WITHHELD: insufficient team history {len(insufficient)} | unsupported competition {len(unsupported)}",
-        "",
     ]
+    unsupported_breakdown = report.get("unsupported_competition_breakdown") or {}
+    if unsupported_breakdown:
+        top_unsupported = sorted(
+            unsupported_breakdown.items(), key=lambda item: (-int(item[1]), str(item[0]))
+        )[:5]
+        header.append(
+            "Unsupported leagues (top): "
+            + " | ".join(f"{name} ({count})" for name, count in top_unsupported)
+        )
+    header.append("")
     if "fixtures_received" in report:
         header.extend([
             "FIXTURE FILTER",
