@@ -174,9 +174,32 @@ def format_report(report: dict[str, Any], ledger: dict[str, Any] | None = None) 
             "",
             f"{goal_label}: {_format_goals(expected_goals.get('home'))} - "
             f"{_format_goals(expected_goals.get('away'))}",
-            "Status: experimental estimate only",
-            "",
         ])
+        btts_yes = item.get("btts_yes")
+        over_25 = item.get("over_2_5")
+        if isinstance(btts_yes, (int, float)) and isinstance(over_25, (int, float)):
+            market_heading = "POISSON AUXILIARY GOAL MARKETS" if is_elo_primary else "POISSON GOAL MARKETS"
+            block.extend([
+                "",
+                market_heading,
+                f"BTTS Yes {float(btts_yes):.0%} | No {1.0 - float(btts_yes):.0%}",
+                f"Over 2.5 {float(over_25):.0%} | Under 2.5 {1.0 - float(over_25):.0%}",
+            ])
+        scorelines = item.get("most_likely_scorelines")
+        if isinstance(scorelines, list) and scorelines:
+            rendered_scores = []
+            for score in scorelines[:3]:
+                try:
+                    home_goals = int(score["home_goals"])
+                    away_goals = int(score["away_goals"])
+                    probability = float(score["probability"])
+                except (KeyError, TypeError, ValueError):
+                    continue
+                rendered_scores.append(f"{home_goals}-{away_goals} ({probability:.0%})")
+            if rendered_scores:
+                score_label = "Poisson scoreline estimates" if is_elo_primary else "Most likely scorelines"
+                block.extend(["", f"{score_label}: " + ", ".join(rendered_scores)])
+        block.extend(["Status: experimental estimate only", ""])
         blocks.append(block)
 
     footer = [
