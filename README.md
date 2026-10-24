@@ -72,7 +72,7 @@ The backtest compares two league-aware research baselines (venue-specific Poisso
 - **Competition Elo alternative:** 66,620 forecasts; 48.22% accuracy, Brier 0.6191, log loss 1.0311. On 66,564 fixtures with odds, Elo scored 48.20% / 0.6192 / 1.0313 versus the market at 50.21% / 0.6002 / 1.0036.
 - **Recent Elo holdout:** 11,445 fixtures with odds; Elo scored 48.98% accuracy, Brier 0.6137, log loss 1.0232 versus the market at 50.69% / 0.5980 / 1.0004.
 
-Elo is materially better than the current Poisson model on these historical metrics, but still underperforms the market benchmark. Historical odds timestamps and closing-line quality have not been verified, so neither model is validated for betting. Keep betting slips and value alerts disabled; these metrics are not evidence of profitability.
+Elo is materially better than the current Poisson model on these historical metrics, but still underperforms the market benchmark. In the full-period same-fixture comparison, neither live model beats the de-vigged market on both Brier score and log loss in any of the 38 evaluated divisions. Historical odds timestamps and closing-line quality have not been verified, so neither model is validated for betting. Keep betting slips and value alerts disabled; these metrics are not evidence of profitability.
 
 ## Retrospective paper tracking
 
