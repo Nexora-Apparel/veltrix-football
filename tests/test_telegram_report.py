@@ -32,6 +32,7 @@ def test_telegram_report_is_organized_and_explicitly_experimental():
     assert "MATCH FORECASTS: 1" in message
     assert "Alpha FC vs Beta FC" in message
     assert "Example League" in message
+    assert "Kickoff: 17:00 WAT" in message
     assert "Home  50%" in message
     assert "Draw  25%" in message
     assert "Away  25%" in message
