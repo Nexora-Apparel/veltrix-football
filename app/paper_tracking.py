@@ -169,13 +169,11 @@ def evaluate_report(report: dict[str, Any], results_payload: dict[str, Any]) -> 
             ))
 
         scored_this_fixture = False
-        valid_forecasts = 0
         for model_name, raw_probabilities in forecast_models:
             values = _canonical_probabilities(raw_probabilities)
             if values is None:
                 withheld += 1
                 continue
-            valid_forecasts += 1
             actual = result["actual"]
             scored.append({
                 "fixture_id": fixture_id,
@@ -199,7 +197,11 @@ def evaluate_report(report: dict[str, Any], results_payload: dict[str, Any]) -> 
         ])
         for model_name in sorted({row["model"] for row in scored})
     }
-    metrics = next(iter(metrics_by_model.values())) if len(metrics_by_model) == 1 else None
+    metrics = (
+        next(iter(metrics_by_model.values())) if len(metrics_by_model) == 1
+        else None if len(metrics_by_model) > 1
+        else summarize_scored_matches([])
+    )
 
     return {
         "product": report.get("product", "Veltrix Football"),
@@ -207,6 +209,7 @@ def evaluate_report(report: dict[str, Any], results_payload: dict[str, Any]) -> 
         "model_status": "PAPER_TRACKING_ONLY",
         "predictions_in_report": len(predictions),
         "fixtures_scored": len(fixtures_scored),
+        "unique_fixtures_scored": len(fixtures_scored),
         "completed_forecasts_scored": len(scored),
         "awaiting_result_or_match": awaiting_result,
         "withheld_or_invalid_forecasts": withheld,
