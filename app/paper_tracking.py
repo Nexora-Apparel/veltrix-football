@@ -136,7 +136,16 @@ def evaluate_report(report: dict[str, Any], results_payload: dict[str, Any]) -> 
             continue
         probs = prediction["probabilities"]
         try:
-            values = {key: float(probs[key]) for key in OUTCOMES}
+            if all(key in probs for key in OUTCOMES):
+                values = {key: float(probs[key]) for key in OUTCOMES}
+            else:
+                # The live Poisson model uses descriptive keys; canonicalize
+                # them to H/D/A for scoring and ledger storage.
+                values = {
+                    "H": float(probs["home_win"]),
+                    "D": float(probs["draw"]),
+                    "A": float(probs["away_win"]),
+                }
         except (KeyError, TypeError, ValueError):
             withheld += 1
             continue
