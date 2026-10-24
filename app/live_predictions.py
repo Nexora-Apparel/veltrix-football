@@ -20,7 +20,37 @@ TEAM_WINDOW = 10
 
 
 def _name_key(name: Any) -> str:
-    return re.sub(r"[^a-z0-9]+", "", str(name or "").casefold())
+    """Normalize punctuation and a small, explicit set of common team aliases.
+
+    Deliberately avoid fuzzy matching: a wrong team merge is worse than
+    withholding a forecast when historical identity is uncertain.
+    """
+    key = re.sub(r"[^a-z0-9]+", "", str(name or "").casefold())
+    aliases = {
+        "manutd": "manchesterunited",
+        "manunited": "manchesterunited",
+        "manchesterutd": "manchesterunited",
+        "mancity": "manchestercity",
+        "manchestercty": "manchestercity",
+        "spurs": "tottenhamhotspur",
+        "tottenham": "tottenhamhotspur",
+        "wolves": "wolverhamptonwanderers",
+        "wolverhampton": "wolverhamptonwanderers",
+        "psg": "parissaintgermain",
+        "parissg": "parissaintgermain",
+        "barca": "barcelona",
+        "fcbarcelona": "barcelona",
+        "bayern": "bayernmunich",
+        "bayernmunchen": "bayernmunich",
+        "juve": "juventus",
+        "atleticomadrid": "atleticodemadrid",
+        "athleticomadrid": "atleticodemadrid",
+        "athmadrid": "atleticodemadrid",
+        "newcastleutd": "newcastleunited",
+        "westham": "westhamunited",
+        "westhamutd": "westhamunited",
+    }
+    return aliases.get(key, key)
 
 
 def load_historical_matches(path: str | Path) -> list[dict[str, Any]]:
