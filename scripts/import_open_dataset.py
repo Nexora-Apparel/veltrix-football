@@ -4,6 +4,7 @@ from __future__ import annotations
 import argparse
 import csv
 import io
+from collections import Counter
 import json
 import sys
 from datetime import date
@@ -121,6 +122,8 @@ def import_dataset(start_date: str, end_date: str, output: str, timeout: int = 9
     out_path = Path(output)
     out_path.parent.mkdir(parents=True, exist_ok=True)
     seen: set[tuple[str, str, str, str]] = set()
+    competition_counts: Counter[str] = Counter()
+    season_counts: Counter[str] = Counter()
     scanned = saved = duplicates = invalid = 0
     try:
         with out_path.open("w", newline="", encoding="utf-8") as handle:
@@ -147,6 +150,8 @@ def import_dataset(start_date: str, end_date: str, output: str, timeout: int = 9
                 seen.add(key)
                 writer.writerow(row)
                 saved += 1
+                competition_counts[row["division"]] += 1
+                season_counts[row["match_date"][:4]] += 1
     finally:
         text_stream.close()
         response.close()
@@ -162,6 +167,8 @@ def import_dataset(start_date: str, end_date: str, output: str, timeout: int = 9
         "matches_saved": saved,
         "duplicates_skipped": duplicates,
         "invalid_rows_skipped": invalid,
+        "matches_by_competition": dict(sorted(competition_counts.items())),
+        "matches_by_season": dict(sorted(season_counts.items())),
         "output": str(out_path),
         "columns": OUTPUT_COLUMNS,
         "note": "Odds and match statistics may be missing by league/season. Validate per-field coverage before modeling.",
