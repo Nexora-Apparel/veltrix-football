@@ -170,3 +170,19 @@ def test_telegram_report_shows_elo_alternative_when_available():
     assert "Home  60%" in message
     assert "Draw  25%" in message
     assert "Away  15%" in message
+
+
+
+def test_telegram_report_labels_elo_primary_and_poisson_auxiliary():
+    report = sample_report()
+    item = report["predictions"][0]
+    item["model"] = "experimental_elo_by_competition"
+    item["elo_history"] = {"scope": "COMPETITION", "division_code": "E0"}
+    item["probabilities"] = {"home_win": 0.6, "draw": 0.25, "away_win": 0.15}
+    item["poisson_model"] = "experimental_recent_goals_poisson"
+    item["poisson_probabilities"] = {"home_win": 0.4, "draw": 0.3, "away_win": 0.3}
+    message = format_report(report)
+    assert "ELO PRIMARY ESTIMATE" in message
+    assert "Competition history: E0" in message
+    assert "POISSON ALTERNATIVE (EXPERIMENTAL)" in message
+    assert "Poisson xG (auxiliary)" in message
