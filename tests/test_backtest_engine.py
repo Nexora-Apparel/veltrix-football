@@ -60,3 +60,20 @@ def test_market_reference_is_reported_on_covered_fixtures():
         for outcome in calibration.values():
             assert 0 <= outcome["expected_calibration_error"] <= 1
             assert outcome["reliability_bins"]
+
+
+
+def test_match_normalizer_rejects_fractional_or_invalid_scores():
+    from app.backtest_engine import _normalize_match
+    base = {
+        "match_date": "2025-01-01",
+        "division": "L1",
+        "home_team": "Alpha",
+        "away_team": "Beta",
+        "home_goals": 2,
+        "away_goals": 1,
+    }
+    assert _normalize_match(base)["home_goals"] == 2
+    for bad_value in (1.5, -1, "NaN", "inf", "not-a-score"):
+        assert _normalize_match({**base, "home_goals": bad_value}) is None
+        assert _normalize_match({**base, "away_goals": bad_value}) is None
