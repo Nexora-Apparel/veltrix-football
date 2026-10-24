@@ -426,6 +426,7 @@ def build_daily_report(
     timezone_name: str = "Africa/Lagos",
     now: datetime | None = None,
     additional_historical_matches: list[dict[str, Any]] | None = None,
+    base_historical_matches: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     """Build a daily report with explicit fixture-filter and history-freshness diagnostics."""
     fixtures = fixtures_payload.get("response")
@@ -452,7 +453,7 @@ def build_daily_report(
     future_kickoffs = sum(
         part["kickoff_datetime"] > current_time for part in parsed_for_date
     )
-    historical = load_historical_matches(history_path)
+    historical = list(base_historical_matches) if base_historical_matches is not None else load_historical_matches(history_path)
     if additional_historical_matches:
         existing = {
             (row["date"].isoformat(), row.get("division", ""), row["home_key"], row["away_key"])
