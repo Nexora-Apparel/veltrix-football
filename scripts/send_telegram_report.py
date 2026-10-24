@@ -105,6 +105,12 @@ def format_report(report: dict[str, Any]) -> str:
         footer.append(
             f"• {len(insufficient)} fixture(s) withheld: insufficient historical team data."
         )
+    suggested = sum(bool(p.get("team_name_match_suggestions")) for p in insufficient)
+    if suggested:
+        footer.append(
+            f"• {suggested} withheld fixture(s) have possible team-name variants to review; "
+            "these are suggestions only and are never auto-matched."
+        )
     footer.extend([
         "• Standard 10.00-odds slips: DISABLED.",
         "• Value slips (50.00–100.00 odds): DISABLED.",
