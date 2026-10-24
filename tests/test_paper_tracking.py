@@ -432,3 +432,22 @@ def test_tracking_runner_retries_report_already_in_ledger_when_fixtures_are_pend
     assert ledger["last_attempt"]["status"] == "EVALUATED"
     assert ledger["evaluations"][0]["awaiting_result_or_match"] == 0
     assert ledger["evaluations"][0]["completed_forecasts_scored"] == 1
+
+
+
+def test_pending_report_date_is_updated_when_delayed_fixture_finishes():
+    report = {"as_of_date": "2026-10-22", "predictions": [_prediction(51)]}
+    pending = evaluate_report(report, {"response": []})
+    ledger = merge_paper_ledger({}, pending)
+    assert ledger["evaluations"][0]["awaiting_result_or_match"] == 1
+    assert ledger["scored_matches"] == []
+
+    completed = evaluate_report(report, {"response": [_result(51, 2, 0)]})
+    updated = merge_paper_ledger(ledger, completed)
+    assert updated["evaluations"][0]["awaiting_result_or_match"] == 0
+    assert updated["evaluations"][0]["completed_forecasts_scored"] == 1
+    assert len(updated["scored_matches"]) == 1
+    # Replaying the now-complete report remains idempotent.
+    replay = merge_paper_ledger(updated, completed)
+    assert len(replay["scored_matches"]) == 1
+    assert replay["evaluations"][0]["completed_forecasts_scored"] == 1
