@@ -289,7 +289,8 @@ def test_daily_report_warns_backtest_does_not_validate_live_pipeline(tmp_path):
         now=datetime(2026, 10, 23, 12, 0, tzinfo=ZoneInfo("Africa/Lagos")),
     )
     assert "underperforms the historical market benchmark" in report["notice"]
-    assert "unvalidated for betting" in report["notice"]
+    assert "Elo alternative is experimental" in report["notice"]
+    assert "No betting recommendations" in report["notice"]
 
 
 
