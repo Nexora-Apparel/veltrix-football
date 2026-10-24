@@ -287,3 +287,21 @@ def test_evaluator_scores_elo_primary_and_poisson_alternative():
     ledger = merge_paper_ledger({}, evaluation)
     assert ledger["cumulative_metrics_by_model"]["experimental_elo_by_competition"]["matches"] == 1
     assert ledger["cumulative_metrics_by_model"]["experimental_recent_goals_poisson"]["matches"] == 1
+
+
+
+def test_evaluator_scores_poisson_alternative_when_competition_elo_is_primary():
+    prediction = _prediction(51)
+    prediction["model"] = "experimental_elo_by_competition"
+    prediction["probabilities"] = {"home_win": 0.6, "draw": 0.25, "away_win": 0.15}
+    prediction["poisson_model"] = "experimental_recent_goals_poisson"
+    prediction["poisson_probabilities"] = {"home_win": 0.35, "draw": 0.3, "away_win": 0.35}
+    evaluation = evaluate_report(
+        {"as_of_date": "2026-10-24", "predictions": [prediction]},
+        {"response": [_result(51, 2, 0)]},
+    )
+    assert evaluation["completed_forecasts_scored"] == 2
+    assert evaluation["unique_fixtures_scored"] == 1
+    assert evaluation["metrics_by_model"]["experimental_elo_by_competition"]["result_accuracy"] == 1.0
+    assert evaluation["metrics_by_model"]["experimental_recent_goals_poisson"]["result_accuracy"] == 1.0
+    assert len(evaluation["matches"]) == 2
