@@ -193,59 +193,60 @@ def chronological_backtest(matches: Iterable[dict[str, Any]], *, min_training_ma
     for day in sorted(by_date):
         todays = by_date[day]
         for m in todays:
-            # Evaluate the exact live-pipeline baseline using only results from
-            # strictly earlier dates. Keep this separate from the league-aware
-            # research baselines below because their eligibility rules differ.
-            home_key, away_key = _name_key(m["home_team"]), _name_key(m["away_team"])
-            home_hist = list(live_team_history[home_key])
-            away_hist = list(live_team_history[away_key])
-            if len(home_hist) >= 5 and len(away_hist) >= 5 and live_totals[0] > 0:
-                live_home_baseline = max(0.05, live_totals[1] / live_totals[0])
-                live_away_baseline = max(0.05, live_totals[2] / live_totals[0])
-
-                def live_rate(
-                    history: list[tuple[int, int, str]],
-                    venue: str,
-                    scored_prior: float,
-                    conceded_prior: float,
-                ) -> tuple[float, float]:
-                    relevant = [row for row in history if row[2] == venue] or history
-                    weight = len(relevant) / (len(relevant) + 4.0)
-                    scored = sum(row[0] for row in relevant) / len(relevant)
-                    conceded = sum(row[1] for row in relevant) / len(relevant)
-                    return (
-                        weight * scored + (1 - weight) * scored_prior,
-                        weight * conceded + (1 - weight) * conceded_prior,
+            if day >= "2020-01-01":
+                # Evaluate the exact live-pipeline baseline using only results from
+                # strictly earlier dates. Keep this separate from the league-aware
+                # research baselines below because their eligibility rules differ.
+                home_key, away_key = _name_key(m["home_team"]), _name_key(m["away_team"])
+                home_hist = list(live_team_history[home_key])
+                away_hist = list(live_team_history[away_key])
+                if len(home_hist) >= 5 and len(away_hist) >= 5 and live_totals[0] > 0:
+                    live_home_baseline = max(0.05, live_totals[1] / live_totals[0])
+                    live_away_baseline = max(0.05, live_totals[2] / live_totals[0])
+    
+                    def live_rate(
+                        history: list[tuple[int, int, str]],
+                        venue: str,
+                        scored_prior: float,
+                        conceded_prior: float,
+                    ) -> tuple[float, float]:
+                        relevant = [row for row in history if row[2] == venue] or history
+                        weight = len(relevant) / (len(relevant) + 4.0)
+                        scored = sum(row[0] for row in relevant) / len(relevant)
+                        conceded = sum(row[1] for row in relevant) / len(relevant)
+                        return (
+                            weight * scored + (1 - weight) * scored_prior,
+                            weight * conceded + (1 - weight) * conceded_prior,
+                        )
+    
+                    home_scored, home_conceded = live_rate(
+                        home_hist, "home", live_home_baseline, live_away_baseline
                     )
-
-                home_scored, home_conceded = live_rate(
-                    home_hist, "home", live_home_baseline, live_away_baseline
-                )
-                away_scored, away_conceded = live_rate(
-                    away_hist, "away", live_away_baseline, live_home_baseline
-                )
-                home_xg = min(5.0, max(0.05,
-                    live_home_baseline * (home_scored / live_home_baseline)
-                    * (away_conceded / live_home_baseline)
-                ))
-                away_xg = min(5.0, max(0.05,
-                    live_away_baseline * (away_scored / live_away_baseline)
-                    * (home_conceded / live_away_baseline)
-                ))
-                live_probs = poisson_1x2(home_xg, away_xg)
-                live_scored.append({
-                    "match_date": day,
-                    "division": m["division"],
-                    "home_team": m["home_team"],
-                    "away_team": m["away_team"],
-                    "actual": m["result"],
-                    "home_goals": m["home_goals"],
-                    "away_goals": m["away_goals"],
-                    "live_poisson": live_probs,
-                    **({"market": m["market"]} if "market" in m else {}),
-                })
-
-            lid, home, away = m["division"], m["home_team"], m["away_team"]
+                    away_scored, away_conceded = live_rate(
+                        away_hist, "away", live_away_baseline, live_home_baseline
+                    )
+                    home_xg = min(5.0, max(0.05,
+                        live_home_baseline * (home_scored / live_home_baseline)
+                        * (away_conceded / live_home_baseline)
+                    ))
+                    away_xg = min(5.0, max(0.05,
+                        live_away_baseline * (away_scored / live_away_baseline)
+                        * (home_conceded / live_away_baseline)
+                    ))
+                    live_probs = poisson_1x2(home_xg, away_xg)
+                    live_scored.append({
+                        "match_date": day,
+                        "division": m["division"],
+                        "home_team": m["home_team"],
+                        "away_team": m["away_team"],
+                        "actual": m["result"],
+                        "home_goals": m["home_goals"],
+                        "away_goals": m["away_goals"],
+                        "live_poisson": live_probs,
+                        **({"market": m["market"]} if "market" in m else {}),
+                    })
+    
+                lid, home, away = m["division"], m["home_team"], m["away_team"]
             totals = league_totals[lid]
             if history_count >= min_training_matches and totals[0] >= 10:
                 avg_home = max(0.15, totals[1] / totals[0])
@@ -291,13 +292,14 @@ def chronological_backtest(matches: Iterable[dict[str, Any]], *, min_training_ma
             league_draws[lid][1] += int(hg == ag)
             history_count += 1
 
-            # The live model's global team history is updated only after every
-            # match on this date has been forecast, preventing same-day leakage.
-            live_team_history[_name_key(home)].append((hg, ag, "home"))
-            live_team_history[_name_key(away)].append((ag, hg, "away"))
-            live_totals[0] += 1
-            live_totals[1] += hg
-            live_totals[2] += ag
+            if day >= "2020-01-01":
+                # The live model's global team history is updated only after every
+                # match on this date has been forecast, preventing same-day leakage.
+                live_team_history[_name_key(home)].append((hg, ag, "home"))
+                live_team_history[_name_key(away)].append((ag, hg, "away"))
+                live_totals[0] += 1
+                live_totals[1] += hg
+                live_totals[2] += ag
 
     if not scored:
         raise ValueError("No test predictions produced; lower min_training_matches or supply more history")
@@ -369,7 +371,7 @@ def chronological_backtest(matches: Iterable[dict[str, Any]], *, min_training_ma
             "last_test_date": live_dates[-1] if live_dates else None,
             "metrics": live_metrics, "recent_holdout": live_holdout,
             "historical_odds_subset": live_odds_subset,
-            "note": "This is a separate walk-forward evaluation of the exact live experimental Poisson logic; only live-eligible fixtures are scored."},
+            "note": "Separate walk-forward evaluation of the live Poisson logic, using only matches dated 2020-01-01 onward to match the daily importer and scoring only live-eligible fixtures."},
         "recent_holdout": {"method": "latest 20% of unique forecast dates", "start_date": holdout_start,
             "end_date": forecast_dates[-1], "matches": len(holdout_rows), "models": holdout_metrics,
             "historical_odds_subset": {"matches_with_valid_1x2_odds": len(holdout_odds_rows),
