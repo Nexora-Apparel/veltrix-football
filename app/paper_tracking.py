@@ -46,6 +46,7 @@ def merge_paper_ledger(ledger: dict[str, Any], evaluation: dict[str, Any]) -> di
         raise ValueError("Evaluation must include a report_date.")
     evaluation_summary = {
         "report_date": report_date,
+        "fixtures_scored": evaluation.get("fixtures_scored", 0),
         "completed_forecasts_scored": evaluation.get("completed_forecasts_scored", 0),
         "awaiting_result_or_match": evaluation.get("awaiting_result_or_match", 0),
         "withheld_or_invalid_forecasts": evaluation.get("withheld_or_invalid_forecasts", 0),
@@ -80,6 +81,34 @@ def merge_paper_ledger(ledger: dict[str, Any], evaluation: dict[str, Any]) -> di
             continue
         unique[key] = row
     current["scored_matches"] = list(unique.values())
+    if should_merge_matches:
+        report_matches = [
+            row for row in current["scored_matches"]
+            if str(row.get("report_date")) == str(report_date)
+        ]
+        report_metrics_by_model = {
+            model_name: summarize_scored_matches([
+                row for row in report_matches if str(row.get("model", "unknown")) == model_name
+            ])
+            for model_name in sorted({str(row.get("model", "unknown")) for row in report_matches})
+        }
+        if len(report_metrics_by_model) == 1:
+            report_metrics = next(iter(report_metrics_by_model.values()))
+        elif report_metrics_by_model:
+            report_metrics = None
+        else:
+            report_metrics = summarize_scored_matches([])
+        summary_index = next(
+            index for index, row in enumerate(current["evaluations"])
+            if str(row.get("report_date")) == str(report_date)
+        )
+        current["evaluations"][summary_index].update({
+            "fixtures_scored": len({int(row["fixture_id"]) for row in report_matches}),
+            "completed_forecasts_scored": len(report_matches),
+            "metrics": report_metrics,
+            "metrics_by_model": report_metrics_by_model,
+            "model_versions": sorted(report_metrics_by_model),
+        })
     current["product"] = "Veltrix Football"
     current["model_status"] = "PAPER_TRACKING_ONLY"
     model_names = sorted({str(row.get("model", "unknown")) for row in current["scored_matches"]})
