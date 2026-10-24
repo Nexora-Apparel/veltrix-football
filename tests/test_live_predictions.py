@@ -55,7 +55,7 @@ def test_history_from_prediction_date_is_not_used():
         "home_key": "alphafc", "away_key": "betafc",
         "home_goals": 8, "away_goals": 0,
     })
-    result = predict_fixtures([_fixture()], rows, as_of=date(2026, 10, 23))
+    result = predict_fixtures([_fixture()], rows, as_of=date(2026, 10, 23), now=datetime(2026, 10, 23, 12, 0, tzinfo=ZoneInfo("Africa/Lagos")))
     assert result[0]["status"] == "EXPERIMENTAL_ONLY"
     assert result[0]["historical_matches"] == {"home": 6, "away": 6}
 
