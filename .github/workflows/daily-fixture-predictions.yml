@@ -117,6 +117,26 @@ jobs:
           fi
           if [ -z "${TARGET_DATE:-}" ]; then TARGET_DATE="$(TZ=Africa/Lagos date +%F)"; fi
           python scripts/run_daily_predictions.py --date "$TARGET_DATE" --history data/open_historical_matches.csv --output reports/daily_predictions.json
+      - name: Notify Telegram when live report generation fails
+        if: (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && failure() && steps.generate-report.outcome == 'failure'
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          if [ -z "$TELEGRAM_BOT_TOKEN" ] || [ -z "$TELEGRAM_CHAT_ID" ]; then
+            echo "::warning::Live report failed and Telegram failure notification is not configured."
+            exit 0
+          fi
+          MESSAGE="$(printf '%s\n' \
+            'VELTRIX FOOTBALL — LIVE REPORT FAILED' \
+            'No live predictions were generated or sent.' \
+            'The live data provider rejected the request. Open the failed GitHub Actions run for the exact cause.' \
+            'No fallback or fabricated predictions were published.')"
+          curl --fail --silent --show-error --retry 2 \
+            --get "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+            --data-urlencode "chat_id=${TELEGRAM_CHAT_ID}" \
+            --data-urlencode "text=${MESSAGE}"
+
       - name: Check Telegram configuration
         if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
         id: telegram-config
