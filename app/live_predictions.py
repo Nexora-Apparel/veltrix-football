@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import csv
 import re
-from difflib import get_close_matches
+from difflib import SequenceMatcher, get_close_matches
 from collections import defaultdict, deque
 from datetime import date, datetime, timezone
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
@@ -86,6 +86,28 @@ def _name_key(name: Any) -> str:
         "nec": "necnijmegen",
     }
     return aliases.get(key, key)
+
+
+def _resolve_team_key(name: Any, known_keys: Iterable[str]) -> str:
+    """Resolve provider spelling variants only when one historical key is a clear match.
+
+    Exact normalized keys and explicit aliases win. Fuzzy matching is conservative:
+    a candidate must score at least 0.84 and beat the runner-up by 0.08, preventing
+    ambiguous clubs from being silently merged.
+    """
+    key = _name_key(name)
+    candidates = list(set(known_keys))
+    if key in candidates or not candidates:
+        return key
+    scored = sorted(
+        ((SequenceMatcher(None, key, candidate).ratio(), candidate) for candidate in candidates),
+        reverse=True,
+    )
+    best_score, best_key = scored[0]
+    runner_up = scored[1][0] if len(scored) > 1 else 0.0
+    if best_score >= 0.84 and best_score - runner_up >= 0.08:
+        return best_key
+    return key
 
 
 def load_historical_matches(path: str | Path) -> list[dict[str, Any]]:
@@ -193,7 +215,9 @@ def _elo_probabilities(
     ratings = state["ratings"]
     match_counts = state["match_counts"]
     total_matches = state["total_matches"]
-    home_key, away_key = _name_key(home_name), _name_key(away_name)
+    known_keys = set(match_counts)
+    home_key = _resolve_team_key(home_name, known_keys)
+    away_key = _resolve_team_key(away_name, known_keys)
     metadata = {
         "scope": scope,
         "division_code": division_code,
@@ -307,7 +331,9 @@ def predict_fixtures(
             )
 
         for fixture in (p for p in parsed_fixtures if p["kickoff_date"] == target_date):
-            home_key, away_key = _name_key(fixture["home_team"]), _name_key(fixture["away_team"])
+            known_keys = set(team_history)
+            home_key = _resolve_team_key(fixture["home_team"], known_keys)
+            away_key = _resolve_team_key(fixture["away_team"], known_keys)
             home_hist, away_hist = list(team_history[home_key]), list(team_history[away_key])
             record: dict[str, Any] = {
                 **{k: v for k, v in fixture.items() if k not in {"kickoff_date", "kickoff_datetime"}},
@@ -315,6 +341,12 @@ def predict_fixtures(
                 "model_validated": False,
                 "betting_recommendation": False,
                 "historical_matches": {"home": len(home_hist), "away": len(away_hist)},
+                "team_name_matches": {
+                    "home": {"fixture_name": fixture["home_team"], "historical_key": home_key,
+                             "auto_matched": home_key != _name_key(fixture["home_team"])},
+                    "away": {"fixture_name": fixture["away_team"], "historical_key": away_key,
+                             "auto_matched": away_key != _name_key(fixture["away_team"])},
+                },
             }
             if len(home_hist) < min_team_matches or len(away_hist) < min_team_matches:
                 if not fixture.get("division_code"):
