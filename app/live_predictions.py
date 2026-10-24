@@ -431,5 +431,5 @@ def build_daily_report(
         "normal_bets": {"target_combined_decimal_odds": 10.0, "status": "NOT_GENERATED_MODEL_NOT_VALIDATED"},
         "value_bets": {"target_combined_decimal_odds": [50.0, 100.0], "status": "NOT_GENERATED_MODEL_NOT_VALIDATED"},
         "predictions": predictions,
-        "notice": "Experimental research output only. The live pipeline has a direct historical walk-forward evaluation, but it remains unvalidated for betting and underperforms the market benchmark. No betting recommendations or value bets are approved.",
+        "notice": "Experimental research output only. The primary Poisson pipeline underperforms the historical market benchmark and is not validated for betting. The Elo alternative is experimental and is being tracked separately. No betting recommendations or value bets are approved.",
     }
