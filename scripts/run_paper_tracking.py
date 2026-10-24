@@ -121,11 +121,7 @@ def run(report_date: date, output_path: str) -> dict[str, Any]:
         "evaluations": [],
         "scored_matches": [],
     }
-    attempt: dict[str, Any] = {
-        "report_date": report_date.isoformat(),
-        "status": "NOT_EVALUATED",
-        "detail": None,
-    }
+    attempts: list[dict[str, Any]] = []
 
     try:
         if not repo or not token:
@@ -139,51 +135,108 @@ def run(report_date: date, output_path: str) -> dict[str, Any]:
             })
             runs = list_relevant_runs(session, repo)
             ledger = find_latest_ledger(session, repo, runs, current_run_id)
-            existing_evaluation = next(
-                (
-                    item for item in ledger.get("evaluations", [])
-                    if str(item.get("report_date")) == report_date.isoformat()
-                ),
-                None,
-            )
-            has_pending_fixtures = bool(
-                existing_evaluation
-                and int(existing_evaluation.get("awaiting_result_or_match", 0)) > 0
-            )
-            if existing_evaluation and not has_pending_fixtures:
-                attempt.update({"status": "ALREADY_EVALUATED", "detail": "This report date is already complete in the ledger."})
+            evaluations = ledger.get("evaluations", [])
+            evaluation_by_date = {
+                str(item.get("report_date")): item for item in evaluations
+                if item.get("report_date")
+            }
+            pending_dates = sorted({
+                date.fromisoformat(day)
+                for day, item in evaluation_by_date.items()
+                if int(item.get("awaiting_result_or_match", 0)) > 0
+                and day != report_date.isoformat()
+            })[:3]
+            dates_to_process = [day for day in pending_dates]
+            target_summary = evaluation_by_date.get(report_date.isoformat())
+            if (
+                target_summary is None
+                or int(target_summary.get("awaiting_result_or_match", 0)) > 0
+            ):
+                dates_to_process.append(report_date)
+
+            if not dates_to_process:
+                attempts.append({
+                    "report_date": report_date.isoformat(),
+                    "status": "ALREADY_EVALUATED",
+                    "detail": "No pending report dates; this date is already complete.",
+                })
             else:
-                report = find_daily_report(
-                    session, repo, runs, report_date.isoformat(), current_run_id
-                )
-                if report is None:
-                    attempt.update({"status": "NO_PREVIOUS_REPORT", "detail": "No saved daily report was found for this date."})
-                elif not os.getenv("API_FOOTBALL_KEY"):
-                    attempt.update({"status": "API_KEY_MISSING", "detail": "Cannot fetch completed results without API_FOOTBALL_KEY."})
-                else:
+                api_client = None
+                for date_to_process in dates_to_process:
+                    date_text = date_to_process.isoformat()
+                    one: dict[str, Any] = {
+                        "report_date": date_text,
+                        "status": "NOT_EVALUATED",
+                        "detail": None,
+                    }
                     try:
-                        results = FootballAPI(get_settings()).fixtures(
-                            report_date.isoformat(), "Africa/Lagos"
+                        report = find_daily_report(
+                            session, repo, runs, date_text, current_run_id
                         )
-                        evaluation = evaluate_report(report, results)
-                        ledger = merge_paper_ledger(ledger, evaluation)
-                        attempt.update({
-                            "status": "EVALUATED",
-                            "fixtures_scored": evaluation.get("fixtures_scored", 0),
-                            "completed_forecasts_scored": evaluation["completed_forecasts_scored"],
-                            "metrics": evaluation["metrics"],
-                            "metrics_by_model": evaluation.get("metrics_by_model", {}),
-                        })
-                    except (FootballAPIError, RuntimeError, ValueError) as exc:
-                        attempt.update({"status": "RESULT_FETCH_FAILED", "detail": str(exc)})
+                        if report is None:
+                            one.update({
+                                "status": "NO_PREVIOUS_REPORT",
+                                "detail": "No saved daily report was found for this date.",
+                            })
+                        elif not os.getenv("API_FOOTBALL_KEY"):
+                            one.update({
+                                "status": "API_KEY_MISSING",
+                                "detail": "Cannot fetch completed results without API_FOOTBALL_KEY.",
+                            })
+                        else:
+                            try:
+                                if api_client is None:
+                                    api_client = FootballAPI(get_settings())
+                                results = api_client.fixtures(date_text, "Africa/Lagos")
+                                evaluation = evaluate_report(report, results)
+                                ledger = merge_paper_ledger(ledger, evaluation)
+                                one.update({
+                                    "status": "EVALUATED",
+                                    "fixtures_scored": evaluation.get("fixtures_scored", 0),
+                                    "completed_forecasts_scored": evaluation["completed_forecasts_scored"],
+                                    "metrics": evaluation["metrics"],
+                                    "metrics_by_model": evaluation.get("metrics_by_model", {}),
+                                    "awaiting_result_or_match": evaluation.get("awaiting_result_or_match", 0),
+                                })
+                            except (FootballAPIError, RuntimeError, ValueError) as exc:
+                                one.update({"status": "RESULT_FETCH_FAILED", "detail": str(exc)})
+                    except (requests.RequestException, RuntimeError, ValueError, zipfile.BadZipFile, json.JSONDecodeError) as exc:
+                        one.update({"status": "TRACKING_ERROR", "detail": str(exc)})
+                    attempts.append(one)
     except (requests.RequestException, RuntimeError, ValueError, zipfile.BadZipFile, json.JSONDecodeError) as exc:
         # Paper tracking must never prevent the current day's predictions from running.
-        attempt.update({"status": "TRACKING_ERROR", "detail": str(exc)})
+        attempts.append({
+            "report_date": report_date.isoformat(),
+            "status": "TRACKING_ERROR",
+            "detail": str(exc),
+        })
+
+    statuses = {item["status"] for item in attempts}
+    if "EVALUATED" in statuses:
+        top_status = "EVALUATED"
+    elif "TRACKING_ERROR" in statuses:
+        top_status = "TRACKING_ERROR"
+    elif "RESULT_FETCH_FAILED" in statuses:
+        top_status = "RESULT_FETCH_FAILED"
+    elif "API_KEY_MISSING" in statuses:
+        top_status = "API_KEY_MISSING"
+    elif "NO_PREVIOUS_REPORT" in statuses:
+        top_status = "NO_PREVIOUS_REPORT"
+    elif "ALREADY_EVALUATED" in statuses:
+        top_status = "ALREADY_EVALUATED"
+    else:
+        top_status = "NOT_EVALUATED"
 
     ledger["product"] = "Veltrix Football"
     ledger["model_status"] = "PAPER_TRACKING_ONLY"
     ledger["updated_at_utc"] = datetime.now(timezone.utc).isoformat()
-    ledger["last_attempt"] = attempt
+    ledger["last_attempt"] = {
+        "report_date": report_date.isoformat(),
+        "status": top_status,
+        "attempts": attempts,
+        "detail": None,
+        "metrics_by_model": ledger.get("cumulative_metrics_by_model", {}),
+    }
     ledger.setdefault("evaluations", [])
     ledger.setdefault("scored_matches", [])
     output = Path(output_path)
