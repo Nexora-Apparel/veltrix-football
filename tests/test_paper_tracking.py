@@ -357,3 +357,34 @@ def test_tracking_runner_evaluates_saved_report_and_writes_per_model_ledger(tmp_
     assert ledger["cumulative_metrics_by_model"]["experimental_elo_by_competition"]["matches"] == 1
     assert ledger["cumulative_metrics_by_model"]["experimental_recent_goals_poisson"]["matches"] == 1
     assert output.exists()
+
+
+
+def test_pending_report_date_is_updated_as_more_fixtures_finish():
+    report = {
+        "as_of_date": "2026-10-22",
+        "predictions": [_prediction(71), _prediction(72)],
+    }
+    first = evaluate_report(
+        report,
+        {"response": [_result(71, 1, 0), _result(72, None, None, status="NS")]},
+    )
+    ledger = merge_paper_ledger({}, first)
+    assert ledger["evaluations"][0]["awaiting_result_or_match"] == 1
+    assert ledger["evaluations"][0]["completed_forecasts_scored"] == 1
+
+    second = evaluate_report(
+        report,
+        {"response": [_result(71, 1, 0), _result(72, 0, 2)]},
+    )
+    ledger = merge_paper_ledger(ledger, second)
+    assert ledger["evaluations"][0]["awaiting_result_or_match"] == 0
+    assert ledger["evaluations"][0]["completed_forecasts_scored"] == 2
+    assert ledger["evaluations"][0]["metrics"]["matches"] == 2
+    assert ledger["cumulative_metrics_by_model"]["unknown"]["matches"] == 2
+    assert len(ledger["scored_matches"]) == 2
+
+    # A replay after completion must remain idempotent.
+    replay = merge_paper_ledger(ledger, second)
+    assert replay["evaluations"][0]["completed_forecasts_scored"] == 2
+    assert len(replay["scored_matches"]) == 2
