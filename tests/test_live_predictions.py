@@ -96,3 +96,13 @@ def test_past_kickoffs_are_excluded_from_pre_match_report():
     )
     assert [item["fixture_id"] for item in result] == [200]
     assert result[0]["kickoff_local"].startswith("2026-10-23T15:00:00")
+
+
+
+def test_explicit_historical_date_uses_that_dates_clock_when_now_is_omitted():
+    result = predict_fixtures(
+        [_fixture()], _history(), as_of=date(2026, 10, 23),
+        timezone_name="Africa/Lagos",
+    )
+    assert len(result) == 1
+    assert result[0]["fixture_id"] == 123
