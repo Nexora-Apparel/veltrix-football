@@ -290,3 +290,35 @@ def test_daily_report_warns_backtest_does_not_validate_live_pipeline(tmp_path):
     )
     assert "underperforms the market benchmark" in report["notice"]
     assert "unvalidated for betting" in report["notice"]
+
+
+
+def test_competition_elo_uses_only_matching_division_history():
+    rows = _history()
+    for row in rows:
+        row["division"] = "E0"
+    # Add many contradictory results in a different competition. They must not
+    # alter the EPL-scoped Elo estimate for this fixture.
+    for day in range(1, 7):
+        d = date(2026, 10, day)
+        rows.extend([
+            {"date": d, "division": "SP1", "home": "Alpha FC", "away": f"Spanish Opponent {day}",
+             "home_key": "alphafc", "away_key": f"spanishopponent{day}",
+             "home_goals": 0, "away_goals": 4},
+            {"date": d, "division": "SP1", "home": f"Spanish Rival {day}", "away": "Beta FC",
+             "home_key": f"spanishrival{day}", "away_key": "betafc",
+             "home_goals": 4, "away_goals": 0},
+        ])
+    fixture = _fixture()
+    fixture["league"]["id"] = 39
+    result = predict_fixtures(
+        [fixture], rows, as_of=date(2026, 10, 23),
+        now=datetime(2026, 10, 23, 12, 0, tzinfo=ZoneInfo("Africa/Lagos")),
+    )
+    prediction = result[0]
+    assert prediction["elo_model"] == "experimental_elo_by_competition"
+    assert prediction["elo_history"]["division_code"] == "E0"
+    assert prediction["elo_history"]["home_prior_matches"] == 6
+    assert prediction["elo_history"]["away_prior_matches"] == 6
+    assert set(prediction["elo_probabilities"]) == {"home_win", "draw", "away_win"}
+    assert abs(sum(prediction["elo_probabilities"].values()) - 1) < 0.0002
