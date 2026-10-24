@@ -130,3 +130,16 @@ def test_aliases_allow_known_fixture_name_variant_to_use_history():
     )
     assert result[0]["status"] == "EXPERIMENTAL_ONLY"
     assert result[0]["historical_matches"]["home"] == 6
+
+
+
+def test_fuzzy_name_matches_are_suggestions_only_not_automatic_predictions():
+    fixture = _fixture()
+    fixture["teams"]["home"]["name"] = "Alph FC"
+    result = predict_fixtures(
+        [fixture], _history(), as_of=date(2026, 10, 23),
+        now=datetime(2026, 10, 23, 12, 0, tzinfo=ZoneInfo("Africa/Lagos")),
+    )
+    assert result[0]["status"] == "INSUFFICIENT_HISTORY"
+    assert "probabilities" not in result[0]
+    assert "Alpha FC" in result[0]["team_name_match_suggestions"]["home"]
