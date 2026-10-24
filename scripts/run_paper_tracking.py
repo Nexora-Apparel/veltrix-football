@@ -161,8 +161,10 @@ def run(report_date: date, output_path: str) -> dict[str, Any]:
                         ledger = merge_paper_ledger(ledger, evaluation)
                         attempt.update({
                             "status": "EVALUATED",
+                            "fixtures_scored": evaluation.get("fixtures_scored", 0),
                             "completed_forecasts_scored": evaluation["completed_forecasts_scored"],
                             "metrics": evaluation["metrics"],
+                            "metrics_by_model": evaluation.get("metrics_by_model", {}),
                         })
                     except (FootballAPIError, RuntimeError, ValueError) as exc:
                         attempt.update({"status": "RESULT_FETCH_FAILED", "detail": str(exc)})
