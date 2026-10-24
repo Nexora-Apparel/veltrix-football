@@ -95,7 +95,7 @@ def test_daily_runner_refreshes_history_only_when_future_fixtures_exist(tmp_path
     }
     monkeypatch.setattr(
         daily_runner, "fetch_recent_results",
-        lambda api, history, end_date: (recent_rows, sync),
+        lambda api, history, end_date, **kwargs: (recent_rows, sync),
     )
 
     daily_runner.main()
