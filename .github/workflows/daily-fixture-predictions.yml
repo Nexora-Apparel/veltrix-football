@@ -71,7 +71,7 @@ jobs:
           python scripts/run_paper_tracking.py --date "$PAPER_DATE" --output reports/paper_tracking_ledger.json
       - name: Validate paper ledger before upload
         id: paper-ledger-check
-        if: always() && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && steps.paper-ledger-check.outputs.safe == 'true'
+        if: always() && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch')
         run: |
           if [ ! -f reports/paper_tracking_ledger.json ]; then
             echo "safe=false" >> "$GITHUB_OUTPUT"
@@ -131,7 +131,7 @@ jobs:
           retention-days: 90
 
       - name: Upload cumulative paper-tracking ledger
-        if: always() && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && steps.paper-tracking.outcome != 'skipped'
+        if: always() && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && steps.paper-ledger-check.outputs.safe == 'true'
         uses: actions/upload-artifact@v7
         with:
           name: veltrix-paper-ledger
