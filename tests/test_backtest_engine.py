@@ -26,6 +26,12 @@ def test_backtest_predicts_only_after_training_and_is_deterministic():
     assert result["test_matches"] > 0
     assert result["first_test_date"] > matches[49]["match_date"]
     assert set(result["models"]) == {"poisson", "elo"}
+    live = result["live_pipeline"]
+    assert live["model"] == "experimental_recent_goals_poisson"
+    assert live["matches"] > 0
+    assert live["first_test_date"] >= "2024-01-01"
+    assert live["metrics"]["brier_score"] >= 0
+    assert live["recent_holdout"]["matches"] > 0
     assert result["models"]["poisson"]["matches"] == result["test_matches"]
     assert result["models"]["elo"]["brier_score"] >= 0
     holdout = result["recent_holdout"]
@@ -53,6 +59,9 @@ def test_market_reference_is_reported_on_covered_fixtures():
     assert subset["models_compared_on_same_matches"]["market"]["matches"] == result["test_matches"]
     holdout_market = result["recent_holdout"]["historical_odds_subset"]
     assert holdout_market["matches_with_valid_1x2_odds"] == result["recent_holdout"]["matches"]
+    live = result["live_pipeline"]
+    assert live["historical_odds_subset"]["matches_with_valid_1x2_odds"] == live["matches"]
+    assert set(live["historical_odds_subset"]["models_compared_on_same_matches"]) == {"live_poisson", "market"}
     assert set(holdout_market["models_compared_on_same_matches"]) == {"poisson", "elo", "market"}
     for model in ("poisson", "elo", "market"):
         calibration = subset["models_compared_on_same_matches"][model]["calibration"]
