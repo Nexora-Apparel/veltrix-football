@@ -102,3 +102,17 @@ def test_telegram_report_converts_utc_kickoff_to_lagos_time():
     report = sample_report()
     report["predictions"][0]["kickoff_local"] = "2026-10-23T16:00:00Z"
     assert "Kickoff: 17:00 WAT" in format_report(report)
+
+
+
+def test_telegram_report_discloses_non_automatic_name_match_suggestions():
+    report = sample_report()
+    report["predictions"].append({
+        "status": "INSUFFICIENT_HISTORY",
+        "home_team": "Alph FC",
+        "away_team": "Mystery FC",
+        "team_name_match_suggestions": {"home": ["Alpha FC"]},
+    })
+    message = format_report(report)
+    assert "possible team-name variants to review" in message
+    assert "suggestions only and are never auto-matched" in message
