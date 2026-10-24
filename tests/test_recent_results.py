@@ -184,8 +184,8 @@ def test_fetch_recent_results_falls_back_to_single_dates_when_range_parameters_a
 
     assert len(api.range_calls) == 1
     assert api.date_calls == [
-        ("2026-09-05", "Europe/London"),
         ("2026-09-04", "Europe/London"),
+        ("2026-09-05", "Europe/London"),
     ]
     assert [row["date"] for row in rows] == [date(2026, 9, 4), date(2026, 9, 5)]
     assert meta["status"] == "COMPLETE"
