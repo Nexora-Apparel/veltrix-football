@@ -70,6 +70,7 @@ def test_market_reference_is_reported_on_covered_fixtures():
     assert holdout_market["matches_with_valid_1x2_odds"] == result["recent_holdout"]["matches"]
     live = result["live_pipeline"]
     assert live["historical_odds_subset"]["matches_with_valid_1x2_odds"] == live["matches"]
+    assert live["metrics_by_competition"]["L1"]["historical_odds_matches"] == live["matches"]
     assert set(live["historical_odds_subset"]["models_compared_on_same_matches"]) == {"live_poisson", "market"}
     assert set(holdout_market["models_compared_on_same_matches"]) == {"poisson", "elo", "market"}
     for model in ("poisson", "elo", "market"):
