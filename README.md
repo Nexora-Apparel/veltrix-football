@@ -39,11 +39,11 @@ The available leagues, seasons, statistics, odds, and request quota depend on th
 ## Historical data export
 Use `python -m app.cli history --from YYYY-MM-DD --to YYYY-MM-DD --output data/historical_features.csv` to retrieve fixtures and export completed matches. Each row includes rolling team form features computed strictly from earlier completed matches; a match result is added to team history only after that match’s pre-match features are calculated. This avoids direct target leakage. The default rolling window is five matches and can be changed with `--window 8`. Keep date ranges to 366 calendar days or less per request. API plan coverage, quota and historical availability still apply. CSV files are local outputs and are not committed automatically.
 
-## Open historical dataset import (2024–present)
+## Open historical dataset import (2020–present)
 Veltrix can import completed match records from the public [Club-Football-Match-Data dataset](https://github.com/xgabora/Club-Football-Match-Data), whose repository identifies an MIT license. The raw dataset is **not** committed to this repository. Run:
 
 ```bash
-python -m scripts.import_open_dataset --from 2024-01-01 --to 2026-10-23 --output data/open_historical_matches.csv
+python -m scripts.import_open_dataset --from 2020-01-01 --to 2026-10-23 --output data/open_historical_matches.csv
 ```
 
 The importer discovers the source CSV path from the repository tree, validates required fields, normalizes scores, team names, date, available Elo/form/odds/statistics, skips malformed rows, and deduplicates by competition/date/home/away. Optional odds and statistics remain empty when missing. The GitHub Actions workflow can run manually or weekly and uploads the generated CSV as an artifact for 30 days; this artifact is not a permanent database.
