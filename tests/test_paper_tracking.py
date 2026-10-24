@@ -350,8 +350,10 @@ def test_tracking_runner_evaluates_saved_report_and_writes_per_model_ledger(tmp_
     output = tmp_path / "paper_ledger.json"
     ledger = tracking_runner.run(date(2026, 10, 23), str(output))
     assert ledger["last_attempt"]["status"] == "EVALUATED"
-    assert ledger["last_attempt"]["completed_forecasts_scored"] == 2
-    assert set(ledger["last_attempt"]["metrics_by_model"]) == {
+    attempt = ledger["last_attempt"]["attempts"][0]
+    assert attempt["status"] == "EVALUATED"
+    assert attempt["completed_forecasts_scored"] == 2
+    assert set(attempt["metrics_by_model"]) == {
         "experimental_elo_by_competition", "experimental_recent_goals_poisson"
     }
     assert ledger["cumulative_metrics_by_model"]["experimental_elo_by_competition"]["matches"] == 1
@@ -430,6 +432,7 @@ def test_tracking_runner_retries_report_already_in_ledger_when_fixtures_are_pend
     monkeypatch.setattr(tracking_runner, "FootballAPI", FakeFootballAPI)
     ledger = tracking_runner.run(date(2026, 10, 23), str(tmp_path / "ledger.json"))
     assert ledger["last_attempt"]["status"] == "EVALUATED"
+    assert ledger["last_attempt"]["attempts"][0]["status"] == "EVALUATED"
     assert ledger["evaluations"][0]["awaiting_result_or_match"] == 0
     assert ledger["evaluations"][0]["completed_forecasts_scored"] == 1
 
