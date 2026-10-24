@@ -1,3 +1,5 @@
+from datetime import date
+
 from app.paper_tracking import evaluate_report, merge_paper_ledger
 from scripts.run_paper_tracking import run as run_paper_tracking
 
@@ -96,7 +98,7 @@ def test_automation_writes_safe_ledger_when_github_credentials_are_missing(tmp_p
     monkeypatch.delenv("GITHUB_REPOSITORY", raising=False)
     monkeypatch.delenv("GITHUB_TOKEN", raising=False)
     output = tmp_path / "ledger.json"
-    ledger = run_paper_tracking(__import__("datetime").date(2026, 10, 23), str(output))
+    ledger = run_paper_tracking(date(2026, 10, 23), str(output))
     assert output.exists()
     assert ledger["model_status"] == "PAPER_TRACKING_ONLY"
     assert ledger["last_attempt"]["status"] == "TRACKING_ERROR"
