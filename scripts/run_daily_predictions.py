@@ -1,4 +1,4 @@
-"""Fetch today's fixtures and write an experimental prediction JSON report."""
+"""Fetch today's fixtures, refresh completed results, and write an experimental report."""
 from __future__ import annotations
 
 import argparse
@@ -17,7 +17,7 @@ from app.live_odds import extract_market_probabilities
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--date", default=None, help="Nigeria-local fixture date YYYY-MM-DD (defaults to today in selected timezone)")
+    parser.add_argument("--date", default=None, help="Fixture date YYYY-MM-DD in the selected timezone (defaults to today)")
     parser.add_argument("--history", default="data/open_historical_matches.csv")
     parser.add_argument("--output", default="reports/daily_predictions.json")
     parser.add_argument("--timezone", default="Africa/Lagos")
@@ -27,18 +27,16 @@ def main() -> None:
         api = FootballAPI(get_settings())
         payload = api.fixtures(target_date.isoformat(), args.timezone)
         base_history = load_historical_matches(args.history)
-        report = build_daily_report(
-            payload,
-            args.history,
-            as_of=target_date,
-            timezone_name=args.timezone,
-            base_historical_matches=base_history,
+
+        # Historical results must refresh even when the target day's matches have
+        # already kicked off. Otherwise late-day runs can leave model history stale.
+        recent_rows, recent_sync = fetch_recent_results(
+            api, base_history, target_date - timedelta(days=1), timezone_name=args.timezone
         )
-        if report["future_fixtures_considered"] > 0:
-            recent_rows, recent_sync = fetch_recent_results(
-                api, base_history, target_date - timedelta(days=1), timezone_name=args.timezone
-            )
-            market_odds_by_fixture = {}
+
+        market_odds_by_fixture = {}
+        # Odds are only useful for fixtures that have not kicked off yet.
+        if _has_future_fixtures(payload, target_date, args.timezone):
             try:
                 odds_payload = api.odds_for_date(target_date.isoformat(), args.timezone)
                 market_odds_by_fixture = extract_market_probabilities(odds_payload)
@@ -55,33 +53,23 @@ def main() -> None:
                     "snapshot_date": target_date.isoformat(),
                     "warning": str(exc),
                 }
-            if recent_rows or market_odds_by_fixture:
-                report = build_daily_report(
-                    payload,
-                    args.history,
-                    as_of=target_date,
-                    timezone_name=args.timezone,
-                    additional_historical_matches=recent_rows,
-                    base_historical_matches=base_history,
-                    market_odds_by_fixture=market_odds_by_fixture,
-                )
         else:
-            recent_sync = {
-                "status": "SKIPPED_NO_FUTURE_FIXTURES",
-                "results_added": 0,
-                "requested_start": None,
-                "requested_end": (target_date - timedelta(days=1)).isoformat(),
-                "covered_from": None,
-                "covered_through": report.get("historical_data_through"),
-                "ranges_succeeded": 0,
-                "warning": None,
-            }
             odds_sync = {
                 "status": "SKIPPED_NO_FUTURE_FIXTURES",
                 "fixtures_with_odds": 0,
                 "snapshot_date": target_date.isoformat(),
                 "warning": None,
             }
+
+        report = build_daily_report(
+            payload,
+            args.history,
+            as_of=target_date,
+            timezone_name=args.timezone,
+            additional_historical_matches=recent_rows,
+            base_historical_matches=base_history,
+            market_odds_by_fixture=market_odds_by_fixture,
+        )
         report["recent_results_sync"] = recent_sync
         report["live_odds_sync"] = odds_sync
         report["fixtures_with_market_odds"] = sum(
@@ -114,6 +102,24 @@ def main() -> None:
     except (RuntimeError, ValueError, FootballAPIError, OSError) as exc:
         print(f"DAILY PREDICTION RUN FAILED: {exc}", file=sys.stderr)
         raise SystemExit(1) from exc
+
+
+def _has_future_fixtures(payload: dict, target_date: date, timezone_name: str) -> bool:
+    """Return whether the payload contains a same-local-day fixture still to start."""
+    from app.live_predictions import _fixture_parts
+    from datetime import datetime
+    from zoneinfo import ZoneInfo
+
+    now = datetime.now(ZoneInfo(timezone_name))
+    response = payload.get("response")
+    if not isinstance(response, list):
+        return False
+    return any(
+        (part := _fixture_parts(item, timezone_name))
+        and part["kickoff_date"] == target_date
+        and part["kickoff_datetime"] > now
+        for item in response
+    )
 
 
 if __name__ == "__main__":
