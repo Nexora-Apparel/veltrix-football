@@ -69,6 +69,21 @@ jobs:
           if [ -z "$TARGET_DATE" ]; then TARGET_DATE="$(TZ=Africa/Lagos date +%F)"; fi
           PAPER_DATE="$(TZ=Africa/Lagos date -d "$TARGET_DATE - 1 day" +%F)"
           python scripts/run_paper_tracking.py --date "$PAPER_DATE" --output reports/paper_tracking_ledger.json
+      - name: Validate paper ledger before upload
+        id: paper-ledger-check
+        if: always() && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && steps.paper-ledger-check.outputs.safe == 'true'
+        run: |
+          if [ ! -f reports/paper_tracking_ledger.json ]; then
+            echo "safe=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          STATUS="$(python -c 'import json; print(json.load(open("reports/paper_tracking_ledger.json", encoding="utf-8")).get("last_attempt", {}).get("status", "UNKNOWN"))')"
+          if [ "$STATUS" = "TRACKING_ERROR" ]; then
+            echo "::warning::Paper tracking failed; do not replace the last known-good cumulative ledger."
+            echo "safe=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "safe=true" >> "$GITHUB_OUTPUT"
+          fi
       - name: Import historical matches
         if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
         run: python scripts/import_open_dataset.py --from 2020-01-01 --to "$(date -u +%F)" --output data/open_historical_matches.csv
