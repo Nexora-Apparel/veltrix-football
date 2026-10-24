@@ -162,14 +162,28 @@ def _score_probabilities(rows: list[dict[str, Any]], model_name: str, *, bins: i
 
 
 def _compact_score(rows: list[dict[str, Any]], model_name: str) -> dict[str, Any] | None:
+    """Calculate compact metrics without calibration bins for league breakdowns."""
     if not rows:
         return None
-    full = _score_probabilities(rows, model_name)
+    outcomes = ("H", "D", "A")
+    brier_total = 0.0
+    logloss_total = 0.0
+    correct = 0
+    for row in rows:
+        probabilities = row[model_name]
+        actual = row["actual"]
+        brier_total += sum(
+            (probabilities[outcome] - float(actual == outcome)) ** 2
+            for outcome in outcomes
+        )
+        logloss_total += -math.log(max(1e-15, min(1.0, probabilities[actual])))
+        correct += int(max(probabilities, key=probabilities.get) == actual)
+    count = len(rows)
     return {
-        "matches": full["matches"],
-        "brier_score": full["brier_score"],
-        "log_loss": full["log_loss"],
-        "result_accuracy": full["result_accuracy"],
+        "matches": count,
+        "brier_score": brier_total / count,
+        "log_loss": logloss_total / count,
+        "result_accuracy": correct / count,
     }
 
 
