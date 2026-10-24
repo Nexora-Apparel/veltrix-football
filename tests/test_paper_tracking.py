@@ -206,3 +206,27 @@ def test_latest_ledger_searches_past_45_daily_runs(monkeypatch):
     )
     ledger = tracking_runner.find_latest_ledger(object(), "owner/repo", runs, "9999")
     assert ledger["evaluations"][0]["report_date"] == "2026-08-01"
+
+
+
+def test_evaluator_scores_poisson_and_elo_alternatives_separately():
+    report = {"as_of_date": "2026-10-23", "predictions": [{
+        "fixture_id": 31,
+        "model": "experimental_recent_goals_poisson",
+        "elo_model": "experimental_elo_by_competition",
+        "home_team": "Alpha FC",
+        "away_team": "Beta FC",
+        "status": "EXPERIMENTAL_ONLY",
+        "probabilities": {"home_win": 0.35, "draw": 0.30, "away_win": 0.35},
+        "elo_probabilities": {"home_win": 0.60, "draw": 0.25, "away_win": 0.15},
+    }]}
+    result = evaluate_report(report, {"response": [_result(31, 2, 0)]})
+    assert result["completed_forecasts_scored"] == 2
+    assert result["unique_fixtures_scored"] == 1
+    assert {row["model"] for row in result["matches"]} == {
+        "experimental_recent_goals_poisson",
+        "experimental_elo_by_competition",
+    }
+    ledger = merge_paper_ledger({}, result)
+    assert ledger["cumulative_metrics_by_model"]["experimental_recent_goals_poisson"]["matches"] == 1
+    assert ledger["cumulative_metrics_by_model"]["experimental_elo_by_competition"]["matches"] == 1
