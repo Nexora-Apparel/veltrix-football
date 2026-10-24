@@ -1,7 +1,7 @@
 from datetime import date
 
 from app.paper_tracking import evaluate_report, merge_paper_ledger
-from scripts.run_paper_tracking import run as run_paper_tracking
+from scripts import run_paper_tracking as tracking_runner
 
 
 def _prediction(fixture_id, status="EXPERIMENTAL_ONLY", probabilities=None):
@@ -98,8 +98,22 @@ def test_automation_writes_safe_ledger_when_github_credentials_are_missing(tmp_p
     monkeypatch.delenv("GITHUB_REPOSITORY", raising=False)
     monkeypatch.delenv("GITHUB_TOKEN", raising=False)
     output = tmp_path / "ledger.json"
-    ledger = run_paper_tracking(date(2026, 10, 23), str(output))
+    ledger = tracking_runner.run(date(2026, 10, 23), str(output))
     assert output.exists()
     assert ledger["model_status"] == "PAPER_TRACKING_ONLY"
     assert ledger["last_attempt"]["status"] == "TRACKING_ERROR"
     assert ledger["evaluations"] == []
+
+
+
+def test_run_discovery_queries_schedule_and_dispatch_separately(monkeypatch):
+    calls = []
+    def fake_github_get(session, url):
+        calls.append(url)
+        if "event=schedule" in url:
+            return {"workflow_runs": [{"id": 1, "event": "schedule", "created_at": "2026-10-23T07:00:00Z"}]}
+        return {"workflow_runs": [{"id": 2, "event": "workflow_dispatch", "created_at": "2026-10-24T07:00:00Z"}]}
+    monkeypatch.setattr(tracking_runner, "github_get", fake_github_get)
+    runs = tracking_runner.list_relevant_runs(object(), "owner/repo")
+    assert len(calls) == 2
+    assert [run["id"] for run in runs] == [2, 1]
