@@ -98,6 +98,8 @@ def predict_fixtures(
     except ZoneInfoNotFoundError as exc:
         raise ValueError(f"Unknown timezone: {timezone_name}") from exc
     current_time = now or datetime.now(local_zone)
+    if now is None and as_of is not None and as_of != current_time.date():
+        current_time = datetime.combine(as_of, datetime.min.time(), tzinfo=local_zone)
     if current_time.tzinfo is None:
         current_time = current_time.replace(tzinfo=local_zone)
     current_time = current_time.astimezone(local_zone)
