@@ -202,3 +202,29 @@ def test_telegram_report_summarizes_primary_model_mix():
     assert "experimental_elo_by_competition: 3 primary forecast(s)" in message
     assert "experimental_recent_goals_poisson: 2 primary forecast(s)" in message
     assert "Alternative forecasts available — Elo: 2 | Poisson: 3" in message
+
+
+
+def test_telegram_report_shows_poisson_goal_markets_and_scorelines():
+    report = sample_report()
+    prediction = report["predictions"][0]
+    prediction.update({
+        "btts_yes": 0.58,
+        "over_2_5": 0.52,
+        "most_likely_scorelines": [
+            {"home_goals": 1, "away_goals": 0, "probability": 0.14},
+            {"home_goals": 1, "away_goals": 1, "probability": 0.12},
+        ],
+    })
+    message = format_report(report)
+    assert "POISSON GOAL MARKETS" in message
+    assert "BTTS Yes 58% | No 42%" in message
+    assert "Over 2.5 52% | Under 2.5 48%" in message
+    assert "Most likely scorelines: 1-0 (14%), 1-1 (12%)" in message
+
+    prediction["model"] = "experimental_elo_by_competition"
+    prediction["poisson_probabilities"] = {"home_win": 0.5, "draw": 0.25, "away_win": 0.25}
+    message = format_report(report)
+    assert "ELO PRIMARY ESTIMATE" in message
+    assert "POISSON AUXILIARY GOAL MARKETS" in message
+    assert "Poisson scoreline estimates: 1-0 (14%), 1-1 (12%)" in message
