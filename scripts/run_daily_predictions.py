@@ -26,17 +26,37 @@ def main() -> None:
         api = FootballAPI(get_settings())
         payload = api.fixtures(target_date.isoformat(), args.timezone)
         base_history = load_historical_matches(args.history)
-        recent_rows, recent_sync = fetch_recent_results(
-            api, base_history, target_date - timedelta(days=1)
-        )
         report = build_daily_report(
             payload,
             args.history,
             as_of=target_date,
             timezone_name=args.timezone,
-            additional_historical_matches=recent_rows,
             base_historical_matches=base_history,
         )
+        if report["future_fixtures_considered"] > 0:
+            recent_rows, recent_sync = fetch_recent_results(
+                api, base_history, target_date - timedelta(days=1)
+            )
+            if recent_rows:
+                report = build_daily_report(
+                    payload,
+                    args.history,
+                    as_of=target_date,
+                    timezone_name=args.timezone,
+                    additional_historical_matches=recent_rows,
+                    base_historical_matches=base_history,
+                )
+        else:
+            recent_sync = {
+                "status": "SKIPPED_NO_FUTURE_FIXTURES",
+                "results_added": 0,
+                "requested_start": None,
+                "requested_end": (target_date - timedelta(days=1)).isoformat(),
+                "covered_from": None,
+                "covered_through": report.get("historical_data_through"),
+                "ranges_succeeded": 0,
+                "warning": None,
+            }
         report["recent_results_sync"] = recent_sync
         output = Path(args.output)
         output.parent.mkdir(parents=True, exist_ok=True)
