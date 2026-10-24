@@ -42,9 +42,23 @@ def test_prediction_uses_minimum_history_and_never_claims_validated():
 
 def test_insufficient_team_history_suppresses_probabilities():
     fixture = _fixture()
+    fixture["league"]["id"] = 39
     fixture["teams"]["home"]["name"] = "Unknown Club"
     result = predict_fixtures([fixture], _history(), as_of=date(2026, 10, 23), now=datetime(2026, 10, 23, 12, 0, tzinfo=ZoneInfo("Africa/Lagos")))
     assert result[0]["status"] == "INSUFFICIENT_HISTORY"
+    assert "probabilities" not in result[0]
+
+
+def test_unmapped_competition_with_insufficient_history_is_classified_unsupported():
+    fixture = _fixture()
+    fixture["league"].pop("id", None)
+    fixture["teams"]["home"]["name"] = "Unknown Club"
+    result = predict_fixtures(
+        [fixture], _history(), as_of=date(2026, 10, 23),
+        now=datetime(2026, 10, 23, 12, 0, tzinfo=ZoneInfo("Africa/Lagos")),
+    )
+    assert result[0]["status"] == "UNSUPPORTED_COMPETITION"
+    assert "not mapped to the historical dataset" in result[0]["reason"]
     assert "probabilities" not in result[0]
 
 
