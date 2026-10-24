@@ -193,7 +193,9 @@ def main() -> None:
             "report_date": report_date.isoformat(),
             "last_attempt": ledger["last_attempt"],
             "evaluated_report_dates": len(ledger.get("evaluations", [])),
+            "model_versions": ledger.get("model_versions", []),
             "cumulative_metrics": ledger.get("cumulative_metrics", {}),
+            "cumulative_metrics_by_model": ledger.get("cumulative_metrics_by_model", {}),
             "output": args.output,
         }, indent=2))
     except (ValueError, OSError) as exc:
