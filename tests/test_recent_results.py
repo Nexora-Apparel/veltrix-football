@@ -1,10 +1,9 @@
 from __future__ import annotations
 
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 
 import pytest
 import csv
-from datetime import datetime
 from zoneinfo import ZoneInfo
 
 from app.live_predictions import build_daily_report
