@@ -1,0 +1,195 @@
+"""Evaluate the prior day's saved report and maintain a cumulative paper ledger."""
+from __future__ import annotations
+
+import argparse
+import io
+import json
+import os
+import sys
+import zipfile
+from datetime import date, datetime, timedelta, timezone
+from pathlib import Path
+from typing import Any
+
+import requests
+
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from app.config import get_settings
+from app.football_api import FootballAPI, FootballAPIError
+from app.paper_tracking import evaluate_report, merge_paper_ledger
+
+API_ROOT = "https://api.github.com"
+
+
+def github_get(session: requests.Session, url: str) -> dict[str, Any]:
+    response = session.get(url, timeout=30)
+    response.raise_for_status()
+    payload = response.json()
+    if not isinstance(payload, dict):
+        raise RuntimeError("GitHub API returned an unexpected response.")
+    return payload
+
+
+def list_relevant_runs(session: requests.Session, repo: str) -> list[dict[str, Any]]:
+    url = f"{API_ROOT}/repos/{repo}/actions/workflows/daily-fixture-predictions.yml/runs?per_page=100&status=success"
+    payload = github_get(session, url)
+    runs = [
+        run for run in payload.get("workflow_runs", [])
+        if run.get("event") in {"schedule", "workflow_dispatch"}
+    ]
+    return sorted(runs, key=lambda run: run.get("created_at", ""), reverse=True)
+
+
+def artifact_for_run(session: requests.Session, repo: str, run_id: int, artifact_name: str) -> dict[str, Any] | None:
+    url = f"{API_ROOT}/repos/{repo}/actions/runs/{run_id}/artifacts?per_page=100"
+    payload = github_get(session, url)
+    return next(
+        (item for item in payload.get("artifacts", [])
+         if item.get("name") == artifact_name and not item.get("expired")),
+        None,
+    )
+
+
+def read_artifact_json(session: requests.Session, artifact_url: str) -> dict[str, Any]:
+    response = session.get(artifact_url, timeout=60)
+    response.raise_for_status()
+    with zipfile.ZipFile(io.BytesIO(response.content)) as archive:
+        candidates = [name for name in archive.namelist() if name.lower().endswith(".json")]
+        if not candidates:
+            raise RuntimeError("GitHub artifact contains no JSON file.")
+        # These artifacts each contain one report/ledger JSON document.
+        value = json.loads(archive.read(candidates[0]).decode("utf-8"))
+    if not isinstance(value, dict):
+        raise RuntimeError("Downloaded artifact JSON has an unexpected shape.")
+    return value
+
+
+def find_daily_report(
+    session: requests.Session, repo: str, runs: list[dict[str, Any]], report_date: str, current_run_id: str
+) -> dict[str, Any] | None:
+    for run in runs:
+        if str(run.get("id")) == current_run_id or str(run.get("created_at", ""))[:10] != report_date:
+            continue
+        artifact = artifact_for_run(session, repo, int(run["id"]), "veltrix-daily-predictions")
+        if artifact:
+            report = read_artifact_json(session, artifact["archive_download_url"])
+            if report.get("as_of_date") == report_date:
+                return report
+    return None
+
+
+def find_latest_ledger(
+    session: requests.Session, repo: str, runs: list[dict[str, Any]], current_run_id: str
+) -> dict[str, Any]:
+    # Only schedule/dispatch runs produce this artifact. Bound API work if older
+    # workflows predate paper tracking and have no ledger artifact.
+    for run in runs[:45]:
+        if str(run.get("id")) == current_run_id:
+            continue
+        artifact = artifact_for_run(session, repo, int(run["id"]), "veltrix-paper-ledger")
+        if artifact:
+            return read_artifact_json(session, artifact["archive_download_url"])
+    return {
+        "product": "Veltrix Football",
+        "model_status": "PAPER_TRACKING_ONLY",
+        "evaluations": [],
+        "scored_matches": [],
+    }
+
+
+def run(report_date: date, output_path: str) -> dict[str, Any]:
+    repo = os.getenv("GITHUB_REPOSITORY", "")
+    token = os.getenv("GITHUB_TOKEN", "")
+    current_run_id = os.getenv("GITHUB_RUN_ID", "")
+    ledger: dict[str, Any] = {
+        "product": "Veltrix Football",
+        "model_status": "PAPER_TRACKING_ONLY",
+        "evaluations": [],
+        "scored_matches": [],
+    }
+    attempt: dict[str, Any] = {
+        "report_date": report_date.isoformat(),
+        "status": "NOT_EVALUATED",
+        "detail": None,
+    }
+
+    try:
+        if not repo or not token:
+            raise RuntimeError("GITHUB_REPOSITORY or GITHUB_TOKEN is unavailable.")
+        with requests.Session() as session:
+            session.headers.update({
+                "Authorization": f"Bearer {token}",
+                "Accept": "application/vnd.github+json",
+                "X-GitHub-Api-Version": "2022-11-28",
+                "User-Agent": "VeltrixFootball/0.1",
+            })
+            runs = list_relevant_runs(session, repo)
+            ledger = find_latest_ledger(session, repo, runs, current_run_id)
+            existing_dates = {
+                str(item.get("report_date")) for item in ledger.get("evaluations", [])
+            }
+            if report_date.isoformat() in existing_dates:
+                attempt.update({"status": "ALREADY_EVALUATED", "detail": "This report date is already in the ledger."})
+            else:
+                report = find_daily_report(
+                    session, repo, runs, report_date.isoformat(), current_run_id
+                )
+                if report is None:
+                    attempt.update({"status": "NO_PREVIOUS_REPORT", "detail": "No saved daily report was found for this date."})
+                elif not os.getenv("API_FOOTBALL_KEY"):
+                    attempt.update({"status": "API_KEY_MISSING", "detail": "Cannot fetch completed results without API_FOOTBALL_KEY."})
+                else:
+                    try:
+                        results = FootballAPI(get_settings()).fixtures(
+                            report_date.isoformat(), "Africa/Lagos"
+                        )
+                        evaluation = evaluate_report(report, results)
+                        ledger = merge_paper_ledger(ledger, evaluation)
+                        attempt.update({
+                            "status": "EVALUATED",
+                            "completed_forecasts_scored": evaluation["completed_forecasts_scored"],
+                            "metrics": evaluation["metrics"],
+                        })
+                    except (FootballAPIError, RuntimeError, ValueError) as exc:
+                        attempt.update({"status": "RESULT_FETCH_FAILED", "detail": str(exc)})
+    except (requests.RequestException, RuntimeError, ValueError, zipfile.BadZipFile, json.JSONDecodeError) as exc:
+        # Paper tracking must never prevent the current day's predictions from running.
+        attempt.update({"status": "TRACKING_ERROR", "detail": str(exc)})
+
+    ledger["product"] = "Veltrix Football"
+    ledger["model_status"] = "PAPER_TRACKING_ONLY"
+    ledger["updated_at_utc"] = datetime.now(timezone.utc).isoformat()
+    ledger["last_attempt"] = attempt
+    ledger.setdefault("evaluations", [])
+    ledger.setdefault("scored_matches", [])
+    output = Path(output_path)
+    output.parent.mkdir(parents=True, exist_ok=True)
+    output.write_text(json.dumps(ledger, indent=2, ensure_ascii=False), encoding="utf-8")
+    return ledger
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--date", required=True, help="Nigeria-local date of the saved report to evaluate (YYYY-MM-DD)")
+    parser.add_argument("--output", default="reports/paper_tracking_ledger.json")
+    args = parser.parse_args()
+    try:
+        report_date = date.fromisoformat(args.date)
+        ledger = run(report_date, args.output)
+        print(json.dumps({
+            "report_date": report_date.isoformat(),
+            "last_attempt": ledger["last_attempt"],
+            "evaluated_report_dates": len(ledger.get("evaluations", [])),
+            "cumulative_metrics": ledger.get("cumulative_metrics", {}),
+            "output": args.output,
+        }, indent=2))
+    except (ValueError, OSError) as exc:
+        print(f"PAPER TRACKING FAILED: {exc}", file=sys.stderr)
+        raise SystemExit(1) from exc
+
+
+if __name__ == "__main__":
+    main()
