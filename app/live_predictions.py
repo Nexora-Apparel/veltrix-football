@@ -497,6 +497,16 @@ def build_daily_report(
         "predictions_created": sum(p["status"] == "EXPERIMENTAL_ONLY" for p in predictions),
         "insufficient_history": sum(p["status"] == "INSUFFICIENT_HISTORY" for p in predictions),
         "unsupported_competitions": sum(p["status"] == "UNSUPPORTED_COMPETITION" for p in predictions),
+        "unsupported_competition_breakdown": {
+            str(league_name): sum(
+                p.get("status") == "UNSUPPORTED_COMPETITION" and p.get("league") == league_name
+                for p in predictions
+            )
+            for league_name in sorted({
+                p.get("league") for p in predictions
+                if p.get("status") == "UNSUPPORTED_COMPETITION" and p.get("league")
+            })
+        },
         "possible_team_name_mismatches": sum(bool(p.get("team_name_match_suggestions")) for p in predictions),
         "primary_model_counts": {
             model_name: sum(
