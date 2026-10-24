@@ -34,13 +34,23 @@ def github_get(session: requests.Session, url: str) -> dict[str, Any]:
 
 
 def list_relevant_runs(session: requests.Session, repo: str) -> list[dict[str, Any]]:
-    url = f"{API_ROOT}/repos/{repo}/actions/workflows/daily-fixture-predictions.yml/runs?per_page=100&status=success"
-    payload = github_get(session, url)
-    runs = [
-        run for run in payload.get("workflow_runs", [])
-        if run.get("event") in {"schedule", "workflow_dispatch"}
-    ]
-    return sorted(runs, key=lambda run: run.get("created_at", ""), reverse=True)
+    # Query these event types separately so frequent push-triggered test runs
+    # cannot crowd scheduled/manual report runs out of GitHub's first page.
+    runs_by_id: dict[int, dict[str, Any]] = {}
+    for event in ("schedule", "workflow_dispatch"):
+        url = (
+            f"{API_ROOT}/repos/{repo}/actions/workflows/daily-fixture-predictions.yml/runs"
+            f"?event={event}&per_page=100&status=completed"
+        )
+        payload = github_get(session, url)
+        for run in payload.get("workflow_runs", []):
+            if isinstance(run.get("id"), int):
+                runs_by_id[run["id"]] = run
+    return sorted(
+        runs_by_id.values(),
+        key=lambda run: run.get("created_at", ""),
+        reverse=True,
+    )
 
 
 def artifact_for_run(session: requests.Session, repo: str, run_id: int, artifact_name: str) -> dict[str, Any] | None:
