@@ -145,7 +145,7 @@ def run(report_date: date, output_path: str) -> dict[str, Any]:
                 for day, item in evaluation_by_date.items()
                 if int(item.get("awaiting_result_or_match", 0)) > 0
                 and day != report_date.isoformat()
-                and 0 <= (date.today() - date.fromisoformat(day)).days <= 85
+                and 0 <= (report_date - date.fromisoformat(day)).days <= 85
             })[:3]
             dates_to_process = [day for day in pending_dates]
             target_summary = evaluation_by_date.get(report_date.isoformat())
