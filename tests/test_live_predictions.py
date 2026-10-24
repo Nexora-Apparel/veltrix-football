@@ -43,7 +43,7 @@ def test_prediction_uses_minimum_history_and_never_claims_validated():
 def test_insufficient_team_history_suppresses_probabilities():
     fixture = _fixture()
     fixture["teams"]["home"]["name"] = "Unknown Club"
-    result = predict_fixtures([fixture], _history(), as_of=date(2026, 10, 23))
+    result = predict_fixtures([fixture], _history(), as_of=date(2026, 10, 23), now=datetime(2026, 10, 23, 12, 0, tzinfo=ZoneInfo("Africa/Lagos")))
     assert result[0]["status"] == "INSUFFICIENT_HISTORY"
     assert "probabilities" not in result[0]
 
