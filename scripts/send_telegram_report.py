@@ -4,6 +4,7 @@ from __future__ import annotations
 import argparse
 import json
 from datetime import datetime
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 import os
 import sys
 from pathlib import Path
@@ -30,9 +31,16 @@ def _format_kickoff(value: Any, timezone_name: str) -> str:
         parsed = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
     except ValueError:
         return str(value)
-    if timezone_name == "Africa/Lagos":
-        return f"{parsed:%H:%M} WAT"
-    abbreviation = parsed.tzname()
+    try:
+        target_timezone = ZoneInfo(timezone_name)
+    except ZoneInfoNotFoundError:
+        target_timezone = None
+    if target_timezone is not None:
+        if parsed.tzinfo is None:
+            parsed = parsed.replace(tzinfo=target_timezone)
+        else:
+            parsed = parsed.astimezone(target_timezone)
+    abbreviation = "WAT" if timezone_name == "Africa/Lagos" else parsed.tzname()
     return f"{parsed:%H:%M} {abbreviation}" if abbreviation else f"{parsed:%H:%M}"
 
 
