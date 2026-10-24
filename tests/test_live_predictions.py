@@ -180,3 +180,20 @@ def test_goal_estimates_prefer_relevant_home_and_away_venue_history():
     )
     assert result[0]["status"] == "EXPERIMENTAL_ONLY"
     assert result[0]["expected_goals"]["home"] > result[0]["expected_goals"]["away"]
+
+
+
+def test_zero_goal_history_keeps_estimates_finite():
+    rows = _history()
+    for row in rows:
+        row["home_goals"] = 0
+        row["away_goals"] = 0
+    result = predict_fixtures(
+        [_fixture()], rows, as_of=date(2026, 10, 23),
+        now=datetime(2026, 10, 23, 12, 0, tzinfo=ZoneInfo("Africa/Lagos")),
+    )
+    prediction = result[0]
+    assert prediction["status"] == "EXPERIMENTAL_ONLY"
+    assert prediction["expected_goals"]["home"] > 0
+    assert prediction["expected_goals"]["away"] > 0
+    assert all(0 <= p <= 1 for p in prediction["probabilities"].values())
