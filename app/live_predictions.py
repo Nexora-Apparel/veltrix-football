@@ -135,7 +135,28 @@ def predict_fixtures(
     today = as_of or current_time.date()
     usable = sorted((m for m in historical_matches if m["date"] < today), key=lambda row: row["date"])
     if not usable:
-        return []
+        # Never silently drop eligible fixtures when the history file is empty
+        # or contains no records before the requested date. Emit explicit
+        # withheld records so reports distinguish missing data from no fixtures.
+        candidates = [
+            p for item in fixtures
+            if (p := _fixture_parts(item, timezone_name))
+            and p["kickoff_date"] == today
+            and p["kickoff_datetime"] > current_time
+        ]
+        return [
+            {
+                **{k: v for k, v in fixture.items() if k not in {"kickoff_date", "kickoff_datetime"}},
+                "model": "experimental_recent_goals_poisson",
+                "model_validated": False,
+                "betting_recommendation": False,
+                "historical_matches": {"home": 0, "away": 0},
+                "status": "INSUFFICIENT_HISTORY",
+                "reason": "No historical matches dated before the fixture date are available.",
+                "team_name_match_suggestions": {},
+            }
+            for fixture in candidates
+        ]
 
     known_team_names: dict[str, set[str]] = defaultdict(set)
     for match in usable:
