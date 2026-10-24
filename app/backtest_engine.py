@@ -64,8 +64,15 @@ def _normalize_match(row: dict[str, Any]) -> dict[str, Any] | None:
         division = str(row.get("division") or row.get("league") or "").strip()
         home = str(row.get("home_team") or row.get("HomeTeam") or "").strip()
         away = str(row.get("away_team") or row.get("AwayTeam") or "").strip()
-        hg = int(float(row.get("home_goals", row.get("FTHome"))))
-        ag = int(float(row.get("away_goals", row.get("FTAway"))))
+        home_score = _safe_float(row.get("home_goals", row.get("FTHome")))
+        away_score = _safe_float(row.get("away_goals", row.get("FTAway")))
+        if (
+            home_score is None or away_score is None
+            or not home_score.is_integer() or not away_score.is_integer()
+            or home_score < 0 or away_score < 0
+        ):
+            return None
+        hg, ag = int(home_score), int(away_score)
         from datetime import date
         date.fromisoformat(day)
         if not division or not home or not away or home.casefold() == away.casefold() or min(hg, ag) < 0:
