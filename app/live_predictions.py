@@ -398,7 +398,7 @@ def predict_fixtures(
                 "limitations": [
                     "Not validated for betting.",
                     "Historical dataset coverage and team-name matching may be incomplete.",
-                    "The primary Poisson model underperforms the historical market benchmark.",
+                    "The recent-goals Poisson model underperforms the historical market benchmark.",
                     "Competition-specific Elo is selected as primary only when the fixture maps to a supported historical division and has sufficient team history.",
                     "Expected goals and totals remain auxiliary Poisson estimates when Elo is primary.",
                     "Elo and Poisson paper results are tracked separately; neither is approved for betting.",
