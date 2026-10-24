@@ -1,4 +1,4 @@
-from scripts.import_open_dataset import normalize_row
+from scripts.import_open_dataset import RAW_BASE, find_matches_csv, normalize_row
 
 
 def base_row(**overrides):
@@ -94,3 +94,12 @@ def test_import_summary_reports_competition_and_season_coverage(tmp_path, monkey
     report = importer.import_dataset("2025-01-01", "2026-12-31", str(tmp_path / "history.csv"))
     assert report["matches_by_competition"] == {"E0": 2, "SP1": 1}
     assert report["matches_by_season"] == {"2025": 2, "2026": 1}
+
+
+
+def test_dataset_path_avoids_github_tree_api_rate_limit():
+    class NoRequestSession:
+        def get(self, *args, **kwargs):
+            raise AssertionError("The known raw CSV path should not require a tree API request.")
+
+    assert find_matches_csv(NoRequestSession()) == RAW_BASE + "data/Matches.csv"
