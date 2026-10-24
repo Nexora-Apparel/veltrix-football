@@ -152,3 +152,43 @@ def test_daily_report_merges_recent_results_and_reports_freshness(tmp_path):
     assert report["historical_matches_available"] == 13
     assert report["historical_data_through"] == "2026-10-20"
     assert report["predictions_created"] == 1
+
+
+
+def test_fetch_recent_results_falls_back_to_single_dates_when_range_parameters_are_rejected():
+    class FakeAPI:
+        def __init__(self):
+            self.range_calls = []
+            self.date_calls = []
+
+        def fixtures_between(self, start, end, timezone):
+            self.range_calls.append((start, end, timezone))
+            raise FootballAPIError(
+                "API reported errors: {'from': 'The From field need another parameter.', "
+                "'to': 'The To field need another parameter.', "
+                "'timezone': 'The Timezone field need another parameter.'}"
+            )
+
+        def fixtures(self, match_date, timezone):
+            self.date_calls.append((match_date, timezone))
+            return {"response": [_fixture(match_date, home=f"Home {match_date}", away=f"Away {match_date}")]}
+
+    base = [{
+        "date": date(2026, 9, 3), "division": "E0", "home": "Old", "away": "Older",
+        "home_key": "old", "away_key": "older", "home_goals": 1, "away_goals": 0,
+    }]
+    api = FakeAPI()
+    rows, meta = fetch_recent_results(
+        api, base, date(2026, 9, 5), max_chunk_days=7, timezone_name="Europe/London"
+    )
+
+    assert len(api.range_calls) == 1
+    assert api.date_calls == [
+        ("2026-09-05", "Europe/London"),
+        ("2026-09-04", "Europe/London"),
+    ]
+    assert [row["date"] for row in rows] == [date(2026, 9, 4), date(2026, 9, 5)]
+    assert meta["status"] == "COMPLETE"
+    assert meta["results_added"] == 2
+    assert meta["covered_from"] == "2026-09-04"
+    assert meta["covered_through"] == "2026-09-05"
