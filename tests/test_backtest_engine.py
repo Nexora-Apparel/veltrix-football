@@ -83,6 +83,54 @@ def test_market_reference_is_reported_on_covered_fixtures():
             assert outcome["reliability_bins"]
 
 
+def test_same_day_results_cannot_change_another_fixture_forecast():
+    from datetime import date, timedelta
+
+    matches = []
+    start = date(2024, 1, 1)
+    for i in range(80):
+        matches.append({
+            "match_date": (start + timedelta(days=i)).isoformat(),
+            "division": "L1",
+            "home_team": "Alpha" if i % 2 == 0 else "Beta",
+            "away_team": "Beta" if i % 2 == 0 else "Alpha",
+            "home_goals": 2 if i % 3 else 0,
+            "away_goals": 0 if i % 3 else 1,
+        })
+
+    target_day = (start + timedelta(days=80)).isoformat()
+    same_day_matches = [
+        {
+            "match_date": target_day, "division": "L1",
+            "home_team": "Alpha", "away_team": "Beta",
+            "home_goals": 4, "away_goals": 0,
+        },
+        {
+            "match_date": target_day, "division": "L1",
+            "home_team": "Gamma", "away_team": "Delta",
+            "home_goals": 1, "away_goals": 1,
+        },
+    ]
+    changed_same_day_matches = [
+        {**same_day_matches[0], "home_goals": 0, "away_goals": 5},
+        same_day_matches[1],
+    ]
+
+    baseline = chronological_backtest(matches + same_day_matches, min_training_matches=50)
+    changed = chronological_backtest(matches + changed_same_day_matches, min_training_matches=50)
+
+    def target_forecast(report):
+        return next(
+            row for row in report["predictions"]
+            if row["match_date"] == target_day and row["home_team"] == "Gamma"
+        )
+
+    baseline_forecast = target_forecast(baseline)
+    changed_forecast = target_forecast(changed)
+    assert baseline_forecast["poisson"] == changed_forecast["poisson"]
+    assert baseline_forecast["elo"] == changed_forecast["elo"]
+
+
 
 def test_match_normalizer_rejects_fractional_or_invalid_scores():
     from app.backtest_engine import _normalize_match
