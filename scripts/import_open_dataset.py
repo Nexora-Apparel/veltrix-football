@@ -15,7 +15,6 @@ from urllib.parse import quote
 import requests
 
 DATASET_REPO = "xgabora/Club-Football-Match-Data"
-API_TREE_URL = f"https://api.github.com/repos/{DATASET_REPO}/git/trees/main?recursive=1"
 RAW_BASE = f"https://raw.githubusercontent.com/{DATASET_REPO}/main/"
 USER_AGENT = "VeltrixFootball/0.1"
 REQUIRED_COLUMNS = {"Division", "MatchDate", "HomeTeam", "AwayTeam", "FTHome", "FTAway"}
@@ -88,20 +87,14 @@ def normalize_row(row: dict[str, Any]) -> dict[str, Any] | None:
 
 
 def find_matches_csv(session: requests.Session) -> str:
-    response = session.get(API_TREE_URL, timeout=30)
-    response.raise_for_status()
-    payload = response.json()
-    if payload.get("truncated"):
-        raise RuntimeError("Dataset repository tree was truncated; refusing to guess a CSV path.")
-    candidates = [
-        item["path"] for item in payload.get("tree", [])
-        if item.get("type") == "blob" and Path(item.get("path", "")).name.casefold() == "matches.csv"
-    ]
-    if not candidates:
-        raise RuntimeError("Could not find Matches.csv in the dataset repository.")
-    # Prefer a data/ path if the repository has more than one candidate.
-    candidates.sort(key=lambda p: (0 if p.lower().startswith("data/") else 1, p))
-    return RAW_BASE + quote(candidates[0], safe="/")
+    """Return the documented raw CSV path without spending a rate-limited tree API call.
+
+    The upstream repository documents its match table at data/Matches.csv.
+    Keeping this URL explicit avoids making the daily prediction workflow depend
+    on GitHub's unauthenticated recursive-tree API quota.
+    """
+    del session  # retained in the signature for compatibility with callers/tests
+    return RAW_BASE + "data/Matches.csv"
 
 
 def import_dataset(start_date: str, end_date: str, output: str, timeout: int = 90) -> dict[str, Any]:
