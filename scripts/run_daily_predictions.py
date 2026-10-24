@@ -30,8 +30,13 @@ def main() -> None:
         print(json.dumps({
             "date": target_date.isoformat(),
             "fixtures_received": report["fixtures_received"],
+            "same_day_pre_match_fixtures": report["same_day_pre_match_fixtures"],
+            "future_fixtures_considered": report["future_fixtures_considered"],
+            "past_kickoffs_excluded": report["past_kickoffs_excluded"],
+            "fixtures_excluded_other_date_or_status": report["fixtures_excluded_other_date_or_status"],
             "predictions_created": report["predictions_created"],
             "insufficient_history": report["insufficient_history"],
+            "possible_team_name_mismatches": report["possible_team_name_mismatches"],
             "output": str(output),
             "model_status": report["model_status"],
         }, indent=2))
