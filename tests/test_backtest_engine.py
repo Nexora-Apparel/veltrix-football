@@ -32,6 +32,10 @@ def test_backtest_predicts_only_after_training_and_is_deterministic():
     assert live["first_test_date"] >= "2024-01-01"
     assert live["metrics"]["brier_score"] >= 0
     assert live["recent_holdout"]["matches"] > 0
+    assert live["elo_alternative"]["model"] == "experimental_elo_by_competition"
+    assert live["elo_alternative"]["matches"] > 0
+    assert live["elo_alternative"]["metrics"]["matches"] == live["elo_alternative"]["matches"]
+    assert live["elo_alternative"]["recent_holdout"]["matches"] > 0
     assert result["models"]["poisson"]["matches"] == result["test_matches"]
     assert result["models"]["elo"]["brier_score"] >= 0
     holdout = result["recent_holdout"]
