@@ -364,8 +364,9 @@ def predict_fixtures(
                 "limitations": [
                     "Not validated for betting.",
                     "Historical dataset coverage and team-name matching may be incomplete.",
-                    "No competition-specific adjustment or current odds are applied.",
-                    "The live pipeline has a direct historical walk-forward evaluation, but it remains unvalidated for betting and underperforms the market benchmark.",
+                    "Primary Poisson model uses global scoring priors and no current odds.",
+                    "The primary Poisson model underperforms the historical market benchmark.",
+                    "The Elo alternative is experimental and is tracked separately; its live paper performance is not yet established.",
                 ],
             })
             output.append(record)
