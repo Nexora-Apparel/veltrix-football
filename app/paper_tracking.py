@@ -166,10 +166,17 @@ def evaluate_report(report: dict[str, Any], results_payload: dict[str, Any]) -> 
         forecast_models: list[tuple[str, Any]] = [
             (str(prediction.get("model", "unknown")), prediction.get("probabilities"))
         ]
+        # Support both report layouts: Poisson primary + Elo alternative, or
+        # competition Elo primary + Poisson alternative.
         if isinstance(prediction.get("elo_probabilities"), dict):
             forecast_models.append((
                 str(prediction.get("elo_model", "experimental_elo_unknown")),
                 prediction.get("elo_probabilities"),
+            ))
+        if isinstance(prediction.get("poisson_probabilities"), dict):
+            forecast_models.append((
+                str(prediction.get("poisson_model", "experimental_poisson_unknown")),
+                prediction.get("poisson_probabilities"),
             ))
         if isinstance(prediction.get("poisson_probabilities"), dict):
             forecast_models.append((
