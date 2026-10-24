@@ -250,3 +250,26 @@ def test_telegram_report_keeps_every_chunk_under_limit_for_extreme_names():
     assert len(messages) >= 2
     assert all(len(message) <= MAX_MESSAGE_LENGTH for message in messages)
     assert any("Final Fixture vs Final Opponent" in message for message in messages)
+
+
+
+def test_telegram_report_discloses_historical_data_freshness():
+    report = sample_report()
+    report.update({
+        "historical_data_through": "2026-10-22",
+        "historical_matches_available": 1200,
+        "recent_results_sync": {
+            "status": "PARTIAL",
+            "results_added": 37,
+            "covered_from": "2026-10-09",
+            "covered_through": "2026-10-22",
+            "warning": "historical range unavailable",
+        },
+    })
+    message = format_report(report)
+    assert "HISTORICAL DATA FRESHNESS" in message
+    assert "Historical results through: 2026-10-22" in message
+    assert "Historical matches available: 1200" in message
+    assert "Recent API refresh: PARTIAL | completed results added: 37" in message
+    assert "API results coverage: 2026-10-09 to 2026-10-22" in message
+    assert "predictions use available history" in message
