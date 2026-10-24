@@ -1,4 +1,5 @@
 from app.paper_tracking import evaluate_report, merge_paper_ledger
+from scripts.run_paper_tracking import run as run_paper_tracking
 
 
 def _prediction(fixture_id, status="EXPERIMENTAL_ONLY", probabilities=None):
@@ -88,3 +89,15 @@ def test_ledger_accumulates_metrics_and_deduplicates_report_dates():
     assert updated["cumulative_metrics"]["matches"] == 2
     assert updated["evaluated_report_dates"] == 2
     assert updated["cumulative_metrics"]["result_accuracy"] == 1.0
+
+
+
+def test_automation_writes_safe_ledger_when_github_credentials_are_missing(tmp_path, monkeypatch):
+    monkeypatch.delenv("GITHUB_REPOSITORY", raising=False)
+    monkeypatch.delenv("GITHUB_TOKEN", raising=False)
+    output = tmp_path / "ledger.json"
+    ledger = run_paper_tracking(__import__("datetime").date(2026, 10, 23), str(output))
+    assert output.exists()
+    assert ledger["model_status"] == "PAPER_TRACKING_ONLY"
+    assert ledger["last_attempt"]["status"] == "TRACKING_ERROR"
+    assert ledger["evaluations"] == []
