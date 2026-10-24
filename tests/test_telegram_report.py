@@ -186,3 +186,19 @@ def test_telegram_report_labels_elo_primary_and_poisson_auxiliary():
     assert "Competition history: E0" in message
     assert "POISSON ALTERNATIVE (EXPERIMENTAL)" in message
     assert "Poisson xG (auxiliary)" in message
+
+
+
+def test_telegram_report_summarizes_primary_model_mix():
+    report = sample_report()
+    report["primary_model_counts"] = {
+        "experimental_elo_by_competition": 3,
+        "experimental_recent_goals_poisson": 2,
+    }
+    report["elo_alternative_available"] = 2
+    report["poisson_alternative_available"] = 3
+    message = format_report(report)
+    assert "MODEL MIX" in message
+    assert "experimental_elo_by_competition: 3 primary forecast(s)" in message
+    assert "experimental_recent_goals_poisson: 2 primary forecast(s)" in message
+    assert "Alternative forecasts available — Elo: 2 | Poisson: 3" in message
