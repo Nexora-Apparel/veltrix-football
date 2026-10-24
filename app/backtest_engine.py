@@ -14,7 +14,7 @@ from collections import defaultdict, deque
 from pathlib import Path
 from typing import Any, Iterable
 
-from app.live_predictions import _name_key
+from app.live_predictions import ELO_K, HOME_ELO_ADVANTAGE, MIN_TEAM_MATCHES, _name_key
 
 
 def _poisson_probs(lam: float, cap: int = 12) -> list[float]:
@@ -184,6 +184,10 @@ def chronological_backtest(matches: Iterable[dict[str, Any]], *, min_training_ma
     live_team_history: dict[str, deque[tuple[int, int, str]]] = defaultdict(lambda: deque(maxlen=10))
     live_totals = [0, 0, 0]  # matches, home goals, away goals across all competitions
     live_scored: list[dict[str, Any]] = []
+    # Separate competition-scoped Elo state mirrors the alternative live model.
+    live_elo_ratings: dict[tuple[str, str], float] = defaultdict(lambda: 1500.0)
+    live_elo_team_matches: dict[tuple[str, str], int] = defaultdict(int)
+    live_elo_totals: dict[str, list[int]] = defaultdict(lambda: [0, 0])  # matches, draws
 
     # Same-day matches are all predicted before any result from that date is ingested.
     by_date: dict[str, list[dict[str, Any]]] = defaultdict(list)
@@ -200,6 +204,26 @@ def chronological_backtest(matches: Iterable[dict[str, Any]], *, min_training_ma
                 home_key, away_key = _name_key(m["home_team"]), _name_key(m["away_team"])
                 home_hist = list(live_team_history[home_key])
                 away_hist = list(live_team_history[away_key])
+                live_elo_probs = None
+                division = m["division"]
+                competition_totals = live_elo_totals[division]
+                if (
+                    competition_totals[0] >= 10
+                    and live_elo_team_matches[(division, home_key)] >= MIN_TEAM_MATCHES
+                    and live_elo_team_matches[(division, away_key)] >= MIN_TEAM_MATCHES
+                ):
+                    home_rating = live_elo_ratings[(division, home_key)]
+                    away_rating = live_elo_ratings[(division, away_key)]
+                    expected_home = 1.0 / (
+                        1.0 + 10.0 ** (-(home_rating + HOME_ELO_ADVANTAGE - away_rating) / 400.0)
+                    )
+                    draw_rate = (competition_totals[1] + 3.0) / (competition_totals[0] + 10.0)
+                    non_draw = 1.0 - draw_rate
+                    live_elo_probs = {
+                        "H": non_draw * expected_home,
+                        "D": draw_rate,
+                        "A": non_draw * (1.0 - expected_home),
+                    }
                 if len(home_hist) >= 5 and len(away_hist) >= 5 and live_totals[0] > 0:
                     live_home_baseline = max(0.05, live_totals[1] / live_totals[0])
                     live_away_baseline = max(0.05, live_totals[2] / live_totals[0])
@@ -243,6 +267,7 @@ def chronological_backtest(matches: Iterable[dict[str, Any]], *, min_training_ma
                         "home_goals": m["home_goals"],
                         "away_goals": m["away_goals"],
                         "live_poisson": live_probs,
+                        **({"live_elo": live_elo_probs} if live_elo_probs is not None else {}),
                         **({"market": m["market"]} if "market" in m else {}),
                     })
     
@@ -301,12 +326,31 @@ def chronological_backtest(matches: Iterable[dict[str, Any]], *, min_training_ma
                 live_totals[1] += hg
                 live_totals[2] += ag
 
+                division = m["division"]
+                home_key, away_key = _name_key(home), _name_key(away)
+                home_rating = live_elo_ratings[(division, home_key)]
+                away_rating = live_elo_ratings[(division, away_key)]
+                expected_home = 1.0 / (
+                    1.0 + 10.0 ** (-(home_rating + HOME_ELO_ADVANTAGE - away_rating) / 400.0)
+                )
+                actual_score = 1.0 if hg > ag else 0.5 if hg == ag else 0.0
+                goal_weight = min(2.0, 1.0 + abs(hg - ag) * 0.1)
+                delta = ELO_K * goal_weight * (actual_score - expected_home)
+                live_elo_ratings[(division, home_key)] = home_rating + delta
+                live_elo_ratings[(division, away_key)] = away_rating - delta
+                live_elo_team_matches[(division, home_key)] += 1
+                live_elo_team_matches[(division, away_key)] += 1
+                live_elo_totals[division][0] += 1
+                live_elo_totals[division][1] += int(hg == ag)
+
     if not scored:
         raise ValueError("No test predictions produced; lower min_training_matches or supply more history")
     metrics = {name: _score_probabilities(scored, name) for name in ("poisson", "elo")}
     winner = min(metrics, key=lambda name: metrics[name]["log_loss"])
 
     live_metrics = _score_probabilities(live_scored, "live_poisson") if live_scored else None
+    live_elo_rows = [row for row in live_scored if "live_elo" in row]
+    live_elo_metrics = _score_probabilities(live_elo_rows, "live_elo") if live_elo_rows else None
     live_dates = sorted({row["match_date"] for row in live_scored})
     live_holdout = None
     if live_scored:
@@ -314,6 +358,9 @@ def chronological_backtest(matches: Iterable[dict[str, Any]], *, min_training_ma
         live_holdout_start = live_dates[live_holdout_index]
         live_holdout_rows = [row for row in live_scored if row["match_date"] >= live_holdout_start]
         live_holdout_metrics = _score_probabilities(live_holdout_rows, "live_poisson")
+        live_elo_holdout_rows = [row for row in live_holdout_rows if "live_elo" in row]
+        live_elo_odds_rows = [row for row in live_elo_rows if "market" in row]
+        live_elo_holdout_odds_rows = [row for row in live_elo_holdout_rows if "market" in row]
         live_odds_rows = [row for row in live_scored if "market" in row]
         live_holdout_odds_rows = [row for row in live_holdout_rows if "market" in row]
         live_holdout = {
@@ -329,6 +376,17 @@ def chronological_backtest(matches: Iterable[dict[str, Any]], *, min_training_ma
                     "market": _score_probabilities(live_holdout_odds_rows, "market"),
                 } if live_holdout_odds_rows else {},
             },
+            "elo_alternative": {
+                "matches": len(live_elo_holdout_rows),
+                "metrics": _score_probabilities(live_elo_holdout_rows, "live_elo") if live_elo_holdout_rows else None,
+                "historical_odds_subset": {
+                    "matches_with_valid_1x2_odds": len(live_elo_holdout_odds_rows),
+                    "models_compared_on_same_matches": {
+                        "live_elo": _score_probabilities(live_elo_holdout_odds_rows, "live_elo"),
+                        "market": _score_probabilities(live_elo_holdout_odds_rows, "market"),
+                    } if live_elo_holdout_odds_rows else {},
+                },
+            },
         }
         live_odds_subset = {
             "matches_with_valid_1x2_odds": len(live_odds_rows),
@@ -338,11 +396,24 @@ def chronological_backtest(matches: Iterable[dict[str, Any]], *, min_training_ma
             } if live_odds_rows else {},
             "warning": "Historical odds are indicative only; timestamp and closing-line quality are not verified.",
         }
+        live_elo_odds_subset = {
+            "matches_with_valid_1x2_odds": len(live_elo_odds_rows),
+            "models_compared_on_same_matches": {
+                "live_elo": _score_probabilities(live_elo_odds_rows, "live_elo"),
+                "market": _score_probabilities(live_elo_odds_rows, "market"),
+            } if live_elo_odds_rows else {},
+            "warning": "Historical odds are indicative only; timestamp and closing-line quality are not verified.",
+        }
     else:
         live_odds_subset = {
             "matches_with_valid_1x2_odds": 0,
             "models_compared_on_same_matches": {},
             "warning": "No eligible live-pipeline forecasts were produced.",
+        }
+        live_elo_odds_subset = {
+            "matches_with_valid_1x2_odds": 0,
+            "models_compared_on_same_matches": {},
+            "warning": "No eligible live Elo forecasts were produced.",
         }
 
     # Reserve the latest 20% of unique forecast dates as a final-period diagnostic.
@@ -371,7 +442,10 @@ def chronological_backtest(matches: Iterable[dict[str, Any]], *, min_training_ma
             "last_test_date": live_dates[-1] if live_dates else None,
             "metrics": live_metrics, "recent_holdout": live_holdout,
             "historical_odds_subset": live_odds_subset,
-            "note": "Separate walk-forward evaluation of the live Poisson logic, using only matches dated 2020-01-01 onward to match the daily importer and scoring only live-eligible fixtures."},
+            "elo_alternative": {"model": "experimental_elo_by_competition", "matches": len(live_elo_rows),
+                "metrics": live_elo_metrics, "historical_odds_subset": live_elo_odds_subset,
+                "note": "Competition-scoped Elo forecast evaluated only where the production live pipeline would emit a fixture record; scores are independent from Poisson."},
+            "note": "Separate walk-forward evaluation of live prediction logic, using only matches dated 2020-01-01 onward. Same-day results are added only after all forecasts for that date."},
         "recent_holdout": {"method": "latest 20% of unique forecast dates", "start_date": holdout_start,
             "end_date": forecast_dates[-1], "matches": len(holdout_rows), "models": holdout_metrics,
             "historical_odds_subset": {"matches_with_valid_1x2_odds": len(holdout_odds_rows),
