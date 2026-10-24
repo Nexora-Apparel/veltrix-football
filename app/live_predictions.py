@@ -141,12 +141,10 @@ def predict_fixtures(
     for match in usable:
         known_team_names[match["home_key"]].add(match["home"])
         known_team_names[match["away_key"]].add(match["away"])
-    home_baseline = sum(m["home_goals"] for m in usable) / len(usable)
-    away_baseline = sum(m["away_goals"] for m in usable) / len(usable)
-    overall_baseline = (sum(m["home_goals"] + m["away_goals"] for m in usable)
-                        / (2 * len(usable)))
-    if overall_baseline <= 0:
-        overall_baseline = 1.0
+    # Keep priors strictly positive so sparse or pathological data cannot cause
+    # division by zero in the rate ratios.
+    home_baseline = max(0.05, sum(m["home_goals"] for m in usable) / len(usable))
+    away_baseline = max(0.05, sum(m["away_goals"] for m in usable) / len(usable))
 
     # Rebuild histories per target date so earlier dates are never duplicated.
     output: list[dict[str, Any]] = []
