@@ -113,38 +113,52 @@ def format_report(report: dict[str, Any], ledger: dict[str, Any] | None = None) 
         away_probability = probs.get("away_win", probs.get("away", 0))
         kickoff = _format_kickoff(item.get("kickoff_local"), timezone_name)
         expected_goals = item.get("expected_goals", {})
+        model_name = str(item.get("model", "experimental_unknown"))
+        is_elo_primary = "elo" in model_name
         block = [
             DIVIDER,
             f"⚽ {item.get('home_team', 'Home')} vs {item.get('away_team', 'Away')}",
             f"🏆 {item.get('league') or 'Unknown competition'}",
             f"🕒 Kickoff: {kickoff}",
             "",
-            "1X2 PROBABILITY ESTIMATE",
+            "ELO PRIMARY ESTIMATE" if is_elo_primary else "POISSON PRIMARY ESTIMATE",
             f"Home  {float(home_probability):.0%}",
             f"Draw  {float(draw_probability):.0%}",
             f"Away  {float(away_probability):.0%}",
         ]
-        elo_probs = item.get("elo_probabilities")
-        if isinstance(elo_probs, dict):
-            elo_history = item.get("elo_history") or {}
-            scope = elo_history.get("scope")
+        elo_history = item.get("elo_history") or {}
+        scope = elo_history.get("scope")
+        if is_elo_primary or isinstance(item.get("elo_probabilities"), dict):
             if scope == "COMPETITION":
                 scope_label = f"Competition history: {elo_history.get('division_code') or 'mapped league'}"
             elif scope == "GLOBAL_FALLBACK":
                 scope_label = "History scope: global fallback (league mapping unavailable)"
             else:
                 scope_label = "History scope: not specified"
+            block.append(scope_label)
+
+        elo_probs = item.get("elo_probabilities")
+        if isinstance(elo_probs, dict):
             block.extend([
                 "",
                 "ELO ALTERNATIVE (EXPERIMENTAL)",
-                scope_label,
                 f"Home  {float(elo_probs.get('home_win', 0)):.0%}",
                 f"Draw  {float(elo_probs.get('draw', 0)):.0%}",
                 f"Away  {float(elo_probs.get('away_win', 0)):.0%}",
             ])
+        poisson_probs = item.get("poisson_probabilities")
+        if isinstance(poisson_probs, dict):
+            block.extend([
+                "",
+                "POISSON ALTERNATIVE (EXPERIMENTAL)",
+                f"Home  {float(poisson_probs.get('home_win', 0)):.0%}",
+                f"Draw  {float(poisson_probs.get('draw', 0)):.0%}",
+                f"Away  {float(poisson_probs.get('away_win', 0)):.0%}",
+            ])
+        goal_label = "Poisson xG (auxiliary)" if is_elo_primary else "Expected goals"
         block.extend([
             "",
-            f"Expected goals: {_format_goals(expected_goals.get('home'))} - "
+            f"{goal_label}: {_format_goals(expected_goals.get('home'))} - "
             f"{_format_goals(expected_goals.get('away'))}",
             "Status: experimental estimate only",
             "",
