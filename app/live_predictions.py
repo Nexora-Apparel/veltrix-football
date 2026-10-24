@@ -359,31 +359,49 @@ def predict_fixtures(
                 min_team_matches=min_team_matches,
                 cache=elo_cache,
             )
+            poisson_probabilities = {
+                key: round(value, 4)
+                for key, value in probabilities["one_x_two"].items()
+            }
+            elo_model = (
+                "experimental_elo_by_competition"
+                if elo_metadata["scope"] == "COMPETITION"
+                else "experimental_elo_global_fallback"
+            )
+            use_competition_elo = (
+                elo_probabilities is not None and elo_metadata["scope"] == "COMPETITION"
+            )
+            primary_model = elo_model if use_competition_elo else "experimental_recent_goals_poisson"
+            primary_probabilities = (
+                {key: round(value, 4) for key, value in elo_probabilities.items()}
+                if use_competition_elo else poisson_probabilities
+            )
             record.update({
                 "status": "EXPERIMENTAL_ONLY",
-                "elo_model": (
-                    "experimental_elo_by_competition"
-                    if elo_metadata["scope"] == "COMPETITION"
-                    else "experimental_elo_global_fallback"
-                ),
+                "model": primary_model,
+                "probabilities": primary_probabilities,
                 "elo_history": elo_metadata,
-                **({"elo_probabilities": {
-                    key: round(value, 4) for key, value in elo_probabilities.items()
-                }} if elo_probabilities is not None else {}),
                 "expected_goals": {"home": round(home_xg, 3), "away": round(away_xg, 3)},
-                "probabilities": {
-                    key: round(value, 4)
-                    for key, value in probabilities["one_x_two"].items()
-                },
                 "btts_yes": round(probabilities["btts_yes"], 4),
                 "over_2_5": round(probabilities["totals"]["over_2_5"], 4),
                 "most_likely_scorelines": probabilities["most_likely_scorelines"][:3],
+                **({
+                    "poisson_model": "experimental_recent_goals_poisson",
+                    "poisson_probabilities": poisson_probabilities,
+                } if use_competition_elo else {}),
+                **({
+                    "elo_model": elo_model,
+                    "elo_probabilities": {
+                        key: round(value, 4) for key, value in elo_probabilities.items()
+                    },
+                } if elo_probabilities is not None and not use_competition_elo else {}),
                 "limitations": [
                     "Not validated for betting.",
                     "Historical dataset coverage and team-name matching may be incomplete.",
-                    "Primary Poisson model uses global scoring priors and no current odds.",
                     "The primary Poisson model underperforms the historical market benchmark.",
-                    "The Elo alternative is experimental and is tracked separately; its live paper performance is not yet established.",
+                    "Competition-specific Elo is selected as primary only when the fixture maps to a supported historical division and has sufficient team history.",
+                    "Expected goals and totals remain auxiliary Poisson estimates when Elo is primary.",
+                    "Elo and Poisson paper results are tracked separately; neither is approved for betting.",
                 ],
             })
             output.append(record)
