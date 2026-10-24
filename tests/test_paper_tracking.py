@@ -254,3 +254,14 @@ def test_evaluator_scores_poisson_and_elo_separately_for_same_fixture():
     assert ledger["cumulative_metrics_by_model"]["experimental_recent_goals_poisson"]["matches"] == 1
     assert ledger["cumulative_metrics_by_model"]["experimental_elo_by_competition"]["matches"] == 1
     assert len(ledger["scored_matches"]) == 2
+
+
+
+def test_evaluator_normalizes_small_probability_rounding_drift():
+    prediction = _prediction(41, probabilities={"H": 0.3333, "D": 0.3333, "A": 0.3333})
+    result = evaluate_report(
+        {"as_of_date": "2026-10-24", "predictions": [prediction]},
+        {"response": [_result(41, 1, 1)]},
+    )
+    values = result["matches"][0]["probabilities"]
+    assert abs(sum(values.values()) - 1.0) < 1e-12
