@@ -228,3 +228,25 @@ def test_telegram_report_shows_poisson_goal_markets_and_scorelines():
     assert "ELO PRIMARY ESTIMATE" in message
     assert "POISSON AUXILIARY GOAL MARKETS" in message
     assert "Poisson scoreline estimates: 1-0 (14%), 1-1 (12%)" in message
+
+
+
+def test_telegram_report_keeps_every_chunk_under_limit_for_extreme_names():
+    report = sample_report()
+    report["predictions"] = [
+        dict(sample_report()["predictions"][0]),
+        {
+            **sample_report()["predictions"][0],
+            "home_team": "X" * 6000,
+            "away_team": "Y" * 6000,
+        },
+        {
+            **sample_report()["predictions"][0],
+            "home_team": "Final Fixture",
+            "away_team": "Final Opponent",
+        },
+    ]
+    messages = format_report_messages(report)
+    assert len(messages) >= 2
+    assert all(len(message) <= MAX_MESSAGE_LENGTH for message in messages)
+    assert any("Final Fixture vs Final Opponent" in message for message in messages)
