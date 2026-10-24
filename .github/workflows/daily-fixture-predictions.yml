@@ -4,6 +4,7 @@ on:
   push:
     branches: [main]
     paths:
+      - "app/football_api.py"
       - "app/live_predictions.py"
       - "app/recent_results.py"
       - "app/paper_tracking.py"
@@ -12,6 +13,7 @@ on:
       - "scripts/run_paper_tracking.py"
       - "scripts/evaluate_paper_predictions.py"
       - "scripts/send_telegram_report.py"
+      - "tests/test_football_api_odds.py"
       - "tests/test_live_predictions.py"
       - "tests/test_import_open_dataset.py"
       - "tests/test_recent_results.py"
@@ -23,6 +25,7 @@ on:
   pull_request:
     branches: [main]
     paths:
+      - "app/football_api.py"
       - "app/live_predictions.py"
       - "app/recent_results.py"
       - "app/paper_tracking.py"
@@ -31,6 +34,7 @@ on:
       - "scripts/run_paper_tracking.py"
       - "scripts/evaluate_paper_predictions.py"
       - "scripts/send_telegram_report.py"
+      - "tests/test_football_api_odds.py"
       - "tests/test_live_predictions.py"
       - "tests/test_import_open_dataset.py"
       - "tests/test_recent_results.py"
