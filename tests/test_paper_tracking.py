@@ -59,7 +59,8 @@ def test_evaluator_rejects_invalid_probability_vectors():
     result = evaluate_report(report, {"response": [_result(1, 1, 0)]})
     assert result["completed_forecasts_scored"] == 0
     assert result["withheld_or_invalid_forecasts"] == 1
-    assert result["metrics"]["log_loss"] is None
+    assert result["metrics"] is None
+    assert result["metrics_by_model"] == {}
 
 
 def test_evaluator_reports_unmatched_and_missing_fixture_ids():
@@ -222,7 +223,7 @@ def test_evaluator_scores_poisson_and_elo_alternatives_separately():
     }]}
     result = evaluate_report(report, {"response": [_result(31, 2, 0)]})
     assert result["completed_forecasts_scored"] == 2
-    assert result["unique_fixtures_scored"] == 1
+    assert result["fixtures_scored"] == 1
     assert {row["model"] for row in result["matches"]} == {
         "experimental_recent_goals_poisson",
         "experimental_elo_by_competition",
