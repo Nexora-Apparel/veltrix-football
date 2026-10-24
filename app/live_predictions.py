@@ -254,20 +254,59 @@ def predict_fixtures(
     return output
 
 
-def build_daily_report(fixtures_payload: dict[str, Any], history_path: str | Path, *, as_of: date | None = None, timezone_name: str = "Africa/Lagos") -> dict[str, Any]:
+def build_daily_report(
+    fixtures_payload: dict[str, Any],
+    history_path: str | Path,
+    *,
+    as_of: date | None = None,
+    timezone_name: str = "Africa/Lagos",
+    now: datetime | None = None,
+) -> dict[str, Any]:
+    """Build a daily report with explicit fixture-filter diagnostics."""
     fixtures = fixtures_payload.get("response")
     if not isinstance(fixtures, list):
         raise ValueError("Fixture API payload is missing a response list.")
+    try:
+        local_zone = ZoneInfo(timezone_name)
+    except ZoneInfoNotFoundError as exc:
+        raise ValueError(f"Unknown timezone: {timezone_name}") from exc
+    current_time = now or datetime.now(local_zone)
+    if current_time.tzinfo is None:
+        current_time = current_time.replace(tzinfo=local_zone)
+    current_time = current_time.astimezone(local_zone)
+    target_date = as_of or current_time.date()
+
+    parsed_for_date = [
+        part for item in fixtures
+        if (part := _fixture_parts(item, timezone_name))
+        and part["kickoff_date"] == target_date
+    ]
+    past_kickoffs = sum(
+        part["kickoff_datetime"] <= current_time for part in parsed_for_date
+    )
+    future_kickoffs = sum(
+        part["kickoff_datetime"] > current_time for part in parsed_for_date
+    )
     historical = load_historical_matches(history_path)
-    predictions = predict_fixtures(fixtures, historical, as_of=as_of, timezone_name=timezone_name)
+    predictions = predict_fixtures(
+        fixtures,
+        historical,
+        as_of=target_date,
+        timezone_name=timezone_name,
+        now=current_time,
+    )
     return {
         "product": "Veltrix Football",
         "generated_at_utc": datetime.now(timezone.utc).isoformat(),
-        "as_of_date": (as_of or datetime.now(ZoneInfo(timezone_name)).date()).isoformat(),
+        "as_of_date": target_date.isoformat(),
         "timezone": timezone_name,
         "same_day_only": True,
         "model_status": "EXPERIMENTAL_NOT_VALIDATED",
         "fixtures_received": len(fixtures),
+        "same_day_pre_match_fixtures": len(parsed_for_date),
+        "past_kickoffs_excluded": past_kickoffs,
+        "future_fixtures_considered": future_kickoffs,
+        "fixtures_excluded_other_date_or_status": len(fixtures) - len(parsed_for_date),
         "predictions_created": sum(p["status"] == "EXPERIMENTAL_ONLY" for p in predictions),
         "insufficient_history": sum(p["status"] == "INSUFFICIENT_HISTORY" for p in predictions),
         "possible_team_name_mismatches": sum(bool(p.get("team_name_match_suggestions")) for p in predictions),
