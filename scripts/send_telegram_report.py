@@ -126,9 +126,18 @@ def format_report(report: dict[str, Any], ledger: dict[str, Any] | None = None) 
         ]
         elo_probs = item.get("elo_probabilities")
         if isinstance(elo_probs, dict):
+            elo_history = item.get("elo_history") or {}
+            scope = elo_history.get("scope")
+            if scope == "COMPETITION":
+                scope_label = f"Competition history: {elo_history.get('division_code') or 'mapped league'}"
+            elif scope == "GLOBAL_FALLBACK":
+                scope_label = "History scope: global fallback (league mapping unavailable)"
+            else:
+                scope_label = "History scope: not specified"
             block.extend([
                 "",
                 "ELO ALTERNATIVE (EXPERIMENTAL)",
+                scope_label,
                 f"Home  {float(elo_probs.get('home_win', 0)):.0%}",
                 f"Draw  {float(elo_probs.get('draw', 0)):.0%}",
                 f"Away  {float(elo_probs.get('away_win', 0)):.0%}",
