@@ -239,3 +239,27 @@ def test_daily_report_explains_fixture_filtering(tmp_path):
     assert report["fixtures_excluded_other_date_or_status"] == 2
     assert len(report["predictions"]) == 1
     assert report["predictions"][0]["fixture_id"] == 200
+
+
+
+def test_empty_history_withholds_eligible_fixtures_explicitly():
+    fixture = _fixture("2026-10-23T15:00:00+01:00")
+    result = predict_fixtures(
+        [fixture], [], as_of=date(2026, 10, 23),
+        now=datetime(2026, 10, 23, 12, 0, tzinfo=ZoneInfo("Africa/Lagos")),
+    )
+    assert len(result) == 1
+    assert result[0]["status"] == "INSUFFICIENT_HISTORY"
+    assert result[0]["historical_matches"] == {"home": 0, "away": 0}
+    assert "No historical matches" in result[0]["reason"]
+    assert "probabilities" not in result[0]
+
+
+def test_empty_history_still_excludes_past_and_other_day_fixtures():
+    past = _fixture("2026-10-23T11:00:00+01:00")
+    tomorrow = _fixture("2026-10-24T15:00:00+01:00")
+    result = predict_fixtures(
+        [past, tomorrow], [], as_of=date(2026, 10, 23),
+        now=datetime(2026, 10, 23, 12, 0, tzinfo=ZoneInfo("Africa/Lagos")),
+    )
+    assert result == []
