@@ -167,6 +167,11 @@ def evaluate_report(report: dict[str, Any], results_payload: dict[str, Any]) -> 
                 str(prediction.get("elo_model", "experimental_elo_unknown")),
                 prediction.get("elo_probabilities"),
             ))
+        if isinstance(prediction.get("poisson_probabilities"), dict):
+            forecast_models.append((
+                str(prediction.get("poisson_model", "experimental_recent_goals_poisson")),
+                prediction.get("poisson_probabilities"),
+            ))
 
         scored_this_fixture = False
         for model_name, raw_probabilities in forecast_models:
