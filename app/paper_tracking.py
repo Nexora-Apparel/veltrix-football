@@ -44,17 +44,31 @@ def merge_paper_ledger(ledger: dict[str, Any], evaluation: dict[str, Any]) -> di
     report_date = evaluation.get("report_date")
     if not report_date:
         raise ValueError("Evaluation must include a report_date.")
-    already_recorded = any(row.get("report_date") == report_date for row in current["evaluations"])
-    if not already_recorded:
-        current["evaluations"].append({
-            "report_date": report_date,
-            "completed_forecasts_scored": evaluation.get("completed_forecasts_scored", 0),
-            "awaiting_result_or_match": evaluation.get("awaiting_result_or_match", 0),
-            "withheld_or_invalid_forecasts": evaluation.get("withheld_or_invalid_forecasts", 0),
-            "metrics": evaluation.get("metrics", {}),
-            "metrics_by_model": evaluation.get("metrics_by_model", {}),
-            "model_versions": sorted({str(row.get("model", "unknown")) for row in evaluation.get("matches", [])}),
-        })
+    evaluation_summary = {
+        "report_date": report_date,
+        "completed_forecasts_scored": evaluation.get("completed_forecasts_scored", 0),
+        "awaiting_result_or_match": evaluation.get("awaiting_result_or_match", 0),
+        "withheld_or_invalid_forecasts": evaluation.get("withheld_or_invalid_forecasts", 0),
+        "metrics": evaluation.get("metrics", {}),
+        "metrics_by_model": evaluation.get("metrics_by_model", {}),
+        "model_versions": sorted({str(row.get("model", "unknown")) for row in evaluation.get("matches", [])}),
+    }
+    existing_index = next(
+        (index for index, row in enumerate(current["evaluations"])
+         if row.get("report_date") == report_date),
+        None,
+    )
+    if existing_index is None:
+        current["evaluations"].append(evaluation_summary)
+        should_merge_matches = True
+    else:
+        previous_pending = int(current["evaluations"][existing_index].get("awaiting_result_or_match", 0))
+        should_merge_matches = previous_pending > 0
+        if should_merge_matches:
+            current["evaluations"][existing_index] = evaluation_summary
+    # Pending report dates can be re-evaluated as postponed fixtures finish;
+    # match-level deduplication below prevents duplicate scores.
+    if should_merge_matches:
         for match in evaluation.get("matches", []):
             current["scored_matches"].append({**match, "report_date": report_date})
     # A report-date + fixture ID pair is the stable identity for ledger rows.
