@@ -113,8 +113,12 @@ class FootballAPI:
 
     def fixtures(self, date: str, timezone: str = "Africa/Lagos") -> dict[str, Any]:
         """Fetch all matches visible to the account for a single UTC-date window."""
-        next_day = (date_type.fromisoformat(date) + timedelta(days=1)).isoformat()
-        return self._matches({"dateFrom": date, "dateTo": next_day})
+        target = date_type.fromisoformat(date)
+        # API dates are UTC, while reports are filtered to Africa/Lagos locally.
+        # Include the prior UTC date so early Nigeria-time kickoffs are not missed.
+        start = (target - timedelta(days=1)).isoformat()
+        end_exclusive = (target + timedelta(days=1)).isoformat()
+        return self._matches({"dateFrom": start, "dateTo": end_exclusive})
 
     def fixtures_between(self, start_date: str, end_date: str, timezone: str = "Africa/Lagos") -> dict[str, Any]:
         """Fetch an inclusive date range (football-data.org dateTo is exclusive)."""
