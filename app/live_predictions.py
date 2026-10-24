@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import csv
 import re
+from difflib import get_close_matches
 from collections import defaultdict, deque
 from datetime import date, datetime, timezone
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
@@ -136,6 +137,10 @@ def predict_fixtures(
     if not usable:
         return []
 
+    known_team_names: dict[str, set[str]] = defaultdict(set)
+    for match in usable:
+        known_team_names[match["home_key"]].add(match["home"])
+        known_team_names[match["away_key"]].add(match["away"])
     home_baseline = sum(m["home_goals"] for m in usable) / len(usable)
     away_baseline = sum(m["away_goals"] for m in usable) / len(usable)
     overall_baseline = (sum(m["home_goals"] + m["away_goals"] for m in usable)
@@ -177,9 +182,26 @@ def predict_fixtures(
                 "historical_matches": {"home": len(home_hist), "away": len(away_hist)},
             }
             if len(home_hist) < min_team_matches or len(away_hist) < min_team_matches:
+                suggestions: dict[str, list[str]] = {}
+                for side, team_name, team_key, history in (
+                    ("home", fixture["home_team"], home_key, home_hist),
+                    ("away", fixture["away_team"], away_key, away_hist),
+                ):
+                    # Suggestions are diagnostics only; never silently merge fuzzy names.
+                    if not history:
+                        close_keys = get_close_matches(
+                            team_key, list(known_team_names), n=3, cutoff=0.72
+                        )
+                        display_names = sorted({
+                            label for candidate in close_keys
+                            for label in known_team_names[candidate]
+                        })
+                        if display_names:
+                            suggestions[side] = display_names[:3]
                 record.update({
                     "status": "INSUFFICIENT_HISTORY",
                     "reason": f"Each team needs at least {min_team_matches} prior matches in the historical dataset.",
+                    "team_name_match_suggestions": suggestions,
                 })
                 output.append(record)
                 continue
