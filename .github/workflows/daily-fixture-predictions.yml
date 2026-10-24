@@ -10,6 +10,15 @@ on:
       - "tests/test_live_predictions.py"
       - "tests/test_telegram_report.py"
       - ".github/workflows/daily-fixture-predictions.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "app/live_predictions.py"
+      - "scripts/run_daily_predictions.py"
+      - "scripts/send_telegram_report.py"
+      - "tests/test_live_predictions.py"
+      - "tests/test_telegram_report.py"
+      - ".github/workflows/daily-fixture-predictions.yml"
   workflow_dispatch:
     inputs:
       date:
