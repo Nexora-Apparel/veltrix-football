@@ -32,6 +32,7 @@ def test_fixtures_uses_football_data_v4_and_normalizes_matches():
         "api_key": "test-key",
         "base_url": "https://api.football-data.org/v4",
     })())
+    assert api.session.headers["X-Auth-Token"] == "test-key"
     session = FakeSession()
     api.session = session
 
@@ -42,7 +43,6 @@ def test_fixtures_uses_football_data_v4_and_normalizes_matches():
         {"dateFrom": "2026-10-24", "dateTo": "2026-10-26"},
         20,
     )]
-    assert session.headers["X-Auth-Token"] == "test-key"
     fixture = payload["response"][0]
     assert fixture["fixture"]["id"] == 123
     assert fixture["fixture"]["status"]["short"] == "NS"
