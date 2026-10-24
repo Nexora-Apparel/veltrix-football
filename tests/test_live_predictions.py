@@ -263,3 +263,29 @@ def test_empty_history_still_excludes_past_and_other_day_fixtures():
         now=datetime(2026, 10, 23, 12, 0, tzinfo=ZoneInfo("Africa/Lagos")),
     )
     assert result == []
+
+
+
+def test_daily_report_warns_backtest_does_not_validate_live_pipeline(tmp_path):
+    import csv
+    rows = _history()
+    history_path = tmp_path / "history.csv"
+    with history_path.open("w", newline="", encoding="utf-8") as handle:
+        writer = csv.DictWriter(
+            handle, fieldnames=["match_date", "home_team", "away_team", "home_goals", "away_goals"]
+        )
+        writer.writeheader()
+        for row in rows:
+            writer.writerow({
+                "match_date": row["date"].isoformat(),
+                "home_team": row["home"],
+                "away_team": row["away"],
+                "home_goals": row["home_goals"],
+                "away_goals": row["away_goals"],
+            })
+    report = build_daily_report(
+        {"response": [_fixture()]}, history_path,
+        as_of=date(2026, 10, 23),
+        now=datetime(2026, 10, 23, 12, 0, tzinfo=ZoneInfo("Africa/Lagos")),
+    )
+    assert "does not yet validate this exact live prediction pipeline" in report["notice"]
