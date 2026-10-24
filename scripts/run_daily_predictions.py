@@ -12,6 +12,7 @@ from app.config import get_settings
 from app.football_api import FootballAPI, FootballAPIError
 from app.live_predictions import build_daily_report, load_historical_matches
 from app.recent_results import fetch_recent_results
+from app.live_odds import extract_market_probabilities
 
 
 def main() -> None:
@@ -37,7 +38,24 @@ def main() -> None:
             recent_rows, recent_sync = fetch_recent_results(
                 api, base_history, target_date - timedelta(days=1)
             )
-            if recent_rows:
+            market_odds_by_fixture = {}
+            try:
+                odds_payload = api.odds_for_date(target_date.isoformat(), args.timezone)
+                market_odds_by_fixture = extract_market_probabilities(odds_payload)
+                odds_sync = {
+                    "status": "AVAILABLE" if market_odds_by_fixture else "NO_VALID_1X2_ODDS",
+                    "fixtures_with_odds": len(market_odds_by_fixture),
+                    "snapshot_date": target_date.isoformat(),
+                    "warning": None,
+                }
+            except (FootballAPIError, ValueError) as exc:
+                odds_sync = {
+                    "status": "UNAVAILABLE",
+                    "fixtures_with_odds": 0,
+                    "snapshot_date": target_date.isoformat(),
+                    "warning": str(exc),
+                }
+            if recent_rows or market_odds_by_fixture:
                 report = build_daily_report(
                     payload,
                     args.history,
@@ -45,6 +63,7 @@ def main() -> None:
                     timezone_name=args.timezone,
                     additional_historical_matches=recent_rows,
                     base_historical_matches=base_history,
+                    market_odds_by_fixture=market_odds_by_fixture,
                 )
         else:
             recent_sync = {
@@ -57,7 +76,18 @@ def main() -> None:
                 "ranges_succeeded": 0,
                 "warning": None,
             }
+            odds_sync = {
+                "status": "SKIPPED_NO_FUTURE_FIXTURES",
+                "fixtures_with_odds": 0,
+                "snapshot_date": target_date.isoformat(),
+                "warning": None,
+            }
         report["recent_results_sync"] = recent_sync
+        report["live_odds_sync"] = odds_sync
+        report["fixtures_with_market_odds"] = sum(
+            isinstance(item.get("market_probabilities"), dict)
+            for item in report.get("predictions", [])
+        )
         output = Path(args.output)
         output.parent.mkdir(parents=True, exist_ok=True)
         output.write_text(json.dumps(report, indent=2, ensure_ascii=False), encoding="utf-8")
@@ -76,6 +106,8 @@ def main() -> None:
             "historical_data_through": report.get("historical_data_through"),
             "historical_matches_available": report.get("historical_matches_available", 0),
             "recent_results_sync": recent_sync,
+            "live_odds_sync": odds_sync,
+            "fixtures_with_market_odds": report["fixtures_with_market_odds"],
             "output": str(output),
             "model_status": report["model_status"],
         }, indent=2))
