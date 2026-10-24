@@ -26,7 +26,7 @@ def split_date_ranges(start: date, end: date, max_days: int = 7) -> list[tuple[d
 
 
 def extract_completed_results(payload: dict[str, Any]) -> list[dict[str, Any]]:
-    """Normalize completed API fixtures into the same row shape as historical CSV."""
+    """Normalize completed football-data.org matches into the same row shape as historical CSV."""
     response = payload.get("response")
     if not isinstance(response, list):
         raise ValueError("Recent-results payload must contain a response list.")
@@ -66,7 +66,7 @@ def extract_completed_results(payload: dict[str, Any]) -> list[dict[str, Any]]:
             "away_key": _name_key(away_name),
             "home_goals": home_goals,
             "away_goals": away_goals,
-            "source": "API_FOOTBALL_RECENT_RESULTS",
+            "source": "FOOTBALL_DATA_RECENT_RESULTS",
         })
     return rows
 
