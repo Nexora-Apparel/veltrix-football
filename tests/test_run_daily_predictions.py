@@ -65,7 +65,7 @@ def test_daily_runner_refreshes_history_only_when_future_fixtures_exist(tmp_path
     output = tmp_path / "reports" / "daily.json"
     _run_args(monkeypatch, output)
     monkeypatch.setattr(daily_runner, "get_settings", lambda: object())
-    base_history = [{"date": date(2026, 10, 22)}]
+    base_history = [{"date": date(2026, 10, 20)}]
     monkeypatch.setattr(daily_runner, "load_historical_matches", lambda path: base_history)
 
     class FakeAPI:
@@ -84,9 +84,9 @@ def test_daily_runner_refreshes_history_only_when_future_fixtures_exist(tmp_path
     sync = {
         "status": "COMPLETE",
         "results_added": 1,
-        "requested_start": "2026-10-23",
+        "requested_start": "2026-10-21",
         "requested_end": "2026-10-22",
-        "covered_from": "2026-10-23",
+        "covered_from": "2026-10-21",
         "covered_through": "2026-10-22",
         "ranges_succeeded": 1,
         "warning": None,
