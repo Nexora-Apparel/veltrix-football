@@ -344,3 +344,40 @@ def test_competition_elo_uses_only_matching_division_history():
     assert set(prediction["probabilities"]) == {"home_win", "draw", "away_win"}
     assert abs(sum(prediction["probabilities"].values()) - 1) < 0.0002
     assert set(prediction["poisson_probabilities"]) == {"home_win", "draw", "away_win"}
+
+def test_daily_report_includes_refreshed_completed_results_but_excludes_target_day():
+    from app.live_predictions import build_daily_report
+
+    base = [{
+        "date": date(2026, 10, 20), "division": "E0",
+        "home": "Old FC", "away": "Older FC",
+        "home_key": "oldfc", "away_key": "olderfc",
+        "home_goals": 1, "away_goals": 0,
+    }]
+    refreshed = [
+        {
+            "date": date(2026, 10, 22), "division": "E0",
+            "home": "Recent FC", "away": "Visitor FC",
+            "home_key": "recentfc", "away_key": "visitorfc",
+            "home_goals": 2, "away_goals": 1,
+        },
+        {
+            "date": date(2026, 10, 23), "division": "E0",
+            "home": "Same Day FC", "away": "Same Day Visitor",
+            "home_key": "samedayfc", "away_key": "samedayvisitor",
+            "home_goals": 9, "away_goals": 0,
+        },
+    ]
+
+    report = build_daily_report(
+        {"response": []},
+        "unused.csv",
+        as_of=date(2026, 10, 23),
+        now=datetime(2026, 10, 23, 12, 0, tzinfo=ZoneInfo("Africa/Lagos")),
+        base_historical_matches=base,
+        additional_historical_matches=refreshed,
+    )
+
+    assert report["historical_matches_available"] == 2
+    assert report["historical_data_through"] == "2026-10-22"
+
