@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import argparse
 import json
+from datetime import datetime
 import os
 import sys
 from pathlib import Path
@@ -19,6 +20,20 @@ def _format_goals(value: Any) -> str:
     if isinstance(value, (int, float)) and not isinstance(value, bool):
         return f"{value:.2f}"
     return str(value) if value is not None else "—"
+
+
+def _format_kickoff(value: Any, timezone_name: str) -> str:
+    """Show a readable local kickoff time rather than a raw ISO timestamp."""
+    if not value:
+        return "Time unavailable"
+    try:
+        parsed = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+    except ValueError:
+        return str(value)
+    if timezone_name == "Africa/Lagos":
+        return f"{parsed:%H:%M} WAT"
+    abbreviation = parsed.tzname()
+    return f"{parsed:%H:%M} {abbreviation}" if abbreviation else f"{parsed:%H:%M}"
 
 
 def format_report(report: dict[str, Any]) -> str:
@@ -55,7 +70,7 @@ def format_report(report: dict[str, Any]) -> str:
         home_probability = probs.get("home_win", probs.get("home", 0))
         draw_probability = probs.get("draw", 0)
         away_probability = probs.get("away_win", probs.get("away", 0))
-        kickoff = str(item.get("kickoff_local", "Kickoff time unavailable"))
+        kickoff = _format_kickoff(item.get("kickoff_local"), timezone_name)
         expected_goals = item.get("expected_goals", {})
         blocks.append([
             DIVIDER,
