@@ -381,3 +381,12 @@ def test_daily_report_includes_refreshed_completed_results_but_excludes_target_d
     assert report["historical_matches_available"] == 2
     assert report["historical_data_through"] == "2026-10-22"
 
+
+
+def test_football_data_club_suffixes_and_prefixes_match_historical_names():
+    assert _name_key("Liverpool FC") == _name_key("Liverpool")
+    assert _name_key("AFC Bournemouth") == _name_key("Bournemouth")
+    assert _name_key("EC Bahia") == _name_key("Bahia")
+    assert _name_key("FC Internazionale Milano") == _name_key("Inter")
+    assert _name_key("Athletic Club") == _name_key("Ath Bilbao")
+    assert _name_key("SBV Excelsior") == _name_key("Excelsior")
