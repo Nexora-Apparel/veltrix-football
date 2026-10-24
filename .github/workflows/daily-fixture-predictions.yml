@@ -89,4 +89,4 @@ jobs:
           name: veltrix-daily-predictions
           path: reports/daily_predictions.json
           if-no-files-found: error
-          retention-days: 14
+          retention-days: 90
