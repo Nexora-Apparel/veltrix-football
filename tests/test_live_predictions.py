@@ -143,3 +143,40 @@ def test_fuzzy_name_matches_are_suggestions_only_not_automatic_predictions():
     assert result[0]["status"] == "INSUFFICIENT_HISTORY"
     assert "probabilities" not in result[0]
     assert "Alpha FC" in result[0]["team_name_match_suggestions"]["home"]
+
+
+
+def test_goal_estimates_prefer_relevant_home_and_away_venue_history():
+    rows = []
+    for day in range(1, 7):
+        d = date(2026, 10, day)
+        rows.append({
+            "date": d, "home": "Alpha FC", "away": f"Opponent {day}",
+            "home_key": "alphafc", "away_key": f"opponent{day}",
+            "home_goals": 3, "away_goals": 0,
+        })
+        rows.append({
+            "date": d, "home": f"Rival {day}", "away": "Beta FC",
+            "home_key": f"rival{day}", "away_key": "betafc",
+            "home_goals": 1, "away_goals": 1,
+        })
+    # Add away-only Alpha matches and home-only Beta matches. Their weaker
+    # performance should not erase the relevant venue-specific signal.
+    for day in range(7, 13):
+        d = date(2026, 10, day)
+        rows.append({
+            "date": d, "home": f"Opponent Away {day}", "away": "Alpha FC",
+            "home_key": f"opponentaway{day}", "away_key": "alphafc",
+            "home_goals": 3, "away_goals": 0,
+        })
+        rows.append({
+            "date": d, "home": "Beta FC", "away": f"Rival Away {day}",
+            "home_key": "betafc", "away_key": f"rivalaway{day}",
+            "home_goals": 0, "away_goals": 2,
+        })
+    result = predict_fixtures(
+        [_fixture()], rows, as_of=date(2026, 10, 23),
+        now=datetime(2026, 10, 23, 12, 0, tzinfo=ZoneInfo("Africa/Lagos")),
+    )
+    assert result[0]["status"] == "EXPERIMENTAL_ONLY"
+    assert result[0]["expected_goals"]["home"] > result[0]["expected_goals"]["away"]
