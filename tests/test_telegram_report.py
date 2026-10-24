@@ -160,11 +160,13 @@ def test_telegram_report_includes_cumulative_paper_metrics_by_model():
 def test_telegram_report_shows_elo_alternative_when_available():
     report = sample_report()
     report["predictions"][0]["elo_model"] = "experimental_elo_by_competition"
+    report["predictions"][0]["elo_history"] = {"scope": "COMPETITION", "division_code": "E0"}
     report["predictions"][0]["elo_probabilities"] = {
         "home_win": 0.6, "draw": 0.25, "away_win": 0.15,
     }
     message = format_report(report)
     assert "ELO ALTERNATIVE (EXPERIMENTAL)" in message
+    assert "Competition history: E0" in message
     assert "Home  60%" in message
     assert "Draw  25%" in message
     assert "Away  15%" in message
