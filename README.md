@@ -67,6 +67,16 @@ python -m scripts.run_backtest --input data/open_historical_matches.csv --output
 
 The backtest compares two separate baselines: a venue-specific Poisson attack/defence estimate with shrinkage toward league averages, and an Elo-based 1X2 estimate. It predicts all matches on a date before ingesting results from that date, then reports multiclass Brier score, log loss, result accuracy and one-vs-rest reliability diagnostics. It also reports a recent-period evaluation using the latest 20% of unique forecast dates, plus a market comparison on the same fixtures with usable odds. GitHub Actions runs tests, imports the dataset and uploads a compact report artifact. The report is an evaluation snapshot, not evidence of profitability; compare against market probabilities and audit odds timestamps before enabling value alerts.
 
+## Retrospective paper tracking
+
+A saved daily report can be scored against the completed-fixture response for the same date without placing bets. The evaluator matches forecasts by fixture ID, excludes withheld/invalid predictions and unfinished fixtures, and reports result accuracy, multiclass Brier score, and log loss. It is a scoring tool, not a betting approval gate; it does not yet automatically collect daily results or maintain a persistent cumulative ledger.
+
+Example after saving the API-Football results JSON for that date:
+
+```bash
+python scripts/evaluate_paper_predictions.py --report reports/daily_predictions.json --results reports/completed_fixtures.json --output reports/paper_evaluation.json
+```
+
 ## Daily fixture-to-prediction pipeline (experimental)
 
 The daily workflow is scheduled for 08:00 Africa/Lagos (07:00 UTC) and can also be started manually. It includes only fixtures whose kickoff date is the same calendar date in Africa/Lagos as the report date and whose kickoff time is still in the future; tomorrow/later fixtures and already-started fixtures are excluded even when the API returns UTC timestamps. Add `API_FOOTBALL_KEY` under repository Settings → Secrets and variables → Actions → New repository secret for the job to run. To enable the optional Telegram delivery step, also add `TELEGRAM_BOT_TOKEN` (from BotFather) and `TELEGRAM_CHAT_ID` (the destination chat ID) as repository Actions secrets. Never put these values in source code or commit them. The workflow imports historical scores, runs the unit tests, fetches fixtures for the requested Nigeria-time date, sends the explicitly experimental report to Telegram when all three secrets are present, and uploads a JSON report artifact retained for 90 days so reports can be reviewed during a paper-tracking period. If Telegram secrets are absent, delivery is skipped without exposing credentials.
