@@ -161,6 +161,18 @@ def _score_probabilities(rows: list[dict[str, Any]], model_name: str, *, bins: i
     }
 
 
+def _compact_score(rows: list[dict[str, Any]], model_name: str) -> dict[str, Any] | None:
+    if not rows:
+        return None
+    full = _score_probabilities(rows, model_name)
+    return {
+        "matches": full["matches"],
+        "brier_score": full["brier_score"],
+        "log_loss": full["log_loss"],
+        "result_accuracy": full["result_accuracy"],
+    }
+
+
 def chronological_backtest(matches: Iterable[dict[str, Any]], *, min_training_matches: int = 100,
                            form_window: int = 10, elo_k: float = 20.0,
                            home_elo_advantage: float = 55.0) -> dict[str, Any]:
@@ -416,6 +428,47 @@ def chronological_backtest(matches: Iterable[dict[str, Any]], *, min_training_ma
             "warning": "No eligible live Elo forecasts were produced.",
         }
 
+    live_metrics_by_competition: dict[str, Any] = {}
+    for division in sorted({str(row["division"]) for row in live_scored}):
+        competition_rows = [row for row in live_scored if str(row["division"]) == division]
+        competition_elo_rows = [row for row in competition_rows if "live_elo" in row]
+        competition_odds_rows = [row for row in competition_rows if "market" in row]
+        competition_elo_odds_rows = [row for row in competition_elo_rows if "market" in row]
+        competition_holdout_rows = [
+            row for row in competition_rows
+            if live_holdout and row["match_date"] >= live_holdout["start_date"]
+        ]
+        competition_elo_holdout_rows = [row for row in competition_holdout_rows if "live_elo" in row]
+        competition_holdout_odds_rows = [row for row in competition_holdout_rows if "market" in row]
+        competition_elo_holdout_odds_rows = [row for row in competition_elo_holdout_rows if "market" in row]
+        live_metrics_by_competition[division] = {
+            "live_eligible_matches": len(competition_rows),
+            "poisson": _compact_score(competition_rows, "live_poisson"),
+            "elo": _compact_score(competition_elo_rows, "live_elo"),
+            "historical_odds_matches": len(competition_odds_rows),
+            "same_match_market_comparison": {
+                "poisson": _compact_score(competition_odds_rows, "live_poisson"),
+                "market": _compact_score(competition_odds_rows, "market"),
+            } if competition_odds_rows else {},
+            "elo_same_match_market_comparison": {
+                "elo": _compact_score(competition_elo_odds_rows, "live_elo"),
+                "market": _compact_score(competition_elo_odds_rows, "market"),
+            } if competition_elo_odds_rows else {},
+            "recent_holdout": {
+                "matches": len(competition_holdout_rows),
+                "poisson": _compact_score(competition_holdout_rows, "live_poisson"),
+                "elo": _compact_score(competition_elo_holdout_rows, "live_elo"),
+                "same_match_market_comparison": {
+                    "poisson": _compact_score(competition_holdout_odds_rows, "live_poisson"),
+                    "market": _compact_score(competition_holdout_odds_rows, "market"),
+                } if competition_holdout_odds_rows else {},
+                "elo_same_match_market_comparison": {
+                    "elo": _compact_score(competition_elo_holdout_odds_rows, "live_elo"),
+                    "market": _compact_score(competition_elo_holdout_odds_rows, "market"),
+                } if competition_elo_holdout_odds_rows else {},
+            },
+        }
+
     # Reserve the latest 20% of unique forecast dates as a final-period diagnostic.
     # Forecasts remain walk-forward: each match is predicted before same-day results
     # are ingested. The cutoff is date-based so matches on one date cannot split.
@@ -441,6 +494,7 @@ def chronological_backtest(matches: Iterable[dict[str, Any]], *, min_training_ma
             "first_test_date": live_dates[0] if live_dates else None,
             "last_test_date": live_dates[-1] if live_dates else None,
             "metrics": live_metrics, "recent_holdout": live_holdout,
+            "metrics_by_competition": live_metrics_by_competition,
             "historical_odds_subset": live_odds_subset,
             "elo_alternative": {"model": "experimental_elo_by_competition", "matches": len(live_elo_rows),
                 "metrics": live_elo_metrics, "historical_odds_subset": live_elo_odds_subset,
