@@ -5,8 +5,10 @@ import requests
 
 from app.config import Settings
 
+
 class FootballAPIError(RuntimeError):
     pass
+
 
 class FootballAPI:
     def __init__(self, settings: Settings, timeout: int = 20):
@@ -64,6 +66,16 @@ class FootballAPI:
     def fixtures_between(self, start_date: str, end_date: str, timezone: str = "Africa/Lagos") -> dict[str, Any]:
         """Fetch fixtures in an inclusive date range; coverage depends on API plan."""
         return self.get("fixtures", {"from": start_date, "to": end_date, "timezone": timezone})
+
+    def odds_for_date(self, date: str, timezone: str = "Africa/Lagos") -> dict[str, Any]:
+        """Fetch available pre-match odds for a date in the selected timezone.
+
+        API-Football's odds endpoint may return no rows when the account plan
+        does not include odds, bookmakers have not posted markets, or the
+        requested fixtures are outside the available odds window. Callers
+        should treat an empty response as unavailable data, not as a model error.
+        """
+        return self.get("odds", {"date": date, "timezone": timezone})
 
     def leagues(self, current: bool = True) -> dict[str, Any]:
         return self.get("leagues", {"current": str(current).lower()})
