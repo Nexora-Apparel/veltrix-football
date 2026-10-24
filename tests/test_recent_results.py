@@ -3,6 +3,11 @@ from __future__ import annotations
 from datetime import date, timedelta
 
 import pytest
+import csv
+from datetime import datetime
+from zoneinfo import ZoneInfo
+
+from app.live_predictions import build_daily_report
 
 from app.football_api import FootballAPIError
 from app.recent_results import extract_completed_results, fetch_recent_results, split_date_ranges
@@ -104,3 +109,47 @@ def test_fetch_recent_results_skips_api_when_history_is_current():
     rows, meta = fetch_recent_results(FakeAPI(), base, date(2026, 10, 23))
     assert rows == []
     assert meta["status"] == "UP_TO_DATE"
+
+
+
+def test_daily_report_merges_recent_results_and_reports_freshness(tmp_path):
+    history_path = tmp_path / "history.csv"
+    with history_path.open("w", newline="", encoding="utf-8") as handle:
+        writer = csv.DictWriter(
+            handle,
+            fieldnames=["match_date", "home_team", "away_team", "home_goals", "away_goals"],
+        )
+        writer.writeheader()
+        for day in range(1, 13):
+            writer.writerow({
+                "match_date": f"2026-10-{day:02d}",
+                "home_team": "Alpha FC" if day % 2 else f"Opponent {day}",
+                "away_team": f"Opponent {day}" if day % 2 else "Beta FC",
+                "home_goals": 2 if day % 2 else 0,
+                "away_goals": 0 if day % 2 else 1,
+            })
+    recent = [{
+        "date": date(2026, 10, 20),
+        "division": "E0",
+        "home": "Alpha FC",
+        "away": "Recent Opponent",
+        "home_key": "alphafc",
+        "away_key": "recentopponent",
+        "home_goals": 3,
+        "away_goals": 1,
+    }]
+    payload = {"response": [{
+        "fixture": {"id": 901, "date": "2026-10-23T15:00:00+01:00", "status": {"short": "NS"}},
+        "league": {"id": 39, "name": "Premier League"},
+        "teams": {"home": {"name": "Alpha FC"}, "away": {"name": "Beta FC"}},
+    }]}
+    report = build_daily_report(
+        payload,
+        history_path,
+        as_of=date(2026, 10, 23),
+        now=datetime(2026, 10, 23, 12, 0, tzinfo=ZoneInfo("Africa/Lagos")),
+        additional_historical_matches=recent,
+    )
+    assert report["historical_matches_available"] == 13
+    assert report["historical_data_through"] == "2026-10-20"
+    assert report["predictions_created"] == 1
