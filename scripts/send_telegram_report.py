@@ -50,6 +50,7 @@ def format_report_messages(report: dict[str, Any], ledger: dict[str, Any] | None
     predictions = report.get("predictions", [])
     usable = [p for p in predictions if p.get("status") == "EXPERIMENTAL_ONLY"]
     insufficient = [p for p in predictions if p.get("status") == "INSUFFICIENT_HISTORY"]
+    unsupported = [p for p in predictions if p.get("status") == "UNSUPPORTED_COMPETITION"]
 
     header = [
         "⚽ VELTRIX FOOTBALL",
@@ -60,6 +61,7 @@ def format_report_messages(report: dict[str, Any], ledger: dict[str, Any] | None
         "Probabilities are research estimates, not betting tips.",
         "",
         f"MATCH FORECASTS: {len(usable)}",
+        f"WITHHELD: insufficient team history {len(insufficient)} | unsupported competition {len(unsupported)}",
         "",
     ]
     if "fixtures_received" in report:
@@ -230,6 +232,10 @@ def format_report_messages(report: dict[str, Any], ledger: dict[str, Any] | None
     if insufficient:
         footer.append(
             f"• {len(insufficient)} fixture(s) withheld: insufficient historical team data."
+        )
+    if unsupported:
+        footer.append(
+            f"• {len(unsupported)} fixture(s) withheld: competition is outside current historical coverage."
         )
     suggested = sum(bool(p.get("team_name_match_suggestions")) for p in insufficient)
     if suggested:
