@@ -382,6 +382,8 @@ def predict_fixtures(
                 "probabilities": primary_probabilities,
                 "elo_history": elo_metadata,
                 "expected_goals": {"home": round(home_xg, 3), "away": round(away_xg, 3)},
+                "goal_markets_model": "experimental_recent_goals_poisson",
+                "scoreline_model": "experimental_recent_goals_poisson",
                 "btts_yes": round(probabilities["btts_yes"], 4),
                 "over_2_5": round(probabilities["totals"]["over_2_5"], 4),
                 "most_likely_scorelines": probabilities["most_likely_scorelines"][:3],
