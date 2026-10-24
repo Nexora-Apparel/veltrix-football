@@ -71,6 +71,16 @@ def extract_completed_results(payload: dict[str, Any]) -> list[dict[str, Any]]:
     return rows
 
 
+def _range_parameters_rejected(exc: FootballAPIError) -> bool:
+    """Detect the API's validation response for from/to/timezone range requests."""
+    message = str(exc).lower()
+    return (
+        "api reported errors" in message
+        and "need another parameter" in message
+        and any(field in message for field in ("'from'", '"from"', "'to'", '"to"'))
+    )
+
+
 def fetch_recent_results(
     api: Any,
     historical_matches: list[dict[str, Any]],
@@ -81,9 +91,9 @@ def fetch_recent_results(
 ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     """Fetch results newer than the open CSV, stopping safely on API-plan errors.
 
-    Ranges are queried newest-first. If a plan blocks older history, the newest
-    successful ranges are retained rather than discarding all recent results.
-    The target day is excluded by callers passing yesterday as end_date.
+    Date ranges are queried newest-first. If the API rejects the documented range
+    parameters, retry that range using individual date queries. The target day is
+    excluded by callers passing yesterday as end_date.
     """
     if not historical_matches:
         return [], {
@@ -121,8 +131,31 @@ def fetch_recent_results(
             )
             rows = extract_completed_results(payload)
         except (FootballAPIError, ValueError) as exc:
-            warning = str(exc)
-            break
+            if not isinstance(exc, FootballAPIError) or not _range_parameters_rejected(exc):
+                warning = str(exc)
+                break
+            # Some API accounts/endpoints reject from/to combinations even though
+            # the single-date fixtures endpoint works. Retry only this validation
+            # failure, and keep the fallback bounded to the failed range.
+            fallback_rows: list[dict[str, Any]] = []
+            try:
+                day = range_start
+                while day <= range_end:
+                    daily_payload = api.fixtures(day.isoformat(), timezone_name)
+                    fallback_rows.extend(extract_completed_results(daily_payload))
+                    day += timedelta(days=1)
+            except (FootballAPIError, ValueError) as fallback_exc:
+                warning = (
+                    f"Range query rejected ({exc}); single-date fallback failed "
+                    f"for {day.isoformat()}: {fallback_exc}"
+                )
+                break
+            fetched.extend(
+                row for row in fallback_rows
+                if range_start <= row["date"] <= range_end
+            )
+            successful_ranges.append((range_start, range_end))
+            continue
         fetched.extend(
             row for row in rows
             if range_start <= row["date"] <= range_end
