@@ -39,7 +39,7 @@ def test_fixtures_uses_football_data_v4_and_normalizes_matches():
 
     assert session.calls == [(
         "https://api.football-data.org/v4/matches",
-        {"dateFrom": "2026-10-25", "dateTo": "2026-10-26"},
+        {"dateFrom": "2026-10-24", "dateTo": "2026-10-26"},
         20,
     )]
     assert session.headers["X-Auth-Token"] == "test-key"
