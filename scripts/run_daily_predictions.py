@@ -36,7 +36,7 @@ def main() -> None:
         )
         if report["future_fixtures_considered"] > 0:
             recent_rows, recent_sync = fetch_recent_results(
-                api, base_history, target_date - timedelta(days=1)
+                api, base_history, target_date - timedelta(days=1), timezone_name=args.timezone
             )
             market_odds_by_fixture = {}
             try:
