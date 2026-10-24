@@ -52,6 +52,7 @@ def merge_paper_ledger(ledger: dict[str, Any], evaluation: dict[str, Any]) -> di
             "awaiting_result_or_match": evaluation.get("awaiting_result_or_match", 0),
             "withheld_or_invalid_forecasts": evaluation.get("withheld_or_invalid_forecasts", 0),
             "metrics": evaluation.get("metrics", {}),
+            "metrics_by_model": evaluation.get("metrics_by_model", {}),
             "model_versions": sorted({str(row.get("model", "unknown")) for row in evaluation.get("matches", [])}),
         })
         for match in evaluation.get("matches", []):
@@ -89,8 +90,30 @@ def merge_paper_ledger(ledger: dict[str, Any], evaluation: dict[str, Any]) -> di
     return current
 
 
+def _canonical_probabilities(probabilities: Any) -> dict[str, float] | None:
+    if not isinstance(probabilities, dict):
+        return None
+    try:
+        if all(key in probabilities for key in OUTCOMES):
+            values = {key: float(probabilities[key]) for key in OUTCOMES}
+        else:
+            values = {
+                "H": float(probabilities["home_win"]),
+                "D": float(probabilities["draw"]),
+                "A": float(probabilities["away_win"]),
+            }
+    except (KeyError, TypeError, ValueError):
+        return None
+    if (
+        any(not math.isfinite(value) or not 0 <= value <= 1 for value in values.values())
+        or abs(sum(values.values()) - 1.0) > 0.02
+    ):
+        return None
+    return values
+
+
 def evaluate_report(report: dict[str, Any], results_payload: dict[str, Any]) -> dict[str, Any]:
-    """Score report forecasts matched by fixture ID to completed API results."""
+    """Score every available model forecast by fixture ID against completed results."""
     predictions = report.get("predictions")
     results = results_payload.get("response")
     if not isinstance(predictions, list):
@@ -122,8 +145,9 @@ def evaluate_report(report: dict[str, Any], results_payload: dict[str, Any]) -> 
     awaiting_result = 0
     withheld = 0
     missing_fixture_id = 0
+    fixtures_scored: set[int] = set()
     for prediction in predictions:
-        if prediction.get("status") != "EXPERIMENTAL_ONLY" or not isinstance(prediction.get("probabilities"), dict):
+        if prediction.get("status") != "EXPERIMENTAL_ONLY":
             withheld += 1
             continue
         fixture_id = prediction.get("fixture_id")
@@ -134,95 +158,61 @@ def evaluate_report(report: dict[str, Any], results_payload: dict[str, Any]) -> 
         if result is None:
             awaiting_result += 1
             continue
-        probs = prediction["probabilities"]
-        try:
-            if all(key in probs for key in OUTCOMES):
-                values = {key: float(probs[key]) for key in OUTCOMES}
-            else:
-                # The live Poisson model uses descriptive keys; canonicalize
-                # them to H/D/A for scoring and ledger storage.
-                values = {
-                    "H": float(probs["home_win"]),
-                    "D": float(probs["draw"]),
-                    "A": float(probs["away_win"]),
-                }
-        except (KeyError, TypeError, ValueError):
-            withheld += 1
-            continue
-        if (
-            any(not math.isfinite(value) or not 0 <= value <= 1 for value in values.values())
-            or abs(sum(values.values()) - 1.0) > 0.02
-        ):
-            withheld += 1
-            continue
-        actual = result["actual"]
-        scored.append({
-            "fixture_id": fixture_id,
-            "model": prediction.get("model", "unknown"),
-            "home_team": prediction.get("home_team"),
-            "away_team": prediction.get("away_team"),
-            "actual": actual,
-            "predicted": max(values, key=values.get),
-            "probabilities": values,
-            "correct": max(values, key=values.get) == actual,
-            "home_goals": result["home_goals"],
-            "away_goals": result["away_goals"],
-        })
 
-        # Score the Elo alternative independently, keeping its metrics separate
-        # from the primary Poisson forecast for the same fixture.
-        elo_payload = prediction.get("elo_probabilities")
-        if isinstance(elo_payload, dict):
-            try:
-                if all(key in elo_payload for key in OUTCOMES):
-                    elo_values = {key: float(elo_payload[key]) for key in OUTCOMES}
-                else:
-                    elo_values = {
-                        "H": float(elo_payload["home_win"]),
-                        "D": float(elo_payload["draw"]),
-                        "A": float(elo_payload["away_win"]),
-                    }
-            except (KeyError, TypeError, ValueError):
-                elo_values = None
-            if elo_values is None or (
-                any(not math.isfinite(value) or not 0 <= value <= 1 for value in elo_values.values())
-                or abs(sum(elo_values.values()) - 1.0) > 0.02
-            ):
+        forecast_models: list[tuple[str, Any]] = [
+            (str(prediction.get("model", "unknown")), prediction.get("probabilities"))
+        ]
+        if isinstance(prediction.get("elo_probabilities"), dict):
+            forecast_models.append((
+                str(prediction.get("elo_model", "experimental_elo_unknown")),
+                prediction.get("elo_probabilities"),
+            ))
+
+        scored_this_fixture = False
+        valid_forecasts = 0
+        for model_name, raw_probabilities in forecast_models:
+            values = _canonical_probabilities(raw_probabilities)
+            if values is None:
                 withheld += 1
-            else:
-                elo_model = str(prediction.get("elo_model", "experimental_elo"))
-                elo_predicted = max(elo_values, key=elo_values.get)
-                scored.append({
-                    "fixture_id": fixture_id,
-                    "model": elo_model,
-                    "home_team": prediction.get("home_team"),
-                    "away_team": prediction.get("away_team"),
-                    "actual": actual,
-                    "predicted": elo_predicted,
-                    "probabilities": elo_values,
-                    "correct": elo_predicted == actual,
-                    "home_goals": result["home_goals"],
-                    "away_goals": result["away_goals"],
-                })
+                continue
+            valid_forecasts += 1
+            actual = result["actual"]
+            scored.append({
+                "fixture_id": fixture_id,
+                "model": model_name,
+                "home_team": prediction.get("home_team"),
+                "away_team": prediction.get("away_team"),
+                "actual": actual,
+                "predicted": max(values, key=values.get),
+                "probabilities": values,
+                "correct": max(values, key=values.get) == actual,
+                "home_goals": result["home_goals"],
+                "away_goals": result["away_goals"],
+            })
+            scored_this_fixture = True
+        if scored_this_fixture:
+            fixtures_scored.add(fixture_id)
 
-    metrics = summarize_scored_matches(scored)
-    count = metrics["matches"]
+    metrics_by_model = {
+        model_name: summarize_scored_matches([
+            row for row in scored if row["model"] == model_name
+        ])
+        for model_name in sorted({row["model"] for row in scored})
+    }
+    metrics = next(iter(metrics_by_model.values())) if len(metrics_by_model) == 1 else None
 
     return {
         "product": report.get("product", "Veltrix Football"),
         "report_date": report.get("as_of_date"),
         "model_status": "PAPER_TRACKING_ONLY",
         "predictions_in_report": len(predictions),
-        "completed_forecasts_scored": count,
-        "unique_fixtures_scored": len({row["fixture_id"] for row in scored}),
+        "fixtures_scored": len(fixtures_scored),
+        "completed_forecasts_scored": len(scored),
         "awaiting_result_or_match": awaiting_result,
         "withheld_or_invalid_forecasts": withheld,
         "forecasts_missing_fixture_id": missing_fixture_id,
-        "metrics": {
-            "result_accuracy": metrics["result_accuracy"],
-            "brier_score": metrics["brier_score"],
-            "log_loss": metrics["log_loss"],
-        },
+        "metrics": metrics,
+        "metrics_by_model": metrics_by_model,
         "matches": scored,
         "notice": "Retrospective paper evaluation only; no betting recommendation or profitability claim.",
     }
