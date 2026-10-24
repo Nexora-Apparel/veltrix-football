@@ -265,3 +265,25 @@ def test_evaluator_normalizes_small_probability_rounding_drift():
     )
     values = result["matches"][0]["probabilities"]
     assert abs(sum(values.values()) - 1.0) < 1e-12
+
+
+
+def test_evaluator_scores_elo_primary_and_poisson_alternative():
+    report = {"as_of_date": "2026-10-24", "predictions": [{
+        "fixture_id": 41,
+        "model": "experimental_elo_by_competition",
+        "poisson_model": "experimental_recent_goals_poisson",
+        "home_team": "Alpha FC",
+        "away_team": "Beta FC",
+        "status": "EXPERIMENTAL_ONLY",
+        "probabilities": {"home_win": 0.6, "draw": 0.25, "away_win": 0.15},
+        "poisson_probabilities": {"home_win": 0.35, "draw": 0.30, "away_win": 0.35},
+    }]}
+    evaluation = evaluate_report(report, {"response": [_result(41, 2, 0)]})
+    assert evaluation["fixtures_scored"] == 1
+    assert evaluation["completed_forecasts_scored"] == 2
+    assert evaluation["metrics_by_model"]["experimental_elo_by_competition"]["result_accuracy"] == 1.0
+    assert evaluation["metrics_by_model"]["experimental_recent_goals_poisson"]["result_accuracy"] == 1.0
+    ledger = merge_paper_ledger({}, evaluation)
+    assert ledger["cumulative_metrics_by_model"]["experimental_elo_by_competition"]["matches"] == 1
+    assert ledger["cumulative_metrics_by_model"]["experimental_recent_goals_poisson"]["matches"] == 1
