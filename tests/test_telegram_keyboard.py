@@ -8,6 +8,8 @@ def test_keyboard_exposes_requested_sections():
         for button in row
     }
     assert labels == {
+        "Over/Under Goals",
+        "BTTS",
         "Today's Predictions",
         "Fixtures",
         "Paper Tracking",
@@ -20,6 +22,8 @@ def test_keyboard_exposes_requested_sections():
 
 
 def test_keyboard_buttons_route_to_existing_commands():
+    assert BUTTON_COMMANDS["over/under goals"] == "/overunder"
+    assert BUTTON_COMMANDS["btts"] == "/btts"
     assert BUTTON_COMMANDS["today's predictions"] == "/today"
     assert BUTTON_COMMANDS["fixtures"] == "/fixtures"
     assert BUTTON_COMMANDS["paper tracking"] == "/results"
