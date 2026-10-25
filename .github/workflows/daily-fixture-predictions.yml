@@ -82,6 +82,7 @@ on:
 # A push only performs the full live run when its commit message contains [run-live-check].
 # This supports an explicit one-off operational verification without making normal pushes send reports.
 # Live-run opt-in is restricted to a tagged commit; do not add the tag to routine commits.
+# Reuse mode is only for same-day artifacts when the Highlightly quota is exhausted.
 
 permissions:
   contents: read
