@@ -160,8 +160,11 @@ jobs:
       - name: Restore saved paper ledger
         if: github.event_name == 'push' && contains(github.event.head_commit.message, '[reuse-report-40175707059]')
         run: |
-          if [ -f reports/ledger-raw/paper_tracking_ledger.json ]; then
-            cp reports/ledger-raw/paper_tracking_ledger.json reports/paper_tracking_ledger.json
+          LEDGER_FILE="$(find reports/ledger-raw -type f -name 'paper_tracking_ledger.json' -print -quit)"
+          if [ -n "$LEDGER_FILE" ]; then
+            cp "$LEDGER_FILE" reports/paper_tracking_ledger.json
+          else
+            echo "::warning::Saved paper ledger artifact did not contain paper_tracking_ledger.json."
           fi
 
       - name: Filter saved report to future same-day fixtures
