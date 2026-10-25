@@ -176,6 +176,7 @@ def test_fuzzy_matching_never_crosses_women_youth_or_reserve_squads():
     assert _resolve_team_key("FC Porto B", {"porto"}) == "portob"
     assert _resolve_team_key("Arka Gdynia U19", {"arkagdynia"}) == "arkagdyniau19"
     assert _resolve_team_key("Crystal Palace", {"crystalpalacewomen"}) == "crystalpalace"
+    assert _resolve_team_key("Boca Unidos", {"bocajuniors"}) == "bocaunidos"
 
 
 def test_name_normalization_preserves_accented_club_identity():
