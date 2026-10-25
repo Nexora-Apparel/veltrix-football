@@ -13,9 +13,9 @@ def sample_report():
         "same_day_only": True,
         "past_kickoffs_excluded": 0,
         "predictions": [
-            {"status": "EXPERIMENTAL_ONLY", "kickoff_local": "2026-10-25T10:00:00+01:00"},
-            {"status": "EXPERIMENTAL_ONLY", "kickoff_local": "2026-10-25T07:00:00+01:00"},
-            {"status": "UNSUPPORTED_COMPETITION", "kickoff_local": "2026-10-25T12:00:00+01:00"},
+            {"status": "EXPERIMENTAL_ONLY", "kickoff_local": "2026-10-25T10:00:00+01:00", "model": "elo", "probabilities": {"home_win": 0.5, "draw": 0.3, "away_win": 0.2}},
+            {"status": "EXPERIMENTAL_ONLY", "kickoff_local": "2026-10-25T07:00:00+01:00", "model": "poisson", "probabilities": {"home_win": 0.5, "draw": 0.3, "away_win": 0.2}},
+            {"status": "UNSUPPORTED_COMPETITION", "kickoff_local": "2026-10-25T12:00:00+01:00", "league": "Unknown League"},
             {"status": "EXPERIMENTAL_ONLY", "kickoff_local": None},
         ],
     }
@@ -27,7 +27,12 @@ def test_filter_keeps_only_future_same_day_rows_and_recomputes_count():
     assert len(report["predictions"]) == 2
     assert report["predictions_created"] == 1
     assert report["future_fixtures_considered"] == 2
-    assert report["past_kickoffs_excluded"] == 2
+    assert report["past_kickoffs_excluded"] == 1
+    assert report["unsupported_competitions"] == 0
+    assert report["insufficient_history"] == 0
+    assert report["predictions_created"] == 1
+    assert report["primary_model_counts"] == {"elo": 1}
+    assert report["delivery_filter"]["missing_or_invalid_kickoff_rows_excluded"] == 1
     assert report["delivery_filter"]["applied"] is True
 
 
@@ -42,3 +47,24 @@ def test_filter_rejects_report_without_same_day_guard():
     report["same_day_only"] = False
     with pytest.raises(ValueError, match="same-day"):
         filter_report_for_delivery(report)
+
+
+def test_filter_recomputes_status_counts_after_removing_rows():
+    report = sample_report()
+    report.update({
+        "predictions_created": 99,
+        "insufficient_history": 88,
+        "unsupported_competitions": 77,
+        "primary_model_counts": {"stale": 99},
+    })
+    now = datetime(2026, 10, 25, 8, 0, tzinfo=ZoneInfo("Africa/Lagos"))
+    filtered = filter_report_for_delivery(report, now)
+    assert len(filtered["predictions"]) == 2
+    assert (
+        filtered["predictions_created"]
+        + filtered["insufficient_history"]
+        + filtered["unsupported_competitions"]
+    ) == len(filtered["predictions"])
+    assert filtered["predictions_created"] == 1
+    assert filtered["unsupported_competitions"] == 1
+    assert filtered["unsupported_competition_breakdown"] == {"Unknown League": 1}
