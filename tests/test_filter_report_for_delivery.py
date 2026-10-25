@@ -61,6 +61,28 @@ def test_filter_withholds_legacy_forecast_with_unsafe_team_identity():
     assert filtered["delivery_filter"]["unsafe_team_identity_rows_withheld"] == 1
 
 
+def test_reused_snapshot_is_marked_and_coverage_gap_is_preserved():
+    report = sample_report()
+    report["recent_results_sync"] = {
+        "status": "PARTIAL",
+        "requested_start": "2026-09-04",
+        "requested_end": "2026-10-24",
+        "covered_from": "2026-10-18",
+        "covered_through": "2026-10-24",
+        "ranges_succeeded": 1,
+        "ranges_requested": 8,
+    }
+    report["historical_data_through"] = "2026-10-24"
+    now = datetime(2026, 10, 25, 8, 0, tzinfo=ZoneInfo("Africa/Lagos"))
+    filtered = filter_report_for_delivery(report, now)
+    assert filtered["publication_status"] == "REUSED_SNAPSHOT_NOT_REFRESHED"
+    assert "did not fetch fresh fixtures" in filtered["publication_notice"]
+    assert filtered["historical_data_coverage"]["status"] == "GAPPED_OR_STALE"
+    assert filtered["historical_data_coverage"]["contiguous_through"] == "2026-09-03"
+    assert filtered["historical_data_coverage"]["ranges_succeeded"] == 1
+    assert filtered["historical_data_coverage"]["ranges_requested"] == 8
+
+
 def test_filter_rejects_stale_report_date():
     now = datetime(2026, 10, 26, 8, 0, tzinfo=ZoneInfo("Africa/Lagos"))
     with pytest.raises(ValueError, match="not today"):
