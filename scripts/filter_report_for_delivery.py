@@ -70,7 +70,13 @@ def filter_report_for_delivery(report: dict, now: datetime | None = None) -> dic
         for league_name in sorted({row.get("league") for row in unsupported if row.get("league")})
     }
     result["possible_team_name_mismatches"] = sum(
-        bool(row.get("team_name_match_suggestions")) for row in kept
+        bool(row.get("team_name_match_suggestions"))
+        or any(
+            bool(side.get("auto_matched"))
+            for side in (row.get("team_name_matches") or {}).values()
+            if isinstance(side, dict)
+        )
+        for row in kept
     )
     result["primary_model_counts"] = {
         str(model_name): sum(row.get("model") == model_name for row in experimental)
