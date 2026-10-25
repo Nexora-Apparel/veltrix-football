@@ -202,3 +202,180 @@ def fetch_recent_results(
         "ranges_requested": len(ranges),
         "warning": warning,
     }
+
+def fetch_recent_results_incremental(
+    api: Any,
+    historical_matches: list[dict[str, Any]],
+    end_date: date,
+    cache_state: dict[str, Any] | None = None,
+    *,
+    max_chunk_days: int = 7,
+    timezone_name: str = "Africa/Lagos",
+) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    """Fetch one date range per run and return a cursor for resumable, quota-safe history backfill.
+
+    The newest week is fetched first and retained by the caller. Older ranges are then
+    backfilled one range per run; after the gap is closed, the cursor advances forward.
+    """
+    state = dict(cache_state or {})
+    if max_chunk_days < 1:
+        raise ValueError("max_chunk_days must be positive")
+    if not historical_matches:
+        return [], {
+            "status": "NO_BASE_HISTORY", "results_added": 0,
+            "requested_start": None, "requested_end": end_date.isoformat(),
+            "covered_from": None, "covered_through": None,
+            "ranges_succeeded": 0, "ranges_requested": 0,
+            "warning": "No base historical matches were available to anchor the refresh.",
+            "cache_state": state,
+        }
+
+    latest_base = max(row["date"] for row in historical_matches)
+    base_start = latest_base + timedelta(days=1)
+    if base_start > end_date and not state.get("backfill_anchor_end"):
+        state.update({
+            "backfill_complete": True,
+            "latest_covered_through": latest_base.isoformat(),
+            "next_backfill_end_date": (base_start - timedelta(days=1)).isoformat(),
+        })
+        return [], {
+            "status": "UP_TO_DATE", "results_added": 0,
+            "requested_start": base_start.isoformat(), "requested_end": end_date.isoformat(),
+            "covered_from": None, "covered_through": latest_base.isoformat(),
+            "ranges_succeeded": 0, "ranges_requested": 0, "warning": None,
+            "cache_state": state,
+        }
+
+    anchor_raw = state.get("backfill_anchor_end")
+    cursor_raw = state.get("next_backfill_end_date")
+    latest_covered_raw = state.get("latest_covered_through")
+    if not anchor_raw:
+        anchor = end_date
+        state["backfill_anchor_end"] = anchor.isoformat()
+        state["next_backfill_end_date"] = end_date.isoformat()
+        state["backfill_complete"] = False
+        cursor = end_date
+    else:
+        try:
+            anchor = date.fromisoformat(str(anchor_raw))
+            cursor = date.fromisoformat(str(cursor_raw)) if cursor_raw else base_start - timedelta(days=1)
+        except ValueError:
+            anchor = end_date
+            cursor = end_date
+            state = {
+                "backfill_anchor_end": anchor.isoformat(),
+                "next_backfill_end_date": cursor.isoformat(),
+                "latest_covered_through": latest_covered_raw,
+                "backfill_complete": False,
+            }
+
+    backfill_complete = bool(state.get("backfill_complete")) or cursor < base_start
+    if not backfill_complete:
+        range_end = min(cursor, end_date)
+        range_start = max(base_start, range_end - timedelta(days=max_chunk_days - 1))
+        total_ranges = len(split_date_ranges(base_start, anchor, max_chunk_days))
+        phase = "backfill"
+        progress_before = (
+            total_ranges - len(split_date_ranges(base_start, cursor, max_chunk_days))
+            if cursor >= base_start else total_ranges
+        )
+    else:
+        latest_covered = (
+            date.fromisoformat(str(latest_covered_raw))
+            if latest_covered_raw else latest_base
+        )
+        range_start = max(base_start, latest_covered + timedelta(days=1))
+        if range_start > end_date:
+            state["backfill_complete"] = True
+            state["next_backfill_end_date"] = (base_start - timedelta(days=1)).isoformat()
+            return [], {
+                "status": "UP_TO_DATE", "results_added": 0,
+                "requested_start": range_start.isoformat(), "requested_end": end_date.isoformat(),
+                "covered_from": None, "covered_through": latest_covered.isoformat(),
+                "ranges_succeeded": 0, "ranges_requested": 0, "warning": None,
+                "cache_state": state,
+            }
+        range_end = min(end_date, range_start + timedelta(days=max_chunk_days - 1))
+        total_ranges = len(split_date_ranges(range_start, end_date, max_chunk_days))
+        phase = "catchup"
+        progress_before = 0
+
+    rows: list[dict[str, Any]] = []
+    warning = None
+    try:
+        payload = api.fixtures_between(
+            range_start.isoformat(), range_end.isoformat(), timezone_name
+        )
+        rows = extract_completed_results(payload)
+    except (FootballAPIError, ValueError) as exc:
+        if not isinstance(exc, FootballAPIError) or not _range_parameters_rejected(exc):
+            warning = str(exc)
+        else:
+            try:
+                day = range_start
+                while day <= range_end:
+                    rows.extend(extract_completed_results(api.fixtures(day.isoformat(), timezone_name)))
+                    day += timedelta(days=1)
+            except (FootballAPIError, ValueError) as fallback_exc:
+                warning = f"Range query rejected; single-date fallback failed: {fallback_exc}"
+                rows = []
+
+    rows = [row for row in rows if range_start <= row["date"] <= range_end]
+    unique: dict[tuple[str, str, str, str], dict[str, Any]] = {}
+    for row in rows:
+        key = (row["date"].isoformat(), row.get("division", ""), row["home_key"], row["away_key"])
+        unique[key] = row
+    rows = sorted(
+        unique.values(),
+        key=lambda row: (row["date"], row.get("division", ""), row["home_key"], row["away_key"]),
+    )
+
+    succeeded = warning is None
+    if succeeded and phase == "backfill":
+        next_cursor = range_start - timedelta(days=1)
+        previous_latest = date.fromisoformat(str(latest_covered_raw)) if latest_covered_raw else range_end
+        latest_covered = max(previous_latest, range_end)
+        complete_now = next_cursor < base_start
+        state.update({
+            "backfill_anchor_end": anchor.isoformat(),
+            "next_backfill_end_date": next_cursor.isoformat(),
+            "latest_covered_through": latest_covered.isoformat(),
+            "backfill_complete": complete_now,
+        })
+        progress_after = (
+            total_ranges if complete_now
+            else total_ranges - len(split_date_ranges(base_start, next_cursor, max_chunk_days))
+        )
+        status = "COMPLETE" if complete_now else "PARTIAL"
+        if not complete_now:
+            warning = (
+                f"Historical backfill progress: {progress_after} of {total_ranges} date ranges. "
+                "History remains non-contiguous until the remaining ranges are fetched."
+            )
+    elif succeeded:
+        state.update({
+            "backfill_complete": True,
+            "latest_covered_through": range_end.isoformat(),
+            "next_backfill_end_date": (base_start - timedelta(days=1)).isoformat(),
+        })
+        progress_after = 1
+        status = "COMPLETE" if range_end >= end_date else "PARTIAL"
+        if status == "PARTIAL":
+            warning = f"Catch-up progress: 1 of {total_ranges} date ranges refreshed; remaining dates will be handled in later runs."
+    else:
+        progress_after = progress_before
+        status = "PARTIAL" if progress_before else "UNAVAILABLE"
+
+    return rows, {
+        "status": status,
+        "results_added": len(rows),
+        "requested_start": range_start.isoformat(),
+        "requested_end": range_end.isoformat(),
+        "covered_from": range_start.isoformat() if succeeded else None,
+        "covered_through": range_end.isoformat() if succeeded else None,
+        "ranges_succeeded": progress_after,
+        "ranges_requested": total_ranges,
+        "warning": warning,
+        "cache_state": state,
+    }
+
