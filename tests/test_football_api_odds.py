@@ -155,3 +155,16 @@ def test_matches_fetches_all_pages_when_provider_reports_more_than_one_page():
     assert payload["pagination"]["pagesFetched"] == 2
     assert payload["_veltrix_meta"]["requests_made"] == 2
     assert [call[1]["offset"] for call in session.calls] == [0, 1]
+
+
+def test_fixture_range_refuses_more_than_seven_days_to_protect_quota():
+    api = _api()
+    session = FakeSession()
+    api.session = session
+    try:
+        api.fixtures_between("2026-10-01", "2026-10-08")
+    except FootballAPIError as exc:
+        assert "capped at 7 calendar days" in str(exc)
+    else:
+        raise AssertionError("Expected the long date range to be rejected")
+    assert session.calls == []
