@@ -13,7 +13,7 @@ def sample_report():
         "same_day_only": True,
         "past_kickoffs_excluded": 0,
         "predictions": [
-            {"status": "EXPERIMENTAL_ONLY", "kickoff_local": "2026-10-25T10:00:00+01:00", "model": "elo", "probabilities": {"home_win": 0.5, "draw": 0.3, "away_win": 0.2}},
+            {"status": "EXPERIMENTAL_ONLY", "kickoff_local": "2026-10-25T10:00:00+01:00", "model": "elo", "probabilities": {"home_win": 0.5, "draw": 0.3, "away_win": 0.2}, "team_name_matches": {"home": {"auto_matched": True}, "away": {"auto_matched": False}}},
             {"status": "EXPERIMENTAL_ONLY", "kickoff_local": "2026-10-25T07:00:00+01:00", "model": "poisson", "probabilities": {"home_win": 0.5, "draw": 0.3, "away_win": 0.2}},
             {"status": "UNSUPPORTED_COMPETITION", "kickoff_local": "2026-10-25T12:00:00+01:00", "league": "Unknown League"},
             {"status": "EXPERIMENTAL_ONLY", "kickoff_local": None},
@@ -32,6 +32,7 @@ def test_filter_keeps_only_future_same_day_rows_and_recomputes_count():
     assert report["insufficient_history"] == 0
     assert report["predictions_created"] == 1
     assert report["primary_model_counts"] == {"elo": 1}
+    assert report["possible_team_name_mismatches"] == 1
     assert report["delivery_filter"]["missing_or_invalid_kickoff_rows_excluded"] == 1
     assert report["delivery_filter"]["applied"] is True
 
