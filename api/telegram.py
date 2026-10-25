@@ -94,7 +94,15 @@ async def telegram_webhook(
     if not command.startswith("/"):
         return JSONResponse({"ok": True})
     try:
-        # Read already-generated GitHub Actions artifacts only. This path does not\n        # run prediction jobs or consume the football provider's API quota.\n        try:\n            report = load_latest_report()\n            ledger = load_paper_ledger()\n        except Exception:\n            # A data-source outage must not break the Telegram webhook. The\n            # command router explicitly reports unavailable data instead.\n            report, ledger = None, None\n        _send_message(bot_token, chat_id, handle_command(command, report=report, ledger=ledger))
+        # Read published snapshots only. This never starts prediction jobs or
+        # consumes the football provider's API quota.
+        try:
+            report = load_latest_report()
+            ledger = load_paper_ledger()
+        except Exception:
+            # A data-source outage must not break the Telegram webhook.
+            report, ledger = None, None
+        _send_message(bot_token, chat_id, handle_command(command, report=report, ledger=ledger))
     except Exception:
         # Do not expose the update, chat id, token, or Telegram request URL.
         raise HTTPException(status_code=502, detail="Telegram reply delivery failed") from None
