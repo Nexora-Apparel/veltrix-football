@@ -10,6 +10,7 @@ from fastapi import FastAPI, Header, HTTPException, Request as FastAPIRequest
 from fastapi.responses import JSONResponse
 
 from app.telegram_commands import handle_command
+from app.telegram_security import telegram_webhook_secret_token
 
 app = FastAPI(title="Veltrix Football Telegram Command Centre")
 
@@ -49,7 +50,11 @@ async def telegram_webhook(
     allowed_chat = os.environ.get("TELEGRAM_CHAT_ID", "")
     if not expected_secret or not bot_token or not allowed_chat:
         raise HTTPException(status_code=503, detail="Webhook environment is not configured")
-    if not secret_header or not hmac.compare_digest(secret_header, expected_secret):
+    try:
+        expected_token = telegram_webhook_secret_token(expected_secret)
+    except ValueError:
+        raise HTTPException(status_code=503, detail="Webhook environment is not configured") from None
+    if not secret_header or not hmac.compare_digest(secret_header, expected_token):
         raise HTTPException(status_code=403, detail="Forbidden")
     try:
         update = await request.json()
