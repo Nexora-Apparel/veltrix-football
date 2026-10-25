@@ -46,3 +46,39 @@ def test_match_lookup_uses_supplied_report_only():
     reply = handle_command("/match Arsenal vs Chelsea", report=report)
     assert "Arsenal vs Chelsea" in reply
     assert "H 50%" in reply
+
+def test_today_excludes_withheld_fixtures_and_only_shows_real_forecasts():
+    report = {
+        "predictions": [
+            {
+                "fixture_id": 1,
+                "home_team": "Withheld FC",
+                "away_team": "Unknown FC",
+                "status": "UNSUPPORTED_COMPETITION",
+                "reason": "Competition not supported",
+            },
+            {
+                "fixture_id": 2,
+                "home_team": "Forecast FC",
+                "away_team": "Model FC",
+                "league": "Test League",
+                "kickoff_local": "2026-10-25T18:00:00+01:00",
+                "status": "EXPERIMENTAL_ONLY",
+                "probabilities": {"home_win": 0.5, "draw": 0.3, "away_win": 0.2},
+            },
+        ]
+    }
+    today = handle_command("/today", report=report)
+    fixtures = handle_command("/fixtures", report=report)
+    status = handle_command("/status", report=report)
+
+    assert "Forecast FC vs Model FC" in today
+    assert "Withheld FC" not in today
+    assert "Withheld FC vs Unknown FC" in fixtures
+    assert "Usable experimental forecasts: 1" in status
+    assert "Fixtures in report: 2" in status
+
+
+def test_tomorrow_and_live_commands_do_not_relabel_same_day_snapshot():
+    assert "DATA NOT CONNECTED" in handle_command("/tomorrow")
+    assert "DATA NOT CONNECTED" in handle_command("/live")
