@@ -192,3 +192,65 @@ def test_paper_tracking_keyboard_label_does_not_claim_successful_predictions():
     assert "Paper Tracking" in labels
     assert "Successful Predictions" not in labels
     assert BUTTON_COMMANDS["paper tracking"] == "/results"
+
+
+def test_overunder_command_returns_experimental_goal_line_probabilities():
+    now = datetime.now(ZoneInfo("Africa/Lagos"))
+    future_kickoff = (now + timedelta(hours=3)).isoformat()
+    report = {
+        "as_of_date": now.date().isoformat(),
+        "predictions": [{
+            "home_team": "Goal FC",
+            "away_team": "Score United",
+            "league": "Test League",
+            "kickoff_local": future_kickoff,
+            "status": "EXPERIMENTAL_ONLY",
+            "probabilities": {"home_win": 0.45, "draw": 0.25, "away_win": 0.30},
+            "expected_goals": {"home": 1.5, "away": 1.2},
+        }],
+    }
+    reply = handle_command("/overunder", report=report)
+    assert "PRIMARY MARKET — OVER/UNDER GOALS" in reply
+    assert "O0.5" in reply and "O2.5" in reply and "O4.5" in reply
+    assert "not calibrated or validated betting advice" in reply
+    assert "bookmaker odds are not connected" in reply
+
+
+def test_btts_command_returns_yes_no_probability_from_expected_goals():
+    now = datetime.now(ZoneInfo("Africa/Lagos"))
+    future_kickoff = (now + timedelta(hours=3)).isoformat()
+    report = {
+        "as_of_date": now.date().isoformat(),
+        "predictions": [{
+            "home_team": "Goal FC",
+            "away_team": "Score United",
+            "league": "Test League",
+            "kickoff_local": future_kickoff,
+            "status": "EXPERIMENTAL_ONLY",
+            "probabilities": {"home_win": 0.45, "draw": 0.25, "away_win": 0.30},
+            "expected_goals": {"home": 1.5, "away": 1.2},
+        }],
+    }
+    reply = handle_command("/btts", report=report)
+    assert "PRIMARY MARKET — BOTH TEAMS TO SCORE" in reply
+    assert "BTTS Yes:" in reply and "BTTS No:" in reply
+    assert "independent-Poisson approximation" in reply
+
+
+def test_goal_markets_withhold_invalid_expected_goals():
+    now = datetime.now(ZoneInfo("Africa/Lagos"))
+    future_kickoff = (now + timedelta(hours=3)).isoformat()
+    report = {
+        "as_of_date": now.date().isoformat(),
+        "predictions": [{
+            "home_team": "Bad FC",
+            "away_team": "Input United",
+            "league": "Test League",
+            "kickoff_local": future_kickoff,
+            "status": "EXPERIMENTAL_ONLY",
+            "probabilities": {"home_win": 0.45, "draw": 0.25, "away_win": 0.30},
+            "expected_goals": {"home": float("nan"), "away": -1},
+        }],
+    }
+    assert "NO USABLE GOAL-MARKET ESTIMATES" in handle_command("/overunder", report=report)
+    assert "NO USABLE GOAL-MARKET ESTIMATES" in handle_command("/btts", report=report)
