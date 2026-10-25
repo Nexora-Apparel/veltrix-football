@@ -118,7 +118,7 @@ def format_report_messages(report: dict[str, Any], ledger: dict[str, Any] | None
             DIVIDER,
             f"⚽ {item.get('home_team', 'Home')} vs {item.get('away_team', 'Away')}",
             f"🏆 {item.get('league') or 'Unknown competition'}",
-            f"🕒 Kick-off: {kickoff}",
+            f"🕒 Kickoff: {kickoff}",
             "",
             "WIN / DRAW / WIN PROBABILITY",
             f"Home win: {float(home_probability):.0%}",
