@@ -54,71 +54,21 @@ def format_report_messages(report: dict[str, Any], ledger: dict[str, Any] | None
 
     header = [
         "⚽ VELTRIX FOOTBALL",
-        "DAILY MATCH ANALYTICS",
-        f"📅 {day}  |  Timezone: {timezone_name}",
+        "TODAY'S MATCH FORECASTS",
+        f"📅 {day} | Kick-off times: Nigeria (WAT)",
         DIVIDER,
-        "⚠️ EXPERIMENTAL MODEL — NOT VALIDATED FOR BETTING",
-        "Probabilities are research estimates, not betting tips.",
+        "⚠️ Experimental estimates only — not validated betting advice.",
         "",
-        f"MATCH FORECASTS: {len(usable)}",
-        f"WITHHELD: insufficient team history {len(insufficient)} | unsupported competition {len(unsupported)}",
+        f"FORECASTS: {len(usable)}",
+        f"NOT SHOWN: {len(insufficient)} need more team history | {len(unsupported)} unsupported competitions",
+        "",
     ]
-    unsupported_breakdown = report.get("unsupported_competition_breakdown") or {}
-    if unsupported_breakdown:
-        top_unsupported = sorted(
-            unsupported_breakdown.items(), key=lambda item: (-int(item[1]), str(item[0]))
-        )[:5]
-        header.append(
-            "Unsupported leagues (top): "
-            + " | ".join(f"{name} ({count})" for name, count in top_unsupported)
-        )
-    header.append("")
-    if "fixtures_received" in report:
+    sync = report.get("recent_results_sync") or {}
+    if sync and (sync.get("status") not in {"OK", "SUCCESS", "COMPLETE"} or sync.get("warning")):
         header.extend([
-            "FIXTURE FILTER",
-            f"API fixtures received: {report.get('fixtures_received', 0)}",
-            (
-                f"Today/future fixtures considered: {report.get('future_fixtures_considered', 0)}"
-                f"  |  Past kickoffs excluded: {report.get('past_kickoffs_excluded', 0)}"
-            ),
-            f"Other dates/status excluded: {report.get('fixtures_excluded_other_date_or_status', 0)}",
+            "DATA NOTICE: Recent results could not be fully refreshed; forecasts use available history.",
             "",
         ])
-    if "historical_data_through" in report:
-        sync = report.get("recent_results_sync") or {}
-        header.extend([
-            "HISTORICAL DATA FRESHNESS",
-            f"Historical results through: {report.get('historical_data_through') or 'unknown'}",
-            f"Historical matches available: {report.get('historical_matches_available', 0)}",
-        ])
-        if sync:
-            header.append(
-                f"Recent API refresh: {sync.get('status', 'UNKNOWN')} "
-                f"| completed results added: {sync.get('results_added', 0)}"
-            )
-            if sync.get("status") != "SKIPPED_NO_FUTURE_FIXTURES":
-                header.append("Date coverage is not a guarantee that every league is available on the API plan.")
-            if sync.get("covered_from") and sync.get("covered_through"):
-                header.append(
-                    f"API results coverage: {sync['covered_from']} to {sync['covered_through']}"
-                )
-            if sync.get("warning"):
-                header.append("Warning: recent history refresh was incomplete; predictions use available history.")
-        header.append("")
-
-    if "primary_model_counts" in report:
-        model_counts = report.get("primary_model_counts") or {}
-        header.extend(["MODEL MIX"])
-        if model_counts:
-            for model_name, count in sorted(model_counts.items()):
-                header.append(f"{model_name}: {count} primary forecast(s)")
-        else:
-            header.append("No experimental model produced a forecast.")
-        header.append(
-            f"Alternative forecasts available — Elo: {report.get('elo_alternative_available', 0)}"
-            f" | Poisson: {report.get('poisson_alternative_available', 0)}"
-        )
-        header.append("")
 
     if ledger is not None:
         paper_lines = [DIVIDER, "PAPER TRACKING — CUMULATIVE"]
@@ -184,81 +134,18 @@ def format_report_messages(report: dict[str, Any], ledger: dict[str, Any] | None
                 scope_label = "History scope: not specified"
             block.append(scope_label)
 
-        elo_probs = item.get("elo_probabilities")
-        if isinstance(elo_probs, dict):
-            block.extend([
-                "",
-                "ELO ALTERNATIVE (EXPERIMENTAL)",
-                f"Home  {float(elo_probs.get('home_win', 0)):.0%}",
-                f"Draw  {float(elo_probs.get('draw', 0)):.0%}",
-                f"Away  {float(elo_probs.get('away_win', 0)):.0%}",
-            ])
-        poisson_probs = item.get("poisson_probabilities")
-        if isinstance(poisson_probs, dict):
-            block.extend([
-                "",
-                "POISSON ALTERNATIVE (EXPERIMENTAL)",
-                f"Home  {float(poisson_probs.get('home_win', 0)):.0%}",
-                f"Draw  {float(poisson_probs.get('draw', 0)):.0%}",
-                f"Away  {float(poisson_probs.get('away_win', 0)):.0%}",
-            ])
-        goal_label = "Poisson xG (auxiliary)" if is_elo_primary else "Expected goals"
-        block.extend([
-            "",
-            f"{goal_label}: {_format_goals(expected_goals.get('home'))} - "
-            f"{_format_goals(expected_goals.get('away'))}",
-        ])
-        btts_yes = item.get("btts_yes")
-        over_25 = item.get("over_2_5")
-        if isinstance(btts_yes, (int, float)) and isinstance(over_25, (int, float)):
-            market_heading = "POISSON AUXILIARY GOAL MARKETS" if is_elo_primary else "POISSON GOAL MARKETS"
-            block.extend([
-                "",
-                market_heading,
-                f"BTTS Yes {float(btts_yes):.0%} | No {1.0 - float(btts_yes):.0%}",
-                f"Over 2.5 {float(over_25):.0%} | Under 2.5 {1.0 - float(over_25):.0%}",
-            ])
-        scorelines = item.get("most_likely_scorelines")
-        if isinstance(scorelines, list) and scorelines:
-            rendered_scores = []
-            for score in scorelines[:3]:
-                try:
-                    home_goals = int(score["home_goals"])
-                    away_goals = int(score["away_goals"])
-                    probability = float(score["probability"])
-                except (KeyError, TypeError, ValueError):
-                    continue
-                rendered_scores.append(f"{home_goals}-{away_goals} ({probability:.0%})")
-            if rendered_scores:
-                score_label = "Poisson scoreline estimates" if is_elo_primary else "Most likely scorelines"
-                block.extend(["", f"{score_label}: " + ", ".join(rendered_scores)])
         block.extend(["Status: experimental estimate only", ""])
         blocks.append(block)
 
-    footer = [
-        DIVIDER,
-        "MODEL & DATA NOTES",
-    ]
+    footer = [DIVIDER, "QUICK NOTES"]
     if insufficient:
-        footer.append(
-            f"• {len(insufficient)} fixture(s) withheld: insufficient historical team data."
-        )
+        footer.append(f"• {len(insufficient)} match(es) withheld: not enough reliable team history.")
     if unsupported:
-        footer.append(
-            f"• {len(unsupported)} fixture(s) withheld: competition is outside current historical coverage."
-        )
-    suggested = sum(bool(p.get("team_name_match_suggestions")) for p in insufficient)
-    if suggested:
-        footer.append(
-            f"• {suggested} withheld fixture(s) have possible team-name variants to review; "
-            "these are suggestions only and are never auto-matched."
-        )
+        footer.append(f"• {len(unsupported)} match(es) withheld: league history is not supported.")
     footer.extend([
-        "• Standard 10.00-odds slips: DISABLED.",
-        "• Value slips (50.00–100.00 odds): DISABLED.",
-        "• Reason: models have not beaten the historical market benchmark.",
-        "",
-        "Please do not use these experimental estimates as betting advice.",
+        "• No betting slips or forced picks are generated.",
+        "• Probabilities are model estimates, not guarantees.",
+        "• Data provided by football-data.org API.",
     ])
 
     def render(selected: list[list[str]]) -> str:
