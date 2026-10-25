@@ -110,3 +110,12 @@ def test_telegram_send_requires_credentials_and_does_not_echo_token_on_network_e
         send_message(token, "12345", "hello")
     assert token not in str(error.value)
     assert "ConnectionError" in str(error.value)
+
+
+def test_elo_primary_report_discloses_poisson_expected_goals_are_separate():
+    report = sample_report()
+    report["predictions"][0]["model"] = "experimental_elo_by_competition"
+    report["predictions"][0]["probabilities"] = {"home_win": 0.59, "draw": 0.26, "away_win": 0.15}
+    message = format_report(report)
+    assert "Model: Elo ratings (1X2); Poisson xG" in message
+    assert "When Elo is primary, expected goals are a separate Poisson estimate" in message
