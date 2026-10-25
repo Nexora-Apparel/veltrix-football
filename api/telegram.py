@@ -18,6 +18,7 @@ app = FastAPI(title="Veltrix Football Telegram Command Centre")
 # Persistent reply keyboard: users can tap features instead of typing commands.
 KEYBOARD = {
     "keyboard": [
+        [{"text": "Over/Under Goals"}, {"text": "BTTS"}],
         [{"text": "Today's Predictions"}, {"text": "Fixtures"}],
         [{"text": "Paper Tracking"}, {"text": "Results & Performance"}],
         [{"text": "Status"}, {"text": "Help"}],
@@ -27,6 +28,9 @@ KEYBOARD = {
     "input_field_placeholder": "Choose a Veltrix feature…",
 }
 BUTTON_COMMANDS = {
+    "over/under goals": "/overunder",
+    "over under goals": "/overunder",
+    "btts": "/btts",
     "today's predictions": "/today",
     "todays predictions": "/today",
     "fixtures": "/fixtures",
