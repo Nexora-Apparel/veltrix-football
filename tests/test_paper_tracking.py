@@ -394,7 +394,6 @@ def test_tracking_runner_retries_report_already_in_ledger_when_fixtures_are_pend
     monkeypatch.setenv("GITHUB_TOKEN", "test-token")
     monkeypatch.setenv("GITHUB_RUN_ID", "999")
     monkeypatch.setenv("API_FOOTBALL_KEY", "test-api-key")
-    monkeypatch.setattr(tracking_runner, "get_settings", lambda: object())
     monkeypatch.setattr(tracking_runner, "list_relevant_runs", lambda session, repo: [])
     monkeypatch.setattr(
         tracking_runner, "find_latest_ledger",
@@ -492,7 +491,6 @@ def test_runner_skips_provider_call_when_saved_report_has_no_scoreable_forecasts
     monkeypatch.setenv("GITHUB_REPOSITORY", "owner/repo")
     monkeypatch.setenv("GITHUB_TOKEN", "test-token")
     monkeypatch.setenv("GITHUB_RUN_ID", "999")
-    monkeypatch.setattr(tracking_runner, "get_settings", lambda: object())
     monkeypatch.setattr(tracking_runner, "list_relevant_runs", lambda session, repo: [])
     monkeypatch.setattr(tracking_runner, "find_latest_ledger", lambda *args: {
         "product": "Veltrix Football", "model_status": "PAPER_TRACKING_ONLY",
@@ -515,7 +513,6 @@ def test_old_empty_evaluation_is_retried_and_marked_without_provider_call(tmp_pa
     monkeypatch.setenv("GITHUB_REPOSITORY", "owner/repo")
     monkeypatch.setenv("GITHUB_TOKEN", "test-token")
     monkeypatch.setenv("GITHUB_RUN_ID", "999")
-    monkeypatch.setattr(tracking_runner, "get_settings", lambda: object())
     monkeypatch.setattr(tracking_runner, "list_relevant_runs", lambda session, repo: [])
     monkeypatch.setattr(tracking_runner, "find_latest_ledger", lambda *args: {
         "product": "Veltrix Football", "model_status": "PAPER_TRACKING_ONLY",
