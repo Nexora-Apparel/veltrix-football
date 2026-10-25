@@ -255,7 +255,6 @@ def run(report_date: date, output_path: str) -> dict[str, Any]:
                     "detail": "No pending report dates; this date is already complete.",
                 })
             else:
-                api_client = None
                 for date_to_process in dates_to_process:
                     date_text = date_to_process.isoformat()
                     one: dict[str, Any] = {
