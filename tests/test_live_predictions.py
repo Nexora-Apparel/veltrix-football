@@ -169,6 +169,21 @@ def test_ambiguous_fuzzy_team_name_is_not_automatically_merged():
     assert resolved == "united"
 
 
+def test_fuzzy_matching_never_crosses_women_youth_or_reserve_squads():
+    from app.live_predictions import _resolve_team_key
+
+    assert _resolve_team_key("Newcastle United", {"newcastleunitedwomen"}) == "newcastleunited"
+    assert _resolve_team_key("FC Porto B", {"porto"}) == "portob"
+    assert _resolve_team_key("Arka Gdynia U19", {"arkagdynia"}) == "arkagdyniau19"
+    assert _resolve_team_key("Crystal Palace", {"crystalpalacewomen"}) == "crystalpalace"
+
+
+def test_name_normalization_preserves_accented_club_identity():
+    assert _name_key("Atlético Ottawa") == "atleticoottawa"
+    assert _name_key("Sporting Gijón") == "sportinggijon"
+    assert _name_key("Oţelul") == "otelul"
+
+
 
 def test_goal_estimates_prefer_relevant_home_and_away_venue_history():
     rows = []
