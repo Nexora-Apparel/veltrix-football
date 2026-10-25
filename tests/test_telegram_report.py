@@ -3,7 +3,12 @@ from __future__ import annotations
 import requests
 import pytest
 
-from scripts.send_telegram_report import MAX_MESSAGE_LENGTH, format_report, format_report_messages, send_message
+from scripts.send_telegram_report import (
+    MAX_MESSAGE_LENGTH,
+    format_report,
+    format_report_messages,
+    send_message,
+)
 
 
 def sample_report():
@@ -16,20 +21,25 @@ def sample_report():
             "home_team": "Alpha FC",
             "away_team": "Beta FC",
             "league": "Example League",
-            "kickoff_local": "2026-10-23T17:00:00+01:00",
+            "kickoff_local": "2026-10-23T16:00:00Z",
             "probabilities": {"home_win": 0.5, "draw": 0.25, "away_win": 0.25},
             "expected_goals": {"home": 1.4, "away": 0.8},
+            "model": "experimental_recent_goals_poisson",
+            "elo_probabilities": {"home_win": 0.6, "draw": 0.25, "away_win": 0.15},
+            "btts_yes": 0.58,
+            "over_2_5": 0.52,
         }],
     }
 
 
-def test_telegram_report_is_organized_and_explicitly_experimental():
+def test_telegram_report_is_clear_and_experimental():
     message = format_report(sample_report())
     assert "⚽ VELTRIX FOOTBALL" in message
-    assert "DAILY MATCH ANALYTICS" in message
+    assert "TODAY'S MATCH FORECASTS" in message
     assert "2026-10-23" in message
-    assert "EXPERIMENTAL MODEL — NOT VALIDATED FOR BETTING" in message
-    assert "MATCH FORECASTS: 1" in message
+    assert "Nigeria (WAT)" in message
+    assert "Experimental estimates only" in message
+    assert "FORECASTS: 1" in message
     assert "Alpha FC vs Beta FC" in message
     assert "Example League" in message
     assert "Kickoff: 17:00 WAT" in message
@@ -37,263 +47,66 @@ def test_telegram_report_is_organized_and_explicitly_experimental():
     assert "Draw  25%" in message
     assert "Away  25%" in message
     assert "Expected goals: 1.40 - 0.80" in message
-    assert "Standard 10.00-odds slips: DISABLED." in message
-    assert "Value slips (50.00–100.00 odds): DISABLED." in message
-    assert "historical market benchmark" in message
-    assert "not betting tips" in message
+    assert "ELO ALTERNATIVE" not in message
+    assert "POISSON GOAL MARKETS" not in message
+    assert "Data provided by football-data.org API." in message
 
 
-def test_telegram_report_handles_no_usable_predictions():
+def test_report_warns_when_recent_data_refresh_is_incomplete():
     report = sample_report()
-    report["predictions"] = []
+    report["recent_results_sync"] = {
+        "status": "UNAVAILABLE",
+        "warning": "invalid token",
+    }
     message = format_report(report)
+    assert "DATA NOTICE: Recent results could not be fully refreshed" in message
+    assert "invalid token" not in message
+
+
+def test_report_handles_no_usable_predictions_and_withheld_fixtures():
+    report = sample_report()
+    report["predictions"] = [
+        {"status": "INSUFFICIENT_HISTORY"},
+        {"status": "UNSUPPORTED_COMPETITION"},
+    ]
+    message = format_report(report)
+    assert "FORECASTS: 0" in message
     assert "NO USABLE EXPERIMENTAL FORECASTS TODAY." in message
-    assert "No picks are being forced." in message
-    assert "MATCH FORECASTS: 0" in message
+    assert "1 match(es) withheld: not enough reliable team history." in message
+    assert "1 match(es) withheld: league history is not supported." in message
 
 
-def test_telegram_report_counts_fixtures_with_insufficient_history():
+def test_report_splits_without_dropping_fixtures_or_exceeding_limit():
     report = sample_report()
-    report["predictions"].append({
-        "status": "INSUFFICIENT_HISTORY",
-        "home_team": "Unknown FC",
-        "away_team": "Mystery FC",
-    })
-    assert "1 fixture(s) withheld: insufficient historical team data." in format_report(report)
-
-
-def test_telegram_report_splits_between_fixture_blocks_without_dropping_fixtures():
-    report = sample_report()
+    template = dict(report["predictions"][0])
     report["predictions"] = []
     for index in range(30):
-        item = dict(sample_report()["predictions"][0])
-        item["home_team"] = f"Home Team {index:02d} with a longer name"
-        item["away_team"] = f"Away Team {index:02d} with another longer name"
-        report["predictions"].append(item)
-
+        report["predictions"].append({
+            **template,
+            "home_team": f"Home Team {index:02d}",
+            "away_team": f"Away Team {index:02d}",
+        })
     messages = format_report_messages(report)
     assert len(messages) > 1
     assert all(len(message) <= MAX_MESSAGE_LENGTH for message in messages)
     combined = "\n".join(messages)
     for index in range(30):
-        assert f"Home Team {index:02d} with a longer name vs Away Team {index:02d} with another longer name" in combined
-    assert "additional fixture(s) omitted" not in combined
+        assert f"Home Team {index:02d} vs Away Team {index:02d}" in combined
 
 
-def test_telegram_send_requires_credentials():
+def test_telegram_send_requires_credentials_and_does_not_echo_token_on_network_error(monkeypatch):
     with pytest.raises(ValueError, match="TELEGRAM_BOT_TOKEN"):
         send_message("", "", "test")
 
-
-def test_telegram_network_errors_do_not_echo_token(monkeypatch):
     token = "123456:TOP_SECRET_TEST_TOKEN"
 
     def fail_request(*args, **kwargs):
-        raise requests.ConnectionError(f"connection failed for https://api.telegram.org/bot{token}/sendMessage")
+        raise requests.ConnectionError(
+            f"connection failed for https://api.telegram.org/bot{token}/sendMessage"
+        )
 
     monkeypatch.setattr("scripts.send_telegram_report.requests.post", fail_request)
     with pytest.raises(RuntimeError) as error:
         send_message(token, "12345", "hello")
     assert token not in str(error.value)
     assert "ConnectionError" in str(error.value)
-
-
-def test_telegram_report_converts_utc_kickoff_to_lagos_time():
-    report = sample_report()
-    report["predictions"][0]["kickoff_local"] = "2026-10-23T16:00:00Z"
-    assert "Kickoff: 17:00 WAT" in format_report(report)
-
-
-
-def test_telegram_report_discloses_non_automatic_name_match_suggestions():
-    report = sample_report()
-    report["predictions"].append({
-        "status": "INSUFFICIENT_HISTORY",
-        "home_team": "Alph FC",
-        "away_team": "Mystery FC",
-        "team_name_match_suggestions": {"home": ["Alpha FC"]},
-    })
-    message = format_report(report)
-    assert "possible team-name variants to review" in message
-    assert "suggestions only and are never auto-matched" in message
-
-
-
-def test_telegram_report_shows_fixture_filter_counts_when_available():
-    report = sample_report()
-    report.update({
-        "fixtures_received": 100,
-        "future_fixtures_considered": 12,
-        "past_kickoffs_excluded": 3,
-        "fixtures_excluded_other_date_or_status": 85,
-    })
-    message = format_report(report)
-    assert "API fixtures received: 100" in message
-    assert "Today/future fixtures considered: 12" in message
-    assert "Past kickoffs excluded: 3" in message
-    assert "Other dates/status excluded: 85" in message
-
-
-
-def test_telegram_report_includes_cumulative_paper_metrics_by_model():
-    ledger = {
-        "last_attempt": {"status": "EVALUATED", "report_date": "2026-10-23"},
-        "cumulative_metrics_by_model": {
-            "experimental_recent_goals_poisson": {
-                "matches": 12,
-                "result_accuracy": 0.5,
-                "brier_score": 0.62,
-                "log_loss": 1.04,
-            }
-        },
-    }
-    message = format_report(sample_report(), ledger)
-    assert "PAPER TRACKING — CUMULATIVE" in message
-    assert "Latest evaluation status: EVALUATED" in message
-    assert "12 scored" in message
-    assert "accuracy 50.0%" in message
-    assert "Brier 0.620 | log loss 1.040" in message
-    assert "not proof of profitability" in message
-
-
-
-def test_telegram_report_shows_elo_alternative_when_available():
-    report = sample_report()
-    report["predictions"][0]["elo_model"] = "experimental_elo_by_competition"
-    report["predictions"][0]["elo_history"] = {"scope": "COMPETITION", "division_code": "E0"}
-    report["predictions"][0]["elo_probabilities"] = {
-        "home_win": 0.6, "draw": 0.25, "away_win": 0.15,
-    }
-    message = format_report(report)
-    assert "ELO ALTERNATIVE (EXPERIMENTAL)" in message
-    assert "Competition history: E0" in message
-    assert "Home  60%" in message
-    assert "Draw  25%" in message
-    assert "Away  15%" in message
-
-
-
-def test_telegram_report_labels_elo_primary_and_poisson_auxiliary():
-    report = sample_report()
-    item = report["predictions"][0]
-    item["model"] = "experimental_elo_by_competition"
-    item["elo_history"] = {"scope": "COMPETITION", "division_code": "E0"}
-    item["probabilities"] = {"home_win": 0.6, "draw": 0.25, "away_win": 0.15}
-    item["poisson_model"] = "experimental_recent_goals_poisson"
-    item["poisson_probabilities"] = {"home_win": 0.4, "draw": 0.3, "away_win": 0.3}
-    message = format_report(report)
-    assert "ELO PRIMARY ESTIMATE" in message
-    assert "Competition history: E0" in message
-    assert "POISSON ALTERNATIVE (EXPERIMENTAL)" in message
-    assert "Poisson xG (auxiliary)" in message
-
-
-
-def test_telegram_report_summarizes_primary_model_mix():
-    report = sample_report()
-    report["primary_model_counts"] = {
-        "experimental_elo_by_competition": 3,
-        "experimental_recent_goals_poisson": 2,
-    }
-    report["elo_alternative_available"] = 2
-    report["poisson_alternative_available"] = 3
-    message = format_report(report)
-    assert "MODEL MIX" in message
-    assert "experimental_elo_by_competition: 3 primary forecast(s)" in message
-    assert "experimental_recent_goals_poisson: 2 primary forecast(s)" in message
-    assert "Alternative forecasts available — Elo: 2 | Poisson: 3" in message
-
-
-
-def test_telegram_report_shows_poisson_goal_markets_and_scorelines():
-    report = sample_report()
-    prediction = report["predictions"][0]
-    prediction.update({
-        "btts_yes": 0.58,
-        "over_2_5": 0.52,
-        "most_likely_scorelines": [
-            {"home_goals": 1, "away_goals": 0, "probability": 0.14},
-            {"home_goals": 1, "away_goals": 1, "probability": 0.12},
-        ],
-    })
-    message = format_report(report)
-    assert "POISSON GOAL MARKETS" in message
-    assert "BTTS Yes 58% | No 42%" in message
-    assert "Over 2.5 52% | Under 2.5 48%" in message
-    assert "Most likely scorelines: 1-0 (14%), 1-1 (12%)" in message
-
-    prediction["model"] = "experimental_elo_by_competition"
-    prediction["poisson_probabilities"] = {"home_win": 0.5, "draw": 0.25, "away_win": 0.25}
-    message = format_report(report)
-    assert "ELO PRIMARY ESTIMATE" in message
-    assert "POISSON AUXILIARY GOAL MARKETS" in message
-    assert "Poisson scoreline estimates: 1-0 (14%), 1-1 (12%)" in message
-
-
-
-def test_telegram_report_keeps_every_chunk_under_limit_for_extreme_names():
-    report = sample_report()
-    report["predictions"] = [
-        dict(sample_report()["predictions"][0]),
-        {
-            **sample_report()["predictions"][0],
-            "home_team": "X" * 6000,
-            "away_team": "Y" * 6000,
-        },
-        {
-            **sample_report()["predictions"][0],
-            "home_team": "Final Fixture",
-            "away_team": "Final Opponent",
-        },
-    ]
-    messages = format_report_messages(report)
-    assert len(messages) >= 2
-    assert all(len(message) <= MAX_MESSAGE_LENGTH for message in messages)
-    assert any("Final Fixture vs Final Opponent" in message for message in messages)
-
-
-
-def test_telegram_report_discloses_historical_data_freshness():
-    report = sample_report()
-    report.update({
-        "historical_data_through": "2026-10-22",
-        "historical_matches_available": 1200,
-        "recent_results_sync": {
-            "status": "PARTIAL",
-            "results_added": 37,
-            "covered_from": "2026-10-09",
-            "covered_through": "2026-10-22",
-            "warning": "historical range unavailable",
-        },
-    })
-    message = format_report(report)
-    assert "HISTORICAL DATA FRESHNESS" in message
-    assert "Historical results through: 2026-10-22" in message
-    assert "Historical matches available: 1200" in message
-    assert "Recent API refresh: PARTIAL | completed results added: 37" in message
-    assert "API results coverage: 2026-10-09 to 2026-10-22" in message
-    assert "predictions use available history" in message
-    assert "not a guarantee that every league is available on the API plan" in message
-
-
-
-def test_telegram_report_summarizes_unsupported_competition_fixtures():
-    report = sample_report()
-    report["predictions"].append({
-        "fixture_id": 999,
-        "status": "UNSUPPORTED_COMPETITION",
-        "reason": "This competition is not mapped to the historical dataset.",
-        "home_team": "Unknown A",
-        "away_team": "Unknown B",
-        "league": "Lower League A",
-    })
-    report["unsupported_competition_breakdown"] = {
-        "Lower League A": 1,
-        "Lower League B": 3,
-        "Lower League C": 2,
-    }
-    message = format_report(report)
-    assert "WITHHELD: insufficient team history 0 | unsupported competition 1" in message
-    assert "1 fixture(s) withheld: competition is outside current historical coverage." in message
-    assert "Unsupported leagues (top): Lower League B (3) | Lower League C (2) | Lower League A (1)" in message
-    assert "Unknown A vs Unknown B" not in message
