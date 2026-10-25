@@ -121,28 +121,35 @@ def _forecast_predictions(report: dict[str, Any] | None) -> list[dict[str, Any]]
 def _history_notice(report: dict[str, Any] | None) -> str | None:
     if not isinstance(report, dict):
         return None
+    notices: list[str] = []
+    if str(report.get("publication_status") or "").upper() == "REUSED_SNAPSHOT_NOT_REFRESHED":
+        notices.append(
+            "SNAPSHOT NOTICE: This is a reused same-day snapshot; fresh fixtures were not fetched in this run."
+        )
     sync = report.get("recent_results_sync") or {}
     coverage = report.get("historical_data_coverage") or {}
-    if not isinstance(sync, dict) or not isinstance(coverage, dict):
-        return None
-    if coverage.get("status") == "GAPPED_OR_STALE":
-        contiguous = coverage.get("contiguous_through") or "unknown"
-        latest = coverage.get("latest_available_match_date") or "unknown"
-        succeeded, requested = sync.get("ranges_succeeded"), sync.get("ranges_requested")
-        progress = (
-            f" {succeeded}/{requested} date ranges refreshed."
-            if isinstance(succeeded, int) and isinstance(requested, int) and requested > 0
-            else ""
-        )
-        return (
-            "DATA NOTICE: Historical results are incomplete; forecasts may miss matches from the gap. "
-            f"History is continuous through {contiguous}; latest available result date is {latest}."
-            f"{progress}"
-        )
-    status = str(sync.get("status") or "").upper()
-    if status and status not in {"COMPLETE", "UP_TO_DATE", "SUCCESS", "OK"}:
-        return f"DATA NOTICE: Recent-results refresh status is {status}; saved history may be incomplete."
-    return None
+    if isinstance(sync, dict) and isinstance(coverage, dict):
+        if coverage.get("status") == "GAPPED_OR_STALE":
+            contiguous = coverage.get("contiguous_through") or "unknown"
+            latest = coverage.get("latest_available_match_date") or "unknown"
+            succeeded, requested = sync.get("ranges_succeeded"), sync.get("ranges_requested")
+            progress = (
+                f" {succeeded}/{requested} date ranges refreshed."
+                if isinstance(succeeded, int) and isinstance(requested, int) and requested > 0
+                else ""
+            )
+            notices.append(
+                "DATA NOTICE: Historical results are incomplete; forecasts may miss matches from the gap. "
+                f"History is continuous through {contiguous}; latest available result date is {latest}."
+                f"{progress}"
+            )
+        else:
+            status = str(sync.get("status") or "").upper()
+            if status and status not in {"COMPLETE", "UP_TO_DATE", "SUCCESS", "OK"}:
+                notices.append(
+                    f"DATA NOTICE: Recent-results refresh status is {status}; saved history may be incomplete."
+                )
+    return "\\n".join(notices) if notices else None
 
 
 def _status(report: dict[str, Any] | None, ledger: dict[str, Any] | None) -> str:
@@ -182,6 +189,7 @@ def _status(report: dict[str, Any] | None, ledger: dict[str, Any] | None) -> str
         f"Usable experimental forecasts: {len(predictions)}\n"
         f"Recent-results refresh: {history_status}\n"
         f"Historical coverage: {history_coverage}\n"
+        f"Report publication: {str(report.get('publication_status') or 'LIVE_OR_UNMARKED') if isinstance(report, dict) else 'UNKNOWN'}\n"
         f"Live bookmaker odds: {odds_status}\n"
         f"Paper-tracking ledger: {ledger_status}\n"
         "Betting/value alerts: DISABLED until chronological out-of-sample validation.\n"
