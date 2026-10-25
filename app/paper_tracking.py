@@ -63,8 +63,17 @@ def merge_paper_ledger(ledger: dict[str, Any], evaluation: dict[str, Any]) -> di
         current["evaluations"].append(evaluation_summary)
         should_merge_matches = True
     else:
-        previous_pending = int(current["evaluations"][existing_index].get("awaiting_result_or_match", 0))
-        should_merge_matches = previous_pending > 0
+        previous = current["evaluations"][existing_index]
+        previous_pending = int(previous.get("awaiting_result_or_match", 0))
+        previous_empty = (
+            int(previous.get("completed_forecasts_scored", 0)) == 0
+            and int(previous.get("fixtures_scored", 0)) == 0
+            and not previous.get("model_versions")
+            and int(previous.get("withheld_or_invalid_forecasts", 0)) == 0
+        )
+        # Empty evaluations are not proof that a report was successfully tracked:
+        # an earlier same-day artifact may have contained no usable forecasts.
+        should_merge_matches = previous_pending > 0 or previous_empty
         if should_merge_matches:
             current["evaluations"][existing_index] = evaluation_summary
     # Pending report dates can be re-evaluated as postponed fixtures finish;
