@@ -82,9 +82,8 @@ on:
     # 06:00 Africa/Lagos (WAT, UTC+1) = 05:00 UTC; publish before most match kickoffs.
     - cron: "0 5 * * *"
 
-# A push only performs the full live run when its commit message contains [run-live-check].
-# This supports an explicit one-off operational verification without making normal pushes send reports.
-# Live-run opt-in is restricted to a tagged commit; do not add the tag to routine commits.
+# Pushes run tests only; live provider calls are restricted to scheduled or manually dispatched runs.
+# This prevents code commits and automated fixes from consuming the daily Highlightly quota.
 # Reuse mode is only for same-day artifacts when the Highlightly quota is exhausted.
 # Reuse publication also recalculates all fixture-status counters after delivery filtering.
 
@@ -107,7 +106,7 @@ jobs:
         run: python -m pytest -q
       - name: Evaluate previous day's forecasts
         id: paper-tracking
-        if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && contains(github.event.head_commit.message, '[run-live-check]')) && !contains(github.event.head_commit.message, '[reuse-report-40175707059]')
+        if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || false && !contains(github.event.head_commit.message, '[reuse-report-40175707059]')
         continue-on-error: true
         env:
           HIGHLIGHTLY_API_KEY: ${{ secrets.HIGHLIGHTLY_API_KEY }}
@@ -122,7 +121,7 @@ jobs:
           python scripts/run_paper_tracking.py --date "$PAPER_DATE" --output reports/paper_tracking_ledger.json
       - name: Validate paper ledger before upload
         id: paper-ledger-check
-        if: always() && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && contains(github.event.head_commit.message, '[run-live-check]'))) && !contains(github.event.head_commit.message, '[reuse-report-40175707059]')
+        if: always() && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || false) && !contains(github.event.head_commit.message, '[reuse-report-40175707059]')
         run: |
           if [ ! -f reports/paper_tracking_ledger.json ]; then
             echo "safe=false" >> "$GITHUB_OUTPUT"
@@ -136,7 +135,7 @@ jobs:
             echo "safe=true" >> "$GITHUB_OUTPUT"
           fi
       - name: Import historical matches
-        if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && contains(github.event.head_commit.message, '[run-live-check]')) && !contains(github.event.head_commit.message, '[reuse-report-40175707059]')
+        if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || false && !contains(github.event.head_commit.message, '[reuse-report-40175707059]')
         run: python scripts/import_open_dataset.py --from 2020-01-01 --to "$(date -u +%F)" --output data/open_historical_matches.csv
       - name: Download previous same-day report for quota-safe delivery
         if: github.event_name == 'push' && contains(github.event.head_commit.message, '[reuse-report-40175707059]')
@@ -175,7 +174,7 @@ jobs:
 
       - name: Generate daily fixture report
         id: generate-report
-        if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && contains(github.event.head_commit.message, '[run-live-check]')) && !contains(github.event.head_commit.message, '[reuse-report-40175707059]')
+        if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || false && !contains(github.event.head_commit.message, '[reuse-report-40175707059]')
         env:
           HIGHLIGHTLY_API_KEY: ${{ secrets.HIGHLIGHTLY_API_KEY }}
           TARGET_DATE: ${{ inputs.date }}
@@ -188,7 +187,7 @@ jobs:
           if [ -z "${TARGET_DATE:-}" ]; then TARGET_DATE="$(TZ=Africa/Lagos date +%F)"; fi
           python scripts/run_daily_predictions.py --date "$TARGET_DATE" --history data/open_historical_matches.csv --output reports/daily_predictions.json
       - name: Notify Telegram when live report generation fails
-        if: (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && contains(github.event.head_commit.message, '[run-live-check]'))) && failure() && steps.generate-report.outcome == 'failure'
+        if: (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || false) && failure() && steps.generate-report.outcome == 'failure'
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
@@ -208,7 +207,7 @@ jobs:
             --data-urlencode "text=${MESSAGE}"
 
       - name: Check Telegram configuration
-        if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && contains(github.event.head_commit.message, '[run-live-check]'))
+        if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || false
         id: telegram-config
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
@@ -222,7 +221,7 @@ jobs:
           fi
       - name: Register Telegram Command Centre webhook
         continue-on-error: true
-        if: (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && contains(github.event.head_commit.message, '[run-live-check]'))) && steps.telegram-config.outputs.configured == 'true'
+        if: (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || false) && steps.telegram-config.outputs.configured == 'true'
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_WEBHOOK_URL: https://veltrix-football-commands.vercel.app/api/index
@@ -235,14 +234,14 @@ jobs:
           fi
 
       - name: Send daily report to Telegram
-        if: (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && contains(github.event.head_commit.message, '[run-live-check]'))) && steps.telegram-config.outputs.configured == 'true'
+        if: (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || false) && steps.telegram-config.outputs.configured == 'true'
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           PYTHONPATH: .
         run: python scripts/send_telegram_report.py --report reports/daily_predictions.json --ledger reports/paper_tracking_ledger.json
       - name: Upload daily prediction report
-        if: always() && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && contains(github.event.head_commit.message, '[run-live-check]'))) && (steps.generate-report.outcome == 'success' || steps.filter-saved-report.outcome == 'success')
+        if: always() && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || false) && (steps.generate-report.outcome == 'success' || steps.filter-saved-report.outcome == 'success')
         uses: actions/upload-artifact@v7
         with:
           name: veltrix-daily-predictions
@@ -251,7 +250,7 @@ jobs:
           retention-days: 90
 
       - name: Upload cumulative paper-tracking ledger
-        if: always() && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && contains(github.event.head_commit.message, '[run-live-check]'))) && !contains(github.event.head_commit.message, '[reuse-report-40175707059]') && steps.paper-ledger-check.outputs.safe == 'true'
+        if: always() && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || false) && !contains(github.event.head_commit.message, '[reuse-report-40175707059]') && steps.paper-ledger-check.outputs.safe == 'true'
         uses: actions/upload-artifact@v7
         with:
           name: veltrix-paper-ledger
