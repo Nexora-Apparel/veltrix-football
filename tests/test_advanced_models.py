@@ -4,7 +4,7 @@ from app.advanced_models import blend_1x2, dixon_coles_1x2, recency_weighted_mea
 
 
 def test_recency_weighted_mean_gives_more_weight_to_recent_values():
-    assert recency_weighted_mean([0, 10], decay=0.5) == pytest.approx(10 / 3)
+    assert recency_weighted_mean([0, 10], decay=0.5) == pytest.approx(20 / 3)
     assert recency_weighted_mean([0, 10], decay=1.0) == pytest.approx(5.0)
 
 
