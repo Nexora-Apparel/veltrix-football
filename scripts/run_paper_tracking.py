@@ -77,18 +77,51 @@ def read_artifact_json(session: requests.Session, artifact_url: str) -> dict[str
     return value
 
 
+def _report_forecast_count(report: dict[str, Any]) -> int:
+    predictions = report.get("predictions")
+    if not isinstance(predictions, list):
+        return 0
+    return sum(
+        1 for row in predictions
+        if isinstance(row, dict)
+        and row.get("status") == "EXPERIMENTAL_ONLY"
+        and isinstance(row.get("fixture_id"), int)
+        and isinstance(row.get("probabilities"), dict)
+    )
+
+
 def find_daily_report(
     session: requests.Session, repo: str, runs: list[dict[str, Any]], report_date: str, current_run_id: str
 ) -> dict[str, Any] | None:
+    """Choose the same-day snapshot with the most scoreable forecasts.
+
+    Multiple manual/scheduled runs can create reports on one date. Choosing the
+    newest artifact can accidentally select a late report after most fixtures
+    have kicked off, leaving paper tracking with zero forecasts. Prefer the
+    richest valid report; break ties by the earliest report timestamp.
+    """
+    candidates: list[tuple[int, str, dict[str, Any]]] = []
     for run in runs:
-        if str(run.get("id")) == current_run_id or str(run.get("created_at", ""))[:10] != report_date:
+        created_at = str(run.get("created_at", ""))
+        if str(run.get("id")) == current_run_id or created_at[:10] != report_date:
             continue
         artifact = artifact_for_run(session, repo, int(run["id"]), "veltrix-daily-predictions")
-        if artifact:
-            report = read_artifact_json(session, artifact["archive_download_url"])
-            if report.get("as_of_date") == report_date:
-                return report
-    return None
+        if not artifact:
+            continue
+        report = read_artifact_json(session, artifact["archive_download_url"])
+        if report.get("as_of_date") != report_date:
+            continue
+        timestamp = str(report.get("generated_at_utc") or created_at)
+        candidates.append((_report_forecast_count(report), timestamp, report))
+    if not candidates:
+        return None
+    candidates.sort(key=lambda item: (-item[0], item[1]))
+    return candidates[0][2]
+
+
+def _has_trackable_forecasts(report: dict[str, Any]) -> bool:
+    """Avoid burning provider quota when a saved report contains no scoreable rows."""
+    return _report_forecast_count(report) > 0
 
 
 def find_latest_ledger(
@@ -152,6 +185,10 @@ def run(report_date: date, output_path: str) -> dict[str, Any]:
             if (
                 target_summary is None
                 or int(target_summary.get("awaiting_result_or_match", 0)) > 0
+                or (
+                    int(target_summary.get("completed_forecasts_scored", 0)) == 0
+                    and not target_summary.get("model_versions")
+                )
             ):
                 dates_to_process.append(report_date)
 
@@ -178,6 +215,11 @@ def run(report_date: date, output_path: str) -> dict[str, Any]:
                             one.update({
                                 "status": "NO_PREVIOUS_REPORT",
                                 "detail": "No saved daily report was found for this date.",
+                            })
+                        elif not _has_trackable_forecasts(report):
+                            one.update({
+                                "status": "NO_FORECASTS_TO_SCORE",
+                                "detail": "The best saved report for this date contains no scoreable experimental forecasts; provider quota was preserved.",
                             })
                         else:
                             try:
@@ -220,6 +262,8 @@ def run(report_date: date, output_path: str) -> dict[str, Any]:
         top_status = "API_KEY_MISSING"
     elif "NO_PREVIOUS_REPORT" in statuses:
         top_status = "NO_PREVIOUS_REPORT"
+    elif "NO_FORECASTS_TO_SCORE" in statuses:
+        top_status = "NO_FORECASTS_TO_SCORE"
     elif "ALREADY_EVALUATED" in statuses:
         top_status = "ALREADY_EVALUATED"
     else:
