@@ -33,6 +33,14 @@ def _run_args(monkeypatch, output):
     )
 
 
+def _recent_row():
+    return [{
+        "date": date(2026, 10, 22), "division": "E0",
+        "home": "A", "away": "B", "home_key": "a", "away_key": "b",
+        "home_goals": 1, "away_goals": 0,
+    }]
+
+
 def _sync():
     return {
         "status": "COMPLETE",
@@ -57,7 +65,7 @@ def test_daily_runner_refreshes_history_even_when_no_future_fixtures(tmp_path, m
     _run_args(monkeypatch, output)
     monkeypatch.setattr(daily_runner, "get_settings", lambda: object())
     base_history = [{"date": date(2026, 10, 20)}]
-    recent_rows = [{"date": date(2026, 10, 22), "home": "A", "away": "B"}]
+    recent_rows = _recent_row()
     monkeypatch.setattr(daily_runner, "load_historical_matches", lambda path: base_history)
 
     class FakeAPI:
