@@ -137,6 +137,34 @@ jobs:
       - name: Import historical matches
         if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || false && !contains(github.event.head_commit.message, '[reuse-report-40175707059]')
         run: python scripts/import_open_dataset.py --from 2020-01-01 --to "$(date -u +%F)" --output data/open_historical_matches.csv
+      - name: Download resumable recent-results cache
+        if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+        env:
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: |
+          mkdir -p reports
+          CACHE_URL="https://raw.githubusercontent.com/${GITHUB_REPOSITORY}/command-data/public-data/recent_results_cache.json"
+          if curl -fsSL --max-time 15 "$CACHE_URL" -o reports/recent_results_cache.json; then
+            python - <<'PY'
+          import json
+          from pathlib import Path
+          path = Path("reports/recent_results_cache.json")
+          try:
+              value = json.loads(path.read_text(encoding="utf-8"))
+              valid = isinstance(value, dict) and value.get("version") == 1 and isinstance(value.get("matches"), list) and isinstance(value.get("state"), dict)
+          except (OSError, json.JSONDecodeError):
+              valid = False
+          if not valid:
+              path.write_text('{"version":1,"matches":[],"state":{}}', encoding="utf-8")
+              print("Saved recent-results cache was invalid; starting a clean cache.")
+          else:
+              print(f"Loaded recent-results cache with {len(value['matches'])} matches.")
+          PY
+          else
+            printf '%s\n' '{"version":1,"matches":[],"state":{}}' > reports/recent_results_cache.json
+            echo "No saved recent-results cache exists yet; a new cache will be initialized."
+          fi
+
       - name: Download previous same-day report for quota-safe delivery
         if: github.event_name == 'push' && contains(github.event.head_commit.message, '[reuse-report-40175707059]')
         uses: actions/download-artifact@v7
@@ -185,7 +213,7 @@ jobs:
             exit 1
           fi
           if [ -z "${TARGET_DATE:-}" ]; then TARGET_DATE="$(TZ=Africa/Lagos date +%F)"; fi
-          python scripts/run_daily_predictions.py --date "$TARGET_DATE" --history data/open_historical_matches.csv --output reports/daily_predictions.json
+          python scripts/run_daily_predictions.py --date "$TARGET_DATE" --history data/open_historical_matches.csv --output reports/daily_predictions.json --recent-cache reports/recent_results_cache.json
       - name: Notify Telegram when live report generation fails
         if: (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || false) && failure() && steps.generate-report.outcome == 'failure'
         env:
@@ -269,5 +297,8 @@ jobs:
           ARGS=(--report reports/daily_predictions.json)
           if { [ "${{ steps.paper-ledger-check.outputs.safe }}" = "true" ] || [ "$REUSE_REPORT" = "true" ]; } && [ -f reports/paper_tracking_ledger.json ]; then
             ARGS+=(--ledger reports/paper_tracking_ledger.json)
+          fi
+          if [ "$REUSE_REPORT" != "true" ] && [ -f reports/recent_results_cache.json ]; then
+            ARGS+=(--recent-cache reports/recent_results_cache.json)
           fi
           python scripts/publish_command_data.py "${ARGS[@]}"
