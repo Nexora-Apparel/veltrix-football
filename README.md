@@ -70,7 +70,11 @@ The backtest compares league-aware venue-specific Poisson and Elo baselines, the
 - **Competition Elo alternative:** 66,620 forecasts; 48.22% accuracy, Brier 0.6191, log loss 1.0311. On 66,564 fixtures with odds, Elo scored 48.20% / 0.6192 / 1.0313 versus the market at 50.21% / 0.6002 / 1.0036.
 - **Recent Elo holdout:** 11,445 fixtures with odds; Elo scored 48.98% accuracy, Brier 0.6137, log loss 1.0232 versus the market at 50.69% / 0.5980 / 1.0004.
 
+**Advanced-model check (2026-10-25):** a recency-weighted Dixon-Coles candidate was tested on 67,544 walk-forward fixtures. It scored 44.82% accuracy, Brier 0.6450, and log loss 1.0700, worse than the existing recent-goals Poisson pipeline (45.02%, 0.6441, 1.0680). On the latest 20% date holdout (11,607 fixtures), Dixon-Coles scored 0.6441 Brier / 1.0688 log loss, again worse than Poisson at 0.6429 / 1.0664. It therefore remains a research-only alternative and is **not** promoted to primary. Its rho parameter is a fixed initial value, not calibrated.
+
 Elo is materially better than the current Poisson model on these historical metrics, but still underperforms the market benchmark. In the full-period same-fixture comparison, neither live model beats the de-vigged market on both Brier score and log loss in any of the 38 evaluated divisions. Historical odds timestamps and closing-line quality have not been verified, so neither model is validated for betting. Keep betting slips and value alerts disabled; these metrics are not evidence of profitability.
+
+The live report now also includes an explicitly non-predictive rest/congestion context (days since the prior match and matches in the previous 14 days), calculated only from historical match dates. It is not used to change probabilities until its effect is independently tested. The current free Highlightly feed does not supply confirmed injuries, suspensions, lineups, true xG, or live bookmaker odds, so those are marked unavailable rather than inferred.
 
 ## Retrospective paper tracking
 
