@@ -673,7 +673,15 @@ def build_daily_report(
                 if p.get("status") == "UNSUPPORTED_COMPETITION" and p.get("league")
             })
         },
-        "possible_team_name_mismatches": sum(bool(p.get("team_name_match_suggestions")) for p in predictions),
+        "possible_team_name_mismatches": sum(
+            bool(p.get("team_name_match_suggestions"))
+            or any(
+                bool(side.get("auto_matched"))
+                for side in (p.get("team_name_matches") or {}).values()
+                if isinstance(side, dict)
+            )
+            for p in predictions
+        ),
         "primary_model_counts": {
             model_name: sum(
                 p.get("status") == "EXPERIMENTAL_ONLY" and p.get("model") == model_name
