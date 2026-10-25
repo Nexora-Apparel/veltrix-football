@@ -85,6 +85,9 @@ def test_daily_runner_refreshes_history_even_when_no_future_fixtures(tmp_path, m
     assert build_calls[0]["additional_historical_matches"] == recent_rows
     assert report["recent_results_sync"]["status"] == "COMPLETE"
     assert report["recent_results_sync"]["results_added"] == 1
+    assert report["historical_data_coverage"]["status"] == "CONTIGUOUS_THROUGH_TARGET_MINUS_ONE"
+    assert report["historical_data_coverage"]["contiguous_through"] == "2026-10-22"
+    assert report["historical_data_coverage"]["latest_available_match_date"] == "2026-10-22"
     assert report["live_odds_sync"]["status"] == "SKIPPED_NO_FUTURE_FIXTURES"
 
 
@@ -124,4 +127,5 @@ def test_daily_runner_refreshes_history_and_requests_odds_for_future_fixtures(tm
     assert len(build_calls) == 1
     assert build_calls[0]["additional_historical_matches"] == recent_rows
     assert report["recent_results_sync"]["status"] == "COMPLETE"
+    assert report["historical_data_coverage"]["status"] == "CONTIGUOUS_THROUGH_TARGET_MINUS_ONE"
     assert report["live_odds_sync"]["status"] == "NO_VALID_1X2_ODDS"
