@@ -46,8 +46,26 @@ def _report_predictions(report: dict[str, Any] | None) -> list[dict[str, Any]]:
     return [row for row in rows if isinstance(row, dict)] if isinstance(rows, list) else []
 
 
+def _forecast_predictions(report: dict[str, Any] | None) -> list[dict[str, Any]]:
+    """Return only rows explicitly carrying a usable experimental forecast."""
+    rows = _report_predictions(report)
+    valid = []
+    for row in rows:
+        probabilities = row.get("probabilities")
+        if row.get("status") != "EXPERIMENTAL_ONLY" or not isinstance(probabilities, dict):
+            continue
+        try:
+            values = [float(probabilities[key]) for key in ("home_win", "draw", "away_win")]
+        except (KeyError, TypeError, ValueError):
+            continue
+        if all(0 <= value <= 1 for value in values) and abs(sum(values) - 1.0) <= 0.02:
+            valid.append(row)
+    return valid
+
+
 def _status(report: dict[str, Any] | None, ledger: dict[str, Any] | None) -> str:
-    predictions = _report_predictions(report)
+    fixtures = _report_predictions(report)
+    predictions = _forecast_predictions(report)
     odds_status = "not connected to this command router"
     if isinstance(report, dict):
         meta = report.get("odds_meta") or report.get("odds") or {}
@@ -57,7 +75,8 @@ def _status(report: dict[str, Any] | None, ledger: dict[str, Any] | None) -> str
     return (
         "VELTRIX COMMAND CENTRE — STATUS\n"
         f"Current report: {'available' if isinstance(report, dict) else 'not loaded'}\n"
-        f"Forecast rows in report: {len(predictions)}\n"
+        f"Fixtures in report: {len(fixtures)}\n"
+        f"Usable experimental forecasts: {len(predictions)}\n"
         f"Live bookmaker odds: {odds_status}\n"
         f"Paper-tracking ledger: {ledger_status}\n"
         "Betting/value alerts: DISABLED until chronological out-of-sample validation.\n"
@@ -131,43 +150,76 @@ def handle_command(
             "Use /10odds to check whether verified odds data are connected."
         )
 
-    if command in {"/today", "/fixtures", "/tomorrow", "/live", "/match", "/goals"}:
-        predictions = _report_predictions(report)
-        if not predictions:
+    if command in {"/tomorrow", "/live"}:
+        label = "TOMORROW" if command == "/tomorrow" else "LIVE MATCHES"
+        return _reply(
+            f"{label} — DATA NOT CONNECTED\\n"
+            "The saved report is a same-day pre-match snapshot. A separate date-specific or live-status source is required; no fixtures are guessed."
+        )
+
+    if command in {"/today", "/fixtures", "/match", "/goals"}:
+        all_rows = _report_predictions(report)
+        forecast_rows = _forecast_predictions(report)
+        if not all_rows:
             if command == "/match" and not argument.strip():
                 body = "Usage: /match Home Team vs Away Team"
             else:
                 body = (
-                    f"{command.upper()} — DATA NOT AVAILABLE\n"
-                    "No current prediction report was supplied to the command router. "
-                    "I won't invent fixtures, scores, kickoff times, or probabilities."
+                    f"{command.upper()} — DATA NOT AVAILABLE\\n"
+                    "No current saved prediction report was supplied. I won't invent fixtures, scores, kickoff times, or probabilities."
                 )
             return _reply(body)
+
         if command == "/match":
             query = argument.casefold().replace(" vs ", " ").strip()
             if not query:
                 return _reply("Usage: /match Home Team vs Away Team")
             matches = [
-                row for row in predictions
+                row for row in all_rows
                 if query in f"{row.get('home_team', '')} {row.get('away_team', '')}".casefold()
             ]
             if not matches:
                 return _reply("No matching fixture was found in the loaded report.")
             selected = matches[:5]
+        elif command == "/fixtures":
+            selected = all_rows[:15]
+        elif command == "/goals":
+            selected = [row for row in forecast_rows if isinstance(row.get("expected_goals"), dict)][:15]
+            if not selected:
+                return _reply("GOALS — NO USABLE EXPECTED-GOALS FORECASTS in the saved report.")
         else:
-            selected = predictions
-        lines = [f"{command.upper()} — EXPERIMENTAL REPORT"]
-        for row in selected[:15]:
-            probs = row.get("probabilities") or {}
+            selected = forecast_rows[:15]
+            if not selected:
+                return _reply("TODAY — NO USABLE FORECASTS. Fixtures may exist, but no rows passed the forecast-data checks.")
+
+        lines = [f"{command.upper()} — {'FIXTURE LIST' if command == '/fixtures' else 'EXPERIMENTAL REPORT'}"]
+        for row in selected:
+            home = row.get("home_team", "Home")
+            away = row.get("away_team", "Away")
+            league = row.get("league", "Competition unknown")
+            kickoff = row.get("kickoff_local") or row.get("kickoff") or "kickoff unavailable"
+            if command == "/fixtures":
+                lines.append(
+                    f"{home} vs {away} | {league} | {kickoff} | "
+                    f"{row.get('status', 'status unknown')}"
+                )
+                continue
+
+            probs = row.get("probabilities")
+            if not isinstance(probs, dict):
+                reason = row.get("reason") or row.get("status") or "forecast unavailable"
+                lines.append(f"{home} vs {away} | {league} | {kickoff} | WITHHELD: {reason}")
+                continue
             lines.append(
-                f"{row.get('home_team', 'Home')} vs {row.get('away_team', 'Away')} | "
-                f"{row.get('league', 'Competition unknown')} | "
-                f"H {float(probs.get('home_win', probs.get('home', 0))):.0%} / "
-                f"D {float(probs.get('draw', 0)):.0%} / "
-                f"A {float(probs.get('away_win', probs.get('away', 0))):.0%}"
+                f"{home} vs {away} | {league} | {kickoff} | "
+                f"H {float(probs['home_win']):.0%} / D {float(probs['draw']):.0%} / A {float(probs['away_win']):.0%}"
             )
+            if isinstance(row.get("expected_goals"), dict) and command == "/goals":
+                eg = row["expected_goals"]
+                lines.append(f"Expected goals: {eg.get('home', 'n/a')} - {eg.get('away', 'n/a')}")
+
         lines.append("Experimental estimates only — not validated betting advice.")
-        return _reply("\n".join(lines))
+        return _reply("\\n".join(lines))
 
     if command in {"/overunder", "/btts", "/cleansheet", "/value", "/overvalue", "/bttsvalue", "/odds", "/10odds"}:
         return _reply(
