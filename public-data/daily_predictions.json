@@ -147,7 +147,7 @@
     "World Cup - U17 - Women": 4,
     "Ykkösliiga": 1
   },
-  "possible_team_name_mismatches": 14,
+  "possible_team_name_mismatches": 53,
   "primary_model_counts": {
     "experimental_elo_by_competition": 20,
     "experimental_recent_goals_poisson": 24
