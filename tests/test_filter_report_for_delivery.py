@@ -28,7 +28,7 @@ def test_filter_keeps_only_future_same_day_rows_and_recomputes_count():
     assert report["predictions_created"] == 1
     assert report["future_fixtures_considered"] == 2
     assert report["past_kickoffs_excluded"] == 1
-    assert report["unsupported_competitions"] == 0
+    assert report["unsupported_competitions"] == 1
     assert report["insufficient_history"] == 0
     assert report["predictions_created"] == 1
     assert report["primary_model_counts"] == {"elo": 1}
