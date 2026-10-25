@@ -26,7 +26,7 @@ def split_date_ranges(start: date, end: date, max_days: int = 7) -> list[tuple[d
 
 
 def extract_completed_results(payload: dict[str, Any]) -> list[dict[str, Any]]:
-    """Normalize completed football-data.org matches into the same row shape as historical CSV."""
+    """Normalize completed Highlightly matches into historical rows with stable fixture IDs."""
     response = payload.get("response")
     if not isinstance(response, list):
         raise ValueError("Recent-results payload must contain a response list.")
