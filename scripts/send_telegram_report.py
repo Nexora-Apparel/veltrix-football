@@ -66,6 +66,12 @@ def format_report_messages(report: dict[str, Any], ledger: dict[str, Any] | None
         f"NOT SHOWN: {len(insufficient)} need more team history | {len(unsupported)} unsupported competitions",
         "",
     ]
+    publication_status = str(report.get("publication_status") or "").upper()
+    if publication_status == "REUSED_SNAPSHOT_NOT_REFRESHED":
+        header.extend([
+            "SNAPSHOT NOTICE: This is a reused same-day snapshot; fresh fixtures were not fetched in this run.",
+            "",
+        ])
     sync = report.get("recent_results_sync") or {}
     if sync and (sync.get("status") not in {"OK", "SUCCESS", "COMPLETE", "UP_TO_DATE"} or sync.get("warning")):
         sync_status = str(sync.get("status") or "UNKNOWN").upper()
