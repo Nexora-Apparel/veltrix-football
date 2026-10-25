@@ -53,6 +53,9 @@ def format_report_messages(report: dict[str, Any], ledger: dict[str, Any] | None
     unsupported = [p for p in predictions if p.get("status") == "UNSUPPORTED_COMPETITION"]
 
     header = [
+        "╔══════════════════════════╗",
+        "🔔 🆕 NEW VELTRIX MESSAGE",
+        "╚══════════════════════════╝",
         "⚽ VELTRIX FOOTBALL",
         "TODAY'S MATCH FORECASTS",
         f"📅 {day} | Kick-off times: Nigeria (WAT)",
@@ -175,7 +178,13 @@ def format_report_messages(report: dict[str, Any], ledger: dict[str, Any] | None
         if len(message) > MAX_MESSAGE_LENGTH:
             message = message[: MAX_MESSAGE_LENGTH - 1].rstrip() + "…"
         chunks.append(message)
-    return chunks
+    # Add a strong visual marker to every Telegram message, including split parts,
+    # so fresh Veltrix updates are easy to distinguish in a busy chat.
+    total = len(chunks)
+    return [
+        f"🔔 🆕 NEW VELTRIX UPDATE  •  MESSAGE {index}/{total}\n╔══════════════════════════╗\n" + chunk
+        for index, chunk in enumerate(chunks, start=1)
+    ]
 
 
 def format_report(report: dict[str, Any], ledger: dict[str, Any] | None = None) -> str:
