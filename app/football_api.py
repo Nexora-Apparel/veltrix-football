@@ -252,6 +252,10 @@ class FootballAPI:
         end = date_type.fromisoformat(end_date)
         if end < start:
             raise FootballAPIError("end date must be on or after start date.")
+        if (end - start).days >= 7:
+            raise FootballAPIError(
+                "Highlightly range queries are capped at 7 calendar days to protect the free daily quota."
+            )
         combined: list[dict[str, Any]] = []
         metas: list[dict[str, Any]] = []
         cursor = start
