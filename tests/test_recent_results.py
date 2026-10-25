@@ -9,7 +9,7 @@ from zoneinfo import ZoneInfo
 from app.live_predictions import build_daily_report
 
 from app.football_api import FootballAPIError
-from app.recent_results import extract_completed_results, fetch_recent_results, split_date_ranges
+from app.recent_results import extract_completed_results, fetch_recent_results, fetch_recent_results_incremental, split_date_ranges
 
 
 def _fixture(match_date: str, *, status: str = "FT", league_id: int = 39,
@@ -119,6 +119,45 @@ def test_fetch_recent_results_can_limit_provider_calls_to_one_range():
     assert meta["ranges_succeeded"] == 1
     assert meta["ranges_requested"] == 8
     assert "limited to 1 of 8" in meta["warning"]
+
+
+def test_incremental_refresh_backfills_one_range_per_run_and_preserves_recent_coverage():
+    class FakeAPI:
+        def __init__(self):
+            self.calls = []
+        def fixtures_between(self, start, end, timezone):
+            self.calls.append((start, end, timezone))
+            return {"response": [_fixture(end)]}
+
+    base = [{
+        "date": date(2026, 9, 3), "division": "E0", "home": "Old", "away": "Older",
+        "home_key": "old", "away_key": "older", "home_goals": 1, "away_goals": 0,
+    }]
+    api = FakeAPI()
+    state = {}
+    statuses = []
+    for _ in range(8):
+        rows, meta = fetch_recent_results_incremental(
+            api, base, date(2026, 10, 24), state
+        )
+        assert len(rows) == 1
+        state = meta["cache_state"]
+        statuses.append(meta["status"])
+    assert len(api.calls) == 8
+    assert api.calls[0] == ("2026-10-18", "2026-10-24", "Africa/Lagos")
+    assert api.calls[1] == ("2026-10-11", "2026-10-17", "Africa/Lagos")
+    assert api.calls[-1] == ("2026-09-04", "2026-09-05", "Africa/Lagos")
+    assert statuses[0] == "PARTIAL"
+    assert statuses[-1] == "COMPLETE"
+    assert state["backfill_complete"] is True
+    assert state["latest_covered_through"] == "2026-10-24"
+
+    # Once the historical gap is filled, the cursor advances to newly completed dates.
+    _, next_meta = fetch_recent_results_incremental(
+        api, base, date(2026, 10, 25), state
+    )
+    assert api.calls[-1] == ("2026-10-25", "2026-10-25", "Africa/Lagos")
+    assert next_meta["cache_state"]["latest_covered_through"] == "2026-10-25"
 
 
 def test_fetch_recent_results_skips_api_when_history_is_current():
