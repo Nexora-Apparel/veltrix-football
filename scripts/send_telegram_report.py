@@ -143,7 +143,7 @@ def format_report_messages(report: dict[str, Any], ledger: dict[str, Any] | None
     footer.extend([
         "• No betting slips or forced picks are generated.",
         "• Probabilities are model estimates, not guarantees.",
-        "• Data provided by football-data.org API.",
+        "• Fixture data provided by Highlightly Football API.",
     ])
 
     def render(selected: list[list[str]]) -> str:
