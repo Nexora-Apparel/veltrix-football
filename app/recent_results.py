@@ -88,6 +88,7 @@ def fetch_recent_results(
     *,
     max_chunk_days: int = 7,
     timezone_name: str = "Africa/Lagos",
+    max_ranges: int | None = None,
 ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     """Fetch results newer than the open CSV, stopping safely on API-plan errors.
 
@@ -121,10 +122,13 @@ def fetch_recent_results(
         }
 
     ranges = split_date_ranges(start_date, end_date, max_chunk_days)
+    if max_ranges is not None and max_ranges < 1:
+        raise ValueError("max_ranges must be positive when provided")
+    ranges_to_fetch = ranges if max_ranges is None else ranges[:max_ranges]
     fetched: list[dict[str, Any]] = []
     successful_ranges: list[tuple[date, date]] = []
     warning = None
-    for range_start, range_end in ranges:
+    for range_start, range_end in ranges_to_fetch:
         try:
             payload = api.fixtures_between(
                 range_start.isoformat(), range_end.isoformat(), timezone_name
@@ -172,13 +176,19 @@ def fetch_recent_results(
         unique[key] = row
     fetched = sorted(unique.values(), key=lambda row: (row["date"], row["division"], row["home_key"], row["away_key"]))
 
-    all_ranges_succeeded = len(successful_ranges) == len(ranges)
+    all_ranges_succeeded = len(successful_ranges) == len(ranges) and len(ranges_to_fetch) == len(ranges)
     if all_ranges_succeeded:
         status = "COMPLETE"
     elif successful_ranges:
         status = "PARTIAL"
     else:
         status = "UNAVAILABLE"
+    if max_ranges is not None and len(ranges_to_fetch) < len(ranges):
+        limit_notice = (
+            f"Refresh limited to {len(ranges_to_fetch)} of {len(ranges)} historical date ranges "
+            "per run to protect the provider request quota."
+        )
+        warning = f"{warning}; {limit_notice}" if warning else limit_notice
     covered_from = min((start for start, _ in successful_ranges), default=None)
     covered_through = max((end for _, end in successful_ranges), default=None)
     return fetched, {
