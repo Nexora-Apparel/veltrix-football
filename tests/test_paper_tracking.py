@@ -517,3 +517,33 @@ def test_runner_skips_provider_call_when_saved_report_has_no_scoreable_forecasts
     output = tmp_path / "ledger.json"
     ledger = tracking_runner.run(date(2026, 10, 23), str(output))
     assert ledger["last_attempt"]["status"] == "NO_FORECASTS_TO_SCORE"
+
+
+def test_old_empty_evaluation_is_retried_and_marked_without_provider_call(tmp_path, monkeypatch):
+    monkeypatch.setenv("GITHUB_REPOSITORY", "owner/repo")
+    monkeypatch.setenv("GITHUB_TOKEN", "test-token")
+    monkeypatch.setenv("GITHUB_RUN_ID", "999")
+    monkeypatch.setattr(tracking_runner, "get_settings", lambda: object())
+    monkeypatch.setattr(tracking_runner, "list_relevant_runs", lambda session, repo: [])
+    monkeypatch.setattr(tracking_runner, "find_latest_ledger", lambda *args: {
+        "product": "Veltrix Football", "model_status": "PAPER_TRACKING_ONLY",
+        "evaluations": [{
+            "report_date": "2026-10-22", "fixtures_scored": 0,
+            "completed_forecasts_scored": 0, "awaiting_result_or_match": 0,
+            "withheld_or_invalid_forecasts": 0, "model_versions": [],
+        }],
+        "scored_matches": [],
+    })
+    monkeypatch.setattr(tracking_runner, "find_daily_report", lambda *args: {
+        "as_of_date": "2026-10-22", "predictions": [],
+    })
+
+    class NeverCallAPI:
+        def __init__(self, settings):
+            raise AssertionError("Provider must not be called for an empty report.")
+
+    monkeypatch.setattr(tracking_runner, "FootballAPI", NeverCallAPI)
+    output = tmp_path / "ledger.json"
+    ledger = tracking_runner.run(date(2026, 10, 23), str(output))
+    assert ledger["evaluations"][0]["tracking_state"] == "NO_FORECASTS_TO_SCORE"
+    assert ledger["last_attempt"]["status"] == "NO_FORECASTS_TO_SCORE"
