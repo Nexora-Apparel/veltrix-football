@@ -16,7 +16,7 @@ from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
 API_ROOT = "https://api.github.com"
-REPORT_NAMES = ("daily-predictions", "daily_predictions", "daily-prediction-report", "prediction-report")
+REPORT_NAMES = ("veltrix-daily-predictions", "daily-predictions", "daily_predictions", "daily-prediction-report", "prediction-report")
 LEDGER_NAMES = ("veltrix-paper-ledger", "paper-tracking-ledger", "paper_tracking_ledger")
 CACHE_SECONDS = 45
 _cache: dict[str, tuple[float, dict[str, Any] | None]] = {}
