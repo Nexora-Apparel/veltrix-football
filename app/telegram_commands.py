@@ -153,7 +153,7 @@ def handle_command(
     if command in {"/tomorrow", "/live"}:
         label = "TOMORROW" if command == "/tomorrow" else "LIVE MATCHES"
         return _reply(
-            f"{label} — DATA NOT CONNECTED\\n"
+            f"{label} — DATA NOT CONNECTED\n"
             "The saved report is a same-day pre-match snapshot. A separate date-specific or live-status source is required; no fixtures are guessed."
         )
 
@@ -165,7 +165,7 @@ def handle_command(
                 body = "Usage: /match Home Team vs Away Team"
             else:
                 body = (
-                    f"{command.upper()} — DATA NOT AVAILABLE\\n"
+                    f"{command.upper()} — DATA NOT AVAILABLE\n"
                     "No current saved prediction report was supplied. I won't invent fixtures, scores, kickoff times, or probabilities."
                 )
             return _reply(body)
@@ -219,7 +219,7 @@ def handle_command(
                 lines.append(f"Expected goals: {eg.get('home', 'n/a')} - {eg.get('away', 'n/a')}")
 
         lines.append("Experimental estimates only — not validated betting advice.")
-        return _reply("\\n".join(lines))
+        return _reply("\n".join(lines))
 
     if command in {"/overunder", "/btts", "/cleansheet", "/value", "/overvalue", "/bttsvalue", "/odds", "/10odds"}:
         return _reply(
