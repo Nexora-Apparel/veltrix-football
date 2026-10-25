@@ -15,7 +15,7 @@ from pathlib import Path
 from typing import Any, Iterable
 
 from app.prediction import match_probabilities
-from app.advanced_models import dixon_coles_1x2, recency_weighted_mean
+from app.advanced_models import dixon_coles_1x2, recency_weighted_mean, rest_congestion_context
 
 MIN_TEAM_MATCHES = 5
 TEAM_WINDOW = 10
@@ -483,6 +483,9 @@ def predict_fixtures(
                 "probabilities": primary_probabilities,
                 "elo_history": elo_metadata,
                 "expected_goals": {"home": round(home_xg, 3), "away": round(away_xg, 3)},
+                "rest_congestion_context": rest_congestion_context(
+                    usable, home_key, away_key, target_date, window_days=14
+                ),
                 "advanced_model_alternative": {
                     "model": "experimental_recency_weighted_dixon_coles",
                     "model_validated": False,
@@ -499,7 +502,7 @@ def predict_fixtures(
                     "competition_elo": "AVAILABLE" if elo_probabilities is not None else "INSUFFICIENT_HISTORY",
                     "true_expected_goals_xg": "UNAVAILABLE_FROM_CURRENT_HISTORICAL_FEED",
                     "confirmed_lineups_injuries_suspensions": "NOT_CONNECTED",
-                    "rest_and_fixture_congestion": "NOT_MODELLED",
+                    "rest_and_fixture_congestion": "CONTEXT_ONLY_NOT_USED_IN_PROBABILITIES",
                     "live_bookmaker_odds": "UNAVAILABLE_ON_CURRENT_HIGHLIGHTLY_PLAN",
                 },
                 "goal_markets_model": "experimental_recent_goals_poisson",
