@@ -1,110 +1,95 @@
+"""Manual Highlightly season-coverage audit; keep requests bounded on the free tier."""
 from __future__ import annotations
 
 import json
-import time
 from app.config import get_settings
-from app.football_api import FootballAPI, FootballAPIError
+from app.football_api import FootballAPI, FootballAPIError, normalize_match
 
-# API-Football season labels: 2025 is 2025/26; 2026 is 2026/27.
-# Requests are paced to respect the free-plan limit of 10 requests/minute.
-SAMPLES = {
-    39: ("England", "Premier League"),
-    140: ("Spain", "La Liga"),
-    135: ("Italy", "Serie A"),
-}
+SAMPLES = ("Premier League", "La Liga", "Serie A")
 SEASONS = (2025, 2026)
 COMPLETED = {"FT", "AET", "PEN"}
-_LAST_REQUEST = 0.0
-
-
-def paced_get(api: FootballAPI, endpoint: str, params: dict | None = None) -> dict:
-    """Stay below the free-plan 10-requests/minute burst limit."""
-    global _LAST_REQUEST
-    wait = 6.5 - (time.monotonic() - _LAST_REQUEST)
-    if _LAST_REQUEST and wait > 0:
-        time.sleep(wait)
-    result = api.get(endpoint, params)
-    _LAST_REQUEST = time.monotonic()
-    return result
 
 
 def main() -> int:
     api = FootballAPI(get_settings())
     report = {
-        "purpose": "Check actual free-plan access to the 2025/26 and 2026/27 seasons.",
-        "season_label_note": "For these leagues, season year is the starting year.",
-        "plan_status": None,
+        "purpose": "Sample Highlightly coverage for selected competitions and seasons.",
+        "warning": "Each league/season sample makes API requests; monitor the daily quota.",
+        "provider": "Highlightly",
         "samples": [],
         "errors": [],
     }
 
-    status = paced_get(api, "status")
-    response = status.get("response", {})
-    report["plan_status"] = {
-        "plan": response.get("subscription", {}).get("plan"),
-        "active": response.get("subscription", {}).get("active"),
-        "requests_used": response.get("requests", {}).get("current"),
-        "daily_limit": response.get("requests", {}).get("limit_day"),
-    }
-
-    for league_id, (country, league_name) in SAMPLES.items():
-        try:
-            meta = paced_get(api, "leagues", {"id": league_id})
-            coverage_by_season = {}
-            for item in meta.get("response", []):
-                for season in item.get("seasons", []):
-                    year = season.get("year")
-                    if year is not None:
-                        coverage_by_season[str(year)] = season.get("coverage", {})
-            for year in SEASONS:
-                row = {
-                    "league_id": league_id,
-                    "league": league_name,
-                    "country": country,
+    for league_name in SAMPLES:
+        for year in SEASONS:
+            row = {"league": league_name, "season": year, "request_ok": False}
+            try:
+                league_payload = api.get("leagues", {
                     "season": year,
-                    "season_name": "2025/26" if year == 2025 else "2026/27",
-                    "listed_in_league_metadata": str(year) in coverage_by_season,
-                    "coverage": coverage_by_season.get(str(year)),
-                }
-                try:
-                    payload = paced_get(api, "fixtures", {"league": league_id, "season": year})
-                    fixtures = payload.get("response", [])
-                    completed = [
-                        f for f in fixtures
-                        if f.get("fixture", {}).get("status", {}).get("short") in COMPLETED
-                        and f.get("goals", {}).get("home") is not None
-                        and f.get("goals", {}).get("away") is not None
-                    ]
-                    upcoming = [
-                        f for f in fixtures
-                        if f.get("fixture", {}).get("status", {}).get("short") in {"NS", "TBD"}
-                    ]
+                    "leagueName": league_name,
+                    "limit": 20,
+                    "offset": 0,
+                })
+                leagues = league_payload.get("data")
+                if not isinstance(leagues, list):
+                    raise FootballAPIError("Highlightly leagues response is missing its data list.")
+                if not leagues:
                     row.update({
                         "request_ok": True,
-                        "fixtures_returned": len(fixtures),
-                        "completed_with_scores": len(completed),
-                        "upcoming_unplayed": len(upcoming),
-                        "sample_upcoming_fixture_ids": [
-                            f.get("fixture", {}).get("id") for f in upcoming[:3]
-                        ],
+                        "league_found": False,
+                        "fixtures_sampled": 0,
+                        "note": "No matching league returned for this season/name filter.",
                     })
-                except FootballAPIError as exc:
-                    message = str(exc)
-                    limited = "do not have access to this season" in message.lower()
-                    row.update({"request_ok": False, "plan_limited": limited, "error": message})
-                    if not limited:
-                        report["errors"].append(f"{league_name} {year}: {exc}")
-                report["samples"].append(row)
-        except FootballAPIError as exc:
-            report["errors"].append(f"{league_name} metadata: {exc}")
+                    row["requests_remaining"] = (league_payload.get("_veltrix_meta") or {}).get("requests_remaining")
+                    report["samples"].append(row)
+                    continue
+
+                league = leagues[0]
+                match_payload = api.get("matches", {
+                    "leagueId": league.get("id"),
+                    "season": year,
+                    "limit": 100,
+                    "offset": 0,
+                })
+                raw_matches = match_payload.get("data")
+                if not isinstance(raw_matches, list):
+                    raise FootballAPIError("Highlightly matches response is missing its data list.")
+                matches = [normalize_match(item) for item in raw_matches if isinstance(item, dict)]
+                completed = [
+                    item for item in matches
+                    if item.get("fixture", {}).get("status", {}).get("short") in COMPLETED
+                    and item.get("goals", {}).get("home") is not None
+                    and item.get("goals", {}).get("away") is not None
+                ]
+                upcoming = [
+                    item for item in matches
+                    if item.get("fixture", {}).get("status", {}).get("short") in {"NS", "TBD"}
+                ]
+                row.update({
+                    "request_ok": True,
+                    "league_found": True,
+                    "resolved_league_id": league.get("id"),
+                    "fixtures_sampled": len(matches),
+                    "provider_total_count": (match_payload.get("pagination") or {}).get("totalCount"),
+                    "completed_with_scores_in_sample": len(completed),
+                    "upcoming_unplayed_in_sample": len(upcoming),
+                    "sample_upcoming_fixture_ids": [
+                        item.get("fixture", {}).get("id") for item in upcoming[:3]
+                    ],
+                    "requests_remaining": (match_payload.get("_veltrix_meta") or {}).get("requests_remaining"),
+                })
+            except (FootballAPIError, ValueError) as exc:
+                row["error"] = str(exc)
+                report["errors"].append(f"{league_name} {year}: {exc}")
+            report["samples"].append(row)
 
     print(json.dumps(report, indent=2, ensure_ascii=False))
-    successful = sum(1 for row in report["samples"] if row.get("request_ok"))
-    with_data = sum(1 for row in report["samples"] if row.get("completed_with_scores", 0) > 0)
-    upcoming = sum(1 for row in report["samples"] if row.get("upcoming_unplayed", 0) > 0)
+    successful = sum(bool(row.get("request_ok")) for row in report["samples"])
+    with_data = sum(row.get("completed_with_scores_in_sample", 0) > 0 for row in report["samples"])
+    upcoming = sum(row.get("upcoming_unplayed_in_sample", 0) > 0 for row in report["samples"])
     print(
-        f"AUDIT_SUMMARY: successful season requests={successful}/{len(report['samples'])}; "
-        f"seasons with completed scored fixtures={with_data}; seasons with upcoming fixtures={upcoming}; "
+        f"AUDIT_SUMMARY: successful samples={successful}/{len(report['samples'])}; "
+        f"samples with completed scores={with_data}; samples with upcoming fixtures={upcoming}; "
         f"errors={len(report['errors'])}"
     )
     return 1 if report["errors"] else 0
