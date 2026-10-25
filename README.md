@@ -11,7 +11,7 @@ Football analytics and prediction platform. The active fixture provider is Highl
 
 ## Requirements
 - Python 3.11+
-- Highlightly API key from your API-Sports dashboard
+- Highlightly Football API key from your Highlightly dashboard
 
 ## Configure
 Set the environment variable `HIGHLIGHTLY_API_KEY`. Never commit a real key.
@@ -32,12 +32,10 @@ python -m app.cli status
 ```
 
 ## API notes
-The client uses `https://v3.football.api-sports.io/` and the `x-apisports-key` header.
-An HTTP 200 response is not by itself proof of success: the API's JSON `errors` field is checked too.
-The available leagues, seasons, statistics, odds, and request quota depend on the API plan.
+The client calls `https://soccer.highlightly.net` and sends the key in the `x-rapidapi-key` header. It normalizes Highlightly's `data` envelope into the internal `response` shape. Request quota is reported from the provider's rate-limit headers when available. The free/basic plan does not provide bookmaker odds; the adapter returns an explicit unavailable status instead of fabricating them.
 
 ## Historical data export
-Use `python -m app.cli history --from YYYY-MM-DD --to YYYY-MM-DD --output data/historical_features.csv` to retrieve fixtures and export completed matches. Each row includes rolling team form features computed strictly from earlier completed matches; a match result is added to team history only after that match’s pre-match features are calculated. This avoids direct target leakage. The default rolling window is five matches and can be changed with `--window 8`. Keep date ranges to 366 calendar days or less per request. API plan coverage, quota and historical availability still apply. CSV files are local outputs and are not committed automatically.
+Use `python -m app.cli history --from YYYY-MM-DD --to YYYY-MM-DD --output data/historical_features.csv` to retrieve fixtures and export completed matches. Each date is requested separately because Highlightly's matches endpoint uses a single `date` filter; long ranges therefore consume one API request per date and may exceed the free-tier quota. Keep ranges short. Each row includes rolling team form features computed strictly from earlier completed matches. CSV files are local outputs and are not committed automatically.
 
 ## Open historical dataset import (2020–present)
 Veltrix can import completed match records from the public [Club-Football-Match-Data dataset](https://github.com/xgabora/Club-Football-Match-Data), whose repository identifies an MIT license. The raw dataset is **not** committed to this repository. Run:
@@ -86,7 +84,7 @@ python scripts/evaluate_paper_predictions.py --report reports/daily_predictions.
 
 ## Daily fixture-to-prediction pipeline (experimental)
 
-The daily workflow is scheduled for 08:00 Africa/Lagos (07:00 UTC) and can also be started manually. It includes only fixtures whose kickoff date is the same calendar date in Africa/Lagos as the report date and whose kickoff time is still in the future; tomorrow/later fixtures and already-started fixtures are excluded even when the API returns UTC timestamps. Add `HIGHLIGHTLY_API_KEY` under repository Settings → Secrets and variables → Actions → New repository secret for the job to run. To enable the optional Telegram delivery step, also add `TELEGRAM_BOT_TOKEN` (from BotFather) and `TELEGRAM_CHAT_ID` (the destination chat ID) as repository Actions secrets. Never put these values in source code or commit them. The workflow imports historical scores, runs the unit tests, fetches fixtures for the requested Nigeria-time date, sends the explicitly experimental report to Telegram when all three secrets are present, and uploads a JSON report artifact retained for 90 days so reports can be reviewed during a paper-tracking period. If Telegram secrets are absent, delivery is skipped without exposing credentials.
+The daily workflow is scheduled for 06:00 Africa/Lagos (05:00 UTC) and can also be started manually. It includes only fixtures whose kickoff date is the same calendar date in Africa/Lagos as the report date and whose kickoff time is still in the future; tomorrow/later fixtures and already-started fixtures are excluded even when the API returns UTC timestamps. Add `HIGHLIGHTLY_API_KEY` under repository Settings → Secrets and variables → Actions → New repository secret for the job to run. To enable the optional Telegram delivery step, also add `TELEGRAM_BOT_TOKEN` (from BotFather) and `TELEGRAM_CHAT_ID` (the destination chat ID) as repository Actions secrets. Never put these values in source code or commit them. The workflow imports historical scores, runs the unit tests, fetches fixtures for the requested Nigeria-time date, sends the explicitly experimental report to Telegram when all three secrets are present, and uploads a JSON report artifact retained for 90 days so reports can be reviewed during a paper-tracking period. If Telegram secrets are absent, delivery is skipped without exposing credentials.
 
 Run locally after importing historical data:
 
