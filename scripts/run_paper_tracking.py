@@ -1,4 +1,5 @@
 """Evaluate the prior day's saved report and maintain a cumulative paper ledger."""
+# Keep report selection and ledger recovery covered by the quota-safe publication workflow.
 from __future__ import annotations
 
 import argparse
