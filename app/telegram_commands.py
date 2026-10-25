@@ -5,6 +5,7 @@ invents odds or treats experimental estimates as validated bets.
 """
 from __future__ import annotations
 
+import math
 import re
 from datetime import datetime
 from zoneinfo import ZoneInfo
@@ -55,15 +56,22 @@ def _report_predictions(report: dict[str, Any] | None) -> list[dict[str, Any]]:
     return [row for row in rows if isinstance(row, dict)] if isinstance(rows, list) else []
 
 
-def _kickoff_is_future(row: dict[str, Any]) -> bool:
+def _kickoff_is_future(row: dict[str, Any], *, now: datetime | None = None) -> bool:
+    """Accept only fixtures that have not started and kick off on the current Lagos date."""
     raw = row.get("kickoff_local") or row.get("kickoff")
     if not isinstance(raw, str) or not raw.strip():
         return False
     try:
         kickoff = datetime.fromisoformat(raw.replace("Z", "+00:00"))
+        lagos = ZoneInfo("Africa/Lagos")
         if kickoff.tzinfo is None:
-            kickoff = kickoff.replace(tzinfo=ZoneInfo("Africa/Lagos"))
-        return kickoff > datetime.now(ZoneInfo("Africa/Lagos"))
+            kickoff = kickoff.replace(tzinfo=lagos)
+        kickoff = kickoff.astimezone(lagos)
+        current = now or datetime.now(lagos)
+        if current.tzinfo is None:
+            current = current.replace(tzinfo=lagos)
+        current = current.astimezone(lagos)
+        return kickoff.date() == current.date() and kickoff > current
     except (TypeError, ValueError, OverflowError):
         return False
 
@@ -72,21 +80,26 @@ def _future_fixtures(report: dict[str, Any] | None) -> list[dict[str, Any]]:
     return [row for row in _report_predictions(report) if _kickoff_is_future(row)]
 
 
+def _valid_probability_vector(probabilities: Any) -> bool:
+    if not isinstance(probabilities, dict):
+        return False
+    try:
+        values = [float(probabilities[key]) for key in ("home_win", "draw", "away_win")]
+    except (KeyError, TypeError, ValueError, OverflowError):
+        return False
+    return (
+        all(math.isfinite(value) and 0.0 <= value <= 1.0 for value in values)
+        and abs(sum(values) - 1.0) <= 0.02
+    )
+
+
 def _forecast_predictions(report: dict[str, Any] | None) -> list[dict[str, Any]]:
     """Return only current-day, future, explicitly usable experimental forecasts."""
-    rows = _future_fixtures(report)
-    valid = []
-    for row in rows:
-        probabilities = row.get("probabilities")
-        if row.get("status") != "EXPERIMENTAL_ONLY" or not isinstance(probabilities, dict):
-            continue
-        try:
-            values = [float(probabilities[key]) for key in ("home_win", "draw", "away_win")]
-        except (KeyError, TypeError, ValueError):
-            continue
-        if all(0 <= value <= 1 for value in values) and abs(sum(values) - 1.0) <= 0.02:
-            valid.append(row)
-    return valid
+    return [
+        row for row in _future_fixtures(report)
+        if row.get("status") == "EXPERIMENTAL_ONLY"
+        and _valid_probability_vector(row.get("probabilities"))
+    ]
 
 
 def _status(report: dict[str, Any] | None, ledger: dict[str, Any] | None) -> str:
@@ -102,9 +115,10 @@ def _status(report: dict[str, Any] | None, ledger: dict[str, Any] | None) -> str
         ledger_status = f"available ({scored_count} settled forecast rows)"
     else:
         ledger_status = "not available"
+    report_is_current = isinstance(report, dict) and bool(_report_predictions(report))
     return (
         "VELTRIX COMMAND CENTRE — STATUS\n"
-        f"Current report: {'available' if isinstance(report, dict) else 'not loaded'}\n"
+        f"Current report: {'available' if report_is_current else 'not loaded or no longer current'}\n"
         f"Fixtures in report: {len(fixtures)}\n"
         f"Usable experimental forecasts: {len(predictions)}\n"
         f"Live bookmaker odds: {odds_status}\n"
@@ -238,7 +252,7 @@ def handle_command(
                 continue
 
             probs = row.get("probabilities")
-            if not isinstance(probs, dict):
+            if row.get("status") != "EXPERIMENTAL_ONLY" or not _valid_probability_vector(probs):
                 reason = row.get("reason") or row.get("status") or "forecast unavailable"
                 lines.append(f"{home} vs {away} | {league} | {kickoff} | WITHHELD: {reason}")
                 continue
