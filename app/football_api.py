@@ -160,17 +160,68 @@ class FootballAPI:
         return payload
 
     def _matches(self, params: dict[str, Any]) -> dict[str, Any]:
-        payload = self.get("matches", params)
-        matches = payload.get("data")
-        if not isinstance(matches, list):
+        """Fetch every page for the filter, without silently truncating fixtures."""
+        first = self.get("matches", params)
+        page = first.get("data")
+        if not isinstance(page, list):
             raise FootballAPIError("Highlightly payload is missing its data list.")
-        meta = payload.get("_veltrix_meta", {})
-        pagination = payload.get("pagination") or {}
+        matches = list(page)
+        meta = dict(first.get("_veltrix_meta", {}))
+        pagination = dict(first.get("pagination") or {})
+        plan = first.get("plan")
+        try:
+            total_count = int(pagination.get("totalCount", len(matches)))
+            limit = int(pagination.get("limit", params.get("limit", 100)))
+        except (TypeError, ValueError):
+            total_count, limit = len(matches), max(1, len(matches))
+        if limit < 1:
+            raise FootballAPIError("Highlightly returned an invalid pagination limit.")
+        pages_fetched = 1
+        offset = int(pagination.get("offset", params.get("offset", 0)) or 0)
+        # Defensive cap prevents malformed provider metadata from exhausting quota.
+        max_pages = 20
+        while len(matches) < total_count and pages_fetched < max_pages:
+            next_offset = offset + len(page)
+            if next_offset >= total_count:
+                break
+            next_params = {**params, "limit": limit, "offset": next_offset}
+            next_payload = self.get("matches", next_params)
+            next_page = next_payload.get("data")
+            if not isinstance(next_page, list):
+                raise FootballAPIError("Highlightly pagination response is missing its data list.")
+            if not next_page:
+                raise FootballAPIError(
+                    f"Highlightly pagination stopped early ({len(matches)} of {total_count} matches retrieved)."
+                )
+            matches.extend(next_page)
+            page = next_page
+            offset = next_offset
+            pages_fetched += 1
+            meta = dict(next_payload.get("_veltrix_meta", meta))
+            plan = next_payload.get("plan", plan)
+            next_pagination = next_payload.get("pagination") or {}
+            try:
+                total_count = int(next_pagination.get("totalCount", total_count))
+            except (TypeError, ValueError):
+                pass
+        complete = len(matches) >= total_count
+        if not complete and pages_fetched >= max_pages:
+            raise FootballAPIError(
+                f"Highlightly returned more than {max_pages * limit} matches for one filter; "
+                "refusing to silently publish a truncated fixture list."
+            )
+        pagination.update({
+            "totalCount": total_count,
+            "fetchedCount": len(matches),
+            "pagesFetched": pages_fetched,
+            "complete": complete,
+        })
+        meta["requests_made"] = pages_fetched
         return {
             "response": [normalize_match(match) for match in matches if isinstance(match, dict)],
             "results": len(matches),
             "pagination": pagination,
-            "plan": payload.get("plan"),
+            "plan": plan,
             "_veltrix_meta": meta,
             "provider": "Highlightly",
         }
