@@ -147,6 +147,23 @@ jobs:
           repository: ${{ github.repository }}
           run-id: 40175707059
 
+      - name: Download saved paper ledger for quota-safe publication
+        if: github.event_name == 'push' && contains(github.event.head_commit.message, '[reuse-report-40175707059]')
+        uses: actions/download-artifact@v7
+        with:
+          name: veltrix-paper-ledger
+          path: reports/ledger-raw
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          repository: ${{ github.repository }}
+          run-id: 40175707059
+
+      - name: Restore saved paper ledger
+        if: github.event_name == 'push' && contains(github.event.head_commit.message, '[reuse-report-40175707059]')
+        run: |
+          if [ -f reports/ledger-raw/paper_tracking_ledger.json ]; then
+            cp reports/ledger-raw/paper_tracking_ledger.json reports/paper_tracking_ledger.json
+          fi
+
       - name: Filter saved report to future same-day fixtures
         id: filter-saved-report
         if: github.event_name == 'push' && contains(github.event.head_commit.message, '[reuse-report-40175707059]')
@@ -239,14 +256,15 @@ jobs:
           retention-days: 90
 
       - name: Publish validated command data snapshots
-        if: always() && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && contains(github.event.head_commit.message, '[run-live-check]'))) && (steps.generate-report.outcome == 'success' || steps.filter-saved-report.outcome == 'success')
+        if: always() && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && (contains(github.event.head_commit.message, '[run-live-check]') || contains(github.event.head_commit.message, '[reuse-report-40175707059]')))) && (steps.generate-report.outcome == 'success' || steps.filter-saved-report.outcome == 'success')
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_REPOSITORY: ${{ github.repository }}
+          REUSE_REPORT: ${{ github.event_name == 'push' && contains(github.event.head_commit.message, '[reuse-report-40175707059]') }}
           PYTHONPATH: .
         run: |
           ARGS=(--report reports/daily_predictions.json)
-          if [ "${{ steps.paper-ledger-check.outputs.safe }}" = "true" ] && [ -f reports/paper_tracking_ledger.json ]; then
+          if { [ "${{ steps.paper-ledger-check.outputs.safe }}" = "true" ] || [ "$REUSE_REPORT" = "true" ]; } && [ -f reports/paper_tracking_ledger.json ]; then
             ARGS+=(--ledger reports/paper_tracking_ledger.json)
           fi
           python scripts/publish_command_data.py "${ARGS[@]}"
