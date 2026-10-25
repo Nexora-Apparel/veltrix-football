@@ -29,6 +29,13 @@ def test_backtest_predicts_only_after_training_and_is_deterministic():
     live = result["live_pipeline"]
     assert live["model"] == "experimental_recent_goals_poisson"
     assert live["matches"] > 0
+    dc = live["dixon_coles_alternative"]
+    assert dc["model"] == "experimental_recency_weighted_dixon_coles"
+    assert dc["model_validated"] is False
+    assert dc["metrics"]["matches"] == live["matches"]
+    assert dc["metrics"]["brier_score"] >= 0
+    assert dc["metrics"]["log_loss"] >= 0
+    assert live["recent_holdout"]["dixon_coles_alternative"]["metrics"]["matches"] > 0
     assert live["first_test_date"] >= "2024-01-01"
     assert live["metrics"]["brier_score"] >= 0
     assert live["recent_holdout"]["matches"] > 0
