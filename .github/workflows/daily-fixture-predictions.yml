@@ -71,6 +71,9 @@ on:
     # 06:00 Africa/Lagos (WAT, UTC+1) = 05:00 UTC; publish before most match kickoffs.
     - cron: "0 5 * * *"
 
+# A push only performs the full live run when its commit message contains [run-live-check].
+# This supports an explicit one-off operational verification without making normal pushes send reports.
+
 permissions:
   contents: read
   actions: read
