@@ -96,6 +96,31 @@ def test_fetch_recent_results_keeps_newest_successful_ranges_if_older_range_fail
     assert "historical range unavailable" in meta["warning"]
 
 
+def test_fetch_recent_results_can_limit_provider_calls_to_one_range():
+    class FakeAPI:
+        def __init__(self):
+            self.calls = []
+        def fixtures_between(self, start, end, timezone):
+            self.calls.append((start, end, timezone))
+            return {"response": [_fixture(end)]}
+
+    base = [{
+        "date": date(2026, 9, 3), "division": "E0", "home": "Old", "away": "Older",
+        "home_key": "old", "away_key": "older", "home_goals": 1, "away_goals": 0,
+    }]
+    api = FakeAPI()
+    rows, meta = fetch_recent_results(
+        api, base, date(2026, 10, 24), max_chunk_days=7, max_ranges=1
+    )
+    assert len(api.calls) == 1
+    assert api.calls[0] == ("2026-10-18", "2026-10-24", "Africa/Lagos")
+    assert len(rows) == 1
+    assert meta["status"] == "PARTIAL"
+    assert meta["ranges_succeeded"] == 1
+    assert meta["ranges_requested"] == 8
+    assert "limited to 1 of 8" in meta["warning"]
+
+
 def test_fetch_recent_results_skips_api_when_history_is_current():
     class FakeAPI:
         def fixtures_between(self, *args):
