@@ -313,7 +313,6 @@ def test_tracking_runner_evaluates_saved_report_and_writes_per_model_ledger(tmp_
     monkeypatch.setenv("GITHUB_TOKEN", "test-token")
     monkeypatch.setenv("GITHUB_RUN_ID", "999")
     monkeypatch.delenv("API_FOOTBALL_KEY", raising=False)
-    monkeypatch.setattr(tracking_runner, "get_settings", lambda: object())
     monkeypatch.setattr(
         tracking_runner, "list_relevant_runs",
         lambda session, repo: [{"id": 123, "created_at": "2026-10-23T07:00:00Z"}],
@@ -340,13 +339,10 @@ def test_tracking_runner_evaluates_saved_report_and_writes_per_model_ledger(tmp_
         },
     )
 
-    class FakeFootballAPI:
-        def __init__(self, settings):
-            pass
-        def fixtures(self, date, timezone):
-            return {"response": [_result(61, 2, 0)]}
-
-    monkeypatch.setattr(tracking_runner, "FootballAPI", FakeFootballAPI)
+    monkeypatch.setattr(
+        tracking_runner, "load_cached_results_payload",
+        lambda repo: ({"response": [_result(61, 2, 0)]}, "CACHE_AVAILABLE"),
+    )
     output = tmp_path / "paper_ledger.json"
     ledger = tracking_runner.run(date(2026, 10, 23), str(output))
     assert ledger["last_attempt"]["status"] == "EVALUATED"
@@ -423,13 +419,10 @@ def test_tracking_runner_retries_report_already_in_ledger_when_fixtures_are_pend
         },
     )
 
-    class FakeFootballAPI:
-        def __init__(self, settings):
-            pass
-        def fixtures(self, date, timezone):
-            return {"response": [_result(81, 2, 0)]}
-
-    monkeypatch.setattr(tracking_runner, "FootballAPI", FakeFootballAPI)
+    monkeypatch.setattr(
+        tracking_runner, "load_cached_results_payload",
+        lambda repo: ({"response": [_result(81, 2, 0)]}, "CACHE_AVAILABLE"),
+    )
     ledger = tracking_runner.run(date(2026, 10, 23), str(tmp_path / "ledger.json"))
     assert ledger["last_attempt"]["status"] == "EVALUATED"
     assert ledger["last_attempt"]["attempts"][0]["status"] == "EVALUATED"
@@ -509,11 +502,10 @@ def test_runner_skips_provider_call_when_saved_report_has_no_scoreable_forecasts
         "as_of_date": "2026-10-23", "predictions": [],
     })
 
-    class NeverCallAPI:
-        def __init__(self, settings):
-            raise AssertionError("Provider must not be called for an empty report.")
-
-    monkeypatch.setattr(tracking_runner, "FootballAPI", NeverCallAPI)
+    monkeypatch.setattr(
+        tracking_runner, "load_cached_results_payload",
+        lambda repo: ({"response": []}, "CACHE_AVAILABLE"),
+    )
     output = tmp_path / "ledger.json"
     ledger = tracking_runner.run(date(2026, 10, 23), str(output))
     assert ledger["last_attempt"]["status"] == "NO_FORECASTS_TO_SCORE"
@@ -538,23 +530,19 @@ def test_old_empty_evaluation_is_retried_and_marked_without_provider_call(tmp_pa
         "as_of_date": "2026-10-22", "predictions": [],
     })
 
-    class NeverCallAPI:
-        def __init__(self, settings):
-            raise AssertionError("Provider must not be called for an empty report.")
-
-    monkeypatch.setattr(tracking_runner, "FootballAPI", NeverCallAPI)
+    monkeypatch.setattr(
+        tracking_runner, "load_cached_results_payload",
+        lambda repo: ({"response": []}, "CACHE_AVAILABLE"),
+    )
     output = tmp_path / "ledger.json"
     ledger = tracking_runner.run(date(2026, 10, 23), str(output))
     assert ledger["evaluations"][0]["tracking_state"] == "NO_FORECASTS_TO_SCORE"
     assert ledger["last_attempt"]["status"] == "NO_FORECASTS_TO_SCORE"
 
-def test_provider_rate_limit_marks_ledger_unsafe_for_publication(tmp_path, monkeypatch):
-    from app.football_api import FootballAPIError
-
+def test_paper_tracking_never_calls_live_provider_when_result_cache_is_unavailable(tmp_path, monkeypatch):
     monkeypatch.setenv("GITHUB_REPOSITORY", "owner/repo")
     monkeypatch.setenv("GITHUB_TOKEN", "test-token")
     monkeypatch.setenv("GITHUB_RUN_ID", "999")
-    monkeypatch.setattr(tracking_runner, "get_settings", lambda: object())
     monkeypatch.setattr(tracking_runner, "list_relevant_runs", lambda session, repo: [])
     monkeypatch.setattr(tracking_runner, "find_latest_ledger", lambda *args: {
         "product": "Veltrix Football", "model_status": "PAPER_TRACKING_ONLY",
@@ -563,17 +551,15 @@ def test_provider_rate_limit_marks_ledger_unsafe_for_publication(tmp_path, monke
     monkeypatch.setattr(tracking_runner, "find_daily_report", lambda *args: {
         "as_of_date": "2026-10-23", "predictions": [_prediction(88)],
     })
-
-    class RateLimitedAPI:
-        def __init__(self, settings):
-            pass
-
-        def fixtures(self, report_date, timezone_name):
-            raise FootballAPIError("HTTP 429: quota exceeded")
-
-    monkeypatch.setattr(tracking_runner, "FootballAPI", RateLimitedAPI)
+    monkeypatch.setattr(
+        tracking_runner, "load_cached_results_payload",
+        lambda repo: ({"response": []}, "CACHE_UNAVAILABLE"),
+    )
     output = tmp_path / "ledger.json"
     ledger = tracking_runner.run(date(2026, 10, 23), str(output))
-    assert ledger["last_attempt"]["status"] == "TRACKING_ERROR"
-    assert ledger["last_attempt"]["attempts"][0]["status"] == "RESULT_FETCH_FAILED"
-
+    attempt = ledger["last_attempt"]["attempts"][0]
+    assert ledger["last_attempt"]["status"] == "EVALUATED"
+    assert attempt["status"] == "EVALUATED"
+    assert attempt["completed_forecasts_scored"] == 0
+    assert attempt["awaiting_result_or_match"] == 1
+    assert "no live football-provider request was made" in attempt["detail"]
