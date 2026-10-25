@@ -454,3 +454,66 @@ def test_pending_report_date_is_updated_when_delayed_fixture_finishes():
     replay = merge_paper_ledger(updated, completed)
     assert len(replay["scored_matches"]) == 1
     assert replay["evaluations"][0]["completed_forecasts_scored"] == 1
+
+
+def test_report_lookup_prefers_same_day_snapshot_with_more_forecasts(monkeypatch):
+    runs = [
+        {"id": 30, "created_at": "2026-10-23T18:00:00Z"},
+        {"id": 20, "created_at": "2026-10-23T05:00:00Z"},
+        {"id": 10, "created_at": "2026-10-23T04:00:00Z"},
+    ]
+    artifacts = {
+        30: {"archive_download_url": "late"},
+        20: {"archive_download_url": "rich"},
+        10: {"archive_download_url": "empty"},
+    }
+    reports = {
+        "late": {"as_of_date": "2026-10-23", "predictions": [_prediction(1)]},
+        "rich": {"as_of_date": "2026-10-23", "predictions": [_prediction(1), _prediction(2)]},
+        "empty": {"as_of_date": "2026-10-23", "predictions": []},
+    }
+    monkeypatch.setattr(
+        tracking_runner, "artifact_for_run",
+        lambda session, repo, run_id, name: artifacts.get(run_id),
+    )
+    monkeypatch.setattr(tracking_runner, "read_artifact_json", lambda session, url: reports[url])
+    selected = tracking_runner.find_daily_report(object(), "owner/repo", runs, "2026-10-23", "999")
+    assert len(selected["predictions"]) == 2
+
+
+def test_empty_previous_evaluation_can_be_replaced_when_forecasts_become_scoreable():
+    empty = evaluate_report({"as_of_date": "2026-10-22", "predictions": []}, {"response": []})
+    ledger = merge_paper_ledger({}, empty)
+    assert ledger["evaluations"][0]["completed_forecasts_scored"] == 0
+
+    corrected = evaluate_report(
+        {"as_of_date": "2026-10-22", "predictions": [_prediction(77)]},
+        {"response": [_result(77, 1, 0)]},
+    )
+    updated = merge_paper_ledger(ledger, corrected)
+    assert updated["evaluations"][0]["completed_forecasts_scored"] == 1
+    assert updated["cumulative_metrics_by_model"]["unknown"]["matches"] == 1
+
+
+def test_runner_skips_provider_call_when_saved_report_has_no_scoreable_forecasts(tmp_path, monkeypatch):
+    monkeypatch.setenv("GITHUB_REPOSITORY", "owner/repo")
+    monkeypatch.setenv("GITHUB_TOKEN", "test-token")
+    monkeypatch.setenv("GITHUB_RUN_ID", "999")
+    monkeypatch.setattr(tracking_runner, "get_settings", lambda: object())
+    monkeypatch.setattr(tracking_runner, "list_relevant_runs", lambda session, repo: [])
+    monkeypatch.setattr(tracking_runner, "find_latest_ledger", lambda *args: {
+        "product": "Veltrix Football", "model_status": "PAPER_TRACKING_ONLY",
+        "evaluations": [], "scored_matches": [],
+    })
+    monkeypatch.setattr(tracking_runner, "find_daily_report", lambda *args: {
+        "as_of_date": "2026-10-23", "predictions": [],
+    })
+
+    class NeverCallAPI:
+        def __init__(self, settings):
+            raise AssertionError("Provider must not be called for an empty report.")
+
+    monkeypatch.setattr(tracking_runner, "FootballAPI", NeverCallAPI)
+    output = tmp_path / "ledger.json"
+    ledger = tracking_runner.run(date(2026, 10, 23), str(output))
+    assert ledger["last_attempt"]["status"] == "NO_FORECASTS_TO_SCORE"
