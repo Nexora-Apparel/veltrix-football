@@ -12,6 +12,8 @@ on:
       - "app/recent_results.py"
       - "app/paper_tracking.py"
       - "app/telegram_commands.py"
+      - "app/telegram_security.py"
+      - "tests/test_telegram_security.py"
       - "api/telegram.py"
       - "api/index.py"
       - "main.py"
@@ -34,6 +36,8 @@ on:
       - "tests/test_paper_tracking.py"
       - "tests/test_telegram_report.py"
       - "tests/test_telegram_commands.py"
+      - "app/telegram_security.py"
+      - "tests/test_telegram_security.py"
       - ".github/workflows/daily-fixture-predictions.yml"
   pull_request:
     branches: [main]
@@ -172,6 +176,7 @@ jobs:
             echo "::notice::Telegram delivery skipped because its two secrets are not both configured."
           fi
       - name: Register Telegram Command Centre webhook
+        continue-on-error: true
         if: (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && contains(github.event.head_commit.message, '[run-live-check]'))) && steps.telegram-config.outputs.configured == 'true'
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
