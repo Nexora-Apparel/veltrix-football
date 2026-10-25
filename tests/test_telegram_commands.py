@@ -74,6 +74,35 @@ def test_match_lookup_uses_supplied_report_only():
     assert "Arsenal vs Chelsea" in reply
     assert "H 50%" in reply
 
+def test_today_discloses_gapped_historical_data():
+    future_kickoff = (datetime.now(ZoneInfo("Africa/Lagos")) + timedelta(hours=3)).isoformat()
+    report = {
+        "as_of_date": datetime.now(ZoneInfo("Africa/Lagos")).date().isoformat(),
+        "predictions": [{
+            "home_team": "Forecast FC",
+            "away_team": "Model FC",
+            "league": "Test League",
+            "kickoff_local": future_kickoff,
+            "status": "EXPERIMENTAL_ONLY",
+            "probabilities": {"home_win": 0.5, "draw": 0.3, "away_win": 0.2},
+        }],
+        "recent_results_sync": {
+            "status": "PARTIAL",
+            "ranges_succeeded": 1,
+            "ranges_requested": 8,
+        },
+        "historical_data_coverage": {
+            "status": "GAPPED_OR_STALE",
+            "contiguous_through": "2026-09-03",
+            "latest_available_match_date": "2026-10-24",
+        },
+    }
+    reply = handle_command("/today", report=report)
+    assert "History is continuous through 2026-09-03" in reply
+    assert "latest available result date is 2026-10-24" in reply
+    assert "1/8 date ranges refreshed" in reply
+
+
 def test_today_excludes_withheld_fixtures_and_only_shows_real_forecasts():
     future_kickoff = (datetime.now(ZoneInfo("Africa/Lagos")) + timedelta(hours=3)).isoformat()
     report = {
