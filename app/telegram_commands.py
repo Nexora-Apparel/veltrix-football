@@ -6,6 +6,8 @@ invents odds or treats experimental estimates as validated bets.
 from __future__ import annotations
 
 import re
+from datetime import datetime
+from zoneinfo import ZoneInfo
 from typing import Any
 
 COMMANDS: dict[str, str] = {
@@ -42,13 +44,37 @@ def _reply(body: str) -> str:
 def _report_predictions(report: dict[str, Any] | None) -> list[dict[str, Any]]:
     if not isinstance(report, dict):
         return []
+    report_date = report.get("as_of_date")
+    if report_date:
+        try:
+            if str(report_date) != datetime.now(ZoneInfo("Africa/Lagos")).date().isoformat():
+                return []
+        except (TypeError, ValueError):
+            return []
     rows = report.get("predictions", [])
     return [row for row in rows if isinstance(row, dict)] if isinstance(rows, list) else []
 
 
+def _kickoff_is_future(row: dict[str, Any]) -> bool:
+    raw = row.get("kickoff_local") or row.get("kickoff")
+    if not isinstance(raw, str) or not raw.strip():
+        return False
+    try:
+        kickoff = datetime.fromisoformat(raw.replace("Z", "+00:00"))
+        if kickoff.tzinfo is None:
+            kickoff = kickoff.replace(tzinfo=ZoneInfo("Africa/Lagos"))
+        return kickoff > datetime.now(ZoneInfo("Africa/Lagos"))
+    except (TypeError, ValueError, OverflowError):
+        return False
+
+
+def _future_fixtures(report: dict[str, Any] | None) -> list[dict[str, Any]]:
+    return [row for row in _report_predictions(report) if _kickoff_is_future(row)]
+
+
 def _forecast_predictions(report: dict[str, Any] | None) -> list[dict[str, Any]]:
-    """Return only rows explicitly carrying a usable experimental forecast."""
-    rows = _report_predictions(report)
+    """Return only current-day, future, explicitly usable experimental forecasts."""
+    rows = _future_fixtures(report)
     valid = []
     for row in rows:
         probabilities = row.get("probabilities")
@@ -182,7 +208,9 @@ def handle_command(
                 return _reply("No matching fixture was found in the loaded report.")
             selected = matches[:5]
         elif command == "/fixtures":
-            selected = all_rows[:15]
+            selected = _future_fixtures(report)[:15]
+            if not selected:
+                return _reply("FIXTURES — NO FUTURE SAME-DAY FIXTURES remain in the saved snapshot.")
         elif command == "/goals":
             selected = [row for row in forecast_rows if isinstance(row.get("expected_goals"), dict)][:15]
             if not selected:
