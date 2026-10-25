@@ -110,7 +110,7 @@ def test_daily_runner_refreshes_history_and_requests_odds_for_future_fixtures(tm
     _run_args(monkeypatch, output)
     monkeypatch.setattr(daily_runner, "get_settings", lambda: object())
     base_history = [{"date": date(2026, 10, 20)}]
-    recent_rows = [{"date": date(2026, 10, 22), "home": "A", "away": "B"}]
+    recent_rows = _recent_row()
     monkeypatch.setattr(daily_runner, "load_historical_matches", lambda path: base_history)
 
     class FakeAPI:
