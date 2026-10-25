@@ -116,7 +116,7 @@ def format_report_messages(report: dict[str, Any], ledger: dict[str, Any] | None
         model_name = str(item.get("model", "experimental_unknown"))
         is_elo_primary = "elo" in model_name
         expected_goals = item.get("expected_goals") or {}
-        model_label = "Elo ratings" if is_elo_primary else "Recent-goals model"
+        model_label = "Elo ratings (1X2); Poisson xG" if is_elo_primary else "Recent-goals Poisson (1X2 + xG)"
         block = [
             DIVIDER,
             f"⚽ {item.get('home_team', 'Home')} vs {item.get('away_team', 'Away')}",
@@ -143,6 +143,7 @@ def format_report_messages(report: dict[str, Any], ledger: dict[str, Any] | None
     footer.extend([
         "• No betting slips or forced picks are generated.",
         "• Probabilities are model estimates, not guarantees.",
+        "• When Elo is primary, expected goals are a separate Poisson estimate and do not directly generate the displayed 1X2 probabilities.",
         "• Fixture data provided by Highlightly Football API.",
     ])
 
