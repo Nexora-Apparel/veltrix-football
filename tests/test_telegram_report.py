@@ -64,6 +64,14 @@ def test_report_warns_when_recent_data_refresh_is_incomplete():
     assert "invalid token" not in message
 
 
+def test_report_marks_reused_snapshot_as_not_fresh():
+    report = sample_report()
+    report["publication_status"] = "REUSED_SNAPSHOT_NOT_REFRESHED"
+    message = format_report(report)
+    assert "SNAPSHOT NOTICE: This is a reused same-day snapshot" in message
+    assert "fresh fixtures were not fetched in this run" in message
+
+
 def test_report_explains_recent_results_quota_limit_without_raw_provider_error():
     report = sample_report()
     report["recent_results_sync"] = {
