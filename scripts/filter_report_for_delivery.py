@@ -4,7 +4,7 @@ from __future__ import annotations
 import argparse
 import json
 import sys
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
@@ -146,7 +146,7 @@ def filter_report_for_delivery(report: dict, now: datetime | None = None) -> dic
         base_through = None
         if requested_start:
             try:
-                base_through = (date.fromisoformat(str(requested_start)) - __import__("datetime").timedelta(days=1)).isoformat()
+                base_through = (date.fromisoformat(str(requested_start)) - timedelta(days=1)).isoformat()
             except ValueError:
                 base_through = None
         result["historical_data_coverage"] = {
