@@ -1,0 +1,33 @@
+name: Telegram Webhook Verification
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "scripts/test_telegram_webhook_live.py"
+      - "app/telegram_security.py"
+      - ".github/workflows/telegram-webhook-check.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify-webhook:
+    if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[verify-webhook]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+      - name: Install dependencies
+        run: python -m pip install -r requirements.txt
+      - name: Verify authenticated webhook and Telegram reply
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          TELEGRAM_WEBHOOK_SECRET: ${{ secrets.TELEGRAM_WEBHOOK_SECRET }}
+          TELEGRAM_WEBHOOK_URL: https://veltrix-football-commands.vercel.app/api/index
+        run: python scripts/test_telegram_webhook_live.py
