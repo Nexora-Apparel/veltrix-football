@@ -59,8 +59,22 @@ def test_report_warns_when_recent_data_refresh_is_incomplete():
         "warning": "invalid token",
     }
     message = format_report(report)
-    assert "DATA NOTICE: Recent results could not be fully refreshed" in message
+    assert "DATA NOTICE: Recent-results refresh status: UNAVAILABLE." in message
+    assert "authentication was rejected" in message
     assert "invalid token" not in message
+
+
+def test_report_explains_recent_results_quota_limit_without_raw_provider_error():
+    report = sample_report()
+    report["recent_results_sync"] = {
+        "status": "UNAVAILABLE",
+        "warning": "Highlightly request failed with HTTP 429: daily API request quota or rate limit reached.",
+    }
+    message = format_report(report)
+    assert "Recent-results refresh status: UNAVAILABLE" in message
+    assert "Provider request quota/rate limit reached" in message
+    assert "missing results are not invented" in message
+    assert "HTTP 429" not in message
 
 
 def test_report_handles_no_usable_predictions_and_withheld_fixtures():
