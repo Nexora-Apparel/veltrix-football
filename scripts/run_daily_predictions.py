@@ -26,6 +26,14 @@ def _load_recent_cache(path: Path) -> tuple[dict, list[dict]]:
     if not isinstance(value, dict) or value.get("version") != 1 or not isinstance(value.get("matches"), list):
         return empty, []
     state = value.get("state") if isinstance(value.get("state"), dict) else {}
+    try:
+        for key in ("backfill_anchor_end", "next_backfill_end_date", "latest_covered_through"):
+            if state.get(key):
+                date.fromisoformat(str(state[key]))
+        if "backfill_complete" in state and not isinstance(state["backfill_complete"], bool):
+            raise ValueError("invalid backfill_complete flag")
+    except (TypeError, ValueError):
+        state = {}
     rows = []
     for raw in value["matches"]:
         if not isinstance(raw, dict):
