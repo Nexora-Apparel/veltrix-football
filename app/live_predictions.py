@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import csv
 import re
+import unicodedata
 from difflib import SequenceMatcher, get_close_matches
 from collections import defaultdict, deque
 from datetime import date, datetime, timezone
@@ -48,7 +49,11 @@ def _name_key(name: Any) -> str:
     fuzzy matches remain suggestions only; a wrong team merge is worse than
     withholding a forecast.
     """
-    tokens = re.findall(r"[a-z0-9]+", str(name or "").casefold())
+    normalized = unicodedata.normalize("NFKD", str(name or "").casefold())
+    normalized = "".join(char for char in normalized if not unicodedata.combining(char))
+    # Preserve a small set of letters that NFKD does not decompose consistently.
+    normalized = normalized.replace("ø", "o").replace("ł", "l").replace("đ", "d").replace("ð", "d").replace("þ", "th")
+    tokens = re.findall(r"[a-z0-9]+", normalized)
     edge_markers = {"fc", "afc", "cf", "sc", "ac", "as", "ec", "sbv", "acf", "cd", "ud"}
     while tokens and tokens[0] in edge_markers:
         tokens.pop(0)
@@ -89,19 +94,48 @@ def _name_key(name: Any) -> str:
     return aliases.get(key, key)
 
 
-def _resolve_team_key(name: Any, known_keys: Iterable[str]) -> str:
-    """Resolve provider spelling variants only when one historical key is a clear match.
+def _team_variant_signature(key: str) -> tuple[str, ...]:
+    """Identify squad/category markers that must never be erased by fuzzy matching."""
+    markers: list[str] = []
+    for label, pattern in (
+        ("women", r"(?:women|womens|ladies|feminin|femenino|feminino)$"),
+        ("youth", r"(?:youth|academy|junior|juniors)$"),
+        ("age_group", r"u(?:1[0-9]|2[0-3])$"),
+        ("reserve", r"(?:reserves|reserve|bteam|ii|iii|iv|b|2|3)$"),
+    ):
+        if re.search(pattern, key):
+            markers.append(label)
+    # Distinguish different age groups and reserve levels, not just their category.
+    age = re.search(r"u(1[0-9]|2[0-3])$", key)
+    if age:
+        markers.append("u" + age.group(1))
+    reserve = re.search(r"(?:reserves|reserve|bteam|ii|iii|iv|b|2|3)$", key)
+    if reserve:
+        markers.append(reserve.group(0))
+    return tuple(markers)
 
-    Exact normalized keys and explicit aliases win. Fuzzy matching is conservative:
-    a candidate must score at least 0.84 and beat the runner-up by 0.08, preventing
-    ambiguous clubs from being silently merged.
+
+def _resolve_team_key(name: Any, known_keys: Iterable[str]) -> str:
+    """Resolve only high-confidence name variants; never cross squad/category boundaries.
+
+    Exact normalized keys and explicit aliases win. Fuzzy matches require a clear
+    score and margin, and are rejected if the candidate differs by women/youth,
+    age-group, or reserve-team markers. Withholding a forecast is safer than using
+    another squad's results.
     """
     key = _name_key(name)
     candidates = list(set(known_keys))
     if key in candidates or not candidates:
         return key
+    signature = _team_variant_signature(key)
+    compatible = [
+        candidate for candidate in candidates
+        if _team_variant_signature(candidate) == signature
+    ]
+    if not compatible:
+        return key
     scored = sorted(
-        ((SequenceMatcher(None, key, candidate).ratio(), candidate) for candidate in candidates),
+        ((SequenceMatcher(None, key, candidate).ratio(), candidate) for candidate in compatible),
         reverse=True,
     )
     best_score, best_key = scored[0]
