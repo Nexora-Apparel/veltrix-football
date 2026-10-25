@@ -4,8 +4,15 @@ from __future__ import annotations
 import os
 import re
 import sys
+from pathlib import Path
 
 import requests
+
+# When this file is executed directly, Python puts scripts/ rather than the
+# repository root on sys.path. Add the root so the app package can be imported.
+REPO_ROOT = Path(__file__).resolve().parents[1]
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
 
 from app.telegram_commands import COMMANDS
 
@@ -18,7 +25,7 @@ TELEGRAM_COMMANDS = [
 def configure(token: str, webhook_url: str, secret: str) -> None:
     if not token.strip():
         raise ValueError("TELEGRAM_BOT_TOKEN is required")
-    if not re.fullmatch(r"https://[^\\s]+/api/index/?", webhook_url.strip()):
+    if not re.fullmatch(r"https://[^\s]+/api/index/?", webhook_url.strip()):
         raise ValueError("TELEGRAM_WEBHOOK_URL must be an HTTPS URL ending in /api/index")
     if not re.fullmatch(r"[A-Za-z0-9_-]{1,256}", secret):
         raise ValueError("TELEGRAM_WEBHOOK_SECRET must be 1–256 characters: letters, numbers, underscore, or hyphen")
