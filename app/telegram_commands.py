@@ -90,7 +90,7 @@ def _forecast_predictions(report: dict[str, Any] | None) -> list[dict[str, Any]]
 
 
 def _status(report: dict[str, Any] | None, ledger: dict[str, Any] | None) -> str:
-    fixtures = _report_predictions(report)
+    fixtures = _future_fixtures(report)
     predictions = _forecast_predictions(report)
     odds_status = "not connected to this command router"
     if isinstance(report, dict):
@@ -184,7 +184,7 @@ def handle_command(
         )
 
     if command in {"/today", "/fixtures", "/match", "/goals"}:
-        all_rows = _report_predictions(report)
+        all_rows = _future_fixtures(report)
         forecast_rows = _forecast_predictions(report)
         if not all_rows:
             if command == "/match" and not argument.strip():
