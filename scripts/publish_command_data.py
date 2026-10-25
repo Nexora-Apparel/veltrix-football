@@ -91,9 +91,11 @@ def main() -> int:
                 or ledger.get("model_status") != "PAPER_TRACKING_ONLY"
                 or not isinstance(ledger.get("cumulative_metrics_by_model"), dict)
             ):
+                # Keep the last known-good published ledger rather than replacing
+                # it with an incomplete first-run/error document.
                 print("Ledger publication skipped: ledger failed structural validation.", file=sys.stderr)
-                return 2
-            publish("public-data/paper_tracking_ledger.json", ledger_path, repo, token)
+            else:
+                publish("public-data/paper_tracking_ledger.json", ledger_path, repo, token)
     except (HTTPError, URLError, OSError, ValueError, json.JSONDecodeError) as exc:
         # Never print request headers or the GitHub token.
         print(f"Command-data publication failed: {type(exc).__name__}", file=sys.stderr)
