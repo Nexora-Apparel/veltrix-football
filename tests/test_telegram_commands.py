@@ -51,10 +51,12 @@ def test_status_discloses_historical_refresh_gaps():
             "contiguous_through": "2026-09-03",
             "latest_available_match_date": "2026-10-24",
         },
+        "publication_status": "REUSED_SNAPSHOT_NOT_REFRESHED",
     }
     reply = handle_command("/status", report=report)
     assert "Recent-results refresh: PARTIAL (1/8 ranges refreshed)" in reply
     assert "Historical coverage: GAPPED_OR_STALE" in reply
+    assert "Report publication: REUSED_SNAPSHOT_NOT_REFRESHED" in reply
     assert "continuous through 2026-09-03, latest available 2026-10-24" in reply
 
 
@@ -96,8 +98,10 @@ def test_today_discloses_gapped_historical_data():
             "contiguous_through": "2026-09-03",
             "latest_available_match_date": "2026-10-24",
         },
+        "publication_status": "REUSED_SNAPSHOT_NOT_REFRESHED",
     }
     reply = handle_command("/today", report=report)
+    assert "SNAPSHOT NOTICE: This is a reused same-day snapshot" in reply
     assert "History is continuous through 2026-09-03" in reply
     assert "latest available result date is 2026-10-24" in reply
     assert "1/8 date ranges refreshed" in reply
