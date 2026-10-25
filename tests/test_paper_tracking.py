@@ -312,7 +312,7 @@ def test_tracking_runner_evaluates_saved_report_and_writes_per_model_ledger(tmp_
     monkeypatch.setenv("GITHUB_REPOSITORY", "owner/repo")
     monkeypatch.setenv("GITHUB_TOKEN", "test-token")
     monkeypatch.setenv("GITHUB_RUN_ID", "999")
-    monkeypatch.setenv("API_FOOTBALL_KEY", "test-api-key")
+    monkeypatch.delenv("API_FOOTBALL_KEY", raising=False)
     monkeypatch.setattr(tracking_runner, "get_settings", lambda: object())
     monkeypatch.setattr(
         tracking_runner, "list_relevant_runs",
