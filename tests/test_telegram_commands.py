@@ -38,11 +38,13 @@ def test_status_discloses_validation_gate():
 
 
 def test_match_lookup_uses_supplied_report_only():
+    future_kickoff = (datetime.now(ZoneInfo("Africa/Lagos")) + timedelta(hours=3)).isoformat()
     report = {
         "predictions": [{
             "home_team": "Arsenal",
             "away_team": "Chelsea",
             "league": "Premier League",
+            "kickoff_local": future_kickoff,
             "probabilities": {"home_win": 0.5, "draw": 0.25, "away_win": 0.25},
         }]
     }
