@@ -299,7 +299,9 @@ def run(report_date: date, output_path: str) -> dict[str, Any]:
     elif "TRACKING_ERROR" in statuses:
         top_status = "TRACKING_ERROR"
     elif "RESULT_FETCH_FAILED" in statuses:
-        top_status = "RESULT_FETCH_FAILED"
+        # A provider failure must never be published as a healthy paper ledger.
+        # The workflow validator uses TRACKING_ERROR to preserve the last known-good ledger.
+        top_status = "TRACKING_ERROR"
     elif "API_KEY_MISSING" in statuses:
         top_status = "API_KEY_MISSING"
     elif "NO_PREVIOUS_REPORT" in statuses:
