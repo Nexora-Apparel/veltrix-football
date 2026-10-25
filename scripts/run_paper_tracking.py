@@ -33,7 +33,7 @@ def load_cached_results_payload(repo: str) -> tuple[dict[str, Any], str]:
         if len(response.content) > 4_000_000:
             return {"response": []}, "CACHE_TOO_LARGE"
         cache = response.json()
-    except (requests.RequestException, ValueError):
+    except (requests.RequestException, OSError, ValueError):
         return {"response": []}, "CACHE_UNAVAILABLE"
     if (
         not isinstance(cache, dict)
