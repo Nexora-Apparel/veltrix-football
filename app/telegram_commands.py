@@ -300,7 +300,7 @@ def handle_command(
                 notice = _history_notice(report)
                 body = "TODAY — NO USABLE FORECASTS. Fixtures may exist, but no rows passed the forecast-data checks."
                 if notice:
-                    body += "\\n" + notice
+                    body += "\n" + notice
                 return _reply(body)
 
         lines = [f"{command.upper()} — {'FIXTURE LIST' if command == '/fixtures' else 'EXPERIMENTAL REPORT'}"]
