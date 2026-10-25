@@ -19,7 +19,7 @@ app = FastAPI(title="Veltrix Football Telegram Command Centre")
 KEYBOARD = {
     "keyboard": [
         [{"text": "Today's Predictions"}, {"text": "Fixtures"}],
-        [{"text": "Successful Predictions"}, {"text": "Results & Performance"}],
+        [{"text": "Paper Tracking"}, {"text": "Results & Performance"}],
         [{"text": "Status"}, {"text": "Help"}],
     ],
     "resize_keyboard": True,
@@ -30,7 +30,7 @@ BUTTON_COMMANDS = {
     "today's predictions": "/today",
     "todays predictions": "/today",
     "fixtures": "/fixtures",
-    "successful predictions": "/results",
+    "paper tracking": "/results",
     "results & performance": "/performance",
     "status": "/status",
     "help": "/help",
