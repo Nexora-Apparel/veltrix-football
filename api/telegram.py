@@ -10,6 +10,7 @@ from fastapi import FastAPI, Header, HTTPException, Request as FastAPIRequest
 from fastapi.responses import JSONResponse
 
 from app.telegram_commands import handle_command
+from app.report_artifacts import load_latest_report, load_paper_ledger
 from app.telegram_security import telegram_webhook_secret_token
 
 app = FastAPI(title="Veltrix Football Telegram Command Centre")
@@ -93,7 +94,7 @@ async def telegram_webhook(
     if not command.startswith("/"):
         return JSONResponse({"ok": True})
     try:
-        _send_message(bot_token, chat_id, handle_command(command))
+        # Read already-generated GitHub Actions artifacts only. This path does not\n        # run prediction jobs or consume the football provider's API quota.\n        try:\n            report = load_latest_report()\n            ledger = load_paper_ledger()\n        except Exception:\n            # A data-source outage must not break the Telegram webhook. The\n            # command router explicitly reports unavailable data instead.\n            report, ledger = None, None\n        _send_message(bot_token, chat_id, handle_command(command, report=report, ledger=ledger))
     except Exception:
         # Do not expose the update, chat id, token, or Telegram request URL.
         raise HTTPException(status_code=502, detail="Telegram reply delivery failed") from None
