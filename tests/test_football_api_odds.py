@@ -1,20 +1,27 @@
-from app.football_api import FootballAPI, normalize_match
+from app.football_api import FootballAPI, FootballAPIError, normalize_match
 
 
 class FakeResponse:
     status_code = 200
-    headers = {"X-Requests-Available-Minute": "9", "X-RequestCounter-Reset": "25"}
+    headers = {
+        "x-ratelimit-requests-limit": "100",
+        "x-ratelimit-requests-remaining": "98",
+    }
 
     def json(self):
-        return {"matches": [{
-            "id": 123,
-            "utcDate": "2026-10-25T16:00:00Z",
-            "status": "SCHEDULED",
-            "competition": {"id": 2021, "name": "Premier League", "code": "PL"},
-            "homeTeam": {"id": 1, "name": "Arsenal"},
-            "awayTeam": {"id": 2, "name": "Chelsea"},
-            "score": {"fullTime": {"home": None, "away": None}},
-        }]}
+        return {
+            "data": [{
+                "id": 123,
+                "date": "2026-10-25T16:00:00.000Z",
+                "state": {"description": "Not started", "clock": None,
+                          "score": {"current": None, "penalties": None}},
+                "league": {"id": 133, "name": "Premier League", "season": 2026},
+                "homeTeam": {"id": 1, "name": "Arsenal"},
+                "awayTeam": {"id": 2, "name": "Chelsea"},
+            }],
+            "pagination": {"totalCount": 1, "offset": 0, "limit": 100},
+            "plan": {"tier": "BASIC", "message": "Example"},
+        }
 
 
 class FakeSession:
@@ -27,20 +34,24 @@ class FakeSession:
         return FakeResponse()
 
 
-def test_fixtures_uses_football_data_v4_and_normalizes_matches():
-    api = FootballAPI(settings=type("SettingsStub", (), {
+def _api():
+    return FootballAPI(settings=type("SettingsStub", (), {
         "api_key": "test-key",
-        "base_url": "https://api.football-data.org/v4",
+        "base_url": "https://soccer.highlightly.net",
     })())
-    assert api.session.headers["X-Auth-Token"] == "test-key"
+
+
+def test_fixtures_uses_highlightly_and_normalizes_match_shape():
+    api = _api()
     session = FakeSession()
     api.session = session
 
     payload = api.fixtures("2026-10-25", "Africa/Lagos")
 
+    assert session.headers["x-rapidapi-key"] == "test-key"
     assert session.calls == [(
-        "https://api.football-data.org/v4/matches",
-        {"dateFrom": "2026-10-24", "dateTo": "2026-10-26"},
+        "https://soccer.highlightly.net/matches",
+        {"date": "2026-10-25", "timezone": "Africa/Lagos", "limit": 100, "offset": 0},
         20,
     )]
     fixture = payload["response"][0]
@@ -48,18 +59,18 @@ def test_fixtures_uses_football_data_v4_and_normalizes_matches():
     assert fixture["fixture"]["status"]["short"] == "NS"
     assert fixture["teams"]["home"]["name"] == "Arsenal"
     assert fixture["league"]["code"] == "PL"
-    assert payload["_veltrix_meta"]["http_status"] == 200
+    assert payload["_veltrix_meta"]["provider"] == "Highlightly"
+    assert payload["_veltrix_meta"]["requests_remaining"] == "98"
 
 
-def test_normalize_finished_match_preserves_full_time_score():
+def test_normalize_finished_match_preserves_score_and_maps_status():
     match = {
         "id": 5,
-        "utcDate": "2026-10-24T15:00:00Z",
-        "status": "FINISHED",
-        "competition": {"id": 2002, "name": "Bundesliga", "code": "BL1"},
+        "date": "2026-10-24T15:00:00.000Z",
+        "state": {"description": "Finished", "score": {"current": "2 - 1"}},
+        "league": {"id": 2002, "name": "Bundesliga", "season": 2026},
         "homeTeam": {"name": "Home FC"},
         "awayTeam": {"name": "Away FC"},
-        "score": {"fullTime": {"home": 2, "away": 1}},
     }
     normalized = normalize_match(match)
     assert normalized["fixture"]["status"]["short"] == "FT"
@@ -67,11 +78,40 @@ def test_normalize_finished_match_preserves_full_time_score():
     assert normalized["league"]["code"] == "BL1"
 
 
-def test_odds_are_explicitly_unavailable_not_fabricated():
-    api = FootballAPI(settings=type("SettingsStub", (), {
-        "api_key": "test-key",
-        "base_url": "https://api.football-data.org/v4",
-    })())
+def test_odds_are_explicitly_unavailable_without_making_a_request():
+    api = _api()
+    session = FakeSession()
+    api.session = session
     payload = api.odds_for_date("2026-10-25", "Africa/Lagos")
     assert payload["response"] == []
     assert payload["_veltrix_meta"]["odds_status"] == "UNAVAILABLE"
+    assert session.calls == []
+
+
+def test_fixture_range_uses_one_request_per_day():
+    api = _api()
+    session = FakeSession()
+    api.session = session
+    payload = api.fixtures_between("2026-10-24", "2026-10-25")
+    assert len(session.calls) == 2
+    assert payload["_veltrix_meta"]["requests_made"] == 2
+
+
+def test_highlightly_auth_errors_are_actionable():
+    class UnauthorizedResponse(FakeResponse):
+        status_code = 401
+        def json(self):
+            return {"message": "Unauthorized"}
+
+    class UnauthorizedSession(FakeSession):
+        def get(self, url, params=None, timeout=None):
+            return UnauthorizedResponse()
+
+    api = _api()
+    api.session = UnauthorizedSession()
+    try:
+        api.fixtures("2026-10-25")
+    except FootballAPIError as exc:
+        assert "API key was rejected" in str(exc)
+    else:
+        raise AssertionError("Expected an actionable auth error")
