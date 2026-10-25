@@ -84,8 +84,20 @@ def format_report_messages(report: dict[str, Any], ledger: dict[str, Any] | None
             f"DATA NOTICE: Recent-results refresh status: {sync_status}.",
             sync_reason,
             "Forecasts use available saved history; missing results are not invented.",
-            "",
         ])
+        coverage = report.get("historical_data_coverage") or {}
+        if coverage.get("status") == "GAPPED_OR_STALE":
+            contiguous_through = coverage.get("contiguous_through") or "unknown"
+            latest_available = coverage.get("latest_available_match_date") or "unknown"
+            succeeded = coverage.get("ranges_succeeded")
+            requested = coverage.get("ranges_requested")
+            if isinstance(succeeded, int) and isinstance(requested, int) and requested > 0:
+                header.append(f"Historical coverage: {succeeded}/{requested} date ranges refreshed.")
+            header.append(
+                f"History is only confirmed continuous through {contiguous_through}; "
+                f"latest available result date is {latest_available}."
+            )
+        header.append("")
 
     if ledger is not None:
         paper_lines = [DIVIDER, "PAPER TRACKING — CUMULATIVE"]
