@@ -15,6 +15,7 @@ if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 from app.telegram_commands import COMMANDS
+from app.telegram_security import telegram_webhook_secret_token
 
 TELEGRAM_COMMANDS = [
     {"command": command.lstrip("/"), "description": description[:256]}
@@ -27,8 +28,7 @@ def configure(token: str, webhook_url: str, secret: str) -> None:
         raise ValueError("TELEGRAM_BOT_TOKEN is required")
     if not re.fullmatch(r"https://[^\s]+/api/index/?", webhook_url.strip()):
         raise ValueError("TELEGRAM_WEBHOOK_URL must be an HTTPS URL ending in /api/index")
-    if not re.fullmatch(r"[A-Za-z0-9_-]{1,256}", secret):
-        raise ValueError("TELEGRAM_WEBHOOK_SECRET must be 1–256 characters: letters, numbers, underscore, or hyphen")
+    telegram_secret_token = telegram_webhook_secret_token(secret)
     base = f"https://api.telegram.org/bot{token}"
     headers = {"Content-Type": "application/json"}
     try:
@@ -45,7 +45,7 @@ def configure(token: str, webhook_url: str, secret: str) -> None:
             f"{base}/setWebhook",
             json={
                 "url": webhook_url.strip(),
-                "secret_token": secret,
+                "secret_token": telegram_secret_token,
                 "allowed_updates": ["message", "edited_message"],
                 "drop_pending_updates": False,
             },
