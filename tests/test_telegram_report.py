@@ -77,6 +77,27 @@ def test_report_explains_recent_results_quota_limit_without_raw_provider_error()
     assert "HTTP 429" not in message
 
 
+def test_report_discloses_gapped_historical_coverage():
+    report = sample_report()
+    report["recent_results_sync"] = {
+        "status": "PARTIAL",
+        "warning": "quota",
+        "ranges_succeeded": 1,
+        "ranges_requested": 8,
+    }
+    report["historical_data_coverage"] = {
+        "status": "GAPPED_OR_STALE",
+        "contiguous_through": "2026-09-03",
+        "latest_available_match_date": "2026-10-24",
+        "ranges_succeeded": 1,
+        "ranges_requested": 8,
+    }
+    message = format_report(report)
+    assert "Historical coverage: 1/8 date ranges refreshed." in message
+    assert "continuous through 2026-09-03" in message
+    assert "latest available result date is 2026-10-24" in message
+
+
 def test_report_handles_no_usable_predictions_and_withheld_fixtures():
     report = sample_report()
     report["predictions"] = [
