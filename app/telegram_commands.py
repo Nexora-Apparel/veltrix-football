@@ -149,7 +149,7 @@ def _history_notice(report: dict[str, Any] | None) -> str | None:
                 notices.append(
                     f"DATA NOTICE: Recent-results refresh status is {status}; saved history may be incomplete."
                 )
-    return "\\n".join(notices) if notices else None
+    return "\n".join(notices) if notices else None
 
 
 def _status(report: dict[str, Any] | None, ledger: dict[str, Any] | None) -> str:
