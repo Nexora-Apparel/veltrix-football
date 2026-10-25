@@ -8,7 +8,7 @@ from __future__ import annotations
 import csv
 import re
 import unicodedata
-from difflib import SequenceMatcher, get_close_matches
+from difflib import get_close_matches
 from collections import defaultdict, deque
 from datetime import date, datetime, timezone
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
@@ -115,13 +115,45 @@ def _team_variant_signature(key: str) -> tuple[str, ...]:
     return tuple(markers)
 
 
-def _resolve_team_key(name: Any, known_keys: Iterable[str]) -> str:
-    """Resolve only high-confidence name variants; never cross squad/category boundaries.
+def _one_edit_apart(left: str, right: str) -> bool:
+    """Allow one obvious spelling typo, not broad similarity between different clubs."""
+    if left == right:
+        return True
+    if abs(len(left) - len(right)) > 1:
+        return False
+    if len(left) == len(right):
+        differences = sum(a != b for a, b in zip(left, right))
+        if differences == 1:
+            return True
+        # Accept one adjacent transposition, a common typing/provider variant.
+        for index in range(len(left) - 1):
+            if (
+                left[index] == right[index + 1]
+                and left[index + 1] == right[index]
+                and left[:index] == right[:index]
+                and left[index + 2:] == right[index + 2:]
+            ):
+                return True
+        return False
+    shorter, longer = (left, right) if len(left) < len(right) else (right, left)
+    i = j = edits = 0
+    while i < len(shorter) and j < len(longer):
+        if shorter[i] == longer[j]:
+            i += 1
+            j += 1
+        else:
+            edits += 1
+            j += 1
+            if edits > 1:
+                return False
+    return True
 
-    Exact normalized keys and explicit aliases win. Fuzzy matches require a clear
-    score and margin, and are rejected if the candidate differs by women/youth,
-    age-group, or reserve-team markers. Withholding a forecast is safer than using
-    another squad's results.
+
+def _resolve_team_key(name: Any, known_keys: Iterable[str]) -> str:
+    """Resolve only one-character spelling variants; never cross squad boundaries.
+
+    Exact normalized keys and explicit aliases win. Fuzzy guesses that can merge
+    different clubs are deliberately withheld, even if the names look similar.
     """
     key = _name_key(name)
     candidates = list(set(known_keys))
@@ -131,18 +163,10 @@ def _resolve_team_key(name: Any, known_keys: Iterable[str]) -> str:
     compatible = [
         candidate for candidate in candidates
         if _team_variant_signature(candidate) == signature
+        and _one_edit_apart(key, candidate)
     ]
-    if not compatible:
-        return key
-    scored = sorted(
-        ((SequenceMatcher(None, key, candidate).ratio(), candidate) for candidate in compatible),
-        reverse=True,
-    )
-    best_score, best_key = scored[0]
-    runner_up = scored[1][0] if len(scored) > 1 else 0.0
-    if best_score >= 0.84 and best_score - runner_up >= 0.08:
-        return best_key
-    return key
+    # If more than one historical team is one edit away, the identity is ambiguous.
+    return compatible[0] if len(compatible) == 1 else key
 
 
 def load_historical_matches(path: str | Path) -> list[dict[str, Any]]:
