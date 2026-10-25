@@ -131,12 +131,30 @@ def _status(report: dict[str, Any] | None, ledger: dict[str, Any] | None) -> str
         ledger_status = f"available ({scored_count} settled forecast rows)"
     else:
         ledger_status = "not available"
+    history_status = "unknown"
+    history_coverage = "not reported"
+    if isinstance(report, dict):
+        sync = report.get("recent_results_sync") or {}
+        coverage = report.get("historical_data_coverage") or {}
+        if isinstance(sync, dict) and sync.get("status"):
+            history_status = str(sync["status"])
+            succeeded, requested = sync.get("ranges_succeeded"), sync.get("ranges_requested")
+            if isinstance(succeeded, int) and isinstance(requested, int) and requested > 0:
+                history_status += f" ({succeeded}/{requested} ranges refreshed)"
+        if isinstance(coverage, dict) and coverage.get("status"):
+            history_coverage = str(coverage["status"])
+            contiguous = coverage.get("contiguous_through")
+            latest = coverage.get("latest_available_match_date")
+            if contiguous or latest:
+                history_coverage += f"; continuous through {contiguous or 'unknown'}, latest available {latest or 'unknown'}"
     report_is_current = isinstance(report, dict) and bool(_report_predictions(report))
     return (
         "VELTRIX COMMAND CENTRE — STATUS\n"
         f"Current report: {'available' if report_is_current else 'not loaded or no longer current'}\n"
         f"Fixtures in report: {len(fixtures)}\n"
         f"Usable experimental forecasts: {len(predictions)}\n"
+        f"Recent-results refresh: {history_status}\n"
+        f"Historical coverage: {history_coverage}\n"
         f"Live bookmaker odds: {odds_status}\n"
         f"Paper-tracking ledger: {ledger_status}\n"
         "Betting/value alerts: DISABLED until chronological out-of-sample validation.\n"
