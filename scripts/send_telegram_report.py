@@ -67,9 +67,23 @@ def format_report_messages(report: dict[str, Any], ledger: dict[str, Any] | None
         "",
     ]
     sync = report.get("recent_results_sync") or {}
-    if sync and (sync.get("status") not in {"OK", "SUCCESS", "COMPLETE"} or sync.get("warning")):
+    if sync and (sync.get("status") not in {"OK", "SUCCESS", "COMPLETE", "UP_TO_DATE"} or sync.get("warning")):
+        sync_status = str(sync.get("status") or "UNKNOWN").upper()
+        sync_warning = str(sync.get("warning") or "").lower()
+        if "http 429" in sync_warning or "quota" in sync_warning or "rate limit" in sync_warning:
+            sync_reason = "Provider request quota/rate limit reached; no further historical results were fetched."
+        elif "http 401" in sync_warning or "http 403" in sync_warning or "authentication" in sync_warning or "token" in sync_warning:
+            sync_reason = "Provider authentication was rejected; historical results were not refreshed."
+        elif sync_status == "PARTIAL":
+            sync_reason = "Only part of the requested historical date range was refreshed."
+        elif sync_status == "NO_BASE_HISTORY":
+            sync_reason = "No base historical dataset was available to refresh."
+        else:
+            sync_reason = "The historical-results provider request failed; available saved history was retained."
         header.extend([
-            "DATA NOTICE: Recent results could not be fully refreshed; forecasts use available history.",
+            f"DATA NOTICE: Recent-results refresh status: {sync_status}.",
+            sync_reason,
+            "Forecasts use available saved history; missing results are not invented.",
             "",
         ])
 
