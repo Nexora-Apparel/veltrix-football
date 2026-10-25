@@ -12,6 +12,9 @@ on:
       - "app/recent_results.py"
       - "app/paper_tracking.py"
       - "app/telegram_commands.py"
+      - "app/report_artifacts.py"
+      - "scripts/publish_command_data.py"
+      - "tests/test_report_artifacts.py"
       - "app/telegram_security.py"
       - "tests/test_telegram_security.py"
       - "tests/test_filter_report_for_delivery.py"
@@ -85,7 +88,7 @@ on:
 # Reuse mode is only for same-day artifacts when the Highlightly quota is exhausted.
 
 permissions:
-  contents: read
+  contents: write
   actions: read
 
 jobs:
@@ -234,3 +237,16 @@ jobs:
           path: reports/paper_tracking_ledger.json
           if-no-files-found: warn
           retention-days: 90
+
+      - name: Publish validated command data snapshots
+        if: always() && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && contains(github.event.head_commit.message, '[run-live-check]'))) && (steps.generate-report.outcome == 'success' || steps.filter-saved-report.outcome == 'success')
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          PYTHONPATH: .
+        run: |
+          ARGS=(--report reports/daily_predictions.json)
+          if [ "${{ steps.paper-ledger-check.outputs.safe }}" = "true" ] && [ -f reports/paper_tracking_ledger.json ]; then
+            ARGS+=(--ledger reports/paper_tracking_ledger.json)
+          fi
+          python scripts/publish_command_data.py "${ARGS[@]}"
