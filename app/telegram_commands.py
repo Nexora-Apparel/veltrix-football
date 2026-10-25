@@ -19,8 +19,8 @@ COMMANDS: dict[str, str] = {
     "/fixtures": "Show fixtures available in the current report.",
     "/match": "Inspect a named fixture: /match Arsenal vs Chelsea",
     "/live": "Show live matches only when live-status data is connected.",
-    "/overunder": "Over/Under analysis; requires supported goal-market probabilities.",
-    "/btts": "Both Teams To Score analysis; requires supported goal-market probabilities.",
+    "/overunder": "PRIMARY MARKET: experimental Over/Under 0.5–4.5 goal probabilities from model expected goals.",
+    "/btts": "PRIMARY MARKET: experimental Both Teams To Score Yes/No probabilities from model expected goals.",
     "/goals": "Expected-goals summary for available forecasts.",
     "/cleansheet": "Clean-sheet estimates; unavailable until calibrated team-goal probabilities exist.",
     "/value": "Value screen status; candidates stay disabled until the model passes validation.",
@@ -116,6 +116,50 @@ def _forecast_predictions(report: dict[str, Any] | None) -> list[dict[str, Any]]
         if row.get("status") == "EXPERIMENTAL_ONLY"
         and _valid_probability_vector(row.get("probabilities"))
     ]
+
+
+def _expected_goals(row: dict[str, Any]) -> tuple[float, float] | None:
+    """Read finite, plausible Poisson goal means from an explicitly usable forecast."""
+    values = row.get("expected_goals")
+    if not isinstance(values, dict):
+        return None
+    try:
+        home, away = float(values["home"]), float(values["away"])
+    except (KeyError, TypeError, ValueError, OverflowError):
+        return None
+    if not all(math.isfinite(x) and 0.0 <= x <= 10.0 for x in (home, away)):
+        return None
+    return home, away
+
+
+def _poisson_probability_at_least(k: int, mean: float) -> float:
+    """P(X >= k) for a Poisson goal count, evaluated without external libraries."""
+    if k <= 0:
+        return 1.0
+    term = math.exp(-mean)
+    cumulative = term
+    for goals in range(1, k):
+        term *= mean / goals
+        cumulative += term
+    return min(1.0, max(0.0, 1.0 - cumulative))
+
+
+def _goal_market_probabilities(row: dict[str, Any]) -> dict[str, float] | None:
+    means = _expected_goals(row)
+    if means is None:
+        return None
+    home, away = means
+    total = home + away
+    # Independent Poisson approximation; explicitly experimental, not calibrated.
+    markets = {
+        "over_0_prob": _poisson_probability_at_least(1, total),
+        "over_1_prob": _poisson_probability_at_least(2, total),
+        "over_2_prob": _poisson_probability_at_least(3, total),
+        "over_3_prob": _poisson_probability_at_least(4, total),
+        "over_4_prob": _poisson_probability_at_least(5, total),
+        "btts_yes_prob": (1.0 - math.exp(-home)) * (1.0 - math.exp(-away)),
+    }
+    return markets
 
 
 def _history_notice(report: dict[str, Any] | None) -> str | None:
@@ -270,7 +314,7 @@ def handle_command(
             "The saved report is a same-day pre-match snapshot. A separate date-specific or live-status source is required; no fixtures are guessed."
         )
 
-    if command in {"/today", "/fixtures", "/match", "/goals"}:
+    if command in {"/today", "/fixtures", "/match", "/goals", "/overunder", "/btts"}:
         all_rows = _future_fixtures(report)
         forecast_rows = _forecast_predictions(report)
         if not all_rows:
@@ -298,8 +342,16 @@ def handle_command(
             selected = _future_fixtures(report)[:15]
             if not selected:
                 return _reply("FIXTURES — NO FUTURE SAME-DAY FIXTURES remain in the saved snapshot.")
+        elif command in {"/overunder", "/btts"}:
+            selected = [row for row in forecast_rows if _goal_market_probabilities(row) is not None][:15]
+            if not selected:
+                market = "OVER/UNDER" if command == "/overunder" else "BTTS"
+                return _reply(
+                    f"{market} — NO USABLE GOAL-MARKET ESTIMATES. "
+                    "The current report has no eligible fixtures with valid expected-goal inputs."
+                )
         elif command == "/goals":
-            selected = [row for row in forecast_rows if isinstance(row.get("expected_goals"), dict)][:15]
+            selected = [row for row in forecast_rows if _expected_goals(row) is not None][:15]
             if not selected:
                 return _reply("GOALS — NO USABLE EXPECTED-GOALS FORECASTS in the saved report.")
         else:
@@ -311,7 +363,12 @@ def handle_command(
                     body += "\n" + notice
                 return _reply(body)
 
-        lines = [f"{command.upper()} — {'FIXTURE LIST' if command == '/fixtures' else 'EXPERIMENTAL REPORT'}"]
+        titles = {
+            "/overunder": "PRIMARY MARKET — OVER/UNDER GOALS (EXPERIMENTAL)",
+            "/btts": "PRIMARY MARKET — BOTH TEAMS TO SCORE (EXPERIMENTAL)",
+            "/fixtures": "FIXTURE LIST",
+        }
+        lines = [titles.get(command, f"{command.upper()} — EXPERIMENTAL REPORT")]
         notice = _history_notice(report)
         if notice:
             lines.extend([notice, ""])
@@ -336,11 +393,28 @@ def handle_command(
                 f"{home} vs {away} | {league} | {kickoff} | "
                 f"H {float(probs['home_win']):.0%} / D {float(probs['draw']):.0%} / A {float(probs['away_win']):.0%}"
             )
-            if isinstance(row.get("expected_goals"), dict) and command == "/goals":
-                eg = row["expected_goals"]
-                lines.append(f"Expected goals: {eg.get('home', 'n/a')} - {eg.get('away', 'n/a')}")
+            means = _expected_goals(row)
+            if means is not None and command == "/goals":
+                lines.append(f"Expected goals: {means[0]:.2f} - {means[1]:.2f}")
+            if means is not None and command == "/overunder":
+                markets = _goal_market_probabilities(row) or {}
+                lines.append(f"Model expected goals: {means[0]:.2f} + {means[1]:.2f} = {sum(means):.2f}")
+                lines.append("Over probabilities: " + " | ".join(
+                    f"O{line}.5 {markets[f'over_{line}_prob']:.0%}" for line in (0, 1, 2, 3, 4)
+                ))
+            if means is not None and command == "/btts":
+                markets = _goal_market_probabilities(row) or {}
+                yes = markets["btts_yes_prob"]
+                lines.append(f"BTTS Yes: {yes:.0%} | BTTS No: {1.0 - yes:.0%}")
+                lines.append(f"Model expected goals: home {means[0]:.2f}, away {means[1]:.2f}")
 
-        lines.append("Experimental estimates only — not validated betting advice.")
+        if command in {"/overunder", "/btts"}:
+            lines.append(
+                "Goal-market estimates use an independent-Poisson approximation from experimental expected goals. "
+                "They are not calibrated or validated betting advice; bookmaker odds are not connected."
+            )
+        else:
+            lines.append("Experimental estimates only — not validated betting advice.")
         return _reply("\n".join(lines))
 
     if command in {"/overunder", "/btts", "/cleansheet", "/value", "/overvalue", "/bttsvalue", "/odds", "/10odds"}:
