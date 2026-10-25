@@ -71,6 +71,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--report", required=True, help="Generated daily_predictions.json")
     parser.add_argument("--ledger", default=None, help="Validated paper_tracking_ledger.json (optional)")
+    parser.add_argument("--recent-cache", default=None, help="Resumable recent-results cache (optional)")
     args = parser.parse_args()
 
     repo = (os.getenv("GITHUB_REPOSITORY") or "").strip()
@@ -100,6 +101,18 @@ def main() -> int:
                 print("Ledger publication skipped: ledger failed structural validation.", file=sys.stderr)
             else:
                 publish("public-data/paper_tracking_ledger.json", ledger_path, repo, token)
+        if args.recent_cache:
+            cache_path = Path(args.recent_cache)
+            cache = json.loads(cache_path.read_text(encoding="utf-8"))
+            if (
+                isinstance(cache, dict)
+                and cache.get("version") == 1
+                and isinstance(cache.get("matches"), list)
+                and isinstance(cache.get("state"), dict)
+            ):
+                publish("public-data/recent_results_cache.json", cache_path, repo, token)
+            else:
+                print("Recent-results cache publication skipped: cache schema validation failed.", file=sys.stderr)
     except (HTTPError, URLError, OSError, ValueError, json.JSONDecodeError) as exc:
         # Never print request headers or the GitHub token.
         print(f"Command-data publication failed: {type(exc).__name__}", file=sys.stderr)
