@@ -1,4 +1,4 @@
-name: API-Football smoke test
+name: Highlightly API smoke test
 
 on:
   workflow_dispatch:
@@ -29,24 +29,19 @@ jobs:
       - name: Run local sanity tests
         run: python -m pytest -q
 
-      - name: Verify API-Football account
+      - name: Verify Highlightly authentication and league endpoint
         env:
-          API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
+          HIGHLIGHTLY_API_KEY: ${{ secrets.HIGHLIGHTLY_API_KEY }}
         run: |
-          if [ -z "$API_FOOTBALL_KEY" ]; then
-            echo "::error::Repository secret API_FOOTBALL_KEY is not configured."
+          if [ -z "$HIGHLIGHTLY_API_KEY" ]; then
+            echo "::error::Repository secret HIGHLIGHTLY_API_KEY is not configured."
             exit 1
           fi
           python -m app.cli status
 
-      - name: Audit 2025/26 and 2026/27 season access (sample)
-        env:
-          API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
-        run: python -m scripts.audit_historical_coverage
-
       - name: Fetch today's fixtures (Africa/Lagos)
         env:
-          API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
+          HIGHLIGHTLY_API_KEY: ${{ secrets.HIGHLIGHTLY_API_KEY }}
         run: |
           TODAY="$(TZ=Africa/Lagos date +%F)"
           python -m app.cli fixtures --date "$TODAY" --timezone Africa/Lagos
