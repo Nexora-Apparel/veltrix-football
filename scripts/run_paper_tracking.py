@@ -18,11 +18,49 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from app.config import get_settings
-from app.football_api import FootballAPI, FootballAPIError
 from app.paper_tracking import evaluate_report, merge_paper_ledger
 
 API_ROOT = "https://api.github.com"
+
+
+def load_cached_results_payload(repo: str) -> tuple[dict[str, Any], str]:
+    """Load completed fixture scores from the persisted cache without calling the football provider."""
+    branch = os.getenv("VELTRIX_DATA_BRANCH", "command-data").strip()
+    url = f"https://raw.githubusercontent.com/{repo}/{branch}/public-data/recent_results_cache.json"
+    try:
+        response = requests.get(url, headers={"User-Agent": "VeltrixFootball-PaperTracking"}, timeout=20)
+        response.raise_for_status()
+        if len(response.content) > 4_000_000:
+            return {"response": []}, "CACHE_TOO_LARGE"
+        cache = response.json()
+    except (requests.RequestException, ValueError):
+        return {"response": []}, "CACHE_UNAVAILABLE"
+    if (
+        not isinstance(cache, dict)
+        or cache.get("version") != 1
+        or not isinstance(cache.get("matches"), list)
+    ):
+        return {"response": []}, "CACHE_INVALID"
+
+    completed = []
+    for row in cache["matches"]:
+        if not isinstance(row, dict):
+            continue
+        fixture_id = row.get("fixture_id")
+        status = str(row.get("fixture_status") or "FT").upper()
+        home_goals, away_goals = row.get("home_goals"), row.get("away_goals")
+        if (
+            not isinstance(fixture_id, int) or isinstance(fixture_id, bool)
+            or status not in {"FT", "AET", "PEN"}
+            or not isinstance(home_goals, int) or isinstance(home_goals, bool) or home_goals < 0
+            or not isinstance(away_goals, int) or isinstance(away_goals, bool) or away_goals < 0
+        ):
+            continue
+        completed.append({
+            "fixture": {"id": fixture_id, "status": {"short": status}},
+            "goals": {"home": home_goals, "away": away_goals},
+        })
+    return {"response": completed}, "CACHE_AVAILABLE"
 
 
 def github_get(session: requests.Session, url: str) -> dict[str, Any]:
@@ -175,6 +213,7 @@ def run(report_date: date, output_path: str) -> dict[str, Any]:
             })
             runs = list_relevant_runs(session, repo)
             ledger = find_latest_ledger(session, repo, runs, current_run_id)
+            cached_results, cache_status = load_cached_results_payload(repo)
             evaluations = ledger.get("evaluations", [])
             evaluation_by_date = {
                 str(item.get("report_date")): item for item in evaluations
@@ -265,23 +304,27 @@ def run(report_date: date, output_path: str) -> dict[str, Any]:
                             ledger["evaluated_report_dates"] = len(evaluations)
                         else:
                             try:
-                                # Use the configured provider (Highlightly). Do not
-                                # gate paper tracking on the retired API-Football key.
-                                if api_client is None:
-                                    api_client = FootballAPI(get_settings())
-                                results = api_client.fixtures(date_text, "Africa/Lagos")
-                                evaluation = evaluate_report(report, results)
+                                # Use only persisted completed results. Live provider calls here
+                                # duplicated the full fixture pagination and exhausted daily quota.
+                                evaluation = evaluate_report(report, cached_results)
                                 ledger = merge_paper_ledger(ledger, evaluation)
+                                cache_detail = (
+                                    f"Scored from {len(cached_results['response'])} cached completed matches; "
+                                    "no live football-provider request was made."
+                                    if cache_status == "CACHE_AVAILABLE"
+                                    else "Recent-results cache unavailable; no live football-provider request was made."
+                                )
                                 one.update({
                                     "status": "EVALUATED",
+                                    "detail": cache_detail,
                                     "fixtures_scored": evaluation.get("fixtures_scored", 0),
                                     "completed_forecasts_scored": evaluation["completed_forecasts_scored"],
                                     "metrics": evaluation["metrics"],
                                     "metrics_by_model": evaluation.get("metrics_by_model", {}),
                                     "awaiting_result_or_match": evaluation.get("awaiting_result_or_match", 0),
                                 })
-                            except (FootballAPIError, RuntimeError, ValueError) as exc:
-                                one.update({"status": "RESULT_FETCH_FAILED", "detail": str(exc)})
+                            except (RuntimeError, ValueError) as exc:
+                                one.update({"status": "TRACKING_ERROR", "detail": str(exc)})
                     except (requests.RequestException, RuntimeError, ValueError, zipfile.BadZipFile, json.JSONDecodeError) as exc:
                         one.update({"status": "TRACKING_ERROR", "detail": str(exc)})
                     attempts.append(one)
