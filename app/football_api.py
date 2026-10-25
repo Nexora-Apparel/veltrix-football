@@ -177,8 +177,7 @@ class FootballAPI:
 
     def status(self) -> dict[str, Any]:
         """Validate API access using a lightweight, supported league query."""
-        year = date_type.today().year
-        return self.get("leagues", {"season": year, "limit": 1})
+        return self.leagues(current=True)
 
     def fixtures(self, date: str, timezone: str = "Africa/Lagos") -> dict[str, Any]:
         """Fetch a local-calendar day's fixtures; Highlightly accepts a single date."""
@@ -236,7 +235,20 @@ class FootballAPI:
         }
 
     def leagues(self, current: bool = True) -> dict[str, Any]:
-        params: dict[str, Any] = {"season": date_type.today().year, "limit": 100}
-        if not current:
-            params.pop("season", None)
-        return self.get("leagues", params)
+        # Highlightly requires a primary filter; limit alone is not sufficient.
+        # The provider exposes seasons explicitly, so avoid pretending this is an
+        # unfiltered all-seasons catalogue.
+        year = date_type.today().year
+        params: dict[str, Any] = {"season": year if current else year - 1, "limit": 100}
+        payload = self.get("leagues", params)
+        leagues = payload.get("data")
+        if not isinstance(leagues, list):
+            raise FootballAPIError("Highlightly leagues payload is missing its data list.")
+        return {
+            "response": leagues,
+            "results": len(leagues),
+            "pagination": payload.get("pagination"),
+            "plan": payload.get("plan"),
+            "_veltrix_meta": payload.get("_veltrix_meta", {}),
+            "provider": "Highlightly",
+        }
