@@ -14,12 +14,34 @@ from app.telegram_security import telegram_webhook_secret_token
 
 app = FastAPI(title="Veltrix Football Telegram Command Centre")
 
+# Persistent reply keyboard: users can tap features instead of typing commands.
+KEYBOARD = {
+    "keyboard": [
+        [{"text": "Today's Predictions"}, {"text": "Fixtures"}],
+        [{"text": "Successful Predictions"}, {"text": "Results & Performance"}],
+        [{"text": "Status"}, {"text": "Help"}],
+    ],
+    "resize_keyboard": True,
+    "is_persistent": True,
+    "input_field_placeholder": "Choose a Veltrix feature…",
+}
+BUTTON_COMMANDS = {
+    "today's predictions": "/today",
+    "todays predictions": "/today",
+    "fixtures": "/fixtures",
+    "successful predictions": "/results",
+    "results & performance": "/performance",
+    "status": "/status",
+    "help": "/help",
+}
+
 
 def _send_message(token: str, chat_id: str, text: str) -> None:
     payload = json.dumps({
         "chat_id": chat_id,
         "text": text[:3900],
         "disable_web_page_preview": True,
+        "reply_markup": KEYBOARD,
     }).encode("utf-8")
     request = Request(
         f"https://api.telegram.org/bot{token}/sendMessage",
@@ -64,10 +86,14 @@ async def telegram_webhook(
     chat = message.get("chat") or {}
     chat_id = str(chat.get("id", ""))
     text = str(message.get("text") or "")
-    if chat_id != allowed_chat or not text.startswith("/"):
+    if chat_id != allowed_chat:
+        return JSONResponse({"ok": True})
+    # Telegram reply-keyboard buttons arrive as ordinary text messages.
+    command = BUTTON_COMMANDS.get(text.strip().casefold(), text)
+    if not command.startswith("/"):
         return JSONResponse({"ok": True})
     try:
-        _send_message(bot_token, chat_id, handle_command(text))
+        _send_message(bot_token, chat_id, handle_command(command))
     except Exception:
         # Do not expose the update, chat id, token, or Telegram request URL.
         raise HTTPException(status_code=502, detail="Telegram reply delivery failed") from None
