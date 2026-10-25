@@ -179,13 +179,10 @@ def run(report_date: date, output_path: str) -> dict[str, Any]:
                                 "status": "NO_PREVIOUS_REPORT",
                                 "detail": "No saved daily report was found for this date.",
                             })
-                        elif not os.getenv("API_FOOTBALL_KEY"):
-                            one.update({
-                                "status": "API_KEY_MISSING",
-                                "detail": "Cannot fetch completed results without API_FOOTBALL_KEY.",
-                            })
                         else:
                             try:
+                                # Use the configured provider (Highlightly). Do not
+                                # gate paper tracking on the retired API-Football key.
                                 if api_client is None:
                                     api_client = FootballAPI(get_settings())
                                 results = api_client.fixtures(date_text, "Africa/Lagos")
