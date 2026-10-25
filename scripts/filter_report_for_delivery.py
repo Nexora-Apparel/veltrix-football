@@ -8,6 +8,27 @@ from datetime import date, datetime
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
+from app.live_predictions import _name_key, _one_edit_apart, _team_variant_signature
+
+def _has_unsafe_auto_team_match(row: dict) -> bool:
+    """Reject legacy fuzzy matches that violate the current conservative identity rules."""
+    matches = row.get("team_name_matches") or {}
+    if not isinstance(matches, dict):
+        return False
+    for side in matches.values():
+        if not isinstance(side, dict) or side.get("auto_matched") is not True:
+            continue
+        fixture_key = _name_key(side.get("fixture_name"))
+        historical_key = str(side.get("historical_key") or "")
+        if (
+            not historical_key
+            or _team_variant_signature(fixture_key) != _team_variant_signature(historical_key)
+            or not _one_edit_apart(fixture_key, historical_key)
+        ):
+            return True
+    return False
+
+
 def filter_report_for_delivery(report: dict, now: datetime | None = None) -> dict:
     if not isinstance(report, dict) or report.get("same_day_only") is not True:
         raise ValueError("Refusing to deliver a report that does not enforce same-day fixture filtering.")
@@ -28,6 +49,7 @@ def filter_report_for_delivery(report: dict, now: datetime | None = None) -> dic
     past_rows_excluded = 0
     other_date_rows_excluded = 0
     missing_or_invalid_kickoff_rows = 0
+    unsafe_team_identity_rows_withheld = 0
     for row in rows:
         if not isinstance(row, dict):
             missing_or_invalid_kickoff_rows += 1
@@ -50,7 +72,16 @@ def filter_report_for_delivery(report: dict, now: datetime | None = None) -> dic
         elif kickoff <= current:
             past_rows_excluded += 1
         else:
-            kept.append(row)
+            delivered_row = row
+            if row.get("status") == "EXPERIMENTAL_ONLY" and _has_unsafe_auto_team_match(row):
+                delivered_row = dict(row)
+                delivered_row["status"] = "INSUFFICIENT_HISTORY"
+                delivered_row["reason"] = (
+                    "Forecast withheld because the saved report used an unsafe fuzzy team-name match."
+                )
+                delivered_row["team_identity_withheld"] = True
+                unsafe_team_identity_rows_withheld += 1
+            kept.append(delivered_row)
 
     # Recompute every counter that describes the delivered prediction rows.
     # Otherwise the saved JSON can contain 594 rows but stale status counts
@@ -100,6 +131,7 @@ def filter_report_for_delivery(report: dict, now: datetime | None = None) -> dic
         "past_kickoffs_excluded": past_rows_excluded,
         "other_date_rows_excluded": other_date_rows_excluded,
         "missing_or_invalid_kickoff_rows_excluded": missing_or_invalid_kickoff_rows,
+        "unsafe_team_identity_rows_withheld": unsafe_team_identity_rows_withheld,
     }
     return result
 
