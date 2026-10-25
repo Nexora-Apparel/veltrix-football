@@ -93,7 +93,7 @@ def main() -> None:
             api,
             base_history,
             target_date - timedelta(days=1),
-            cache_data.get("state") or {},
+            cache_state=cache_data.get("state") or {},
             timezone_name=args.timezone,
         )
         updated_cache_state = recent_sync.pop("cache_state", cache_data.get("state") or {})
