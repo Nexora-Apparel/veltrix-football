@@ -547,3 +547,33 @@ def test_old_empty_evaluation_is_retried_and_marked_without_provider_call(tmp_pa
     ledger = tracking_runner.run(date(2026, 10, 23), str(output))
     assert ledger["evaluations"][0]["tracking_state"] == "NO_FORECASTS_TO_SCORE"
     assert ledger["last_attempt"]["status"] == "NO_FORECASTS_TO_SCORE"
+
+def test_provider_rate_limit_marks_ledger_unsafe_for_publication(tmp_path, monkeypatch):
+    from app.football_api import FootballAPIError
+
+    monkeypatch.setenv("GITHUB_REPOSITORY", "owner/repo")
+    monkeypatch.setenv("GITHUB_TOKEN", "test-token")
+    monkeypatch.setenv("GITHUB_RUN_ID", "999")
+    monkeypatch.setattr(tracking_runner, "get_settings", lambda: object())
+    monkeypatch.setattr(tracking_runner, "list_relevant_runs", lambda session, repo: [])
+    monkeypatch.setattr(tracking_runner, "find_latest_ledger", lambda *args: {
+        "product": "Veltrix Football", "model_status": "PAPER_TRACKING_ONLY",
+        "evaluations": [], "scored_matches": [],
+    })
+    monkeypatch.setattr(tracking_runner, "find_daily_report", lambda *args: {
+        "as_of_date": "2026-10-23", "predictions": [_prediction(88)],
+    })
+
+    class RateLimitedAPI:
+        def __init__(self, settings):
+            pass
+
+        def fixtures(self, report_date, timezone_name):
+            raise FootballAPIError("HTTP 429: quota exceeded")
+
+    monkeypatch.setattr(tracking_runner, "FootballAPI", RateLimitedAPI)
+    output = tmp_path / "ledger.json"
+    ledger = tracking_runner.run(date(2026, 10, 23), str(output))
+    assert ledger["last_attempt"]["status"] == "TRACKING_ERROR"
+    assert ledger["last_attempt"]["attempts"][0]["status"] == "RESULT_FETCH_FAILED"
+
