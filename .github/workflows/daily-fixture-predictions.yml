@@ -83,7 +83,7 @@ jobs:
         if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
         continue-on-error: true
         env:
-          HIGHLIGHTLY_API_KEY: ${{ secrets.FOOTBALL_DATA_TOKEN }}
+          HIGHLIGHTLY_API_KEY: ${{ secrets.HIGHLIGHTLY_API_KEY }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_REPOSITORY: ${{ github.repository }}
           GITHUB_RUN_ID: ${{ github.run_id }}
@@ -115,12 +115,12 @@ jobs:
         id: generate-report
         if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
         env:
-          FOOTBALL_DATA_TOKEN: ${{ secrets.FOOTBALL_DATA_TOKEN }}
+          HIGHLIGHTLY_API_KEY: ${{ secrets.HIGHLIGHTLY_API_KEY }}
           TARGET_DATE: ${{ inputs.date }}
           PYTHONPATH: .
         run: |
-          if [ -z "$FOOTBALL_DATA_TOKEN" ]; then
-            echo "::error::Repository secret FOOTBALL_DATA_TOKEN is missing."
+          if [ -z "$HIGHLIGHTLY_API_KEY" ]; then
+            echo "::error::Repository secret HIGHLIGHTLY_API_KEY is missing."
             exit 1
           fi
           if [ -z "${TARGET_DATE:-}" ]; then TARGET_DATE="$(TZ=Africa/Lagos date +%F)"; fi
