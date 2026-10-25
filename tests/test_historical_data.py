@@ -20,3 +20,10 @@ def test_window_and_dates_validated():
  with pytest.raises(ValueError): add_leakage_safe_rolling_features([],0)
  with pytest.raises(ValueError): validate_date_range("2025-02-01","2025-01-01")
  with pytest.raises(ValueError): validate_date_range("2024-01-01","2025-01-02")
+
+
+
+def test_highlightly_history_range_is_capped_at_seven_calendar_days():
+ assert validate_date_range("2026-10-01", "2026-10-07") == ("2026-10-01", "2026-10-07")
+ with pytest.raises(ValueError, match="7 calendar days"):
+  validate_date_range("2026-10-01", "2026-10-08")
