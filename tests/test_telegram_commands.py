@@ -37,6 +37,27 @@ def test_status_discloses_validation_gate():
     assert "DISABLED until chronological out-of-sample validation" in reply
 
 
+def test_status_discloses_historical_refresh_gaps():
+    report = {
+        "as_of_date": datetime.now(ZoneInfo("Africa/Lagos")).date().isoformat(),
+        "predictions": [],
+        "recent_results_sync": {
+            "status": "PARTIAL",
+            "ranges_succeeded": 1,
+            "ranges_requested": 8,
+        },
+        "historical_data_coverage": {
+            "status": "GAPPED_OR_STALE",
+            "contiguous_through": "2026-09-03",
+            "latest_available_match_date": "2026-10-24",
+        },
+    }
+    reply = handle_command("/status", report=report)
+    assert "Recent-results refresh: PARTIAL (1/8 ranges refreshed)" in reply
+    assert "Historical coverage: GAPPED_OR_STALE" in reply
+    assert "continuous through 2026-09-03, latest available 2026-10-24" in reply
+
+
 def test_match_lookup_uses_supplied_report_only():
     future_kickoff = (datetime.now(ZoneInfo("Africa/Lagos")) + timedelta(hours=3)).isoformat()
     report = {
