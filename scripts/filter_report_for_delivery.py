@@ -133,6 +133,36 @@ def filter_report_for_delivery(report: dict, now: datetime | None = None) -> dic
         "missing_or_invalid_kickoff_rows_excluded": missing_or_invalid_kickoff_rows,
         "unsafe_team_identity_rows_withheld": unsafe_team_identity_rows_withheld,
     }
+    # This script is used only by the quota-safe reuse path. Mark the snapshot so
+    # consumers cannot mistake a filtered older report for a fresh live fetch.
+    result["publication_status"] = "REUSED_SNAPSHOT_NOT_REFRESHED"
+    result["publication_notice"] = (
+        "A saved same-day snapshot was reused because a new live report was unavailable; "
+        "this run did not fetch fresh fixtures."
+    )
+    if not isinstance(result.get("historical_data_coverage"), dict):
+        sync = result.get("recent_results_sync") or {}
+        requested_start = sync.get("requested_start") if isinstance(sync, dict) else None
+        base_through = None
+        if requested_start:
+            try:
+                base_through = (date.fromisoformat(str(requested_start)) - __import__("datetime").timedelta(days=1)).isoformat()
+            except ValueError:
+                base_through = None
+        result["historical_data_coverage"] = {
+            "status": "GAPPED_OR_STALE",
+            "base_history_through": base_through,
+            "contiguous_through": base_through,
+            "latest_available_match_date": result.get("historical_data_through") or (sync.get("covered_through") if isinstance(sync, dict) else None),
+            "refresh_status": str(sync.get("status") or "UNKNOWN") if isinstance(sync, dict) else "UNKNOWN",
+            "requested_start": requested_start,
+            "requested_end": sync.get("requested_end") if isinstance(sync, dict) else None,
+            "covered_from": sync.get("covered_from") if isinstance(sync, dict) else None,
+            "covered_through": sync.get("covered_through") if isinstance(sync, dict) else None,
+            "ranges_succeeded": sync.get("ranges_succeeded") if isinstance(sync, dict) else None,
+            "ranges_requested": sync.get("ranges_requested") if isinstance(sync, dict) else None,
+            "backfill_complete": False,
+        }
     return result
 
 def main() -> None:
