@@ -29,7 +29,7 @@ def _report(future_fixtures: int) -> dict:
 def _run_args(monkeypatch, output):
     monkeypatch.setattr(
         "sys.argv",
-        ["run_daily_predictions.py", "--date", "2026-10-23", "--history", "history.csv", "--output", str(output)],
+        ["run_daily_predictions.py", "--date", "2026-10-23", "--history", "history.csv", "--output", str(output), "--recent-cache", str(output.parent / "recent_results_cache.json")],
     )
 
 
@@ -43,6 +43,12 @@ def _sync():
         "covered_through": "2026-10-22",
         "ranges_succeeded": 1,
         "warning": None,
+        "cache_state": {
+            "backfill_complete": True,
+            "latest_covered_through": "2026-10-22",
+            "next_backfill_end_date": "2026-10-19",
+            "backfill_anchor_end": "2026-10-22",
+        },
     }
 
 
@@ -65,7 +71,7 @@ def test_daily_runner_refreshes_history_even_when_no_future_fixtures(tmp_path, m
     monkeypatch.setattr(daily_runner, "FootballAPI", FakeAPI)
     refresh_calls = []
     monkeypatch.setattr(
-        daily_runner, "fetch_recent_results",
+        daily_runner, "fetch_recent_results_incremental",
         lambda api, history, end_date, **kwargs: (
             refresh_calls.append((history, end_date, kwargs)) or (recent_rows, _sync())
         ),
@@ -113,7 +119,7 @@ def test_daily_runner_refreshes_history_and_requests_odds_for_future_fixtures(tm
         daily_runner, "_has_future_fixtures", lambda payload, target_date, timezone_name: True
     )
     monkeypatch.setattr(
-        daily_runner, "fetch_recent_results",
+        daily_runner, "fetch_recent_results_incremental",
         lambda api, history, end_date, **kwargs: (recent_rows, _sync()),
     )
     build_calls = []
