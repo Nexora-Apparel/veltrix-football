@@ -115,7 +115,6 @@ jobs:
         if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || false && !contains(github.event.head_commit.message, '[reuse-report-40175707059]')
         continue-on-error: true
         env:
-          HIGHLIGHTLY_API_KEY: ${{ secrets.HIGHLIGHTLY_API_KEY }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_REPOSITORY: ${{ github.repository }}
           GITHUB_RUN_ID: ${{ github.run_id }}
