@@ -71,6 +71,28 @@ def main() -> None:
             market_odds_by_fixture=market_odds_by_fixture,
         )
         report["recent_results_sync"] = recent_sync
+        base_history_through = max(
+            (row["date"].isoformat() for row in base_history if row.get("date") < target_date),
+            default=None,
+        )
+        refresh_status = str(recent_sync.get("status") or "UNKNOWN").upper()
+        refresh_complete = refresh_status in {"COMPLETE", "UP_TO_DATE"}
+        report["historical_data_coverage"] = {
+            "status": "CONTIGUOUS_THROUGH_TARGET_MINUS_ONE" if refresh_complete else "GAPPED_OR_STALE",
+            "base_history_through": base_history_through,
+            "contiguous_through": (
+                recent_sync.get("covered_through") if refresh_status == "COMPLETE"
+                else base_history_through
+            ),
+            "latest_available_match_date": report.get("historical_data_through"),
+            "refresh_status": refresh_status,
+            "requested_start": recent_sync.get("requested_start"),
+            "requested_end": recent_sync.get("requested_end"),
+            "covered_from": recent_sync.get("covered_from"),
+            "covered_through": recent_sync.get("covered_through"),
+            "ranges_succeeded": recent_sync.get("ranges_succeeded"),
+            "ranges_requested": recent_sync.get("ranges_requested"),
+        }
         report["live_odds_sync"] = odds_sync
         report["fixtures_with_market_odds"] = sum(
             isinstance(item.get("market_probabilities"), dict)
