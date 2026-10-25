@@ -89,3 +89,43 @@ def test_today_excludes_withheld_fixtures_and_only_shows_real_forecasts():
 def test_tomorrow_and_live_commands_do_not_relabel_same_day_snapshot():
     assert "DATA NOT CONNECTED" in handle_command("/tomorrow")
     assert "DATA NOT CONNECTED" in handle_command("/live")
+
+
+def test_future_filter_excludes_tomorrow_even_when_kickoff_is_future():
+    from app.telegram_commands import _kickoff_is_future
+    now = datetime.now(ZoneInfo("Africa/Lagos"))
+    tomorrow = (now + timedelta(days=1)).replace(hour=23, minute=30, second=0, microsecond=0)
+    assert not _kickoff_is_future({"kickoff_local": tomorrow.isoformat()}, now=now)
+
+
+def test_future_filter_accepts_same_day_utc_timestamp_using_lagos_date():
+    from app.telegram_commands import _kickoff_is_future
+    now = datetime.now(ZoneInfo("Africa/Lagos"))
+    kickoff = now + timedelta(hours=2)
+    assert _kickoff_is_future({"kickoff": kickoff.astimezone(ZoneInfo("UTC")).isoformat()}, now=now)
+
+
+def test_match_does_not_publish_invalid_probability_vectors():
+    now = datetime.now(ZoneInfo("Africa/Lagos"))
+    future = (now + timedelta(hours=2)).isoformat()
+    report = {"predictions": [{
+        "home_team": "Unsafe FC", "away_team": "Example FC", "league": "Test",
+        "kickoff_local": future, "status": "UNSUPPORTED_COMPETITION",
+        "probabilities": {"home_win": 0.8, "draw": 0.8, "away_win": -0.6},
+        "reason": "Unsupported competition",
+    }]}
+    reply = handle_command("/match Unsafe FC vs Example FC", report=report)
+    assert "WITHHELD: Unsupported competition" in reply
+    assert "H 80%" not in reply
+
+
+def test_match_with_nan_probabilities_is_withheld():
+    now = datetime.now(ZoneInfo("Africa/Lagos"))
+    future = (now + timedelta(hours=2)).isoformat()
+    report = {"predictions": [{
+        "home_team": "NaN FC", "away_team": "Example FC", "league": "Test",
+        "kickoff_local": future, "status": "EXPERIMENTAL_ONLY",
+        "probabilities": {"home_win": float("nan"), "draw": 0.3, "away_win": 0.7},
+    }]}
+    reply = handle_command("/match NaN FC vs Example FC", report=report)
+    assert "WITHHELD: EXPERIMENTAL_ONLY" in reply
