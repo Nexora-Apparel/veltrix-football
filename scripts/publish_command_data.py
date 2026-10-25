@@ -1,4 +1,8 @@
-"""Publish safe report/ledger snapshots to the public command-data branch."""
+"""Publish safe report/ledger snapshots to the public command-data branch.
+
+Quota-safe recovery runs may republish previously generated artifacts without
+requesting new fixtures or creating forecasts.
+"""
 from __future__ import annotations
 
 import argparse
