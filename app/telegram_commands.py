@@ -94,10 +94,14 @@ def _status(report: dict[str, Any] | None, ledger: dict[str, Any] | None) -> str
     predictions = _forecast_predictions(report)
     odds_status = "not connected to this command router"
     if isinstance(report, dict):
-        meta = report.get("odds_meta") or report.get("odds") or {}
+        meta = report.get("live_odds_sync") or report.get("odds_meta") or report.get("odds") or {}
         if isinstance(meta, dict) and meta.get("status"):
             odds_status = str(meta["status"])
-    ledger_status = "available" if isinstance(ledger, dict) else "not available"
+    if isinstance(ledger, dict):
+        scored_count = len(ledger.get("scored_matches", [])) if isinstance(ledger.get("scored_matches"), list) else 0
+        ledger_status = f"available ({scored_count} settled forecast rows)"
+    else:
+        ledger_status = "not available"
     return (
         "VELTRIX COMMAND CENTRE — STATUS\n"
         f"Current report: {'available' if isinstance(report, dict) else 'not loaded'}\n"
