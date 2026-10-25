@@ -43,12 +43,12 @@ def _api():
 
 def test_fixtures_uses_highlightly_and_normalizes_match_shape():
     api = _api()
+    assert api.session.headers["x-rapidapi-key"] == "test-key"
     session = FakeSession()
     api.session = session
 
     payload = api.fixtures("2026-10-25", "Africa/Lagos")
 
-    assert session.headers["x-rapidapi-key"] == "test-key"
     assert session.calls == [(
         "https://soccer.highlightly.net/matches",
         {"date": "2026-10-25", "timezone": "Africa/Lagos", "limit": 100, "offset": 0},
