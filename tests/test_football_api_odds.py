@@ -115,3 +115,43 @@ def test_highlightly_auth_errors_are_actionable():
         assert "API key was rejected" in str(exc)
     else:
         raise AssertionError("Expected an actionable auth error")
+
+
+
+def test_matches_fetches_all_pages_when_provider_reports_more_than_one_page():
+    class PagedResponse(FakeResponse):
+        def __init__(self, offset):
+            self.offset = offset
+        def json(self):
+            rows = [
+                {
+                    "id": self.offset + 1,
+                    "date": "2026-10-25T16:00:00.000Z",
+                    "state": {"description": "Not started", "score": {"current": None}},
+                    "league": {"id": 133, "name": "Premier League", "season": 2026},
+                    "homeTeam": {"id": self.offset + 1, "name": f"Home {self.offset + 1}"},
+                    "awayTeam": {"id": self.offset + 2, "name": f"Away {self.offset + 2}"},
+                }
+            ]
+            return {
+                "data": rows,
+                "pagination": {"totalCount": 2, "offset": self.offset, "limit": 1},
+                "plan": {"tier": "BASIC", "message": "Example"},
+            }
+
+    class PagedSession(FakeSession):
+        def get(self, url, params=None, timeout=None):
+            self.calls.append((url, params, timeout))
+            return PagedResponse((params or {}).get("offset", 0))
+
+    api = _api()
+    session = PagedSession()
+    api.session = session
+    payload = api._matches({"date": "2026-10-25", "timezone": "Africa/Lagos", "limit": 1, "offset": 0})
+
+    assert len(payload["response"]) == 2
+    assert [row["fixture"]["id"] for row in payload["response"]] == [1, 2]
+    assert payload["pagination"]["complete"] is True
+    assert payload["pagination"]["pagesFetched"] == 2
+    assert payload["_veltrix_meta"]["requests_made"] == 2
+    assert [call[1]["offset"] for call in session.calls] == [0, 1]
