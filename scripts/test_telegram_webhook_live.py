@@ -5,8 +5,13 @@ import json
 import os
 import sys
 import time
+from pathlib import Path
 
 import requests
+
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 
 from app.telegram_security import telegram_webhook_secret_token
 
