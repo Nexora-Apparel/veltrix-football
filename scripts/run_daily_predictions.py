@@ -31,7 +31,11 @@ def main() -> None:
         # Historical results must refresh even when the target day's matches have
         # already kicked off. Otherwise late-day runs can leave model history stale.
         recent_rows, recent_sync = fetch_recent_results(
-            api, base_history, target_date - timedelta(days=1), timezone_name=args.timezone
+            api,
+            base_history,
+            target_date - timedelta(days=1),
+            timezone_name=args.timezone,
+            max_ranges=1,
         )
 
         market_odds_by_fixture = {}
