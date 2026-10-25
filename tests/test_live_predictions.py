@@ -260,6 +260,8 @@ def test_daily_report_explains_fixture_filtering(tmp_path):
     past["fixture"]["id"] = 100
     future = _fixture("2026-10-23T15:00:00+01:00")
     future["fixture"]["id"] = 200
+    future["league"]["id"] = 39
+    future["teams"]["home"]["name"] = "Alph FC"
     tomorrow = _fixture("2026-10-24T15:00:00+01:00")
     tomorrow["fixture"]["id"] = 300
     finished = _fixture("2026-10-23T16:00:00+01:00")
@@ -279,6 +281,7 @@ def test_daily_report_explains_fixture_filtering(tmp_path):
     assert len(report["predictions"]) == 1
     assert report["predictions"][0]["fixture_id"] == 200
     assert report["primary_model_counts"] == {"experimental_recent_goals_poisson": 1}
+    assert report["possible_team_name_mismatches"] == 1
     assert report["poisson_alternative_available"] == 0
     assert report["elo_alternative_available"] == 1
 
