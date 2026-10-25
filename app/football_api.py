@@ -265,7 +265,7 @@ class FootballAPI:
             "results": len(combined),
             "_veltrix_meta": {
                 "provider": "Highlightly",
-                "requests_made": len(metas),
+                "requests_made": sum(int(m.get("requests_made", 1) or 1) for m in metas),
                 "requests_remaining": next(
                     (m.get("requests_remaining") for m in reversed(metas)
                      if m.get("requests_remaining") is not None), None
