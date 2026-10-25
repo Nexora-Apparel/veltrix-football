@@ -1,5 +1,5 @@
 """Evaluate the prior day's saved report and maintain a cumulative paper ledger."""
-# Keep report selection and ledger recovery covered by the quota-safe publication workflow; exercise the live operational path.
+# Paper tracking reads published reports and cached completed results; it never calls the football provider.
 from __future__ import annotations
 
 import argparse
