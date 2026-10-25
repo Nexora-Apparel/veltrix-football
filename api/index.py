@@ -1,4 +1,4 @@
-"""Default Vercel Python entrypoint for the Veltrix Telegram webhook."""
-from api.telegram import handler
+"""Compatibility entrypoint; the main FastAPI app serves /api/telegram."""
+from api.telegram import app
 
-__all__ = ["handler"]
+__all__ = ["app"]
