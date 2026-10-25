@@ -95,14 +95,14 @@ def test_future_filter_excludes_tomorrow_even_when_kickoff_is_future():
     from app.telegram_commands import _kickoff_is_future
     now = datetime.now(ZoneInfo("Africa/Lagos")).replace(hour=12, minute=0, second=0, microsecond=0)
     tomorrow = (now + timedelta(days=1)).replace(hour=23, minute=30, second=0, microsecond=0)
-    assert not _kickoff_is_future({"kickoff_local": tomorrow.isoformat()}, now=now)
+    assert not _kickoff_is_future({"kickoff_local": tomorrow.isoformat()}, now=now, expected_date=now.date())
 
 
 def test_future_filter_accepts_same_day_utc_timestamp_using_lagos_date():
     from app.telegram_commands import _kickoff_is_future
     now = datetime.now(ZoneInfo("Africa/Lagos")).replace(hour=12, minute=0, second=0, microsecond=0)
     kickoff = now + timedelta(hours=2)
-    assert _kickoff_is_future({"kickoff": kickoff.astimezone(ZoneInfo("UTC")).isoformat()}, now=now)
+    assert _kickoff_is_future({"kickoff": kickoff.astimezone(ZoneInfo("UTC")).isoformat()}, now=now, expected_date=now.date())
 
 
 def test_match_does_not_publish_invalid_probability_vectors():
