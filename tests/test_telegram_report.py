@@ -43,9 +43,9 @@ def test_telegram_report_is_clear_and_experimental():
     assert "Alpha FC vs Beta FC" in message
     assert "Example League" in message
     assert "Kickoff: 17:00 WAT" in message
-    assert "Home  50%" in message
-    assert "Draw  25%" in message
-    assert "Away  25%" in message
+    assert "Home win: 50%" in message
+    assert "Draw: 25%" in message
+    assert "Away win: 25%" in message
     assert "Expected goals: 1.40 - 0.80" in message
     assert "ELO ALTERNATIVE" not in message
     assert "POISSON GOAL MARKETS" not in message
