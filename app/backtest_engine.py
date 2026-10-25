@@ -15,6 +15,7 @@ from pathlib import Path
 from typing import Any, Iterable
 
 from app.live_predictions import ELO_K, HOME_ELO_ADVANTAGE, MIN_TEAM_MATCHES, _name_key
+from app.advanced_models import dixon_coles_1x2, recency_weighted_mean
 
 
 def _poisson_probs(lam: float, cap: int = 12) -> list[float]:
@@ -284,6 +285,42 @@ def chronological_backtest(matches: Iterable[dict[str, Any]], *, min_training_ma
                         * (home_conceded / live_away_baseline)
                     ))
                     live_probs = poisson_1x2(home_xg, away_xg)
+
+                    # Separate research candidate: recency-weighted venue form and
+                    # Dixon-Coles low-score correction. Same-day results are still
+                    # excluded because histories are updated only after this loop.
+                    def weighted_live_rate(
+                        history: list[tuple[int, int, str]],
+                        venue: str,
+                        scored_prior: float,
+                        conceded_prior: float,
+                    ) -> tuple[float, float]:
+                        relevant = [row for row in history if row[2] == venue] or history
+                        weight = len(relevant) / (len(relevant) + 4.0)
+                        scored = recency_weighted_mean([row[0] for row in relevant], decay=0.85)
+                        conceded = recency_weighted_mean([row[1] for row in relevant], decay=0.85)
+                        return (
+                            weight * scored + (1 - weight) * scored_prior,
+                            weight * conceded + (1 - weight) * conceded_prior,
+                        )
+
+                    whs, whc = weighted_live_rate(
+                        home_hist, "home", live_home_baseline, live_away_baseline
+                    )
+                    was, wac = weighted_live_rate(
+                        away_hist, "away", live_away_baseline, live_home_baseline
+                    )
+                    weighted_home_xg = min(5.0, max(0.05,
+                        live_home_baseline * (whs / live_home_baseline)
+                        * (wac / live_home_baseline)
+                    ))
+                    weighted_away_xg = min(5.0, max(0.05,
+                        live_away_baseline * (was / live_away_baseline)
+                        * (whc / live_away_baseline)
+                    ))
+                    live_dc_probs = dixon_coles_1x2(
+                        weighted_home_xg, weighted_away_xg, rho=-0.05
+                    )
                     live_scored.append({
                         "match_date": day,
                         "division": m["division"],
@@ -293,6 +330,9 @@ def chronological_backtest(matches: Iterable[dict[str, Any]], *, min_training_ma
                         "home_goals": m["home_goals"],
                         "away_goals": m["away_goals"],
                         "live_poisson": live_probs,
+                        "live_dc": live_dc_probs,
+                        "live_dc_home_xg": weighted_home_xg,
+                        "live_dc_away_xg": weighted_away_xg,
                         **({"live_elo": live_elo_probs} if live_elo_probs is not None else {}),
                         **({"market": m["market"]} if "market" in m else {}),
                     })
@@ -375,6 +415,7 @@ def chronological_backtest(matches: Iterable[dict[str, Any]], *, min_training_ma
     winner = min(metrics, key=lambda name: metrics[name]["log_loss"])
 
     live_metrics = _score_probabilities(live_scored, "live_poisson") if live_scored else None
+    live_dc_metrics = _score_probabilities(live_scored, "live_dc") if live_scored else None
     live_elo_rows = [row for row in live_scored if "live_elo" in row]
     live_elo_metrics = _score_probabilities(live_elo_rows, "live_elo") if live_elo_rows else None
     live_dates = sorted({row["match_date"] for row in live_scored})
@@ -384,6 +425,7 @@ def chronological_backtest(matches: Iterable[dict[str, Any]], *, min_training_ma
         live_holdout_start = live_dates[live_holdout_index]
         live_holdout_rows = [row for row in live_scored if row["match_date"] >= live_holdout_start]
         live_holdout_metrics = _score_probabilities(live_holdout_rows, "live_poisson")
+        live_dc_holdout_metrics = _score_probabilities(live_holdout_rows, "live_dc")
         live_elo_holdout_rows = [row for row in live_holdout_rows if "live_elo" in row]
         live_elo_odds_rows = [row for row in live_elo_rows if "market" in row]
         live_elo_holdout_odds_rows = [row for row in live_elo_holdout_rows if "market" in row]
@@ -395,6 +437,12 @@ def chronological_backtest(matches: Iterable[dict[str, Any]], *, min_training_ma
             "end_date": live_dates[-1],
             "matches": len(live_holdout_rows),
             "metrics": live_holdout_metrics,
+            "dixon_coles_alternative": {
+                "model": "experimental_recency_weighted_dixon_coles",
+                "rho": -0.05,
+                "metrics": live_dc_holdout_metrics,
+                "model_validated": False,
+            },
             "historical_odds_subset": {
                 "matches_with_valid_1x2_odds": len(live_holdout_odds_rows),
                 "models_compared_on_same_matches": {
@@ -507,7 +555,15 @@ def chronological_backtest(matches: Iterable[dict[str, Any]], *, min_training_ma
         "live_pipeline": {"model": "experimental_recent_goals_poisson", "matches": len(live_scored),
             "first_test_date": live_dates[0] if live_dates else None,
             "last_test_date": live_dates[-1] if live_dates else None,
-            "metrics": live_metrics, "recent_holdout": live_holdout,
+            "metrics": live_metrics,
+            "dixon_coles_alternative": {
+                "model": "experimental_recency_weighted_dixon_coles",
+                "rho": -0.05,
+                "metrics": live_dc_metrics,
+                "model_validated": False,
+                "note": "Alternative only; fixed rho has not been calibrated on a validation fold.",
+            },
+            "recent_holdout": live_holdout,
             "metrics_by_competition": live_metrics_by_competition,
             "historical_odds_subset": live_odds_subset,
             "elo_alternative": {"model": "experimental_elo_by_competition", "matches": len(live_elo_rows),
