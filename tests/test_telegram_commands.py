@@ -45,6 +45,7 @@ def test_match_lookup_uses_supplied_report_only():
             "away_team": "Chelsea",
             "league": "Premier League",
             "kickoff_local": future_kickoff,
+            "status": "EXPERIMENTAL_ONLY",
             "probabilities": {"home_win": 0.5, "draw": 0.25, "away_win": 0.25},
         }]
     }
