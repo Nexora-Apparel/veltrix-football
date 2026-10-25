@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - "app/config.py"
+      - "app/historical_data.py"
       - "app/football_api.py"
       - "app/live_predictions.py"
       - "app/recent_results.py"
@@ -20,6 +21,7 @@ on:
       - "scripts/run_paper_tracking.py"
       - "scripts/evaluate_paper_predictions.py"
       - "scripts/send_telegram_report.py"
+      - "tests/test_historical_data.py"
       - "tests/test_football_api_odds.py"
       - "tests/test_live_predictions.py"
       - "tests/test_import_open_dataset.py"
