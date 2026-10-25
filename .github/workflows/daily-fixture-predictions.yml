@@ -87,6 +87,12 @@ on:
 # Reuse mode is only for same-day artifacts when the Highlightly quota is exhausted.
 # Reuse publication also recalculates all fixture-status counters after delivery filtering.
 
+# Serialize scheduled/manual live runs so they cannot overwrite each other's cache cursor.
+# Push-triggered test runs use a separate group and do not block live data runs.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name == 'push' && 'tests' || 'live' }}
+  cancel-in-progress: false
+
 permissions:
   contents: write
   actions: read
