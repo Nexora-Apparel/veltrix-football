@@ -1,6 +1,13 @@
 name: Highlightly API smoke test
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - "app/config.py"
+      - "app/football_api.py"
+      - "tests/test_football_api_odds.py"
+      - ".github/workflows/api-smoke-test.yml"
   workflow_dispatch:
   schedule:
     - cron: "25 5 * * 1"
