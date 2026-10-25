@@ -18,8 +18,8 @@ TELEGRAM_COMMANDS = [
 def configure(token: str, webhook_url: str, secret: str) -> None:
     if not token.strip():
         raise ValueError("TELEGRAM_BOT_TOKEN is required")
-    if not re.fullmatch(r"https://[^\s]+/api/index/?", webhook_url.strip()):
-        raise ValueError("TELEGRAM_WEBHOOK_URL must be an HTTPS URL ending in /api/telegram")
+    if not re.fullmatch(r"https://[^\\s]+/api/index/?", webhook_url.strip()):
+        raise ValueError("TELEGRAM_WEBHOOK_URL must be an HTTPS URL ending in /api/index")
     if not re.fullmatch(r"[A-Za-z0-9_-]{1,256}", secret):
         raise ValueError("TELEGRAM_WEBHOOK_SECRET must be 1–256 characters: letters, numbers, underscore, or hyphen")
     base = f"https://api.telegram.org/bot{token}"
