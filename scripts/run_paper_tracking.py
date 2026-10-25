@@ -84,9 +84,15 @@ def _report_forecast_count(report: dict[str, Any]) -> int:
     return sum(
         1 for row in predictions
         if isinstance(row, dict)
-        and row.get("status") == "EXPERIMENTAL_ONLY"
         and isinstance(row.get("fixture_id"), int)
-        and isinstance(row.get("probabilities"), dict)
+        and not isinstance(row.get("fixture_id"), bool)
+        and (
+            (
+                row.get("status") == "EXPERIMENTAL_ONLY"
+                and isinstance(row.get("probabilities"), dict)
+            )
+            or isinstance(row.get("market_probabilities"), dict)
+        )
     )
 
 
@@ -176,7 +182,15 @@ def run(report_date: date, output_path: str) -> dict[str, Any]:
             pending_dates = sorted({
                 date.fromisoformat(day)
                 for day, item in evaluation_by_date.items()
-                if int(item.get("awaiting_result_or_match", 0)) > 0
+                if (
+                    int(item.get("awaiting_result_or_match", 0)) > 0
+                    or (
+                        int(item.get("completed_forecasts_scored", 0)) == 0
+                        and not item.get("model_versions")
+                        and not item.get("tracking_state")
+                        and int(item.get("withheld_or_invalid_forecasts", 0)) == 0
+                    )
+                )
                 and day != report_date.isoformat()
                 and 0 <= (report_date - date.fromisoformat(day)).days <= 85
             })[:3]
@@ -188,6 +202,8 @@ def run(report_date: date, output_path: str) -> dict[str, Any]:
                 or (
                     int(target_summary.get("completed_forecasts_scored", 0)) == 0
                     and not target_summary.get("model_versions")
+                    and not target_summary.get("tracking_state")
+                    and int(target_summary.get("withheld_or_invalid_forecasts", 0)) == 0
                 )
             ):
                 dates_to_process.append(report_date)
@@ -219,8 +235,33 @@ def run(report_date: date, output_path: str) -> dict[str, Any]:
                         elif not _has_trackable_forecasts(report):
                             one.update({
                                 "status": "NO_FORECASTS_TO_SCORE",
-                                "detail": "The best saved report for this date contains no scoreable experimental forecasts; provider quota was preserved.",
+                                "detail": "The best saved report for this date contains no scoreable forecasts; provider quota was preserved.",
                             })
+                            evaluations = ledger.setdefault("evaluations", [])
+                            empty_summary = {
+                                "report_date": date_text,
+                                "fixtures_scored": 0,
+                                "completed_forecasts_scored": 0,
+                                "awaiting_result_or_match": 0,
+                                "withheld_or_invalid_forecasts": 0,
+                                "metrics": {"matches": 0, "result_accuracy": None, "brier_score": None, "log_loss": None},
+                                "metrics_by_model": {},
+                                "model_versions": [],
+                                "tracking_state": "NO_FORECASTS_TO_SCORE",
+                            }
+                            existing = next(
+                                (item for item in evaluations if str(item.get("report_date")) == date_text),
+                                None,
+                            )
+                            if existing is None:
+                                evaluations.append(empty_summary)
+                            elif (
+                                int(existing.get("completed_forecasts_scored", 0)) == 0
+                                and not existing.get("model_versions")
+                                and int(existing.get("withheld_or_invalid_forecasts", 0)) == 0
+                            ):
+                                existing.update(empty_summary)
+                            ledger["evaluated_report_dates"] = len(evaluations)
                         else:
                             try:
                                 # Use the configured provider (Highlightly). Do not
