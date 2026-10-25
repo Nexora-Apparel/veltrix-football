@@ -1,7 +1,46 @@
 {
   "product": "Veltrix Football",
   "model_status": "PAPER_TRACKING_ONLY",
-  "evaluations": [],
+  "evaluations": [
+    {
+      "report_date": "2026-10-24",
+      "fixtures_scored": 0,
+      "completed_forecasts_scored": 0,
+      "awaiting_result_or_match": 0,
+      "withheld_or_invalid_forecasts": 0,
+      "metrics": {
+        "matches": 0,
+        "result_accuracy": null,
+        "brier_score": null,
+        "log_loss": null
+      },
+      "metrics_by_model": {},
+      "model_versions": []
+    }
+  ],
   "scored_matches": [],
-  "cumulative_metrics_by_model": {}
+  "updated_at_utc": "2026-10-25T08:12:38.803485+00:00",
+  "last_attempt": {
+    "report_date": "2026-10-24",
+    "status": "ALREADY_EVALUATED",
+    "attempts": [
+      {
+        "report_date": "2026-10-24",
+        "status": "ALREADY_EVALUATED",
+        "detail": "No pending report dates; this date is already complete."
+      }
+    ],
+    "detail": null,
+    "metrics_by_model": {}
+  },
+  "cumulative_metrics_by_model": {},
+  "cumulative_metrics": {
+    "matches": 0,
+    "result_accuracy": null,
+    "brier_score": null,
+    "log_loss": null
+  },
+  "model_versions": [],
+  "evaluated_report_dates": 1,
+  "notice": "Retrospective paper evaluation only; no betting recommendation or profitability claim."
 }
