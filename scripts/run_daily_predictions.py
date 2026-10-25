@@ -47,10 +47,17 @@ def _load_recent_cache(path: Path) -> tuple[dict, list[dict]]:
                 continue
         except (KeyError, TypeError, ValueError):
             continue
+        fixture_id = raw.get("fixture_id")
+        try:
+            fixture_id = int(fixture_id) if fixture_id is not None else None
+        except (TypeError, ValueError):
+            fixture_id = None
+        fixture_status = str(raw.get("fixture_status") or "FT").upper()
         rows.append({
             "date": match_date, "division": division, "home": home, "away": away,
             "home_key": _name_key(home), "away_key": _name_key(away),
             "home_goals": home_goals, "away_goals": away_goals,
+            "fixture_id": fixture_id, "fixture_status": fixture_status,
             "source": "VELTRIX_RECENT_RESULTS_CACHE",
         })
     return {"version": 1, "matches": value["matches"], "state": state}, rows
@@ -77,6 +84,8 @@ def _serialize_recent_cache(rows: list[dict]) -> list[dict]:
         "away": row["away"],
         "home_goals": int(row["home_goals"]),
         "away_goals": int(row["away_goals"]),
+        "fixture_id": row.get("fixture_id") if isinstance(row.get("fixture_id"), int) else None,
+        "fixture_status": str(row.get("fixture_status") or "FT"),
     } for row in rows]
 
 def main() -> None:
