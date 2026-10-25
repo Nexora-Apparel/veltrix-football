@@ -6,7 +6,8 @@ an alternative forecast until chronological backtests justify promotion.
 from __future__ import annotations
 
 import math
-from typing import Iterable, Mapping
+from datetime import date, timedelta
+from typing import Any, Iterable, Mapping
 
 
 def recency_weighted_mean(values: Iterable[float], *, decay: float = 0.85) -> float:
@@ -68,6 +69,40 @@ def dixon_coles_1x2(
     if total <= 0 or not math.isfinite(total):
         raise ValueError("Dixon-Coles probabilities could not be normalized")
     return {key: value / total for key, value in result.items()}
+
+
+def rest_congestion_context(
+    matches: Iterable[Mapping[str, Any]],
+    home_key: str,
+    away_key: str,
+    target_date: date,
+    *,
+    window_days: int = 14,
+) -> dict[str, dict[str, int | None]]:
+    """Describe rest and recent fixture congestion from past match dates only.
+
+    This is context for reviewers, not a probability adjustment: the data source
+    has dates but no verified lineup/injury or match-minute information.
+    """
+    if isinstance(window_days, bool) or not isinstance(window_days, int) or window_days < 1:
+        raise ValueError("window_days must be a positive integer")
+    rows = list(matches)
+    cutoff = target_date - timedelta(days=window_days)
+    result: dict[str, dict[str, int | None]] = {}
+    for side, key in (("home", home_key), ("away", away_key)):
+        previous = [
+            row for row in rows
+            if isinstance(row.get("date"), date)
+            and row["date"] < target_date
+            and key in (row.get("home_key"), row.get("away_key"))
+        ]
+        last_date = max((row["date"] for row in previous), default=None)
+        recent_count = sum(cutoff <= row["date"] < target_date for row in previous)
+        result[side] = {
+            "days_since_last_match": (target_date - last_date).days if last_date else None,
+            "matches_in_previous_14_days": recent_count,
+        }
+    return result
 
 
 def blend_1x2(
