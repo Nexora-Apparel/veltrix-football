@@ -48,6 +48,15 @@ def test_extract_completed_results_maps_competition_and_ignores_unfinished():
     assert rows[0]["home_goals"] == 1
 
 
+def test_completed_result_rows_retain_fixture_id_for_paper_tracking():
+    match = _fixture("2026-10-20", status="FT", home_goals=2, away_goals=1)
+    match["fixture"]["id"] = 987654
+    rows = extract_completed_results({"response": [match]})
+    assert len(rows) == 1
+    assert rows[0]["fixture_id"] == 987654
+    assert rows[0]["fixture_status"] == "FT"
+
+
 def test_fetch_recent_results_uses_only_dates_after_base_history_and_end_date():
     class FakeAPI:
         def __init__(self):
