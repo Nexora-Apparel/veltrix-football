@@ -81,7 +81,7 @@ def test_report_discloses_gapped_historical_coverage():
     report = sample_report()
     report["recent_results_sync"] = {
         "status": "PARTIAL",
-        "warning": "quota",
+        "warning": "Refresh limited to 1 of 8 historical date ranges per run to protect the provider request quota.",
         "ranges_succeeded": 1,
         "ranges_requested": 8,
     }
@@ -93,6 +93,7 @@ def test_report_discloses_gapped_historical_coverage():
         "ranges_requested": 8,
     }
     message = format_report(report)
+    assert "intentionally bounded to protect the daily provider request quota" in message
     assert "Historical coverage: 1/8 date ranges refreshed." in message
     assert "continuous through 2026-09-03" in message
     assert "latest available result date is 2026-10-24" in message
