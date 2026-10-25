@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import math
 import re
-from datetime import datetime
+from datetime import date, datetime
 from zoneinfo import ZoneInfo
 from typing import Any
 
@@ -56,8 +56,13 @@ def _report_predictions(report: dict[str, Any] | None) -> list[dict[str, Any]]:
     return [row for row in rows if isinstance(row, dict)] if isinstance(rows, list) else []
 
 
-def _kickoff_is_future(row: dict[str, Any], *, now: datetime | None = None) -> bool:
-    """Accept only fixtures that have not started and kick off on the current Lagos date."""
+def _kickoff_is_future(
+    row: dict[str, Any],
+    *,
+    now: datetime | None = None,
+    expected_date: date | None = None,
+) -> bool:
+    """Accept not-yet-started fixtures, optionally constrained to a report date."""
     raw = row.get("kickoff_local") or row.get("kickoff")
     if not isinstance(raw, str) or not raw.strip():
         return False
@@ -71,14 +76,25 @@ def _kickoff_is_future(row: dict[str, Any], *, now: datetime | None = None) -> b
         if current.tzinfo is None:
             current = current.replace(tzinfo=lagos)
         current = current.astimezone(lagos)
-        return kickoff.date() == current.date() and kickoff > current
+        return kickoff > current and (expected_date is None or kickoff.date() == expected_date)
     except (TypeError, ValueError, OverflowError):
         return False
 
 
 def _future_fixtures(report: dict[str, Any] | None) -> list[dict[str, Any]]:
-    return [row for row in _report_predictions(report) if _kickoff_is_future(row)]
-
+    if not isinstance(report, dict):
+        return []
+    expected_date = None
+    report_date = report.get("as_of_date")
+    if report_date:
+        try:
+            expected_date = date.fromisoformat(str(report_date))
+        except ValueError:
+            return []
+    return [
+        row for row in _report_predictions(report)
+        if _kickoff_is_future(row, expected_date=expected_date)
+    ]
 
 def _valid_probability_vector(probabilities: Any) -> bool:
     if not isinstance(probabilities, dict):
