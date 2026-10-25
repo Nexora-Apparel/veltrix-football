@@ -57,6 +57,11 @@ def extract_completed_results(payload: dict[str, Any]) -> list[dict[str, Any]]:
             or not isinstance(away_goals, int) or isinstance(away_goals, bool) or away_goals < 0
         ):
             continue
+        fixture_id = fixture.get("id")
+        try:
+            fixture_id = int(fixture_id)
+        except (TypeError, ValueError):
+            fixture_id = None
         rows.append({
             "date": match_date,
             "division": LEAGUE_DIVISION_BY_CODE.get(str(league.get("code") or "").upper()) or LEAGUE_DIVISION_BY_ID.get(league_id, ""),
@@ -66,7 +71,9 @@ def extract_completed_results(payload: dict[str, Any]) -> list[dict[str, Any]]:
             "away_key": _name_key(away_name),
             "home_goals": home_goals,
             "away_goals": away_goals,
-            "source": "FOOTBALL_DATA_RECENT_RESULTS",
+            "fixture_id": fixture_id,
+            "fixture_status": status,
+            "source": "HIGHLIGHTLY_RECENT_RESULTS",
         })
     return rows
 
