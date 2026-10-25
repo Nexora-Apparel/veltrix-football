@@ -129,3 +129,11 @@ def test_match_with_nan_probabilities_is_withheld():
     }]}
     reply = handle_command("/match NaN FC vs Example FC", report=report)
     assert "WITHHELD: EXPERIMENTAL_ONLY" in reply
+
+
+def test_paper_tracking_keyboard_label_does_not_claim_successful_predictions():
+    from api.telegram import BUTTON_COMMANDS, KEYBOARD
+    labels = {button["text"] for row in KEYBOARD["keyboard"] for button in row}
+    assert "Paper Tracking" in labels
+    assert "Successful Predictions" not in labels
+    assert BUTTON_COMMANDS["paper tracking"] == "/results"
