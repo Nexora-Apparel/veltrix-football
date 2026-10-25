@@ -155,13 +155,13 @@
   "poisson_alternative_available": 20,
   "elo_alternative_available": 20,
   "normal_bets": {
-    "target_combined_decimal_odds": 10.0,
+    "target_combined_decimal_odds": 10,
     "status": "NOT_GENERATED_MODEL_NOT_VALIDATED"
   },
   "value_bets": {
     "target_combined_decimal_odds": [
-      50.0,
-      100.0
+      50,
+      100
     ],
     "status": "NOT_GENERATED_MODEL_NOT_VALIDATED"
   },
@@ -2059,7 +2059,7 @@
         "model_validated": false,
         "rho": -0.05,
         "expected_goals": {
-          "home": 1.0,
+          "home": 1,
           "away": 1.169
         },
         "probabilities": {
@@ -21117,5 +21117,19 @@
     "past_kickoffs_excluded": 89,
     "other_date_rows_excluded": 0,
     "missing_or_invalid_kickoff_rows_excluded": 0
+  },
+  "historical_data_coverage": {
+    "status": "GAPPED_OR_STALE",
+    "base_history_through": "2026-09-03",
+    "contiguous_through": "2026-09-03",
+    "latest_available_match_date": "2026-10-24",
+    "refresh_status": "PARTIAL",
+    "requested_start": "2026-09-04",
+    "requested_end": "2026-10-24",
+    "covered_from": "2026-10-18",
+    "covered_through": "2026-10-24",
+    "ranges_succeeded": 1,
+    "ranges_requested": 8,
+    "backfill_complete": false
   }
 }
