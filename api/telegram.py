@@ -33,11 +33,13 @@ def _send_message(token: str, chat_id: str, text: str) -> None:
 
 
 @app.get("/api/telegram")
+@app.get("/api/index")
 def health() -> dict[str, str]:
     return {"service": "Veltrix Telegram Command Centre", "status": "ready"}
 
 
 @app.post("/api/telegram")
+@app.post("/api/index")
 async def telegram_webhook(
     request: FastAPIRequest,
     secret_header: str | None = Header(default=None, alias="X-Telegram-Bot-Api-Secret-Token"),
