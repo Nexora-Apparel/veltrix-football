@@ -157,6 +157,19 @@ jobs:
             echo "configured=false" >> "$GITHUB_OUTPUT"
             echo "::notice::Telegram delivery skipped because its two secrets are not both configured."
           fi
+      - name: Register Telegram Command Centre webhook
+        if: (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && steps.telegram-config.outputs.configured == 'true'
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_WEBHOOK_URL: https://veltrix-football-commands.vercel.app/api/index
+          TELEGRAM_WEBHOOK_SECRET: ${{ secrets.TELEGRAM_WEBHOOK_SECRET }}
+        run: |
+          if [ -z "$TELEGRAM_WEBHOOK_SECRET" ]; then
+            echo "::notice::Telegram Command Centre webhook not registered; add TELEGRAM_WEBHOOK_SECRET to repository Actions secrets and Vercel environment variables."
+          else
+            python scripts/configure_telegram_webhook.py
+          fi
+
       - name: Send daily report to Telegram
         if: (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && steps.telegram-config.outputs.configured == 'true'
         env:
