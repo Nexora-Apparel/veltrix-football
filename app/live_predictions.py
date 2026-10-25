@@ -15,6 +15,7 @@ from pathlib import Path
 from typing import Any, Iterable
 
 from app.prediction import match_probabilities
+from app.advanced_models import dixon_coles_1x2, recency_weighted_mean
 
 MIN_TEAM_MATCHES = 5
 TEAM_WINDOW = 10
@@ -411,6 +412,46 @@ def predict_fixtures(
             home_xg = min(5.0, max(0.05, home_xg))
             away_xg = min(5.0, max(0.05, away_xg))
             probabilities = match_probabilities(home_xg, away_xg)
+
+            # Research-only alternative: exponentially weighted recent venue form
+            # plus the Dixon-Coles low-score correction. Keep it separate from the
+            # production primary until walk-forward metrics justify promotion.
+            def weighted_venue_rates(
+                history: list[tuple[int, int, str]],
+                venue: str,
+                scored_prior: float,
+                conceded_prior: float,
+            ) -> tuple[float, float]:
+                relevant = [row for row in history if row[2] == venue] or history
+                weight = len(relevant) / (len(relevant) + 4.0)
+                scored = recency_weighted_mean([row[0] for row in relevant], decay=0.85)
+                conceded = recency_weighted_mean([row[1] for row in relevant], decay=0.85)
+                return (
+                    weight * scored + (1 - weight) * scored_prior,
+                    weight * conceded + (1 - weight) * conceded_prior,
+                )
+
+            weighted_home_scored, weighted_home_conceded = weighted_venue_rates(
+                home_hist, "home", home_baseline, away_baseline
+            )
+            weighted_away_scored, weighted_away_conceded = weighted_venue_rates(
+                away_hist, "away", away_baseline, home_baseline
+            )
+            weighted_home_xg = min(5.0, max(0.05,
+                home_baseline * (weighted_home_scored / home_baseline)
+                * (weighted_away_conceded / home_baseline)
+            ))
+            weighted_away_xg = min(5.0, max(0.05,
+                away_baseline * (weighted_away_scored / away_baseline)
+                * (weighted_home_conceded / away_baseline)
+            ))
+            dixon_coles_probabilities = {
+                key: round(value, 4)
+                for key, value in dixon_coles_1x2(
+                    weighted_home_xg, weighted_away_xg, rho=-0.05
+                ).items()
+            }
+
             elo_probabilities, elo_metadata = _elo_probabilities(
                 usable,
                 fixture["home_team"],
@@ -442,6 +483,25 @@ def predict_fixtures(
                 "probabilities": primary_probabilities,
                 "elo_history": elo_metadata,
                 "expected_goals": {"home": round(home_xg, 3), "away": round(away_xg, 3)},
+                "advanced_model_alternative": {
+                    "model": "experimental_recency_weighted_dixon_coles",
+                    "model_validated": False,
+                    "rho": -0.05,
+                    "expected_goals": {
+                        "home": round(weighted_home_xg, 3),
+                        "away": round(weighted_away_xg, 3),
+                    },
+                    "probabilities": dixon_coles_probabilities,
+                    "status": "RESEARCH_ONLY_NOT_PRIMARY",
+                },
+                "data_availability": {
+                    "historical_goals_for_against": "AVAILABLE",
+                    "competition_elo": "AVAILABLE" if elo_probabilities is not None else "INSUFFICIENT_HISTORY",
+                    "true_expected_goals_xg": "UNAVAILABLE_FROM_CURRENT_HISTORICAL_FEED",
+                    "confirmed_lineups_injuries_suspensions": "NOT_CONNECTED",
+                    "rest_and_fixture_congestion": "NOT_MODELLED",
+                    "live_bookmaker_odds": "UNAVAILABLE_ON_CURRENT_HIGHLIGHTLY_PLAN",
+                },
                 "goal_markets_model": "experimental_recent_goals_poisson",
                 "scoreline_model": "experimental_recent_goals_poisson",
                 "btts_yes": round(probabilities["btts_yes"], 4),
