@@ -190,8 +190,12 @@ def test_paper_tracking_keyboard_label_does_not_claim_successful_predictions():
     from api.telegram import BUTTON_COMMANDS, KEYBOARD
     labels = {button["text"] for row in KEYBOARD["keyboard"] for button in row}
     assert "Paper Tracking" in labels
+    assert "Over/Under Goals" in labels
+    assert "BTTS" in labels
     assert "Successful Predictions" not in labels
     assert BUTTON_COMMANDS["paper tracking"] == "/results"
+    assert BUTTON_COMMANDS["over/under goals"] == "/overunder"
+    assert BUTTON_COMMANDS["btts"] == "/btts"
 
 
 def test_overunder_command_returns_experimental_goal_line_probabilities():
