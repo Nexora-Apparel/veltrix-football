@@ -181,6 +181,8 @@ def main() -> None:
             "saved_fixture_rows": filtered["delivery_filter"]["saved_fixture_rows"],
             "future_same_day_fixture_rows": filtered["delivery_filter"]["future_same_day_fixture_rows"],
             "usable_forecasts": filtered["predictions_created"],
+            "unsafe_team_identity_rows_withheld": filtered["delivery_filter"]["unsafe_team_identity_rows_withheld"],
+            "publication_status": filtered["publication_status"],
             "delivery_filter": "APPLIED",
         }, indent=2))
     except (OSError, json.JSONDecodeError, ValueError) as exc:
