@@ -118,6 +118,33 @@ def _forecast_predictions(report: dict[str, Any] | None) -> list[dict[str, Any]]
     ]
 
 
+def _history_notice(report: dict[str, Any] | None) -> str | None:
+    if not isinstance(report, dict):
+        return None
+    sync = report.get("recent_results_sync") or {}
+    coverage = report.get("historical_data_coverage") or {}
+    if not isinstance(sync, dict) or not isinstance(coverage, dict):
+        return None
+    if coverage.get("status") == "GAPPED_OR_STALE":
+        contiguous = coverage.get("contiguous_through") or "unknown"
+        latest = coverage.get("latest_available_match_date") or "unknown"
+        succeeded, requested = sync.get("ranges_succeeded"), sync.get("ranges_requested")
+        progress = (
+            f" {succeeded}/{requested} date ranges refreshed."
+            if isinstance(succeeded, int) and isinstance(requested, int) and requested > 0
+            else ""
+        )
+        return (
+            "DATA NOTICE: Historical results are incomplete; forecasts may miss matches from the gap. "
+            f"History is continuous through {contiguous}; latest available result date is {latest}."
+            f"{progress}"
+        )
+    status = str(sync.get("status") or "").upper()
+    if status and status not in {"COMPLETE", "UP_TO_DATE", "SUCCESS", "OK"}:
+        return f"DATA NOTICE: Recent-results refresh status is {status}; saved history may be incomplete."
+    return None
+
+
 def _status(report: dict[str, Any] | None, ledger: dict[str, Any] | None) -> str:
     fixtures = _future_fixtures(report)
     predictions = _forecast_predictions(report)
@@ -270,9 +297,16 @@ def handle_command(
         else:
             selected = forecast_rows[:15]
             if not selected:
-                return _reply("TODAY — NO USABLE FORECASTS. Fixtures may exist, but no rows passed the forecast-data checks.")
+                notice = _history_notice(report)
+                body = "TODAY — NO USABLE FORECASTS. Fixtures may exist, but no rows passed the forecast-data checks."
+                if notice:
+                    body += "\\n" + notice
+                return _reply(body)
 
         lines = [f"{command.upper()} — {'FIXTURE LIST' if command == '/fixtures' else 'EXPERIMENTAL REPORT'}"]
+        notice = _history_notice(report)
+        if notice:
+            lines.extend([notice, ""])
         for row in selected:
             home = row.get("home_team", "Home")
             away = row.get("away_team", "Away")
