@@ -166,3 +166,58 @@ class APIFootballOddsClient:
                 "markets_supported": ["1X2", "BTTS", "Over/Under 0.5–4.5"],
             },
         }
+
+    def diagnose(self, day: str) -> str:
+        """Probe the account with a low-cost reference endpoint and odds endpoint."""
+        if not self.api_key:
+            return "DIAGNOSTIC: APIFOOTBALL_API_KEY is not configured."
+        try:
+            parsed_day = date.fromisoformat(day)
+        except (TypeError, ValueError):
+            return "DIAGNOSTIC: invalid date; expected YYYY-MM-DD."
+        lines = ["APIFOOTBALL CONNECTION DIAGNOSTIC"]
+        for action in ("get_countries", "get_odds"):
+            params = {"action": action, "APIkey": self.api_key}
+            if action == "get_odds":
+                params.update({"from": parsed_day.isoformat(), "to": parsed_day.isoformat()})
+            try:
+                response = self.session.get(self.base_url, params=params, timeout=self.timeout)
+            except requests.RequestException as exc:
+                lines.append(f"{action}: NETWORK ERROR ({exc.__class__.__name__})")
+                continue
+            try:
+                payload = response.json()
+            except ValueError:
+                lines.append(f"{action}: HTTP {response.status_code}; non-JSON response")
+                continue
+            if response.status_code >= 400:
+                lines.append(f"{action}: HTTP {response.status_code}")
+                continue
+            if isinstance(payload, list):
+                lines.append(f"{action}: HTTP {response.status_code}; list response ({len(payload)} rows)")
+            elif isinstance(payload, dict):
+                error = str(payload.get("error") or "").strip()
+                if error:
+                    # Only known, non-sensitive provider error text is exposed.
+                    folded = error.casefold()
+                    if "authentification failed" in folded or "authentication failed" in folded or "invalid api" in folded or "invalid key" in folded:
+                        summary = "API KEY REJECTED"
+                    elif "no odd" in folded or "no data" in folded:
+                        summary = "NO ODDS DATA"
+                    elif any(term in folded for term in ("limit", "quota", "too many", "rate")):
+                        summary = "RATE/QUOTA LIMIT"
+                    elif any(term in folded for term in ("subscription", "upgrade", "permission", "plan", "access denied")):
+                        summary = "PLAN/ACCESS RESTRICTION"
+                    else:
+                        summary = "PROVIDER ERROR (details withheld)"
+                    lines.append(f"{action}: HTTP {response.status_code}; {summary}")
+                else:
+                    rows = payload.get("data", payload.get("response"))
+                    if isinstance(rows, list):
+                        lines.append(f"{action}: HTTP {response.status_code}; {len(rows)} rows")
+                    else:
+                        lines.append(f"{action}: HTTP {response.status_code}; JSON object received")
+            else:
+                lines.append(f"{action}: HTTP {response.status_code}; unexpected JSON type")
+        lines.append("No API key or request URL is included in this report.")
+        return "\\n".join(lines)
