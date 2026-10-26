@@ -6,7 +6,9 @@ API_FOOTBALL_KEY and sends it only in the x-apisports-key request header.
 from __future__ import annotations
 
 import os
-from datetime import date
+from datetime import date, datetime
+from zoneinfo import ZoneInfo
+import math
 from typing import Any
 
 import requests
@@ -104,24 +106,117 @@ class APIFootballClient:
             "_veltrix_meta": payload.get("_veltrix_meta", {}),
         }
 
-    def odds_for_date(self, day: str, *, timezone: str = "Africa/Lagos", page: int = 1) -> dict[str, Any]:
-        """Fetch one page of pre-match odds for a date; no odds are invented.
+    @staticmethod
+    def _decimal_price(value: Any) -> float | None:
+        try:
+            price = float(str(value).strip())
+        except (TypeError, ValueError, OverflowError):
+            return None
+        return price if math.isfinite(price) and 1.0 < price < 1000.0 else None
 
-        API-Football exposes 10 odds records per page. Availability depends on
+    @staticmethod
+    def _fixture_datetime(raw: Any, timezone: str) -> tuple[str, str]:
+        if not isinstance(raw, str) or not raw.strip():
+            return "", ""
+        try:
+            parsed = datetime.fromisoformat(raw.replace("Z", "+00:00"))
+            target = ZoneInfo(timezone)
+            if parsed.tzinfo is None:
+                parsed = parsed.replace(tzinfo=target)
+            else:
+                parsed = parsed.astimezone(target)
+            return parsed.date().isoformat(), parsed.strftime("%H:%M")
+        except (ValueError, OverflowError, KeyError):
+            return raw[:10], ""
+
+    @classmethod
+    def normalize_odds(cls, raw_rows: list[Any], timezone: str) -> list[dict[str, Any]]:
+        """Flatten API-Sports fixture/bookmaker/bet nesting into Veltrix's odds-row shape."""
+        normalized: list[dict[str, Any]] = []
+        for fixture_row in raw_rows:
+            if not isinstance(fixture_row, dict):
+                continue
+            fixture = fixture_row.get("fixture") or {}
+            teams = fixture_row.get("teams") or {}
+            league = fixture_row.get("league") or {}
+            home = str((teams.get("home") or {}).get("name") or "").strip()
+            away = str((teams.get("away") or {}).get("name") or "").strip()
+            fixture_id = str(fixture.get("id") or "").strip()
+            match_date, match_time = cls._fixture_datetime(fixture.get("date"), timezone)
+            if not (fixture_id and home and away and match_date):
+                continue
+            for bookmaker in fixture_row.get("bookmakers") or []:
+                if not isinstance(bookmaker, dict):
+                    continue
+                prices: dict[str, float] = {}
+                for bet in bookmaker.get("bets") or []:
+                    if not isinstance(bet, dict):
+                        continue
+                    market = str(bet.get("name") or "").casefold().strip()
+                    for selection in bet.get("values") or []:
+                        if not isinstance(selection, dict):
+                            continue
+                        label = str(selection.get("value") or "").casefold().strip()
+                        price = cls._decimal_price(selection.get("odd"))
+                        if price is None:
+                            continue
+                        if market in {"match winner", "1x2", "fulltime result", "winner"}:
+                            if label in {"home", home.casefold(), "1"}:
+                                prices["home"] = price
+                            elif label in {"draw", "x"}:
+                                prices["draw"] = price
+                            elif label in {"away", away.casefold(), "2"}:
+                                prices["away"] = price
+                        elif market in {"both teams score", "both teams to score", "btts"}:
+                            if label in {"yes", "no"}:
+                                prices["yes" if label == "yes" else "no"] = price
+                        elif market in {"goals over/under", "over/under", "total goals"}:
+                            parts = label.split()
+                            if len(parts) == 2 and parts[0] in {"over", "under"}:
+                                try:
+                                    line = float(parts[1])
+                                except ValueError:
+                                    continue
+                                if line in {0.5, 1.5, 2.5, 3.5, 4.5}:
+                                    prices[f"{parts[0]}_{str(line).replace('.', '_')}"] = price
+                if not prices:
+                    continue
+                normalized.append({
+                    "provider": "API-Football (API-Sports)",
+                    "match_id": fixture_id,
+                    "home_team": home,
+                    "away_team": away,
+                    "league": str(league.get("name") or "Competition unavailable"),
+                    "date": match_date,
+                    "time": match_time,
+                    "bookmaker": str(bookmaker.get("name") or "Unknown bookmaker"),
+                    "odd_date": None,
+                    "odds": prices,
+                })
+        return normalized
+
+    def odds_for_date(self, day: str, *, timezone: str = "Africa/Lagos", page: int = 1) -> dict[str, Any]:
+        """Fetch one page of prematch odds and normalize prices for command/report use.
+
+        API-Football exposes 10 fixture records per page. Availability depends on
         fixture timing, league coverage, bookmaker, and subscription. Odds are
-        normally published 1–14 days before a fixture and historical retention
-        is limited, so an empty response is not by itself an authentication failure.
+        normally published 1–14 days before a fixture; historical retention is
+        limited, so an empty response is not by itself an authentication failure.
         """
         try:
             parsed_day = date.fromisoformat(day)
-        except (TypeError, ValueError):
-            raise APIFootballError("Date must use YYYY-MM-DD format.") from None
+            ZoneInfo(timezone)
+        except (TypeError, ValueError, KeyError):
+            raise APIFootballError("Date must use YYYY-MM-DD format and timezone must be valid.") from None
         if isinstance(page, bool) or not isinstance(page, int) or page < 1:
             raise APIFootballError("Page must be a positive integer.")
         payload = self._get("odds", {"date": parsed_day.isoformat(), "timezone": timezone, "page": page})
-        rows = payload.get("response")
-        if not isinstance(rows, list):
+        raw_rows = payload.get("response")
+        if not isinstance(raw_rows, list):
             raise APIFootballError("API-Football odds response is missing its response list.")
+        rows = self.normalize_odds(raw_rows, timezone)
+        meta = dict(payload.get("_veltrix_meta", {}))
+        meta.update({"status": "AVAILABLE" if rows else "NO_ODDS_RETURNED", "raw_fixture_rows": len(raw_rows)})
         return {
             "provider": "API-Football (API-Sports)",
             "date": parsed_day.isoformat(),
@@ -129,5 +224,5 @@ class APIFootballClient:
             "results": len(rows),
             "paging": payload.get("paging") or {},
             "response": rows,
-            "_veltrix_meta": payload.get("_veltrix_meta", {}),
+            "_veltrix_meta": meta,
         }
