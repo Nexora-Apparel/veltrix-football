@@ -87,6 +87,12 @@ def main() -> int:
         return 2
 
     try:
+        # Separate transport publication from snapshot freshness: reused reports
+        # must retain their explicit reuse warning while still reporting that the
+        # command-data branch received this exact snapshot.
+        report["command_data_publication"] = "PUBLISHED"
+        report["command_data_published_at_utc"] = __import__("datetime").datetime.now(__import__("datetime").timezone.utc).isoformat()
+        report_path.write_text(json.dumps(report, indent=2, ensure_ascii=False), encoding="utf-8")
         publish("public-data/daily_predictions.json", report_path, repo, token)
         if args.ledger:
             ledger_path = Path(args.ledger)
