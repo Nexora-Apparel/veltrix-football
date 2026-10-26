@@ -14,7 +14,7 @@ from fastapi.responses import JSONResponse
 from app.telegram_commands import handle_command
 from app.report_artifacts import load_latest_report, load_paper_ledger
 from app.telegram_security import telegram_webhook_secret_token
-from app.bookmaker_odds import APIFootballOddsClient, BookmakerOddsError
+from app.api_football_odds import APIFootballClient, APIFootballError
 
 app = FastAPI(title="Veltrix Football Telegram Command Centre")
 
@@ -103,7 +103,23 @@ async def telegram_webhook(
     if command.strip().split()[0].split("@", 1)[0].casefold() == "/oddsdiag":
         try:
             today_lagos = datetime.now(ZoneInfo("Africa/Lagos")).date().isoformat()
-            diagnostic = APIFootballOddsClient().diagnose(today_lagos)
+            client = APIFootballClient()
+            status = client.status()
+            odds = client.odds_for_date(today_lagos, timezone="Africa/Lagos")
+            meta = odds.get("_veltrix_meta") or {}
+            subscription = status.get("subscription") or {}
+            diagnostic = "\n".join([
+                "API-FOOTBALL / API-SPORTS CONNECTION DIAGNOSTIC",
+                "Authentication: SUCCESS",
+                f"Subscription active: {subscription.get('active', 'not reported')}",
+                f"Plan: {subscription.get('plan', 'not reported')}",
+                f"Requests remaining: {(meta.get('requests_remaining') or 'not reported')}",
+                f"Prematch odds rows for {today_lagos}: {odds.get('results', 0)}",
+                f"Odds status: {meta.get('status', 'UNKNOWN')}",
+                f"Provider raw fixture rows: {meta.get('raw_fixture_rows', 0)}",
+                "An empty odds response can mean the date/competition has no covered prematch prices.",
+                "API key and account email are never shown.",
+            ])
             _send_message(bot_token, chat_id, "🔔 🆕 NEW VELTRIX UPDATE\n━━━━━━━━━━━━━━━━━━━━\n" + diagnostic)
         except Exception:
             _send_message(bot_token, chat_id, "🔔 🆕 NEW VELTRIX UPDATE\n━━━━━━━━━━━━━━━━━━━━\nODDS DIAGNOSTIC FAILED — internal details withheld.")
@@ -122,8 +138,8 @@ async def telegram_webhook(
         if command.strip().split()[0].split("@", 1)[0].casefold() == "/odds":
             try:
                 today_lagos = datetime.now(ZoneInfo("Africa/Lagos")).date().isoformat()
-                odds_data = APIFootballOddsClient().odds_for_date(today_lagos)
-            except BookmakerOddsError as exc:
+                odds_data = APIFootballClient().odds_for_date(today_lagos, timezone="Africa/Lagos")
+            except APIFootballError as exc:
                 odds_error = str(exc)
             except Exception:
                 odds_error = "Unexpected odds-provider error; details were withheld."
