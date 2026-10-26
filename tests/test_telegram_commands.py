@@ -40,7 +40,10 @@ def test_status_distinguishes_report_odds_from_direct_provider_feed():
     }
     reply = handle_command("/status", report=report)
     assert "Report 1X2 odds integration: NO_VALID_1X2_ODDS" in reply
+    assert "Command-data publication: UNCONFIRMED" in reply
     assert "Direct API-Sports odds feed: run /oddsdiag" in reply
+    report["command_data_publication"] = "PUBLISHED"
+    assert "Command-data publication: PUBLISHED" in handle_command("/status", report=report)
 
 
 def test_odds_command_excludes_started_and_malformed_kickoffs():
@@ -105,7 +108,7 @@ def test_status_discloses_historical_refresh_gaps():
     reply = handle_command("/status", report=report)
     assert "Recent-results refresh: PARTIAL (1/8 ranges refreshed)" in reply
     assert "Historical coverage: GAPPED_OR_STALE" in reply
-    assert "Report publication: REUSED_SNAPSHOT_NOT_REFRESHED" in reply
+    assert "Report freshness / reuse: REUSED_SNAPSHOT_NOT_REFRESHED" in reply
     assert "continuous through 2026-09-03, latest available 2026-10-24" in reply
 
 
