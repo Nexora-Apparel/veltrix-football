@@ -113,3 +113,24 @@ def test_provider_auth_error_is_sanitized():
         assert "secret-key" not in str(exc)
     else:
         raise AssertionError("Expected provider error")
+
+
+def test_empty_odds_reports_fixture_and_bookmaker_coverage_diagnostics():
+    session = FakeSession({
+        "errors": [],
+        "paging": {"current": 1, "total": 1},
+        "response": [{
+            "fixture": {"id": 1234, "date": "2026-10-27T18:00:00+00:00"},
+            "league": {"name": "Example League"},
+            "teams": {"home": {"name": "Alpha"}, "away": {"name": "Beta"}},
+            "bookmakers": [],
+        }],
+    })
+    result = APIFootballClient("test-key", session=session).odds_for_date("2026-10-27")
+    meta = result["_veltrix_meta"]
+    assert meta["status"] == "NO_ODDS_RETURNED"
+    assert meta["raw_fixture_rows"] == 1
+    assert meta["fixtures_with_bookmakers"] == 0
+    assert meta["bookmaker_count"] == 0
+    assert meta["fixture_examples"][0]["fixture_id"] == "1234"
+    assert meta["fixture_examples"][0]["match"] == "Alpha vs Beta"
