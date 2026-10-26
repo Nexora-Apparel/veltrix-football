@@ -57,10 +57,24 @@ def normalize_odds_rows(payload: Any) -> list[dict[str, Any]]:
             provider_error = str(payload.get("error", "")).strip().casefold()
             if "authentification failed" in provider_error or "authentication failed" in provider_error:
                 reason = "API key rejected by APIFootball.com. Check that APIFOOTBALL_API_KEY is the correct APIfootball.com key."
-            elif "no odd found" in provider_error or "no odds found" in provider_error:
+            elif "no odd found" in provider_error or "no odds found" in provider_error or "no data" in provider_error:
                 reason = "No odds available for this date, or odds are not enabled on this APIfootball.com plan. Check plan coverage and odds entitlement."
+            elif any(term in provider_error for term in ("invalid api", "invalid key", "wrong api", "api key", "apikey")):
+                reason = "APIFootball.com rejected the API key. Confirm the key belongs to APIfootball.com (not API-Football/API-Sports) and that it is active."
+            elif any(term in provider_error for term in ("limit", "quota", "too many", "rate")):
+                reason = "APIFootball.com reports a quota or rate limit. Check the account usage limits and retry after they reset."
+            elif any(term in provider_error for term in ("upgrade", "subscription", "plan", "permission", "not allowed", "access denied")):
+                reason = "APIFootball.com reports an access or subscription restriction for odds. Confirm get_odds is included in the current plan."
             else:
-                reason = "APIFootball.com returned a provider error; the exact cause was withheld."
+                # Return a short, sanitized provider diagnostic so the next Telegram
+                # reply can identify the actual failure without leaking credentials.
+                import re
+                diagnostic = str(payload.get("error", "")).strip()
+                diagnostic = re.sub(r"(?i)(apikey|api_key|api key|token|secret)(\\s*[=:]\\s*)[^\\s&,;]+", r"\\1\\2[REDACTED]", diagnostic)
+                diagnostic = re.sub(r"https?://\\S+", "[URL REDACTED]", diagnostic)
+                diagnostic = re.sub(r"[^\\w .,:;()/'-]", " ", diagnostic)
+                diagnostic = " ".join(diagnostic.split())[:140]
+                reason = "APIFootball.com provider message: " + (diagnostic or "unrecognized error; message was empty.")
             raise BookmakerOddsError(reason)
         rows = payload.get("data", payload.get("response", []))
     else:
