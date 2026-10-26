@@ -134,3 +134,59 @@ def test_empty_odds_reports_fixture_and_bookmaker_coverage_diagnostics():
     assert meta["bookmaker_count"] == 0
     assert meta["fixture_examples"][0]["fixture_id"] == "1234"
     assert meta["fixture_examples"][0]["match"] == "Alpha vs Beta"
+
+
+
+def test_odds_enriches_missing_team_names_using_fixture_ids():
+    class QueuedSession:
+        def __init__(self):
+            self.headers = {}
+            self.calls = []
+            self.payloads = [
+                {
+                    "errors": [],
+                    "paging": {"current": 1, "total": 1},
+                    "response": [{
+                        "fixture": {"id": 9001, "date": "2026-10-27T18:00:00+00:00"},
+                        "league": {"name": "Example League"},
+                        "bookmakers": [{
+                            "name": "Example Book",
+                            "bets": [
+                                {"name": "Match Winner", "values": [
+                                    {"value": "Home", "odd": "1.90"},
+                                    {"value": "Draw", "odd": "3.50"},
+                                    {"value": "Away", "odd": "4.20"},
+                                ]},
+                                {"name": "Both Teams Score", "values": [
+                                    {"value": "Yes", "odd": "1.80"},
+                                    {"value": "No", "odd": "2.00"},
+                                ]},
+                            ],
+                        }],
+                    }],
+                },
+                {
+                    "errors": [],
+                    "response": [{
+                        "fixture": {"id": 9001},
+                        "teams": {
+                            "home": {"name": "Arsenal"},
+                            "away": {"name": "Chelsea"},
+                        },
+                    }],
+                },
+            ]
+
+        def get(self, url, params=None, timeout=None):
+            self.calls.append((url, params, timeout, dict(self.headers)))
+            return FakeResponse(self.payloads.pop(0))
+
+    session = QueuedSession()
+    result = APIFootballClient("test-key", session=session).odds_for_date("2026-10-27")
+    assert len(session.calls) == 2
+    assert session.calls[1][0] == "https://v3.football.api-sports.io/fixtures"
+    assert session.calls[1][1]["ids"] == "9001"
+    assert result["results"] == 1
+    assert result["response"][0]["home_team"] == "Arsenal"
+    assert result["response"][0]["away_team"] == "Chelsea"
+    assert result["_veltrix_meta"]["team_name_enrichment"] == "SUCCESS"
