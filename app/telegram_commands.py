@@ -221,7 +221,11 @@ def _status(report: dict[str, Any] | None, ledger: dict[str, Any] | None) -> str
     odds_status = "not connected to this command router"
     if isinstance(report, dict):
         meta = report.get("live_odds_sync") or report.get("odds_meta") or report.get("odds") or {}
-        if isinstance(meta, dict) and meta.get("status"):
+        if isinstance(meta, dict) and meta.get("api_sports_status"):
+            api_status = str(meta["api_sports_status"])
+            attached = meta.get("api_sports_fixtures_with_odds", 0)
+            odds_status = f"API-Sports {api_status} ({attached} report fixtures enriched)"
+        elif isinstance(meta, dict) and meta.get("status"):
             odds_status = str(meta["status"])
     if isinstance(ledger, dict):
         scored_count = len(ledger.get("scored_matches", [])) if isinstance(ledger.get("scored_matches"), list) else 0
