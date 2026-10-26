@@ -63,6 +63,8 @@ def normalize_odds_rows(payload: Any) -> list[dict[str, Any]]:
                 reason = "APIFootball.com rejected the API key. Confirm the key belongs to APIfootball.com (not API-Football/API-Sports) and that it is active."
             elif any(term in provider_error for term in ("limit", "quota", "too many", "rate")):
                 reason = "APIFootball.com reports a quota or rate limit. Check the account usage limits and retry after they reset."
+            elif provider_error in {"404", "http 404", "not found", "404 not found"}:
+                reason = "APIFootball.com returned its generic 404 error for get_odds. The key was accepted far enough to reach the provider, but the response does not identify whether the endpoint/action or account access is responsible. Next diagnostic: test get_countries with the same key, then get_odds for a date and supported competition."
             elif any(term in provider_error for term in ("upgrade", "subscription", "plan", "permission", "not allowed", "access denied")):
                 reason = "APIFootball.com reports an access or subscription restriction for odds. Confirm get_odds is included in the current plan."
             else:
