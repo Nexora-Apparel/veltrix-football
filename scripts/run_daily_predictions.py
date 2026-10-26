@@ -13,6 +13,8 @@ from app.football_api import FootballAPI, FootballAPIError
 from app.live_predictions import _name_key, build_daily_report, load_historical_matches
 from app.recent_results import fetch_recent_results_incremental
 from app.live_odds import extract_market_probabilities
+from app.api_football_odds import APIFootballClient, APIFootballError
+import math
 
 
 
@@ -87,6 +89,96 @@ def _serialize_recent_cache(rows: list[dict]) -> list[dict]:
         "fixture_id": row.get("fixture_id") if isinstance(row.get("fixture_id"), int) else None,
         "fixture_status": str(row.get("fixture_status") or "FT"),
     } for row in rows]
+
+
+def _merge_api_sports_market_odds(
+    report: dict,
+    odds_payload: dict,
+    *,
+    timezone_name: str = "Africa/Lagos",
+) -> int:
+    """Attach real, de-vigged API-Sports 1X2 consensus by date and team names.
+
+    Provider fixture IDs are not interchangeable, so matching deliberately uses
+    normalized home/away names and the local kickoff date. Ambiguous or incomplete
+    markets are ignored rather than guessed.
+    """
+    from zoneinfo import ZoneInfo
+
+    rows = odds_payload.get("response")
+    predictions = report.get("predictions")
+    if not isinstance(rows, list) or not isinstance(predictions, list):
+        return 0
+    zone = ZoneInfo(timezone_name)
+    markets: dict[tuple[str, str, str], list[dict[str, float]]] = {}
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
+        prices = row.get("odds")
+        if not isinstance(prices, dict):
+            continue
+        try:
+            odds = {key: float(prices[key]) for key in ("home", "draw", "away")}
+        except (KeyError, TypeError, ValueError, OverflowError):
+            continue
+        if not all(math.isfinite(value) and value > 1.0 for value in odds.values()):
+            continue
+        day = str(row.get("date") or "")
+        home_key, away_key = _name_key(str(row.get("home_team") or "")), _name_key(str(row.get("away_team") or ""))
+        if not day or not home_key or not away_key:
+            continue
+        implied = {key: 1.0 / value for key, value in odds.items()}
+        total = sum(implied.values())
+        if not math.isfinite(total) or total <= 0:
+            continue
+        key = (day, home_key, away_key)
+        markets.setdefault(key, []).append({name: value / total for name, value in implied.items()})
+
+    attached = 0
+    for prediction in predictions:
+        if not isinstance(prediction, dict) or prediction.get("status") not in {
+            "EXPERIMENTAL_ONLY", "INSUFFICIENT_HISTORY", "UNSUPPORTED_COMPETITION"
+        }:
+            continue
+        raw_kickoff = prediction.get("kickoff_local") or prediction.get("kickoff")
+        if not isinstance(raw_kickoff, str):
+            continue
+        try:
+            kickoff = datetime.fromisoformat(raw_kickoff.replace("Z", "+00:00"))
+            if kickoff.tzinfo is None:
+                kickoff = kickoff.replace(tzinfo=zone)
+            day = kickoff.astimezone(zone).date().isoformat()
+        except (ValueError, OverflowError):
+            continue
+        key = (
+            day,
+            _name_key(str(prediction.get("home_team") or "")),
+            _name_key(str(prediction.get("away_team") or "")),
+        )
+        candidates = markets.get(key, [])
+        if not candidates:
+            continue
+        count = len(candidates)
+        probabilities = {
+            outcome: sum(item[outcome] for item in candidates) / count
+            for outcome in ("home", "draw", "away")
+        }
+        total = sum(probabilities.values())
+        if not math.isfinite(total) or total <= 0:
+            continue
+        probabilities = {key: round(value / total, 6) for key, value in probabilities.items()}
+        prediction["market_model"] = "api_sports_bookmaker_consensus"
+        prediction["market_probabilities"] = {
+            "home_win": probabilities["home"],
+            "draw": probabilities["draw"],
+            "away_win": probabilities["away"],
+        }
+        prediction["market_bookmakers_count"] = count
+        prediction["market_updated_at"] = None
+        prediction["market_method"] = "equal-weight mean of bookmaker-specific de-vigged API-Sports 1X2 prices"
+        attached += 1
+    return attached
+
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
@@ -192,7 +284,30 @@ def main() -> None:
             "backfill_complete": cache_backfill_complete,
             "cache_path": str(cache_path),
         }
-        report["live_odds_sync"] = odds_sync
+        api_sports_odds_status = "NOT_CONFIGURED"
+        api_sports_odds_attached = 0
+        # API-Sports is the verified real-bookmaker feed used by the Telegram
+        # command centre. Use it as an optional enrichment source when the same
+        # key is configured in GitHub Actions; never require or print the key.
+        if __import__("os").environ.get("API_FOOTBALL_KEY", "").strip():
+            try:
+                api_sports_payload = APIFootballClient().odds_for_date(
+                    target_date.isoformat(), timezone=args.timezone
+                )
+                api_sports_odds_attached = _merge_api_sports_market_odds(
+                    report, api_sports_payload, timezone_name=args.timezone
+                )
+                api_sports_odds_status = (
+                    "AVAILABLE" if api_sports_odds_attached else
+                    str((api_sports_payload.get("_veltrix_meta") or {}).get("status") or "NO_MATCHED_1X2_ODDS")
+                )
+            except APIFootballError:
+                api_sports_odds_status = "UNAVAILABLE"
+        report["live_odds_sync"] = {
+            **odds_sync,
+            "api_sports_status": api_sports_odds_status,
+            "api_sports_fixtures_with_odds": api_sports_odds_attached,
+        }
         report["fixtures_with_market_odds"] = sum(
             isinstance(item.get("market_probabilities"), dict)
             for item in report.get("predictions", [])
