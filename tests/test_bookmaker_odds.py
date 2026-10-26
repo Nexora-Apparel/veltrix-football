@@ -59,3 +59,25 @@ def test_client_sends_date_scoped_request_and_normalizes_response():
     assert session.call[1]["APIkey"] == "secret-test-key"
     assert result["_veltrix_meta"]["status"] == "AVAILABLE"
     assert result["response"][0]["odds"]["yes"] == 1.9
+
+
+
+def test_diagnose_classifies_generic_odds_404_without_exposing_credentials():
+    class Response:
+        status_code = 200
+        def __init__(self, payload): self.payload = payload
+        def json(self): return self.payload
+    class Session:
+        def __init__(self): self.calls = []
+        def get(self, url, params=None, timeout=None):
+            self.calls.append(params.copy())
+            if params["action"] == "get_countries":
+                return Response([{"country_id": "1"}, {"country_id": "2"}])
+            return Response({"error": "404"})
+    session = Session()
+    report = APIFootballOddsClient("secret-test-key", session=session).diagnose("2026-10-26")
+    assert "get_countries: HTTP 200; list response (2 rows)" in report
+    assert "GENERIC 404 FROM get_odds" in report
+    assert "COUNTRIES WORKS" in report
+    assert "secret-test-key" not in report
+    assert "No API key or request URL" in report
