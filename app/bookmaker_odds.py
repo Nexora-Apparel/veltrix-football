@@ -220,4 +220,4 @@ class APIFootballOddsClient:
             else:
                 lines.append(f"{action}: HTTP {response.status_code}; unexpected JSON type")
         lines.append("No API key or request URL is included in this report.")
-        return "\\n".join(lines)
+        return "\n".join(lines)
