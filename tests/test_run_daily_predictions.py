@@ -6,6 +6,46 @@ from datetime import date
 from scripts import run_daily_predictions as daily_runner
 
 
+def test_api_sports_odds_attach_by_local_date_and_team_names_not_provider_ids():
+    report = {
+        "predictions": [{
+            "fixture_id": 11,
+            "home_team": "Arsenal",
+            "away_team": "Chelsea",
+            "kickoff_local": "2026-10-27T19:00:00+01:00",
+            "status": "EXPERIMENTAL_ONLY",
+        }]
+    }
+    payload = {"response": [
+        {"match_id": "9001", "home_team": "Arsenal", "away_team": "Chelsea",
+         "date": "2026-10-27", "odds": {"home": 2.0, "draw": 3.0, "away": 4.0}},
+        {"match_id": "9002", "home_team": "Arsenal", "away_team": "Chelsea",
+         "date": "2026-10-27", "odds": {"home": 2.2, "draw": 3.1, "away": 3.8}},
+        {"match_id": "9003", "home_team": "Arsenal", "away_team": "Chelsea",
+         "date": "2026-10-28", "odds": {"home": 1.5, "draw": 3.0, "away": 5.0}},
+    ]}
+    attached = daily_runner._merge_api_sports_market_odds(report, payload)
+    assert attached == 1
+    market = report["predictions"][0]["market_probabilities"]
+    assert set(market) == {"home_win", "draw", "away_win"}
+    assert abs(sum(market.values()) - 1.0) < 1e-5
+    assert report["predictions"][0]["market_bookmakers_count"] == 2
+    assert report["predictions"][0]["market_model"] == "api_sports_bookmaker_consensus"
+
+
+def test_api_sports_odds_reject_incomplete_or_invalid_1x2_prices():
+    report = {"predictions": [{
+        "home_team": "Arsenal", "away_team": "Chelsea",
+        "kickoff_local": "2026-10-27T19:00:00+01:00", "status": "EXPERIMENTAL_ONLY",
+    }]}
+    payload = {"response": [{
+        "home_team": "Arsenal", "away_team": "Chelsea", "date": "2026-10-27",
+        "odds": {"home": 2.0, "draw": 3.0},
+    }]}
+    assert daily_runner._merge_api_sports_market_odds(report, payload) == 0
+    assert "market_probabilities" not in report["predictions"][0]
+
+
 def _report(future_fixtures: int) -> dict:
     return {
         "as_of_date": "2026-10-23",
