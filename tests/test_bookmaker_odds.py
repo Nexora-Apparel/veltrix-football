@@ -94,8 +94,12 @@ def test_diagnose_scopes_fixture_checks_to_two_free_plan_leagues_without_exposin
     assert "League Three" not in report
     assert "get_odds: HTTP 200; GENERIC 404" in report
     assert "get_odds(match_id): HTTP 200; GENERIC 404" in report
+    assert "Fixture/odds window: 2026-10-26 through 2026-11-01 (7 days)" in report
     event_calls = [call for call in session.calls if call["action"] == "get_events"]
     assert [call["league_id"] for call in event_calls] == ["101", "202"]
-    assert all(call["from"] == call["to"] == "2026-10-26" for call in event_calls)
+    assert all(call["from"] == "2026-10-26" and call["to"] == "2026-11-01" for call in event_calls)
+    odds_calls = [call for call in session.calls if call["action"] == "get_odds"]
+    assert all(call["from"] == "2026-10-26" and call["to"] == "2026-11-01" for call in odds_calls)
+    assert all(call["APIkey"] == "secret-test-key" for call in session.calls)
     assert "secret-test-key" not in report
     assert "No API key or request URL" in report
