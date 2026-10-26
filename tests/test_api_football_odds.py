@@ -190,3 +190,60 @@ def test_odds_enriches_missing_team_names_using_fixture_ids():
     assert result["response"][0]["home_team"] == "Arsenal"
     assert result["response"][0]["away_team"] == "Chelsea"
     assert result["_veltrix_meta"]["team_name_enrichment"] == "SUCCESS"
+
+
+def test_odds_falls_back_to_date_lookup_when_batch_ids_are_plan_restricted():
+    class QueuedSession:
+        def __init__(self):
+            self.headers = {}
+            self.calls = []
+            self.payloads = [
+                {
+                    "errors": [],
+                    "paging": {"current": 1, "total": 1},
+                    "response": [{
+                        "fixture": {"id": 9002, "date": "2026-10-27T18:00:00+00:00"},
+                        "league": {"name": "Example League"},
+                        "bookmakers": [{
+                            "name": "Example Book",
+                            "bets": [{
+                                "name": "Match Winner",
+                                "values": [
+                                    {"value": "Home", "odd": "1.90"},
+                                    {"value": "Draw", "odd": "3.50"},
+                                    {"value": "Away", "odd": "4.20"},
+                                ],
+                            }],
+                        }],
+                    }],
+                },
+                {"errors": {"plan": "batch IDs not available"}, "response": []},
+                {
+                    "errors": [],
+                    "response": [{
+                        "fixture": {"id": 9002, "date": "2026-10-27T18:00:00+00:00"},
+                        "teams": {
+                            "home": {"name": "Alpha"},
+                            "away": {"name": "Beta"},
+                        },
+                    }],
+                },
+            ]
+
+        def get(self, url, params=None, timeout=None):
+            self.calls.append((url, params, timeout, dict(self.headers)))
+            payload = self.payloads.pop(0)
+            return FakeResponse(payload)
+
+    session = QueuedSession()
+    result = APIFootballClient("test-key", session=session).odds_for_date("2026-10-27")
+
+    assert len(session.calls) == 3
+    assert session.calls[1][1]["ids"] == "9002"
+    assert session.calls[2][1] == {"date": "2026-10-27", "timezone": "Africa/Lagos"}
+    assert result["results"] == 1
+    assert result["response"][0]["home_team"] == "Alpha"
+    assert result["response"][0]["away_team"] == "Beta"
+    assert result["_veltrix_meta"]["team_name_enrichment"] == "SUCCESS"
+    assert "team_name_enrichment_detail" not in result["_veltrix_meta"]
+
