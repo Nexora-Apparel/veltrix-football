@@ -121,6 +121,11 @@ async def telegram_webhook(
                 "API key and account email are never shown.",
             ])
             _send_message(bot_token, chat_id, "🔔 🆕 NEW VELTRIX UPDATE\n━━━━━━━━━━━━━━━━━━━━\n" + diagnostic)
+        except APIFootballError as exc:
+            _send_message(
+                bot_token, chat_id,
+                "🔔 🆕 NEW VELTRIX UPDATE\n━━━━━━━━━━━━━━━━━━━━\nAPI-FOOTBALL DIAGNOSTIC — UNAVAILABLE\n" + str(exc)
+            )
         except Exception:
             _send_message(bot_token, chat_id, "🔔 🆕 NEW VELTRIX UPDATE\n━━━━━━━━━━━━━━━━━━━━\nODDS DIAGNOSTIC FAILED — internal details withheld.")
         return JSONResponse({"ok": True})
