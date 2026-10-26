@@ -51,7 +51,17 @@ def normalize_odds_rows(payload: Any) -> list[dict[str, Any]]:
     """Normalize provider rows while preserving each bookmaker's prices."""
     if isinstance(payload, dict):
         if payload.get("error"):
-            raise BookmakerOddsError("APIFootball.com returned a provider error.")
+            # APIfootball often reports auth/plan/coverage failures in a HTTP-200
+            # JSON body. Map known messages to safe actionable diagnostics; do not
+            # echo arbitrary provider text or anything that could contain secrets.
+            provider_error = str(payload.get("error", "")).strip().casefold()
+            if "authentification failed" in provider_error or "authentication failed" in provider_error:
+                reason = "API key rejected by APIFootball.com. Check that APIFOOTBALL_API_KEY is the correct APIfootball.com key."
+            elif "no odd found" in provider_error or "no odds found" in provider_error:
+                reason = "No odds available for this date, or odds are not enabled on this APIfootball.com plan. Check plan coverage and odds entitlement."
+            else:
+                reason = "APIFootball.com returned a provider error; the exact cause was withheld."
+            raise BookmakerOddsError(reason)
         rows = payload.get("data", payload.get("response", []))
     else:
         rows = payload
