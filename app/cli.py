@@ -5,6 +5,7 @@ import json
 from datetime import date
 
 from app.config import get_settings
+from app.api_football_odds import APIFootballClient, APIFootballError
 from app.football_api import FootballAPI, FootballAPIError
 from app.historical_data import add_leakage_safe_rolling_features, completed_fixture_rows, validate_date_range, write_csv
 
@@ -15,7 +16,12 @@ def main():
     parser = argparse.ArgumentParser(description="Veltrix Football API diagnostics")
     sub = parser.add_subparsers(dest="command", required=True)
 
-    sub.add_parser("status", help="Verify API key/account status")
+    sub.add_parser("status", help="Verify Highlightly API key/account status")
+    sub.add_parser("api-football-status", help="Verify API-Football (API-Sports) key and subscription")
+    odds_parser = sub.add_parser("odds", help="Inspect prematch bookmaker odds from API-Football (API-Sports)")
+    odds_parser.add_argument("--date", required=True, help="Odds date YYYY-MM-DD")
+    odds_parser.add_argument("--timezone", default="Africa/Lagos")
+    odds_parser.add_argument("--page", type=int, default=1)
     fixture_parser = sub.add_parser("fixtures", help="Fetch fixtures for a date")
     fixture_parser.add_argument("--date", default=date.today().isoformat())
     fixture_parser.add_argument("--timezone", default="Africa/Lagos")
@@ -31,6 +37,12 @@ def main():
     args = parser.parse_args()
 
     try:
+        if args.command == "api-football-status":
+            print_json(APIFootballClient().status())
+            return
+        if args.command == "odds":
+            print_json(APIFootballClient().odds_for_date(args.date, timezone=args.timezone, page=args.page))
+            return
         api = FootballAPI(get_settings())
         if args.command == "status":
             data = api.status()
@@ -56,7 +68,7 @@ def main():
             leagues = data.get("response", [])
             print(f"Valid API response. Competitions returned: {len(leagues)}")
             print_json({"results": data.get("results"), "meta": data.get("_veltrix_meta"), "response": leagues})
-    except (RuntimeError, FootballAPIError) as exc:
+    except (RuntimeError, FootballAPIError, APIFootballError) as exc:
         print(f"ERROR: {exc}")
         raise SystemExit(1)
 
