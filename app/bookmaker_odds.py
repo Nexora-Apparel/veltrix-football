@@ -70,9 +70,9 @@ def normalize_odds_rows(payload: Any) -> list[dict[str, Any]]:
                 # reply can identify the actual failure without leaking credentials.
                 import re
                 diagnostic = str(payload.get("error", "")).strip()
-                diagnostic = re.sub(r"(?i)(apikey|api_key|api key|token|secret)(\\s*[=:]\\s*)[^\\s&,;]+", r"\\1\\2[REDACTED]", diagnostic)
-                diagnostic = re.sub(r"https?://\\S+", "[URL REDACTED]", diagnostic)
-                diagnostic = re.sub(r"[^\\w .,:;()/'-]", " ", diagnostic)
+                diagnostic = re.sub(r"(?i)(apikey|api_key|api key|token|secret)(\s*[=:]\s*)[^\s&,;]+", r"\1\2[REDACTED]", diagnostic)
+                diagnostic = re.sub(r"https?://\S+", "[URL REDACTED]", diagnostic)
+                diagnostic = re.sub(r"[^\w .,:;()/'-]", " ", diagnostic)
                 diagnostic = " ".join(diagnostic.split())[:140]
                 reason = "APIFootball.com provider message: " + (diagnostic or "unrecognized error; message was empty.")
             raise BookmakerOddsError(reason)
