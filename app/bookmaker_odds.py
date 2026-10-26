@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import math
 import os
-from datetime import date
+from datetime import date, timedelta
 from typing import Any
 
 import requests
@@ -175,7 +175,10 @@ class APIFootballOddsClient:
             parsed_day = date.fromisoformat(day)
         except (TypeError, ValueError):
             return "DIAGNOSTIC: invalid date; expected YYYY-MM-DD."
+        date_from = parsed_day.isoformat()
+        date_to = (parsed_day + timedelta(days=6)).isoformat()
         lines = ["APIFOOTBALL CONNECTION DIAGNOSTIC"]
+        lines.append(f"Fixture/odds window: {date_from} through {date_to} (7 days)")
 
         def probe(action: str, extra: dict[str, str] | None = None) -> tuple[Any, str]:
             params = {"action": action, "APIkey": self.api_key}
@@ -238,8 +241,8 @@ class APIFootballOddsClient:
             lines.append("League-scoped fixtures: SKIPPED; get_leagues returned no usable league IDs")
         for league_id, league_name in supported_leagues:
             events, event_line = probe("get_events", {
-                "from": parsed_day.isoformat(),
-                "to": parsed_day.isoformat(),
+                "from": date_from,
+                "to": date_to,
                 "league_id": league_id,
             })
             lines.append(f"get_events[{league_name}; league_id={league_id}]: " + event_line.split(": ", 1)[1])
@@ -249,15 +252,20 @@ class APIFootballOddsClient:
                                    if isinstance(row, dict) and str(row.get("match_id") or "").strip()), "")
 
         _, odds_line = probe("get_odds", {
-            "from": parsed_day.isoformat(),
-            "to": parsed_day.isoformat(),
+            "from": date_from,
+            "to": date_to,
         })
         lines.append(odds_line)
         if fixture_id:
-            _, match_odds_line = probe("get_odds", {"match_id": fixture_id})
+            _, match_odds_line = probe("get_odds", {
+                "from": date_from,
+                "to": date_to,
+                "match_id": fixture_id,
+            })
             lines.append("get_odds(match_id): " + match_odds_line.split(": ", 1)[1])
         else:
             lines.append("get_odds(match_id): SKIPPED; no fixture ID returned by the two league-scoped probes")
+        lines.append("League IDs are sourced from get_leagues, which lists competitions in the current subscription.")
         lines.append("Free-plan diagnostic checks no more than two league IDs.")
         lines.append("No API key or request URL is included in this report.")
         return "\n".join(lines)
