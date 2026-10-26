@@ -298,10 +298,17 @@ def main() -> None:
                 api_sports_odds_attached = _merge_api_sports_market_odds(
                     report, api_sports_payload, timezone_name=args.timezone
                 )
-                api_sports_odds_status = (
-                    "AVAILABLE" if api_sports_odds_attached else
-                    str((api_sports_payload.get("_veltrix_meta") or {}).get("status") or "NO_MATCHED_1X2_ODDS")
+                provider_odds_status = str(
+                    (api_sports_payload.get("_veltrix_meta") or {}).get("status") or "UNKNOWN"
                 )
+                if api_sports_odds_attached:
+                    api_sports_odds_status = "AVAILABLE"
+                elif provider_odds_status == "NO_ODDS_RETURNED":
+                    api_sports_odds_status = "NO_ODDS_RETURNED"
+                else:
+                    # Provider rows alone do not prove report integration. Only
+                    # call it AVAILABLE after at least one fixture was matched.
+                    api_sports_odds_status = "NO_MATCHED_1X2_ODDS"
             except APIFootballError:
                 api_sports_odds_status = "UNAVAILABLE"
             except Exception:
