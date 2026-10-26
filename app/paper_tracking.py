@@ -5,6 +5,9 @@ This is paper tracking only. It does not place bets or certify model quality.
 from __future__ import annotations
 
 import math
+import re
+from datetime import date, datetime
+from zoneinfo import ZoneInfo
 from typing import Any
 
 COMPLETED_STATUSES = {"FT", "AET", "PEN"}
@@ -168,6 +171,31 @@ def _canonical_probabilities(probabilities: Any) -> dict[str, float] | None:
     return {key: value / total for key, value in values.items()}
 
 
+def _identity_name(value: Any) -> str:
+    return re.sub(r"[^a-z0-9]+", "", str(value or "").casefold())
+
+
+def _identity_key(day: str, home: Any, away: Any) -> tuple[str, str, str] | None:
+    home_key, away_key = _identity_name(home), _identity_name(away)
+    if not day or not home_key or not away_key or home_key == away_key:
+        return None
+    return day, home_key, away_key
+
+
+def _prediction_day(prediction: dict[str, Any], timezone_name: str) -> str | None:
+    raw = prediction.get("kickoff_local") or prediction.get("kickoff")
+    if not isinstance(raw, str) or not raw.strip():
+        return None
+    try:
+        zone = ZoneInfo(timezone_name)
+        kickoff = datetime.fromisoformat(raw.replace("Z", "+00:00"))
+        if kickoff.tzinfo is None:
+            kickoff = kickoff.replace(tzinfo=zone)
+        return kickoff.astimezone(zone).date().isoformat()
+    except (TypeError, ValueError, OverflowError, KeyError):
+        return None
+
+
 def evaluate_report(report: dict[str, Any], results_payload: dict[str, Any]) -> dict[str, Any]:
     """Score every available model forecast by fixture ID against completed results."""
     predictions = report.get("predictions")
@@ -178,6 +206,7 @@ def evaluate_report(report: dict[str, Any], results_payload: dict[str, Any]) -> 
         raise ValueError("Results payload must contain a response list.")
 
     completed: dict[int, dict[str, Any]] = {}
+    identity_candidates: dict[tuple[str, str, str], list[dict[str, Any]]] = {}
     for item in results:
         fixture = item.get("fixture") or {}
         fixture_id = fixture.get("id")
@@ -190,12 +219,30 @@ def evaluate_report(report: dict[str, Any], results_payload: dict[str, Any]) -> 
             and isinstance(home, int) and not isinstance(home, bool) and home >= 0
             and isinstance(away, int) and not isinstance(away, bool) and away >= 0
         ):
-            completed[fixture_id] = {
+            result_row = {
                 "status": status,
                 "home_goals": home,
                 "away_goals": away,
                 "actual": "H" if home > away else "A" if home < away else "D",
             }
+            completed[fixture_id] = result_row
+            teams = item.get("teams") or {}
+            home_team = (teams.get("home") or {}).get("name")
+            away_team = (teams.get("away") or {}).get("name")
+            raw_date = str(fixture.get("date") or "")
+            day = raw_date[:10]
+            try:
+                day = date.fromisoformat(day).isoformat()
+            except ValueError:
+                day = ""
+            identity = _identity_key(day, home_team, away_team)
+            if identity:
+                identity_candidates.setdefault(identity, []).append(result_row)
+    # Only use identity fallback when the exact home/away/date key is unique.
+    completed_by_identity = {
+        key: rows[0] for key, rows in identity_candidates.items() if len(rows) == 1
+    }
+    timezone_name = str(report.get("timezone") or "Africa/Lagos")
 
     scored: list[dict[str, Any]] = []
     awaiting_result = 0
@@ -215,6 +262,12 @@ def evaluate_report(report: dict[str, Any], results_payload: dict[str, Any]) -> 
             missing_fixture_id += 1
             continue
         result = completed.get(fixture_id)
+        if result is None:
+            identity = _identity_key(
+                _prediction_day(prediction, timezone_name) or "",
+                prediction.get("home_team"), prediction.get("away_team"),
+            )
+            result = completed_by_identity.get(identity) if identity else None
         if result is None:
             awaiting_result += 1
             continue
