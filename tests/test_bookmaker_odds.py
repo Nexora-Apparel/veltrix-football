@@ -62,7 +62,7 @@ def test_client_sends_date_scoped_request_and_normalizes_response():
 
 
 
-def test_diagnose_classifies_generic_odds_404_without_exposing_credentials():
+def test_diagnose_scopes_fixture_checks_to_two_free_plan_leagues_without_exposing_credentials():
     class Response:
         status_code = 200
         def __init__(self, payload): self.payload = payload
@@ -71,16 +71,31 @@ def test_diagnose_classifies_generic_odds_404_without_exposing_credentials():
         def __init__(self): self.calls = []
         def get(self, url, params=None, timeout=None):
             self.calls.append(params.copy())
-            if params["action"] == "get_countries":
+            action = params["action"]
+            if action == "get_countries":
                 return Response([{"country_id": "1"}, {"country_id": "2"}])
-            if params["action"] == "get_events":
+            if action == "get_leagues":
+                return Response([
+                    {"league_id": "101", "league_name": "League One"},
+                    {"league_id": "202", "league_name": "League Two"},
+                    {"league_id": "303", "league_name": "League Three"},
+                ])
+            if action == "get_events" and params.get("league_id") == "101":
                 return Response([{"match_id": "fixture-123"}])
+            if action == "get_events":
+                return Response([])
             return Response({"error": "404"})
     session = Session()
     report = APIFootballOddsClient("secret-test-key", session=session).diagnose("2026-10-26")
     assert "get_countries: HTTP 200; list response (2 rows)" in report
-    assert "get_events: HTTP 200; list response (1 rows)" in report
+    assert "get_leagues: HTTP 200; list response (3 rows)" in report
+    assert "get_events[League One; league_id=101]: HTTP 200; list response (1 rows)" in report
+    assert "get_events[League Two; league_id=202]: HTTP 200; list response (0 rows)" in report
+    assert "League Three" not in report
     assert "get_odds: HTTP 200; GENERIC 404" in report
     assert "get_odds(match_id): HTTP 200; GENERIC 404" in report
+    event_calls = [call for call in session.calls if call["action"] == "get_events"]
+    assert [call["league_id"] for call in event_calls] == ["101", "202"]
+    assert all(call["from"] == call["to"] == "2026-10-26" for call in event_calls)
     assert "secret-test-key" not in report
     assert "No API key or request URL" in report
