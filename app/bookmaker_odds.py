@@ -176,29 +176,24 @@ class APIFootballOddsClient:
         except (TypeError, ValueError):
             return "DIAGNOSTIC: invalid date; expected YYYY-MM-DD."
         lines = ["APIFOOTBALL CONNECTION DIAGNOSTIC"]
-        for action in ("get_countries", "get_odds"):
+        def probe(action: str, extra: dict[str, str] | None = None) -> tuple[Any, str]:
             params = {"action": action, "APIkey": self.api_key}
-            if action == "get_odds":
-                params.update({"from": parsed_day.isoformat(), "to": parsed_day.isoformat()})
+            params.update(extra or {})
             try:
                 response = self.session.get(self.base_url, params=params, timeout=self.timeout)
             except requests.RequestException as exc:
-                lines.append(f"{action}: NETWORK ERROR ({exc.__class__.__name__})")
-                continue
+                return None, f"{action}: NETWORK ERROR ({exc.__class__.__name__})"
             try:
                 payload = response.json()
             except ValueError:
-                lines.append(f"{action}: HTTP {response.status_code}; non-JSON response")
-                continue
+                return None, f"{action}: HTTP {response.status_code}; non-JSON response"
             if response.status_code >= 400:
-                lines.append(f"{action}: HTTP {response.status_code}")
-                continue
+                return None, f"{action}: HTTP {response.status_code}"
             if isinstance(payload, list):
-                lines.append(f"{action}: HTTP {response.status_code}; list response ({len(payload)} rows)")
-            elif isinstance(payload, dict):
+                return payload, f"{action}: HTTP {response.status_code}; list response ({len(payload)} rows)"
+            if isinstance(payload, dict):
                 error = str(payload.get("error") or "").strip()
                 if error:
-                    # Only known, non-sensitive provider error text is exposed.
                     folded = error.casefold()
                     if "authentification failed" in folded or "authentication failed" in folded or "invalid api" in folded or "invalid key" in folded:
                         summary = "API KEY REJECTED"
@@ -209,17 +204,29 @@ class APIFootballOddsClient:
                     elif any(term in folded for term in ("subscription", "upgrade", "permission", "plan", "access denied")):
                         summary = "PLAN/ACCESS RESTRICTION"
                     elif folded in {"404", "http 404", "not found", "404 not found"}:
-                        summary = "GENERIC 404 FROM get_odds; COUNTRIES WORKS, INVESTIGATE ODDS ACTION OR ACCOUNT ENTITLEMENT"
+                        summary = "GENERIC 404; CHECK ACTION SUPPORT OR ACCOUNT ENTITLEMENT"
                     else:
                         summary = "PROVIDER ERROR (details withheld)"
-                    lines.append(f"{action}: HTTP {response.status_code}; {summary}")
-                else:
-                    rows = payload.get("data", payload.get("response"))
-                    if isinstance(rows, list):
-                        lines.append(f"{action}: HTTP {response.status_code}; {len(rows)} rows")
-                    else:
-                        lines.append(f"{action}: HTTP {response.status_code}; JSON object received")
-            else:
-                lines.append(f"{action}: HTTP {response.status_code}; unexpected JSON type")
+                    return None, f"{action}: HTTP {response.status_code}; {summary}"
+                rows = payload.get("data", payload.get("response"))
+                if isinstance(rows, list):
+                    return rows, f"{action}: HTTP {response.status_code}; {len(rows)} rows"
+                return None, f"{action}: HTTP {response.status_code}; JSON object received"
+            return None, f"{action}: HTTP {response.status_code}; unexpected JSON type"
+
+        _, countries_line = probe("get_countries")
+        lines.append(countries_line)
+        events, events_line = probe("get_events", {"from": parsed_day.isoformat(), "to": parsed_day.isoformat()})
+        lines.append(events_line)
+        _, odds_line = probe("get_odds", {"from": parsed_day.isoformat(), "to": parsed_day.isoformat()})
+        lines.append(odds_line)
+        # If the date has a fixture, test the documented match_id odds filter too.
+        fixture_id = next((str(row.get("match_id") or "").strip() for row in (events or [])
+                           if isinstance(row, dict) and str(row.get("match_id") or "").strip()), "")
+        if fixture_id:
+            _, match_odds_line = probe("get_odds", {"match_id": fixture_id})
+            lines.append("get_odds(match_id): " + match_odds_line.split(": ", 1)[1])
+        else:
+            lines.append("get_odds(match_id): SKIPPED; no fixture ID returned for this date")
         lines.append("No API key or request URL is included in this report.")
         return "\n".join(lines)
