@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 from datetime import date, datetime, timedelta
 from zoneinfo import ZoneInfo
@@ -289,7 +290,7 @@ def main() -> None:
         # API-Sports is the verified real-bookmaker feed used by the Telegram
         # command centre. Use it as an optional enrichment source when the same
         # key is configured in GitHub Actions; never require or print the key.
-        if __import__("os").environ.get("API_FOOTBALL_KEY", "").strip():
+        if os.environ.get("API_FOOTBALL_KEY", "").strip():
             try:
                 api_sports_payload = APIFootballClient().odds_for_date(
                     target_date.isoformat(), timezone=args.timezone
@@ -302,6 +303,9 @@ def main() -> None:
                     str((api_sports_payload.get("_veltrix_meta") or {}).get("status") or "NO_MATCHED_1X2_ODDS")
                 )
             except APIFootballError:
+                api_sports_odds_status = "UNAVAILABLE"
+            except Exception:
+                # Optional enrichment must never suppress the primary report.
                 api_sports_odds_status = "UNAVAILABLE"
         report["live_odds_sync"] = {
             **odds_sync,
