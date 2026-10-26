@@ -117,7 +117,15 @@ async def telegram_webhook(
                 f"Prematch odds rows for {today_lagos}: {odds.get('results', 0)}",
                 f"Odds status: {meta.get('status', 'UNKNOWN')}",
                 f"Provider raw fixture rows: {meta.get('raw_fixture_rows', 0)}",
-                "An empty odds response can mean the date/competition has no covered prematch prices.",
+                f"Fixtures with bookmakers: {meta.get('fixtures_with_bookmakers', 0)}",
+                f"Bookmaker records: {meta.get('bookmaker_count', 0)}",
+                f"Sample market names: {', '.join(meta.get('sample_market_names', [])) or 'none returned'}",
+                "Sample fixtures:",
+                *[
+                    f"- {row.get('match')} | {row.get('date')} | {row.get('league')} | fixture ID {row.get('fixture_id')}"
+                    for row in meta.get('fixture_examples', [])
+                ],
+                "Use fixture IDs and bookmaker counts to distinguish missing coverage from response-normalization issues.",
                 "API key and account email are never shown.",
             ])
             _send_message(bot_token, chat_id, "🔔 🆕 NEW VELTRIX UPDATE\n━━━━━━━━━━━━━━━━━━━━\n" + diagnostic)
