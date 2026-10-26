@@ -260,4 +260,4 @@ class APIFootballOddsClient:
             lines.append("get_odds(match_id): SKIPPED; no fixture ID returned by the two league-scoped probes")
         lines.append("Free-plan diagnostic checks no more than two league IDs.")
         lines.append("No API key or request URL is included in this report.")
-        return "\\n".join(lines)
+        return "\n".join(lines)
