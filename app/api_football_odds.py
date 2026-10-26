@@ -218,6 +218,7 @@ class APIFootballClient:
         # those fixture IDs in one /fixtures request (IDs are dash-separated),
         # rather than silently dropping every otherwise-valid odds record.
         enrichment_status = "NOT_NEEDED"
+        enrichment_detail = ""
         missing_team_rows = [
             row for row in raw_rows
             if isinstance(row, dict)
@@ -269,14 +270,18 @@ class APIFootballClient:
                         )
                     else:
                         enrichment_status = "UNEXPECTED_RESPONSE"
-                except APIFootballError:
+                except APIFootballError as exc:
                     enrichment_status = "FAILED"
+                    # Sanitized error category only; never includes credentials.
+                    enrichment_detail = str(exc)[:180]
             else:
                 enrichment_status = "NO_FIXTURE_IDS"
 
         rows = self.normalize_odds(raw_rows, timezone)
         meta = dict(payload.get("_veltrix_meta", {}))
         meta["team_name_enrichment"] = enrichment_status
+        if enrichment_detail:
+            meta["team_name_enrichment_detail"] = enrichment_detail
         bookmaker_count = 0
         fixtures_with_bookmakers = 0
         market_names: list[str] = []
@@ -288,10 +293,10 @@ class APIFootballClient:
             teams = raw_row.get("teams") or {}
             home = str((teams.get("home") or {}).get("name") or "").strip()
             away = str((teams.get("away") or {}).get("name") or "").strip()
-            if home and away and len(fixture_examples) < 3:
+            if len(fixture_examples) < 3:
                 fixture_examples.append({
                     "fixture_id": str(fixture.get("id") or ""),
-                    "match": f"{home} vs {away}",
+                    "match": f"{home} vs {away}" if home and away else "Team names missing from odds response",
                     "date": str(fixture.get("date") or "")[:10],
                     "league": str((raw_row.get("league") or {}).get("name") or "Unknown"),
                 })
