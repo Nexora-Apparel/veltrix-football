@@ -268,6 +268,8 @@ def handle_command(
     *,
     report: dict[str, Any] | None = None,
     ledger: dict[str, Any] | None = None,
+    odds_data: dict[str, Any] | None = None,
+    odds_error: str | None = None,
 ) -> str:
     """Return a clearly labelled reply for a Telegram command.
 
@@ -292,6 +294,32 @@ def handle_command(
             "No picks or odds are fabricated; no bets are placed.",
         ])
         return _reply("\n".join(lines))
+
+    if command == "/odds":
+        if odds_error:
+            return _reply("LIVE BOOKMAKER ODDS — UNAVAILABLE\\n" + odds_error + "\\nValue alerts remain disabled until probabilities are validated.")
+        rows = odds_data.get("response", []) if isinstance(odds_data, dict) else []
+        if not rows:
+            return _reply("LIVE BOOKMAKER ODDS — NO PRICES RETURNED\\nThe provider returned no usable odds for today's date. Coverage varies by competition and subscription.")
+        lines = ["LIVE BOOKMAKER ODDS — RAW PRICES, NOT VALUE PICKS"]
+        for row in rows[:12]:
+            prices = row.get("odds") or {}
+            market_parts = []
+            for key, label in (("yes", "BTTS Yes"), ("no", "BTTS No"),
+                               ("over_2_5", "Over 2.5"), ("under_2_5", "Under 2.5"),
+                               ("over_1_5", "Over 1.5"), ("under_1_5", "Under 1.5")):
+                if key in prices:
+                    market_parts.append(f"{label} {prices[key]:.2f}")
+            if not market_parts:
+                for key, label in (("home", "1"), ("draw", "X"), ("away", "2")):
+                    if key in prices:
+                        market_parts.append(f"{label} {prices[key]:.2f}")
+            lines.append(f"{row.get('home_team')} vs {row.get('away_team')} | {row.get('date')} {row.get('time')} | {row.get('bookmaker')}")
+            lines.append(" | ".join(market_parts) if market_parts else "No supported prices in this row.")
+            if row.get("odd_date"):
+                lines.append(f"Odds updated: {row['odd_date']}")
+        lines.append("Prices are provider-reported and may change. No value picks: the prediction model has not passed chronological out-of-sample validation.")
+        return _reply("\\n".join(lines))
 
     if command == "/status":
         return _reply(_status(report, ledger))
@@ -417,7 +445,7 @@ def handle_command(
             lines.append("Experimental estimates only — not validated betting advice.")
         return _reply("\n".join(lines))
 
-    if command in {"/overunder", "/btts", "/cleansheet", "/value", "/overvalue", "/bttsvalue", "/odds", "/10odds"}:
+    if command in {"/overunder", "/btts", "/cleansheet", "/value", "/overvalue", "/bttsvalue", "/10odds"}:
         return _reply(
             f"{command.upper()} — NOT ENABLED\n"
             "The connected report does not yet provide verified bookmaker prices plus validated probabilities for this market. "
