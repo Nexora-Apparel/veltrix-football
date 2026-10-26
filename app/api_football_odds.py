@@ -214,8 +214,69 @@ class APIFootballClient:
         raw_rows = payload.get("response")
         if not isinstance(raw_rows, list):
             raise APIFootballError("API-Football odds response is missing its response list.")
+        # The API-Sports /odds response commonly omits team names. Enrich
+        # those fixture IDs in one /fixtures request (IDs are dash-separated),
+        # rather than silently dropping every otherwise-valid odds record.
+        enrichment_status = "NOT_NEEDED"
+        missing_team_rows = [
+            row for row in raw_rows
+            if isinstance(row, dict)
+            and not (
+                str(((row.get("teams") or {}).get("home") or {}).get("name") or "").strip()
+                and str(((row.get("teams") or {}).get("away") or {}).get("name") or "").strip()
+            )
+        ]
+        if missing_team_rows:
+            fixture_ids = [
+                str(((row.get("fixture") or {}).get("id") or "")).strip()
+                for row in missing_team_rows
+            ]
+            fixture_ids = list(dict.fromkeys(fid for fid in fixture_ids if fid.isdigit()))
+            if fixture_ids:
+                try:
+                    fixtures_payload = self._get("fixtures", {
+                        "ids": "-".join(fixture_ids[:20]),
+                        "timezone": timezone,
+                    })
+                    fixtures_response = fixtures_payload.get("response")
+                    if isinstance(fixtures_response, list):
+                        fixture_teams = {}
+                        for fixture_row in fixtures_response:
+                            if not isinstance(fixture_row, dict):
+                                continue
+                            fid = str(((fixture_row.get("fixture") or {}).get("id") or "")).strip()
+                            teams = fixture_row.get("teams") or {}
+                            home = teams.get("home") or {}
+                            away = teams.get("away") or {}
+                            if fid and home.get("name") and away.get("name"):
+                                fixture_teams[fid] = {"home": home, "away": away}
+                        for row in raw_rows:
+                            if not isinstance(row, dict):
+                                continue
+                            fid = str(((row.get("fixture") or {}).get("id") or "")).strip()
+                            if fid in fixture_teams and fid not in {
+                                key for key, value in fixture_teams.items()
+                                if not value
+                            }:
+                                row["teams"] = fixture_teams[fid]
+                        enrichment_status = (
+                            "SUCCESS" if all(
+                                isinstance(row, dict)
+                                and str(((row.get("teams") or {}).get("home") or {}).get("name") or "").strip()
+                                and str(((row.get("teams") or {}).get("away") or {}).get("name") or "").strip()
+                                for row in raw_rows
+                            ) else "PARTIAL"
+                        )
+                    else:
+                        enrichment_status = "UNEXPECTED_RESPONSE"
+                except APIFootballError:
+                    enrichment_status = "FAILED"
+            else:
+                enrichment_status = "NO_FIXTURE_IDS"
+
         rows = self.normalize_odds(raw_rows, timezone)
         meta = dict(payload.get("_veltrix_meta", {}))
+        meta["team_name_enrichment"] = enrichment_status
         bookmaker_count = 0
         fixtures_with_bookmakers = 0
         market_names: list[str] = []
