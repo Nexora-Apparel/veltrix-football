@@ -104,9 +104,9 @@ async def telegram_webhook(
         try:
             today_lagos = datetime.now(ZoneInfo("Africa/Lagos")).date().isoformat()
             diagnostic = APIFootballOddsClient().diagnose(today_lagos)
-            _send_message(bot_token, chat_id, "🔔 🆕 NEW VELTRIX UPDATE\\n━━━━━━━━━━━━━━━━━━━━\\n" + diagnostic)
+            _send_message(bot_token, chat_id, "🔔 🆕 NEW VELTRIX UPDATE\n━━━━━━━━━━━━━━━━━━━━\n" + diagnostic)
         except Exception:
-            _send_message(bot_token, chat_id, "🔔 🆕 NEW VELTRIX UPDATE\\n━━━━━━━━━━━━━━━━━━━━\\nODDS DIAGNOSTIC FAILED — internal details withheld.")
+            _send_message(bot_token, chat_id, "🔔 🆕 NEW VELTRIX UPDATE\n━━━━━━━━━━━━━━━━━━━━\nODDS DIAGNOSTIC FAILED — internal details withheld.")
         return JSONResponse({"ok": True})
     try:
         # Read published snapshots only. This never starts prediction jobs or
