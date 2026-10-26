@@ -168,7 +168,7 @@ class APIFootballOddsClient:
         }
 
     def diagnose(self, day: str) -> str:
-        """Probe the account with a low-cost reference endpoint and odds endpoint."""
+        """Probe the two league slots available on the free plan before testing odds."""
         if not self.api_key:
             return "DIAGNOSTIC: APIFOOTBALL_API_KEY is not configured."
         try:
@@ -176,6 +176,7 @@ class APIFootballOddsClient:
         except (TypeError, ValueError):
             return "DIAGNOSTIC: invalid date; expected YYYY-MM-DD."
         lines = ["APIFOOTBALL CONNECTION DIAGNOSTIC"]
+
         def probe(action: str, extra: dict[str, str] | None = None) -> tuple[Any, str]:
             params = {"action": action, "APIkey": self.api_key}
             params.update(extra or {})
@@ -216,17 +217,47 @@ class APIFootballOddsClient:
 
         _, countries_line = probe("get_countries")
         lines.append(countries_line)
-        events, events_line = probe("get_events", {"from": parsed_day.isoformat(), "to": parsed_day.isoformat()})
-        lines.append(events_line)
-        _, odds_line = probe("get_odds", {"from": parsed_day.isoformat(), "to": parsed_day.isoformat()})
+        leagues, leagues_line = probe("get_leagues")
+        lines.append(leagues_line)
+
+        # Free access is limited to two leagues: probe only the first two returned
+        # league records, and scope event requests to those league IDs.
+        supported_leagues: list[tuple[str, str]] = []
+        for row in (leagues or []):
+            if not isinstance(row, dict):
+                continue
+            league_id = str(row.get("league_id") or "").strip()
+            league_name = str(row.get("league_name") or row.get("league") or "Unnamed league").strip()
+            if league_id and all(existing_id != league_id for existing_id, _ in supported_leagues):
+                supported_leagues.append((league_id, league_name))
+            if len(supported_leagues) == 2:
+                break
+
+        fixture_id = ""
+        if not supported_leagues:
+            lines.append("League-scoped fixtures: SKIPPED; get_leagues returned no usable league IDs")
+        for league_id, league_name in supported_leagues:
+            events, event_line = probe("get_events", {
+                "from": parsed_day.isoformat(),
+                "to": parsed_day.isoformat(),
+                "league_id": league_id,
+            })
+            lines.append(f"get_events[{league_name}; league_id={league_id}]: " + event_line.split(": ", 1)[1])
+            if not fixture_id:
+                fixture_id = next((str(row.get("match_id") or "").strip()
+                                   for row in (events or [])
+                                   if isinstance(row, dict) and str(row.get("match_id") or "").strip()), "")
+
+        _, odds_line = probe("get_odds", {
+            "from": parsed_day.isoformat(),
+            "to": parsed_day.isoformat(),
+        })
         lines.append(odds_line)
-        # If the date has a fixture, test the documented match_id odds filter too.
-        fixture_id = next((str(row.get("match_id") or "").strip() for row in (events or [])
-                           if isinstance(row, dict) and str(row.get("match_id") or "").strip()), "")
         if fixture_id:
             _, match_odds_line = probe("get_odds", {"match_id": fixture_id})
             lines.append("get_odds(match_id): " + match_odds_line.split(": ", 1)[1])
         else:
-            lines.append("get_odds(match_id): SKIPPED; no fixture ID returned for this date")
+            lines.append("get_odds(match_id): SKIPPED; no fixture ID returned by the two league-scoped probes")
+        lines.append("Free-plan diagnostic checks no more than two league IDs.")
         lines.append("No API key or request URL is included in this report.")
-        return "\n".join(lines)
+        return "\\n".join(lines)
