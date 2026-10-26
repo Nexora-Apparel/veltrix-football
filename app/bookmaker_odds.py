@@ -208,6 +208,8 @@ class APIFootballOddsClient:
                         summary = "RATE/QUOTA LIMIT"
                     elif any(term in folded for term in ("subscription", "upgrade", "permission", "plan", "access denied")):
                         summary = "PLAN/ACCESS RESTRICTION"
+                    elif folded in {"404", "http 404", "not found", "404 not found"}:
+                        summary = "GENERIC 404 FROM get_odds; COUNTRIES WORKS, INVESTIGATE ODDS ACTION OR ACCOUNT ENTITLEMENT"
                     else:
                         summary = "PROVIDER ERROR (details withheld)"
                     lines.append(f"{action}: HTTP {response.status_code}; {summary}")
