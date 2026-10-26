@@ -46,7 +46,8 @@ def test_cached_results_payload_includes_only_completed_matches_with_valid_ids(m
     result, status = load_cached_results_payload("Nexora-Apparel/veltrix-football")
     assert status == "CACHE_AVAILABLE"
     assert result["response"] == [{
-        "fixture": {"id": 123, "status": {"short": "FT"}},
+        "fixture": {"id": 123, "date": "2026-10-24", "status": {"short": "FT"}},
+        "teams": {"home": {"name": "Alpha"}, "away": {"name": "Beta"}},
         "goals": {"home": 2, "away": 1},
     }]
 
