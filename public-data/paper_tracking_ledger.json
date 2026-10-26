@@ -6,8 +6,8 @@
       "report_date": "2026-10-24",
       "fixtures_scored": 0,
       "completed_forecasts_scored": 0,
-      "awaiting_result_or_match": 0,
-      "withheld_or_invalid_forecasts": 0,
+      "awaiting_result_or_match": 8,
+      "withheld_or_invalid_forecasts": 295,
       "metrics": {
         "matches": 0,
         "result_accuracy": null,
@@ -19,15 +19,30 @@
     }
   ],
   "scored_matches": [],
-  "updated_at_utc": "2026-10-25T08:12:38.803485+00:00",
+  "updated_at_utc": "2026-10-26T10:48:04.093838+00:00",
   "last_attempt": {
-    "report_date": "2026-10-24",
-    "status": "ALREADY_EVALUATED",
+    "report_date": "2026-10-25",
+    "status": "EVALUATED",
     "attempts": [
       {
         "report_date": "2026-10-24",
-        "status": "ALREADY_EVALUATED",
-        "detail": "No pending report dates; this date is already complete."
+        "status": "EVALUATED",
+        "detail": "Scored from 0 cached completed matches; no live football-provider request was made.",
+        "fixtures_scored": 0,
+        "completed_forecasts_scored": 0,
+        "metrics": {
+          "matches": 0,
+          "result_accuracy": null,
+          "brier_score": null,
+          "log_loss": null
+        },
+        "metrics_by_model": {},
+        "awaiting_result_or_match": 8
+      },
+      {
+        "report_date": "2026-10-25",
+        "status": "NO_PREVIOUS_REPORT",
+        "detail": "No saved daily report was found for this date."
       }
     ],
     "detail": null,
