@@ -100,6 +100,14 @@ async def telegram_webhook(
     command = BUTTON_COMMANDS.get(text.strip().casefold(), text)
     if not command.startswith("/"):
         return JSONResponse({"ok": True})
+    if command.strip().split()[0].split("@", 1)[0].casefold() == "/oddsdiag":
+        try:
+            today_lagos = datetime.now(ZoneInfo("Africa/Lagos")).date().isoformat()
+            diagnostic = APIFootballOddsClient().diagnose(today_lagos)
+            _send_message(bot_token, chat_id, "🔔 🆕 NEW VELTRIX UPDATE\\n━━━━━━━━━━━━━━━━━━━━\\n" + diagnostic)
+        except Exception:
+            _send_message(bot_token, chat_id, "🔔 🆕 NEW VELTRIX UPDATE\\n━━━━━━━━━━━━━━━━━━━━\\nODDS DIAGNOSTIC FAILED — internal details withheld.")
+        return JSONResponse({"ok": True})
     try:
         # Read published snapshots only. This never starts prediction jobs or
         # consumes the football provider's API quota.
