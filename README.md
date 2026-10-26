@@ -31,6 +31,21 @@ $env:HIGHLIGHTLY_API_KEY="your_key_here"
 python -m app.cli status
 ```
 
+## API-Football / API-Sports odds diagnostics
+
+The original API-Football account is separate from Highlightly and from the similarly named APIFootball.com service. The API-Sports v3 adapter reads `API_FOOTBALL_KEY` and sends it in the `x-apisports-key` header to `https://v3.football.api-sports.io/`. Keep `HIGHLIGHTLY_API_KEY` unchanged for fixture retrieval.
+
+Set `API_FOOTBALL_KEY` in the deployment environment, then run:
+
+```bash
+python -m app.cli api-football-status
+python -m app.cli odds --date YYYY-MM-DD --timezone Africa/Lagos
+```
+
+The status command checks authentication and returns subscription/quota metadata without exposing the API key or account email. The odds command inspects one page of prematch odds (10 records per page). Availability depends on fixture timing, competition coverage, and subscription; an empty odds response does not by itself prove authentication failed.
+
+**Integration status:** this is currently a diagnostic/data-access path, not yet connected to the daily report, Telegram command router, or value-alert pipeline. Keep value alerts disabled until live odds are verified and model probabilities pass chronological out-of-sample validation.
+
 ## API notes
 The client calls `https://soccer.highlightly.net` and sends the key in the `x-rapidapi-key` header. It normalizes Highlightly's `data` envelope into the internal `response` shape. Request quota is reported from the provider's rate-limit headers when available. The free/basic plan does not provide bookmaker odds; the adapter returns an explicit unavailable status instead of fabricating them.
 
