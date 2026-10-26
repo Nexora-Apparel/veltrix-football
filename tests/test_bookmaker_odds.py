@@ -73,11 +73,14 @@ def test_diagnose_classifies_generic_odds_404_without_exposing_credentials():
             self.calls.append(params.copy())
             if params["action"] == "get_countries":
                 return Response([{"country_id": "1"}, {"country_id": "2"}])
+            if params["action"] == "get_events":
+                return Response([{"match_id": "fixture-123"}])
             return Response({"error": "404"})
     session = Session()
     report = APIFootballOddsClient("secret-test-key", session=session).diagnose("2026-10-26")
     assert "get_countries: HTTP 200; list response (2 rows)" in report
-    assert "GENERIC 404 FROM get_odds" in report
-    assert "COUNTRIES WORKS" in report
+    assert "get_events: HTTP 200; list response (1 rows)" in report
+    assert "get_odds: HTTP 200; GENERIC 404" in report
+    assert "get_odds(match_id): HTTP 200; GENERIC 404" in report
     assert "secret-test-key" not in report
     assert "No API key or request URL" in report
