@@ -297,10 +297,10 @@ def handle_command(
 
     if command == "/odds":
         if odds_error:
-            return _reply("LIVE BOOKMAKER ODDS — UNAVAILABLE\\n" + odds_error + "\\nValue alerts remain disabled until probabilities are validated.")
+            return _reply("LIVE BOOKMAKER ODDS — UNAVAILABLE\n" + odds_error + "\nValue alerts remain disabled until probabilities are validated.")
         rows = odds_data.get("response", []) if isinstance(odds_data, dict) else []
         if not rows:
-            return _reply("LIVE BOOKMAKER ODDS — NO PRICES RETURNED\\nThe provider returned no usable odds for today's date. Coverage varies by competition and subscription.")
+            return _reply("LIVE BOOKMAKER ODDS — NO PRICES RETURNED\nThe provider returned no usable odds for today's date. Coverage varies by competition and subscription.")
         lines = ["LIVE BOOKMAKER ODDS — RAW PRICES, NOT VALUE PICKS"]
         for row in rows[:12]:
             prices = row.get("odds") or {}
@@ -319,7 +319,7 @@ def handle_command(
             if row.get("odd_date"):
                 lines.append(f"Odds updated: {row['odd_date']}")
         lines.append("Prices are provider-reported and may change. No value picks: the prediction model has not passed chronological out-of-sample validation.")
-        return _reply("\\n".join(lines))
+        return _reply("\n".join(lines))
 
     if command == "/status":
         return _reply(_status(report, ledger))
