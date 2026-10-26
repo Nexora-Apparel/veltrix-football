@@ -216,7 +216,45 @@ class APIFootballClient:
             raise APIFootballError("API-Football odds response is missing its response list.")
         rows = self.normalize_odds(raw_rows, timezone)
         meta = dict(payload.get("_veltrix_meta", {}))
-        meta.update({"status": "AVAILABLE" if rows else "NO_ODDS_RETURNED", "raw_fixture_rows": len(raw_rows)})
+        bookmaker_count = 0
+        fixtures_with_bookmakers = 0
+        market_names: list[str] = []
+        fixture_examples: list[dict[str, str]] = []
+        for raw_row in raw_rows:
+            if not isinstance(raw_row, dict):
+                continue
+            fixture = raw_row.get("fixture") or {}
+            teams = raw_row.get("teams") or {}
+            home = str((teams.get("home") or {}).get("name") or "").strip()
+            away = str((teams.get("away") or {}).get("name") or "").strip()
+            if home and away and len(fixture_examples) < 3:
+                fixture_examples.append({
+                    "fixture_id": str(fixture.get("id") or ""),
+                    "match": f"{home} vs {away}",
+                    "date": str(fixture.get("date") or "")[:10],
+                    "league": str((raw_row.get("league") or {}).get("name") or "Unknown"),
+                })
+            bookmakers = raw_row.get("bookmakers") or []
+            if bookmakers:
+                fixtures_with_bookmakers += 1
+            for bookmaker in bookmakers:
+                if not isinstance(bookmaker, dict):
+                    continue
+                bookmaker_count += 1
+                for bet in bookmaker.get("bets") or []:
+                    if not isinstance(bet, dict):
+                        continue
+                    market = str(bet.get("name") or "").strip()
+                    if market and market not in market_names and len(market_names) < 8:
+                        market_names.append(market)
+        meta.update({
+            "status": "AVAILABLE" if rows else "NO_ODDS_RETURNED",
+            "raw_fixture_rows": len(raw_rows),
+            "fixtures_with_bookmakers": fixtures_with_bookmakers,
+            "bookmaker_count": bookmaker_count,
+            "sample_market_names": market_names,
+            "fixture_examples": fixture_examples,
+        })
         return {
             "provider": "API-Football (API-Sports)",
             "date": parsed_day.isoformat(),
