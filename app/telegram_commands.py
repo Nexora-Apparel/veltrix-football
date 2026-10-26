@@ -97,6 +97,24 @@ def _future_fixtures(report: dict[str, Any] | None) -> list[dict[str, Any]]:
         if _kickoff_is_future(row, expected_date=expected_date)
     ]
 
+def _odds_row_is_future(row: dict[str, Any], *, now: datetime | None = None) -> bool:
+    """Fail closed on missing/invalid kickoff data and exclude started fixtures."""
+    raw_date, raw_time = row.get("date"), row.get("time")
+    if not isinstance(raw_date, str) or not isinstance(raw_time, str):
+        return False
+    try:
+        kickoff_date = date.fromisoformat(raw_date)
+        kickoff_time = datetime.strptime(raw_time, "%H:%M").time()
+        lagos = ZoneInfo("Africa/Lagos")
+        kickoff = datetime.combine(kickoff_date, kickoff_time, tzinfo=lagos)
+        current = now or datetime.now(lagos)
+        if current.tzinfo is None:
+            current = current.replace(tzinfo=lagos)
+        return kickoff > current.astimezone(lagos)
+    except (TypeError, ValueError, OverflowError):
+        return False
+
+
 def _valid_probability_vector(probabilities: Any) -> bool:
     if not isinstance(probabilities, dict):
         return False
@@ -235,7 +253,8 @@ def _status(report: dict[str, Any] | None, ledger: dict[str, Any] | None) -> str
         f"Recent-results refresh: {history_status}\n"
         f"Historical coverage: {history_coverage}\n"
         f"Report publication: {str(report.get('publication_status') or 'LIVE_OR_UNMARKED') if isinstance(report, dict) else 'UNKNOWN'}\n"
-        f"Live bookmaker odds: {odds_status}\n"
+        f"Report 1X2 odds integration: {odds_status}\n"
+        "Direct API-Sports odds feed: run /oddsdiag; /status reads saved-report integration only.\n"
         f"Paper-tracking ledger: {ledger_status}\n"
         "Betting/value alerts: DISABLED until chronological out-of-sample validation.\n"
         "No bookmaker actions are performed."
@@ -300,10 +319,14 @@ def handle_command(
         if odds_error:
             return _reply("LIVE BOOKMAKER ODDS — UNAVAILABLE\n" + odds_error + "\nValue alerts remain disabled until probabilities are validated.")
         rows = odds_data.get("response", []) if isinstance(odds_data, dict) else []
-        if not rows:
+        if not isinstance(rows, list) or not rows:
             return _reply("LIVE BOOKMAKER ODDS — NO PRICES RETURNED\nThe provider returned no usable odds for today's date. Coverage varies by competition and subscription.")
-        lines = ["LIVE BOOKMAKER ODDS — RAW PRICES, NOT VALUE PICKS"]
-        for row in rows[:12]:
+        now_lagos = datetime.now(ZoneInfo("Africa/Lagos"))
+        upcoming_rows = [row for row in rows if isinstance(row, dict) and _odds_row_is_future(row, now=now_lagos)]
+        if not upcoming_rows:
+            return _reply("LIVE BOOKMAKER ODDS — NO UPCOMING FIXTURES WITH USABLE PREMATCH PRICES\nAll returned fixtures have started, have passed kickoff, or lack a valid Lagos kickoff time. No stale prices are being presented as upcoming opportunities. Try /oddsdiag to check the provider feed.")
+        lines = ["LIVE BOOKMAKER ODDS — UPCOMING FIXTURES | RAW PRICES, NOT VALUE PICKS"]
+        for row in upcoming_rows[:12]:
             prices = row.get("odds") or {}
             market_parts = []
             for key, label in (("yes", "BTTS Yes"), ("no", "BTTS No"),
