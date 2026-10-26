@@ -117,6 +117,7 @@ async def telegram_webhook(
                 f"Prematch odds rows for {today_lagos}: {odds.get('results', 0)}",
                 f"Odds status: {meta.get('status', 'UNKNOWN')}",
                 f"Team-name enrichment: {meta.get('team_name_enrichment', 'not reported')}",
+                f"Enrichment detail: {meta.get('team_name_enrichment_detail', 'none')}",
                 f"Provider raw fixture rows: {meta.get('raw_fixture_rows', 0)}",
                 f"Fixtures with bookmakers: {meta.get('fixtures_with_bookmakers', 0)}",
                 f"Bookmaker records: {meta.get('bookmaker_count', 0)}",
