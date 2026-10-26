@@ -323,6 +323,14 @@ def main() -> None:
             isinstance(item.get("market_probabilities"), dict)
             for item in report.get("predictions", [])
         )
+        # Distinguish a report built from this live run from a reused snapshot.
+        # The publisher adds command_data_publication=PUBLISHED only after the
+        # public command-data write succeeds.
+        report["publication_status"] = "LIVE_REPORT_GENERATED_PENDING_PUBLICATION"
+        report["publication_notice"] = (
+            "Generated from this run's live fixture response. Public publication "
+            "is confirmed separately by command_data_publication."
+        )
         output = Path(args.output)
         output.parent.mkdir(parents=True, exist_ok=True)
         output.write_text(json.dumps(report, indent=2, ensure_ascii=False), encoding="utf-8")
