@@ -37,6 +37,43 @@ def test_evaluator_scores_completed_forecast_with_proper_metrics():
     assert result["model_status"] == "PAPER_TRACKING_ONLY"
 
 
+def test_evaluator_falls_back_to_unique_local_date_and_team_identity():
+    report = {
+        "timezone": "Africa/Lagos",
+        "as_of_date": "2026-10-23",
+        "predictions": [{
+            **_prediction(999),
+            "kickoff_local": "2026-10-23T18:00:00+01:00",
+        }],
+    }
+    result_payload = {"response": [{
+        "fixture": {"id": 1, "date": "2026-10-23", "status": {"short": "FT"}},
+        "teams": {"home": {"name": "Alpha FC"}, "away": {"name": "Beta FC"}},
+        "goals": {"home": 2, "away": 0},
+    }]}
+    result = evaluate_report(report, result_payload)
+    assert result["completed_forecasts_scored"] == 1
+    assert result["matches"][0]["fixture_id"] == 999
+    assert result["matches"][0]["actual"] == "H"
+
+
+def test_evaluator_does_not_use_ambiguous_identity_fallback():
+    report = {
+        "timezone": "Africa/Lagos",
+        "predictions": [{**_prediction(999), "kickoff_local": "2026-10-23T18:00:00+01:00"}],
+    }
+    repeated = {
+        "fixture": {"date": "2026-10-23", "status": {"short": "FT"}},
+        "teams": {"home": {"name": "Alpha FC"}, "away": {"name": "Beta FC"}},
+        "goals": {"home": 2, "away": 0},
+    }
+    first = {**repeated, "fixture": {**repeated["fixture"], "id": 1}}
+    second = {**repeated, "fixture": {**repeated["fixture"], "id": 2}, "goals": {"home": 0, "away": 2}}
+    result = evaluate_report(report, {"response": [first, second]})
+    assert result["completed_forecasts_scored"] == 0
+    assert result["awaiting_result_or_match"] == 1
+
+
 def test_evaluator_does_not_score_unfinished_or_withheld_fixtures():
     report = {"predictions": [
         _prediction(1),
