@@ -214,9 +214,9 @@ class APIFootballClient:
         raw_rows = payload.get("response")
         if not isinstance(raw_rows, list):
             raise APIFootballError("API-Football odds response is missing its response list.")
-        # The API-Sports /odds response commonly omits team names. Enrich
-        # those fixture IDs in one /fixtures request (IDs are dash-separated),
-        # rather than silently dropping every otherwise-valid odds record.
+        # The API-Sports /odds response commonly omits team names. Some plans
+        # reject the batch `ids` fixture filter, so fall back to the supported
+        # date filter rather than losing all odds rows.
         enrichment_status = "NOT_NEEDED"
         enrichment_detail = ""
         missing_team_rows = [
@@ -233,47 +233,71 @@ class APIFootballClient:
                 for row in missing_team_rows
             ]
             fixture_ids = list(dict.fromkeys(fid for fid in fixture_ids if fid.isdigit()))
+            fixture_teams: dict[str, dict[str, Any]] = {}
+
+            def collect_fixture_teams(fixtures_response: Any) -> None:
+                if not isinstance(fixtures_response, list):
+                    return
+                for fixture_row in fixtures_response:
+                    if not isinstance(fixture_row, dict):
+                        continue
+                    fid = str(((fixture_row.get("fixture") or {}).get("id") or "")).strip()
+                    teams = fixture_row.get("teams") or {}
+                    home = teams.get("home") or {}
+                    away = teams.get("away") or {}
+                    if fid and home.get("name") and away.get("name"):
+                        fixture_teams[fid] = {"home": home, "away": away}
+
             if fixture_ids:
                 try:
                     fixtures_payload = self._get("fixtures", {
                         "ids": "-".join(fixture_ids[:20]),
                         "timezone": timezone,
                     })
-                    fixtures_response = fixtures_payload.get("response")
-                    if isinstance(fixtures_response, list):
-                        fixture_teams = {}
-                        for fixture_row in fixtures_response:
-                            if not isinstance(fixture_row, dict):
-                                continue
-                            fid = str(((fixture_row.get("fixture") or {}).get("id") or "")).strip()
-                            teams = fixture_row.get("teams") or {}
-                            home = teams.get("home") or {}
-                            away = teams.get("away") or {}
-                            if fid and home.get("name") and away.get("name"):
-                                fixture_teams[fid] = {"home": home, "away": away}
-                        for row in raw_rows:
-                            if not isinstance(row, dict):
-                                continue
-                            fid = str(((row.get("fixture") or {}).get("id") or "")).strip()
-                            if fid in fixture_teams and fid not in {
-                                key for key, value in fixture_teams.items()
-                                if not value
-                            }:
-                                row["teams"] = fixture_teams[fid]
-                        enrichment_status = (
-                            "SUCCESS" if all(
-                                isinstance(row, dict)
-                                and str(((row.get("teams") or {}).get("home") or {}).get("name") or "").strip()
-                                and str(((row.get("teams") or {}).get("away") or {}).get("name") or "").strip()
-                                for row in raw_rows
-                            ) else "PARTIAL"
-                        )
-                    else:
-                        enrichment_status = "UNEXPECTED_RESPONSE"
+                    collect_fixture_teams(fixtures_payload.get("response"))
                 except APIFootballError as exc:
+                    enrichment_detail = f"Batch fixture lookup failed: {str(exc)[:140]}"
+
+                # The API's documentation notes that batch IDs may depend on
+                # plan access. A date lookup is a lower-cost fallback and can
+                # still enrich the 10 odds fixtures returned for this date.
+                if not fixture_teams:
+                    try:
+                        fixtures_payload = self._get("fixtures", {
+                            "date": parsed_day.isoformat(),
+                            "timezone": timezone,
+                        })
+                        collect_fixture_teams(fixtures_payload.get("response"))
+                        if fixture_teams:
+                            enrichment_detail = ""
+                    except APIFootballError as exc:
+                        fallback_detail = f"Date fixture lookup failed: {str(exc)[:140]}"
+                        enrichment_detail = (
+                            f"{enrichment_detail}; {fallback_detail}"
+                            if enrichment_detail else fallback_detail
+                        )
+
+                for row in raw_rows:
+                    if not isinstance(row, dict):
+                        continue
+                    fid = str(((row.get("fixture") or {}).get("id") or "")).strip()
+                    if fid in fixture_teams:
+                        row["teams"] = fixture_teams[fid]
+
+                named_rows = [
+                    row for row in raw_rows
+                    if isinstance(row, dict)
+                    and str(((row.get("teams") or {}).get("home") or {}).get("name") or "").strip()
+                    and str(((row.get("teams") or {}).get("away") or {}).get("name") or "").strip()
+                ]
+                if len(named_rows) == len(raw_rows):
+                    enrichment_status = "SUCCESS"
+                elif named_rows:
+                    enrichment_status = "PARTIAL"
+                else:
                     enrichment_status = "FAILED"
-                    # Sanitized error category only; never includes credentials.
-                    enrichment_detail = str(exc)[:180]
+                    if not enrichment_detail:
+                        enrichment_detail = "Fixture lookups returned no matching team names."
             else:
                 enrichment_status = "NO_FIXTURE_IDS"
 
