@@ -32,6 +32,55 @@ def test_invalid_slipcheck_rejected():
     assert "Usage" in handle_command("/slipcheck")
 
 
+def test_status_distinguishes_report_odds_from_direct_provider_feed():
+    report = {
+        "as_of_date": datetime.now(ZoneInfo("Africa/Lagos")).date().isoformat(),
+        "predictions": [],
+        "live_odds_sync": {"status": "NO_VALID_1X2_ODDS"},
+    }
+    reply = handle_command("/status", report=report)
+    assert "Report 1X2 odds integration: NO_VALID_1X2_ODDS" in reply
+    assert "Direct API-Sports odds feed: run /oddsdiag" in reply
+
+
+def test_odds_command_excludes_started_and_malformed_kickoffs():
+    lagos = ZoneInfo("Africa/Lagos")
+    now = datetime.now(lagos)
+    future = now + timedelta(hours=3)
+    yesterday = (now - timedelta(days=1)).strftime("%Y-%m-%d")
+    future_row = {
+        "home_team": "Future FC", "away_team": "Upcoming FC",
+        "date": future.date().isoformat(), "time": future.strftime("%H:%M"),
+        "bookmaker": "Example Book", "odds": {"home": 2.1, "draw": 3.2, "away": 3.5},
+    }
+    stale_row = {
+        "home_team": "Stale FC", "away_team": "Finished FC",
+        "date": yesterday, "time": "12:00", "bookmaker": "Example Book",
+        "odds": {"home": 2.1, "draw": 3.2, "away": 3.5},
+    }
+    malformed_row = {
+        "home_team": "Unknown FC", "away_team": "Unknown United",
+        "date": now.date().isoformat(), "time": "", "bookmaker": "Example Book",
+        "odds": {"home": 2.1, "draw": 3.2, "away": 3.5},
+    }
+    reply = handle_command("/odds", odds_data={"response": [stale_row, malformed_row, future_row]})
+    assert "Future FC vs Upcoming FC" in reply
+    assert "Stale FC" not in reply
+    assert "Unknown FC" not in reply
+    assert "UPCOMING FIXTURES" in reply
+
+
+def test_odds_command_fails_closed_when_only_stale_prices_returned():
+    yesterday = (datetime.now(ZoneInfo("Africa/Lagos")) - timedelta(days=1)).strftime("%Y-%m-%d")
+    reply = handle_command("/odds", odds_data={"response": [{
+        "home_team": "Past FC", "away_team": "Done FC", "date": yesterday,
+        "time": "10:00", "bookmaker": "Example Book",
+        "odds": {"home": 2.0, "draw": 3.0, "away": 4.0},
+    }]})
+    assert "NO UPCOMING FIXTURES" in reply
+    assert "Past FC" not in reply
+
+
 def test_status_discloses_validation_gate():
     reply = handle_command("/status")
     assert "DISABLED until chronological out-of-sample validation" in reply
