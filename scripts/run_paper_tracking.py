@@ -57,7 +57,15 @@ def load_cached_results_payload(repo: str) -> tuple[dict[str, Any], str]:
         ):
             continue
         completed.append({
-            "fixture": {"id": fixture_id, "status": {"short": status}},
+            "fixture": {
+                "id": fixture_id,
+                "date": str(row.get("date") or ""),
+                "status": {"short": status},
+            },
+            "teams": {
+                "home": {"name": str(row.get("home") or "")},
+                "away": {"name": str(row.get("away") or "")},
+            },
             "goals": {"home": home_goals, "away": away_goals},
         })
     return {"response": completed}, "CACHE_AVAILABLE"
