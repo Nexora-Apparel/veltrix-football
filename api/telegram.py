@@ -4,6 +4,8 @@ from __future__ import annotations
 import hmac
 import json
 import os
+from datetime import datetime
+from zoneinfo import ZoneInfo
 from urllib.request import Request, urlopen
 
 from fastapi import FastAPI, Header, HTTPException, Request as FastAPIRequest
@@ -12,6 +14,7 @@ from fastapi.responses import JSONResponse
 from app.telegram_commands import handle_command
 from app.report_artifacts import load_latest_report, load_paper_ledger
 from app.telegram_security import telegram_webhook_secret_token
+from app.bookmaker_odds import APIFootballOddsClient, BookmakerOddsError
 
 app = FastAPI(title="Veltrix Football Telegram Command Centre")
 
@@ -106,7 +109,21 @@ async def telegram_webhook(
         except Exception:
             # A data-source outage must not break the Telegram webhook.
             report, ledger = None, None
-        _send_message(bot_token, chat_id, handle_command(command, report=report, ledger=ledger))
+        odds_data = None
+        odds_error = None
+        if command.strip().split()[0].split("@", 1)[0].casefold() == "/odds":
+            try:
+                today_lagos = datetime.now(ZoneInfo("Africa/Lagos")).date().isoformat()
+                odds_data = APIFootballOddsClient().odds_for_date(today_lagos)
+            except BookmakerOddsError as exc:
+                odds_error = str(exc)
+            except Exception:
+                odds_error = "Unexpected odds-provider error; details were withheld."
+        _send_message(
+            bot_token, chat_id,
+            handle_command(command, report=report, ledger=ledger,
+                           odds_data=odds_data, odds_error=odds_error)
+        )
     except Exception:
         # Do not expose the update, chat id, token, or Telegram request URL.
         raise HTTPException(status_code=502, detail="Telegram reply delivery failed") from None
