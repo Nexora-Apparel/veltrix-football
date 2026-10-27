@@ -49,7 +49,7 @@ def test_telegram_report_is_clear_and_experimental():
     assert "Expected goals: 1.40 - 0.80" in message
     assert "ELO ALTERNATIVE" not in message
     assert "POISSON GOAL MARKETS" not in message
-    assert "Fixture data provided by Highlightly Football API." in message
+    assert "Fixture data provided by API-Football (API-Sports)." in message
 
 
 def test_report_warns_when_recent_data_refresh_is_incomplete():
