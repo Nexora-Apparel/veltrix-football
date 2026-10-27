@@ -33,8 +33,16 @@ def _load(kind: str) -> dict[str, Any] | None:
         return None
 
     filename = "daily_predictions.json" if kind == "report" else "paper_tracking_ledger.json"
-    url = f"https://raw.githubusercontent.com/{repo}/{branch}/public-data/{filename}"
-    request = Request(url, headers={"User-Agent": "Veltrix-Football-Command-Centre"})
+    # Raw GitHub/CDN caches can lag behind updates to the command-data branch.
+    # A changing query parameter prevents the runtime from repeatedly reading
+    # an old snapshot after a successful publication.
+    cache_buster = int(time.time())
+    url = f"https://raw.githubusercontent.com/{repo}/{branch}/public-data/{filename}?v={cache_buster}"
+    request = Request(url, headers={
+        "User-Agent": "Veltrix-Football-Command-Centre",
+        "Cache-Control": "no-cache",
+        "Pragma": "no-cache",
+    })
     value: dict[str, Any] | None = None
     try:
         with urlopen(request, timeout=_TIMEOUT_SECONDS) as response:
@@ -49,7 +57,7 @@ def _load(kind: str) -> dict[str, Any] | None:
     except (HTTPError, URLError, OSError, TimeoutError, UnicodeDecodeError, json.JSONDecodeError, ValueError):
         value = None
 
-    _cache[kind] = (time.monotonic(), value)
+    _cache[kind] = (now, value)
     return value
 
 
