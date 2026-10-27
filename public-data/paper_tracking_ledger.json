@@ -4,58 +4,159 @@
   "evaluations": [
     {
       "report_date": "2026-10-24",
-      "fixtures_scored": 0,
-      "completed_forecasts_scored": 0,
-      "awaiting_result_or_match": 8,
+      "fixtures_scored": 4,
+      "completed_forecasts_scored": 4,
+      "awaiting_result_or_match": 4,
       "withheld_or_invalid_forecasts": 295,
       "metrics": {
-        "matches": 0,
-        "result_accuracy": null,
-        "brier_score": null,
-        "log_loss": null
+        "matches": 4,
+        "result_accuracy": 0.75,
+        "brier_score": 0.47981128640808113,
+        "log_loss": 0.8226479998250742
       },
-      "metrics_by_model": {},
-      "model_versions": []
+      "metrics_by_model": {
+        "experimental_recent_goals_poisson": {
+          "matches": 4,
+          "result_accuracy": 0.75,
+          "brier_score": 0.47981128640808113,
+          "log_loss": 0.8226479998250742
+        }
+      },
+      "model_versions": [
+        "experimental_recent_goals_poisson"
+      ]
     }
   ],
-  "scored_matches": [],
-  "updated_at_utc": "2026-10-26T10:48:04.093838+00:00",
+  "scored_matches": [
+    {
+      "fixture_id": 1550162,
+      "model": "experimental_recent_goals_poisson",
+      "home_team": "Lazio",
+      "away_team": "Parma",
+      "actual": "H",
+      "predicted": "H",
+      "probabilities": {
+        "H": 0.4697,
+        "D": 0.3037,
+        "A": 0.2266
+      },
+      "correct": true,
+      "home_goals": 2,
+      "away_goals": 1,
+      "report_date": "2026-10-24"
+    },
+    {
+      "fixture_id": 1552795,
+      "model": "experimental_recent_goals_poisson",
+      "home_team": "Lens",
+      "away_team": "Paris FC",
+      "actual": "H",
+      "predicted": "A",
+      "probabilities": {
+        "H": 0.3492,
+        "D": 0.217,
+        "A": 0.4338
+      },
+      "correct": false,
+      "home_goals": 2,
+      "away_goals": 1,
+      "report_date": "2026-10-24"
+    },
+    {
+      "fixture_id": 1490556,
+      "model": "experimental_recent_goals_poisson",
+      "home_team": "Columbus Crew",
+      "away_team": "Toronto FC",
+      "actual": "H",
+      "predicted": "H",
+      "probabilities": {
+        "H": 0.5248475152484752,
+        "D": 0.23777622237776225,
+        "A": 0.23737626237376264
+      },
+      "correct": true,
+      "home_goals": 4,
+      "away_goals": 2,
+      "report_date": "2026-10-24"
+    },
+    {
+      "fixture_id": 1490558,
+      "model": "experimental_recent_goals_poisson",
+      "home_team": "New York Red Bulls",
+      "away_team": "Inter Miami",
+      "actual": "H",
+      "predicted": "H",
+      "probabilities": {
+        "H": 0.4325,
+        "D": 0.2004,
+        "A": 0.3671
+      },
+      "correct": true,
+      "home_goals": 2,
+      "away_goals": 0,
+      "report_date": "2026-10-24"
+    }
+  ],
+  "updated_at_utc": "2026-10-27T05:25:46.231096+00:00",
   "last_attempt": {
-    "report_date": "2026-10-25",
+    "report_date": "2026-10-26",
     "status": "EVALUATED",
     "attempts": [
       {
         "report_date": "2026-10-24",
         "status": "EVALUATED",
-        "detail": "Scored from 0 cached completed matches; no live football-provider request was made.",
-        "fixtures_scored": 0,
-        "completed_forecasts_scored": 0,
+        "detail": "Scored from 2611 cached completed matches; no live football-provider request was made.",
+        "fixtures_scored": 4,
+        "completed_forecasts_scored": 4,
         "metrics": {
-          "matches": 0,
-          "result_accuracy": null,
-          "brier_score": null,
-          "log_loss": null
+          "matches": 4,
+          "result_accuracy": 0.75,
+          "brier_score": 0.47981128640808113,
+          "log_loss": 0.8226479998250742
         },
-        "metrics_by_model": {},
-        "awaiting_result_or_match": 8
+        "metrics_by_model": {
+          "experimental_recent_goals_poisson": {
+            "matches": 4,
+            "result_accuracy": 0.75,
+            "brier_score": 0.47981128640808113,
+            "log_loss": 0.8226479998250742
+          }
+        },
+        "awaiting_result_or_match": 4
       },
       {
-        "report_date": "2026-10-25",
+        "report_date": "2026-10-26",
         "status": "NO_PREVIOUS_REPORT",
         "detail": "No saved daily report was found for this date."
       }
     ],
     "detail": null,
-    "metrics_by_model": {}
+    "metrics_by_model": {
+      "experimental_recent_goals_poisson": {
+        "matches": 4,
+        "result_accuracy": 0.75,
+        "brier_score": 0.47981128640808113,
+        "log_loss": 0.8226479998250742
+      }
+    }
   },
-  "cumulative_metrics_by_model": {},
+  "cumulative_metrics_by_model": {
+    "experimental_recent_goals_poisson": {
+      "matches": 4,
+      "result_accuracy": 0.75,
+      "brier_score": 0.47981128640808113,
+      "log_loss": 0.8226479998250742
+    }
+  },
   "cumulative_metrics": {
-    "matches": 0,
-    "result_accuracy": null,
-    "brier_score": null,
-    "log_loss": null
+    "matches": 4,
+    "result_accuracy": 0.75,
+    "brier_score": 0.47981128640808113,
+    "log_loss": 0.8226479998250742
   },
-  "model_versions": [],
+  "model_versions": [
+    "experimental_recent_goals_poisson"
+  ],
   "evaluated_report_dates": 1,
   "notice": "Retrospective paper evaluation only; no betting recommendation or profitability claim."
 }
