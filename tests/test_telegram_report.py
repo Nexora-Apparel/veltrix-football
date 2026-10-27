@@ -207,3 +207,27 @@ def test_delivery_marker_is_saved_with_existing_sha_and_recent_dates(monkeypatch
     assert saved["version"] == 1
     assert saved["sent_dates"][-1] == "2026-10-31"
     assert len(saved["sent_dates"]) == 30
+
+
+
+def test_main_skips_a_report_date_already_recorded_as_sent(tmp_path, monkeypatch, capsys):
+    import json
+    from scripts import send_telegram_report as sender
+
+    report_path = tmp_path / "report.json"
+    report_path.write_text(json.dumps({
+        "as_of_date": "2026-10-27",
+        "same_day_only": True,
+        "timezone": "Africa/Lagos",
+        "predictions": [],
+    }), encoding="utf-8")
+    monkeypatch.setattr("sys.argv", ["send_telegram_report.py", "--report", str(report_path), "--ledger", str(tmp_path / "missing-ledger.json")])
+    monkeypatch.setenv("GITHUB_REPOSITORY", "Nexora-Apparel/veltrix-football")
+    monkeypatch.setenv("GITHUB_TOKEN", "github-test-token")
+    monkeypatch.setenv("TELEGRAM_BOT_TOKEN", "telegram-test-token")
+    monkeypatch.setenv("TELEGRAM_CHAT_ID", "12345")
+    monkeypatch.setattr(sender, "_load_delivery_state", lambda repo, token: ({"version": 1, "sent_dates": ["2026-10-27"]}, "sha"))
+    monkeypatch.setattr(sender, "send_message", lambda *args, **kwargs: (_ for _ in ()).throw(AssertionError("duplicate send attempted")))
+
+    sender.main()
+    assert "already sent" in capsys.readouterr().out
