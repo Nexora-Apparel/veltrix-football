@@ -195,6 +195,123 @@ class APIFootballClient:
                 })
         return normalized
 
+    _STATUS_MAP = {
+        "NS": "NS", "TBD": "TBD", "1H": "LIVE", "HT": "LIVE", "2H": "LIVE",
+        "ET": "LIVE", "BT": "LIVE", "P": "LIVE", "LIVE": "LIVE",
+        "FT": "FT", "AET": "FT", "PEN": "FT", "PST": "PST", "CANC": "CANC",
+        "SUSP": "SUSP", "INT": "SUSP", "ABD": "ABD", "AWD": "FT", "WO": "FT",
+    }
+    _LEAGUE_CODES = {
+        "PREMIER LEAGUE": "PL", "ENGLISH PREMIER LEAGUE": "PL",
+        "CHAMPIONSHIP": "ELC", "LEAGUE ONE": "EL1", "LEAGUE TWO": "EL2",
+        "LA LIGA": "PD", "LALIGA": "PD", "SERIE A": "SA", "SERIE B": "SB",
+        "BUNDESLIGA": "BL1", "2. BUNDESLIGA": "BL2", "LIGUE 1": "FL1",
+        "LIGUE 2": "FL2", "EREDIVISIE": "DED", "PRIMEIRA LIGA": "PPL",
+        "LIGA PORTUGAL": "PPL", "SCOTTISH PREMIERSHIP": "SPL",
+        "BRASILEIRAO": "BSA", "BRAZIL SERIE A": "BSA",
+    }
+
+    @classmethod
+    def normalize_fixtures(cls, raw_rows: list[Any]) -> list[dict[str, Any]]:
+        """Normalize API-Football fixtures to the stable Veltrix internal fixture shape."""
+        rows: list[dict[str, Any]] = []
+        for raw in raw_rows:
+            if not isinstance(raw, dict):
+                continue
+            fixture = raw.get("fixture") or {}
+            teams = raw.get("teams") or {}
+            home, away = teams.get("home") or {}, teams.get("away") or {}
+            league = raw.get("league") or {}
+            goals = raw.get("goals") or {}
+            status = (fixture.get("status") or {}).get("short") or "TBD"
+            league_name = str(league.get("name") or "")
+            try:
+                fixture_id = int(fixture.get("id"))
+            except (TypeError, ValueError):
+                fixture_id = fixture.get("id")
+            try:
+                league_id = int(league.get("id"))
+            except (TypeError, ValueError):
+                league_id = league.get("id")
+            rows.append({
+                "fixture": {
+                    "id": fixture_id, "date": fixture.get("date"),
+                    "status": {"short": cls._STATUS_MAP.get(str(status).upper(), str(status).upper())},
+                },
+                "teams": {
+                    "home": {"id": home.get("id"), "name": home.get("name")},
+                    "away": {"id": away.get("id"), "name": away.get("name")},
+                },
+                "league": {
+                    "id": league_id, "name": league_name,
+                    "code": cls._LEAGUE_CODES.get(league_name.strip().upper()),
+                    "season": league.get("season"),
+                },
+                "goals": {"home": goals.get("home"), "away": goals.get("away")},
+                "_api_football_status": (fixture.get("status") or {}).get("long"),
+            })
+        return rows
+
+    def _fixtures_query(self, params: dict[str, Any]) -> dict[str, Any]:
+        """Fetch paginated API-Football fixtures without silently truncating results."""
+        first = self._get("fixtures", {**params, "page": 1})
+        raw = first.get("response")
+        if not isinstance(raw, list):
+            raise APIFootballError("API-Football fixtures response is missing its response list.")
+        all_rows = list(raw)
+        paging = first.get("paging") or {}
+        try:
+            total_pages = max(1, int(paging.get("total", 1)))
+        except (TypeError, ValueError):
+            total_pages = 1
+        if total_pages > 20:
+            raise APIFootballError("API-Football returned more than 20 fixture pages for one query; refusing to publish a truncated list.")
+        for page in range(2, total_pages + 1):
+            payload = self._get("fixtures", {**params, "page": page})
+            batch = payload.get("response")
+            if not isinstance(batch, list):
+                raise APIFootballError("API-Football pagination response is missing its response list.")
+            all_rows.extend(batch)
+        return {
+            "response": self.normalize_fixtures(all_rows),
+            "results": len(all_rows),
+            "paging": {"current": total_pages, "total": total_pages},
+            "provider": "API-Football (API-Sports)",
+            "_veltrix_meta": {
+                **(first.get("_veltrix_meta") or {}),
+                "provider": "API-Football (API-Sports)",
+                "pages_fetched": total_pages,
+                "raw_fixture_rows": len(all_rows),
+            },
+        }
+
+    def fixtures(self, day: str, timezone: str = "Africa/Lagos") -> dict[str, Any]:
+        """Fetch fixtures for a local calendar day from the primary API-Football feed."""
+        try:
+            parsed_day = date.fromisoformat(day)
+            ZoneInfo(timezone)
+        except (TypeError, ValueError, KeyError):
+            raise APIFootballError("Date must use YYYY-MM-DD format and timezone must be valid.") from None
+        return self._fixtures_query({"date": parsed_day.isoformat(), "timezone": timezone})
+
+    def fixtures_between(
+        self, start_date: str, end_date: str, timezone: str = "Africa/Lagos"
+    ) -> dict[str, Any]:
+        """Fetch completed and scheduled fixtures in a bounded date range."""
+        try:
+            start = date.fromisoformat(start_date)
+            end = date.fromisoformat(end_date)
+            ZoneInfo(timezone)
+        except (TypeError, ValueError, KeyError):
+            raise APIFootballError("Dates must use YYYY-MM-DD format and timezone must be valid.") from None
+        if end < start:
+            raise APIFootballError("end date must be on or after start date.")
+        if (end - start).days >= 7:
+            raise APIFootballError("API-Football history refresh ranges are capped at 7 calendar days.")
+        return self._fixtures_query({
+            "from": start.isoformat(), "to": end.isoformat(), "timezone": timezone,
+        })
+
     def odds_for_date(self, day: str, *, timezone: str = "Africa/Lagos", page: int = 1) -> dict[str, Any]:
         """Fetch one page of prematch odds and normalize prices for command/report use.
 
