@@ -83,8 +83,8 @@ on:
     - cron: "0 5 * * *"
 
 # Pushes run tests only; live provider calls are restricted to scheduled or manually dispatched runs.
-# This prevents code commits and automated fixes from consuming the daily Highlightly quota.
-# Reuse mode is only for same-day artifacts when the Highlightly quota is exhausted.
+# This prevents code commits and automated fixes from consuming the daily API-Football quota.
+# Reuse mode is only for same-day artifacts when the primary API-Football quota is exhausted.
 # Reuse publication also recalculates all fixture-status counters after delivery filtering.
 
 # Serialize scheduled/manual live runs so they cannot overwrite each other's cache cursor.
