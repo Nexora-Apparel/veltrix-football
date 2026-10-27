@@ -241,7 +241,7 @@ def main() -> None:
                     "snapshot_date": target_date.isoformat(),
                     "warning": None,
                 }
-            except (FootballAPIError, ValueError) as exc:
+            except (APIFootballError, ValueError) as exc:
                 odds_sync = {
                     "status": "UNAVAILABLE",
                     "fixtures_with_odds": 0,
