@@ -58,8 +58,11 @@ const r=await fetch('/api/dashboard-data',{cache:'no-store'});if(!r.ok)throw new
 document.getElementById('fixtures').textContent=d.fixtures_received??'—';
 document.getElementById('forecasts').textContent=d.experimental_forecasts??'—';
 document.getElementById('odds').textContent=d.fixtures_with_market_odds??'—';
-document.getElementById('reporttime').textContent='Report date: '+(d.as_of_date||'unknown')+' · Generated: '+(d.generated_at_utc||'unknown');
-document.getElementById('notice').textContent=d.warning||'Published report loaded. Forecasts are experimental.';
+document.getElementById('reporttime').textContent='Report date: '+(d.as_of_date||'unknown')+' · Generated: '+(d.generated_at_utc||'unknown')+' · Published: '+(d.published_at_utc||'unknown');
+let notice=d.warning||'Published report loaded. Forecasts are experimental.';
+if(d.historical_data_coverage&&d.historical_data_coverage.status==='GAPPED_OR_STALE'){notice+=' Historical results have known coverage gaps; forecasts may use incomplete recent history.';}
+if(d.live_odds_sync){notice+=' Matched bookmaker odds: '+(d.live_odds_sync.fixtures_with_odds??d.fixtures_with_market_odds??0)+'.';}
+document.getElementById('notice').textContent=notice;
 if(!d.predictions||!d.predictions.length){const p=document.createElement('div');p.className='empty';p.textContent='No eligible upcoming experimental forecasts in the published report.';box.append(p);return;}
 for(const m of d.predictions){
 const card=document.createElement('article');card.className='card';
@@ -104,6 +107,11 @@ def dashboard_data() -> dict:
         "status": "OK",
         "as_of_date": report.get("as_of_date"),
         "generated_at_utc": report.get("generated_at_utc"),
+        "published_at_utc": report.get("command_data_published_at_utc"),
+        "publication_status": report.get("command_data_publication", "UNKNOWN"),
+        "api_football_request": report.get("api_football_request"),
+        "live_odds_sync": report.get("live_odds_sync"),
+        "historical_data_coverage": report.get("historical_data_coverage"),
         "fixtures_received": report.get("fixtures_received", 0),
         "experimental_forecasts": sum(1 for row in rows if isinstance(row, dict) and row.get("status") == "EXPERIMENTAL_ONLY"),
         "fixtures_with_market_odds": report.get("fixtures_with_market_odds", 0),
