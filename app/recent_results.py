@@ -288,11 +288,16 @@ def fetch_recent_results_incremental(
                 gap_day = date.fromisoformat(str(raw_gap))
             except ValueError:
                 continue
-            if base_start <= gap_day <= end_date:
+            if gap_day <= end_date:
                 retryable_gaps.append(gap_day)
     retryable_gaps = sorted(set(retryable_gaps))
-    if retryable_gaps:
-        # One bounded, contiguous range per run to avoid unbounded quota use.
+    covered_for_retry = (
+        date.fromisoformat(str(latest_covered_raw))
+        if latest_covered_raw else latest_base
+    )
+    if retryable_gaps and backfill_complete and covered_for_retry >= end_date:
+        # Retry gaps only after forward coverage is current, so a permanent
+        # subscription restriction cannot starve newer historical catch-up.
         range_start = retryable_gaps[0]
         range_end = range_start
         for gap_day in retryable_gaps[1:]:
