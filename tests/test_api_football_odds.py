@@ -293,8 +293,8 @@ def test_primary_historical_range_uses_supported_date_filters_and_normalizes_fin
     result = client.fixtures_between("2026-10-20", "2026-10-26", "Africa/Lagos")
     assert session.calls[0][0] == "https://v3.football.api-sports.io/fixtures"
     assert len(session.calls) == 7
-    assert session.calls[0][1] == {"date": "2026-10-20", "timezone": "Africa/Lagos"}
-    assert session.calls[-1][1] == {"date": "2026-10-26", "timezone": "Africa/Lagos"}
+    assert session.calls[0][1] == {"date": "2026-10-26", "timezone": "Africa/Lagos"}
+    assert session.calls[-1][1] == {"date": "2026-10-20", "timezone": "Africa/Lagos"}
     assert result["_veltrix_meta"]["date_queries"] == 7
     fixture = result["response"][0]
     assert fixture["fixture"]["status"]["short"] == "FT"
