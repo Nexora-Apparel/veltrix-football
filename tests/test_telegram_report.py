@@ -231,3 +231,22 @@ def test_main_skips_a_report_date_already_recorded_as_sent(tmp_path, monkeypatch
 
     sender.main()
     assert "already sent" in capsys.readouterr().out
+
+
+
+def test_report_explains_plan_limited_dates_are_not_retried():
+    report = sample_report()
+    report["recent_results_sync"] = {
+        "status": "PARTIAL",
+        "warning": "Historical dates remain unavailable on the provider plan.",
+    }
+    report["historical_data_coverage"] = {
+        "status": "GAPPED_OR_STALE",
+        "contiguous_through": "2026-09-20",
+        "latest_available_match_date": "2026-10-26",
+        "provider_plan_limited_date_count": 21,
+        "retryable_gap_date_count": 0,
+    }
+    message = format_report(report)
+    assert "21 historical date(s) are inaccessible on this account" in message
+    assert "will not be retried automatically" in message
