@@ -186,7 +186,10 @@ def _append_current_season_fallback(
     fixtures or live bookmaker prices. Missing league files are normal and skipped.
     """
     season_code = _football_data_season_code(end_date)
-    summary = {"files_checked": 0, "files_available": 0, "matches_added": 0}
+    summary = {
+        "files_checked": 0, "files_available": 0, "matches_added": 0,
+        "matches_by_competition": {}, "matches_by_season": {},
+    }
     for division in FOOTBALL_DATA_DIVISIONS:
         url = f"{FOOTBALL_DATA_BASE}/{season_code}/{division}.csv"
         summary["files_checked"] += 1
@@ -217,6 +220,9 @@ def _append_current_season_fallback(
                 seen.add(key)
                 writer.writerow(row)
                 summary["matches_added"] += 1
+                summary["matches_by_competition"][division] = summary["matches_by_competition"].get(division, 0) + 1
+                year = row["match_date"][:4]
+                summary["matches_by_season"][year] = summary["matches_by_season"].get(year, 0) + 1
         except (requests.RequestException, OSError, UnicodeError, csv.Error):
             # This is an optional secondary source. Preserve the primary import if
             # one league file is unavailable, rate-limited, or temporarily malformed.
@@ -277,7 +283,7 @@ def import_dataset(start_date: str, end_date: str, output: str, timeout: int = 9
                 if row is None:
                     invalid += 1
                     continue
-                key = (row["division"], row["match_date"], row["home_team"].casefold(), row["away_team"].casefold())
+                key = (row["division"], row["match_date"], _team_identity(row["home_team"]), _team_identity(row["away_team"]))
                 if key in seen:
                     duplicates += 1
                     continue
@@ -287,15 +293,16 @@ def import_dataset(start_date: str, end_date: str, output: str, timeout: int = 9
                 competition_counts[row["division"]] += 1
                 season_counts[row["match_date"][:4]] += 1
 
-            fallback_summary = {"files_checked": 0, "files_available": 0, "matches_added": 0}
+            fallback_summary = {
+                "files_checked": 0, "files_available": 0, "matches_added": 0,
+                "matches_by_competition": {}, "matches_by_season": {},
+            }
             if os.getenv("VELTRIX_ENABLE_FOOTBALL_DATA_FALLBACK", "").strip().lower() in {"1", "true", "yes"}:
                 fallback_summary = _append_current_season_fallback(
                     session, writer, seen, start, end
                 )
-                for division in FOOTBALL_DATA_DIVISIONS:
-                    competition_counts.setdefault(division, 0)
-                # Count fallback rows by season from the deduplicated output file
-                # on the next load; the import summary reports the total additions.
+                competition_counts.update(fallback_summary["matches_by_competition"])
+                season_counts.update(fallback_summary["matches_by_season"])
     finally:
         text_stream.close()
         response.close()
