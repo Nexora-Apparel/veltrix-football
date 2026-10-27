@@ -1,9 +1,9 @@
 # Veltrix Football
 
-Football analytics and prediction platform. The active fixture provider is Highlightly, with normalized fixture data and an experimental, explicitly unvalidated prediction model.
+Football analytics and prediction platform. The primary provider is API-Football (API-Sports v3) for fixtures, recent completed results, competition listings, and bookmaker-odds enrichment. Predictions remain experimental and explicitly unvalidated.
 
 ## Current scope
-- Verify Highlightly credentials without exposing the key.
+- Verify API-Football credentials and subscription without exposing the key.
 - Fetch fixtures for a chosen date.
 - Inspect accessible competitions.
 - Validate API responses and report remaining request quota when headers are available.
@@ -11,14 +11,14 @@ Football analytics and prediction platform. The active fixture provider is Highl
 
 ## Requirements
 - Python 3.11+
-- Highlightly Football API key from your Highlightly dashboard
+- API-Football (API-Sports) key from your API-Sports account
 
 ## Configure
-Set the environment variable `HIGHLIGHTLY_API_KEY`. Never commit a real key.
+Set the environment variable `API_FOOTBALL_KEY`. Never commit a real key.
 
 Linux/macOS:
 ```bash
-export HIGHLIGHTLY_API_KEY="your_key_here"
+export API_FOOTBALL_KEY="your_key_here"
 python -m app.cli status
 python -m app.cli fixtures --date 2026-10-23
 python -m app.cli leagues
@@ -27,13 +27,13 @@ python -m app.cli history --from 2025-01-01 --to 2025-01-31 --output data/histor
 
 Windows PowerShell:
 ```powershell
-$env:HIGHLIGHTLY_API_KEY="your_key_here"
+$env:API_FOOTBALL_KEY="your_key_here"
 python -m app.cli status
 ```
 
-## API-Football / API-Sports odds diagnostics
+## Primary API-Football / API-Sports provider
 
-The original API-Football account is separate from Highlightly and from the similarly named APIFootball.com service. The API-Sports v3 adapter reads `API_FOOTBALL_KEY` and sends it in the `x-apisports-key` header to `https://v3.football.api-sports.io/`. Keep `HIGHLIGHTLY_API_KEY` unchanged for fixture retrieval.
+Veltrix uses API-Football v3 at `https://v3.football.api-sports.io/` as the primary live provider. The client reads `API_FOOTBALL_KEY` and sends it in the `x-apisports-key` header. The same provider powers daily fixtures, incremental completed-result history refreshes, account checks, and optional bookmaker-odds enrichment. Highlightly is no longer required for the daily prediction workflow.
 
 Set `API_FOOTBALL_KEY` in the deployment environment, then run:
 
@@ -44,13 +44,13 @@ python -m app.cli odds --date YYYY-MM-DD --timezone Africa/Lagos
 
 The status command checks authentication and returns subscription/quota metadata without exposing the API key or account email. The odds command inspects one page of prematch odds (10 records per page). Availability depends on fixture timing, competition coverage, and subscription; an empty odds response does not by itself prove authentication failed.
 
-**Integration status:** this is currently a diagnostic/data-access path, not yet connected to the daily report, Telegram command router, or value-alert pipeline. Keep value alerts disabled until live odds are verified and model probabilities pass chronological out-of-sample validation.
+**Integration status:** API-Football is the primary provider in the daily report pipeline and the Telegram command centre. Odds are only attached when complete 1X2 markets can be matched to the same fixture by local date and team names. Keep value alerts disabled until live odds are verified and model probabilities pass chronological out-of-sample validation.
 
 ## API notes
-The client calls `https://soccer.highlightly.net` and sends the key in the `x-rapidapi-key` header. It normalizes Highlightly's `data` envelope into the internal `response` shape. Request quota is reported from the provider's rate-limit headers when available. The free/basic plan does not provide bookmaker odds; the adapter returns an explicit unavailable status instead of fabricating them.
+The primary client calls `https://v3.football.api-sports.io/` and reports the provider's request limits and remaining quota when headers are available. Fixture responses are normalized into Veltrix's internal shape. API-Football coverage, historical retention, and bookmaker availability depend on the account subscription; empty odds are reported as unavailable rather than fabricated.
 
 ## Historical data export
-Use `python -m app.cli history --from YYYY-MM-DD --to YYYY-MM-DD --output data/historical_features.csv` to retrieve fixtures and export completed matches. Each date is requested separately because Highlightly's matches endpoint uses a single `date` filter; long ranges therefore consume one API request per date and may exceed the free-tier quota. Keep ranges short. Each row includes rolling team form features computed strictly from earlier completed matches. CSV files are local outputs and are not committed automatically.
+Use `python -m app.cli history --from YYYY-MM-DD --to YYYY-MM-DD --output data/historical_features.csv` to retrieve fixtures and export completed matches through API-Football's `from`/`to` filters. Keep each query within seven calendar days; the CLI and daily refresh deliberately bound requests to manage quota. Each row includes rolling team form features computed strictly from earlier completed matches. CSV files are local outputs and are not committed automatically.
 
 ## Open historical dataset import (2020–present)
 Veltrix can import completed match records from the public [Club-Football-Match-Data dataset](https://github.com/xgabora/Club-Football-Match-Data), whose repository identifies an MIT license. The raw dataset is **not** committed to this repository. Run:
@@ -89,13 +89,13 @@ The backtest compares league-aware venue-specific Poisson and Elo baselines, the
 
 Elo is materially better than the current Poisson model on these historical metrics, but still underperforms the market benchmark. In the full-period same-fixture comparison, neither live model beats the de-vigged market on both Brier score and log loss in any of the 38 evaluated divisions. Historical odds timestamps and closing-line quality have not been verified, so neither model is validated for betting. Keep betting slips and value alerts disabled; these metrics are not evidence of profitability.
 
-The live report now also includes an explicitly non-predictive rest/congestion context (days since the prior match and matches in the previous 14 days), calculated only from historical match dates. It is not used to change probabilities until its effect is independently tested. The current free Highlightly feed does not supply confirmed injuries, suspensions, lineups, true xG, or live bookmaker odds, so those are marked unavailable rather than inferred.
+The live report also includes an explicitly non-predictive rest/congestion context (days since the prior match and matches in the previous 14 days), calculated only from historical match dates. It is not used to change probabilities until its effect is independently tested. Confirmed injuries, suspensions, lineups, and true xG are not assumed when the selected feed does not supply verified data.
 
 ## Retrospective paper tracking
 
 A saved daily report can be scored against the completed-fixture response for the same date without placing bets. The daily report uses competition-scoped Elo as the primary 1X2 estimate when the fixture maps to a supported historical division and both teams have enough prior competition matches. In that case, the recent-goals Poisson probabilities are shown as an alternative and its expected-goal/total estimates remain auxiliary. When the Elo history is unavailable, Poisson remains primary and a global-fallback Elo estimate is shown only if it meets the minimum-history gate. The report labels which model is primary and the Elo history scope. The scheduled/manual daily workflow attempts to evaluate the previous day's report, matches forecasts by fixture ID, excludes withheld/invalid predictions and unfinished fixtures, and updates a cumulative ledger with result accuracy, multiclass Brier score, and log loss, separated by model version so results from different algorithms are not mixed. Both model versions are tracked separately in the cumulative paper ledger, regardless of which is primary for a particular fixture. When a ledger is available, the Telegram report also shows cumulative paper metrics for each model version. The ledger is uploaded as a 90-day artifact; this is not a permanent database, and an evaluation is skipped if the previous report cannot be found or results cannot be fetched. This is a scoring tool, not a betting approval gate.
 
-Example after saving the Highlightly results JSON for that date:
+Example after saving the API-Football results JSON for that date:
 
 ```bash
 python scripts/evaluate_paper_predictions.py --report reports/daily_predictions.json --results reports/completed_fixtures.json --output reports/paper_evaluation.json
@@ -103,7 +103,7 @@ python scripts/evaluate_paper_predictions.py --report reports/daily_predictions.
 
 ## Daily fixture-to-prediction pipeline (experimental)
 
-The daily workflow is scheduled for 06:00 Africa/Lagos (05:00 UTC) and can also be started manually. It includes only fixtures whose kickoff date is the same calendar date in Africa/Lagos as the report date and whose kickoff time is still in the future; tomorrow/later fixtures and already-started fixtures are excluded even when the API returns UTC timestamps. Add `HIGHLIGHTLY_API_KEY` under repository Settings → Secrets and variables → Actions → New repository secret for the job to run. To enable the optional Telegram delivery step, also add `TELEGRAM_BOT_TOKEN` (from BotFather) and `TELEGRAM_CHAT_ID` (the destination chat ID) as repository Actions secrets. Never put these values in source code or commit them. The workflow imports historical scores, runs the unit tests, fetches fixtures for the requested Nigeria-time date, sends the explicitly experimental report to Telegram when all three secrets are present, and uploads a JSON report artifact retained for 90 days so reports can be reviewed during a paper-tracking period. If Telegram secrets are absent, delivery is skipped without exposing credentials.
+The daily workflow is scheduled for 06:00 Africa/Lagos (05:00 UTC) and can also be started manually. It includes only fixtures whose kickoff date is the same calendar date in Africa/Lagos as the report date and whose kickoff time is still in the future; tomorrow/later fixtures and already-started fixtures are excluded even when the API returns UTC timestamps. Add `API_FOOTBALL_KEY` under repository Settings → Secrets and variables → Actions → New repository secret for the job to run. To enable the optional Telegram delivery step, also add `TELEGRAM_BOT_TOKEN` (from BotFather) and `TELEGRAM_CHAT_ID` (the destination chat ID) as repository Actions secrets. Never put these values in source code or commit them. The workflow imports historical scores, runs the unit tests, fetches fixtures for the requested Nigeria-time date, sends the explicitly experimental report to Telegram when all three secrets are present, and uploads a JSON report artifact retained for 90 days so reports can be reviewed during a paper-tracking period. If Telegram secrets are absent, delivery is skipped without exposing credentials.
 
 Run locally after importing historical data:
 
@@ -112,7 +112,7 @@ python scripts/import_open_dataset.py --from 2020-01-01 --to YYYY-MM-DD --output
 python scripts/run_daily_predictions.py --date YYYY-MM-DD --history data/open_historical_matches.csv --output reports/daily_predictions.json
 ```
 
-The daily job refreshes completed results after the open CSV's latest date through yesterday using Highlightly's single-date matches endpoint. This uses one request per date in the range, so keep the historical CSV reasonably fresh and monitor the free-plan daily quota. Current-day results are excluded to prevent leakage. Bookmaker odds are marked unavailable on the free/basic plan; the system does not fabricate odds or claim value bets without verified market data.
+The daily job refreshes completed results after the open CSV's latest date through yesterday using API-Football's bounded `from`/`to` fixture endpoint. It refreshes one seven-day range per scheduled run and stores results in a provider-versioned cache so records from the former Highlightly feed are not mixed into the new history. Current-day results are excluded to prevent leakage. Bookmaker odds remain unavailable unless a complete 1X2 market is returned and matched; the system does not fabricate odds or claim value bets without verified market data.
 
 For 1X2 probabilities, competition-scoped Elo is selected as primary only when the fixture maps to a supported historical division and the competition/team history gates pass. Otherwise, the recent-goals Poisson model remains primary; a global-fallback Elo estimate is only shown as a labelled alternative when its history gate passes. Expected goals, BTTS, over/under 2.5 and likely scorelines remain Poisson-derived, including when Elo is primary. When exact team history is missing, the report may show close-name suggestions for diagnosis but never applies fuzzy matches automatically.
 
@@ -122,7 +122,7 @@ The system is **experimental and not validated for betting**. Historical walk-fo
 Use only information available before kickoff as predictors. Full-time/half-time scores, shots and cards are post-match outcomes and must not be used as pre-match features. Never randomly split time-series match data; train on earlier matches and evaluate on later matches. Report Brier score/log loss, calibration, number of selections, ROI, yield, and drawdown alongside a market baseline. Historical odds coverage varies by league and season, and the open dataset does not cover every competition worldwide.
 
 ## Project status and remaining work
-1. API connection and response validation: implemented; live smoke checks are subject to Highlightly quota/rate limits.
+1. API connection and response validation: API-Football is the primary provider; live smoke checks verify account access and fixture retrieval.
 2. Historical fixture export and leakage-safe rolling features: implemented and covered by automated tests.
 3. Open historical data import: implemented; CI successfully imported the available historical dataset.
 4. Baseline modelling: Poisson attack/defence and Elo are implemented and evaluated chronologically.
