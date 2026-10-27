@@ -118,7 +118,7 @@ jobs:
         run: python -m pytest -q
       - name: Evaluate previous day's forecasts
         id: paper-tracking
-        if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || false && !contains(github.event.head_commit.message, '[reuse-report-40175707059]')
+        if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && contains(github.event.head_commit.message, '[run-live-verification]')) || false && !contains(github.event.head_commit.message, '[reuse-report-40175707059]')
         continue-on-error: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -132,7 +132,7 @@ jobs:
           python scripts/run_paper_tracking.py --date "$PAPER_DATE" --output reports/paper_tracking_ledger.json
       - name: Validate paper ledger before upload
         id: paper-ledger-check
-        if: always() && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || false) && !contains(github.event.head_commit.message, '[reuse-report-40175707059]')
+        if: always() && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && contains(github.event.head_commit.message, '[run-live-verification]')) || false) && !contains(github.event.head_commit.message, '[reuse-report-40175707059]')
         run: |
           if [ ! -f reports/paper_tracking_ledger.json ]; then
             echo "safe=false" >> "$GITHUB_OUTPUT"
@@ -146,10 +146,10 @@ jobs:
             echo "safe=true" >> "$GITHUB_OUTPUT"
           fi
       - name: Import historical matches
-        if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || false && !contains(github.event.head_commit.message, '[reuse-report-40175707059]')
+        if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && contains(github.event.head_commit.message, '[run-live-verification]')) || false && !contains(github.event.head_commit.message, '[reuse-report-40175707059]')
         run: python scripts/import_open_dataset.py --from 2020-01-01 --to "$(date -u +%F)" --output data/open_historical_matches.csv
       - name: Download resumable recent-results cache
-        if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+        if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && contains(github.event.head_commit.message, '[run-live-verification]'))
         env:
           GITHUB_REPOSITORY: ${{ github.repository }}
         run: |
@@ -215,7 +215,7 @@ jobs:
 
       - name: Generate daily fixture report
         id: generate-report
-        if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || false && !contains(github.event.head_commit.message, '[reuse-report-40175707059]')
+        if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && contains(github.event.head_commit.message, '[run-live-verification]')) || false && !contains(github.event.head_commit.message, '[reuse-report-40175707059]')
         env:
           API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
           TARGET_DATE: ${{ inputs.date }}
@@ -228,7 +228,7 @@ jobs:
           if [ -z "${TARGET_DATE:-}" ]; then TARGET_DATE="$(TZ=Africa/Lagos date +%F)"; fi
           python scripts/run_daily_predictions.py --date "$TARGET_DATE" --history data/open_historical_matches.csv --output reports/daily_predictions.json --recent-cache reports/recent_results_cache.json
       - name: Notify Telegram when live report generation fails
-        if: (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || false) && failure() && steps.generate-report.outcome == 'failure'
+        if: (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && contains(github.event.head_commit.message, '[run-live-verification]')) || false) && failure() && steps.generate-report.outcome == 'failure'
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
@@ -248,7 +248,7 @@ jobs:
             --data-urlencode "text=${MESSAGE}"
 
       - name: Check Telegram configuration
-        if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || false
+        if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && contains(github.event.head_commit.message, '[run-live-verification]')) || false
         id: telegram-config
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
@@ -262,7 +262,7 @@ jobs:
           fi
       - name: Register Telegram Command Centre webhook
         continue-on-error: true
-        if: (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || false) && steps.telegram-config.outputs.configured == 'true'
+        if: (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && contains(github.event.head_commit.message, '[run-live-verification]')) || false) && steps.telegram-config.outputs.configured == 'true'
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_WEBHOOK_URL: https://veltrix-football-commands.vercel.app/api/index
@@ -275,14 +275,14 @@ jobs:
           fi
 
       - name: Send daily report to Telegram
-        if: (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || false) && steps.telegram-config.outputs.configured == 'true'
+        if: (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && contains(github.event.head_commit.message, '[run-live-verification]')) || false) && steps.telegram-config.outputs.configured == 'true'
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           PYTHONPATH: .
         run: python scripts/send_telegram_report.py --report reports/daily_predictions.json --ledger reports/paper_tracking_ledger.json
       - name: Upload daily prediction report
-        if: always() && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || false) && (steps.generate-report.outcome == 'success' || steps.filter-saved-report.outcome == 'success')
+        if: always() && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && contains(github.event.head_commit.message, '[run-live-verification]')) || false) && (steps.generate-report.outcome == 'success' || steps.filter-saved-report.outcome == 'success')
         uses: actions/upload-artifact@v7
         with:
           name: veltrix-daily-predictions
@@ -291,7 +291,7 @@ jobs:
           retention-days: 90
 
       - name: Upload cumulative paper-tracking ledger
-        if: always() && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || false) && !contains(github.event.head_commit.message, '[reuse-report-40175707059]') && steps.paper-ledger-check.outputs.safe == 'true'
+        if: always() && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && contains(github.event.head_commit.message, '[run-live-verification]')) || false) && !contains(github.event.head_commit.message, '[reuse-report-40175707059]') && steps.paper-ledger-check.outputs.safe == 'true'
         uses: actions/upload-artifact@v7
         with:
           name: veltrix-paper-ledger
@@ -300,7 +300,7 @@ jobs:
           retention-days: 90
 
       - name: Publish validated command data snapshots
-        if: always() && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && contains(github.event.head_commit.message, '[reuse-report-40175707059]'))) && (steps.generate-report.outcome == 'success' || steps.filter-saved-report.outcome == 'success')
+        if: always() && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && contains(github.event.head_commit.message, '[run-live-verification]')) || (github.event_name == 'push' && contains(github.event.head_commit.message, '[reuse-report-40175707059]'))) && (steps.generate-report.outcome == 'success' || steps.filter-saved-report.outcome == 'success')
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_REPOSITORY: ${{ github.repository }}
