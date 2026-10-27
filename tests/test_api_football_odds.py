@@ -275,7 +275,7 @@ def test_primary_fixtures_normalize_to_veltrix_shape_and_use_api_football():
     assert result["provider"] == "API-Football (API-Sports)"
 
 
-def test_primary_historical_range_uses_from_to_and_normalizes_final_scores():
+def test_primary_historical_range_uses_supported_date_filters_and_normalizes_final_scores():
     session = FakeSession({
         "errors": [],
         "paging": {"current": 1, "total": 1},
@@ -292,10 +292,10 @@ def test_primary_historical_range_uses_from_to_and_normalizes_final_scores():
     client = APIFootballClient("test-key", session=session)
     result = client.fixtures_between("2026-10-20", "2026-10-26", "Africa/Lagos")
     assert session.calls[0][0] == "https://v3.football.api-sports.io/fixtures"
-    assert session.calls[0][1] == {
-        "from": "2026-10-20", "to": "2026-10-26",
-        "timezone": "Africa/Lagos",
-    }
+    assert len(session.calls) == 7
+    assert session.calls[0][1] == {"date": "2026-10-20", "timezone": "Africa/Lagos"}
+    assert session.calls[-1][1] == {"date": "2026-10-26", "timezone": "Africa/Lagos"}
+    assert result["_veltrix_meta"]["date_queries"] == 7
     fixture = result["response"][0]
     assert fixture["fixture"]["status"]["short"] == "FT"
     assert fixture["goals"] == {"home": 2, "away": 1}
