@@ -341,7 +341,11 @@ class APIFootballClient:
             ),
             "date_queries": len(successful_dates) + len(failed_dates),
             "successful_dates": sorted(successful_dates),
+            # These are explicit subscription/plan restrictions, not transient
+            # transport failures. Persist them separately so we do not spend a
+            # request every week retrying dates the account cannot access.
             "failed_dates": sorted(failed_dates),
+            "plan_limited_dates": sorted(failed_dates),
         }
         if failed_dates:
             meta["warning"] = (
