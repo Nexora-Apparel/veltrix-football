@@ -96,7 +96,14 @@ Do not declare this issue resolved until all of the following are true:
 - The historical import workflow is configured to upload `data/open_historical_matches.csv` as a 30-day artifact. That artifact must be retrieved from a successful run of the dedicated historical import workflow, then audited. The daily workflow's small prediction report is not a substitute.
 - The backtest workflow is configured to import the source data and run `scripts/run_backtest.py`, but its historical report is also an artifact rather than a committed production dataset. Its metrics need to be tied to the exact dataset hash.
 
-**Immediate next action:** restore a green test suite first, then run the dedicated historical-dataset import workflow and audit the resulting CSV artifact. Only after that can we publish real dataset dates, counts, and per-division coverage. The unit-test mismatch is a concrete blocker discovered during this follow-up research; this report does not claim it has been fixed.
+**Remediation and follow-up verification (2026-10-27, 18:10 UTC):**
+
+- Fixed the test to validate the implementation's intended cache-busted GitHub Contents API request, including the `command-data` branch selector and numeric cache-buster, instead of requiring the older raw CDN URL. The production loader was not weakened or reverted.
+- Commit **92ed93f3215a90d81f8b2faa518de197ba11ab04** triggered fresh workflow runs. The Daily Fixture Predictions workflow's unit-test step passed and the workflow completed successfully; its push-triggered run intentionally skipped the scheduled/dispatch prediction-generation steps, so it is not evidence of a new Telegram prediction delivery.
+- Historical Model Backtest run **40557259141** completed successfully: unit tests passed, the historical dataset import step passed, the chronological model comparison passed, and the **veltrix-backtest-report** artifact was uploaded (40,432 bytes; created 2026-10-27 18:09:58 UTC).
+- This is a meaningful recovery: the immediate CI blocker is fixed, and a fresh backtest report exists. However, the artifact has not yet been inspected here and the raw historical CSV has not been independently audited for duplicates, actual min/max dates, division-season completeness, or unresolved gaps. The dedicated historical-dataset-import workflow still needs a successful run if we need its standalone `open_historical_matches.csv` artifact.
+
+**Next action:** inspect the newly generated backtest report and run/audit the standalone historical CSV artifact. Keep value/betting alerts disabled until coverage and out-of-sample results are verified.
 
 ## Sources
 
