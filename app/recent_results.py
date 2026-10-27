@@ -240,7 +240,7 @@ def fetch_recent_results_incremental(
 
     latest_base = max(row["date"] for row in historical_matches)
     base_start = latest_base + timedelta(days=1)
-    if base_start > end_date and not state.get("backfill_anchor_end"):
+    if base_start > end_date and not state.get("backfill_anchor_end") and not state.get("history_gaps"):
         state.update({
             "backfill_complete": True,
             "latest_covered_through": latest_base.isoformat(),
