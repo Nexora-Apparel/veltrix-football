@@ -192,6 +192,9 @@ def _merge_api_sports_market_odds(
         prediction["market_bookmakers_count"] = count
         prediction["market_updated_at"] = None
         prediction["market_method"] = "equal-weight mean of bookmaker-specific de-vigged API-Sports 1X2 prices"
+        availability = prediction.get("data_availability")
+        if isinstance(availability, dict):
+            availability["live_bookmaker_odds"] = "AVAILABLE_FROM_API_FOOTBALL"
         attached += 1
     return attached
 
@@ -293,7 +296,7 @@ def main() -> None:
         report["historical_data_coverage"] = {
             "status": "CONTIGUOUS_THROUGH_TARGET_MINUS_ONE" if refresh_complete else "GAPPED_OR_STALE",
             "base_history_through": base_history_through,
-            "contiguous_through": contiguous_candidate if refresh_complete else base_history_through,
+            "contiguous_through": contiguous_candidate if refresh_complete else None,
             "latest_available_match_date": report.get("historical_data_through"),
             "refresh_status": refresh_status,
             "requested_start": recent_sync.get("requested_start"),
