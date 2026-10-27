@@ -229,25 +229,16 @@ def main() -> None:
             encoding="utf-8",
         )
 
+        # API-Football odds are fetched once and merged after predictions are built,
+        # using normalized team names and local kickoff date. Do not make a duplicate request here.
         market_odds_by_fixture = {}
-        # Odds are only useful for fixtures that have not kicked off yet.
         if _has_future_fixtures(payload, target_date, args.timezone):
-            try:
-                odds_payload = api.odds_for_date(target_date.isoformat(), args.timezone)
-                market_odds_by_fixture = extract_market_probabilities(odds_payload)
-                odds_sync = {
-                    "status": "AVAILABLE" if market_odds_by_fixture else "NO_VALID_1X2_ODDS",
-                    "fixtures_with_odds": len(market_odds_by_fixture),
-                    "snapshot_date": target_date.isoformat(),
-                    "warning": None,
-                }
-            except (APIFootballError, ValueError) as exc:
-                odds_sync = {
-                    "status": "UNAVAILABLE",
-                    "fixtures_with_odds": 0,
-                    "snapshot_date": target_date.isoformat(),
-                    "warning": str(exc),
-                }
+            odds_sync = {
+                "status": "NO_VALID_1X2_ODDS",
+                "fixtures_with_odds": 0,
+                "snapshot_date": target_date.isoformat(),
+                "warning": None,
+            }
         else:
             odds_sync = {
                 "status": "SKIPPED_NO_FUTURE_FIXTURES",
