@@ -267,3 +267,41 @@ def test_daily_runner_refreshes_history_and_requests_odds_for_future_fixtures(tm
     assert report["live_odds_sync"]["status"] == "NO_VALID_1X2_ODDS"
     assert report["live_odds_sync"]["football_api_status"] == "NO_VALID_1X2_ODDS"
     assert report["live_odds_sync"]["football_api_fixtures_with_odds"] == 0
+
+
+
+def test_daily_runner_does_not_claim_continuity_with_plan_limited_dates(tmp_path, monkeypatch):
+    output = tmp_path / "reports" / "daily.json"
+    _run_args(monkeypatch, output)
+    monkeypatch.setenv("API_FOOTBALL_KEY", "test-key")
+    monkeypatch.setattr(daily_runner, "load_historical_matches", lambda path: [{"date": date(2026, 10, 26)}])
+
+    class FakeAPI:
+        api_key = "test-key"
+        def fixtures(self, target_date, timezone):
+            return {"response": []}
+        def odds_for_date(self, *args, **kwargs):
+            raise AssertionError("No odds request should occur without future fixtures")
+
+    monkeypatch.setattr(daily_runner, "APIFootballClient", FakeAPI)
+    limited_sync = _sync()
+    limited_sync["status"] = "PARTIAL"
+    limited_sync["warning"] = "Historical dates unavailable on API-Football plan."
+    limited_sync["cache_state"] = {
+        **limited_sync["cache_state"],
+        "coverage_state_version": 2,
+        "history_plan_limited_dates": ["2026-09-21", "2026-09-22"],
+    }
+    monkeypatch.setattr(
+        daily_runner, "fetch_recent_results_incremental",
+        lambda *args, **kwargs: ([], limited_sync),
+    )
+    monkeypatch.setattr(daily_runner, "build_daily_report", lambda *args, **kwargs: _report(0))
+
+    daily_runner.main()
+    report = json.loads(output.read_text(encoding="utf-8"))
+    coverage = report["historical_data_coverage"]
+    assert coverage["status"] == "GAPPED_OR_STALE"
+    assert coverage["contiguous_through"] is None
+    assert coverage["provider_plan_limited_date_count"] == 2
+    assert coverage["provider_plan_limited_dates"] == ["2026-09-21", "2026-09-22"]
