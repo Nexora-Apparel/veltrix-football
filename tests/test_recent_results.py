@@ -367,3 +367,40 @@ def test_incremental_gap_retry_retains_subscription_blocked_dates_without_false_
     assert meta["cache_state"]["history_gaps"] == ["2026-10-18"]
     assert "plan did not return historical fixtures" in meta["warning"]
     assert meta["cache_state"]["backfill_complete"] is True
+
+
+
+def test_gap_retry_throttle_allows_newer_history_to_catch_up_next_day():
+    class FakeAPI:
+        def __init__(self):
+            self.calls = []
+
+        def fixtures_between(self, start, end, timezone):
+            self.calls.append((start, end, timezone))
+            return {
+                "response": [_fixture(end, home="Catchup Home", away="Catchup Away")],
+                "_veltrix_meta": {
+                    "successful_dates": [end],
+                    "failed_dates": [],
+                },
+            }
+
+    base = [{
+        "date": date(2026, 10, 10), "division": "E0", "home": "Old", "away": "Older",
+        "home_key": "old", "away_key": "older", "home_goals": 1, "away_goals": 0,
+    }]
+    state = {
+        "backfill_anchor_end": "2026-10-24",
+        "next_backfill_end_date": "2026-10-10",
+        "latest_covered_through": "2026-10-24",
+        "backfill_complete": True,
+        "history_gaps": ["2026-10-18"],
+        "last_gap_retry_on": "2026-10-24",
+    }
+    api = FakeAPI()
+    rows, meta = fetch_recent_results_incremental(api, base, date(2026, 10, 25), state)
+
+    assert api.calls == [("2026-10-25", "2026-10-25", "Africa/Lagos")]
+    assert [row["date"] for row in rows] == [date(2026, 10, 25)]
+    assert meta["cache_state"]["history_gaps"] == ["2026-10-18"]
+    assert meta["cache_state"]["latest_covered_through"] == "2026-10-25"
