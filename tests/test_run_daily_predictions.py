@@ -6,6 +6,12 @@ from datetime import date
 from scripts import run_daily_predictions as daily_runner
 
 
+def test_combined_odds_status_prefers_verified_api_sports_report_matches():
+    assert daily_runner._combined_odds_status("NO_VALID_1X2_ODDS", 5) == "AVAILABLE"
+    assert daily_runner._combined_odds_status("NO_VALID_1X2_ODDS", 0) == "NO_VALID_1X2_ODDS"
+    assert daily_runner._combined_odds_status("UNAVAILABLE", 0) == "UNAVAILABLE"
+
+
 def test_api_sports_odds_attach_by_local_date_and_team_names_not_provider_ids():
     report = {
         "predictions": [{
@@ -183,3 +189,5 @@ def test_daily_runner_refreshes_history_and_requests_odds_for_future_fixtures(tm
     assert report["recent_results_sync"]["status"] == "COMPLETE"
     assert report["historical_data_coverage"]["status"] == "CONTIGUOUS_THROUGH_TARGET_MINUS_ONE"
     assert report["live_odds_sync"]["status"] == "NO_VALID_1X2_ODDS"
+    assert report["live_odds_sync"]["football_api_status"] == "NO_VALID_1X2_ODDS"
+    assert report["live_odds_sync"]["football_api_fixtures_with_odds"] == 0
