@@ -1,10 +1,19 @@
-"""Vercel entrypoint and explicit dashboard route aliases."""
-from fastapi.responses import HTMLResponse
-from api.telegram import app, dashboard, dashboard_data
+"""Vercel entrypoint with query-dispatched dashboard aliases."""
+from api.telegram import app
 
-# Vercel rewrites requests to these explicit paths; keep the public API routes
-# unchanged so Telegram webhook traffic is not intercepted.
-app.add_api_route("/api/index/dashboard", dashboard, methods=["GET"], response_class=HTMLResponse, include_in_schema=False)
-app.add_api_route("/api/index/dashboard-data", dashboard_data, methods=["GET"], include_in_schema=False)
+@app.middleware("http")
+async def dispatch_dashboard_rewrites(request, call_next):
+    # Vercel Python functions are routed by the exact /api/index function path;
+    # deeper rewrite destinations do not reliably invoke this function.
+    # Route both public dashboard URLs through /api/index and dispatch here.
+    if request.url.path == "/api/index":
+        route = request.query_params.get("route")
+        if route == "dashboard":
+            request.scope["path"] = "/"
+            request.scope["raw_path"] = b"/"
+        elif route == "dashboard-data":
+            request.scope["path"] = "/api/dashboard-data"
+            request.scope["raw_path"] = b"/api/dashboard-data"
+    return await call_next(request)
 
 __all__ = ["app"]
