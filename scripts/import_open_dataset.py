@@ -6,8 +6,11 @@ import csv
 import io
 from collections import Counter
 import json
+import os
+import re
 import sys
-from datetime import date
+import unicodedata
+from datetime import date, datetime
 from pathlib import Path
 from typing import Any
 from urllib.parse import quote
@@ -17,6 +20,12 @@ import requests
 DATASET_REPO = "xgabora/Club-Football-Match-Data"
 RAW_BASE = f"https://raw.githubusercontent.com/{DATASET_REPO}/main/"
 USER_AGENT = "VeltrixFootball/0.1"
+FOOTBALL_DATA_DIVISIONS = (
+    "E0", "E1", "E2", "E3", "EC", "SC0", "SC1", "SC2", "SC3",
+    "D1", "D2", "I1", "I2", "SP1", "SP2", "F1", "F2", "N1",
+    "B1", "P1", "T1", "G1",
+)
+FOOTBALL_DATA_BASE = "https://www.football-data.co.uk/mmz4281"
 REQUIRED_COLUMNS = {"Division", "MatchDate", "HomeTeam", "AwayTeam", "FTHome", "FTAway"}
 OUTPUT_COLUMNS = [
     "source", "division", "match_date", "home_team", "away_team",
@@ -86,6 +95,138 @@ def normalize_row(row: dict[str, Any]) -> dict[str, Any] | None:
     }
 
 
+def _football_data_season_code(end_date: date) -> str:
+    """Return the current football-data.co.uk season code for an end date."""
+    start_year = end_date.year if end_date.month >= 7 else end_date.year - 1
+    return f"{start_year % 100:02d}{(start_year + 1) % 100:02d}"
+
+
+def _football_data_date(value: Any) -> date | None:
+    """Parse football-data.co.uk's day-first dates and common ISO variants."""
+    raw = str(value or "").strip()
+    for fmt in ("%d/%m/%y", "%d/%m/%Y", "%Y-%m-%d"):
+        try:
+            return datetime.strptime(raw, fmt).date()
+        except ValueError:
+            continue
+    return None
+
+
+def _team_identity(value: Any) -> str:
+    normalized = unicodedata.normalize("NFKD", str(value or "").casefold())
+    normalized = "".join(ch for ch in normalized if not unicodedata.combining(ch))
+    key = re.sub(r"[^a-z0-9]", "", normalized)
+    aliases = {
+        "manutd": "manchesterunited", "manunited": "manchesterunited",
+        "manchesterutd": "manchesterunited", "mancity": "manchestercity",
+        "spurs": "tottenhamhotspur", "tottenham": "tottenhamhotspur",
+        "wolves": "wolverhamptonwanderers", "psg": "parissaintgermain",
+        "barca": "barcelona", "juve": "juventus", "inter": "intermilan",
+        "internazionale": "intermilan", "athleticclub": "athleticbilbao",
+    }
+    return aliases.get(key, key)
+
+
+def normalize_football_data_row(raw: dict[str, Any], division: str) -> dict[str, Any] | None:
+    """Map a football-data.co.uk current-season result into Veltrix's CSV schema."""
+    match_date = _football_data_date(raw.get("Date"))
+    home = str(raw.get("HomeTeam") or "").strip()
+    away = str(raw.get("AwayTeam") or "").strip()
+    home_goals, away_goals = _number(raw.get("FTHG")), _number(raw.get("FTAG"))
+    if (
+        match_date is None or not home or not away
+        or _team_identity(home) == _team_identity(away)
+        or home_goals is None or away_goals is None
+        or not home_goals.is_integer() or not away_goals.is_integer()
+        or home_goals < 0 or away_goals < 0
+    ):
+        return None
+    hg, ag = int(home_goals), int(away_goals)
+    result = "H" if hg > ag else "A" if hg < ag else "D"
+    return {
+        "source": "football-data.co.uk",
+        "division": division,
+        "match_date": match_date.isoformat(),
+        "home_team": home,
+        "away_team": away,
+        "home_goals": hg,
+        "away_goals": ag,
+        "full_time_result": result,
+        "home_elo": None,
+        "away_elo": None,
+        "home_form3": None,
+        "away_form3": None,
+        "home_form5": None,
+        "away_form5": None,
+        "home_odds": _number(raw.get("B365H") or raw.get("AvgH")),
+        "draw_odds": _number(raw.get("B365D") or raw.get("AvgD")),
+        "away_odds": _number(raw.get("B365A") or raw.get("AvgA")),
+        "over25_odds": _number(raw.get("B365>2.5") or raw.get("Avg>2.5")),
+        "under25_odds": _number(raw.get("B365<2.5") or raw.get("Avg<2.5")),
+        "half_time_home_goals": _number(raw.get("HTHG")),
+        "half_time_away_goals": _number(raw.get("HTAG")),
+        "home_shots": _number(raw.get("HS")),
+        "away_shots": _number(raw.get("AS")),
+        "home_shots_on_target": _number(raw.get("HST")),
+        "away_shots_on_target": _number(raw.get("AST")),
+    }
+
+
+def _append_current_season_fallback(
+    session: requests.Session,
+    writer: csv.DictWriter,
+    seen: set[tuple[str, str, str, str]],
+    start_date: date,
+    end_date: date,
+) -> dict[str, int]:
+    """Supplement recent gaps from public current-season league CSVs when enabled.
+
+    API-Football plan restrictions must not erase accessible open results. This
+    source is used only as a historical-results fallback; it never supplies live
+    fixtures or live bookmaker prices. Missing league files are normal and skipped.
+    """
+    season_code = _football_data_season_code(end_date)
+    summary = {"files_checked": 0, "files_available": 0, "matches_added": 0}
+    for division in FOOTBALL_DATA_DIVISIONS:
+        url = f"{FOOTBALL_DATA_BASE}/{season_code}/{division}.csv"
+        summary["files_checked"] += 1
+        response = None
+        try:
+            response = session.get(url, timeout=20)
+            if response.status_code == 404:
+                continue
+            response.raise_for_status()
+            decoded = response.content.decode("cp1252", errors="replace")
+            reader = csv.DictReader(io.StringIO(decoded))
+            if not reader.fieldnames or not {"Date", "HomeTeam", "AwayTeam", "FTHG", "FTAG"}.issubset(reader.fieldnames):
+                continue
+            summary["files_available"] += 1
+            for raw in reader:
+                parsed_date = _football_data_date(raw.get("Date"))
+                if parsed_date is None or not start_date <= parsed_date <= end_date:
+                    continue
+                row = normalize_football_data_row(raw, division)
+                if row is None:
+                    continue
+                key = (
+                    row["division"], row["match_date"],
+                    _team_identity(row["home_team"]), _team_identity(row["away_team"]),
+                )
+                if key in seen:
+                    continue
+                seen.add(key)
+                writer.writerow(row)
+                summary["matches_added"] += 1
+        except (requests.RequestException, OSError, UnicodeError, csv.Error):
+            # This is an optional secondary source. Preserve the primary import if
+            # one league file is unavailable, rate-limited, or temporarily malformed.
+            continue
+        finally:
+            if response is not None:
+                response.close()
+    return summary
+
+
 def find_matches_csv(session: requests.Session) -> str:
     """Return the documented raw CSV path without spending a rate-limited tree API call.
 
@@ -145,6 +286,16 @@ def import_dataset(start_date: str, end_date: str, output: str, timeout: int = 9
                 saved += 1
                 competition_counts[row["division"]] += 1
                 season_counts[row["match_date"][:4]] += 1
+
+            fallback_summary = {"files_checked": 0, "files_available": 0, "matches_added": 0}
+            if os.getenv("VELTRIX_ENABLE_FOOTBALL_DATA_FALLBACK", "").strip().lower() in {"1", "true", "yes"}:
+                fallback_summary = _append_current_season_fallback(
+                    session, writer, seen, start, end
+                )
+                for division in FOOTBALL_DATA_DIVISIONS:
+                    competition_counts.setdefault(division, 0)
+                # Count fallback rows by season from the deduplicated output file
+                # on the next load; the import summary reports the total additions.
     finally:
         text_stream.close()
         response.close()
@@ -157,7 +308,12 @@ def import_dataset(start_date: str, end_date: str, output: str, timeout: int = 9
         "source_csv": csv_url,
         "date_range": {"from": start.isoformat(), "to": end.isoformat()},
         "source_rows_scanned": scanned,
-        "matches_saved": saved,
+        "matches_saved": saved + fallback_summary["matches_added"],
+        "fallback_source": {
+            "name": "football-data.co.uk",
+            "season_code": _football_data_season_code(end),
+            **fallback_summary,
+        },
         "duplicates_skipped": duplicates,
         "invalid_rows_skipped": invalid,
         "matches_by_competition": dict(sorted(competition_counts.items())),
