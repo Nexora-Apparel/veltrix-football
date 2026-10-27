@@ -90,6 +90,9 @@ def _name_key(name: Any) -> str:
         "psveindhoven": "psv",
         "feyenoordrotterdam": "feyenoord",
         "nec": "necnijmegen",
+        # Exact provider abbreviations observed in API-Sports/fixture feeds.
+        "argentinosjrs": "argentinosjuniors",
+        "independrivadavia": "independienterivadavia",
     }
     return aliases.get(key, key)
 
