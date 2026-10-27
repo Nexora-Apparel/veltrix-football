@@ -266,7 +266,7 @@ def _status(report: dict[str, Any] | None, ledger: dict[str, Any] | None) -> str
         f"Usable experimental forecasts: {len(predictions)}\n"
         f"Recent-results refresh: {history_status}\n"
         f"Historical coverage: {history_coverage}\n"
-        f"Report freshness / reuse: {freshness_status}\\n"
+        f"Report freshness / reuse: {freshness_status}\n"
         f"Command-data publication: {str(report.get('command_data_publication') or 'UNCONFIRMED') if isinstance(report, dict) else 'UNKNOWN'}\n"
         f"Report 1X2 odds integration: {odds_status}\n"
         "Direct API-Sports odds feed: run /oddsdiag; /status reads saved-report integration only.\n"
