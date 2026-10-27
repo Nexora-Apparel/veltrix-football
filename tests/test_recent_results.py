@@ -265,3 +265,35 @@ def test_fetch_recent_results_falls_back_to_single_dates_when_range_parameters_a
     assert meta["results_added"] == 2
     assert meta["covered_from"] == "2026-09-04"
     assert meta["covered_through"] == "2026-09-05"
+
+
+def test_incremental_refresh_keeps_accessible_dates_and_records_plan_gaps():
+    class FakeAPI:
+        def fixtures_between(self, start, end, timezone):
+            return {
+                "response": [_fixture(end, home="Recent Home", away="Recent Away")],
+                "_veltrix_meta": {
+                    "provider": "API-Football (API-Sports)",
+                    "successful_dates": [
+                        "2026-10-19", "2026-10-20", "2026-10-21",
+                        "2026-10-22", "2026-10-23", "2026-10-24",
+                    ],
+                    "failed_dates": ["2026-10-18"],
+                    "warning": "API-Football plan did not return historical fixtures for 2026-10-18.",
+                },
+            }
+
+    base = [{
+        "date": date(2026, 10, 10), "division": "E0", "home": "Old", "away": "Older",
+        "home_key": "old", "away_key": "older", "home_goals": 1, "away_goals": 0,
+    }]
+    rows, meta = fetch_recent_results_incremental(
+        FakeAPI(), base, date(2026, 10, 24), {}
+    )
+    assert len(rows) == 1
+    assert meta["status"] == "PARTIAL"
+    assert meta["covered_from"] == "2026-10-19"
+    assert meta["covered_through"] == "2026-10-24"
+    assert meta["cache_state"]["history_gaps"] == ["2026-10-18"]
+    assert meta["cache_state"]["next_backfill_end_date"] == "2026-10-17"
+    assert "plan did not return historical fixtures" in meta["warning"]
