@@ -60,7 +60,7 @@ document.getElementById('forecasts').textContent=d.experimental_forecasts??'—'
 document.getElementById('odds').textContent=d.fixtures_with_market_odds??'—';
 document.getElementById('reporttime').textContent='Report date: '+(d.as_of_date||'unknown')+' · Generated: '+(d.generated_at_utc||'unknown')+' · Published: '+(d.published_at_utc||'unknown');
 let notice=d.warning||'Published report loaded. Forecasts are experimental.';
-if(d.historical_data_coverage&&d.historical_data_coverage.status==='GAPPED_OR_STALE'){notice+=' Historical results have known coverage gaps; forecasts may use incomplete recent history.';}
+if(d.historical_data_coverage&&d.historical_data_coverage.status==='GAPPED_OR_STALE'){const cov=d.historical_data_coverage;notice+=' Historical results have coverage gaps; forecasts may use incomplete recent history.';if(Number(cov.provider_plan_limited_date_count)>0){notice+=' '+cov.provider_plan_limited_date_count+' historical date(s) are inaccessible on the API-Football plan and will not be retried automatically.';}if(Number(cov.retryable_gap_date_count)>0){notice+=' '+cov.retryable_gap_date_count+' transient gap date(s) remain queued for bounded retry.';}}
 if(d.live_odds_sync){notice+=' Matched bookmaker odds: '+(d.live_odds_sync.fixtures_with_odds??d.fixtures_with_market_odds??0)+'.';}
 document.getElementById('notice').textContent=notice;
 if(!d.predictions||!d.predictions.length){const p=document.createElement('div');p.className='empty';p.textContent='No eligible upcoming experimental forecasts in the published report.';box.append(p);return;}
