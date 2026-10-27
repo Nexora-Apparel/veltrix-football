@@ -68,6 +68,16 @@ def publish(path: str, local_file: Path, repo: str, token: str) -> None:
     print(f"Published {path} ({len(data)} bytes).")
 
 
+def _valid_recent_cache(cache: object) -> bool:
+    """Accept the active v2 resumable cache and legacy v1 caches during migration."""
+    return (
+        isinstance(cache, dict)
+        and cache.get("version") in (1, 2)
+        and isinstance(cache.get("matches"), list)
+        and isinstance(cache.get("state"), dict)
+    )
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--report", required=True, help="Generated daily_predictions.json")
@@ -114,12 +124,7 @@ def main() -> int:
             # Recent-results cache v2 is the active resumable schema. Accept v1
             # only for backward-compatible migration; otherwise the cursor and
             # historical matches would never be published for the next run.
-            if (
-                isinstance(cache, dict)
-                and cache.get("version") in (1, 2)
-                and isinstance(cache.get("matches"), list)
-                and isinstance(cache.get("state"), dict)
-            ):
+            if _valid_recent_cache(cache):
                 publish("public-data/recent_results_cache.json", cache_path, repo, token)
             else:
                 print("Recent-results cache publication skipped: cache schema validation failed.", file=sys.stderr)
