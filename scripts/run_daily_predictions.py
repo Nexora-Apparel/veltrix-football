@@ -92,6 +92,11 @@ def _serialize_recent_cache(rows: list[dict]) -> list[dict]:
     } for row in rows]
 
 
+def _combined_odds_status(football_api_status: str, api_sports_fixtures_attached: int) -> str:
+    """Report the effective odds status without hiding source-specific diagnostics."""
+    return "AVAILABLE" if api_sports_fixtures_attached > 0 else football_api_status
+
+
 def _merge_api_sports_market_odds(
     report: dict,
     odds_payload: dict,
@@ -322,9 +327,9 @@ def main() -> None:
             # attached real bookmaker consensus to report fixtures.
             "football_api_status": odds_sync.get("status"),
             "football_api_fixtures_with_odds": odds_sync.get("fixtures_with_odds", 0),
-            "status": (
-                "AVAILABLE" if api_sports_odds_attached > 0
-                else odds_sync.get("status", "UNKNOWN")
+            "status": _combined_odds_status(
+                str(odds_sync.get("status") or "UNKNOWN"),
+                api_sports_odds_attached,
             ),
             "api_sports_status": api_sports_odds_status,
             "api_sports_fixtures_with_odds": api_sports_odds_attached,
