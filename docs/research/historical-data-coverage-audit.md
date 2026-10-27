@@ -142,3 +142,15 @@ These changes improve auditability and operational safety; they do **not** turn 
 - API-Football access is plan- and competition-dependent. A successful API response or an empty response cannot alone prove full historical coverage.
 - The new workflows must complete successfully and their new coverage artifacts must be inspected. A successful Vercel deployment is not proof that GitHub Actions tests passed, Telegram delivered a fresh report, or the live prediction pipeline is accurate.
 - The dashboard and Telegram should be checked against the same published report after deployment. No automatic betting or value alert should be enabled unless chronological out-of-sample calibration and market comparison justify it.
+
+
+### Persistent cache reconciliation (2026-10-27)
+
+The published resumable API-Football cache had **21 historical dates** recorded in the legacy `history_gaps` field (2026-09-21 through 2026-10-11). Inspection of the API client shows that this field was populated from `failed_dates`, which represented explicit API-Football plan-denial errors, not ordinary transient network failures. Repeated weekly retries would therefore consume requests without repairing those dates.
+
+- Migrated the 21 dates to `history_plan_limited_dates` and set cache schema marker `coverage_state_version: 2` on the `command-data` branch.
+- Current retryable gap count after migration: **0**. Provider plan-limited date count: **21**.
+- Reconciled the published dashboard report's coverage metadata with that cache state and removed the unsupported claim that history was confirmed continuous through 2026-10-26. The report now shows no confirmed contiguous-through date while these gaps remain unresolved.
+- New code separates plan-limited dates from retryable transient gaps, prevents automatic retries of known plan denials, and exposes the counts in Telegram/dashboard diagnostics.
+
+This is a classification and quota-safety fix, **not proof that all competitions on those dates are missing**. The open historical source may cover some leagues on those dates; a complete expected-fixture inventory is still required to determine which fixtures are truly absent across all competitions.
