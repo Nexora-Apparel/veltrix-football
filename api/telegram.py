@@ -7,7 +7,6 @@ import os
 from datetime import datetime
 from zoneinfo import ZoneInfo
 from urllib.request import Request, urlopen
-from html import escape
 
 from fastapi import FastAPI, Header, HTTPException, Request as FastAPIRequest
 from fastapi.responses import HTMLResponse, JSONResponse
@@ -161,60 +160,6 @@ def _send_message(token: str, chat_id: str, text: str) -> None:
 @app.get("/api/index")
 def health() -> dict[str, str]:
     return {"service": "Veltrix Telegram Command Centre", "status": "ready"}
-
-@app.get("/")
-def dashboard() -> HTMLResponse:
-    """Serve the mobile-friendly dashboard at the project root."""
-    report = load_latest_report()
-    if report:
-        predictions = report.get("predictions") or []
-        usable = [p for p in predictions if p.get("status") == "EXPERIMENTAL_ONLY"]
-        unsupported = sum(1 for p in predictions if p.get("status") == "UNSUPPORTED_COMPETITION")
-        insufficient = sum(1 for p in predictions if p.get("status") == "INSUFFICIENT_HISTORY")
-        generated = escape(str(report.get("generated_at_utc") or "Not reported"))
-        as_of = escape(str(report.get("as_of_date") or "Unknown"))
-        publication = escape(str(report.get("command_data_publication") or report.get("publication_status") or "UNKNOWN"))
-        cards = []
-        for p in usable:
-            home = escape(str(p.get("home_team") or "Home"))
-            away = escape(str(p.get("away_team") or "Away"))
-            league = escape(str(p.get("league") or "Competition unavailable"))
-            kickoff = escape(str(p.get("kickoff_local") or p.get("kickoff") or "Kick-off unavailable"))
-            probs = p.get("probabilities") or {}
-            expected = p.get("expected_goals") or {}
-            def pct(key: str) -> str:
-                value = probs.get(key)
-                return f"{value:.1%}" if isinstance(value, (int, float)) else "—"
-            def goals(key: str) -> str:
-                value = expected.get(key)
-                return f"{value:.2f}" if isinstance(value, (int, float)) else "—"
-            cards.append(
-                '<article class="match"><div class="league">' + league + '</div>'
-                + '<h3>' + home + ' <span class="versus">vs</span> ' + away + '</h3>'
-                + '<p class="kickoff">' + kickoff + '</p><div class="stats">'
-                + '<span>Home win<b>' + pct("home_win") + '</b></span>'
-                + '<span>Draw<b>' + pct("draw") + '</b></span>'
-                + '<span>Away win<b>' + pct("away_win") + '</b></span></div>'
-                + '<p class="goals">Expected goals: ' + goals("home") + ' – ' + goals("away") + '</p></article>'
-            )
-        match_html = "".join(cards) or '<div class="empty">No eligible experimental forecasts in the latest report.</div>'
-        report_html = (
-            '<section class="metrics"><div><strong>' + str(len(usable)) + '</strong><span>Experimental forecasts</span></div>'
-            + '<div><strong>' + str(unsupported) + '</strong><span>Unsupported competitions</span></div>'
-            + '<div><strong>' + str(insufficient) + '</strong><span>Need more history</span></div></section>'
-            + '<p class="report-meta">Report date: ' + as_of + ' · Generated UTC: ' + generated + ' · Publication: ' + publication + '</p>'
-            + '<section class="matches">' + match_html + '</section>'
-        )
-    else:
-        report_html = '<div class="empty">The dashboard is online, but no published report could be loaded.</div>'
-    page = """<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#080b12"><title>Veltrix Football — Command Centre</title>
-<style>
-:root{color-scheme:dark;font-family:system-ui,-apple-system,Segoe UI,sans-serif;background:#080b12;color:#f3f5f9}*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at top,#172033 0,#080b12 58%);min-height:100vh}header{padding:26px 18px 20px;max-width:1000px;margin:auto}.brand{font-size:12px;letter-spacing:.2em;color:#8ea5ca;font-weight:800}h1{font-size:clamp(27px,6vw,42px);margin:9px 0 5px}.subtitle{color:#aab4c6;margin:0}main{max-width:1000px;margin:auto;padding:0 14px 40px}.notice{border:1px solid #594a2a;background:#211b10;color:#f4dba2;border-radius:12px;padding:13px 15px;font-size:13px;line-height:1.5}.metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:15px 0}.metrics div,.match{background:#111827;border:1px solid #263248;border-radius:14px;padding:14px}.metrics strong{display:block;font-size:26px}.metrics span{font-size:11px;color:#aab4c6}.report-meta{font-size:12px;color:#98a5ba;line-height:1.6;overflow-wrap:anywhere}.matches{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,290px),1fr));gap:12px;margin-top:15px}.league{font-size:11px;color:#8ea5ca;text-transform:uppercase;letter-spacing:.08em}h3{font-size:17px;line-height:1.4;margin:10px 0}.versus{color:#8795aa;font-weight:400;font-size:12px}.kickoff{font-size:12px;color:#aab4c6}.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:14px 0}.stats span{background:#0b111d;border-radius:8px;padding:8px 5px;font-size:10px;color:#aab4c6;text-align:center}.stats b{display:block;color:#f3f5f9;font-size:15px;margin-top:3px}.goals{font-size:12px;color:#aab4c6}.empty{padding:20px;border:1px dashed #39465a;border-radius:12px;color:#aab4c6;margin-top:14px}footer{color:#738198;font-size:11px;padding:24px 2px;text-align:center}
-</style></head><body><header><div class="brand">VELTRIX FOOTBALL</div><h1>Command Centre</h1><p class="subtitle">Daily forecasts and model status</p></header><main><div class="notice"><strong>Research mode only.</strong> Forecasts are experimental, not validated betting advice. No bet recommendations or bookmaker actions are enabled.</div>
-""" + report_html + """<footer>Data comes from the latest published report. Forecasts are not validated betting advice.</footer></main></body></html>"""
-    return HTMLResponse(content=page)
-
-
 
 @app.post("/api/telegram")
 @app.post("/api/index")
