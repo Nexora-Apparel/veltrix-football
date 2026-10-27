@@ -408,6 +408,10 @@ def fetch_recent_results_incremental(
     plan_warning = provider_meta.get("warning") if failed_dates else None
 
     succeeded = warning is None
+    if phase == "gap_retry":
+        # Throttle even provider exceptions so a plan/rate-limit failure does not
+        # trigger the same retry on every scheduled run.
+        state["last_gap_retry_on"] = end_date.isoformat()
     successful_date_objects = []
     for value in successful_dates:
         try:
@@ -442,7 +446,6 @@ def fetch_recent_results_incremental(
     elif succeeded and phase == "gap_retry":
         # A retry updates only the gap ledger; it must not move the forward cursor
         # or claim the historical timeline is contiguous while other gaps remain.
-        state["last_gap_retry_on"] = end_date.isoformat()
         progress_after = 1 if successful_date_objects else 0
         remaining_gaps = state.get("history_gaps")
         has_gaps = isinstance(remaining_gaps, list) and bool(remaining_gaps)
