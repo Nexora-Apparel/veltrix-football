@@ -6,6 +6,25 @@ from datetime import date
 from scripts import run_daily_predictions as daily_runner
 
 
+
+def test_api_sports_unexpected_error_diagnostic_does_not_echo_exception_text():
+    class SecretBearingError(RuntimeError):
+        pass
+
+    message = daily_runner._safe_api_sports_error(
+        SecretBearingError("request failed with key=should-not-be-published")
+    )
+    assert message == "Unexpected API-Sports integration error (SecretBearingError)."
+    assert "should-not-be-published" not in message
+
+
+def test_api_sports_provider_error_keeps_sanitized_provider_reason():
+    from app.api_football_odds import APIFootballError
+
+    error = APIFootballError("API-Football request quota or rate limit reached.")
+    assert daily_runner._safe_api_sports_error(error) == str(error)
+
+
 def test_combined_odds_status_prefers_verified_api_sports_report_matches():
     assert daily_runner._combined_odds_status("NO_VALID_1X2_ODDS", 5) == "AVAILABLE"
     assert daily_runner._combined_odds_status("NO_VALID_1X2_ODDS", 0) == "NO_VALID_1X2_ODDS"
