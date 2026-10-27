@@ -111,9 +111,12 @@ def main() -> int:
         if args.recent_cache:
             cache_path = Path(args.recent_cache)
             cache = json.loads(cache_path.read_text(encoding="utf-8"))
+            # Recent-results cache v2 is the active resumable schema. Accept v1
+            # only for backward-compatible migration; otherwise the cursor and
+            # historical matches would never be published for the next run.
             if (
                 isinstance(cache, dict)
-                and cache.get("version") == 1
+                and cache.get("version") in (1, 2)
                 and isinstance(cache.get("matches"), list)
                 and isinstance(cache.get("state"), dict)
             ):
