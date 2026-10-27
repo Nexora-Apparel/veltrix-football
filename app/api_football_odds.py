@@ -6,7 +6,7 @@ API_FOOTBALL_KEY and sends it only in the x-apisports-key request header.
 from __future__ import annotations
 
 import os
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from zoneinfo import ZoneInfo
 import math
 from typing import Any
@@ -297,7 +297,13 @@ class APIFootballClient:
     def fixtures_between(
         self, start_date: str, end_date: str, timezone: str = "Africa/Lagos"
     ) -> dict[str, Any]:
-        """Fetch completed and scheduled fixtures in a bounded date range."""
+        """Fetch an inclusive range with one supported date-filtered request per day.
+
+        The account's live endpoint rejected combined from/to/timezone filters during
+        verification, while the date filter works. Keep each caller's range bounded
+        to seven days and aggregate explicit daily responses rather than failing the
+        entire historical refresh.
+        """
         try:
             start = date.fromisoformat(start_date)
             end = date.fromisoformat(end_date)
@@ -308,9 +314,28 @@ class APIFootballClient:
             raise APIFootballError("end date must be on or after start date.")
         if (end - start).days >= 7:
             raise APIFootballError("API-Football history refresh ranges are capped at 7 calendar days.")
-        return self._fixtures_query({
-            "from": start.isoformat(), "to": end.isoformat(), "timezone": timezone,
-        })
+        combined: list[dict[str, Any]] = []
+        metas: list[dict[str, Any]] = []
+        cursor = start
+        while cursor <= end:
+            payload = self.fixtures(cursor.isoformat(), timezone)
+            combined.extend(payload.get("response") or [])
+            metas.append(payload.get("_veltrix_meta") or {})
+            cursor += timedelta(days=1)
+        return {
+            "response": combined,
+            "results": len(combined),
+            "provider": "API-Football (API-Sports)",
+            "_veltrix_meta": {
+                "provider": "API-Football (API-Sports)",
+                "requests_made": sum(int(meta.get("requests_made", meta.get("pages_fetched", 1)) or 1) for meta in metas),
+                "requests_remaining": next(
+                    (meta.get("requests_remaining") for meta in reversed(metas)
+                     if meta.get("requests_remaining") is not None), None
+                ),
+                "date_queries": len(metas),
+            },
+        }
 
     def leagues(self, current: bool = True) -> dict[str, Any]:
         """List competitions available through API-Football for the selected season."""
