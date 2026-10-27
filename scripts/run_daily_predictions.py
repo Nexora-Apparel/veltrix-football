@@ -316,6 +316,16 @@ def main() -> None:
                 api_sports_odds_status = "UNAVAILABLE"
         report["live_odds_sync"] = {
             **odds_sync,
+            # Keep the original FootballAPI feed status for diagnostics, but make
+            # the headline status reflect the combined report integration. This
+            # avoids saying "NO_VALID_1X2_ODDS" when API-Sports successfully
+            # attached real bookmaker consensus to report fixtures.
+            "football_api_status": odds_sync.get("status"),
+            "football_api_fixtures_with_odds": odds_sync.get("fixtures_with_odds", 0),
+            "status": (
+                "AVAILABLE" if api_sports_odds_attached > 0
+                else odds_sync.get("status", "UNKNOWN")
+            ),
             "api_sports_status": api_sports_odds_status,
             "api_sports_fixtures_with_odds": api_sports_odds_attached,
         }
