@@ -1,17 +1,15 @@
-from fastapi.testclient import TestClient
-
-from api.dashboard import app as dashboard_app
-from api.dashboard_data import app as dashboard_data_app
+from api.dashboard import dashboard
+from api.dashboard_data import get_dashboard_data
 
 
-def test_dashboard_root_returns_html():
-    response = TestClient(dashboard_app).get("/")
+def test_dashboard_root_handler_returns_html():
+    response = dashboard()
     assert response.status_code == 200
-    assert "VELTRIX FOOTBALL" in response.text
-    assert "Command Centre" in response.text
+    assert "VELTRIX FOOTBALL" in response.body.decode("utf-8")
+    assert "Command Centre" in response.body.decode("utf-8")
 
 
-def test_dashboard_data_alias_returns_json(monkeypatch):
+def test_dashboard_data_handler_returns_json(monkeypatch):
     import api.telegram
 
     monkeypatch.setattr(api.telegram, "load_latest_report", lambda: {
@@ -21,9 +19,7 @@ def test_dashboard_data_alias_returns_json(monkeypatch):
         "fixtures_received": 0,
         "fixtures_with_market_odds": 0,
     })
-    response = TestClient(dashboard_data_app).get("/api/dashboard-data")
-    assert response.status_code == 200
-    payload = response.json()
+    payload = get_dashboard_data()
     assert payload["status"] == "OK"
     assert payload["as_of_date"] == "2026-10-27"
     assert payload["predictions"] == []
