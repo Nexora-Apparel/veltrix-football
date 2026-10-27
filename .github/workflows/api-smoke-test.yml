@@ -11,6 +11,7 @@ on:
       - "scripts/run_daily_predictions.py"
       - "tests/test_football_api_odds.py"
       - "tests/test_api_football_odds.py"
+      - "tests/test_recent_results.py"
       - ".github/workflows/api-smoke-test.yml"
   workflow_dispatch:
   schedule:
