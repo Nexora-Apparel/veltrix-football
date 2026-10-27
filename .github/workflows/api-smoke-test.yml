@@ -1,12 +1,12 @@
-name: Highlightly API smoke test
+name: API-Football primary API smoke test
 
 on:
   push:
     branches: [main]
     paths:
       - "app/config.py"
-      - "app/football_api.py"
       - "app/api_football_odds.py"
+      - "app/cli.py"
       - "tests/test_football_api_odds.py"
       - "tests/test_api_football_odds.py"
       - ".github/workflows/api-smoke-test.yml"
@@ -38,32 +38,17 @@ jobs:
       - name: Run local sanity tests
         run: python -m pytest -q
 
-      - name: Verify Highlightly authentication and league endpoint
-        env:
-          HIGHLIGHTLY_API_KEY: ${{ secrets.HIGHLIGHTLY_API_KEY }}
-        run: |
-          if [ -z "$HIGHLIGHTLY_API_KEY" ]; then
-            echo "::error::Repository secret HIGHLIGHTLY_API_KEY is not configured."
-            exit 1
-          fi
-          python -m app.cli status
-
-      - name: Fetch today's fixtures (Africa/Lagos)
-        env:
-          HIGHLIGHTLY_API_KEY: ${{ secrets.HIGHLIGHTLY_API_KEY }}
-        run: |
-          TODAY="$(TZ=Africa/Lagos date +%F)"
-          python -m app.cli fixtures --date "$TODAY" --timezone Africa/Lagos
-
-      - name: Verify API-Football account status when secret is configured
+      - name: Verify primary API-Football authentication and fixtures
         env:
           API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
         run: |
           if [ -z "$API_FOOTBALL_KEY" ]; then
-            echo "::warning::Repository secret API_FOOTBALL_KEY is not configured; API-Football live checks skipped."
-            exit 0
+            echo "::error::Repository secret API_FOOTBALL_KEY is not configured."
+            exit 1
           fi
-          python -m app.cli api-football-status
+          python -m app.cli status
+          TODAY="$(TZ=Africa/Lagos date +%F)"
+          python -m app.cli fixtures --date "$TODAY" --timezone Africa/Lagos
 
       - name: Check API-Football prematch odds (scheduled/manual runs only)
         if: github.event_name == 'workflow_dispatch' || github.event_name == 'schedule'
