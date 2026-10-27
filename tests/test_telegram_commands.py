@@ -43,7 +43,9 @@ def test_status_distinguishes_report_odds_from_direct_provider_feed():
     assert "Command-data publication: UNCONFIRMED" in reply
     assert "Direct API-Sports odds feed: run /oddsdiag" in reply
     report["command_data_publication"] = "PUBLISHED"
-    assert "Command-data publication: PUBLISHED" in handle_command("/status", report=report)
+    published_reply = handle_command("/status", report=report)
+    assert "Command-data publication: PUBLISHED" in published_reply
+    assert "Report freshness / reuse: LIVE_REPORT_GENERATED_AND_PUBLISHED" in published_reply
 
 
 def test_odds_command_excludes_started_and_malformed_kickoffs():
