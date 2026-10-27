@@ -59,19 +59,72 @@ button:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
 @media(min-width:700px){main{padding-top:28px}.metric,.card,.notice{border-radius:19px}.grid{gap:15px}}
 @media(max-width:520px){header{padding:21px 16px 19px}.grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}main{padding:17px 12px 90px}.metric{padding:12px 10px;border-radius:13px}.label{font-size:9px;letter-spacing:.025em}.value{font-size:22px}.metric:last-child{grid-column:auto}h1{font-size:29px}.card{padding:15px;border-radius:15px}.teams{font-size:15px}.row{gap:8px;font-size:11px}.notice{padding:13px;font-size:11px}}
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{scroll-behavior:auto!important;transition:none!important}}
+
+/* Match-intelligence visual system */
+:root{--sapphire:#071b38;--emerald:#00f0a0;--emerald-soft:rgba(0,240,160,.12);--electric:#54b7ff}
+body{background:radial-gradient(ellipse at 78% 0%,rgba(20,91,174,.28),transparent 42%),radial-gradient(ellipse at 0% 28%,rgba(0,240,160,.07),transparent 34%),linear-gradient(155deg,#061426,#03080f 56%,#07111d)}
+header{background:linear-gradient(130deg,rgba(8,30,61,.96),rgba(3,8,15,.93));padding-top:22px}
+.brand:before{content:"V";border-radius:10px;color:#eafff7;font-style:italic;font-weight:900}
+.hero-label{display:flex;align-items:center;gap:8px;color:var(--accent);font-size:10px;letter-spacing:.16em;font-weight:850;text-transform:uppercase}
+.live-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--accent);box-shadow:0 0 12px var(--accent)}
+h1{margin:13px 0 7px;font-size:clamp(30px,6vw,43px)}
+.section-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:27px}
+.section-head h2{margin:0}
+.eyebrow{font-size:10px;color:var(--muted);letter-spacing:.13em;text-transform:uppercase}
+.intel-panel{border:1px solid rgba(84,183,255,.23);border-radius:20px;padding:16px;background:linear-gradient(145deg,rgba(9,32,61,.9),rgba(5,15,27,.97));box-shadow:0 12px 38px rgba(0,0,0,.2),inset 0 1px rgba(255,255,255,.025);margin-top:16px}
+.intel-top{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:15px}
+.intel-title{font-size:14px;font-weight:800;letter-spacing:-.02em}
+.intel-kicker{color:var(--muted);font-size:10px;margin-top:3px}
+.status-chip{font-size:9px;letter-spacing:.08em;font-weight:850;color:var(--warn);border:1px solid rgba(247,201,108,.28);border-radius:99px;padding:6px 8px;white-space:nowrap}
+.pitch{position:relative;height:148px;border:1px solid rgba(0,240,160,.26);border-radius:12px;overflow:hidden;background:linear-gradient(90deg,rgba(0,240,160,.06),rgba(84,183,255,.055)),repeating-linear-gradient(0deg,transparent 0 28px,rgba(0,240,160,.055) 29px 30px),#061b23}
+.pitch:before{content:"";position:absolute;inset:0 50%;border-left:1px solid rgba(0,240,160,.24)}
+.pitch:after{content:"";position:absolute;width:62px;height:62px;left:calc(50% - 31px);top:calc(50% - 31px);border:1px solid rgba(0,240,160,.24);border-radius:50%}
+.pitch-box{position:absolute;top:34px;width:40px;height:80px;border:1px solid rgba(0,240,160,.2)}
+.pitch-box.left{left:-1px;border-left:0}.pitch-box.right{right:-1px;border-right:0}
+.pitch-dot{position:absolute;width:8px;height:8px;border-radius:50%;background:var(--emerald);box-shadow:0 0 10px rgba(0,240,160,.65);z-index:1}
+.pitch-dot.blue{background:var(--electric);box-shadow:0 0 10px rgba(84,183,255,.65)}
+.prob-list{display:grid;gap:12px;margin-top:16px}
+.prob-line{display:grid;grid-template-columns:54px 1fr 48px;align-items:center;gap:9px;font-size:11px}
+.prob-name{color:#c9d9e8}.prob-track{height:7px;background:#14283b;border-radius:20px;overflow:hidden}
+.prob-fill{height:100%;border-radius:20px;background:linear-gradient(90deg,#008d69,var(--emerald));box-shadow:0 0 12px rgba(0,240,160,.24)}
+.prob-fill.draw{background:linear-gradient(90deg,#286eab,var(--electric))}
+.prob-fill.away{background:linear-gradient(90deg,#546c87,#a7c4df)}
+.prob-value{text-align:right;font-weight:850;color:#f4fbff;font-variant-numeric:tabular-nums}
+.compare{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+.compare-item{border:1px solid rgba(84,183,255,.15);border-radius:12px;padding:12px;background:rgba(5,15,27,.55)}
+.compare-label{font-size:9px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted)}
+.compare-value{font-size:18px;font-weight:850;margin-top:5px;color:#f4fbff}
+.odds-row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin-top:14px}
+.odds-cell{padding:10px 5px;border-radius:10px;border:1px solid rgba(84,183,255,.18);background:rgba(5,15,27,.65);text-align:center}
+.odds-cell span{display:block;font-size:9px;color:var(--muted);text-transform:uppercase}
+.odds-cell b{display:block;font-size:15px;margin-top:3px;font-variant-numeric:tabular-nums;color:#eff8ff}
+.data-note{font-size:10px;color:var(--muted);line-height:1.6;margin-top:12px}
+.card{background:linear-gradient(145deg,rgba(8,25,45,.96),rgba(4,12,22,.98));border-color:rgba(84,183,255,.18)}
+.card .row{border-color:rgba(84,183,255,.16)}
+.metric{background:linear-gradient(145deg,rgba(9,30,56,.94),rgba(4,13,23,.98));border-color:rgba(84,183,255,.2)}
+@media(max-width:520px){.intel-panel{padding:13px;border-radius:17px}.pitch{height:130px}.prob-line{grid-template-columns:47px 1fr 42px}.odds-cell b{font-size:14px}}
+
 </style></head><body>
-<header><div class="wrap"><div class="brand">VELTRIX FOOTBALL</div><h1>Command Centre</h1>
-<div class="sub">Fixtures, experimental forecasts and system status</div></div></header>
-<main><div class="grid">
+<header><div class="wrap"><div class="brand">VELTRIX FOOTBALL</div><h1>Match Intelligence</h1>
+<div class="hero-label"><span class="live-dot"></span> AI FOOTBALL ANALYTICS <span style="color:var(--muted)">/ SYSTEM MONITOR</span></div>
+<div class="sub" style="margin-top:9px">A data-first view of fixtures, market coverage and experimental model output.</div></div></header>
+<main><div class="section-head" style="margin-top:0"><h2>Data overview</h2><span class="eyebrow">Published report</span></div><div class="grid">
 <div class="metric"><div class="label">Fixtures received</div><div class="value" id="fixtures">—</div></div>
 <div class="metric"><div class="label">Experimental forecasts</div><div class="value" id="forecasts">—</div></div>
 <div class="metric"><div class="label">Fixtures with odds</div><div class="value" id="odds">—</div></div>
 </div>
 <div class="notice" id="notice">Loading published report…</div>
-<h2>Upcoming experimental forecasts</h2><div class="sub" id="reporttime">Checking latest published data…</div>
+<section class="intel-panel" aria-label="Match intelligence visual">
+<div class="intel-top"><div><div class="eyebrow">Tactical visualization</div><div class="intel-title">Match analysis field</div><div class="intel-kicker">Visual preview · no live match selected</div></div><span class="status-chip">AWAITING DATA</span></div>
+<div class="pitch" aria-hidden="true"><span class="pitch-box left"></span><span class="pitch-box right"></span>
+<i class="pitch-dot" style="left:15%;top:25%"></i><i class="pitch-dot" style="left:24%;top:50%"></i><i class="pitch-dot" style="left:17%;top:74%"></i><i class="pitch-dot" style="left:38%;top:35%"></i><i class="pitch-dot" style="left:39%;top:66%"></i><i class="pitch-dot blue" style="left:61%;top:26%"></i><i class="pitch-dot blue" style="left:72%;top:45%"></i><i class="pitch-dot blue" style="left:62%;top:72%"></i><i class="pitch-dot blue" style="left:83%;top:34%"></i><i class="pitch-dot blue" style="left:82%;top:67%"></i></div>
+<div class="data-note">Illustrative pitch graphic only. Player positions are not linked to a live fixture or tracking feed.</div>
+<div class="section-head"><h2>Upcoming forecasts</h2><span class="eyebrow">Experimental</span></div>
+<div class="sub" id="reporttime" style="margin-top:7px">Checking latest published data…</div>
 <div id="predictions"><div class="empty">Loading fixtures…</div></div>
-<div class="footer">Forecasts are experimental and not validated for betting. Value-betting alerts remain disabled. Data refreshes when the published report updates.</div>
-<button onclick="loadDashboard()">Refresh data</button></main>
+</section>
+<div class="footer">Forecasts are experimental and not validated for betting. No betting recommendations are enabled. Probabilities, odds and comparisons will only appear when supported by the published data. Data refreshes when the published report updates.</div>
+<button onclick="loadDashboard()"><span class="live-dot"></span> Refresh intelligence</button></main>
 <script>
 async function loadDashboard(){
 const box=document.getElementById('predictions');box.replaceChildren();
@@ -88,12 +141,20 @@ document.getElementById('notice').textContent=notice;
 if(!d.predictions||!d.predictions.length){const p=document.createElement('div');p.className='empty';p.textContent='No eligible upcoming experimental forecasts in the published report.';box.append(p);return;}
 for(const m of d.predictions){
 const card=document.createElement('article');card.className='card';
-const teams=document.createElement('div');teams.className='teams';teams.textContent=(m.home_team||'Home')+' vs '+(m.away_team||'Away');card.append(teams);
-const league=document.createElement('div');league.className='league';league.textContent=(m.league||'Competition')+' · '+(m.kickoff_local||m.kickoff||'Kickoff unavailable');card.append(league);
-const pill=document.createElement('span');pill.className='pill';pill.textContent='EXPERIMENTAL ONLY';card.append(pill);
-const row=document.createElement('div');row.className='row';
-const probs=m.probabilities||{};row.textContent='Home '+fmt(probs.home_win)+' · Draw '+fmt(probs.draw)+' · Away '+fmt(probs.away_win);card.append(row);
-const note=document.createElement('div');note.className='sub';note.style.marginTop='9px';note.textContent='No betting recommendation · Model not validated';card.append(note);box.append(card);
+const top=document.createElement('div');top.className='intel-top';
+const left=document.createElement('div');
+const teams=document.createElement('div');teams.className='teams';teams.textContent=(m.home_team||'Home')+'  vs  '+(m.away_team||'Away');left.append(teams);
+const league=document.createElement('div');league.className='league';league.textContent=(m.league||'Competition')+' · '+(m.kickoff_local||m.kickoff||'Kickoff unavailable');left.append(league);top.append(left);
+const pill=document.createElement('span');pill.className='pill';pill.textContent='EXPERIMENTAL';top.append(pill);card.append(top);
+const probs=m.probabilities||{};
+const probList=document.createElement('div');probList.className='prob-list';
+[['Home',probs.home_win,''],['Draw',probs.draw,'draw'],['Away',probs.away_win,'away']].forEach(([name,value,kind])=>{const line=document.createElement('div');line.className='prob-line';const label=document.createElement('span');label.className='prob-name';label.textContent=name;const track=document.createElement('div');track.className='prob-track';const fill=document.createElement('div');fill.className='prob-fill '+kind;const pct=Number(value);fill.style.width=Number.isFinite(pct)?Math.max(0,Math.min(100,pct*100))+'%':'0%';track.append(fill);const val=document.createElement('span');val.className='prob-value';val.textContent=fmt(value);line.append(label,track,val);probList.append(line)});card.append(probList);
+const compare=document.createElement('div');compare.className='compare';
+[['Home form','home_form'],['Away form','away_form']].forEach(([label,key])=>{const item=document.createElement('div');item.className='compare-item';const l=document.createElement('div');l.className='compare-label';l.textContent=label;const v=document.createElement('div');v.className='compare-value';const raw=m[key];v.textContent=(raw===undefined||raw===null||raw==='')?'—':String(raw);item.append(l,v);compare.append(item)});if(m.home_form!==undefined||m.away_form!==undefined)card.append(compare);
+const odds=m.odds||m.market_odds||{};
+const oddsItems=[['Home',odds.home||odds.home_win],['Draw',odds.draw],['Away',odds.away||odds.away_win]];
+if(oddsItems.some(x=>x[1]!==undefined&&x[1]!==null)){const oddsRow=document.createElement('div');oddsRow.className='odds-row';oddsItems.forEach(([label,value])=>{const cell=document.createElement('div');cell.className='odds-cell';const l=document.createElement('span');l.textContent=label;const v=document.createElement('b');v.textContent=value===undefined||value===null?'—':String(value);cell.append(l,v);oddsRow.append(cell)});card.append(oddsRow)}
+const note=document.createElement('div');note.className='data-note';note.textContent='No betting recommendation · Experimental model not validated';card.append(note);box.append(card);
 }
 }catch(e){document.getElementById('notice').textContent='Could not load the published report. Please refresh shortly.';const p=document.createElement('div');p.className='empty';p.textContent='Dashboard data request failed.';box.append(p);}
 }
