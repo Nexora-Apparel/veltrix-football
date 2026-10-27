@@ -310,3 +310,33 @@ def test_primary_fixture_queries_reject_ranges_over_seven_days():
         assert "capped at 7 calendar days" in str(exc)
     else:
         raise AssertionError("Expected oversized historical range to be rejected")
+
+
+
+def test_historical_range_labels_plan_denied_dates_as_non_retryable():
+    class QueuedSession:
+        def __init__(self):
+            self.headers = {}
+            self.calls = []
+            self.payloads = [
+                {"errors": {"plan": "historical fixture date unavailable"}, "response": []},
+                {"errors": [], "paging": {"current": 1, "total": 1}, "response": [{
+                    "fixture": {"id": 222, "date": "2026-10-25T15:00:00+01:00", "status": {"short": "FT"}},
+                    "league": {"id": 39, "name": "Premier League", "season": 2026},
+                    "teams": {"home": {"name": "Alpha"}, "away": {"name": "Beta"}},
+                    "goals": {"home": 1, "away": 0},
+                }]},
+        ]
+
+        def get(self, url, params=None, timeout=None):
+            self.calls.append((url, params, timeout, dict(self.headers)))
+            return FakeResponse(self.payloads.pop(0))
+
+    session = QueuedSession()
+    result = APIFootballClient("test-key", session=session).fixtures_between(
+        "2026-10-25", "2026-10-26"
+    )
+    meta = result["_veltrix_meta"]
+    assert meta["failed_dates"] == ["2026-10-26"]
+    assert meta["plan_limited_dates"] == ["2026-10-26"]
+    assert meta["successful_dates"] == ["2026-10-25"]
