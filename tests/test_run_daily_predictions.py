@@ -147,7 +147,7 @@ def _sync():
 def test_daily_runner_refreshes_history_even_when_no_future_fixtures(tmp_path, monkeypatch):
     output = tmp_path / "reports" / "daily.json"
     _run_args(monkeypatch, output)
-    monkeypatch.setattr(daily_runner, "get_settings", lambda: object())
+    monkeypatch.setenv("API_FOOTBALL_KEY", "test-key")
     base_history = [{"date": date(2026, 10, 20)}]
     recent_rows = _recent_row()
     monkeypatch.setattr(daily_runner, "load_historical_matches", lambda path: base_history)
@@ -160,7 +160,7 @@ def test_daily_runner_refreshes_history_even_when_no_future_fixtures(tmp_path, m
         def odds_for_date(self, *args):
             raise AssertionError("Odds should not be requested when no future fixtures remain.")
 
-    monkeypatch.setattr(daily_runner, "FootballAPI", FakeAPI)
+    monkeypatch.setattr(daily_runner, "APIFootballClient", FakeAPI)
     refresh_calls = []
     monkeypatch.setattr(
         daily_runner, "fetch_recent_results_incremental",
@@ -192,7 +192,7 @@ def test_daily_runner_refreshes_history_even_when_no_future_fixtures(tmp_path, m
 def test_daily_runner_refreshes_history_and_requests_odds_for_future_fixtures(tmp_path, monkeypatch):
     output = tmp_path / "reports" / "daily.json"
     _run_args(monkeypatch, output)
-    monkeypatch.setattr(daily_runner, "get_settings", lambda: object())
+    monkeypatch.setenv("API_FOOTBALL_KEY", "test-key")
     base_history = [{"date": date(2026, 10, 20)}]
     recent_rows = _recent_row()
     monkeypatch.setattr(daily_runner, "load_historical_matches", lambda path: base_history)
@@ -206,7 +206,7 @@ def test_daily_runner_refreshes_history_and_requests_odds_for_future_fixtures(tm
         def odds_for_date(self, target_date, timezone):
             return {"response": []}
 
-    monkeypatch.setattr(daily_runner, "FootballAPI", FakeAPI)
+    monkeypatch.setattr(daily_runner, "APIFootballClient", FakeAPI)
     monkeypatch.setattr(
         daily_runner, "_has_future_fixtures", lambda payload, target_date, timezone_name: True
     )
