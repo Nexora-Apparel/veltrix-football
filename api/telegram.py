@@ -9,14 +9,107 @@ from zoneinfo import ZoneInfo
 from urllib.request import Request, urlopen
 
 from fastapi import FastAPI, Header, HTTPException, Request as FastAPIRequest
-from fastapi.responses import JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse
 
 from app.telegram_commands import handle_command
 from app.report_artifacts import load_latest_report, load_paper_ledger
 from app.telegram_security import telegram_webhook_secret_token
 from app.api_football_odds import APIFootballClient, APIFootballError
 
-app = FastAPI(title="Veltrix Football Telegram Command Centre")
+app = FastAPI(title="Veltrix Football Command Centre")
+
+DASHBOARD_HTML = """<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#090b10"><title>Veltrix Football</title>
+<style>
+:root{color-scheme:dark;--bg:#090b10;--panel:#121620;--line:#252c39;--text:#f2f5fa;--muted:#9ba6b7;--accent:#78aaff;--warn:#f4c56a}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:15px/1.5 system-ui,-apple-system,Segoe UI,sans-serif}
+header{padding:26px 18px 18px;background:linear-gradient(145deg,#111a2a,#090b10 72%);border-bottom:1px solid var(--line)}
+.wrap{max-width:960px;margin:auto} .brand{font-size:12px;letter-spacing:.18em;color:var(--accent);font-weight:800}
+h1{font-size:27px;line-height:1.15;margin:8px 0} .sub{color:var(--muted);font-size:13px}
+main{padding:18px;max-width:960px;margin:auto}.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.metric,.card,.notice{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:15px}
+.label{color:var(--muted);font-size:12px}.value{font-size:23px;font-weight:750;margin-top:3px}
+h2{font-size:18px;margin:25px 0 10px}.notice{margin-top:14px;color:var(--warn);font-size:13px}
+.card{margin:10px 0}.teams{font-size:16px;font-weight:750}.league{color:var(--muted);font-size:12px;margin:4px 0 12px}
+.row{display:flex;justify-content:space-between;gap:12px;border-top:1px solid var(--line);padding-top:10px;margin-top:10px}
+.pill{font-size:11px;color:var(--warn);border:1px solid #5c4c2b;padding:3px 7px;border-radius:20px;white-space:nowrap}
+.empty{color:var(--muted);padding:16px 0}.footer{color:var(--muted);font-size:12px;margin:22px 0}
+button{background:#202a3b;color:var(--text);border:1px solid #34445e;border-radius:9px;padding:9px 12px;font-weight:650}
+@media(max-width:520px){.grid{grid-template-columns:1fr 1fr}.metric:last-child{grid-column:span 2}h1{font-size:24px}}
+</style></head><body>
+<header><div class="wrap"><div class="brand">VELTRIX FOOTBALL</div><h1>Command Centre</h1>
+<div class="sub">Fixtures, experimental forecasts and system status</div></div></header>
+<main><div class="grid">
+<div class="metric"><div class="label">Fixtures received</div><div class="value" id="fixtures">—</div></div>
+<div class="metric"><div class="label">Experimental forecasts</div><div class="value" id="forecasts">—</div></div>
+<div class="metric"><div class="label">Fixtures with odds</div><div class="value" id="odds">—</div></div>
+</div>
+<div class="notice" id="notice">Loading published report…</div>
+<h2>Upcoming experimental forecasts</h2><div class="sub" id="reporttime">Checking latest published data…</div>
+<div id="predictions"><div class="empty">Loading fixtures…</div></div>
+<div class="footer">Forecasts are experimental and not validated for betting. Value-betting alerts remain disabled. Data refreshes when the published report updates.</div>
+<button onclick="loadDashboard()">Refresh data</button></main>
+<script>
+async function loadDashboard(){
+const box=document.getElementById('predictions');box.replaceChildren();
+try{
+const r=await fetch('/api/dashboard-data',{cache:'no-store'});if(!r.ok)throw new Error('Dashboard data unavailable');const d=await r.json();
+document.getElementById('fixtures').textContent=d.fixtures_received??'—';
+document.getElementById('forecasts').textContent=d.experimental_forecasts??'—';
+document.getElementById('odds').textContent=d.fixtures_with_market_odds??'—';
+document.getElementById('reporttime').textContent='Report date: '+(d.as_of_date||'unknown')+' · Generated: '+(d.generated_at_utc||'unknown');
+document.getElementById('notice').textContent=d.warning||'Published report loaded. Forecasts are experimental.';
+if(!d.predictions||!d.predictions.length){const p=document.createElement('div');p.className='empty';p.textContent='No eligible upcoming experimental forecasts in the published report.';box.append(p);return;}
+for(const m of d.predictions){
+const card=document.createElement('article');card.className='card';
+const teams=document.createElement('div');teams.className='teams';teams.textContent=(m.home_team||'Home')+' vs '+(m.away_team||'Away');card.append(teams);
+const league=document.createElement('div');league.className='league';league.textContent=(m.league||'Competition')+' · '+(m.kickoff_local||m.kickoff||'Kickoff unavailable');card.append(league);
+const pill=document.createElement('span');pill.className='pill';pill.textContent='EXPERIMENTAL ONLY';card.append(pill);
+const row=document.createElement('div');row.className='row';
+const probs=m.probabilities||{};row.textContent='Home '+fmt(probs.home_win)+' · Draw '+fmt(probs.draw)+' · Away '+fmt(probs.away_win);card.append(row);
+const note=document.createElement('div');note.className='sub';note.style.marginTop='9px';note.textContent='No betting recommendation · Model not validated';card.append(note);box.append(card);
+}
+}catch(e){document.getElementById('notice').textContent='Could not load the published report. Please refresh shortly.';const p=document.createElement('div');p.className='empty';p.textContent='Dashboard data request failed.';box.append(p);}
+}
+function fmt(v){return Number.isFinite(Number(v))?(Number(v)*100).toFixed(1)+'%':'—'}
+loadDashboard();
+</script></body></html>"""
+
+@app.get("/", response_class=HTMLResponse)
+def dashboard() -> HTMLResponse:
+    return HTMLResponse(DASHBOARD_HTML)
+
+@app.get("/api/dashboard-data")
+def dashboard_data() -> dict:
+    report = load_latest_report()
+    if not isinstance(report, dict):
+        return {"status": "UNAVAILABLE", "warning": "No published report could be loaded.", "predictions": []}
+    now = datetime.now(ZoneInfo("Africa/Lagos"))
+    rows = report.get("predictions") if isinstance(report.get("predictions"), list) else []
+    upcoming = []
+    for row in rows:
+        if not isinstance(row, dict) or row.get("status") != "EXPERIMENTAL_ONLY":
+            continue
+        raw = row.get("kickoff_local") or row.get("kickoff")
+        try:
+            kickoff = datetime.fromisoformat(str(raw).replace("Z", "+00:00"))
+            if kickoff.tzinfo is None:
+                kickoff = kickoff.replace(tzinfo=ZoneInfo("Africa/Lagos"))
+            if kickoff.astimezone(ZoneInfo("Africa/Lagos")) > now:
+                upcoming.append(row)
+        except (TypeError, ValueError, OverflowError):
+            continue
+    return {
+        "status": "OK",
+        "as_of_date": report.get("as_of_date"),
+        "generated_at_utc": report.get("generated_at_utc"),
+        "fixtures_received": report.get("fixtures_received", 0),
+        "experimental_forecasts": sum(1 for row in rows if isinstance(row, dict) and row.get("status") == "EXPERIMENTAL_ONLY"),
+        "fixtures_with_market_odds": report.get("fixtures_with_market_odds", 0),
+        "warning": "Published forecasts are experimental and not validated for betting. The report may not be the latest live run.",
+        "predictions": upcoming[:60],
+    }
 
 # Persistent reply keyboard: users can tap features instead of typing commands.
 KEYBOARD = {
