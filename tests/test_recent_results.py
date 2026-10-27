@@ -409,3 +409,32 @@ def test_gap_retry_throttle_allows_newer_history_to_catch_up_next_day():
     assert [row["date"] for row in rows] == [date(2026, 10, 25)]
     assert meta["cache_state"]["history_gaps"] == ["2026-10-18"]
     assert meta["cache_state"]["latest_covered_through"] == "2026-10-25"
+
+
+
+def test_legacy_plan_denied_dates_migrate_without_repeating_provider_requests():
+    class FakeAPI:
+        def fixtures_between(self, *args):
+            pytest.fail("Known legacy plan-denied dates must not be retried")
+
+    base = [{
+        "date": date(2026, 10, 26), "division": "E0", "home": "Old", "away": "Older",
+        "home_key": "old", "away_key": "older", "home_goals": 1, "away_goals": 0,
+    }]
+    legacy_state = {
+        "backfill_anchor_end": "2026-10-26",
+        "next_backfill_end_date": "2026-10-25",
+        "latest_covered_through": "2026-10-26",
+        "backfill_complete": True,
+        "history_gaps": ["2026-09-21", "2026-09-22", "2026-10-11"],
+    }
+    rows, meta = fetch_recent_results_incremental(
+        FakeAPI(), base, date(2026, 10, 26), legacy_state
+    )
+    assert rows == []
+    assert meta["status"] == "GAPPED"
+    assert "history_gaps" not in meta["cache_state"]
+    assert meta["cache_state"]["history_plan_limited_dates"] == [
+        "2026-09-21", "2026-09-22", "2026-10-11"
+    ]
+    assert meta["cache_state"]["coverage_state_version"] == 2
