@@ -52,8 +52,7 @@ jobs:
           TODAY="$(TZ=Africa/Lagos date +%F)"
           python -m app.cli fixtures --date "$TODAY" --timezone Africa/Lagos
           END_DATE="$(TZ=Africa/Lagos date -d 'yesterday' +%F)"
-          START_DATE="$(TZ=Africa/Lagos date -d "$END_DATE - 6 days" +%F)"
-          python -m app.cli history --from "$START_DATE" --to "$END_DATE" --output /tmp/veltrix-api-football-history-smoke.csv
+          python -m app.cli history --from "$END_DATE" --to "$END_DATE" --output /tmp/veltrix-api-football-history-smoke.csv
 
       - name: Check API-Football prematch odds (scheduled/manual runs only)
         if: github.event_name == 'workflow_dispatch' || github.event_name == 'schedule'
