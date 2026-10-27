@@ -69,5 +69,5 @@ def write_csv(rows: Iterable[dict[str, Any]], output_path: str | Path) -> int:
 def validate_date_range(start: str, end: str) -> tuple[str, str]:
     a, b = date.fromisoformat(start), date.fromisoformat(end)
     if b < a: raise ValueError("--to must be on or after --from")
-    if (b-a).days > 6: raise ValueError("Request at most 7 calendar days at a time to respect Highlightly's free API quota")
+    if (b-a).days > 6: raise ValueError("Request at most 7 calendar days at a time to keep API-Football fixture queries bounded")
     return a.isoformat(), b.isoformat()
