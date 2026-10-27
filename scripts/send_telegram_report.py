@@ -175,6 +175,16 @@ def format_report_messages(report: dict[str, Any], ledger: dict[str, Any] | None
                 f"History is only confirmed continuous through {contiguous_through}; "
                 f"latest available result date is {latest_available}."
             )
+            plan_limited_count = coverage.get("provider_plan_limited_date_count")
+            if isinstance(plan_limited_count, int) and plan_limited_count > 0:
+                header.append(
+                    f"API-Football plan limitation: {plan_limited_count} historical date(s) are inaccessible on this account and will not be retried automatically."
+                )
+            retryable_count = coverage.get("retryable_gap_date_count")
+            if isinstance(retryable_count, int) and retryable_count > 0:
+                header.append(
+                    f"Retryable history gaps: {retryable_count} date(s) remain queued for bounded retry."
+                )
         header.append("")
 
     if ledger is not None:
