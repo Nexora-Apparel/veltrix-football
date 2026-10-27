@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import argparse
+import base64
 import json
 from datetime import datetime
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
@@ -9,11 +10,78 @@ import os
 import sys
 from pathlib import Path
 from typing import Any
+from urllib.error import HTTPError, URLError
+from urllib.parse import quote
+from urllib.request import Request, urlopen
 
 import requests
 
+
 MAX_MESSAGE_LENGTH = 3900
 DIVIDER = "━━━━━━━━━━━━━━━━━━━━"
+DELIVERY_STATE_PATH = "public-data/telegram_delivery_state.json"
+DELIVERY_STATE_BRANCH = "command-data"
+
+
+def _github_json(url: str, token: str, method: str = "GET", body: dict | None = None) -> dict:
+    headers = {
+        "Accept": "application/vnd.github+json",
+        "Authorization": f"Bearer {token}",
+        "X-GitHub-Api-Version": "2022-11-28",
+        "User-Agent": "Veltrix-Telegram-Delivery-Guard",
+    }
+    data = json.dumps(body).encode("utf-8") if body is not None else None
+    if data is not None:
+        headers["Content-Type"] = "application/json"
+    request = Request(url, data=data, headers=headers, method=method)
+    with urlopen(request, timeout=15) as response:
+        payload = json.loads(response.read().decode("utf-8"))
+    if not isinstance(payload, dict):
+        raise ValueError("GitHub returned an unexpected delivery-state response.")
+    return payload
+
+
+def _load_delivery_state(repo: str, token: str) -> tuple[dict[str, Any], str | None]:
+    """Read the persistent sent-date guard from the command-data branch."""
+    path = quote(DELIVERY_STATE_PATH, safe="/")
+    url = f"https://api.github.com/repos/{repo}/contents/{path}?ref={quote(DELIVERY_STATE_BRANCH, safe='')}"
+    try:
+        payload = _github_json(url, token)
+    except HTTPError as exc:
+        if exc.code == 404:
+            return {"version": 1, "sent_dates": []}, None
+        raise RuntimeError(f"Could not read Telegram delivery guard (HTTP {exc.code}).") from None
+    try:
+        encoded = payload.get("content")
+        state = json.loads(base64.b64decode(encoded).decode("utf-8"))
+        dates = state.get("sent_dates")
+        if state.get("version") != 1 or not isinstance(dates, list):
+            raise ValueError("unsupported delivery state")
+        sent_dates = sorted({str(value) for value in dates if isinstance(value, str) and len(value) == 10})
+        return {"version": 1, "sent_dates": sent_dates[-30:]}, str(payload["sha"])
+    except (KeyError, TypeError, ValueError, json.JSONDecodeError):
+        raise RuntimeError("Published Telegram delivery guard is malformed; refusing a potentially duplicate send.") from None
+
+
+def _record_delivery_date(repo: str, token: str, sent_date: str, state: dict[str, Any], sha: str | None) -> None:
+    """Persist a successful report date so workflow reruns cannot resend it."""
+    dates = sorted(set(state.get("sent_dates", [])) | {sent_date})[-30:]
+    data = json.dumps({"version": 1, "sent_dates": dates}, indent=2).encode("utf-8")
+    path = quote(DELIVERY_STATE_PATH, safe="/")
+    url = f"https://api.github.com/repos/{repo}/contents/{path}"
+    body = {
+        "message": f"Record Veltrix Telegram delivery for {sent_date}",
+        "content": base64.b64encode(data).decode("ascii"),
+        "branch": DELIVERY_STATE_BRANCH,
+    }
+    if sha:
+        body["sha"] = sha
+    try:
+        _github_json(url, token, method="PUT", body=body)
+    except (HTTPError, URLError, OSError, ValueError, json.JSONDecodeError):
+        # The report has already been sent. Fail visibly so a human knows that
+        # the persistent idempotency marker did not stick; never claim it did.
+        raise RuntimeError("Telegram report was sent, but its duplicate-prevention marker could not be saved.") from None
 
 
 def _format_goals(value: Any) -> str:
@@ -271,11 +339,26 @@ def main() -> None:
                     ledger = loaded_ledger
             except (OSError, json.JSONDecodeError):
                 ledger = None
+        report_date = str(report.get("as_of_date", ""))
+        repo = os.environ.get("GITHUB_REPOSITORY", "").strip()
+        github_token = os.environ.get("GITHUB_TOKEN", "").strip()
+        delivery_state = None
+        delivery_sha = None
+        if repo and github_token:
+            delivery_state, delivery_sha = _load_delivery_state(repo, github_token)
+            if report_date in delivery_state["sent_dates"]:
+                print(f"Telegram delivery skipped: a report for {report_date} was already sent.")
+                return
+        else:
+            print("WARNING: persistent duplicate-prevention is unavailable outside GitHub Actions.", file=sys.stderr)
+
         messages = format_report_messages(report, ledger)
         for index, message in enumerate(messages, start=1):
             send_message(token, chat_id, message)
             print(f"Telegram report part {index}/{len(messages)} delivered.")
-        print(f"Telegram report delivered for {report.get('as_of_date', 'unknown date')}.")
+        if delivery_state is not None:
+            _record_delivery_date(repo, github_token, report_date, delivery_state, delivery_sha)
+        print(f"Telegram report delivered for {report_date or 'unknown date'}.")
     except (OSError, json.JSONDecodeError, ValueError, RuntimeError, requests.RequestException) as exc:
         print(f"TELEGRAM REPORT FAILED: {exc}", file=sys.stderr)
         raise SystemExit(1) from exc
