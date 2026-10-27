@@ -268,7 +268,7 @@ def main() -> None:
             (value for value in (base_history_through, latest_covered) if value),
             default=None,
         )
-        refresh_complete = cache_backfill_complete and (
+        refresh_complete = cache_backfill_complete and not updated_cache_state.get("history_gaps") and (
             not contiguous_candidate or contiguous_candidate >= (target_date - timedelta(days=1)).isoformat()
         )
         report["historical_data_coverage"] = {
