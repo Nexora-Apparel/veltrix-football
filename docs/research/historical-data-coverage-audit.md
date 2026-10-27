@@ -86,6 +86,18 @@ Do not declare this issue resolved until all of the following are true:
 5. The chronological backtest is reproducible from the pinned dataset and shows no temporal leakage.
 6. Prediction/value-alert safeguards remain active until predeclared out-of-sample acceptance criteria are met.
 
+## Follow-up repository evidence (2026-10-27)
+
+### Production-data audit is still blocked by artifact availability
+
+- The daily prediction workflow run **40554516330** (commit `39fb42b112e32fa82ef9be6961dd094d0b1554ca`, 2026-10-27 17:51 UTC) failed during unit tests: **192 passed, 1 failed**. The failing test is `tests/test_report_artifacts.py::test_report_loader_reads_published_snapshot_without_github_api_or_forecast`; it expected a raw.githubusercontent.com URL, while the implementation used the GitHub Contents API URL with a cache-busting parameter.
+- Because the unit-test step failed, downstream steps in that run—including historical-match import and report generation—were skipped. Do not use that run as evidence of a successful refresh.
+- The previous successful run **40552093140** (2026-10-27 17:36 UTC) published only `veltrix-paper-ledger` and `veltrix-daily-predictions` artifacts. Neither artifact is the full historical match CSV, so it cannot establish the actual dataset's minimum date, maximum date, duplicates, or coverage gaps.
+- The historical import workflow is configured to upload `data/open_historical_matches.csv` as a 30-day artifact. That artifact must be retrieved from a successful run of the dedicated historical import workflow, then audited. The daily workflow's small prediction report is not a substitute.
+- The backtest workflow is configured to import the source data and run `scripts/run_backtest.py`, but its historical report is also an artifact rather than a committed production dataset. Its metrics need to be tied to the exact dataset hash.
+
+**Immediate next action:** restore a green test suite first, then run the dedicated historical-dataset import workflow and audit the resulting CSV artifact. Only after that can we publish real dataset dates, counts, and per-division coverage. The unit-test mismatch is a concrete blocker discovered during this follow-up research; this report does not claim it has been fixed.
+
 ## Sources
 
 1. Veltrix README and documented import/backtest behavior: https://github.com/Nexora-Apparel/veltrix-football/blob/main/README.md
