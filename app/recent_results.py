@@ -226,6 +226,27 @@ def fetch_recent_results_incremental(
     backfilled one range per run; after the gap is closed, the cursor advances forward.
     """
     state = dict(cache_state or {})
+    # Cache v1/v2 stored plan-rejected dates in history_gaps. Migrate those
+    # legacy entries once: the API client only populated failed_dates for an
+    # explicit plan error, so retrying them weekly could never repair coverage.
+    try:
+        coverage_state_version = int(state.get("coverage_state_version", 1))
+    except (TypeError, ValueError):
+        coverage_state_version = 1
+    plan_limited_dates = {
+        str(value) for value in state.get("history_plan_limited_dates", [])
+        if isinstance(value, str)
+    } if isinstance(state.get("history_plan_limited_dates"), list) else set()
+    if coverage_state_version < 2:
+        legacy_gaps = state.get("history_gaps")
+        if isinstance(legacy_gaps, list):
+            plan_limited_dates.update(str(value) for value in legacy_gaps if isinstance(value, str))
+        state.pop("history_gaps", None)
+    state["coverage_state_version"] = 2
+    if plan_limited_dates:
+        state["history_plan_limited_dates"] = sorted(plan_limited_dates)
+    else:
+        state.pop("history_plan_limited_dates", None)
     if max_chunk_days < 1:
         raise ValueError("max_chunk_days must be positive")
     if not historical_matches:
@@ -337,12 +358,18 @@ def fetch_recent_results_incremental(
             state["next_backfill_end_date"] = (base_start - timedelta(days=1)).isoformat()
             remaining_gaps = state.get("history_gaps")
             has_gaps = isinstance(remaining_gaps, list) and bool(remaining_gaps)
+            remaining_plan_dates = state.get("history_plan_limited_dates")
+            has_plan_gaps = isinstance(remaining_plan_dates, list) and bool(remaining_plan_dates)
+            unresolved = has_gaps or has_plan_gaps
             return [], {
-                "status": "GAPPED" if has_gaps else "UP_TO_DATE", "results_added": 0,
+                "status": "GAPPED" if unresolved else "UP_TO_DATE", "results_added": 0,
                 "requested_start": range_start.isoformat(), "requested_end": end_date.isoformat(),
                 "covered_from": None, "covered_through": latest_covered.isoformat(),
                 "ranges_succeeded": 0, "ranges_requested": 0,
-                "warning": "Historical dates remain unresolved and will be retried." if has_gaps else None,
+                "warning": (
+                    f"{len(remaining_plan_dates or [])} date(s) are unavailable on the API-Football plan; "
+                    f"{len(remaining_gaps or [])} transient gap date(s) remain retryable."
+                ) if unresolved else None,
                 "cache_state": state,
             }
         range_end = min(end_date, range_start + timedelta(days=max_chunk_days - 1))
@@ -399,18 +426,42 @@ def fetch_recent_results_incremental(
 
     existing_gaps = state.get("history_gaps")
     history_gaps = set(str(value) for value in existing_gaps if isinstance(value, str)) if isinstance(existing_gaps, list) else set()
+    raw_plan_limited = provider_meta.get("plan_limited_dates")
+    if not isinstance(raw_plan_limited, list):
+        # Backward compatibility: older API-Football clients reported only
+        # failed_dates, which meant explicit plan errors.
+        raw_plan_limited = provider_meta.get("failed_dates")
+    reported_plan_limited = {
+        str(value) for value in raw_plan_limited if isinstance(value, str)
+    } if isinstance(raw_plan_limited, list) else set()
+    raw_failed = provider_meta.get("failed_dates")
+    reported_failed = {str(value) for value in raw_failed if isinstance(value, str)} if isinstance(raw_failed, list) else set()
+    plan_limited_dates.update(reported_plan_limited)
+    plan_limited_dates.difference_update(successful_dates)
     history_gaps.difference_update(successful_dates)
-    history_gaps.update(failed_dates)
+    history_gaps.difference_update(reported_plan_limited)
+    history_gaps.update(reported_failed - reported_plan_limited)
+    # A request-level failure is retryable, unlike an explicit plan denial.
+    # Persist the dates so a later run can recover without losing the cursor.
+    if warning and not successful_dates and not reported_plan_limited:
+        failed_day = range_start
+        while failed_day <= range_end:
+            history_gaps.add(failed_day.isoformat())
+            failed_day += timedelta(days=1)
     if history_gaps:
         state["history_gaps"] = sorted(history_gaps)
-    elif "history_gaps" in state:
+    else:
         state.pop("history_gaps", None)
+    if plan_limited_dates:
+        state["history_plan_limited_dates"] = sorted(plan_limited_dates)
+    else:
+        state.pop("history_plan_limited_dates", None)
     plan_warning = provider_meta.get("warning") if failed_dates else None
 
     succeeded = warning is None
     if phase == "gap_retry":
-        # Throttle even provider exceptions so a plan/rate-limit failure does not
-        # trigger the same retry on every scheduled run.
+        # Throttle transient gap retries. Plan-limited dates are stored separately
+        # and are never selected for another provider request.
         state["last_gap_retry_on"] = end_date.isoformat()
     successful_date_objects = []
     for value in successful_dates:
@@ -435,7 +486,7 @@ def fetch_recent_results_incremental(
             total_ranges if complete_now
             else total_ranges - len(split_date_ranges(base_start, next_cursor, max_chunk_days))
         )
-        status = "PARTIAL" if failed_dates or not complete_now else "COMPLETE"
+        status = "PARTIAL" if failed_dates or not complete_now or state.get("history_plan_limited_dates") else "COMPLETE"
         if plan_warning:
             warning = str(plan_warning)
         elif not complete_now:
@@ -449,7 +500,8 @@ def fetch_recent_results_incremental(
         progress_after = 1 if successful_date_objects else 0
         remaining_gaps = state.get("history_gaps")
         has_gaps = isinstance(remaining_gaps, list) and bool(remaining_gaps)
-        status = "PARTIAL" if failed_dates or has_gaps else "COMPLETE"
+        has_plan_gaps = bool(state.get("history_plan_limited_dates"))
+        status = "PARTIAL" if failed_dates or has_gaps or has_plan_gaps else "COMPLETE"
         if plan_warning:
             warning = str(plan_warning)
         elif has_gaps:
@@ -463,7 +515,7 @@ def fetch_recent_results_incremental(
             "next_backfill_end_date": (base_start - timedelta(days=1)).isoformat(),
         })
         progress_after = 1
-        status = "PARTIAL" if failed_dates or range_end < end_date else "COMPLETE"
+        status = "PARTIAL" if failed_dates or range_end < end_date or state.get("history_plan_limited_dates") else "COMPLETE"
         if plan_warning:
             warning = str(plan_warning)
         elif status == "PARTIAL":
