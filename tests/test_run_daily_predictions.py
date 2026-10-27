@@ -6,6 +6,44 @@ from datetime import date
 from scripts import run_daily_predictions as daily_runner
 
 
+def test_load_recent_cache_v2_preserves_matches_and_incremental_cursor(tmp_path):
+    cache_path = tmp_path / "recent_results_cache.json"
+    state = {
+        "backfill_complete": False,
+        "latest_covered_through": "2026-10-18",
+        "next_backfill_end_date": "2026-10-11",
+        "backfill_anchor_end": "2026-10-18",
+        "history_gaps": ["2026-10-14"],
+    }
+    cache_path.write_text(json.dumps({
+        "version": 2,
+        "state": state,
+        "matches": [{
+            "date": "2026-10-18",
+            "division": "E0",
+            "home": "Arsenal",
+            "away": "Chelsea",
+            "home_goals": 2,
+            "away_goals": 1,
+            "fixture_id": 12345,
+            "fixture_status": "FT",
+        }],
+    }), encoding="utf-8")
+
+    cache, rows = daily_runner._load_recent_cache(cache_path)
+
+    assert cache["version"] == 2
+    assert cache["state"] == state
+    assert len(rows) == 1
+    assert rows[0]["date"] == date(2026, 10, 18)
+    assert rows[0]["home"] == "Arsenal"
+    assert rows[0]["away_goals"] == 1
+    assert rows[0]["fixture_id"] == 12345
+    assert rows[0]["source"] == "VELTRIX_RECENT_RESULTS_CACHE"
+
+
+
+
 
 def test_api_sports_unexpected_error_diagnostic_does_not_echo_exception_text():
     class SecretBearingError(RuntimeError):
