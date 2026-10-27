@@ -5,6 +5,7 @@ download GitHub Actions artifacts, or call the football provider.
 """
 from __future__ import annotations
 
+import base64
 import json
 import os
 import re
@@ -16,7 +17,7 @@ from urllib.request import Request, urlopen
 DEFAULT_REPOSITORY = "Nexora-Apparel/veltrix-football"
 DEFAULT_BRANCH = "command-data"
 CACHE_SECONDS = 30
-_TIMEOUT_SECONDS = 3
+_TIMEOUT_SECONDS = 5
 _cache: dict[str, tuple[float, dict[str, Any] | None]] = {}
 
 
@@ -33,13 +34,16 @@ def _load(kind: str) -> dict[str, Any] | None:
         return None
 
     filename = "daily_predictions.json" if kind == "report" else "paper_tracking_ledger.json"
-    # Raw GitHub/CDN caches can lag behind updates to the command-data branch.
-    # A changing query parameter prevents the runtime from repeatedly reading
-    # an old snapshot after a successful publication.
+    # Query the GitHub Contents API with its raw media type. Unlike the raw
+    # branch CDN URL, this avoids stale CDN snapshots after publication.
     cache_buster = int(time.time())
-    url = f"https://raw.githubusercontent.com/{repo}/{branch}/public-data/{filename}?v={cache_buster}"
+    url = (
+        f"https://api.github.com/repos/{repo}/contents/public-data/{filename}"
+        f"?ref={branch}&v={cache_buster}"
+    )
     request = Request(url, headers={
         "User-Agent": "Veltrix-Football-Command-Centre",
+        "Accept": "application/vnd.github.raw+json",
         "Cache-Control": "no-cache",
         "Pragma": "no-cache",
     })
@@ -48,7 +52,15 @@ def _load(kind: str) -> dict[str, Any] | None:
         with urlopen(request, timeout=_TIMEOUT_SECONDS) as response:
             raw = response.read(4_000_001)
         if len(raw) <= 4_000_000:
-            parsed = json.loads(raw.decode("utf-8"))
+            # The raw media type normally returns JSON bytes. Keep a fallback
+            # for GitHub/API proxies that return the standard base64 envelope.
+            try:
+                parsed = json.loads(raw.decode("utf-8"))
+            except (UnicodeDecodeError, json.JSONDecodeError):
+                parsed = None
+            if isinstance(parsed, dict) and isinstance(parsed.get("content"), str) and parsed.get("encoding") == "base64":
+                decoded = base64.b64decode(parsed["content"])
+                parsed = json.loads(decoded.decode("utf-8"))
             if isinstance(parsed, dict):
                 if kind == "report" and isinstance(parsed.get("predictions"), list) and parsed.get("status") != "NOT_YET_PUBLISHED":
                     value = parsed
