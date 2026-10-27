@@ -51,6 +51,8 @@ def _load_delivery_state(repo: str, token: str) -> tuple[dict[str, Any], str | N
         if exc.code == 404:
             return {"version": 1, "sent_dates": []}, None
         raise RuntimeError(f"Could not read Telegram delivery guard (HTTP {exc.code}).") from None
+    except (URLError, OSError):
+        raise RuntimeError("Could not read Telegram delivery guard due to a GitHub network error.") from None
     try:
         encoded = payload.get("content")
         state = json.loads(base64.b64decode(encoded).decode("utf-8"))
