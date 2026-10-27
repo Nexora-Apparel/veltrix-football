@@ -97,7 +97,7 @@
       "report_date": "2026-10-24"
     }
   ],
-  "updated_at_utc": "2026-10-27T05:25:46.231096+00:00",
+  "updated_at_utc": "2026-10-27T10:14:20.254650+00:00",
   "last_attempt": {
     "report_date": "2026-10-26",
     "status": "EVALUATED",
@@ -105,7 +105,7 @@
       {
         "report_date": "2026-10-24",
         "status": "EVALUATED",
-        "detail": "Scored from 2611 cached completed matches; no live football-provider request was made.",
+        "detail": "Scored from 5311 cached completed matches; no live football-provider request was made.",
         "fixtures_scored": 4,
         "completed_forecasts_scored": 4,
         "metrics": {
