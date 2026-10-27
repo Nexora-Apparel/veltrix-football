@@ -21,7 +21,7 @@ import math
 
 def _load_recent_cache(path: Path) -> tuple[dict, list[dict]]:
     """Load the public cache defensively and normalize dates/team keys for modelling."""
-    empty = {"version": 1, "matches": [], "state": {}}
+    empty = {"version": 2, "matches": [], "state": {}}
     try:
         value = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError):
@@ -63,7 +63,7 @@ def _load_recent_cache(path: Path) -> tuple[dict, list[dict]]:
             "fixture_id": fixture_id, "fixture_status": fixture_status,
             "source": "VELTRIX_RECENT_RESULTS_CACHE",
         })
-    return {"version": 1, "matches": value["matches"], "state": state}, rows
+    return {"version": 2, "matches": value["matches"], "state": state}, rows
 
 
 def _merge_recent_rows(*groups: list[dict]) -> list[dict]:
@@ -223,7 +223,7 @@ def main() -> None:
         merged_recent_rows = _merge_recent_rows(cached_rows, recent_rows)
         cache_path.parent.mkdir(parents=True, exist_ok=True)
         cache_payload = {
-            "version": 1,
+            "version": 2,
             "state": updated_cache_state,
             "matches": _serialize_recent_cache(merged_recent_rows),
         }
