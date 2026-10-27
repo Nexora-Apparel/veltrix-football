@@ -312,6 +312,20 @@ class APIFootballClient:
             "from": start.isoformat(), "to": end.isoformat(), "timezone": timezone,
         })
 
+    def leagues(self, current: bool = True) -> dict[str, Any]:
+        """List competitions available through API-Football for the selected season."""
+        season = date.today().year if current else date.today().year - 1
+        payload = self._get("leagues", {"season": season})
+        rows = payload.get("response")
+        if not isinstance(rows, list):
+            raise APIFootballError("API-Football leagues response is missing its response list.")
+        return {
+            "provider": "API-Football (API-Sports)",
+            "results": len(rows),
+            "response": rows,
+            "_veltrix_meta": payload.get("_veltrix_meta", {}),
+        }
+
     def odds_for_date(self, day: str, *, timezone: str = "Africa/Lagos", page: int = 1) -> dict[str, Any]:
         """Fetch one page of prematch odds and normalize prices for command/report use.
 
