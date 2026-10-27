@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import base64
+import json
+
 import requests
 import pytest
 
@@ -8,6 +11,8 @@ from scripts.send_telegram_report import (
     format_report,
     format_report_messages,
     send_message,
+    _load_delivery_state,
+    _record_delivery_date,
 )
 
 
@@ -163,3 +168,42 @@ def test_elo_primary_report_discloses_poisson_expected_goals_are_separate():
     message = format_report(report)
     assert "Model: Elo ratings (1X2); Poisson xG" in message
     assert "When Elo is primary, expected goals are a separate Poisson estimate" in message
+
+
+
+def test_delivery_state_loads_published_dates_and_sha(monkeypatch):
+    payload = {
+        "sha": "blob-sha",
+        "content": base64.b64encode(json.dumps({
+            "version": 1, "sent_dates": ["2026-10-26", "2026-10-27"]
+        }).encode()).decode(),
+    }
+    monkeypatch.setattr("scripts.send_telegram_report._github_json", lambda *a, **k: payload)
+    state, sha = _load_delivery_state("Nexora-Apparel/veltrix-football", "token")
+    assert state == {"version": 1, "sent_dates": ["2026-10-26", "2026-10-27"]}
+    assert sha == "blob-sha"
+
+
+def test_delivery_state_rejects_malformed_remote_state(monkeypatch):
+    payload = {"sha": "blob-sha", "content": base64.b64encode(b'{"version":9}').decode()}
+    monkeypatch.setattr("scripts.send_telegram_report._github_json", lambda *a, **k: payload)
+    with pytest.raises(RuntimeError, match="duplicate send"):
+        _load_delivery_state("Nexora-Apparel/veltrix-football", "token")
+
+
+def test_delivery_marker_is_saved_with_existing_sha_and_recent_dates(monkeypatch):
+    calls = []
+    def fake_github_json(url, token, method="GET", body=None):
+        calls.append((url, token, method, body))
+        return {"content": {"sha": "new-sha"}}
+    monkeypatch.setattr("scripts.send_telegram_report._github_json", fake_github_json)
+    state = {"version": 1, "sent_dates": [f"2026-10-{day:02d}" for day in range(1, 31)]}
+    _record_delivery_date("Nexora-Apparel/veltrix-football", "token", "2026-10-31", state, "old-sha")
+    assert len(calls) == 1
+    _, token, method, body = calls[0]
+    assert token == "token" and method == "PUT"
+    assert body["sha"] == "old-sha"
+    saved = json.loads(base64.b64decode(body["content"]))
+    assert saved["version"] == 1
+    assert saved["sent_dates"][-1] == "2026-10-31"
+    assert len(saved["sent_dates"]) == 30
