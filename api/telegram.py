@@ -22,21 +22,43 @@ DASHBOARD_HTML = """<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#090b10"><title>Veltrix Football</title>
 <style>
-:root{color-scheme:dark;--bg:#090b10;--panel:#121620;--line:#252c39;--text:#f2f5fa;--muted:#9ba6b7;--accent:#78aaff;--warn:#f4c56a}
-*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:15px/1.5 system-ui,-apple-system,Segoe UI,sans-serif}
-header{padding:26px 18px 18px;background:linear-gradient(145deg,#111a2a,#090b10 72%);border-bottom:1px solid var(--line)}
-.wrap{max-width:960px;margin:auto} .brand{font-size:12px;letter-spacing:.18em;color:var(--accent);font-weight:800}
-h1{font-size:27px;line-height:1.15;margin:8px 0} .sub{color:var(--muted);font-size:13px}
-main{padding:18px;max-width:960px;margin:auto}.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
-.metric,.card,.notice{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:15px}
-.label{color:var(--muted);font-size:12px}.value{font-size:23px;font-weight:750;margin-top:3px}
-h2{font-size:18px;margin:25px 0 10px}.notice{margin-top:14px;color:var(--warn);font-size:13px}
-.card{margin:10px 0}.teams{font-size:16px;font-weight:750}.league{color:var(--muted);font-size:12px;margin:4px 0 12px}
-.row{display:flex;justify-content:space-between;gap:12px;border-top:1px solid var(--line);padding-top:10px;margin-top:10px}
-.pill{font-size:11px;color:var(--warn);border:1px solid #5c4c2b;padding:3px 7px;border-radius:20px;white-space:nowrap}
-.empty{color:var(--muted);padding:16px 0}.footer{color:var(--muted);font-size:12px;margin:22px 0}
-button{background:#202a3b;color:var(--text);border:1px solid #34445e;border-radius:9px;padding:9px 12px;font-weight:650}
-@media(max-width:520px){.grid{grid-template-columns:1fr 1fr}.metric:last-child{grid-column:span 2}h1{font-size:24px}}
+:root{color-scheme:dark;--bg:#03080f;--panel:rgba(8,20,32,.9);--line:rgba(38,184,219,.23);--text:#f1f8ff;--muted:#8fa9bc;--accent:#12e6ad;--blue:#2da9ff;--warn:#f7c96c;--danger:#ff657a;--glow:0 0 28px rgba(18,230,173,.07)}
+*{box-sizing:border-box}
+html{min-height:100%;background:var(--bg);scroll-behavior:smooth}
+body{margin:0;color:var(--text);font:14px/1.55 Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:radial-gradient(ellipse at 50% -20%,rgba(19,105,161,.28),transparent 55%),radial-gradient(ellipse at 100% 40%,rgba(18,230,173,.055),transparent 38%),var(--bg);min-height:100vh}
+body:before{content:"";position:fixed;inset:0;pointer-events:none;opacity:.12;background-image:linear-gradient(rgba(72,160,190,.08) 1px,transparent 1px),linear-gradient(90deg,rgba(72,160,190,.08) 1px,transparent 1px);background-size:34px 34px;mask-image:linear-gradient(to bottom,black,transparent 80%)}
+header{position:relative;padding:25px 18px 23px;background:linear-gradient(135deg,rgba(8,24,39,.97),rgba(3,8,15,.88));border-bottom:1px solid var(--line);box-shadow:0 12px 38px rgba(0,0,0,.22)}
+.wrap{max-width:960px;margin:auto}
+.brand{display:flex;align-items:center;gap:10px;font-size:12px;letter-spacing:.2em;color:var(--accent);font-weight:900}
+.brand:before{content:"V";display:grid;place-items:center;width:30px;height:30px;border:1px solid rgba(18,230,173,.55);border-radius:9px;background:linear-gradient(145deg,rgba(18,230,173,.2),rgba(45,169,255,.1));font-size:17px;box-shadow:0 0 22px rgba(18,230,173,.13)}
+h1{font-size:clamp(27px,5vw,38px);line-height:1.08;letter-spacing:-.04em;margin:16px 0 8px;font-weight:850}
+.sub{color:var(--muted);font-size:12px}
+header .sub{font-size:13px;max-width:600px}
+main{position:relative;padding:22px 16px 100px;max-width:960px;margin:auto}
+.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.metric,.card,.notice{position:relative;overflow:hidden;background:linear-gradient(145deg,rgba(11,28,43,.94),rgba(5,14,24,.96));border:1px solid var(--line);border-radius:17px;padding:17px;box-shadow:var(--glow);backdrop-filter:blur(14px)}
+.metric:before{content:"";position:absolute;top:0;left:18px;right:45%;height:1px;background:linear-gradient(90deg,transparent,var(--accent),transparent);opacity:.75}
+.label{color:var(--muted);font-size:11px;letter-spacing:.06em;text-transform:uppercase}
+.value{font-size:clamp(23px,4vw,30px);font-weight:850;letter-spacing:-.04em;margin-top:7px;color:#f4fbff;font-variant-numeric:tabular-nums}
+.metric:nth-child(2) .value{color:var(--accent)}.metric:nth-child(3) .value{color:var(--blue)}
+h2{font-size:18px;letter-spacing:-.025em;margin:27px 0 7px}
+#reporttime{overflow-wrap:anywhere;margin-bottom:12px}
+.notice{margin-top:14px;color:#d5e8f5;font-size:12px;border-color:rgba(247,201,108,.3);background:linear-gradient(120deg,rgba(70,51,17,.25),rgba(8,20,32,.94));}
+.card{margin:12px 0;padding:17px 17px 16px;transition:border-color .2s,transform .2s}
+.card:hover{border-color:rgba(18,230,173,.48);transform:translateY(-2px)}
+.teams{font-size:17px;font-weight:800;letter-spacing:-.025em}
+.league{color:var(--muted);font-size:11px;margin:5px 0 13px}
+.row{display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px 14px;border-top:1px solid var(--line);padding-top:12px;margin-top:13px;color:#dcebf5;font-size:12px;font-variant-numeric:tabular-nums}
+.pill{display:inline-flex;align-items:center;gap:6px;font-size:10px;letter-spacing:.09em;font-weight:800;color:var(--warn);border:1px solid rgba(247,201,108,.3);background:rgba(247,201,108,.07);padding:5px 9px;border-radius:999px;white-space:nowrap}
+.pill:before{content:"";width:5px;height:5px;border-radius:50%;background:var(--warn);box-shadow:0 0 8px rgba(247,201,108,.6)}
+.empty{color:var(--muted);padding:22px 0;font-size:13px}
+.footer{color:var(--muted);font-size:11px;margin:25px 0 16px;line-height:1.7}
+button{display:inline-flex;align-items:center;justify-content:center;gap:8px;background:linear-gradient(110deg,rgba(18,230,173,.15),rgba(45,169,255,.12));color:var(--accent);border:1px solid rgba(18,230,173,.38);border-radius:11px;padding:11px 15px;font-weight:750;font-size:12px;cursor:pointer;transition:background .2s,border-color .2s}
+button:hover{background:rgba(18,230,173,.2);border-color:var(--accent)}
+button:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+@media(min-width:700px){main{padding-top:28px}.metric,.card,.notice{border-radius:19px}.grid{gap:15px}}
+@media(max-width:520px){header{padding:21px 16px 19px}.grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}main{padding:17px 12px 90px}.metric{padding:12px 10px;border-radius:13px}.label{font-size:9px;letter-spacing:.025em}.value{font-size:22px}.metric:last-child{grid-column:auto}h1{font-size:29px}.card{padding:15px;border-radius:15px}.teams{font-size:15px}.row{gap:8px;font-size:11px}.notice{padding:13px;font-size:11px}}
+@media(prefers-reduced-motion:reduce){*,*:before,*:after{scroll-behavior:auto!important;transition:none!important}}
 </style></head><body>
 <header><div class="wrap"><div class="brand">VELTRIX FOOTBALL</div><h1>Command Centre</h1>
 <div class="sub">Fixtures, experimental forecasts and system status</div></div></header>
