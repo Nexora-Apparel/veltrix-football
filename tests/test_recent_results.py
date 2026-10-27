@@ -297,3 +297,73 @@ def test_incremental_refresh_keeps_accessible_dates_and_records_plan_gaps():
     assert meta["cache_state"]["history_gaps"] == ["2026-10-18"]
     assert meta["cache_state"]["next_backfill_end_date"] == "2026-10-17"
     assert "plan did not return historical fixtures" in meta["warning"]
+
+
+
+def test_incremental_refresh_retries_old_gaps_after_forward_coverage_is_current():
+    class FakeAPI:
+        def __init__(self):
+            self.calls = []
+
+        def fixtures_between(self, start, end, timezone):
+            self.calls.append((start, end, timezone))
+            return {
+                "response": [_fixture(start, home="Gap Home", away="Gap Away")],
+                "_veltrix_meta": {
+                    "successful_dates": [start],
+                    "failed_dates": [],
+                },
+            }
+
+    base = [{
+        "date": date(2026, 10, 10), "division": "E0", "home": "Old", "away": "Older",
+        "home_key": "old", "away_key": "older", "home_goals": 1, "away_goals": 0,
+    }]
+    state = {
+        "backfill_anchor_end": "2026-10-24",
+        "next_backfill_end_date": "2026-10-10",
+        "latest_covered_through": "2026-10-24",
+        "backfill_complete": True,
+        "history_gaps": ["2026-10-18"],
+    }
+    api = FakeAPI()
+    rows, meta = fetch_recent_results_incremental(api, base, date(2026, 10, 24), state)
+
+    assert api.calls == [("2026-10-18", "2026-10-18", "Africa/Lagos")]
+    assert [row["date"] for row in rows] == [date(2026, 10, 18)]
+    assert "history_gaps" not in meta["cache_state"]
+    assert meta["status"] == "COMPLETE"
+    assert meta["cache_state"]["latest_covered_through"] == "2026-10-24"
+    assert meta["cache_state"]["next_backfill_end_date"] == "2026-10-10"
+
+
+def test_incremental_gap_retry_retains_subscription_blocked_dates_without_false_completion():
+    class FakeAPI:
+        def fixtures_between(self, start, end, timezone):
+            return {
+                "response": [],
+                "_veltrix_meta": {
+                    "successful_dates": [],
+                    "failed_dates": [start],
+                    "warning": f"API-Football plan did not return historical fixtures for {start}.",
+                },
+            }
+
+    base = [{
+        "date": date(2026, 10, 10), "division": "E0", "home": "Old", "away": "Older",
+        "home_key": "old", "away_key": "older", "home_goals": 1, "away_goals": 0,
+    }]
+    state = {
+        "backfill_anchor_end": "2026-10-24",
+        "next_backfill_end_date": "2026-10-10",
+        "latest_covered_through": "2026-10-24",
+        "backfill_complete": True,
+        "history_gaps": ["2026-10-18"],
+    }
+    rows, meta = fetch_recent_results_incremental(FakeAPI(), base, date(2026, 10, 24), state)
+
+    assert rows == []
+    assert meta["status"] == "PARTIAL"
+    assert meta["cache_state"]["history_gaps"] == ["2026-10-18"]
+    assert "plan did not return historical fixtures" in meta["warning"]
+    assert meta["cache_state"]["backfill_complete"] is True
