@@ -299,10 +299,9 @@ class APIFootballClient:
     ) -> dict[str, Any]:
         """Fetch an inclusive range with one supported date-filtered request per day.
 
-        The account's live endpoint rejected combined from/to/timezone filters during
-        verification, while the date filter works. Keep each caller's range bounded
-        to seven days and aggregate explicit daily responses rather than failing the
-        entire historical refresh.
+        The account can reject some older dates on plan coverage. Query newest-first,
+        retain successful days, and report every plan-limited date so callers never
+        mistake partial history for a complete range.
         """
         try:
             start = date.fromisoformat(start_date)
@@ -316,25 +315,45 @@ class APIFootballClient:
             raise APIFootballError("API-Football history refresh ranges are capped at 7 calendar days.")
         combined: list[dict[str, Any]] = []
         metas: list[dict[str, Any]] = []
-        cursor = start
-        while cursor <= end:
-            payload = self.fixtures(cursor.isoformat(), timezone)
+        successful_dates: list[str] = []
+        failed_dates: list[str] = []
+        cursor = end
+        while cursor >= start:
+            day = cursor.isoformat()
+            try:
+                payload = self.fixtures(day, timezone)
+            except APIFootballError as exc:
+                if "reported an error in: plan" not in str(exc).lower():
+                    raise
+                failed_dates.append(day)
+                cursor -= timedelta(days=1)
+                continue
             combined.extend(payload.get("response") or [])
             metas.append(payload.get("_veltrix_meta") or {})
-            cursor += timedelta(days=1)
+            successful_dates.append(day)
+            cursor -= timedelta(days=1)
+        meta = {
+            "provider": "API-Football (API-Sports)",
+            "requests_made": sum(int(item.get("requests_made", item.get("pages_fetched", 1)) or 1) for item in metas),
+            "requests_remaining": next(
+                (item.get("requests_remaining") for item in metas
+                 if item.get("requests_remaining") is not None), None
+            ),
+            "date_queries": len(successful_dates) + len(failed_dates),
+            "successful_dates": sorted(successful_dates),
+            "failed_dates": sorted(failed_dates),
+        }
+        if failed_dates:
+            meta["warning"] = (
+                "API-Football plan did not return historical fixtures for "
+                + ", ".join(sorted(failed_dates))
+                + "; those dates are recorded as history gaps."
+            )
         return {
             "response": combined,
             "results": len(combined),
             "provider": "API-Football (API-Sports)",
-            "_veltrix_meta": {
-                "provider": "API-Football (API-Sports)",
-                "requests_made": sum(int(meta.get("requests_made", meta.get("pages_fetched", 1)) or 1) for meta in metas),
-                "requests_remaining": next(
-                    (meta.get("requests_remaining") for meta in reversed(metas)
-                     if meta.get("requests_remaining") is not None), None
-                ),
-                "date_queries": len(metas),
-            },
+            "_veltrix_meta": meta,
         }
 
     def leagues(self, current: bool = True) -> dict[str, Any]:
