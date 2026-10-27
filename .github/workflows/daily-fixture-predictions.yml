@@ -281,6 +281,8 @@ jobs:
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
           PYTHONPATH: .
         run: python scripts/send_telegram_report.py --report reports/daily_predictions.json --ledger reports/paper_tracking_ledger.json
       - name: Upload daily prediction report
