@@ -158,17 +158,17 @@ jobs:
           path = Path("reports/recent_results_cache.json")
           try:
               value = json.loads(path.read_text(encoding="utf-8"))
-              valid = isinstance(value, dict) and value.get("version") == 1 and isinstance(value.get("matches"), list) and isinstance(value.get("state"), dict)
+              valid = isinstance(value, dict) and value.get("version") == 2 and isinstance(value.get("matches"), list) and isinstance(value.get("state"), dict)
           except (OSError, json.JSONDecodeError):
               valid = False
           if not valid:
-              path.write_text('{"version":1,"matches":[],"state":{}}', encoding="utf-8")
+              path.write_text('{"version":2,"matches":[],"state":{}}', encoding="utf-8")
               print("Saved recent-results cache was invalid; starting a clean cache.")
           else:
               print(f"Loaded recent-results cache with {len(value['matches'])} matches.")
           PY
           else
-            printf '%s\n' '{"version":1,"matches":[],"state":{}}' > reports/recent_results_cache.json
+            printf '%s\n' '{"version":2,"matches":[],"state":{}}' > reports/recent_results_cache.json
             echo "No saved recent-results cache exists yet; a new cache will be initialized."
           fi
 
