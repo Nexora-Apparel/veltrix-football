@@ -254,7 +254,7 @@ class APIFootballClient:
 
     def _fixtures_query(self, params: dict[str, Any]) -> dict[str, Any]:
         """Fetch paginated API-Football fixtures without silently truncating results."""
-        first = self._get("fixtures", {**params, "page": 1})
+        first = self._get("fixtures", params)
         raw = first.get("response")
         if not isinstance(raw, list):
             raise APIFootballError("API-Football fixtures response is missing its response list.")
