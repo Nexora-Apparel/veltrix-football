@@ -73,7 +73,7 @@ def test_odds_flattens_fixture_bookmaker_and_common_markets():
     })
     result = APIFootballClient("test-key", session=session).odds_for_date("2026-10-27")
     assert session.calls[0][0] == "https://v3.football.api-sports.io/odds"
-    assert session.calls[0][1] == {"date": "2026-10-27", "timezone": "Africa/Lagos", "page": 1}
+    assert session.calls[0][1] == {"date": "2026-10-27", "timezone": "Africa/Lagos"}
     assert len(result["response"]) == 1
     row = result["response"][0]
     assert row["home_team"] == "Arsenal" and row["away_team"] == "Chelsea"
@@ -294,7 +294,7 @@ def test_primary_historical_range_uses_from_to_and_normalizes_final_scores():
     assert session.calls[0][0] == "https://v3.football.api-sports.io/fixtures"
     assert session.calls[0][1] == {
         "from": "2026-10-20", "to": "2026-10-26",
-        "timezone": "Africa/Lagos", "page": 1,
+        "timezone": "Africa/Lagos",
     }
     fixture = result["response"][0]
     assert fixture["fixture"]["status"]["short"] == "FT"
