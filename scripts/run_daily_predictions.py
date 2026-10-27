@@ -264,6 +264,16 @@ def main() -> None:
             market_odds_by_fixture=market_odds_by_fixture,
         )
         report["recent_results_sync"] = recent_sync
+        fixture_meta = payload.get("_veltrix_meta") if isinstance(payload.get("_veltrix_meta"), dict) else {}
+        report["api_football_request"] = {
+            "provider": fixture_meta.get("provider", "API-Football (API-Sports)"),
+            "status": "SUCCESS",
+            "http_status": fixture_meta.get("http_status"),
+            "requests_limit": fixture_meta.get("requests_limit"),
+            "requests_remaining": fixture_meta.get("requests_remaining"),
+            "pages_fetched": fixture_meta.get("pages_fetched", 1),
+            "fixtures_received": len(payload.get("response") or []),
+        }
         base_history_through = max(
             (row["date"].isoformat() for row in base_history if row.get("date") < target_date),
             default=None,
@@ -347,6 +357,11 @@ def main() -> None:
             isinstance(item.get("market_probabilities"), dict)
             for item in report.get("predictions", [])
         )
+        # The headline count must reflect the combined, actually matched report
+        # data source, not only the legacy odds adapter (which is intentionally
+        # inactive). Preserve per-provider counts above for source diagnostics.
+        report["live_odds_sync"]["fixtures_with_odds"] = report["fixtures_with_market_odds"]
+        report["live_odds_sync"]["matched_prediction_count"] = report["fixtures_with_market_odds"]
         # Distinguish a report built from this live run from a reused snapshot.
         # The publisher adds command_data_publication=PUBLISHED only after the
         # public command-data write succeeds.
