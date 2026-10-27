@@ -1,6 +1,6 @@
 {
   "product": "Veltrix Football",
-  "generated_at_utc": "2026-10-27T14:39:32.062864+00:00",
+  "generated_at_utc": "2026-10-27T14:44:30.296876+00:00",
   "as_of_date": "2026-10-27",
   "timezone": "Africa/Lagos",
   "same_day_only": true,
@@ -9233,13 +9233,22 @@
   "recent_results_sync": {
     "status": "PARTIAL",
     "results_added": 0,
-    "requested_start": "2026-09-28",
-    "requested_end": "2026-10-04",
+    "requested_start": "2026-09-21",
+    "requested_end": "2026-09-27",
     "covered_from": null,
     "covered_through": null,
-    "ranges_succeeded": 4,
+    "ranges_succeeded": 5,
     "ranges_requested": 8,
-    "warning": "API-Football plan did not return historical fixtures for 2026-09-28, 2026-09-29, 2026-09-30, 2026-10-01, 2026-10-02, 2026-10-03, 2026-10-04; those dates are recorded as history gaps."
+    "warning": "API-Football plan did not return historical fixtures for 2026-09-21, 2026-09-22, 2026-09-23, 2026-09-24, 2026-09-25, 2026-09-26, 2026-09-27; those dates are recorded as history gaps."
+  },
+  "api_football_request": {
+    "provider": "API-Football (API-Sports)",
+    "status": "SUCCESS",
+    "http_status": 200,
+    "requests_limit": "100",
+    "requests_remaining": "73",
+    "pages_fetched": 1,
+    "fixtures_received": 331
   },
   "historical_data_coverage": {
     "status": "GAPPED_OR_STALE",
@@ -9247,28 +9256,29 @@
     "contiguous_through": "2026-09-03",
     "latest_available_match_date": "2026-10-25",
     "refresh_status": "PARTIAL",
-    "requested_start": "2026-09-28",
-    "requested_end": "2026-10-04",
+    "requested_start": "2026-09-21",
+    "requested_end": "2026-09-27",
     "covered_from": null,
     "covered_through": null,
-    "ranges_succeeded": 4,
+    "ranges_succeeded": 5,
     "ranges_requested": 8,
     "backfill_complete": false,
     "cache_path": "reports/recent_results_cache.json"
   },
   "live_odds_sync": {
     "status": "AVAILABLE",
-    "fixtures_with_odds": 0,
+    "fixtures_with_odds": 6,
     "snapshot_date": "2026-10-27",
     "warning": null,
     "football_api_status": "NO_VALID_1X2_ODDS",
     "football_api_fixtures_with_odds": 0,
     "api_sports_status": "AVAILABLE",
     "api_sports_fixtures_with_odds": 6,
-    "api_sports_warning": null
+    "api_sports_warning": null,
+    "matched_prediction_count": 6
   },
   "publication_status": "LIVE_REPORT_GENERATED_PENDING_PUBLICATION",
   "publication_notice": "Generated from this run's live fixture response. Public publication is confirmed separately by command_data_publication.",
   "command_data_publication": "PUBLISHED",
-  "command_data_published_at_utc": "2026-10-27T14:39:38.816512+00:00"
+  "command_data_published_at_utc": "2026-10-27T14:44:37.444814+00:00"
 }
