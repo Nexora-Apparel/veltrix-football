@@ -278,7 +278,32 @@ def fetch_recent_results_incremental(
             }
 
     backfill_complete = bool(state.get("backfill_complete")) or cursor < base_start
-    if not backfill_complete:
+    # Retry previously failed dates before declaring the cache idle. A completed
+    # cursor means the scan traversed its ranges, not that every date was accessible.
+    raw_gaps = state.get("history_gaps")
+    retryable_gaps: list[date] = []
+    if isinstance(raw_gaps, list):
+        for raw_gap in raw_gaps:
+            try:
+                gap_day = date.fromisoformat(str(raw_gap))
+            except ValueError:
+                continue
+            if base_start <= gap_day <= end_date:
+                retryable_gaps.append(gap_day)
+    retryable_gaps = sorted(set(retryable_gaps))
+    if retryable_gaps:
+        # One bounded, contiguous range per run to avoid unbounded quota use.
+        range_start = retryable_gaps[0]
+        range_end = range_start
+        for gap_day in retryable_gaps[1:]:
+            if gap_day == range_end + timedelta(days=1) and (gap_day - range_start).days < max_chunk_days:
+                range_end = gap_day
+            else:
+                break
+        total_ranges = 1
+        phase = "gap_retry"
+        progress_before = 0
+    elif not backfill_complete:
         range_end = min(cursor, end_date)
         range_start = max(base_start, range_end - timedelta(days=max_chunk_days - 1))
         total_ranges = len(split_date_ranges(base_start, anchor, max_chunk_days))
@@ -296,11 +321,14 @@ def fetch_recent_results_incremental(
         if range_start > end_date:
             state["backfill_complete"] = True
             state["next_backfill_end_date"] = (base_start - timedelta(days=1)).isoformat()
+            remaining_gaps = state.get("history_gaps")
+            has_gaps = isinstance(remaining_gaps, list) and bool(remaining_gaps)
             return [], {
-                "status": "UP_TO_DATE", "results_added": 0,
+                "status": "GAPPED" if has_gaps else "UP_TO_DATE", "results_added": 0,
                 "requested_start": range_start.isoformat(), "requested_end": end_date.isoformat(),
                 "covered_from": None, "covered_through": latest_covered.isoformat(),
-                "ranges_succeeded": 0, "ranges_requested": 0, "warning": None,
+                "ranges_succeeded": 0, "ranges_requested": 0,
+                "warning": "Historical dates remain unresolved and will be retried." if has_gaps else None,
                 "cache_state": state,
             }
         range_end = min(end_date, range_start + timedelta(days=max_chunk_days - 1))
@@ -397,6 +425,17 @@ def fetch_recent_results_incremental(
                 f"Historical backfill progress: {progress_after} of {total_ranges} date ranges. "
                 "History remains non-contiguous until the remaining ranges are fetched."
             )
+    elif succeeded and phase == "gap_retry":
+        # A retry updates only the gap ledger; it must not move the forward cursor
+        # or claim the historical timeline is contiguous while other gaps remain.
+        progress_after = 1 if successful_date_objects else 0
+        remaining_gaps = state.get("history_gaps")
+        has_gaps = isinstance(remaining_gaps, list) and bool(remaining_gaps)
+        status = "PARTIAL" if failed_dates or has_gaps else "COMPLETE"
+        if plan_warning:
+            warning = str(plan_warning)
+        elif has_gaps:
+            warning = f"Retried unresolved historical dates; {len(remaining_gaps)} gap date(s) remain."
     elif succeeded:
         previous_latest = date.fromisoformat(str(latest_covered_raw)) if latest_covered_raw else (base_start - timedelta(days=1))
         latest_covered = max([previous_latest, *successful_date_objects])
