@@ -202,7 +202,7 @@ def main() -> None:
     args = parser.parse_args()
     try:
         target_date = date.fromisoformat(args.date) if args.date else datetime.now(ZoneInfo(args.timezone)).date()
-        api = FootballAPI(get_settings())
+        api = APIFootballClient()\n        if not api.api_key:\n            raise APIFootballError("API_FOOTBALL_KEY is missing. Add it as a GitHub Actions repository secret; do not paste it into source code.")
         payload = api.fixtures(target_date.isoformat(), args.timezone)
         base_history = load_historical_matches(args.history)
         cache_path = Path(args.recent_cache)
