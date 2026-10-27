@@ -7,6 +7,7 @@ def test_dashboard_root_handler_returns_html():
     assert response.status_code == 200
     assert "VELTRIX FOOTBALL" in response.body.decode("utf-8")
     assert "Command Centre" in response.body.decode("utf-8")
+    assert "will not be retried automatically" in response.body.decode("utf-8")
 
 
 def test_dashboard_data_handler_returns_json(monkeypatch):
