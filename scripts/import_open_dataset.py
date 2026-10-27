@@ -115,7 +115,13 @@ def _football_data_date(value: Any) -> date | None:
 def _team_identity(value: Any) -> str:
     normalized = unicodedata.normalize("NFKD", str(value or "").casefold())
     normalized = "".join(ch for ch in normalized if not unicodedata.combining(ch))
-    key = re.sub(r"[^a-z0-9]", "", normalized)
+    tokens = re.findall(r"[a-z0-9]+", normalized)
+    edge_markers = {"fc", "afc", "cf", "sc", "ac", "as", "ec", "cd", "ud"}
+    while tokens and tokens[0] in edge_markers:
+        tokens.pop(0)
+    while tokens and tokens[-1] in edge_markers:
+        tokens.pop()
+    key = "".join(tokens)
     aliases = {
         "manutd": "manchesterunited", "manunited": "manchesterunited",
         "manchesterutd": "manchesterunited", "mancity": "manchestercity",
