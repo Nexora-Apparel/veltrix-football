@@ -19,7 +19,9 @@ on:
     branches: [main]
     paths:
       - "scripts/import_open_dataset.py"
+      - "scripts/audit_historical_csv.py"
       - "tests/test_import_open_dataset.py"
+      - "tests/test_audit_historical_csv.py"
       - ".github/workflows/historical-dataset-import.yml"
 
 permissions:
@@ -47,6 +49,12 @@ jobs:
         run: |
           if [ -z "$END_DATE" ]; then END_DATE="$(TZ=Africa/Lagos date +%F)"; fi
           python -m scripts.import_open_dataset --from "$START_DATE" --to "$END_DATE" --output data/open_historical_matches.csv
+      - name: Audit historical CSV integrity and coverage
+        run: >-
+          python scripts/audit_historical_csv.py
+          --input data/open_historical_matches.csv
+          --json-output reports/historical_coverage_audit.json
+          --markdown-output reports/historical_coverage_audit.md
       - name: Upload imported CSV
         uses: actions/upload-artifact@v7
         with:
@@ -54,3 +62,12 @@ jobs:
           path: data/open_historical_matches.csv
           if-no-files-found: error
           retention-days: 30
+      - name: Upload coverage audit
+        uses: actions/upload-artifact@v7
+        with:
+          name: veltrix-historical-coverage-audit
+          path: |
+            reports/historical_coverage_audit.json
+            reports/historical_coverage_audit.md
+          if-no-files-found: error
+          retention-days: 90
