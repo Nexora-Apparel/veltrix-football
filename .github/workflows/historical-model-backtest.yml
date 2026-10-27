@@ -9,6 +9,7 @@ on:
     paths:
       - "app/backtest_engine.py"
       - "scripts/run_backtest.py"
+      - "scripts/audit_historical_csv.py"
       - "tests/**"
       - "requirements.txt"
       - ".github/workflows/historical-model-backtest.yml"
@@ -31,6 +32,12 @@ jobs:
         run: python -m pytest -q
       - name: Import historical dataset
         run: python scripts/import_open_dataset.py --from 2000-01-01 --to "$(date -u +%F)" --output data/open_historical_matches.csv
+      - name: Audit exact backtest dataset
+        run: >-
+          python scripts/audit_historical_csv.py
+          --input data/open_historical_matches.csv
+          --json-output reports/historical_coverage_audit.json
+          --markdown-output reports/historical_coverage_audit.md
       - name: Run chronological model comparison
         run: python scripts/run_backtest.py --input data/open_historical_matches.csv --output reports/backtest_summary.json
       - name: Upload backtest report
@@ -40,3 +47,12 @@ jobs:
           path: reports/backtest_summary.json
           if-no-files-found: error
           retention-days: 30
+      - name: Upload backtest dataset coverage audit
+        uses: actions/upload-artifact@v7
+        with:
+          name: veltrix-backtest-coverage-audit
+          path: |
+            reports/historical_coverage_audit.json
+            reports/historical_coverage_audit.md
+          if-no-files-found: error
+          retention-days: 90
