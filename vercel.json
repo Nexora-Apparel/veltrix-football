@@ -1,1 +1,1 @@
-{"rewrites":[{"source":"^/$","destination":"/api/index/dashboard"},{"source":"^/api/dashboard-data$","destination":"/api/index/dashboard-data"}]}
+{"rewrites":[{"source":"/","destination":"/api/index/dashboard"},{"source":"/api/dashboard-data","destination":"/api/index/dashboard-data"}]}
