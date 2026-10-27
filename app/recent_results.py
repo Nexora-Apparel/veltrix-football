@@ -486,7 +486,7 @@ def fetch_recent_results_incremental(
             total_ranges if complete_now
             else total_ranges - len(split_date_ranges(base_start, next_cursor, max_chunk_days))
         )
-        status = "PARTIAL" if failed_dates or not complete_now or state.get("history_plan_limited_dates") else "COMPLETE"
+        status = "PARTIAL" if failed_dates or not complete_now or state.get("history_plan_limited_dates") or state.get("history_gaps") else "COMPLETE"
         if plan_warning:
             warning = str(plan_warning)
         elif not complete_now:
@@ -515,7 +515,7 @@ def fetch_recent_results_incremental(
             "next_backfill_end_date": (base_start - timedelta(days=1)).isoformat(),
         })
         progress_after = 1
-        status = "PARTIAL" if failed_dates or range_end < end_date or state.get("history_plan_limited_dates") else "COMPLETE"
+        status = "PARTIAL" if failed_dates or range_end < end_date or state.get("history_plan_limited_dates") or state.get("history_gaps") else "COMPLETE"
         if plan_warning:
             warning = str(plan_warning)
         elif status == "PARTIAL":
