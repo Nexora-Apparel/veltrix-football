@@ -137,9 +137,9 @@ def test_current_season_fallback_adds_completed_rows_and_deduplicates():
     from scripts.import_open_dataset import OUTPUT_COLUMNS, _append_current_season_fallback
 
     csv_text = (
-        "Div,Date,HomeTeam,AwayTeam,FTHG,FTAG,FTR,B365H,B365D,B365A\\n"
-        "E0,21/09/26,Arsenal,Chelsea,2,1,H,1.80,3.50,4.20\\n"
-        "E0,22/09/26,Arsenal,Chelsea,,, ,1.80,3.50,4.20\\n"
+        "Div,Date,HomeTeam,AwayTeam,FTHG,FTAG,FTR,B365H,B365D,B365A\n"
+        "E0,21/09/26,Arsenal,Chelsea,2,1,H,1.80,3.50,4.20\n"
+        "E0,22/09/26,Arsenal,Chelsea,,, ,1.80,3.50,4.20\n"
     )
 
     class FakeResponse:
