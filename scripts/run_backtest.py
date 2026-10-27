@@ -1,6 +1,7 @@
 """Run and print a chronological model comparison from the imported CSV."""
 from __future__ import annotations
 import argparse
+import hashlib
 import json
 import sys
 from pathlib import Path
@@ -18,8 +19,20 @@ def main() -> None:
     parser.add_argument("--output", default="reports/backtest_summary.json")
     parser.add_argument("--min-training-matches", type=int, default=100)
     args = parser.parse_args()
-    matches = load_matches(args.input)
+    input_path = Path(args.input)
+    matches = load_matches(input_path)
     result = chronological_backtest(matches, min_training_matches=args.min_training_matches)
+    # Pin every evaluation to the exact dataset bytes. The source file is an
+    # ephemeral workflow artifact, so dates and row counts alone are not enough
+    # to reproduce a result if upstream data changes.
+    result["dataset_provenance"] = {
+        "input_file": input_path.name,
+        "sha256": hashlib.sha256(input_path.read_bytes()).hexdigest(),
+        "bytes": input_path.stat().st_size,
+        "rows_loaded": len(matches),
+        "first_match_date": min((str(row.get("match_date") or row.get("date") or "")[:10] for row in matches), default=None),
+        "last_match_date": max((str(row.get("match_date") or row.get("date") or "")[:10] for row in matches), default=None),
+    }
     write_report(result, args.output)
     print(json.dumps({k: v for k, v in result.items() if k != "predictions"}, indent=2))
     print(f"Report saved: {args.output}")
