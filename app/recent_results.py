@@ -1,10 +1,10 @@
-"""Refresh stale historical scores from football-data.org without using current-day results."""
+"""Refresh stale historical scores from the primary API-Football feed without using current-day results."""
 from __future__ import annotations
 
 from datetime import date, timedelta
 from typing import Any
 
-from app.football_api import FootballAPIError
+from app.football_api import FootballAPIError  # retained for compatibility with Highlightly adapter tests\nfrom app.api_football_odds import APIFootballError
 from app.live_predictions import LEAGUE_DIVISION_BY_CODE, LEAGUE_DIVISION_BY_ID, _name_key
 
 COMPLETED_STATUSES = {"FT", "AET", "PEN"}
@@ -26,7 +26,7 @@ def split_date_ranges(start: date, end: date, max_days: int = 7) -> list[tuple[d
 
 
 def extract_completed_results(payload: dict[str, Any]) -> list[dict[str, Any]]:
-    """Normalize completed Highlightly matches into historical rows with stable fixture IDs."""
+    """Normalize completed API-Football matches into historical rows with stable fixture IDs."""
     response = payload.get("response")
     if not isinstance(response, list):
         raise ValueError("Recent-results payload must contain a response list.")
@@ -73,12 +73,12 @@ def extract_completed_results(payload: dict[str, Any]) -> list[dict[str, Any]]:
             "away_goals": away_goals,
             "fixture_id": fixture_id,
             "fixture_status": status,
-            "source": "HIGHLIGHTLY_RECENT_RESULTS",
+            "source": "API_FOOTBALL_RECENT_RESULTS",
         })
     return rows
 
 
-def _range_parameters_rejected(exc: FootballAPIError) -> bool:
+def _range_parameters_rejected(exc: Exception) -> bool:
     """Detect the API's validation response for from/to/timezone range requests."""
     message = str(exc).lower()
     return (
@@ -141,7 +141,7 @@ def fetch_recent_results(
                 range_start.isoformat(), range_end.isoformat(), timezone_name
             )
             rows = extract_completed_results(payload)
-        except (FootballAPIError, ValueError) as exc:
+        except (FootballAPIError, APIFootballError, ValueError) as exc:
             if not isinstance(exc, FootballAPIError) or not _range_parameters_rejected(exc):
                 warning = str(exc)
                 break
@@ -155,7 +155,7 @@ def fetch_recent_results(
                     daily_payload = api.fixtures(day.isoformat(), timezone_name)
                     fallback_rows.extend(extract_completed_results(daily_payload))
                     day += timedelta(days=1)
-            except (FootballAPIError, ValueError) as fallback_exc:
+            except (FootballAPIError, APIFootballError, ValueError) as fallback_exc:
                 warning = (
                     f"Range query rejected ({exc}); single-date fallback failed "
                     f"for {day.isoformat()}: {fallback_exc}"
