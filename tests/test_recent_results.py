@@ -294,7 +294,8 @@ def test_incremental_refresh_keeps_accessible_dates_and_records_plan_gaps():
     assert meta["status"] == "PARTIAL"
     assert meta["covered_from"] == "2026-10-19"
     assert meta["covered_through"] == "2026-10-24"
-    assert meta["cache_state"]["history_gaps"] == ["2026-10-18"]
+    assert meta["cache_state"]["history_plan_limited_dates"] == ["2026-10-18"]
+    assert "history_gaps" not in meta["cache_state"]
     assert meta["cache_state"]["next_backfill_end_date"] == "2026-10-17"
     assert "plan did not return historical fixtures" in meta["warning"]
 
@@ -320,6 +321,7 @@ def test_incremental_refresh_retries_old_gaps_after_forward_coverage_is_current(
         "home_key": "old", "away_key": "older", "home_goals": 1, "away_goals": 0,
     }]
     state = {
+        "coverage_state_version": 2,
         "backfill_anchor_end": "2026-10-24",
         "next_backfill_end_date": "2026-10-10",
         "latest_covered_through": "2026-10-24",
@@ -354,6 +356,7 @@ def test_incremental_gap_retry_retains_subscription_blocked_dates_without_false_
         "home_key": "old", "away_key": "older", "home_goals": 1, "away_goals": 0,
     }]
     state = {
+        "coverage_state_version": 2,
         "backfill_anchor_end": "2026-10-24",
         "next_backfill_end_date": "2026-10-10",
         "latest_covered_through": "2026-10-24",
@@ -364,7 +367,8 @@ def test_incremental_gap_retry_retains_subscription_blocked_dates_without_false_
 
     assert rows == []
     assert meta["status"] == "PARTIAL"
-    assert meta["cache_state"]["history_gaps"] == ["2026-10-18"]
+    assert "history_gaps" not in meta["cache_state"]
+    assert meta["cache_state"]["history_plan_limited_dates"] == ["2026-10-18"]
     assert "plan did not return historical fixtures" in meta["warning"]
     assert meta["cache_state"]["backfill_complete"] is True
 
@@ -390,6 +394,7 @@ def test_gap_retry_throttle_allows_newer_history_to_catch_up_next_day():
         "home_key": "old", "away_key": "older", "home_goals": 1, "away_goals": 0,
     }]
     state = {
+        "coverage_state_version": 2,
         "backfill_anchor_end": "2026-10-24",
         "next_backfill_end_date": "2026-10-10",
         "latest_covered_through": "2026-10-24",
