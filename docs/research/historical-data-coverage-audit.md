@@ -121,3 +121,24 @@ Do not declare this issue resolved until all of the following are true:
 4. Upstream Club-Football-Match-Data README and stated dataset scope: https://github.com/xgabora/Club-Football-Match-Data
 5. API-Football official documentation, including competition/season coverage caveats: https://www.api-football.com/documentation_v3
 6. API-Football official pricing and request quotas: https://www.api-football.com/pricing
+
+
+## Remediation work added after the audit
+
+The following repository changes have been made to make the phases repeatable and reduce operational failure:
+
+1. **Coverage instrumentation:** `scripts/audit_historical_csv.py` now validates required columns, result/score consistency, duplicate match keys, per-division date ranges, calendar-year coverage, missing feature values, and the exact CSV SHA-256. Both the default historical import workflow and the 2000+ backtest workflow run it and publish JSON/Markdown artifacts.
+2. **Reproducible model validation:** `scripts/run_backtest.py` adds dataset filename, SHA-256, byte size, loaded-row count, and date range to every backtest summary. This makes metrics attributable to the exact input bytes rather than only a mutable upstream dataset name.
+3. **Telegram duplicate protection:** `scripts/send_telegram_report.py` checks and records sent report dates in `public-data/telegram_delivery_state.json` on the `command-data` branch. The daily workflow passes its GitHub token/repository context. A successful same-day report rerun is skipped. The marker is written only after all Telegram message parts send successfully; if persistence fails after sending, the script reports that condition rather than claiming the marker was saved.
+4. **Dashboard routing:** dedicated `api/dashboard.py` and `api/dashboard_data.py` entrypoints were added, and Vercel routes now target them rather than relying solely on query-string dispatch through `api/index.py`. Handler-level regression tests were added.
+5. **Provider diagnostic correction:** the prediction metadata no longer claims bookmaker odds are unavailable because of the old Highlightly plan. It explicitly states that API-Football odds enrichment was not fetched/confirmed in that run.
+
+## Important remaining validation gates
+
+These changes improve auditability and operational safety; they do **not** turn the forecasting model into validated betting advice.
+
+- The last available chronological comparison still showed the bookmaker-market baseline outperforming both Elo and Poisson. Value/betting alerts must remain disabled.
+- The public historical dataset's overall rows do not prove every competition-season is complete. Unobserved calendar years are warnings until compared with an expected-fixture inventory from a source that documents competition/season availability.
+- API-Football access is plan- and competition-dependent. A successful API response or an empty response cannot alone prove full historical coverage.
+- The new workflows must complete successfully and their new coverage artifacts must be inspected. A successful Vercel deployment is not proof that GitHub Actions tests passed, Telegram delivered a fresh report, or the live prediction pipeline is accurate.
+- The dashboard and Telegram should be checked against the same published report after deployment. No automatic betting or value alert should be enabled unless chronological out-of-sample calibration and market comparison justify it.
