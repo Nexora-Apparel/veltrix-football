@@ -67,13 +67,13 @@
   "poisson_alternative_available": 16,
   "elo_alternative_available": 3,
   "normal_bets": {
-    "target_combined_decimal_odds": 10.0,
+    "target_combined_decimal_odds": 10,
     "status": "NOT_GENERATED_MODEL_NOT_VALIDATED"
   },
   "value_bets": {
     "target_combined_decimal_odds": [
-      50.0,
-      100.0
+      50,
+      100
     ],
     "status": "NOT_GENERATED_MODEL_NOT_VALIDATED"
   },
@@ -469,7 +469,7 @@
         "true_expected_goals_xg": "UNAVAILABLE_FROM_CURRENT_HISTORICAL_FEED",
         "confirmed_lineups_injuries_suspensions": "NOT_CONNECTED",
         "rest_and_fixture_congestion": "CONTEXT_ONLY_NOT_USED_IN_PROBABILITIES",
-        "live_bookmaker_odds": "UNAVAILABLE_ON_CURRENT_HIGHLIGHTLY_PLAN"
+        "live_bookmaker_odds": "NOT_FETCHED_IN_THIS_RUN_API_FOOTBALL_ODDS_ENRICHMENT_NOT_CONFIRMED"
       },
       "goal_markets_model": "experimental_recent_goals_poisson",
       "scoreline_model": "experimental_recent_goals_poisson",
@@ -1276,7 +1276,7 @@
         "true_expected_goals_xg": "UNAVAILABLE_FROM_CURRENT_HISTORICAL_FEED",
         "confirmed_lineups_injuries_suspensions": "NOT_CONNECTED",
         "rest_and_fixture_congestion": "CONTEXT_ONLY_NOT_USED_IN_PROBABILITIES",
-        "live_bookmaker_odds": "UNAVAILABLE_ON_CURRENT_HIGHLIGHTLY_PLAN"
+        "live_bookmaker_odds": "NOT_FETCHED_IN_THIS_RUN_API_FOOTBALL_ODDS_ENRICHMENT_NOT_CONFIRMED"
       },
       "goal_markets_model": "experimental_recent_goals_poisson",
       "scoreline_model": "experimental_recent_goals_poisson",
@@ -1390,7 +1390,7 @@
         "true_expected_goals_xg": "UNAVAILABLE_FROM_CURRENT_HISTORICAL_FEED",
         "confirmed_lineups_injuries_suspensions": "NOT_CONNECTED",
         "rest_and_fixture_congestion": "CONTEXT_ONLY_NOT_USED_IN_PROBABILITIES",
-        "live_bookmaker_odds": "UNAVAILABLE_ON_CURRENT_HIGHLIGHTLY_PLAN"
+        "live_bookmaker_odds": "NOT_FETCHED_IN_THIS_RUN_API_FOOTBALL_ODDS_ENRICHMENT_NOT_CONFIRMED"
       },
       "goal_markets_model": "experimental_recent_goals_poisson",
       "scoreline_model": "experimental_recent_goals_poisson",
@@ -1504,7 +1504,7 @@
         "true_expected_goals_xg": "UNAVAILABLE_FROM_CURRENT_HISTORICAL_FEED",
         "confirmed_lineups_injuries_suspensions": "NOT_CONNECTED",
         "rest_and_fixture_congestion": "CONTEXT_ONLY_NOT_USED_IN_PROBABILITIES",
-        "live_bookmaker_odds": "UNAVAILABLE_ON_CURRENT_HIGHLIGHTLY_PLAN"
+        "live_bookmaker_odds": "NOT_FETCHED_IN_THIS_RUN_API_FOOTBALL_ODDS_ENRICHMENT_NOT_CONFIRMED"
       },
       "goal_markets_model": "experimental_recent_goals_poisson",
       "scoreline_model": "experimental_recent_goals_poisson",
@@ -1651,7 +1651,7 @@
         "true_expected_goals_xg": "UNAVAILABLE_FROM_CURRENT_HISTORICAL_FEED",
         "confirmed_lineups_injuries_suspensions": "NOT_CONNECTED",
         "rest_and_fixture_congestion": "CONTEXT_ONLY_NOT_USED_IN_PROBABILITIES",
-        "live_bookmaker_odds": "UNAVAILABLE_ON_CURRENT_HIGHLIGHTLY_PLAN"
+        "live_bookmaker_odds": "NOT_FETCHED_IN_THIS_RUN_API_FOOTBALL_ODDS_ENRICHMENT_NOT_CONFIRMED"
       },
       "goal_markets_model": "experimental_recent_goals_poisson",
       "scoreline_model": "experimental_recent_goals_poisson",
@@ -1765,7 +1765,7 @@
         "true_expected_goals_xg": "UNAVAILABLE_FROM_CURRENT_HISTORICAL_FEED",
         "confirmed_lineups_injuries_suspensions": "NOT_CONNECTED",
         "rest_and_fixture_congestion": "CONTEXT_ONLY_NOT_USED_IN_PROBABILITIES",
-        "live_bookmaker_odds": "UNAVAILABLE_ON_CURRENT_HIGHLIGHTLY_PLAN"
+        "live_bookmaker_odds": "NOT_FETCHED_IN_THIS_RUN_API_FOOTBALL_ODDS_ENRICHMENT_NOT_CONFIRMED"
       },
       "goal_markets_model": "experimental_recent_goals_poisson",
       "scoreline_model": "experimental_recent_goals_poisson",
@@ -2176,7 +2176,7 @@
         "true_expected_goals_xg": "UNAVAILABLE_FROM_CURRENT_HISTORICAL_FEED",
         "confirmed_lineups_injuries_suspensions": "NOT_CONNECTED",
         "rest_and_fixture_congestion": "CONTEXT_ONLY_NOT_USED_IN_PROBABILITIES",
-        "live_bookmaker_odds": "UNAVAILABLE_ON_CURRENT_HIGHLIGHTLY_PLAN"
+        "live_bookmaker_odds": "NOT_FETCHED_IN_THIS_RUN_API_FOOTBALL_ODDS_ENRICHMENT_NOT_CONFIRMED"
       },
       "goal_markets_model": "experimental_recent_goals_poisson",
       "scoreline_model": "experimental_recent_goals_poisson",
@@ -2587,7 +2587,7 @@
         "true_expected_goals_xg": "UNAVAILABLE_FROM_CURRENT_HISTORICAL_FEED",
         "confirmed_lineups_injuries_suspensions": "NOT_CONNECTED",
         "rest_and_fixture_congestion": "CONTEXT_ONLY_NOT_USED_IN_PROBABILITIES",
-        "live_bookmaker_odds": "UNAVAILABLE_ON_CURRENT_HIGHLIGHTLY_PLAN"
+        "live_bookmaker_odds": "NOT_FETCHED_IN_THIS_RUN_API_FOOTBALL_ODDS_ENRICHMENT_NOT_CONFIRMED"
       },
       "goal_markets_model": "experimental_recent_goals_poisson",
       "scoreline_model": "experimental_recent_goals_poisson",
@@ -2800,7 +2800,7 @@
         "true_expected_goals_xg": "UNAVAILABLE_FROM_CURRENT_HISTORICAL_FEED",
         "confirmed_lineups_injuries_suspensions": "NOT_CONNECTED",
         "rest_and_fixture_congestion": "CONTEXT_ONLY_NOT_USED_IN_PROBABILITIES",
-        "live_bookmaker_odds": "UNAVAILABLE_ON_CURRENT_HIGHLIGHTLY_PLAN"
+        "live_bookmaker_odds": "NOT_FETCHED_IN_THIS_RUN_API_FOOTBALL_ODDS_ENRICHMENT_NOT_CONFIRMED"
       },
       "goal_markets_model": "experimental_recent_goals_poisson",
       "scoreline_model": "experimental_recent_goals_poisson",
@@ -2914,7 +2914,7 @@
         "true_expected_goals_xg": "UNAVAILABLE_FROM_CURRENT_HISTORICAL_FEED",
         "confirmed_lineups_injuries_suspensions": "NOT_CONNECTED",
         "rest_and_fixture_congestion": "CONTEXT_ONLY_NOT_USED_IN_PROBABILITIES",
-        "live_bookmaker_odds": "UNAVAILABLE_ON_CURRENT_HIGHLIGHTLY_PLAN"
+        "live_bookmaker_odds": "NOT_FETCHED_IN_THIS_RUN_API_FOOTBALL_ODDS_ENRICHMENT_NOT_CONFIRMED"
       },
       "goal_markets_model": "experimental_recent_goals_poisson",
       "scoreline_model": "experimental_recent_goals_poisson",
@@ -3028,7 +3028,7 @@
         "true_expected_goals_xg": "UNAVAILABLE_FROM_CURRENT_HISTORICAL_FEED",
         "confirmed_lineups_injuries_suspensions": "NOT_CONNECTED",
         "rest_and_fixture_congestion": "CONTEXT_ONLY_NOT_USED_IN_PROBABILITIES",
-        "live_bookmaker_odds": "UNAVAILABLE_ON_CURRENT_HIGHLIGHTLY_PLAN"
+        "live_bookmaker_odds": "NOT_FETCHED_IN_THIS_RUN_API_FOOTBALL_ODDS_ENRICHMENT_NOT_CONFIRMED"
       },
       "goal_markets_model": "experimental_recent_goals_poisson",
       "scoreline_model": "experimental_recent_goals_poisson",
@@ -3202,7 +3202,7 @@
         "true_expected_goals_xg": "UNAVAILABLE_FROM_CURRENT_HISTORICAL_FEED",
         "confirmed_lineups_injuries_suspensions": "NOT_CONNECTED",
         "rest_and_fixture_congestion": "CONTEXT_ONLY_NOT_USED_IN_PROBABILITIES",
-        "live_bookmaker_odds": "UNAVAILABLE_ON_CURRENT_HIGHLIGHTLY_PLAN"
+        "live_bookmaker_odds": "NOT_FETCHED_IN_THIS_RUN_API_FOOTBALL_ODDS_ENRICHMENT_NOT_CONFIRMED"
       },
       "goal_markets_model": "experimental_recent_goals_poisson",
       "scoreline_model": "experimental_recent_goals_poisson",
@@ -3316,7 +3316,7 @@
         "true_expected_goals_xg": "UNAVAILABLE_FROM_CURRENT_HISTORICAL_FEED",
         "confirmed_lineups_injuries_suspensions": "NOT_CONNECTED",
         "rest_and_fixture_congestion": "CONTEXT_ONLY_NOT_USED_IN_PROBABILITIES",
-        "live_bookmaker_odds": "UNAVAILABLE_ON_CURRENT_HIGHLIGHTLY_PLAN"
+        "live_bookmaker_odds": "NOT_FETCHED_IN_THIS_RUN_API_FOOTBALL_ODDS_ENRICHMENT_NOT_CONFIRMED"
       },
       "goal_markets_model": "experimental_recent_goals_poisson",
       "scoreline_model": "experimental_recent_goals_poisson",
@@ -3430,7 +3430,7 @@
         "true_expected_goals_xg": "UNAVAILABLE_FROM_CURRENT_HISTORICAL_FEED",
         "confirmed_lineups_injuries_suspensions": "NOT_CONNECTED",
         "rest_and_fixture_congestion": "CONTEXT_ONLY_NOT_USED_IN_PROBABILITIES",
-        "live_bookmaker_odds": "UNAVAILABLE_ON_CURRENT_HIGHLIGHTLY_PLAN"
+        "live_bookmaker_odds": "NOT_FETCHED_IN_THIS_RUN_API_FOOTBALL_ODDS_ENRICHMENT_NOT_CONFIRMED"
       },
       "goal_markets_model": "experimental_recent_goals_poisson",
       "scoreline_model": "experimental_recent_goals_poisson",
@@ -3544,7 +3544,7 @@
         "true_expected_goals_xg": "UNAVAILABLE_FROM_CURRENT_HISTORICAL_FEED",
         "confirmed_lineups_injuries_suspensions": "NOT_CONNECTED",
         "rest_and_fixture_congestion": "CONTEXT_ONLY_NOT_USED_IN_PROBABILITIES",
-        "live_bookmaker_odds": "UNAVAILABLE_ON_CURRENT_HIGHLIGHTLY_PLAN"
+        "live_bookmaker_odds": "NOT_FETCHED_IN_THIS_RUN_API_FOOTBALL_ODDS_ENRICHMENT_NOT_CONFIRMED"
       },
       "goal_markets_model": "experimental_recent_goals_poisson",
       "scoreline_model": "experimental_recent_goals_poisson",
@@ -3955,7 +3955,7 @@
         "true_expected_goals_xg": "UNAVAILABLE_FROM_CURRENT_HISTORICAL_FEED",
         "confirmed_lineups_injuries_suspensions": "NOT_CONNECTED",
         "rest_and_fixture_congestion": "CONTEXT_ONLY_NOT_USED_IN_PROBABILITIES",
-        "live_bookmaker_odds": "UNAVAILABLE_ON_CURRENT_HIGHLIGHTLY_PLAN"
+        "live_bookmaker_odds": "NOT_FETCHED_IN_THIS_RUN_API_FOOTBALL_ODDS_ENRICHMENT_NOT_CONFIRMED"
       },
       "goal_markets_model": "experimental_recent_goals_poisson",
       "scoreline_model": "experimental_recent_goals_poisson",
@@ -4201,7 +4201,7 @@
         "true_expected_goals_xg": "UNAVAILABLE_FROM_CURRENT_HISTORICAL_FEED",
         "confirmed_lineups_injuries_suspensions": "NOT_CONNECTED",
         "rest_and_fixture_congestion": "CONTEXT_ONLY_NOT_USED_IN_PROBABILITIES",
-        "live_bookmaker_odds": "UNAVAILABLE_ON_CURRENT_HIGHLIGHTLY_PLAN"
+        "live_bookmaker_odds": "NOT_FETCHED_IN_THIS_RUN_API_FOOTBALL_ODDS_ENRICHMENT_NOT_CONFIRMED"
       },
       "goal_markets_model": "experimental_recent_goals_poisson",
       "scoreline_model": "experimental_recent_goals_poisson",
@@ -4348,7 +4348,7 @@
         "true_expected_goals_xg": "UNAVAILABLE_FROM_CURRENT_HISTORICAL_FEED",
         "confirmed_lineups_injuries_suspensions": "NOT_CONNECTED",
         "rest_and_fixture_congestion": "CONTEXT_ONLY_NOT_USED_IN_PROBABILITIES",
-        "live_bookmaker_odds": "UNAVAILABLE_ON_CURRENT_HIGHLIGHTLY_PLAN"
+        "live_bookmaker_odds": "NOT_FETCHED_IN_THIS_RUN_API_FOOTBALL_ODDS_ENRICHMENT_NOT_CONFIRMED"
       },
       "goal_markets_model": "experimental_recent_goals_poisson",
       "scoreline_model": "experimental_recent_goals_poisson",
@@ -4462,7 +4462,7 @@
         "true_expected_goals_xg": "UNAVAILABLE_FROM_CURRENT_HISTORICAL_FEED",
         "confirmed_lineups_injuries_suspensions": "NOT_CONNECTED",
         "rest_and_fixture_congestion": "CONTEXT_ONLY_NOT_USED_IN_PROBABILITIES",
-        "live_bookmaker_odds": "UNAVAILABLE_ON_CURRENT_HIGHLIGHTLY_PLAN"
+        "live_bookmaker_odds": "NOT_FETCHED_IN_THIS_RUN_API_FOOTBALL_ODDS_ENRICHMENT_NOT_CONFIRMED"
       },
       "goal_markets_model": "experimental_recent_goals_poisson",
       "scoreline_model": "experimental_recent_goals_poisson",
@@ -6754,7 +6754,7 @@
         "true_expected_goals_xg": "UNAVAILABLE_FROM_CURRENT_HISTORICAL_FEED",
         "confirmed_lineups_injuries_suspensions": "NOT_CONNECTED",
         "rest_and_fixture_congestion": "CONTEXT_ONLY_NOT_USED_IN_PROBABILITIES",
-        "live_bookmaker_odds": "UNAVAILABLE_ON_CURRENT_HIGHLIGHTLY_PLAN"
+        "live_bookmaker_odds": "NOT_FETCHED_IN_THIS_RUN_API_FOOTBALL_ODDS_ENRICHMENT_NOT_CONFIRMED"
       },
       "goal_markets_model": "experimental_recent_goals_poisson",
       "scoreline_model": "experimental_recent_goals_poisson",
@@ -7222,7 +7222,7 @@
   "historical_data_coverage": {
     "status": "GAPPED_OR_STALE",
     "base_history_through": "2026-10-26",
-    "contiguous_through": "2026-10-26",
+    "contiguous_through": null,
     "latest_available_match_date": "2026-10-26",
     "refresh_status": "UP_TO_DATE",
     "requested_start": "2026-10-27",
@@ -7232,7 +7232,34 @@
     "ranges_succeeded": 0,
     "ranges_requested": 0,
     "backfill_complete": true,
-    "cache_path": "reports/recent_results_cache.json"
+    "cache_path": "reports/recent_results_cache.json",
+    "retryable_gap_date_count": 0,
+    "provider_plan_limited_date_count": 21,
+    "provider_plan_limited_dates": [
+      "2026-09-21",
+      "2026-09-22",
+      "2026-09-23",
+      "2026-09-24",
+      "2026-09-25",
+      "2026-09-26",
+      "2026-09-27",
+      "2026-09-28",
+      "2026-09-29",
+      "2026-09-30",
+      "2026-10-01",
+      "2026-10-02",
+      "2026-10-03",
+      "2026-10-04",
+      "2026-10-05",
+      "2026-10-06",
+      "2026-10-07",
+      "2026-10-08",
+      "2026-10-09",
+      "2026-10-10",
+      "2026-10-11"
+    ],
+    "coverage_assessment_updated_at_utc": "2026-10-27T18:32:06.200Z",
+    "coverage_assessment_note": "Coverage metadata reconciled with persisted API-Football cache state; prediction probabilities were not changed."
   },
   "live_odds_sync": {
     "status": "AVAILABLE",
