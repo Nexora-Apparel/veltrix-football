@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - "app/config.py"
+      - "app/api_football_odds.py"
       - "app/historical_data.py"
       - "app/football_api.py"
       - "app/live_predictions.py"
@@ -48,6 +49,7 @@ on:
     branches: [main]
     paths:
       - "app/config.py"
+      - "app/api_football_odds.py"
       - "app/historical_data.py"
       - "app/football_api.py"
       - "app/live_predictions.py"
@@ -211,13 +213,12 @@ jobs:
         id: generate-report
         if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || false && !contains(github.event.head_commit.message, '[reuse-report-40175707059]')
         env:
-          HIGHLIGHTLY_API_KEY: ${{ secrets.HIGHLIGHTLY_API_KEY }}
           API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
           TARGET_DATE: ${{ inputs.date }}
           PYTHONPATH: .
         run: |
-          if [ -z "$HIGHLIGHTLY_API_KEY" ]; then
-            echo "::error::Repository secret HIGHLIGHTLY_API_KEY is missing."
+          if [ -z "$API_FOOTBALL_KEY" ]; then
+            echo "::error::Repository secret API_FOOTBALL_KEY is missing."
             exit 1
           fi
           if [ -z "${TARGET_DATE:-}" ]; then TARGET_DATE="$(TZ=Africa/Lagos date +%F)"; fi
