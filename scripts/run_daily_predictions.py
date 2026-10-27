@@ -9,11 +9,9 @@ from datetime import date, datetime, timedelta
 from zoneinfo import ZoneInfo
 from pathlib import Path
 
-from app.config import get_settings
-from app.football_api import FootballAPI, FootballAPIError
+from app.football_api import FootballAPIError
 from app.live_predictions import _name_key, build_daily_report, load_historical_matches
 from app.recent_results import fetch_recent_results_incremental
-from app.live_odds import extract_market_probabilities
 from app.api_football_odds import APIFootballClient, APIFootballError
 import math
 
