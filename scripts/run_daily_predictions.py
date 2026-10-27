@@ -96,6 +96,12 @@ def _combined_odds_status(football_api_status: str, api_sports_fixtures_attached
     """Report the effective odds status without hiding source-specific diagnostics."""
     return "AVAILABLE" if api_sports_fixtures_attached > 0 else football_api_status
 
+def _safe_api_sports_error(exc: Exception) -> str:
+    """Keep provider diagnostics useful without exposing arbitrary exception text."""
+    if isinstance(exc, APIFootballError):
+        return str(exc)
+    return f"Unexpected API-Sports integration error ({type(exc).__name__})."
+
 
 def _merge_api_sports_market_odds(
     report: dict,
@@ -292,6 +298,7 @@ def main() -> None:
         }
         api_sports_odds_status = "NOT_CONFIGURED"
         api_sports_odds_attached = 0
+        api_sports_warning = None
         # API-Sports is the verified real-bookmaker feed used by the Telegram
         # command centre. Use it as an optional enrichment source when the same
         # key is configured in GitHub Actions; never require or print the key.
@@ -314,11 +321,15 @@ def main() -> None:
                     # Provider rows alone do not prove report integration. Only
                     # call it AVAILABLE after at least one fixture was matched.
                     api_sports_odds_status = "NO_MATCHED_1X2_ODDS"
-            except APIFootballError:
+            except APIFootballError as exc:
                 api_sports_odds_status = "UNAVAILABLE"
-            except Exception:
+                api_sports_warning = _safe_api_sports_error(exc)
+            except Exception as exc:
                 # Optional enrichment must never suppress the primary report.
+                # Record only the exception class for unexpected errors; raw
+                # exception text can contain request details or credentials.
                 api_sports_odds_status = "UNAVAILABLE"
+                api_sports_warning = _safe_api_sports_error(exc)
         report["live_odds_sync"] = {
             **odds_sync,
             # Keep the original FootballAPI feed status for diagnostics, but make
@@ -333,6 +344,7 @@ def main() -> None:
             ),
             "api_sports_status": api_sports_odds_status,
             "api_sports_fixtures_with_odds": api_sports_odds_attached,
+            "api_sports_warning": api_sports_warning,
         }
         report["fixtures_with_market_odds"] = sum(
             isinstance(item.get("market_probabilities"), dict)
