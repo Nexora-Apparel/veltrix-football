@@ -153,3 +153,19 @@ def test_match_normalizer_rejects_fractional_or_invalid_scores():
     for bad_value in (1.5, -1, "NaN", "inf", "not-a-score"):
         assert _normalize_match({**base, "home_goals": bad_value}) is None
         assert _normalize_match({**base, "away_goals": bad_value}) is None
+
+
+
+def test_backtest_dataset_provenance_pins_exact_input_bytes(tmp_path):
+    import hashlib
+    from scripts.run_backtest import dataset_provenance
+
+    path = tmp_path / "matches.csv"
+    path.write_bytes(b"match_date,home_team,away_team\n2024-01-01,A,B\n")
+    matches = [{"match_date": "2024-01-01"}, {"match_date": "2024-02-01"}]
+    provenance = dataset_provenance(path, matches)
+    assert provenance["sha256"] == hashlib.sha256(path.read_bytes()).hexdigest()
+    assert provenance["bytes"] == path.stat().st_size
+    assert provenance["rows_loaded"] == 2
+    assert provenance["first_match_date"] == "2024-01-01"
+    assert provenance["last_match_date"] == "2024-02-01"
