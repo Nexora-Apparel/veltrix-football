@@ -564,7 +564,7 @@ def predict_fixtures(
                     "true_expected_goals_xg": "UNAVAILABLE_FROM_CURRENT_HISTORICAL_FEED",
                     "confirmed_lineups_injuries_suspensions": "NOT_CONNECTED",
                     "rest_and_fixture_congestion": "CONTEXT_ONLY_NOT_USED_IN_PROBABILITIES",
-                    "live_bookmaker_odds": "UNAVAILABLE_ON_CURRENT_HIGHLIGHTLY_PLAN",
+                    "live_bookmaker_odds": "NOT_FETCHED_IN_THIS_RUN_API_FOOTBALL_ODDS_ENRICHMENT_NOT_CONFIRMED",
                 },
                 "goal_markets_model": "experimental_recent_goals_poisson",
                 "scoreline_model": "experimental_recent_goals_poisson",
