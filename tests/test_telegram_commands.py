@@ -37,6 +37,7 @@ def test_status_distinguishes_report_odds_from_direct_provider_feed():
         "as_of_date": datetime.now(ZoneInfo("Africa/Lagos")).date().isoformat(),
         "predictions": [],
         "live_odds_sync": {"status": "NO_VALID_1X2_ODDS"},
+        "publication_status": "LIVE_REPORT_GENERATED_PENDING_PUBLICATION",
     }
     reply = handle_command("/status", report=report)
     assert "Report 1X2 odds integration: NO_VALID_1X2_ODDS" in reply
