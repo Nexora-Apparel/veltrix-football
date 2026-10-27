@@ -266,7 +266,7 @@ def test_primary_fixtures_normalize_to_veltrix_shape_and_use_api_football():
     client = APIFootballClient("test-key", session=session)
     result = client.fixtures("2026-10-27", "Africa/Lagos")
     assert session.calls[0][0] == "https://v3.football.api-sports.io/fixtures"
-    assert session.calls[0][1] == {"date": "2026-10-27", "timezone": "Africa/Lagos", "page": 1}
+    assert session.calls[0][1] == {"date": "2026-10-27", "timezone": "Africa/Lagos"}
     fixture = result["response"][0]
     assert fixture["fixture"]["id"] == 123
     assert fixture["fixture"]["status"]["short"] == "NS"
