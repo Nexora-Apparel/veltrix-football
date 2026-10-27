@@ -9,7 +9,6 @@ from datetime import date, datetime, timedelta
 from zoneinfo import ZoneInfo
 from pathlib import Path
 
-from app.football_api import FootballAPIError
 from app.live_predictions import _name_key, build_daily_report, load_historical_matches
 from app.recent_results import fetch_recent_results_incremental
 from app.api_football_odds import APIFootballClient, APIFootballError
@@ -381,7 +380,7 @@ def main() -> None:
             "output": str(output),
             "model_status": report["model_status"],
         }, indent=2))
-    except (RuntimeError, ValueError, FootballAPIError, OSError) as exc:
+    except (RuntimeError, ValueError, OSError) as exc:
         print(f"DAILY PREDICTION RUN FAILED: {exc}", file=sys.stderr)
         raise SystemExit(1) from exc
 
