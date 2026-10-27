@@ -147,6 +147,8 @@ jobs:
           fi
       - name: Import historical matches
         if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && contains(github.event.head_commit.message, '[run-live-verification]')) || false && !contains(github.event.head_commit.message, '[reuse-report-40175707059]')
+        env:
+          VELTRIX_ENABLE_FOOTBALL_DATA_FALLBACK: "true"
         run: python scripts/import_open_dataset.py --from 2020-01-01 --to "$(date -u +%F)" --output data/open_historical_matches.csv
       - name: Download resumable recent-results cache
         if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && contains(github.event.head_commit.message, '[run-live-verification]'))
