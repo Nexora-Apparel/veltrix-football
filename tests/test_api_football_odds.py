@@ -247,3 +247,66 @@ def test_odds_falls_back_to_date_lookup_when_batch_ids_are_plan_restricted():
     assert result["_veltrix_meta"]["team_name_enrichment"] == "SUCCESS"
     assert "team_name_enrichment_detail" not in result["_veltrix_meta"]
 
+
+
+def test_primary_fixtures_normalize_to_veltrix_shape_and_use_api_football():
+    session = FakeSession({
+        "errors": [],
+        "paging": {"current": 1, "total": 1},
+        "response": [{
+            "fixture": {
+                "id": 123, "date": "2026-10-27T18:00:00+00:00",
+                "status": {"short": "NS", "long": "Not Started"},
+            },
+            "league": {"id": 39, "name": "Premier League", "season": 2026},
+            "teams": {"home": {"id": 1, "name": "Arsenal"}, "away": {"id": 2, "name": "Chelsea"}},
+            "goals": {"home": None, "away": None},
+        }],
+    })
+    client = APIFootballClient("test-key", session=session)
+    result = client.fixtures("2026-10-27", "Africa/Lagos")
+    assert session.calls[0][0] == "https://v3.football.api-sports.io/fixtures"
+    assert session.calls[0][1] == {"date": "2026-10-27", "timezone": "Africa/Lagos", "page": 1}
+    fixture = result["response"][0]
+    assert fixture["fixture"]["id"] == 123
+    assert fixture["fixture"]["status"]["short"] == "NS"
+    assert fixture["teams"]["home"]["name"] == "Arsenal"
+    assert fixture["league"]["code"] == "PL"
+    assert result["provider"] == "API-Football (API-Sports)"
+
+
+def test_primary_historical_range_uses_from_to_and_normalizes_final_scores():
+    session = FakeSession({
+        "errors": [],
+        "paging": {"current": 1, "total": 1},
+        "response": [{
+            "fixture": {
+                "id": 456, "date": "2026-10-20T15:00:00+01:00",
+                "status": {"short": "FT", "long": "Match Finished"},
+            },
+            "league": {"id": 39, "name": "Premier League", "season": 2026},
+            "teams": {"home": {"id": 1, "name": "Arsenal"}, "away": {"id": 2, "name": "Chelsea"}},
+            "goals": {"home": 2, "away": 1},
+        }],
+    })
+    client = APIFootballClient("test-key", session=session)
+    result = client.fixtures_between("2026-10-20", "2026-10-26", "Africa/Lagos")
+    assert session.calls[0][0] == "https://v3.football.api-sports.io/fixtures"
+    assert session.calls[0][1] == {
+        "from": "2026-10-20", "to": "2026-10-26",
+        "timezone": "Africa/Lagos", "page": 1,
+    }
+    fixture = result["response"][0]
+    assert fixture["fixture"]["status"]["short"] == "FT"
+    assert fixture["goals"] == {"home": 2, "away": 1}
+    assert fixture["league"]["code"] == "PL"
+
+
+def test_primary_fixture_queries_reject_ranges_over_seven_days():
+    client = APIFootballClient("test-key", session=FakeSession({"errors": [], "response": []}))
+    try:
+        client.fixtures_between("2026-10-01", "2026-10-08")
+    except APIFootballError as exc:
+        assert "capped at 7 calendar days" in str(exc)
+    else:
+        raise AssertionError("Expected oversized historical range to be rejected")
