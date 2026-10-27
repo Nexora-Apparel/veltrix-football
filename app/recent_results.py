@@ -310,23 +310,40 @@ def fetch_recent_results_incremental(
 
     rows: list[dict[str, Any]] = []
     warning = None
+    provider_meta: dict[str, Any] = {}
+    successful_dates: list[str] = []
+    failed_dates: list[str] = []
     try:
         payload = api.fixtures_between(
             range_start.isoformat(), range_end.isoformat(), timezone_name
         )
         rows = extract_completed_results(payload)
-    except (FootballAPIError, ValueError) as exc:
-        if not isinstance(exc, FootballAPIError) or not _range_parameters_rejected(exc):
-            warning = str(exc)
+        provider_meta = payload.get("_veltrix_meta") or {}
+        raw_failed = provider_meta.get("failed_dates")
+        failed_dates = [str(value) for value in raw_failed if isinstance(value, str)] if isinstance(raw_failed, list) else []
+        raw_successful = provider_meta.get("successful_dates")
+        if isinstance(raw_successful, list):
+            successful_dates = [str(value) for value in raw_successful if isinstance(value, str)]
         else:
+            day = range_start
+            while day <= range_end:
+                successful_dates.append(day.isoformat())
+                day += timedelta(days=1)
+    except (FootballAPIError, APIFootballError, ValueError) as exc:
+        if isinstance(exc, FootballAPIError) and _range_parameters_rejected(exc):
             try:
                 day = range_start
                 while day <= range_end:
-                    rows.extend(extract_completed_results(api.fixtures(day.isoformat(), timezone_name)))
+                    daily_payload = api.fixtures(day.isoformat(), timezone_name)
+                    rows.extend(extract_completed_results(daily_payload))
+                    successful_dates.append(day.isoformat())
                     day += timedelta(days=1)
-            except (FootballAPIError, ValueError) as fallback_exc:
+            except (FootballAPIError, APIFootballError, ValueError) as fallback_exc:
                 warning = f"Range query rejected; single-date fallback failed: {fallback_exc}"
                 rows = []
+                successful_dates = []
+        else:
+            warning = str(exc)
 
     rows = [row for row in rows if range_start <= row["date"] <= range_end]
     unique: dict[tuple[str, str, str, str], dict[str, Any]] = {}
@@ -338,11 +355,29 @@ def fetch_recent_results_incremental(
         key=lambda row: (row["date"], row.get("division", ""), row["home_key"], row["away_key"]),
     )
 
+    existing_gaps = state.get("history_gaps")
+    history_gaps = set(str(value) for value in existing_gaps if isinstance(value, str)) if isinstance(existing_gaps, list) else set()
+    history_gaps.difference_update(successful_dates)
+    history_gaps.update(failed_dates)
+    if history_gaps:
+        state["history_gaps"] = sorted(history_gaps)
+    elif "history_gaps" in state:
+        state.pop("history_gaps", None)
+    plan_warning = provider_meta.get("warning") if failed_dates else None
+
     succeeded = warning is None
+    successful_date_objects = []
+    for value in successful_dates:
+        try:
+            parsed = date.fromisoformat(value)
+        except ValueError:
+            continue
+        if range_start <= parsed <= range_end:
+            successful_date_objects.append(parsed)
     if succeeded and phase == "backfill":
         next_cursor = range_start - timedelta(days=1)
-        previous_latest = date.fromisoformat(str(latest_covered_raw)) if latest_covered_raw else range_end
-        latest_covered = max(previous_latest, range_end)
+        previous_latest = date.fromisoformat(str(latest_covered_raw)) if latest_covered_raw else (base_start - timedelta(days=1))
+        latest_covered = max([previous_latest, *successful_date_objects])
         complete_now = next_cursor < base_start
         state.update({
             "backfill_anchor_end": anchor.isoformat(),
@@ -354,21 +389,27 @@ def fetch_recent_results_incremental(
             total_ranges if complete_now
             else total_ranges - len(split_date_ranges(base_start, next_cursor, max_chunk_days))
         )
-        status = "COMPLETE" if complete_now else "PARTIAL"
-        if not complete_now:
+        status = "PARTIAL" if failed_dates or not complete_now else "COMPLETE"
+        if plan_warning:
+            warning = str(plan_warning)
+        elif not complete_now:
             warning = (
                 f"Historical backfill progress: {progress_after} of {total_ranges} date ranges. "
                 "History remains non-contiguous until the remaining ranges are fetched."
             )
     elif succeeded:
+        previous_latest = date.fromisoformat(str(latest_covered_raw)) if latest_covered_raw else (base_start - timedelta(days=1))
+        latest_covered = max([previous_latest, *successful_date_objects])
         state.update({
             "backfill_complete": True,
-            "latest_covered_through": range_end.isoformat(),
+            "latest_covered_through": latest_covered.isoformat(),
             "next_backfill_end_date": (base_start - timedelta(days=1)).isoformat(),
         })
         progress_after = 1
-        status = "COMPLETE" if range_end >= end_date else "PARTIAL"
-        if status == "PARTIAL":
+        status = "PARTIAL" if failed_dates or range_end < end_date else "COMPLETE"
+        if plan_warning:
+            warning = str(plan_warning)
+        elif status == "PARTIAL":
             warning = f"Catch-up progress: 1 of {total_ranges} date ranges refreshed; remaining dates will be handled in later runs."
     else:
         progress_after = progress_before
@@ -379,8 +420,8 @@ def fetch_recent_results_incremental(
         "results_added": len(rows),
         "requested_start": range_start.isoformat(),
         "requested_end": range_end.isoformat(),
-        "covered_from": range_start.isoformat() if succeeded else None,
-        "covered_through": range_end.isoformat() if succeeded else None,
+        "covered_from": min(successful_date_objects).isoformat() if succeeded and successful_date_objects else None,
+        "covered_through": max(successful_date_objects).isoformat() if succeeded and successful_date_objects else None,
         "ranges_succeeded": progress_after,
         "ranges_requested": total_ranges,
         "warning": warning,
