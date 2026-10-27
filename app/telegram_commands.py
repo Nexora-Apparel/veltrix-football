@@ -249,6 +249,16 @@ def _status(report: dict[str, Any] | None, ledger: dict[str, Any] | None) -> str
             if contiguous or latest:
                 history_coverage += f"; continuous through {contiguous or 'unknown'}, latest available {latest or 'unknown'}"
     report_is_current = isinstance(report, dict) and bool(_report_predictions(report))
+    freshness_status = (
+        str(report.get("publication_status") or "FRESHNESS_UNMARKED")
+        if isinstance(report, dict) else "UNKNOWN"
+    )
+    # The generator marks its local output pending publication. Once the publisher
+    # confirms the public command-data write, avoid presenting that old intermediate
+    # state as if publication were still pending.
+    if isinstance(report, dict) and report.get("command_data_publication") == "PUBLISHED":
+        if freshness_status == "LIVE_REPORT_GENERATED_PENDING_PUBLICATION":
+            freshness_status = "LIVE_REPORT_GENERATED_AND_PUBLISHED"
     return (
         "VELTRIX COMMAND CENTRE — STATUS\n"
         f"Current report: {'available' if report_is_current else 'not loaded or no longer current'}\n"
@@ -256,7 +266,7 @@ def _status(report: dict[str, Any] | None, ledger: dict[str, Any] | None) -> str
         f"Usable experimental forecasts: {len(predictions)}\n"
         f"Recent-results refresh: {history_status}\n"
         f"Historical coverage: {history_coverage}\n"
-        f"Report freshness / reuse: {str(report.get('publication_status') or 'FRESHNESS_UNMARKED') if isinstance(report, dict) else 'UNKNOWN'}\n"
+        f"Report freshness / reuse: {freshness_status}\\n"
         f"Command-data publication: {str(report.get('command_data_publication') or 'UNCONFIRMED') if isinstance(report, dict) else 'UNKNOWN'}\n"
         f"Report 1X2 odds integration: {odds_status}\n"
         "Direct API-Sports odds feed: run /oddsdiag; /status reads saved-report integration only.\n"
