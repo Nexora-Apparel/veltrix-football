@@ -23,7 +23,14 @@ def _load_recent_cache(path: Path) -> tuple[dict, list[dict]]:
         value = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError):
         return empty, []
-    if not isinstance(value, dict) or value.get("version") != 1 or not isinstance(value.get("matches"), list):
+    # The publisher and workflow persist cache schema v2. Accept v2 so the
+    # incremental cursor and historical matches survive between scheduled runs;
+    # continue accepting v1 caches for a safe one-time migration.
+    if (
+        not isinstance(value, dict)
+        or value.get("version") not in (1, 2)
+        or not isinstance(value.get("matches"), list)
+    ):
         return empty, []
     state = value.get("state") if isinstance(value.get("state"), dict) else {}
     try:
