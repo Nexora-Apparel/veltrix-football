@@ -1,5 +1,6 @@
 import io
 import json
+from urllib.parse import parse_qs, urlparse
 
 from app import report_artifacts
 
@@ -32,9 +33,14 @@ def test_report_loader_reads_published_snapshot_without_github_api_or_forecast(m
 
     monkeypatch.setattr(report_artifacts, "urlopen", fake_urlopen)
     assert report_artifacts.load_latest_report() == report
-    assert requested == [
-        "https://raw.githubusercontent.com/Nexora-Apparel/veltrix-football/command-data/public-data/daily_predictions.json"
-    ]
+    assert len(requested) == 1
+    parsed_url = urlparse(requested[0])
+    assert parsed_url.scheme == "https"
+    assert parsed_url.netloc == "api.github.com"
+    assert parsed_url.path == "/repos/Nexora-Apparel/veltrix-football/contents/public-data/daily_predictions.json"
+    query = parse_qs(parsed_url.query)
+    assert query.get("ref") == ["command-data"]
+    assert query.get("v", [""])[0].isdigit()
     assert not any("/actions/" in url or "dispatches" in url for url in requested)
 
 
