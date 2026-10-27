@@ -295,9 +295,18 @@ def fetch_recent_results_incremental(
         date.fromisoformat(str(latest_covered_raw))
         if latest_covered_raw else latest_base
     )
-    if retryable_gaps and backfill_complete and covered_for_retry >= end_date:
-        # Retry gaps only after forward coverage is current, so a permanent
-        # subscription restriction cannot starve newer historical catch-up.
+    last_gap_retry_raw = state.get("last_gap_retry_on")
+    try:
+        last_gap_retry = date.fromisoformat(str(last_gap_retry_raw)) if last_gap_retry_raw else None
+    except ValueError:
+        last_gap_retry = None
+    gap_retry_due = last_gap_retry is None or (end_date - last_gap_retry).days >= 7
+    if retryable_gaps and backfill_complete and (
+        covered_for_retry >= end_date or gap_retry_due
+    ):
+        # Retry gaps when forward coverage is current, or at most weekly, so
+        # transient failures can heal without a permanent plan restriction
+        # starving newer history or consuming quota on every run.
         range_start = retryable_gaps[0]
         range_end = range_start
         for gap_day in retryable_gaps[1:]:
@@ -433,6 +442,7 @@ def fetch_recent_results_incremental(
     elif succeeded and phase == "gap_retry":
         # A retry updates only the gap ledger; it must not move the forward cursor
         # or claim the historical timeline is contiguous while other gaps remain.
+        state["last_gap_retry_on"] = end_date.isoformat()
         progress_after = 1 if successful_date_objects else 0
         remaining_gaps = state.get("history_gaps")
         has_gaps = isinstance(remaining_gaps, list) and bool(remaining_gaps)
