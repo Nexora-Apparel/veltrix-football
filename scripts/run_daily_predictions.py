@@ -285,7 +285,9 @@ def main() -> None:
             (value for value in (base_history_through, latest_covered) if value),
             default=None,
         )
-        refresh_complete = cache_backfill_complete and not updated_cache_state.get("history_gaps") and (
+        history_gaps = updated_cache_state.get("history_gaps") or []
+        plan_limited_dates = updated_cache_state.get("history_plan_limited_dates") or []
+        refresh_complete = cache_backfill_complete and not history_gaps and not plan_limited_dates and (
             not contiguous_candidate or contiguous_candidate >= (target_date - timedelta(days=1)).isoformat()
         )
         report["historical_data_coverage"] = {
@@ -301,6 +303,9 @@ def main() -> None:
             "ranges_succeeded": recent_sync.get("ranges_succeeded"),
             "ranges_requested": recent_sync.get("ranges_requested"),
             "backfill_complete": cache_backfill_complete,
+            "retryable_gap_date_count": len(history_gaps) if isinstance(history_gaps, list) else 0,
+            "provider_plan_limited_date_count": len(plan_limited_dates) if isinstance(plan_limited_dates, list) else 0,
+            "provider_plan_limited_dates": plan_limited_dates if isinstance(plan_limited_dates, list) else [],
             "cache_path": str(cache_path),
         }
         api_sports_odds_status = "NOT_CONFIGURED"
