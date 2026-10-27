@@ -1,54 +1,45 @@
 {
   "product": "Veltrix Football",
-  "generated_at_utc": "2026-10-27T14:44:30.296876+00:00",
+  "generated_at_utc": "2026-10-27T17:36:33.281095+00:00",
   "as_of_date": "2026-10-27",
   "timezone": "Africa/Lagos",
   "same_day_only": true,
   "model_status": "EXPERIMENTAL_NOT_VALIDATED",
-  "historical_matches_available": 75755,
-  "historical_data_through": "2026-10-25",
+  "historical_matches_available": 76909,
+  "historical_data_through": "2026-10-26",
   "fixtures_received": 331,
-  "same_day_pre_match_fixtures": 234,
-  "past_kickoffs_excluded": 15,
-  "future_fixtures_considered": 219,
-  "fixtures_excluded_other_date_or_status": 97,
-  "predictions_created": 23,
-  "insufficient_history": 13,
-  "unsupported_competitions": 183,
-  "fixtures_with_market_odds": 6,
+  "same_day_pre_match_fixtures": 175,
+  "past_kickoffs_excluded": 9,
+  "future_fixtures_considered": 166,
+  "fixtures_excluded_other_date_or_status": 156,
+  "predictions_created": 20,
+  "insufficient_history": 11,
+  "unsupported_competitions": 135,
+  "fixtures_with_market_odds": 3,
   "unsupported_competition_breakdown": {
-    "1. SNL": 2,
-    "2. SNL": 2,
-    "AFC Champions League Elite": 2,
-    "AFC Champions League Two": 2,
-    "AGCFF Gulf Champions League": 2,
+    "1. SNL": 1,
+    "AFC Champions League Elite": 1,
+    "AFC Champions League Two": 1,
     "Copa Paraguay": 1,
     "Copa Uruguay": 1,
-    "Copa del Rey": 18,
+    "Copa del Rey": 17,
     "Coppa Italia Serie C": 3,
     "Coppa Titano": 3,
-    "Cup": 17,
-    "Cupa României": 2,
+    "Cup": 5,
+    "Cupa României": 1,
     "DBU Pokalen": 1,
-    "DFB Pokal": 8,
-    "David Kipiani Cup": 1,
-    "Division 1": 2,
+    "DFB Pokal": 4,
     "EFL Trophy": 4,
     "FA Cup": 1,
     "FA Trophy": 1,
     "First Division": 2,
-    "First League": 3,
     "Football League - Lowland League": 7,
-    "Girabola": 1,
-    "HNL": 1,
     "KNVB Beker": 8,
     "Kvindeliga": 1,
-    "League Cup": 4,
+    "League Cup": 1,
     "Liga Pro Serie B": 1,
-    "Liga Revelação U23": 4,
-    "Ligi kuu Bara": 2,
+    "Ligi kuu Bara": 1,
     "Magyar Kupa": 1,
-    "Meistriliiga": 2,
     "National League - North": 10,
     "National League - South": 11,
     "Non League Premier - Isthmian": 7,
@@ -65,19 +56,16 @@
     "Regionalliga - Bayern": 1,
     "Regionalliga - SudWest": 1,
     "Reserve League": 5,
-    "Second League": 1,
     "Superettan": 1,
-    "Taça da Liga": 1,
-    "Türkiye Kupası": 3,
-    "UEFA Youth League": 1
+    "Taça da Liga": 1
   },
-  "possible_team_name_mismatches": 3,
+  "possible_team_name_mismatches": 2,
   "primary_model_counts": {
-    "experimental_elo_by_competition": 17,
-    "experimental_recent_goals_poisson": 6
+    "experimental_elo_by_competition": 16,
+    "experimental_recent_goals_poisson": 4
   },
-  "poisson_alternative_available": 17,
-  "elo_alternative_available": 5,
+  "poisson_alternative_available": 16,
+  "elo_alternative_available": 3,
   "normal_bets": {
     "target_combined_decimal_odds": 10.0,
     "status": "NOT_GENERATED_MODEL_NOT_VALIDATED"
@@ -90,2025 +78,6 @@
     "status": "NOT_GENERATED_MODEL_NOT_VALIDATED"
   },
   "predictions": [
-    {
-      "fixture_id": 1645603,
-      "kickoff": "2026-10-27T15:45:00+01:00",
-      "kickoff_local": "2026-10-27T15:45:00+01:00",
-      "home_team": "Al-Shabab",
-      "away_team": "NEOM",
-      "league": "AGCFF Gulf Champions League",
-      "league_id": 1162,
-      "division_code": null,
-      "fixture_status": "NS",
-      "model": "experimental_recent_goals_poisson",
-      "model_validated": false,
-      "betting_recommendation": false,
-      "historical_matches": {
-        "home": 6,
-        "away": 4
-      },
-      "team_name_matches": {
-        "home": {
-          "fixture_name": "Al-Shabab",
-          "historical_key": "alshabab",
-          "auto_matched": false
-        },
-        "away": {
-          "fixture_name": "NEOM",
-          "historical_key": "neom",
-          "auto_matched": false
-        }
-      },
-      "status": "UNSUPPORTED_COMPETITION",
-      "reason": "This competition is not mapped to the historical dataset and the teams do not have enough exact-match history for a safe global estimate.",
-      "team_name_match_suggestions": {}
-    },
-    {
-      "fixture_id": 1551125,
-      "kickoff": "2026-10-27T16:00:00+01:00",
-      "kickoff_local": "2026-10-27T16:00:00+01:00",
-      "home_team": "Cherno More Varna",
-      "away_team": "Septemvri Sofia",
-      "league": "First League",
-      "league_id": 172,
-      "division_code": null,
-      "fixture_status": "NS",
-      "model": "experimental_recent_goals_poisson",
-      "model_validated": false,
-      "betting_recommendation": false,
-      "historical_matches": {
-        "home": 2,
-        "away": 1
-      },
-      "team_name_matches": {
-        "home": {
-          "fixture_name": "Cherno More Varna",
-          "historical_key": "chernomorevarna",
-          "auto_matched": false
-        },
-        "away": {
-          "fixture_name": "Septemvri Sofia",
-          "historical_key": "septemvrisofia",
-          "auto_matched": false
-        }
-      },
-      "status": "UNSUPPORTED_COMPETITION",
-      "reason": "This competition is not mapped to the historical dataset and the teams do not have enough exact-match history for a safe global estimate.",
-      "team_name_match_suggestions": {}
-    },
-    {
-      "fixture_id": 1563669,
-      "kickoff": "2026-10-27T16:00:00+01:00",
-      "kickoff_local": "2026-10-27T16:00:00+01:00",
-      "home_team": "Fakel",
-      "away_team": "Akhmat",
-      "league": "Cup",
-      "league_id": 237,
-      "division_code": null,
-      "fixture_status": "NS",
-      "model": "experimental_recent_goals_poisson",
-      "model_validated": false,
-      "betting_recommendation": false,
-      "historical_matches": {
-        "home": 0,
-        "away": 0
-      },
-      "team_name_matches": {
-        "home": {
-          "fixture_name": "Fakel",
-          "historical_key": "fakel",
-          "auto_matched": false
-        },
-        "away": {
-          "fixture_name": "Akhmat",
-          "historical_key": "akhmat",
-          "auto_matched": false
-        }
-      },
-      "status": "UNSUPPORTED_COMPETITION",
-      "reason": "This competition is not mapped to the historical dataset and the teams do not have enough exact-match history for a safe global estimate.",
-      "team_name_match_suggestions": {}
-    },
-    {
-      "fixture_id": 1598725,
-      "kickoff": "2026-10-27T16:00:00+01:00",
-      "kickoff_local": "2026-10-27T16:00:00+01:00",
-      "home_team": "Famalicão U23",
-      "away_team": "União Leiria U23",
-      "league": "Liga Revelação U23",
-      "league_id": 701,
-      "division_code": null,
-      "fixture_status": "NS",
-      "model": "experimental_recent_goals_poisson",
-      "model_validated": false,
-      "betting_recommendation": false,
-      "historical_matches": {
-        "home": 0,
-        "away": 0
-      },
-      "team_name_matches": {
-        "home": {
-          "fixture_name": "Famalicão U23",
-          "historical_key": "famalicaou23",
-          "auto_matched": false
-        },
-        "away": {
-          "fixture_name": "União Leiria U23",
-          "historical_key": "uniaoleiriau23",
-          "auto_matched": false
-        }
-      },
-      "status": "UNSUPPORTED_COMPETITION",
-      "reason": "This competition is not mapped to the historical dataset and the teams do not have enough exact-match history for a safe global estimate.",
-      "team_name_match_suggestions": {}
-    },
-    {
-      "fixture_id": 1598728,
-      "kickoff": "2026-10-27T16:00:00+01:00",
-      "kickoff_local": "2026-10-27T16:00:00+01:00",
-      "home_team": "Penafiel U23",
-      "away_team": "Vizela U23",
-      "league": "Liga Revelação U23",
-      "league_id": 701,
-      "division_code": null,
-      "fixture_status": "NS",
-      "model": "experimental_recent_goals_poisson",
-      "model_validated": false,
-      "betting_recommendation": false,
-      "historical_matches": {
-        "home": 0,
-        "away": 0
-      },
-      "team_name_matches": {
-        "home": {
-          "fixture_name": "Penafiel U23",
-          "historical_key": "penafielu23",
-          "auto_matched": false
-        },
-        "away": {
-          "fixture_name": "Vizela U23",
-          "historical_key": "vizelau23",
-          "auto_matched": false
-        }
-      },
-      "status": "UNSUPPORTED_COMPETITION",
-      "reason": "This competition is not mapped to the historical dataset and the teams do not have enough exact-match history for a safe global estimate.",
-      "team_name_match_suggestions": {}
-    },
-    {
-      "fixture_id": 1598730,
-      "kickoff": "2026-10-27T16:00:00+01:00",
-      "kickoff_local": "2026-10-27T16:00:00+01:00",
-      "home_team": "Rio Ave U23",
-      "away_team": "Sporting CP U23",
-      "league": "Liga Revelação U23",
-      "league_id": 701,
-      "division_code": null,
-      "fixture_status": "NS",
-      "model": "experimental_recent_goals_poisson",
-      "model_validated": false,
-      "betting_recommendation": false,
-      "historical_matches": {
-        "home": 0,
-        "away": 0
-      },
-      "team_name_matches": {
-        "home": {
-          "fixture_name": "Rio Ave U23",
-          "historical_key": "rioaveu23",
-          "auto_matched": false
-        },
-        "away": {
-          "fixture_name": "Sporting CP U23",
-          "historical_key": "sportingcpu23",
-          "auto_matched": false
-        }
-      },
-      "status": "UNSUPPORTED_COMPETITION",
-      "reason": "This competition is not mapped to the historical dataset and the teams do not have enough exact-match history for a safe global estimate.",
-      "team_name_match_suggestions": {}
-    },
-    {
-      "fixture_id": 1632276,
-      "kickoff": "2026-10-27T16:00:00+01:00",
-      "kickoff_local": "2026-10-27T16:00:00+01:00",
-      "home_team": "Progresul Spartac",
-      "away_team": "Petrolul Ploiesti",
-      "league": "Cupa României",
-      "league_id": 285,
-      "division_code": null,
-      "fixture_status": "NS",
-      "model": "experimental_recent_goals_poisson",
-      "model_validated": false,
-      "betting_recommendation": false,
-      "historical_matches": {
-        "home": 0,
-        "away": 2
-      },
-      "team_name_matches": {
-        "home": {
-          "fixture_name": "Progresul Spartac",
-          "historical_key": "progresulspartac",
-          "auto_matched": false
-        },
-        "away": {
-          "fixture_name": "Petrolul Ploiesti",
-          "historical_key": "petrolulploiesti",
-          "auto_matched": false
-        }
-      },
-      "status": "UNSUPPORTED_COMPETITION",
-      "reason": "This competition is not mapped to the historical dataset and the teams do not have enough exact-match history for a safe global estimate.",
-      "team_name_match_suggestions": {}
-    },
-    {
-      "fixture_id": 1641902,
-      "kickoff": "2026-10-27T16:00:00+01:00",
-      "kickoff_local": "2026-10-27T16:00:00+01:00",
-      "home_team": "Pyunik Yerevan",
-      "away_team": "Ararat",
-      "league": "Cup",
-      "league_id": 709,
-      "division_code": null,
-      "fixture_status": "NS",
-      "model": "experimental_recent_goals_poisson",
-      "model_validated": false,
-      "betting_recommendation": false,
-      "historical_matches": {
-        "home": 3,
-        "away": 2
-      },
-      "team_name_matches": {
-        "home": {
-          "fixture_name": "Pyunik Yerevan",
-          "historical_key": "pyunikyerevan",
-          "auto_matched": false
-        },
-        "away": {
-          "fixture_name": "Ararat",
-          "historical_key": "ararat",
-          "auto_matched": false
-        }
-      },
-      "status": "UNSUPPORTED_COMPETITION",
-      "reason": "This competition is not mapped to the historical dataset and the teams do not have enough exact-match history for a safe global estimate.",
-      "team_name_match_suggestions": {}
-    },
-    {
-      "fixture_id": 1641903,
-      "kickoff": "2026-10-27T16:00:00+01:00",
-      "kickoff_local": "2026-10-27T16:00:00+01:00",
-      "home_team": "FC Urartu",
-      "away_team": "Andranik",
-      "league": "Cup",
-      "league_id": 709,
-      "division_code": null,
-      "fixture_status": "NS",
-      "model": "experimental_recent_goals_poisson",
-      "model_validated": false,
-      "betting_recommendation": false,
-      "historical_matches": {
-        "home": 0,
-        "away": 2
-      },
-      "team_name_matches": {
-        "home": {
-          "fixture_name": "FC Urartu",
-          "historical_key": "urartu",
-          "auto_matched": false
-        },
-        "away": {
-          "fixture_name": "Andranik",
-          "historical_key": "andranik",
-          "auto_matched": false
-        }
-      },
-      "status": "UNSUPPORTED_COMPETITION",
-      "reason": "This competition is not mapped to the historical dataset and the teams do not have enough exact-match history for a safe global estimate.",
-      "team_name_match_suggestions": {}
-    },
-    {
-      "fixture_id": 1645439,
-      "kickoff": "2026-10-27T16:00:00+01:00",
-      "kickoff_local": "2026-10-27T16:00:00+01:00",
-      "home_team": "Kocaelispor",
-      "away_team": "Mazıdağı Fosfatspor",
-      "league": "Türkiye Kupası",
-      "league_id": 206,
-      "division_code": null,
-      "fixture_status": "NS",
-      "model": "experimental_recent_goals_poisson",
-      "model_validated": false,
-      "betting_recommendation": false,
-      "historical_matches": {
-        "home": 10,
-        "away": 0
-      },
-      "team_name_matches": {
-        "home": {
-          "fixture_name": "Kocaelispor",
-          "historical_key": "kocaelispor",
-          "auto_matched": false
-        },
-        "away": {
-          "fixture_name": "Mazıdağı Fosfatspor",
-          "historical_key": "mazdagfosfatspor",
-          "auto_matched": false
-        }
-      },
-      "status": "UNSUPPORTED_COMPETITION",
-      "reason": "This competition is not mapped to the historical dataset and the teams do not have enough exact-match history for a safe global estimate.",
-      "team_name_match_suggestions": {}
-    },
-    {
-      "fixture_id": 1604040,
-      "kickoff": "2026-10-27T16:25:00+01:00",
-      "kickoff_local": "2026-10-27T16:25:00+01:00",
-      "home_team": "Al Wehda Club",
-      "away_team": "Al Saqer",
-      "league": "Division 1",
-      "league_id": 308,
-      "division_code": null,
-      "fixture_status": "NS",
-      "model": "experimental_recent_goals_poisson",
-      "model_validated": false,
-      "betting_recommendation": false,
-      "historical_matches": {
-        "home": 2,
-        "away": 2
-      },
-      "team_name_matches": {
-        "home": {
-          "fixture_name": "Al Wehda Club",
-          "historical_key": "alwehdaclub",
-          "auto_matched": false
-        },
-        "away": {
-          "fixture_name": "Al Saqer",
-          "historical_key": "alsaqer",
-          "auto_matched": false
-        }
-      },
-      "status": "UNSUPPORTED_COMPETITION",
-      "reason": "This competition is not mapped to the historical dataset and the teams do not have enough exact-match history for a safe global estimate.",
-      "team_name_match_suggestions": {}
-    },
-    {
-      "fixture_id": 1600805,
-      "kickoff": "2026-10-27T16:30:00+01:00",
-      "kickoff_local": "2026-10-27T16:30:00+01:00",
-      "home_team": "Young Africans",
-      "away_team": "Mashujaa",
-      "league": "Ligi kuu Bara",
-      "league_id": 567,
-      "division_code": null,
-      "fixture_status": "NS",
-      "model": "experimental_recent_goals_poisson",
-      "model_validated": false,
-      "betting_recommendation": false,
-      "historical_matches": {
-        "home": 3,
-        "away": 1
-      },
-      "team_name_matches": {
-        "home": {
-          "fixture_name": "Young Africans",
-          "historical_key": "youngafricans",
-          "auto_matched": false
-        },
-        "away": {
-          "fixture_name": "Mashujaa",
-          "historical_key": "mashujaa",
-          "auto_matched": false
-        }
-      },
-      "status": "UNSUPPORTED_COMPETITION",
-      "reason": "This competition is not mapped to the historical dataset and the teams do not have enough exact-match history for a safe global estimate.",
-      "team_name_match_suggestions": {}
-    },
-    {
-      "fixture_id": 1638575,
-      "kickoff": "2026-10-27T16:30:00+01:00",
-      "kickoff_local": "2026-10-27T16:30:00+01:00",
-      "home_team": "Asteras Tripolis",
-      "away_team": "Kifisia",
-      "league": "Cup",
-      "league_id": 199,
-      "division_code": null,
-      "fixture_status": "NS",
-      "model": "experimental_recent_goals_poisson",
-      "model_validated": false,
-      "betting_recommendation": false,
-      "historical_matches": {
-        "home": 10,
-        "away": 10
-      },
-      "team_name_matches": {
-        "home": {
-          "fixture_name": "Asteras Tripolis",
-          "historical_key": "asterastripolis",
-          "auto_matched": false
-        },
-        "away": {
-          "fixture_name": "Kifisia",
-          "historical_key": "kifisia",
-          "auto_matched": false
-        }
-      },
-      "status": "EXPERIMENTAL_ONLY",
-      "probabilities": {
-        "home_win": 0.3269,
-        "draw": 0.3232,
-        "away_win": 0.35
-      },
-      "elo_history": {
-        "scope": "GLOBAL_FALLBACK",
-        "division_code": null,
-        "home_prior_matches": 147,
-        "away_prior_matches": 39
-      },
-      "expected_goals": {
-        "home": 0.904,
-        "away": 0.947
-      },
-      "rest_congestion_context": {
-        "home": {
-          "days_since_last_match": 3,
-          "matches_in_previous_14_days": 2
-        },
-        "away": {
-          "days_since_last_match": 3,
-          "matches_in_previous_14_days": 2
-        }
-      },
-      "advanced_model_alternative": {
-        "model": "experimental_recency_weighted_dixon_coles",
-        "model_validated": false,
-        "rho": -0.05,
-        "expected_goals": {
-          "home": 0.822,
-          "away": 0.933
-        },
-        "probabilities": {
-          "H": 0.2962,
-          "D": 0.3465,
-          "A": 0.3573
-        },
-        "status": "RESEARCH_ONLY_NOT_PRIMARY"
-      },
-      "data_availability": {
-        "historical_goals_for_against": "AVAILABLE",
-        "competition_elo": "AVAILABLE",
-        "true_expected_goals_xg": "UNAVAILABLE_FROM_CURRENT_HISTORICAL_FEED",
-        "confirmed_lineups_injuries_suspensions": "NOT_CONNECTED",
-        "rest_and_fixture_congestion": "CONTEXT_ONLY_NOT_USED_IN_PROBABILITIES",
-        "live_bookmaker_odds": "UNAVAILABLE_ON_CURRENT_HIGHLIGHTLY_PLAN"
-      },
-      "goal_markets_model": "experimental_recent_goals_poisson",
-      "scoreline_model": "experimental_recent_goals_poisson",
-      "btts_yes": 0.3643,
-      "over_2_5": 0.2832,
-      "most_likely_scorelines": [
-        {
-          "home_goals": 0,
-          "away_goals": 0,
-          "probability": 0.1570142692217139
-        },
-        {
-          "home_goals": 0,
-          "away_goals": 1,
-          "probability": 0.1487053109713865
-        },
-        {
-          "home_goals": 1,
-          "away_goals": 0,
-          "probability": 0.14199382612629705
-        }
-      ],
-      "elo_model": "experimental_elo_global_fallback",
-      "elo_probabilities": {
-        "home_win": 0.3797,
-        "draw": 0.2615,
-        "away_win": 0.3588
-      },
-      "limitations": [
-        "Not validated for betting.",
-        "Historical dataset coverage and team-name matching may be incomplete.",
-        "The recent-goals Poisson model underperforms the historical market benchmark.",
-        "Competition-specific Elo is selected as primary only when the fixture maps to a supported historical division and has sufficient team history.",
-        "Expected goals and totals remain auxiliary Poisson estimates when Elo is primary.",
-        "Elo and Poisson paper results are tracked separately; neither is approved for betting."
-      ]
-    },
-    {
-      "fixture_id": 1513659,
-      "kickoff": "2026-10-27T17:00:00+01:00",
-      "kickoff_local": "2026-10-27T17:00:00+01:00",
-      "home_team": "FC Levadia Tallinn",
-      "away_team": "Tammeka",
-      "league": "Meistriliiga",
-      "league_id": 329,
-      "division_code": null,
-      "fixture_status": "NS",
-      "model": "experimental_recent_goals_poisson",
-      "model_validated": false,
-      "betting_recommendation": false,
-      "historical_matches": {
-        "home": 0,
-        "away": 3
-      },
-      "team_name_matches": {
-        "home": {
-          "fixture_name": "FC Levadia Tallinn",
-          "historical_key": "levadiatallinn",
-          "auto_matched": false
-        },
-        "away": {
-          "fixture_name": "Tammeka",
-          "historical_key": "tammeka",
-          "auto_matched": false
-        }
-      },
-      "status": "UNSUPPORTED_COMPETITION",
-      "reason": "This competition is not mapped to the historical dataset and the teams do not have enough exact-match history for a safe global estimate.",
-      "team_name_match_suggestions": {},
-      "market_model": "api_sports_bookmaker_consensus",
-      "market_probabilities": {
-        "home_win": 0.766481,
-        "draw": 0.141911,
-        "away_win": 0.091608
-      },
-      "market_bookmakers_count": 9,
-      "market_updated_at": null,
-      "market_method": "equal-weight mean of bookmaker-specific de-vigged API-Sports 1X2 prices"
-    },
-    {
-      "fixture_id": 1513660,
-      "kickoff": "2026-10-27T17:00:00+01:00",
-      "kickoff_local": "2026-10-27T17:00:00+01:00",
-      "home_team": "Trans Narva",
-      "away_team": "Nõmme United",
-      "league": "Meistriliiga",
-      "league_id": 329,
-      "division_code": null,
-      "fixture_status": "NS",
-      "model": "experimental_recent_goals_poisson",
-      "model_validated": false,
-      "betting_recommendation": false,
-      "historical_matches": {
-        "home": 3,
-        "away": 3
-      },
-      "team_name_matches": {
-        "home": {
-          "fixture_name": "Trans Narva",
-          "historical_key": "transnarva",
-          "auto_matched": false
-        },
-        "away": {
-          "fixture_name": "Nõmme United",
-          "historical_key": "nommeunited",
-          "auto_matched": false
-        }
-      },
-      "status": "UNSUPPORTED_COMPETITION",
-      "reason": "This competition is not mapped to the historical dataset and the teams do not have enough exact-match history for a safe global estimate.",
-      "team_name_match_suggestions": {},
-      "market_model": "api_sports_bookmaker_consensus",
-      "market_probabilities": {
-        "home_win": 0.232614,
-        "draw": 0.229942,
-        "away_win": 0.537444
-      },
-      "market_bookmakers_count": 9,
-      "market_updated_at": null,
-      "market_method": "equal-weight mean of bookmaker-specific de-vigged API-Sports 1X2 prices"
-    },
-    {
-      "fixture_id": 1558033,
-      "kickoff": "2026-10-27T17:00:00+01:00",
-      "kickoff_local": "2026-10-27T17:00:00+01:00",
-      "home_team": "Radomlje",
-      "away_team": "Mura",
-      "league": "1. SNL",
-      "league_id": 373,
-      "division_code": null,
-      "fixture_status": "NS",
-      "model": "experimental_recent_goals_poisson",
-      "model_validated": false,
-      "betting_recommendation": false,
-      "historical_matches": {
-        "home": 2,
-        "away": 1
-      },
-      "team_name_matches": {
-        "home": {
-          "fixture_name": "Radomlje",
-          "historical_key": "radomlje",
-          "auto_matched": false
-        },
-        "away": {
-          "fixture_name": "Mura",
-          "historical_key": "mura",
-          "auto_matched": false
-        }
-      },
-      "status": "UNSUPPORTED_COMPETITION",
-      "reason": "This competition is not mapped to the historical dataset and the teams do not have enough exact-match history for a safe global estimate.",
-      "team_name_match_suggestions": {}
-    },
-    {
-      "fixture_id": 1558981,
-      "kickoff": "2026-10-27T17:00:00+01:00",
-      "kickoff_local": "2026-10-27T17:00:00+01:00",
-      "home_team": "Primorje",
-      "away_team": "Rudar",
-      "league": "2. SNL",
-      "league_id": 374,
-      "division_code": null,
-      "fixture_status": "NS",
-      "model": "experimental_recent_goals_poisson",
-      "model_validated": false,
-      "betting_recommendation": false,
-      "historical_matches": {
-        "home": 1,
-        "away": 3
-      },
-      "team_name_matches": {
-        "home": {
-          "fixture_name": "Primorje",
-          "historical_key": "primorje",
-          "auto_matched": false
-        },
-        "away": {
-          "fixture_name": "Rudar",
-          "historical_key": "rudar",
-          "auto_matched": false
-        }
-      },
-      "status": "UNSUPPORTED_COMPETITION",
-      "reason": "This competition is not mapped to the historical dataset and the teams do not have enough exact-match history for a safe global estimate.",
-      "team_name_match_suggestions": {}
-    },
-    {
-      "fixture_id": 1558982,
-      "kickoff": "2026-10-27T17:00:00+01:00",
-      "kickoff_local": "2026-10-27T17:00:00+01:00",
-      "home_team": "Tabor Sežana",
-      "away_team": "Slovan Ljubljana",
-      "league": "2. SNL",
-      "league_id": 374,
-      "division_code": null,
-      "fixture_status": "NS",
-      "model": "experimental_recent_goals_poisson",
-      "model_validated": false,
-      "betting_recommendation": false,
-      "historical_matches": {
-        "home": 2,
-        "away": 1
-      },
-      "team_name_matches": {
-        "home": {
-          "fixture_name": "Tabor Sežana",
-          "historical_key": "taborsezana",
-          "auto_matched": false
-        },
-        "away": {
-          "fixture_name": "Slovan Ljubljana",
-          "historical_key": "slovanljubljana",
-          "auto_matched": false
-        }
-      },
-      "status": "UNSUPPORTED_COMPETITION",
-      "reason": "This competition is not mapped to the historical dataset and the teams do not have enough exact-match history for a safe global estimate.",
-      "team_name_match_suggestions": {}
-    },
-    {
-      "fixture_id": 1571598,
-      "kickoff": "2026-10-27T17:00:00+01:00",
-      "kickoff_local": "2026-10-27T17:00:00+01:00",
-      "home_team": "Ludogorets II",
-      "away_team": "Dobrudzha",
-      "league": "Second League",
-      "league_id": 173,
-      "division_code": null,
-      "fixture_status": "NS",
-      "model": "experimental_recent_goals_poisson",
-      "model_validated": false,
-      "betting_recommendation": false,
-      "historical_matches": {
-        "home": 1,
-        "away": 1
-      },
-      "team_name_matches": {
-        "home": {
-          "fixture_name": "Ludogorets II",
-          "historical_key": "ludogoretsii",
-          "auto_matched": false
-        },
-        "away": {
-          "fixture_name": "Dobrudzha",
-          "historical_key": "dobrudzha",
-          "auto_matched": false
-        }
-      },
-      "status": "UNSUPPORTED_COMPETITION",
-      "reason": "This competition is not mapped to the historical dataset and the teams do not have enough exact-match history for a safe global estimate.",
-      "team_name_match_suggestions": {}
-    },
-    {
-      "fixture_id": 1629955,
-      "kickoff": "2026-10-27T17:00:00+01:00",
-      "kickoff_local": "2026-10-27T17:00:00+01:00",
-      "home_team": "Shabab Al Ahli Dubai",
-      "away_team": "Esteghlal FC",
-      "league": "AFC Champions League Elite",
-      "league_id": 17,
-      "division_code": null,
-      "fixture_status": "NS",
-      "model": "experimental_recent_goals_poisson",
-      "model_validated": false,
-      "betting_recommendation": false,
-      "historical_matches": {
-        "home": 3,
-        "away": 3
-      },
-      "team_name_matches": {
-        "home": {
-          "fixture_name": "Shabab Al Ahli Dubai",
-          "historical_key": "shababalahlidubai",
-          "auto_matched": false
-        },
-        "away": {
-          "fixture_name": "Esteghlal FC",
-          "historical_key": "esteghlal",
-          "auto_matched": false
-        }
-      },
-      "status": "UNSUPPORTED_COMPETITION",
-      "reason": "This competition is not mapped to the historical dataset and the teams do not have enough exact-match history for a safe global estimate.",
-      "team_name_match_suggestions": {}
-    },
-    {
-      "fixture_id": 1630375,
-      "kickoff": "2026-10-27T17:00:00+01:00",
-      "kickoff_local": "2026-10-27T17:00:00+01:00",
-      "home_team": "Al Seeb",
-      "away_team": "East Bengal II",
-      "league": "AFC Champions League Two",
-      "league_id": 18,
-      "division_code": null,
-      "fixture_status": "NS",
-      "model": "experimental_recent_goals_poisson",
-      "model_validated": false,
-      "betting_recommendation": false,
-      "historical_matches": {
-        "home": 3,
-        "away": 3
-      },
-      "team_name_matches": {
-        "home": {
-          "fixture_name": "Al Seeb",
-          "historical_key": "alseeb",
-          "auto_matched": false
-        },
-        "away": {
-          "fixture_name": "East Bengal II",
-          "historical_key": "eastbengalii",
-          "auto_matched": false
-        }
-      },
-      "status": "UNSUPPORTED_COMPETITION",
-      "reason": "This competition is not mapped to the historical dataset and the teams do not have enough exact-match history for a safe global estimate.",
-      "team_name_match_suggestions": {}
-    },
-    {
-      "fixture_id": 1635300,
-      "kickoff": "2026-10-27T17:00:00+01:00",
-      "kickoff_local": "2026-10-27T17:00:00+01:00",
-      "home_team": "Express",
-      "away_team": "Kataka",
-      "league": "Premier League",
-      "league_id": 585,
-      "division_code": "E0",
-      "fixture_status": "NS",
-      "model": "experimental_recent_goals_poisson",
-      "model_validated": false,
-      "betting_recommendation": false,
-      "historical_matches": {
-        "home": 2,
-        "away": 2
-      },
-      "team_name_matches": {
-        "home": {
-          "fixture_name": "Express",
-          "historical_key": "express",
-          "auto_matched": false
-        },
-        "away": {
-          "fixture_name": "Kataka",
-          "historical_key": "kataka",
-          "auto_matched": false
-        }
-      },
-      "status": "INSUFFICIENT_HISTORY",
-      "reason": "Each team needs at least 5 prior matches in the historical dataset.",
-      "team_name_match_suggestions": {}
-    },
-    {
-      "fixture_id": 1640674,
-      "kickoff": "2026-10-27T17:00:00+01:00",
-      "kickoff_local": "2026-10-27T17:00:00+01:00",
-      "home_team": "Shakhtar Donetsk",
-      "away_team": "Dynamo Kyiv",
-      "league": "Cup",
-      "league_id": 335,
-      "division_code": null,
-      "fixture_status": "NS",
-      "model": "experimental_recent_goals_poisson",
-      "model_validated": false,
-      "betting_recommendation": false,
-      "historical_matches": {
-        "home": 4,
-        "away": 2
-      },
-      "team_name_matches": {
-        "home": {
-          "fixture_name": "Shakhtar Donetsk",
-          "historical_key": "shakhtardonetsk",
-          "auto_matched": false
-        },
-        "away": {
-          "fixture_name": "Dynamo Kyiv",
-          "historical_key": "dynamokyiv",
-          "auto_matched": false
-        }
-      },
-      "status": "UNSUPPORTED_COMPETITION",
-      "reason": "This competition is not mapped to the historical dataset and the teams do not have enough exact-match history for a safe global estimate.",
-      "team_name_match_suggestions": {}
-    },
-    {
-      "fixture_id": 1642155,
-      "kickoff": "2026-10-27T17:00:00+01:00",
-      "kickoff_local": "2026-10-27T17:00:00+01:00",
-      "home_team": "Gagra",
-      "away_team": "Rustavi",
-      "league": "David Kipiani Cup",
-      "league_id": 672,
-      "division_code": null,
-      "fixture_status": "NS",
-      "model": "experimental_recent_goals_poisson",
-      "model_validated": false,
-      "betting_recommendation": false,
-      "historical_matches": {
-        "home": 2,
-        "away": 2
-      },
-      "team_name_matches": {
-        "home": {
-          "fixture_name": "Gagra",
-          "historical_key": "gagra",
-          "auto_matched": false
-        },
-        "away": {
-          "fixture_name": "Rustavi",
-          "historical_key": "rustavi",
-          "auto_matched": false
-        }
-      },
-      "status": "UNSUPPORTED_COMPETITION",
-      "reason": "This competition is not mapped to the historical dataset and the teams do not have enough exact-match history for a safe global estimate.",
-      "team_name_match_suggestions": {}
-    },
-    {
-      "fixture_id": 1645408,
-      "kickoff": "2026-10-27T17:00:00+01:00",
-      "kickoff_local": "2026-10-27T17:00:00+01:00",
-      "home_team": "Slovan Liberec",
-      "away_team": "Teplice",
-      "league": "Cup",
-      "league_id": 347,
-      "division_code": null,
-      "fixture_status": "NS",
-      "model": "experimental_recent_goals_poisson",
-      "model_validated": false,
-      "betting_recommendation": false,
-      "historical_matches": {
-        "home": 1,
-        "away": 2
-      },
-      "team_name_matches": {
-        "home": {
-          "fixture_name": "Slovan Liberec",
-          "historical_key": "slovanliberec",
-          "auto_matched": false
-        },
-        "away": {
-          "fixture_name": "Teplice",
-          "historical_key": "teplice",
-          "auto_matched": false
-        }
-      },
-      "status": "UNSUPPORTED_COMPETITION",
-      "reason": "This competition is not mapped to the historical dataset and the teams do not have enough exact-match history for a safe global estimate.",
-      "team_name_match_suggestions": {}
-    },
-    {
-      "fixture_id": 1645449,
-      "kickoff": "2026-10-27T17:00:00+01:00",
-      "kickoff_local": "2026-10-27T17:00:00+01:00",
-      "home_team": "Yeni Mersin Idmanyurdu",
-      "away_team": "Muş Sport Klübü",
-      "league": "Türkiye Kupası",
-      "league_id": 206,
-      "division_code": null,
-      "fixture_status": "NS",
-      "model": "experimental_recent_goals_poisson",
-      "model_validated": false,
-      "betting_recommendation": false,
-      "historical_matches": {
-        "home": 0,
-        "away": 0
-      },
-      "team_name_matches": {
-        "home": {
-          "fixture_name": "Yeni Mersin Idmanyurdu",
-          "historical_key": "yenimersinidmanyurdu",
-          "auto_matched": false
-        },
-        "away": {
-          "fixture_name": "Muş Sport Klübü",
-          "historical_key": "mussportklubu",
-          "auto_matched": false
-        }
-      },
-      "status": "UNSUPPORTED_COMPETITION",
-      "reason": "This competition is not mapped to the historical dataset and the teams do not have enough exact-match history for a safe global estimate.",
-      "team_name_match_suggestions": {}
-    },
-    {
-      "fixture_id": 1627301,
-      "kickoff": "2026-10-27T17:15:00+01:00",
-      "kickoff_local": "2026-10-27T17:15:00+01:00",
-      "home_team": "Recreativo da Caála",
-      "away_team": "1º de Agosto",
-      "league": "Girabola",
-      "league_id": 397,
-      "division_code": null,
-      "fixture_status": "NS",
-      "model": "experimental_recent_goals_poisson",
-      "model_validated": false,
-      "betting_recommendation": false,
-      "historical_matches": {
-        "home": 1,
-        "away": 2
-      },
-      "team_name_matches": {
-        "home": {
-          "fixture_name": "Recreativo da Caála",
-          "historical_key": "recreativodacaala",
-          "auto_matched": false
-        },
-        "away": {
-          "fixture_name": "1º de Agosto",
-          "historical_key": "1odeagosto",
-          "auto_matched": false
-        }
-      },
-      "status": "UNSUPPORTED_COMPETITION",
-      "reason": "This competition is not mapped to the historical dataset and the teams do not have enough exact-match history for a safe global estimate.",
-      "team_name_match_suggestions": {}
-    },
-    {
-      "fixture_id": 1604041,
-      "kickoff": "2026-10-27T17:30:00+01:00",
-      "kickoff_local": "2026-10-27T17:30:00+01:00",
-      "home_team": "Al-Adalah",
-      "away_team": "Al Jeel",
-      "league": "Division 1",
-      "league_id": 308,
-      "division_code": null,
-      "fixture_status": "NS",
-      "model": "experimental_recent_goals_poisson",
-      "model_validated": false,
-      "betting_recommendation": false,
-      "historical_matches": {
-        "home": 2,
-        "away": 0
-      },
-      "team_name_matches": {
-        "home": {
-          "fixture_name": "Al-Adalah",
-          "historical_key": "aladalah",
-          "auto_matched": false
-        },
-        "away": {
-          "fixture_name": "Al Jeel",
-          "historical_key": "aljeel",
-          "auto_matched": false
-        }
-      },
-      "status": "UNSUPPORTED_COMPETITION",
-      "reason": "This competition is not mapped to the historical dataset and the teams do not have enough exact-match history for a safe global estimate.",
-      "team_name_match_suggestions": {}
-    },
-    {
-      "fixture_id": 1640565,
-      "kickoff": "2026-10-27T17:30:00+01:00",
-      "kickoff_local": "2026-10-27T17:30:00+01:00",
-      "home_team": "Motor Lublin",
-      "away_team": "Raków Częstochowa",
-      "league": "Cup",
-      "league_id": 108,
-      "division_code": null,
-      "fixture_status": "NS",
-      "model": "experimental_recent_goals_poisson",
-      "model_validated": false,
-      "betting_recommendation": false,
-      "historical_matches": {
-        "home": 10,
-        "away": 2
-      },
-      "team_name_matches": {
-        "home": {
-          "fixture_name": "Motor Lublin",
-          "historical_key": "motorlublin",
-          "auto_matched": false
-        },
-        "away": {
-          "fixture_name": "Raków Częstochowa",
-          "historical_key": "rakowczestochowa",
-          "auto_matched": false
-        }
-      },
-      "status": "UNSUPPORTED_COMPETITION",
-      "reason": "This competition is not mapped to the historical dataset and the teams do not have enough exact-match history for a safe global estimate.",
-      "team_name_match_suggestions": {}
-    },
-    {
-      "fixture_id": 1645817,
-      "kickoff": "2026-10-27T17:30:00+01:00",
-      "kickoff_local": "2026-10-27T17:30:00+01:00",
-      "home_team": "Macva",
-      "away_team": "Napredak",
-      "league": "Cup",
-      "league_id": 732,
-      "division_code": null,
-      "fixture_status": "NS",
-      "model": "experimental_recent_goals_poisson",
-      "model_validated": false,
-      "betting_recommendation": false,
-      "historical_matches": {
-        "home": 2,
-        "away": 2
-      },
-      "team_name_matches": {
-        "home": {
-          "fixture_name": "Macva",
-          "historical_key": "macva",
-          "auto_matched": false
-        },
-        "away": {
-          "fixture_name": "Napredak",
-          "historical_key": "napredak",
-          "auto_matched": false
-        }
-      },
-      "status": "UNSUPPORTED_COMPETITION",
-      "reason": "This competition is not mapped to the historical dataset and the teams do not have enough exact-match history for a safe global estimate.",
-      "team_name_match_suggestions": {}
-    },
-    {
-      "fixture_id": 1548547,
-      "kickoff": "2026-10-27T18:00:00+01:00",
-      "kickoff_local": "2026-10-27T18:00:00+01:00",
-      "home_team": "Dinamo Zagreb",
-      "away_team": "HNK Rijeka",
-      "league": "HNL",
-      "league_id": 210,
-      "division_code": null,
-      "fixture_status": "NS",
-      "model": "experimental_recent_goals_poisson",
-      "model_validated": false,
-      "betting_recommendation": false,
-      "historical_matches": {
-        "home": 3,
-        "away": 2
-      },
-      "team_name_matches": {
-        "home": {
-          "fixture_name": "Dinamo Zagreb",
-          "historical_key": "dinamozagreb",
-          "auto_matched": false
-        },
-        "away": {
-          "fixture_name": "HNK Rijeka",
-          "historical_key": "hnkrijeka",
-          "auto_matched": false
-        }
-      },
-      "status": "UNSUPPORTED_COMPETITION",
-      "reason": "This competition is not mapped to the historical dataset and the teams do not have enough exact-match history for a safe global estimate.",
-      "team_name_match_suggestions": {},
-      "market_model": "api_sports_bookmaker_consensus",
-      "market_probabilities": {
-        "home_win": 0.588599,
-        "draw": 0.230685,
-        "away_win": 0.180716
-      },
-      "market_bookmakers_count": 10,
-      "market_updated_at": null,
-      "market_method": "equal-weight mean of bookmaker-specific de-vigged API-Sports 1X2 prices"
-    },
-    {
-      "fixture_id": 1558547,
-      "kickoff": "2026-10-27T18:00:00+01:00",
-      "kickoff_local": "2026-10-27T18:00:00+01:00",
-      "home_team": "Buducnost Podgorica",
-      "away_team": "Mornar",
-      "league": "First League",
-      "league_id": 355,
-      "division_code": null,
-      "fixture_status": "NS",
-      "model": "experimental_recent_goals_poisson",
-      "model_validated": false,
-      "betting_recommendation": false,
-      "historical_matches": {
-        "home": 3,
-        "away": 3
-      },
-      "team_name_matches": {
-        "home": {
-          "fixture_name": "Buducnost Podgorica",
-          "historical_key": "buducnostpodgorica",
-          "auto_matched": false
-        },
-        "away": {
-          "fixture_name": "Mornar",
-          "historical_key": "mornar",
-          "auto_matched": false
-        }
-      },
-      "status": "UNSUPPORTED_COMPETITION",
-      "reason": "This competition is not mapped to the historical dataset and the teams do not have enough exact-match history for a safe global estimate.",
-      "team_name_match_suggestions": {}
-    },
-    {
-      "fixture_id": 1598732,
-      "kickoff": "2026-10-27T18:00:00+01:00",
-      "kickoff_local": "2026-10-27T18:00:00+01:00",
-      "home_team": "Torreense U23",
-      "away_team": "Estrela U23",
-      "league": "Liga Revelação U23",
-      "league_id": 701,
-      "division_code": null,
-      "fixture_status": "NS",
-      "model": "experimental_recent_goals_poisson",
-      "model_validated": false,
-      "betting_recommendation": false,
-      "historical_matches": {
-        "home": 0,
-        "away": 0
-      },
-      "team_name_matches": {
-        "home": {
-          "fixture_name": "Torreense U23",
-          "historical_key": "torreenseu23",
-          "auto_matched": false
-        },
-        "away": {
-          "fixture_name": "Estrela U23",
-          "historical_key": "estrelau23",
-          "auto_matched": false
-        }
-      },
-      "status": "UNSUPPORTED_COMPETITION",
-      "reason": "This competition is not mapped to the historical dataset and the teams do not have enough exact-match history for a safe global estimate.",
-      "team_name_match_suggestions": {}
-    },
-    {
-      "fixture_id": 1632278,
-      "kickoff": "2026-10-27T18:00:00+01:00",
-      "kickoff_local": "2026-10-27T18:00:00+01:00",
-      "home_team": "Uta Arad",
-      "away_team": "FC Botosani",
-      "league": "Cupa României",
-      "league_id": 285,
-      "division_code": null,
-      "fixture_status": "NS",
-      "model": "experimental_recent_goals_poisson",
-      "model_validated": false,
-      "betting_recommendation": false,
-      "historical_matches": {
-        "home": 10,
-        "away": 10
-      },
-      "team_name_matches": {
-        "home": {
-          "fixture_name": "Uta Arad",
-          "historical_key": "utaarad",
-          "auto_matched": false
-        },
-        "away": {
-          "fixture_name": "FC Botosani",
-          "historical_key": "botosani",
-          "auto_matched": false
-        }
-      },
-      "status": "EXPERIMENTAL_ONLY",
-      "probabilities": {
-        "home_win": 0.5422,
-        "draw": 0.2526,
-        "away_win": 0.2052
-      },
-      "elo_history": {
-        "scope": "GLOBAL_FALLBACK",
-        "division_code": null,
-        "home_prior_matches": 172,
-        "away_prior_matches": 187
-      },
-      "expected_goals": {
-        "home": 1.579,
-        "away": 0.863
-      },
-      "rest_congestion_context": {
-        "home": {
-          "days_since_last_match": 3,
-          "matches_in_previous_14_days": 2
-        },
-        "away": {
-          "days_since_last_match": 4,
-          "matches_in_previous_14_days": 2
-        }
-      },
-      "advanced_model_alternative": {
-        "model": "experimental_recency_weighted_dixon_coles",
-        "model_validated": false,
-        "rho": -0.05,
-        "expected_goals": {
-          "home": 1.563,
-          "away": 0.871
-        },
-        "probabilities": {
-          "H": 0.5302,
-          "D": 0.2663,
-          "A": 0.2035
-        },
-        "status": "RESEARCH_ONLY_NOT_PRIMARY"
-      },
-      "data_availability": {
-        "historical_goals_for_against": "AVAILABLE",
-        "competition_elo": "AVAILABLE",
-        "true_expected_goals_xg": "UNAVAILABLE_FROM_CURRENT_HISTORICAL_FEED",
-        "confirmed_lineups_injuries_suspensions": "NOT_CONNECTED",
-        "rest_and_fixture_congestion": "CONTEXT_ONLY_NOT_USED_IN_PROBABILITIES",
-        "live_bookmaker_odds": "UNAVAILABLE_ON_CURRENT_HIGHLIGHTLY_PLAN"
-      },
-      "goal_markets_model": "experimental_recent_goals_poisson",
-      "scoreline_model": "experimental_recent_goals_poisson",
-      "btts_yes": 0.4589,
-      "over_2_5": 0.4413,
-      "most_likely_scorelines": [
-        {
-          "home_goals": 1,
-          "away_goals": 0,
-          "probability": 0.13734161828836133
-        },
-        {
-          "home_goals": 1,
-          "away_goals": 1,
-          "probability": 0.11853383455178415
-        },
-        {
-          "home_goals": 2,
-          "away_goals": 0,
-          "probability": 0.10843444035231875
-        }
-      ],
-      "elo_model": "experimental_elo_global_fallback",
-      "elo_probabilities": {
-        "home_win": 0.5303,
-        "draw": 0.2615,
-        "away_win": 0.2081
-      },
-      "limitations": [
-        "Not validated for betting.",
-        "Historical dataset coverage and team-name matching may be incomplete.",
-        "The recent-goals Poisson model underperforms the historical market benchmark.",
-        "Competition-specific Elo is selected as primary only when the fixture maps to a supported historical division and has sufficient team history.",
-        "Expected goals and totals remain auxiliary Poisson estimates when Elo is primary.",
-        "Elo and Poisson paper results are tracked separately; neither is approved for betting."
-      ]
-    },
-    {
-      "fixture_id": 1634094,
-      "kickoff": "2026-10-27T18:00:00+01:00",
-      "kickoff_local": "2026-10-27T18:00:00+01:00",
-      "home_team": "Enesia",
-      "away_team": "TAFIC",
-      "league": "Premier League",
-      "league_id": 412,
-      "division_code": "E0",
-      "fixture_status": "NS",
-      "model": "experimental_recent_goals_poisson",
-      "model_validated": false,
-      "betting_recommendation": false,
-      "historical_matches": {
-        "home": 2,
-        "away": 1
-      },
-      "team_name_matches": {
-        "home": {
-          "fixture_name": "Enesia",
-          "historical_key": "enesia",
-          "auto_matched": false
-        },
-        "away": {
-          "fixture_name": "TAFIC",
-          "historical_key": "tafic",
-          "auto_matched": false
-        }
-      },
-      "status": "INSUFFICIENT_HISTORY",
-      "reason": "Each team needs at least 5 prior matches in the historical dataset.",
-      "team_name_match_suggestions": {}
-    },
-    {
-      "fixture_id": 1638560,
-      "kickoff": "2026-10-27T18:00:00+01:00",
-      "kickoff_local": "2026-10-27T18:00:00+01:00",
-      "home_team": "VfL Bochum",
-      "away_team": "FSV Mainz 05",
-      "league": "DFB Pokal",
-      "league_id": 81,
-      "division_code": null,
-      "fixture_status": "NS",
-      "model": "experimental_recent_goals_poisson",
-      "model_validated": false,
-      "betting_recommendation": false,
-      "historical_matches": {
-        "home": 2,
-        "away": 2
-      },
-      "team_name_matches": {
-        "home": {
-          "fixture_name": "VfL Bochum",
-          "historical_key": "vflbochum",
-          "auto_matched": false
-        },
-        "away": {
-          "fixture_name": "FSV Mainz 05",
-          "historical_key": "fsvmainz05",
-          "auto_matched": false
-        }
-      },
-      "status": "UNSUPPORTED_COMPETITION",
-      "reason": "This competition is not mapped to the historical dataset and the teams do not have enough exact-match history for a safe global estimate.",
-      "team_name_match_suggestions": {}
-    },
-    {
-      "fixture_id": 1638565,
-      "kickoff": "2026-10-27T18:00:00+01:00",
-      "kickoff_local": "2026-10-27T18:00:00+01:00",
-      "home_team": "SG Sonnenhof Grossaspach",
-      "away_team": "FC Augsburg",
-      "league": "DFB Pokal",
-      "league_id": 81,
-      "division_code": null,
-      "fixture_status": "NS",
-      "model": "experimental_recent_goals_poisson",
-      "model_validated": false,
-      "betting_recommendation": false,
-      "historical_matches": {
-        "home": 3,
-        "away": 10
-      },
-      "team_name_matches": {
-        "home": {
-          "fixture_name": "SG Sonnenhof Grossaspach",
-          "historical_key": "sgsonnenhofgrossaspach",
-          "auto_matched": false
-        },
-        "away": {
-          "fixture_name": "FC Augsburg",
-          "historical_key": "augsburg",
-          "auto_matched": false
-        }
-      },
-      "status": "UNSUPPORTED_COMPETITION",
-      "reason": "This competition is not mapped to the historical dataset and the teams do not have enough exact-match history for a safe global estimate.",
-      "team_name_match_suggestions": {}
-    },
-    {
-      "fixture_id": 1638566,
-      "kickoff": "2026-10-27T18:00:00+01:00",
-      "kickoff_local": "2026-10-27T18:00:00+01:00",
-      "home_team": "Hamburger SV",
-      "away_team": "Eintracht Frankfurt",
-      "league": "DFB Pokal",
-      "league_id": 81,
-      "division_code": null,
-      "fixture_status": "NS",
-      "model": "experimental_recent_goals_poisson",
-      "model_validated": false,
-      "betting_recommendation": false,
-      "historical_matches": {
-        "home": 2,
-        "away": 2
-      },
-      "team_name_matches": {
-        "home": {
-          "fixture_name": "Hamburger SV",
-          "historical_key": "hamburgersv",
-          "auto_matched": false
-        },
-        "away": {
-          "fixture_name": "Eintracht Frankfurt",
-          "historical_key": "eintrachtfrankfurt",
-          "auto_matched": false
-        }
-      },
-      "status": "UNSUPPORTED_COMPETITION",
-      "reason": "This competition is not mapped to the historical dataset and the teams do not have enough exact-match history for a safe global estimate.",
-      "team_name_match_suggestions": {}
-    },
-    {
-      "fixture_id": 1638571,
-      "kickoff": "2026-10-27T18:00:00+01:00",
-      "kickoff_local": "2026-10-27T18:00:00+01:00",
-      "home_team": "Rot-Weiß Essen",
-      "away_team": "RB Leipzig",
-      "league": "DFB Pokal",
-      "league_id": 81,
-      "division_code": null,
-      "fixture_status": "NS",
-      "model": "experimental_recent_goals_poisson",
-      "model_validated": false,
-      "betting_recommendation": false,
-      "historical_matches": {
-        "home": 3,
-        "away": 10
-      },
-      "team_name_matches": {
-        "home": {
-          "fixture_name": "Rot-Weiß Essen",
-          "historical_key": "rotweissessen",
-          "auto_matched": false
-        },
-        "away": {
-          "fixture_name": "RB Leipzig",
-          "historical_key": "rbleipzig",
-          "auto_matched": false
-        }
-      },
-      "status": "UNSUPPORTED_COMPETITION",
-      "reason": "This competition is not mapped to the historical dataset and the teams do not have enough exact-match history for a safe global estimate.",
-      "team_name_match_suggestions": {}
-    },
-    {
-      "fixture_id": 1638653,
-      "kickoff": "2026-10-27T18:00:00+01:00",
-      "kickoff_local": "2026-10-27T18:00:00+01:00",
-      "home_team": "Austria Vienna",
-      "away_team": "TSV Hartberg",
-      "league": "Cup",
-      "league_id": 220,
-      "division_code": null,
-      "fixture_status": "NS",
-      "model": "experimental_recent_goals_poisson",
-      "model_validated": false,
-      "betting_recommendation": false,
-      "historical_matches": {
-        "home": 10,
-        "away": 2
-      },
-      "team_name_matches": {
-        "home": {
-          "fixture_name": "Austria Vienna",
-          "historical_key": "austriavienna",
-          "auto_matched": false
-        },
-        "away": {
-          "fixture_name": "TSV Hartberg",
-          "historical_key": "tsvhartberg",
-          "auto_matched": false
-        }
-      },
-      "status": "UNSUPPORTED_COMPETITION",
-      "reason": "This competition is not mapped to the historical dataset and the teams do not have enough exact-match history for a safe global estimate.",
-      "team_name_match_suggestions": {}
-    },
-    {
-      "fixture_id": 1638655,
-      "kickoff": "2026-10-27T18:00:00+01:00",
-      "kickoff_local": "2026-10-27T18:00:00+01:00",
-      "home_team": "First Vienna",
-      "away_team": "Rapid Vienna",
-      "league": "Cup",
-      "league_id": 220,
-      "division_code": null,
-      "fixture_status": "NS",
-      "model": "experimental_recent_goals_poisson",
-      "model_validated": false,
-      "betting_recommendation": false,
-      "historical_matches": {
-        "home": 2,
-        "away": 0
-      },
-      "team_name_matches": {
-        "home": {
-          "fixture_name": "First Vienna",
-          "historical_key": "firstvienna",
-          "auto_matched": false
-        },
-        "away": {
-          "fixture_name": "Rapid Vienna",
-          "historical_key": "rapidvienna",
-          "auto_matched": false
-        }
-      },
-      "status": "UNSUPPORTED_COMPETITION",
-      "reason": "This competition is not mapped to the historical dataset and the teams do not have enough exact-match history for a safe global estimate.",
-      "team_name_match_suggestions": {}
-    },
-    {
-      "fixture_id": 1638841,
-      "kickoff": "2026-10-27T18:00:00+01:00",
-      "kickoff_local": "2026-10-27T18:00:00+01:00",
-      "home_team": "AZ U19",
-      "away_team": "Goztepe U19",
-      "league": "UEFA Youth League",
-      "league_id": 14,
-      "division_code": null,
-      "fixture_status": "NS",
-      "model": "experimental_recent_goals_poisson",
-      "model_validated": false,
-      "betting_recommendation": false,
-      "historical_matches": {
-        "home": 0,
-        "away": 2
-      },
-      "team_name_matches": {
-        "home": {
-          "fixture_name": "AZ U19",
-          "historical_key": "azu19",
-          "auto_matched": false
-        },
-        "away": {
-          "fixture_name": "Goztepe U19",
-          "historical_key": "goztepeu19",
-          "auto_matched": false
-        }
-      },
-      "status": "UNSUPPORTED_COMPETITION",
-      "reason": "This competition is not mapped to the historical dataset and the teams do not have enough exact-match history for a safe global estimate.",
-      "team_name_match_suggestions": {}
-    },
-    {
-      "fixture_id": 1645388,
-      "kickoff": "2026-10-27T18:00:00+01:00",
-      "kickoff_local": "2026-10-27T18:00:00+01:00",
-      "home_team": "Laktaši",
-      "away_team": "Zrinjski",
-      "league": "Cup",
-      "league_id": 314,
-      "division_code": null,
-      "fixture_status": "NS",
-      "model": "experimental_recent_goals_poisson",
-      "model_validated": false,
-      "betting_recommendation": false,
-      "historical_matches": {
-        "home": 3,
-        "away": 2
-      },
-      "team_name_matches": {
-        "home": {
-          "fixture_name": "Laktaši",
-          "historical_key": "laktasi",
-          "auto_matched": false
-        },
-        "away": {
-          "fixture_name": "Zrinjski",
-          "historical_key": "zrinjski",
-          "auto_matched": false
-        }
-      },
-      "status": "UNSUPPORTED_COMPETITION",
-      "reason": "This competition is not mapped to the historical dataset and the teams do not have enough exact-match history for a safe global estimate.",
-      "team_name_match_suggestions": {}
-    },
-    {
-      "fixture_id": 1645604,
-      "kickoff": "2026-10-27T18:00:00+01:00",
-      "kickoff_local": "2026-10-27T18:00:00+01:00",
-      "home_team": "Al Riffa",
-      "away_team": "Qatar SC",
-      "league": "AGCFF Gulf Champions League",
-      "league_id": 1162,
-      "division_code": null,
-      "fixture_status": "NS",
-      "model": "experimental_recent_goals_poisson",
-      "model_validated": false,
-      "betting_recommendation": false,
-      "historical_matches": {
-        "home": 3,
-        "away": 3
-      },
-      "team_name_matches": {
-        "home": {
-          "fixture_name": "Al Riffa",
-          "historical_key": "alriffa",
-          "auto_matched": false
-        },
-        "away": {
-          "fixture_name": "Qatar SC",
-          "historical_key": "qatar",
-          "auto_matched": false
-        }
-      },
-      "status": "UNSUPPORTED_COMPETITION",
-      "reason": "This competition is not mapped to the historical dataset and the teams do not have enough exact-match history for a safe global estimate.",
-      "team_name_match_suggestions": {}
-    },
-    {
-      "fixture_id": 1646946,
-      "kickoff": "2026-10-27T18:00:00+01:00",
-      "kickoff_local": "2026-10-27T18:00:00+01:00",
-      "home_team": "Kaizer Chiefs",
-      "away_team": "TS Galaxy",
-      "league": "League Cup",
-      "league_id": 508,
-      "division_code": null,
-      "fixture_status": "NS",
-      "model": "experimental_recent_goals_poisson",
-      "model_validated": false,
-      "betting_recommendation": false,
-      "historical_matches": {
-        "home": 3,
-        "away": 1
-      },
-      "team_name_matches": {
-        "home": {
-          "fixture_name": "Kaizer Chiefs",
-          "historical_key": "kaizerchiefs",
-          "auto_matched": false
-        },
-        "away": {
-          "fixture_name": "TS Galaxy",
-          "historical_key": "tsgalaxy",
-          "auto_matched": false
-        }
-      },
-      "status": "UNSUPPORTED_COMPETITION",
-      "reason": "This competition is not mapped to the historical dataset and the teams do not have enough exact-match history for a safe global estimate.",
-      "team_name_match_suggestions": {}
-    },
-    {
-      "fixture_id": 1646947,
-      "kickoff": "2026-10-27T18:00:00+01:00",
-      "kickoff_local": "2026-10-27T18:00:00+01:00",
-      "home_team": "Mamelodi Sundowns",
-      "away_team": "Marumo Gallants",
-      "league": "League Cup",
-      "league_id": 508,
-      "division_code": null,
-      "fixture_status": "NS",
-      "model": "experimental_recent_goals_poisson",
-      "model_validated": false,
-      "betting_recommendation": false,
-      "historical_matches": {
-        "home": 3,
-        "away": 1
-      },
-      "team_name_matches": {
-        "home": {
-          "fixture_name": "Mamelodi Sundowns",
-          "historical_key": "mamelodisundowns",
-          "auto_matched": false
-        },
-        "away": {
-          "fixture_name": "Marumo Gallants",
-          "historical_key": "marumogallants",
-          "auto_matched": false
-        }
-      },
-      "status": "UNSUPPORTED_COMPETITION",
-      "reason": "This competition is not mapped to the historical dataset and the teams do not have enough exact-match history for a safe global estimate.",
-      "team_name_match_suggestions": {}
-    },
-    {
-      "fixture_id": 1646948,
-      "kickoff": "2026-10-27T18:00:00+01:00",
-      "kickoff_local": "2026-10-27T18:00:00+01:00",
-      "home_team": "Orlando Pirates",
-      "away_team": "Milford FC",
-      "league": "League Cup",
-      "league_id": 508,
-      "division_code": null,
-      "fixture_status": "NS",
-      "model": "experimental_recent_goals_poisson",
-      "model_validated": false,
-      "betting_recommendation": false,
-      "historical_matches": {
-        "home": 3,
-        "away": 1
-      },
-      "team_name_matches": {
-        "home": {
-          "fixture_name": "Orlando Pirates",
-          "historical_key": "orlandopirates",
-          "auto_matched": false
-        },
-        "away": {
-          "fixture_name": "Milford FC",
-          "historical_key": "milford",
-          "auto_matched": false
-        }
-      },
-      "status": "UNSUPPORTED_COMPETITION",
-      "reason": "This competition is not mapped to the historical dataset and the teams do not have enough exact-match history for a safe global estimate.",
-      "team_name_match_suggestions": {}
-    },
-    {
-      "fixture_id": 1550174,
-      "kickoff": "2026-10-27T18:30:00+01:00",
-      "kickoff_local": "2026-10-27T18:30:00+01:00",
-      "home_team": "Sassuolo",
-      "away_team": "Lazio",
-      "league": "Serie A",
-      "league_id": 135,
-      "division_code": "I1",
-      "fixture_status": "NS",
-      "model": "experimental_elo_by_competition",
-      "model_validated": false,
-      "betting_recommendation": false,
-      "historical_matches": {
-        "home": 10,
-        "away": 10
-      },
-      "team_name_matches": {
-        "home": {
-          "fixture_name": "Sassuolo",
-          "historical_key": "sassuolo",
-          "auto_matched": false
-        },
-        "away": {
-          "fixture_name": "Lazio",
-          "historical_key": "lazio",
-          "auto_matched": false
-        }
-      },
-      "status": "EXPERIMENTAL_ONLY",
-      "probabilities": {
-        "home_win": 0.2607,
-        "draw": 0.2621,
-        "away_win": 0.4772
-      },
-      "elo_history": {
-        "scope": "COMPETITION",
-        "division_code": "I1",
-        "home_prior_matches": 215,
-        "away_prior_matches": 254
-      },
-      "expected_goals": {
-        "home": 1.166,
-        "away": 1.45
-      },
-      "rest_congestion_context": {
-        "home": {
-          "days_since_last_match": 3,
-          "matches_in_previous_14_days": 2
-        },
-        "away": {
-          "days_since_last_match": 3,
-          "matches_in_previous_14_days": 2
-        }
-      },
-      "advanced_model_alternative": {
-        "model": "experimental_recency_weighted_dixon_coles",
-        "model_validated": false,
-        "rho": -0.05,
-        "expected_goals": {
-          "home": 1.137,
-          "away": 1.513
-        },
-        "probabilities": {
-          "H": 0.2791,
-          "D": 0.2677,
-          "A": 0.4531
-        },
-        "status": "RESEARCH_ONLY_NOT_PRIMARY"
-      },
-      "data_availability": {
-        "historical_goals_for_against": "AVAILABLE",
-        "competition_elo": "AVAILABLE",
-        "true_expected_goals_xg": "UNAVAILABLE_FROM_CURRENT_HISTORICAL_FEED",
-        "confirmed_lineups_injuries_suspensions": "NOT_CONNECTED",
-        "rest_and_fixture_congestion": "CONTEXT_ONLY_NOT_USED_IN_PROBABILITIES",
-        "live_bookmaker_odds": "UNAVAILABLE_ON_CURRENT_HIGHLIGHTLY_PLAN"
-      },
-      "goal_markets_model": "experimental_recent_goals_poisson",
-      "scoreline_model": "experimental_recent_goals_poisson",
-      "btts_yes": 0.5269,
-      "over_2_5": 0.4856,
-      "most_likely_scorelines": [
-        {
-          "home_goals": 1,
-          "away_goals": 1,
-          "probability": 0.12356833290520762
-        },
-        {
-          "home_goals": 0,
-          "away_goals": 1,
-          "probability": 0.1059928837049824
-        },
-        {
-          "home_goals": 1,
-          "away_goals": 2,
-          "probability": 0.08961283963479155
-        }
-      ],
-      "poisson_model": "experimental_recent_goals_poisson",
-      "poisson_probabilities": {
-        "home_win": 0.3038,
-        "draw": 0.2598,
-        "away_win": 0.4364
-      },
-      "limitations": [
-        "Not validated for betting.",
-        "Historical dataset coverage and team-name matching may be incomplete.",
-        "The recent-goals Poisson model underperforms the historical market benchmark.",
-        "Competition-specific Elo is selected as primary only when the fixture maps to a supported historical division and has sufficient team history.",
-        "Expected goals and totals remain auxiliary Poisson estimates when Elo is primary.",
-        "Elo and Poisson paper results are tracked separately; neither is approved for betting."
-      ]
-    },
-    {
-      "fixture_id": 1551124,
-      "kickoff": "2026-10-27T18:30:00+01:00",
-      "kickoff_local": "2026-10-27T18:30:00+01:00",
-      "home_team": "Arda Kardzhali",
-      "away_team": "Levski Sofia",
-      "league": "First League",
-      "league_id": 172,
-      "division_code": null,
-      "fixture_status": "NS",
-      "model": "experimental_recent_goals_poisson",
-      "model_validated": false,
-      "betting_recommendation": false,
-      "historical_matches": {
-        "home": 2,
-        "away": 3
-      },
-      "team_name_matches": {
-        "home": {
-          "fixture_name": "Arda Kardzhali",
-          "historical_key": "ardakardzhali",
-          "auto_matched": false
-        },
-        "away": {
-          "fixture_name": "Levski Sofia",
-          "historical_key": "levskisofia",
-          "auto_matched": false
-        }
-      },
-      "status": "UNSUPPORTED_COMPETITION",
-      "reason": "This competition is not mapped to the historical dataset and the teams do not have enough exact-match history for a safe global estimate.",
-      "team_name_match_suggestions": {}
-    },
-    {
-      "fixture_id": 1563671,
-      "kickoff": "2026-10-27T18:30:00+01:00",
-      "kickoff_local": "2026-10-27T18:30:00+01:00",
-      "home_team": "FC Krasnodar",
-      "away_team": "Dynamo",
-      "league": "Cup",
-      "league_id": 237,
-      "division_code": null,
-      "fixture_status": "NS",
-      "model": "experimental_recent_goals_poisson",
-      "model_validated": false,
-      "betting_recommendation": false,
-      "historical_matches": {
-        "home": 10,
-        "away": 2
-      },
-      "team_name_matches": {
-        "home": {
-          "fixture_name": "FC Krasnodar",
-          "historical_key": "krasnodar",
-          "auto_matched": false
-        },
-        "away": {
-          "fixture_name": "Dynamo",
-          "historical_key": "dynamos",
-          "auto_matched": true
-        }
-      },
-      "status": "UNSUPPORTED_COMPETITION",
-      "reason": "This competition is not mapped to the historical dataset and the teams do not have enough exact-match history for a safe global estimate.",
-      "team_name_match_suggestions": {}
-    },
-    {
-      "fixture_id": 1638657,
-      "kickoff": "2026-10-27T18:30:00+01:00",
-      "kickoff_local": "2026-10-27T18:30:00+01:00",
-      "home_team": "WSPG Wels",
-      "away_team": "Wolfsberger AC",
-      "league": "Cup",
-      "league_id": 220,
-      "division_code": null,
-      "fixture_status": "NS",
-      "model": "experimental_recent_goals_poisson",
-      "model_validated": false,
-      "betting_recommendation": false,
-      "historical_matches": {
-        "home": 2,
-        "away": 10
-      },
-      "team_name_matches": {
-        "home": {
-          "fixture_name": "WSPG Wels",
-          "historical_key": "wspgwels",
-          "auto_matched": false
-        },
-        "away": {
-          "fixture_name": "Wolfsberger AC",
-          "historical_key": "wolfsberger",
-          "auto_matched": false
-        }
-      },
-      "status": "UNSUPPORTED_COMPETITION",
-      "reason": "This competition is not mapped to the historical dataset and the teams do not have enough exact-match history for a safe global estimate.",
-      "team_name_match_suggestions": {}
-    },
-    {
-      "fixture_id": 1644352,
-      "kickoff": "2026-10-27T18:30:00+01:00",
-      "kickoff_local": "2026-10-27T18:30:00+01:00",
-      "home_team": "Cuarte",
-      "away_team": "Girona",
-      "league": "Copa del Rey",
-      "league_id": 143,
-      "division_code": null,
-      "fixture_status": "NS",
-      "model": "experimental_recent_goals_poisson",
-      "model_validated": false,
-      "betting_recommendation": false,
-      "historical_matches": {
-        "home": 0,
-        "away": 10
-      },
-      "team_name_matches": {
-        "home": {
-          "fixture_name": "Cuarte",
-          "historical_key": "cuarte",
-          "auto_matched": false
-        },
-        "away": {
-          "fixture_name": "Girona",
-          "historical_key": "girona",
-          "auto_matched": false
-        }
-      },
-      "status": "UNSUPPORTED_COMPETITION",
-      "reason": "This competition is not mapped to the historical dataset and the teams do not have enough exact-match history for a safe global estimate.",
-      "team_name_match_suggestions": {}
-    },
-    {
-      "fixture_id": 1645418,
-      "kickoff": "2026-10-27T18:30:00+01:00",
-      "kickoff_local": "2026-10-27T18:30:00+01:00",
-      "home_team": "Alanyaspor",
-      "away_team": "12 Bingölspor",
-      "league": "Türkiye Kupası",
-      "league_id": 206,
-      "division_code": null,
-      "fixture_status": "NS",
-      "model": "experimental_recent_goals_poisson",
-      "model_validated": false,
-      "betting_recommendation": false,
-      "historical_matches": {
-        "home": 10,
-        "away": 2
-      },
-      "team_name_matches": {
-        "home": {
-          "fixture_name": "Alanyaspor",
-          "historical_key": "alanyaspor",
-          "auto_matched": false
-        },
-        "away": {
-          "fixture_name": "12 Bingölspor",
-          "historical_key": "12bingolspor",
-          "auto_matched": false
-        }
-      },
-      "status": "UNSUPPORTED_COMPETITION",
-      "reason": "This competition is not mapped to the historical dataset and the teams do not have enough exact-match history for a safe global estimate.",
-      "team_name_match_suggestions": {}
-    },
     {
       "fixture_id": 1641969,
       "kickoff": "2026-10-27T18:45:00+01:00",
@@ -2176,9 +145,9 @@
       "team_name_match_suggestions": {},
       "market_model": "api_sports_bookmaker_consensus",
       "market_probabilities": {
-        "home_win": 0.285799,
-        "draw": 0.253555,
-        "away_win": 0.460646
+        "home_win": 0.276465,
+        "draw": 0.251185,
+        "away_win": 0.47235
       },
       "market_bookmakers_count": 10,
       "market_updated_at": null,
@@ -2218,9 +187,9 @@
       "team_name_match_suggestions": {},
       "market_model": "api_sports_bookmaker_consensus",
       "market_probabilities": {
-        "home_win": 0.473873,
-        "draw": 0.253455,
-        "away_win": 0.272672
+        "home_win": 0.467588,
+        "draw": 0.25036,
+        "away_win": 0.282052
       },
       "market_bookmakers_count": 10,
       "market_updated_at": null,
@@ -2455,24 +424,24 @@
       },
       "status": "EXPERIMENTAL_ONLY",
       "probabilities": {
-        "home_win": 0.3371,
-        "draw": 0.3177,
-        "away_win": 0.3452
+        "home_win": 0.3878,
+        "draw": 0.3176,
+        "away_win": 0.2946
       },
       "elo_history": {
         "scope": "COMPETITION",
         "division_code": "I2",
-        "home_prior_matches": 99,
-        "away_prior_matches": 118
+        "home_prior_matches": 104,
+        "away_prior_matches": 122
       },
       "expected_goals": {
-        "home": 1.804,
-        "away": 1.583
+        "home": 2.272,
+        "away": 1.362
       },
       "rest_congestion_context": {
         "home": {
           "days_since_last_match": 3,
-          "matches_in_previous_14_days": 2
+          "matches_in_previous_14_days": 3
         },
         "away": {
           "days_since_last_match": 3,
@@ -2484,13 +453,13 @@
         "model_validated": false,
         "rho": -0.05,
         "expected_goals": {
-          "home": 1.868,
-          "away": 1.655
+          "home": 2.267,
+          "away": 1.369
         },
         "probabilities": {
-          "H": 0.4286,
-          "D": 0.2299,
-          "A": 0.3415
+          "H": 0.5728,
+          "D": 0.2065,
+          "A": 0.2207
         },
         "status": "RESEARCH_ONLY_NOT_PRIMARY"
       },
@@ -2504,30 +473,30 @@
       },
       "goal_markets_model": "experimental_recent_goals_poisson",
       "scoreline_model": "experimental_recent_goals_poisson",
-      "btts_yes": 0.6639,
-      "over_2_5": 0.6578,
+      "btts_yes": 0.6673,
+      "over_2_5": 0.7033,
       "most_likely_scorelines": [
-        {
-          "home_goals": 1,
-          "away_goals": 1,
-          "probability": 0.09654616658896846
-        },
         {
           "home_goals": 2,
           "away_goals": 1,
-          "probability": 0.08707361540433932
+          "probability": 0.09282906875613472
         },
         {
           "home_goals": 1,
-          "away_goals": 2,
-          "probability": 0.07643778881024331
+          "away_goals": 1,
+          "probability": 0.08171717210825505
+        },
+        {
+          "home_goals": 3,
+          "away_goals": 1,
+          "probability": 0.07030130700652476
         }
       ],
       "poisson_model": "experimental_recent_goals_poisson",
       "poisson_probabilities": {
-        "home_win": 0.433,
-        "draw": 0.2256,
-        "away_win": 0.3414
+        "home_win": 0.5793,
+        "draw": 0.1979,
+        "away_win": 0.2228
       },
       "limitations": [
         "Not validated for betting.",
@@ -3262,19 +1231,19 @@
       },
       "status": "EXPERIMENTAL_ONLY",
       "probabilities": {
-        "home_win": 0.4429,
-        "draw": 0.3177,
-        "away_win": 0.2394
+        "home_win": 0.4595,
+        "draw": 0.3176,
+        "away_win": 0.2229
       },
       "elo_history": {
         "scope": "COMPETITION",
         "division_code": "I2",
-        "home_prior_matches": 175,
-        "away_prior_matches": 118
+        "home_prior_matches": 179,
+        "away_prior_matches": 122
       },
       "expected_goals": {
-        "home": 0.822,
-        "away": 0.797
+        "home": 1.87,
+        "away": 0.718
       },
       "rest_congestion_context": {
         "home": {
@@ -3291,13 +1260,13 @@
         "model_validated": false,
         "rho": -0.05,
         "expected_goals": {
-          "home": 0.873,
-          "away": 0.815
+          "home": 1.921,
+          "away": 0.745
         },
         "probabilities": {
-          "H": 0.3389,
-          "D": 0.3549,
-          "A": 0.3062
+          "H": 0.6469,
+          "D": 0.2207,
+          "A": 0.1323
         },
         "status": "RESEARCH_ONLY_NOT_PRIMARY"
       },
@@ -3311,30 +1280,30 @@
       },
       "goal_markets_model": "experimental_recent_goals_poisson",
       "scoreline_model": "experimental_recent_goals_poisson",
-      "btts_yes": 0.3079,
-      "over_2_5": 0.2216,
+      "btts_yes": 0.4331,
+      "over_2_5": 0.4784,
       "most_likely_scorelines": [
-        {
-          "home_goals": 0,
-          "away_goals": 0,
-          "probability": 0.19809069016083292
-        },
         {
           "home_goals": 1,
           "away_goals": 0,
-          "probability": 0.16278595214159974
+          "probability": 0.1406468243612502
         },
         {
-          "home_goals": 0,
+          "home_goals": 2,
+          "away_goals": 0,
+          "probability": 0.1314810860266839
+        },
+        {
+          "home_goals": 1,
           "away_goals": 1,
-          "probability": 0.15792888174388592
+          "probability": 0.1009279632188163
         }
       ],
       "poisson_model": "experimental_recent_goals_poisson",
       "poisson_probabilities": {
-        "home_win": 0.3316,
-        "draw": 0.3507,
-        "away_win": 0.3176
+        "home_win": 0.648,
+        "draw": 0.2155,
+        "away_win": 0.1365
       },
       "limitations": [
         "Not validated for betting.",
@@ -3376,19 +1345,19 @@
       },
       "status": "EXPERIMENTAL_ONLY",
       "probabilities": {
-        "home_win": 0.3691,
-        "draw": 0.3177,
-        "away_win": 0.3132
+        "home_win": 0.3949,
+        "draw": 0.3176,
+        "away_win": 0.2875
       },
       "elo_history": {
         "scope": "COMPETITION",
         "division_code": "I2",
-        "home_prior_matches": 80,
-        "away_prior_matches": 99
+        "home_prior_matches": 84,
+        "away_prior_matches": 104
       },
       "expected_goals": {
-        "home": 1.424,
-        "away": 0.961
+        "home": 1.615,
+        "away": 1.531
       },
       "rest_congestion_context": {
         "home": {
@@ -3397,7 +1366,7 @@
         },
         "away": {
           "days_since_last_match": 4,
-          "matches_in_previous_14_days": 2
+          "matches_in_previous_14_days": 3
         }
       },
       "advanced_model_alternative": {
@@ -3405,13 +1374,13 @@
         "model_validated": false,
         "rho": -0.05,
         "expected_goals": {
-          "home": 1.473,
-          "away": 1.052
+          "home": 1.511,
+          "away": 1.409
         },
         "probabilities": {
-          "H": 0.4622,
-          "D": 0.2737,
-          "A": 0.2641
+          "H": 0.3937,
+          "D": 0.2579,
+          "A": 0.3484
         },
         "status": "RESEARCH_ONLY_NOT_PRIMARY"
       },
@@ -3425,30 +1394,30 @@
       },
       "goal_markets_model": "experimental_recent_goals_poisson",
       "scoreline_model": "experimental_recent_goals_poisson",
-      "btts_yes": 0.4688,
-      "over_2_5": 0.4263,
+      "btts_yes": 0.6277,
+      "over_2_5": 0.6086,
       "most_likely_scorelines": [
         {
           "home_goals": 1,
-          "away_goals": 0,
-          "probability": 0.13112893333789236
-        },
-        {
-          "home_goals": 1,
           "away_goals": 1,
-          "probability": 0.1260351244085921
+          "probability": 0.10640210171998694
         },
         {
           "home_goals": 2,
-          "away_goals": 0,
-          "probability": 0.09333953563933411
+          "away_goals": 1,
+          "probability": 0.08590530560966995
+        },
+        {
+          "home_goals": 1,
+          "away_goals": 2,
+          "probability": 0.08143378660936028
         }
       ],
       "poisson_model": "experimental_recent_goals_poisson",
       "poisson_probabilities": {
-        "home_win": 0.4772,
-        "draw": 0.2684,
-        "away_win": 0.2544
+        "home_win": 0.3999,
+        "draw": 0.2363,
+        "away_win": 0.3637
       },
       "limitations": [
         "Not validated for betting.",
@@ -3490,19 +1459,19 @@
       },
       "status": "EXPERIMENTAL_ONLY",
       "probabilities": {
-        "home_win": 0.3235,
-        "draw": 0.3177,
-        "away_win": 0.3587
+        "home_win": 0.3356,
+        "draw": 0.3176,
+        "away_win": 0.3468
       },
       "elo_history": {
         "scope": "COMPETITION",
         "division_code": "I2",
-        "home_prior_matches": 99,
-        "away_prior_matches": 42
+        "home_prior_matches": 103,
+        "away_prior_matches": 46
       },
       "expected_goals": {
-        "home": 1.017,
-        "away": 0.885
+        "home": 1.222,
+        "away": 1.065
       },
       "rest_congestion_context": {
         "home": {
@@ -3519,13 +1488,13 @@
         "model_validated": false,
         "rho": -0.05,
         "expected_goals": {
-          "home": 0.969,
-          "away": 0.922
+          "home": 1.177,
+          "away": 1.078
         },
         "probabilities": {
-          "H": 0.3464,
-          "D": 0.3325,
-          "A": 0.3211
+          "H": 0.3747,
+          "D": 0.2999,
+          "A": 0.3254
         },
         "status": "RESEARCH_ONLY_NOT_PRIMARY"
       },
@@ -3539,30 +1508,30 @@
       },
       "goal_markets_model": "experimental_recent_goals_poisson",
       "scoreline_model": "experimental_recent_goals_poisson",
-      "btts_yes": 0.3751,
-      "over_2_5": 0.297,
+      "btts_yes": 0.4623,
+      "over_2_5": 0.4006,
       "most_likely_scorelines": [
         {
           "home_goals": 1,
-          "away_goals": 0,
-          "probability": 0.1517420821102226
-        },
-        {
-          "home_goals": 0,
-          "away_goals": 0,
-          "probability": 0.14914997226883225
+          "away_goals": 1,
+          "probability": 0.1321864370800351
         },
         {
           "home_goals": 1,
+          "away_goals": 0,
+          "probability": 0.12406110421578022
+        },
+        {
+          "home_goals": 0,
           "away_goals": 1,
-          "probability": 0.13435604129894904
+          "probability": 0.10818423872706207
         }
       ],
       "poisson_model": "experimental_recent_goals_poisson",
       "poisson_probabilities": {
-        "home_win": 0.3768,
-        "draw": 0.317,
-        "away_win": 0.3063
+        "home_win": 0.3969,
+        "draw": 0.2835,
+        "away_win": 0.3196
       },
       "limitations": [
         "Not validated for betting.",
@@ -3637,19 +1606,19 @@
       },
       "status": "EXPERIMENTAL_ONLY",
       "probabilities": {
-        "home_win": 0.3647,
-        "draw": 0.3177,
-        "away_win": 0.3176
+        "home_win": 0.3868,
+        "draw": 0.3176,
+        "away_win": 0.2956
       },
       "elo_history": {
         "scope": "COMPETITION",
         "division_code": "I2",
-        "home_prior_matches": 80,
-        "away_prior_matches": 176
+        "home_prior_matches": 84,
+        "away_prior_matches": 180
       },
       "expected_goals": {
-        "home": 1.687,
-        "away": 0.929
+        "home": 1.582,
+        "away": 1.068
       },
       "rest_congestion_context": {
         "home": {
@@ -3666,13 +1635,13 @@
         "model_validated": false,
         "rho": -0.05,
         "expected_goals": {
-          "home": 1.685,
-          "away": 0.987
+          "home": 1.567,
+          "away": 1.088
         },
         "probabilities": {
-          "H": 0.5316,
-          "D": 0.2532,
-          "A": 0.2152
+          "H": 0.4781,
+          "D": 0.264,
+          "A": 0.2579
         },
         "status": "RESEARCH_ONLY_NOT_PRIMARY"
       },
@@ -3686,30 +1655,30 @@
       },
       "goal_markets_model": "experimental_recent_goals_poisson",
       "scoreline_model": "experimental_recent_goals_poisson",
-      "btts_yes": 0.4932,
-      "over_2_5": 0.4856,
+      "btts_yes": 0.5213,
+      "over_2_5": 0.4939,
       "most_likely_scorelines": [
         {
           "home_goals": 1,
-          "away_goals": 0,
-          "probability": 0.12326752293168142
+          "away_goals": 1,
+          "probability": 0.11938949325551182
         },
         {
           "home_goals": 1,
-          "away_goals": 1,
-          "probability": 0.11457601004385262
+          "away_goals": 0,
+          "probability": 0.1117981958184166
         },
         {
           "home_goals": 2,
-          "away_goals": 0,
-          "probability": 0.10395488586737595
+          "away_goals": 1,
+          "probability": 0.09441241176563489
         }
       ],
       "poisson_model": "experimental_recent_goals_poisson",
       "poisson_probabilities": {
-        "home_win": 0.5521,
-        "draw": 0.2412,
-        "away_win": 0.2067
+        "home_win": 0.4925,
+        "draw": 0.251,
+        "away_win": 0.2564
       },
       "limitations": [
         "Not validated for betting.",
@@ -3751,19 +1720,19 @@
       },
       "status": "EXPERIMENTAL_ONLY",
       "probabilities": {
-        "home_win": 0.4277,
-        "draw": 0.3177,
-        "away_win": 0.2546
+        "home_win": 0.3888,
+        "draw": 0.3176,
+        "away_win": 0.2936
       },
       "elo_history": {
         "scope": "COMPETITION",
         "division_code": "I2",
-        "home_prior_matches": 42,
-        "away_prior_matches": 156
+        "home_prior_matches": 46,
+        "away_prior_matches": 160
       },
       "expected_goals": {
-        "home": 1.631,
-        "away": 0.627
+        "home": 1.11,
+        "away": 1.111
       },
       "rest_congestion_context": {
         "home": {
@@ -3780,13 +1749,13 @@
         "model_validated": false,
         "rho": -0.05,
         "expected_goals": {
-          "home": 1.616,
-          "away": 0.666
+          "home": 1.141,
+          "away": 1.225
         },
         "probabilities": {
-          "H": 0.5979,
-          "D": 0.2562,
-          "A": 0.1458
+          "H": 0.3336,
+          "D": 0.2918,
+          "A": 0.3746
         },
         "status": "RESEARCH_ONLY_NOT_PRIMARY"
       },
@@ -3800,30 +1769,30 @@
       },
       "goal_markets_model": "experimental_recent_goals_poisson",
       "scoreline_model": "experimental_recent_goals_poisson",
-      "btts_yes": 0.3747,
-      "over_2_5": 0.3928,
+      "btts_yes": 0.4499,
+      "over_2_5": 0.3831,
       "most_likely_scorelines": [
         {
           "home_goals": 1,
-          "away_goals": 0,
-          "probability": 0.17052271852932097
+          "away_goals": 1,
+          "probability": 0.13379352939560502
         },
         {
-          "home_goals": 2,
-          "away_goals": 0,
-          "probability": 0.1390777941939483
+          "home_goals": 0,
+          "away_goals": 1,
+          "probability": 0.12049346886335323
         },
         {
           "home_goals": 1,
-          "away_goals": 1,
-          "probability": 0.10691861993259824
+          "away_goals": 0,
+          "probability": 0.12038257305118231
         }
       ],
       "poisson_model": "experimental_recent_goals_poisson",
       "poisson_probabilities": {
-        "home_win": 0.6176,
-        "draw": 0.2421,
-        "away_win": 0.1403
+        "home_win": 0.3549,
+        "draw": 0.2896,
+        "away_win": 0.3555
       },
       "limitations": [
         "Not validated for betting.",
@@ -4162,19 +2131,19 @@
       },
       "status": "EXPERIMENTAL_ONLY",
       "probabilities": {
-        "home_win": 0.5053,
-        "draw": 0.202,
-        "away_win": 0.2927
+        "home_win": 0.3657,
+        "draw": 0.2112,
+        "away_win": 0.423
       },
       "elo_history": {
         "scope": "GLOBAL_FALLBACK",
         "division_code": null,
-        "home_prior_matches": 39,
+        "home_prior_matches": 44,
         "away_prior_matches": 70
       },
       "expected_goals": {
-        "home": 2.243,
-        "away": 1.691
+        "home": 1.846,
+        "away": 1.992
       },
       "rest_congestion_context": {
         "home": {
@@ -4191,13 +2160,13 @@
         "model_validated": false,
         "rho": -0.05,
         "expected_goals": {
-          "home": 2.144,
-          "away": 1.829
+          "home": 1.968,
+          "away": 1.972
         },
         "probabilities": {
-          "H": 0.4543,
-          "D": 0.2129,
-          "A": 0.3327
+          "H": 0.3911,
+          "D": 0.2163,
+          "A": 0.3927
         },
         "status": "RESEARCH_ONLY_NOT_PRIMARY"
       },
@@ -4211,30 +2180,30 @@
       },
       "goal_markets_model": "experimental_recent_goals_poisson",
       "scoreline_model": "experimental_recent_goals_poisson",
-      "btts_yes": 0.7291,
-      "over_2_5": 0.7521,
+      "btts_yes": 0.7272,
+      "over_2_5": 0.7372,
       "most_likely_scorelines": [
-        {
-          "home_goals": 2,
-          "away_goals": 1,
-          "probability": 0.08322044220409568
-        },
         {
           "home_goals": 1,
           "away_goals": 1,
-          "probability": 0.0741890979714015
+          "probability": 0.07919943126645852
+        },
+        {
+          "home_goals": 1,
+          "away_goals": 2,
+          "probability": 0.07887597655248488
         },
         {
           "home_goals": 2,
-          "away_goals": 2,
-          "probability": 0.07036427494761496
+          "away_goals": 1,
+          "probability": 0.07310370622608307
         }
       ],
       "elo_model": "experimental_elo_global_fallback",
       "elo_probabilities": {
-        "home_win": 0.5289,
-        "draw": 0.2615,
-        "away_win": 0.2096
+        "home_win": 0.5141,
+        "draw": 0.2614,
+        "away_win": 0.2245
       },
       "limitations": [
         "Not validated for betting.",
@@ -4573,8 +2542,8 @@
       },
       "status": "EXPERIMENTAL_ONLY",
       "probabilities": {
-        "home_win": 0.4196,
-        "draw": 0.2481,
+        "home_win": 0.4195,
+        "draw": 0.2482,
         "away_win": 0.3323
       },
       "elo_history": {
@@ -4603,11 +2572,11 @@
         "rho": -0.05,
         "expected_goals": {
           "home": 1.578,
-          "away": 1.318
+          "away": 1.317
         },
         "probabilities": {
           "H": 0.4294,
-          "D": 0.2571,
+          "D": 0.2572,
           "A": 0.3134
         },
         "status": "RESEARCH_ONLY_NOT_PRIMARY"
@@ -4622,29 +2591,29 @@
       },
       "goal_markets_model": "experimental_recent_goals_poisson",
       "scoreline_model": "experimental_recent_goals_poisson",
-      "btts_yes": 0.5774,
-      "over_2_5": 0.546,
+      "btts_yes": 0.5773,
+      "over_2_5": 0.5459,
       "most_likely_scorelines": [
         {
           "home_goals": 1,
           "away_goals": 1,
-          "probability": 0.116372312802399
+          "probability": 0.11639952892528953
         },
         {
           "home_goals": 2,
           "away_goals": 1,
-          "probability": 0.08903251093591329
+          "probability": 0.0890295952357437
         },
         {
           "home_goals": 1,
           "away_goals": 0,
-          "probability": 0.08714066454763952
+          "probability": 0.08718511292715976
         }
       ],
       "elo_model": "experimental_elo_global_fallback",
       "elo_probabilities": {
-        "home_win": 0.4258,
-        "draw": 0.2615,
+        "home_win": 0.4259,
+        "draw": 0.2614,
         "away_win": 0.3127
       },
       "limitations": [
@@ -4786,19 +2755,19 @@
       },
       "status": "EXPERIMENTAL_ONLY",
       "probabilities": {
-        "home_win": 0.6278,
-        "draw": 0.2621,
-        "away_win": 0.1101
+        "home_win": 0.6144,
+        "draw": 0.2625,
+        "away_win": 0.1231
       },
       "elo_history": {
         "scope": "COMPETITION",
         "division_code": "I1",
-        "home_prior_matches": 253,
-        "away_prior_matches": 215
+        "home_prior_matches": 257,
+        "away_prior_matches": 219
       },
       "expected_goals": {
-        "home": 2.599,
-        "away": 0.636
+        "home": 2.048,
+        "away": 1.179
       },
       "rest_congestion_context": {
         "home": {
@@ -4815,13 +2784,13 @@
         "model_validated": false,
         "rho": -0.05,
         "expected_goals": {
-          "home": 2.687,
-          "away": 0.657
+          "home": 2.252,
+          "away": 1.078
         },
         "probabilities": {
-          "H": 0.799,
-          "D": 0.1373,
-          "A": 0.0637
+          "H": 0.634,
+          "D": 0.2007,
+          "A": 0.1653
         },
         "status": "RESEARCH_ONLY_NOT_PRIMARY"
       },
@@ -4835,30 +2804,30 @@
       },
       "goal_markets_model": "experimental_recent_goals_poisson",
       "scoreline_model": "experimental_recent_goals_poisson",
-      "btts_yes": 0.4358,
-      "over_2_5": 0.6275,
+      "btts_yes": 0.603,
+      "over_2_5": 0.6256,
       "most_likely_scorelines": [
         {
           "home_goals": 2,
-          "away_goals": 0,
-          "probability": 0.13288264380154466
-        },
-        {
-          "home_goals": 3,
-          "away_goals": 0,
-          "probability": 0.11513546990683907
+          "away_goals": 1,
+          "probability": 0.09810886573447283
         },
         {
           "home_goals": 1,
+          "away_goals": 1,
+          "probability": 0.09582163759715193
+        },
+        {
+          "home_goals": 2,
           "away_goals": 0,
-          "probability": 0.10224359784160263
+          "probability": 0.08324586138907808
         }
       ],
       "poisson_model": "experimental_recent_goals_poisson",
       "poisson_probabilities": {
-        "home_win": 0.7946,
-        "draw": 0.1368,
-        "away_win": 0.0686
+        "home_win": 0.5742,
+        "draw": 0.2114,
+        "away_win": 0.2144
       },
       "limitations": [
         "Not validated for betting.",
@@ -4900,19 +2869,19 @@
       },
       "status": "EXPERIMENTAL_ONLY",
       "probabilities": {
-        "home_win": 0.257,
-        "draw": 0.2621,
-        "away_win": 0.4809
+        "home_win": 0.2704,
+        "draw": 0.2625,
+        "away_win": 0.4671
       },
       "elo_history": {
         "scope": "COMPETITION",
         "division_code": "I1",
-        "home_prior_matches": 254,
-        "away_prior_matches": 80
+        "home_prior_matches": 257,
+        "away_prior_matches": 84
       },
       "expected_goals": {
-        "home": 1.563,
-        "away": 2.189
+        "home": 1.557,
+        "away": 2.14
       },
       "rest_congestion_context": {
         "home": {
@@ -4929,13 +2898,13 @@
         "model_validated": false,
         "rho": -0.05,
         "expected_goals": {
-          "home": 1.698,
-          "away": 2.244
+          "home": 1.675,
+          "away": 2.179
         },
         "probabilities": {
-          "H": 0.2904,
-          "D": 0.2094,
-          "A": 0.5003
+          "H": 0.2954,
+          "D": 0.2131,
+          "A": 0.4915
         },
         "status": "RESEARCH_ONLY_NOT_PRIMARY"
       },
@@ -4949,30 +2918,30 @@
       },
       "goal_markets_model": "experimental_recent_goals_poisson",
       "scoreline_model": "experimental_recent_goals_poisson",
-      "btts_yes": 0.7018,
-      "over_2_5": 0.7231,
+      "btts_yes": 0.6965,
+      "over_2_5": 0.7141,
       "most_likely_scorelines": [
         {
           "home_goals": 1,
           "away_goals": 2,
-          "probability": 0.08790870185877812
+          "probability": 0.08839781320558027
         },
         {
           "home_goals": 1,
           "away_goals": 1,
-          "probability": 0.08032723223933651
+          "probability": 0.08261140946053366
         },
         {
           "home_goals": 2,
           "away_goals": 2,
-          "probability": 0.06867951923683148
+          "probability": 0.06883352827578075
         }
       ],
       "poisson_model": "experimental_recent_goals_poisson",
       "poisson_probabilities": {
-        "home_win": 0.2747,
-        "draw": 0.205,
-        "away_win": 0.5203
+        "home_win": 0.2809,
+        "draw": 0.2078,
+        "away_win": 0.5113
       },
       "limitations": [
         "Not validated for betting.",
@@ -5014,9 +2983,9 @@
       },
       "status": "EXPERIMENTAL_ONLY",
       "probabilities": {
-        "home_win": 0.4265,
-        "draw": 0.3288,
-        "away_win": 0.2447
+        "home_win": 0.3454,
+        "draw": 0.3475,
+        "away_win": 0.3071
       },
       "elo_history": {
         "scope": "COMPETITION",
@@ -5025,17 +2994,17 @@
         "away_prior_matches": 3
       },
       "expected_goals": {
-        "home": 1.036,
-        "away": 0.705
+        "home": 0.855,
+        "away": 0.787
       },
       "rest_congestion_context": {
         "home": {
           "days_since_last_match": 3,
-          "matches_in_previous_14_days": 2
+          "matches_in_previous_14_days": 4
         },
         "away": {
           "days_since_last_match": 3,
-          "matches_in_previous_14_days": 3
+          "matches_in_previous_14_days": 6
         }
       },
       "advanced_model_alternative": {
@@ -5043,13 +3012,13 @@
         "model_validated": false,
         "rho": -0.05,
         "expected_goals": {
-          "home": 1.073,
-          "away": 0.704
+          "home": 0.783,
+          "away": 0.807
         },
         "probabilities": {
-          "H": 0.4326,
-          "D": 0.3359,
-          "A": 0.2315
+          "H": 0.3092,
+          "D": 0.3676,
+          "A": 0.3232
         },
         "status": "RESEARCH_ONLY_NOT_PRIMARY"
       },
@@ -5063,23 +3032,23 @@
       },
       "goal_markets_model": "experimental_recent_goals_poisson",
       "scoreline_model": "experimental_recent_goals_poisson",
-      "btts_yes": 0.3264,
-      "over_2_5": 0.2536,
+      "btts_yes": 0.3131,
+      "over_2_5": 0.2275,
       "most_likely_scorelines": [
-        {
-          "home_goals": 1,
-          "away_goals": 0,
-          "probability": 0.18159069081513377
-        },
         {
           "home_goals": 0,
           "away_goals": 0,
-          "probability": 0.17534696324539872
+          "probability": 0.19361291247756648
         },
         {
           "home_goals": 1,
+          "away_goals": 0,
+          "probability": 0.16549343709951225
+        },
+        {
+          "home_goals": 0,
           "away_goals": 1,
-          "probability": 0.1280905822975468
+          "probability": 0.1523985215421801
         }
       ],
       "limitations": [
@@ -5188,28 +3157,28 @@
       },
       "status": "EXPERIMENTAL_ONLY",
       "probabilities": {
-        "home_win": 0.4761,
-        "draw": 0.2721,
-        "away_win": 0.2517
+        "home_win": 0.4755,
+        "draw": 0.2736,
+        "away_win": 0.2509
       },
       "elo_history": {
         "scope": "COMPETITION",
         "division_code": "E3",
-        "home_prior_matches": 53,
-        "away_prior_matches": 7
+        "home_prior_matches": 59,
+        "away_prior_matches": 13
       },
       "expected_goals": {
-        "home": 1.879,
-        "away": 1.531
+        "home": 1.686,
+        "away": 1.404
       },
       "rest_congestion_context": {
         "home": {
           "days_since_last_match": 3,
-          "matches_in_previous_14_days": 3
+          "matches_in_previous_14_days": 5
         },
         "away": {
           "days_since_last_match": 3,
-          "matches_in_previous_14_days": 3
+          "matches_in_previous_14_days": 4
         }
       },
       "advanced_model_alternative": {
@@ -5217,13 +3186,13 @@
         "model_validated": false,
         "rho": -0.05,
         "expected_goals": {
-          "home": 1.779,
-          "away": 1.548
+          "home": 1.561,
+          "away": 1.381
         },
         "probabilities": {
-          "H": 0.4296,
-          "D": 0.2375,
-          "A": 0.3329
+          "H": 0.4118,
+          "D": 0.256,
+          "A": 0.3322
         },
         "status": "RESEARCH_ONLY_NOT_PRIMARY"
       },
@@ -5237,30 +3206,30 @@
       },
       "goal_markets_model": "experimental_recent_goals_poisson",
       "scoreline_model": "experimental_recent_goals_poisson",
-      "btts_yes": 0.664,
-      "over_2_5": 0.6622,
+      "btts_yes": 0.6148,
+      "over_2_5": 0.5968,
       "most_likely_scorelines": [
         {
           "home_goals": 1,
           "away_goals": 1,
-          "probability": 0.09503954112179101
+          "probability": 0.10768041146769647
         },
         {
           "home_goals": 2,
           "away_goals": 1,
-          "probability": 0.08930233039393241
+          "probability": 0.09079847232027351
         },
         {
           "home_goals": 1,
-          "away_goals": 2,
-          "probability": 0.0727525426945697
+          "away_goals": 0,
+          "probability": 0.07667813568291285
         }
       ],
       "poisson_model": "experimental_recent_goals_poisson",
       "poisson_probabilities": {
-        "home_win": 0.4606,
-        "draw": 0.2227,
-        "away_win": 0.3167
+        "home_win": 0.4428,
+        "draw": 0.2364,
+        "away_win": 0.3208
       },
       "limitations": [
         "Not validated for betting.",
@@ -5302,19 +3271,19 @@
       },
       "status": "EXPERIMENTAL_ONLY",
       "probabilities": {
-        "home_win": 0.5058,
-        "draw": 0.2497,
-        "away_win": 0.2445
+        "home_win": 0.5128,
+        "draw": 0.2515,
+        "away_win": 0.2357
       },
       "elo_history": {
         "scope": "COMPETITION",
         "division_code": "E2",
-        "home_prior_matches": 7,
-        "away_prior_matches": 236
+        "home_prior_matches": 11,
+        "away_prior_matches": 241
       },
       "expected_goals": {
-        "home": 1.558,
-        "away": 0.88
+        "home": 1.245,
+        "away": 1.068
       },
       "rest_congestion_context": {
         "home": {
@@ -5323,7 +3292,7 @@
         },
         "away": {
           "days_since_last_match": 3,
-          "matches_in_previous_14_days": 3
+          "matches_in_previous_14_days": 4
         }
       },
       "advanced_model_alternative": {
@@ -5331,13 +3300,13 @@
         "model_validated": false,
         "rho": -0.05,
         "expected_goals": {
-          "home": 1.665,
-          "away": 0.885
+          "home": 1.353,
+          "away": 1.173
         },
         "probabilities": {
-          "H": 0.5523,
-          "D": 0.2546,
-          "A": 0.193
+          "H": 0.4028,
+          "D": 0.2797,
+          "A": 0.3174
         },
         "status": "RESEARCH_ONLY_NOT_PRIMARY"
       },
@@ -5351,30 +3320,30 @@
       },
       "goal_markets_model": "experimental_recent_goals_poisson",
       "scoreline_model": "experimental_recent_goals_poisson",
-      "btts_yes": 0.4619,
-      "over_2_5": 0.4401,
+      "btts_yes": 0.4674,
+      "over_2_5": 0.4075,
       "most_likely_scorelines": [
         {
           "home_goals": 1,
-          "away_goals": 0,
-          "probability": 0.13609242548375225
+          "away_goals": 1,
+          "probability": 0.13158392290537374
         },
         {
           "home_goals": 1,
-          "away_goals": 1,
-          "probability": 0.11975399872851612
+          "away_goals": 0,
+          "probability": 0.12316396856993278
         },
         {
-          "home_goals": 2,
-          "away_goals": 0,
-          "probability": 0.10599279426479791
+          "home_goals": 0,
+          "away_goals": 1,
+          "probability": 0.10568537521892159
         }
       ],
       "poisson_model": "experimental_recent_goals_poisson",
       "poisson_probabilities": {
-        "home_win": 0.5325,
-        "draw": 0.255,
-        "away_win": 0.2125
+        "home_win": 0.4028,
+        "draw": 0.2813,
+        "away_win": 0.3159
       },
       "limitations": [
         "Not validated for betting.",
@@ -5416,19 +3385,19 @@
       },
       "status": "EXPERIMENTAL_ONLY",
       "probabilities": {
-        "home_win": 0.4602,
-        "draw": 0.2497,
-        "away_win": 0.2901
+        "home_win": 0.4633,
+        "draw": 0.2515,
+        "away_win": 0.2852
       },
       "elo_history": {
         "scope": "COMPETITION",
         "division_code": "E2",
-        "home_prior_matches": 157,
-        "away_prior_matches": 7
+        "home_prior_matches": 161,
+        "away_prior_matches": 13
       },
       "expected_goals": {
-        "home": 2.002,
-        "away": 0.692
+        "home": 1.222,
+        "away": 1.155
       },
       "rest_congestion_context": {
         "home": {
@@ -5437,7 +3406,7 @@
         },
         "away": {
           "days_since_last_match": 3,
-          "matches_in_previous_14_days": 3
+          "matches_in_previous_14_days": 5
         }
       },
       "advanced_model_alternative": {
@@ -5445,13 +3414,13 @@
         "model_validated": false,
         "rho": -0.05,
         "expected_goals": {
-          "home": 1.989,
-          "away": 0.712
+          "home": 1.245,
+          "away": 1.137
         },
         "probabilities": {
-          "H": 0.6695,
-          "D": 0.2112,
-          "A": 0.1193
+          "H": 0.3811,
+          "D": 0.2904,
+          "A": 0.3286
         },
         "status": "RESEARCH_ONLY_NOT_PRIMARY"
       },
@@ -5465,30 +3434,30 @@
       },
       "goal_markets_model": "experimental_recent_goals_poisson",
       "scoreline_model": "experimental_recent_goals_poisson",
-      "btts_yes": 0.4321,
-      "over_2_5": 0.505,
+      "btts_yes": 0.4832,
+      "over_2_5": 0.4244,
       "most_likely_scorelines": [
         {
-          "home_goals": 2,
-          "away_goals": 0,
-          "probability": 0.13545269748528158
+          "home_goals": 1,
+          "away_goals": 1,
+          "probability": 0.13101403958792324
         },
         {
           "home_goals": 1,
           "away_goals": 0,
-          "probability": 0.13531876182641514
+          "probability": 0.11338481929761
         },
         {
-          "home_goals": 2,
+          "home_goals": 0,
           "away_goals": 1,
-          "probability": 0.09377108598130325
+          "probability": 0.10722472326563204
         }
       ],
       "poisson_model": "experimental_recent_goals_poisson",
       "poisson_probabilities": {
-        "home_win": 0.6819,
-        "draw": 0.1992,
-        "away_win": 0.1189
+        "home_win": 0.3772,
+        "draw": 0.278,
+        "away_win": 0.3448
       },
       "limitations": [
         "Not validated for betting.",
@@ -5530,19 +3499,19 @@
       },
       "status": "EXPERIMENTAL_ONLY",
       "probabilities": {
-        "home_win": 0.5529,
-        "draw": 0.2497,
-        "away_win": 0.1974
+        "home_win": 0.5299,
+        "draw": 0.2515,
+        "away_win": 0.2186
       },
       "elo_history": {
         "scope": "COMPETITION",
         "division_code": "E2",
-        "home_prior_matches": 53,
-        "away_prior_matches": 159
+        "home_prior_matches": 57,
+        "away_prior_matches": 165
       },
       "expected_goals": {
-        "home": 1.928,
-        "away": 1.337
+        "home": 1.285,
+        "away": 1.003
       },
       "rest_congestion_context": {
         "home": {
@@ -5551,7 +3520,7 @@
         },
         "away": {
           "days_since_last_match": 3,
-          "matches_in_previous_14_days": 3
+          "matches_in_previous_14_days": 5
         }
       },
       "advanced_model_alternative": {
@@ -5559,13 +3528,13 @@
         "model_validated": false,
         "rho": -0.05,
         "expected_goals": {
-          "home": 1.963,
-          "away": 1.274
+          "home": 1.312,
+          "away": 1.012
         },
         "probabilities": {
-          "H": 0.5294,
-          "D": 0.2288,
-          "A": 0.2418
+          "H": 0.4282,
+          "D": 0.2909,
+          "A": 0.2809
         },
         "status": "RESEARCH_ONLY_NOT_PRIMARY"
       },
@@ -5579,30 +3548,30 @@
       },
       "goal_markets_model": "experimental_recent_goals_poisson",
       "scoreline_model": "experimental_recent_goals_poisson",
-      "btts_yes": 0.6303,
-      "over_2_5": 0.6337,
+      "btts_yes": 0.4582,
+      "over_2_5": 0.4009,
       "most_likely_scorelines": [
         {
           "home_goals": 1,
           "away_goals": 1,
-          "probability": 0.098431789200934
-        },
-        {
-          "home_goals": 2,
-          "away_goals": 1,
-          "probability": 0.09490843609529948
+          "probability": 0.1307744550862263
         },
         {
           "home_goals": 1,
           "away_goals": 0,
-          "probability": 0.07359832974725171
+          "probability": 0.13033398469988763
+        },
+        {
+          "home_goals": 0,
+          "away_goals": 1,
+          "probability": 0.10175780330837879
         }
       ],
       "poisson_model": "experimental_recent_goals_poisson",
       "poisson_probabilities": {
-        "home_win": 0.5127,
-        "draw": 0.2215,
-        "away_win": 0.2658
+        "home_win": 0.429,
+        "draw": 0.2809,
+        "away_win": 0.2901
       },
       "limitations": [
         "Not validated for betting.",
@@ -5941,28 +3910,28 @@
       },
       "status": "EXPERIMENTAL_ONLY",
       "probabilities": {
-        "home_win": 0.4221,
-        "draw": 0.2426,
-        "away_win": 0.3353
+        "home_win": 0.4678,
+        "draw": 0.2405,
+        "away_win": 0.2917
       },
       "elo_history": {
         "scope": "COMPETITION",
         "division_code": "EC",
-        "home_prior_matches": 76,
-        "away_prior_matches": 166
+        "home_prior_matches": 85,
+        "away_prior_matches": 175
       },
       "expected_goals": {
-        "home": 2.504,
-        "away": 0.895
+        "home": 2.336,
+        "away": 1.414
       },
       "rest_congestion_context": {
         "home": {
           "days_since_last_match": 3,
-          "matches_in_previous_14_days": 2
+          "matches_in_previous_14_days": 3
         },
         "away": {
           "days_since_last_match": 3,
-          "matches_in_previous_14_days": 3
+          "matches_in_previous_14_days": 4
         }
       },
       "advanced_model_alternative": {
@@ -5970,13 +3939,13 @@
         "model_validated": false,
         "rho": -0.05,
         "expected_goals": {
-          "home": 2.451,
-          "away": 0.803
+          "home": 2.53,
+          "away": 1.371
         },
         "probabilities": {
-          "H": 0.7323,
-          "D": 0.1689,
-          "A": 0.0989
+          "H": 0.6227,
+          "D": 0.1875,
+          "A": 0.1898
         },
         "status": "RESEARCH_ONLY_NOT_PRIMARY"
       },
@@ -5990,30 +3959,30 @@
       },
       "goal_markets_model": "experimental_recent_goals_poisson",
       "scoreline_model": "experimental_recent_goals_poisson",
-      "btts_yes": 0.543,
-      "over_2_5": 0.66,
+      "btts_yes": 0.6836,
+      "over_2_5": 0.7229,
       "most_likely_scorelines": [
         {
           "home_goals": 2,
-          "away_goals": 0,
-          "probability": 0.1047498061683324
+          "away_goals": 1,
+          "probability": 0.09073244839207649
         },
         {
-          "home_goals": 2,
+          "home_goals": 1,
           "away_goals": 1,
-          "probability": 0.09373301114466942
+          "probability": 0.07769549855466425
         },
         {
           "home_goals": 3,
-          "away_goals": 0,
-          "probability": 0.08742894808034397
+          "away_goals": 1,
+          "probability": 0.07063795925001383
         }
       ],
       "poisson_model": "experimental_recent_goals_poisson",
       "poisson_probabilities": {
-        "home_win": 0.7241,
-        "draw": 0.1623,
-        "away_win": 0.1136
+        "home_win": 0.5807,
+        "draw": 0.1945,
+        "away_win": 0.2248
       },
       "limitations": [
         "Not validated for betting.",
@@ -6137,7 +4106,7 @@
       "model_validated": false,
       "betting_recommendation": false,
       "historical_matches": {
-        "home": 7,
+        "home": 10,
         "away": 3
       },
       "team_name_matches": {
@@ -6187,19 +4156,19 @@
       },
       "status": "EXPERIMENTAL_ONLY",
       "probabilities": {
-        "home_win": 0.4142,
-        "draw": 0.2426,
-        "away_win": 0.3432
+        "home_win": 0.4483,
+        "draw": 0.2405,
+        "away_win": 0.3112
       },
       "elo_history": {
         "scope": "COMPETITION",
         "division_code": "EC",
-        "home_prior_matches": 66,
-        "away_prior_matches": 97
+        "home_prior_matches": 74,
+        "away_prior_matches": 105
       },
       "expected_goals": {
-        "home": 2.226,
-        "away": 1.598
+        "home": 1.566,
+        "away": 1.111
       },
       "rest_congestion_context": {
         "home": {
@@ -6208,7 +4177,7 @@
         },
         "away": {
           "days_since_last_match": 3,
-          "matches_in_previous_14_days": 3
+          "matches_in_previous_14_days": 4
         }
       },
       "advanced_model_alternative": {
@@ -6216,13 +4185,13 @@
         "model_validated": false,
         "rho": -0.05,
         "expected_goals": {
-          "home": 2.336,
-          "away": 1.772
+          "home": 1.581,
+          "away": 1.158
         },
         "probabilities": {
-          "H": 0.5043,
-          "D": 0.2041,
-          "A": 0.2916
+          "H": 0.4656,
+          "D": 0.2613,
+          "A": 0.2731
         },
         "status": "RESEARCH_ONLY_NOT_PRIMARY"
       },
@@ -6236,30 +4205,30 @@
       },
       "goal_markets_model": "experimental_recent_goals_poisson",
       "scoreline_model": "experimental_recent_goals_poisson",
-      "btts_yes": 0.7116,
-      "over_2_5": 0.735,
+      "btts_yes": 0.5307,
+      "over_2_5": 0.5007,
       "most_likely_scorelines": [
-        {
-          "home_goals": 2,
-          "away_goals": 1,
-          "probability": 0.08647041787563917
-        },
         {
           "home_goals": 1,
           "away_goals": 1,
-          "probability": 0.07768585623452234
+          "probability": 0.11965718818109862
+        },
+        {
+          "home_goals": 1,
+          "away_goals": 0,
+          "probability": 0.10766320510701284
         },
         {
           "home_goals": 2,
-          "away_goals": 2,
-          "probability": 0.06908477265358504
+          "away_goals": 1,
+          "probability": 0.09366992239356065
         }
       ],
       "poisson_model": "experimental_recent_goals_poisson",
       "poisson_probabilities": {
-        "home_win": 0.5207,
-        "draw": 0.2029,
-        "away_win": 0.2764
+        "home_win": 0.4783,
+        "draw": 0.2517,
+        "away_win": 0.27
       },
       "limitations": [
         "Not validated for betting.",
@@ -6334,28 +4303,28 @@
       },
       "status": "EXPERIMENTAL_ONLY",
       "probabilities": {
-        "home_win": 0.2846,
-        "draw": 0.2426,
-        "away_win": 0.4728
+        "home_win": 0.2518,
+        "draw": 0.2405,
+        "away_win": 0.5077
       },
       "elo_history": {
         "scope": "COMPETITION",
         "division_code": "EC",
-        "home_prior_matches": 256,
-        "away_prior_matches": 240
+        "home_prior_matches": 265,
+        "away_prior_matches": 249
       },
       "expected_goals": {
-        "home": 0.999,
-        "away": 2.676
+        "home": 0.831,
+        "away": 2.069
       },
       "rest_congestion_context": {
         "home": {
           "days_since_last_match": 3,
-          "matches_in_previous_14_days": 3
+          "matches_in_previous_14_days": 4
         },
         "away": {
           "days_since_last_match": 3,
-          "matches_in_previous_14_days": 3
+          "matches_in_previous_14_days": 4
         }
       },
       "advanced_model_alternative": {
@@ -6363,13 +4332,13 @@
         "model_validated": false,
         "rho": -0.05,
         "expected_goals": {
-          "home": 1.112,
-          "away": 2.672
+          "home": 0.838,
+          "away": 2.103
         },
         "probabilities": {
-          "H": 0.1314,
-          "D": 0.1673,
-          "A": 0.7014
+          "H": 0.1338,
+          "D": 0.2052,
+          "A": 0.661
         },
         "status": "RESEARCH_ONLY_NOT_PRIMARY"
       },
@@ -6383,30 +4352,30 @@
       },
       "goal_markets_model": "experimental_recent_goals_poisson",
       "scoreline_model": "experimental_recent_goals_poisson",
-      "btts_yes": 0.5882,
-      "over_2_5": 0.7103,
+      "btts_yes": 0.493,
+      "over_2_5": 0.5539,
       "most_likely_scorelines": [
         {
           "home_goals": 0,
           "away_goals": 2,
-          "probability": 0.09078743566600027
+          "probability": 0.11779562192210097
+        },
+        {
+          "home_goals": 0,
+          "away_goals": 1,
+          "probability": 0.11387767571035126
         },
         {
           "home_goals": 1,
           "away_goals": 2,
-          "probability": 0.09067084224812791
-        },
-        {
-          "home_goals": 0,
-          "away_goals": 3,
-          "probability": 0.08098510504460198
+          "probability": 0.0978639465454854
         }
       ],
       "poisson_model": "experimental_recent_goals_poisson",
       "poisson_probabilities": {
-        "home_win": 0.1165,
-        "draw": 0.1543,
-        "away_win": 0.7291
+        "home_win": 0.1403,
+        "draw": 0.199,
+        "away_win": 0.6607
       },
       "limitations": [
         "Not validated for betting.",
@@ -6431,7 +4400,7 @@
       "model_validated": false,
       "betting_recommendation": false,
       "historical_matches": {
-        "home": 8,
+        "home": 10,
         "away": 10
       },
       "team_name_matches": {
@@ -6448,28 +4417,28 @@
       },
       "status": "EXPERIMENTAL_ONLY",
       "probabilities": {
-        "home_win": 0.3168,
-        "draw": 0.2426,
-        "away_win": 0.4406
+        "home_win": 0.3698,
+        "draw": 0.2405,
+        "away_win": 0.3897
       },
       "elo_history": {
         "scope": "COMPETITION",
         "division_code": "EC",
-        "home_prior_matches": 5,
-        "away_prior_matches": 202
+        "home_prior_matches": 14,
+        "away_prior_matches": 211
       },
       "expected_goals": {
-        "home": 1.528,
-        "away": 2.833
+        "home": 1.719,
+        "away": 1.604
       },
       "rest_congestion_context": {
         "home": {
           "days_since_last_match": 3,
-          "matches_in_previous_14_days": 3
+          "matches_in_previous_14_days": 4
         },
         "away": {
           "days_since_last_match": 3,
-          "matches_in_previous_14_days": 2
+          "matches_in_previous_14_days": 3
         }
       },
       "advanced_model_alternative": {
@@ -6477,13 +4446,13 @@
         "model_validated": false,
         "rho": -0.05,
         "expected_goals": {
-          "home": 1.454,
-          "away": 2.674
+          "home": 1.703,
+          "away": 1.642
         },
         "probabilities": {
-          "H": 0.1888,
-          "D": 0.1798,
-          "A": 0.6314
+          "H": 0.3936,
+          "D": 0.2382,
+          "A": 0.3681
         },
         "status": "RESEARCH_ONLY_NOT_PRIMARY"
       },
@@ -6497,30 +4466,30 @@
       },
       "goal_markets_model": "experimental_recent_goals_poisson",
       "scoreline_model": "experimental_recent_goals_poisson",
-      "btts_yes": 0.7371,
-      "over_2_5": 0.8102,
+      "btts_yes": 0.6557,
+      "over_2_5": 0.6452,
       "most_likely_scorelines": [
         {
           "home_goals": 1,
-          "away_goals": 2,
-          "probability": 0.07826088050908886
-        },
-        {
-          "home_goals": 1,
-          "away_goals": 3,
-          "probability": 0.07390840966870355
+          "away_goals": 1,
+          "probability": 0.09938241933569801
         },
         {
           "home_goals": 2,
+          "away_goals": 1,
+          "probability": 0.08543888347568039
+        },
+        {
+          "home_goals": 1,
           "away_goals": 2,
-          "probability": 0.059808932924811126
+          "probability": 0.07968589761672357
         }
       ],
       "poisson_model": "experimental_recent_goals_poisson",
       "poisson_probabilities": {
-        "home_win": 0.1872,
-        "draw": 0.1659,
-        "away_win": 0.6468
+        "home_win": 0.4098,
+        "draw": 0.229,
+        "away_win": 0.3612
       },
       "limitations": [
         "Not validated for betting.",
@@ -8740,28 +6709,28 @@
       },
       "status": "EXPERIMENTAL_ONLY",
       "probabilities": {
-        "home_win": 0.3739,
-        "draw": 0.3212,
-        "away_win": 0.3049
+        "home_win": 0.4637,
+        "draw": 0.2844,
+        "away_win": 0.2519
       },
       "elo_history": {
         "scope": "GLOBAL_FALLBACK",
         "division_code": null,
-        "home_prior_matches": 296,
-        "away_prior_matches": 254
+        "home_prior_matches": 304,
+        "away_prior_matches": 259
       },
       "expected_goals": {
-        "home": 0.995,
-        "away": 0.867
+        "home": 1.3,
+        "away": 0.878
       },
       "rest_congestion_context": {
         "home": {
           "days_since_last_match": 3,
-          "matches_in_previous_14_days": 3
+          "matches_in_previous_14_days": 5
         },
         "away": {
           "days_since_last_match": 2,
-          "matches_in_previous_14_days": 6
+          "matches_in_previous_14_days": 7
         }
       },
       "advanced_model_alternative": {
@@ -8769,13 +6738,13 @@
         "model_validated": false,
         "rho": -0.05,
         "expected_goals": {
-          "home": 1.094,
+          "home": 1.398,
           "away": 0.824
         },
         "probabilities": {
-          "H": 0.4089,
-          "D": 0.3255,
-          "A": 0.2656
+          "H": 0.4984,
+          "D": 0.2866,
+          "A": 0.215
         },
         "status": "RESEARCH_ONLY_NOT_PRIMARY"
       },
@@ -8789,30 +6758,30 @@
       },
       "goal_markets_model": "experimental_recent_goals_poisson",
       "scoreline_model": "experimental_recent_goals_poisson",
-      "btts_yes": 0.3655,
-      "over_2_5": 0.2861,
+      "btts_yes": 0.4252,
+      "over_2_5": 0.3715,
       "most_likely_scorelines": [
-        {
-          "home_goals": 0,
-          "away_goals": 0,
-          "probability": 0.15532173906236837
-        },
         {
           "home_goals": 1,
           "away_goals": 0,
-          "probability": 0.15457528805654383
+          "probability": 0.14724263726593978
+        },
+        {
+          "home_goals": 1,
+          "away_goals": 1,
+          "probability": 0.1292727198970359
         },
         {
           "home_goals": 0,
-          "away_goals": 1,
-          "probability": 0.13467364215833807
+          "away_goals": 0,
+          "probability": 0.11323315202841301
         }
       ],
       "elo_model": "experimental_elo_global_fallback",
       "elo_probabilities": {
-        "home_win": 0.0871,
-        "draw": 0.2615,
-        "away_win": 0.6513
+        "home_win": 0.0787,
+        "draw": 0.2614,
+        "away_win": 0.6599
       },
       "limitations": [
         "Not validated for betting.",
@@ -9231,54 +7200,54 @@
   ],
   "notice": "Experimental research output only. Historical tests show the Poisson pipeline underperforms the market benchmark. Competition-scoped Elo is preferred when available but remains unvalidated for betting; Poisson remains primary when Elo history is unavailable. No betting recommendations or value bets are approved.",
   "recent_results_sync": {
-    "status": "PARTIAL",
+    "status": "UP_TO_DATE",
     "results_added": 0,
-    "requested_start": "2026-09-21",
-    "requested_end": "2026-09-27",
+    "requested_start": "2026-10-27",
+    "requested_end": "2026-10-26",
     "covered_from": null,
-    "covered_through": null,
-    "ranges_succeeded": 5,
-    "ranges_requested": 8,
-    "warning": "API-Football plan did not return historical fixtures for 2026-09-21, 2026-09-22, 2026-09-23, 2026-09-24, 2026-09-25, 2026-09-26, 2026-09-27; those dates are recorded as history gaps."
+    "covered_through": "2026-10-25",
+    "ranges_succeeded": 0,
+    "ranges_requested": 0,
+    "warning": null
   },
   "api_football_request": {
     "provider": "API-Football (API-Sports)",
     "status": "SUCCESS",
     "http_status": 200,
     "requests_limit": "100",
-    "requests_remaining": "73",
+    "requests_remaining": "71",
     "pages_fetched": 1,
     "fixtures_received": 331
   },
   "historical_data_coverage": {
     "status": "GAPPED_OR_STALE",
-    "base_history_through": "2026-09-03",
-    "contiguous_through": "2026-09-03",
-    "latest_available_match_date": "2026-10-25",
-    "refresh_status": "PARTIAL",
-    "requested_start": "2026-09-21",
-    "requested_end": "2026-09-27",
+    "base_history_through": "2026-10-26",
+    "contiguous_through": "2026-10-26",
+    "latest_available_match_date": "2026-10-26",
+    "refresh_status": "UP_TO_DATE",
+    "requested_start": "2026-10-27",
+    "requested_end": "2026-10-26",
     "covered_from": null,
-    "covered_through": null,
-    "ranges_succeeded": 5,
-    "ranges_requested": 8,
-    "backfill_complete": false,
+    "covered_through": "2026-10-25",
+    "ranges_succeeded": 0,
+    "ranges_requested": 0,
+    "backfill_complete": true,
     "cache_path": "reports/recent_results_cache.json"
   },
   "live_odds_sync": {
     "status": "AVAILABLE",
-    "fixtures_with_odds": 6,
+    "fixtures_with_odds": 3,
     "snapshot_date": "2026-10-27",
     "warning": null,
     "football_api_status": "NO_VALID_1X2_ODDS",
     "football_api_fixtures_with_odds": 0,
     "api_sports_status": "AVAILABLE",
-    "api_sports_fixtures_with_odds": 6,
+    "api_sports_fixtures_with_odds": 3,
     "api_sports_warning": null,
-    "matched_prediction_count": 6
+    "matched_prediction_count": 3
   },
   "publication_status": "LIVE_REPORT_GENERATED_PENDING_PUBLICATION",
   "publication_notice": "Generated from this run's live fixture response. Public publication is confirmed separately by command_data_publication.",
   "command_data_publication": "PUBLISHED",
-  "command_data_published_at_utc": "2026-10-27T14:44:37.444814+00:00"
+  "command_data_published_at_utc": "2026-10-27T17:36:38.199700+00:00"
 }
