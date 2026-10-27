@@ -153,8 +153,8 @@ def test_daily_runner_refreshes_history_even_when_no_future_fixtures(tmp_path, m
     monkeypatch.setattr(daily_runner, "load_historical_matches", lambda path: base_history)
 
     class FakeAPI:
-        def __init__(self, settings):
-            pass
+        def __init__(self):
+            self.api_key = "test-key"
         def fixtures(self, target_date, timezone):
             return {"response": []}
         def odds_for_date(self, *args):
@@ -198,8 +198,8 @@ def test_daily_runner_refreshes_history_and_requests_odds_for_future_fixtures(tm
     monkeypatch.setattr(daily_runner, "load_historical_matches", lambda path: base_history)
 
     class FakeAPI:
-        def __init__(self, settings):
-            pass
+        def __init__(self):
+            self.api_key = "test-key"
         def fixtures(self, target_date, timezone):
             # Deliberately malformed fixture data means it cannot be counted as a future match.
             return {"response": []}
