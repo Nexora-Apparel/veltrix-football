@@ -39,6 +39,25 @@ def test_api_sports_odds_attach_by_local_date_and_team_names_not_provider_ids():
     assert report["predictions"][0]["market_model"] == "api_sports_bookmaker_consensus"
 
 
+def test_api_sports_odds_match_known_argentine_name_variants():
+    report = {
+        "predictions": [{
+            "home_team": "Argentinos Juniors",
+            "away_team": "Independiente Rivadavia",
+            "kickoff_local": "2026-10-27T23:00:00+01:00",
+            "status": "UNSUPPORTED_COMPETITION",
+        }]
+    }
+    payload = {"response": [{
+        "home_team": "Argentinos JRS",
+        "away_team": "Independ. Rivadavia",
+        "date": "2026-10-27",
+        "odds": {"home": 2.1, "draw": 3.0, "away": 3.5},
+    }]}
+    assert daily_runner._merge_api_sports_market_odds(report, payload) == 1
+    assert report["predictions"][0]["market_model"] == "api_sports_bookmaker_consensus"
+
+
 def test_api_sports_odds_reject_incomplete_or_invalid_1x2_prices():
     report = {"predictions": [{
         "home_team": "Arsenal", "away_team": "Chelsea",
