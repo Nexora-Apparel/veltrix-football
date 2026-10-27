@@ -9,15 +9,7 @@
       "dest": "/api/dashboard"
     },
     {
-      "src": "^/api/dashboard/?$",
-      "dest": "/api/dashboard"
-    },
-    {
       "src": "^/api/dashboard-data/?$",
-      "dest": "/api/dashboard_data"
-    },
-    {
-      "src": "^/api/dashboard_data/?$",
       "dest": "/api/dashboard_data"
     },
     {
