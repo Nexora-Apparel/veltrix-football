@@ -261,7 +261,7 @@ def fetch_recent_results_incremental(
 
     latest_base = max(row["date"] for row in historical_matches)
     base_start = latest_base + timedelta(days=1)
-    if base_start > end_date and not state.get("backfill_anchor_end") and not state.get("history_gaps"):
+    if base_start > end_date and not state.get("backfill_anchor_end") and not state.get("history_gaps") and not state.get("history_plan_limited_dates"):
         state.update({
             "backfill_complete": True,
             "latest_covered_through": latest_base.isoformat(),
@@ -524,6 +524,11 @@ def fetch_recent_results_incremental(
         progress_after = progress_before
         status = "PARTIAL" if progress_before else "UNAVAILABLE"
 
+    if state.get("history_plan_limited_dates") and status == "PARTIAL" and not warning:
+        warning = (
+            f"{len(state['history_plan_limited_dates'])} historical date(s) are unavailable on the API-Football plan; "
+            "they are retained as coverage limitations and will not be retried automatically."
+        )
     return rows, {
         "status": status,
         "results_added": len(rows),
@@ -534,6 +539,8 @@ def fetch_recent_results_incremental(
         "ranges_succeeded": progress_after,
         "ranges_requested": total_ranges,
         "warning": warning,
+        "provider_plan_limited_date_count": len(state.get("history_plan_limited_dates") or []),
+        "retryable_gap_date_count": len(state.get("history_gaps") or []),
         "cache_state": state,
     }
 
