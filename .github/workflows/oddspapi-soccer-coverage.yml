@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - name: Check OddsPapi RapidAPI access
+      - name: Check OddsPapi RapidAPI access and soccer markets
         env:
           RAPIDAPI_KEY: ${{ secrets.ODDSPAPI_RAPIDAPI_KEY }}
         run: |
@@ -20,6 +20,7 @@ jobs:
           import os
           import sys
           import urllib.error
+          import urllib.parse
           import urllib.request
           from datetime import datetime, timedelta, timezone
 
@@ -35,12 +36,10 @@ jobs:
               "Accept": "application/json",
           }
 
-          def get(path):
-              req = urllib.request.Request(
-                  f"https://{host}/en/{path}",
-                  headers=headers,
-                  method="GET",
-              )
+          def get(path, params):
+              query = urllib.parse.urlencode(params)
+              url = f"https://{host}/en/{path}?{query}"
+              req = urllib.request.Request(url, headers=headers, method="GET")
               try:
                   with urllib.request.urlopen(req, timeout=20) as response:
                       body = response.read().decode("utf-8", errors="replace")
@@ -48,44 +47,62 @@ jobs:
                       try:
                           payload = json.loads(body)
                       except json.JSONDecodeError:
-                          print(body[:3000])
-                          return None
-                      if isinstance(payload, list):
-                          print(json.dumps(payload, ensure_ascii=False, indent=2)[:12000])
-                      else:
-                          print(json.dumps(payload, ensure_ascii=False, indent=2)[:5000])
+                          print(body[:2000])
+                          raise RuntimeError(f"{path} returned non-JSON")
+                      print(json.dumps(payload, ensure_ascii=False, indent=2)[:10000])
                       return payload
               except urllib.error.HTTPError as exc:
                   body = exc.read().decode("utf-8", errors="replace")
                   print(f"\n--- {path} (HTTP {exc.code}) ---")
                   print(body[:2000])
-                  return None
-              except Exception as exc:
-                  print(f"\n--- {path} (request failed: {type(exc).__name__}) ---")
-                  print(str(exc)[:500])
-                  return None
+                  raise RuntimeError(f"{path} returned HTTP {exc.code}")
 
-          sports = get("sports")
-          tournaments = get("tournaments?sportId=10")
+          try:
+              # The RapidAPI subscription key is used in the headers and as the
+              # apiKey query value for this initial access test. If the provider
+              # requires a separate OddsPapi account key, the response will make
+              # that authentication requirement visible.
+              api_key_param = key
+              sports = get("sports", {"apiKey": api_key_param})
+              tournaments = get("tournaments", {"sportId": 10, "apiKey": api_key_param})
 
-          now = datetime.now(timezone.utc)
-          start_epoch = int(now.timestamp())
-          end_epoch = int((now + timedelta(days=3)).timestamp())
-          fixtures = get(
-              f"fixtures/filtered?sportId=10&statusId=0&from={start_epoch}&to={end_epoch}&limit=30"
-          )
-
-          if isinstance(sports, list):
+              if not isinstance(sports, list):
+                  raise RuntimeError("Sports endpoint did not return a list.")
               soccer = [
-                  item for item in sports
-                  if str(item.get("slug", "")).lower() == "soccer"
-                  or str(item.get("sportName", "")).lower() in {"soccer", "football"}
+                  item for item in sports if isinstance(item, dict) and (
+                      str(item.get("slug", "")).lower() == "soccer"
+                      or str(item.get("sportName", "")).lower() in {"soccer", "football"}
+                  )
               ]
               print("\nSOCCER SPORT MATCHES:")
               print(json.dumps(soccer, ensure_ascii=False, indent=2))
+              if not soccer:
+                  raise RuntimeError("No soccer sport entry returned for this API key.")
 
-          if isinstance(fixtures, list):
-              print(f"\\nUPCOMING SOCCER FIXTURES RETURNED: {len(fixtures)}")
+              if not isinstance(tournaments, list):
+                  raise RuntimeError("Tournaments endpoint did not return a list.")
+              print(f"\nSOCCER TOURNAMENT COUNT: {len(tournaments)}")
+              print(json.dumps([
+                  {
+                      "tournamentId": item.get("tournamentId"),
+                      "tournamentName": item.get("tournamentName"),
+                      "categoryName": item.get("categoryName"),
+                  }
+                  for item in tournaments if isinstance(item, dict)
+              ], ensure_ascii=False, indent=2)[:10000])
+
+              now = datetime.now(timezone.utc)
+              fixtures = get("fixtures", {
+                  "sportId": 10,
+                  "statusId": 0,
+                  "from": int(now.timestamp()),
+                  "to": int((now + timedelta(days=3)).timestamp()),
+                  "limit": 30,
+                  "apiKey": api_key_param,
+              })
+              if not isinstance(fixtures, list):
+                  raise RuntimeError("Fixtures endpoint did not return a list.")
+              print(f"\nUPCOMING SOCCER FIXTURES RETURNED: {len(fixtures)}")
               print(json.dumps([
                   {
                       "fixtureId": item.get("fixtureId"),
@@ -97,16 +114,18 @@ jobs:
                   for item in fixtures if isinstance(item, dict)
               ], ensure_ascii=False, indent=2)[:15000])
 
-          if isinstance(tournaments, list):
-              print(f"\nSOCCER TOURNAMENT COUNT: {len(tournaments)}")
-              print("Names and IDs:")
-              print(json.dumps([
-                  {
-                      "tournamentId": item.get("tournamentId"),
-                      "tournamentName": item.get("tournamentName"),
-                      "categoryName": item.get("categoryName"),
-                  }
-                  for item in tournaments
-                  if isinstance(item, dict)
-              ], ensure_ascii=False, indent=2))
+              with_odds = [
+                  item for item in fixtures
+                  if isinstance(item, dict) and (
+                      item.get("hasOdds") is True
+                      or bool(item.get("bookmakers"))
+                  )
+              ]
+              print(f"\nFIXTURES WITH BOOKMAKER/ODDS INDICATOR: {len(with_odds)}")
+              if not fixtures:
+                  print("NOTICE: No fixtures returned in this time window; this alone does not prove the API is unavailable.")
+              print("\nMARKET CHECK: This test has not yet verified BTTS or Over/Under market IDs. That requires a fixture odds response.")
+          except Exception as exc:
+              print(f"\nCOVERAGE CHECK FAILED: {exc}")
+              sys.exit(1)
           PY
