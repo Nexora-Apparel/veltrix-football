@@ -6,6 +6,9 @@ on:
     paths:
       - "app/config.py"
       - "app/api_football_odds.py"
+      - "app/oddspapi_odds.py"
+      - "scripts/enrich_oddspapi_odds.py"
+      - "tests/test_oddspapi_odds.py"
       - "app/historical_data.py"
       - "app/football_api.py"
       - "app/live_predictions.py"
@@ -57,6 +60,9 @@ on:
     paths:
       - "app/config.py"
       - "app/api_football_odds.py"
+      - "app/oddspapi_odds.py"
+      - "scripts/enrich_oddspapi_odds.py"
+      - "tests/test_oddspapi_odds.py"
       - "app/historical_data.py"
       - "app/football_api.py"
       - "app/live_predictions.py"
