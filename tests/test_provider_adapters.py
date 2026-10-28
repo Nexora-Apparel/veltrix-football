@@ -240,3 +240,28 @@ def test_infersports_is_disabled_by_default_for_safe_rollout(monkeypatch):
         odds_api_client=FakeOddsAPI(),
     )
     assert result["multi_source_odds_sync"]["infer_sports"]["status"] == "DISABLED"
+
+
+def test_empty_past_day_is_not_marked_as_covered():
+    client = FiveDollarFootballClient("test-key")
+
+    def fake_fixtures(day, timezone="Africa/Lagos"):
+        if day == "2026-10-26":
+            return {"response": [], "_veltrix_meta": {"requests_made": 1}}
+        return {
+            "response": [{
+                "fixture": {"id": 27, "date": "2026-10-27T12:00:00+00:00", "status": {"short": "FT"}},
+                "teams": {"home": {"name": "Home"}, "away": {"name": "Away"}},
+                "league": {"name": "Premier League", "code": "PL"},
+                "goals": {"home": 1, "away": 0},
+            }],
+            "_veltrix_meta": {"requests_made": 1, "requests_remaining": "50"},
+        }
+
+    client.fixtures = fake_fixtures
+    result = client.fixtures_between("2026-10-26", "2026-10-27")
+    meta = result["_veltrix_meta"]
+    assert meta["successful_dates"] == ["2026-10-27"]
+    assert meta["failed_dates"] == ["2026-10-26"]
+    assert meta["empty_response_dates"] == ["2026-10-26"]
+    assert "retryable" in meta["warning"]
