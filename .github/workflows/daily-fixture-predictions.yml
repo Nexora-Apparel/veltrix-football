@@ -62,6 +62,8 @@ on:
     paths:
       - "app/config.py"
       - "app/api_football_odds.py"
+      - "app/provider_adapters.py"
+      - "tests/test_provider_adapters.py"
       - "app/oddspapi_odds.py"
       - "scripts/enrich_oddspapi_odds.py"
       - "tests/test_oddspapi_odds.py"
