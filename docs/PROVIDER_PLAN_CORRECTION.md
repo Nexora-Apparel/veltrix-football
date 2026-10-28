@@ -11,8 +11,8 @@ The earlier multi-source architecture draft incorrectly described API-Football/A
 | 5DollarFootballAPI | Primary fixtures, recent results, and fixture-level bookmaker odds | Integrated and live-verified; fixtures and BTTS/goal-line/1X2 market payloads returned. |
 | The Odds API | Supplemental bookmaker prices, h2h/totals and event-specific BTTS | Integrated and live-verified; soccer sports and target market endpoints passed. |
 | OddsPapi | Optional separate BTTS and Over/Under enrichment | Existing adapter retained; non-blocking. |
-| InferSports | Secondary odds and market information; price comparison | Pending; not integrated or verified. |
-| Open Matchday | Supplementary historical fixtures, results and match statistics | Pending; dataset/API and license must be verified before ingestion. |
+| InferSports | Optional full-time totals and 1X2 odds | Keyless events endpoint verified (200 same-day events), but three bounded odds probes returned no current quotes; adapter is feature-flagged off pending market evidence. No BTTS market in current schema. |
+| Open Matchday | Research-only current-season fixtures/results/statistics | Not ingested into production because the dataset README limits use to non-commercial purposes and only documents the current 2026/27 season. |
 | Existing Veltrix historical database | Preserve existing records and use as the historical/model-feature foundation | Preserved; source provenance is recorded for new rows and unknown legacy provenance is labelled. |
 | Highlightly | Existing legacy integration in the repository | Not a production dependency; do not assume its feed is active or mix it into the new provider path. |
 
@@ -36,8 +36,8 @@ The earlier multi-source architecture draft incorrectly described API-Football/A
 3. **Completed:** integrate The Odds API for bounded h2h/totals and event-specific BTTS prices; keep OddsPapi optional.
 4. **Completed:** add normalization, conservative team/local-date joins, provider diagnostics, and unit tests.
 5. **Completed:** run GitHub Actions unit tests and live provider/market endpoint checks.
-6. **Pending:** evaluate and integrate InferSports only after verifying exact product identity, credentials and market schema.
-7. **Pending:** evaluate Open Matchday data delivery, historical coverage, schema and license before importing.
+6. **Pending:** enable InferSports only after a live quote-bearing fixture is confirmed; keyless event access alone is not enough.
+7. **Research-only:** use Open Matchday only where its non-commercial license is compatible; do not ingest into production without license approval.
 8. **Ongoing:** monitor historical gaps and market coverage; keep value alerts disabled until chronological out-of-sample validation.
 
 ## Acceptance criteria
