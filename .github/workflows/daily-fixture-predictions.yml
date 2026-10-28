@@ -5,6 +5,10 @@ on:
     branches: [main]
     paths:
       - "app/config.py"
+      - "app/open_matchday.py"
+      - "app/multi_source.py"
+      - "tests/test_open_matchday.py"
+      - "tests/test_multi_source.py"
       - "app/api_football_odds.py"
       - "app/historical_data.py"
       - "app/football_api.py"
