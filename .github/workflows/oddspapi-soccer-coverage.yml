@@ -21,6 +21,7 @@ jobs:
           import sys
           import urllib.error
           import urllib.request
+          from datetime import datetime, timedelta, timezone
 
           key = os.environ.get("RAPIDAPI_KEY", "").strip()
           if not key:
@@ -67,6 +68,13 @@ jobs:
           sports = get("sports")
           tournaments = get("tournaments?sportId=10")
 
+          now = datetime.now(timezone.utc)
+          start_epoch = int(now.timestamp())
+          end_epoch = int((now + timedelta(days=3)).timestamp())
+          fixtures = get(
+              f"fixtures/filtered?sportId=10&statusId=0&from={start_epoch}&to={end_epoch}&limit=30"
+          )
+
           if isinstance(sports, list):
               soccer = [
                   item for item in sports
@@ -75,6 +83,19 @@ jobs:
               ]
               print("\nSOCCER SPORT MATCHES:")
               print(json.dumps(soccer, ensure_ascii=False, indent=2))
+
+          if isinstance(fixtures, list):
+              print(f"\\nUPCOMING SOCCER FIXTURES RETURNED: {len(fixtures)}")
+              print(json.dumps([
+                  {
+                      "fixtureId": item.get("fixtureId"),
+                      "startTime": item.get("startTime"),
+                      "tournament": item.get("tournament"),
+                      "participants": item.get("participants"),
+                      "bookmakers": item.get("bookmakers"),
+                  }
+                  for item in fixtures if isinstance(item, dict)
+              ], ensure_ascii=False, indent=2)[:15000])
 
           if isinstance(tournaments, list):
               print(f"\nSOCCER TOURNAMENT COUNT: {len(tournaments)}")
