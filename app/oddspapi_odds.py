@@ -131,8 +131,11 @@ def enrich_report(report: dict[str, Any], client: OddsPapiClient | None = None) 
     """Attach market prices only to exact same-day team matches; failures stay non-fatal to caller."""
     client = client or OddsPapiClient()
     target = date.fromisoformat(str(report["as_of_date"]))
-    start = datetime.combine(target, datetime.min.time(), tzinfo=timezone.utc)
-    end = start + timedelta(days=1)
+    local_zone = ZoneInfo(str(report.get("timezone") or "Africa/Lagos"))
+    local_start = datetime.combine(target, datetime.min.time(), tzinfo=local_zone)
+    local_end = local_start + timedelta(days=1)
+    start = local_start.astimezone(timezone.utc)
+    end = local_end.astimezone(timezone.utc)
     markets = client.get("markets", {"language": "en"})
     if not isinstance(markets, list):
         raise OddsPapiError("OddsPapi markets response had an unexpected shape.")
