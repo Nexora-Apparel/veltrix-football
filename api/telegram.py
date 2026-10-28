@@ -131,17 +131,41 @@ function setFilter(f){currentFilter=f;document.querySelectorAll('.filter').forEa
 document.getElementById('filters').addEventListener('click',e=>{const b=e.target.closest('button[data-filter]');if(b)setFilter(b.dataset.filter)});
 function renderStatus(d){
  const box=document.getElementById('systemStatus');box.replaceChildren();const hist=d.historical_data_coverage||{};const odds=d.live_odds_sync||{};const primary=d.primary_provider_request||{};
- const vals=[['Report publication',d.publication_status||d.status||'UNKNOWN'],['Fixture source',(primary.provider||'Unknown')+' · '+(primary.status||'unknown')],['Market odds','The Odds API: '+(odds.the_odds_api_status||'unknown')],['Historical coverage',hist.status||'not reported']];
- for(const [title,value] of vals){const el=document.createElement('div');el.className='statusitem';const t=document.createElement('div');t.className='stitle';t.textContent=title;const v=document.createElement('div');v.className='svalue';v.textContent=value;el.append(t,v);box.append(el)}
+ const vals=[['Report publication',d.publication_status||d.status||'UNKNOWN'],['Fixture source',(primary.provider||'Unknown')+' · '+(primary.status||'unknown')],['The Odds API',odds.the_odds_api_status||'unknown'],['Historical coverage',hist.status||'not reported']];
+ for(const [title,value] of vals){const el=document.createElement('div');el.className='statusitem reveal';const t=document.createElement('div');t.className='stitle';t.textContent=title;const v=document.createElement('div');v.className='svalue';v.textContent=value;el.append(t,v);box.append(el)}
+ const details=document.getElementById('statusDetails');const lines=[];
+ lines.push('Forecast validation: '+(d.warning||'Experimental model; not validated for betting.'));
+ lines.push('Report freshness: '+(d.as_of_date||'date unavailable')+' · generated '+(d.generated_at_utc||'unknown')+' UTC · published '+(d.published_at_utc||'unknown')+' UTC.');
+ lines.push('Fixture provider: '+(primary.provider||'unknown')+' · '+(primary.status||'unknown')+'.');
+ const remaining=Number(primary.requests_remaining);if(Number.isFinite(remaining))lines.push('Provider quota reported remaining: '+remaining+' requests.');
+ lines.push('5Dollar odds: '+(d.multi_source_odds_sync?.five_dollar?.status||d.live_odds_sync?.five_dollar_status||'not reported')+'.');
+ lines.push('The Odds API: '+(d.multi_source_odds_sync?.the_odds_api?.status||odds.the_odds_api_status||'not reported')+'. Matched fixtures: '+(odds.fixtures_with_market_odds??d.fixtures_with_market_odds??0)+'.');
+ lines.push('Historical coverage: '+(hist.status||'not reported')+'.');if(Number(hist.provider_plan_limited_date_count)>0)lines.push('Provider-limited historical dates: '+hist.provider_plan_limited_date_count+'.');if(Number(hist.retryable_gap_date_count)>0)lines.push('Transient historical gaps queued for bounded retry: '+hist.retryable_gap_date_count+'.');
+ details.textContent=lines.join('\n');observeReveals(box);observeReveals(details.parentElement);
 }
+function observeReveals(root=document){
+ const items=root.querySelectorAll?root.querySelectorAll('.reveal:not([data-observed])'):[];
+ if(!('IntersectionObserver' in window)){items.forEach(el=>el.classList.add('in-view'));return}
+ if(!window.veltrixObserver)window.veltrixObserver=new IntersectionObserver(entries=>entries.forEach(entry=>{if(entry.isIntersecting){entry.target.classList.add('in-view');window.veltrixObserver.unobserve(entry.target)}}),{threshold:.12,rootMargin:'0px 0px -5% 0px'});
+ items.forEach(el=>{el.dataset.observed='1';window.veltrixObserver.observe(el)});
+}
+function setActiveView(id){document.querySelectorAll('.navitem[data-view]').forEach(n=>n.classList.toggle('active',n.dataset.view===id))}
+document.querySelectorAll('.navitem[data-view]').forEach(n=>n.addEventListener('click',e=>{e.preventDefault();const target=document.getElementById(n.dataset.view);if(target){target.scrollIntoView({behavior:'smooth',block:'start'});setActiveView(n.dataset.view)}}));
+const viewObserver=new IntersectionObserver(entries=>entries.forEach(entry=>{if(entry.isIntersecting)setActiveView(entry.target.id)}),{threshold:.25});
+document.querySelectorAll('.sectionview').forEach(el=>viewObserver.observe(el));
 async function loadDashboard(){
  const btn=document.getElementById('refresh');btn.disabled=true;btn.textContent='Loading…';
- try{const r=await fetch('/api/dashboard-data',{cache:'no-store'});if(!r.ok)throw new Error('Dashboard data unavailable');const d=await r.json();dashboardRows=Array.isArray(d.predictions)?d.predictions:[];
- text(document.getElementById('fixtures'),d.fixtures_received);text(document.getElementById('forecasts'),d.experimental_forecasts);text(document.getElementById('odds'),d.fixtures_with_market_odds);
- const notice=document.getElementById('notice');notice.className='notice';let msg=d.warning||'Published report loaded.';const h=d.historical_data_coverage||{};if(h.status==='GAPPED_OR_STALE'){notice.classList.add('warn');msg+=' Historical results have gaps; model context may be incomplete.';if(Number(h.provider_plan_limited_date_count)>0)msg+=' '+h.provider_plan_limited_date_count+' dates remain provider-plan-limited.';if(Number(h.retryable_gap_date_count)>0)msg+=' '+h.retryable_gap_date_count+' transient gaps are queued for bounded retry.'}if(d.primary_provider_request){msg+=' Fixture source: '+(d.primary_provider_request.provider||'unknown')+' ('+(d.primary_provider_request.status||'unknown')+').';const remaining=Number(d.primary_provider_request.requests_remaining);if(Number.isFinite(remaining)&&remaining<=5){notice.classList.add('warn');msg+=' Low provider quota: '+remaining+' requests reported remaining.'}}if(d.live_odds_sync)msg+=' Odds status — 5Dollar: '+(d.live_odds_sync.five_dollar_status||'unknown')+'; The Odds API: '+(d.live_odds_sync.the_odds_api_status||'unknown')+'; matched fixtures: '+(d.live_odds_sync.fixtures_with_market_odds??d.fixtures_with_market_odds??0)+'.';notice.textContent=msg;
- renderFeatured(dashboardRows[0]);renderRows();renderStatus(d);
- document.getElementById('reporttime').textContent='Report date '+(d.as_of_date||'unknown')+' · generated UTC '+(d.generated_at_utc||'unknown')+' · published UTC '+(d.published_at_utc||'unknown');
- }catch(e){const n=document.getElementById('notice');n.className='notice warn';n.textContent='Could not load published data. Please retry shortly.';document.getElementById('featured').textContent='Live report unavailable.';document.getElementById('predictions').textContent='Dashboard data request failed.'}finally{btn.disabled=false;btn.textContent='↻ Refresh'}
+ try{
+  const r=await fetch('/api/dashboard-data',{cache:'no-store'});if(!r.ok)throw new Error('Dashboard data unavailable');const d=await r.json();dashboardRows=Array.isArray(d.predictions)?d.predictions:[];
+  text(document.getElementById('fixtures'),d.fixtures_received);text(document.getElementById('forecasts'),d.experimental_forecasts);text(document.getElementById('odds'),d.fixtures_with_market_odds);
+  renderFeatured(dashboardRows[0]);renderRows();renderMarketOdds();renderStatus(d);observeReveals(document);
+  document.getElementById('reporttime').textContent='Report date '+(d.as_of_date||'unknown')+' · published '+(d.published_at_utc||'unknown')+' UTC';
+ }catch(e){
+  document.getElementById('featured').textContent='Published report unavailable. Please retry shortly.';
+  document.getElementById('predictions').textContent='Dashboard data request failed.';
+  document.getElementById('marketOdds').textContent='Market price data unavailable.';
+  document.getElementById('statusDetails').textContent='Unable to load provider and historical coverage details. Please refresh.';
+ }finally{btn.disabled=false;btn.textContent='↻ Refresh'}
 }
 loadDashboard();
 </script></body></html>"""
