@@ -1,64 +1,41 @@
 # Veltrix Football
 
-Football analytics and prediction platform. The primary provider is API-Football (API-Sports v3) for fixtures, recent completed results, competition listings, and bookmaker-odds enrichment. Predictions remain experimental and explicitly unvalidated.
+Football analytics and experimental prediction platform. The production fixture/result source is **5DollarFootballAPI**; bookmaker odds are enriched from 5DollarFootballAPI, **The Odds API**, and optionally the existing OddsPapi adapter. Historical records, model code, Telegram command centre, dashboard, and paper-tracking ledger are preserved.
 
-## Current scope
-- Verify API-Football credentials and subscription without exposing the key.
-- Fetch fixtures for a chosen date.
-- Inspect accessible competitions.
-- Validate API responses and report remaining request quota when headers are available.
-- No fabricated predictions, no automatic betting, and no promise of profit.
+## Active multi-source architecture
 
-## Requirements
+- **5DollarFootballAPI** — primary same-day fixtures and incremental recent results, normalized into Veltrix's existing fixture schema. The API is authenticated through the repository secret `FIVEDOLLARFOOTBALL_API_KEY`.
+- **The Odds API** — supplemental bookmaker prices. The scheduled pipeline requests featured head-to-head and Over/Under markets only for relevant supported competitions, then checks event-specific BTTS markets for at most three events per report to control the monthly credit budget. The secret is `THE_ODDS_API_KEY`.
+- **OddsPapi** — optional independent BTTS and Over/Under enrichment, still non-blocking and separate from the primary fixture source. Secret: `ODDSPAPI_API_KEY`.
+- **Existing historical database and open match dataset** — retained as the long-term modelling foundation. Recent 5DollarFootballAPI results are merged into the resumable recent-results cache using date, competition and normalized home/away identity; provider fixture IDs are not assumed to match across providers.
+- **Reconciliation** — market prices are attached only when normalized home/away names and the Africa/Lagos kickoff date match. Missing, incomplete or ambiguous prices are omitted; no odds are fabricated and no provider's market prices overwrite the model's forecast probabilities.
+- **Quota safety** — fixture odds requests from 5DollarFootballAPI are capped per report, and The Odds API queries only report-relevant supported competitions with a hard cap on event-specific BTTS calls. Provider errors remain non-fatal for optional odds enrichment but primary fixture/result failure stops the live report rather than publishing invented fixtures.
+- **Suspended provider** — API-Football/API-Sports is not an active runtime dependency. Its historical adapter code is retained for audit/compatibility, but the daily workflow, history refresh and Telegram odds commands do not call it or require `API_FOOTBALL_KEY`.
+
+## Requirements and secrets
+
 - Python 3.11+
-- API-Football (API-Sports) key from your API-Sports account
+- GitHub Actions secrets: `FIVEDOLLARFOOTBALL_API_KEY` and `THE_ODDS_API_KEY`
+- Optional secrets: `ODDSPAPI_API_KEY`, `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`, and `TELEGRAM_WEBHOOK_SECRET`
 
-## Configure
-Set the environment variable `API_FOOTBALL_KEY`. Never commit a real key.
+Never put real keys in source code or commit them.
 
-Linux/macOS:
-```bash
-export API_FOOTBALL_KEY="your_key_here"
-python -m app.cli status
-python -m app.cli fixtures --date 2026-10-23
-python -m app.cli leagues
-python -m app.cli history --from 2025-01-01 --to 2025-01-31 --output data/historical_features.csv
-```
+## Provider verification
 
-Windows PowerShell:
-```powershell
-$env:API_FOOTBALL_KEY="your_key_here"
-python -m app.cli status
-```
+- `scripts/verify_data_providers.py` checks both API credentials and basic response access without printing keys or consuming The Odds API odds credits.
+- `scripts/verify_multi_source_integration.py` performs a bounded live fixture/market probe. It checks up to three 5Dollar fixture odds boards, up to three The Odds API sport odds endpoints, and at most one event-specific BTTS endpoint. Market availability can legitimately be empty for a given competition.
+- Workflow: **Multi-Source Provider Verification** in GitHub Actions.
+- `app/provider_adapters.py` owns provider authentication, schema normalization, local-date/team matching, quota-aware odds retrieval and source-level diagnostics.
 
-## Primary API-Football / API-Sports provider
+## Prediction and publication safeguards
 
-Veltrix uses API-Football v3 at `https://v3.football.api-sports.io/` as the primary live provider. The client reads `API_FOOTBALL_KEY` and sends it in the `x-apisports-key` header. The same provider powers daily fixtures, incremental completed-result history refreshes, account checks, and optional bookmaker-odds enrichment. Highlightly is no longer required for the daily prediction workflow.
+Predictions are experimental and not validated for betting. The current Elo and Poisson models have underperformed the market benchmark in historical comparisons. BTTS and Over/Under probabilities are research estimates, not betting tips. Keep value alerts disabled until chronological out-of-sample validation, calibration, and a suitable market comparison pass. No bookmaker actions are performed.
 
-Set `API_FOOTBALL_KEY` in the deployment environment, then run:
+## Daily pipeline
 
-```bash
-python -m app.cli api-football-status
-python -m app.cli odds --date YYYY-MM-DD --timezone Africa/Lagos
-```
+The daily GitHub Actions workflow runs at 06:00 Africa/Lagos, fetches same-day fixtures, refreshes recent completed results using the resumable cache, generates the report, performs bounded odds enrichment, updates paper tracking, publishes command data, and optionally sends Telegram messages. If the primary fixture provider fails, no fallback fixtures or fabricated predictions are published. Optional odds-source failure does not block an otherwise valid report.
 
-The status command checks authentication and returns subscription/quota metadata without exposing the API key or account email. The odds command inspects one page of prematch odds (10 records per page). Availability depends on fixture timing, competition coverage, and subscription; an empty odds response does not by itself prove authentication failed.
-
-**Integration status:** API-Football is the primary provider in the daily report pipeline and the Telegram command centre. Odds are only attached when complete 1X2 markets can be matched to the same fixture by local date and team names. Keep value alerts disabled until live odds are verified and model probabilities pass chronological out-of-sample validation.
-
-## API notes
-The primary client calls `https://v3.football.api-sports.io/` and reports the provider's request limits and remaining quota when headers are available. Fixture responses are normalized into Veltrix's internal shape. API-Football coverage, historical retention, and bookmaker availability depend on the account subscription; empty odds are reported as unavailable rather than fabricated.
-
-## Optional OddsPapi BTTS and Over/Under odds
-
-OddsPapi is an optional, separate odds source. The daily workflow reads the repository Actions secret `ODDSPAPI_API_KEY` and, after the primary API-Football report is generated, attempts to attach same-day OddsPapi full-time BTTS and Over/Under prices to exact home/away team-name matches. It never replaces API-Football fixtures, historical results, or model probabilities. If OddsPapi is unavailable or no safe fixture match is found, enrichment is skipped and the existing report continues unchanged.
-
-The report can include an `oddspapi_market_odds` object per matched fixture and an `oddspapi_odds` status summary. Telegram messages show available paired BTTS prices and Over/Under 2.5 prices as reference market data only. Prices are not model recommendations; value alerts remain disabled until chronological out-of-sample validation supports them.
-
-Configure the direct OddsPapi account key in GitHub repository **Settings → Secrets and variables → Actions** as `ODDSPAPI_API_KEY`. Do not commit the key or place it in source code. The dedicated coverage workflow verifies the provider's soccer fixtures and live market availability independently of the daily prediction workflow.
-
-## Historical data export
-Use `python -m app.cli history --from YYYY-MM-DD --to YYYY-MM-DD --output data/historical_features.csv` to retrieve fixtures and export completed matches through API-Football's supported date filter, issuing one request per calendar day. Keep each query within seven calendar days; the CLI and daily refresh deliberately bound requests to manage quota. Each row includes rolling team form features computed strictly from earlier completed matches. CSV files are local outputs and are not committed automatically.
+The Telegram `/odds` command reads saved BTTS/Over-Under market prices; `/oddsdiag` inspects the saved provider coverage summary without making new provider calls. The dashboard displays the published report and matched market-odds counts. These are report snapshots, not a real-time trading interface.
 
 ## Open historical dataset import (2020–present)
 Veltrix can import completed match records from the public [Club-Football-Match-Data dataset](https://github.com/xgabora/Club-Football-Match-Data), whose repository identifies an MIT license. The raw dataset is **not** committed to this repository. Run:
@@ -103,7 +80,7 @@ The live report also includes an explicitly non-predictive rest/congestion conte
 
 A saved daily report can be scored against the completed-fixture response for the same date without placing bets. The daily report uses competition-scoped Elo as the primary 1X2 estimate when the fixture maps to a supported historical division and both teams have enough prior competition matches. In that case, the recent-goals Poisson probabilities are shown as an alternative and its expected-goal/total estimates remain auxiliary. When the Elo history is unavailable, Poisson remains primary and a global-fallback Elo estimate is shown only if it meets the minimum-history gate. The report labels which model is primary and the Elo history scope. The scheduled/manual daily workflow attempts to evaluate the previous day's report, matches forecasts by fixture ID, excludes withheld/invalid predictions and unfinished fixtures, and updates a cumulative ledger with result accuracy, multiclass Brier score, and log loss, separated by model version so results from different algorithms are not mixed. Both model versions are tracked separately in the cumulative paper ledger, regardless of which is primary for a particular fixture. When a ledger is available, the Telegram report also shows cumulative paper metrics for each model version. The ledger is uploaded as a 90-day artifact; this is not a permanent database, and an evaluation is skipped if the previous report cannot be found or results cannot be fetched. This is a scoring tool, not a betting approval gate.
 
-Example after saving the API-Football results JSON for that date:
+Example after saving the 5DollarFootballAPI results JSON for that date:
 
 ```bash
 python scripts/evaluate_paper_predictions.py --report reports/daily_predictions.json --results reports/completed_fixtures.json --output reports/paper_evaluation.json
@@ -120,7 +97,7 @@ python scripts/import_open_dataset.py --from 2020-01-01 --to YYYY-MM-DD --output
 python scripts/run_daily_predictions.py --date YYYY-MM-DD --history data/open_historical_matches.csv --output reports/daily_predictions.json
 ```
 
-The daily job refreshes completed results after the open CSV's latest date through yesterday using API-Football's date-filtered fixture endpoint, with one bounded seven-day range per scheduled run and one request per calendar day. The query runs newest-first; if the subscription rejects older dates, accessible results are retained and the rejected dates are recorded as history gaps rather than treated as covered. A versioned cache prevents records from the former Highlightly feed from being mixed into the new history. Current-day results are excluded to prevent leakage. Bookmaker odds remain unavailable unless a complete 1X2 market is returned and matched; the system does not fabricate odds or claim value bets without verified market data.
+The daily job refreshes completed results after the open CSV's latest date through yesterday using 5DollarFootballAPI's date-filtered fixture endpoint, with one bounded seven-day range per scheduled run and one request per calendar day. The query runs newest-first; if the subscription rejects older dates, accessible results are retained and the rejected dates are recorded as history gaps rather than treated as covered. A versioned cache prevents records from the former Highlightly feed from being mixed into the new history. Current-day results are excluded to prevent leakage. Bookmaker odds remain unavailable unless a complete 1X2 market is returned and matched; the system does not fabricate odds or claim value bets without verified market data.
 
 For 1X2 probabilities, competition-scoped Elo is selected as primary only when the fixture maps to a supported historical division and the competition/team history gates pass. Otherwise, the recent-goals Poisson model remains primary; a global-fallback Elo estimate is only shown as a labelled alternative when its history gate passes. Expected goals, BTTS, over/under 2.5 and likely scorelines remain Poisson-derived, including when Elo is primary. When exact team history is missing, the report may show close-name suggestions for diagnosis but never applies fuzzy matches automatically.
 
@@ -130,7 +107,7 @@ The system is **experimental and not validated for betting**. Historical walk-fo
 Use only information available before kickoff as predictors. Full-time/half-time scores, shots and cards are post-match outcomes and must not be used as pre-match features. Never randomly split time-series match data; train on earlier matches and evaluate on later matches. Report Brier score/log loss, calibration, number of selections, ROI, yield, and drawdown alongside a market baseline. Historical odds coverage varies by league and season, and the open dataset does not cover every competition worldwide.
 
 ## Project status and remaining work
-1. API connection and response validation: API-Football is the primary provider; live smoke checks verify account access and fixture retrieval.
+1. API connection and response validation: 5DollarFootballAPI is the primary provider; live smoke checks verify account access and fixture retrieval.
 2. Historical fixture export and leakage-safe rolling features: implemented and covered by automated tests.
 3. Open historical data import: implemented; CI successfully imported the available historical dataset.
 4. Baseline modelling: Poisson attack/defence and Elo are implemented and evaluated chronologically.

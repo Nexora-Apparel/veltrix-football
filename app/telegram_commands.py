@@ -26,8 +26,8 @@ COMMANDS: dict[str, str] = {
     "/value": "Value screen status; candidates stay disabled until the model passes validation.",
     "/overvalue": "Over/Under value screen status; requires model probabilities and real odds.",
     "/bttsvalue": "BTTS value screen status; requires model probabilities and real odds.",
-    "/odds": "Show API-Football / API-Sports prematch odds when the account returns real prices.",
-    "/oddsdiag": "Check API-Football authentication, subscription status, and today's odds availability.",
+    "/odds": "Show matched BTTS and Over/Under bookmaker prices from the connected multi-source report.",
+    "/oddsdiag": "Inspect saved multi-source fixture and odds coverage without spending API quota.",
     "/10odds": "Research shortlist targeting total decimal odds near 10.00 only when real odds are available; not a guarantee.",
     "/builder": "Explain the conservative multi-pick builder rules.",
     "/slipcheck": "Check a supplied decimal-odds combination for arithmetic only.",
@@ -220,11 +220,14 @@ def _status(report: dict[str, Any] | None, ledger: dict[str, Any] | None) -> str
     predictions = _forecast_predictions(report)
     odds_status = "not connected to this command router"
     if isinstance(report, dict):
+        multi = report.get("multi_source_odds_sync") or {}
         meta = report.get("live_odds_sync") or report.get("odds_meta") or report.get("odds") or {}
-        if isinstance(meta, dict) and meta.get("api_sports_status"):
-            api_status = str(meta["api_sports_status"])
-            attached = meta.get("api_sports_fixtures_with_odds", 0)
-            odds_status = f"API-Sports {api_status} ({attached} report fixtures enriched)"
+        if isinstance(multi, dict) and multi:
+            five = (multi.get("five_dollar") or {}).get("status", "UNKNOWN")
+            odds_api = (multi.get("the_odds_api") or {}).get("status", "UNKNOWN")
+            odds_status = f"5DollarFootballAPI {five}; The Odds API {odds_api}"
+            if isinstance(meta, dict) and meta.get("fixtures_with_market_odds") is not None:
+                odds_status += f" ({meta.get('fixtures_with_market_odds')} matched fixtures)"
         elif isinstance(meta, dict) and meta.get("status"):
             odds_status = str(meta["status"])
     if isinstance(ledger, dict):
@@ -268,8 +271,8 @@ def _status(report: dict[str, Any] | None, ledger: dict[str, Any] | None) -> str
         f"Historical coverage: {history_coverage}\n"
         f"Report freshness / reuse: {freshness_status}\n"
         f"Command-data publication: {str(report.get('command_data_publication') or 'UNCONFIRMED') if isinstance(report, dict) else 'UNKNOWN'}\n"
-        f"Report 1X2 odds integration: {odds_status}\n"
-        "Direct API-Sports odds feed: run /oddsdiag; /status reads saved-report integration only.\n"
+        f"Report multi-source odds integration: {odds_status}\n"
+        "/oddsdiag reads saved provider coverage and does not spend API quota.\n"
         f"Paper-tracking ledger: {ledger_status}\n"
         "Betting/value alerts: DISABLED until chronological out-of-sample validation.\n"
         "No bookmaker actions are performed."
@@ -331,34 +334,85 @@ def handle_command(
         return _reply("\n".join(lines))
 
     if command == "/odds":
-        if odds_error:
-            return _reply("LIVE BOOKMAKER ODDS — UNAVAILABLE\n" + odds_error + "\nValue alerts remain disabled until probabilities are validated.")
-        rows = odds_data.get("response", []) if isinstance(odds_data, dict) else []
-        if not isinstance(rows, list) or not rows:
-            return _reply("LIVE BOOKMAKER ODDS — NO PRICES RETURNED\nThe provider returned no usable odds for today's date. Coverage varies by competition and subscription.")
-        now_lagos = datetime.now(ZoneInfo("Africa/Lagos"))
-        upcoming_rows = [row for row in rows if isinstance(row, dict) and _odds_row_is_future(row, now=now_lagos)]
-        if not upcoming_rows:
-            return _reply("LIVE BOOKMAKER ODDS — NO UPCOMING FIXTURES WITH USABLE PREMATCH PRICES\nAll returned fixtures have started, have passed kickoff, or lack a valid Lagos kickoff time. No stale prices are being presented as upcoming opportunities. Try /oddsdiag to check the provider feed.")
-        lines = ["LIVE BOOKMAKER ODDS — UPCOMING FIXTURES | RAW PRICES, NOT VALUE PICKS"]
-        for row in upcoming_rows[:12]:
-            prices = row.get("odds") or {}
-            market_parts = []
-            for key, label in (("yes", "BTTS Yes"), ("no", "BTTS No"),
-                               ("over_2_5", "Over 2.5"), ("under_2_5", "Under 2.5"),
-                               ("over_1_5", "Over 1.5"), ("under_1_5", "Under 1.5")):
-                if key in prices:
-                    market_parts.append(f"{label} {prices[key]:.2f}")
-            if not market_parts:
-                for key, label in (("home", "1"), ("draw", "X"), ("away", "2")):
-                    if key in prices:
-                        market_parts.append(f"{label} {prices[key]:.2f}")
-            lines.append(f"{row.get('home_team')} vs {row.get('away_team')} | {row.get('date')} {row.get('time')} | {row.get('bookmaker')}")
-            lines.append(" | ".join(market_parts) if market_parts else "No supported prices in this row.")
-            if row.get("odd_date"):
-                lines.append(f"Odds updated: {row['odd_date']}")
-        lines.append("Prices are provider-reported and may change. No value picks: the prediction model has not passed chronological out-of-sample validation.")
-        return _reply("\n".join(lines))
+        # Legacy explicit payload support is retained for tests/integrators; the
+        # production webhook reads saved multi-source report data and never calls it.
+        if isinstance(odds_data, dict):
+            legacy_rows = odds_data.get("response", [])
+            if not isinstance(legacy_rows, list) or not legacy_rows:
+                return _reply("LIVE BOOKMAKER ODDS — NO PRICES RETURNED\\nThe supplied provider payload contains no usable odds.")
+            now_lagos = datetime.now(ZoneInfo("Africa/Lagos"))
+            upcoming_legacy = [row for row in legacy_rows if isinstance(row, dict) and _odds_row_is_future(row, now=now_lagos)]
+            if not upcoming_legacy:
+                return _reply("LIVE BOOKMAKER ODDS — NO UPCOMING FIXTURES WITH USABLE PREMATCH PRICES\\nAll supplied prices are stale or have invalid kickoff times.")
+            legacy_lines = ["LIVE BOOKMAKER ODDS — UPCOMING FIXTURES | RAW PRICES, NOT VALUE PICKS"]
+            for row in upcoming_legacy[:12]:
+                prices = row.get("odds") or {}
+                parts = [f"{key} {float(prices[key]):.2f}" for key in ("home", "draw", "away") if key in prices]
+                legacy_lines.append(f"{row.get('home_team')} vs {row.get('away_team')} | {row.get('date')} {row.get('time')} | {row.get('bookmaker')}")
+                legacy_lines.append(" | ".join(parts) if parts else "No supported prices in this row.")
+            legacy_lines.append("Prices are reference data only; model probabilities are not validated for betting.")
+            return _reply("\\n".join(legacy_lines))
+        rows = _future_fixtures(report)
+        if not rows:
+            return _reply("MULTI-SOURCE BOOKMAKER ODDS — NO CURRENT UPCOMING FIXTURES IN THE PUBLISHED REPORT\\nRefresh the daily report first. This command reads saved report data and does not call external providers.")
+        lines = ["BTTS + OVER/UNDER BOOKMAKER PRICES — REFERENCE DATA ONLY"]
+        shown = 0
+        for row in rows:
+            sources = []
+            five = row.get("five_dollar_market_odds")
+            if isinstance(five, dict):
+                for book in (five.get("bookmakers") or []):
+                    if not isinstance(book, dict):
+                        continue
+                    btts, totals = book.get("btts") or {}, book.get("over_under") or {}
+                    parts = []
+                    if btts.get("yes") is not None and btts.get("no") is not None:
+                        parts.append("BTTS Yes {:.2f} / No {:.2f}".format(float(btts["yes"]), float(btts["no"])))
+                    if totals.get("over") is not None and totals.get("under") is not None:
+                        parts.append("O/U {}: Over {:.2f} / Under {:.2f}".format(totals.get("line", 2.5), float(totals["over"]), float(totals["under"])))
+                    if parts:
+                        sources.append("5DollarFootballAPI · " + str(book.get("bookmaker") or "bookmaker") + " · " + " · ".join(parts))
+            odds_api = row.get("the_odds_api_market_odds")
+            if isinstance(odds_api, dict):
+                markets = odds_api.get("markets") or {}
+                for market_key, market_label in (("btts", "BTTS"), ("totals", "Over/Under")):
+                    for market in (markets.get(market_key) or [])[:2]:
+                        if not isinstance(market, dict):
+                            continue
+                        outcomes = market.get("outcomes") or []
+                        parts = []
+                        for outcome in outcomes:
+                            if not isinstance(outcome, dict) or outcome.get("price") is None:
+                                continue
+                            label = "{} {:.2f}".format(outcome.get("name"), float(outcome["price"]))
+                            if outcome.get("point") is not None:
+                                label += " ({})".format(outcome["point"])
+                            parts.append(label)
+                        if parts:
+                            sources.append("The Odds API · " + str(market.get("bookmaker") or "bookmaker") + " · " + market_label + ": " + " / ".join(parts))
+            oddspapi = row.get("oddspapi_market_odds")
+            if isinstance(oddspapi, dict):
+                for market in (oddspapi.get("btts") or [])[:2]:
+                    if isinstance(market, dict) and (market.get("yes") is not None or market.get("no") is not None):
+                        sources.append("OddsPapi · {} · BTTS Yes {} / No {}".format(market.get("bookmaker", "bookmaker"), market.get("yes", "—"), market.get("no", "—")))
+                for market in (oddspapi.get("over_under") or [])[:2]:
+                    if isinstance(market, dict) and (market.get("over") is not None or market.get("under") is not None):
+                        sources.append("OddsPapi · {} · O/U {}: Over {} / Under {}".format(market.get("bookmaker", "bookmaker"), market.get("line", "—"), market.get("over", "—"), market.get("under", "—")))
+            if not sources:
+                continue
+            lines.append("")
+            lines.append("{} vs {} · {}".format(row.get("home_team"), row.get("away_team"), row.get("kickoff_local") or row.get("kickoff")))
+            lines.extend(sources[:5])
+            shown += 1
+            if shown >= 10:
+                break
+        if not shown:
+            return _reply("MULTI-SOURCE BOOKMAKER ODDS — NO MATCHED BTTS OR OVER/UNDER PRICES\\nThe current report contains fixtures, but no provider prices matched safely by teams and local kickoff date. No odds were fabricated.")
+        lines.extend([
+            "",
+            "Prices are provider-reported and may change. Forecast probabilities remain experimental; no value recommendations or bookmaker actions are generated.",
+        ])
+        return _reply("\\n".join(lines))
 
     if command == "/status":
         return _reply(_status(report, ledger))

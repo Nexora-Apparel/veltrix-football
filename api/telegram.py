@@ -14,7 +14,6 @@ from fastapi.responses import HTMLResponse, JSONResponse
 from app.telegram_commands import handle_command
 from app.report_artifacts import load_latest_report, load_paper_ledger
 from app.telegram_security import telegram_webhook_secret_token
-from app.api_football_odds import APIFootballClient, APIFootballError
 
 app = FastAPI(title="Veltrix Football Command Centre")
 
@@ -60,7 +59,7 @@ document.getElementById('forecasts').textContent=d.experimental_forecasts??'—'
 document.getElementById('odds').textContent=d.fixtures_with_market_odds??'—';
 document.getElementById('reporttime').textContent='Report date: '+(d.as_of_date||'unknown')+' · Generated: '+(d.generated_at_utc||'unknown')+' · Published: '+(d.published_at_utc||'unknown');
 let notice=d.warning||'Published report loaded. Forecasts are experimental.';
-if(d.historical_data_coverage&&d.historical_data_coverage.status==='GAPPED_OR_STALE'){const cov=d.historical_data_coverage;notice+=' Historical results have coverage gaps; forecasts may use incomplete recent history.';if(Number(cov.provider_plan_limited_date_count)>0){notice+=' '+cov.provider_plan_limited_date_count+' historical date(s) are inaccessible on the API-Football plan and will not be retried automatically.';}if(Number(cov.retryable_gap_date_count)>0){notice+=' '+cov.retryable_gap_date_count+' transient gap date(s) remain queued for bounded retry.';}}
+if(d.historical_data_coverage&&d.historical_data_coverage.status==='GAPPED_OR_STALE'){const cov=d.historical_data_coverage;notice+=' Historical results have coverage gaps; forecasts may use incomplete recent history.';if(Number(cov.provider_plan_limited_date_count)>0){notice+=' '+cov.provider_plan_limited_date_count+' historical date(s) are inaccessible on the selected provider plan and will not be retried automatically.';}if(Number(cov.retryable_gap_date_count)>0){notice+=' '+cov.retryable_gap_date_count+' transient gap date(s) remain queued for bounded retry.';}}
 if(d.live_odds_sync){notice+=' Matched bookmaker odds: '+(d.live_odds_sync.fixtures_with_odds??d.fixtures_with_market_odds??0)+'.';}
 document.getElementById('notice').textContent=notice;
 if(!d.predictions||!d.predictions.length){const p=document.createElement('div');p.className='empty';p.textContent='No eligible upcoming experimental forecasts in the published report.';box.append(p);return;}
@@ -109,7 +108,7 @@ def dashboard_data() -> dict:
         "generated_at_utc": report.get("generated_at_utc"),
         "published_at_utc": report.get("command_data_published_at_utc"),
         "publication_status": report.get("command_data_publication", "UNKNOWN"),
-        "api_football_request": report.get("api_football_request"),
+        "primary_provider_request": report.get("primary_provider_request"),
         "live_odds_sync": report.get("live_odds_sync"),
         "historical_data_coverage": report.get("historical_data_coverage"),
         "fixtures_received": report.get("fixtures_received", 0),
@@ -202,42 +201,36 @@ async def telegram_webhook(
         return JSONResponse({"ok": True})
     if command.strip().split()[0].split("@", 1)[0].casefold() == "/oddsdiag":
         try:
-            today_lagos = datetime.now(ZoneInfo("Africa/Lagos")).date().isoformat()
-            client = APIFootballClient()
-            status = client.status()
-            odds = client.odds_for_date(today_lagos, timezone="Africa/Lagos")
-            meta = odds.get("_veltrix_meta") or {}
-            subscription = status.get("subscription") or {}
+            report = load_latest_report()
+            request_meta = report.get("primary_provider_request") or {}
+            odds_meta = report.get("multi_source_odds_sync") or {}
+            live_odds = report.get("live_odds_sync") or {}
+            five = odds_meta.get("five_dollar") or {}
+            odds_api = odds_meta.get("the_odds_api") or {}
+            predictions = report.get("predictions") if isinstance(report.get("predictions"), list) else []
+            five_rows = sum(1 for row in predictions if isinstance(row, dict) and row.get("five_dollar_market_odds"))
+            odds_api_rows = sum(1 for row in predictions if isinstance(row, dict) and row.get("the_odds_api_market_odds"))
             diagnostic = "\n".join([
-                "API-FOOTBALL / API-SPORTS CONNECTION DIAGNOSTIC",
-                "Authentication: SUCCESS",
-                f"Subscription active: {subscription.get('active', 'not reported')}",
-                f"Plan: {subscription.get('plan', 'not reported')}",
-                f"Requests remaining: {(meta.get('requests_remaining') or 'not reported')}",
-                f"Prematch odds rows for {today_lagos}: {odds.get('results', 0)}",
-                f"Odds status: {meta.get('status', 'UNKNOWN')}",
-                f"Team-name enrichment: {meta.get('team_name_enrichment', 'not reported')}",
-                f"Enrichment detail: {meta.get('team_name_enrichment_detail', 'none')}",
-                f"Provider raw fixture rows: {meta.get('raw_fixture_rows', 0)}",
-                f"Fixtures with bookmakers: {meta.get('fixtures_with_bookmakers', 0)}",
-                f"Bookmaker records: {meta.get('bookmaker_count', 0)}",
-                f"Sample market names: {', '.join(meta.get('sample_market_names', [])) or 'none returned'}",
-                "Sample fixtures:",
-                *[
-                    f"- {row.get('match')} | {row.get('date')} | {row.get('league')} | fixture ID {row.get('fixture_id')}"
-                    for row in meta.get('fixture_examples', [])
-                ],
-                "Use fixture IDs and bookmaker counts to distinguish missing coverage from response-normalization issues.",
-                "API key and account email are never shown.",
+                "VELTRIX MULTI-SOURCE ODDS DIAGNOSTIC",
+                f"Report date: {report.get('as_of_date', 'not available')}",
+                f"Primary fixture provider: {request_meta.get('provider', 'not reported')}",
+                f"Primary fixture status: {request_meta.get('status', 'not reported')}",
+                f"Fixtures received: {request_meta.get('fixtures_received', report.get('fixtures_received', 0))}",
+                f"5DollarFootballAPI odds status: {five.get('status', 'not reported')}",
+                f"Fixtures with 5Dollar odds: {five_rows}",
+                f"The Odds API status: {odds_api.get('status', 'not reported')}",
+                f"Sports queried: {', '.join(odds_api.get('sports_queried', [])) or 'none'}",
+                f"Fixtures with The Odds API prices: {odds_api_rows}",
+                f"The Odds API quota metadata: {odds_api.get('quota', {})}",
+                f"Combined odds status: {live_odds.get('status', 'not reported')}",
+                f"Fixtures with matched market odds: {report.get('fixtures_with_market_odds', 0)}",
+                "Odds markets are reference data only; model probabilities remain experimental.",
+                "API-Football/API-Sports is suspended and is not called by this diagnostic.",
+                "No API keys are shown and no provider request is made by this command.",
             ])
             _send_message(bot_token, chat_id, "🔔 🆕 NEW VELTRIX UPDATE\n━━━━━━━━━━━━━━━━━━━━\n" + diagnostic)
-        except APIFootballError as exc:
-            _send_message(
-                bot_token, chat_id,
-                "🔔 🆕 NEW VELTRIX UPDATE\n━━━━━━━━━━━━━━━━━━━━\nAPI-FOOTBALL DIAGNOSTIC — UNAVAILABLE\n" + str(exc)
-            )
         except Exception:
-            _send_message(bot_token, chat_id, "🔔 🆕 NEW VELTRIX UPDATE\n━━━━━━━━━━━━━━━━━━━━\nODDS DIAGNOSTIC FAILED — internal details withheld.")
+            _send_message(bot_token, chat_id, "🔔 🆕 NEW VELTRIX UPDATE\n━━━━━━━━━━━━━━━━━━━━\nMULTI-SOURCE DIAGNOSTIC FAILED — published report details unavailable.")
         return JSONResponse({"ok": True})
     try:
         # Read published snapshots only. This never starts prediction jobs or
@@ -250,14 +243,6 @@ async def telegram_webhook(
             report, ledger = None, None
         odds_data = None
         odds_error = None
-        if command.strip().split()[0].split("@", 1)[0].casefold() == "/odds":
-            try:
-                today_lagos = datetime.now(ZoneInfo("Africa/Lagos")).date().isoformat()
-                odds_data = APIFootballClient().odds_for_date(today_lagos, timezone="Africa/Lagos")
-            except APIFootballError as exc:
-                odds_error = str(exc)
-            except Exception:
-                odds_error = "Unexpected odds-provider error; details were withheld."
         _send_message(
             bot_token, chat_id,
             handle_command(command, report=report, ledger=ledger,

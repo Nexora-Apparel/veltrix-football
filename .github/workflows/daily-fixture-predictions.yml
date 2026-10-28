@@ -6,6 +6,8 @@ on:
     paths:
       - "app/config.py"
       - "app/api_football_odds.py"
+      - "app/provider_adapters.py"
+      - "tests/test_provider_adapters.py"
       - "app/oddspapi_odds.py"
       - "scripts/enrich_oddspapi_odds.py"
       - "tests/test_oddspapi_odds.py"
@@ -60,6 +62,8 @@ on:
     paths:
       - "app/config.py"
       - "app/api_football_odds.py"
+      - "app/provider_adapters.py"
+      - "tests/test_provider_adapters.py"
       - "app/oddspapi_odds.py"
       - "scripts/enrich_oddspapi_odds.py"
       - "tests/test_oddspapi_odds.py"
@@ -105,8 +109,8 @@ on:
     - cron: "0 5 * * *"
 
 # Ordinary pushes run tests only. A push commit containing [run-live-verification] intentionally runs the full live pipeline for controlled end-to-end verification.
-# This prevents code commits and automated fixes from consuming the daily API-Football quota.
-# Reuse mode is only for same-day artifacts when the primary API-Football quota is exhausted.
+# This prevents code commits and automated fixes from consuming live provider quotas.
+# Reuse mode is only for same-day artifacts when the primary provider is unavailable.
 # Reuse publication also recalculates all fixture-status counters after delivery filtering.
 
 # Serialize scheduled/manual live runs so they cannot overwrite each other's cache cursor.
@@ -231,25 +235,17 @@ jobs:
           PYTHONPATH: .
         run: python scripts/filter_report_for_delivery.py --input reports/raw/daily_predictions.json --output reports/daily_predictions.json
 
-      - name: Diagnose API-Football account access (quota-exempt status endpoint)
-        id: api-football-preflight
-        if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && contains(github.event.head_commit.message, '[run-live-verification]'))
-        continue-on-error: true
-        env:
-          API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
-          PYTHONPATH: .
-        run: python -m app.cli api-football-status
-
-      - name: Generate daily fixture report
+      - name: Generate daily fixture report from 5DollarFootballAPI
         id: generate-report
         if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && contains(github.event.head_commit.message, '[run-live-verification]')) || false && !contains(github.event.head_commit.message, '[reuse-report-40175707059]')
         env:
-          API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
+          FIVEDOLLARFOOTBALL_API_KEY: ${{ secrets.FIVEDOLLARFOOTBALL_API_KEY }}
+          THE_ODDS_API_KEY: ${{ secrets.THE_ODDS_API_KEY }}
           TARGET_DATE: ${{ inputs.date }}
           PYTHONPATH: .
         run: |
-          if [ -z "$API_FOOTBALL_KEY" ]; then
-            echo "::error::Repository secret API_FOOTBALL_KEY is missing."
+          if [ -z "$FIVEDOLLARFOOTBALL_API_KEY" ]; then
+            echo "::error::Repository secret FIVEDOLLARFOOTBALL_API_KEY is missing."
             exit 1
           fi
           if [ -z "${TARGET_DATE:-}" ]; then TARGET_DATE="$(TZ=Africa/Lagos date +%F)"; fi
