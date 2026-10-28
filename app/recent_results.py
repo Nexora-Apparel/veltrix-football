@@ -356,12 +356,9 @@ def fetch_recent_results_incremental(
     except ValueError:
         last_gap_retry = None
     gap_retry_due = last_gap_retry is None or (end_date - last_gap_retry).days >= 7
-    if retryable_gaps and backfill_complete and (
-        covered_for_retry >= end_date or gap_retry_due
-    ):
-        # Retry gaps when forward coverage is current, or at most weekly, so
-        # transient failures can heal without a permanent plan restriction
-        # starving newer history or consuming quota on every run.
+    if retryable_gaps and backfill_complete and gap_retry_due:
+        # Retry gaps at most weekly, so transient failures can heal without
+        # consuming provider quota on every daily report run.
         range_start = retryable_gaps[0]
         range_end = range_start
         for gap_day in retryable_gaps[1:]:
