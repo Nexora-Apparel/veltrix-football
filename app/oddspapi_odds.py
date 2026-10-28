@@ -5,7 +5,7 @@ import json
 import os
 import re
 import unicodedata
-from datetime import date, datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone\nfrom zoneinfo import ZoneInfo
 from typing import Any
 from urllib.error import HTTPError, URLError
 from urllib.parse import urlencode
@@ -160,7 +160,7 @@ def enrich_report(report: dict[str, Any], client: OddsPapiClient | None = None) 
         raw_start = str(fixture.get("startTime") or "")
         if raw_start:
             try:
-                fixture_date = datetime.fromisoformat(raw_start.replace("Z", "+00:00")).astimezone(timezone.utc).date()
+                fixture_date = datetime.fromisoformat(raw_start.replace("Z", "+00:00")).astimezone(local_zone).date()
                 if fixture_date != target:
                     continue
             except ValueError:
