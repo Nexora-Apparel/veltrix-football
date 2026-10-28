@@ -24,6 +24,17 @@ def test_backtest_predicts_only_after_training_and_is_deterministic():
         })
     result = chronological_backtest(matches, min_training_matches=50)
     assert result["test_matches"] > 0
+    assert result["goal_markets"]["metrics"]["matches"] == result["test_matches"]
+    assert result["goal_markets"]["recent_holdout"]["matches"] > 0
+    assert set(result["goal_markets"]["metrics"]["markets"]) == {
+        "btts_yes", "btts_no", "over_1_5", "under_1_5",
+        "over_2_5", "under_2_5", "over_3_5", "under_3_5",
+    }
+    assert all(
+        metrics["matches"] > 0 and 0 <= metrics["brier_score"] <= 1
+        and metrics["log_loss"] >= 0 and 0 <= metrics["accuracy"] <= 1
+        for metrics in result["goal_markets"]["metrics"]["markets"].values()
+    )
     assert result["first_test_date"] > matches[49]["match_date"]
     assert set(result["models"]) == {"poisson", "elo"}
     live = result["live_pipeline"]
@@ -169,3 +180,15 @@ def test_backtest_dataset_provenance_pins_exact_input_bytes(tmp_path):
     assert provenance["rows_loaded"] == 2
     assert provenance["first_match_date"] == "2024-01-01"
     assert provenance["last_match_date"] == "2024-02-01"
+
+
+
+def test_goal_market_probabilities_are_valid_and_complementary():
+    from app.backtest_engine import goal_market_probabilities
+
+    markets = goal_market_probabilities(1.45, 1.05)
+    assert 0 <= markets["btts_yes"] <= 1
+    assert abs(markets["btts_yes"] + markets["btts_no"] - 1) < 1e-12
+    for line in ("1_5", "2_5", "3_5"):
+        assert abs(markets[f"over_{line}"] + markets[f"under_{line}"] - 1) < 1e-12
+    assert markets["over_1_5"] >= markets["over_2_5"] >= markets["over_3_5"]
