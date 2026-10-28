@@ -1,5 +1,5 @@
 name: Daily Fixture Predictions
-# Live multi-source verification is opt-in via a marked commit; no bookmaker actions are performed.
+# Live multi-source verification is opt-in via a marked commit; provider-switch history gaps are retried; no bookmaker actions are performed.
 
 on:
   push:
