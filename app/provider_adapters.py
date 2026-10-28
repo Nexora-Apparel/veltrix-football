@@ -405,6 +405,15 @@ def enrich_report_with_multi_source_odds(
         if key[1] and key[2]:
             pred_by_key[key] = prediction
 
+    # Attach source-local fixture identity only after a strict team/date join.
+    # Never assume that fixture IDs are interchangeable across providers.
+    for key, item in by_key.items():
+        prediction = pred_by_key.get(key)
+        if prediction is not None:
+            fixture = item.get("fixture") or {}
+            prediction["fixture_source"] = str(item.get("_veltrix_source") or "5DollarFootballAPI")
+            prediction["source_fixture_id"] = fixture.get("id")
+
     fivedollar_status = "NOT_CONFIGURED"
     fivedollar_attached = 0
     fivedollar_error = None
