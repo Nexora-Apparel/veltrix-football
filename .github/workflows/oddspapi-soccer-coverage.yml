@@ -1,0 +1,91 @@
+name: OddsPapi soccer coverage check
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check-coverage:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check OddsPapi RapidAPI access
+        env:
+          RAPIDAPI_KEY: ${{ secrets.ODDSPAPI_RAPIDAPI_KEY }}
+        run: |
+          python - <<'PY'
+          import json
+          import os
+          import sys
+          import urllib.error
+          import urllib.request
+
+          key = os.environ.get("RAPIDAPI_KEY", "").strip()
+          if not key:
+              print("ERROR: repository secret ODDSPAPI_RAPIDAPI_KEY is missing or empty.")
+              sys.exit(1)
+
+          host = "odds-api1.p.rapidapi.com"
+          headers = {
+              "X-RapidAPI-Key": key,
+              "X-RapidAPI-Host": host,
+              "Accept": "application/json",
+          }
+
+          def get(path):
+              req = urllib.request.Request(
+                  f"https://{host}/en/{path}",
+                  headers=headers,
+                  method="GET",
+              )
+              try:
+                  with urllib.request.urlopen(req, timeout=20) as response:
+                      body = response.read().decode("utf-8", errors="replace")
+                      print(f"\n--- {path} (HTTP {response.status}) ---")
+                      try:
+                          payload = json.loads(body)
+                      except json.JSONDecodeError:
+                          print(body[:3000])
+                          return None
+                      if isinstance(payload, list):
+                          print(json.dumps(payload, ensure_ascii=False, indent=2)[:12000])
+                      else:
+                          print(json.dumps(payload, ensure_ascii=False, indent=2)[:5000])
+                      return payload
+              except urllib.error.HTTPError as exc:
+                  body = exc.read().decode("utf-8", errors="replace")
+                  print(f"\n--- {path} (HTTP {exc.code}) ---")
+                  print(body[:2000])
+                  return None
+              except Exception as exc:
+                  print(f"\n--- {path} (request failed: {type(exc).__name__}) ---")
+                  print(str(exc)[:500])
+                  return None
+
+          sports = get("sports")
+          tournaments = get("tournaments?sportId=10")
+
+          if isinstance(sports, list):
+              soccer = [
+                  item for item in sports
+                  if str(item.get("slug", "")).lower() == "soccer"
+                  or str(item.get("sportName", "")).lower() in {"soccer", "football"}
+              ]
+              print("\nSOCCER SPORT MATCHES:")
+              print(json.dumps(soccer, ensure_ascii=False, indent=2))
+
+          if isinstance(tournaments, list):
+              print(f"\nSOCCER TOURNAMENT COUNT: {len(tournaments)}")
+              print("Names and IDs:")
+              print(json.dumps([
+                  {
+                      "tournamentId": item.get("tournamentId"),
+                      "tournamentName": item.get("tournamentName"),
+                      "categoryName": item.get("categoryName"),
+                  }
+                  for item in tournaments
+                  if isinstance(item, dict)
+              ], ensure_ascii=False, indent=2))
+          PY
