@@ -66,6 +66,7 @@ def _load_recent_cache(path: Path) -> tuple[dict, list[dict]]:
             "home_key": _name_key(home), "away_key": _name_key(away),
             "home_goals": home_goals, "away_goals": away_goals,
             "fixture_id": fixture_id, "fixture_status": fixture_status,
+            "source_provider": str(raw.get("source_provider") or "LEGACY_UNATTRIBUTED"),
             "source": "VELTRIX_RECENT_RESULTS_CACHE",
         })
     return {"version": 2, "matches": value["matches"], "state": state}, rows
@@ -94,6 +95,7 @@ def _serialize_recent_cache(rows: list[dict]) -> list[dict]:
         "away_goals": int(row["away_goals"]),
         "fixture_id": row.get("fixture_id") if isinstance(row.get("fixture_id"), int) else None,
         "fixture_status": str(row.get("fixture_status") or "FT"),
+        "source_provider": str(row.get("source_provider") or "LEGACY_UNATTRIBUTED"),
     } for row in rows]
 
 
