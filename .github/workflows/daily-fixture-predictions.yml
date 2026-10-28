@@ -6,9 +6,6 @@ on:
     paths:
       - "app/config.py"
       - "app/api_football_odds.py"
-      - "app/oddspapi_odds.py"
-      - "scripts/enrich_oddspapi_odds.py"
-      - "tests/test_oddspapi_odds.py"
       - "app/historical_data.py"
       - "app/football_api.py"
       - "app/live_predictions.py"
@@ -187,8 +184,7 @@ jobs:
               print(f"Loaded recent-results cache v{value['version']} with {len(value['matches'])} matches.")
           PY
           else
-            printf '%s
-' '{"version":2,"matches":[],"state":{}}' > reports/recent_results_cache.json
+            printf '%s\n' '{"version":2,"matches":[],"state":{}}' > reports/recent_results_cache.json
             echo "No saved recent-results cache exists yet; a new cache will be initialized."
           fi
 
@@ -269,8 +265,7 @@ jobs:
             echo "::warning::Live report failed and Telegram failure notification is not configured."
             exit 0
           fi
-          MESSAGE="$(printf '%s
-' \
+          MESSAGE="$(printf '%s\n' \
             'VELTRIX FOOTBALL — LIVE REPORT FAILED' \
             'No live predictions were generated or sent.' \
             'The live data provider rejected the request. Open the failed GitHub Actions run for the exact cause.' \
