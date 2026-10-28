@@ -40,7 +40,7 @@ main{padding:20px clamp(12px,3vw,30px)}.eyebrow{color:var(--green);font-weight:8
 </style></head><body><div class="shell">
 <header class="topbar"><div class="headrow"><div><div class="brandbox"><div class="mark">V</div><div class="brand">VELTRIX<span>F O O T B A L L</span></div></div><div class="tagline">Command Centre · Football intelligence · Real published data</div></div><div class="live"><i class="dot"></i><span id="liveLabel">REPORT</span></div></div></header>
 <main>
-<section id="dashboardView" class="sectionview">
+<section id="dashboardView" class="sectionview active">
 <div class="sectionhead" style="margin-top:0"><div><div class="eyebrow">Match intelligence</div><h2>Featured prediction</h2></div><button class="refresh" id="refresh" onclick="loadDashboard()">↻ Refresh</button></div>
 <div id="featured" class="empty">Loading the next eligible fixture…</div>
 <div class="sectionhead"><div><div class="eyebrow">Model interpretation</div><h2>AI Insights · Recommended angles</h2></div></div>
@@ -68,7 +68,7 @@ main{padding:20px clamp(12px,3vw,30px)}.eyebrow{color:var(--green);font-weight:8
 <div class="footer">Football data by <a href="https://5dollarfootballapi.com" target="_blank" rel="noopener noreferrer">5DollarFootballAPI</a>. Forecasts are experimental and have not been validated for betting. Market prices are displayed only when matched to a fixture. Missing statistics are not invented; their coverage is not assumed complete. <span id="reporttime"></span></div>
 </section>
 </main></div>
-<nav class="bottomnav"><a class="navitem active" href="#dashboardView" data-view="dashboardView"><span>⌂</span>Dashboard</a><a class="navitem" href="#predictionsView" data-view="predictionsView"><span>◎</span>Predictions</a><a class="navitem" href="#marketView" data-view="marketView"><span>▤</span>Market odds</a><a class="navitem" href="#statusView" data-view="statusView"><span>▥</span>Status</a></nav><a class="navitem active" href="#top" onclick="window.scrollTo({top:0,behavior:'smooth'});return false"><span>⌂</span>Home</a><a class="navitem" href="#predictions" onclick="document.getElementById('predictions').scrollIntoView({behavior:'smooth'});return false"><span>◎</span>Predictions</a><a class="navitem" href="#predictions" onclick="setFilter('priced');return false"><span>▤</span>Market odds</a><a class="navitem" href="#systemStatus" onclick="document.getElementById('systemStatus').scrollIntoView({behavior:'smooth'});return false"><span>▥</span>Status</a></nav>
+<nav class="bottomnav"><a class="navitem active" href="#dashboardView" data-view="dashboardView"><span>⌂</span>Dashboard</a><a class="navitem" href="#predictionsView" data-view="predictionsView"><span>◎</span>Predictions</a><a class="navitem" href="#marketView" data-view="marketView"><span>▤</span>Market odds</a><a class="navitem" href="#statusView" data-view="statusView"><span>▥</span>Status</a></nav>
 <script>
 let dashboardRows=[];let currentFilter='all';
 function num(v){return v===null||v===undefined||v===''?NaN:Number(v)}
@@ -103,14 +103,40 @@ function renderFeatured(m,targetId='featured',insightTarget='insights'){
  const odds=marketPriceLines(m);if(odds.length){const price=document.createElement('div');price.className='prices';price.textContent='AVAILABLE MARKET PRICES · '+odds.join(' · ');wrap.append(price)}
  box.append(top,hero,wrap);if(insightTarget)renderInsights(m,insightTarget);
 }
+function findValueBets(m){
+ const markets=(m.the_odds_api_market_odds||{}).markets||{};const candidates=[
+  {key:'btts',label:'BTTS Yes',p:num(m.btts_yes),names:['yes','btts yes']},
+  {key:'btts',label:'BTTS No',p:Number.isFinite(num(m.btts_yes))?1-num(m.btts_yes):NaN,names:['no','btts no']},
+  {key:'totals',label:'Over 2.5',p:num(m.over_2_5),names:['over 2.5','over'],point:2.5},
+  {key:'totals',label:'Under 2.5',p:Number.isFinite(num(m.over_2_5))?1-num(m.over_2_5):NaN,names:['under 2.5','under'],point:2.5}
+ ];const bets=[];
+ for(const c of candidates){
+  if(!Number.isFinite(c.p)||c.p<=0||c.p>=1)continue;
+  const list=markets[c.key]||[];const market=(list.find(x=>Number.isFinite(c.point)?Number(x.point)===c.point:true))||list[0];if(!market)continue;
+  const outcome=(market.outcomes||[]).find(o=>c.names.includes(String(o.name||'').toLowerCase())&&Number.isFinite(Number(o.price)));if(!outcome)continue;
+  const price=Number(outcome.price);if(price<=1)continue;const edge=c.p-1/price,ev=c.p*price-1;
+  if(edge>=.05&&ev>=.05)bets.push({label:c.label,prob:c.p,price,edge,ev,bookmaker:market.bookmaker||'Matched bookmaker'});
+ }
+ return bets.sort((a,b)=>b.ev-a.ev);
+}
+function renderValueBet(m,box){
+ const bets=findValueBets(m),card=document.createElement('article');card.className='insightcard';
+ const i=document.createElement('div');i.className='insighticon';i.textContent=bets.length?'◆':'◇';
+ const t=document.createElement('div');t.className='insighttitle';t.textContent='AI Value Bet';
+ const v=document.createElement('div');v.className='insightbody insightvalue';const d=document.createElement('div');d.className='insightbody';
+ if(bets.length){const b=bets[0];v.textContent=b.label+' · '+b.bookmaker+' @ '+b.price.toFixed(2);d.textContent='Model probability '+fmt(b.prob)+' · market implied '+fmt(1/b.price)+' · estimated edge '+(100*b.edge).toFixed(1)+' percentage points · expected return '+(100*b.ev).toFixed(1)+'% per unit stake. Experimental estimate only.'}
+ else{v.textContent='No qualifying value bet identified';d.textContent='No matched BTTS or Over/Under price clears the 5-point probability-edge and 5% expected-return thresholds. No bet is recommended from this result.'}
+ card.append(i,t,v,d);box.append(card);
+}
 function renderInsights(m,targetId='insights'){
  const box=document.getElementById(targetId);if(!box)return;box.replaceChildren();if(!m){box.textContent='No eligible fixture available for insight generation.';return}
- const x=m.expected_goals||{};const homeX=num(x.home),awayX=num(x.away),btts=num(m.btts_yes),over=num(m.over_2_5);const probs=m.probabilities||{};const best=topProbability(m);const rows=[];
+ const x=m.expected_goals||{},homeX=num(x.home),awayX=num(x.away),btts=num(m.btts_yes),over=num(m.over_2_5),best=topProbability(m),rows=[];
  rows.push(['◉','Model lean',Number.isFinite(best[1])?(best[0]==='Home'?m.home_team:best[0]==='Away'?m.away_team:'Draw')+' leads at '+fmt(best[1]):'1X2 probability unavailable','Computed from published model probabilities.']);
  rows.push(['◎','BTTS outlook',Number.isFinite(btts)?(btts>=.55?'Higher estimated chance both teams score':btts<=.45?'Model leans toward at least one team not scoring':'No strong BTTS lean'):'BTTS probability unavailable',Number.isFinite(btts)?'Model estimate: '+fmt(btts):'No value supplied.']);
  rows.push(['↗','Goal total',Number.isFinite(over)?(over>=.55?'Model leans Over 2.5':over<=.45?'Model leans Under 2.5':'No strong 2.5-goal lean'):'Totals estimate unavailable',Number.isFinite(over)?'Over 2.5 estimate: '+fmt(over):'No value supplied.']);
  rows.push(['⌁','Expected goals',Number.isFinite(homeX)&&Number.isFinite(awayX)?m.home_team+' '+homeX.toFixed(2)+' · '+m.away_team+' '+awayX.toFixed(2):'Expected-goals data unavailable','Goal estimates from the published model; not live xG statistics.']);
- for(const [icon,title,value,desc] of rows){const card=document.createElement('article');card.className='insightcard';const i=document.createElement('div');i.className='insighticon';i.textContent=icon;const t=document.createElement('div');t.className='insighttitle';t.textContent=title;const v=document.createElement('div');v.className='insightbody insightvalue';v.textContent=value;const d=document.createElement('div');d.className='insightbody';d.textContent=desc;card.append(i,t,v,d);box.append(card)}
+ for(const [icon,title,value,desc] of rows){const card=document.createElement('article');card.className='insightcard';const a=document.createElement('div');a.className='insighticon';a.textContent=icon;const b=document.createElement('div');b.className='insighttitle';b.textContent=title;const c=document.createElement('div');c.className='insightbody insightvalue';c.textContent=value;const d=document.createElement('div');d.className='insightbody';d.textContent=desc;card.append(a,b,c,d);box.append(card)}
+ renderValueBet(m,box);
 }
 function renderRows(){
  const box=document.getElementById('predictions');box.replaceChildren();let rows=dashboardRows;
@@ -118,7 +144,25 @@ function renderRows(){
  if(currentFilter==='totals')rows=rows.filter(m=>m.over_2_5!==null&&m.over_2_5!==undefined&&m.over_2_5!==''&&Number.isFinite(Number(m.over_2_5)));
  document.getElementById('fixtureCount').textContent=rows.length+' fixtures shown';
  if(!rows.length){const e=document.createElement('div');e.className='empty';e.textContent='No fixtures match this filter in the published data.';box.append(e);return}
- rows.forEach((m,i)=>{const card=document.createElement('article');card.className='prediction-card reveal';card.style.transitionDelay=Math.min(i*70,350)+'ms';const inner=document.createElement('div');inner.id='predictionDetail'+i;card.append(inner);box.append(card);renderFeatured(m,inner.id,null)});
+ rows.forEach((m,i)=>{
+  const card=document.createElement('article');card.className='prediction-card reveal';card.style.transitionDelay=Math.min(i*45,250)+'ms';
+  const title=document.createElement('h3');title.className='prediction-title';title.textContent=(m.home_team||'Home')+' vs '+(m.away_team||'Away');
+  const meta=document.createElement('div');meta.className='meta';meta.textContent=(m.league||'Competition')+' · '+(m.kickoff_local||m.kickoff||'Kickoff unavailable');
+  const chips=document.createElement('div');chips.className='chips';
+  for(const [label,value] of [['BTTS Yes',fmt(m.btts_yes)],['Over 2.5',fmt(m.over_2_5)],['Under 2.5',Number.isFinite(num(m.over_2_5))?fmt(1-num(m.over_2_5)):'—']]){
+   const chip=document.createElement('span');chip.className='chip';chip.textContent=label+' '+value;chips.append(chip);
+  }
+  const odds=marketPriceLines(m);const price=document.createElement('div');price.className='prices';price.textContent=odds.length?odds.join(' · '):'No matched market odds available';
+  const open=document.createElement('button');open.type='button';open.className='refresh';open.textContent='View AI Insights & Value Bet →';open.style.marginTop='12px';
+  const detail=document.createElement('div');detail.hidden=true;detail.className='prediction-detail';detail.style.marginTop='14px';
+  const close=document.createElement('button');close.type='button';close.className='refresh';close.textContent='← Back to predictions';
+  const feature=document.createElement('div');const insightHead=document.createElement('div');insightHead.className='sectionhead';const heading=document.createElement('h2');heading.textContent='AI Insights';insightHead.append(heading);
+  const insight=document.createElement('div');insight.className='insights';
+  detail.append(close,feature,insightHead,insight);card.append(title,meta,chips,price,open,detail);box.append(card);
+  feature.id='prediction-feature-'+i;insight.id='prediction-insights-'+i;
+  open.addEventListener('click',()=>{detail.hidden=false;open.hidden=true;renderFeatured(m,feature.id,null);renderInsights(m,insight.id);detail.scrollIntoView({behavior:'smooth',block:'nearest'});});
+  close.addEventListener('click',()=>{detail.hidden=true;open.hidden=false;});
+ });
  observeReveals(box);
 }
 function renderMarketOdds(){
@@ -150,10 +194,12 @@ function observeReveals(root=document){
  if(!window.veltrixObserver)window.veltrixObserver=new IntersectionObserver(entries=>entries.forEach(entry=>{if(entry.isIntersecting){entry.target.classList.add('in-view');window.veltrixObserver.unobserve(entry.target)}}),{threshold:.12,rootMargin:'0px 0px -5% 0px'});
  items.forEach(el=>{el.dataset.observed='1';window.veltrixObserver.observe(el)});
 }
-function setActiveView(id){document.querySelectorAll('.navitem[data-view]').forEach(n=>n.classList.toggle('active',n.dataset.view===id))}
-document.querySelectorAll('.navitem[data-view]').forEach(n=>n.addEventListener('click',e=>{e.preventDefault();const target=document.getElementById(n.dataset.view);if(target){target.scrollIntoView({behavior:'smooth',block:'start'});setActiveView(n.dataset.view)}}));
-const viewObserver=new IntersectionObserver(entries=>entries.forEach(entry=>{if(entry.isIntersecting)setActiveView(entry.target.id)}),{threshold:.25});
-document.querySelectorAll('.sectionview').forEach(el=>viewObserver.observe(el));
+function setActiveView(id){
+ document.querySelectorAll('.navitem[data-view]').forEach(n=>n.classList.toggle('active',n.dataset.view===id));
+ document.querySelectorAll('.sectionview').forEach(section=>section.classList.toggle('active',section.id===id));
+ window.scrollTo({top:0,behavior:'smooth'});
+}
+document.querySelectorAll('.navitem[data-view]').forEach(n=>n.addEventListener('click',e=>{e.preventDefault();setActiveView(n.dataset.view)}));
 async function loadDashboard(){
  const btn=document.getElementById('refresh');btn.disabled=true;btn.textContent='Loading…';
  try{
