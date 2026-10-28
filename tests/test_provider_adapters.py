@@ -173,3 +173,70 @@ def test_history_window_keeps_successful_dates_when_one_day_fails():
     assert result["results"] == 2
     assert meta["successful_dates"] == ["2026-10-26", "2026-10-28"]
     assert meta["failed_dates"] == ["2026-10-27"]
+
+
+def test_infersports_totals_are_attached_only_when_explicitly_enabled():
+    class FakeInferSports:
+        def __init__(self):
+            self.odds_calls = []
+
+        def events_for_date(self, day, timezone_name):
+            return [{
+                "id": "evt_123", "sport": "football", "status": "scheduled",
+                "scheduled_at": "2026-10-29T15:00:00Z",
+                "home_team": {"name": "Arsenal"}, "away_team": {"name": "Chelsea"},
+                "league": {"name": "Premier League"},
+            }]
+
+        def event_odds(self, event_id):
+            self.odds_calls.append(event_id)
+            return {
+                "event_id": event_id, "as_of": "2026-10-29T12:00:00Z", "stale": False,
+                "odds": [{
+                    "bookmaker": "Pinnacle", "market_type": "totals",
+                    "period": "full_time", "line": 2.5, "status": "active",
+                    "prices": {"over": 1.88, "under": 1.98},
+                    "as_of": "2026-10-29T12:00:00Z",
+                }],
+            }
+
+    report = {
+        "as_of_date": "2026-10-29",
+        "predictions": [{
+            "fixture_id": 123, "home_team": "Arsenal", "away_team": "Chelsea",
+            "kickoff_local": "2026-10-29T16:00:00+01:00", "league": "Premier League",
+            "probabilities": {"over_2_5": 0.55},
+        }],
+    }
+    fixtures = {"response": [{
+        "fixture": {"id": 123, "date": "2026-10-29T15:00:00+00:00", "status": {"short": "NS"}},
+        "teams": {"home": {"name": "Arsenal"}, "away": {"name": "Chelsea"}},
+    }]}
+    infer = FakeInferSports()
+    result = enrich_report_with_multi_source_odds(
+        report, fixtures, five_dollar_client=FakeFiveDollar(),
+        odds_api_client=FakeOddsAPI(), infer_sports_client=infer,
+        enable_infersports=True,
+    )
+    attached = result["predictions"][0]["infer_sports_market_odds"]
+    assert attached["provider"] == "InferSports"
+    assert attached["markets"]["totals"][0]["outcomes"][0] == {"name": "Over", "price": 1.88, "point": 2.5}
+    assert result["multi_source_odds_sync"]["infer_sports"]["status"] == "AVAILABLE"
+    assert infer.odds_calls == ["evt_123"]
+
+
+def test_infersports_is_disabled_by_default_for_safe_rollout(monkeypatch):
+    monkeypatch.delenv("VELTRIX_ENABLE_INFERSports", raising=False)
+    report = {"as_of_date": "2026-10-29", "predictions": [{
+        "home_team": "Arsenal", "away_team": "Chelsea",
+        "kickoff_local": "2026-10-29T16:00:00+01:00", "league": "Premier League",
+    }]}
+    fixtures = {"response": [{
+        "fixture": {"id": 123, "date": "2026-10-29T15:00:00+00:00", "status": {"short": "NS"}},
+        "teams": {"home": {"name": "Arsenal"}, "away": {"name": "Chelsea"}},
+    }]}
+    result = enrich_report_with_multi_source_odds(
+        report, fixtures, five_dollar_client=FakeFiveDollar(),
+        odds_api_client=FakeOddsAPI(),
+    )
+    assert result["multi_source_odds_sync"]["infer_sports"]["status"] == "DISABLED"
