@@ -454,6 +454,23 @@ def handle_command(
                             parts.append(label)
                         if parts:
                             sources.append("The Odds API · " + str(market.get("bookmaker") or "bookmaker") + " · " + market_label + ": " + " / ".join(parts))
+            infer = row.get("infer_sports_market_odds")
+            if isinstance(infer, dict):
+                markets = infer.get("markets") or {}
+                for market_key, market_label in (("totals", "Over/Under"),):
+                    for market in (markets.get(market_key) or [])[:2]:
+                        if not isinstance(market, dict):
+                            continue
+                        parts = []
+                        for outcome in market.get("outcomes") or []:
+                            if not isinstance(outcome, dict) or outcome.get("price") is None:
+                                continue
+                            label = "{} {:.2f}".format(outcome.get("name"), float(outcome["price"]))
+                            if outcome.get("point") is not None:
+                                label += " ({})".format(outcome["point"])
+                            parts.append(label)
+                        if parts:
+                            sources.append("InferSports · " + str(market.get("bookmaker") or "bookmaker") + " · " + market_label + ": " + " / ".join(parts))
             oddspapi = row.get("oddspapi_market_odds")
             if isinstance(oddspapi, dict):
                 for market in (oddspapi.get("btts") or [])[:2]:
