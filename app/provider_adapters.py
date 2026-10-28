@@ -20,6 +20,7 @@ from urllib.request import Request, urlopen
 from zoneinfo import ZoneInfo
 
 from app.api_football_odds import APIFootballError
+from app.live_predictions import _name_key as _canonical_name_key
 
 
 FIVEDOLLAR_BASE_URL = "https://api.5dollarfootballapi.com/v1"
@@ -51,9 +52,8 @@ class ProviderAPIError(APIFootballError):
 
 
 def _name_key(value: Any) -> str:
-    text = unicodedata.normalize("NFKD", str(value or "").casefold())
-    text = "".join(ch for ch in text if not unicodedata.combining(ch))
-    return "".join(re.findall(r"[a-z0-9]+", text))
+    """Use the model pipeline's canonical team aliases for cross-source joins."""
+    return _canonical_name_key(value)
 
 
 def _json_request(url: str, headers: dict[str, str] | None = None, timeout: int = 20):
