@@ -207,9 +207,11 @@ async def telegram_webhook(
             live_odds = report.get("live_odds_sync") or {}
             five = odds_meta.get("five_dollar") or {}
             odds_api = odds_meta.get("the_odds_api") or {}
+            infer = odds_meta.get("infer_sports") or {}
             predictions = report.get("predictions") if isinstance(report.get("predictions"), list) else []
             five_rows = sum(1 for row in predictions if isinstance(row, dict) and row.get("five_dollar_market_odds"))
             odds_api_rows = sum(1 for row in predictions if isinstance(row, dict) and row.get("the_odds_api_market_odds"))
+            infer_rows = sum(1 for row in predictions if isinstance(row, dict) and row.get("infer_sports_market_odds"))
             diagnostic = "\n".join([
                 "VELTRIX MULTI-SOURCE ODDS DIAGNOSTIC",
                 f"Report date: {report.get('as_of_date', 'not available')}",
@@ -222,6 +224,8 @@ async def telegram_webhook(
                 f"Sports queried: {', '.join(odds_api.get('sports_queried', [])) or 'none'}",
                 f"Fixtures with The Odds API prices: {odds_api_rows}",
                 f"The Odds API quota metadata: {odds_api.get('quota', {})}",
+                f"InferSports status: {infer.get('status', 'not reported')}",
+                f"Fixtures with InferSports prices: {infer_rows}",
                 f"Combined odds status: {live_odds.get('status', 'not reported')}",
                 f"Fixtures with matched market odds: {report.get('fixtures_with_market_odds', 0)}",
                 "Odds markets are reference data only; model probabilities remain experimental.",
