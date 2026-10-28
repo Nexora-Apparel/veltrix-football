@@ -394,7 +394,7 @@ def enrich_report_with_multi_source_odds(
         else:
             by_key[key] = item
 
-    pred_by_key: dict[tuple[str, str, str], dict[str, Any]] = {}
+    pred_by_key: dict[tuple[str, str, str], dict[str, Any] | None] = {}
     for prediction in predictions:
         if not isinstance(prediction, dict):
             continue
