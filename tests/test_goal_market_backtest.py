@@ -22,7 +22,10 @@ def test_goal_market_backtest_reports_btts_and_totals():
     result = chronological_goal_market_backtest(_matches(), min_training_matches=50)
     assert result["test_matches"] > 0
     assert result["first_test_date"] > "2024-02-19"
-    assert set(result["markets"]) == {"btts_yes", "over_1_5", "over_2_5", "over_3_5"}
+    assert set(result["markets"]) == {
+        "btts_yes", "btts_no", "over_1_5", "under_1_5",
+        "over_2_5", "under_2_5", "over_3_5", "under_3_5",
+    }
     for market in result["markets"].values():
         for model in ("model", "historical_rate_baseline"):
             metrics = market[model]
