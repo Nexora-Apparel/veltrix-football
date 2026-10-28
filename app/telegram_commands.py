@@ -216,6 +216,22 @@ def _saved_market_price_lines(row: dict[str, Any], market_key: str) -> list[str]
                 outcomes.append(label)
             if outcomes:
                 lines.append("The Odds API · {} · {}".format(market.get("bookmaker", "bookmaker"), " / ".join(outcomes)))
+    infer = row.get("infer_sports_market_odds")
+    if isinstance(infer, dict):
+        markets = infer.get("markets") or {}
+        for market in (markets.get(market_key) or [])[:2]:
+            if not isinstance(market, dict):
+                continue
+            outcomes = []
+            for outcome in market.get("outcomes") or []:
+                if not isinstance(outcome, dict) or not isinstance(outcome.get("price"), (int, float)):
+                    continue
+                label = "{} {:.2f}".format(outcome.get("name", "outcome"), outcome["price"])
+                if outcome.get("point") is not None:
+                    label += " ({})".format(outcome["point"])
+                outcomes.append(label)
+            if outcomes:
+                lines.append("InferSports · {} · {}".format(market.get("bookmaker", "bookmaker"), " / ".join(outcomes)))
     oddspapi = row.get("oddspapi_market_odds")
     if isinstance(oddspapi, dict):
         if market_key == "btts":
