@@ -113,6 +113,7 @@ def normalize_fivedollar_fixture(item: dict[str, Any]) -> dict[str, Any]:
 class FiveDollarFootballClient:
     """5DollarFootballAPI client; all date filters are converted to UTC timestamps."""
 
+    provider_name = "5DollarFootballAPI"
     base_url = FIVEDOLLAR_BASE_URL
 
     def __init__(self, api_key: str | None = None, timeout: int = 20):
