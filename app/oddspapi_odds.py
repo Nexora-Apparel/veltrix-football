@@ -58,17 +58,20 @@ class OddsPapiClient:
         return payload
 
 
-def _active_prices(market: dict[str, Any]) -> dict[str, float]:
+def _active_prices(market: dict[str, Any], definition: dict[str, Any] | None = None) -> dict[str, float]:
     prices: dict[str, float] = {}
+    definition = definition or {}
+    definition_outcomes = definition.get("outcomes") or []
+    names_by_id = {str(item.get("outcomeId")): str(item.get("outcomeName") or "").strip().casefold() for item in definition_outcomes if isinstance(item, dict)} if isinstance(definition_outcomes, list) else {}
     outcomes = market.get("outcomes") or {}
     if isinstance(outcomes, list):
         outcomes = {str(i): item for i, item in enumerate(outcomes)}
     if not isinstance(outcomes, dict):
         return prices
-    for outcome in outcomes.values():
+    for outcome_id, outcome in outcomes.items():
         if not isinstance(outcome, dict):
             continue
-        name = str(outcome.get("outcomeName") or outcome.get("name") or "").strip().casefold()
+        name = str(outcome.get("outcomeName") or outcome.get("name") or names_by_id.get(str(outcome_id)) or "").strip().casefold()
         players = outcome.get("players") or {}
         if isinstance(players, list):
             players = {str(i): item for i, item in enumerate(players)}
@@ -109,7 +112,7 @@ def normalize_fixture_odds(
             period = str(definition.get("period") or "").casefold()
             if period and period not in {"fulltime", "ft", "full_time"}:
                 continue
-            prices = _active_prices(market)
+            prices = _active_prices(market, definition)
             if "both teams to score" in market_name or "bothteamsscore" == str(definition.get("marketType", "")).casefold():
                 yes = prices.get("yes")
                 no = prices.get("no")
