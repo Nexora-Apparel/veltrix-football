@@ -243,6 +243,24 @@ def fetch_recent_results_incremental(
         if isinstance(legacy_gaps, list):
             plan_limited_dates.update(str(value) for value in legacy_gaps if isinstance(value, str))
         state.pop("history_gaps", None)
+
+    # Provider-plan denials are source-specific. When the active provider changes,
+    # retry those dates against the new provider instead of carrying the old plan's
+    # permanent restrictions forward.
+    active_provider = getattr(api, "provider_name", None)
+    if isinstance(active_provider, str) and active_provider:
+        previous_provider = state.get("source_provider")
+        if previous_provider != active_provider:
+            prior_gaps = state.get("history_gaps")
+            retryable = {
+                str(value) for value in prior_gaps if isinstance(value, str)
+            } if isinstance(prior_gaps, list) else set()
+            retryable.update(plan_limited_dates)
+            if retryable:
+                state["history_gaps"] = sorted(retryable)
+            plan_limited_dates.clear()
+        state["source_provider"] = active_provider
+
     state["coverage_state_version"] = 2
     if plan_limited_dates:
         state["history_plan_limited_dates"] = sorted(plan_limited_dates)
