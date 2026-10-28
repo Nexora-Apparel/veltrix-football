@@ -9,14 +9,14 @@ def test_team_key_normalizes_accents_and_punctuation():
 def test_normalize_fixture_odds_extracts_btts_and_fulltime_totals():
     fixture = {"fixtureId": "fixture-1"}
     markets = [
-        {"marketId": 104, "marketName": "Both Teams To Score", "period": "fulltime", "marketType": "bothteamsscore"},
+        {"marketId": 104, "marketName": "Both Teams To Score", "period": "fulltime", "marketType": "bothteamsscore", "outcomes": [{"outcomeId": 104, "outcomeName": "Yes"}, {"outcomeId": 105, "outcomeName": "No"}]},
         {"marketId": 1010, "marketName": "Over Under Full Time", "period": "fulltime", "handicap": 2.5, "marketType": "totals"},
         {"marketId": 10300, "marketName": "Both Teams To Score First Half", "period": "p1", "marketType": "bothteamsscore"},
     ]
     payload = {"bookmakerOdds": {"book-a": {"markets": {
         "104": {"outcomes": {
-            "yes": {"outcomeName": "Yes", "players": {"1": {"active": True, "price": 1.8}}},
-            "no": {"outcomeName": "No", "players": {"1": {"active": True, "price": 2.0}}},
+            "104": {"players": {"1": {"active": True, "price": 1.8}}},
+            "105": {"players": {"1": {"active": True, "price": 2.0}}},
         }},
         "1010": {"outcomes": {
             "over": {"outcomeName": "Over", "players": {"1": {"active": True, "price": 1.9}}},
