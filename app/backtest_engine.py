@@ -110,6 +110,61 @@ def load_matches(path: str | Path) -> list[dict[str, Any]]:
     return valid
 
 
+
+
+def goal_market_probabilities(home_lambda: float, away_lambda: float) -> dict[str, float]:
+    """Derive BTTS and goal-total probabilities from the same pre-match xG inputs."""
+    home = _poisson_probs(home_lambda)
+    away = _poisson_probs(away_lambda)
+    btts_yes = sum(hp * ap for hg, hp in enumerate(home) for ag, ap in enumerate(away) if hg > 0 and ag > 0)
+    totals = {
+        "over_1_5": sum(hp * ap for hg, hp in enumerate(home) for ag, ap in enumerate(away) if hg + ag >= 2),
+        "over_2_5": sum(hp * ap for hg, hp in enumerate(home) for ag, ap in enumerate(away) if hg + ag >= 3),
+        "over_3_5": sum(hp * ap for hg, hp in enumerate(home) for ag, ap in enumerate(away) if hg + ag >= 4),
+    }
+    return {
+        "btts_yes": btts_yes,
+        "btts_no": 1.0 - btts_yes,
+        **totals,
+        **{key.replace("over", "under"): 1.0 - value for key, value in totals.items()},
+    }
+
+
+def _score_goal_markets(rows: list[dict[str, Any]], probability_key: str = "goal_markets") -> dict[str, Any]:
+    """Score BTTS and totals as binary forecasts using Brier score, log loss and accuracy."""
+    definitions = {
+        "btts_yes": lambda row: row["home_goals"] > 0 and row["away_goals"] > 0,
+        "btts_no": lambda row: row["home_goals"] == 0 or row["away_goals"] == 0,
+        "over_1_5": lambda row: row["home_goals"] + row["away_goals"] >= 2,
+        "under_1_5": lambda row: row["home_goals"] + row["away_goals"] < 2,
+        "over_2_5": lambda row: row["home_goals"] + row["away_goals"] >= 3,
+        "under_2_5": lambda row: row["home_goals"] + row["away_goals"] < 3,
+        "over_3_5": lambda row: row["home_goals"] + row["away_goals"] >= 4,
+        "under_3_5": lambda row: row["home_goals"] + row["away_goals"] < 4,
+    }
+    result: dict[str, Any] = {"matches": len(rows), "markets": {}}
+    for market, is_winner in definitions.items():
+        evaluated = [
+            (float(row[probability_key][market]), bool(is_winner(row)))
+            for row in rows if probability_key in row and market in row[probability_key]
+        ]
+        if not evaluated:
+            result["markets"][market] = {"matches": 0, "brier_score": None, "log_loss": None, "accuracy": None}
+            continue
+        probs = [min(1.0, max(0.0, p)) for p, _ in evaluated]
+        outcomes = [int(actual) for _, actual in evaluated]
+        count = len(evaluated)
+        result["markets"][market] = {
+            "matches": count,
+            "brier_score": sum((p - y) ** 2 for p, y in zip(probs, outcomes)) / count,
+            "log_loss": sum(-math.log(max(1e-15, min(1.0, p if y else 1.0 - p))) for p, y in zip(probs, outcomes)) / count,
+            "accuracy": sum((p >= 0.5) == bool(y) for p, y in zip(probs, outcomes)) / count,
+            "observed_frequency": sum(outcomes) / count,
+            "mean_predicted_probability": sum(probs) / count,
+        }
+    return result
+
+
 def _score_probabilities(rows: list[dict[str, Any]], model_name: str, *, bins: int = 10) -> dict[str, Any]:
     """Score multiclass forecasts and report one-vs-rest reliability by probability bin."""
     outcomes = ("H", "D", "A")
@@ -361,6 +416,7 @@ def chronological_backtest(matches: Iterable[dict[str, Any]], *, min_training_ma
                 scored.append({"match_date": day, "division": lid, "home_team": home, "away_team": away,
                     "actual": m["result"], "home_goals": m["home_goals"], "away_goals": m["away_goals"],
                     "home_expected_goals": home_lambda, "away_expected_goals": away_lambda,
+                    "goal_markets": goal_market_probabilities(home_lambda, away_lambda),
                     "poisson": poisson, "elo": elo,
                     **({"market": m["market"]} if "market" in m else {})})
         # Update ratings and form only after all fixtures on this date were forecast.
@@ -412,6 +468,7 @@ def chronological_backtest(matches: Iterable[dict[str, Any]], *, min_training_ma
     if not scored:
         raise ValueError("No test predictions produced; lower min_training_matches or supply more history")
     metrics = {name: _score_probabilities(scored, name) for name in ("poisson", "elo")}
+    goal_market_metrics = _score_goal_markets(scored)
     winner = min(metrics, key=lambda name: metrics[name]["log_loss"])
 
     live_metrics = _score_probabilities(live_scored, "live_poisson") if live_scored else None
@@ -539,6 +596,7 @@ def chronological_backtest(matches: Iterable[dict[str, Any]], *, min_training_ma
     holdout_start = forecast_dates[holdout_index]
     holdout_rows = [row for row in scored if row["match_date"] >= holdout_start]
     holdout_metrics = {name: _score_probabilities(holdout_rows, name) for name in ("poisson", "elo")}
+    holdout_goal_market_metrics = _score_goal_markets(holdout_rows)
 
     # Compare de-vigged odds against both models on the same covered fixtures.
     odds_rows = [row for row in scored if "market" in row]
@@ -552,6 +610,12 @@ def chronological_backtest(matches: Iterable[dict[str, Any]], *, min_training_ma
     return {"status": "BACKTESTED_NOT_PROOF_OF_PROFIT", "test_matches": len(scored),
         "first_test_date": scored[0]["match_date"], "last_test_date": scored[-1]["match_date"],
         "models": metrics, "lower_log_loss_model": winner,
+        "goal_markets": {
+            "model": "chronological_shrunk_venue_poisson",
+            "metrics": goal_market_metrics,
+            "recent_holdout": holdout_goal_market_metrics,
+            "note": "BTTS and goal totals are evaluated from pre-match expected goals on chronological predictions; this is not evidence of profitability or validation.",
+        },
         "live_pipeline": {"model": "experimental_recent_goals_poisson", "matches": len(live_scored),
             "first_test_date": live_dates[0] if live_dates else None,
             "last_test_date": live_dates[-1] if live_dates else None,
