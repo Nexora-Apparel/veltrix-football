@@ -185,7 +185,7 @@ def _sync():
 def test_daily_runner_refreshes_history_even_when_no_future_fixtures(tmp_path, monkeypatch):
     output = tmp_path / "reports" / "daily.json"
     _run_args(monkeypatch, output)
-    monkeypatch.setenv("API_FOOTBALL_KEY", "test-key")
+    monkeypatch.setenv("FIVEDOLLARFOOTBALL_API_KEY", "test-key")
     base_history = [{"date": date(2026, 10, 20)}]
     recent_rows = _recent_row()
     monkeypatch.setattr(daily_runner, "load_historical_matches", lambda path: base_history)
@@ -198,7 +198,7 @@ def test_daily_runner_refreshes_history_even_when_no_future_fixtures(tmp_path, m
         def odds_for_date(self, *args):
             raise AssertionError("Odds should not be requested when no future fixtures remain.")
 
-    monkeypatch.setattr(daily_runner, "APIFootballClient", FakeAPI)
+    monkeypatch.setattr(daily_runner, "FiveDollarFootballClient", FakeAPI)
     refresh_calls = []
     monkeypatch.setattr(
         daily_runner, "fetch_recent_results_incremental",
@@ -264,9 +264,9 @@ def test_daily_runner_refreshes_history_and_requests_odds_for_future_fixtures(tm
     assert build_calls[0]["additional_historical_matches"] == recent_rows
     assert report["recent_results_sync"]["status"] == "COMPLETE"
     assert report["historical_data_coverage"]["status"] == "CONTIGUOUS_THROUGH_TARGET_MINUS_ONE"
-    assert report["live_odds_sync"]["status"] == "NO_VALID_1X2_ODDS"
-    assert report["live_odds_sync"]["football_api_status"] == "NO_VALID_1X2_ODDS"
-    assert report["live_odds_sync"]["football_api_fixtures_with_odds"] == 0
+    assert report["live_odds_sync"]["status"] == "SKIPPED_NO_FUTURE_FIXTURES"
+    assert report["live_odds_sync"]["five_dollar_status"] == "SKIPPED_NO_FUTURE_FIXTURES"
+    assert report["live_odds_sync"]["the_odds_api_status"] == "SKIPPED_NO_FUTURE_FIXTURES"
 
 
 
