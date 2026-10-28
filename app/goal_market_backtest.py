@@ -70,8 +70,12 @@ def chronological_goal_market_backtest(
 
     ordered = sorted(matches, key=lambda row: (row["match_date"], row["division"], row["home_team"], row["away_team"]))
     history: dict[tuple[str, str], deque[dict[str, Any]]] = defaultdict(lambda: deque(maxlen=team_window))
-    league_history: dict[str, list[dict[str, Any]]] = defaultdict(list)
-    global_history: list[dict[str, Any]] = []
+    league_totals: dict[str, dict[str, Any]] = defaultdict(
+        lambda: {"matches": 0, "home_goals": 0, "away_goals": 0, "market_counts": defaultdict(int)}
+    )
+    global_totals: dict[str, Any] = {
+        "matches": 0, "home_goals": 0, "away_goals": 0, "market_counts": defaultdict(int)
+    }
     predictions: list[dict[str, Any]] = []
     training_count = 0
     index = 0
@@ -87,16 +91,19 @@ def chronological_goal_market_backtest(
         if training_count >= min_training_matches:
             for match in day_matches:
                 division = str(match["division"])
-                league_rows = league_history[division]
-                baseline_rows = league_rows if len(league_rows) >= 30 else global_history
-                if not baseline_rows:
+                league_stats = league_totals[division]
+                baseline_stats = league_stats if league_stats["matches"] >= 30 else global_totals
+                if not baseline_stats["matches"]:
                     continue
 
-                def mean_goal(rows: list[dict[str, Any]], key: str) -> float:
-                    return sum(float(row[key]) for row in rows) / len(rows)
-
-                league_home = mean_goal(league_rows, "home_goals") if league_rows else mean_goal(global_history, "home_goals")
-                league_away = mean_goal(league_rows, "away_goals") if league_rows else mean_goal(global_history, "away_goals")
+                league_home = (
+                    league_stats["home_goals"] / league_stats["matches"]
+                    if league_stats["matches"] else global_totals["home_goals"] / global_totals["matches"]
+                )
+                league_away = (
+                    league_stats["away_goals"] / league_stats["matches"]
+                    if league_stats["matches"] else global_totals["away_goals"] / global_totals["matches"]
+                )
                 league_home = max(0.15, league_home)
                 league_away = max(0.15, league_away)
 
@@ -131,9 +138,10 @@ def chronological_goal_market_backtest(
                     "under_3_5": float(model_result["totals"]["under_3_5"]),
                 }
 
-                base_probs = {}
-                for market, event in MARKETS.items():
-                    base_probs[market] = sum(event(int(r["home_goals"]), int(r["away_goals"])) for r in baseline_rows) / len(baseline_rows)
+                base_probs = {
+                    market: baseline_stats["market_counts"][market] / baseline_stats["matches"]
+                    for market in MARKETS
+                }
                 actual = {market: event(int(match["home_goals"]), int(match["away_goals"])) for market, event in MARKETS.items()}
                 predictions.append({
                     "match_date": day,
@@ -163,8 +171,13 @@ def chronological_goal_market_backtest(
                 "home_goals": int(match["home_goals"]),
                 "away_goals": int(match["away_goals"]),
             })
-            league_history[division].append(match)
-            global_history.append(match)
+            league_stats = league_totals[division]
+            for stats in (league_stats, global_totals):
+                stats["matches"] += 1
+                stats["home_goals"] += int(match["home_goals"])
+                stats["away_goals"] += int(match["away_goals"])
+                for market, event in MARKETS.items():
+                    stats["market_counts"][market] += event(int(match["home_goals"]), int(match["away_goals"]))
             training_count += 1
 
     metrics = {}
