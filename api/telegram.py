@@ -47,7 +47,7 @@ button{background:#202a3b;color:var(--text);border:1px solid #34445e;border-radi
 <div class="notice" id="notice">Loading published report…</div>
 <h2>Upcoming experimental forecasts</h2><div class="sub" id="reporttime">Checking latest published data…</div>
 <div id="predictions"><div class="empty">Loading fixtures…</div></div>
-<div class="footer">Forecasts are experimental and not validated for betting. Value-betting alerts remain disabled. Data refreshes when the published report updates.</div>
+<div class="footer">Football data by <a href="https://5dollarfootballapi.com" target="_blank" rel="noopener noreferrer" style="color:#8fcfff">5DollarFootballAPI</a>. Forecasts are experimental and not validated for betting. Value-betting alerts remain disabled. Data refreshes when the published report updates.</div>
 <button onclick="loadDashboard()">Refresh data</button></main>
 <script>
 async function loadDashboard(){
@@ -59,8 +59,9 @@ document.getElementById('forecasts').textContent=d.experimental_forecasts??'—'
 document.getElementById('odds').textContent=d.fixtures_with_market_odds??'—';
 document.getElementById('reporttime').textContent='Report date: '+(d.as_of_date||'unknown')+' · Generated: '+(d.generated_at_utc||'unknown')+' · Published: '+(d.published_at_utc||'unknown');
 let notice=d.warning||'Published report loaded. Forecasts are experimental.';
-if(d.historical_data_coverage&&d.historical_data_coverage.status==='GAPPED_OR_STALE'){const cov=d.historical_data_coverage;notice+=' Historical results have coverage gaps; forecasts may use incomplete recent history.';if(Number(cov.provider_plan_limited_date_count)>0){notice+=' '+cov.provider_plan_limited_date_count+' historical date(s) are inaccessible on the selected provider plan and will not be retried automatically.';}if(Number(cov.retryable_gap_date_count)>0){notice+=' '+cov.retryable_gap_date_count+' transient gap date(s) remain queued for bounded retry.';}}
-if(d.live_odds_sync){notice+=' Matched bookmaker odds: '+(d.live_odds_sync.fixtures_with_odds??d.fixtures_with_market_odds??0)+'.';}
+if(d.historical_data_coverage&&d.historical_data_coverage.status==='GAPPED_OR_STALE'){const cov=d.historical_data_coverage;notice+=' Historical results have coverage gaps; forecasts may use incomplete recent history.';if(Number(cov.provider_plan_limited_date_count)>0){notice+=' '+cov.provider_plan_limited_date_count+' historical date(s) remain marked provider-plan-limited; their coverage is not assumed complete.';}if(Number(cov.retryable_gap_date_count)>0){notice+=' '+cov.retryable_gap_date_count+' transient gap date(s) remain queued for bounded retry.';}}
+if(d.primary_provider_request){notice+=' Fixture source: '+(d.primary_provider_request.provider||'unknown')+' ('+(d.primary_provider_request.status||'unknown')+').';}
+if(d.live_odds_sync){notice+=' Odds status: 5Dollar '+(d.live_odds_sync.five_dollar_status||'unknown')+' · The Odds API '+(d.live_odds_sync.the_odds_api_status||'unknown')+' · InferSports '+(d.live_odds_sync.infer_sports_status||'disabled')+'. Matched fixtures: '+(d.live_odds_sync.fixtures_with_market_odds??d.fixtures_with_market_odds??0)+'.';}
 document.getElementById('notice').textContent=notice;
 if(!d.predictions||!d.predictions.length){const p=document.createElement('div');p.className='empty';p.textContent='No eligible upcoming experimental forecasts in the published report.';box.append(p);return;}
 for(const m of d.predictions){
@@ -70,6 +71,15 @@ const league=document.createElement('div');league.className='league';league.text
 const pill=document.createElement('span');pill.className='pill';pill.textContent='EXPERIMENTAL ONLY';card.append(pill);
 const row=document.createElement('div');row.className='row';
 const probs=m.probabilities||{};row.textContent='Home '+fmt(probs.home_win)+' · Draw '+fmt(probs.draw)+' · Away '+fmt(probs.away_win);card.append(row);
+const goalRow=document.createElement('div');goalRow.className='row';goalRow.textContent='BTTS Yes '+fmt(m.btts_yes)+' · Over 2.5 '+fmt(m.over_2_5)+' · Under 2.5 '+(Number.isFinite(Number(m.over_2_5))?(100*(1-Number(m.over_2_5))).toFixed(1)+'%':'—');card.append(goalRow);
+if(m.fixture_source){const src=document.createElement('div');src.className='sub';src.textContent='Fixture source: '+m.fixture_source;card.append(src);}
+const marketLines=[];
+const fiveBooks=(m.five_dollar_market_odds||{}).bookmakers||[];
+if(fiveBooks.length){const b=fiveBooks[0],bt=b.btts||{},ou=b.over_under||{};if(Number.isFinite(Number(bt.yes))&&Number.isFinite(Number(bt.no)))marketLines.push('5Dollar BTTS '+Number(bt.yes).toFixed(2)+' / '+Number(bt.no).toFixed(2));if(Number.isFinite(Number(ou.over))&&Number.isFinite(Number(ou.under)))marketLines.push('5Dollar O/U '+(ou.line||2.5)+' '+Number(ou.over).toFixed(2)+' / '+Number(ou.under).toFixed(2));}
+const apiMarkets=(m.the_odds_api_market_odds||{}).markets||{};
+for(const [key,label] of [['btts','The Odds API BTTS'],['totals','The Odds API O/U']]){const market=(apiMarkets[key]||[])[0];if(market){const outcomes=market.outcomes||[];const parts=outcomes.filter(o=>o&&Number.isFinite(Number(o.price))).map(o=>o.name+' '+Number(o.price).toFixed(2)+(o.point!==null&&o.point!==undefined?' ('+o.point+')':''));if(parts.length)marketLines.push(label+' '+parts.join(' / '));}}
+const inferMarkets=(m.infer_sports_market_odds||{}).markets||{};const inferTotal=(inferMarkets.totals||[])[0];if(inferTotal){const parts=(inferTotal.outcomes||[]).filter(o=>o&&Number.isFinite(Number(o.price))).map(o=>o.name+' '+Number(o.price).toFixed(2)+(o.point!==null&&o.point!==undefined?' ('+o.point+')':''));if(parts.length)marketLines.push('InferSports O/U '+parts.join(' / '));}
+if(marketLines.length){const prices=document.createElement('div');prices.className='sub';prices.style.marginTop='8px';prices.textContent='Bookmaker reference prices: '+marketLines.join(' · ');card.append(prices);}
 const note=document.createElement('div');note.className='sub';note.style.marginTop='9px';note.textContent='No betting recommendation · Model not validated';card.append(note);box.append(card);
 }
 }catch(e){document.getElementById('notice').textContent='Could not load the published report. Please refresh shortly.';const p=document.createElement('div');p.className='empty';p.textContent='Dashboard data request failed.';box.append(p);}
