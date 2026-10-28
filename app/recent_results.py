@@ -259,6 +259,21 @@ def fetch_recent_results_incremental(
             if retryable:
                 state["history_gaps"] = sorted(retryable)
             plan_limited_dates.clear()
+        # One-time correction for earlier 5Dollar runs where empty responses
+        # were misclassified as permanent provider-plan denials.
+        if active_provider == "5DollarFootballAPI" and state.get("provider_error_classification_version") != 1:
+            prior_plan_dates = state.get("history_plan_limited_dates")
+            retryable = {
+                str(value) for value in prior_plan_dates if isinstance(value, str)
+            } if isinstance(prior_plan_dates, list) else set()
+            existing = state.get("history_gaps")
+            if isinstance(existing, list):
+                retryable.update(str(value) for value in existing if isinstance(value, str))
+            if retryable:
+                state["history_gaps"] = sorted(retryable)
+            plan_limited_dates.clear()
+            state.pop("history_plan_limited_dates", None)
+            state["provider_error_classification_version"] = 1
         state["source_provider"] = active_provider
 
     state["coverage_state_version"] = 2
@@ -447,9 +462,10 @@ def fetch_recent_results_incremental(
     history_gaps = set(str(value) for value in existing_gaps if isinstance(value, str)) if isinstance(existing_gaps, list) else set()
     raw_plan_limited = provider_meta.get("plan_limited_dates")
     if not isinstance(raw_plan_limited, list):
-        # Backward compatibility: older API-Football clients reported only
-        # failed_dates, which meant explicit plan errors.
-        raw_plan_limited = provider_meta.get("failed_dates")
+        # Legacy API-Football adapters used failed_dates for explicit plan errors.
+        # The active 5Dollar adapter uses failed_dates for retryable HTTP failures
+        # and empty historical responses, so never promote those to permanent plan gaps.
+        raw_plan_limited = [] if getattr(api, "provider_name", None) else provider_meta.get("failed_dates")
     reported_plan_limited = {
         str(value) for value in raw_plan_limited if isinstance(value, str)
     } if isinstance(raw_plan_limited, list) else set()
