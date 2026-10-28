@@ -1,6 +1,6 @@
 {
   "product": "Veltrix Football",
-  "generated_at_utc": "2026-10-28T15:20:45.807761+00:00",
+  "generated_at_utc": "2026-10-28T15:23:06.469687+00:00",
   "as_of_date": "2026-10-28",
   "timezone": "Africa/Lagos",
   "same_day_only": true,
@@ -150,30 +150,6 @@
       ],
       "fixture_source": "5DollarFootballAPI",
       "source_fixture_id": 4112771667,
-      "five_dollar_market_odds": {
-        "provider": "5DollarFootballAPI",
-        "fixture_id": "4112771667",
-        "bookmakers": [
-          {
-            "bookmaker": "Bet 365",
-            "btts": {
-              "yes": 1.95,
-              "no": 1.8
-            },
-            "over_under": {
-              "line": 2.5,
-              "over": 2.0,
-              "under": 1.8
-            },
-            "1x2": {
-              "home": 1.7,
-              "draw": 3.6,
-              "away": 5.25
-            }
-          }
-        ],
-        "fetched_at": "2026-10-28T15:20:46.175209+00:00"
-      },
       "the_odds_api_market_odds": {
         "provider": "The Odds API",
         "sport_key": "soccer_italy_serie_a",
@@ -183,7 +159,7 @@
           "h2h": [
             {
               "bookmaker": "LeoVegas",
-              "last_update": "2026-10-28T15:20:32Z",
+              "last_update": "2026-10-28T15:22:58Z",
               "outcomes": [
                 {
                   "name": "AC Milan",
@@ -204,7 +180,7 @@
             },
             {
               "bookmaker": "Betway",
-              "last_update": "2026-10-28T15:20:10Z",
+              "last_update": "2026-10-28T15:22:34Z",
               "outcomes": [
                 {
                   "name": "AC Milan",
@@ -225,7 +201,7 @@
             },
             {
               "bookmaker": "Unibet (UK)",
-              "last_update": "2026-10-28T15:20:07Z",
+              "last_update": "2026-10-28T15:22:37Z",
               "outcomes": [
                 {
                   "name": "AC Milan",
@@ -246,7 +222,7 @@
             },
             {
               "bookmaker": "Betfred (UK)",
-              "last_update": "2026-10-28T15:20:33Z",
+              "last_update": "2026-10-28T15:22:35Z",
               "outcomes": [
                 {
                   "name": "AC Milan",
@@ -267,7 +243,7 @@
             },
             {
               "bookmaker": "888sport",
-              "last_update": "2026-10-28T15:20:32Z",
+              "last_update": "2026-10-28T15:22:36Z",
               "outcomes": [
                 {
                   "name": "AC Milan",
@@ -288,7 +264,7 @@
             },
             {
               "bookmaker": "William Hill",
-              "last_update": "2026-10-28T15:19:42Z",
+              "last_update": "2026-10-28T15:22:10Z",
               "outcomes": [
                 {
                   "name": "AC Milan",
@@ -309,7 +285,7 @@
             },
             {
               "bookmaker": "Smarkets",
-              "last_update": "2026-10-28T15:20:34Z",
+              "last_update": "2026-10-28T15:22:59Z",
               "outcomes": [
                 {
                   "name": "AC Milan",
@@ -318,7 +294,7 @@
                 },
                 {
                   "name": "Bologna",
-                  "price": 5.6,
+                  "price": 5.5,
                   "point": null
                 },
                 {
@@ -330,7 +306,7 @@
             },
             {
               "bookmaker": "BoyleSports",
-              "last_update": "2026-10-28T15:19:49Z",
+              "last_update": "2026-10-28T15:22:13Z",
               "outcomes": [
                 {
                   "name": "AC Milan",
@@ -351,7 +327,7 @@
             },
             {
               "bookmaker": "Virgin Bet",
-              "last_update": "2026-10-28T15:20:07Z",
+              "last_update": "2026-10-28T15:22:11Z",
               "outcomes": [
                 {
                   "name": "AC Milan",
@@ -372,7 +348,7 @@
             },
             {
               "bookmaker": "LiveScore Bet",
-              "last_update": "2026-10-28T15:20:32Z",
+              "last_update": "2026-10-28T15:22:36Z",
               "outcomes": [
                 {
                   "name": "AC Milan",
@@ -393,7 +369,7 @@
             },
             {
               "bookmaker": "Grosvenor",
-              "last_update": "2026-10-28T15:20:34Z",
+              "last_update": "2026-10-28T15:22:34Z",
               "outcomes": [
                 {
                   "name": "AC Milan",
@@ -414,7 +390,7 @@
             },
             {
               "bookmaker": "Casumo",
-              "last_update": "2026-10-28T15:20:07Z",
+              "last_update": "2026-10-28T15:22:12Z",
               "outcomes": [
                 {
                   "name": "AC Milan",
@@ -435,7 +411,7 @@
             },
             {
               "bookmaker": "Betfair",
-              "last_update": "2026-10-28T15:20:32Z",
+              "last_update": "2026-10-28T15:22:58Z",
               "outcomes": [
                 {
                   "name": "AC Milan",
@@ -456,11 +432,11 @@
             },
             {
               "bookmaker": "Matchbook",
-              "last_update": "2026-10-28T15:20:33Z",
+              "last_update": "2026-10-28T15:22:57Z",
               "outcomes": [
                 {
                   "name": "AC Milan",
-                  "price": 1.77,
+                  "price": 1.78,
                   "point": null
                 },
                 {
@@ -477,7 +453,7 @@
             },
             {
               "bookmaker": "Betano (UK)",
-              "last_update": "2026-10-28T15:19:27Z",
+              "last_update": "2026-10-28T15:21:58Z",
               "outcomes": [
                 {
                   "name": "AC Milan",
@@ -519,7 +495,7 @@
             },
             {
               "bookmaker": "Coral",
-              "last_update": "2026-10-28T15:20:32Z",
+              "last_update": "2026-10-28T15:22:35Z",
               "outcomes": [
                 {
                   "name": "AC Milan",
@@ -540,7 +516,7 @@
             },
             {
               "bookmaker": "Ladbrokes",
-              "last_update": "2026-10-28T15:20:33Z",
+              "last_update": "2026-10-28T15:22:35Z",
               "outcomes": [
                 {
                   "name": "AC Milan",
@@ -561,7 +537,7 @@
             },
             {
               "bookmaker": "Paddy Power",
-              "last_update": "2026-10-28T15:19:39Z",
+              "last_update": "2026-10-28T15:22:09Z",
               "outcomes": [
                 {
                   "name": "AC Milan",
@@ -582,7 +558,7 @@
             },
             {
               "bookmaker": "Sky Bet",
-              "last_update": "2026-10-28T15:20:06Z",
+              "last_update": "2026-10-28T15:22:57Z",
               "outcomes": [
                 {
                   "name": "AC Milan",
@@ -603,7 +579,7 @@
             },
             {
               "bookmaker": "Betfair Sportsbook",
-              "last_update": "2026-10-28T15:20:32Z",
+              "last_update": "2026-10-28T15:22:36Z",
               "outcomes": [
                 {
                   "name": "AC Milan",
@@ -626,7 +602,7 @@
           "totals": [
             {
               "bookmaker": "LeoVegas",
-              "last_update": "2026-10-28T15:20:32Z",
+              "last_update": "2026-10-28T15:22:58Z",
               "outcomes": [
                 {
                   "name": "Over",
@@ -642,7 +618,7 @@
             },
             {
               "bookmaker": "William Hill",
-              "last_update": "2026-10-28T15:19:42Z",
+              "last_update": "2026-10-28T15:22:10Z",
               "outcomes": [
                 {
                   "name": "Over",
@@ -658,7 +634,7 @@
             },
             {
               "bookmaker": "Grosvenor",
-              "last_update": "2026-10-28T15:20:34Z",
+              "last_update": "2026-10-28T15:22:34Z",
               "outcomes": [
                 {
                   "name": "Over",
@@ -674,7 +650,7 @@
             },
             {
               "bookmaker": "Casumo",
-              "last_update": "2026-10-28T15:20:07Z",
+              "last_update": "2026-10-28T15:22:12Z",
               "outcomes": [
                 {
                   "name": "Over",
@@ -692,7 +668,7 @@
           "btts": [
             {
               "bookmaker": "LeoVegas",
-              "last_update": "2026-10-28T15:20:32Z",
+              "last_update": "2026-10-28T15:22:58Z",
               "outcomes": [
                 {
                   "name": "Yes",
@@ -708,7 +684,7 @@
             },
             {
               "bookmaker": "Betfred (UK)",
-              "last_update": "2026-10-28T15:20:33Z",
+              "last_update": "2026-10-28T15:22:35Z",
               "outcomes": [
                 {
                   "name": "Yes",
@@ -724,7 +700,7 @@
             },
             {
               "bookmaker": "William Hill",
-              "last_update": "2026-10-28T15:19:42Z",
+              "last_update": "2026-10-28T15:22:10Z",
               "outcomes": [
                 {
                   "name": "Yes",
@@ -740,7 +716,7 @@
             },
             {
               "bookmaker": "Virgin Bet",
-              "last_update": "2026-10-28T15:20:07Z",
+              "last_update": "2026-10-28T15:22:11Z",
               "outcomes": [
                 {
                   "name": "Yes",
@@ -756,7 +732,7 @@
             },
             {
               "bookmaker": "LiveScore Bet",
-              "last_update": "2026-10-28T15:20:32Z",
+              "last_update": "2026-10-28T15:22:36Z",
               "outcomes": [
                 {
                   "name": "Yes",
@@ -772,7 +748,7 @@
             },
             {
               "bookmaker": "Betfair",
-              "last_update": "2026-10-28T15:20:27Z",
+              "last_update": "2026-10-28T15:22:51Z",
               "outcomes": [
                 {
                   "name": "Yes",
@@ -788,7 +764,7 @@
             },
             {
               "bookmaker": "Matchbook",
-              "last_update": "2026-10-28T15:20:33Z",
+              "last_update": "2026-10-28T15:22:57Z",
               "outcomes": [
                 {
                   "name": "Yes",
@@ -797,14 +773,14 @@
                 },
                 {
                   "name": "No",
-                  "price": 1.96,
+                  "price": 1.97,
                   "point": null
                 }
               ]
             },
             {
               "bookmaker": "Coral",
-              "last_update": "2026-10-28T15:20:32Z",
+              "last_update": "2026-10-28T15:22:35Z",
               "outcomes": [
                 {
                   "name": "Yes",
@@ -820,7 +796,7 @@
             },
             {
               "bookmaker": "Ladbrokes",
-              "last_update": "2026-10-28T15:20:33Z",
+              "last_update": "2026-10-28T15:22:35Z",
               "outcomes": [
                 {
                   "name": "Yes",
@@ -836,7 +812,7 @@
             },
             {
               "bookmaker": "Paddy Power",
-              "last_update": "2026-10-28T15:19:51Z",
+              "last_update": "2026-10-28T15:22:19Z",
               "outcomes": [
                 {
                   "name": "Yes",
@@ -852,7 +828,7 @@
             }
           ]
         },
-        "fetched_at": "2026-10-28T15:20:50.273822+00:00"
+        "fetched_at": "2026-10-28T15:23:08.950708+00:00"
       }
     },
     {
@@ -970,30 +946,6 @@
       ],
       "fixture_source": "5DollarFootballAPI",
       "source_fixture_id": 3129064639,
-      "five_dollar_market_odds": {
-        "provider": "5DollarFootballAPI",
-        "fixture_id": "3129064639",
-        "bookmakers": [
-          {
-            "bookmaker": "Bet 365",
-            "btts": {
-              "yes": 1.8,
-              "no": 1.95
-            },
-            "over_under": {
-              "line": 2.5,
-              "over": 2.1,
-              "under": 1.727
-            },
-            "1x2": {
-              "home": 2.7,
-              "draw": 3.1,
-              "away": 2.7
-            }
-          }
-        ],
-        "fetched_at": "2026-10-28T15:20:46.871548+00:00"
-      },
       "the_odds_api_market_odds": {
         "provider": "The Odds API",
         "sport_key": "soccer_italy_serie_a",
@@ -1003,7 +955,7 @@
           "h2h": [
             {
               "bookmaker": "LeoVegas",
-              "last_update": "2026-10-28T15:20:32Z",
+              "last_update": "2026-10-28T15:22:58Z",
               "outcomes": [
                 {
                   "name": "Parma",
@@ -1024,7 +976,7 @@
             },
             {
               "bookmaker": "Betway",
-              "last_update": "2026-10-28T15:20:10Z",
+              "last_update": "2026-10-28T15:22:34Z",
               "outcomes": [
                 {
                   "name": "Parma",
@@ -1045,7 +997,7 @@
             },
             {
               "bookmaker": "Unibet (UK)",
-              "last_update": "2026-10-28T15:20:08Z",
+              "last_update": "2026-10-28T15:22:37Z",
               "outcomes": [
                 {
                   "name": "Parma",
@@ -1066,7 +1018,7 @@
             },
             {
               "bookmaker": "Betfred (UK)",
-              "last_update": "2026-10-28T15:20:33Z",
+              "last_update": "2026-10-28T15:22:35Z",
               "outcomes": [
                 {
                   "name": "Parma",
@@ -1087,7 +1039,7 @@
             },
             {
               "bookmaker": "888sport",
-              "last_update": "2026-10-28T15:20:32Z",
+              "last_update": "2026-10-28T15:22:36Z",
               "outcomes": [
                 {
                   "name": "Parma",
@@ -1108,7 +1060,7 @@
             },
             {
               "bookmaker": "William Hill",
-              "last_update": "2026-10-28T15:19:42Z",
+              "last_update": "2026-10-28T15:22:10Z",
               "outcomes": [
                 {
                   "name": "Parma",
@@ -1129,7 +1081,7 @@
             },
             {
               "bookmaker": "Smarkets",
-              "last_update": "2026-10-28T15:20:34Z",
+              "last_update": "2026-10-28T15:22:59Z",
               "outcomes": [
                 {
                   "name": "Parma",
@@ -1150,7 +1102,7 @@
             },
             {
               "bookmaker": "BoyleSports",
-              "last_update": "2026-10-28T15:19:49Z",
+              "last_update": "2026-10-28T15:22:13Z",
               "outcomes": [
                 {
                   "name": "Parma",
@@ -1171,7 +1123,7 @@
             },
             {
               "bookmaker": "Grosvenor",
-              "last_update": "2026-10-28T15:20:34Z",
+              "last_update": "2026-10-28T15:22:34Z",
               "outcomes": [
                 {
                   "name": "Parma",
@@ -1192,7 +1144,7 @@
             },
             {
               "bookmaker": "Casumo",
-              "last_update": "2026-10-28T15:20:07Z",
+              "last_update": "2026-10-28T15:22:12Z",
               "outcomes": [
                 {
                   "name": "Parma",
@@ -1213,7 +1165,7 @@
             },
             {
               "bookmaker": "LiveScore Bet",
-              "last_update": "2026-10-28T15:20:32Z",
+              "last_update": "2026-10-28T15:22:36Z",
               "outcomes": [
                 {
                   "name": "Parma",
@@ -1234,7 +1186,7 @@
             },
             {
               "bookmaker": "Virgin Bet",
-              "last_update": "2026-10-28T15:20:07Z",
+              "last_update": "2026-10-28T15:22:11Z",
               "outcomes": [
                 {
                   "name": "Parma",
@@ -1255,7 +1207,7 @@
             },
             {
               "bookmaker": "Betfair",
-              "last_update": "2026-10-28T15:20:32Z",
+              "last_update": "2026-10-28T15:22:58Z",
               "outcomes": [
                 {
                   "name": "Parma",
@@ -1276,7 +1228,7 @@
             },
             {
               "bookmaker": "Matchbook",
-              "last_update": "2026-10-28T15:20:33Z",
+              "last_update": "2026-10-28T15:22:57Z",
               "outcomes": [
                 {
                   "name": "Parma",
@@ -1297,7 +1249,7 @@
             },
             {
               "bookmaker": "Betano (UK)",
-              "last_update": "2026-10-28T15:19:27Z",
+              "last_update": "2026-10-28T15:21:58Z",
               "outcomes": [
                 {
                   "name": "Parma",
@@ -1339,7 +1291,7 @@
             },
             {
               "bookmaker": "Coral",
-              "last_update": "2026-10-28T15:20:32Z",
+              "last_update": "2026-10-28T15:22:35Z",
               "outcomes": [
                 {
                   "name": "Parma",
@@ -1360,7 +1312,7 @@
             },
             {
               "bookmaker": "Ladbrokes",
-              "last_update": "2026-10-28T15:20:33Z",
+              "last_update": "2026-10-28T15:22:35Z",
               "outcomes": [
                 {
                   "name": "Parma",
@@ -1381,7 +1333,7 @@
             },
             {
               "bookmaker": "Paddy Power",
-              "last_update": "2026-10-28T15:19:39Z",
+              "last_update": "2026-10-28T15:22:09Z",
               "outcomes": [
                 {
                   "name": "Parma",
@@ -1402,7 +1354,7 @@
             },
             {
               "bookmaker": "Sky Bet",
-              "last_update": "2026-10-28T15:20:06Z",
+              "last_update": "2026-10-28T15:22:57Z",
               "outcomes": [
                 {
                   "name": "Parma",
@@ -1423,7 +1375,7 @@
             },
             {
               "bookmaker": "Betfair Sportsbook",
-              "last_update": "2026-10-28T15:20:32Z",
+              "last_update": "2026-10-28T15:22:36Z",
               "outcomes": [
                 {
                   "name": "Parma",
@@ -1446,7 +1398,7 @@
           "totals": [
             {
               "bookmaker": "LeoVegas",
-              "last_update": "2026-10-28T15:20:32Z",
+              "last_update": "2026-10-28T15:22:58Z",
               "outcomes": [
                 {
                   "name": "Over",
@@ -1462,7 +1414,7 @@
             },
             {
               "bookmaker": "William Hill",
-              "last_update": "2026-10-28T15:19:42Z",
+              "last_update": "2026-10-28T15:22:10Z",
               "outcomes": [
                 {
                   "name": "Over",
@@ -1478,7 +1430,7 @@
             },
             {
               "bookmaker": "Grosvenor",
-              "last_update": "2026-10-28T15:20:34Z",
+              "last_update": "2026-10-28T15:22:34Z",
               "outcomes": [
                 {
                   "name": "Over",
@@ -1494,7 +1446,7 @@
             },
             {
               "bookmaker": "Casumo",
-              "last_update": "2026-10-28T15:20:07Z",
+              "last_update": "2026-10-28T15:22:12Z",
               "outcomes": [
                 {
                   "name": "Over",
@@ -1510,7 +1462,7 @@
             },
             {
               "bookmaker": "Matchbook",
-              "last_update": "2026-10-28T15:20:33Z",
+              "last_update": "2026-10-28T15:22:57Z",
               "outcomes": [
                 {
                   "name": "Over",
@@ -1528,7 +1480,7 @@
           "btts": [
             {
               "bookmaker": "LeoVegas",
-              "last_update": "2026-10-28T15:20:32Z",
+              "last_update": "2026-10-28T15:22:58Z",
               "outcomes": [
                 {
                   "name": "Yes",
@@ -1544,7 +1496,7 @@
             },
             {
               "bookmaker": "Betfred (UK)",
-              "last_update": "2026-10-28T15:20:33Z",
+              "last_update": "2026-10-28T15:22:35Z",
               "outcomes": [
                 {
                   "name": "Yes",
@@ -1560,7 +1512,7 @@
             },
             {
               "bookmaker": "William Hill",
-              "last_update": "2026-10-28T15:19:42Z",
+              "last_update": "2026-10-28T15:22:10Z",
               "outcomes": [
                 {
                   "name": "Yes",
@@ -1576,7 +1528,7 @@
             },
             {
               "bookmaker": "LiveScore Bet",
-              "last_update": "2026-10-28T15:20:32Z",
+              "last_update": "2026-10-28T15:22:36Z",
               "outcomes": [
                 {
                   "name": "Yes",
@@ -1592,7 +1544,7 @@
             },
             {
               "bookmaker": "Virgin Bet",
-              "last_update": "2026-10-28T15:20:07Z",
+              "last_update": "2026-10-28T15:22:11Z",
               "outcomes": [
                 {
                   "name": "Yes",
@@ -1608,7 +1560,7 @@
             },
             {
               "bookmaker": "Betfair",
-              "last_update": "2026-10-28T15:20:47Z",
+              "last_update": "2026-10-28T15:22:37Z",
               "outcomes": [
                 {
                   "name": "Yes",
@@ -1624,7 +1576,7 @@
             },
             {
               "bookmaker": "Matchbook",
-              "last_update": "2026-10-28T15:20:33Z",
+              "last_update": "2026-10-28T15:22:57Z",
               "outcomes": [
                 {
                   "name": "Yes",
@@ -1640,7 +1592,7 @@
             },
             {
               "bookmaker": "Coral",
-              "last_update": "2026-10-28T15:20:32Z",
+              "last_update": "2026-10-28T15:22:35Z",
               "outcomes": [
                 {
                   "name": "Yes",
@@ -1656,7 +1608,7 @@
             },
             {
               "bookmaker": "Ladbrokes",
-              "last_update": "2026-10-28T15:20:33Z",
+              "last_update": "2026-10-28T15:22:35Z",
               "outcomes": [
                 {
                   "name": "Yes",
@@ -1672,7 +1624,7 @@
             },
             {
               "bookmaker": "Paddy Power",
-              "last_update": "2026-10-28T15:20:17Z",
+              "last_update": "2026-10-28T15:22:35Z",
               "outcomes": [
                 {
                   "name": "Yes",
@@ -1688,7 +1640,7 @@
             }
           ]
         },
-        "fetched_at": "2026-10-28T15:20:50.273937+00:00"
+        "fetched_at": "2026-10-28T15:23:08.950857+00:00"
       }
     },
     {
@@ -1806,30 +1758,6 @@
       ],
       "fixture_source": "5DollarFootballAPI",
       "source_fixture_id": 1474709527,
-      "five_dollar_market_odds": {
-        "provider": "5DollarFootballAPI",
-        "fixture_id": "1474709527",
-        "bookmakers": [
-          {
-            "bookmaker": "Bet 365",
-            "btts": {
-              "yes": 1.615,
-              "no": 2.2
-            },
-            "over_under": {
-              "line": 2.5,
-              "over": 1.444,
-              "under": 2.75
-            },
-            "1x2": {
-              "home": 7.5,
-              "draw": 5.25,
-              "away": 1.364
-            }
-          }
-        ],
-        "fetched_at": "2026-10-28T15:20:48.476511+00:00"
-      },
       "the_odds_api_market_odds": {
         "provider": "The Odds API",
         "sport_key": "soccer_italy_serie_a",
@@ -1839,16 +1767,16 @@
           "h2h": [
             {
               "bookmaker": "Betway",
-              "last_update": "2026-10-28T15:20:10Z",
+              "last_update": "2026-10-28T15:22:34Z",
               "outcomes": [
                 {
                   "name": "Inter Milan",
-                  "price": 1.33,
+                  "price": 1.35,
                   "point": null
                 },
                 {
                   "name": "Venezia",
-                  "price": 7.5,
+                  "price": 7.0,
                   "point": null
                 },
                 {
@@ -1860,7 +1788,7 @@
             },
             {
               "bookmaker": "LeoVegas",
-              "last_update": "2026-10-28T15:20:32Z",
+              "last_update": "2026-10-28T15:22:58Z",
               "outcomes": [
                 {
                   "name": "Inter Milan",
@@ -1881,7 +1809,7 @@
             },
             {
               "bookmaker": "Unibet (UK)",
-              "last_update": "2026-10-28T15:20:08Z",
+              "last_update": "2026-10-28T15:22:37Z",
               "outcomes": [
                 {
                   "name": "Inter Milan",
@@ -1902,7 +1830,7 @@
             },
             {
               "bookmaker": "Betfred (UK)",
-              "last_update": "2026-10-28T15:20:33Z",
+              "last_update": "2026-10-28T15:22:35Z",
               "outcomes": [
                 {
                   "name": "Inter Milan",
@@ -1923,28 +1851,28 @@
             },
             {
               "bookmaker": "Smarkets",
-              "last_update": "2026-10-28T15:20:34Z",
+              "last_update": "2026-10-28T15:22:59Z",
               "outcomes": [
                 {
                   "name": "Inter Milan",
-                  "price": 1.39,
+                  "price": 1.4,
                   "point": null
                 },
                 {
                   "name": "Venezia",
-                  "price": 8.8,
+                  "price": 8.6,
                   "point": null
                 },
                 {
                   "name": "Draw",
-                  "price": 5.7,
+                  "price": 5.8,
                   "point": null
                 }
               ]
             },
             {
               "bookmaker": "888sport",
-              "last_update": "2026-10-28T15:20:32Z",
+              "last_update": "2026-10-28T15:22:36Z",
               "outcomes": [
                 {
                   "name": "Inter Milan",
@@ -1965,7 +1893,7 @@
             },
             {
               "bookmaker": "William Hill",
-              "last_update": "2026-10-28T15:19:42Z",
+              "last_update": "2026-10-28T15:22:10Z",
               "outcomes": [
                 {
                   "name": "Inter Milan",
@@ -1986,7 +1914,7 @@
             },
             {
               "bookmaker": "BoyleSports",
-              "last_update": "2026-10-28T15:19:49Z",
+              "last_update": "2026-10-28T15:22:13Z",
               "outcomes": [
                 {
                   "name": "Inter Milan",
@@ -2007,7 +1935,7 @@
             },
             {
               "bookmaker": "Virgin Bet",
-              "last_update": "2026-10-28T15:20:07Z",
+              "last_update": "2026-10-28T15:22:11Z",
               "outcomes": [
                 {
                   "name": "Inter Milan",
@@ -2028,7 +1956,7 @@
             },
             {
               "bookmaker": "LiveScore Bet",
-              "last_update": "2026-10-28T15:20:32Z",
+              "last_update": "2026-10-28T15:22:36Z",
               "outcomes": [
                 {
                   "name": "Inter Milan",
@@ -2049,7 +1977,7 @@
             },
             {
               "bookmaker": "Grosvenor",
-              "last_update": "2026-10-28T15:20:34Z",
+              "last_update": "2026-10-28T15:22:34Z",
               "outcomes": [
                 {
                   "name": "Inter Milan",
@@ -2070,7 +1998,7 @@
             },
             {
               "bookmaker": "Casumo",
-              "last_update": "2026-10-28T15:20:07Z",
+              "last_update": "2026-10-28T15:22:12Z",
               "outcomes": [
                 {
                   "name": "Inter Milan",
@@ -2091,49 +2019,49 @@
             },
             {
               "bookmaker": "Betfair",
-              "last_update": "2026-10-28T15:20:32Z",
+              "last_update": "2026-10-28T15:22:58Z",
               "outcomes": [
                 {
                   "name": "Inter Milan",
-                  "price": 1.39,
+                  "price": 1.4,
                   "point": null
                 },
                 {
                   "name": "Venezia",
-                  "price": 8.8,
+                  "price": 8.6,
                   "point": null
                 },
                 {
                   "name": "Draw",
-                  "price": 5.7,
+                  "price": 5.8,
                   "point": null
                 }
               ]
             },
             {
               "bookmaker": "Matchbook",
-              "last_update": "2026-10-28T15:20:33Z",
+              "last_update": "2026-10-28T15:22:57Z",
               "outcomes": [
                 {
                   "name": "Inter Milan",
-                  "price": 1.39,
+                  "price": 1.4,
                   "point": null
                 },
                 {
                   "name": "Venezia",
-                  "price": 8.8,
+                  "price": 8.6,
                   "point": null
                 },
                 {
                   "name": "Draw",
-                  "price": 5.7,
+                  "price": 5.8,
                   "point": null
                 }
               ]
             },
             {
               "bookmaker": "Betano (UK)",
-              "last_update": "2026-10-28T15:19:27Z",
+              "last_update": "2026-10-28T15:21:58Z",
               "outcomes": [
                 {
                   "name": "Inter Milan",
@@ -2175,7 +2103,7 @@
             },
             {
               "bookmaker": "Coral",
-              "last_update": "2026-10-28T15:20:32Z",
+              "last_update": "2026-10-28T15:22:35Z",
               "outcomes": [
                 {
                   "name": "Inter Milan",
@@ -2196,7 +2124,7 @@
             },
             {
               "bookmaker": "Ladbrokes",
-              "last_update": "2026-10-28T15:20:33Z",
+              "last_update": "2026-10-28T15:22:35Z",
               "outcomes": [
                 {
                   "name": "Inter Milan",
@@ -2217,7 +2145,7 @@
             },
             {
               "bookmaker": "Paddy Power",
-              "last_update": "2026-10-28T15:19:39Z",
+              "last_update": "2026-10-28T15:22:09Z",
               "outcomes": [
                 {
                   "name": "Inter Milan",
@@ -2238,7 +2166,7 @@
             },
             {
               "bookmaker": "Sky Bet",
-              "last_update": "2026-10-28T15:20:06Z",
+              "last_update": "2026-10-28T15:22:57Z",
               "outcomes": [
                 {
                   "name": "Inter Milan",
@@ -2259,7 +2187,7 @@
             },
             {
               "bookmaker": "Betfair Sportsbook",
-              "last_update": "2026-10-28T15:20:32Z",
+              "last_update": "2026-10-28T15:22:36Z",
               "outcomes": [
                 {
                   "name": "Inter Milan",
@@ -2282,7 +2210,7 @@
           "totals": [
             {
               "bookmaker": "LeoVegas",
-              "last_update": "2026-10-28T15:20:32Z",
+              "last_update": "2026-10-28T15:22:58Z",
               "outcomes": [
                 {
                   "name": "Over",
@@ -2298,7 +2226,7 @@
             },
             {
               "bookmaker": "William Hill",
-              "last_update": "2026-10-28T15:19:42Z",
+              "last_update": "2026-10-28T15:22:10Z",
               "outcomes": [
                 {
                   "name": "Over",
@@ -2314,7 +2242,7 @@
             },
             {
               "bookmaker": "Grosvenor",
-              "last_update": "2026-10-28T15:20:34Z",
+              "last_update": "2026-10-28T15:22:34Z",
               "outcomes": [
                 {
                   "name": "Over",
@@ -2330,7 +2258,7 @@
             },
             {
               "bookmaker": "Casumo",
-              "last_update": "2026-10-28T15:20:07Z",
+              "last_update": "2026-10-28T15:22:12Z",
               "outcomes": [
                 {
                   "name": "Over",
@@ -2346,7 +2274,7 @@
             },
             {
               "bookmaker": "Matchbook",
-              "last_update": "2026-10-28T15:20:33Z",
+              "last_update": "2026-10-28T15:22:57Z",
               "outcomes": [
                 {
                   "name": "Over",
@@ -2364,7 +2292,7 @@
           "btts": [
             {
               "bookmaker": "LeoVegas",
-              "last_update": "2026-10-28T15:20:32Z",
+              "last_update": "2026-10-28T15:22:58Z",
               "outcomes": [
                 {
                   "name": "Yes",
@@ -2380,7 +2308,7 @@
             },
             {
               "bookmaker": "Betfred (UK)",
-              "last_update": "2026-10-28T15:20:33Z",
+              "last_update": "2026-10-28T15:22:35Z",
               "outcomes": [
                 {
                   "name": "Yes",
@@ -2396,7 +2324,7 @@
             },
             {
               "bookmaker": "William Hill",
-              "last_update": "2026-10-28T15:19:42Z",
+              "last_update": "2026-10-28T15:22:10Z",
               "outcomes": [
                 {
                   "name": "Yes",
@@ -2412,7 +2340,7 @@
             },
             {
               "bookmaker": "Virgin Bet",
-              "last_update": "2026-10-28T15:20:07Z",
+              "last_update": "2026-10-28T15:22:11Z",
               "outcomes": [
                 {
                   "name": "Yes",
@@ -2428,7 +2356,7 @@
             },
             {
               "bookmaker": "LiveScore Bet",
-              "last_update": "2026-10-28T15:20:32Z",
+              "last_update": "2026-10-28T15:22:36Z",
               "outcomes": [
                 {
                   "name": "Yes",
@@ -2444,7 +2372,7 @@
             },
             {
               "bookmaker": "Betfair",
-              "last_update": "2026-10-28T15:20:47Z",
+              "last_update": "2026-10-28T15:22:36Z",
               "outcomes": [
                 {
                   "name": "Yes",
@@ -2460,23 +2388,23 @@
             },
             {
               "bookmaker": "Matchbook",
-              "last_update": "2026-10-28T15:20:33Z",
+              "last_update": "2026-10-28T15:22:57Z",
               "outcomes": [
                 {
                   "name": "Yes",
-                  "price": 1.71,
+                  "price": 1.69,
                   "point": null
                 },
                 {
                   "name": "No",
-                  "price": 2.36,
+                  "price": 2.38,
                   "point": null
                 }
               ]
             },
             {
               "bookmaker": "Coral",
-              "last_update": "2026-10-28T15:20:32Z",
+              "last_update": "2026-10-28T15:22:35Z",
               "outcomes": [
                 {
                   "name": "Yes",
@@ -2492,7 +2420,7 @@
             },
             {
               "bookmaker": "Ladbrokes",
-              "last_update": "2026-10-28T15:20:33Z",
+              "last_update": "2026-10-28T15:22:35Z",
               "outcomes": [
                 {
                   "name": "Yes",
@@ -2508,7 +2436,7 @@
             },
             {
               "bookmaker": "Paddy Power",
-              "last_update": "2026-10-28T15:19:51Z",
+              "last_update": "2026-10-28T15:22:21Z",
               "outcomes": [
                 {
                   "name": "Yes",
@@ -2524,7 +2452,7 @@
             }
           ]
         },
-        "fetched_at": "2026-10-28T15:20:50.273883+00:00"
+        "fetched_at": "2026-10-28T15:23:08.950788+00:00"
       }
     },
     {
@@ -2642,30 +2570,6 @@
       ],
       "fixture_source": "5DollarFootballAPI",
       "source_fixture_id": 3477269001,
-      "five_dollar_market_odds": {
-        "provider": "5DollarFootballAPI",
-        "fixture_id": "3477269001",
-        "bookmakers": [
-          {
-            "bookmaker": "Bet 365",
-            "btts": {
-              "yes": 2.2,
-              "no": 1.615
-            },
-            "over_under": {
-              "line": 2.5,
-              "over": 2.375,
-              "under": 1.571
-            },
-            "1x2": {
-              "home": 5.25,
-              "draw": 3.4,
-              "away": 1.75
-            }
-          }
-        ],
-        "fetched_at": "2026-10-28T15:20:48.899301+00:00"
-      },
       "the_odds_api_market_odds": {
         "provider": "The Odds API",
         "sport_key": "soccer_italy_serie_a",
@@ -2675,7 +2579,7 @@
           "h2h": [
             {
               "bookmaker": "Betway",
-              "last_update": "2026-10-28T15:20:10Z",
+              "last_update": "2026-10-28T15:22:34Z",
               "outcomes": [
                 {
                   "name": "Genoa",
@@ -2696,7 +2600,7 @@
             },
             {
               "bookmaker": "LeoVegas",
-              "last_update": "2026-10-28T15:20:32Z",
+              "last_update": "2026-10-28T15:22:58Z",
               "outcomes": [
                 {
                   "name": "Genoa",
@@ -2717,7 +2621,7 @@
             },
             {
               "bookmaker": "Unibet (UK)",
-              "last_update": "2026-10-28T15:20:08Z",
+              "last_update": "2026-10-28T15:22:37Z",
               "outcomes": [
                 {
                   "name": "Genoa",
@@ -2738,7 +2642,7 @@
             },
             {
               "bookmaker": "Smarkets",
-              "last_update": "2026-10-28T15:20:34Z",
+              "last_update": "2026-10-28T15:22:59Z",
               "outcomes": [
                 {
                   "name": "Genoa",
@@ -2759,7 +2663,7 @@
             },
             {
               "bookmaker": "888sport",
-              "last_update": "2026-10-28T15:20:32Z",
+              "last_update": "2026-10-28T15:22:36Z",
               "outcomes": [
                 {
                   "name": "Genoa",
@@ -2780,7 +2684,7 @@
             },
             {
               "bookmaker": "William Hill",
-              "last_update": "2026-10-28T15:19:42Z",
+              "last_update": "2026-10-28T15:22:10Z",
               "outcomes": [
                 {
                   "name": "Genoa",
@@ -2801,7 +2705,7 @@
             },
             {
               "bookmaker": "Betfred (UK)",
-              "last_update": "2026-10-28T15:20:33Z",
+              "last_update": "2026-10-28T15:22:35Z",
               "outcomes": [
                 {
                   "name": "Genoa",
@@ -2822,7 +2726,7 @@
             },
             {
               "bookmaker": "BoyleSports",
-              "last_update": "2026-10-28T15:19:49Z",
+              "last_update": "2026-10-28T15:22:13Z",
               "outcomes": [
                 {
                   "name": "Genoa",
@@ -2843,7 +2747,7 @@
             },
             {
               "bookmaker": "Virgin Bet",
-              "last_update": "2026-10-28T15:20:07Z",
+              "last_update": "2026-10-28T15:22:11Z",
               "outcomes": [
                 {
                   "name": "Genoa",
@@ -2864,7 +2768,7 @@
             },
             {
               "bookmaker": "LiveScore Bet",
-              "last_update": "2026-10-28T15:20:32Z",
+              "last_update": "2026-10-28T15:22:36Z",
               "outcomes": [
                 {
                   "name": "Genoa",
@@ -2885,7 +2789,7 @@
             },
             {
               "bookmaker": "Casumo",
-              "last_update": "2026-10-28T15:20:07Z",
+              "last_update": "2026-10-28T15:22:12Z",
               "outcomes": [
                 {
                   "name": "Genoa",
@@ -2906,7 +2810,7 @@
             },
             {
               "bookmaker": "Grosvenor",
-              "last_update": "2026-10-28T15:20:34Z",
+              "last_update": "2026-10-28T15:22:34Z",
               "outcomes": [
                 {
                   "name": "Genoa",
@@ -2927,7 +2831,7 @@
             },
             {
               "bookmaker": "Betfair",
-              "last_update": "2026-10-28T15:20:32Z",
+              "last_update": "2026-10-28T15:22:58Z",
               "outcomes": [
                 {
                   "name": "Genoa",
@@ -2948,7 +2852,7 @@
             },
             {
               "bookmaker": "Matchbook",
-              "last_update": "2026-10-28T15:20:33Z",
+              "last_update": "2026-10-28T15:22:57Z",
               "outcomes": [
                 {
                   "name": "Genoa",
@@ -2969,7 +2873,7 @@
             },
             {
               "bookmaker": "Betano (UK)",
-              "last_update": "2026-10-28T15:19:27Z",
+              "last_update": "2026-10-28T15:21:58Z",
               "outcomes": [
                 {
                   "name": "Genoa",
@@ -3011,7 +2915,7 @@
             },
             {
               "bookmaker": "Coral",
-              "last_update": "2026-10-28T15:20:32Z",
+              "last_update": "2026-10-28T15:22:35Z",
               "outcomes": [
                 {
                   "name": "Genoa",
@@ -3032,7 +2936,7 @@
             },
             {
               "bookmaker": "Ladbrokes",
-              "last_update": "2026-10-28T15:20:33Z",
+              "last_update": "2026-10-28T15:22:35Z",
               "outcomes": [
                 {
                   "name": "Genoa",
@@ -3053,7 +2957,7 @@
             },
             {
               "bookmaker": "Paddy Power",
-              "last_update": "2026-10-28T15:19:40Z",
+              "last_update": "2026-10-28T15:22:09Z",
               "outcomes": [
                 {
                   "name": "Genoa",
@@ -3074,7 +2978,7 @@
             },
             {
               "bookmaker": "Sky Bet",
-              "last_update": "2026-10-28T15:20:06Z",
+              "last_update": "2026-10-28T15:22:57Z",
               "outcomes": [
                 {
                   "name": "Genoa",
@@ -3095,7 +2999,7 @@
             },
             {
               "bookmaker": "Betfair Sportsbook",
-              "last_update": "2026-10-28T15:20:32Z",
+              "last_update": "2026-10-28T15:22:36Z",
               "outcomes": [
                 {
                   "name": "Genoa",
@@ -3118,7 +3022,7 @@
           "totals": [
             {
               "bookmaker": "LeoVegas",
-              "last_update": "2026-10-28T15:20:32Z",
+              "last_update": "2026-10-28T15:22:58Z",
               "outcomes": [
                 {
                   "name": "Over",
@@ -3134,7 +3038,7 @@
             },
             {
               "bookmaker": "William Hill",
-              "last_update": "2026-10-28T15:19:42Z",
+              "last_update": "2026-10-28T15:22:10Z",
               "outcomes": [
                 {
                   "name": "Over",
@@ -3150,7 +3054,7 @@
             },
             {
               "bookmaker": "Casumo",
-              "last_update": "2026-10-28T15:20:07Z",
+              "last_update": "2026-10-28T15:22:12Z",
               "outcomes": [
                 {
                   "name": "Over",
@@ -3166,7 +3070,7 @@
             },
             {
               "bookmaker": "Grosvenor",
-              "last_update": "2026-10-28T15:20:34Z",
+              "last_update": "2026-10-28T15:22:34Z",
               "outcomes": [
                 {
                   "name": "Over",
@@ -3183,7 +3087,7 @@
           ],
           "btts": []
         },
-        "fetched_at": "2026-10-28T15:20:50.273982+00:00"
+        "fetched_at": "2026-10-28T15:23:08.950948+00:00"
       }
     },
     {
@@ -3301,30 +3205,6 @@
       ],
       "fixture_source": "5DollarFootballAPI",
       "source_fixture_id": 486424714,
-      "five_dollar_market_odds": {
-        "provider": "5DollarFootballAPI",
-        "fixture_id": "486424714",
-        "bookmakers": [
-          {
-            "bookmaker": "Bet 365",
-            "btts": {
-              "yes": 1.667,
-              "no": 2.1
-            },
-            "over_under": {
-              "line": 2.5,
-              "over": 1.667,
-              "under": 2.2
-            },
-            "1x2": {
-              "home": 4.5,
-              "draw": 3.9,
-              "away": 1.75
-            }
-          }
-        ],
-        "fetched_at": "2026-10-28T15:20:49.946988+00:00"
-      },
       "the_odds_api_market_odds": {
         "provider": "The Odds API",
         "sport_key": "soccer_italy_serie_a",
@@ -3334,7 +3214,7 @@
           "h2h": [
             {
               "bookmaker": "LeoVegas",
-              "last_update": "2026-10-28T15:20:32Z",
+              "last_update": "2026-10-28T15:22:58Z",
               "outcomes": [
                 {
                   "name": "Monza",
@@ -3355,7 +3235,7 @@
             },
             {
               "bookmaker": "Betway",
-              "last_update": "2026-10-28T15:20:10Z",
+              "last_update": "2026-10-28T15:22:34Z",
               "outcomes": [
                 {
                   "name": "Monza",
@@ -3376,7 +3256,7 @@
             },
             {
               "bookmaker": "Unibet (UK)",
-              "last_update": "2026-10-28T15:20:08Z",
+              "last_update": "2026-10-28T15:22:37Z",
               "outcomes": [
                 {
                   "name": "Monza",
@@ -3397,7 +3277,7 @@
             },
             {
               "bookmaker": "Smarkets",
-              "last_update": "2026-10-28T15:20:34Z",
+              "last_update": "2026-10-28T15:22:59Z",
               "outcomes": [
                 {
                   "name": "Monza",
@@ -3418,7 +3298,7 @@
             },
             {
               "bookmaker": "888sport",
-              "last_update": "2026-10-28T15:20:32Z",
+              "last_update": "2026-10-28T15:22:36Z",
               "outcomes": [
                 {
                   "name": "Monza",
@@ -3439,7 +3319,7 @@
             },
             {
               "bookmaker": "William Hill",
-              "last_update": "2026-10-28T15:19:42Z",
+              "last_update": "2026-10-28T15:22:10Z",
               "outcomes": [
                 {
                   "name": "Monza",
@@ -3460,7 +3340,7 @@
             },
             {
               "bookmaker": "BoyleSports",
-              "last_update": "2026-10-28T15:19:49Z",
+              "last_update": "2026-10-28T15:22:13Z",
               "outcomes": [
                 {
                   "name": "Monza",
@@ -3481,7 +3361,7 @@
             },
             {
               "bookmaker": "LiveScore Bet",
-              "last_update": "2026-10-28T15:20:32Z",
+              "last_update": "2026-10-28T15:22:36Z",
               "outcomes": [
                 {
                   "name": "Monza",
@@ -3502,7 +3382,7 @@
             },
             {
               "bookmaker": "Grosvenor",
-              "last_update": "2026-10-28T15:20:34Z",
+              "last_update": "2026-10-28T15:22:34Z",
               "outcomes": [
                 {
                   "name": "Monza",
@@ -3523,7 +3403,7 @@
             },
             {
               "bookmaker": "Casumo",
-              "last_update": "2026-10-28T15:20:07Z",
+              "last_update": "2026-10-28T15:22:12Z",
               "outcomes": [
                 {
                   "name": "Monza",
@@ -3544,7 +3424,7 @@
             },
             {
               "bookmaker": "Virgin Bet",
-              "last_update": "2026-10-28T15:20:07Z",
+              "last_update": "2026-10-28T15:22:11Z",
               "outcomes": [
                 {
                   "name": "Monza",
@@ -3565,7 +3445,7 @@
             },
             {
               "bookmaker": "Betfair",
-              "last_update": "2026-10-28T15:20:32Z",
+              "last_update": "2026-10-28T15:22:58Z",
               "outcomes": [
                 {
                   "name": "Monza",
@@ -3574,7 +3454,7 @@
                 },
                 {
                   "name": "Napoli",
-                  "price": 1.78,
+                  "price": 1.79,
                   "point": null
                 },
                 {
@@ -3586,7 +3466,7 @@
             },
             {
               "bookmaker": "Matchbook",
-              "last_update": "2026-10-28T15:20:33Z",
+              "last_update": "2026-10-28T15:22:57Z",
               "outcomes": [
                 {
                   "name": "Monza",
@@ -3607,7 +3487,7 @@
             },
             {
               "bookmaker": "Betano (UK)",
-              "last_update": "2026-10-28T15:19:27Z",
+              "last_update": "2026-10-28T15:21:58Z",
               "outcomes": [
                 {
                   "name": "Monza",
@@ -3649,7 +3529,7 @@
             },
             {
               "bookmaker": "Coral",
-              "last_update": "2026-10-28T15:20:32Z",
+              "last_update": "2026-10-28T15:22:35Z",
               "outcomes": [
                 {
                   "name": "Monza",
@@ -3670,7 +3550,7 @@
             },
             {
               "bookmaker": "Ladbrokes",
-              "last_update": "2026-10-28T15:20:33Z",
+              "last_update": "2026-10-28T15:22:35Z",
               "outcomes": [
                 {
                   "name": "Monza",
@@ -3691,7 +3571,7 @@
             },
             {
               "bookmaker": "Paddy Power",
-              "last_update": "2026-10-28T15:19:40Z",
+              "last_update": "2026-10-28T15:22:09Z",
               "outcomes": [
                 {
                   "name": "Monza",
@@ -3712,7 +3592,7 @@
             },
             {
               "bookmaker": "Sky Bet",
-              "last_update": "2026-10-28T15:20:06Z",
+              "last_update": "2026-10-28T15:22:57Z",
               "outcomes": [
                 {
                   "name": "Monza",
@@ -3733,7 +3613,7 @@
             },
             {
               "bookmaker": "Betfair Sportsbook",
-              "last_update": "2026-10-28T15:20:32Z",
+              "last_update": "2026-10-28T15:22:36Z",
               "outcomes": [
                 {
                   "name": "Monza",
@@ -3754,7 +3634,7 @@
             },
             {
               "bookmaker": "Betfred (UK)",
-              "last_update": "2026-10-28T15:20:33Z",
+              "last_update": "2026-10-28T15:22:35Z",
               "outcomes": [
                 {
                   "name": "Monza",
@@ -3777,7 +3657,7 @@
           "totals": [
             {
               "bookmaker": "LeoVegas",
-              "last_update": "2026-10-28T15:20:32Z",
+              "last_update": "2026-10-28T15:22:58Z",
               "outcomes": [
                 {
                   "name": "Over",
@@ -3793,7 +3673,7 @@
             },
             {
               "bookmaker": "William Hill",
-              "last_update": "2026-10-28T15:19:42Z",
+              "last_update": "2026-10-28T15:22:10Z",
               "outcomes": [
                 {
                   "name": "Over",
@@ -3809,7 +3689,7 @@
             },
             {
               "bookmaker": "Grosvenor",
-              "last_update": "2026-10-28T15:20:34Z",
+              "last_update": "2026-10-28T15:22:34Z",
               "outcomes": [
                 {
                   "name": "Over",
@@ -3825,7 +3705,7 @@
             },
             {
               "bookmaker": "Casumo",
-              "last_update": "2026-10-28T15:20:07Z",
+              "last_update": "2026-10-28T15:22:12Z",
               "outcomes": [
                 {
                   "name": "Over",
@@ -3842,7 +3722,7 @@
           ],
           "btts": []
         },
-        "fetched_at": "2026-10-28T15:20:50.274036+00:00"
+        "fetched_at": "2026-10-28T15:23:08.951020+00:00"
       }
     }
   ],
@@ -3856,14 +3736,14 @@
     "covered_through": null,
     "ranges_succeeded": 0,
     "ranges_requested": 1,
-    "warning": "No fixtures returned for 7 historical date(s); dates remain retryable.",
-    "provider_plan_limited_date_count": 7,
-    "retryable_gap_date_count": 7
+    "warning": "No fixtures returned for 2 historical date(s); dates remain retryable.",
+    "provider_plan_limited_date_count": 0,
+    "retryable_gap_date_count": 14
   },
   "primary_provider_request": {
     "provider": "5DollarFootballAPI",
     "status": "SUCCESS",
-    "requests_remaining": "15",
+    "requests_remaining": "2",
     "pages_fetched": 1,
     "fixtures_received": 5
   },
@@ -3880,23 +3760,15 @@
     "ranges_succeeded": 0,
     "ranges_requested": 1,
     "backfill_complete": true,
-    "retryable_gap_date_count": 7,
-    "provider_plan_limited_date_count": 7,
-    "provider_plan_limited_dates": [
-      "2026-09-28",
-      "2026-09-29",
-      "2026-09-30",
-      "2026-10-01",
-      "2026-10-02",
-      "2026-10-03",
-      "2026-10-04"
-    ],
+    "retryable_gap_date_count": 14,
+    "provider_plan_limited_date_count": 0,
+    "provider_plan_limited_dates": [],
     "cache_path": "reports/recent_results_cache.json"
   },
   "multi_source_odds_sync": {
     "five_dollar": {
-      "status": "AVAILABLE",
-      "fixtures_with_market_odds": 5,
+      "status": "NO_MATCHED_MARKET_ODDS",
+      "fixtures_with_market_odds": 0,
       "max_fixture_odds_calls": 15,
       "warning": null
     },
@@ -3908,8 +3780,8 @@
       ],
       "max_btts_event_calls": 3,
       "quota": {
-        "remaining": "476",
-        "used": "24",
+        "remaining": "471",
+        "used": "29",
         "last_cost": "1"
       },
       "warning": null
@@ -3926,7 +3798,7 @@
   "live_odds_sync": {
     "status": "AVAILABLE",
     "primary_fixture_provider": "5DollarFootballAPI",
-    "five_dollar_status": "AVAILABLE",
+    "five_dollar_status": "NO_MATCHED_MARKET_ODDS",
     "the_odds_api_status": "AVAILABLE",
     "infer_sports_status": "DISABLED",
     "fixtures_with_market_odds": 5,
@@ -3945,5 +3817,5 @@
     "note": "Market prices are informational; model outputs remain experimental and are not betting advice."
   },
   "command_data_publication": "PUBLISHED",
-  "command_data_published_at_utc": "2026-10-28T15:20:56.856713+00:00"
+  "command_data_published_at_utc": "2026-10-28T15:23:16.717652+00:00"
 }
