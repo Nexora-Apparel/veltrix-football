@@ -49,6 +49,14 @@ The status command checks authentication and returns subscription/quota metadata
 ## API notes
 The primary client calls `https://v3.football.api-sports.io/` and reports the provider's request limits and remaining quota when headers are available. Fixture responses are normalized into Veltrix's internal shape. API-Football coverage, historical retention, and bookmaker availability depend on the account subscription; empty odds are reported as unavailable rather than fabricated.
 
+## Optional OddsPapi BTTS and Over/Under odds
+
+OddsPapi is an optional, separate odds source. The daily workflow reads the repository Actions secret `ODDSPAPI_API_KEY` and, after the primary API-Football report is generated, attempts to attach same-day OddsPapi full-time BTTS and Over/Under prices to exact home/away team-name matches. It never replaces API-Football fixtures, historical results, or model probabilities. If OddsPapi is unavailable or no safe fixture match is found, enrichment is skipped and the existing report continues unchanged.
+
+The report can include an `oddspapi_market_odds` object per matched fixture and an `oddspapi_odds` status summary. Telegram messages show available paired BTTS prices and Over/Under 2.5 prices as reference market data only. Prices are not model recommendations; value alerts remain disabled until chronological out-of-sample validation supports them.
+
+Configure the direct OddsPapi account key in GitHub repository **Settings → Secrets and variables → Actions** as `ODDSPAPI_API_KEY`. Do not commit the key or place it in source code. The dedicated coverage workflow verifies the provider's soccer fixtures and live market availability independently of the daily prediction workflow.
+
 ## Historical data export
 Use `python -m app.cli history --from YYYY-MM-DD --to YYYY-MM-DD --output data/historical_features.csv` to retrieve fixtures and export completed matches through API-Football's supported date filter, issuing one request per calendar day. Keep each query within seven calendar days; the CLI and daily refresh deliberately bound requests to manage quota. Each row includes rolling team form features computed strictly from earlier completed matches. CSV files are local outputs and are not committed automatically.
 
