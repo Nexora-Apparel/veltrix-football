@@ -8,7 +8,7 @@ The earlier multi-source architecture draft incorrectly described API-Football/A
 
 | Provider / store | Intended responsibility | Current status |
 |---|---|---|
-| 5DollarFootballAPI | Primary fixtures, recent results, and fixture-level bookmaker odds | Integrated and live-verified; fixtures and BTTS/goal-line/1X2 market payloads returned. |
+| 5DollarFootballAPI | Primary fixtures, recent results, and fixture-level bookmaker odds | Integrated and live-verified for fixtures/results. The odds endpoint returns market keys but the latest live report found no usable matched 5Dollar prices; The Odds API currently supplies the matched market quotes. |
 | The Odds API | Supplemental bookmaker prices, h2h/totals and event-specific BTTS | Integrated and live-verified; soccer sports and target market endpoints passed. |
 | OddsPapi | Optional separate BTTS and Over/Under enrichment | Existing adapter retained; non-blocking. |
 | InferSports | Optional full-time totals and 1X2 odds | Keyless events endpoint verified (200 same-day events), but three bounded odds probes returned no current quotes; adapter is feature-flagged off pending market evidence. No BTTS market in current schema. |
