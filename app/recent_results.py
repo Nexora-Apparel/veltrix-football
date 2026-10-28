@@ -74,7 +74,8 @@ def extract_completed_results(payload: dict[str, Any]) -> list[dict[str, Any]]:
             "away_goals": away_goals,
             "fixture_id": fixture_id,
             "fixture_status": status,
-            "source": "API_FOOTBALL_RECENT_RESULTS",
+            "source": "5DOLLARFOOTBALLAPI_RECENT_RESULTS",
+            "source_provider": str(item.get("_veltrix_source") or payload.get("provider") or "5DollarFootballAPI"),
         })
     return rows
 
