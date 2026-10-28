@@ -8,23 +8,27 @@ This register captures the exact provider references found in the earlier projec
 - Website: https://5dollarfootballapi.com/
 - Python SDK repository: https://github.com/5dollarfootball-api/football-api-python-sdk
 - Intended evaluation: fixtures, results, bookmaker odds and available match statistics.
-- Verify: official docs and base URL, authentication, endpoint coverage, free/paid quotas, historical depth, odds market names, update cadence, and SDK maintenance.
+- **Status (2026-10-28): LIVE AUTH + FIXTURE + ODDS ENDPOINTS VERIFIED.** GitHub Actions authenticated successfully, retrieved today's fixtures, and read a fixture odds board with `1x2`, `btts`, `goal_line`, and `goal_line_fixed` market keys.
+- Integrated as the primary fixture/results source in `app/provider_adapters.py`; historical refresh is bounded and records failed dates separately so successful dates are preserved.
+- Continue monitoring free-tier coverage, request quotas, and historical gaps. The live check verifies endpoint/schema access, not complete coverage of every competition.
 
 ### 2. InferSports
 - OpenAPI specification referenced in the earlier discussion: https://github.com/infersports-dev/infersports/blob/main/openapi.yaml
 - Intended evaluation: secondary odds and market information.
-- Verify: service identity, whether the OpenAPI spec is current, authentication, available markets, bookmaker coverage, quota and timestamp semantics before implementing.
+- **Status: NOT INTEGRATED / NOT VERIFIED.** No credential has been configured for the current integration work. Verify service identity, OpenAPI currency, auth, markets, bookmakers, quotas and timestamps before implementation.
 
 ### 3. The Odds API
 - Website: https://the-odds-api.com/
 - Additional listing referenced in the earlier discussion: https://rapidapi.com/theoddsapi/api/live-sports-odds
 - Intended evaluation: supplemental bookmaker odds and market coverage.
-- Verify whether direct access or the RapidAPI listing is the intended product, since their credentials, endpoints and limits may differ. Do not mix their configurations.
+- **Status (2026-10-28): LIVE AUTH + SOCCER MARKETS VERIFIED.** Direct API access accepted the configured key and listed 50 active soccer sports. A bounded live probe returned `h2h`, `totals`, and `btts` market keys; the event-specific BTTS endpoint returned prices. The probe consumed three odds credits, leaving 497 at that time.
+- Integrated as a quota-bounded supplemental source; the daily report requests only supported competitions represented in the report, and caps event-specific BTTS requests at three.
+- The RapidAPI listing is a distinct product/configuration and is not used by this integration.
 
 ### 4. Open Matchday
 - GitHub repository referenced in the earlier discussion: https://github.com/oladeeayo/open-matchday
 - Intended evaluation: supplementary historical fixtures, results and match statistics.
-- Verify actual data delivery method, coverage, schema, licensing and update cadence. Do not assume a repository name guarantees a live API.
+- **Status: NOT INTEGRATED / NOT VERIFIED.** Verify actual data delivery method, coverage, schema, licensing and update cadence. Do not assume a repository name guarantees a live API.
 
 ## Separate provider previously investigated: OddsPapi
 
@@ -32,7 +36,7 @@ This register captures the exact provider references found in the earlier projec
 - Existing repository integration: `app/oddspapi_odds.py` and `scripts/enrich_oddspapi_odds.py`.
 - Repository README describes it as optional odds enrichment using the GitHub Actions secret `ODDSPAPI_API_KEY`, attached after the primary report and matched by exact home/away team names.
 - This is distinct from The Odds API and from API-Football/API-Sports. Do not conflate the provider names, keys or API endpoints.
-- Verify the current secret configuration and live access before treating it as operational.
+- Existing repository adapter is retained and included as optional post-report enrichment. Its status is separate from The Odds API; confirm fresh live coverage in its own workflow before treating it as healthy.
 
 ## Suspended provider — do not use as active dependency
 
