@@ -11,7 +11,7 @@ from pathlib import Path
 
 from app.live_predictions import _name_key, build_daily_report, load_historical_matches
 from app.recent_results import fetch_recent_results_incremental
-from app.api_football_odds import APIFootballClient, APIFootballError
+from app.provider_adapters import FiveDollarFootballClient, ProviderAPIError, enrich_report_with_multi_source_odds
 import math
 
 
@@ -209,9 +209,9 @@ def main() -> None:
     args = parser.parse_args()
     try:
         target_date = date.fromisoformat(args.date) if args.date else datetime.now(ZoneInfo(args.timezone)).date()
-        api = APIFootballClient()
+        api = FiveDollarFootballClient()
         if not api.api_key:
-            raise APIFootballError("API_FOOTBALL_KEY is missing. Add it as a GitHub Actions repository secret; do not paste it into source code.")
+            raise ProviderAPIError("FIVEDOLLARFOOTBALL_API_KEY is missing. Add it as a GitHub Actions repository secret; do not paste it into source code.")
         payload = api.fixtures(target_date.isoformat(), args.timezone)
         base_history = load_historical_matches(args.history)
         cache_path = Path(args.recent_cache)
@@ -268,11 +268,9 @@ def main() -> None:
         )
         report["recent_results_sync"] = recent_sync
         fixture_meta = payload.get("_veltrix_meta") if isinstance(payload.get("_veltrix_meta"), dict) else {}
-        report["api_football_request"] = {
-            "provider": fixture_meta.get("provider", "API-Football (API-Sports)"),
+        report["primary_provider_request"] = {
+            "provider": fixture_meta.get("provider", "5DollarFootballAPI"),
             "status": "SUCCESS",
-            "http_status": fixture_meta.get("http_status"),
-            "requests_limit": fixture_meta.get("requests_limit"),
             "requests_remaining": fixture_meta.get("requests_remaining"),
             "pages_fetched": fixture_meta.get("pages_fetched", 1),
             "fixtures_received": len(payload.get("response") or []),
@@ -311,65 +309,28 @@ def main() -> None:
             "provider_plan_limited_dates": plan_limited_dates if isinstance(plan_limited_dates, list) else [],
             "cache_path": str(cache_path),
         }
-        api_sports_odds_status = "NOT_CONFIGURED"
-        api_sports_odds_attached = 0
-        api_sports_warning = None
-        # API-Sports is the verified real-bookmaker feed used by the Telegram
-        # command centre. Use it as an optional enrichment source when the same
-        # key is configured in GitHub Actions; never require or print the key.
-        if os.environ.get("API_FOOTBALL_KEY", "").strip():
-            try:
-                api_sports_payload = APIFootballClient().odds_for_date(
-                    target_date.isoformat(), timezone=args.timezone
-                )
-                api_sports_odds_attached = _merge_api_sports_market_odds(
-                    report, api_sports_payload, timezone_name=args.timezone
-                )
-                provider_odds_status = str(
-                    (api_sports_payload.get("_veltrix_meta") or {}).get("status") or "UNKNOWN"
-                )
-                if api_sports_odds_attached:
-                    api_sports_odds_status = "AVAILABLE"
-                elif provider_odds_status == "NO_ODDS_RETURNED":
-                    api_sports_odds_status = "NO_ODDS_RETURNED"
-                else:
-                    # Provider rows alone do not prove report integration. Only
-                    # call it AVAILABLE after at least one fixture was matched.
-                    api_sports_odds_status = "NO_MATCHED_1X2_ODDS"
-            except APIFootballError as exc:
-                api_sports_odds_status = "UNAVAILABLE"
-                api_sports_warning = _safe_api_sports_error(exc)
-            except Exception as exc:
-                # Optional enrichment must never suppress the primary report.
-                # Record only the exception class for unexpected errors; raw
-                # exception text can contain request details or credentials.
-                api_sports_odds_status = "UNAVAILABLE"
-                api_sports_warning = _safe_api_sports_error(exc)
-        report["live_odds_sync"] = {
-            **odds_sync,
-            # Keep the original FootballAPI feed status for diagnostics, but make
-            # the headline status reflect the combined report integration. This
-            # avoids saying "NO_VALID_1X2_ODDS" when API-Sports successfully
-            # attached real bookmaker consensus to report fixtures.
-            "football_api_status": odds_sync.get("status"),
-            "football_api_fixtures_with_odds": odds_sync.get("fixtures_with_odds", 0),
-            "status": _combined_odds_status(
-                str(odds_sync.get("status") or "UNKNOWN"),
-                api_sports_odds_attached,
-            ),
-            "api_sports_status": api_sports_odds_status,
-            "api_sports_fixtures_with_odds": api_sports_odds_attached,
-            "api_sports_warning": api_sports_warning,
-        }
-        report["fixtures_with_market_odds"] = sum(
-            isinstance(item.get("market_probabilities"), dict)
-            for item in report.get("predictions", [])
+        report = enrich_report_with_multi_source_odds(
+            report,
+            payload,
+            timezone_name=args.timezone,
         )
-        # The headline count must reflect the combined, actually matched report
-        # data source, not only the legacy odds adapter (which is intentionally
-        # inactive). Preserve per-provider counts above for source diagnostics.
-        report["live_odds_sync"]["fixtures_with_odds"] = report["fixtures_with_market_odds"]
-        report["live_odds_sync"]["matched_prediction_count"] = report["fixtures_with_market_odds"]
+        multi_odds = report.get("multi_source_odds_sync") or {}
+        five_status = (multi_odds.get("five_dollar") or {}).get("status", "NOT_CONFIGURED")
+        odds_api_status = (multi_odds.get("the_odds_api") or {}).get("status", "NOT_CONFIGURED")
+        report["live_odds_sync"] = {
+            "status": "AVAILABLE" if (
+                five_status == "AVAILABLE" or odds_api_status == "AVAILABLE"
+            ) else "NO_MATCHED_MARKET_ODDS",
+            "primary_fixture_provider": "5DollarFootballAPI",
+            "five_dollar_status": five_status,
+            "the_odds_api_status": odds_api_status,
+            "fixtures_with_market_odds": sum(
+                bool(item.get("five_dollar_market_odds") or item.get("the_odds_api_market_odds"))
+                for item in report.get("predictions", []) if isinstance(item, dict)
+            ),
+            "note": "Market odds are reference data; forecast probabilities remain experimental and unchanged.",
+        }
+        report["fixtures_with_market_odds"] = report["live_odds_sync"]["fixtures_with_market_odds"]
         # Distinguish a report built from this live run from a reused snapshot.
         # The publisher adds command_data_publication=PUBLISHED only after the
         # public command-data write succeeds.
@@ -401,7 +362,7 @@ def main() -> None:
             "output": str(output),
             "model_status": report["model_status"],
         }, indent=2))
-    except (RuntimeError, ValueError, OSError) as exc:
+    except (RuntimeError, ValueError, OSError, ProviderAPIError) as exc:
         print(f"DAILY PREDICTION RUN FAILED: {exc}", file=sys.stderr)
         raise SystemExit(1) from exc
 
