@@ -18,7 +18,7 @@
 
 | Provider | Responsibility | Current evidence / gate |
 |---|---|---|
-| 5DollarFootballAPI | Primary same-day fixtures, incremental recent results, and fixture-level BTTS/goal-line odds | Live auth and fixture access passed; actual odds endpoint returned 1X2, BTTS, goal-line and fixed goal-line markets. Partial history failures are retained as retryable gaps. |
+| 5DollarFootballAPI | Primary same-day fixtures, incremental recent results, and fixture-level BTTS/goal-line odds | Live auth and fixture access passed. The odds endpoint exposes 1X2, BTTS, goal-line and fixed goal-line market keys, but the latest live report matched no usable 5Dollar prices; do not count it as an active odds source until quote parsing/coverage is confirmed. Partial history failures are retained as retryable gaps. |
 | The Odds API | Supplemental bookmaker h2h and totals prices; event-specific BTTS | Live auth, active soccer sports, h2h/totals endpoint and BTTS event endpoint passed. The integration check used three odds credits; daily requests are bounded. |
 | OddsPapi | Optional secondary BTTS and Over/Under enrichment | Existing adapter retained and included in the combined market-coverage count; keep non-blocking. |
 | InferSports | Optional supplemental full-time totals/1X2 odds | Keyless REST connectivity and 200 same-day events verified; three bounded event-odds probes returned no current quotes. Adapter is implemented but feature-flagged off until quote availability is demonstrated. No BTTS market in the current schema. |
