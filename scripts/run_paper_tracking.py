@@ -37,7 +37,7 @@ def load_cached_results_payload(repo: str) -> tuple[dict[str, Any], str]:
         return {"response": []}, "CACHE_UNAVAILABLE"
     if (
         not isinstance(cache, dict)
-        or cache.get("version") != 1
+        or cache.get("version") not in (1, 2)
         or not isinstance(cache.get("matches"), list)
     ):
         return {"response": []}, "CACHE_INVALID"
