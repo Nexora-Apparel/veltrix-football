@@ -5,7 +5,7 @@ on:
     branches: [main]
     paths:
       - "app/config.py"
-      - "app/api_football_odds.py"
+      - "app/api_football_odds.py"\n      - "app/oddspapi_odds.py"\n      - "scripts/enrich_oddspapi_odds.py"\n      - "tests/test_oddspapi_odds.py"
       - "app/historical_data.py"
       - "app/football_api.py"
       - "app/live_predictions.py"
@@ -248,6 +248,13 @@ jobs:
           fi
           if [ -z "${TARGET_DATE:-}" ]; then TARGET_DATE="$(TZ=Africa/Lagos date +%F)"; fi
           python scripts/run_daily_predictions.py --date "$TARGET_DATE" --history data/open_historical_matches.csv --output reports/daily_predictions.json --recent-cache reports/recent_results_cache.json
+      - name: Enrich report with optional OddsPapi BTTS and Over Under prices
+        if: (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && contains(github.event.head_commit.message, '[run-live-verification]')) || false) && steps.generate-report.outcome == 'success'
+        env:
+          ODDSPAPI_API_KEY: ${{ secrets.ODDSPAPI_API_KEY }}
+          PYTHONPATH: .
+        run: python scripts/enrich_oddspapi_odds.py --report reports/daily_predictions.json
+
       - name: Notify Telegram when live report generation fails
         if: (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && contains(github.event.head_commit.message, '[run-live-verification]')) || false) && failure() && steps.generate-report.outcome == 'failure'
         env:
