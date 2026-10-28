@@ -61,6 +61,28 @@ python -m scripts.import_open_dataset --from 2020-01-01 --to 2026-10-23 --output
 
 The importer discovers the source CSV path from the repository tree, validates required fields, normalizes scores, team names, date, available Elo/form/odds/statistics, skips malformed rows, and deduplicates by competition/date/home/away. Its summary reports match counts by competition code and calendar year so coverage gaps can be diagnosed. Optional odds and statistics remain empty when missing. A successful import on 2026-10-24 produced 70,444 completed matches across 38 competition codes from 2020-01-01 through 2026-10-24 (one malformed row skipped). The GitHub Actions workflow can run manually or weekly and uploads the generated CSV as an artifact for 30 days; this artifact is not a permanent database.
 
+## Optional no-key fixture/results source
+
+The experimental `app/open_matchday.py` adapter can retrieve current 2026/27 fixture and finished-result CSVs from [Open Matchday](https://github.com/oladeeayo/open-matchday) for explicitly selected competition folders. It is separate from the primary pipeline and does not change scheduled publication, historical archive contents, or model inputs automatically. It does not provide bookmaker odds. The upstream dataset is documented as free for non-commercial use; verify its current terms before any commercial use. Kickoff times are converted using the dataset's documented fixed UTC+1 convention, so source timestamps should be reconciled before merging with another provider.
+
+Example usage from Python:
+
+```python
+from datetime import date
+from app.open_matchday import OpenMatchdayClient
+from app.multi_source import reconcile_fixtures
+
+client = OpenMatchdayClient()
+records = client.fetch_records(
+    ["ENG_1_premier-league", "ESP_1_la-liga"],
+    date(2026, 10, 28),
+    date(2026, 11, 2),
+)
+reviewable_matches = reconcile_fixtures(records)
+```
+
+The adapter deliberately requires explicit competition folders and date bounds rather than downloading all competitions by default. Provider data is not merged into production forecasts until coverage, timestamps, and team-name reconciliation have been checked.
+
 ## Value screening safeguards
 `app/value_bets.py` provides a conservative candidate filter, not a proven prediction model. It:
 - removes the proportional bookmaker margin from a complete set of market odds before calculating probability edge;
