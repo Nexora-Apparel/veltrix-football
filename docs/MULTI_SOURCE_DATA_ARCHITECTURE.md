@@ -21,8 +21,8 @@
 | 5DollarFootballAPI | Primary same-day fixtures, incremental recent results, and fixture-level BTTS/goal-line odds | Live auth and fixture access passed; actual odds endpoint returned 1X2, BTTS, goal-line and fixed goal-line markets. Partial history failures are retained as retryable gaps. |
 | The Odds API | Supplemental bookmaker h2h and totals prices; event-specific BTTS | Live auth, active soccer sports, h2h/totals endpoint and BTTS event endpoint passed. The integration check used three odds credits; daily requests are bounded. |
 | OddsPapi | Optional secondary BTTS and Over/Under enrichment | Existing adapter retained and included in the combined market-coverage count; keep non-blocking. |
-| InferSports | Candidate secondary odds/market source | Not integrated or verified; requires exact product/auth/market review and a credential before enabling. |
-| Open Matchday | Candidate supplementary historical fixtures/results/statistics | Not integrated or verified; repository/API delivery, coverage and license must be checked before ingestion. |
+| InferSports | Optional supplemental full-time totals/1X2 odds | Keyless REST connectivity and 200 same-day events verified; three bounded event-odds probes returned no current quotes. Adapter is implemented but feature-flagged off until quote availability is demonstrated. No BTTS market in the current schema. |
+| Open Matchday | Research-only supplementary current-season fixtures/results/statistics | Not ingested into production: the current dataset README limits use to non-commercial purposes and covers 2026/27, so license compatibility and historical depth are insufficiently established for a potentially commercial platform. |
 | Existing Veltrix historical store and open-dataset import | Long-term historical baseline and derived features | Preserved. Recent results are merged with source provenance and provider IDs remain source-local. |
 
 Do not treat similarly named services as interchangeable. Do not add a provider merely because its name appears in a plan; verify the exact official documentation and API identity first.
@@ -96,7 +96,7 @@ Primary target markets: BTTS Yes/No and full-time Over/Under 1.5, 2.5 and 3.5 go
 - Legacy Highlightly and API-Football adapters remain in the repository for compatibility/audit; they must not be called by active workflows while those providers are not selected.
 - 5DollarFootballAPI fixture coverage and bookmaker odds vary by competition; daily output must report zero matches/quotes honestly when the feed is empty.
 - The Odds API coverage is intentionally limited to report-relevant supported competitions, with a maximum of three event-specific BTTS calls per report to protect monthly credits.
-- InferSports and Open Matchday are not yet integrated. Do not list them as operational until their own auth/data/market tests pass.
+- InferSports event access works, but the bounded odds probes returned no current prices; keep `VELTRIX_ENABLE_INFERSports=false` until a quote-bearing fixture is confirmed. Open Matchday remains research-only due its stated non-commercial restriction.
 - Older cache rows may be marked `LEGACY_UNATTRIBUTED`; preserve them but avoid pretending their provider provenance is known.
 - Historical refresh may have date gaps. Only completed matches are used; current-day results remain excluded from model features.
 - Existing backtest results show the market benchmark outperforming current model baselines in reported samples. Keep experimental labeling and betting/value alerts disabled.
