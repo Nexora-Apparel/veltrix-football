@@ -231,6 +231,17 @@ def format_report_messages(report: dict[str, Any], ledger: dict[str, Any] | None
         is_elo_primary = "elo" in model_name
         expected_goals = item.get("expected_goals") or {}
         model_label = "Elo ratings (1X2); Poisson xG" if is_elo_primary else "Recent-goals Poisson (1X2 + xG)"
+        odds = item.get("oddspapi_market_odds") if isinstance(item.get("oddspapi_market_odds"), dict) else {}
+        odds_lines: list[str] = []
+        btts_rows = odds.get("btts") if isinstance(odds.get("btts"), list) else []
+        btts_pair = next((row for row in btts_rows if isinstance(row, dict) and isinstance(row.get("yes"), (int, float)) and isinstance(row.get("no"), (int, float))), None)
+        if btts_pair:
+            odds_lines.append(f"BTTS Yes/No: {btts_pair['yes']:.2f} / {btts_pair['no']:.2f} ({btts_pair.get('bookmaker', 'bookmaker unknown')})")
+        totals_rows = odds.get("over_under") if isinstance(odds.get("over_under"), list) else []
+        totals_pair = next((row for row in totals_rows if isinstance(row, dict) and str(row.get("line")) == "2.5" and isinstance(row.get("over"), (int, float)) and isinstance(row.get("under"), (int, float))), None)
+        if totals_pair:
+            odds_lines.append(f"Over/Under 2.5: {totals_pair['over']:.2f} / {totals_pair['under']:.2f} ({totals_pair.get('bookmaker', 'bookmaker unknown')})")
+        odds_block = ["", "ODDSPAPI REFERENCE PRICES — NOT PICKS"] + odds_lines if odds_lines else []
         block = [
             DIVIDER,
             f"⚽ {item.get('home_team', 'Home')} vs {item.get('away_team', 'Away')}",
@@ -245,6 +256,7 @@ def format_report_messages(report: dict[str, Any], ledger: dict[str, Any] | None
             f"Expected goals: {_format_goals(expected_goals.get('home'))} - {_format_goals(expected_goals.get('away'))}",
             f"Model: {model_label}",
             "Status: experimental estimate only",
+            *odds_block,
             "",
         ]
         blocks.append(block)
