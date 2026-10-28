@@ -145,3 +145,29 @@ def test_no_fixtures_does_not_spend_supplemental_odds_quota():
     report = {"predictions": []}
     result = enrich_report_with_multi_source_odds(report, {"response": []}, odds_api_client=MustNotCall())
     assert result["multi_source_odds_sync"]["the_odds_api"]["status"] == "SKIPPED_NO_FUTURE_FIXTURES"
+
+
+def test_history_window_keeps_successful_dates_when_one_day_fails():
+    from app.provider_adapters import ProviderAPIError
+
+    client = FiveDollarFootballClient("test-key")
+
+    def fake_fixtures(day, timezone="Africa/Lagos"):
+        if day == "2026-10-27":
+            raise ProviderAPIError("Provider request failed with HTTP 403.")
+        return {
+            "response": [{
+                "fixture": {"id": int(day[-2:]), "date": day + "T12:00:00+00:00", "status": {"short": "FT"}},
+                "teams": {"home": {"name": "Home"}, "away": {"name": "Away"}},
+                "league": {"name": "Premier League", "code": "PL"},
+                "goals": {"home": 1, "away": 0},
+            }],
+            "_veltrix_meta": {"requests_made": 1, "requests_remaining": "50"},
+        }
+
+    client.fixtures = fake_fixtures
+    result = client.fixtures_between("2026-10-26", "2026-10-28")
+    meta = result["_veltrix_meta"]
+    assert result["results"] == 2
+    assert meta["successful_dates"] == ["2026-10-26", "2026-10-28"]
+    assert meta["failed_dates"] == ["2026-10-27"]
