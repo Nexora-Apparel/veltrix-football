@@ -1,131 +1,141 @@
-name: OddsPapi soccer coverage check
+name: OddsPapi soccer and target-market verification
 
 on:
   workflow_dispatch:
+  push:
+    paths:
+      - ".github/workflows/oddspapi-soccer-coverage.yml"
 
 permissions:
   contents: read
 
 jobs:
-  check-coverage:
+  verify-coverage:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 8
     steps:
-      - name: Check OddsPapi RapidAPI access and soccer markets
+      - name: Verify direct OddsPapi API, soccer fixtures, BTTS and Over Under odds
         env:
-          RAPIDAPI_KEY: ${{ secrets.ODDSPAPI_RAPIDAPI_KEY }}
+          ODDSPAPI_KEY: ${{ secrets.ODDSPAPI_RAPIDAPI_KEY }}
         run: |
           python - <<'PY'
-          import json
-          import os
-          import sys
-          import urllib.error
-          import urllib.parse
-          import urllib.request
+          import json, os, sys, time
+          import urllib.error, urllib.parse, urllib.request
           from datetime import datetime, timedelta, timezone
 
-          key = os.environ.get("RAPIDAPI_KEY", "").strip()
+          key = os.environ.get("ODDSPAPI_KEY", "").strip()
           if not key:
-              print("ERROR: repository secret ODDSPAPI_RAPIDAPI_KEY is missing or empty.")
+              print("FAIL: ODDSPAPI_RAPIDAPI_KEY secret is missing.")
               sys.exit(1)
 
-          host = "odds-api1.p.rapidapi.com"
-          headers = {
-              "X-RapidAPI-Key": key,
-              "X-RapidAPI-Host": host,
-              "Accept": "application/json",
-          }
+          base = "https://api.oddspapi.io/v4"
 
-          def get(path, params):
-              query = urllib.parse.urlencode(params)
-              url = f"https://{host}/en/{path}?{query}"
-              req = urllib.request.Request(url, headers=headers, method="GET")
+          def get(path, params=None):
+              params = dict(params or {})
+              params["apiKey"] = key
+              url = base + "/" + path + "?" + urllib.parse.urlencode(params)
+              req = urllib.request.Request(url, headers={"Accept": "application/json"}, method="GET")
               try:
-                  with urllib.request.urlopen(req, timeout=20) as response:
+                  with urllib.request.urlopen(req, timeout=30) as response:
                       body = response.read().decode("utf-8", errors="replace")
-                      print(f"\n--- {path} (HTTP {response.status}) ---")
-                      try:
-                          payload = json.loads(body)
-                      except json.JSONDecodeError:
-                          print(body[:2000])
-                          raise RuntimeError(f"{path} returned non-JSON")
-                      print(json.dumps(payload, ensure_ascii=False, indent=2)[:10000])
-                      return payload
-              except urllib.error.HTTPError as exc:
-                  body = exc.read().decode("utf-8", errors="replace")
-                  print(f"\n--- {path} (HTTP {exc.code}) ---")
-                  print(body[:2000])
-                  raise RuntimeError(f"{path} returned HTTP {exc.code}")
-
+                      data = json.loads(body)
+                      print(f"PASS: GET /v4/{path} HTTP {response.status}")
+                      return data
+              except urllib.error.HTTPError as e:
+                  body = e.read().decode("utf-8", errors="replace")
+                  # Do not print request URLs or query strings, which contain the key.
+                  print(f"FAIL: GET /v4/{path} HTTP {e.code}: {body[:1000]}")
+                  raise RuntimeError(f"/v4/{path} returned HTTP {e.code}")
+          
           try:
-              # The RapidAPI subscription key is used in the headers and as the
-              # apiKey query value for this initial access test. If the provider
-              # requires a separate OddsPapi account key, the response will make
-              # that authentication requirement visible.
-              api_key_param = key
-              sports = get("sports", {"apiKey": api_key_param})
-              tournaments = get("tournaments", {"sportId": 10, "apiKey": api_key_param})
-
+              sports = get("sports")
               if not isinstance(sports, list):
-                  raise RuntimeError("Sports endpoint did not return a list.")
-              soccer = [
-                  item for item in sports if isinstance(item, dict) and (
-                      str(item.get("slug", "")).lower() == "soccer"
-                      or str(item.get("sportName", "")).lower() in {"soccer", "football"}
-                  )
-              ]
-              print("\nSOCCER SPORT MATCHES:")
-              print(json.dumps(soccer, ensure_ascii=False, indent=2))
+                  raise RuntimeError("Sports response was not a list.")
+              soccer = [s for s in sports if isinstance(s, dict) and (
+                  str(s.get("sportId")) == "10" or
+                  "soccer" in str(s.get("sportName", "")).lower() or
+                  "football" in str(s.get("sportName", "")).lower()
+              )]
+              print("SOCCER SPORT ENTRY:", json.dumps(soccer[:5], ensure_ascii=False))
               if not soccer:
-                  raise RuntimeError("No soccer sport entry returned for this API key.")
+                  raise RuntimeError("API responded but no soccer sport entry was found.")
 
-              if not isinstance(tournaments, list):
-                  raise RuntimeError("Tournaments endpoint did not return a list.")
-              print(f"\nSOCCER TOURNAMENT COUNT: {len(tournaments)}")
-              print(json.dumps([
-                  {
-                      "tournamentId": item.get("tournamentId"),
-                      "tournamentName": item.get("tournamentName"),
-                      "categoryName": item.get("categoryName"),
-                  }
-                  for item in tournaments if isinstance(item, dict)
-              ], ensure_ascii=False, indent=2)[:10000])
+              markets = get("markets", {"language": "en"})
+              if not isinstance(markets, list):
+                  raise RuntimeError("Markets response was not a list.")
+              soccer_markets = [m for m in markets if isinstance(m, dict) and str(m.get("sportId")) == "10"]
+              btts_markets = [m for m in soccer_markets if "both teams to score" in str(m.get("marketName", "")).lower()]
+              ou_markets = [m for m in soccer_markets if "over under" in str(m.get("marketName", "")).lower() and not m.get("playerProp", False)]
+              print("BTTS MARKET DEFINITIONS:", json.dumps(btts_markets[:10], ensure_ascii=False))
+              print("OVER/UNDER MARKET DEFINITIONS:", json.dumps(ou_markets[:15], ensure_ascii=False))
+              if not btts_markets:
+                  raise RuntimeError("No soccer BTTS market definition returned.")
+              if not ou_markets:
+                  raise RuntimeError("No soccer Over/Under market definition returned.")
 
               now = datetime.now(timezone.utc)
               fixtures = get("fixtures", {
                   "sportId": 10,
+                  "from": now.strftime("%Y-%m-%dT%H:%M:%SZ"),
+                  "to": (now + timedelta(hours=36)).strftime("%Y-%m-%dT%H:%M:%SZ"),
                   "statusId": 0,
-                  "from": int(now.timestamp()),
-                  "to": int((now + timedelta(days=3)).timestamp()),
-                  "limit": 30,
-                  "apiKey": api_key_param,
+                  "hasOdds": "true",
               })
               if not isinstance(fixtures, list):
-                  raise RuntimeError("Fixtures endpoint did not return a list.")
-              print(f"\nUPCOMING SOCCER FIXTURES RETURNED: {len(fixtures)}")
-              print(json.dumps([
-                  {
-                      "fixtureId": item.get("fixtureId"),
-                      "startTime": item.get("startTime"),
-                      "tournament": item.get("tournament"),
-                      "participants": item.get("participants"),
-                      "bookmakers": item.get("bookmakers"),
-                  }
-                  for item in fixtures if isinstance(item, dict)
-              ], ensure_ascii=False, indent=2)[:15000])
+                  raise RuntimeError("Fixtures response was not a list.")
+              soccer_fixtures = [f for f in fixtures if isinstance(f, dict) and str(f.get("sportId")) == "10"]
+              upcoming_with_odds = [f for f in soccer_fixtures if f.get("hasOdds") and f.get("fixtureId")]
+              print(f"SOCCER FIXTURES RETURNED: {len(soccer_fixtures)}")
+              print(f"UPCOMING SOCCER FIXTURES WITH ODDS FLAG: {len(upcoming_with_odds)}")
+              print("FIXTURE SAMPLE:", json.dumps([{
+                  "fixtureId": f.get("fixtureId"), "startTime": f.get("startTime"),
+                  "home": f.get("participant1Name"), "away": f.get("participant2Name"),
+                  "tournament": f.get("tournamentName"), "hasOdds": f.get("hasOdds")
+              } for f in upcoming_with_odds[:8]], ensure_ascii=False))
+              if not soccer_fixtures:
+                  raise RuntimeError("No soccer fixtures returned for the next 36 hours.")
 
-              with_odds = [
-                  item for item in fixtures
-                  if isinstance(item, dict) and (
-                      item.get("hasOdds") is True
-                      or bool(item.get("bookmakers"))
-                  )
-              ]
-              print(f"\nFIXTURES WITH BOOKMAKER/ODDS INDICATOR: {len(with_odds)}")
-              if not fixtures:
-                  print("NOTICE: No fixtures returned in this time window; this alone does not prove the API is unavailable.")
-              print("\nMARKET CHECK: This test has not yet verified BTTS or Over/Under market IDs. That requires a fixture odds response.")
-          except Exception as exc:
-              print(f"\nCOVERAGE CHECK FAILED: {exc}")
+              btts_ids = {str(m.get("marketId")) for m in btts_markets}
+              ou_ids = {str(m.get("marketId")) for m in ou_markets}
+              verified_btts = []
+              verified_ou = []
+              checked = 0
+              for fixture in upcoming_with_odds[:8]:
+                  checked += 1
+                  time.sleep(0.6)
+                  odds = get("odds", {"fixtureId": fixture["fixtureId"], "verbosity": 3})
+                  boards = odds.get("bookmakerOdds", {}) if isinstance(odds, dict) else {}
+                  for bookmaker, board in boards.items():
+                      market_map = board.get("markets", {}) if isinstance(board, dict) else {}
+                      for mid, market in market_map.items():
+                          if not isinstance(market, dict):
+                              continue
+                          active_prices = []
+                          for outcome in (market.get("outcomes") or {}).values():
+                              for player in (outcome.get("players") or {}).values():
+                                  if player.get("active") and player.get("price"):
+                                      active_prices.append(player.get("price"))
+                          if active_prices and str(mid) in btts_ids:
+                              verified_btts.append({
+                                  "fixture": fixture.get("participant1Name", "") + " vs " + fixture.get("participant2Name", ""),
+                                  "bookmaker": bookmaker, "marketId": str(mid), "activePrices": len(active_prices)
+                              })
+                          if active_prices and str(mid) in ou_ids:
+                              verified_ou.append({
+                                  "fixture": fixture.get("participant1Name", "") + " vs " + fixture.get("participant2Name", ""),
+                                  "bookmaker": bookmaker, "marketId": str(mid), "activePrices": len(active_prices)
+                              })
+                  if verified_btts and verified_ou:
+                      break
+              print("LIVE BTTS ODDS VERIFIED:", json.dumps(verified_btts[:10], ensure_ascii=False))
+              print("LIVE OVER/UNDER ODDS VERIFIED:", json.dumps(verified_ou[:10], ensure_ascii=False))
+              print(f"FIXTURE ODDS RESPONSES CHECKED: {checked}")
+              if not verified_btts:
+                  raise RuntimeError("Soccer fixtures were found, but no active BTTS prices were verified in checked odds.")
+              if not verified_ou:
+                  raise RuntimeError("Soccer fixtures were found, but no active Over/Under prices were verified in checked odds.")
+              print("SUCCESS: Direct OddsPapi API returned soccer fixtures and active BTTS + Over/Under prices.")
+          except Exception as e:
+              print("VERIFICATION FAILED:", str(e))
               sys.exit(1)
           PY
