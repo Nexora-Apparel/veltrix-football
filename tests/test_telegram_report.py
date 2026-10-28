@@ -54,7 +54,7 @@ def test_telegram_report_is_clear_and_experimental():
     assert "Expected goals: 1.40 - 0.80" in message
     assert "ELO ALTERNATIVE" not in message
     assert "POISSON GOAL MARKETS" not in message
-    assert "Fixture and recent-result data provided by 5DollarFootballAPI." in message
+    assert "Football data by 5DollarFootballAPI: https://5dollarfootballapi.com" in message
 
 
 def test_report_warns_when_recent_data_refresh_is_incomplete():
