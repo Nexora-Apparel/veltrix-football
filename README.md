@@ -24,7 +24,7 @@ Never put real keys in source code or commit them.
 ## Provider verification
 
 - `scripts/verify_data_providers.py` checks both API credentials and basic response access without printing keys or consuming The Odds API odds credits.
-- `scripts/verify_multi_source_integration.py` performs a bounded live fixture/market probe. It checks up to three 5Dollar fixture odds boards, up to three The Odds API sport odds endpoints, and at most one event-specific BTTS endpoint. Market availability can legitimately be empty for a given competition.
+- `scripts/verify_multi_source_integration.py` performs a bounded live fixture/market probe. It checks up to three 5Dollar fixture odds boards, up to three The Odds API sport odds endpoints plus at most three event-specific BTTS requests, and the keyless InferSports event/odds endpoint with up to three event-odds calls. InferSports connectivity passed but its probe returned no current quotes, so its production feature flag remains off. Market availability can legitimately be empty for a given competition.
 - Workflow: **Multi-Source Provider Verification** in GitHub Actions.
 - `app/provider_adapters.py` owns provider authentication, schema normalization, local-date/team matching, quota-aware odds retrieval and source-level diagnostics.
 
