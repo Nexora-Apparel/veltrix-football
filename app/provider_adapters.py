@@ -401,6 +401,7 @@ def enrich_report_with_multi_source_odds(
         report["multi_source_odds_sync"] = {
             "five_dollar": {"status": "SKIPPED_NO_FUTURE_FIXTURES", "fixtures_with_market_odds": 0, "max_fixture_odds_calls": max_fivedollar_fixtures, "warning": None},
             "the_odds_api": {"status": "SKIPPED_NO_FUTURE_FIXTURES", "fixtures_with_market_odds": 0, "sports_queried": [], "max_btts_event_calls": max_btts_events, "quota": {}, "warning": None},
+            "infer_sports": {"status": "SKIPPED_NO_FUTURE_FIXTURES", "fixtures_with_market_odds": 0, "events_checked": 0, "max_event_odds_calls": 3, "warning": None},
             "note": "No report fixtures available for odds matching; no supplemental odds requests were made.",
         }
         return report
