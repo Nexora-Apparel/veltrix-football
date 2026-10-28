@@ -381,6 +381,8 @@ def enrich_report_with_multi_source_odds(
     timezone_name: str = "Africa/Lagos",
     five_dollar_client: FiveDollarFootballClient | None = None,
     odds_api_client: TheOddsAPIClient | None = None,
+    infer_sports_client: InferSportsClient | None = None,
+    enable_infersports: bool | None = None,
     max_fivedollar_fixtures: int = 15,
     max_odds_api_sports: int = 5,
     max_btts_events: int = 3,
@@ -607,8 +609,11 @@ def enrich_report_with_multi_source_odds(
     infer_attached = 0
     infer_events_checked = 0
     infer_error = None
-    infer_enabled = os.getenv("VELTRIX_ENABLE_INFERSports", "false").strip().casefold() in {"1", "true", "yes"}
-    infer_client = InferSportsClient()
+    infer_enabled = (
+        enable_infersports if enable_infersports is not None
+        else os.getenv("VELTRIX_ENABLE_INFERSports", "false").strip().casefold() in {"1", "true", "yes"}
+    )
+    infer_client = infer_sports_client or InferSportsClient()
     if infer_enabled:
         infer_status = "NO_MATCHED_MARKET_ODDS"
         try:
