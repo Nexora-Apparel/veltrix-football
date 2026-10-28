@@ -20,9 +20,13 @@ from app.prediction import match_probabilities
 
 MARKETS = {
     "btts_yes": lambda hg, ag: int(hg > 0 and ag > 0),
+    "btts_no": lambda hg, ag: int(not (hg > 0 and ag > 0)),
     "over_1_5": lambda hg, ag: int(hg + ag >= 2),
+    "under_1_5": lambda hg, ag: int(hg + ag < 2),
     "over_2_5": lambda hg, ag: int(hg + ag >= 3),
+    "under_2_5": lambda hg, ag: int(hg + ag < 3),
     "over_3_5": lambda hg, ag: int(hg + ag >= 4),
+    "under_3_5": lambda hg, ag: int(hg + ag < 4),
 }
 
 
@@ -118,9 +122,13 @@ def chronological_goal_market_backtest(
                 model_result = match_probabilities(home_lambda, away_lambda)
                 model_probs = {
                     "btts_yes": float(model_result["btts_yes"]),
+                    "btts_no": float(model_result["btts_no"]),
                     "over_1_5": float(model_result["totals"]["over_1_5"]),
+                    "under_1_5": float(model_result["totals"]["under_1_5"]),
                     "over_2_5": float(model_result["totals"]["over_2_5"]),
+                    "under_2_5": float(model_result["totals"]["under_2_5"]),
                     "over_3_5": float(model_result["totals"]["over_3_5"]),
+                    "under_3_5": float(model_result["totals"]["under_3_5"]),
                 }
 
                 base_probs = {}
