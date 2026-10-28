@@ -477,3 +477,40 @@ def test_provider_switch_retries_dates_blocked_by_previous_provider_plan():
     assert sync["cache_state"]["source_provider"] == "5DollarFootballAPI"
     assert "history_plan_limited_dates" not in sync["cache_state"]
     assert "history_gaps" not in sync["cache_state"]
+
+
+def test_5dollar_empty_history_response_is_retryable_not_plan_limited():
+    class NewProvider:
+        provider_name = "5DollarFootballAPI"
+
+        def fixtures_between(self, start_date, end_date, timezone_name):
+            return {
+                "response": [],
+                "_veltrix_meta": {
+                    "provider": "5DollarFootballAPI",
+                    "successful_dates": [],
+                    "failed_dates": [start_date],
+                    "empty_response_dates": [start_date],
+                    "warning": "No fixtures returned for 1 historical date(s); dates remain retryable.",
+                },
+            }
+
+    cache_state = {
+        "source_provider": "5DollarFootballAPI",
+        "provider_error_classification_version": 1,
+        "coverage_state_version": 2,
+        "backfill_anchor_end": "2026-10-20",
+        "next_backfill_end_date": "2026-10-10",
+        "latest_covered_through": "2026-10-20",
+        "backfill_complete": True,
+        "history_gaps": ["2026-10-20"],
+        "last_gap_retry_on": "2026-10-12",
+    }
+    _, sync = fetch_recent_results_incremental(
+        NewProvider(), [{"date": date(2026, 10, 10), "division": "E0"}],
+        date(2026, 10, 20), cache_state,
+    )
+    updated = sync["cache_state"]
+    assert updated["history_gaps"] == ["2026-10-20"]
+    assert "history_plan_limited_dates" not in updated
+    assert sync["status"] == "PARTIAL"
