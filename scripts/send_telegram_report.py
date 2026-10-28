@@ -313,7 +313,7 @@ def format_report_messages(report: dict[str, Any], ledger: dict[str, Any] | None
         "• No betting slips or forced picks are generated.",
         "• Probabilities are model estimates, not guarantees.",
         "• When Elo is primary, expected goals are a separate Poisson estimate and do not directly generate the displayed 1X2 probabilities.",
-        "• Fixture and recent-result data provided by 5DollarFootballAPI.",
+        "• Football data by 5DollarFootballAPI: https://5dollarfootballapi.com",
     ])
 
     def render(selected: list[list[str]]) -> str:
