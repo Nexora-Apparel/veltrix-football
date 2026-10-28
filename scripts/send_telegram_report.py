@@ -260,6 +260,21 @@ def format_report_messages(report: dict[str, Any], ledger: dict[str, Any] | None
                     outcomes.append(outcome_label)
                 if outcomes:
                     odds_lines.append(f"The Odds API {label}: {' / '.join(outcomes)} ({market.get('bookmaker', 'bookmaker unknown')})")
+        infer = item.get("infer_sports_market_odds") if isinstance(item.get("infer_sports_market_odds"), dict) else {}
+        infer_markets = infer.get("markets") or {}
+        for market in (infer_markets.get("totals") or [])[:1]:
+            if not isinstance(market, dict):
+                continue
+            outcomes = []
+            for outcome in market.get("outcomes") or []:
+                if not isinstance(outcome, dict) or not isinstance(outcome.get("price"), (int, float)):
+                    continue
+                label = f"{outcome.get('name')} {outcome['price']:.2f}"
+                if outcome.get("point") is not None:
+                    label += f" ({outcome['point']})"
+                outcomes.append(label)
+            if outcomes:
+                odds_lines.append(f"InferSports Over/Under: {' / '.join(outcomes)} ({market.get('bookmaker', 'bookmaker unknown')})")
         odds = item.get("oddspapi_market_odds") if isinstance(item.get("oddspapi_market_odds"), dict) else {}
         btts_rows = odds.get("btts") if isinstance(odds.get("btts"), list) else []
         btts_pair = next((row for row in btts_rows if isinstance(row, dict) and isinstance(row.get("yes"), (int, float)) and isinstance(row.get("no"), (int, float))), None)
