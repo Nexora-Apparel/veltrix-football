@@ -178,7 +178,7 @@ def format_report_messages(report: dict[str, Any], ledger: dict[str, Any] | None
             plan_limited_count = coverage.get("provider_plan_limited_date_count")
             if isinstance(plan_limited_count, int) and plan_limited_count > 0:
                 header.append(
-                    f"API-Football plan limitation: {plan_limited_count} historical date(s) are inaccessible on this account and will not be retried automatically."
+                    f"5DollarFootballAPI coverage limitation: {plan_limited_count} historical date(s) are inaccessible on this account and will not be retried automatically."
                 )
             retryable_count = coverage.get("retryable_gap_date_count")
             if isinstance(retryable_count, int) and retryable_count > 0:
@@ -231,17 +231,45 @@ def format_report_messages(report: dict[str, Any], ledger: dict[str, Any] | None
         is_elo_primary = "elo" in model_name
         expected_goals = item.get("expected_goals") or {}
         model_label = "Elo ratings (1X2); Poisson xG" if is_elo_primary else "Recent-goals Poisson (1X2 + xG)"
-        odds = item.get("oddspapi_market_odds") if isinstance(item.get("oddspapi_market_odds"), dict) else {}
         odds_lines: list[str] = []
+        five_odds = item.get("five_dollar_market_odds") if isinstance(item.get("five_dollar_market_odds"), dict) else {}
+        for book in (five_odds.get("bookmakers") or []):
+            if not isinstance(book, dict):
+                continue
+            btts = book.get("btts") or {}
+            totals = book.get("over_under") or {}
+            if isinstance(btts.get("yes"), (int, float)) and isinstance(btts.get("no"), (int, float)):
+                odds_lines.append(f"5DollarFootballAPI BTTS Yes/No: {btts['yes']:.2f} / {btts['no']:.2f} ({book.get('bookmaker', 'bookmaker unknown')})")
+            if isinstance(totals.get("over"), (int, float)) and isinstance(totals.get("under"), (int, float)):
+                odds_lines.append(f"5DollarFootballAPI O/U {totals.get('line', 2.5)}: Over {totals['over']:.2f} / Under {totals['under']:.2f} ({book.get('bookmaker', 'bookmaker unknown')})")
+            if len(odds_lines) >= 2:
+                break
+        odds_api = item.get("the_odds_api_market_odds") if isinstance(item.get("the_odds_api_market_odds"), dict) else {}
+        api_markets = odds_api.get("markets") or {}
+        for market_key, label in (("btts", "BTTS"), ("totals", "Over/Under")):
+            for market in (api_markets.get(market_key) or [])[:1]:
+                if not isinstance(market, dict):
+                    continue
+                outcomes = []
+                for outcome in market.get("outcomes") or []:
+                    if not isinstance(outcome, dict) or not isinstance(outcome.get("price"), (int, float)):
+                        continue
+                    outcome_label = f"{outcome.get('name')} {outcome['price']:.2f}"
+                    if outcome.get("point") is not None:
+                        outcome_label += f" ({outcome['point']})"
+                    outcomes.append(outcome_label)
+                if outcomes:
+                    odds_lines.append(f"The Odds API {label}: {' / '.join(outcomes)} ({market.get('bookmaker', 'bookmaker unknown')})")
+        odds = item.get("oddspapi_market_odds") if isinstance(item.get("oddspapi_market_odds"), dict) else {}
         btts_rows = odds.get("btts") if isinstance(odds.get("btts"), list) else []
         btts_pair = next((row for row in btts_rows if isinstance(row, dict) and isinstance(row.get("yes"), (int, float)) and isinstance(row.get("no"), (int, float))), None)
         if btts_pair:
-            odds_lines.append(f"BTTS Yes/No: {btts_pair['yes']:.2f} / {btts_pair['no']:.2f} ({btts_pair.get('bookmaker', 'bookmaker unknown')})")
+            odds_lines.append(f"OddsPapi BTTS Yes/No: {btts_pair['yes']:.2f} / {btts_pair['no']:.2f} ({btts_pair.get('bookmaker', 'bookmaker unknown')})")
         totals_rows = odds.get("over_under") if isinstance(odds.get("over_under"), list) else []
         totals_pair = next((row for row in totals_rows if isinstance(row, dict) and str(row.get("line")) == "2.5" and isinstance(row.get("over"), (int, float)) and isinstance(row.get("under"), (int, float))), None)
         if totals_pair:
-            odds_lines.append(f"Over/Under 2.5: {totals_pair['over']:.2f} / {totals_pair['under']:.2f} ({totals_pair.get('bookmaker', 'bookmaker unknown')})")
-        odds_block = ["", "ODDSPAPI REFERENCE PRICES — NOT PICKS"] + odds_lines if odds_lines else []
+            odds_lines.append(f"OddsPapi Over/Under 2.5: {totals_pair['over']:.2f} / {totals_pair['under']:.2f} ({totals_pair.get('bookmaker', 'bookmaker unknown')})")
+        odds_block = ["", "MULTI-SOURCE REFERENCE PRICES — NOT PICKS"] + odds_lines[:5] if odds_lines else []
         block = [
             DIVIDER,
             f"⚽ {item.get('home_team', 'Home')} vs {item.get('away_team', 'Away')}",
@@ -270,7 +298,7 @@ def format_report_messages(report: dict[str, Any], ledger: dict[str, Any] | None
         "• No betting slips or forced picks are generated.",
         "• Probabilities are model estimates, not guarantees.",
         "• When Elo is primary, expected goals are a separate Poisson estimate and do not directly generate the displayed 1X2 probabilities.",
-        "• Fixture data provided by API-Football (API-Sports).",
+        "• Fixture and recent-result data provided by 5DollarFootballAPI.",
     ])
 
     def render(selected: list[list[str]]) -> str:
