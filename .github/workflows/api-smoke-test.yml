@@ -46,7 +46,7 @@ jobs:
         run: python -m pytest -q
 
       - name: Verify provider authentication (no odds quota used)
-        if: github.event_name != 'pull_request'
+        if: github.event_name == 'workflow_dispatch' || github.event_name == 'schedule' || (github.event_name == 'push' && contains(github.event.head_commit.message, '[run-provider-integration]'))
         env:
           FIVEDOLLARFOOTBALL_API_KEY: ${{ secrets.FIVEDOLLARFOOTBALL_API_KEY }}
           THE_ODDS_API_KEY: ${{ secrets.THE_ODDS_API_KEY }}
