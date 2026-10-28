@@ -15,7 +15,7 @@ This register captures the exact provider references found in the earlier projec
 ### 2. InferSports
 - OpenAPI specification referenced in the earlier discussion: https://github.com/infersports-dev/infersports/blob/main/openapi.yaml
 - Intended evaluation: secondary odds and market information.
-- **Status: NOT INTEGRATED / NOT VERIFIED.** No credential has been configured for the current integration work. Verify service identity, OpenAPI currency, auth, markets, bookmakers, quotas and timestamps before implementation.
+- **Status (2026-10-28): KEYLESS EVENT CONNECTIVITY VERIFIED; MARKET COVERAGE NOT CONFIRMED.** The keyless REST endpoint returned 200 same-day events, but three bounded odds requests returned no current quotes. A read-only adapter is implemented behind `VELTRIX_ENABLE_INFERSports=false`; do not enable it until a real quote-bearing fixture is verified. Current API schema supports 1X2 and totals, not BTTS.
 
 ### 3. The Odds API
 - Website: https://the-odds-api.com/
@@ -28,7 +28,7 @@ This register captures the exact provider references found in the earlier projec
 ### 4. Open Matchday
 - GitHub repository referenced in the earlier discussion: https://github.com/oladeeayo/open-matchday
 - Intended evaluation: supplementary historical fixtures, results and match statistics.
-- **Status: NOT INTEGRATED / NOT VERIFIED.** Verify actual data delivery method, coverage, schema, licensing and update cadence. Do not assume a repository name guarantees a live API.
+- **Status: RESEARCH-ONLY / NOT INGESTED.** The current README describes daily CSV data for 2026/27 and limits use to non-commercial purposes. Do not add it to production until licensing is confirmed compatible and historical coverage is shown to fill a real gap.
 
 ## Separate provider previously investigated: OddsPapi
 
