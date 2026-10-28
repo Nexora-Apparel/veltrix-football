@@ -27,7 +27,7 @@ COMMANDS: dict[str, str] = {
     "/overvalue": "Over/Under value screen status; requires model probabilities and real odds.",
     "/bttsvalue": "BTTS value screen status; requires model probabilities and real odds.",
     "/odds": "Show matched BTTS and Over/Under bookmaker prices from the connected multi-source report.",
-    "/oddsdiag": "Check API-Football authentication, subscription status, and today's odds availability.",
+    "/oddsdiag": "Inspect saved multi-source fixture and odds coverage without spending API quota.",
     "/10odds": "Research shortlist targeting total decimal odds near 10.00 only when real odds are available; not a guarantee.",
     "/builder": "Explain the conservative multi-pick builder rules.",
     "/slipcheck": "Check a supplied decimal-odds combination for arithmetic only.",
