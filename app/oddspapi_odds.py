@@ -186,4 +186,12 @@ def enrich_report(report: dict[str, Any], client: OddsPapiClient | None = None) 
         "markets_checked": ["BTTS", "Over/Under full time"],
         "note": "Market prices are informational; model outputs remain experimental and are not betting advice.",
     }
+    predictions = report.get("predictions") if isinstance(report.get("predictions"), list) else []
+    report["fixtures_with_market_odds"] = sum(
+        1 for row in predictions if isinstance(row, dict) and (
+            row.get("five_dollar_market_odds")
+            or row.get("the_odds_api_market_odds")
+            or row.get("oddspapi_market_odds")
+        )
+    )
     return report
