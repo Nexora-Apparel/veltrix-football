@@ -8,12 +8,13 @@ The earlier multi-source architecture draft incorrectly described API-Football/A
 
 | Provider / store | Intended responsibility | Current status |
 |---|---|---|
-| 5DollarFootballAPI | Candidate source for fixtures, results, bookmaker odds and supported match statistics | To verify and integrate |
-| InferSports | Secondary odds and market information; price comparison | To verify and integrate |
-| The Odds API | Supplemental bookmaker odds and market coverage | To verify access, quota and coverage |
-| Open Matchday | Supplementary historical fixtures, results and match statistics | To verify dataset/API, coverage and license |
-| Existing Veltrix historical database | Preserve existing records and use as the historical/model-feature foundation | Preserve; audit gaps and provenance |
-| Highlightly | Existing integration in the repository; assess as an available provider only if its credential/service remains usable | Must be verified; do not assume it is sufficient or the requested replacement |
+| 5DollarFootballAPI | Primary fixtures, recent results, and fixture-level bookmaker odds | Integrated and live-verified; fixtures and BTTS/goal-line/1X2 market payloads returned. |
+| The Odds API | Supplemental bookmaker prices, h2h/totals and event-specific BTTS | Integrated and live-verified; soccer sports and target market endpoints passed. |
+| OddsPapi | Optional separate BTTS and Over/Under enrichment | Existing adapter retained; non-blocking. |
+| InferSports | Secondary odds and market information; price comparison | Pending; not integrated or verified. |
+| Open Matchday | Supplementary historical fixtures, results and match statistics | Pending; dataset/API and license must be verified before ingestion. |
+| Existing Veltrix historical database | Preserve existing records and use as the historical/model-feature foundation | Preserved; source provenance is recorded for new rows and unknown legacy provenance is labelled. |
+| Highlightly | Existing legacy integration in the repository | Not a production dependency; do not assume its feed is active or mix it into the new provider path. |
 
 ## Implementation rules
 
@@ -30,14 +31,14 @@ The earlier multi-source architecture draft incorrectly described API-Football/A
 
 ## Corrected order of work
 
-1. Audit active workflows, configuration and all API-Football references.
-2. Confirm which current integration can still serve fixtures/results without API-Football.
-3. Verify 5DollarFootballAPI and the exact InferSports product from official documentation.
-4. Verify The Odds API and Open Matchday independently.
-5. Build provider health diagnostics and canonical schemas.
-6. Add one verified adapter at a time, with unit tests and fixture-level reconciliation tests.
-7. Run a shadow/canary comparison against existing reports before switching scheduled production runs.
-8. Update Telegram and dashboard diagnostics to show real source status and provenance.
+1. **Completed:** remove API-Football/API-Sports from active daily workflow, CLI and Telegram odds requests.
+2. **Completed:** integrate 5DollarFootballAPI as the primary fixture/results source and preserve the recent-results cache.
+3. **Completed:** integrate The Odds API for bounded h2h/totals and event-specific BTTS prices; keep OddsPapi optional.
+4. **Completed:** add normalization, conservative team/local-date joins, provider diagnostics, and unit tests.
+5. **Completed:** run GitHub Actions unit tests and live provider/market endpoint checks.
+6. **Pending:** evaluate and integrate InferSports only after verifying exact product identity, credentials and market schema.
+7. **Pending:** evaluate Open Matchday data delivery, historical coverage, schema and license before importing.
+8. **Ongoing:** monitor historical gaps and market coverage; keep value alerts disabled until chronological out-of-sample validation.
 
 ## Acceptance criteria
 
