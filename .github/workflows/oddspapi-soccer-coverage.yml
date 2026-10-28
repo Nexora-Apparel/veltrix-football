@@ -16,7 +16,7 @@ jobs:
     steps:
       - name: Verify direct OddsPapi API, soccer fixtures, BTTS and Over Under odds
         env:
-          ODDSPAPI_KEY: ${{ secrets.ODDSPAPI_RAPIDAPI_KEY }}
+          ODDSPAPI_KEY: ${{ secrets.ODDSPAPI_API_KEY }}
         run: |
           python - <<'PY'
           import json, os, sys, time
@@ -25,7 +25,7 @@ jobs:
 
           key = os.environ.get("ODDSPAPI_KEY", "").strip()
           if not key:
-              print("FAIL: ODDSPAPI_RAPIDAPI_KEY secret is missing.")
+              print("FAIL: ODDSPAPI_API_KEY secret is missing.")
               sys.exit(1)
 
           base = "https://api.oddspapi.io/v4"
