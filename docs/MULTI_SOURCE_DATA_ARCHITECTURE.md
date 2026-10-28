@@ -1,7 +1,9 @@
 # Veltrix Football — Multi-Source Data Architecture
 
-**Status:** Architecture baseline; provider integrations are not approved for production until individually verified.  
-**Primary existing provider:** API-Football / API-Sports v3 via `API_FOOTBALL_KEY`.  
+**Status (2026-10-28):** Phase 1 multi-source fixture and odds adapters are integrated and live-verified. InferSports and Open Matchday remain unverified candidates.  
+**Primary active provider:** 5DollarFootballAPI via `FIVEDOLLARFOOTBALL_API_KEY`.  
+**Supplemental odds:** The Odds API via `THE_ODDS_API_KEY`, with optional OddsPapi enrichment.  
+**Suspended provider:** API-Football / API-Sports v3 is disabled in production.  
 **Prediction status:** Experimental; no validated betting claims and no automatic bookmaker actions.
 
 ## Goals
@@ -14,14 +16,14 @@
 
 ## Proposed provider roles (candidate roles, not verified guarantees)
 
-| Provider | Candidate responsibility | Approval gate |
+| Provider | Responsibility | Current evidence / gate |
 |---|---|---|
-| API-Football / API-Sports v3 | Primary fixtures, completed results, supported statistics, historical refresh, optional odds | Existing integration; audit all workflows and confirm live behavior |
-| 5DollarFootballAPI | Candidate fixtures/results/odds source | Verify exact service/API documentation, endpoint behavior, pricing and coverage |
-| InferSports | Candidate secondary odds/market source | Verify exact product identity, market schema, timestamps, quotas and access |
-| The Odds API | Supplemental bookmaker prices | Verify available sports/markets, bookmaker coverage, quota and fixture matching |
-| Open Matchday | Candidate open historical source | Verify canonical dataset/API, license, fields, update cadence and duplicate overlap |
-| Existing Veltrix historical store and open-dataset import | Historical baseline and derived features | Audit freshness, gaps, identifiers, licensing and reproducibility |
+| 5DollarFootballAPI | Primary same-day fixtures, incremental recent results, and fixture-level BTTS/goal-line odds | Live auth and fixture access passed; actual odds endpoint returned 1X2, BTTS, goal-line and fixed goal-line markets. Partial history failures are retained as retryable gaps. |
+| The Odds API | Supplemental bookmaker h2h and totals prices; event-specific BTTS | Live auth, active soccer sports, h2h/totals endpoint and BTTS event endpoint passed. The integration check used three odds credits; daily requests are bounded. |
+| OddsPapi | Optional secondary BTTS and Over/Under enrichment | Existing adapter retained and included in the combined market-coverage count; keep non-blocking. |
+| InferSports | Candidate secondary odds/market source | Not integrated or verified; requires exact product/auth/market review and a credential before enabling. |
+| Open Matchday | Candidate supplementary historical fixtures/results/statistics | Not integrated or verified; repository/API delivery, coverage and license must be checked before ingestion. |
+| Existing Veltrix historical store and open-dataset import | Long-term historical baseline and derived features | Preserved. Recent results are merged with source provenance and provider IDs remain source-local. |
 
 Do not treat similarly named services as interchangeable. Do not add a provider merely because its name appears in a plan; verify the exact official documentation and API identity first.
 
@@ -79,15 +81,15 @@ Primary target markets: BTTS Yes/No and full-time Over/Under 1.5, 2.5 and 3.5 go
 
 ## Implementation sequence
 
-1. **Audit current state:** map API clients, workflows, environment variables, historical data paths, report artifacts, Telegram commands, dashboard routes and paper ledger.
-2. **Stabilize the primary path:** confirm `API_FOOTBALL_KEY` is the source used for fixtures/results/history and document any remaining legacy adapters.
-3. **Add source registry and health diagnostics:** endpoint-level status, quota, coverage, freshness and safe error categories.
-4. **Define canonical contracts and reconciliation tests:** fixtures, results and odds quotes.
-5. **Integrate one secondary provider at a time:** verify documentation and test with fixtures before enabling it in scheduled runs.
-6. **Build multi-source odds reconciliation:** quote freshness, bookmaker/market identity and best-price/consensus calculations.
-7. **Evaluate prediction changes:** chronological tests against the current baseline.
-8. **Connect health and provenance to reports, Telegram and dashboard.**
-9. **Canary rollout:** compare output with the existing pipeline; retain a rollback path.
+1. **Completed:** remove API-Football/API-Sports from active workflows, CLI and Telegram odds calls.
+2. **Completed:** use 5DollarFootballAPI for primary fixtures/results and preserve the existing history/cache with source provenance.
+3. **Completed:** integrate The Odds API h2h/totals and bounded event-specific BTTS enrichment; retain optional OddsPapi.
+4. **Completed:** add provider smoke checks, bounded live market probes, fixture normalization and local-date/team reconciliation tests.
+5. **Completed:** run unit tests and a live integration probe; see `scripts/verify_multi_source_integration.py` and the GitHub Actions workflow.
+6. **Pending:** verify InferSports product/auth/markets and Open Matchday dataset/API/license before any integration.
+7. **Pending:** expand canonical odds persistence to a durable quote table if the existing report artifact is no longer sufficient.
+8. **Pending:** monitor daily provider coverage and historical gaps; do not infer provider health from code presence alone.
+9. **Separate model gate:** evaluate any prediction changes on chronological holdout data before enabling value alerts.
 
 ## Current known risks to audit
 
