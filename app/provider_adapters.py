@@ -180,17 +180,31 @@ class FiveDollarFootballClient:
         rows: list[dict[str, Any]] = []
         requests_made = 0
         remaining = None
+        successful_dates: list[str] = []
+        failed_dates: list[str] = []
         cursor = start
         while cursor <= end:
-            payload = self.fixtures(cursor.isoformat(), timezone)
-            rows.extend(payload["response"])
-            meta = payload.get("_veltrix_meta") or {}
-            requests_made += int(meta.get("requests_made", 1) or 1)
-            remaining = meta.get("requests_remaining", remaining)
+            day_text = cursor.isoformat()
+            try:
+                payload = self.fixtures(day_text, timezone)
+                rows.extend(payload["response"])
+                meta = payload.get("_veltrix_meta") or {}
+                requests_made += int(meta.get("requests_made", 1) or 1)
+                remaining = meta.get("requests_remaining", remaining)
+                successful_dates.append(day_text)
+            except ProviderAPIError:
+                # Keep successful dates from this window instead of discarding them
+                # when one date is inaccessible. Failed dates remain retryable.
+                requests_made += 1
+                failed_dates.append(day_text)
             cursor += timedelta(days=1)
         return {
             "response": rows, "results": len(rows), "provider": "5DollarFootballAPI",
-            "_veltrix_meta": {"provider": "5DollarFootballAPI", "requests_made": requests_made, "requests_remaining": remaining},
+            "_veltrix_meta": {
+                "provider": "5DollarFootballAPI", "requests_made": requests_made,
+                "requests_remaining": remaining, "successful_dates": successful_dates,
+                "failed_dates": failed_dates,
+            },
         }
 
     def status(self) -> dict[str, Any]:
