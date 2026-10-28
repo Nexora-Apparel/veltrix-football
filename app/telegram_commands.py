@@ -220,11 +220,14 @@ def _status(report: dict[str, Any] | None, ledger: dict[str, Any] | None) -> str
     predictions = _forecast_predictions(report)
     odds_status = "not connected to this command router"
     if isinstance(report, dict):
+        multi = report.get("multi_source_odds_sync") or {}
         meta = report.get("live_odds_sync") or report.get("odds_meta") or report.get("odds") or {}
-        if isinstance(meta, dict) and meta.get("api_sports_status"):
-            api_status = str(meta["api_sports_status"])
-            attached = meta.get("api_sports_fixtures_with_odds", 0)
-            odds_status = f"API-Sports {api_status} ({attached} report fixtures enriched)"
+        if isinstance(multi, dict) and multi:
+            five = (multi.get("five_dollar") or {}).get("status", "UNKNOWN")
+            odds_api = (multi.get("the_odds_api") or {}).get("status", "UNKNOWN")
+            odds_status = f"5DollarFootballAPI {five}; The Odds API {odds_api}"
+            if isinstance(meta, dict) and meta.get("fixtures_with_market_odds") is not None:
+                odds_status += f" ({meta.get('fixtures_with_market_odds')} matched fixtures)"
         elif isinstance(meta, dict) and meta.get("status"):
             odds_status = str(meta["status"])
     if isinstance(ledger, dict):
@@ -268,8 +271,8 @@ def _status(report: dict[str, Any] | None, ledger: dict[str, Any] | None) -> str
         f"Historical coverage: {history_coverage}\n"
         f"Report freshness / reuse: {freshness_status}\n"
         f"Command-data publication: {str(report.get('command_data_publication') or 'UNCONFIRMED') if isinstance(report, dict) else 'UNKNOWN'}\n"
-        f"Report 1X2 odds integration: {odds_status}\n"
-        "Direct API-Sports odds feed: run /oddsdiag; /status reads saved-report integration only.\n"
+        f"Report multi-source odds integration: {odds_status}\n"
+        "/oddsdiag reads saved provider coverage and does not spend API quota.\n"
         f"Paper-tracking ledger: {ledger_status}\n"
         "Betting/value alerts: DISABLED until chronological out-of-sample validation.\n"
         "No bookmaker actions are performed."
