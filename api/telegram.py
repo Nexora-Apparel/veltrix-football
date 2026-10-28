@@ -71,12 +71,13 @@ main{padding:20px clamp(12px,3vw,30px)}.eyebrow{color:var(--green);font-weight:8
 <nav class="bottomnav"><a class="navitem active" href="#dashboardView" data-view="dashboardView"><span>⌂</span>Dashboard</a><a class="navitem" href="#predictionsView" data-view="predictionsView"><span>◎</span>Predictions</a><a class="navitem" href="#marketView" data-view="marketView"><span>▤</span>Market odds</a><a class="navitem" href="#statusView" data-view="statusView"><span>▥</span>Status</a></nav><a class="navitem active" href="#top" onclick="window.scrollTo({top:0,behavior:'smooth'});return false"><span>⌂</span>Home</a><a class="navitem" href="#predictions" onclick="document.getElementById('predictions').scrollIntoView({behavior:'smooth'});return false"><span>◎</span>Predictions</a><a class="navitem" href="#predictions" onclick="setFilter('priced');return false"><span>▤</span>Market odds</a><a class="navitem" href="#systemStatus" onclick="document.getElementById('systemStatus').scrollIntoView({behavior:'smooth'});return false"><span>▥</span>Status</a></nav>
 <script>
 let dashboardRows=[];let currentFilter='all';
-function fmt(v){const n=Number(v);return Number.isFinite(n)?(n*100).toFixed(1)+'%':'—'}
-function pct(v){const n=Number(v);return Number.isFinite(n)?Math.max(0,Math.min(100,n*100)):0}
+function num(v){return v===null||v===undefined||v===''?NaN:Number(v)}
+function fmt(v){const n=num(v);return Number.isFinite(n)?(n*100).toFixed(1)+'%':'—'}
+function pct(v){const n=num(v);return Number.isFinite(n)?Math.max(0,Math.min(100,n*100)):0}
 function text(el,value){el.textContent=value===null||value===undefined||value===''?'—':String(value)}
 function marketPriceLines(m){
  const out=[];const odds=m.the_odds_api_market_odds||{};const markets=odds.markets||{};
- for(const [key,label] of [['btts','BTTS'],['totals','Over / Under']]){
+ for(const [key,label] of [['h2h','Match result'],['btts','BTTS'],['totals','Over / Under']]){
   const market=(markets[key]||[])[0];if(!market)continue;
   const parts=(market.outcomes||[]).filter(o=>o&&Number.isFinite(Number(o.price))).map(o=>o.name+' '+Number(o.price).toFixed(2)+(o.point!==null&&o.point!==undefined?' ('+o.point+')':''));
   if(parts.length)out.push((market.bookmaker||'Bookmaker')+' '+label+': '+parts.join(' / '));
@@ -85,7 +86,7 @@ function marketPriceLines(m){
  if(five.length){const b=five[0],bt=b.btts||{},ou=b.over_under||{};if(Number.isFinite(Number(bt.yes))&&Number.isFinite(Number(bt.no)))out.push('5Dollar BTTS: Yes '+Number(bt.yes).toFixed(2)+' / No '+Number(bt.no).toFixed(2));if(Number.isFinite(Number(ou.over))&&Number.isFinite(Number(ou.under)))out.push('5Dollar O/U '+(ou.line||2.5)+': Over '+Number(ou.over).toFixed(2)+' / Under '+Number(ou.under).toFixed(2))}
  return out;
 }
-function topProbability(m){const p=m.probabilities||{};const opts=[['Home',Number(p.home_win)],['Draw',Number(p.draw)],['Away',Number(p.away_win)]].filter(x=>Number.isFinite(x[1]));opts.sort((a,b)=>b[1]-a[1]);return opts[0]||['Outcome',NaN]}
+function topProbability(m){const p=m.probabilities||{};const opts=[['Home',num(p.home_win)],['Draw',num(p.draw)],['Away',num(p.away_win)]].filter(x=>Number.isFinite(x[1]));opts.sort((a,b)=>b[1]-a[1]);return opts[0]||['Outcome',NaN]}
 async function fetchTeamBadge(team){
  try{const r=await fetch('https://www.thesportsdb.com/api/v1/json/3/searchteams.php?t='+encodeURIComponent(team));if(!r.ok)return null;const d=await r.json();const rows=Array.isArray(d.teams)?d.teams:[];const normalized=team.toLowerCase().replace(/[^a-z0-9]/g,'');const match=rows.find(x=>String(x.strSport||'').toLowerCase()==='soccer'&&String(x.strTeam||'').toLowerCase().replace(/[^a-z0-9]/g,'')===normalized)||rows.find(x=>String(x.strSport||'').toLowerCase()==='soccer');return match?.strBadge||match?.strTeamBadge||null}catch(e){return null}
 }
@@ -104,7 +105,7 @@ function renderFeatured(m,targetId='featured',insightTarget='insights'){
 }
 function renderInsights(m,targetId='insights'){
  const box=document.getElementById(targetId);if(!box)return;box.replaceChildren();if(!m){box.textContent='No eligible fixture available for insight generation.';return}
- const x=m.expected_goals||{};const homeX=Number(x.home),awayX=Number(x.away),btts=Number(m.btts_yes),over=Number(m.over_2_5);const probs=m.probabilities||{};const best=topProbability(m);const rows=[];
+ const x=m.expected_goals||{};const homeX=num(x.home),awayX=num(x.away),btts=num(m.btts_yes),over=num(m.over_2_5);const probs=m.probabilities||{};const best=topProbability(m);const rows=[];
  rows.push(['◉','Model lean',Number.isFinite(best[1])?(best[0]==='Home'?m.home_team:best[0]==='Away'?m.away_team:'Draw')+' leads at '+fmt(best[1]):'1X2 probability unavailable','Computed from published model probabilities.']);
  rows.push(['◎','BTTS outlook',Number.isFinite(btts)?(btts>=.55?'Higher estimated chance both teams score':btts<=.45?'Model leans toward at least one team not scoring':'No strong BTTS lean'):'BTTS probability unavailable',Number.isFinite(btts)?'Model estimate: '+fmt(btts):'No value supplied.']);
  rows.push(['↗','Goal total',Number.isFinite(over)?(over>=.55?'Model leans Over 2.5':over<=.45?'Model leans Under 2.5':'No strong 2.5-goal lean'):'Totals estimate unavailable',Number.isFinite(over)?'Over 2.5 estimate: '+fmt(over):'No value supplied.']);
