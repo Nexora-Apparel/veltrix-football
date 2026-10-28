@@ -325,6 +325,13 @@ def enrich_report_with_multi_source_odds(
     source_fixtures = fixtures_payload.get("response")
     if not isinstance(predictions, list) or not isinstance(source_fixtures, list):
         return report
+    if not predictions or not source_fixtures:
+        report["multi_source_odds_sync"] = {
+            "five_dollar": {"status": "SKIPPED_NO_FUTURE_FIXTURES", "fixtures_with_market_odds": 0, "max_fixture_odds_calls": max_fivedollar_fixtures, "warning": None},
+            "the_odds_api": {"status": "SKIPPED_NO_FUTURE_FIXTURES", "fixtures_with_market_odds": 0, "sports_queried": [], "max_btts_event_calls": max_btts_events, "quota": {}, "warning": None},
+            "note": "No report fixtures available for odds matching; no supplemental odds requests were made.",
+        }
+        return report
     zone = ZoneInfo(timezone_name)
     by_key: dict[tuple[str, str, str], dict[str, Any]] = {}
     for item in source_fixtures:
@@ -431,12 +438,20 @@ def enrich_report_with_multi_source_odds(
     odds_client = odds_api_client or TheOddsAPIClient()
     if odds_client.api_key:
         odds_api_status = "NO_MATCHED_MARKET_ODDS"
-        sports = list(DEFAULT_SOCCER_SPORTS)
         configured = os.getenv("THE_ODDS_API_SOCCER_SPORTS", "").strip()
         if configured:
             sports = [key.strip() for key in configured.split(",") if key.strip()][:max_odds_api_sports]
         else:
-            sports = sports[:max_odds_api_sports]
+            # Query only competitions represented in the current report to protect monthly quota.
+            aliases = {
+                "soccer_epl": ("premierleague", "englishpremierleague", "epl"),
+                "soccer_spain_la_liga": ("laliga", "spanishprimera", "spainlaliga"),
+                "soccer_germany_bundesliga": ("bundesliga", "germanbundesliga"),
+                "soccer_italy_serie_a": ("seriea", "italianseriea"),
+                "soccer_france_ligue_one": ("ligue1", "frenchligue1"),
+            }
+            league_keys = {_name_key(p.get("league")) for p in predictions if isinstance(p, dict) and p.get("league")}
+            sports = [sport for sport, names in aliases.items() if any(any(name in league_key or league_key in name for name in names) for league_key in league_keys if league_key)][:max_odds_api_sports]
         odds_events: list[tuple[str, dict[str, Any]]] = []
         for sport_key in sports:
             try:
