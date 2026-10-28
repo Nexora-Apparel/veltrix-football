@@ -39,6 +39,12 @@ def test_backtest_predicts_only_after_training_and_is_deterministic():
     assert set(result["models"]) == {"poisson", "elo"}
     live = result["live_pipeline"]
     assert live["model"] == "experimental_recent_goals_poisson"
+    assert live["goal_markets"]["metrics"]["matches"] == live["matches"]
+    assert live["goal_markets"]["recent_holdout"]["matches"] > 0
+    assert set(live["goal_markets"]["metrics"]["markets"]) == {
+        "btts_yes", "btts_no", "over_1_5", "under_1_5",
+        "over_2_5", "under_2_5", "over_3_5", "under_3_5",
+    }
     assert live["matches"] > 0
     dc = live["dixon_coles_alternative"]
     assert dc["model"] == "experimental_recency_weighted_dixon_coles"
