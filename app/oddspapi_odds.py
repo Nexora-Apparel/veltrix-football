@@ -191,6 +191,7 @@ def enrich_report(report: dict[str, Any], client: OddsPapiClient | None = None) 
         1 for row in predictions if isinstance(row, dict) and (
             row.get("five_dollar_market_odds")
             or row.get("the_odds_api_market_odds")
+            or row.get("infer_sports_market_odds")
             or row.get("oddspapi_market_odds")
         )
     )
