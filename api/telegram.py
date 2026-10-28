@@ -142,7 +142,7 @@ function renderStatus(d){
  lines.push('5Dollar odds: '+(d.multi_source_odds_sync?.five_dollar?.status||d.live_odds_sync?.five_dollar_status||'not reported')+'.');
  lines.push('The Odds API: '+(d.multi_source_odds_sync?.the_odds_api?.status||odds.the_odds_api_status||'not reported')+'. Matched fixtures: '+(odds.fixtures_with_market_odds??d.fixtures_with_market_odds??0)+'.');
  lines.push('Historical coverage: '+(hist.status||'not reported')+'.');if(Number(hist.provider_plan_limited_date_count)>0)lines.push('Provider-limited historical dates: '+hist.provider_plan_limited_date_count+'.');if(Number(hist.retryable_gap_date_count)>0)lines.push('Transient historical gaps queued for bounded retry: '+hist.retryable_gap_date_count+'.');
- details.textContent=lines.join('\n');observeReveals(box);observeReveals(details.parentElement);
+ details.textContent=lines.join('\\n');observeReveals(box);observeReveals(details.parentElement);
 }
 function observeReveals(root=document){
  const items=root.querySelectorAll?root.querySelectorAll('.reveal:not([data-observed])'):[];
