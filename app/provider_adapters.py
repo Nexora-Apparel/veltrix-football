@@ -183,28 +183,42 @@ class FiveDollarFootballClient:
         remaining = None
         successful_dates: list[str] = []
         failed_dates: list[str] = []
+        empty_response_dates: list[str] = []
+        today_local = datetime.now(ZoneInfo(timezone)).date()
         cursor = start
         while cursor <= end:
             day_text = cursor.isoformat()
             try:
                 payload = self.fixtures(day_text, timezone)
-                rows.extend(payload["response"])
+                day_rows = payload["response"]
+                rows.extend(day_rows)
                 meta = payload.get("_veltrix_meta") or {}
                 requests_made += int(meta.get("requests_made", 1) or 1)
                 remaining = meta.get("requests_remaining", remaining)
-                successful_dates.append(day_text)
+                if not day_rows and cursor < today_local:
+                    # An empty response for a historical date is not proof that
+                    # the date is covered; keep it as a retryable gap.
+                    failed_dates.append(day_text)
+                    empty_response_dates.append(day_text)
+                else:
+                    successful_dates.append(day_text)
             except ProviderAPIError:
                 # Keep successful dates from this window instead of discarding them
                 # when one date is inaccessible. Failed dates remain retryable.
                 requests_made += 1
                 failed_dates.append(day_text)
             cursor += timedelta(days=1)
+        warning = (
+            f"No fixtures returned for {len(empty_response_dates)} historical date(s); dates remain retryable."
+            if empty_response_dates else None
+        )
         return {
             "response": rows, "results": len(rows), "provider": "5DollarFootballAPI",
             "_veltrix_meta": {
                 "provider": "5DollarFootballAPI", "requests_made": requests_made,
                 "requests_remaining": remaining, "successful_dates": successful_dates,
-                "failed_dates": failed_dates,
+                "failed_dates": failed_dates, "empty_response_dates": empty_response_dates,
+                "warning": warning,
             },
         }
 
