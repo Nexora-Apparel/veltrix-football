@@ -144,7 +144,7 @@ jobs:
           import pathlib
           import re
           source = pathlib.Path("api/telegram.py").read_text(encoding="utf-8")
-          match = re.search(r'DASHBOARD_HTML\\s*=\\s*"""(.*?)"""', source, re.S)
+          match = re.search(r'DASHBOARD_HTML\s*=\s*"""(.*?)"""', source, re.S)
           if not match:
               raise SystemExit("DASHBOARD_HTML block not found")
           scripts = re.findall(r"<script>(.*?)</script>", match.group(1), re.S)
