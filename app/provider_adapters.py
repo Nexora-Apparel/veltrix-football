@@ -286,6 +286,41 @@ class TheOddsAPIClient:
         return []
 
 
+class InferSportsClient:
+    """Keyless read-only InferSports REST client for supplemental full-time totals/1X2."""
+
+    base_url = "https://api.infersports.dev"
+
+    def __init__(self, timeout: int = 20):
+        self.timeout = timeout
+
+    def _get(self, path: str, params: dict[str, Any] | None = None) -> tuple[Any, Any]:
+        query = urlencode({k: v for k, v in (params or {}).items() if v is not None})
+        url = f"{self.base_url}/{path.lstrip('/')}" + (f"?{query}" if query else "")
+        status, headers, payload = _json_request(url, timeout=self.timeout)
+        if status != 200:
+            raise ProviderAPIError("InferSports returned an unsuccessful response.")
+        return payload, headers
+
+    def events_for_date(self, day: str, timezone_name: str = "Africa/Lagos") -> list[dict[str, Any]]:
+        payload, _ = self._get("v1/events", {
+            "sport": "football", "date": day, "timezone": timezone_name,
+            "status": "scheduled", "limit": 200,
+        })
+        rows = payload.get("data") if isinstance(payload, dict) else payload
+        if not isinstance(rows, list):
+            raise ProviderAPIError("InferSports events response had an unexpected shape.")
+        return [row for row in rows if isinstance(row, dict)]
+
+    def event_odds(self, event_id: str) -> dict[str, Any]:
+        payload, _ = self._get(f"v1/events/{event_id}/odds", {
+            "markets": "1x2,totals", "period": "full_time", "format": "decimal",
+        })
+        if not isinstance(payload, dict) or not isinstance(payload.get("odds"), list):
+            raise ProviderAPIError("InferSports odds response had an unexpected shape.")
+        return payload
+
+
 def _valid_price(value: Any) -> float | None:
     try:
         price = float(value)
