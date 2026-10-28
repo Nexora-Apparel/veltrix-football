@@ -193,6 +193,26 @@ class FiveDollarFootballClient:
             "_veltrix_meta": {"provider": "5DollarFootballAPI", "requests_made": requests_made, "requests_remaining": remaining},
         }
 
+    def status(self) -> dict[str, Any]:
+        payload, headers = self._get("status")
+        return {
+            "provider": "5DollarFootballAPI",
+            "status": "CONNECTED",
+            "data": payload.get("data"),
+            "_veltrix_meta": {"provider": "5DollarFootballAPI", "requests_remaining": headers.get("X-RateLimit-Remaining")},
+        }
+
+    def leagues(self, page: int = 1, per_page: int = 100) -> dict[str, Any]:
+        payload, headers = self._get("leagues", {"page": page, "per_page": min(max(per_page, 1), 100)})
+        rows = payload.get("data")
+        if not isinstance(rows, list):
+            raise ProviderAPIError("5DollarFootballAPI leagues response is missing its data list.")
+        return {
+            "response": rows, "results": len(rows), "pagination": payload.get("pagination"),
+            "provider": "5DollarFootballAPI",
+            "_veltrix_meta": {"provider": "5DollarFootballAPI", "requests_remaining": headers.get("X-RateLimit-Remaining")},
+        }
+
     def fixture_odds(self, fixture_id: Any) -> dict[str, Any]:
         payload, headers = self._get(f"fixtures/{fixture_id}/odds")
         data = payload.get("data")
