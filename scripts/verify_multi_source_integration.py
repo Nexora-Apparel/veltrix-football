@@ -112,20 +112,27 @@ def main() -> int:
         events = infer.events_for_date(day, "Africa/Lagos")
         market_keys: set[str] = set()
         odds_probe = "NOT_TESTED_NO_EVENTS"
-        if events:
-            first_event = events[0]
-            event_id = str(first_event.get("id") or "")
-            if event_id:
-                odds_block = infer.event_odds(event_id)
-                market_keys = {
-                    str(row.get("market_type")) for row in (odds_block.get("odds") or [])
-                    if isinstance(row, dict)
-                }
-                odds_probe = "AVAILABLE" if market_keys else "NO_CURRENT_QUOTES"
+        odds_requests = 0
+        for event in events[:3]:
+            event_id = str(event.get("id") or "")
+            if not event_id:
+                continue
+            odds_requests += 1
+            odds_block = infer.event_odds(event_id)
+            market_keys.update(
+                str(row.get("market_type")) for row in (odds_block.get("odds") or [])
+                if isinstance(row, dict)
+            )
+            if market_keys:
+                odds_probe = "AVAILABLE"
+                break
+        if events and not market_keys:
+            odds_probe = "NO_CURRENT_QUOTES"
         results["infer_sports"] = {
             "status": "CONNECTED",
             "events_today_lagos": len(events),
             "market_types_seen": sorted(market_keys),
+            "odds_requests": odds_requests,
             "odds_probe": odds_probe,
             "note": "Keyless read-only endpoint; only totals and 1X2 are available, not BTTS.",
         }
@@ -138,11 +145,11 @@ def main() -> int:
     )
     print(json.dumps({
         "checked_at_utc": datetime.utcnow().isoformat(timespec="seconds") + "Z",
-        "providers_connected": f"{connected}/2",
+        "providers_connected": f"{connected}/3",
         "details": results,
         "note": "Connected means authentication and response schema passed. Market coverage can legitimately be empty for a fixture or competition.",
     }, indent=2, ensure_ascii=False))
-    return 0 if connected == 2 else 1
+    return 0 if connected == 3 else 1
 
 
 if __name__ == "__main__":
