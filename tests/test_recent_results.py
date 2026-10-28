@@ -438,3 +438,42 @@ def test_legacy_plan_denied_dates_migrate_without_repeating_provider_requests():
         "2026-09-21", "2026-09-22", "2026-10-11"
     ]
     assert meta["cache_state"]["coverage_state_version"] == 2
+
+
+def test_provider_switch_retries_dates_blocked_by_previous_provider_plan():
+    class NewProvider:
+        provider_name = "5DollarFootballAPI"
+
+        def __init__(self):
+            self.calls = []
+
+        def fixtures_between(self, start_date, end_date, timezone_name):
+            self.calls.append((start_date, end_date, timezone_name))
+            return {
+                "response": [],
+                "_veltrix_meta": {
+                    "provider": "5DollarFootballAPI",
+                    "successful_dates": [start_date],
+                    "failed_dates": [],
+                },
+            }
+
+    api = NewProvider()
+    historical = [{"date": date(2026, 10, 10), "division": "E0"}]
+    cache_state = {
+        "source_provider": "API-Football",
+        "coverage_state_version": 2,
+        "backfill_anchor_end": "2026-10-20",
+        "next_backfill_end_date": "2026-10-10",
+        "latest_covered_through": "2026-10-20",
+        "backfill_complete": True,
+        "history_plan_limited_dates": ["2026-10-15"],
+    }
+    rows, sync = fetch_recent_results_incremental(
+        api, historical, date(2026, 10, 20), cache_state,
+    )
+    assert rows == []
+    assert api.calls == [("2026-10-15", "2026-10-15", "Africa/Lagos")]
+    assert sync["cache_state"]["source_provider"] == "5DollarFootballAPI"
+    assert "history_plan_limited_dates" not in sync["cache_state"]
+    assert "history_gaps" not in sync["cache_state"]
