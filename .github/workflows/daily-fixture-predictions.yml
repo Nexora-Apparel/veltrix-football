@@ -150,7 +150,7 @@ jobs:
           scripts = re.findall(r"<script>(.*?)</script>", match.group(1), re.S)
           if not scripts:
               raise SystemExit("No embedded dashboard script found")
-          pathlib.Path("/tmp/veltrix-dashboard.js").write_text("\\n".join(scripts), encoding="utf-8")
+          pathlib.Path("/tmp/veltrix-dashboard.js").write_text("\n".join(scripts), encoding="utf-8")
           PY
           node --check /tmp/veltrix-dashboard.js
       - name: Evaluate previous day's forecasts
