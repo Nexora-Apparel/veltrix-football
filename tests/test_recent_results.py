@@ -514,3 +514,29 @@ def test_5dollar_empty_history_response_is_retryable_not_plan_limited():
     assert updated["history_gaps"] == ["2026-10-20"]
     assert "history_plan_limited_dates" not in updated
     assert sync["status"] == "PARTIAL"
+
+
+def test_gap_retries_are_throttled_to_weekly_even_when_forward_coverage_is_current():
+    class MustNotCall:
+        provider_name = "5DollarFootballAPI"
+
+        def fixtures_between(self, *args, **kwargs):
+            raise AssertionError("Gap retry should be throttled.")
+
+    cache_state = {
+        "source_provider": "5DollarFootballAPI",
+        "provider_error_classification_version": 1,
+        "coverage_state_version": 2,
+        "backfill_anchor_end": "2026-10-20",
+        "next_backfill_end_date": "2026-10-10",
+        "latest_covered_through": "2026-10-20",
+        "backfill_complete": True,
+        "history_gaps": ["2026-10-20"],
+        "last_gap_retry_on": "2026-10-20",
+    }
+    _, sync = fetch_recent_results_incremental(
+        MustNotCall(), [{"date": date(2026, 10, 10), "division": "E0"}],
+        date(2026, 10, 20), cache_state,
+    )
+    assert sync["status"] == "GAPPED"
+    assert sync["cache_state"]["history_gaps"] == ["2026-10-20"]
