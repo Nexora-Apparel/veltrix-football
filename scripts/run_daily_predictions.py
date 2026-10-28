@@ -306,19 +306,18 @@ def main() -> None:
         multi_odds = report.get("multi_source_odds_sync") or {}
         five_status = (multi_odds.get("five_dollar") or {}).get("status", "NOT_CONFIGURED")
         odds_api_status = (multi_odds.get("the_odds_api") or {}).get("status", "NOT_CONFIGURED")
-        combined_status = (
-            "SKIPPED_NO_FUTURE_FIXTURES"
-            if five_status == "SKIPPED_NO_FUTURE_FIXTURES" and odds_api_status == "SKIPPED_NO_FUTURE_FIXTURES"
-            else "AVAILABLE" if (five_status == "AVAILABLE" or odds_api_status == "AVAILABLE")
-            else "NO_MATCHED_MARKET_ODDS"
-        )
+        infer_status = (multi_odds.get("infer_sports") or {}).get("status", "DISABLED")
+        all_skipped = five_status == "SKIPPED_NO_FUTURE_FIXTURES" and odds_api_status == "SKIPPED_NO_FUTURE_FIXTURES"
+        any_available = any(status == "AVAILABLE" for status in (five_status, odds_api_status, infer_status))
+        combined_status = "SKIPPED_NO_FUTURE_FIXTURES" if all_skipped else "AVAILABLE" if any_available else "NO_MATCHED_MARKET_ODDS"
         report["live_odds_sync"] = {
             "status": combined_status,
             "primary_fixture_provider": "5DollarFootballAPI",
             "five_dollar_status": five_status,
             "the_odds_api_status": odds_api_status,
+            "infer_sports_status": infer_status,
             "fixtures_with_market_odds": sum(
-                bool(item.get("five_dollar_market_odds") or item.get("the_odds_api_market_odds"))
+                bool(item.get("five_dollar_market_odds") or item.get("the_odds_api_market_odds") or item.get("infer_sports_market_odds"))
                 for item in report.get("predictions", []) if isinstance(item, dict)
             ),
             "note": "Market odds are reference data; forecast probabilities remain experimental and unchanged.",
