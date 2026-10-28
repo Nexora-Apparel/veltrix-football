@@ -28,18 +28,29 @@
     },
     {
       "report_date": "2026-10-27",
-      "fixtures_scored": 0,
-      "completed_forecasts_scored": 0,
-      "awaiting_result_or_match": 30,
+      "fixtures_scored": 2,
+      "completed_forecasts_scored": 4,
+      "awaiting_result_or_match": 28,
       "withheld_or_invalid_forecasts": 201,
-      "metrics": {
-        "matches": 0,
-        "result_accuracy": null,
-        "brier_score": null,
-        "log_loss": null
+      "metrics": null,
+      "metrics_by_model": {
+        "experimental_elo_by_competition": {
+          "matches": 2,
+          "result_accuracy": 1.0,
+          "brier_score": 0.40709547999999995,
+          "log_loss": 0.735957759728448
+        },
+        "experimental_recent_goals_poisson": {
+          "matches": 2,
+          "result_accuracy": 1.0,
+          "brier_score": 0.41251631,
+          "log_loss": 0.7412728678545503
+        }
       },
-      "metrics_by_model": {},
-      "model_versions": []
+      "model_versions": [
+        "experimental_elo_by_competition",
+        "experimental_recent_goals_poisson"
+      ]
     }
   ],
   "scored_matches": [
@@ -110,9 +121,77 @@
       "home_goals": 2,
       "away_goals": 0,
       "report_date": "2026-10-24"
+    },
+    {
+      "fixture_id": 1319199709,
+      "model": "experimental_elo_by_competition",
+      "home_team": "Torino",
+      "away_team": "Como",
+      "actual": "A",
+      "predicted": "A",
+      "probabilities": {
+        "H": 0.257,
+        "D": 0.2621,
+        "A": 0.4809
+      },
+      "correct": true,
+      "home_goals": 1,
+      "away_goals": 3,
+      "report_date": "2026-10-27"
+    },
+    {
+      "fixture_id": 1319199709,
+      "model": "experimental_recent_goals_poisson",
+      "home_team": "Torino",
+      "away_team": "Como",
+      "actual": "A",
+      "predicted": "A",
+      "probabilities": {
+        "H": 0.2747,
+        "D": 0.205,
+        "A": 0.5203
+      },
+      "correct": true,
+      "home_goals": 1,
+      "away_goals": 3,
+      "report_date": "2026-10-27"
+    },
+    {
+      "fixture_id": 1319198858,
+      "model": "experimental_elo_by_competition",
+      "home_team": "Sassuolo",
+      "away_team": "Lazio",
+      "actual": "A",
+      "predicted": "A",
+      "probabilities": {
+        "H": 0.2607,
+        "D": 0.2621,
+        "A": 0.4772
+      },
+      "correct": true,
+      "home_goals": 2,
+      "away_goals": 6,
+      "report_date": "2026-10-27"
+    },
+    {
+      "fixture_id": 1319198858,
+      "model": "experimental_recent_goals_poisson",
+      "home_team": "Sassuolo",
+      "away_team": "Lazio",
+      "actual": "A",
+      "predicted": "A",
+      "probabilities": {
+        "H": 0.3038,
+        "D": 0.2598,
+        "A": 0.4364
+      },
+      "correct": true,
+      "home_goals": 2,
+      "away_goals": 6,
+      "report_date": "2026-10-27"
     }
   ],
-  "updated_at_utc": "2026-10-28T15:10:37.421824+00:00",
+  "updated_at_utc": "2026-10-28T15:14:17.853174+00:00",
   "last_attempt": {
     "report_date": "2026-10-27",
     "status": "EVALUATED",
@@ -120,7 +199,7 @@
       {
         "report_date": "2026-10-24",
         "status": "EVALUATED",
-        "detail": "Scored from 5311 cached completed matches; no live football-provider request was made.",
+        "detail": "Scored from 5314 cached completed matches; no live football-provider request was made.",
         "fixtures_scored": 4,
         "completed_forecasts_scored": 4,
         "metrics": {
@@ -142,44 +221,60 @@
       {
         "report_date": "2026-10-27",
         "status": "EVALUATED",
-        "detail": "Scored from 5311 cached completed matches; no live football-provider request was made.",
-        "fixtures_scored": 0,
-        "completed_forecasts_scored": 0,
-        "metrics": {
-          "matches": 0,
-          "result_accuracy": null,
-          "brier_score": null,
-          "log_loss": null
+        "detail": "Scored from 5314 cached completed matches; no live football-provider request was made.",
+        "fixtures_scored": 2,
+        "completed_forecasts_scored": 4,
+        "metrics": null,
+        "metrics_by_model": {
+          "experimental_elo_by_competition": {
+            "matches": 2,
+            "result_accuracy": 1.0,
+            "brier_score": 0.40709547999999995,
+            "log_loss": 0.735957759728448
+          },
+          "experimental_recent_goals_poisson": {
+            "matches": 2,
+            "result_accuracy": 1.0,
+            "brier_score": 0.41251631,
+            "log_loss": 0.7412728678545503
+          }
         },
-        "metrics_by_model": {},
-        "awaiting_result_or_match": 30
+        "awaiting_result_or_match": 28
       }
     ],
     "detail": null,
     "metrics_by_model": {
+      "experimental_elo_by_competition": {
+        "matches": 2,
+        "result_accuracy": 1.0,
+        "brier_score": 0.40709547999999995,
+        "log_loss": 0.735957759728448
+      },
       "experimental_recent_goals_poisson": {
-        "matches": 4,
-        "result_accuracy": 0.75,
-        "brier_score": 0.47981128640808113,
-        "log_loss": 0.8226479998250742
+        "matches": 6,
+        "result_accuracy": 0.8333333333333334,
+        "brier_score": 0.4573796276053874,
+        "log_loss": 0.7955229558348996
       }
     }
   },
   "cumulative_metrics_by_model": {
+    "experimental_elo_by_competition": {
+      "matches": 2,
+      "result_accuracy": 1.0,
+      "brier_score": 0.40709547999999995,
+      "log_loss": 0.735957759728448
+    },
     "experimental_recent_goals_poisson": {
-      "matches": 4,
-      "result_accuracy": 0.75,
-      "brier_score": 0.47981128640808113,
-      "log_loss": 0.8226479998250742
+      "matches": 6,
+      "result_accuracy": 0.8333333333333334,
+      "brier_score": 0.4573796276053874,
+      "log_loss": 0.7955229558348996
     }
   },
-  "cumulative_metrics": {
-    "matches": 4,
-    "result_accuracy": 0.75,
-    "brier_score": 0.47981128640808113,
-    "log_loss": 0.8226479998250742
-  },
+  "cumulative_metrics": null,
   "model_versions": [
+    "experimental_elo_by_competition",
     "experimental_recent_goals_poisson"
   ],
   "evaluated_report_dates": 2,
