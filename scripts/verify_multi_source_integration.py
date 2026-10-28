@@ -15,6 +15,7 @@ from app.provider_adapters import (
     FiveDollarFootballClient,
     ProviderAPIError,
     TheOddsAPIClient,
+    InferSportsClient,
 )
 
 
@@ -105,8 +106,34 @@ def main() -> int:
         except (ProviderAPIError, TypeError, ValueError) as exc:
             results["the_odds_api"] = {"status": "FAILED", "reason": str(exc)[:160]}
 
+    infer = InferSportsClient()
+    try:
+        day = datetime.now(ZoneInfo("Africa/Lagos")).date().isoformat()
+        events = infer.events_for_date(day, "Africa/Lagos")
+        market_keys: set[str] = set()
+        odds_probe = "NOT_TESTED_NO_EVENTS"
+        if events:
+            first_event = events[0]
+            event_id = str(first_event.get("id") or "")
+            if event_id:
+                odds_block = infer.event_odds(event_id)
+                market_keys = {
+                    str(row.get("market_type")) for row in (odds_block.get("odds") or [])
+                    if isinstance(row, dict)
+                }
+                odds_probe = "AVAILABLE" if market_keys else "NO_CURRENT_QUOTES"
+        results["infer_sports"] = {
+            "status": "CONNECTED",
+            "events_today_lagos": len(events),
+            "market_types_seen": sorted(market_keys),
+            "odds_probe": odds_probe,
+            "note": "Keyless read-only endpoint; only totals and 1X2 are available, not BTTS.",
+        }
+    except ProviderAPIError as exc:
+        results["infer_sports"] = {"status": "FAILED", "reason": str(exc)[:160]}
+
     connected = sum(
-        1 for name in ("five_dollar", "the_odds_api")
+        1 for name in ("five_dollar", "the_odds_api", "infer_sports")
         if isinstance(results.get(name), dict) and results[name].get("status") == "CONNECTED"
     )
     print(json.dumps({
