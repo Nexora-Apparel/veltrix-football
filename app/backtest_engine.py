@@ -385,6 +385,7 @@ def chronological_backtest(matches: Iterable[dict[str, Any]], *, min_training_ma
                         "home_goals": m["home_goals"],
                         "away_goals": m["away_goals"],
                         "live_poisson": live_probs,
+                        "live_goal_markets": goal_market_probabilities(home_xg, away_xg),
                         "live_dc": live_dc_probs,
                         "live_dc_home_xg": weighted_home_xg,
                         "live_dc_away_xg": weighted_away_xg,
@@ -472,6 +473,7 @@ def chronological_backtest(matches: Iterable[dict[str, Any]], *, min_training_ma
     winner = min(metrics, key=lambda name: metrics[name]["log_loss"])
 
     live_metrics = _score_probabilities(live_scored, "live_poisson") if live_scored else None
+    live_goal_market_metrics = _score_goal_markets(live_scored, "live_goal_markets") if live_scored else None
     live_dc_metrics = _score_probabilities(live_scored, "live_dc") if live_scored else None
     live_elo_rows = [row for row in live_scored if "live_elo" in row]
     live_elo_metrics = _score_probabilities(live_elo_rows, "live_elo") if live_elo_rows else None
@@ -482,6 +484,7 @@ def chronological_backtest(matches: Iterable[dict[str, Any]], *, min_training_ma
         live_holdout_start = live_dates[live_holdout_index]
         live_holdout_rows = [row for row in live_scored if row["match_date"] >= live_holdout_start]
         live_holdout_metrics = _score_probabilities(live_holdout_rows, "live_poisson")
+        live_goal_market_holdout_metrics = _score_goal_markets(live_holdout_rows, "live_goal_markets")
         live_dc_holdout_metrics = _score_probabilities(live_holdout_rows, "live_dc")
         live_elo_holdout_rows = [row for row in live_holdout_rows if "live_elo" in row]
         live_elo_odds_rows = [row for row in live_elo_rows if "market" in row]
@@ -620,6 +623,11 @@ def chronological_backtest(matches: Iterable[dict[str, Any]], *, min_training_ma
             "first_test_date": live_dates[0] if live_dates else None,
             "last_test_date": live_dates[-1] if live_dates else None,
             "metrics": live_metrics,
+            "goal_markets": {
+                "metrics": live_goal_market_metrics,
+                "recent_holdout": live_goal_market_holdout_metrics if live_scored else None,
+                "note": "BTTS and totals derived from the same pre-match xG as the live Poisson baseline; research evaluation only.",
+            },
             "dixon_coles_alternative": {
                 "model": "experimental_recency_weighted_dixon_coles",
                 "rho": -0.05,
