@@ -20,7 +20,7 @@ def test_normalize_fixture_odds_extracts_btts_and_fulltime_totals():
         }},
         "1010": {"outcomes": {
             "over": {"outcomeName": "Over", "players": {"1": {"active": True, "price": 1.9}}},
-            "under": {"outcomeName": "Under", "players": {"1": {"active": True, "price": 1.9}},
+            "under": {"outcomeName": "Under", "players": {"1": {"active": True, "price": 1.9}}},
         }},
         "10300": {"outcomes": {
             "yes": {"outcomeName": "Yes", "players": {"1": {"active": True, "price": 1.7}}},
