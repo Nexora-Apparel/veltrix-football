@@ -11,7 +11,7 @@ from pathlib import Path
 
 from app.live_predictions import _name_key, build_daily_report, load_historical_matches
 from app.recent_results import fetch_recent_results_incremental
-from app.provider_adapters import FiveDollarFootballClient, ProviderAPIError, enrich_report_with_multi_source_odds
+from app.api_football_odds import APIFootballError  # legacy error type for compatibility helpers only\nfrom app.provider_adapters import FiveDollarFootballClient, ProviderAPIError, enrich_report_with_multi_source_odds
 import math
 
 
