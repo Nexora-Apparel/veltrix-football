@@ -1,0 +1,28 @@
+name: Verify Multi-Source Football Providers
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "scripts/verify_data_providers.py"
+      - ".github/workflows/verify-data-providers.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  provider-smoke-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      FIVEDOLLARFOOTBALL_API_KEY: ${{ secrets.FIVEDOLLARFOOTBALL_API_KEY }}
+      THE_ODDS_API_KEY: ${{ secrets.THE_ODDS_API_KEY }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Verify provider authentication and access
+        run: python scripts/verify_data_providers.py
