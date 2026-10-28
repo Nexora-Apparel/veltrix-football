@@ -289,7 +289,8 @@ def _status(report: dict[str, Any] | None, ledger: dict[str, Any] | None) -> str
         if isinstance(multi, dict) and multi:
             five = (multi.get("five_dollar") or {}).get("status", "UNKNOWN")
             odds_api = (multi.get("the_odds_api") or {}).get("status", "UNKNOWN")
-            odds_status = f"5DollarFootballAPI {five}; The Odds API {odds_api}"
+            infer = (multi.get("infer_sports") or {}).get("status", "DISABLED")
+            odds_status = f"5DollarFootballAPI {five}; The Odds API {odds_api}; InferSports {infer}"
             if isinstance(meta, dict) and meta.get("fixtures_with_market_odds") is not None:
                 odds_status += f" ({meta.get('fixtures_with_market_odds')} matched fixtures)"
         elif isinstance(meta, dict) and meta.get("status"):
