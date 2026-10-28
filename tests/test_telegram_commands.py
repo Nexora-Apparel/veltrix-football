@@ -272,7 +272,7 @@ def test_overunder_command_returns_experimental_goal_line_probabilities():
     assert "PRIMARY MARKET — OVER/UNDER GOALS" in reply
     assert "O0.5" in reply and "O2.5" in reply and "O4.5" in reply
     assert "not calibrated or validated betting advice" in reply
-    assert "bookmaker odds are not connected" in reply
+    assert "Market prices are reference data only" in reply
 
 
 def test_btts_command_returns_yes_no_probability_from_expected_goals():
