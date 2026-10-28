@@ -124,6 +124,8 @@ def test_multi_source_odds_enrichment_attaches_btts_and_totals_without_changing_
     )
     prediction = result["predictions"][0]
     assert prediction["probabilities"]["btts_yes"] == 0.61
+    assert prediction["fixture_source"] == "5DollarFootballAPI"
+    assert prediction["source_fixture_id"] == 123
     assert prediction["five_dollar_market_odds"]["bookmakers"][0]["btts"] == {"yes": 1.8, "no": 2.0}
     assert prediction["five_dollar_market_odds"]["bookmakers"][0]["over_under"]["line"] == 2.5
     assert prediction["the_odds_api_market_odds"]["markets"]["totals"]
