@@ -334,6 +334,24 @@ def handle_command(
         return _reply("\n".join(lines))
 
     if command == "/odds":
+        # Legacy explicit payload support is retained for tests/integrators; the
+        # production webhook reads saved multi-source report data and never calls it.
+        if isinstance(odds_data, dict):
+            legacy_rows = odds_data.get("response", [])
+            if not isinstance(legacy_rows, list) or not legacy_rows:
+                return _reply("LIVE BOOKMAKER ODDS — NO PRICES RETURNED\\nThe supplied provider payload contains no usable odds.")
+            now_lagos = datetime.now(ZoneInfo("Africa/Lagos"))
+            upcoming_legacy = [row for row in legacy_rows if isinstance(row, dict) and _odds_row_is_future(row, now=now_lagos)]
+            if not upcoming_legacy:
+                return _reply("LIVE BOOKMAKER ODDS — NO UPCOMING FIXTURES WITH USABLE PREMATCH PRICES\\nAll supplied prices are stale or have invalid kickoff times.")
+            legacy_lines = ["LIVE BOOKMAKER ODDS — UPCOMING FIXTURES | RAW PRICES, NOT VALUE PICKS"]
+            for row in upcoming_legacy[:12]:
+                prices = row.get("odds") or {}
+                parts = [f"{key} {float(prices[key]):.2f}" for key in ("home", "draw", "away") if key in prices]
+                legacy_lines.append(f"{row.get('home_team')} vs {row.get('away_team')} | {row.get('date')} {row.get('time')} | {row.get('bookmaker')}")
+                legacy_lines.append(" | ".join(parts) if parts else "No supported prices in this row.")
+            legacy_lines.append("Prices are reference data only; model probabilities are not validated for betting.")
+            return _reply("\\n".join(legacy_lines))
         rows = _future_fixtures(report)
         if not rows:
             return _reply("MULTI-SOURCE BOOKMAKER ODDS — NO CURRENT UPCOMING FIXTURES IN THE PUBLISHED REPORT\\nRefresh the daily report first. This command reads saved report data and does not call external providers.")
