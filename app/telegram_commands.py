@@ -180,6 +180,54 @@ def _goal_market_probabilities(row: dict[str, Any]) -> dict[str, float] | None:
     }
     return markets
 
+def _saved_market_price_lines(row: dict[str, Any], market_key: str) -> list[str]:
+    """Read only actual prices attached to this fixture in the published report."""
+    lines: list[str] = []
+    five = row.get("five_dollar_market_odds")
+    if isinstance(five, dict):
+        for book in (five.get("bookmakers") or []):
+            if not isinstance(book, dict):
+                continue
+            if market_key == "btts":
+                market = book.get("btts") or {}
+                yes, no = market.get("yes"), market.get("no")
+                if isinstance(yes, (int, float)) and isinstance(no, (int, float)):
+                    lines.append("5DollarFootballAPI · {} · BTTS Yes {:.2f} / No {:.2f}".format(book.get("bookmaker", "bookmaker"), yes, no))
+            elif market_key == "totals":
+                market = book.get("over_under") or {}
+                over, under = market.get("over"), market.get("under")
+                if isinstance(over, (int, float)) and isinstance(under, (int, float)):
+                    lines.append("5DollarFootballAPI · {} · O/U {}: Over {:.2f} / Under {:.2f}".format(book.get("bookmaker", "bookmaker"), market.get("line", "—"), over, under))
+            if len(lines) >= 2:
+                break
+    odds_api = row.get("the_odds_api_market_odds")
+    if isinstance(odds_api, dict):
+        markets = odds_api.get("markets") or {}
+        for market in (markets.get(market_key) or [])[:2]:
+            if not isinstance(market, dict):
+                continue
+            outcomes = []
+            for outcome in market.get("outcomes") or []:
+                if not isinstance(outcome, dict) or not isinstance(outcome.get("price"), (int, float)):
+                    continue
+                label = "{} {:.2f}".format(outcome.get("name", "outcome"), outcome["price"])
+                if outcome.get("point") is not None:
+                    label += " ({})".format(outcome["point"])
+                outcomes.append(label)
+            if outcomes:
+                lines.append("The Odds API · {} · {}".format(market.get("bookmaker", "bookmaker"), " / ".join(outcomes)))
+    oddspapi = row.get("oddspapi_market_odds")
+    if isinstance(oddspapi, dict):
+        if market_key == "btts":
+            for market in (oddspapi.get("btts") or [])[:2]:
+                if isinstance(market, dict) and isinstance(market.get("yes"), (int, float)) and isinstance(market.get("no"), (int, float)):
+                    lines.append("OddsPapi · {} · BTTS Yes {:.2f} / No {:.2f}".format(market.get("bookmaker", "bookmaker"), market["yes"], market["no"]))
+        elif market_key == "totals":
+            for market in (oddspapi.get("over_under") or [])[:2]:
+                if isinstance(market, dict) and isinstance(market.get("over"), (int, float)) and isinstance(market.get("under"), (int, float)):
+                    lines.append("OddsPapi · {} · O/U {}: Over {:.2f} / Under {:.2f}".format(market.get("bookmaker", "bookmaker"), market.get("line", "—"), market["over"], market["under"]))
+    return lines[:5]
+
 
 def _history_notice(report: dict[str, Any] | None) -> str | None:
     if not isinstance(report, dict):
@@ -523,16 +571,20 @@ def handle_command(
                 lines.append("Over probabilities: " + " | ".join(
                     f"O{line}.5 {markets[f'over_{line}_prob']:.0%}" for line in (0, 1, 2, 3, 4)
                 ))
+                prices = _saved_market_price_lines(row, "totals")
+                lines.extend(["Bookmaker reference prices:", *prices] if prices else ["No matched bookmaker Over/Under prices in this report."])
             if means is not None and command == "/btts":
                 markets = _goal_market_probabilities(row) or {}
                 yes = markets["btts_yes_prob"]
                 lines.append(f"BTTS Yes: {yes:.0%} | BTTS No: {1.0 - yes:.0%}")
                 lines.append(f"Model expected goals: home {means[0]:.2f}, away {means[1]:.2f}")
+                prices = _saved_market_price_lines(row, "btts")
+                lines.extend(["Bookmaker reference prices:", *prices] if prices else ["No matched bookmaker BTTS prices in this report."])
 
         if command in {"/overunder", "/btts"}:
             lines.append(
                 "Goal-market estimates use an independent-Poisson approximation from experimental expected goals. "
-                "They are not calibrated or validated betting advice; bookmaker odds are not connected."
+                "They are not calibrated or validated betting advice. Market prices are reference data only."
             )
         else:
             lines.append("Experimental estimates only — not validated betting advice.")
