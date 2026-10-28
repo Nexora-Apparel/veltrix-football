@@ -225,6 +225,15 @@ jobs:
           PYTHONPATH: .
         run: python scripts/filter_report_for_delivery.py --input reports/raw/daily_predictions.json --output reports/daily_predictions.json
 
+      - name: Diagnose API-Football account access (quota-exempt status endpoint)
+        id: api-football-preflight
+        if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && contains(github.event.head_commit.message, '[run-live-verification]'))
+        continue-on-error: true
+        env:
+          API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
+          PYTHONPATH: .
+        run: python -m app.cli api-football-status
+
       - name: Generate daily fixture report
         id: generate-report
         if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && contains(github.event.head_commit.message, '[run-live-verification]')) || false && !contains(github.event.head_commit.message, '[reuse-report-40175707059]')
