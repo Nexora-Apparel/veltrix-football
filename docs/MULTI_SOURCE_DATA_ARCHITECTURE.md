@@ -93,11 +93,13 @@ Primary target markets: BTTS Yes/No and full-time Over/Under 1.5, 2.5 and 3.5 go
 
 ## Current known risks to audit
 
-- Legacy Highlightly configuration may remain in `app/config.py` even though the daily pipeline has moved to API-Football.
-- Multiple odds integrations may be present and must be clearly isolated by provider and responsibility.
-- API-Football free-tier quota and competition coverage are limited; daily workflows must avoid wasteful requests.
-- Historical refresh may have date gaps. Imported open data and live API data must not be assumed to be interchangeable without schema and provenance checks.
-- Existing backtest results show the market benchmark outperforming current model baselines in reported samples. The system must keep experimental labeling and betting/value alerts disabled.
+- Legacy Highlightly and API-Football adapters remain in the repository for compatibility/audit; they must not be called by active workflows while those providers are not selected.
+- 5DollarFootballAPI fixture coverage and bookmaker odds vary by competition; daily output must report zero matches/quotes honestly when the feed is empty.
+- The Odds API coverage is intentionally limited to report-relevant supported competitions, with a maximum of three event-specific BTTS calls per report to protect monthly credits.
+- InferSports and Open Matchday are not yet integrated. Do not list them as operational until their own auth/data/market tests pass.
+- Older cache rows may be marked `LEGACY_UNATTRIBUTED`; preserve them but avoid pretending their provider provenance is known.
+- Historical refresh may have date gaps. Only completed matches are used; current-day results remain excluded from model features.
+- Existing backtest results show the market benchmark outperforming current model baselines in reported samples. Keep experimental labeling and betting/value alerts disabled.
 
 ## Definition of done
 
