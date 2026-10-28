@@ -40,9 +40,9 @@ def test_status_distinguishes_report_odds_from_direct_provider_feed():
         "publication_status": "LIVE_REPORT_GENERATED_PENDING_PUBLICATION",
     }
     reply = handle_command("/status", report=report)
-    assert "Report 1X2 odds integration: NO_VALID_1X2_ODDS" in reply
+    assert "Report multi-source odds integration: NO_VALID_1X2_ODDS" in reply
     assert "Command-data publication: UNCONFIRMED" in reply
-    assert "Direct API-Sports odds feed: run /oddsdiag" in reply
+    assert "/oddsdiag reads saved provider coverage" in reply
     report["command_data_publication"] = "PUBLISHED"
     published_reply = handle_command("/status", report=report)
     assert "Command-data publication: PUBLISHED" in published_reply
@@ -313,3 +313,33 @@ def test_goal_markets_withhold_invalid_expected_goals():
     }
     assert "NO USABLE GOAL-MARKET ESTIMATES" in handle_command("/overunder", report=report)
     assert "NO USABLE GOAL-MARKET ESTIMATES" in handle_command("/btts", report=report)
+
+
+def test_odds_command_reads_saved_multisource_btts_and_totals_prices():
+    now = datetime.now(ZoneInfo("Africa/Lagos"))
+    kickoff = (now + timedelta(hours=3)).isoformat()
+    report = {
+        "as_of_date": now.date().isoformat(),
+        "predictions": [{
+            "home_team": "Arsenal", "away_team": "Chelsea", "league": "Premier League",
+            "kickoff_local": kickoff, "status": "EXPERIMENTAL_ONLY",
+            "probabilities": {"home_win": 0.5, "draw": 0.25, "away_win": 0.25},
+            "five_dollar_market_odds": {"bookmakers": [{
+                "bookmaker": "Bet365", "btts": {"yes": 1.8, "no": 2.0},
+                "over_under": {"line": 2.5, "over": 1.9, "under": 1.95},
+            }]},
+            "the_odds_api_market_odds": {"markets": {"totals": [{
+                "bookmaker": "Book A", "outcomes": [
+                    {"name": "Over", "price": 1.91, "point": 2.5},
+                    {"name": "Under", "price": 1.95, "point": 2.5},
+                ],
+            }]}},
+        }],
+    }
+    reply = handle_command("/odds", report=report)
+    assert "Arsenal vs Chelsea" in reply
+    assert "5DollarFootballAPI" in reply
+    assert "BTTS Yes 1.80 / No 2.00" in reply
+    assert "O/U 2.5: Over 1.90 / Under 1.95" in reply
+    assert "The Odds API" in reply
+    assert "No provider prices were fabricated" not in reply
