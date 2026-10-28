@@ -368,7 +368,7 @@ def enrich_report_with_multi_source_odds(
         }
         return report
     zone = ZoneInfo(timezone_name)
-    by_key: dict[tuple[str, str, str], dict[str, Any]] = {}
+    by_key: dict[tuple[str, str, str], dict[str, Any] | None] = {}
     for item in source_fixtures:
         if not isinstance(item, dict):
             continue
@@ -386,7 +386,13 @@ def enrich_report_with_multi_source_odds(
             day = kickoff.astimezone(zone).date().isoformat()
         except (ValueError, OverflowError):
             continue
-        by_key[(day, _name_key(home), _name_key(away))] = item
+        key = (day, _name_key(home), _name_key(away))
+        # Duplicate same-team fixtures on one local date are ambiguous without a
+        # stronger competition/kickoff match; quarantine instead of overwriting.
+        if key in by_key:
+            by_key[key] = None
+        else:
+            by_key[key] = item
 
     pred_by_key: dict[tuple[str, str, str], dict[str, Any]] = {}
     for prediction in predictions:
@@ -404,13 +410,16 @@ def enrich_report_with_multi_source_odds(
             continue
         key = (day, _name_key(prediction.get("home_team")), _name_key(prediction.get("away_team")))
         if key[1] and key[2]:
-            pred_by_key[key] = prediction
+            if key in pred_by_key:
+                pred_by_key[key] = None
+            else:
+                pred_by_key[key] = prediction
 
     # Attach source-local fixture identity only after a strict team/date join.
     # Never assume that fixture IDs are interchangeable across providers.
     for key, item in by_key.items():
         prediction = pred_by_key.get(key)
-        if prediction is not None:
+        if item is not None and prediction is not None:
             fixture = item.get("fixture") or {}
             prediction["fixture_source"] = str(item.get("_veltrix_source") or "5DollarFootballAPI")
             prediction["source_fixture_id"] = fixture.get("id")
@@ -424,7 +433,7 @@ def enrich_report_with_multi_source_odds(
         upcoming = []
         for key, item in by_key.items():
             prediction = pred_by_key.get(key)
-            if prediction is None:
+            if item is None or prediction is None:
                 continue
             short = str(((item.get("fixture") or {}).get("status") or {}).get("short") or "")
             if short != "NS":
