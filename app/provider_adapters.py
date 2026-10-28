@@ -603,6 +603,90 @@ def enrich_report_with_multi_source_odds(
                 break
         odds_api_status = "AVAILABLE" if odds_api_attached else "NO_MATCHED_MARKET_ODDS"
 
+    infer_status = "DISABLED"
+    infer_attached = 0
+    infer_events_checked = 0
+    infer_error = None
+    infer_enabled = os.getenv("VELTRIX_ENABLE_INFERSports", "false").strip().casefold() in {"1", "true", "yes"}
+    infer_client = InferSportsClient()
+    if infer_enabled:
+        infer_status = "NO_MATCHED_MARKET_ODDS"
+        try:
+            infer_events = infer_client.events_for_date(str(report.get("as_of_date") or ""), timezone_name)
+            infer_events_checked = len(infer_events)
+            seen_event_keys: set[tuple[str, str, str]] = set()
+            matched_events = []
+            for event in infer_events:
+                home_obj = event.get("home_team") or {}
+                away_obj = event.get("away_team") or {}
+                home_name = home_obj.get("name") if isinstance(home_obj, dict) else str(home_obj)
+                away_name = away_obj.get("name") if isinstance(away_obj, dict) else str(away_obj)
+                scheduled = event.get("scheduled_at")
+                event_day = _event_local_date({"commence_time": scheduled}, timezone_name) if scheduled else str(report.get("as_of_date") or "")
+                key = (event_day or "", _name_key(home_name), _name_key(away_name))
+                if not key[0] or not key[1] or not key[2] or key in seen_event_keys:
+                    continue
+                seen_event_keys.add(key)
+                prediction = pred_by_key.get(key)
+                if prediction is not None:
+                    matched_events.append((key, event, prediction, str(home_name), str(away_name)))
+            for key, event, prediction, home_name, away_name in matched_events[:3]:
+                event_id = str(event.get("id") or "")
+                if not event_id:
+                    continue
+                try:
+                    odds_block = infer_client.event_odds(event_id)
+                except ProviderAPIError:
+                    continue
+                if odds_block.get("stale") is True:
+                    continue
+                normalized = {"h2h": [], "totals": [], "btts": []}
+                for quote in odds_block.get("odds") or []:
+                    if not isinstance(quote, dict) or str(quote.get("period") or "").casefold() != "full_time":
+                        continue
+                    status_text = str(quote.get("status") or "").casefold()
+                    if any(token in status_text for token in ("suspend", "closed", "stale", "unavailable")):
+                        continue
+                    market_type = str(quote.get("market_type") or "").casefold()
+                    prices = quote.get("prices") or {}
+                    bookmaker = str(quote.get("bookmaker") or "bookmaker")
+                    as_of = quote.get("as_of") or odds_block.get("as_of")
+                    if market_type == "totals":
+                        over, under = _valid_price(prices.get("over")), _valid_price(prices.get("under"))
+                        if over is not None and under is not None:
+                            normalized["totals"].append({
+                                "bookmaker": bookmaker, "last_update": as_of,
+                                "outcomes": [
+                                    {"name": "Over", "price": over, "point": quote.get("line")},
+                                    {"name": "Under", "price": under, "point": quote.get("line")},
+                                ],
+                            })
+                    elif market_type == "1x2":
+                        home_price, draw_price, away_price = (
+                            _valid_price(prices.get("home")), _valid_price(prices.get("draw")), _valid_price(prices.get("away"))
+                        )
+                        if home_price is not None and draw_price is not None and away_price is not None:
+                            normalized["h2h"].append({
+                                "bookmaker": bookmaker, "last_update": as_of,
+                                "outcomes": [
+                                    {"name": home_name, "price": home_price},
+                                    {"name": "Draw", "price": draw_price},
+                                    {"name": away_name, "price": away_price},
+                                ],
+                            })
+                if normalized["totals"] or normalized["h2h"]:
+                    prediction["infer_sports_market_odds"] = {
+                        "provider": "InferSports", "event_id": event_id,
+                        "scheduled_at": event.get("scheduled_at"),
+                        "as_of": odds_block.get("as_of"), "stale": False,
+                        "markets": normalized, "fetched_at": datetime.now(timezone.utc).isoformat(),
+                    }
+                    infer_attached += 1
+            infer_status = "AVAILABLE" if infer_attached else "NO_MATCHED_MARKET_ODDS"
+        except ProviderAPIError as exc:
+            infer_status = "UNAVAILABLE"
+            infer_error = str(exc)[:160]
+
     report["multi_source_odds_sync"] = {
         "five_dollar": {
             "status": fivedollar_status, "fixtures_with_market_odds": fivedollar_attached,
@@ -614,6 +698,11 @@ def enrich_report_with_multi_source_odds(
             "max_btts_event_calls": max_btts_events,
             "quota": dict(odds_client.last_quota) if odds_client.api_key else {},
             "warning": odds_api_error,
+        },
+        "infer_sports": {
+            "status": infer_status, "fixtures_with_market_odds": infer_attached,
+            "events_checked": infer_events_checked, "max_event_odds_calls": 3,
+            "warning": infer_error,
         },
         "note": "Market prices are reference data only; model probabilities remain unchanged and unvalidated for betting.",
     }
