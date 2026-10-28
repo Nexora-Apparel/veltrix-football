@@ -8,7 +8,7 @@ This register captures the exact provider references found in the earlier projec
 - Website: https://5dollarfootballapi.com/
 - Python SDK repository: https://github.com/5dollarfootball-api/football-api-python-sdk
 - Intended evaluation: fixtures, results, bookmaker odds and available match statistics.
-- **Status (2026-10-28): LIVE AUTH + FIXTURE + ODDS ENDPOINTS VERIFIED.** GitHub Actions authenticated successfully, retrieved today's fixtures, and read a fixture odds board with `1x2`, `btts`, `goal_line`, and `goal_line_fixed` market keys.
+- **Status (2026-10-28): LIVE AUTH + FIXTURE + ODDS ENDPOINTS VERIFIED.** GitHub Actions authenticated successfully and retrieved today's fixtures. The odds endpoint returned `1x2`, `btts`, `goal_line`, and `goal_line_fixed` market keys, but the latest live report matched no usable 5Dollar prices; treat 5Dollar as the fixture/results source until price coverage is confirmed.
 - Integrated as the primary fixture/results source in `app/provider_adapters.py`; historical refresh is bounded and records failed dates separately so successful dates are preserved.
 - Continue monitoring free-tier coverage, request quotas, and historical gaps. The live check verifies endpoint/schema access, not complete coverage of every competition.
 
