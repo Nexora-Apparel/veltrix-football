@@ -19,7 +19,7 @@ app = FastAPI(title="Veltrix Football Command Centre")
 
 DASHBOARD_HTML = """<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#031017"><title>VELTRIX Football — Intelligence Dashboard</title>
+<meta name="theme-color" content="#031017"><title>VELTRIX FOOTBALL — Intelligence Dashboard</title>
 <style>
 :root{color-scheme:dark;--bg:#020b11;--panel:#061720;--panel2:#071e28;--line:#123744;--text:#f2fbff;--muted:#89a7b4;--green:#00f0ad;--cyan:#35d8f5;--blue:#4e9aff;--amber:#ffd27a;--red:#ff6d81}
 *{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:radial-gradient(ellipse at 50% -20%,#123947 0,transparent 55%),var(--bg);color:var(--text);font:14px/1.5 Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif}
