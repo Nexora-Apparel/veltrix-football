@@ -240,23 +240,9 @@ def main() -> None:
             encoding="utf-8",
         )
 
-        # API-Football odds are fetched once and merged after predictions are built,
-        # using normalized team names and local kickoff date. Do not make a duplicate request here.
+        # External bookmaker prices are attached after forecasts are built; they
+        # never alter model probabilities and their failures do not block the report.
         market_odds_by_fixture = {}
-        if _has_future_fixtures(payload, target_date, args.timezone):
-            odds_sync = {
-                "status": "NO_VALID_1X2_ODDS",
-                "fixtures_with_odds": 0,
-                "snapshot_date": target_date.isoformat(),
-                "warning": None,
-            }
-        else:
-            odds_sync = {
-                "status": "SKIPPED_NO_FUTURE_FIXTURES",
-                "fixtures_with_odds": 0,
-                "snapshot_date": target_date.isoformat(),
-                "warning": None,
-            }
 
         report = build_daily_report(
             payload,
@@ -362,7 +348,7 @@ def main() -> None:
             "historical_data_through": report.get("historical_data_through"),
             "historical_matches_available": report.get("historical_matches_available", 0),
             "recent_results_sync": recent_sync,
-            "live_odds_sync": odds_sync,
+            "live_odds_sync": report["live_odds_sync"],
             "fixtures_with_market_odds": report["fixtures_with_market_odds"],
             "output": str(output),
             "model_status": report["model_status"],
