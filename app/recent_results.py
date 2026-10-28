@@ -1,4 +1,4 @@
-"""Refresh stale historical scores from the primary API-Football feed without using current-day results."""
+"""Refresh stale historical scores from the active football provider without using current-day results."""
 from __future__ import annotations
 
 from datetime import date, timedelta
@@ -27,7 +27,7 @@ def split_date_ranges(start: date, end: date, max_days: int = 7) -> list[tuple[d
 
 
 def extract_completed_results(payload: dict[str, Any]) -> list[dict[str, Any]]:
-    """Normalize completed API-Football matches into historical rows with stable fixture IDs."""
+    """Normalize completed provider matches into historical rows with stable source fixture IDs."""
     response = payload.get("response")
     if not isinstance(response, list):
         raise ValueError("Recent-results payload must contain a response list.")
@@ -367,7 +367,7 @@ def fetch_recent_results_incremental(
                 "covered_from": None, "covered_through": latest_covered.isoformat(),
                 "ranges_succeeded": 0, "ranges_requested": 0,
                 "warning": (
-                    f"{len(remaining_plan_dates or [])} date(s) are unavailable on the API-Football plan; "
+                    f"{len(remaining_plan_dates or [])} date(s) are unavailable on the selected provider plan; "
                     f"{len(remaining_gaps or [])} transient gap date(s) remain retryable."
                 ) if unresolved else None,
                 "cache_state": state,
@@ -526,7 +526,7 @@ def fetch_recent_results_incremental(
 
     if state.get("history_plan_limited_dates") and status == "PARTIAL" and not warning:
         warning = (
-            f"{len(state['history_plan_limited_dates'])} historical date(s) are unavailable on the API-Football plan; "
+            f"{len(state['history_plan_limited_dates'])} historical date(s) are unavailable on the selected provider plan; "
             "they are retained as coverage limitations and will not be retried automatically."
         )
     return rows, {
