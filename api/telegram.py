@@ -96,8 +96,8 @@ function renderInsights(m){
 }
 function renderRows(){
  const box=document.getElementById('predictions');box.replaceChildren();let rows=dashboardRows;
- if(currentFilter==='btts')rows=rows.filter(m=>Number.isFinite(Number(m.btts_yes)));
- if(currentFilter==='totals')rows=rows.filter(m=>Number.isFinite(Number(m.over_2_5)));
+ if(currentFilter==='btts')rows=rows.filter(m=>m.btts_yes!==null&&m.btts_yes!==undefined&&m.btts_yes!==''&&Number.isFinite(Number(m.btts_yes)));
+ if(currentFilter==='totals')rows=rows.filter(m=>m.over_2_5!==null&&m.over_2_5!==undefined&&m.over_2_5!==''&&Number.isFinite(Number(m.over_2_5)));
  if(currentFilter==='priced')rows=rows.filter(m=>marketPriceLines(m).length);
  document.getElementById('fixtureCount').textContent=rows.length+' fixtures shown';
  if(!rows.length){const e=document.createElement('div');e.className='empty';e.textContent='No fixtures match this filter in the published data. No values have been filled in artificially.';box.append(e);return}
@@ -105,7 +105,7 @@ function renderRows(){
  for(const m of rows){const card=document.createElement('article');card.className='matchcard';const teams=document.createElement('div');teams.className='teams';teams.textContent=(m.home_team||'Home')+' vs '+(m.away_team||'Away');const meta=document.createElement('div');meta.className='meta';meta.textContent=(m.league||'Competition')+' · '+(m.kickoff_local||m.kickoff||'Kickoff unavailable');const chips=document.createElement('div');chips.className='chips';const p=m.probabilities||{};for(const [label,val] of [['1',p.home_win],['X',p.draw],['2',p.away_win],['BTTS',m.btts_yes],['O2.5',m.over_2_5]]){const c=document.createElement('div');c.className='chip';c.textContent=label+' ';const b=document.createElement('b');b.textContent=fmt(val);c.append(b);chips.append(c)}const prices=marketPriceLines(m);card.append(teams,meta,chips);if(prices.length){const pr=document.createElement('div');pr.className='prices';pr.textContent=prices.join(' · ');card.append(pr)}const note=document.createElement('div');note.className='prices';note.textContent='Experimental estimate · not a betting recommendation';card.append(note);list.append(card)}
  box.append(list)
 }
-function setFilter(f){currentFilter=f;document.querySelectorAll('.filter').forEach(b=>b.classList.toggle('active',b.dataset.filter===f));renderRows();document.getElementById('predictions').scrollIntoView({behavior:'smooth',block:'start'})}
+function setFilter(f){currentFilter=f;document.querySelectorAll('.filter').forEach(b=>{const active=b.dataset.filter===f;b.classList.toggle('active',active);b.setAttribute('aria-pressed',active?'true':'false')});renderRows();const title=document.querySelector('#predictions');if(title){title.setAttribute('data-active-filter',f);title.style.animation='none';void title.offsetWidth;title.style.animation='riseIn .3s ease both'}document.getElementById('predictions').scrollIntoView({behavior:'smooth',block:'start'})}
 document.getElementById('filters').addEventListener('click',e=>{const b=e.target.closest('button[data-filter]');if(b)setFilter(b.dataset.filter)});
 function renderStatus(d){
  const box=document.getElementById('systemStatus');box.replaceChildren();const hist=d.historical_data_coverage||{};const odds=d.live_odds_sync||{};const primary=d.primary_provider_request||{};
