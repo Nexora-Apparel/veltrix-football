@@ -198,3 +198,23 @@ def test_goal_market_probabilities_are_valid_and_complementary():
     for line in ("1_5", "2_5", "3_5"):
         assert abs(markets[f"over_{line}"] + markets[f"under_{line}"] - 1) < 1e-12
     assert markets["over_1_5"] >= markets["over_2_5"] >= markets["over_3_5"]
+
+
+
+def test_goal_market_baseline_uses_prior_dates_only():
+    from app.backtest_engine import _score_expanding_goal_baseline
+
+    rows = [
+        {"match_date": "2025-01-01", "home_goals": 5, "away_goals": 1},
+        {"match_date": "2025-01-02", "home_goals": 0, "away_goals": 0},
+        {"match_date": "2025-01-02", "home_goals": 3, "away_goals": 1},
+        {"match_date": "2025-01-03", "home_goals": 0, "away_goals": 1},
+    ]
+    baseline = _score_expanding_goal_baseline(rows)
+    assert baseline["matches"] == 4
+    assert baseline["method"].startswith("expanding historical base rate")
+    # Both fixtures on Jan 2 use the same pre-Jan-2 probability, regardless
+    # of their same-day outcomes.
+    changed = [rows[0], {**rows[1], "home_goals": 4, "away_goals": 4}, rows[2], rows[3]]
+    baseline_changed = _score_expanding_goal_baseline(changed)
+    assert baseline["markets"]["over_1_5"]["brier_score"] != baseline_changed["markets"]["over_1_5"]["brier_score"]
