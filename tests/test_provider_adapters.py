@@ -12,6 +12,12 @@ from app.provider_adapters import (
 )
 
 
+def test_brazil_serie_a_short_label_maps_to_existing_historical_division():
+    from app.provider_adapters import LEAGUE_CODES
+
+    assert LEAGUE_CODES["bra a"] == "BSA"
+
+
 def test_normalize_fivedollar_fixture_to_veltrix_shape():
     row = normalize_fivedollar_fixture({
         "id": 123,
