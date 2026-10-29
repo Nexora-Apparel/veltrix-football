@@ -438,6 +438,18 @@ def predict_fixtures(
             )
 
         for fixture in (p for p in parsed_fixtures if p["kickoff_date"] == target_date):
+            if _is_non_senior_competition(fixture.get("league")):
+                output.append({
+                    **{k: v for k, v in fixture.items() if k not in {"kickoff_date", "kickoff_datetime"}},
+                    "model": "experimental_recent_goals_poisson",
+                    "model_validated": False,
+                    "betting_recommendation": False,
+                    "historical_matches": {"home": 0, "away": 0},
+                    "status": "UNSUPPORTED_COMPETITION",
+                    "reason": "Women's, youth and reserve competitions require category-matched historical results; senior-team history is not used.",
+                    "team_name_match_suggestions": {},
+                })
+                continue
             known_keys = set(team_history)
             home_key = _resolve_team_key(fixture["home_team"], known_keys)
             away_key = _resolve_team_key(fixture["away_team"], known_keys)
