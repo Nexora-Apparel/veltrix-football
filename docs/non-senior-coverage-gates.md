@@ -30,3 +30,16 @@ A proposed source or competition mapping must pass all of these checks before it
 ## Enablement rule
 
 Do not add a league alias alone to enable a competition. Enablement requires a documented source, category-matched data, a passing integrity/coverage audit, and a passing chronological evaluation. Until then, withholding the forecast is the correct result.
+
+## Women's club history pilot
+
+A category-isolated importer is available at `scripts/import_womens_club_history.py`. It reads the English Women's Football (EWF) database and writes to `data/womens_club_historical_matches.csv` by default. The file retains source match IDs, team IDs, season, tier and the `WOMENS_CLUB` category. It must remain separate from `data/open_historical_matches.csv`; it is not automatically enabled for live predictions.
+
+Example manual import:
+
+```bash
+python scripts/import_womens_club_history.py --from 2011-01-01 --to 2026-12-31 --output data/womens_club_historical_matches.csv
+python scripts/audit_historical_csv.py --input data/womens_club_historical_matches.csv --json-output reports/womens_history_audit.json --markdown-output reports/womens_history_audit.md
+```
+
+The source covers the English Women's Super League from 2011 and Women's Championship from 2014, with source-specific season structure. It is licensed CC BY-SA 4.0. Any public redistribution must include attribution and comply with ShareAlike requirements; verify how the license applies to the intended output before distributing it. This pilot does not cover lower-tier women's leagues or any reserve/youth competition.
