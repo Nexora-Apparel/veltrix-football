@@ -464,3 +464,15 @@ def test_provider_local_league_ids_never_map_to_api_football_divisions():
     api_parts = _fixture_parts(api_fixture)
     assert api_parts is not None
     assert api_parts["division_code"] == "ARG"
+
+
+
+def test_explicit_historical_division_code_maps_without_numeric_id():
+    from app.live_predictions import _fixture_parts
+
+    fixture = _fixture()
+    fixture["league"]["code"] = "SWE"
+    fixture["league"].pop("id", None)
+    parts = _fixture_parts(fixture)
+    assert parts is not None
+    assert parts["division_code"] == "SWE"
