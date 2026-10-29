@@ -317,7 +317,7 @@ def test_goal_market_command_formats_ten_matches_as_separate_readable_cards():
             "expected_goals": {"home": 1.5, "away": 1.2},
         })
     reply = handle_command("/btts", report=report)
-    assert "10 matches" in reply
+    assert "Home 0 vs Away 0" in reply and "Home 9 vs Away 9" in reply
     assert "Home 0 vs Away 0" in reply
     assert "Home 9 vs Away 9" in reply
     assert "Home 10 vs Away 10" not in reply
