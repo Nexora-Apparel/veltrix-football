@@ -241,13 +241,16 @@ def test_match_with_nan_probabilities_is_withheld():
     assert "WITHHELD: EXPERIMENTAL_ONLY" in reply
 
 
-def test_paper_tracking_keyboard_label_does_not_claim_successful_predictions():
+def test_paper_tracking_is_on_website_not_in_telegram_keyboard():
     from api.telegram import BUTTON_COMMANDS, KEYBOARD
     labels = {button["text"] for row in KEYBOARD["keyboard"] for button in row}
-    assert "Paper Tracking" in labels
+    assert "Paper Tracking" not in labels
+    assert "Status" not in labels
     assert "Over/Under Goals" in labels
     assert "BTTS" in labels
-    assert "Successful Predictions" not in labels
+    assert "Value Bet" in labels
+    assert "Results" in labels
+    assert "Performance" in labels
     assert BUTTON_COMMANDS["paper tracking"] == "/results"
     assert BUTTON_COMMANDS["over/under goals"] == "/overunder"
     assert BUTTON_COMMANDS["btts"] == "/btts"
