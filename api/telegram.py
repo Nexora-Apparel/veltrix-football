@@ -61,6 +61,15 @@ main{padding:20px clamp(12px,3vw,30px)}.eyebrow{color:var(--green);font-weight:8
 <div id="marketOdds" class="market-list"><div class="empty">Loading matched market prices…</div></div>
 </section>
 <div class="section-divider"></div>
+<section id="trackingView" class="sectionview">
+<div class="sectionhead"><div><div class="eyebrow">Retrospective evaluation</div><h2>Paper tracking & results</h2></div></div>
+<div class="notice">Paper tracking only · historical outcomes are not proof of profitability.</div>
+<div id="trackingMetrics" class="panel statusgrid" style="margin-top:12px"><div class="statusitem"><div class="stitle">Ledger</div><div class="svalue">Loading…</div></div></div>
+<div id="trackingModels" class="market-list" style="margin-top:12px"><div class="empty">Loading model metrics…</div></div>
+<div class="sectionhead"><div><div class="eyebrow">Settled forecasts</div><h2>Recent results</h2></div></div>
+<div id="trackingResults" class="market-list"><div class="empty">Loading results…</div></div>
+</section>
+<div class="section-divider"></div>
 <section id="statusView" class="sectionview">
 <div class="sectionhead"><div><div class="eyebrow">Data quality & providers</div><h2>System status</h2></div></div>
 <div class="panel statusgrid" id="systemStatus"><div class="statusitem"><div class="stitle">Published report</div><div class="svalue">Checking…</div></div></div>
@@ -68,7 +77,7 @@ main{padding:20px clamp(12px,3vw,30px)}.eyebrow{color:var(--green);font-weight:8
 <div class="footer">Football data by <a href="https://5dollarfootballapi.com" target="_blank" rel="noopener noreferrer">5DollarFootballAPI</a>. Forecasts are experimental and have not been validated for betting. Market prices are displayed only when matched to a fixture. Missing statistics are not invented; their coverage is not assumed complete. <span id="reporttime"></span></div>
 </section>
 </main></div>
-<nav class="bottomnav"><a class="navitem active" href="#dashboardView" data-view="dashboardView"><span>⌂</span>Dashboard</a><a class="navitem" href="#predictionsView" data-view="predictionsView"><span>◎</span>Predictions</a><a class="navitem" href="#marketView" data-view="marketView"><span>▤</span>Market odds</a><a class="navitem" href="#statusView" data-view="statusView"><span>▥</span>Status</a></nav>
+<nav class="bottomnav"><a class="navitem active" href="#dashboardView" data-view="dashboardView"><span>⌂</span>Dashboard</a><a class="navitem" href="#predictionsView" data-view="predictionsView"><span>◎</span>Predictions</a><a class="navitem" href="#marketView" data-view="marketView"><span>▤</span>Market odds</a><a class="navitem" href="#trackingView" data-view="trackingView"><span>◷</span>Tracking</a><a class="navitem" href="#statusView" data-view="statusView"><span>▥</span>Status</a></nav>
 <script>
 let dashboardRows=[];let currentFilter='all';
 function num(v){return v===null||v===undefined||v===''?NaN:Number(v)}
@@ -174,6 +183,20 @@ function renderMarketOdds(){
 }
 function setFilter(f){currentFilter=f;document.querySelectorAll('.filter').forEach(b=>{const active=b.dataset.filter===f;b.classList.toggle('active',active);b.setAttribute('aria-pressed',active?'true':'false')});renderRows();const title=document.querySelector('#predictions');if(title){title.setAttribute('data-active-filter',f);title.style.animation='none';void title.offsetWidth;title.style.animation='riseIn .3s ease both'}document.getElementById('predictions').scrollIntoView({behavior:'smooth',block:'start'})}
 document.getElementById('filters').addEventListener('click',e=>{const b=e.target.closest('button[data-filter]');if(b)setFilter(b.dataset.filter)});
+function renderPaperTracking(d){
+ const data=d.paper_tracking||{};
+ const metrics=document.getElementById('trackingMetrics');metrics.replaceChildren();
+ if(!d.paper_tracking){metrics.innerHTML='<div class="statusitem wide"><div class="svalue">Paper-tracking ledger is not available yet.</div></div>';document.getElementById('trackingModels').innerHTML='<div class="empty">No model metrics published.</div>';document.getElementById('trackingResults').innerHTML='<div class="empty">No settled results published.</div>';return}
+ const last=data.last_attempt||{};
+ const values=[['Ledger status',data.model_status||'PAPER_TRACKING_ONLY'],['Evaluated report dates',data.evaluated_report_dates??0],['Last evaluation',last.status||'Not evaluated'],['Updated',data.updated_at_utc||'Unknown']];
+ for(const [title,value] of values){const el=document.createElement('div');el.className='statusitem';const t=document.createElement('div');t.className='stitle';t.textContent=title;const v=document.createElement('div');v.className='svalue';v.textContent=value;el.append(t,v);metrics.append(el)}
+ const modelBox=document.getElementById('trackingModels');modelBox.replaceChildren();const models=data.cumulative_metrics_by_model||{};const entries=Object.entries(models);
+ if(!entries.length){const empty=document.createElement('div');empty.className='empty';empty.textContent='No completed forecasts scored yet.';modelBox.append(empty)}
+ for(const [name,m] of entries){const card=document.createElement('article');card.className='market-fixture';const title=document.createElement('h3');title.textContent=name.replaceAll('_',' ');const line=document.createElement('div');line.className='market-line';const acc=Number(m.result_accuracy);line.textContent=String(m.matches??0)+' scored · accuracy '+(Number.isFinite(acc)?(acc*100).toFixed(1)+'%':'—')+' · Brier '+(Number.isFinite(Number(m.brier_score))?Number(m.brier_score).toFixed(3):'—')+' · Log loss '+(Number.isFinite(Number(m.log_loss))?Number(m.log_loss).toFixed(3):'—');card.append(title,line);modelBox.append(card)}
+ const results=document.getElementById('trackingResults');results.replaceChildren();const rows=Array.isArray(data.scored_matches)?data.scored_matches.slice().reverse():[];
+ if(!rows.length){const empty=document.createElement('div');empty.className='empty';empty.textContent='No settled match results published yet.';results.append(empty)}
+ for(const row of rows){const card=document.createElement('article');card.className='market-fixture';const title=document.createElement('h3');title.textContent=(row.home_team||'Home')+' '+(row.home_goals??'—')+' – '+(row.away_goals??'—')+' '+(row.away_team||'Away');const line=document.createElement('div');line.className='market-line';line.textContent=(row.report_date||'Date unknown')+' · Predicted '+(row.predicted||'—')+' · Actual '+(row.actual||'—')+' · '+(row.correct===true?'Correct':row.correct===false?'Incorrect':'Unscored');card.append(title,line);results.append(card)}
+}
 function renderStatus(d){
  const box=document.getElementById('systemStatus');box.replaceChildren();const hist=d.historical_data_coverage||{};const odds=d.live_odds_sync||{};const primary=d.primary_provider_request||{};
  const vals=[['Report publication',d.publication_status||d.status||'UNKNOWN'],['Fixture source',(primary.provider||'Unknown')+' · '+(primary.status||'unknown')],['The Odds API',odds.the_odds_api_status||'unknown'],['Historical coverage',hist.status||'not reported']];
@@ -208,7 +231,7 @@ async function loadDashboard(){
   document.getElementById('overviewTitle').textContent=reportDate?(reportDate===today?"Today's overview":'Report overview · '+reportDate):'Report overview';
   const stale=!!reportDate&&reportDate!==today;const reportNotice=document.getElementById('reportFreshness');if(reportNotice){reportNotice.textContent=stale?'Showing the saved report from '+reportDate+'. It is not today’s report; refresh the data pipeline for current fixtures.':(dashboardRows.length?'Current-day report loaded.':'No upcoming matches found in the current report.');reportNotice.classList.toggle('warn',stale||!dashboardRows.length);}
   text(document.getElementById('fixtures'),d.fixtures_received);text(document.getElementById('forecasts'),d.experimental_forecasts);text(document.getElementById('odds'),d.fixtures_with_market_odds);
-  renderFeatured(dashboardRows[0]);renderRows();renderMarketOdds();renderStatus(d);observeReveals(document);
+  renderFeatured(dashboardRows[0]);renderRows();renderMarketOdds();renderPaperTracking(d);renderStatus(d);observeReveals(document);
   document.getElementById('reporttime').textContent='Report date '+(d.as_of_date||'unknown')+' · published '+(d.published_at_utc||'unknown')+' UTC';
  }catch(e){
   document.getElementById('featured').textContent='Published report unavailable. Please retry shortly.';
@@ -244,6 +267,32 @@ def dashboard_data() -> dict:
                 upcoming.append(row)
         except (TypeError, ValueError, OverflowError):
             continue
+    ledger = load_paper_ledger()
+    paper_tracking = None
+    if isinstance(ledger, dict):
+        paper_tracking = {
+            "model_status": ledger.get("model_status", "PAPER_TRACKING_ONLY"),
+            "updated_at_utc": ledger.get("updated_at_utc"),
+            "evaluated_report_dates": ledger.get("evaluated_report_dates", 0),
+            "cumulative_metrics_by_model": ledger.get("cumulative_metrics_by_model") or {},
+            "last_attempt": ledger.get("last_attempt") or {},
+            "scored_matches": [
+                {
+                    "home_team": row.get("home_team"),
+                    "away_team": row.get("away_team"),
+                    "actual": row.get("actual"),
+                    "predicted": row.get("predicted"),
+                    "correct": row.get("correct"),
+                    "home_goals": row.get("home_goals"),
+                    "away_goals": row.get("away_goals"),
+                    "report_date": row.get("report_date"),
+                    "model": row.get("model"),
+                }
+                for row in (ledger.get("scored_matches") or [])[-12:]
+                if isinstance(row, dict)
+            ],
+            "notice": ledger.get("notice", "Retrospective paper evaluation only."),
+        }
     return {
         "status": "OK",
         "as_of_date": report.get("as_of_date"),
@@ -256,6 +305,7 @@ def dashboard_data() -> dict:
         "fixtures_received": report.get("fixtures_received", 0),
         "experimental_forecasts": sum(1 for row in rows if isinstance(row, dict) and row.get("status") == "EXPERIMENTAL_ONLY"),
         "fixtures_with_market_odds": report.get("fixtures_with_market_odds", 0),
+        "paper_tracking": paper_tracking,
         "warning": "Published forecasts are experimental and not validated for betting. The report may not be the latest live run.",
         "predictions": upcoming[:60],
     }
