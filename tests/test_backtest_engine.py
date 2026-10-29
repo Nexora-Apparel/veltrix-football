@@ -282,6 +282,6 @@ def test_historical_over_under_price_audit_is_explicitly_non_validating():
     assert audit["fixtures_with_model_and_any_valid_ou25_price"] == 1
     assert audit["selection_count"] == 1
     assert audit["wins"] == 1
-    assert audit["net_units"] == 1.2
+    assert abs(audit["net_units"] - 1.2) < 1e-9
     assert audit["timestamp_quality"].startswith("UNVERIFIED")
     assert audit["profitability_claim_allowed"] is False
