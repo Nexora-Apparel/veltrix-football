@@ -302,7 +302,6 @@ def test_btts_command_returns_yes_no_probability_from_expected_goals():
 def test_goal_market_command_formats_ten_matches_as_separate_readable_cards():
     now = datetime.now(ZoneInfo("Africa/Lagos"))
     report = {
-        "as_of_date": now.date().isoformat(),
         "predictions": [],
     }
     for index in range(12):
