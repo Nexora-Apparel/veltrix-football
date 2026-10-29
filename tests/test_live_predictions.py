@@ -445,3 +445,22 @@ def test_football_data_club_suffixes_and_prefixes_match_historical_names():
     assert _name_key("FC Internazionale Milano") == _name_key("Inter")
     assert _name_key("Athletic Club") == _name_key("Ath Bilbao")
     assert _name_key("SBV Excelsior") == _name_key("Excelsior")
+
+
+
+def test_provider_local_league_ids_never_map_to_api_football_divisions():
+    from app.live_predictions import _fixture_parts
+
+    fixture = _fixture()
+    fixture["league"]["id"] = 128  # API-Football's Argentina league ID
+    fixture["_veltrix_source"] = "5DollarFootballAPI"
+    parts = _fixture_parts(fixture)
+    assert parts is not None
+    assert parts["division_code"] is None
+
+    # Legacy/API-Football-shaped fixtures retain the existing ID mapping.
+    api_fixture = _fixture()
+    api_fixture["league"]["id"] = 128
+    api_parts = _fixture_parts(api_fixture)
+    assert api_parts is not None
+    assert api_parts["division_code"] == "ARG"
