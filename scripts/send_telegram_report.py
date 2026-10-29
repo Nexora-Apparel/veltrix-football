@@ -125,7 +125,6 @@ def format_report_messages(report: dict[str, Any], ledger: dict[str, Any] | None
     ]
 
     header = [
-        "🔔 🆕 NEW VELTRIX UPDATE",
         DIVIDER,
         f"⚽ VELTRIX FOOTBALL · PREDICTIONS",
         f"📅 {day} · Kick-off times: WAT",
