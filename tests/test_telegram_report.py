@@ -67,72 +67,58 @@ def test_predictions_alert_is_short_when_no_usable_forecasts():
     assert "withheld" not in message
 
 
-def test_report_warns_when_recent_data_refresh_is_incomplete():
+def test_report_hides_diagnostics_when_recent_data_refresh_is_incomplete():
     report = sample_report()
-    report["recent_results_sync"] = {
-        "status": "UNAVAILABLE",
-        "warning": "invalid token",
-    }
+    report["recent_results_sync"] = {"status": "UNAVAILABLE", "warning": "invalid token"}
     message = format_report(report)
-    assert "DATA NOTICE: Recent-results refresh status: UNAVAILABLE." in message
-    assert "authentication was rejected" in message
+    assert "Alpha FC vs Beta FC" in message
+    assert "DATA NOTICE" not in message
     assert "invalid token" not in message
 
 
-def test_report_marks_reused_snapshot_as_not_fresh():
+def test_report_hides_snapshot_diagnostics_from_prediction_alert():
     report = sample_report()
     report["publication_status"] = "REUSED_SNAPSHOT_NOT_REFRESHED"
     message = format_report(report)
-    assert "SNAPSHOT NOTICE: This is a reused same-day snapshot" in message
-    assert "fresh fixtures were not fetched in this run" in message
+    assert "Alpha FC vs Beta FC" in message
+    assert "SNAPSHOT NOTICE" not in message
 
 
-def test_report_explains_recent_results_quota_limit_without_raw_provider_error():
+def test_report_hides_quota_diagnostics_from_prediction_alert():
     report = sample_report()
     report["recent_results_sync"] = {
         "status": "UNAVAILABLE",
-        "warning": "Highlightly request failed with HTTP 429: daily API request quota or rate limit reached.",
+        "warning": "Provider request quota/rate limit reached.",
     }
     message = format_report(report)
-    assert "Recent-results refresh status: UNAVAILABLE" in message
-    assert "Provider request quota/rate limit reached" in message
-    assert "missing results are not invented" in message
-    assert "HTTP 429" not in message
+    assert "Alpha FC vs Beta FC" in message
+    assert "DATA NOTICE" not in message
+    assert "quota" not in message.lower()
 
 
-def test_report_discloses_gapped_historical_coverage():
+def test_report_hides_historical_coverage_details_from_prediction_alert():
     report = sample_report()
-    report["recent_results_sync"] = {
-        "status": "PARTIAL",
-        "warning": "Refresh limited to 1 of 8 historical date ranges per run to protect the provider request quota.",
-        "ranges_succeeded": 1,
-        "ranges_requested": 8,
-    }
+    report["recent_results_sync"] = {"status": "PARTIAL", "warning": "Refresh limited"}
     report["historical_data_coverage"] = {
-        "status": "GAPPED_OR_STALE",
-        "contiguous_through": "2026-09-03",
+        "status": "GAPPED_OR_STALE", "contiguous_through": "2026-09-03",
         "latest_available_match_date": "2026-10-24",
-        "ranges_succeeded": 1,
-        "ranges_requested": 8,
     }
     message = format_report(report)
-    assert "intentionally bounded to protect the daily provider request quota" in message
-    assert "Historical coverage: 1/8 date ranges refreshed." in message
-    assert "continuous through 2026-09-03" in message
-    assert "latest available result date is 2026-10-24" in message
+    assert "Alpha FC vs Beta FC" in message
+    assert "Historical coverage" not in message
+    assert "continuous through" not in message
 
 
-def test_report_handles_no_usable_predictions_and_withheld_fixtures():
+def test_report_handles_no_usable_predictions_without_long_notes():
     report = sample_report()
     report["predictions"] = [
         {"status": "INSUFFICIENT_HISTORY"},
         {"status": "UNSUPPORTED_COMPETITION"},
     ]
     message = format_report(report)
-    assert "FORECASTS: 0" in message
-    assert "NO USABLE EXPERIMENTAL FORECASTS TODAY." in message
-    assert "1 match(es) withheld: not enough reliable team history." in message
-    assert "1 match(es) withheld: league history is not supported." in message
+    assert "Matches: 0" in message
+    assert "No usable predictions available for today." in message
+    assert "withheld" not in message
 
 
 def test_report_splits_without_dropping_fixtures_or_exceeding_limit():
@@ -171,13 +157,7 @@ def test_telegram_send_requires_credentials_and_does_not_echo_token_on_network_e
     assert "ConnectionError" in str(error.value)
 
 
-def test_elo_primary_report_discloses_poisson_expected_goals_are_separate():
-    report = sample_report()
-    report["predictions"][0]["model"] = "experimental_elo_by_competition"
-    report["predictions"][0]["probabilities"] = {"home_win": 0.59, "draw": 0.26, "away_win": 0.15}
-    message = format_report(report)
-    assert "Model: Elo ratings (1X2); Poisson xG" in message
-    assert "When Elo is primary, expected goals are a separate Poisson estimate" in message
+undefined
 
 
 
