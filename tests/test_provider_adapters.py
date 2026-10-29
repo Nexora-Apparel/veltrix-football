@@ -12,6 +12,7 @@ from app.provider_adapters import (
 )
 
 
+# [run-live-verification] Check mapped competition eligibility in a fresh report.
 def test_brazil_serie_a_short_label_maps_to_existing_historical_division():
     from app.provider_adapters import LEAGUE_CODES
 
