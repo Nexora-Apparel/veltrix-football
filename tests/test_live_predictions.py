@@ -117,6 +117,7 @@ def test_past_kickoffs_are_excluded_from_pre_match_report():
 def test_argentine_provider_abbreviations_match_exact_club_aliases():
     assert _name_key("Argentinos JRS") == _name_key("Argentinos Juniors")
     assert _name_key("Independ. Rivadavia") == _name_key("Independiente Rivadavia")
+    assert _name_key("Atalanta BC") == _name_key("Atalanta")
 
 
 def test_known_team_aliases_match_without_fuzzy_guessing():
