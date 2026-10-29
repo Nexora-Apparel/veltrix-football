@@ -176,6 +176,7 @@ def test_ambiguous_fuzzy_team_name_is_not_automatically_merged():
     assert resolved == "united"
 
 
+# [run-live-verification] Validate conservative team matching in the live report.
 def test_fuzzy_matching_does_not_drop_a_leading_club_initial():
     from app.live_predictions import _resolve_team_key
 
