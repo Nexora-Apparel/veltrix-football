@@ -16,6 +16,7 @@ from typing import Any, Iterable
 
 from app.live_predictions import ELO_K, HOME_ELO_ADVANTAGE, MIN_TEAM_MATCHES, _name_key
 from app.advanced_models import dixon_coles_1x2, recency_weighted_mean
+from app.bias_audit import audit_favourites_and_underdogs
 
 
 def _poisson_probs(lam: float, cap: int = 12) -> list[float]:
@@ -613,6 +614,11 @@ def chronological_backtest(matches: Iterable[dict[str, Any]], *, min_training_ma
     return {"status": "BACKTESTED_NOT_PROOF_OF_PROFIT", "test_matches": len(scored),
         "first_test_date": scored[0]["match_date"], "last_test_date": scored[-1]["match_date"],
         "models": metrics, "lower_log_loss_model": winner,
+        "favourite_underdog_audit": {
+            "poisson": audit_favourites_and_underdogs(scored, model_key="poisson"),
+            "elo": audit_favourites_and_underdogs(scored, model_key="elo"),
+            "note": "Evaluation-only subgroup diagnostic using de-vigged historical market probabilities to classify favourites and underdogs; it does not measure club fame or alter forecasts.",
+        },
         "goal_markets": {
             "model": "chronological_shrunk_venue_poisson",
             "metrics": goal_market_metrics,
@@ -638,6 +644,11 @@ def chronological_backtest(matches: Iterable[dict[str, Any]], *, min_training_ma
             "recent_holdout": live_holdout,
             "metrics_by_competition": live_metrics_by_competition,
             "historical_odds_subset": live_odds_subset,
+            "favourite_underdog_audit": {
+                "poisson": audit_favourites_and_underdogs(live_scored, model_key="live_poisson"),
+                "elo": audit_favourites_and_underdogs(live_elo_rows, model_key="live_elo"),
+                "note": "Evaluation-only subgroup diagnostic on market-covered walk-forward fixtures; not a causal measure of fame bias.",
+            },
             "elo_alternative": {"model": "experimental_elo_by_competition", "matches": len(live_elo_rows),
                 "metrics": live_elo_metrics, "historical_odds_subset": live_elo_odds_subset,
                 "recent_holdout": live_holdout.get("elo_alternative") if live_holdout else None,
