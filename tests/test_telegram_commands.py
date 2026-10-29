@@ -275,7 +275,7 @@ def test_overunder_command_returns_experimental_goal_line_probabilities():
     assert "PRIMARY MARKET — OVER/UNDER GOALS" in reply
     assert "O0.5" in reply and "O2.5" in reply and "O4.5" in reply
     assert "Not calibrated or validated for betting" in reply
-    assert "Market prices are reference data only" in reply
+    assert "Prices are reference data only" in reply
 
 
 def test_btts_command_returns_yes_no_probability_from_expected_goals():
@@ -299,7 +299,7 @@ def test_btts_command_returns_yes_no_probability_from_expected_goals():
     assert "Kick-off times: WAT" in reply
     assert "REFERENCE BOOKMAKER PRICES" not in reply
     assert "━━━━━━━━━━━━━━━━━━━━" in reply
-    assert "independent-Poisson approximation" in reply
+    assert "independent-Poisson estimates" in reply
 
 
 def test_goal_market_command_formats_ten_matches_as_separate_readable_cards():
