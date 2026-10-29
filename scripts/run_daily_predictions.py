@@ -12,7 +12,7 @@ from pathlib import Path
 from app.live_predictions import _name_key, build_daily_report, load_historical_matches
 from app.recent_results import fetch_recent_results_incremental
 from app.api_football_odds import APIFootballError  # legacy error type for compatibility helpers only
-from app.provider_adapters import FiveDollarFootballClient, ProviderAPIError, enrich_report_with_multi_source_odds
+from app.provider_adapters import FiveDollarFootballClient, ProviderAPIError, enrich_report_with_multi_source_odds, supplement_fixtures_from_odds_api
 import math
 
 
@@ -216,6 +216,14 @@ def main() -> None:
         if not api.api_key:
             raise ProviderAPIError("FIVEDOLLARFOOTBALL_API_KEY is missing. Add it as a GitHub Actions repository secret; do not paste it into source code.")
         payload = api.fixtures(target_date.isoformat(), args.timezone)
+        # The primary free-tier feed may expose only a small set of leagues on a
+        # given day. Supplement from the already-connected Odds API event lists,
+        # keeping only future fixtures on this same Lagos calendar date.
+        payload = supplement_fixtures_from_odds_api(
+            payload,
+            target_date.isoformat(),
+            timezone_name=args.timezone,
+        )
         base_history = load_historical_matches(args.history)
         cache_path = Path(args.recent_cache)
         cache_data, cached_rows = _load_recent_cache(cache_path)
