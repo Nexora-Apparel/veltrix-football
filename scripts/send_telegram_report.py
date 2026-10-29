@@ -160,7 +160,7 @@ def format_report_messages(report: dict[str, Any], ledger: dict[str, Any] | None
         blocks.append([DIVIDER, "No usable predictions available for today.", ""])
 
     def render(selected: list[list[str]]) -> str:
-        return "\\n".join(header + [line for block in selected for line in block])
+        return "\n".join(header + [line for block in selected for line in block])
 
     chunks: list[str] = []
     selected: list[list[str]] = []
@@ -179,7 +179,7 @@ def format_report_messages(report: dict[str, Any], ledger: dict[str, Any] | None
         chunks.append(render(selected))
     total = len(chunks)
     return [
-        f"🔔 🆕 NEW VELTRIX UPDATE  •  MESSAGE {index}/{total}\\n" + chunk
+        f"🔔 🆕 NEW VELTRIX UPDATE  •  MESSAGE {index}/{total}\n" + chunk
         for index, chunk in enumerate(chunks, start=1)
     ]
 
