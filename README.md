@@ -56,6 +56,14 @@ The importer discovers the source CSV path from the repository tree, validates r
 
 The `model_validated` switch is a safety gate, not proof of validation. It must remain false until a chronological, out-of-sample backtest and calibration review have passed. The expected-return calculation is theoretical and does not account for odds movement, limits, execution, or bookmaker restrictions. Do not publish selections as "value bets" merely because this mathematical filter passes.
 
+## Favourite/underdog neutrality audit
+
+The current Elo baseline starts unseen clubs at the same 1500 rating and updates ratings from match outcomes; the Poisson baselines use observed scoring/conceding history. Neither model has an explicit club-fame, social-popularity, or team-name feature. This does not guarantee neutral outcomes: historical data coverage, team-name matching, home advantage, and market-derived information can still create systematic errors.
+
+The chronological backtest now reports a diagnostic under `favourite_underdog_audit` for the Poisson and Elo baselines, plus the separately evaluated live pipeline. Where historical 1X2 odds are available, fixtures are classified using de-vigged market probabilities, and metrics are reported for favourite wins and underdog wins. This is an evaluation slice, not a model input and not proof of causal fame bias. It is limited to fixtures with valid market probabilities, so its sample size and odds timestamps must be checked.
+
+A valid neutrality review should compare model probabilities, calibration, Brier score and log loss on the same out-of-sample fixtures; break results down by competition and probability band; inspect underdog-win cases; and verify the model does not use future information. Do not increase underdog predictions by arbitrary rule. Change model features or weights only when chronological validation shows improvement. The diagnostic does not approve value alerts or betting use.
+
 ## Chronological model comparison (new)
 Run a historical evaluation after importing the CSV:
 
