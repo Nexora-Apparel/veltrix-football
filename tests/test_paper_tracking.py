@@ -597,3 +597,71 @@ def test_paper_tracking_never_calls_live_provider_when_result_cache_is_unavailab
     assert attempt["completed_forecasts_scored"] == 0
     assert attempt["awaiting_result_or_match"] == 1
     assert "no live football-provider request was made" in attempt["detail"]
+
+
+
+def test_goal_market_paper_tracking_uses_only_pre_kickoff_odds_and_settles_flat_stakes():
+    report = {
+        "as_of_date": "2026-10-23",
+        "predictions": [{
+            **_prediction(55),
+            "kickoff_local": "2026-10-23T18:00:00+01:00",
+            "btts_yes": 0.62,
+            "over_2_5": 0.57,
+            "goal_markets_model": "experimental_recent_goals_poisson",
+            "the_odds_api_market_odds": {
+                "provider": "The Odds API",
+                "commence_time": "2026-10-23T17:00:00Z",
+                "fetched_at": "2026-10-23T16:00:00Z",
+                "markets": {
+                    "btts": [{
+                        "bookmaker": "Book A",
+                        "last_update": "2026-10-23T15:00:00Z",
+                        "outcomes": [{"name": "Yes", "price": 1.85}, {"name": "No", "price": 2.0}],
+                    }],
+                    "totals": [{
+                        "bookmaker": "Book A",
+                        "last_update": "2026-10-23T15:00:00Z",
+                        "outcomes": [
+                            {"name": "Over", "point": 2.5, "price": 1.9},
+                            {"name": "Under", "point": 2.5, "price": 1.95},
+                            {"name": "Over", "point": 3.5, "price": 3.0},
+                            {"name": "Under", "point": 3.5, "price": 1.3},
+                        ],
+                    }],
+                },
+            },
+        }],
+    }
+    result = evaluate_report(report, {"response": [_result(55, 2, 1)]})
+    assert len(result["goal_market_matches"]) == 4
+    assert result["goal_market_metrics"]["settled_selections"] == 4
+    assert result["goal_market_metrics"]["wins"] == 2
+    assert result["goal_market_metrics"]["losses"] == 2
+    assert {row["selection"] for row in result["goal_market_matches"]} == {"yes", "no", "over_2_5", "under_2_5"}
+    over_row = next(row for row in result["goal_market_matches"] if row["selection"] == "over_2_5")
+    assert over_row["decimal_odds"] == 1.9
+    assert over_row["unit_profit"] == 0.9
+
+
+def test_goal_market_paper_tracking_rejects_post_kickoff_odds():
+    report = {
+        "as_of_date": "2026-10-23",
+        "predictions": [{
+            **_prediction(56),
+            "kickoff_local": "2026-10-23T18:00:00+01:00",
+            "btts_yes": 0.62,
+            "over_2_5": 0.57,
+            "the_odds_api_market_odds": {
+                "commence_time": "2026-10-23T17:00:00Z",
+                "fetched_at": "2026-10-23T18:01:00Z",
+                "markets": {
+                    "btts": [{"bookmaker": "Book A", "outcomes": [{"name": "Yes", "price": 1.9}, {"name": "No", "price": 1.9}]}],
+                    "totals": [{"bookmaker": "Book A", "outcomes": [{"name": "Over", "point": 2.5, "price": 1.9}, {"name": "Under", "point": 2.5, "price": 1.9}]}],
+                },
+            },
+        }],
+    }
+    result = evaluate_report(report, {"response": [_result(56, 2, 1)]})
+    assert result["goal_market_matches"] == []
+    assert result["goal_market_metrics"]["settled_selections"] == 0
