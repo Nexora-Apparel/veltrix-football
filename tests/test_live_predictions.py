@@ -175,6 +175,16 @@ def test_ambiguous_fuzzy_team_name_is_not_automatically_merged():
     assert resolved == "united"
 
 
+def test_short_women_and_reserve_suffixes_cannot_match_senior_sides():
+    from app.live_predictions import _resolve_team_key, _team_variant_signature
+
+    assert _team_variant_signature(_name_key("Juventus(W)")) == ("women",)
+    assert _team_variant_signature(_name_key("Godoy Cruz(R)")) == ("reserve", "r")
+    assert _resolve_team_key("Juventus(W)", {"juventus"}) == "juventusw"
+    assert _resolve_team_key("Godoy Cruz(R)", {"godoycruz"}) == "godoycruzr"
+    assert _resolve_team_key("Boca Juniors(R)", {"bocajuniors"}) == "bocajuniorsr"
+
+
 def test_fuzzy_matching_never_crosses_women_youth_or_reserve_squads():
     from app.live_predictions import _resolve_team_key
 
