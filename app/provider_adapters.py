@@ -281,6 +281,13 @@ class TheOddsAPIClient:
             raise ProviderAPIError("The Odds API sports response had an unexpected shape.")
         return [row for row in payload if isinstance(row, dict) and str(row.get("key", "")).startswith("soccer_") and row.get("active", True)]
 
+    def events_for_sport(self, sport_key: str) -> list[dict[str, Any]]:
+        """List events for a supported soccer competition without requesting odds markets."""
+        payload, _ = self._get(f"sports/{sport_key}/events", {"dateFormat": "iso"})
+        if not isinstance(payload, list):
+            raise ProviderAPIError("The Odds API events response had an unexpected shape.")
+        return [row for row in payload if isinstance(row, dict)]
+
     def odds_for_sport(self, sport_key: str, *, regions: str = "uk", markets: str = "h2h,totals") -> list[dict[str, Any]]:
         payload, _ = self._get(f"sports/{sport_key}/odds", {
             "regions": regions, "markets": markets, "oddsFormat": "decimal", "dateFormat": "iso",
@@ -388,6 +395,122 @@ def _event_market_summary(event: dict[str, Any]) -> dict[str, Any]:
     return markets
 
 
+def supplement_fixtures_from_odds_api(
+    fixtures_payload: dict[str, Any],
+    day: str,
+    *,
+    timezone_name: str = "Africa/Lagos",
+    client: TheOddsAPIClient | None = None,
+    max_sports: int = 5,
+    now: datetime | None = None,
+) -> dict[str, Any]:
+    """Supplement limited primary fixture coverage with same-day major-league events.
+
+    Only scheduled future events on the requested local date are added. Existing
+    fixtures win duplicate joins; failed supplemental requests never discard the
+    primary provider's data.
+    """
+    odds_client = client or TheOddsAPIClient()
+    if not odds_client.api_key:
+        return fixtures_payload
+    zone = ZoneInfo(timezone_name)
+    target_day = date.fromisoformat(day)
+    current = now or datetime.now(zone)
+    if current.tzinfo is None:
+        current = current.replace(tzinfo=zone)
+    current = current.astimezone(zone)
+
+    league_by_sport = {
+        "soccer_epl": ("Premier League", "PL"),
+        "soccer_spain_la_liga": ("La Liga", "PD"),
+        "soccer_germany_bundesliga": ("Bundesliga", "BL1"),
+        "soccer_italy_serie_a": ("Serie A", "SA"),
+        "soccer_france_ligue_one": ("Ligue 1", "FL1"),
+    }
+    rows = fixtures_payload.get("response")
+    if not isinstance(rows, list):
+        rows = []
+        fixtures_payload["response"] = rows
+
+    def event_key(home: Any, away: Any) -> tuple[str, str, str]:
+        return (target_day.isoformat(), _name_key(home), _name_key(away))
+
+    existing: set[tuple[str, str, str]] = set()
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
+        teams = row.get("teams") or {}
+        home = (teams.get("home") or {}).get("name")
+        away = (teams.get("away") or {}).get("name")
+        raw = (row.get("fixture") or {}).get("date")
+        if not home or not away or not isinstance(raw, str):
+            continue
+        try:
+            kickoff = datetime.fromisoformat(raw.replace("Z", "+00:00"))
+            if kickoff.tzinfo is None:
+                kickoff = kickoff.replace(tzinfo=zone)
+            local = kickoff.astimezone(zone)
+            if local.date() == target_day:
+                existing.add(event_key(home, away))
+        except (ValueError, OverflowError):
+            continue
+
+    added = 0
+    queried: list[str] = []
+    failed: list[str] = []
+    for sport_key in list(league_by_sport)[:max(0, min(max_sports, 5))]:
+        try:
+            events = odds_client.events_for_sport(sport_key)
+            queried.append(sport_key)
+        except ProviderAPIError:
+            failed.append(sport_key)
+            continue
+        league_name, division_code = league_by_sport[sport_key]
+        for event in events:
+            home, away = event.get("home_team"), event.get("away_team")
+            raw = event.get("commence_time")
+            if not isinstance(home, str) or not home.strip() or not isinstance(away, str) or not away.strip() or not isinstance(raw, str):
+                continue
+            try:
+                kickoff = datetime.fromisoformat(raw.replace("Z", "+00:00"))
+                if kickoff.tzinfo is None:
+                    kickoff = kickoff.replace(tzinfo=timezone.utc)
+                local = kickoff.astimezone(zone)
+            except (ValueError, OverflowError):
+                continue
+            if local.date() != target_day or local <= current:
+                continue
+            key = event_key(home, away)
+            if key in existing:
+                continue
+            event_id = event.get("id")
+            rows.append({
+                "fixture": {
+                    "id": str(event_id) if event_id is not None else None,
+                    "date": kickoff.isoformat(),
+                    "timestamp": int(kickoff.timestamp()),
+                    "status": {"short": "NS", "long": "scheduled"},
+                },
+                "teams": {"home": {"id": None, "name": home}, "away": {"id": None, "name": away}},
+                "league": {"id": None, "name": league_name, "code": division_code, "season": None},
+                "_veltrix_source": "The Odds API",
+                "_supplemental_event_id": str(event_id or ""),
+            })
+            existing.add(key)
+            added += 1
+
+    meta = fixtures_payload.get("_veltrix_meta")
+    if not isinstance(meta, dict):
+        meta = {}
+        fixtures_payload["_veltrix_meta"] = meta
+    meta["supplemental_fixture_source"] = "The Odds API"
+    meta["supplemental_fixtures_added"] = added
+    meta["supplemental_sports_queried"] = queried
+    meta["supplemental_sports_failed"] = failed
+    meta["fixtures_total_after_supplement"] = len(rows)
+    return fixtures_payload
+
+
 def enrich_report_with_multi_source_odds(
     report: dict[str, Any],
     fixtures_payload: dict[str, Any],
@@ -486,6 +609,8 @@ def enrich_report_with_multi_source_odds(
         for key, item in by_key.items():
             prediction = pred_by_key.get(key)
             if item is None or prediction is None:
+                continue
+            if str(item.get("_veltrix_source") or "5DollarFootballAPI") != "5DollarFootballAPI":
                 continue
             short = str(((item.get("fixture") or {}).get("status") or {}).get("short") or "")
             if short != "NS":
