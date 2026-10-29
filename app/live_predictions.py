@@ -54,7 +54,7 @@ def _name_key(name: Any) -> str:
     # Preserve a small set of letters that NFKD does not decompose consistently.
     normalized = normalized.replace("ø", "o").replace("ł", "l").replace("đ", "d").replace("ð", "d").replace("þ", "th")
     tokens = re.findall(r"[a-z0-9]+", normalized)
-    edge_markers = {"fc", "afc", "cf", "sc", "ac", "as", "ec", "sbv", "acf", "cd", "ud"}
+    edge_markers = {"fc", "afc", "cf", "sc", "ac", "as", "ec", "sbv", "acf", "cd", "ud", "bc"}
     while tokens and tokens[0] in edge_markers:
         tokens.pop(0)
     while tokens and tokens[-1] in edge_markers:
