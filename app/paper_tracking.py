@@ -236,6 +236,8 @@ def _goal_market_paper_rows(prediction: dict[str, Any], result: dict[str, Any]) 
     commence = _parse_timestamp(odds_snapshot.get("commence_time"))
     if not kickoff or not fetched or not commence or fetched >= kickoff or commence != kickoff:
         return []
+    if (kickoff - fetched).total_seconds() > 24 * 3600:
+        return []
     markets = odds_snapshot.get("markets")
     if not isinstance(markets, dict):
         return []
@@ -262,9 +264,11 @@ def _goal_market_paper_rows(prediction: dict[str, Any], result: dict[str, Any]) 
                 if not isinstance(book, dict):
                     continue
                 quote_time = _parse_timestamp(book.get("last_update"))
-                if quote_time and quote_time > kickoff:
+                # Require a timestamped quote observed no later than the captured
+                # snapshot and no more than 24 hours before kickoff.
+                if not quote_time or quote_time > fetched or quote_time > kickoff:
                     continue
-                if quote_time and (fetched - quote_time).total_seconds() > 24 * 3600:
+                if (kickoff - quote_time).total_seconds() > 24 * 3600:
                     continue
                 for quote in book.get("outcomes") or []:
                     if not isinstance(quote, dict) or str(quote.get("name", "")).casefold() != outcome_label.casefold():
