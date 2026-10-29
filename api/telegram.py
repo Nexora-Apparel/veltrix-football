@@ -46,8 +46,8 @@ main{padding:20px clamp(12px,3vw,30px)}.eyebrow{color:var(--green);font-weight:8
 <div class="sectionhead"><div><div class="eyebrow">Model interpretation</div><h2>AI Insights · Recommended angles</h2></div></div>
 <div id="insights" class="insights"><div class="empty">Preparing insights from available data…</div></div>
 <div class="section-divider"></div>
-<div class="sectionhead overview-bottom"><div><div class="eyebrow">Report snapshot</div><h2>Today's overview</h2></div></div>
-<div class="overview"><div class="metric"><div class="label">Fixtures received</div><div class="value" id="fixtures">—</div><div class="hint">From published report</div></div><div class="metric"><div class="label">Eligible forecasts</div><div class="value" id="forecasts">—</div><div class="hint">Available model outputs</div></div><div class="metric"><div class="label">With market prices</div><div class="value" id="odds">—</div><div class="hint">Matched bookmaker quotes</div></div></div>
+<div class="sectionhead overview-bottom"><div><div class="eyebrow">Report snapshot</div><h2 id="overviewTitle">Report overview</h2></div></div>
+<div id="reportFreshness" class="notice" role="status">Loading report freshness…</div><div class="overview"><div class="metric"><div class="label">Fixtures received</div><div class="value" id="fixtures">—</div><div class="hint">From published report</div></div><div class="metric"><div class="label">Eligible forecasts</div><div class="value" id="forecasts">—</div><div class="hint">Available model outputs</div></div><div class="metric"><div class="label">With market prices</div><div class="value" id="odds">—</div><div class="hint">Matched bookmaker quotes</div></div></div>
 </section>
 <div class="section-divider"></div>
 <section id="predictionsView" class="sectionview">
@@ -204,6 +204,9 @@ async function loadDashboard(){
  const btn=document.getElementById('refresh');btn.disabled=true;btn.textContent='Loading…';
  try{
   const r=await fetch('/api/dashboard-data',{cache:'no-store'});if(!r.ok)throw new Error('Dashboard data unavailable');const d=await r.json();dashboardRows=Array.isArray(d.predictions)?d.predictions:[];
+  const reportDate=String(d.as_of_date||'');const today=new Intl.DateTimeFormat('en-CA',{timeZone:'Africa/Lagos',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
+  document.getElementById('overviewTitle').textContent=reportDate?(reportDate===today?"Today's overview":'Report overview · '+reportDate):'Report overview';
+  const stale=!!reportDate&&reportDate!==today;const reportNotice=document.getElementById('reportFreshness');if(reportNotice){reportNotice.textContent=stale?'Showing the saved report from '+reportDate+'. It is not today’s report; refresh the data pipeline for current fixtures.':(dashboardRows.length?'Current-day report loaded.':'No upcoming matches found in the current report.');reportNotice.classList.toggle('warn',stale||!dashboardRows.length);}
   text(document.getElementById('fixtures'),d.fixtures_received);text(document.getElementById('forecasts'),d.experimental_forecasts);text(document.getElementById('odds'),d.fixtures_with_market_odds);
   renderFeatured(dashboardRows[0]);renderRows();renderMarketOdds();renderStatus(d);observeReveals(document);
   document.getElementById('reporttime').textContent='Report date '+(d.as_of_date||'unknown')+' · published '+(d.published_at_utc||'unknown')+' UTC';
