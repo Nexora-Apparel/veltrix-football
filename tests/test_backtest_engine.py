@@ -218,3 +218,39 @@ def test_goal_market_baseline_uses_prior_dates_only():
     changed = [rows[0], {**rows[1], "home_goals": 4, "away_goals": 4}, rows[2], rows[3]]
     baseline_changed = _score_expanding_goal_baseline(changed)
     assert baseline["markets"]["over_1_5"]["brier_score"] != baseline_changed["markets"]["over_1_5"]["brier_score"]
+
+
+def test_goal_calibration_fits_earlier_dates_and_only_reports_later_scores():
+    from datetime import date, timedelta
+    from app.backtest_engine import _chronological_goal_calibration
+
+    rows = []
+    start = date(2020, 1, 1)
+    for i in range(800):
+        # Synthetic probabilities deliberately overconfident; all probabilities
+        # are supplied before the synthetic outcome and each date remains unique.
+        p = 0.8 if i % 2 else 0.2
+        outcome = (i % 5 == 0) if p > 0.5 else (i % 5 != 0)
+        rows.append({
+            "match_date": (start + timedelta(days=i)).isoformat(),
+            "home_goals": 1 if outcome else 0,
+            "away_goals": 1 if outcome else 0,
+            "goal_markets": {
+                "btts_yes": p,
+                "over_1_5": p,
+                "over_2_5": p,
+                "over_3_5": p,
+            },
+        })
+    report = _chronological_goal_calibration(rows, "goal_markets")
+    assert report["status"] == "DIAGNOSTIC_ONLY_NOT_APPLIED"
+    assert report["calibration_cutoff_date"] == rows[640]["match_date"]
+    assert report["calibration_matches"] == 640
+    assert report["test_matches"] == 160
+    assert set(report["markets"]) == {"btts_yes", "over_1_5", "over_2_5", "over_3_5"}
+    for market in report["markets"].values():
+        assert market["status"] == "CALIBRATION_FIT_EVALUATED_ON_LATER_DATES"
+        assert market["raw_test"]["matches"] == 160
+        assert market["calibrated_test"]["matches"] == 160
+        assert 0 <= market["calibrated_test"]["brier_score"] <= 1
+        assert market["calibrated_test"]["log_loss"] >= 0
