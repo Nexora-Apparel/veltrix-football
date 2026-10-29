@@ -665,3 +665,29 @@ def test_goal_market_paper_tracking_rejects_post_kickoff_odds():
     result = evaluate_report(report, {"response": [_result(56, 2, 1)]})
     assert result["goal_market_matches"] == []
     assert result["goal_market_metrics"]["settled_selections"] == 0
+
+
+
+def test_goal_market_ledger_preserves_non_numeric_provider_fixture_ids():
+    evaluation = {
+        "report_date": "2026-10-28",
+        "fixtures_scored": 0,
+        "completed_forecasts_scored": 0,
+        "awaiting_result_or_match": 0,
+        "withheld_or_invalid_forecasts": 0,
+        "matches": [],
+        "goal_market_matches": [{
+            "fixture_id": "odds-event-abc123",
+            "market": "btts",
+            "selection": "yes",
+            "actual_outcome": True,
+            "unit_stake": 1.0,
+            "unit_profit": 0.8,
+            "settlement": "WON",
+        }],
+        "goal_market_metrics": {"settled_selections": 1},
+    }
+    ledger = merge_paper_ledger({}, evaluation)
+    assert len(ledger["goal_market_scored"]) == 1
+    assert ledger["goal_market_scored"][0]["fixture_id"] == "odds-event-abc123"
+    assert ledger["goal_market_metrics"]["settled_selections"] == 1
