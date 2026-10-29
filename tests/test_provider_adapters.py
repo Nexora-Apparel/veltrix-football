@@ -121,6 +121,10 @@ def test_odds_api_supplements_only_future_same_day_fixtures_and_keeps_primary_ro
                         "home_team": "Arsenal", "away_team": "Chelsea",
                     },
                     {
+                        "id": "duplicate-primary", "commence_time": "2026-10-29T18:00:00Z",
+                        "home_team": "Frosinone", "away_team": "Lecce",
+                    },
+                    {
                         "id": "epl-2", "commence_time": "2026-10-30T12:00:00Z",
                         "home_team": "Tomorrow FC", "away_team": "Later FC",
                     },
