@@ -204,6 +204,32 @@ def _score_goal_markets(rows: list[dict[str, Any]], probability_key: str = "goal
             "observed_frequency": sum(outcomes) / count,
             "mean_predicted_probability": sum(probs) / count,
         }
+    baseline_markets = result["expanding_base_rate_baseline"]["markets"]
+    comparison = {}
+    for market, model_metrics in result["markets"].items():
+        baseline_metrics = baseline_markets.get(market, {})
+        if not model_metrics.get("matches") or not baseline_metrics.get("matches"):
+            comparison[market] = {"status": "INSUFFICIENT_MATCHES"}
+            continue
+        brier_delta = model_metrics["brier_score"] - baseline_metrics["brier_score"]
+        log_loss_delta = model_metrics["log_loss"] - baseline_metrics["log_loss"]
+        accuracy_delta = model_metrics["accuracy"] - baseline_metrics["accuracy"]
+        comparison[market] = {
+            "matches": model_metrics["matches"],
+            "brier_delta_model_minus_baseline": brier_delta,
+            "log_loss_delta_model_minus_baseline": log_loss_delta,
+            "accuracy_delta_model_minus_baseline": accuracy_delta,
+            "probability_scores_better": brier_delta < 0 and log_loss_delta < 0,
+            "interpretation": (
+                "MODEL_BEATS_BASELINE_ON_BRIER_AND_LOG_LOSS"
+                if brier_delta < 0 and log_loss_delta < 0
+                else "MODEL_DOES_NOT_BEAT_BASELINE_ON_BOTH_PROBABILITY_SCORES"
+            ),
+        }
+    result["model_vs_expanding_baseline"] = {
+        "delta_convention": "model metric minus baseline metric; negative Brier/log loss is better; positive accuracy is better",
+        "markets": comparison,
+    }
     return result
 
 
