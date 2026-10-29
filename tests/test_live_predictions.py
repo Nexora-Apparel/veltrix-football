@@ -484,9 +484,9 @@ def test_explicit_historical_division_code_maps_without_numeric_id():
 def test_non_senior_competitions_cannot_borrow_senior_historical_divisions():
     from app.live_predictions import _fixture_parts
 
-    women's_fixture = _fixture()
-    women's_fixture["league"] = {"name": "Swedish Women's League", "code": "SWE"}
-    assert _fixture_parts(women's_fixture)["division_code"] is None
+    womens_fixture = _fixture()
+    womens_fixture["league"] = {"name": "Swedish Women's League", "code": "SWE"}
+    assert _fixture_parts(womens_fixture)["division_code"] is None
 
     youth_fixture = _fixture()
     youth_fixture["league"] = {"name": "U21 League", "id": 39}
@@ -499,6 +499,6 @@ def test_non_senior_competitions_cannot_borrow_senior_historical_divisions():
     # Ordinary senior second divisions must not be blocked just because their
     # competition names contain a letter/number commonly used by reserves.
     senior_fixture = _fixture()
-    senior_fixture["league"] = {"name": "Brazil Serie B", "code": "SB"}
-    assert _fixture_parts(senior_fixture)["division_code"] == "I2"
+    senior_fixture["league"] = {"name": "English League One", "code": "EL1"}
+    assert _fixture_parts(senior_fixture)["division_code"] == "E2"
 
