@@ -272,6 +272,20 @@ def main() -> None:
             "pages_fetched": fixture_meta.get("pages_fetched", 1),
             "fixtures_received": len(payload.get("response") or []),
         }
+        # Make supplemental discovery measurable in the saved report and CI logs.
+        # This separates successful provider execution from actual model eligibility.
+        report["fixture_discovery"] = {
+            "primary_provider": fixture_meta.get("provider", "5DollarFootballAPI"),
+            "supplemental_provider": fixture_meta.get("supplemental_fixture_source"),
+            "supplemental_fixtures_added": int(fixture_meta.get("supplemental_fixtures_added", 0) or 0),
+            "supplemental_sports_queried": fixture_meta.get("supplemental_sports_queried", []),
+            "supplemental_sports_failed": fixture_meta.get("supplemental_sports_failed", []),
+            "fixtures_total_after_supplement": int(fixture_meta.get("fixtures_total_after_supplement", len(payload.get("response") or [])) or 0),
+            "future_fixtures_considered": report.get("future_fixtures_considered", 0),
+            "predictions_created": report.get("predictions_created", 0),
+            "insufficient_history": report.get("insufficient_history", 0),
+            "possible_team_name_mismatches": report.get("possible_team_name_mismatches", 0),
+        }
         base_history_through = max(
             (row["date"].isoformat() for row in base_history if row.get("date") < target_date),
             default=None,
@@ -345,6 +359,7 @@ def main() -> None:
         print(json.dumps({
             "date": target_date.isoformat(),
             "fixtures_received": report["fixtures_received"],
+            "fixture_discovery": report["fixture_discovery"],
             "same_day_pre_match_fixtures": report["same_day_pre_match_fixtures"],
             "future_fixtures_considered": report["future_fixtures_considered"],
             "past_kickoffs_excluded": report["past_kickoffs_excluded"],
