@@ -129,7 +129,7 @@ def test_match_lookup_uses_supplied_report_only():
     }
     reply = handle_command("/match Arsenal vs Chelsea", report=report)
     assert "Arsenal vs Chelsea" in reply
-    assert "H 50%" in reply
+    assert "Home 50%" in reply
 
 def test_today_discloses_gapped_historical_data():
     future_kickoff = (datetime.now(ZoneInfo("Africa/Lagos")) + timedelta(hours=3)).isoformat()
@@ -225,7 +225,7 @@ def test_match_does_not_publish_invalid_probability_vectors():
         "reason": "Unsupported competition",
     }]}
     reply = handle_command("/match Unsafe FC vs Example FC", report=report)
-    assert "WITHHELD: Unsupported competition" in reply
+    assert "Forecast withheld: Unsupported competition" in reply
     assert "H 80%" not in reply
 
 
@@ -238,7 +238,7 @@ def test_match_with_nan_probabilities_is_withheld():
         "probabilities": {"home_win": float("nan"), "draw": 0.3, "away_win": 0.7},
     }]}
     reply = handle_command("/match NaN FC vs Example FC", report=report)
-    assert "WITHHELD: EXPERIMENTAL_ONLY" in reply
+    assert "Forecast withheld: EXPERIMENTAL_ONLY" in reply
 
 
 def test_paper_tracking_is_on_website_not_in_telegram_keyboard():
@@ -272,7 +272,7 @@ def test_overunder_command_returns_experimental_goal_line_probabilities():
         }],
     }
     reply = handle_command("/overunder", report=report)
-    assert "PRIMARY MARKET — OVER/UNDER GOALS" in reply
+    assert "PRIMARY MARKET — OVER / UNDER GOALS" in reply
     assert "O/U 0.5" in reply and "O/U 2.5" in reply and "O/U 4.5" in reply
     assert "Not calibrated or validated for betting" in reply
     assert "Prices are reference data only" in reply
