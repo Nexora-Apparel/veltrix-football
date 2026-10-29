@@ -28,7 +28,7 @@ LEAGUE_DIVISION_BY_CODE = {
     "PL": "E0", "ELC": "E1", "EL1": "E2", "EL2": "E3",
     "PD": "SP1", "SD": "SP2", "SA": "I1", "SB": "I2",
     "BL1": "D1", "BL2": "D2", "FL1": "F1", "FL2": "F2",
-    "DED": "N1", "PPL": "P1", "SPL": "SC0", "BSA": "B1",
+    "DED": "N1", "PPL": "P1", "SPL": "SC0", "BSA": "BRA",
     # Exact historical division identifiers from the 38-competition dataset.
     # These are explicit codes, not provider-local numeric IDs.
     "ARG": "ARG", "BRA": "BRA", "CHN": "CHN", "JAP": "JAP",
