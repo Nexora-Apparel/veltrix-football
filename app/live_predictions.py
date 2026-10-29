@@ -142,6 +142,11 @@ def _one_edit_apart(left: str, right: str) -> bool:
                 return True
         return False
     shorter, longer = (left, right) if len(left) < len(right) else (right, left)
+    # A dropped first character often represents a club initial or abbreviated
+    # prefix (e.g. "R. Santander"), not a spelling typo. Do not merge it
+    # automatically with the longer club name.
+    if longer[1:] == shorter:
+        return False
     i = j = edits = 0
     while i < len(shorter) and j < len(longer):
         if shorter[i] == longer[j]:
