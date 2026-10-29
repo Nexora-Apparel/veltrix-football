@@ -8,6 +8,7 @@ from app.provider_adapters import (
     enrich_report_with_multi_source_odds,
     normalize_fivedollar_fixture,
     supplement_fixtures_from_odds_api,
+    supplement_fixtures_from_infersports,
 )
 
 
@@ -340,3 +341,60 @@ def test_empty_past_day_is_not_marked_as_covered():
     assert meta["failed_dates"] == ["2026-10-26"]
     assert meta["empty_response_dates"] == ["2026-10-26"]
     assert "retryable" in meta["warning"]
+
+
+
+def test_infersports_fixture_supplement_adds_only_future_same_day_and_deduplicates():
+    class FakeInfer:
+        def __init__(self):
+            self.calls = []
+        def events_for_date(self, day, timezone_name):
+            self.calls.append((day, timezone_name))
+            return [
+                {"id": "new-1", "scheduled_at": "2026-10-29T16:00:00Z",
+                 "home_team": {"name": "Arsenal"}, "away_team": {"name": "Chelsea"},
+                 "competition": {"id": 39, "name": "Premier League"}},
+                {"id": "dup", "scheduled_at": "2026-10-29T17:00:00Z",
+                 "home_team": "Frosinone", "away_team": "Lecce",
+                 "league": {"name": "Serie A"}},
+                {"id": "tomorrow", "scheduled_at": "2026-10-30T12:00:00Z",
+                 "home_team": "Tomorrow FC", "away_team": "Later FC",
+                 "league": {"name": "Premier League"}},
+                {"id": "past", "scheduled_at": "2026-10-29T08:00:00Z",
+                 "home_team": "Past FC", "away_team": "Old FC",
+                 "league": {"name": "Premier League"}},
+            ]
+    payload = {"response": [{
+        "fixture": {"id": 10, "date": "2026-10-29T18:00:00Z", "status": {"short": "NS"}},
+        "teams": {"home": {"name": "Frosinone"}, "away": {"name": "Lecce"}},
+        "league": {"name": "Serie A", "code": "SA"},
+    }], "_veltrix_meta": {"provider": "5DollarFootballAPI"}}
+    client = FakeInfer()
+    result = supplement_fixtures_from_infersports(
+        payload, "2026-10-29", client=client,
+        now=datetime.fromisoformat("2026-10-29T10:00:00+01:00"),
+    )
+    assert len(result["response"]) == 2
+    added = result["response"][1]
+    assert added["_veltrix_source"] == "InferSports"
+    assert added["teams"]["home"]["name"] == "Arsenal"
+    assert added["league"]["code"] == "PL"
+    assert result["_veltrix_meta"]["infersports_fixture_discovery"] == {
+        "status": "AVAILABLE", "events_received": 4, "future_same_day_events": 2,
+        "duplicates_skipped": 1, "fixtures_added": 1, "error_type": None,
+    }
+    assert client.calls == [("2026-10-29", "Africa/Lagos")]
+
+
+def test_infersports_fixture_supplement_failure_keeps_primary_fixtures():
+    from app.provider_adapters import ProviderAPIError
+    class BrokenInfer:
+        def events_for_date(self, day, timezone_name):
+            raise ProviderAPIError("unavailable")
+    payload = {"response": [{"fixture": {"id": 1}, "teams": {}}]}
+    result = supplement_fixtures_from_infersports(
+        payload, "2026-10-29", client=BrokenInfer(),
+        now=datetime.fromisoformat("2026-10-29T10:00:00+01:00"),
+    )
+    assert len(result["response"]) == 1
+    assert result["_veltrix_meta"]["infersports_fixture_discovery"]["status"] == "FAILED"
