@@ -110,6 +110,7 @@ on:
     - cron: "0 7 * * *"
 
 # Ordinary pushes run tests only. A push commit containing [run-live-verification] intentionally runs the full live pipeline for controlled end-to-end verification.
+# Controlled verification is explicitly requested for this commit; keep provider failures visible and never publish fallback predictions.
 # This prevents code commits and automated fixes from consuming live provider quotas.
 # Reuse mode is only for same-day artifacts when the primary provider is unavailable.
 # Reuse publication also recalculates all fixture-status counters after delivery filtering.
