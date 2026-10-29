@@ -274,7 +274,7 @@ def test_overunder_command_returns_experimental_goal_line_probabilities():
     reply = handle_command("/overunder", report=report)
     assert "PRIMARY MARKET — OVER/UNDER GOALS" in reply
     assert "O0.5" in reply and "O2.5" in reply and "O4.5" in reply
-    assert "not calibrated or validated betting advice" in reply
+    assert "Not calibrated or validated for betting" in reply
     assert "Market prices are reference data only" in reply
 
 
@@ -295,8 +295,39 @@ def test_btts_command_returns_yes_no_probability_from_expected_goals():
     }
     reply = handle_command("/btts", report=report)
     assert "PRIMARY MARKET — BOTH TEAMS TO SCORE" in reply
-    assert "BTTS Yes:" in reply and "BTTS No:" in reply
+    assert "BTTS: Yes" in reply and "No " in reply
+    assert "Kick-off times: WAT" in reply
+    assert "REFERENCE BOOKMAKER PRICES" not in reply
+    assert "━━━━━━━━━━━━━━━━━━━━" in reply
     assert "independent-Poisson approximation" in reply
+
+
+def test_goal_market_command_formats_ten_matches_as_separate_readable_cards():
+    now = datetime.now(ZoneInfo("Africa/Lagos"))
+    report = {
+        "as_of_date": now.date().isoformat(),
+        "predictions": [],
+    }
+    for index in range(12):
+        kickoff = (now + timedelta(minutes=30 + index * 15)).isoformat()
+        report["predictions"].append({
+            "home_team": f"Home {index}",
+            "away_team": f"Away {index}",
+            "league": "Test League",
+            "kickoff_local": kickoff,
+            "status": "EXPERIMENTAL_ONLY",
+            "probabilities": {"home_win": 0.45, "draw": 0.25, "away_win": 0.30},
+            "expected_goals": {"home": 1.5, "away": 1.2},
+        })
+    reply = handle_command("/btts", report=report)
+    assert "10 matches" in reply
+    assert "Home 0 vs Away 0" in reply
+    assert "Home 9 vs Away 9" in reply
+    assert "Home 10 vs Away 10" not in reply
+    assert "🎯 BTTS: Yes" in reply
+    assert "Kick-off times: WAT" in reply
+    assert "━━━━━━━━━━━━━━━━━━━━" in reply
+    assert "Method: independent-Poisson estimates" in reply
 
 
 def test_goal_markets_withhold_invalid_expected_goals():
