@@ -168,7 +168,8 @@ def _score_expanding_goal_baseline(rows: list[dict[str, Any]]) -> dict[str, Any]
         mean_p = sum(ps)/n if n else None
         markets[key] = {"matches": n, "brier_score": brier, "log_loss": loss, "accuracy": accuracy, "observed_frequency": observed, "mean_predicted_probability": mean_p}
         inverse = key.replace("yes", "no").replace("over", "under")
-        markets[inverse] = {"matches": n, "brier_score": brier, "log_loss": loss, "accuracy": accuracy, "observed_frequency": 1-observed if n else None, "mean_predicted_probability": 1-mean_p if n else None}
+        inverse_accuracy = sum(((1-p) >= 0.5) == bool(1-y) for p, y in zip(ps, ys)) / n if n else None
+        markets[inverse] = {"matches": n, "brier_score": brier, "log_loss": loss, "accuracy": inverse_accuracy, "observed_frequency": 1-observed if n else None, "mean_predicted_probability": 1-mean_p if n else None}
     return {"method": "expanding historical base rate; prior dates only; Beta(1,1) smoothing", "matches": len(ordered), "markets": markets}
 
 def _score_goal_markets(rows: list[dict[str, Any]], probability_key: str = "goal_markets") -> dict[str, Any]:
