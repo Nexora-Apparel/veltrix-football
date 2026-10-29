@@ -1,12 +1,13 @@
 from __future__ import annotations
 
-from datetime import date
+from datetime import date, datetime, timedelta
 
 from app.provider_adapters import (
     FiveDollarFootballClient,
     TheOddsAPIClient,
     enrich_report_with_multi_source_odds,
     normalize_fivedollar_fixture,
+    supplement_fixtures_from_odds_api,
 )
 
 
@@ -102,6 +103,76 @@ class FakeOddsAPI:
                     {"name": "Yes", "price": 1.8}, {"name": "No", "price": 2.0}]}],
             }],
         }]
+
+
+def test_odds_api_supplements_only_future_same_day_fixtures_and_keeps_primary_rows():
+    class FakeEventClient:
+        api_key = "configured"
+
+        def __init__(self):
+            self.calls = []
+
+        def events_for_sport(self, sport_key):
+            self.calls.append(sport_key)
+            if sport_key == "soccer_epl":
+                return [
+                    {
+                        "id": "epl-1", "commence_time": "2026-10-29T16:00:00Z",
+                        "home_team": "Arsenal", "away_team": "Chelsea",
+                    },
+                    {
+                        "id": "epl-2", "commence_time": "2026-10-30T12:00:00Z",
+                        "home_team": "Tomorrow FC", "away_team": "Later FC",
+                    },
+                    {
+                        "id": "epl-3", "commence_time": "2026-10-29T08:00:00Z",
+                        "home_team": "Already Started", "away_team": "Past FC",
+                    },
+                ]
+            return []
+
+    client = FakeEventClient()
+    payload = {
+        "response": [{
+            "fixture": {
+                "id": "primary-1", "date": "2026-10-29T17:30:00Z",
+                "status": {"short": "NS"},
+            },
+            "teams": {"home": {"name": "Frosinone"}, "away": {"name": "Lecce"}},
+            "league": {"name": "Italy Serie A", "code": "SA"},
+            "_veltrix_source": "5DollarFootballAPI",
+        }],
+        "_veltrix_meta": {"provider": "5DollarFootballAPI"},
+    }
+    now = datetime.fromisoformat("2026-10-29T10:00:00+01:00")
+    result = supplement_fixtures_from_odds_api(
+        payload, "2026-10-29", client=client, now=now,
+    )
+    rows = result["response"]
+    assert len(rows) == 2
+    assert rows[0]["teams"]["home"]["name"] == "Frosinone"
+    added = rows[1]
+    assert added["_veltrix_source"] == "The Odds API"
+    assert added["fixture"]["id"] == "epl-1"
+    assert added["fixture"]["status"]["short"] == "NS"
+    assert added["league"]["code"] == "PL"
+    assert result["_veltrix_meta"]["supplemental_fixtures_added"] == 1
+    assert "soccer_epl" in client.calls
+
+
+def test_odds_api_fixture_supplement_is_noop_without_key():
+    class NoKeyClient:
+        api_key = ""
+
+        def events_for_sport(self, sport_key):
+            raise AssertionError("must not call events endpoint without a key")
+
+    payload = {"response": []}
+    result = supplement_fixtures_from_odds_api(
+        payload, "2026-10-29", client=NoKeyClient(),
+    )
+    assert result["response"] == []
+    assert "_veltrix_meta" not in result
 
 
 def test_multi_source_odds_enrichment_attaches_btts_and_totals_without_changing_model():
