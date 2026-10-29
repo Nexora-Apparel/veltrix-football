@@ -38,6 +38,7 @@ jobs:
           START_DATE: ${{ inputs.start_date }}
           END_DATE: ${{ inputs.end_date }}
         run: |
+          if [ -z "$START_DATE" ]; then START_DATE="2011-01-01"; fi
           if [ -z "$END_DATE" ]; then END_DATE="$(date -u +%F)"; fi
           python scripts/import_womens_club_history.py --from "$START_DATE" --to "$END_DATE" --output data/womens_club_historical_matches.csv
       - name: Audit imported dataset
