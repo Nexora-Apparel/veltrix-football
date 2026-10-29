@@ -230,7 +230,18 @@ def _fixture_parts(item: dict[str, Any], timezone_name: str = "Africa/Lagos") ->
         "away_team": away,
         "league": league.get("name"),
         "league_id": league.get("id"),
-        "division_code": LEAGUE_DIVISION_BY_CODE.get(str(league.get("code") or "").upper()) or LEAGUE_DIVISION_BY_ID.get(league.get("id")),
+        # League IDs are provider-local. The ID map above contains API-Football
+        # IDs only; never apply it to 5Dollar/other-provider IDs, which can collide
+        # with an unrelated senior division and falsely enable unsupported leagues.
+        "division_code": (
+            LEAGUE_DIVISION_BY_CODE.get(str(league.get("code") or "").upper())
+            or (
+                LEAGUE_DIVISION_BY_ID.get(league.get("id"))
+                if not item.get("_veltrix_source")
+                or str(item.get("_veltrix_source")).casefold() in {"api-football", "api-sports"}
+                else None
+            )
+        ),
         "fixture_status": status,
     }
 
