@@ -44,6 +44,7 @@ def merge_paper_ledger(ledger: dict[str, Any], evaluation: dict[str, Any]) -> di
     current = dict(ledger)
     current.setdefault("evaluations", [])
     current.setdefault("scored_matches", [])
+    current.setdefault("goal_market_scored", [])
     report_date = evaluation.get("report_date")
     if not report_date:
         raise ValueError("Evaluation must include a report_date.")
@@ -56,6 +57,8 @@ def merge_paper_ledger(ledger: dict[str, Any], evaluation: dict[str, Any]) -> di
         "metrics": evaluation.get("metrics", {}),
         "metrics_by_model": evaluation.get("metrics_by_model", {}),
         "model_versions": sorted({str(row.get("model", "unknown")) for row in evaluation.get("matches", [])}),
+        "goal_market_selections_settled": len(evaluation.get("goal_market_matches", [])),
+        "goal_market_metrics": evaluation.get("goal_market_metrics", {}),
     }
     existing_index = next(
         (index for index, row in enumerate(current["evaluations"])
@@ -84,6 +87,8 @@ def merge_paper_ledger(ledger: dict[str, Any], evaluation: dict[str, Any]) -> di
     if should_merge_matches:
         for match in evaluation.get("matches", []):
             current["scored_matches"].append({**match, "report_date": report_date})
+        for match in evaluation.get("goal_market_matches", []):
+            current["goal_market_scored"].append({**match, "report_date": report_date})
     # A report-date + fixture ID pair is the stable identity for ledger rows.
     unique: dict[tuple[str, int, str], dict[str, Any]] = {}
     for row in current["scored_matches"]:
@@ -93,6 +98,19 @@ def merge_paper_ledger(ledger: dict[str, Any], evaluation: dict[str, Any]) -> di
             continue
         unique[key] = row
     current["scored_matches"] = list(unique.values())
+    unique_goal: dict[tuple[str, int, str, str], dict[str, Any]] = {}
+    for row in current["goal_market_scored"]:
+        try:
+            key = (str(row["report_date"]), int(row["fixture_id"]), str(row["market"]), str(row["selection"]))
+        except (KeyError, TypeError, ValueError):
+            continue
+        unique_goal[key] = row
+    current["goal_market_scored"] = list(unique_goal.values())
+    current["goal_market_metrics"] = summarize_goal_market_paper(current["goal_market_scored"])
+    current["goal_market_metrics_by_market"] = {
+        market: summarize_goal_market_paper([row for row in current["goal_market_scored"] if row.get("market") == market])
+        for market in sorted({str(row.get("market")) for row in current["goal_market_scored"]})
+    }
     if should_merge_matches:
         report_matches = [
             row for row in current["scored_matches"]
@@ -196,6 +214,122 @@ def _prediction_day(prediction: dict[str, Any], timezone_name: str) -> str | Non
         return None
 
 
+def _parse_timestamp(value: Any) -> datetime | None:
+    if not isinstance(value, str) or not value.strip():
+        return None
+    try:
+        parsed = datetime.fromisoformat(value.strip().replace("Z", "+00:00"))
+        if parsed.tzinfo is None:
+            return None
+        return parsed
+    except (TypeError, ValueError, OverflowError):
+        return None
+
+
+def _goal_market_paper_rows(prediction: dict[str, Any], result: dict[str, Any]) -> list[dict[str, Any]]:
+    """Record only genuine, pre-kickoff BTTS/O-U prices for prospective paper ROI."""
+    odds_snapshot = prediction.get("the_odds_api_market_odds")
+    if not isinstance(odds_snapshot, dict):
+        return []
+    kickoff = _parse_timestamp(prediction.get("kickoff_local") or prediction.get("kickoff"))
+    fetched = _parse_timestamp(odds_snapshot.get("fetched_at"))
+    commence = _parse_timestamp(odds_snapshot.get("commence_time"))
+    if not kickoff or not fetched or not commence or fetched >= kickoff or commence != kickoff:
+        return []
+    markets = odds_snapshot.get("markets")
+    if not isinstance(markets, dict):
+        return []
+    outcomes = {
+        "btts_yes": result["home_goals"] > 0 and result["away_goals"] > 0,
+        "over_2_5": result["home_goals"] + result["away_goals"] >= 3,
+    }
+    model_probs = {
+        "btts_yes": prediction.get("btts_yes"),
+        "over_2_5": prediction.get("over_2_5"),
+    }
+    wanted = {
+        "btts": {"yes": "Yes", "no": "No"},
+        "totals": {"over_2_5": "Over", "under_2_5": "Under"},
+    }
+    rows = []
+    for provider_market, selections in wanted.items():
+        books = markets.get(provider_market)
+        if not isinstance(books, list):
+            continue
+        for selection, outcome_label in selections.items():
+            candidates = []
+            for book in books:
+                if not isinstance(book, dict):
+                    continue
+                quote_time = _parse_timestamp(book.get("last_update"))
+                if quote_time and quote_time > kickoff:
+                    continue
+                if quote_time and (fetched - quote_time).total_seconds() > 24 * 3600:
+                    continue
+                for quote in book.get("outcomes") or []:
+                    if not isinstance(quote, dict) or str(quote.get("name", "")).casefold() != outcome_label.casefold():
+                        continue
+                    try:
+                        price = float(quote.get("price"))
+                    except (TypeError, ValueError):
+                        continue
+                    if math.isfinite(price) and 1.01 <= price <= 100:
+                        candidates.append((price, str(book.get("bookmaker") or "Unknown"), quote_time))
+            if not candidates:
+                continue
+            # Best quoted price, chosen from the snapshot available before kickoff.
+            price, bookmaker, quote_time = max(candidates, key=lambda item: item[0])
+            model_market = "btts_yes" if provider_market == "btts" else "over_2_5"
+            probability = model_probs[model_market]
+            try:
+                probability = float(probability)
+            except (TypeError, ValueError):
+                continue
+            if not math.isfinite(probability) or not 0 <= probability <= 1:
+                continue
+            won = outcomes[model_market] if selection in {"yes", "over_2_5"} else not outcomes[model_market]
+            rows.append({
+                "fixture_id": prediction.get("fixture_id"),
+                "home_team": prediction.get("home_team"),
+                "away_team": prediction.get("away_team"),
+                "market": provider_market,
+                "selection": selection,
+                "model_probability": probability if selection in {"yes", "over_2_5"} else 1 - probability,
+                "decimal_odds": price,
+                "implied_probability": 1 / price,
+                "edge": (probability if selection in {"yes", "over_2_5"} else 1 - probability) - (1 / price),
+                "bookmaker": bookmaker,
+                "odds_provider": "The Odds API",
+                "odds_fetched_at": fetched.isoformat(),
+                "quote_updated_at": quote_time.isoformat() if quote_time else None,
+                "kickoff": kickoff.isoformat(),
+                "actual_outcome": bool(won),
+                "unit_stake": 1.0,
+                "unit_profit": round(price - 1, 6) if won else -1.0,
+                "settlement": "WON" if won else "LOST",
+                "model": str(prediction.get("goal_markets_model") or "experimental_recent_goals_poisson"),
+            })
+    return rows
+
+
+def summarize_goal_market_paper(rows: list[dict[str, Any]]) -> dict[str, Any]:
+    """Summarize flat 1-unit paper returns; not a claim of executable betting profit."""
+    count = len(rows)
+    wins = sum(bool(row.get("actual_outcome")) for row in rows)
+    profit = sum(float(row.get("unit_profit", 0)) for row in rows)
+    stake = sum(float(row.get("unit_stake", 1)) for row in rows)
+    return {
+        "settled_selections": count,
+        "wins": wins,
+        "losses": count - wins,
+        "win_rate": wins / count if count else None,
+        "units_staked": stake,
+        "net_units": profit,
+        "paper_roi": profit / stake if stake else None,
+        "notice": "Best quoted price in a pre-kickoff snapshot; flat 1-unit paper stakes; not proof of executable profit or bookmaker closing-line value.",
+    }
+
+
 def evaluate_report(report: dict[str, Any], results_payload: dict[str, Any]) -> dict[str, Any]:
     """Score every available model forecast by fixture ID against completed results."""
     predictions = report.get("predictions")
@@ -245,6 +379,7 @@ def evaluate_report(report: dict[str, Any], results_payload: dict[str, Any]) -> 
     timezone_name = str(report.get("timezone") or "Africa/Lagos")
 
     scored: list[dict[str, Any]] = []
+    goal_market_scored: list[dict[str, Any]] = []
     awaiting_result = 0
     withheld = 0
     missing_fixture_id = 0
@@ -271,6 +406,8 @@ def evaluate_report(report: dict[str, Any], results_payload: dict[str, Any]) -> 
         if result is None:
             awaiting_result += 1
             continue
+
+        goal_market_scored.extend(_goal_market_paper_rows(prediction, result))
 
         forecast_models: list[tuple[str, Any]] = []
         if has_model_forecast:
@@ -347,5 +484,7 @@ def evaluate_report(report: dict[str, Any], results_payload: dict[str, Any]) -> 
         "metrics": metrics,
         "metrics_by_model": metrics_by_model,
         "matches": scored,
-        "notice": "Retrospective paper evaluation only; no betting recommendation or profitability claim.",
+        "goal_market_matches": goal_market_scored,
+        "goal_market_metrics": summarize_goal_market_paper(goal_market_scored),
+        "notice": "Retrospective 1X2 scoring plus prospective pre-kickoff BTTS/Over 2.5 paper tracking only; no betting recommendation or profitability claim.",
     }
