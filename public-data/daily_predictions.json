@@ -1,28 +1,28 @@
 {
   "product": "Veltrix Football",
-  "generated_at_utc": "2026-10-29T07:12:31.568071+00:00",
+  "generated_at_utc": "2026-10-29T17:22:46.176993+00:00",
   "as_of_date": "2026-10-29",
   "timezone": "Africa/Lagos",
   "same_day_only": true,
   "model_status": "EXPERIMENTAL_NOT_VALIDATED",
-  "historical_matches_available": 76917,
+  "historical_matches_available": 76961,
   "historical_data_through": "2026-10-28",
-  "fixtures_received": 2,
+  "fixtures_received": 3,
   "same_day_pre_match_fixtures": 2,
   "past_kickoffs_excluded": 0,
   "future_fixtures_considered": 2,
-  "fixtures_excluded_other_date_or_status": 0,
-  "predictions_created": 2,
-  "insufficient_history": 0,
+  "fixtures_excluded_other_date_or_status": 1,
+  "predictions_created": 1,
+  "insufficient_history": 1,
   "unsupported_competitions": 0,
   "fixtures_with_market_odds": 2,
   "unsupported_competition_breakdown": {},
-  "possible_team_name_mismatches": 0,
+  "possible_team_name_mismatches": 1,
   "primary_model_counts": {
-    "experimental_recent_goals_poisson": 2
+    "experimental_recent_goals_poisson": 1
   },
   "poisson_alternative_available": 0,
-  "elo_alternative_available": 2,
+  "elo_alternative_available": 1,
   "normal_bets": {
     "target_combined_decimal_odds": 10.0,
     "status": "NOT_GENERATED_MODEL_NOT_VALIDATED"
@@ -35,842 +35,6 @@
     "status": "NOT_GENERATED_MODEL_NOT_VALIDATED"
   },
   "predictions": [
-    {
-      "fixture_id": 2180022272,
-      "kickoff": "2026-10-29T17:30:00+00:00",
-      "kickoff_local": "2026-10-29T18:30:00+01:00",
-      "home_team": "Frosinone",
-      "away_team": "Lecce",
-      "league": "Italy Serie A",
-      "league_id": 3405541143,
-      "division_code": null,
-      "fixture_status": "NS",
-      "model": "experimental_recent_goals_poisson",
-      "model_validated": false,
-      "betting_recommendation": false,
-      "historical_matches": {
-        "home": 10,
-        "away": 10
-      },
-      "team_name_matches": {
-        "home": {
-          "fixture_name": "Frosinone",
-          "historical_key": "frosinone",
-          "auto_matched": false
-        },
-        "away": {
-          "fixture_name": "Lecce",
-          "historical_key": "lecce",
-          "auto_matched": false
-        }
-      },
-      "status": "EXPERIMENTAL_ONLY",
-      "probabilities": {
-        "home_win": 0.5343,
-        "draw": 0.2179,
-        "away_win": 0.2478
-      },
-      "elo_history": {
-        "scope": "GLOBAL_FALLBACK",
-        "division_code": null,
-        "home_prior_matches": 255,
-        "away_prior_matches": 257
-      },
-      "expected_goals": {
-        "home": 1.978,
-        "away": 1.289
-      },
-      "rest_congestion_context": {
-        "home": {
-          "days_since_last_match": 4,
-          "matches_in_previous_14_days": 2
-        },
-        "away": {
-          "days_since_last_match": 4,
-          "matches_in_previous_14_days": 2
-        }
-      },
-      "advanced_model_alternative": {
-        "model": "experimental_recency_weighted_dixon_coles",
-        "model_validated": false,
-        "rho": -0.05,
-        "expected_goals": {
-          "home": 1.96,
-          "away": 1.331
-        },
-        "probabilities": {
-          "H": 0.5163,
-          "D": 0.229,
-          "A": 0.2547
-        },
-        "status": "RESEARCH_ONLY_NOT_PRIMARY"
-      },
-      "data_availability": {
-        "historical_goals_for_against": "AVAILABLE",
-        "competition_elo": "AVAILABLE",
-        "true_expected_goals_xg": "UNAVAILABLE_FROM_CURRENT_HISTORICAL_FEED",
-        "confirmed_lineups_injuries_suspensions": "NOT_CONNECTED",
-        "rest_and_fixture_congestion": "CONTEXT_ONLY_NOT_USED_IN_PROBABILITIES",
-        "live_bookmaker_odds": "NOT_FETCHED_IN_THIS_RUN_API_FOOTBALL_ODDS_ENRICHMENT_NOT_CONFIRMED"
-      },
-      "goal_markets_model": "experimental_recent_goals_poisson",
-      "scoreline_model": "experimental_recent_goals_poisson",
-      "btts_yes": 0.6242,
-      "over_2_5": 0.6339,
-      "most_likely_scorelines": [
-        {
-          "home_goals": 1,
-          "away_goals": 1,
-          "probability": 0.0971936783055687
-        },
-        {
-          "home_goals": 2,
-          "away_goals": 1,
-          "probability": 0.09612330749151624
-        },
-        {
-          "home_goals": 1,
-          "away_goals": 0,
-          "probability": 0.07539837883006906
-        }
-      ],
-      "elo_model": "experimental_elo_global_fallback",
-      "elo_probabilities": {
-        "home_win": 0.5371,
-        "draw": 0.2614,
-        "away_win": 0.2015
-      },
-      "limitations": [
-        "Not validated for betting.",
-        "Historical dataset coverage and team-name matching may be incomplete.",
-        "The recent-goals Poisson model underperforms the historical market benchmark.",
-        "Competition-specific Elo is selected as primary only when the fixture maps to a supported historical division and has sufficient team history.",
-        "Expected goals and totals remain auxiliary Poisson estimates when Elo is primary.",
-        "Elo and Poisson paper results are tracked separately; neither is approved for betting."
-      ],
-      "fixture_source": "5DollarFootballAPI",
-      "source_fixture_id": 2180022272,
-      "five_dollar_market_odds": {
-        "provider": "5DollarFootballAPI",
-        "fixture_id": "2180022272",
-        "bookmakers": [
-          {
-            "bookmaker": "Bet 365",
-            "btts": {
-              "yes": 1.444,
-              "no": 2.625
-            },
-            "over_under": {
-              "line": 2.5,
-              "over": 1.4,
-              "under": 3.0
-            },
-            "1x2": {
-              "home": 1.667,
-              "draw": 4.1,
-              "away": 4.5
-            }
-          }
-        ],
-        "fetched_at": "2026-10-29T07:12:31.888731+00:00"
-      },
-      "the_odds_api_market_odds": {
-        "provider": "The Odds API",
-        "sport_key": "soccer_italy_serie_a",
-        "event_id": "667cf69986b200753742c90cb9c5126c",
-        "commence_time": "2026-10-29T17:30:00Z",
-        "markets": {
-          "h2h": [
-            {
-              "bookmaker": "Betway",
-              "last_update": "2026-10-29T07:11:49Z",
-              "outcomes": [
-                {
-                  "name": "Frosinone",
-                  "price": 1.73,
-                  "point": null
-                },
-                {
-                  "name": "Lecce",
-                  "price": 4.2,
-                  "point": null
-                },
-                {
-                  "name": "Draw",
-                  "price": 4.2,
-                  "point": null
-                }
-              ]
-            },
-            {
-              "bookmaker": "LeoVegas",
-              "last_update": "2026-10-29T07:11:50Z",
-              "outcomes": [
-                {
-                  "name": "Frosinone",
-                  "price": 1.7,
-                  "point": null
-                },
-                {
-                  "name": "Lecce",
-                  "price": 4.1,
-                  "point": null
-                },
-                {
-                  "name": "Draw",
-                  "price": 4.2,
-                  "point": null
-                }
-              ]
-            },
-            {
-              "bookmaker": "Unibet (UK)",
-              "last_update": "2026-10-29T07:11:51Z",
-              "outcomes": [
-                {
-                  "name": "Frosinone",
-                  "price": 1.73,
-                  "point": null
-                },
-                {
-                  "name": "Lecce",
-                  "price": 4.2,
-                  "point": null
-                },
-                {
-                  "name": "Draw",
-                  "price": 4.2,
-                  "point": null
-                }
-              ]
-            },
-            {
-              "bookmaker": "888sport",
-              "last_update": "2026-10-29T07:11:48Z",
-              "outcomes": [
-                {
-                  "name": "Frosinone",
-                  "price": 1.67,
-                  "point": null
-                },
-                {
-                  "name": "Lecce",
-                  "price": 4.2,
-                  "point": null
-                },
-                {
-                  "name": "Draw",
-                  "price": 4.0,
-                  "point": null
-                }
-              ]
-            },
-            {
-              "bookmaker": "William Hill",
-              "last_update": "2026-10-29T07:11:50Z",
-              "outcomes": [
-                {
-                  "name": "Frosinone",
-                  "price": 1.67,
-                  "point": null
-                },
-                {
-                  "name": "Lecce",
-                  "price": 4.2,
-                  "point": null
-                },
-                {
-                  "name": "Draw",
-                  "price": 4.0,
-                  "point": null
-                }
-              ]
-            },
-            {
-              "bookmaker": "Smarkets",
-              "last_update": "2026-10-29T07:12:12Z",
-              "outcomes": [
-                {
-                  "name": "Frosinone",
-                  "price": 1.77,
-                  "point": null
-                },
-                {
-                  "name": "Lecce",
-                  "price": 4.7,
-                  "point": null
-                },
-                {
-                  "name": "Draw",
-                  "price": 4.3,
-                  "point": null
-                }
-              ]
-            },
-            {
-              "bookmaker": "BoyleSports",
-              "last_update": "2026-10-29T07:11:51Z",
-              "outcomes": [
-                {
-                  "name": "Frosinone",
-                  "price": 1.6,
-                  "point": null
-                },
-                {
-                  "name": "Lecce",
-                  "price": 3.8,
-                  "point": null
-                },
-                {
-                  "name": "Draw",
-                  "price": 4.2,
-                  "point": null
-                }
-              ]
-            },
-            {
-              "bookmaker": "LiveScore Bet",
-              "last_update": "2026-10-29T07:11:49Z",
-              "outcomes": [
-                {
-                  "name": "Frosinone",
-                  "price": 1.65,
-                  "point": null
-                },
-                {
-                  "name": "Lecce",
-                  "price": 4.5,
-                  "point": null
-                },
-                {
-                  "name": "Draw",
-                  "price": 3.95,
-                  "point": null
-                }
-              ]
-            },
-            {
-              "bookmaker": "Casumo",
-              "last_update": "2026-10-29T07:11:50Z",
-              "outcomes": [
-                {
-                  "name": "Frosinone",
-                  "price": 1.65,
-                  "point": null
-                },
-                {
-                  "name": "Lecce",
-                  "price": 4.6,
-                  "point": null
-                },
-                {
-                  "name": "Draw",
-                  "price": 4.0,
-                  "point": null
-                }
-              ]
-            },
-            {
-              "bookmaker": "Grosvenor",
-              "last_update": "2026-10-29T07:11:49Z",
-              "outcomes": [
-                {
-                  "name": "Frosinone",
-                  "price": 1.64,
-                  "point": null
-                },
-                {
-                  "name": "Lecce",
-                  "price": 4.5,
-                  "point": null
-                },
-                {
-                  "name": "Draw",
-                  "price": 3.95,
-                  "point": null
-                }
-              ]
-            },
-            {
-              "bookmaker": "Virgin Bet",
-              "last_update": "2026-10-29T07:11:49Z",
-              "outcomes": [
-                {
-                  "name": "Frosinone",
-                  "price": 1.65,
-                  "point": null
-                },
-                {
-                  "name": "Lecce",
-                  "price": 4.5,
-                  "point": null
-                },
-                {
-                  "name": "Draw",
-                  "price": 3.95,
-                  "point": null
-                }
-              ]
-            },
-            {
-              "bookmaker": "Betfair",
-              "last_update": "2026-10-29T07:12:11Z",
-              "outcomes": [
-                {
-                  "name": "Frosinone",
-                  "price": 1.78,
-                  "point": null
-                },
-                {
-                  "name": "Lecce",
-                  "price": 4.7,
-                  "point": null
-                },
-                {
-                  "name": "Draw",
-                  "price": 4.3,
-                  "point": null
-                }
-              ]
-            },
-            {
-              "bookmaker": "Betfred (UK)",
-              "last_update": "2026-10-29T07:11:50Z",
-              "outcomes": [
-                {
-                  "name": "Frosinone",
-                  "price": 1.7,
-                  "point": null
-                },
-                {
-                  "name": "Lecce",
-                  "price": 4.2,
-                  "point": null
-                },
-                {
-                  "name": "Draw",
-                  "price": 4.33,
-                  "point": null
-                }
-              ]
-            },
-            {
-              "bookmaker": "Matchbook",
-              "last_update": "2026-10-29T07:12:13Z",
-              "outcomes": [
-                {
-                  "name": "Frosinone",
-                  "price": 1.78,
-                  "point": null
-                },
-                {
-                  "name": "Lecce",
-                  "price": 4.7,
-                  "point": null
-                },
-                {
-                  "name": "Draw",
-                  "price": 4.3,
-                  "point": null
-                }
-              ]
-            },
-            {
-              "bookmaker": "Coral",
-              "last_update": "2026-10-29T07:12:14Z",
-              "outcomes": [
-                {
-                  "name": "Frosinone",
-                  "price": 1.7,
-                  "point": null
-                },
-                {
-                  "name": "Lecce",
-                  "price": 4.2,
-                  "point": null
-                },
-                {
-                  "name": "Draw",
-                  "price": 4.33,
-                  "point": null
-                }
-              ]
-            },
-            {
-              "bookmaker": "Ladbrokes",
-              "last_update": "2026-10-29T07:11:52Z",
-              "outcomes": [
-                {
-                  "name": "Frosinone",
-                  "price": 1.7,
-                  "point": null
-                },
-                {
-                  "name": "Lecce",
-                  "price": 4.2,
-                  "point": null
-                },
-                {
-                  "name": "Draw",
-                  "price": 4.2,
-                  "point": null
-                }
-              ]
-            },
-            {
-              "bookmaker": "Bet Victor",
-              "last_update": "2026-10-29T07:11:41Z",
-              "outcomes": [
-                {
-                  "name": "Frosinone",
-                  "price": 1.7,
-                  "point": null
-                },
-                {
-                  "name": "Lecce",
-                  "price": 4.2,
-                  "point": null
-                },
-                {
-                  "name": "Draw",
-                  "price": 4.33,
-                  "point": null
-                }
-              ]
-            },
-            {
-              "bookmaker": "Betano (UK)",
-              "last_update": "2026-10-29T07:12:03Z",
-              "outcomes": [
-                {
-                  "name": "Frosinone",
-                  "price": 1.7,
-                  "point": null
-                },
-                {
-                  "name": "Lecce",
-                  "price": 4.2,
-                  "point": null
-                },
-                {
-                  "name": "Draw",
-                  "price": 4.33,
-                  "point": null
-                }
-              ]
-            },
-            {
-              "bookmaker": "Paddy Power",
-              "last_update": "2026-10-29T07:12:11Z",
-              "outcomes": [
-                {
-                  "name": "Frosinone",
-                  "price": 1.7,
-                  "point": null
-                },
-                {
-                  "name": "Lecce",
-                  "price": 4.33,
-                  "point": null
-                },
-                {
-                  "name": "Draw",
-                  "price": 4.0,
-                  "point": null
-                }
-              ]
-            },
-            {
-              "bookmaker": "Sky Bet",
-              "last_update": "2026-10-29T07:12:08Z",
-              "outcomes": [
-                {
-                  "name": "Frosinone",
-                  "price": 1.7,
-                  "point": null
-                },
-                {
-                  "name": "Lecce",
-                  "price": 4.33,
-                  "point": null
-                },
-                {
-                  "name": "Draw",
-                  "price": 4.2,
-                  "point": null
-                }
-              ]
-            },
-            {
-              "bookmaker": "Betfair Sportsbook",
-              "last_update": "2026-10-29T07:11:41Z",
-              "outcomes": [
-                {
-                  "name": "Frosinone",
-                  "price": 1.73,
-                  "point": null
-                },
-                {
-                  "name": "Lecce",
-                  "price": 4.5,
-                  "point": null
-                },
-                {
-                  "name": "Draw",
-                  "price": 4.1,
-                  "point": null
-                }
-              ]
-            }
-          ],
-          "totals": [
-            {
-              "bookmaker": "LeoVegas",
-              "last_update": "2026-10-29T07:11:50Z",
-              "outcomes": [
-                {
-                  "name": "Over",
-                  "price": 1.95,
-                  "point": 3.5
-                },
-                {
-                  "name": "Under",
-                  "price": 1.8,
-                  "point": 3.5
-                }
-              ]
-            },
-            {
-              "bookmaker": "William Hill",
-              "last_update": "2026-10-29T07:11:50Z",
-              "outcomes": [
-                {
-                  "name": "Over",
-                  "price": 1.4,
-                  "point": 2.5
-                },
-                {
-                  "name": "Under",
-                  "price": 2.9,
-                  "point": 2.5
-                }
-              ]
-            },
-            {
-              "bookmaker": "Casumo",
-              "last_update": "2026-10-29T07:11:50Z",
-              "outcomes": [
-                {
-                  "name": "Over",
-                  "price": 2.1,
-                  "point": 3.5
-                },
-                {
-                  "name": "Under",
-                  "price": 1.7,
-                  "point": 3.5
-                }
-              ]
-            },
-            {
-              "bookmaker": "Grosvenor",
-              "last_update": "2026-10-29T07:11:49Z",
-              "outcomes": [
-                {
-                  "name": "Over",
-                  "price": 2.1,
-                  "point": 3.5
-                },
-                {
-                  "name": "Under",
-                  "price": 1.7,
-                  "point": 3.5
-                }
-              ]
-            },
-            {
-              "bookmaker": "Matchbook",
-              "last_update": "2026-10-29T07:12:13Z",
-              "outcomes": [
-                {
-                  "name": "Over",
-                  "price": 2.1,
-                  "point": 3.5
-                },
-                {
-                  "name": "Under",
-                  "price": 1.88,
-                  "point": 3.5
-                }
-              ]
-            }
-          ],
-          "btts": [
-            {
-              "bookmaker": "LeoVegas",
-              "last_update": "2026-10-29T07:11:50Z",
-              "outcomes": [
-                {
-                  "name": "Yes",
-                  "price": 1.42,
-                  "point": null
-                },
-                {
-                  "name": "No",
-                  "price": 2.75,
-                  "point": null
-                }
-              ]
-            },
-            {
-              "bookmaker": "William Hill",
-              "last_update": "2026-10-29T07:11:50Z",
-              "outcomes": [
-                {
-                  "name": "Yes",
-                  "price": 1.44,
-                  "point": null
-                },
-                {
-                  "name": "No",
-                  "price": 2.62,
-                  "point": null
-                }
-              ]
-            },
-            {
-              "bookmaker": "LiveScore Bet",
-              "last_update": "2026-10-29T07:11:49Z",
-              "outcomes": [
-                {
-                  "name": "Yes",
-                  "price": 1.47,
-                  "point": null
-                },
-                {
-                  "name": "No",
-                  "price": 2.55,
-                  "point": null
-                }
-              ]
-            },
-            {
-              "bookmaker": "Virgin Bet",
-              "last_update": "2026-10-29T07:11:49Z",
-              "outcomes": [
-                {
-                  "name": "Yes",
-                  "price": 1.47,
-                  "point": null
-                },
-                {
-                  "name": "No",
-                  "price": 2.55,
-                  "point": null
-                }
-              ]
-            },
-            {
-              "bookmaker": "Betfair",
-              "last_update": "2026-10-29T07:11:48Z",
-              "outcomes": [
-                {
-                  "name": "Yes",
-                  "price": 1.48,
-                  "point": null
-                },
-                {
-                  "name": "No",
-                  "price": 3.0,
-                  "point": null
-                }
-              ]
-            },
-            {
-              "bookmaker": "Betfred (UK)",
-              "last_update": "2026-10-29T07:11:50Z",
-              "outcomes": [
-                {
-                  "name": "Yes",
-                  "price": 1.4,
-                  "point": null
-                },
-                {
-                  "name": "No",
-                  "price": 2.75,
-                  "point": null
-                }
-              ]
-            },
-            {
-              "bookmaker": "Matchbook",
-              "last_update": "2026-10-29T07:12:13Z",
-              "outcomes": [
-                {
-                  "name": "Yes",
-                  "price": 1.49,
-                  "point": null
-                },
-                {
-                  "name": "No",
-                  "price": 3.0,
-                  "point": null
-                }
-              ]
-            },
-            {
-              "bookmaker": "Coral",
-              "last_update": "2026-10-29T07:12:14Z",
-              "outcomes": [
-                {
-                  "name": "Yes",
-                  "price": 1.44,
-                  "point": null
-                },
-                {
-                  "name": "No",
-                  "price": 2.62,
-                  "point": null
-                }
-              ]
-            },
-            {
-              "bookmaker": "Ladbrokes",
-              "last_update": "2026-10-29T07:11:52Z",
-              "outcomes": [
-                {
-                  "name": "Yes",
-                  "price": 1.44,
-                  "point": null
-                },
-                {
-                  "name": "No",
-                  "price": 2.6,
-                  "point": null
-                }
-              ]
-            },
-            {
-              "bookmaker": "Paddy Power",
-              "last_update": "2026-10-29T07:12:10Z",
-              "outcomes": [
-                {
-                  "name": "Yes",
-                  "price": 1.36,
-                  "point": null
-                },
-                {
-                  "name": "No",
-                  "price": 2.88,
-                  "point": null
-                }
-              ]
-            }
-          ]
-        },
-        "fetched_at": "2026-10-29T07:12:32.373761+00:00"
-      }
-    },
     {
       "fixture_id": 2942866050,
       "kickoff": "2026-10-29T19:45:00+00:00",
@@ -957,17 +121,17 @@
         {
           "home_goals": 1,
           "away_goals": 1,
-          "probability": 0.12165457924093236
+          "probability": 0.12165485969511529
         },
         {
           "home_goals": 1,
           "away_goals": 0,
-          "probability": 0.09109662181067293
+          "probability": 0.09109742429517555
         },
         {
           "home_goals": 0,
           "away_goals": 1,
-          "probability": 0.08759035567593905
+          "probability": 0.08759058545885308
         }
       ],
       "elo_model": "experimental_elo_global_fallback",
@@ -993,58 +157,777 @@
           {
             "bookmaker": "Bet 365",
             "btts": {
-              "yes": 1.5,
-              "no": 2.5
+              "yes": 1.4,
+              "no": 2.75
             },
             "over_under": {
               "line": 2.5,
-              "over": 1.571,
-              "under": 2.375
+              "over": 1.444,
+              "under": 2.75
             },
             "1x2": {
               "home": 2.3,
-              "draw": 3.6,
-              "away": 2.875
+              "draw": 3.7,
+              "away": 2.8
             }
           }
         ],
-        "fetched_at": "2026-10-29T07:12:32.181915+00:00"
+        "fetched_at": "2026-10-29T17:22:46.527084+00:00"
+      }
+    },
+    {
+      "fixture_id": "da159a6b84dbb548b4d7b94c722caac5",
+      "kickoff": "2026-10-29T19:45:00+00:00",
+      "kickoff_local": "2026-10-29T20:45:00+01:00",
+      "home_team": "Fiorentina",
+      "away_team": "Atalanta BC",
+      "league": "Serie A",
+      "league_id": null,
+      "division_code": "I1",
+      "fixture_status": "NS",
+      "model": "experimental_recent_goals_poisson",
+      "model_validated": false,
+      "betting_recommendation": false,
+      "historical_matches": {
+        "home": 10,
+        "away": 0
+      },
+      "team_name_matches": {
+        "home": {
+          "fixture_name": "Fiorentina",
+          "historical_key": "fiorentina",
+          "auto_matched": false
+        },
+        "away": {
+          "fixture_name": "Atalanta BC",
+          "historical_key": "atalantabc",
+          "auto_matched": false
+        }
+      },
+      "status": "INSUFFICIENT_HISTORY",
+      "reason": "Each team needs at least 5 prior matches in the historical dataset.",
+      "team_name_match_suggestions": {
+        "away": [
+          "Atalanta",
+          "Atlanta",
+          "Atlantic"
+        ]
+      },
+      "fixture_source": "The Odds API",
+      "source_fixture_id": "da159a6b84dbb548b4d7b94c722caac5",
+      "the_odds_api_market_odds": {
+        "provider": "The Odds API",
+        "sport_key": "soccer_italy_serie_a",
+        "event_id": "da159a6b84dbb548b4d7b94c722caac5",
+        "commence_time": "2026-10-29T19:45:00Z",
+        "markets": {
+          "h2h": [
+            {
+              "bookmaker": "Betway",
+              "last_update": "2026-10-29T17:22:34Z",
+              "outcomes": [
+                {
+                  "name": "Atalanta BC",
+                  "price": 2.8,
+                  "point": null
+                },
+                {
+                  "name": "Fiorentina",
+                  "price": 2.3,
+                  "point": null
+                },
+                {
+                  "name": "Draw",
+                  "price": 3.75,
+                  "point": null
+                }
+              ]
+            },
+            {
+              "bookmaker": "LeoVegas",
+              "last_update": "2026-10-29T17:22:35Z",
+              "outcomes": [
+                {
+                  "name": "Atalanta BC",
+                  "price": 2.75,
+                  "point": null
+                },
+                {
+                  "name": "Fiorentina",
+                  "price": 2.3,
+                  "point": null
+                },
+                {
+                  "name": "Draw",
+                  "price": 3.7,
+                  "point": null
+                }
+              ]
+            },
+            {
+              "bookmaker": "Unibet (UK)",
+              "last_update": "2026-10-29T17:19:43Z",
+              "outcomes": [
+                {
+                  "name": "Atalanta BC",
+                  "price": 2.8,
+                  "point": null
+                },
+                {
+                  "name": "Fiorentina",
+                  "price": 2.3,
+                  "point": null
+                },
+                {
+                  "name": "Draw",
+                  "price": 3.7,
+                  "point": null
+                }
+              ]
+            },
+            {
+              "bookmaker": "Smarkets",
+              "last_update": "2026-10-29T17:22:34Z",
+              "outcomes": [
+                {
+                  "name": "Atalanta BC",
+                  "price": 2.98,
+                  "point": null
+                },
+                {
+                  "name": "Fiorentina",
+                  "price": 2.44,
+                  "point": null
+                },
+                {
+                  "name": "Draw",
+                  "price": 3.85,
+                  "point": null
+                }
+              ]
+            },
+            {
+              "bookmaker": "Betfred (UK)",
+              "last_update": "2026-10-29T17:22:07Z",
+              "outcomes": [
+                {
+                  "name": "Atalanta BC",
+                  "price": 2.8,
+                  "point": null
+                },
+                {
+                  "name": "Fiorentina",
+                  "price": 2.3,
+                  "point": null
+                },
+                {
+                  "name": "Draw",
+                  "price": 3.75,
+                  "point": null
+                }
+              ]
+            },
+            {
+              "bookmaker": "888sport",
+              "last_update": "2026-10-29T17:22:34Z",
+              "outcomes": [
+                {
+                  "name": "Atalanta BC",
+                  "price": 2.8,
+                  "point": null
+                },
+                {
+                  "name": "Fiorentina",
+                  "price": 2.25,
+                  "point": null
+                },
+                {
+                  "name": "Draw",
+                  "price": 3.5,
+                  "point": null
+                }
+              ]
+            },
+            {
+              "bookmaker": "William Hill",
+              "last_update": "2026-10-29T17:21:45Z",
+              "outcomes": [
+                {
+                  "name": "Atalanta BC",
+                  "price": 2.62,
+                  "point": null
+                },
+                {
+                  "name": "Fiorentina",
+                  "price": 2.25,
+                  "point": null
+                },
+                {
+                  "name": "Draw",
+                  "price": 3.8,
+                  "point": null
+                }
+              ]
+            },
+            {
+              "bookmaker": "BoyleSports",
+              "last_update": "2026-10-29T17:22:36Z",
+              "outcomes": [
+                {
+                  "name": "Atalanta BC",
+                  "price": 2.6,
+                  "point": null
+                },
+                {
+                  "name": "Fiorentina",
+                  "price": 2.1,
+                  "point": null
+                },
+                {
+                  "name": "Draw",
+                  "price": 3.8,
+                  "point": null
+                }
+              ]
+            },
+            {
+              "bookmaker": "Grosvenor",
+              "last_update": "2026-10-29T17:22:33Z",
+              "outcomes": [
+                {
+                  "name": "Atalanta BC",
+                  "price": 2.8,
+                  "point": null
+                },
+                {
+                  "name": "Fiorentina",
+                  "price": 2.25,
+                  "point": null
+                },
+                {
+                  "name": "Draw",
+                  "price": 3.6,
+                  "point": null
+                }
+              ]
+            },
+            {
+              "bookmaker": "Casumo",
+              "last_update": "2026-10-29T17:22:35Z",
+              "outcomes": [
+                {
+                  "name": "Atalanta BC",
+                  "price": 2.8,
+                  "point": null
+                },
+                {
+                  "name": "Fiorentina",
+                  "price": 2.28,
+                  "point": null
+                },
+                {
+                  "name": "Draw",
+                  "price": 3.6,
+                  "point": null
+                }
+              ]
+            },
+            {
+              "bookmaker": "Virgin Bet",
+              "last_update": "2026-10-29T17:22:07Z",
+              "outcomes": [
+                {
+                  "name": "Atalanta BC",
+                  "price": 2.75,
+                  "point": null
+                },
+                {
+                  "name": "Fiorentina",
+                  "price": 2.28,
+                  "point": null
+                },
+                {
+                  "name": "Draw",
+                  "price": 3.6,
+                  "point": null
+                }
+              ]
+            },
+            {
+              "bookmaker": "LiveScore Bet",
+              "last_update": "2026-10-29T17:22:11Z",
+              "outcomes": [
+                {
+                  "name": "Atalanta BC",
+                  "price": 2.75,
+                  "point": null
+                },
+                {
+                  "name": "Fiorentina",
+                  "price": 2.28,
+                  "point": null
+                },
+                {
+                  "name": "Draw",
+                  "price": 3.6,
+                  "point": null
+                }
+              ]
+            },
+            {
+              "bookmaker": "Betfair",
+              "last_update": "2026-10-29T17:22:35Z",
+              "outcomes": [
+                {
+                  "name": "Atalanta BC",
+                  "price": 3.0,
+                  "point": null
+                },
+                {
+                  "name": "Fiorentina",
+                  "price": 2.44,
+                  "point": null
+                },
+                {
+                  "name": "Draw",
+                  "price": 3.85,
+                  "point": null
+                }
+              ]
+            },
+            {
+              "bookmaker": "Matchbook",
+              "last_update": "2026-10-29T17:22:34Z",
+              "outcomes": [
+                {
+                  "name": "Atalanta BC",
+                  "price": 3.0,
+                  "point": null
+                },
+                {
+                  "name": "Fiorentina",
+                  "price": 2.44,
+                  "point": null
+                },
+                {
+                  "name": "Draw",
+                  "price": 3.85,
+                  "point": null
+                }
+              ]
+            },
+            {
+              "bookmaker": "Coral",
+              "last_update": "2026-10-29T17:22:35Z",
+              "outcomes": [
+                {
+                  "name": "Atalanta BC",
+                  "price": 2.8,
+                  "point": null
+                },
+                {
+                  "name": "Fiorentina",
+                  "price": 2.25,
+                  "point": null
+                },
+                {
+                  "name": "Draw",
+                  "price": 3.9,
+                  "point": null
+                }
+              ]
+            },
+            {
+              "bookmaker": "Ladbrokes",
+              "last_update": "2026-10-29T17:22:35Z",
+              "outcomes": [
+                {
+                  "name": "Atalanta BC",
+                  "price": 2.8,
+                  "point": null
+                },
+                {
+                  "name": "Fiorentina",
+                  "price": 2.25,
+                  "point": null
+                },
+                {
+                  "name": "Draw",
+                  "price": 3.8,
+                  "point": null
+                }
+              ]
+            },
+            {
+              "bookmaker": "Bet Victor",
+              "last_update": "2026-10-29T17:21:38Z",
+              "outcomes": [
+                {
+                  "name": "Atalanta BC",
+                  "price": 2.9,
+                  "point": null
+                },
+                {
+                  "name": "Fiorentina",
+                  "price": 2.3,
+                  "point": null
+                },
+                {
+                  "name": "Draw",
+                  "price": 3.6,
+                  "point": null
+                }
+              ]
+            },
+            {
+              "bookmaker": "Betano (UK)",
+              "last_update": "2026-10-29T17:21:59Z",
+              "outcomes": [
+                {
+                  "name": "Atalanta BC",
+                  "price": 2.9,
+                  "point": null
+                },
+                {
+                  "name": "Fiorentina",
+                  "price": 2.3,
+                  "point": null
+                },
+                {
+                  "name": "Draw",
+                  "price": 3.6,
+                  "point": null
+                }
+              ]
+            },
+            {
+              "bookmaker": "Paddy Power",
+              "last_update": "2026-10-29T17:22:08Z",
+              "outcomes": [
+                {
+                  "name": "Atalanta BC",
+                  "price": 2.8,
+                  "point": null
+                },
+                {
+                  "name": "Fiorentina",
+                  "price": 2.3,
+                  "point": null
+                },
+                {
+                  "name": "Draw",
+                  "price": 3.6,
+                  "point": null
+                }
+              ]
+            },
+            {
+              "bookmaker": "Sky Bet",
+              "last_update": "2026-10-29T17:22:06Z",
+              "outcomes": [
+                {
+                  "name": "Atalanta BC",
+                  "price": 2.8,
+                  "point": null
+                },
+                {
+                  "name": "Fiorentina",
+                  "price": 2.3,
+                  "point": null
+                },
+                {
+                  "name": "Draw",
+                  "price": 3.75,
+                  "point": null
+                }
+              ]
+            },
+            {
+              "bookmaker": "Betfair Sportsbook",
+              "last_update": "2026-10-29T17:22:36Z",
+              "outcomes": [
+                {
+                  "name": "Atalanta BC",
+                  "price": 2.8,
+                  "point": null
+                },
+                {
+                  "name": "Fiorentina",
+                  "price": 2.3,
+                  "point": null
+                },
+                {
+                  "name": "Draw",
+                  "price": 3.6,
+                  "point": null
+                }
+              ]
+            }
+          ],
+          "totals": [
+            {
+              "bookmaker": "LeoVegas",
+              "last_update": "2026-10-29T17:22:35Z",
+              "outcomes": [
+                {
+                  "name": "Over",
+                  "price": 2.05,
+                  "point": 3.5
+                },
+                {
+                  "name": "Under",
+                  "price": 1.7,
+                  "point": 3.5
+                }
+              ]
+            },
+            {
+              "bookmaker": "William Hill",
+              "last_update": "2026-10-29T17:21:45Z",
+              "outcomes": [
+                {
+                  "name": "Over",
+                  "price": 1.4,
+                  "point": 2.5
+                },
+                {
+                  "name": "Under",
+                  "price": 2.75,
+                  "point": 2.5
+                }
+              ]
+            },
+            {
+              "bookmaker": "Grosvenor",
+              "last_update": "2026-10-29T17:22:33Z",
+              "outcomes": [
+                {
+                  "name": "Over",
+                  "price": 2.12,
+                  "point": 3.5
+                },
+                {
+                  "name": "Under",
+                  "price": 1.7,
+                  "point": 3.5
+                }
+              ]
+            },
+            {
+              "bookmaker": "Casumo",
+              "last_update": "2026-10-29T17:22:35Z",
+              "outcomes": [
+                {
+                  "name": "Over",
+                  "price": 2.12,
+                  "point": 3.5
+                },
+                {
+                  "name": "Under",
+                  "price": 1.7,
+                  "point": 3.5
+                }
+              ]
+            }
+          ],
+          "btts": [
+            {
+              "bookmaker": "LeoVegas",
+              "last_update": "2026-10-29T17:22:35Z",
+              "outcomes": [
+                {
+                  "name": "Yes",
+                  "price": 1.4,
+                  "point": null
+                },
+                {
+                  "name": "No",
+                  "price": 2.85,
+                  "point": null
+                }
+              ]
+            },
+            {
+              "bookmaker": "Betfred (UK)",
+              "last_update": "2026-10-29T17:22:07Z",
+              "outcomes": [
+                {
+                  "name": "Yes",
+                  "price": 1.4,
+                  "point": null
+                },
+                {
+                  "name": "No",
+                  "price": 2.75,
+                  "point": null
+                }
+              ]
+            },
+            {
+              "bookmaker": "William Hill",
+              "last_update": "2026-10-29T17:21:45Z",
+              "outcomes": [
+                {
+                  "name": "Yes",
+                  "price": 1.4,
+                  "point": null
+                },
+                {
+                  "name": "No",
+                  "price": 2.8,
+                  "point": null
+                }
+              ]
+            },
+            {
+              "bookmaker": "Virgin Bet",
+              "last_update": "2026-10-29T17:22:07Z",
+              "outcomes": [
+                {
+                  "name": "Yes",
+                  "price": 1.37,
+                  "point": null
+                },
+                {
+                  "name": "No",
+                  "price": 2.88,
+                  "point": null
+                }
+              ]
+            },
+            {
+              "bookmaker": "LiveScore Bet",
+              "last_update": "2026-10-29T17:22:11Z",
+              "outcomes": [
+                {
+                  "name": "Yes",
+                  "price": 1.37,
+                  "point": null
+                },
+                {
+                  "name": "No",
+                  "price": 2.88,
+                  "point": null
+                }
+              ]
+            },
+            {
+              "bookmaker": "Betfair",
+              "last_update": "2026-10-29T17:22:36Z",
+              "outcomes": [
+                {
+                  "name": "Yes",
+                  "price": 1.45,
+                  "point": null
+                },
+                {
+                  "name": "No",
+                  "price": 3.15,
+                  "point": null
+                }
+              ]
+            },
+            {
+              "bookmaker": "Matchbook",
+              "last_update": "2026-10-29T17:22:34Z",
+              "outcomes": [
+                {
+                  "name": "Yes",
+                  "price": 1.45,
+                  "point": null
+                },
+                {
+                  "name": "No",
+                  "price": 3.15,
+                  "point": null
+                }
+              ]
+            },
+            {
+              "bookmaker": "Coral",
+              "last_update": "2026-10-29T17:22:35Z",
+              "outcomes": [
+                {
+                  "name": "Yes",
+                  "price": 1.4,
+                  "point": null
+                },
+                {
+                  "name": "No",
+                  "price": 2.8,
+                  "point": null
+                }
+              ]
+            },
+            {
+              "bookmaker": "Ladbrokes",
+              "last_update": "2026-10-29T17:22:35Z",
+              "outcomes": [
+                {
+                  "name": "Yes",
+                  "price": 1.4,
+                  "point": null
+                },
+                {
+                  "name": "No",
+                  "price": 2.75,
+                  "point": null
+                }
+              ]
+            },
+            {
+              "bookmaker": "Paddy Power",
+              "last_update": "2026-10-29T17:21:43Z",
+              "outcomes": [
+                {
+                  "name": "Yes",
+                  "price": 1.33,
+                  "point": null
+                },
+                {
+                  "name": "No",
+                  "price": 3.0,
+                  "point": null
+                }
+              ]
+            }
+          ]
+        },
+        "fetched_at": "2026-10-29T17:22:46.667443+00:00"
       }
     }
   ],
   "notice": "Experimental research output only. Historical tests show the Poisson pipeline underperforms the market benchmark. Competition-scoped Elo is preferred when available but remains unvalidated for betting; Poisson remains primary when Elo history is unavailable. No betting recommendations or value bets are approved.",
   "recent_results_sync": {
-    "status": "PARTIAL",
-    "results_added": 5,
-    "requested_start": "2026-10-28",
+    "status": "GAPPED",
+    "results_added": 0,
+    "requested_start": "2026-10-29",
     "requested_end": "2026-10-28",
-    "covered_from": "2026-10-28",
+    "covered_from": null,
     "covered_through": "2026-10-28",
-    "ranges_succeeded": 1,
-    "ranges_requested": 1,
-    "warning": "Catch-up progress: 1 of 1 date ranges refreshed; remaining dates will be handled in later runs.",
-    "provider_plan_limited_date_count": 0,
-    "retryable_gap_date_count": 14
+    "ranges_succeeded": 0,
+    "ranges_requested": 0,
+    "warning": "0 date(s) are unavailable on the selected provider plan; 14 transient gap date(s) remain retryable."
   },
   "primary_provider_request": {
     "provider": "5DollarFootballAPI",
     "status": "SUCCESS",
     "requests_remaining": "59",
     "pages_fetched": 1,
-    "fixtures_received": 2
+    "fixtures_received": 3
   },
   "historical_data_coverage": {
     "status": "GAPPED_OR_STALE",
-    "base_history_through": "2026-10-26",
+    "base_history_through": "2026-10-28",
     "contiguous_through": null,
     "latest_available_match_date": "2026-10-28",
-    "refresh_status": "PARTIAL",
-    "requested_start": "2026-10-28",
+    "refresh_status": "GAPPED",
+    "requested_start": "2026-10-29",
     "requested_end": "2026-10-28",
-    "covered_from": "2026-10-28",
+    "covered_from": null,
     "covered_through": "2026-10-28",
-    "ranges_succeeded": 1,
-    "ranges_requested": 1,
+    "ranges_succeeded": 0,
+    "ranges_requested": 0,
     "backfill_complete": true,
     "retryable_gap_date_count": 14,
     "provider_plan_limited_date_count": 0,
@@ -1054,7 +937,7 @@
   "multi_source_odds_sync": {
     "five_dollar": {
       "status": "AVAILABLE",
-      "fixtures_with_market_odds": 2,
+      "fixtures_with_market_odds": 1,
       "max_fixture_odds_calls": 15,
       "warning": null
     },
@@ -1066,8 +949,8 @@
       ],
       "max_btts_event_calls": 3,
       "quota": {
-        "remaining": "468",
-        "used": "32",
+        "remaining": "465",
+        "used": "35",
         "last_cost": "1"
       },
       "warning": null
@@ -1103,5 +986,5 @@
     "note": "Market prices are informational; model outputs remain experimental and are not betting advice."
   },
   "command_data_publication": "PUBLISHED",
-  "command_data_published_at_utc": "2026-10-29T07:12:40.725319+00:00"
+  "command_data_published_at_utc": "2026-10-29T17:23:01.924270+00:00"
 }
