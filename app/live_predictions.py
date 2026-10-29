@@ -214,11 +214,11 @@ def _is_non_senior_competition(name: Any) -> bool:
     normalized = "".join(char for char in normalized if not unicodedata.combining(char))
     # Do not treat generic division labels such as "Serie B" or "Liga 2" as reserves.
     patterns = (
-        r"\b(?:women|womens|ladies|female|feminine|femenino|feminino)\\b",
-        r"\b(?:reserve|reserves|youth|academy|junior|juniors)\\b",
-        r"\b(?:u|under[ -]?)(?:1[0-9]|2[0-3])\\b",
-        r"\b(?:b[ -]?team|team[ -]?b)\\b",
-        r"\b(?:ii|iii|iv)\\s*$",
+        r"\b(?:women|womens|ladies|female|feminine|femenino|feminino)\b",
+        r"\b(?:reserve|reserves|youth|academy|junior|juniors)\b",
+        r"\b(?:u|under[ -]?)(?:1[0-9]|2[0-3])\b",
+        r"\b(?:b[ -]?team|team[ -]?b)\b",
+        r"\b(?:ii|iii|iv)\s*$",
     )
     return any(re.search(pattern, normalized) for pattern in patterns)
 
