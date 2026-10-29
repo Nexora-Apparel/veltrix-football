@@ -134,7 +134,6 @@ def test_match_lookup_uses_supplied_report_only():
 def test_today_discloses_gapped_historical_data():
     future_kickoff = (datetime.now(ZoneInfo("Africa/Lagos")) + timedelta(hours=3)).isoformat()
     report = {
-        "as_of_date": datetime.now(ZoneInfo("Africa/Lagos")).date().isoformat(),
         "predictions": [{
             "home_team": "Forecast FC",
             "away_team": "Model FC",
@@ -260,7 +259,6 @@ def test_overunder_command_returns_experimental_goal_line_probabilities():
     now = datetime.now(ZoneInfo("Africa/Lagos"))
     future_kickoff = (now + timedelta(hours=3)).isoformat()
     report = {
-        "as_of_date": now.date().isoformat(),
         "predictions": [{
             "home_team": "Goal FC",
             "away_team": "Score United",
@@ -282,7 +280,6 @@ def test_btts_command_returns_yes_no_probability_from_expected_goals():
     now = datetime.now(ZoneInfo("Africa/Lagos"))
     future_kickoff = (now + timedelta(hours=3)).isoformat()
     report = {
-        "as_of_date": now.date().isoformat(),
         "predictions": [{
             "home_team": "Goal FC",
             "away_team": "Score United",
@@ -334,7 +331,6 @@ def test_goal_markets_withhold_invalid_expected_goals():
     now = datetime.now(ZoneInfo("Africa/Lagos"))
     future_kickoff = (now + timedelta(hours=3)).isoformat()
     report = {
-        "as_of_date": now.date().isoformat(),
         "predictions": [{
             "home_team": "Bad FC",
             "away_team": "Input United",
@@ -353,7 +349,6 @@ def test_odds_command_reads_saved_multisource_btts_and_totals_prices():
     now = datetime.now(ZoneInfo("Africa/Lagos"))
     kickoff = (now + timedelta(hours=3)).isoformat()
     report = {
-        "as_of_date": now.date().isoformat(),
         "predictions": [{
             "home_team": "Arsenal", "away_team": "Chelsea", "league": "Premier League",
             "kickoff_local": kickoff, "status": "EXPERIMENTAL_ONLY",
