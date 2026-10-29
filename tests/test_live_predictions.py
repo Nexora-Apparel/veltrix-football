@@ -176,6 +176,15 @@ def test_ambiguous_fuzzy_team_name_is_not_automatically_merged():
     assert resolved == "united"
 
 
+def test_fuzzy_matching_does_not_drop_a_leading_club_initial():
+    from app.live_predictions import _resolve_team_key
+
+    assert _resolve_team_key("Slask", {"lask"}) == "slask"
+    assert _resolve_team_key("R. Santander", {"santander"}) == "rsantander"
+    # A trailing one-character typo remains eligible for the existing high-confidence rule.
+    assert _resolve_team_key("Alph", {"alpha"}) == "alpha"
+
+
 # [run-live-verification] Recheck live fixture identity after squad-safety fix.
 def test_short_women_and_reserve_suffixes_cannot_match_senior_sides():
     from app.live_predictions import _resolve_team_key, _team_variant_signature
