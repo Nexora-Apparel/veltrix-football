@@ -582,8 +582,8 @@ def handle_command(
                 return _reply(body)
 
         titles = {
-            "/overunder": "⚽ OVER / UNDER GOALS  |  EXPERIMENTAL",
-            "/btts": "⚽ BOTH TEAMS TO SCORE  |  EXPERIMENTAL",
+            "/overunder": "🎯 PRIMARY MARKET — OVER / UNDER GOALS (EXPERIMENTAL)",
+            "/btts": "🎯 PRIMARY MARKET — BOTH TEAMS TO SCORE (EXPERIMENTAL)",
             "/fixtures": "FIXTURE LIST",
         }
         lines = [titles.get(command, f"{command.upper()} — EXPERIMENTAL REPORT")]
