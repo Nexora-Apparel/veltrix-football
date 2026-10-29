@@ -44,6 +44,7 @@ LEAGUE_CODES = {
     "ligue 2": "FL2", "eredivisie": "DED", "primeira liga": "PPL",
     "liga portugal": "PPL", "scottish premiership": "SPL",
     "brasileirao": "BSA", "brazil serie a": "BSA", "bra a": "BSA",
+    "allsvenskan": "SWE", "swedish allsvenskan": "SWE",
 }
 
 
