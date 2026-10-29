@@ -115,227 +115,57 @@ def _format_kickoff(value: Any, timezone_name: str) -> str:
 
 
 def format_report_messages(report: dict[str, Any], ledger: dict[str, Any] | None = None) -> list[str]:
+    """Send only concise match predictions to Telegram; diagnostics stay on the website."""
     day = str(report.get("as_of_date", "unknown date"))
     timezone_name = str(report.get("timezone", "Africa/Lagos"))
     predictions = report.get("predictions", [])
-    usable = [p for p in predictions if p.get("status") == "EXPERIMENTAL_ONLY"]
-    insufficient = [p for p in predictions if p.get("status") == "INSUFFICIENT_HISTORY"]
-    unsupported = [p for p in predictions if p.get("status") == "UNSUPPORTED_COMPETITION"]
+    usable = [
+        item for item in predictions
+        if isinstance(item, dict) and item.get("status") == "EXPERIMENTAL_ONLY"
+    ]
 
     header = [
-        "╔══════════════════════════╗",
-        "🔔 🆕 NEW VELTRIX MESSAGE",
-        "╚══════════════════════════╝",
-        "⚽ VELTRIX FOOTBALL",
-        "TODAY'S MATCH FORECASTS",
-        f"📅 {day} | Kick-off times: Nigeria (WAT)",
+        "🔔 🆕 NEW VELTRIX UPDATE",
         DIVIDER,
-        "⚠️ Experimental estimates only — not validated betting advice.",
-        "",
-        f"FORECASTS: {len(usable)}",
-        f"NOT SHOWN: {len(insufficient)} need more team history | {len(unsupported)} unsupported competitions",
+        f"⚽ VELTRIX FOOTBALL · PREDICTIONS",
+        f"📅 {day} · Kick-off times: WAT",
+        f"Matches: {len(usable)}",
         "",
     ]
-    publication_status = str(report.get("publication_status") or "").upper()
-    if publication_status == "REUSED_SNAPSHOT_NOT_REFRESHED":
-        header.extend([
-            "SNAPSHOT NOTICE: This is a reused same-day snapshot; fresh fixtures were not fetched in this run.",
-            "",
-        ])
-    sync = report.get("recent_results_sync") or {}
-    if sync and (sync.get("status") not in {"OK", "SUCCESS", "COMPLETE", "UP_TO_DATE"} or sync.get("warning")):
-        sync_status = str(sync.get("status") or "UNKNOWN").upper()
-        sync_warning = str(sync.get("warning") or "").lower()
-        if "limited to" in sync_warning:
-            sync_reason = "Historical refresh was intentionally bounded to protect the daily provider request quota."
-        elif "http 429" in sync_warning or "quota" in sync_warning or "rate limit" in sync_warning:
-            sync_reason = "Provider request quota/rate limit reached; no further historical results were fetched."
-        elif "http 401" in sync_warning or "http 403" in sync_warning or "authentication" in sync_warning or "token" in sync_warning:
-            sync_reason = "Provider authentication was rejected; historical results were not refreshed."
-        elif sync_status == "PARTIAL":
-            sync_reason = "Only part of the requested historical date range was refreshed."
-        elif sync_status == "NO_BASE_HISTORY":
-            sync_reason = "No base historical dataset was available to refresh."
-        else:
-            sync_reason = "The historical-results provider request failed; available saved history was retained."
-        header.extend([
-            f"DATA NOTICE: Recent-results refresh status: {sync_status}.",
-            sync_reason,
-            "Forecasts use available saved history; missing results are not invented.",
-        ])
-        coverage = report.get("historical_data_coverage") or {}
-        if coverage.get("status") == "GAPPED_OR_STALE":
-            contiguous_through = coverage.get("contiguous_through") or "unknown"
-            latest_available = coverage.get("latest_available_match_date") or "unknown"
-            succeeded = coverage.get("ranges_succeeded")
-            requested = coverage.get("ranges_requested")
-            if isinstance(succeeded, int) and isinstance(requested, int) and requested > 0:
-                header.append(f"Historical coverage: {succeeded}/{requested} date ranges refreshed.")
-            header.append(
-                f"History is only confirmed continuous through {contiguous_through}; "
-                f"latest available result date is {latest_available}."
-            )
-            plan_limited_count = coverage.get("provider_plan_limited_date_count")
-            if isinstance(plan_limited_count, int) and plan_limited_count > 0:
-                header.append(
-                    f"5DollarFootballAPI coverage limitation: {plan_limited_count} historical date(s) are inaccessible on this account and will not be retried automatically."
-                )
-            retryable_count = coverage.get("retryable_gap_date_count")
-            if isinstance(retryable_count, int) and retryable_count > 0:
-                header.append(
-                    f"Retryable history gaps: {retryable_count} date(s) remain queued for bounded retry."
-                )
-        header.append("")
-
-    if ledger is not None:
-        paper_lines = [DIVIDER, "PAPER TRACKING — CUMULATIVE"]
-        attempt = ledger.get("last_attempt") or {}
-        paper_lines.append(f"Latest evaluation status: {attempt.get('status', 'UNKNOWN')}")
-        model_metrics = ledger.get("cumulative_metrics_by_model") or {}
-        if model_metrics:
-            for model_name, metrics in sorted(model_metrics.items()):
-                accuracy = metrics.get("result_accuracy")
-                brier = metrics.get("brier_score")
-                log_loss = metrics.get("log_loss")
-                paper_lines.append(
-                    f"{model_name}: {metrics.get('matches', 0)} scored | "
-                    f"accuracy {accuracy:.1%}" if isinstance(accuracy, (int, float))
-                    else f"{model_name}: {metrics.get('matches', 0)} scored | accuracy unavailable"
-                )
-                if isinstance(brier, (int, float)) and isinstance(log_loss, (int, float)):
-                    paper_lines.append(f"  Brier {brier:.3f} | log loss {log_loss:.3f}")
-        else:
-            paper_lines.append("No completed forecasts scored yet.")
-        paper_lines.append("Paper metrics are retrospective, not proof of profitability.")
-        header.extend(paper_lines + [""])
-
-    if not usable:
-        header.extend([
-            "NO USABLE EXPERIMENTAL FORECASTS TODAY.",
-            "No betting slips generated. No picks are being forced.",
-            "",
-        ])
-
-    # Keep each fixture as a block so a long report never ends mid-fixture.
     blocks: list[list[str]] = []
     for item in usable:
-        probs = item.get("probabilities", {})
-        # The model emits home_win/draw/away_win; accept home/draw/away too
-        # for older reports and simple test fixtures.
-        home_probability = probs.get("home_win", probs.get("home", 0))
-        draw_probability = probs.get("draw", 0)
-        away_probability = probs.get("away_win", probs.get("away", 0))
-        kickoff = _format_kickoff(item.get("kickoff_local"), timezone_name)
-        expected_goals = item.get("expected_goals", {})
-        model_name = str(item.get("model", "experimental_unknown"))
-        is_elo_primary = "elo" in model_name
-        expected_goals = item.get("expected_goals") or {}
-        model_label = "Elo ratings (1X2); Poisson xG" if is_elo_primary else "Recent-goals Poisson (1X2 + xG)"
-        odds_lines: list[str] = []
-        five_odds = item.get("five_dollar_market_odds") if isinstance(item.get("five_dollar_market_odds"), dict) else {}
-        for book in (five_odds.get("bookmakers") or []):
-            if not isinstance(book, dict):
-                continue
-            btts = book.get("btts") or {}
-            totals = book.get("over_under") or {}
-            if isinstance(btts.get("yes"), (int, float)) and isinstance(btts.get("no"), (int, float)):
-                odds_lines.append(f"5DollarFootballAPI BTTS Yes/No: {btts['yes']:.2f} / {btts['no']:.2f} ({book.get('bookmaker', 'bookmaker unknown')})")
-            if isinstance(totals.get("over"), (int, float)) and isinstance(totals.get("under"), (int, float)):
-                odds_lines.append(f"5DollarFootballAPI O/U {totals.get('line', 2.5)}: Over {totals['over']:.2f} / Under {totals['under']:.2f} ({book.get('bookmaker', 'bookmaker unknown')})")
-            if len(odds_lines) >= 2:
-                break
-        odds_api = item.get("the_odds_api_market_odds") if isinstance(item.get("the_odds_api_market_odds"), dict) else {}
-        api_markets = odds_api.get("markets") or {}
-        for market_key, label in (("btts", "BTTS"), ("totals", "Over/Under")):
-            for market in (api_markets.get(market_key) or [])[:1]:
-                if not isinstance(market, dict):
-                    continue
-                outcomes = []
-                for outcome in market.get("outcomes") or []:
-                    if not isinstance(outcome, dict) or not isinstance(outcome.get("price"), (int, float)):
-                        continue
-                    outcome_label = f"{outcome.get('name')} {outcome['price']:.2f}"
-                    if outcome.get("point") is not None:
-                        outcome_label += f" ({outcome['point']})"
-                    outcomes.append(outcome_label)
-                if outcomes:
-                    odds_lines.append(f"The Odds API {label}: {' / '.join(outcomes)} ({market.get('bookmaker', 'bookmaker unknown')})")
-        infer = item.get("infer_sports_market_odds") if isinstance(item.get("infer_sports_market_odds"), dict) else {}
-        infer_markets = infer.get("markets") or {}
-        for market in (infer_markets.get("totals") or [])[:1]:
-            if not isinstance(market, dict):
-                continue
-            outcomes = []
-            for outcome in market.get("outcomes") or []:
-                if not isinstance(outcome, dict) or not isinstance(outcome.get("price"), (int, float)):
-                    continue
-                label = f"{outcome.get('name')} {outcome['price']:.2f}"
-                if outcome.get("point") is not None:
-                    label += f" ({outcome['point']})"
-                outcomes.append(label)
-            if outcomes:
-                odds_lines.append(f"InferSports Over/Under: {' / '.join(outcomes)} ({market.get('bookmaker', 'bookmaker unknown')})")
-        odds = item.get("oddspapi_market_odds") if isinstance(item.get("oddspapi_market_odds"), dict) else {}
-        btts_rows = odds.get("btts") if isinstance(odds.get("btts"), list) else []
-        btts_pair = next((row for row in btts_rows if isinstance(row, dict) and isinstance(row.get("yes"), (int, float)) and isinstance(row.get("no"), (int, float))), None)
-        if btts_pair:
-            odds_lines.append(f"OddsPapi BTTS Yes/No: {btts_pair['yes']:.2f} / {btts_pair['no']:.2f} ({btts_pair.get('bookmaker', 'bookmaker unknown')})")
-        totals_rows = odds.get("over_under") if isinstance(odds.get("over_under"), list) else []
-        totals_pair = next((row for row in totals_rows if isinstance(row, dict) and str(row.get("line")) == "2.5" and isinstance(row.get("over"), (int, float)) and isinstance(row.get("under"), (int, float))), None)
-        if totals_pair:
-            odds_lines.append(f"OddsPapi Over/Under 2.5: {totals_pair['over']:.2f} / {totals_pair['under']:.2f} ({totals_pair.get('bookmaker', 'bookmaker unknown')})")
-        odds_block = ["", "MULTI-SOURCE REFERENCE PRICES — NOT PICKS"] + odds_lines[:5] if odds_lines else []
+        probs = item.get("probabilities") if isinstance(item.get("probabilities"), dict) else {}
+        home = probs.get("home_win", probs.get("home"))
+        draw = probs.get("draw")
+        away = probs.get("away_win", probs.get("away"))
+        expected = item.get("expected_goals") if isinstance(item.get("expected_goals"), dict) else {}
+        btts = item.get("btts_yes")
+        over25 = item.get("over_2_5")
+        if btts is None and isinstance(expected.get("home"), (int, float)) and isinstance(expected.get("away"), (int, float)):
+            # Preserve only supplied model probabilities; do not fabricate a market estimate here.
+            btts = None
+
         block = [
             DIVIDER,
             f"⚽ {item.get('home_team', 'Home')} vs {item.get('away_team', 'Away')}",
-            f"🏆 {item.get('league') or 'Unknown competition'}",
-            f"🕒 Kickoff: {kickoff}",
-            "",
-            "WIN / DRAW / WIN PROBABILITY",
-            f"Home win: {float(home_probability):.0%}",
-            f"Draw: {float(draw_probability):.0%}",
-            f"Away win: {float(away_probability):.0%}",
-            "",
-            f"Expected goals: {_format_goals(expected_goals.get('home'))} - {_format_goals(expected_goals.get('away'))}",
-            f"Model: {model_label}",
-            "Status: experimental estimate only",
-            *odds_block,
+            f"🏆 {item.get('league') or 'Competition unavailable'} · 🕒 {_format_kickoff(item.get('kickoff_local') or item.get('kickoff'), timezone_name)}",
+            f"1X2: Home {_format_percent(home)} | Draw {_format_percent(draw)} | Away {_format_percent(away)}",
+            f"BTTS Yes: {_format_percent(btts)}",
+            f"Over 2.5: {_format_percent(over25)} | Under 2.5: {_format_percent(1 - float(over25)) if isinstance(over25, (int, float)) and 0 <= over25 <= 1 else '—'}",
+            f"xG: {_format_goals(expected.get('home'))} - {_format_goals(expected.get('away'))}",
             "",
         ]
         blocks.append(block)
 
-    footer = [DIVIDER, "QUICK NOTES"]
-    if insufficient:
-        footer.append(f"• {len(insufficient)} match(es) withheld: not enough reliable team history.")
-    if unsupported:
-        footer.append(f"• {len(unsupported)} match(es) withheld: league history is not supported.")
-    footer.extend([
-        "• No betting slips or forced picks are generated.",
-        "• Probabilities are model estimates, not guarantees.",
-        "• When Elo is primary, expected goals are a separate Poisson estimate and do not directly generate the displayed 1X2 probabilities.",
-        "• Football data by 5DollarFootballAPI: https://5dollarfootballapi.com",
-    ])
+    if not blocks:
+        blocks.append([DIVIDER, "No usable predictions available for today.", ""])
 
     def render(selected: list[list[str]]) -> str:
-        lines = list(header)
-        for block in selected:
-            lines.extend(block)
-        lines.extend(footer)
-        return "\n".join(lines)
+        return "\\n".join(header + [line for block in selected for line in block])
 
-    # Keep every fixture. Split between complete fixture blocks instead of
-    # silently dropping later matches when the Telegram message limit is reached.
     chunks: list[str] = []
     selected: list[list[str]] = []
     for block in blocks:
-        single_block_message = render([block])
-        if len(single_block_message) > MAX_MESSAGE_LENGTH:
-            if selected:
-                chunks.append(render(selected))
-                selected = []
-            # Defensive fallback for an unusually long single fixture block.
-            chunks.append(single_block_message[: MAX_MESSAGE_LENGTH - 1].rstrip() + "…")
-            continue
         candidate = render(selected + [block])
         if len(candidate) <= MAX_MESSAGE_LENGTH:
             selected.append(block)
@@ -343,18 +173,23 @@ def format_report_messages(report: dict[str, Any], ledger: dict[str, Any] | None
         if selected:
             chunks.append(render(selected))
             selected = [block]
-    if selected or not chunks:
-        message = render(selected)
-        if len(message) > MAX_MESSAGE_LENGTH:
-            message = message[: MAX_MESSAGE_LENGTH - 1].rstrip() + "…"
-        chunks.append(message)
-    # Add a strong visual marker to every Telegram message, including split parts,
-    # so fresh Veltrix updates are easy to distinguish in a busy chat.
+        else:
+            chunks.append(render([block])[: MAX_MESSAGE_LENGTH - 1].rstrip() + "…")
+            selected = []
+    if selected:
+        chunks.append(render(selected))
     total = len(chunks)
     return [
-        f"🔔 🆕 NEW VELTRIX UPDATE  •  MESSAGE {index}/{total}\n╔══════════════════════════╗\n" + chunk
+        f"🔔 🆕 NEW VELTRIX UPDATE  •  MESSAGE {index}/{total}\\n" + chunk
         for index, chunk in enumerate(chunks, start=1)
     ]
+
+
+def _format_percent(value: Any) -> str:
+    """Format a supplied probability without treating missing values as zero."""
+    if isinstance(value, (int, float)) and not isinstance(value, bool) and 0 <= value <= 1:
+        return f"{value:.0%}"
+    return "—"
 
 
 def format_report(report: dict[str, Any], ledger: dict[str, Any] | None = None) -> str:
