@@ -1,6 +1,12 @@
 name: Women's History Coverage Audit
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/import_womens_club_history.py'
+      - 'scripts/audit_historical_csv.py'
+      - '.github/workflows/womens-history-coverage-audit.yml'
   workflow_dispatch:
     inputs:
       start_date:
