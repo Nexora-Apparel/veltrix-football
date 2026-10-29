@@ -12,7 +12,7 @@ from pathlib import Path
 from app.live_predictions import _name_key, build_daily_report, load_historical_matches
 from app.recent_results import fetch_recent_results_incremental
 from app.api_football_odds import APIFootballError  # legacy error type for compatibility helpers only
-from app.provider_adapters import FiveDollarFootballClient, ProviderAPIError, enrich_report_with_multi_source_odds, supplement_fixtures_from_odds_api
+from app.provider_adapters import FiveDollarFootballClient, ProviderAPIError, enrich_report_with_multi_source_odds, supplement_fixtures_from_odds_api, supplement_fixtures_from_infersports
 import math
 
 
@@ -224,6 +224,13 @@ def main() -> None:
             target_date.isoformat(),
             timezone_name=args.timezone,
         )
+        # InferSports broadens fixture discovery independently of its disabled-by-default
+        # odds enrichment. The report builder still enforces competition and history rules.
+        payload = supplement_fixtures_from_infersports(
+            payload,
+            target_date.isoformat(),
+            timezone_name=args.timezone,
+        )
         base_history = load_historical_matches(args.history)
         cache_path = Path(args.recent_cache)
         cache_data, cached_rows = _load_recent_cache(cache_path)
@@ -277,9 +284,12 @@ def main() -> None:
         report["fixture_discovery"] = {
             "primary_provider": fixture_meta.get("provider", "5DollarFootballAPI"),
             "supplemental_provider": fixture_meta.get("supplemental_fixture_source"),
-            "supplemental_fixtures_added": int(fixture_meta.get("supplemental_fixtures_added", 0) or 0),
-            "supplemental_sports_queried": fixture_meta.get("supplemental_sports_queried", []),
-            "supplemental_sports_failed": fixture_meta.get("supplemental_sports_failed", []),
+            "the_odds_api": {
+                "fixtures_added": int(fixture_meta.get("supplemental_fixtures_added", 0) or 0),
+                "sports_queried": fixture_meta.get("supplemental_sports_queried", []),
+                "sports_failed": fixture_meta.get("supplemental_sports_failed", []),
+            },
+            "infersports": fixture_meta.get("infersports_fixture_discovery", {"status": "NOT_RUN"}),
             "fixtures_total_after_supplement": int(fixture_meta.get("fixtures_total_after_supplement", len(payload.get("response") or [])) or 0),
             "future_fixtures_considered": report.get("future_fixtures_considered", 0),
             "predictions_created": report.get("predictions_created", 0),
