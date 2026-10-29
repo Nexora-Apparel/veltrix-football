@@ -43,7 +43,7 @@ LEAGUE_CODES = {
     "bundesliga": "BL1", "2. bundesliga": "BL2", "ligue 1": "FL1",
     "ligue 2": "FL2", "eredivisie": "DED", "primeira liga": "PPL",
     "liga portugal": "PPL", "scottish premiership": "SPL",
-    "brasileirao": "BSA", "brazil serie a": "BSA",
+    "brasileirao": "BSA", "brazil serie a": "BSA", "bra a": "BSA",
 }
 
 
