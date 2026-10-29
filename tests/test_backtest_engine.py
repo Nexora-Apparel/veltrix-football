@@ -1,4 +1,9 @@
-from app.backtest_engine import chronological_backtest, poisson_1x2
+from app.backtest_engine import (
+    _historical_over_under_25_price_audit,
+    _normalize_match,
+    chronological_backtest,
+    poisson_1x2,
+)
 
 
 def test_poisson_probabilities_sum_to_one():
@@ -254,3 +259,29 @@ def test_goal_calibration_fits_earlier_dates_and_only_reports_later_scores():
         assert market["calibrated_test"]["matches"] == 160
         assert 0 <= market["calibrated_test"]["brier_score"] <= 1
         assert market["calibrated_test"]["log_loss"] >= 0
+
+
+
+def test_historical_over_under_price_audit_is_explicitly_non_validating():
+    normalized = _normalize_match({
+        "match_date": "2025-01-01",
+        "division": "L1",
+        "home_team": "Alpha",
+        "away_team": "Beta",
+        "home_goals": 2,
+        "away_goals": 1,
+        "over25_odds": 2.2,
+        "under25_odds": 1.7,
+    })
+    assert normalized["over25_odds"] == 2.2
+    assert normalized["under25_odds"] == 1.7
+    audit = _historical_over_under_25_price_audit([{
+        **normalized,
+        "goal_markets": {"over_2_5": 0.60, "under_2_5": 0.40},
+    }])
+    assert audit["fixtures_with_model_and_any_valid_ou25_price"] == 1
+    assert audit["selection_count"] == 1
+    assert audit["wins"] == 1
+    assert audit["net_units"] == 1.2
+    assert audit["timestamp_quality"].startswith("UNVERIFIED")
+    assert audit["profitability_claim_allowed"] is False
