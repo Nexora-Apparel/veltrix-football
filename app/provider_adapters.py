@@ -511,6 +511,140 @@ def supplement_fixtures_from_odds_api(
     return fixtures_payload
 
 
+
+def supplement_fixtures_from_infersports(
+    fixtures_payload: dict[str, Any],
+    day: str,
+    *,
+    timezone_name: str = "Africa/Lagos",
+    client: InferSportsClient | None = None,
+    now: datetime | None = None,
+) -> dict[str, Any]:
+    """Add scheduled future same-day fixtures from InferSports without fetching odds.
+
+    This is fixture discovery only. Primary rows win duplicates, and competition
+    eligibility/history thresholds remain the responsibility of the report builder.
+    """
+    infer_client = client or InferSportsClient()
+    zone = ZoneInfo(timezone_name)
+    target_day = date.fromisoformat(day)
+    current = now or datetime.now(zone)
+    if current.tzinfo is None:
+        current = current.replace(tzinfo=zone)
+    current = current.astimezone(zone)
+    rows = fixtures_payload.get("response")
+    if not isinstance(rows, list):
+        rows = []
+        fixtures_payload["response"] = rows
+
+    def team_name(value: Any) -> str:
+        if isinstance(value, dict):
+            value = value.get("name") or value.get("display_name") or value.get("short_name")
+        return str(value or "").strip()
+
+    def local_key(home: Any, away: Any) -> tuple[str, str, str]:
+        return (target_day.isoformat(), _name_key(home), _name_key(away))
+
+    existing: set[tuple[str, str, str]] = set()
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
+        teams = row.get("teams") or {}
+        home = team_name(teams.get("home"))
+        away = team_name(teams.get("away"))
+        raw = (row.get("fixture") or {}).get("date")
+        if not home or not away or not isinstance(raw, str):
+            continue
+        try:
+            kickoff = datetime.fromisoformat(raw.replace("Z", "+00:00"))
+            if kickoff.tzinfo is None:
+                kickoff = kickoff.replace(tzinfo=zone)
+            if kickoff.astimezone(zone).date() == target_day:
+                existing.add(local_key(home, away))
+        except (ValueError, OverflowError):
+            continue
+
+    events_received = 0
+    future_same_day = 0
+    duplicates = 0
+    added = 0
+    status = "AVAILABLE"
+    error_type = None
+    try:
+        events = infer_client.events_for_date(target_day.isoformat(), timezone_name)
+        events_received = len(events)
+    except (ProviderAPIError, OSError, TimeoutError, ValueError) as exc:
+        events = []
+        status = "FAILED"
+        error_type = type(exc).__name__
+
+    for event in events:
+        home = team_name(event.get("home_team") or event.get("home"))
+        away = team_name(event.get("away_team") or event.get("away"))
+        raw = event.get("scheduled_at") or event.get("kickoff") or event.get("commence_time") or event.get("date")
+        if not home or not away or not isinstance(raw, str):
+            continue
+        try:
+            kickoff = datetime.fromisoformat(raw.replace("Z", "+00:00"))
+            if kickoff.tzinfo is None:
+                kickoff = kickoff.replace(tzinfo=timezone.utc)
+            local = kickoff.astimezone(zone)
+        except (ValueError, OverflowError):
+            continue
+        if local.date() != target_day or local <= current:
+            continue
+        future_same_day += 1
+        key = local_key(home, away)
+        if key in existing:
+            duplicates += 1
+            continue
+
+        competition = event.get("competition") or event.get("league") or {}
+        if isinstance(competition, dict):
+            league_name = str(competition.get("name") or competition.get("display_name") or "").strip()
+            league_id = competition.get("id")
+        else:
+            league_name = str(event.get("competition_name") or event.get("league_name") or competition or "").strip()
+            league_id = event.get("competition_id") or event.get("league_id")
+        league_name = league_name or "Unknown Competition"
+        event_id = event.get("id")
+        rows.append({
+            "fixture": {
+                "id": str(event_id) if event_id is not None else None,
+                "date": kickoff.isoformat(),
+                "timestamp": int(kickoff.timestamp()),
+                "status": {"short": "NS", "long": "scheduled"},
+            },
+            "teams": {
+                "home": {"id": None, "name": home},
+                "away": {"id": None, "name": away},
+            },
+            "league": {
+                "id": league_id, "name": league_name,
+                "code": LEAGUE_CODES.get(league_name.casefold()), "season": None,
+            },
+            "_veltrix_source": "InferSports",
+            "_supplemental_event_id": str(event_id or ""),
+        })
+        existing.add(key)
+        added += 1
+
+    meta = fixtures_payload.get("_veltrix_meta")
+    if not isinstance(meta, dict):
+        meta = {}
+        fixtures_payload["_veltrix_meta"] = meta
+    meta["infersports_fixture_discovery"] = {
+        "status": status,
+        "events_received": events_received,
+        "future_same_day_events": future_same_day,
+        "duplicates_skipped": duplicates,
+        "fixtures_added": added,
+        "error_type": error_type,
+    }
+    meta["fixtures_total_after_supplement"] = len(rows)
+    return fixtures_payload
+
+
 def enrich_report_with_multi_source_odds(
     report: dict[str, Any],
     fixtures_payload: dict[str, Any],
