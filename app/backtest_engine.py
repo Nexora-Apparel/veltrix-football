@@ -131,6 +131,46 @@ def goal_market_probabilities(home_lambda: float, away_lambda: float) -> dict[st
     }
 
 
+def _score_expanding_goal_baseline(rows: list[dict[str, Any]]) -> dict[str, Any]:
+    """Score a prior-dates-only historical-frequency baseline."""
+    definitions = {
+        "btts_yes": lambda r: r["home_goals"] > 0 and r["away_goals"] > 0,
+        "over_1_5": lambda r: r["home_goals"] + r["away_goals"] >= 2,
+        "over_2_5": lambda r: r["home_goals"] + r["away_goals"] >= 3,
+        "over_3_5": lambda r: r["home_goals"] + r["away_goals"] >= 4,
+    }
+    history = {k: [] for k in definitions}
+    pairs = {k: [] for k in definitions}
+    ordered = sorted(rows, key=lambda r: str(r.get("match_date", "")))
+    i = 0
+    while i < len(ordered):
+        day = str(ordered[i].get("match_date", ""))
+        j = i
+        while j < len(ordered) and str(ordered[j].get("match_date", "")) == day:
+            j += 1
+        day_rows = ordered[i:j]
+        for key, outcome_fn in definitions.items():
+            prior = history[key]
+            p = (sum(prior) + 1.0) / (len(prior) + 2.0)
+            for row in day_rows:
+                pairs[key].append((p, int(bool(outcome_fn(row)))))
+            history[key].extend(int(bool(outcome_fn(row))) for row in day_rows)
+        i = j
+    markets = {}
+    for key, values in pairs.items():
+        ps = [min(1 - 1e-15, max(1e-15, p)) for p, _ in values]
+        ys = [y for _, y in values]
+        n = len(values)
+        brier = sum((p-y)**2 for p,y in zip(ps,ys))/n if n else None
+        loss = -sum(y*math.log(p)+(1-y)*math.log(1-p) for p,y in zip(ps,ys))/n if n else None
+        accuracy = sum((p >= 0.5) == bool(y) for p,y in zip(ps,ys))/n if n else None
+        observed = sum(ys)/n if n else None
+        mean_p = sum(ps)/n if n else None
+        markets[key] = {"matches": n, "brier_score": brier, "log_loss": loss, "accuracy": accuracy, "observed_frequency": observed, "mean_predicted_probability": mean_p}
+        inverse = key.replace("yes", "no").replace("over", "under")
+        markets[inverse] = {"matches": n, "brier_score": brier, "log_loss": loss, "accuracy": accuracy, "observed_frequency": 1-observed if n else None, "mean_predicted_probability": 1-mean_p if n else None}
+    return {"method": "expanding historical base rate; prior dates only; Beta(1,1) smoothing", "matches": len(ordered), "markets": markets}
+
 def _score_goal_markets(rows: list[dict[str, Any]], probability_key: str = "goal_markets") -> dict[str, Any]:
     """Score BTTS and totals as binary forecasts using Brier score, log loss and accuracy."""
     definitions = {
@@ -143,7 +183,7 @@ def _score_goal_markets(rows: list[dict[str, Any]], probability_key: str = "goal
         "over_3_5": lambda row: row["home_goals"] + row["away_goals"] >= 4,
         "under_3_5": lambda row: row["home_goals"] + row["away_goals"] < 4,
     }
-    result: dict[str, Any] = {"matches": len(rows), "markets": {}}
+    result: dict[str, Any] = {"matches": len(rows), "markets": {}, "expanding_base_rate_baseline": _score_expanding_goal_baseline(rows)}
     for market, is_winner in definitions.items():
         evaluated = [
             (float(row[probability_key][market]), bool(is_winner(row)))
