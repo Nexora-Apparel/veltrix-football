@@ -273,7 +273,7 @@ def test_overunder_command_returns_experimental_goal_line_probabilities():
     }
     reply = handle_command("/overunder", report=report)
     assert "PRIMARY MARKET — OVER/UNDER GOALS" in reply
-    assert "O0.5" in reply and "O2.5" in reply and "O4.5" in reply
+    assert "O/U 0.5" in reply and "O/U 2.5" in reply and "O/U 4.5" in reply
     assert "Not calibrated or validated for betting" in reply
     assert "Prices are reference data only" in reply
 
