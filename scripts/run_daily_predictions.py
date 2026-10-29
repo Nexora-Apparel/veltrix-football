@@ -216,6 +216,7 @@ def main() -> None:
         if not api.api_key:
             raise ProviderAPIError("FIVEDOLLARFOOTBALL_API_KEY is missing. Add it as a GitHub Actions repository secret; do not paste it into source code.")
         payload = api.fixtures(target_date.isoformat(), args.timezone)
+        primary_fixture_count = len(payload.get("response") or [])
         # The primary free-tier feed may expose only a small set of leagues on a
         # given day. Supplement from the already-connected Odds API event lists,
         # keeping only future fixtures on this same Lagos calendar date.
@@ -277,7 +278,7 @@ def main() -> None:
             "status": "SUCCESS",
             "requests_remaining": fixture_meta.get("requests_remaining"),
             "pages_fetched": fixture_meta.get("pages_fetched", 1),
-            "fixtures_received": len(payload.get("response") or []),
+            "fixtures_received": primary_fixture_count,
         }
         # Make supplemental discovery measurable in the saved report and CI logs.
         # This separates successful provider execution from actual model eligibility.
