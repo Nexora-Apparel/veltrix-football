@@ -476,3 +476,7 @@ def test_explicit_historical_division_code_maps_without_numeric_id():
     parts = _fixture_parts(fixture)
     assert parts is not None
     assert parts["division_code"] == "SWE"
+    assert _fixture_parts({
+        **fixture,
+        "league": {"name": "Brazil Serie A", "code": "BSA"},
+    })["division_code"] == "BRA"
