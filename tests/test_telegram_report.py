@@ -157,8 +157,6 @@ def test_telegram_send_requires_credentials_and_does_not_echo_token_on_network_e
     assert "ConnectionError" in str(error.value)
 
 
-undefined
-
 
 
 def test_delivery_state_loads_published_dates_and_sha(monkeypatch):
@@ -224,7 +222,7 @@ def test_main_skips_a_report_date_already_recorded_as_sent(tmp_path, monkeypatch
 
 
 
-def test_report_explains_plan_limited_dates_are_not_retried():
+def test_report_hides_plan_limited_history_details_from_prediction_alert():
     report = sample_report()
     report["recent_results_sync"] = {
         "status": "PARTIAL",
@@ -238,5 +236,6 @@ def test_report_explains_plan_limited_dates_are_not_retried():
         "retryable_gap_date_count": 0,
     }
     message = format_report(report)
-    assert "21 historical date(s) are inaccessible on this account" in message
-    assert "will not be retried automatically" in message
+    assert "Alpha FC vs Beta FC" in message
+    assert "historical date(s) are inaccessible" not in message
+    assert "provider plan" not in message
