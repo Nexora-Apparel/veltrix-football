@@ -344,6 +344,7 @@ def test_empty_past_day_is_not_marked_as_covered():
 
 
 
+# [run-live-verification] Validate source expansion against a fresh live fixture report.
 def test_infersports_fixture_supplement_adds_only_future_same_day_and_deduplicates():
     class FakeInfer:
         def __init__(self):
