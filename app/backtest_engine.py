@@ -172,6 +172,107 @@ def _score_expanding_goal_baseline(rows: list[dict[str, Any]]) -> dict[str, Any]
         markets[inverse] = {"matches": n, "brier_score": brier, "log_loss": loss, "accuracy": inverse_accuracy, "observed_frequency": 1-observed if n else None, "mean_predicted_probability": 1-mean_p if n else None}
     return {"method": "expanding historical base rate; prior dates only; Beta(1,1) smoothing", "matches": len(ordered), "markets": markets}
 
+
+def _chronological_goal_calibration(rows: list[dict[str, Any]], probability_key: str) -> dict[str, Any]:
+    """Fit per-market Platt scaling on earlier dates and score only later dates."""
+    definitions = {
+        "btts_yes": lambda r: r["home_goals"] > 0 and r["away_goals"] > 0,
+        "over_1_5": lambda r: r["home_goals"] + r["away_goals"] >= 2,
+        "over_2_5": lambda r: r["home_goals"] + r["away_goals"] >= 3,
+        "over_3_5": lambda r: r["home_goals"] + r["away_goals"] >= 4,
+    }
+    dates = sorted({str(r.get("match_date", "")) for r in rows if r.get("match_date")})
+    if len(dates) < 10:
+        return {"status": "INSUFFICIENT_MATCHES", "reason": "fewer than 10 forecast dates"}
+    cutoff = dates[min(len(dates) - 1, max(1, int(len(dates) * 0.8)))]
+    train = [r for r in rows if str(r.get("match_date", "")) < cutoff and probability_key in r]
+    test = [r for r in rows if str(r.get("match_date", "")) >= cutoff and probability_key in r]
+    if len(train) < 500 or len(test) < 100:
+        return {"status": "INSUFFICIENT_MATCHES", "calibration_matches": len(train), "test_matches": len(test), "cutoff_date": cutoff}
+
+    def logit(p):
+        p = min(1 - 1e-6, max(1e-6, float(p)))
+        return math.log(p / (1 - p))
+
+    def sigmoid(z):
+        if z >= 0:
+            e = math.exp(-min(z, 700))
+            return 1 / (1 + e)
+        e = math.exp(max(z, -700))
+        return e / (1 + e)
+
+    def score(pairs, intercept, slope, apply_calibration):
+        ps = [sigmoid(intercept + slope * logit(p)) if apply_calibration else p for p, _ in pairs]
+        ys = [y for _, y in pairs]
+        n = len(ps)
+        return {
+            "matches": n,
+            "brier_score": sum((p-y)**2 for p,y in zip(ps,ys))/n,
+            "log_loss": -sum(y*math.log(max(1e-15,p))+(1-y)*math.log(max(1e-15,1-p)) for p,y in zip(ps,ys))/n,
+            "accuracy": sum((p >= 0.5) == bool(y) for p,y in zip(ps,ys))/n,
+            "mean_predicted_probability": sum(ps)/n,
+            "observed_frequency": sum(ys)/n,
+        }
+
+    output = {
+        "status": "DIAGNOSTIC_ONLY_NOT_APPLIED",
+        "method": "per-market Platt scaling fit on first 80% of forecast dates; evaluated on final 20%",
+        "calibration_cutoff_date": cutoff,
+        "calibration_matches": len(train),
+        "test_matches": len(test),
+        "markets": {},
+    }
+    for market, outcome_fn in definitions.items():
+        train_pairs = [(logit(r[probability_key][market]), int(bool(outcome_fn(r)))) for r in train if market in r[probability_key]]
+        test_pairs = [(min(1-1e-6, max(1e-6, float(r[probability_key][market]))), int(bool(outcome_fn(r)))) for r in test if market in r[probability_key]]
+        if len(train_pairs) < 500 or len(test_pairs) < 100:
+            output["markets"][market] = {"status": "INSUFFICIENT_MATCHES", "calibration_matches": len(train_pairs), "test_matches": len(test_pairs)}
+            continue
+        xs = [x for x, _ in train_pairs]
+        ys = [y for _, y in train_pairs]
+        intercept = math.log((sum(ys) + 1) / (len(ys) - sum(ys) + 1))
+        slope = 1.0
+        for _ in range(100):
+            g0 = g1 = h00 = h01 = h11 = 0.0
+            for x, y in train_pairs:
+                p = sigmoid(intercept + slope * x)
+                error = p - y
+                weight = max(1e-8, p * (1 - p))
+                g0 += error
+                g1 += error * x
+                h00 += weight
+                h01 += weight * x
+                h11 += weight * x * x
+            h11 += 1e-6
+            determinant = h00 * h11 - h01 * h01
+            if abs(determinant) < 1e-12:
+                break
+            da = (g0 * h11 - g1 * h01) / determinant
+            db = (g1 * h00 - g0 * h01) / determinant
+            intercept -= da
+            slope -= db
+            if not math.isfinite(intercept) or not math.isfinite(slope):
+                break
+            if abs(da) + abs(db) < 1e-7:
+                break
+        raw = score(test_pairs, intercept, slope, False)
+        calibrated = score(test_pairs, intercept, slope, True)
+        output["markets"][market] = {
+            "status": "CALIBRATION_FIT_EVALUATED_ON_LATER_DATES",
+            "platt_intercept": intercept,
+            "platt_slope": slope,
+            "raw_test": raw,
+            "calibrated_test": calibrated,
+            "delta_calibrated_minus_raw": {
+                "brier_score": calibrated["brier_score"] - raw["brier_score"],
+                "log_loss": calibrated["log_loss"] - raw["log_loss"],
+                "accuracy": calibrated["accuracy"] - raw["accuracy"],
+            },
+            "improved_brier_and_log_loss": calibrated["brier_score"] < raw["brier_score"] and calibrated["log_loss"] < raw["log_loss"],
+        }
+    return output
+
+
 def _score_goal_markets(rows: list[dict[str, Any]], probability_key: str = "goal_markets") -> dict[str, Any]:
     """Score BTTS and totals as binary forecasts using Brier score, log loss and accuracy."""
     definitions = {
@@ -690,7 +791,8 @@ def chronological_backtest(matches: Iterable[dict[str, Any]], *, min_training_ma
             "model": "chronological_shrunk_venue_poisson",
             "metrics": goal_market_metrics,
             "recent_holdout": holdout_goal_market_metrics,
-            "note": "BTTS and goal totals are evaluated from pre-match expected goals on chronological predictions; this is not evidence of profitability or validation.",
+            "chronological_calibration_experiment": _chronological_goal_calibration(scored, "goal_markets"),
+            "note": "BTTS and goal totals are evaluated from pre-match expected goals on chronological predictions; calibration is report-only and is not applied to live forecasts.",
         },
         "live_pipeline": {"model": "experimental_recent_goals_poisson", "matches": len(live_scored),
             "first_test_date": live_dates[0] if live_dates else None,
@@ -699,7 +801,8 @@ def chronological_backtest(matches: Iterable[dict[str, Any]], *, min_training_ma
             "goal_markets": {
                 "metrics": live_goal_market_metrics,
                 "recent_holdout": live_goal_market_holdout_metrics if live_scored else None,
-                "note": "BTTS and totals derived from the same pre-match xG as the live Poisson baseline; research evaluation only.",
+                "chronological_calibration_experiment": _chronological_goal_calibration(live_scored, "live_goal_markets"),
+                "note": "BTTS and totals derived from the same pre-match xG as the live Poisson baseline; calibration is report-only and is not applied to live forecasts.",
             },
             "dixon_coles_alternative": {
                 "model": "experimental_recency_weighted_dixon_coles",
