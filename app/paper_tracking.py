@@ -98,10 +98,20 @@ def merge_paper_ledger(ledger: dict[str, Any], evaluation: dict[str, Any]) -> di
             continue
         unique[key] = row
     current["scored_matches"] = list(unique.values())
-    unique_goal: dict[tuple[str, int, str, str], dict[str, Any]] = {}
+    # Keep fixture IDs as strings here: supplemental odds providers may use
+    # opaque event IDs that are not numeric. Do not discard otherwise valid rows.
+    unique_goal: dict[tuple[str, str, str, str], dict[str, Any]] = {}
     for row in current["goal_market_scored"]:
         try:
-            key = (str(row["report_date"]), int(row["fixture_id"]), str(row["market"]), str(row["selection"]))
+            fixture_key = str(row["fixture_id"]).strip()
+            report_key = str(row["report_date"]).strip()
+            market_key = str(row["market"]).strip()
+            selection_key = str(row["selection"]).strip()
+            if not fixture_key or fixture_key.casefold() in {"none", "null"}:
+                continue
+            if not report_key or not market_key or not selection_key:
+                continue
+            key = (report_key, fixture_key, market_key, selection_key)
         except (KeyError, TypeError, ValueError):
             continue
         unique_goal[key] = row
