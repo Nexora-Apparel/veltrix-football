@@ -106,8 +106,8 @@ on:
         required: false
         type: string
   schedule:
-    # 06:00 Africa/Lagos (WAT, UTC+1) = 05:00 UTC; publish before most match kickoffs.
-    - cron: "0 5 * * *"
+    # 08:00 Africa/Lagos (WAT, UTC+1) = 07:00 UTC.
+    - cron: "0 7 * * *"
 
 # Ordinary pushes run tests only. A push commit containing [run-live-verification] intentionally runs the full live pipeline for controlled end-to-end verification.
 # This prevents code commits and automated fixes from consuming live provider quotas.
