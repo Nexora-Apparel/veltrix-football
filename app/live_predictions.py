@@ -23,7 +23,7 @@ TEAM_WINDOW = 10
 HOME_ELO_ADVANTAGE = 55.0
 ELO_K = 20.0
 
-# API-Football league IDs mapped to division codes in the open historical CSV.
+# Provider league codes and API-Football league IDs mapped to compatible divisions in the open historical CSV.
 LEAGUE_DIVISION_BY_CODE = {
     "PL": "E0", "ELC": "E1", "EL1": "E2", "EL2": "E3",
     "PD": "SP1", "SD": "SP2", "SA": "I1", "SB": "I2",
@@ -208,6 +208,21 @@ def load_historical_matches(path: str | Path) -> list[dict[str, Any]]:
     return sorted(rows, key=lambda row: row["date"])
 
 
+def _is_non_senior_competition(name: Any) -> bool:
+    """Keep women's, youth and reserve competitions out of senior-only history."""
+    normalized = unicodedata.normalize("NFKD", str(name or "").casefold())
+    normalized = "".join(char for char in normalized if not unicodedata.combining(char))
+    # Do not treat generic division labels such as "Serie B" or "Liga 2" as reserves.
+    patterns = (
+        r"\\b(?:women|womens|ladies|female|feminine|femenino|feminino)\\b",
+        r"\\b(?:reserve|reserves|youth|academy|junior|juniors)\\b",
+        r"\\b(?:u|under[ -]?)(?:1[0-9]|2[0-3])\\b",
+        r"\\b(?:b[ -]?team|team[ -]?b)\\b",
+        r"\\b(?:ii|iii|iv)\\s*$",
+    )
+    return any(re.search(pattern, normalized) for pattern in patterns)
+
+
 def _fixture_parts(item: dict[str, Any], timezone_name: str = "Africa/Lagos") -> dict[str, Any] | None:
     fixture = item.get("fixture") or {}
     teams = item.get("teams") or {}
@@ -239,13 +254,18 @@ def _fixture_parts(item: dict[str, Any], timezone_name: str = "Africa/Lagos") ->
         # League IDs are provider-local. The ID map above contains API-Football
         # IDs only; never apply it to 5Dollar/other-provider IDs, which can collide
         # with an unrelated senior division and falsely enable unsupported leagues.
+        # A matching short code or numeric ID is not enough if the competition
+        # itself is explicitly women's, youth or reserve: history is senior-only.
         "division_code": (
-            LEAGUE_DIVISION_BY_CODE.get(str(league.get("code") or "").upper())
-            or (
-                LEAGUE_DIVISION_BY_ID.get(league.get("id"))
-                if not item.get("_veltrix_source")
-                or str(item.get("_veltrix_source")).casefold() in {"api-football", "api-sports"}
-                else None
+            None if _is_non_senior_competition(league.get("name"))
+            else (
+                LEAGUE_DIVISION_BY_CODE.get(str(league.get("code") or "").upper())
+                or (
+                    LEAGUE_DIVISION_BY_ID.get(league.get("id"))
+                    if not item.get("_veltrix_source")
+                    or str(item.get("_veltrix_source")).casefold() in {"api-football", "api-sports"}
+                    else None
+                )
             )
         ),
         "fixture_status": status,
