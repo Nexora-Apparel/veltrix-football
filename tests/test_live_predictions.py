@@ -519,3 +519,26 @@ def test_non_senior_competitions_cannot_borrow_senior_historical_divisions():
     senior_fixture["league"] = {"name": "English League One", "code": "EL1"}
     assert _fixture_parts(senior_fixture)["division_code"] == "E2"
 
+
+
+
+def test_non_senior_competition_stays_unsupported_when_history_is_empty():
+    fixture = _fixture()
+    fixture["league"]["name"] = "England Women's League"
+    result = predict_fixtures(
+        [fixture], [], as_of=date(2026, 10, 23),
+        now=datetime(2026, 10, 23, 12, 0, tzinfo=ZoneInfo("Africa/Lagos")),
+    )
+    assert result[0]["status"] == "UNSUPPORTED_COMPETITION"
+    assert "category-matched historical results" in result[0]["reason"]
+    assert "probabilities" not in result[0]
+
+
+def test_senior_competition_with_empty_history_is_insufficient_history():
+    fixture = _fixture()
+    result = predict_fixtures(
+        [fixture], [], as_of=date(2026, 10, 23),
+        now=datetime(2026, 10, 23, 12, 0, tzinfo=ZoneInfo("Africa/Lagos")),
+    )
+    assert result[0]["status"] == "INSUFFICIENT_HISTORY"
+    assert "probabilities" not in result[0]
