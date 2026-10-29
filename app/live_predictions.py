@@ -100,11 +100,14 @@ def _name_key(name: Any) -> str:
 def _team_variant_signature(key: str) -> tuple[str, ...]:
     """Identify squad/category markers that must never be erased by fuzzy matching."""
     markers: list[str] = []
+    # Several fixture feeds abbreviate squad type as a single trailing letter:
+    # "(W)" for women's sides and "(R)" for reserve sides. Those markers must
+    # survive normalization so fuzzy matching cannot merge them with senior men.
     for label, pattern in (
-        ("women", r"(?:women|womens|ladies|feminin|femenino|feminino)$"),
+        ("women", r"(?:women|womens|ladies|feminin|femenino|feminino|w)$"),
         ("youth", r"(?:youth|academy|junior|juniors)$"),
         ("age_group", r"u(?:1[0-9]|2[0-3])$"),
-        ("reserve", r"(?:reserves|reserve|bteam|ii|iii|iv|b|2|3)$"),
+        ("reserve", r"(?:reserves|reserve|bteam|ii|iii|iv|b|2|3|r)$"),
     ):
         if re.search(pattern, key):
             markers.append(label)
@@ -112,7 +115,7 @@ def _team_variant_signature(key: str) -> tuple[str, ...]:
     age = re.search(r"u(1[0-9]|2[0-3])$", key)
     if age:
         markers.append("u" + age.group(1))
-    reserve = re.search(r"(?:reserves|reserve|bteam|ii|iii|iv|b|2|3)$", key)
+    reserve = re.search(r"(?:reserves|reserve|bteam|ii|iii|iv|b|2|3|r)$", key)
     if reserve:
         markers.append(reserve.group(0))
     return tuple(markers)
