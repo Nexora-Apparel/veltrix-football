@@ -508,7 +508,7 @@ def test_non_senior_competitions_cannot_borrow_senior_historical_divisions():
     reserve_fixture["league"] = {"name": "Argentina Reserve League", "id": 128}
     assert _fixture_parts(reserve_fixture)["division_code"] is None
 
-    for compact_label in ("BraCU20", "EngNLW", "Arg(R)"):
+    for compact_label in ("BraCU20", "U-20 League", "EngNLW", "Arg(R)", "Col B"):
         compact_fixture = _fixture()
         compact_fixture["league"] = {"name": compact_label, "code": "SWE"}
         assert _fixture_parts(compact_fixture)["division_code"] is None, compact_label
