@@ -269,6 +269,13 @@ def _goal_market_paper_rows(prediction: dict[str, Any], result: dict[str, Any]) 
                 for quote in book.get("outcomes") or []:
                     if not isinstance(quote, dict) or str(quote.get("name", "")).casefold() != outcome_label.casefold():
                         continue
+                    if provider_market == "totals":
+                        try:
+                            point = float(quote.get("point"))
+                        except (TypeError, ValueError):
+                            continue
+                        if abs(point - 2.5) > 1e-9:
+                            continue
                     try:
                         price = float(quote.get("price"))
                     except (TypeError, ValueError):
