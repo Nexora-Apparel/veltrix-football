@@ -488,6 +488,18 @@ def test_non_senior_competitions_cannot_borrow_senior_historical_divisions():
     womens_fixture["league"] = {"name": "Swedish Women's League", "code": "SWE"}
     assert _fixture_parts(womens_fixture)["division_code"] is None
 
+    # Even when team names have enough senior historical matches, category
+    # mismatch must withhold the prediction instead of falling back globally.
+    predictions = predict_fixtures(
+        [womens_fixture],
+        _history(),
+        as_of=date(2026, 10, 23),
+        now=datetime(2026, 10, 23, 12, 0, tzinfo=ZoneInfo("Africa/Lagos")),
+    )
+    assert predictions[0]["status"] == "UNSUPPORTED_COMPETITION"
+    assert "category-matched historical results" in predictions[0]["reason"]
+    assert "probabilities" not in predictions[0]
+
     youth_fixture = _fixture()
     youth_fixture["league"] = {"name": "U21 League", "id": 39}
     assert _fixture_parts(youth_fixture)["division_code"] is None
