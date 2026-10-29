@@ -83,6 +83,12 @@ def _normalize_match(row: dict[str, Any]) -> dict[str, Any] | None:
             return None
         normalized = {"match_date": day, "division": division, "home_team": home, "away_team": away,
                 "home_goals": hg, "away_goals": ag, "result": "H" if hg > ag else "A" if hg < ag else "D"}
+        # Retain historical O/U 2.5 prices when present; source quote timestamps
+        # are unavailable, so this can only be a diagnostic.
+        for odds_key in ("over25_odds", "under25_odds"):
+            odds_value = _safe_float(row.get(odds_key))
+            if odds_value is not None and 1.01 <= odds_value <= 100:
+                normalized[odds_key] = odds_value
         existing_market = row.get("market")
         if isinstance(existing_market, dict) and all(_safe_float(existing_market.get(k)) is not None for k in ("H", "D", "A")):
             vals = [_safe_float(existing_market[k]) for k in ("H", "D", "A")]
@@ -271,6 +277,48 @@ def _chronological_goal_calibration(rows: list[dict[str, Any]], probability_key:
             "improved_brier_and_log_loss": calibrated["brier_score"] < raw["brier_score"] and calibrated["log_loss"] < raw["log_loss"],
         }
     return output
+
+
+def _historical_over_under_25_price_audit(rows: list[dict[str, Any]], probability_key: str = "goal_markets", *, edge_threshold: float = 0.05) -> dict[str, Any]:
+    """Pair walk-forward O/U 2.5 probabilities with historical prices, without ROI claims."""
+    available = [
+        row for row in rows
+        if isinstance(row.get(probability_key), dict)
+        and any((_safe_float(row.get(key)) is not None and 1.01 <= _safe_float(row.get(key)) <= 100)
+                for key in ("over25_odds", "under25_odds"))
+    ]
+    selections = []
+    for row in available:
+        probs = row[probability_key]
+        over = int(row["home_goals"]) + int(row["away_goals"]) >= 3
+        for selection, odds_key, market_key, won in (
+            ("over_2_5", "over25_odds", "over_2_5", over),
+            ("under_2_5", "under25_odds", "under_2_5", not over),
+        ):
+            price, probability = _safe_float(row.get(odds_key)), _safe_float(probs.get(market_key))
+            if price is None or probability is None or not 1.01 <= price <= 100 or not 0 <= probability <= 1:
+                continue
+            edge = probability - 1.0 / price
+            if edge >= edge_threshold:
+                selections.append({"selection": selection, "won": bool(won), "odds": price,
+                                   "edge": edge, "profit": price - 1.0 if won else -1.0})
+    count = len(selections)
+    wins = sum(item["won"] for item in selections)
+    net = sum(item["profit"] for item in selections)
+    return {
+        "status": "HISTORICAL_PRICE_DIAGNOSTIC_ONLY",
+        "fixtures_with_model_and_any_valid_ou25_price": len(available),
+        "fixtures_with_model_forecasts": len(rows),
+        "coverage": len(available) / len(rows) if rows else None,
+        "edge_threshold": edge_threshold,
+        "selection_count": count, "wins": wins, "losses": count - wins,
+        "win_rate": wins / count if count else None, "flat_stake_units": float(count),
+        "net_units": net, "paper_roi": net / count if count else None,
+        "timestamp_quality": "UNVERIFIED_NO_PER_QUOTE_TIMESTAMP_IN_NORMALIZED_HISTORICAL_DATA",
+        "price_basis": "Historical B365 or average O/U 2.5 prices; bookmaker margin not removed for edge screening.",
+        "profitability_claim_allowed": False,
+        "note": "Quote timing, forecast-time availability, execution and closing-line value are unverified; this diagnostic is not evidence of executable profitability.",
+    }
 
 
 def _score_goal_markets(rows: list[dict[str, Any]], probability_key: str = "goal_markets") -> dict[str, Any]:
@@ -587,6 +635,7 @@ def chronological_backtest(matches: Iterable[dict[str, Any]], *, min_training_ma
                     "actual": m["result"], "home_goals": m["home_goals"], "away_goals": m["away_goals"],
                     "home_expected_goals": home_lambda, "away_expected_goals": away_lambda,
                     "goal_markets": goal_market_probabilities(home_lambda, away_lambda),
+                    **{key: m[key] for key in ("over25_odds", "under25_odds") if key in m},
                     "poisson": poisson, "elo": elo,
                     **({"market": m["market"]} if "market" in m else {})})
         # Update ratings and form only after all fixtures on this date were forecast.
@@ -792,6 +841,8 @@ def chronological_backtest(matches: Iterable[dict[str, Any]], *, min_training_ma
             "metrics": goal_market_metrics,
             "recent_holdout": holdout_goal_market_metrics,
             "chronological_calibration_experiment": _chronological_goal_calibration(scored, "goal_markets"),
+            "historical_over_under_2_5_price_audit": _historical_over_under_25_price_audit(scored),
+            "recent_holdout_over_under_2_5_price_audit": _historical_over_under_25_price_audit(holdout_rows),
             "note": "BTTS and goal totals are evaluated from pre-match expected goals on chronological predictions; calibration is report-only and is not applied to live forecasts.",
         },
         "live_pipeline": {"model": "experimental_recent_goals_poisson", "matches": len(live_scored),
