@@ -37,24 +37,34 @@ def sample_report():
     }
 
 
-def test_telegram_report_is_clear_and_experimental():
+def test_telegram_report_is_predictions_only_and_keeps_new_update_alert():
     message = format_report(sample_report())
-    assert "⚽ VELTRIX FOOTBALL" in message
-    assert "TODAY'S MATCH FORECASTS" in message
+    assert "🔔 🆕 NEW VELTRIX UPDATE" in message
+    assert "VELTRIX FOOTBALL · PREDICTIONS" in message
     assert "2026-10-23" in message
-    assert "Nigeria (WAT)" in message
-    assert "Experimental estimates only" in message
-    assert "FORECASTS: 1" in message
+    assert "Matches: 1" in message
     assert "Alpha FC vs Beta FC" in message
     assert "Example League" in message
-    assert "Kickoff: 17:00 WAT" in message
-    assert "Home win: 50%" in message
-    assert "Draw: 25%" in message
-    assert "Away win: 25%" in message
-    assert "Expected goals: 1.40 - 0.80" in message
-    assert "ELO ALTERNATIVE" not in message
-    assert "POISSON GOAL MARKETS" not in message
-    assert "Football data by 5DollarFootballAPI: https://5dollarfootballapi.com" in message
+    assert "Kickoff" not in message
+    assert "17:00 WAT" in message
+    assert "1X2: Home 50% | Draw 25% | Away 25%" in message
+    assert "BTTS Yes: 58%" in message
+    assert "Over 2.5: 52% | Under 2.5: 48%" in message
+    assert "xG: 1.40 - 0.80" in message
+    assert "PAPER TRACKING" not in message
+    assert "DATA NOTICE" not in message
+    assert "MULTI-SOURCE REFERENCE PRICES" not in message
+    assert "5DollarFootballAPI" not in message
+
+
+def test_predictions_alert_is_short_when_no_usable_forecasts():
+    report = sample_report()
+    report["predictions"] = [{"status": "INSUFFICIENT_HISTORY"}]
+    message = format_report(report)
+    assert "🔔 🆕 NEW VELTRIX UPDATE" in message
+    assert "Matches: 0" in message
+    assert "No usable predictions available for today." in message
+    assert "withheld" not in message
 
 
 def test_report_warns_when_recent_data_refresh_is_incomplete():
