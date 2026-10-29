@@ -57,6 +57,10 @@ on:
       - "tests/test_telegram_commands.py"
       - "app/telegram_security.py"
       - "tests/test_telegram_security.py"
+      - "scripts/import_womens_club_history.py"
+      - "tests/test_import_womens_club_history.py"
+      - "docs/non-senior-coverage-gates.md"
+      - ".github/workflows/womens-history-coverage-audit.yml"
       - ".github/workflows/daily-fixture-predictions.yml"
   pull_request:
     branches: [main]
@@ -98,6 +102,10 @@ on:
       - "tests/test_run_daily_predictions.py"
       - "tests/test_paper_tracking.py"
       - "tests/test_telegram_report.py"
+      - "scripts/import_womens_club_history.py"
+      - "tests/test_import_womens_club_history.py"
+      - "docs/non-senior-coverage-gates.md"
+      - ".github/workflows/womens-history-coverage-audit.yml"
       - ".github/workflows/daily-fixture-predictions.yml"
   workflow_dispatch:
     inputs:
