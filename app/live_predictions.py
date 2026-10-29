@@ -398,8 +398,16 @@ def predict_fixtures(
                 "model_validated": False,
                 "betting_recommendation": False,
                 "historical_matches": {"home": 0, "away": 0},
-                "status": "INSUFFICIENT_HISTORY",
-                "reason": "No historical matches dated before the fixture date are available.",
+                "status": (
+                    "UNSUPPORTED_COMPETITION"
+                    if _is_non_senior_competition(fixture.get("league"))
+                    else "INSUFFICIENT_HISTORY"
+                ),
+                "reason": (
+                    "Women's, youth and reserve competitions require category-matched historical results; senior-team history is not used."
+                    if _is_non_senior_competition(fixture.get("league"))
+                    else "No historical matches dated before the fixture date are available."
+                ),
                 "team_name_match_suggestions": {},
             }
             for fixture in candidates
