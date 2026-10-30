@@ -197,6 +197,11 @@ def test_value_validation_certificate_can_release_only_markets_with_complete_evi
                         "over_3_5": passing,
                     },
                 },
+                "calibration_application": {
+                    "status": "APPLIED_PROSPECTIVELY",
+                    "model_version": "goal-market-platt-v1",
+                    "markets": ["btts_yes", "over_1_5", "over_2_5", "over_3_5"],
+                },
             },
             "historical_odds_subset": {
                 "models_compared_on_same_matches": {
@@ -238,3 +243,29 @@ def test_value_validation_certificate_can_release_only_markets_with_complete_evi
     assert partial["status"] == "PARTIALLY_VALIDATED"
     assert _certificate_allows(partial, "BTTS")
     assert not _certificate_allows(partial, "OVER_UNDER_1_5")
+
+
+
+def test_value_validation_certificate_rejects_diagnostic_only_calibration():
+    from app.value_bets import build_value_validation_certificate
+
+    passing = {"status": "CALIBRATION_DIAGNOSTIC_PASS", "raw": {"matches": 2000}}
+    backtest = {
+        "live_pipeline": {
+            "goal_markets": {
+                "rolling_origin_calibration": {
+                    "markets": {
+                        "btts_yes": passing,
+                        "over_1_5": passing,
+                        "over_2_5": passing,
+                        "over_3_5": passing,
+                    },
+                },
+            },
+        },
+    }
+    certificate = build_value_validation_certificate(backtest, {})
+    for market in ("BTTS", "OVER_UNDER_1_5", "OVER_UNDER_2_5", "OVER_UNDER_3_5"):
+        assert certificate["market_diagnostics"][market]["status"] == "LOCKED"
+        assert "validated calibration is not applied to live forecast probabilities" in certificate["market_diagnostics"][market]["failures"]
+    assert certificate["alerts_enabled"] is False
