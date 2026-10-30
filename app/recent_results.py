@@ -394,7 +394,7 @@ def fetch_recent_results_incremental(
             unresolved = has_gaps or has_plan_gaps
             return [], {
                 "status": "GAPPED" if unresolved else "UP_TO_DATE", "results_added": 0,
-                "requested_start": range_start.isoformat(), "requested_end": end_date.isoformat(),
+                "requested_start": None, "requested_end": end_date.isoformat(),
                 "covered_from": None, "covered_through": latest_covered.isoformat(),
                 "ranges_succeeded": 0, "ranges_requested": 0,
                 "warning": (
