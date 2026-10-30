@@ -183,7 +183,9 @@ def format_report_messages(report: dict[str, Any], ledger: dict[str, Any] | None
             f"🏆 {item.get('league') or 'Competition unavailable'} · 🕒 {_format_kickoff(item.get('kickoff_local') or item.get('kickoff'), timezone_name)}",
             f"1X2: Home {_format_percent(home)} | Draw {_format_percent(draw)} | Away {_format_percent(away)}",
             f"BTTS Yes: {_format_percent(btts)}",
+            f"Over 1.5: {_format_percent(item.get('over_1_5'))} | Under 1.5: {_format_percent(1 - float(item.get('over_1_5'))) if isinstance(item.get('over_1_5'), (int, float)) and 0 <= item.get('over_1_5') <= 1 else '—'}",
             f"Over 2.5: {_format_percent(over25)} | Under 2.5: {_format_percent(1 - float(over25)) if isinstance(over25, (int, float)) and 0 <= over25 <= 1 else '—'}",
+            f"Over 3.5: {_format_percent(item.get('over_3_5'))} | Under 3.5: {_format_percent(1 - float(item.get('over_3_5'))) if isinstance(item.get('over_3_5'), (int, float)) and 0 <= item.get('over_3_5') <= 1 else '—'}",
             f"xG: {_format_goals(expected.get('home'))} - {_format_goals(expected.get('away'))}",
         ]
         prediction_basis = str(item.get("prediction_basis") or "").strip()
