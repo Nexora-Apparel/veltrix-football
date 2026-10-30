@@ -542,3 +542,9 @@ def test_senior_competition_with_empty_history_is_insufficient_history():
     )
     assert result[0]["status"] == "INSUFFICIENT_HISTORY"
     assert "probabilities" not in result[0]
+
+
+def test_french_ligue_one_provider_aliases_match_historical_team_keys():
+    from app.live_predictions import _name_key
+    assert _name_key("LOSC Lille") == _name_key("Lille")
+    assert _name_key("RC Lens") == _name_key("Lens")
