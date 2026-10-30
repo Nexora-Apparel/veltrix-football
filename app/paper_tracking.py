@@ -102,7 +102,7 @@ def merge_paper_ledger(ledger: dict[str, Any], evaluation: dict[str, Any]) -> di
     current["scored_matches"] = list(unique.values())
     # Keep fixture IDs as strings here: supplemental odds providers may use
     # opaque event IDs that are not numeric. Do not discard otherwise valid rows.
-    unique_goal: dict[tuple[str, str, str, str], dict[str, Any]] = {}
+    unique_goal: dict[tuple[str, str], dict[str, Any]] = {}
     for row in current["goal_market_scored"]:
         try:
             fixture_key = str(row["fixture_id"]).strip()
@@ -113,10 +113,21 @@ def merge_paper_ledger(ledger: dict[str, Any], evaluation: dict[str, Any]) -> di
                 continue
             if not report_key or not market_key or not selection_key:
                 continue
-            key = (fixture_key, market_key, selection_key, str(row.get("model", "unknown")))
+            # A fixture can contribute only one prospective selection per market,
+            # even if a later report uses a different model version or selection.
+            key = (fixture_key, market_key)
         except (KeyError, TypeError, ValueError):
             continue
-        unique_goal[key] = row
+        previous = unique_goal.get(key)
+        if previous is None:
+            unique_goal[key] = row
+            continue
+        previous_time = _parse_timestamp(previous.get("odds_fetched_at"))
+        candidate_time = _parse_timestamp(row.get("odds_fetched_at"))
+        # Preserve the earliest genuine pre-kickoff snapshot to avoid hindsight
+        # selection and prevent multiple report revisions from inflating samples.
+        if candidate_time and (not previous_time or candidate_time < previous_time):
+            unique_goal[key] = row
     current["goal_market_scored"] = list(unique_goal.values())
     current["goal_market_metrics"] = summarize_goal_market_paper(current["goal_market_scored"])
     current["goal_market_metrics_by_market"] = {
