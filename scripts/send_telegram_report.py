@@ -129,6 +129,7 @@ def format_report_messages(report: dict[str, Any], ledger: dict[str, Any] | None
         f"⚽ VELTRIX FOOTBALL · PREDICTIONS",
         f"📅 {day} · Kick-off times: WAT",
         f"Matches: {len(usable)}",
+        "Value screen: 1X2 / BTTS / Over-Under · " + str((report.get("value_bet_screen") or {}).get("status") or "NOT_REPORTED"),
         "",
     ]
     blocks: list[list[str]] = []
@@ -152,8 +153,18 @@ def format_report_messages(report: dict[str, Any], ledger: dict[str, Any] | None
             f"BTTS Yes: {_format_percent(btts)}",
             f"Over 2.5: {_format_percent(over25)} | Under 2.5: {_format_percent(1 - float(over25)) if isinstance(over25, (int, float)) and 0 <= over25 <= 1 else '—'}",
             f"xG: {_format_goals(expected.get('home'))} - {_format_goals(expected.get('away'))}",
-            "",
         ]
+        value_screen = item.get("value_bet_screen") if isinstance(item.get("value_bet_screen"), dict) else {}
+        for market, result in (value_screen.get("markets") or {}).items():
+            for candidate in (result.get("candidates") or [])[:2]:
+                block.append(
+                    "VALUE CANDIDATE: {} {} @ {:.2f} · edge {:.1f}pp · expected return {:.1f}%".format(
+                        market, candidate.get("selection"), float(candidate.get("decimal_odds")),
+                        float(candidate.get("edge_percentage_points")),
+                        float(candidate.get("expected_return_per_unit")) * 100.0,
+                    )
+                )
+        block.append("")
         blocks.append(block)
 
     if not blocks:
