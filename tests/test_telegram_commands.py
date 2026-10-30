@@ -371,3 +371,32 @@ def test_odds_command_reads_saved_multisource_btts_and_totals_prices():
     assert "O/U 2.5: Over 1.90 / Under 1.95" in reply
     assert "The Odds API" in reply
     assert "No provider prices were fabricated" not in reply
+
+
+def test_1x2_command_displays_home_draw_away_and_real_h2h_prices():
+    now = datetime.now(ZoneInfo("Africa/Lagos"))
+    report = {"predictions": [{
+        "home_team": "Arsenal", "away_team": "Chelsea", "league": "Premier League",
+        "kickoff_local": (now + timedelta(hours=3)).isoformat(),
+        "status": "EXPERIMENTAL_ONLY",
+        "probabilities": {"home_win": 0.55, "draw": 0.25, "away_win": 0.20},
+        "the_odds_api_market_odds": {"markets": {"h2h": [{
+            "bookmaker": "Bookmaker A",
+            "outcomes": [
+                {"name": "Arsenal", "price": 1.90},
+                {"name": "Draw", "price": 3.50},
+                {"name": "Chelsea", "price": 4.20},
+            ],
+        }]}},
+    }]}
+    reply = handle_command("/1x2", report=report)
+    assert "1X2 probabilities: Home 55% · Draw 25% · Away 20%" in reply
+    assert "Bookmaker A" in reply
+    assert "Arsenal 1.90" in reply
+    assert "Draw 3.50" in reply
+
+
+def test_1x2_value_command_remains_disabled_without_validated_model():
+    reply = handle_command("/1x2value")
+    assert "NOT ENABLED" in reply
+    assert "1X2, BTTS and Over/Under" in reply
