@@ -693,11 +693,30 @@ def handle_command(
         return _reply("\n".join(lines))
 
     if command in {"/overunder", "/btts", "/cleansheet", "/value", "/overvalue", "/bttsvalue", "/1x2value", "/10odds"}:
-        return _reply(
-            f"{command.upper()} — NOT ENABLED\n"
-            "The combined screen covers 1X2, BTTS and Over/Under, but no market is released until validated probabilities and verified bookmaker prices are available. "
-            "No candidate will be published until both are available. No odds or selections have been fabricated."
-        )
+        rows = _report_predictions(report)
+        probability_coverage = {
+            "1X2": sum(1 for row in rows if _valid_probability_vector(row.get("probabilities"))),
+            "BTTS": sum(1 for row in rows if _goal_market_probabilities(row) is not None),
+            "Over/Under": sum(1 for row in rows if isinstance(row.get("expected_goals"), dict)),
+        }
+        odds_coverage = {"1X2": 0, "BTTS": 0, "Over/Under": 0}
+        for row in rows:
+            markets = ((row.get("the_odds_api_market_odds") or {}).get("markets") or {})
+            if markets.get("h2h"): odds_coverage["1X2"] += 1
+            if markets.get("btts"): odds_coverage["BTTS"] += 1
+            if markets.get("totals"): odds_coverage["Over/Under"] += 1
+        lines = [
+            f"{command.upper()} — VALIDATION LOCKED",
+            f"Upcoming forecast rows: {len(rows)}",
+            "MODEL PROBABILITY COVERAGE (1X2 / BTTS / O-U): "
+            + " / ".join(f"{k} {v}" for k, v in probability_coverage.items()),
+            "BOOKMAKER PRICE COVERAGE (1X2 / BTTS / O-U): "
+            + " / ".join(f"{k} {v}" for k, v in odds_coverage.items()),
+            "1X2, BTTS and Over/Under are included in the value-screen architecture.",
+            "No value selections are released until repeated chronological out-of-sample validation passes and prices have verifiable pre-kickoff timestamps.",
+            "EXPERIMENTAL MODEL — NOT VALIDATED FOR BETTING. No bookmaker actions.",
+        ]
+        return _reply("\\n".join(lines))
 
     if command in {"/results", "/performance"}:
         if not isinstance(ledger, dict):
