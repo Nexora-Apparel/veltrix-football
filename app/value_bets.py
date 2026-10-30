@@ -35,7 +35,15 @@ def build_value_validation_certificate(
     failures: dict[str, list[str]] = {}
     approved: list[str] = []
     live = backtest_report.get("live_pipeline") or {}
-    rolling = ((live.get("goal_markets") or {}).get("rolling_origin_calibration") or {})
+    goal_market_report = live.get("goal_markets") or {}
+    rolling = (goal_market_report.get("rolling_origin_calibration") or {})
+    calibration_application = goal_market_report.get("calibration_application") or {}
+    production_calibration_ready = (
+        isinstance(calibration_application, Mapping)
+        and calibration_application.get("status") == "APPLIED_PROSPECTIVELY"
+        and bool(calibration_application.get("model_version"))
+        and isinstance(calibration_application.get("markets"), list)
+    )
     paper_source = paper_report.get("markets") or paper_report.get("value_validation_markets") or {}
     paper = paper_source if isinstance(paper_source, Mapping) else {}
     goal_markets = {
@@ -70,6 +78,8 @@ def build_value_validation_certificate(
         diagnostic = (rolling.get("markets") or {}).get(model_market) or {}
         if diagnostic.get("status") != "CALIBRATION_DIAGNOSTIC_PASS":
             reasons.append("rolling-origin calibration did not pass")
+        if not production_calibration_ready or model_market not in calibration_application.get("markets", []):
+            reasons.append("validated calibration is not applied to live forecast probabilities")
         if int((diagnostic.get("raw") or {}).get("matches") or 0) < min_walk_forward_matches:
             reasons.append("insufficient independent walk-forward test matches")
         reasons.extend(check_paper(public_market))
