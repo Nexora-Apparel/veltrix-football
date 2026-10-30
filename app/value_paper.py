@@ -53,7 +53,8 @@ def prospective_value_rows(prediction: dict[str, Any], result: dict[str, Any]) -
     """
     calibration = prediction.get("goal_market_calibration")
     if (
-        not isinstance(calibration, dict)
+        prediction.get("goal_markets_model") != "experimental_recent_goals_poisson"
+        or not isinstance(calibration, dict)
         or calibration.get("status") != "APPLIED_PROSPECTIVELY"
         or not calibration.get("model_version")
     ):
