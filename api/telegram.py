@@ -112,8 +112,13 @@ function renderFeatured(m,targetId='featured',insightTarget='insights'){
  const odds=marketPriceLines(m);if(odds.length){const price=document.createElement('div');price.className='prices';price.textContent='AVAILABLE MARKET PRICES · '+odds.join(' · ');wrap.append(price)}
  box.append(top,hero,wrap);if(insightTarget)renderInsights(m,insightTarget);
 }
+const VALUE_BET_MODEL_VALIDATED=false; // Enable only after repeated chronological out-of-sample validation.
 function findValueBets(m){
+ if(!VALUE_BET_MODEL_VALIDATED)return [];
  const markets=(m.the_odds_api_market_odds||{}).markets||{};const candidates=[
+  {key:'h2h',label:'1X2 Home',p:num((m.probabilities||{}).home_win),names:[String(m.home_team||'').toLowerCase()]},
+  {key:'h2h',label:'1X2 Draw',p:num((m.probabilities||{}).draw),names:['draw']},
+  {key:'h2h',label:'1X2 Away',p:num((m.probabilities||{}).away_win),names:[String(m.away_team||'').toLowerCase()]},
   {key:'btts',label:'BTTS Yes',p:num(m.btts_yes),names:['yes','btts yes']},
   {key:'btts',label:'BTTS No',p:Number.isFinite(num(m.btts_yes))?1-num(m.btts_yes):NaN,names:['no','btts no']},
   {key:'totals',label:'Over 2.5',p:num(m.over_2_5),names:['over 2.5','over'],point:2.5},
@@ -134,7 +139,7 @@ function renderValueBet(m,box){
  const t=document.createElement('div');t.className='insighttitle';t.textContent='AI Value Bet';
  const v=document.createElement('div');v.className='insightbody insightvalue';const d=document.createElement('div');d.className='insightbody';
  if(bets.length){const b=bets[0];v.textContent=b.label+' · '+b.bookmaker+' @ '+b.price.toFixed(2);d.textContent='Model probability '+fmt(b.prob)+' · market implied '+fmt(1/b.price)+' · estimated edge '+(100*b.edge).toFixed(1)+' percentage points · expected return '+(100*b.ev).toFixed(1)+'% per unit stake. Experimental estimate only.'}
- else{v.textContent='No qualifying value bet identified';d.textContent='No matched BTTS or Over/Under price clears the 5-point probability-edge and 5% expected-return thresholds. No bet is recommended from this result.'}
+ else{v.textContent='No qualifying value bet identified';d.textContent='1X2, BTTS and Over/Under value alerts are locked until the model passes repeated chronological out-of-sample validation. Prices remain reference-only; no bet is recommended.'}
  card.append(i,t,v,d);box.append(card);
 }
 function renderInsights(m,targetId='insights'){
