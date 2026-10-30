@@ -224,6 +224,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--report", default="reports/daily_predictions.json")
     parser.add_argument("--ledger", default="reports/paper_tracking_ledger.json")
+    parser.add_argument("--force", action="store_true", help="Allow an explicitly requested replacement report to be delivered again for the same date.")
     args = parser.parse_args()
     token = os.environ.get("TELEGRAM_BOT_TOKEN", "")
     chat_id = os.environ.get("TELEGRAM_CHAT_ID", "")
@@ -247,7 +248,7 @@ def main() -> None:
         delivery_sha = None
         if repo and github_token:
             delivery_state, delivery_sha = _load_delivery_state(repo, github_token)
-            if report_date in delivery_state["sent_dates"]:
+            if report_date in delivery_state["sent_dates"] and not args.force:
                 print(f"Telegram delivery skipped: a report for {report_date} was already sent.")
                 return
         else:
