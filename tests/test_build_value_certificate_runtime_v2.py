@@ -35,7 +35,7 @@ def test_runtime_adapter_reads_sample_counts_from_real_backtest_shape():
         }
     }
     backtest = {
-        "dataset_provenance": {"sha256": "test-dataset-sha"},
+        "dataset_provenance": {"sha256": "b" * 64},
         "live_pipeline": {
             "goal_markets": {
                 "chronological_calibration_experiment": experiment,
