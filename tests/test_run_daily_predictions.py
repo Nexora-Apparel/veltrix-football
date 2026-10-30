@@ -305,3 +305,37 @@ def test_daily_runner_does_not_claim_continuity_with_plan_limited_dates(tmp_path
     assert coverage["contiguous_through"] is None
     assert coverage["provider_plan_limited_date_count"] == 2
     assert coverage["provider_plan_limited_dates"] == ["2026-09-21", "2026-09-22"]
+
+
+def test_fixture_delivery_cap_uses_requested_date_and_sorts_without_mutating_input():
+    from datetime import datetime
+    from zoneinfo import ZoneInfo
+
+    now = datetime(2026, 10, 30, 12, 0, tzinfo=ZoneInfo("Africa/Lagos"))
+    payload = {"response": [
+        {"fixture": {"date": "2026-10-23T20:00:00+01:00", "status": {"short": "NS"}}, "tag": "late"},
+        {"fixture": {"date": "2026-10-23T18:00:00+01:00", "status": {"short": "NS"}}, "tag": "early"},
+        {"fixture": {"date": "2026-10-24T18:00:00+01:00", "status": {"short": "NS"}}, "tag": "wrong-date"},
+        {"fixture": {"date": "2026-10-23T17:00:00+01:00", "status": {"short": "FT"}}, "tag": "finished"},
+    ]}
+    limited = daily_runner._limit_fixture_payload(
+        payload, 1, as_of_date=date(2026, 10, 23), now=now
+    )
+    assert [row["tag"] for row in limited["response"]] == ["early"]
+    assert len(payload["response"]) == 4
+
+
+def test_fixture_delivery_cap_excludes_started_fixtures_for_today():
+    from datetime import datetime
+    from zoneinfo import ZoneInfo
+
+    now = datetime(2026, 10, 30, 12, 0, tzinfo=ZoneInfo("Africa/Lagos"))
+    payload = {"response": [
+        {"fixture": {"date": "2026-10-30T11:00:00+01:00", "status": {"short": "NS"}}},
+        {"fixture": {"date": "2026-10-30T13:00:00+01:00", "status": {"short": "NS"}}},
+    ]}
+    limited = daily_runner._limit_fixture_payload(
+        payload, 25, as_of_date=date(2026, 10, 30), now=now
+    )
+    assert len(limited["response"]) == 1
+    assert limited["response"][0]["fixture"]["date"].startswith("2026-10-30T13:00")
