@@ -113,7 +113,7 @@ def merge_paper_ledger(ledger: dict[str, Any], evaluation: dict[str, Any]) -> di
                 continue
             if not report_key or not market_key or not selection_key:
                 continue
-            key = (report_key, fixture_key, market_key, selection_key)
+            key = (fixture_key, market_key, selection_key, str(row.get("model", "unknown")))
         except (KeyError, TypeError, ValueError):
             continue
         unique_goal[key] = row
@@ -124,6 +124,19 @@ def merge_paper_ledger(ledger: dict[str, Any], evaluation: dict[str, Any]) -> di
         for market in sorted({str(row.get("market")) for row in current["goal_market_scored"]})
     }
     current["value_market_metrics_by_market"] = summarize_value_market_rows(current["goal_market_scored"])
+    aliases = {"1x2": "1X2", "btts": "BTTS", "over_1_5": "OVER_UNDER_1_5", "over_2_5": "OVER_UNDER_2_5", "over_3_5": "OVER_UNDER_3_5"}
+    current["value_validation_markets"] = {}
+    for source_market, metric in current["value_market_metrics_by_market"].items():
+        if source_market not in aliases:
+            continue
+        current["value_validation_markets"][aliases[source_market]] = {
+            "settled_bets": metric.get("settled_bets", 0),
+            "distinct_match_dates": metric.get("distinct_match_dates", 0),
+            "net_roi": metric.get("paper_roi"),
+            "roi_lower_95_ci": metric.get("roi_lower_95_normal_approx"),
+            "timestamped_odds_coverage": metric.get("timestamped_odds_coverage", 0.0),
+            "confidence_method": "diagnostic normal approximation; not yet release-grade",
+        }
     current["value_market_validation_notice"] = "Prospective paper evidence only; certificate remains locked until sample, date, ROI lower-bound and coverage thresholds pass."
     if should_merge_matches:
         report_matches = [
@@ -512,5 +525,18 @@ def evaluate_report(report: dict[str, Any], results_payload: dict[str, Any]) -> 
         "goal_market_matches": goal_market_scored,
         "goal_market_metrics": summarize_goal_market_paper(goal_market_scored),
         "value_market_metrics_by_market": summarize_value_market_rows(goal_market_scored),
+        "value_validation_markets": {
+            aliases[key]: {
+                "settled_bets": value.get("settled_bets", 0),
+                "distinct_match_dates": value.get("distinct_match_dates", 0),
+                "net_roi": value.get("paper_roi"),
+                "roi_lower_95_ci": value.get("roi_lower_95_normal_approx"),
+                "timestamped_odds_coverage": value.get("timestamped_odds_coverage", 0.0),
+                "confidence_method": "diagnostic normal approximation; not yet release-grade",
+            }
+            for key, value in summarize_value_market_rows(goal_market_scored).items()
+            for aliases in [{"1x2": "1X2", "btts": "BTTS", "over_1_5": "OVER_UNDER_1_5", "over_2_5": "OVER_UNDER_2_5", "over_3_5": "OVER_UNDER_3_5"}]
+            if key in aliases
+        },
         "notice": "Retrospective 1X2 scoring plus prospective timestamped 1X2, BTTS and O/U 1.5/2.5/3.5 paper tracking only; no betting recommendation or profitability claim.",
     }
