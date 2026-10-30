@@ -115,6 +115,7 @@ class FakeOddsAPI:
 
 
 def test_odds_api_supplements_only_future_same_day_fixtures_and_keeps_primary_rows():
+    """Release gate: supported competition coverage feeds the 25-match selection."""
     """Release gate: mapped leagues must survive fixture-source supplementation."""
     class FakeEventClient:
         api_key = "configured"
