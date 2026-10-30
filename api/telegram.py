@@ -282,6 +282,9 @@ def dashboard_data() -> dict:
             "evaluated_report_dates": ledger.get("evaluated_report_dates", 0),
             "cumulative_metrics_by_model": ledger.get("cumulative_metrics_by_model") or {},
             "last_attempt": ledger.get("last_attempt") or {},
+            "value_market_metrics_by_market": ledger.get("value_market_metrics_by_market") or {},
+            "value_model_versions": ledger.get("value_model_versions") or [],
+            "calibration_versions": ledger.get("calibration_versions") or [],
             "scored_matches": [
                 {
                     "home_team": row.get("home_team"),
@@ -311,9 +314,14 @@ def dashboard_data() -> dict:
         "fixtures_received": report.get("fixtures_received", 0),
         "experimental_forecasts": sum(1 for row in rows if isinstance(row, dict) and row.get("status") == "EXPERIMENTAL_ONLY"),
         "fixtures_with_market_odds": report.get("fixtures_with_market_odds", 0),
+        "goal_market_calibration": report.get("goal_market_calibration") or {
+            "status": "NOT_REPORTED", "markets": [], "compatible_forecasts": 0,
+            "applied_forecasts": 0,
+        },
         "value_bet_screen": report.get("value_bet_screen") or {
             "status": "NOT_REPORTED", "model_validated": False,
-            "markets": ["1X2", "BTTS", "OVER_UNDER_2_5"], "candidate_count": 0,
+            "markets": ["1X2", "BTTS", "OVER_UNDER_1_5", "OVER_UNDER_2_5", "OVER_UNDER_3_5"],
+            "candidate_count": 0,
         },
         "value_validation_certificate": report.get("value_validation_certificate") or {
             "status": "LOCKED_INSUFFICIENT_EVIDENCE",
