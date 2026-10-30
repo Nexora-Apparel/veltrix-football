@@ -90,11 +90,12 @@ def apply_goal_market_calibration(
     version = "goal-platt-" + hashlib.sha256(
         json.dumps(canonical, sort_keys=True, separators=(",", ":")).encode("utf-8")
     ).hexdigest()[:16]
+    calibration_ready = len(calibrators) == len(MARKET_FIELDS) and not failures
     predictions = report.get("predictions")
     applied: list[str] = []
     compatible_forecasts = 0
     applied_forecasts = 0
-    if isinstance(predictions, list):
+    if calibration_ready and isinstance(predictions, list):
         for prediction in predictions:
             if not isinstance(prediction, dict):
                 continue
@@ -126,7 +127,7 @@ def apply_goal_market_calibration(
                     "training_cutoff_date": cutoff,
                     "markets": sorted(raw_values),
                 }
-    complete = len(calibrators) == len(MARKET_FIELDS) and not failures
+    complete = calibration_ready
     applied_status = "APPLIED_PROSPECTIVELY" if complete and applied_forecasts > 0 else (
         "NO_COMPATIBLE_FORECASTS" if complete else "PARTIAL_OR_UNAVAILABLE"
     )
