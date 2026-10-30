@@ -518,7 +518,9 @@ def predict_fixtures(
                             "away": round(league_away_xg, 3),
                         },
                         "btts_yes": round(league_prior["btts_yes"], 4),
+                        "over_1_5": round(league_prior["totals"]["over_1_5"], 4),
                         "over_2_5": round(league_prior["totals"]["over_2_5"], 4),
+                        "over_3_5": round(league_prior["totals"]["over_3_5"], 4),
                         "most_likely_scorelines": league_prior["most_likely_scorelines"][:3],
                         "goal_markets_model": "experimental_competition_prior_poisson",
                         "data_availability": {
@@ -682,7 +684,9 @@ def predict_fixtures(
                 "goal_markets_model": "experimental_recent_goals_poisson",
                 "scoreline_model": "experimental_recent_goals_poisson",
                 "btts_yes": round(probabilities["btts_yes"], 4),
+                "over_1_5": round(probabilities["totals"]["over_1_5"], 4),
                 "over_2_5": round(probabilities["totals"]["over_2_5"], 4),
+                "over_3_5": round(probabilities["totals"]["over_3_5"], 4),
                 "most_likely_scorelines": probabilities["most_likely_scorelines"][:3],
                 **({
                     "poisson_model": "experimental_recent_goals_poisson",
