@@ -99,6 +99,10 @@ def _name_key(name: Any) -> str:
         # Exact provider abbreviations observed in API-Sports/fixture feeds.
         "argentinosjrs": "argentinosjuniors",
         "independrivadavia": "independienterivadavia",
+        # French Ligue 1 event-feed naming variants.
+        "losclille": "lille",
+        "lilleosc": "lille",
+        "rclens": "lens",
     }
     return aliases.get(key, key)
 
