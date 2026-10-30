@@ -48,13 +48,26 @@ python -m scripts.import_open_dataset --from 2020-01-01 --to 2026-10-23 --output
 The importer discovers the source CSV path from the repository tree, validates required fields, normalizes scores, team names, date, available Elo/form/odds/statistics, skips malformed rows, and deduplicates by competition/date/home/away. Its summary reports match counts by competition code and calendar year so coverage gaps can be diagnosed. Optional odds and statistics remain empty when missing. A successful import on 2026-10-24 produced 70,444 completed matches across 38 competition codes from 2020-01-01 through 2026-10-24 (one malformed row skipped). The GitHub Actions workflow can run manually or weekly and uploads the generated CSV as an artifact for 30 days; this artifact is not a permanent database.
 
 ## Value screening safeguards
-`app/value_bets.py` provides a conservative candidate filter, not a proven prediction model. It:
-- removes the proportional bookmaker margin from a complete set of market odds before calculating probability edge;
-- requires a minimum 4 percentage-point edge and 5% theoretical expected return by default, with an odds range of 1.50–4.00;
-- returns no candidates by default unless the caller explicitly marks the model as validated;
-- labels passing selections `CANDIDATE_NOT_GUARANTEED`.
+The production value engine screens **1X2, BTTS, Over/Under 1.5, 2.5 and 3.5** independently. It:
+- removes proportional bookmaker margin from a complete same-book outcome set before calculating edge;
+- requires at least a 4 percentage-point model edge, 5% theoretical expected return, model probability of at least 45%, and decimal odds from 1.50 to 4.00;
+- accepts only matched event/team/kickoff data and timestamped pre-kickoff quotes; prospective paper tracking rejects missing, post-kickoff, stale or mismatched snapshots;
+- records at most one qualifying selection per fixture and market, using the best eligible same-book price set;
+- labels a passing screen result `CANDIDATE_NOT_GUARANTEED`; a candidate is not a guaranteed win or proof of positive long-run ROI.
 
-The `model_validated` switch is a safety gate, not proof of validation. It must remain false until a chronological, out-of-sample backtest and calibration review have passed. The expected-return calculation is theoretical and does not account for odds movement, limits, execution, or bookmaker restrictions. Do not publish selections as "value bets" merely because this mathematical filter passes.
+The live BTTS/total calibration is model-specific. Frozen Platt coefficients trained before the 2025-01-12 cutoff are applied only to compatible `experimental_recent_goals_poisson` forecasts. They are not transferred to competition-only priors, unsupported fixtures, or other model versions. Raw probabilities are retained alongside calibrated probabilities. The daily report records whether compatible forecasts were actually calibrated; no compatible forecast means no prospective value-paper row for that fixture.
+
+## Market-specific value release certificate
+A market is released independently; a pass in one market does not unlock the others. BTTS and each totals line require:
+- a rolling-origin calibration diagnostic that beats both the raw model and expanding historical-frequency baseline;
+- at least 1,000 chronological walk-forward test matches;
+- at least 300 settled prospective candidate selections over at least 90 distinct match dates;
+- positive cumulative flat-stake ROI and a positive 95% lower confidence bound from a match-date-cluster bootstrap;
+- at least 98% timestamped pre-kickoff odds coverage; paper evidence must use the exact deployed calibration version.
+
+1X2 additionally must beat the de-vigged market on both Brier score and log loss in full-period and recent-holdout comparisons, then satisfy the same prospective paper requirements. The current 1X2 model does not beat that market benchmark.
+
+The certificate is rebuilt from the latest successful historical backtest artifact and cumulative paper ledger before report publication. Missing artifacts, missing timestamps, insufficient sample size, failed diagnostics or mismatched calibration versions keep the relevant market locked. The theoretical expected-return calculation excludes price movement, stake limits, execution, fees and account restrictions. No bookmaker actions are performed, and no accumulator/10.00-odds or 50.00–100.00-odds slips are enabled.
 
 ## Favourite/underdog neutrality audit
 
@@ -85,18 +98,20 @@ Elo is materially better than the current Poisson model on these historical metr
 
 The live report also includes an explicitly non-predictive rest/congestion context (days since the prior match and matches in the previous 14 days), calculated only from historical match dates. It is not used to change probabilities until its effect is independently tested. Confirmed injuries, suspensions, lineups, and true xG are not assumed when the selected feed does not supply verified data.
 
-## BTTS and Over/Under validation findings (2026-10-29)
+## BTTS and Over/Under validation findings (2026-10-30)
 
-The latest walk-forward backtest evaluated 238,389 matches from 2000-08-18 through 2026-09-03. The probability-model comparison includes an expanding historical-frequency baseline that uses only prior-date outcomes.
+The latest chronological backtest evaluated 238,389 matches from 2000-08-18 through 2026-09-03. The repeated rolling-origin calibration diagnostic evaluated 32,541 later-date test matches in four date-ordered folds for each goal market.
 
-- On the full test set, the current Poisson goal-market model did **not** beat the expanding base-rate baseline on Brier score and log loss for BTTS Yes, Over 1.5, Over 2.5, or Over 3.5.
-- On the latest 20% date holdout (50,201 matches), raw model Brier/log loss were also worse than the expanding baseline in all four markets.
-- A report-only Platt calibration experiment fitted on the earlier 80% and tested on the later 20% improved Brier and log loss for all four markets. This is one chronological split, not repeated rolling-origin validation; the fitted parameters are not applied to live forecasts.
+- BTTS Yes, Over 1.5, Over 2.5 and Over 3.5 each passed the rolling-origin **calibration diagnostic**: all four folds beat both the raw probability model and the expanding historical-frequency baseline on Brier score and log loss.
+- Aggregate calibrated Brier/log-loss scores were better than both the raw model and the expanding baseline for each of the four markets. This supports calibration quality; it is not evidence of profitable betting.
+- Frozen Platt coefficients from the earlier training window (cutoff 2025-01-12) are now wired into live reporting for the matching team-history recent-goals Poisson model. They are not applied to competition-only priors or unsupported fixtures. Raw probabilities remain in the report for audit.
 - Historical O/U 2.5 prices were available on 156,664/238,389 matches (65.7%). A diagnostic selecting either side only when model probability exceeded raw implied probability by at least 5 percentage points produced 73,956 selections, 50.16% wins, and -4,604.08 flat-stake units (-6.23% diagnostic ROI). On the latest 20% holdout: 17,878 selections, 49.26% wins, -1,189.65 units (-6.65% diagnostic ROI).
 - The historical price audit uses B365 or average O/U 2.5 prices. Quote timestamps, forecast-time availability, execution, bookmaker limits and closing-line value are unavailable; bookmaker margin is not removed before edge screening. These figures are diagnostic only and must not be represented as executable returns.
-- The imported historical dataset does not contain BTTS price columns, so it cannot support a historical BTTS profitability audit. Prospective BTTS paper tracking depends on valid, timestamped pre-kickoff bookmaker quotes in the daily report.
+- The imported historical dataset does not contain BTTS price columns, so it cannot support a historical BTTS profitability audit. Prospective paper tracking uses only timestamped pre-kickoff quotes from the live report.
 
-**Decision:** Keep BTTS/Over/Under probabilities research-only, keep all value/betting alerts disabled, and do not promote the current Poisson goal-market model. The next model gate is repeated rolling-origin calibration and a fresh untouched holdout, followed by prospective timestamped price tracking. A single successful calibration split is insufficient.
+**Latest live verification (2026-10-30):** 25 same-day fixtures were retrieved. Four fixtures had research-only competition-prior forecasts; 21 were withheld because their competitions were not mapped to the senior historical dataset. No compatible team-history Poisson forecast was available for calibration in that run, so no prospective value-paper rows were added. The certificate correctly remained `LOCKED_INSUFFICIENT_EVIDENCE`, with no approved markets and no value alerts.
+
+**Decision:** The calibration diagnostic has passed, and its matching live-model application is implemented. Profitability validation is still incomplete: prospective paper evidence must accumulate under the deployed calibration version, and 1X2 must first beat the market benchmark. All value alerts and betting slips therefore remain disabled.
 
 ## Retrospective paper tracking
 
