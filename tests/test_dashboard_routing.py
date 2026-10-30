@@ -51,7 +51,7 @@ def test_dashboard_data_exposes_value_screen_status_and_market_coverage(monkeypa
         "value_bet_screen": {
             "status": "DISABLED_UNVALIDATED",
             "model_validated": False,
-            "markets": ["1X2", "BTTS", "OVER_UNDER_2_5"],
+            "markets": ["1X2", "BTTS", "OVER_UNDER_1_5", "OVER_UNDER_2_5", "OVER_UNDER_3_5"],
             "candidate_count": 0,
         },
     }
@@ -59,7 +59,7 @@ def test_dashboard_data_exposes_value_screen_status_and_market_coverage(monkeypa
     monkeypatch.setattr(telegram, "load_paper_ledger", lambda: None)
     payload = telegram.dashboard_data()
     assert payload["value_bet_screen"]["status"] == "DISABLED_UNVALIDATED"
-    assert payload["value_bet_screen"]["markets"] == ["1X2", "BTTS", "OVER_UNDER_2_5"]
+    assert payload["value_bet_screen"]["markets"] == ["1X2", "BTTS", "OVER_UNDER_1_5", "OVER_UNDER_2_5", "OVER_UNDER_3_5"]
     assert payload["value_validation_certificate"]["status"] == "LOCKED_INSUFFICIENT_EVIDENCE"
     assert payload["value_validation_certificate"]["alerts_enabled"] is False
 
@@ -81,3 +81,33 @@ def test_dashboard_data_exposes_published_validation_certificate(monkeypatch):
     monkeypatch.setattr(telegram, "load_paper_ledger", lambda: None)
     payload = telegram.dashboard_data()
     assert payload["value_validation_certificate"] == certificate
+
+
+
+def test_dashboard_exposes_calibration_coverage_and_versioned_value_ledger(monkeypatch):
+    from api import telegram
+
+    calibration = {
+        "status": "NO_COMPATIBLE_FORECASTS",
+        "compatible_forecasts": 0,
+        "applied_forecasts": 0,
+        "markets": [],
+    }
+    ledger = {
+        "model_status": "PAPER_TRACKING_ONLY",
+        "evaluated_report_dates": 4,
+        "value_market_metrics_by_market": {"1x2": {"settled_bets": 2}},
+        "value_model_versions": ["experimental_recent_goals_poisson"],
+        "calibration_versions": [],
+        "scored_matches": [],
+    }
+    monkeypatch.setattr(telegram, "load_latest_report", lambda: {
+        "as_of_date": "2026-10-30",
+        "predictions": [],
+        "goal_market_calibration": calibration,
+    })
+    monkeypatch.setattr(telegram, "load_paper_ledger", lambda: ledger)
+    payload = telegram.dashboard_data()
+    assert payload["goal_market_calibration"] == calibration
+    assert payload["paper_tracking"]["value_market_metrics_by_market"] == {"1x2": {"settled_bets": 2}}
+    assert payload["paper_tracking"]["value_model_versions"] == ["experimental_recent_goals_poisson"]
