@@ -44,7 +44,11 @@ def build_value_validation_certificate(
         and bool(calibration_application.get("model_version"))
         and isinstance(calibration_application.get("markets"), list)
     )
-    paper_source = paper_report.get("markets") or paper_report.get("value_validation_markets") or {}
+    versioned_paper = paper_report.get("value_validation_markets_by_calibration_version")
+    if isinstance(versioned_paper, Mapping):
+        paper_source = versioned_paper.get(calibration_application.get("model_version")) or {}
+    else:
+        paper_source = paper_report.get("markets") or paper_report.get("value_validation_markets") or {}
     paper = paper_source if isinstance(paper_source, Mapping) else {}
     goal_markets = {
         "BTTS": "btts_yes",
