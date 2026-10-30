@@ -634,14 +634,14 @@ def test_goal_market_paper_tracking_uses_only_pre_kickoff_odds_and_settles_flat_
         }],
     }
     result = evaluate_report(report, {"response": [_result(55, 2, 1)]})
-    assert len(result["goal_market_matches"]) == 4
-    assert result["goal_market_metrics"]["settled_selections"] == 4
-    assert result["goal_market_metrics"]["wins"] == 2
-    assert result["goal_market_metrics"]["losses"] == 2
-    assert {row["selection"] for row in result["goal_market_matches"]} == {"yes", "no", "over_2_5", "under_2_5"}
-    over_row = next(row for row in result["goal_market_matches"] if row["selection"] == "over_2_5")
+    assert len(result["goal_market_matches"]) == 2
+    assert result["goal_market_metrics"]["settled_selections"] == 2
+    assert {row["market"] for row in result["goal_market_matches"]} == {"btts", "over_2_5"}
+    assert {row["selection"] for row in result["goal_market_matches"]} == {"yes", "over"}
+    over_row = next(row for row in result["goal_market_matches"] if row["market"] == "over_2_5")
     assert over_row["decimal_odds"] == 1.9
     assert over_row["unit_profit"] == 0.9
+    assert over_row["devigged_market_probability"] < over_row["model_probability"]
 
 
 def test_goal_market_paper_tracking_rejects_post_kickoff_odds():
