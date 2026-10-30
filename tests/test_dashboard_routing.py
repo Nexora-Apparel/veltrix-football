@@ -37,3 +37,25 @@ def test_dashboard_data_handler_returns_json(monkeypatch):
     assert payload["as_of_date"] == "2026-10-27"
     assert payload["predictions"] == []
     assert payload["paper_tracking"]["model_status"] == "PAPER_TRACKING_ONLY"
+
+
+def test_dashboard_data_exposes_value_screen_status_and_market_coverage(monkeypatch):
+    from api import telegram
+
+    report = {
+        "as_of_date": "2026-10-30",
+        "generated_at_utc": "2026-10-30T12:00:00+00:00",
+        "command_data_publication": "PUBLISHED",
+        "predictions": [],
+        "value_bet_screen": {
+            "status": "DISABLED_UNVALIDATED",
+            "model_validated": False,
+            "markets": ["1X2", "BTTS", "OVER_UNDER_2_5"],
+            "candidate_count": 0,
+        },
+    }
+    monkeypatch.setattr(telegram, "load_latest_report", lambda: report)
+    monkeypatch.setattr(telegram, "load_paper_ledger", lambda: None)
+    payload = telegram.dashboard_data()
+    assert payload["value_bet_screen"]["status"] == "DISABLED_UNVALIDATED"
+    assert payload["value_bet_screen"]["markets"] == ["1X2", "BTTS", "OVER_UNDER_2_5"]
