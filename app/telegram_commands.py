@@ -19,11 +19,13 @@ COMMANDS: dict[str, str] = {
     "/fixtures": "Show fixtures available in the current report.",
     "/match": "Inspect a named fixture: /match Arsenal vs Chelsea",
     "/live": "Show live matches only when live-status data is connected.",
+    "/1x2": "1X2: Home/Draw/Away outcome probabilities from the current experimental forecast.",
+    "/1x2value": "1X2 value screen; requires validated probabilities and timestamped bookmaker prices.",
     "/overunder": "PRIMARY MARKET: experimental Over/Under 0.5–4.5 goal probabilities from model expected goals.",
     "/btts": "PRIMARY MARKET: experimental Both Teams To Score Yes/No probabilities from model expected goals.",
     "/goals": "Expected-goals summary for available forecasts.",
     "/cleansheet": "Clean-sheet estimates; unavailable until calibrated team-goal probabilities exist.",
-    "/value": "Value screen status; candidates stay disabled until the model passes validation.",
+    "/value": "Combined value screen: 1X2, BTTS and Over/Under; candidates stay disabled until models pass validation.",
     "/overvalue": "Over/Under value screen status; requires model probabilities and real odds.",
     "/bttsvalue": "BTTS value screen status; requires model probabilities and real odds.",
     "/odds": "Show matched BTTS and Over/Under bookmaker prices from the connected multi-source report.",
@@ -530,7 +532,7 @@ def handle_command(
             "The saved report is a same-day pre-match snapshot. A separate date-specific or live-status source is required; no fixtures are guessed."
         )
 
-    if command in {"/today", "/fixtures", "/match", "/goals", "/overunder", "/btts"}:
+    if command in {"/today", "/fixtures", "/match", "/goals", "/1x2", "/overunder", "/btts"}:
         all_rows = _future_fixtures(report)
         forecast_rows = _forecast_predictions(report)
         if not all_rows:
@@ -558,12 +560,12 @@ def handle_command(
             selected = _future_fixtures(report)[:15]
             if not selected:
                 return _reply("FIXTURES — NO FUTURE SAME-DAY FIXTURES remain in the saved snapshot.")
-        elif command in {"/overunder", "/btts"}:
+        elif command in {"/overunder", "/btts", "/1x2"}:
             # Show up to ten valid goal-market forecasts. If fewer exist, report
             # only the eligible matches; never pad the list with invented picks.
-            selected = [row for row in forecast_rows if _goal_market_probabilities(row) is not None][:10]
+            selected = [row for row in forecast_rows if (_goal_market_probabilities(row) is not None if command in {"/overunder", "/btts"} else _valid_probability_vector(row.get("probabilities")))][:10]
             if not selected:
-                market = "OVER/UNDER" if command == "/overunder" else "BTTS"
+                market = "OVER/UNDER" if command == "/overunder" else ("BTTS" if command == "/btts" else "1X2")
                 return _reply(
                     f"{market} — NO USABLE GOAL-MARKET ESTIMATES. "
                     "The current report has no eligible fixtures with valid expected-goal inputs."
@@ -584,10 +586,11 @@ def handle_command(
         titles = {
             "/overunder": "🎯 PRIMARY MARKET — OVER / UNDER GOALS (EXPERIMENTAL)",
             "/btts": "🎯 PRIMARY MARKET — BOTH TEAMS TO SCORE (EXPERIMENTAL)",
+            "/1x2": "⚽ 1X2 MARKET — HOME / DRAW / AWAY (EXPERIMENTAL)",
             "/fixtures": "FIXTURE LIST",
         }
         lines = [titles.get(command, f"{command.upper()} — EXPERIMENTAL REPORT")]
-        if command in {"/overunder", "/btts"}:
+        if command in {"/overunder", "/btts", "/1x2"}:
             lines.extend([
                 f"📅 {report.get('as_of_date', 'Today')}  ·  {len(selected)} matches  ·  Kick-off times: WAT",
                 "Model estimates only — not validated betting advice.",
@@ -635,6 +638,14 @@ def handle_command(
                 )
             if means is not None and command == "/goals":
                 lines.append(f"Expected goals: {means[0]:.2f} home  ·  {means[1]:.2f} away")
+            if command == "/1x2":
+                lines.append("1X2 probabilities: Home {:.0%} · Draw {:.0%} · Away {:.0%}".format(float(probs["home_win"]), float(probs["draw"]), float(probs["away_win"])))
+                prices = _saved_market_price_lines(row, "1x2")
+                if prices:
+                    lines.append("REFERENCE BOOKMAKER PRICES")
+                    lines.extend(f"• {price}" for price in prices[:3])
+                else:
+                    lines.append("• No matched 1X2 prices in the saved report.")
             if means is not None and command == "/overunder":
                 markets = _goal_market_probabilities(row) or {}
                 lines.append(f"⚽ Expected goals: {home} {means[0]:.2f}  ·  {away} {means[1]:.2f}")
@@ -671,10 +682,10 @@ def handle_command(
             lines.append("Experimental estimates only — not validated betting advice.")
         return _reply("\n".join(lines))
 
-    if command in {"/overunder", "/btts", "/cleansheet", "/value", "/overvalue", "/bttsvalue", "/10odds"}:
+    if command in {"/overunder", "/btts", "/cleansheet", "/value", "/overvalue", "/bttsvalue", "/1x2value", "/10odds"}:
         return _reply(
             f"{command.upper()} — NOT ENABLED\n"
-            "The connected report does not yet provide verified bookmaker prices plus validated probabilities for this market. "
+            "The combined screen covers 1X2, BTTS and Over/Under, but no market is released until validated probabilities and verified bookmaker prices are available. "
             "No candidate will be published until both are available. No odds or selections have been fabricated."
         )
 
