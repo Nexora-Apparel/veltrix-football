@@ -9,6 +9,7 @@ def _backtest():
         "over_3_5": (-0.65, 0.29),
     }
     return {
+        "dataset_provenance": {"sha256": "a" * 64},
         "live_pipeline": {
             "goal_markets": {
                 "chronological_calibration_experiment": {
@@ -108,3 +109,22 @@ def test_does_not_apply_calibration_without_four_fold_rolling_pass():
     assert row["btts_yes"] == 0.64
     assert "btts_yes" not in row.get("goal_market_calibration", {}).get("markets", [])
     assert report["goal_market_calibration"]["status"] == "PARTIAL_OR_UNAVAILABLE"
+
+
+
+def test_missing_dataset_fingerprint_prevents_live_calibration():
+    backtest = _backtest()
+    del backtest["dataset_provenance"]
+    report = {
+        "predictions": [{
+            "goal_markets_model": "experimental_recent_goals_poisson",
+            "btts_yes": 0.64,
+            "over_1_5": 0.82,
+            "over_2_5": 0.61,
+            "over_3_5": 0.39,
+        }],
+    }
+    apply_goal_market_calibration(report, backtest)
+    assert report["goal_market_calibration"]["status"] == "PARTIAL_OR_UNAVAILABLE"
+    assert "dataset_provenance" in report["goal_market_calibration"]["failures"]
+    assert "goal_market_calibration" not in report["predictions"][0]
