@@ -62,8 +62,8 @@ def test_predictions_alert_is_short_when_no_usable_forecasts():
     report["predictions"] = [{"status": "INSUFFICIENT_HISTORY"}]
     message = format_report(report)
     assert "🔔 🆕 NEW VELTRIX UPDATE" in message
-    assert "Matches: 0" in message
-    assert "No usable predictions available for today." in message
+    assert "Fixtures retrieved: 1 · Research forecasts: 0" in message
+    assert "Forecast withheld: insufficient reliable team history." in message
     assert "withheld" not in message
 
 
@@ -116,8 +116,8 @@ def test_report_handles_no_usable_predictions_without_long_notes():
         {"status": "UNSUPPORTED_COMPETITION"},
     ]
     message = format_report(report)
-    assert "Matches: 0" in message
-    assert "No usable predictions available for today." in message
+    assert "Fixtures retrieved: 1 · Research forecasts: 0" in message
+    assert "No probabilities or betting signal published for this fixture." in message
     assert "withheld" not in message
 
 
@@ -323,3 +323,32 @@ def test_telegram_report_discloses_reference_prices_for_all_three_markets():
     assert "1X2 · Book A: Alpha FC 2.10 / Draw 3.20 / Beta FC 3.60" in message
     assert "BTTS · Book B: Yes 1.85 / No 1.95" in message
     assert "O/U 2.5 · Book C: Over 2.5 1.90 / Under 2.5 1.95" in message
+
+
+def test_telegram_report_lists_all_fixtures_and_marks_ineligible_forecasts():
+    report = sample_report()
+    report["predictions"] = [
+        {**report["predictions"][0], "home_team": "Forecasted FC", "away_team": "Modelled FC"},
+        {
+            "status": "INSUFFICIENT_HISTORY",
+            "home_team": "History Gap FC",
+            "away_team": "New Club FC",
+            "league": "Example League",
+            "kickoff_local": "2026-10-23T18:00:00+01:00",
+        },
+        {
+            "status": "UNSUPPORTED_COMPETITION",
+            "home_team": "Cup Side",
+            "away_team": "Regional Side",
+            "league": "Unmapped Cup",
+            "kickoff_local": "2026-10-23T19:00:00+01:00",
+        },
+    ]
+    message = "\\n".join(format_report_messages(report))
+    assert "Fixtures retrieved: 3 · Research forecasts: 1" in message
+    assert "Forecasted FC vs Modelled FC" in message
+    assert "History Gap FC vs New Club FC" in message
+    assert "Cup Side vs Regional Side" in message
+    assert "FORECAST STATUS: INSUFFICIENT_HISTORY" in message
+    assert "FORECAST STATUS: UNSUPPORTED_COMPETITION" in message
+    assert "No probabilities or betting signal published for this fixture." in message
