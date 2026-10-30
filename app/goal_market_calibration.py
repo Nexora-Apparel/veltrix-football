@@ -75,10 +75,19 @@ def apply_goal_market_calibration(
     ).hexdigest()[:16]
     predictions = report.get("predictions")
     applied: list[str] = []
+    compatible_forecasts = 0
+    applied_forecasts = 0
     if isinstance(predictions, list):
         for prediction in predictions:
             if not isinstance(prediction, dict):
                 continue
+            # The frozen coefficients were evaluated on the team-history
+            # recent-goals Poisson model. Do not transfer them to a different
+            # fallback model such as a competition-only prior.
+            model_name = prediction.get("goal_markets_model") or prediction.get("model")
+            if model_name != "experimental_recent_goals_poisson":
+                continue
+            compatible_forecasts += 1
             raw_values = {}
             for market, field in MARKET_FIELDS.items():
                 raw = prediction.get(field)
@@ -90,6 +99,7 @@ def apply_goal_market_calibration(
                 if market not in applied:
                     applied.append(market)
             if raw_values:
+                applied_forecasts += 1
                 existing = prediction.get("raw_goal_market_probabilities")
                 if not isinstance(existing, dict):
                     prediction["raw_goal_market_probabilities"] = raw_values
@@ -100,11 +110,16 @@ def apply_goal_market_calibration(
                     "markets": sorted(raw_values),
                 }
     complete = len(calibrators) == len(MARKET_FIELDS) and not failures
+    applied_status = "APPLIED_PROSPECTIVELY" if complete and applied_forecasts > 0 else (
+        "NO_COMPATIBLE_FORECASTS" if complete else "PARTIAL_OR_UNAVAILABLE"
+    )
     report["goal_market_calibration"] = {
-        "status": "APPLIED_PROSPECTIVELY" if complete else "PARTIAL_OR_UNAVAILABLE",
-        "model_version": version if complete else None,
+        "status": applied_status,
+        "model_version": version if applied_status == "APPLIED_PROSPECTIVELY" else None,
         "training_cutoff_date": cutoff or None,
-        "markets": sorted(calibrators),
+        "markets": sorted(applied),
+        "compatible_forecasts": compatible_forecasts,
+        "applied_forecasts": applied_forecasts,
         "failures": failures,
         "training_method": experiment.get("method"),
         "note": "Frozen Platt coefficients were fitted before the later-date holdout and applied only to future report fixtures.",
