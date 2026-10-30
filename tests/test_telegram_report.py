@@ -352,3 +352,6 @@ def test_telegram_report_lists_all_fixtures_and_marks_ineligible_forecasts():
     assert "FORECAST STATUS: INSUFFICIENT_HISTORY" in message
     assert "FORECAST STATUS: UNSUPPORTED_COMPETITION" in message
     assert "No probabilities or betting signal published for this fixture." in message
+
+
+# Controlled production verification: exercise corrected all-fixture Telegram delivery.
