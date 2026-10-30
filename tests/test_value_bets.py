@@ -219,7 +219,9 @@ def test_value_validation_certificate_can_release_only_markets_with_complete_evi
             },
         },
     }
-    paper = {"markets": {
+    paper = {
+        "calibration_versions": ["goal-market-platt-v1"],
+        "markets": {
         market: {
             "settled_bets": 400,
             "distinct_match_dates": 120,
@@ -229,7 +231,8 @@ def test_value_validation_certificate_can_release_only_markets_with_complete_evi
             "timestamped_odds_coverage": 0.995,
         }
         for market in ("1X2", "BTTS", "OVER_UNDER_1_5", "OVER_UNDER_2_5", "OVER_UNDER_3_5")
-    }}
+        }
+    }
     certificate = build_value_validation_certificate(backtest, paper)
     assert certificate["status"] == "VALIDATED"
     assert set(certificate["approved_markets"]) == {
@@ -268,4 +271,32 @@ def test_value_validation_certificate_rejects_diagnostic_only_calibration():
     for market in ("BTTS", "OVER_UNDER_1_5", "OVER_UNDER_2_5", "OVER_UNDER_3_5"):
         assert certificate["market_diagnostics"][market]["status"] == "LOCKED"
         assert "validated calibration is not applied to live forecast probabilities" in certificate["market_diagnostics"][market]["failures"]
+    assert certificate["alerts_enabled"] is False
+
+
+
+def test_value_validation_certificate_rejects_paper_rows_from_another_calibrator():
+    from app.value_bets import build_value_validation_certificate
+
+    passing = {"status": "CALIBRATION_DIAGNOSTIC_PASS", "raw": {"matches": 2000}}
+    backtest = {
+        "live_pipeline": {
+            "goal_markets": {
+                "rolling_origin_calibration": {
+                    "markets": {
+                        "btts_yes": passing, "over_1_5": passing,
+                        "over_2_5": passing, "over_3_5": passing,
+                    },
+                },
+                "calibration_application": {
+                    "status": "APPLIED_PROSPECTIVELY",
+                    "model_version": "goal-market-platt-v2",
+                    "markets": ["btts_yes", "over_1_5", "over_2_5", "over_3_5"],
+                },
+            },
+        },
+    }
+    paper = {"calibration_versions": ["goal-market-platt-v1"]}
+    certificate = build_value_validation_certificate(backtest, paper)
+    assert "prospective paper evidence does not match the deployed calibration version" in certificate["market_diagnostics"]["BTTS"]["failures"]
     assert certificate["alerts_enabled"] is False
