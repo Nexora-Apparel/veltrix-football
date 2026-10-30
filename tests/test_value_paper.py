@@ -47,8 +47,10 @@ def test_value_tracker_selects_one_best_edge_per_market_and_devigs_same_book():
         },
     }
     rows = prospective_value_rows(prediction, {"home_goals": 2, "away_goals": 1})
-    assert {row["market"] for row in rows} == {"1x2", "btts", "over_1_5", "over_2_5", "over_3_5"}
-    assert len(rows) == 5
+    assert {row["market"] for row in rows} == {"1x2", "btts", "over_2_5"}
+    assert len(rows) == 3
+    assert all(row["edge"] >= 0.04 for row in rows)
+    assert all(row["decimal_odds"] >= 1.50 and row["decimal_odds"] <= 4.00 for row in rows)
     assert all(row["odds_fetched_at"] and row["quote_updated_at"] for row in rows)
     assert all(row["devigged_market_probability"] > 0 for row in rows)
     summaries = summarize_value_market_rows(rows)
