@@ -17,7 +17,8 @@ value_core.attach_value_bet_screens = attach_value_bet_screens
 _original_apply_calibration = calibration_core.apply_goal_market_calibration
 
 
-def _apply_calibration_from_artifact(report, backtest):
+def normalize_calibration_artifact(backtest):
+    """Copy artifact-level chronological sample counts onto each market record."""
     payload = deepcopy(backtest)
     live = payload.get("live_pipeline") or {}
     goal = live.get("goal_markets") or {}
@@ -28,7 +29,11 @@ def _apply_calibration_from_artifact(report, backtest):
             if isinstance(item, dict):
                 item.setdefault("calibration_matches", experiment.get("calibration_matches"))
                 item.setdefault("test_matches", experiment.get("test_matches"))
-    return _original_apply_calibration(report, payload)
+    return payload
+
+
+def _apply_calibration_from_artifact(report, backtest):
+    return _original_apply_calibration(report, normalize_calibration_artifact(backtest))
 
 
 calibration_core.apply_goal_market_calibration = _apply_calibration_from_artifact
