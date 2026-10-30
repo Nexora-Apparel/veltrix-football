@@ -359,3 +359,21 @@ def test_fixture_delivery_cap_prioritizes_historically_mapped_competitions():
         payload, 1, as_of_date=date(2026, 10, 30), now=now
     )
     assert [row["tag"] for row in limited["response"]] == ["mapped"]
+
+
+def test_fixture_cap_does_not_trust_provider_local_numeric_league_ids():
+    from datetime import datetime
+    from zoneinfo import ZoneInfo
+
+    now = datetime(2026, 10, 30, 12, 0, tzinfo=ZoneInfo("Africa/Lagos"))
+    payload = {"response": [
+        {"fixture": {"date": "2026-10-30T13:00:00+01:00", "status": {"short": "NS"}},
+         "league": {"name": "Unmapped event", "id": 39, "code": "Egy2"},
+         "_veltrix_source": "The Odds API", "tag": "unmapped"},
+        {"fixture": {"date": "2026-10-30T18:00:00+01:00", "status": {"short": "NS"}},
+         "league": {"name": "Premier League", "code": "PL"}, "tag": "mapped"},
+    ]}
+    limited = daily_runner._limit_fixture_payload(
+        payload, 1, as_of_date=date(2026, 10, 30), now=now
+    )
+    assert [row["tag"] for row in limited["response"]] == ["mapped"]
