@@ -145,3 +145,30 @@ def test_value_tracker_excludes_goal_markets_without_market_specific_calibration
     rows = prospective_value_rows(prediction, {"home_goals": 2, "away_goals": 1})
     assert "btts" in {row["market"] for row in rows}
     assert "over_2_5" not in {row["market"] for row in rows}
+
+
+
+def test_value_tracker_rejects_calibrated_probabilities_from_other_model_family():
+    prediction = {
+        "fixture_id": "event-wrong-model",
+        "goal_markets_model": "experimental_competition_prior_poisson",
+        "goal_market_calibration": {
+            "status": "APPLIED_PROSPECTIVELY",
+            "model_version": "goal-platt-wrong-family-v1",
+            "markets": ["btts_yes", "over_1_5", "over_2_5", "over_3_5"],
+        },
+        "home_team": "Alpha",
+        "away_team": "Beta",
+        "kickoff_local": "2026-10-30T18:00:00+01:00",
+        "probabilities": {"H": 0.60, "D": 0.23, "A": 0.17},
+        "btts_yes": 0.64,
+        "over_1_5": 0.82,
+        "over_2_5": 0.61,
+        "over_3_5": 0.39,
+        "the_odds_api_market_odds": {
+            "fetched_at": "2026-10-30T15:00:00Z",
+            "commence_time": "2026-10-30T17:00:00Z",
+            "markets": {},
+        },
+    }
+    assert prospective_value_rows(prediction, {"home_goals": 2, "away_goals": 1}) == []
