@@ -45,7 +45,14 @@ def _eligible_quote(book: Mapping[str, Any], snapshot: Mapping[str, Any], predic
 
 
 def _probabilities(prediction: Mapping[str, Any]) -> dict[str, dict[str, float]]:
-    raw = prediction.get("probabilities") if isinstance(prediction.get("probabilities"), Mapping) else {}
+    model_name = str(prediction.get("model") or prediction.get("goal_markets_model") or "")
+    if model_name == "experimental_elo_by_competition":
+        raw = prediction.get("poisson_probabilities")
+    elif model_name == "experimental_recent_goals_poisson":
+        raw = prediction.get("probabilities")
+    else:
+        raw = None
+    raw = raw if isinstance(raw, Mapping) else {}
     output: dict[str, dict[str, float]] = {}
     one_x_two = {
         "home_win": raw.get("home_win", raw.get("H")),
@@ -146,6 +153,7 @@ def screen_fixture_value_bets(
                 ):
                     candidates.append({
                         **candidate, "market": market,
+                        "model": "experimental_recent_goals_poisson",
                         "provider": price_set["provider"],
                         "bookmaker": price_set["bookmaker"],
                     })
