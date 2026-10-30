@@ -398,7 +398,7 @@ def test_1x2_command_displays_home_draw_away_and_real_h2h_prices():
 
 def test_1x2_value_command_remains_disabled_without_validated_model():
     reply = handle_command("/1x2value")
-    assert "NOT ENABLED" in reply
+    assert "VALIDATION LOCKED" in reply
     assert "1X2, BTTS and Over/Under" in reply
 
 
@@ -427,3 +427,15 @@ def test_odds_command_includes_1x2_h2h_prices():
     }]}
     reply = handle_command("/odds", report=report)
     assert "1X2: Arsenal 1.90 / Draw 3.50 / Chelsea 4.20" in reply
+
+
+def test_value_screen_reports_1x2_btts_totals_coverage_without_releasing_picks():
+    reply = handle_command("/value", report={"predictions": [{
+        "home_team": "Arsenal", "away_team": "Chelsea",
+        "probabilities": {"home_win": 0.55, "draw": 0.25, "away_win": 0.20},
+        "expected_goals": {"home": 1.6, "away": 0.9},
+        "the_odds_api_market_odds": {"markets": {"h2h": [{}], "btts": [{}], "totals": [{}]}},
+    }]})
+    assert "VALIDATION LOCKED" in reply
+    assert "1X2 1 / BTTS 1 / Over/Under 1" in reply
+    assert "No value selections are released" in reply
