@@ -49,6 +49,7 @@ on:
       - "app/goal_market_calibration.py"
       - "tests/test_goal_market_calibration.py"
       - "tests/test_build_value_certificate.py"
+      - "tests/test_build_value_certificate_runtime_v2.py"
       - "tests/test_value_bets_runtime.py"
       - "tests/test_value_bets.py"
       - "scripts/evaluate_paper_predictions.py"
