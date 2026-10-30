@@ -40,6 +40,7 @@ def test_dashboard_data_handler_returns_json(monkeypatch):
 
 
 def test_dashboard_data_exposes_value_screen_status_and_market_coverage(monkeypatch):
+    """Release gate for visible all-market value coverage without live picks."""
     from api import telegram
 
     report = {
