@@ -198,9 +198,6 @@ def format_report_messages(report: dict[str, Any], ledger: dict[str, Any] | None
                         float(candidate.get("expected_return_per_unit")) * 100.0,
                     )
                 )
-        basis = item.get("prediction_basis")
-        if basis:
-            block.append(f"MODEL BASIS: {basis}")
         reference_lines = _reference_market_lines(item)
         if reference_lines:
             block.append("REFERENCE BOOKMAKER PRICES — NOT VALUE PICKS")
