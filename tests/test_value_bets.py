@@ -71,3 +71,68 @@ def test_1x2_value_screen_stays_disabled_without_validation():
         {"home_win": 2.0, "draw": 4.5, "away_win": 7.0},
     )
     assert result == []
+
+
+def test_fixture_value_screen_covers_1x2_btts_and_totals_but_stays_locked():
+    from app.value_bets import screen_fixture_value_bets
+
+    prediction = {
+        "home_team": "Home FC",
+        "away_team": "Away FC",
+        "probabilities": {"home_win": 0.70, "draw": 0.18, "away_win": 0.12},
+        "btts_yes": 0.60,
+        "over_2_5": 0.65,
+        "the_odds_api_market_odds": {"markets": {
+            "h2h": [{"bookmaker": "Book A", "outcomes": [
+                {"name": "Home FC", "price": 2.0},
+                {"name": "Draw", "price": 4.5},
+                {"name": "Away FC", "price": 7.0},
+            ]}],
+            "btts": [{"bookmaker": "Book A", "outcomes": [
+                {"name": "Yes", "price": 2.0}, {"name": "No", "price": 2.0},
+            ]}],
+            "totals": [{"bookmaker": "Book A", "outcomes": [
+                {"name": "Over", "point": 2.5, "price": 2.0},
+                {"name": "Under", "point": 2.5, "price": 2.0},
+            ]}],
+        }},
+    }
+    result = screen_fixture_value_bets(prediction)
+    assert result["status"] == "DISABLED_UNVALIDATED"
+    assert result["markets"]["1X2"]["bookmaker_price_sets"] == 1
+    assert result["markets"]["BTTS"]["bookmaker_price_sets"] == 1
+    assert result["markets"]["OVER_UNDER_2_5"]["bookmaker_price_sets"] == 1
+    assert result["candidate_count"] == 0
+
+
+def test_fixture_value_screen_can_rank_1x2_candidates_after_explicit_validation():
+    from app.value_bets import screen_fixture_value_bets
+
+    prediction = {
+        "home_team": "Home FC",
+        "away_team": "Away FC",
+        "probabilities": {"home_win": 0.70, "draw": 0.18, "away_win": 0.12},
+        "the_odds_api_market_odds": {"markets": {"h2h": [{
+            "bookmaker": "Book A", "outcomes": [
+                {"name": "Home FC", "price": 2.0},
+                {"name": "Draw", "price": 4.5},
+                {"name": "Away FC", "price": 7.0},
+            ],
+        }]}},
+    }
+    result = screen_fixture_value_bets(prediction, model_validated=True)
+    candidates = result["markets"]["1X2"]["candidates"]
+    assert candidates
+    assert candidates[0]["selection"] == "home_win"
+    assert candidates[0]["market"] == "1X2"
+    assert candidates[0]["provider"] == "The Odds API"
+
+
+def test_attach_value_screen_writes_report_level_validation_gate():
+    from app.value_bets import attach_value_bet_screens
+
+    report = {"predictions": [{"home_team": "A", "away_team": "B"}]}
+    attached = attach_value_bet_screens(report)
+    assert attached["value_bet_screen"]["status"] == "DISABLED_UNVALIDATED"
+    assert attached["value_bet_screen"]["markets"] == ["1X2", "BTTS", "OVER_UNDER_2_5"]
+    assert attached["predictions"][0]["value_bet_screen"]["candidate_count"] == 0
