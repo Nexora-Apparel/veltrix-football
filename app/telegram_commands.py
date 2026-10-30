@@ -203,7 +203,12 @@ def _saved_market_price_lines(row: dict[str, Any], market_key: str) -> list[str]
         for book in (five.get("bookmakers") or []):
             if not isinstance(book, dict):
                 continue
-            if market_key == "btts":
+            if market_key == "1x2":
+                market = book.get("1x2") or book.get("match_winner") or {}
+                home, draw, away = market.get("home"), market.get("draw"), market.get("away")
+                if all(isinstance(value, (int, float)) for value in (home, draw, away)):
+                    lines.append("5DollarFootballAPI · {} · 1X2 Home {:.2f} / Draw {:.2f} / Away {:.2f}".format(book.get("bookmaker", "bookmaker"), home, draw, away))
+            elif market_key == "btts":
                 market = book.get("btts") or {}
                 yes, no = market.get("yes"), market.get("no")
                 if isinstance(yes, (int, float)) and isinstance(no, (int, float)):
@@ -218,7 +223,8 @@ def _saved_market_price_lines(row: dict[str, Any], market_key: str) -> list[str]
     odds_api = row.get("the_odds_api_market_odds")
     if isinstance(odds_api, dict):
         markets = odds_api.get("markets") or {}
-        for market in (markets.get(market_key) or [])[:2]:
+        provider_market_key = "h2h" if market_key == "1x2" else market_key
+        for market in (markets.get(provider_market_key) or [])[:2]:
             if not isinstance(market, dict):
                 continue
             outcomes = []
@@ -234,7 +240,8 @@ def _saved_market_price_lines(row: dict[str, Any], market_key: str) -> list[str]
     infer = row.get("infer_sports_market_odds")
     if isinstance(infer, dict):
         markets = infer.get("markets") or {}
-        for market in (markets.get(market_key) or [])[:2]:
+        provider_market_key = "h2h" if market_key == "1x2" else market_key
+        for market in (markets.get(provider_market_key) or [])[:2]:
             if not isinstance(market, dict):
                 continue
             outcomes = []
