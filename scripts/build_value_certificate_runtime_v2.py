@@ -1,4 +1,7 @@
-"""Certificate CLI adapter for timestamp-safe screens and frozen calibrator metadata."""
+"""Certificate CLI adapter for timestamp-safe screens and frozen calibrator metadata.
+
+Controlled end-to-end verification uses the same artifact-aware path as the daily job.
+"""
 from __future__ import annotations
 
 from copy import deepcopy
