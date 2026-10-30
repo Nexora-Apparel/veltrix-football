@@ -786,7 +786,11 @@ def enrich_report_with_multi_source_odds(
                             "away": _valid_price(one_x_two_prices.get("away")),
                         },
                     })
-                if any(any(price is not None for price in (book["btts"]["yes"], book["btts"]["no"], book["over_under"]["over"], book["over_under"]["under"])) for book in normalized_books):
+                if any(any(price is not None for price in (
+                    book["btts"]["yes"], book["btts"]["no"],
+                    book["over_under"]["over"], book["over_under"]["under"],
+                    book["1x2"]["home"], book["1x2"]["draw"], book["1x2"]["away"],
+                )) for book in normalized_books):
                     prediction["five_dollar_market_odds"] = {
                         "provider": "5DollarFootballAPI", "fixture_id": str(fixture_id),
                         "bookmakers": normalized_books, "fetched_at": datetime.now(timezone.utc).isoformat(),
