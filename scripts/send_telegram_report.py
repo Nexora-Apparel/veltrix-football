@@ -154,6 +154,9 @@ def format_report_messages(report: dict[str, Any], ledger: dict[str, Any] | None
             f"Over 2.5: {_format_percent(over25)} | Under 2.5: {_format_percent(1 - float(over25)) if isinstance(over25, (int, float)) and 0 <= over25 <= 1 else '—'}",
             f"xG: {_format_goals(expected.get('home'))} - {_format_goals(expected.get('away'))}",
         ]
+        prediction_basis = str(item.get("prediction_basis") or "").strip()
+        if prediction_basis:
+            block.append("FORECAST BASIS: " + prediction_basis)
         value_screen = item.get("value_bet_screen") if isinstance(item.get("value_bet_screen"), dict) else {}
         for market, result in (value_screen.get("markets") or {}).items():
             for candidate in (result.get("candidates") or [])[:2]:
