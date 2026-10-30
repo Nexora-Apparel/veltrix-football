@@ -149,6 +149,7 @@ function renderInsights(m,targetId='insights'){
  rows.push(['◎','BTTS outlook',Number.isFinite(btts)?(btts>=.55?'Higher estimated chance both teams score':btts<=.45?'Model leans toward at least one team not scoring':'No strong BTTS lean'):'BTTS probability unavailable',Number.isFinite(btts)?'Model estimate: '+fmt(btts):'No value supplied.']);
  rows.push(['↗','Goal total',Number.isFinite(over)?(over>=.55?'Model leans Over 2.5':over<=.45?'Model leans Under 2.5':'No strong 2.5-goal lean'):'Totals estimate unavailable',Number.isFinite(over)?'Over 2.5 estimate: '+fmt(over):'No value supplied.']);
  rows.push(['⌁','Expected goals',Number.isFinite(homeX)&&Number.isFinite(awayX)?m.home_team+' '+homeX.toFixed(2)+' · '+m.away_team+' '+awayX.toFixed(2):'Expected-goals data unavailable','Goal estimates from the published model; not live xG statistics.']);
+ if(m.prediction_basis)rows.push(['⚑','Prediction basis',m.prediction_basis,'Team-specific history is below the model minimum; this is a competition-level research prior only.']);
  for(const [icon,title,value,desc] of rows){const card=document.createElement('article');card.className='insightcard';const a=document.createElement('div');a.className='insighticon';a.textContent=icon;const b=document.createElement('div');b.className='insighttitle';b.textContent=title;const c=document.createElement('div');c.className='insightbody insightvalue';c.textContent=value;const d=document.createElement('div');d.className='insightbody';d.textContent=desc;card.append(a,b,c,d);box.append(card)}
  renderValueBet(m,box);
 }
@@ -310,6 +311,10 @@ def dashboard_data() -> dict:
         "fixtures_received": report.get("fixtures_received", 0),
         "experimental_forecasts": sum(1 for row in rows if isinstance(row, dict) and row.get("status") == "EXPERIMENTAL_ONLY"),
         "fixtures_with_market_odds": report.get("fixtures_with_market_odds", 0),
+        "value_bet_screen": report.get("value_bet_screen") or {
+            "status": "NOT_REPORTED", "model_validated": False,
+            "markets": ["1X2", "BTTS", "OVER_UNDER_2_5"], "candidate_count": 0,
+        },
         "paper_tracking": paper_tracking,
         "warning": "Published forecasts are experimental and not validated for betting. The report may not be the latest live run.",
         "predictions": upcoming[:60],
