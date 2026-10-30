@@ -452,7 +452,10 @@ def handle_command(
                     if not isinstance(book, dict):
                         continue
                     btts, totals = book.get("btts") or {}, book.get("over_under") or {}
+                    one_x_two = book.get("1x2") or book.get("match_winner") or {}
                     parts = []
+                    if all(isinstance(one_x_two.get(key), (int, float)) for key in ("home", "draw", "away")):
+                        parts.append("1X2 Home {:.2f} / Draw {:.2f} / Away {:.2f}".format(float(one_x_two["home"]), float(one_x_two["draw"]), float(one_x_two["away"])))
                     if btts.get("yes") is not None and btts.get("no") is not None:
                         parts.append("BTTS Yes {:.2f} / No {:.2f}".format(float(btts["yes"]), float(btts["no"])))
                     if totals.get("over") is not None and totals.get("under") is not None:
@@ -462,7 +465,7 @@ def handle_command(
             odds_api = row.get("the_odds_api_market_odds")
             if isinstance(odds_api, dict):
                 markets = odds_api.get("markets") or {}
-                for market_key, market_label in (("btts", "BTTS"), ("totals", "Over/Under")):
+                for market_key, market_label in (("h2h", "1X2"), ("btts", "BTTS"), ("totals", "Over/Under")):
                     for market in (markets.get(market_key) or [])[:2]:
                         if not isinstance(market, dict):
                             continue
