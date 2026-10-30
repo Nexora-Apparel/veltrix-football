@@ -1,6 +1,6 @@
 {
   "product": "Veltrix Football",
-  "generated_at_utc": "2026-10-30T13:26:24.688680+00:00",
+  "generated_at_utc": "2026-10-30T13:34:00.181714+00:00",
   "as_of_date": "2026-10-30",
   "timezone": "Africa/Lagos",
   "same_day_only": true,
@@ -20,6 +20,8 @@
     "ALGD2": 7,
     "Angola": 1,
     "Aze PL": 1,
+    "BulFPFL": 1,
+    "EgyPL": 1,
     "India SL": 1,
     "Iran": 2,
     "Iraq": 2,
@@ -27,7 +29,7 @@
     "Nigeria PL": 1,
     "QatarSL": 1,
     "RwandaF": 1,
-    "UzbSL": 3
+    "SaudiPL": 1
   },
   "possible_team_name_mismatches": 4,
   "primary_model_counts": {
@@ -128,7 +130,7 @@
           "h2h": [
             {
               "bookmaker": "LeoVegas",
-              "last_update": "2026-10-30T13:26:10Z",
+              "last_update": "2026-10-30T13:32:55Z",
               "outcomes": [
                 {
                   "name": "Elversberg",
@@ -149,7 +151,7 @@
             },
             {
               "bookmaker": "Betway",
-              "last_update": "2026-10-30T13:25:25Z",
+              "last_update": "2026-10-30T13:33:17Z",
               "outcomes": [
                 {
                   "name": "Elversberg",
@@ -170,7 +172,7 @@
             },
             {
               "bookmaker": "Smarkets",
-              "last_update": "2026-10-30T13:26:10Z",
+              "last_update": "2026-10-30T13:33:18Z",
               "outcomes": [
                 {
                   "name": "Elversberg",
@@ -191,7 +193,7 @@
             },
             {
               "bookmaker": "Unibet (UK)",
-              "last_update": "2026-10-30T13:22:24Z",
+              "last_update": "2026-10-30T13:32:59Z",
               "outcomes": [
                 {
                   "name": "Elversberg",
@@ -212,7 +214,7 @@
             },
             {
               "bookmaker": "Betfred (UK)",
-              "last_update": "2026-10-30T13:26:08Z",
+              "last_update": "2026-10-30T13:32:55Z",
               "outcomes": [
                 {
                   "name": "Elversberg",
@@ -233,7 +235,7 @@
             },
             {
               "bookmaker": "Coral",
-              "last_update": "2026-10-30T13:26:08Z",
+              "last_update": "2026-10-30T13:32:55Z",
               "outcomes": [
                 {
                   "name": "Elversberg",
@@ -254,7 +256,7 @@
             },
             {
               "bookmaker": "Ladbrokes",
-              "last_update": "2026-10-30T13:26:11Z",
+              "last_update": "2026-10-30T13:32:55Z",
               "outcomes": [
                 {
                   "name": "Elversberg",
@@ -275,7 +277,7 @@
             },
             {
               "bookmaker": "Betano (UK)",
-              "last_update": "2026-10-30T13:24:32Z",
+              "last_update": "2026-10-30T13:33:51Z",
               "outcomes": [
                 {
                   "name": "Elversberg",
@@ -296,7 +298,7 @@
             },
             {
               "bookmaker": "Bet Victor",
-              "last_update": "2026-10-30T13:26:24Z",
+              "last_update": "2026-10-30T13:33:57Z",
               "outcomes": [
                 {
                   "name": "Elversberg",
@@ -317,7 +319,7 @@
             },
             {
               "bookmaker": "888sport",
-              "last_update": "2026-10-30T13:26:08Z",
+              "last_update": "2026-10-30T13:32:54Z",
               "outcomes": [
                 {
                   "name": "Elversberg",
@@ -338,7 +340,7 @@
             },
             {
               "bookmaker": "William Hill",
-              "last_update": "2026-10-30T13:25:47Z",
+              "last_update": "2026-10-30T13:33:38Z",
               "outcomes": [
                 {
                   "name": "Elversberg",
@@ -359,7 +361,7 @@
             },
             {
               "bookmaker": "BoyleSports",
-              "last_update": "2026-10-30T13:25:27Z",
+              "last_update": "2026-10-30T13:33:41Z",
               "outcomes": [
                 {
                   "name": "Elversberg",
@@ -380,7 +382,7 @@
             },
             {
               "bookmaker": "LiveScore Bet",
-              "last_update": "2026-10-30T13:26:08Z",
+              "last_update": "2026-10-30T13:33:17Z",
               "outcomes": [
                 {
                   "name": "Elversberg",
@@ -401,7 +403,7 @@
             },
             {
               "bookmaker": "Virgin Bet",
-              "last_update": "2026-10-30T13:25:24Z",
+              "last_update": "2026-10-30T13:33:18Z",
               "outcomes": [
                 {
                   "name": "Elversberg",
@@ -422,7 +424,7 @@
             },
             {
               "bookmaker": "Grosvenor",
-              "last_update": "2026-10-30T13:25:47Z",
+              "last_update": "2026-10-30T13:33:42Z",
               "outcomes": [
                 {
                   "name": "Elversberg",
@@ -443,7 +445,7 @@
             },
             {
               "bookmaker": "Casumo",
-              "last_update": "2026-10-30T13:26:08Z",
+              "last_update": "2026-10-30T13:32:55Z",
               "outcomes": [
                 {
                   "name": "Elversberg",
@@ -464,7 +466,7 @@
             },
             {
               "bookmaker": "Matchbook",
-              "last_update": "2026-10-30T13:26:08Z",
+              "last_update": "2026-10-30T13:33:17Z",
               "outcomes": [
                 {
                   "name": "Elversberg",
@@ -485,7 +487,7 @@
             },
             {
               "bookmaker": "Paddy Power",
-              "last_update": "2026-10-30T13:26:08Z",
+              "last_update": "2026-10-30T13:32:54Z",
               "outcomes": [
                 {
                   "name": "Elversberg",
@@ -506,7 +508,7 @@
             },
             {
               "bookmaker": "Betfair Sportsbook",
-              "last_update": "2026-10-30T13:26:08Z",
+              "last_update": "2026-10-30T13:32:55Z",
               "outcomes": [
                 {
                   "name": "Elversberg",
@@ -527,7 +529,7 @@
             },
             {
               "bookmaker": "Betfair",
-              "last_update": "2026-10-30T13:26:09Z",
+              "last_update": "2026-10-30T13:33:37Z",
               "outcomes": [
                 {
                   "name": "Elversberg",
@@ -548,7 +550,7 @@
             },
             {
               "bookmaker": "Sky Bet",
-              "last_update": "2026-10-30T13:24:38Z",
+              "last_update": "2026-10-30T13:32:54Z",
               "outcomes": [
                 {
                   "name": "Elversberg",
@@ -571,7 +573,7 @@
           "totals": [
             {
               "bookmaker": "LeoVegas",
-              "last_update": "2026-10-30T13:26:10Z",
+              "last_update": "2026-10-30T13:32:55Z",
               "outcomes": [
                 {
                   "name": "Over",
@@ -587,7 +589,7 @@
             },
             {
               "bookmaker": "William Hill",
-              "last_update": "2026-10-30T13:25:47Z",
+              "last_update": "2026-10-30T13:33:38Z",
               "outcomes": [
                 {
                   "name": "Over",
@@ -603,7 +605,7 @@
             },
             {
               "bookmaker": "Grosvenor",
-              "last_update": "2026-10-30T13:25:47Z",
+              "last_update": "2026-10-30T13:33:42Z",
               "outcomes": [
                 {
                   "name": "Over",
@@ -619,7 +621,7 @@
             },
             {
               "bookmaker": "Casumo",
-              "last_update": "2026-10-30T13:26:08Z",
+              "last_update": "2026-10-30T13:32:55Z",
               "outcomes": [
                 {
                   "name": "Over",
@@ -637,7 +639,7 @@
           "btts": [
             {
               "bookmaker": "LeoVegas",
-              "last_update": "2026-10-30T13:26:10Z",
+              "last_update": "2026-10-30T13:32:55Z",
               "outcomes": [
                 {
                   "name": "Yes",
@@ -653,7 +655,7 @@
             },
             {
               "bookmaker": "Betfred (UK)",
-              "last_update": "2026-10-30T13:26:08Z",
+              "last_update": "2026-10-30T13:32:55Z",
               "outcomes": [
                 {
                   "name": "Yes",
@@ -669,7 +671,7 @@
             },
             {
               "bookmaker": "Coral",
-              "last_update": "2026-10-30T13:26:08Z",
+              "last_update": "2026-10-30T13:32:55Z",
               "outcomes": [
                 {
                   "name": "Yes",
@@ -685,7 +687,7 @@
             },
             {
               "bookmaker": "Ladbrokes",
-              "last_update": "2026-10-30T13:26:11Z",
+              "last_update": "2026-10-30T13:32:55Z",
               "outcomes": [
                 {
                   "name": "Yes",
@@ -701,7 +703,7 @@
             },
             {
               "bookmaker": "William Hill",
-              "last_update": "2026-10-30T13:25:47Z",
+              "last_update": "2026-10-30T13:33:38Z",
               "outcomes": [
                 {
                   "name": "Yes",
@@ -717,7 +719,7 @@
             },
             {
               "bookmaker": "LiveScore Bet",
-              "last_update": "2026-10-30T13:26:08Z",
+              "last_update": "2026-10-30T13:33:17Z",
               "outcomes": [
                 {
                   "name": "Yes",
@@ -733,7 +735,7 @@
             },
             {
               "bookmaker": "Virgin Bet",
-              "last_update": "2026-10-30T13:25:24Z",
+              "last_update": "2026-10-30T13:33:18Z",
               "outcomes": [
                 {
                   "name": "Yes",
@@ -749,7 +751,7 @@
             },
             {
               "bookmaker": "Matchbook",
-              "last_update": "2026-10-30T13:26:08Z",
+              "last_update": "2026-10-30T13:33:17Z",
               "outcomes": [
                 {
                   "name": "Yes",
@@ -765,7 +767,7 @@
             },
             {
               "bookmaker": "Paddy Power",
-              "last_update": "2026-10-30T13:25:11Z",
+              "last_update": "2026-10-30T13:33:53Z",
               "outcomes": [
                 {
                   "name": "Yes",
@@ -781,7 +783,7 @@
             },
             {
               "bookmaker": "Betfair",
-              "last_update": "2026-10-30T13:25:58Z",
+              "last_update": "2026-10-30T13:33:53Z",
               "outcomes": [
                 {
                   "name": "Yes",
@@ -797,7 +799,7 @@
             }
           ]
         },
-        "fetched_at": "2026-10-30T13:26:26.045504+00:00"
+        "fetched_at": "2026-10-30T13:34:01.108434+00:00"
       },
       "value_bet_screen": {
         "status": "DISABLED_UNVALIDATED",
@@ -914,7 +916,7 @@
           "h2h": [
             {
               "bookmaker": "LiveScore Bet",
-              "last_update": "2026-10-30T13:25:47Z",
+              "last_update": "2026-10-30T13:33:38Z",
               "outcomes": [
                 {
                   "name": "Casa Pia",
@@ -935,7 +937,7 @@
             },
             {
               "bookmaker": "Grosvenor",
-              "last_update": "2026-10-30T13:25:46Z",
+              "last_update": "2026-10-30T13:33:38Z",
               "outcomes": [
                 {
                   "name": "Casa Pia",
@@ -956,7 +958,7 @@
             },
             {
               "bookmaker": "Virgin Bet",
-              "last_update": "2026-10-30T13:26:08Z",
+              "last_update": "2026-10-30T13:33:17Z",
               "outcomes": [
                 {
                   "name": "Casa Pia",
@@ -977,7 +979,7 @@
             },
             {
               "bookmaker": "Casumo",
-              "last_update": "2026-10-30T13:26:08Z",
+              "last_update": "2026-10-30T13:32:55Z",
               "outcomes": [
                 {
                   "name": "Casa Pia",
@@ -998,7 +1000,7 @@
             },
             {
               "bookmaker": "Betfred (UK)",
-              "last_update": "2026-10-30T13:25:47Z",
+              "last_update": "2026-10-30T13:33:38Z",
               "outcomes": [
                 {
                   "name": "Casa Pia",
@@ -1019,7 +1021,7 @@
             },
             {
               "bookmaker": "Paddy Power",
-              "last_update": "2026-10-30T13:26:09Z",
+              "last_update": "2026-10-30T13:32:55Z",
               "outcomes": [
                 {
                   "name": "Casa Pia",
@@ -1040,7 +1042,7 @@
             },
             {
               "bookmaker": "Betfair",
-              "last_update": "2026-10-30T13:26:09Z",
+              "last_update": "2026-10-30T13:33:38Z",
               "outcomes": [
                 {
                   "name": "Casa Pia",
@@ -1061,7 +1063,7 @@
             },
             {
               "bookmaker": "Bet Victor",
-              "last_update": "2026-10-30T13:24:54Z",
+              "last_update": "2026-10-30T13:32:26Z",
               "outcomes": [
                 {
                   "name": "Casa Pia",
@@ -1082,7 +1084,7 @@
             },
             {
               "bookmaker": "Betano (UK)",
-              "last_update": "2026-10-30T13:24:50Z",
+              "last_update": "2026-10-30T13:33:51Z",
               "outcomes": [
                 {
                   "name": "Casa Pia",
@@ -1103,7 +1105,7 @@
             },
             {
               "bookmaker": "Betfair Sportsbook",
-              "last_update": "2026-10-30T13:25:48Z",
+              "last_update": "2026-10-30T13:33:38Z",
               "outcomes": [
                 {
                   "name": "Casa Pia",
@@ -1124,7 +1126,7 @@
             },
             {
               "bookmaker": "Sky Bet",
-              "last_update": "2026-10-30T13:25:24Z",
+              "last_update": "2026-10-30T13:32:34Z",
               "outcomes": [
                 {
                   "name": "Casa Pia",
@@ -1145,7 +1147,7 @@
             },
             {
               "bookmaker": "Betway",
-              "last_update": "2026-10-30T13:26:08Z",
+              "last_update": "2026-10-30T13:32:55Z",
               "outcomes": [
                 {
                   "name": "Casa Pia",
@@ -1166,7 +1168,7 @@
             },
             {
               "bookmaker": "Smarkets",
-              "last_update": "2026-10-30T13:26:09Z",
+              "last_update": "2026-10-30T13:33:40Z",
               "outcomes": [
                 {
                   "name": "Casa Pia",
@@ -1175,7 +1177,7 @@
                 },
                 {
                   "name": "Sporting Lisbon",
-                  "price": 1.3,
+                  "price": 1.28,
                   "point": null
                 },
                 {
@@ -1187,16 +1189,16 @@
             },
             {
               "bookmaker": "Unibet (UK)",
-              "last_update": "2026-10-30T13:22:48Z",
+              "last_update": "2026-10-30T13:32:35Z",
               "outcomes": [
                 {
                   "name": "Casa Pia",
-                  "price": 10.0,
+                  "price": 10.5,
                   "point": null
                 },
                 {
                   "name": "Sporting Lisbon",
-                  "price": 1.27,
+                  "price": 1.25,
                   "point": null
                 },
                 {
@@ -1208,7 +1210,7 @@
             },
             {
               "bookmaker": "Ladbrokes",
-              "last_update": "2026-10-30T13:25:25Z",
+              "last_update": "2026-10-30T13:33:18Z",
               "outcomes": [
                 {
                   "name": "Casa Pia",
@@ -1229,7 +1231,7 @@
             },
             {
               "bookmaker": "Coral",
-              "last_update": "2026-10-30T13:25:47Z",
+              "last_update": "2026-10-30T13:33:38Z",
               "outcomes": [
                 {
                   "name": "Casa Pia",
@@ -1250,7 +1252,7 @@
             },
             {
               "bookmaker": "888sport",
-              "last_update": "2026-10-30T13:25:50Z",
+              "last_update": "2026-10-30T13:33:42Z",
               "outcomes": [
                 {
                   "name": "Casa Pia",
@@ -1271,7 +1273,7 @@
             },
             {
               "bookmaker": "William Hill",
-              "last_update": "2026-10-30T13:26:09Z",
+              "last_update": "2026-10-30T13:32:55Z",
               "outcomes": [
                 {
                   "name": "Casa Pia",
@@ -1292,7 +1294,7 @@
             },
             {
               "bookmaker": "BoyleSports",
-              "last_update": "2026-10-30T13:25:29Z",
+              "last_update": "2026-10-30T13:33:40Z",
               "outcomes": [
                 {
                   "name": "Casa Pia",
@@ -1313,7 +1315,7 @@
             },
             {
               "bookmaker": "Matchbook",
-              "last_update": "2026-10-30T13:26:08Z",
+              "last_update": "2026-10-30T13:33:22Z",
               "outcomes": [
                 {
                   "name": "Casa Pia",
@@ -1322,7 +1324,7 @@
                 },
                 {
                   "name": "Sporting Lisbon",
-                  "price": 1.3,
+                  "price": 1.29,
                   "point": null
                 },
                 {
@@ -1336,7 +1338,7 @@
           "totals": [
             {
               "bookmaker": "Grosvenor",
-              "last_update": "2026-10-30T13:25:46Z",
+              "last_update": "2026-10-30T13:33:38Z",
               "outcomes": [
                 {
                   "name": "Over",
@@ -1352,7 +1354,7 @@
             },
             {
               "bookmaker": "Casumo",
-              "last_update": "2026-10-30T13:26:08Z",
+              "last_update": "2026-10-30T13:32:55Z",
               "outcomes": [
                 {
                   "name": "Over",
@@ -1368,7 +1370,7 @@
             },
             {
               "bookmaker": "William Hill",
-              "last_update": "2026-10-30T13:26:09Z",
+              "last_update": "2026-10-30T13:32:55Z",
               "outcomes": [
                 {
                   "name": "Over",
@@ -1386,7 +1388,7 @@
           "btts": [
             {
               "bookmaker": "LiveScore Bet",
-              "last_update": "2026-10-30T13:25:47Z",
+              "last_update": "2026-10-30T13:33:38Z",
               "outcomes": [
                 {
                   "name": "Yes",
@@ -1402,7 +1404,7 @@
             },
             {
               "bookmaker": "Virgin Bet",
-              "last_update": "2026-10-30T13:26:08Z",
+              "last_update": "2026-10-30T13:33:17Z",
               "outcomes": [
                 {
                   "name": "Yes",
@@ -1418,7 +1420,7 @@
             },
             {
               "bookmaker": "Betfred (UK)",
-              "last_update": "2026-10-30T13:25:47Z",
+              "last_update": "2026-10-30T13:33:38Z",
               "outcomes": [
                 {
                   "name": "Yes",
@@ -1434,7 +1436,7 @@
             },
             {
               "bookmaker": "Ladbrokes",
-              "last_update": "2026-10-30T13:25:25Z",
+              "last_update": "2026-10-30T13:33:18Z",
               "outcomes": [
                 {
                   "name": "Yes",
@@ -1450,7 +1452,7 @@
             },
             {
               "bookmaker": "Coral",
-              "last_update": "2026-10-30T13:25:47Z",
+              "last_update": "2026-10-30T13:33:38Z",
               "outcomes": [
                 {
                   "name": "Yes",
@@ -1466,7 +1468,7 @@
             },
             {
               "bookmaker": "William Hill",
-              "last_update": "2026-10-30T13:26:09Z",
+              "last_update": "2026-10-30T13:32:55Z",
               "outcomes": [
                 {
                   "name": "Yes",
@@ -1482,11 +1484,11 @@
             },
             {
               "bookmaker": "Matchbook",
-              "last_update": "2026-10-30T13:26:08Z",
+              "last_update": "2026-10-30T13:33:22Z",
               "outcomes": [
                 {
                   "name": "Yes",
-                  "price": 2.06,
+                  "price": 2.04,
                   "point": null
                 },
                 {
@@ -1498,7 +1500,7 @@
             }
           ]
         },
-        "fetched_at": "2026-10-30T13:26:26.251438+00:00"
+        "fetched_at": "2026-10-30T13:34:01.219063+00:00"
       },
       "value_bet_screen": {
         "status": "DISABLED_UNVALIDATED",
@@ -1615,7 +1617,7 @@
           "h2h": [
             {
               "bookmaker": "Paddy Power",
-              "last_update": "2026-10-30T13:25:31Z",
+              "last_update": "2026-10-30T13:32:15Z",
               "outcomes": [
                 {
                   "name": "Atlético Huracán",
@@ -1636,7 +1638,7 @@
             },
             {
               "bookmaker": "Sky Bet",
-              "last_update": "2026-10-30T13:25:04Z",
+              "last_update": "2026-10-30T13:31:54Z",
               "outcomes": [
                 {
                   "name": "Atlético Huracán",
@@ -1657,7 +1659,7 @@
             },
             {
               "bookmaker": "Betfair",
-              "last_update": "2026-10-30T13:26:14Z",
+              "last_update": "2026-10-30T13:33:49Z",
               "outcomes": [
                 {
                   "name": "Atlético Huracán",
@@ -1678,7 +1680,7 @@
             },
             {
               "bookmaker": "BoyleSports",
-              "last_update": "2026-10-30T13:26:17Z",
+              "last_update": "2026-10-30T13:33:24Z",
               "outcomes": [
                 {
                   "name": "Atlético Huracán",
@@ -1699,7 +1701,7 @@
             },
             {
               "bookmaker": "Smarkets",
-              "last_update": "2026-10-30T13:25:55Z",
+              "last_update": "2026-10-30T13:33:47Z",
               "outcomes": [
                 {
                   "name": "Atlético Huracán",
@@ -1720,7 +1722,7 @@
             },
             {
               "bookmaker": "Betfred (UK)",
-              "last_update": "2026-10-30T13:26:15Z",
+              "last_update": "2026-10-30T13:33:01Z",
               "outcomes": [
                 {
                   "name": "Atlético Huracán",
@@ -1741,7 +1743,7 @@
             },
             {
               "bookmaker": "Ladbrokes",
-              "last_update": "2026-10-30T13:26:17Z",
+              "last_update": "2026-10-30T13:33:01Z",
               "outcomes": [
                 {
                   "name": "Atlético Huracán",
@@ -1762,7 +1764,7 @@
             },
             {
               "bookmaker": "Unibet (UK)",
-              "last_update": "2026-10-30T13:25:57Z",
+              "last_update": "2026-10-30T13:32:43Z",
               "outcomes": [
                 {
                   "name": "Atlético Huracán",
@@ -1783,7 +1785,7 @@
             },
             {
               "bookmaker": "Virgin Bet",
-              "last_update": "2026-10-30T13:26:14Z",
+              "last_update": "2026-10-30T13:33:01Z",
               "outcomes": [
                 {
                   "name": "Atlético Huracán",
@@ -1804,7 +1806,7 @@
             },
             {
               "bookmaker": "LiveScore Bet",
-              "last_update": "2026-10-30T13:26:14Z",
+              "last_update": "2026-10-30T13:33:01Z",
               "outcomes": [
                 {
                   "name": "Atlético Huracán",
@@ -1825,7 +1827,7 @@
             },
             {
               "bookmaker": "Betfair Sportsbook",
-              "last_update": "2026-10-30T13:25:30Z",
+              "last_update": "2026-10-30T13:33:22Z",
               "outcomes": [
                 {
                   "name": "Atlético Huracán",
@@ -1846,7 +1848,7 @@
             },
             {
               "bookmaker": "Betway",
-              "last_update": "2026-10-30T13:25:54Z",
+              "last_update": "2026-10-30T13:33:45Z",
               "outcomes": [
                 {
                   "name": "Atlético Huracán",
@@ -1869,7 +1871,7 @@
           "totals": [],
           "btts": []
         },
-        "fetched_at": "2026-10-30T13:26:25.938628+00:00"
+        "fetched_at": "2026-10-30T13:34:01.001132+00:00"
       },
       "value_bet_screen": {
         "status": "DISABLED_UNVALIDATED",
@@ -1986,7 +1988,7 @@
           "h2h": [
             {
               "bookmaker": "Paddy Power",
-              "last_update": "2026-10-30T13:25:31Z",
+              "last_update": "2026-10-30T13:32:15Z",
               "outcomes": [
                 {
                   "name": "Estudiantes de Río Cuarto",
@@ -2007,7 +2009,7 @@
             },
             {
               "bookmaker": "Sky Bet",
-              "last_update": "2026-10-30T13:25:04Z",
+              "last_update": "2026-10-30T13:31:54Z",
               "outcomes": [
                 {
                   "name": "Estudiantes de Río Cuarto",
@@ -2028,7 +2030,7 @@
             },
             {
               "bookmaker": "Betfair",
-              "last_update": "2026-10-30T13:26:14Z",
+              "last_update": "2026-10-30T13:33:49Z",
               "outcomes": [
                 {
                   "name": "Estudiantes de Río Cuarto",
@@ -2049,7 +2051,7 @@
             },
             {
               "bookmaker": "BoyleSports",
-              "last_update": "2026-10-30T13:26:17Z",
+              "last_update": "2026-10-30T13:33:24Z",
               "outcomes": [
                 {
                   "name": "Estudiantes de Río Cuarto",
@@ -2070,7 +2072,7 @@
             },
             {
               "bookmaker": "Betfred (UK)",
-              "last_update": "2026-10-30T13:26:15Z",
+              "last_update": "2026-10-30T13:33:01Z",
               "outcomes": [
                 {
                   "name": "Estudiantes de Río Cuarto",
@@ -2091,7 +2093,7 @@
             },
             {
               "bookmaker": "Smarkets",
-              "last_update": "2026-10-30T13:25:55Z",
+              "last_update": "2026-10-30T13:33:47Z",
               "outcomes": [
                 {
                   "name": "Estudiantes de Río Cuarto",
@@ -2112,7 +2114,7 @@
             },
             {
               "bookmaker": "Ladbrokes",
-              "last_update": "2026-10-30T13:26:16Z",
+              "last_update": "2026-10-30T13:33:01Z",
               "outcomes": [
                 {
                   "name": "Estudiantes de Río Cuarto",
@@ -2133,7 +2135,7 @@
             },
             {
               "bookmaker": "Unibet (UK)",
-              "last_update": "2026-10-30T13:25:57Z",
+              "last_update": "2026-10-30T13:32:43Z",
               "outcomes": [
                 {
                   "name": "Estudiantes de Río Cuarto",
@@ -2154,7 +2156,7 @@
             },
             {
               "bookmaker": "LiveScore Bet",
-              "last_update": "2026-10-30T13:26:14Z",
+              "last_update": "2026-10-30T13:33:01Z",
               "outcomes": [
                 {
                   "name": "Estudiantes de Río Cuarto",
@@ -2175,7 +2177,7 @@
             },
             {
               "bookmaker": "Virgin Bet",
-              "last_update": "2026-10-30T13:26:14Z",
+              "last_update": "2026-10-30T13:33:01Z",
               "outcomes": [
                 {
                   "name": "Estudiantes de Río Cuarto",
@@ -2196,7 +2198,7 @@
             },
             {
               "bookmaker": "Betway",
-              "last_update": "2026-10-30T13:25:54Z",
+              "last_update": "2026-10-30T13:33:45Z",
               "outcomes": [
                 {
                   "name": "Estudiantes de Río Cuarto",
@@ -2217,7 +2219,7 @@
             },
             {
               "bookmaker": "Betfair Sportsbook",
-              "last_update": "2026-10-30T13:25:30Z",
+              "last_update": "2026-10-30T13:33:22Z",
               "outcomes": [
                 {
                   "name": "Estudiantes de Río Cuarto",
@@ -2240,7 +2242,7 @@
           "totals": [],
           "btts": []
         },
-        "fetched_at": "2026-10-30T13:26:25.938664+00:00"
+        "fetched_at": "2026-10-30T13:34:01.001178+00:00"
       },
       "value_bet_screen": {
         "status": "DISABLED_UNVALIDATED",
@@ -2249,210 +2251,6 @@
           "1X2": {
             "status": "DISABLED_UNVALIDATED",
             "bookmaker_price_sets": 12,
-            "candidates": []
-          },
-          "BTTS": {
-            "status": "DISABLED_UNVALIDATED",
-            "bookmaker_price_sets": 0,
-            "candidates": []
-          },
-          "OVER_UNDER_1_5": {
-            "status": "DISABLED_UNVALIDATED",
-            "bookmaker_price_sets": 0,
-            "candidates": []
-          },
-          "OVER_UNDER_2_5": {
-            "status": "DISABLED_UNVALIDATED",
-            "bookmaker_price_sets": 0,
-            "candidates": []
-          },
-          "OVER_UNDER_3_5": {
-            "status": "DISABLED_UNVALIDATED",
-            "bookmaker_price_sets": 0,
-            "candidates": []
-          }
-        },
-        "candidate_count": 0,
-        "note": "Research screen only. Timestamped pre-kickoff prices only; no bookmaker actions are performed."
-      }
-    },
-    {
-      "fixture_id": "evt_CG8V8YP3",
-      "kickoff": "2026-10-30T13:30:00+00:00",
-      "kickoff_local": "2026-10-30T14:30:00+01:00",
-      "home_team": "Xorazm Urganch",
-      "away_team": "Pakhtakor Tashkent",
-      "league": "UzbSL",
-      "league_id": "lg_Y6Z1BW2M",
-      "division_code": null,
-      "fixture_status": "NS",
-      "model": "experimental_recent_goals_poisson",
-      "model_validated": false,
-      "betting_recommendation": false,
-      "historical_matches": {
-        "home": 0,
-        "away": 0
-      },
-      "team_name_matches": {
-        "home": {
-          "fixture_name": "Xorazm Urganch",
-          "historical_key": "xorazmurganch",
-          "auto_matched": false
-        },
-        "away": {
-          "fixture_name": "Pakhtakor Tashkent",
-          "historical_key": "pakhtakortashkent",
-          "auto_matched": false
-        }
-      },
-      "status": "UNSUPPORTED_COMPETITION",
-      "reason": "This competition is not mapped to the historical dataset and the teams do not have enough exact-match history for a safe global estimate.",
-      "team_name_match_suggestions": {},
-      "fixture_source": "InferSports",
-      "source_fixture_id": "evt_CG8V8YP3",
-      "value_bet_screen": {
-        "status": "DISABLED_UNVALIDATED",
-        "model_validated": false,
-        "markets": {
-          "1X2": {
-            "status": "DISABLED_UNVALIDATED",
-            "bookmaker_price_sets": 0,
-            "candidates": []
-          },
-          "BTTS": {
-            "status": "DISABLED_UNVALIDATED",
-            "bookmaker_price_sets": 0,
-            "candidates": []
-          },
-          "OVER_UNDER_1_5": {
-            "status": "DISABLED_UNVALIDATED",
-            "bookmaker_price_sets": 0,
-            "candidates": []
-          },
-          "OVER_UNDER_2_5": {
-            "status": "DISABLED_UNVALIDATED",
-            "bookmaker_price_sets": 0,
-            "candidates": []
-          },
-          "OVER_UNDER_3_5": {
-            "status": "DISABLED_UNVALIDATED",
-            "bookmaker_price_sets": 0,
-            "candidates": []
-          }
-        },
-        "candidate_count": 0,
-        "note": "Research screen only. Timestamped pre-kickoff prices only; no bookmaker actions are performed."
-      }
-    },
-    {
-      "fixture_id": "evt_E2RDR7F3",
-      "kickoff": "2026-10-30T13:30:00+00:00",
-      "kickoff_local": "2026-10-30T14:30:00+01:00",
-      "home_team": "Sogdiana Jizak",
-      "away_team": "Buxoro",
-      "league": "UzbSL",
-      "league_id": "lg_Y6Z1BW2M",
-      "division_code": null,
-      "fixture_status": "NS",
-      "model": "experimental_recent_goals_poisson",
-      "model_validated": false,
-      "betting_recommendation": false,
-      "historical_matches": {
-        "home": 0,
-        "away": 2
-      },
-      "team_name_matches": {
-        "home": {
-          "fixture_name": "Sogdiana Jizak",
-          "historical_key": "sogdianajizak",
-          "auto_matched": false
-        },
-        "away": {
-          "fixture_name": "Buxoro",
-          "historical_key": "buxoro",
-          "auto_matched": false
-        }
-      },
-      "status": "UNSUPPORTED_COMPETITION",
-      "reason": "This competition is not mapped to the historical dataset and the teams do not have enough exact-match history for a safe global estimate.",
-      "team_name_match_suggestions": {},
-      "fixture_source": "InferSports",
-      "source_fixture_id": "evt_E2RDR7F3",
-      "value_bet_screen": {
-        "status": "DISABLED_UNVALIDATED",
-        "model_validated": false,
-        "markets": {
-          "1X2": {
-            "status": "DISABLED_UNVALIDATED",
-            "bookmaker_price_sets": 0,
-            "candidates": []
-          },
-          "BTTS": {
-            "status": "DISABLED_UNVALIDATED",
-            "bookmaker_price_sets": 0,
-            "candidates": []
-          },
-          "OVER_UNDER_1_5": {
-            "status": "DISABLED_UNVALIDATED",
-            "bookmaker_price_sets": 0,
-            "candidates": []
-          },
-          "OVER_UNDER_2_5": {
-            "status": "DISABLED_UNVALIDATED",
-            "bookmaker_price_sets": 0,
-            "candidates": []
-          },
-          "OVER_UNDER_3_5": {
-            "status": "DISABLED_UNVALIDATED",
-            "bookmaker_price_sets": 0,
-            "candidates": []
-          }
-        },
-        "candidate_count": 0,
-        "note": "Research screen only. Timestamped pre-kickoff prices only; no bookmaker actions are performed."
-      }
-    },
-    {
-      "fixture_id": "evt_2MVJV4AY",
-      "kickoff": "2026-10-30T13:30:00+00:00",
-      "kickoff_local": "2026-10-30T14:30:00+01:00",
-      "home_team": "Kokand Qoqon",
-      "away_team": "Qizilqum",
-      "league": "UzbSL",
-      "league_id": "lg_Y6Z1BW2M",
-      "division_code": null,
-      "fixture_status": "NS",
-      "model": "experimental_recent_goals_poisson",
-      "model_validated": false,
-      "betting_recommendation": false,
-      "historical_matches": {
-        "home": 0,
-        "away": 2
-      },
-      "team_name_matches": {
-        "home": {
-          "fixture_name": "Kokand Qoqon",
-          "historical_key": "kokandqoqon",
-          "auto_matched": false
-        },
-        "away": {
-          "fixture_name": "Qizilqum",
-          "historical_key": "qizilqum",
-          "auto_matched": false
-        }
-      },
-      "status": "UNSUPPORTED_COMPETITION",
-      "reason": "This competition is not mapped to the historical dataset and the teams do not have enough exact-match history for a safe global estimate.",
-      "team_name_match_suggestions": {},
-      "fixture_source": "InferSports",
-      "source_fixture_id": "evt_2MVJV4AY",
-      "value_bet_screen": {
-        "status": "DISABLED_UNVALIDATED",
-        "model_validated": false,
-        "markets": {
-          "1X2": {
-            "status": "DISABLED_UNVALIDATED",
-            "bookmaker_price_sets": 0,
             "candidates": []
           },
           "BTTS": {
@@ -2787,6 +2585,12 @@
             "market_id": "104"
           },
           {
+            "bookmaker": "betfair-ex",
+            "yes": 2.12,
+            "no": 1.82,
+            "market_id": "104"
+          },
+          {
             "bookmaker": "betika",
             "yes": 2.04,
             "no": 1.64,
@@ -2850,6 +2654,12 @@
             "bookmaker": "eurobet.it",
             "yes": 2.0,
             "no": 1.62,
+            "market_id": "104"
+          },
+          {
+            "bookmaker": "fair999-ex",
+            "yes": 2.12,
+            "no": 1.82,
             "market_id": "104"
           },
           {
@@ -2934,6 +2744,30 @@
             "bookmaker": "nextbet",
             "yes": 2.09,
             "no": 1.66,
+            "market_id": "104"
+          },
+          {
+            "bookmaker": "orbitx",
+            "yes": 2.12,
+            "no": 1.82,
+            "market_id": "104"
+          },
+          {
+            "bookmaker": "piwi247-ex",
+            "yes": 2.12,
+            "no": 1.82,
+            "market_id": "104"
+          },
+          {
+            "bookmaker": "quigioco.it",
+            "yes": 1.98,
+            "no": 1.65,
+            "market_id": "104"
+          },
+          {
+            "bookmaker": "sharpxch",
+            "yes": 2.12,
+            "no": 1.82,
             "market_id": "104"
           },
           {
@@ -3869,10 +3703,10 @@
           },
           {
             "bookmaker": "asports.bet",
-            "line": 1.5,
-            "over": 1.448,
-            "under": 2.52,
-            "market_id": "108"
+            "line": 2.75,
+            "over": 2.97,
+            "under": 1.331,
+            "market_id": "10172"
           },
           {
             "bookmaker": "asports.bet",
@@ -3880,13 +3714,6 @@
             "over": 1.292,
             "under": 3.18,
             "market_id": "10164"
-          },
-          {
-            "bookmaker": "asports.bet",
-            "line": 2.0,
-            "over": 1.854,
-            "under": 1.884,
-            "market_id": "10168"
           },
           {
             "bookmaker": "asports.bet",
@@ -3904,13 +3731,6 @@
           },
           {
             "bookmaker": "asports.bet",
-            "line": 0.5,
-            "over": 1.452,
-            "under": 2.51,
-            "market_id": "10240"
-          },
-          {
-            "bookmaker": "asports.bet",
             "line": 1.75,
             "over": 1.595,
             "under": 2.22,
@@ -3918,10 +3738,24 @@
           },
           {
             "bookmaker": "asports.bet",
-            "line": 2.75,
-            "over": 2.97,
-            "under": 1.331,
-            "market_id": "10172"
+            "line": 1.5,
+            "over": 1.448,
+            "under": 2.52,
+            "market_id": "108"
+          },
+          {
+            "bookmaker": "asports.bet",
+            "line": 0.5,
+            "over": 1.452,
+            "under": 2.51,
+            "market_id": "10240"
+          },
+          {
+            "bookmaker": "asports.bet",
+            "line": 2.0,
+            "over": 1.854,
+            "under": 1.884,
+            "market_id": "10168"
           },
           {
             "bookmaker": "ballybet",
@@ -3939,10 +3773,10 @@
           },
           {
             "bookmaker": "bet487",
-            "line": 1.5,
-            "over": 1.448,
-            "under": 2.52,
-            "market_id": "108"
+            "line": 2.75,
+            "over": 2.97,
+            "under": 1.331,
+            "market_id": "10172"
           },
           {
             "bookmaker": "bet487",
@@ -3950,13 +3784,6 @@
             "over": 1.292,
             "under": 3.18,
             "market_id": "10164"
-          },
-          {
-            "bookmaker": "bet487",
-            "line": 2.0,
-            "over": 1.854,
-            "under": 1.884,
-            "market_id": "10168"
           },
           {
             "bookmaker": "bet487",
@@ -3974,13 +3801,6 @@
           },
           {
             "bookmaker": "bet487",
-            "line": 0.5,
-            "over": 1.452,
-            "under": 2.51,
-            "market_id": "10240"
-          },
-          {
-            "bookmaker": "bet487",
             "line": 1.75,
             "over": 1.595,
             "under": 2.22,
@@ -3988,10 +3808,24 @@
           },
           {
             "bookmaker": "bet487",
-            "line": 2.75,
-            "over": 2.97,
-            "under": 1.331,
-            "market_id": "10172"
+            "line": 1.5,
+            "over": 1.448,
+            "under": 2.52,
+            "market_id": "108"
+          },
+          {
+            "bookmaker": "bet487",
+            "line": 0.5,
+            "over": 1.452,
+            "under": 2.51,
+            "market_id": "10240"
+          },
+          {
+            "bookmaker": "bet487",
+            "line": 2.0,
+            "over": 1.854,
+            "under": 1.884,
+            "market_id": "10168"
           },
           {
             "bookmaker": "betano",
@@ -4142,31 +3976,10 @@
           },
           {
             "bookmaker": "betfair-ex",
-            "line": 5.25,
-            "over": 20.78,
-            "under": 1.01,
-            "market_id": "10188"
-          },
-          {
-            "bookmaker": "betfair-ex",
-            "line": 6.25,
-            "over": 34.17,
+            "line": 7.0,
+            "over": 50.51,
             "under": null,
-            "market_id": "10194"
-          },
-          {
-            "bookmaker": "betfair-ex",
-            "line": 0.5,
-            "over": 1.14,
-            "under": 7.2,
-            "market_id": "106"
-          },
-          {
-            "bookmaker": "betfair-ex",
-            "line": 3.75,
-            "over": null,
-            "under": 1.1,
-            "market_id": "10178"
+            "market_id": "10198"
           },
           {
             "bookmaker": "betfair-ex",
@@ -4177,59 +3990,17 @@
           },
           {
             "bookmaker": "betfair-ex",
-            "line": 7.0,
-            "over": 50.51,
-            "under": null,
-            "market_id": "10198"
-          },
-          {
-            "bookmaker": "betfair-ex",
-            "line": 7.75,
-            "over": 50.99,
-            "under": null,
-            "market_id": "10202"
-          },
-          {
-            "bookmaker": "betfair-ex",
-            "line": 6.5,
-            "over": 34.33,
-            "under": null,
-            "market_id": "1018"
-          },
-          {
-            "bookmaker": "betfair-ex",
-            "line": 8.5,
-            "over": 51.0,
-            "under": null,
-            "market_id": "1022"
-          },
-          {
-            "bookmaker": "betfair-ex",
-            "line": 6.75,
-            "over": 50.99,
-            "under": null,
-            "market_id": "10196"
-          },
-          {
-            "bookmaker": "betfair-ex",
             "line": 1.75,
-            "over": 1.7,
-            "under": null,
+            "over": 1.71,
+            "under": 2.19,
             "market_id": "10166"
           },
           {
             "bookmaker": "betfair-ex",
-            "line": 1.0,
-            "over": 1.19,
-            "under": 4.92,
-            "market_id": "10162"
-          },
-          {
-            "bookmaker": "betfair-ex",
-            "line": 0.75,
-            "over": 1.16,
-            "under": 5.66,
-            "market_id": "10160"
+            "line": 6.25,
+            "over": 34.17,
+            "under": null,
+            "market_id": "10194"
           },
           {
             "bookmaker": "betfair-ex",
@@ -4240,38 +4011,10 @@
           },
           {
             "bookmaker": "betfair-ex",
-            "line": 6.0,
-            "over": 34.01,
-            "under": null,
-            "market_id": "10192"
-          },
-          {
-            "bookmaker": "betfair-ex",
-            "line": 8.0,
-            "over": 51.0,
-            "under": null,
-            "market_id": "10204"
-          },
-          {
-            "bookmaker": "betfair-ex",
-            "line": 7.25,
-            "over": 51.0,
-            "under": null,
-            "market_id": "10200"
-          },
-          {
-            "bookmaker": "betfair-ex",
-            "line": 5.5,
-            "over": 21.0,
-            "under": 1.01,
-            "market_id": "1016"
-          },
-          {
-            "bookmaker": "betfair-ex",
-            "line": 7.5,
-            "over": 50.71,
-            "under": null,
-            "market_id": "1020"
+            "line": 1.25,
+            "over": 1.37,
+            "under": 3.26,
+            "market_id": "10164"
           },
           {
             "bookmaker": "betfair-ex",
@@ -4282,10 +4025,52 @@
           },
           {
             "bookmaker": "betfair-ex",
-            "line": 1.25,
-            "over": 1.37,
-            "under": 3.26,
-            "market_id": "10164"
+            "line": 7.25,
+            "over": 51.0,
+            "under": null,
+            "market_id": "10200"
+          },
+          {
+            "bookmaker": "betfair-ex",
+            "line": 6.0,
+            "over": 34.01,
+            "under": null,
+            "market_id": "10192"
+          },
+          {
+            "bookmaker": "betfair-ex",
+            "line": 4.5,
+            "over": 14.63,
+            "under": 1.06,
+            "market_id": "1014"
+          },
+          {
+            "bookmaker": "betfair-ex",
+            "line": 4.0,
+            "over": 13.16,
+            "under": 1.06,
+            "market_id": "10180"
+          },
+          {
+            "bookmaker": "betfair-ex",
+            "line": 6.5,
+            "over": 34.33,
+            "under": null,
+            "market_id": "1018"
+          },
+          {
+            "bookmaker": "betfair-ex",
+            "line": 4.25,
+            "over": 13.9,
+            "under": 1.06,
+            "market_id": "10182"
+          },
+          {
+            "bookmaker": "betfair-ex",
+            "line": 2.0,
+            "over": 1.97,
+            "under": 1.85,
+            "market_id": "10168"
           },
           {
             "bookmaker": "betfair-ex",
@@ -4293,6 +4078,132 @@
             "over": 34.11,
             "under": null,
             "market_id": "10190"
+          },
+          {
+            "bookmaker": "betfair-ex",
+            "line": 7.5,
+            "over": 50.8,
+            "under": null,
+            "market_id": "1020"
+          },
+          {
+            "bookmaker": "betfair-ex",
+            "line": 5.25,
+            "over": 20.78,
+            "under": 1.01,
+            "market_id": "10188"
+          },
+          {
+            "bookmaker": "betfair-ex",
+            "line": 8.0,
+            "over": 50.99,
+            "under": null,
+            "market_id": "10204"
+          },
+          {
+            "bookmaker": "betfair-ex",
+            "line": 1.0,
+            "over": 1.19,
+            "under": 4.92,
+            "market_id": "10162"
+          },
+          {
+            "bookmaker": "betfair-ex",
+            "line": 6.75,
+            "over": 50.99,
+            "under": null,
+            "market_id": "10196"
+          },
+          {
+            "bookmaker": "betfair-ex",
+            "line": 2.5,
+            "over": 2.7,
+            "under": 1.51,
+            "market_id": "1010"
+          },
+          {
+            "bookmaker": "betfair-ex",
+            "line": 3.75,
+            "over": 7.84,
+            "under": 1.1,
+            "market_id": "10178"
+          },
+          {
+            "bookmaker": "betfair-ex",
+            "line": 3.25,
+            "over": 5.19,
+            "under": 1.2,
+            "market_id": "10176"
+          },
+          {
+            "bookmaker": "betfair-ex",
+            "line": 3.5,
+            "over": 5.76,
+            "under": 1.18,
+            "market_id": "1012"
+          },
+          {
+            "bookmaker": "betfair-ex",
+            "line": 0.75,
+            "over": 1.16,
+            "under": 5.66,
+            "market_id": "10160"
+          },
+          {
+            "bookmaker": "betfair-ex",
+            "line": 3.0,
+            "over": 4.62,
+            "under": 1.22,
+            "market_id": "10174"
+          },
+          {
+            "bookmaker": "betfair-ex",
+            "line": 2.25,
+            "over": 2.33,
+            "under": 1.63,
+            "market_id": "10170"
+          },
+          {
+            "bookmaker": "betfair-ex",
+            "line": 8.5,
+            "over": 51.0,
+            "under": null,
+            "market_id": "1022"
+          },
+          {
+            "bookmaker": "betfair-ex",
+            "line": 5.5,
+            "over": 21.0,
+            "under": 1.01,
+            "market_id": "1016"
+          },
+          {
+            "bookmaker": "betfair-ex",
+            "line": 7.75,
+            "over": 50.99,
+            "under": null,
+            "market_id": "10202"
+          },
+          {
+            "bookmaker": "betfair-ex",
+            "line": 2.75,
+            "over": 3.31,
+            "under": 1.35,
+            "market_id": "10172"
+          },
+          {
+            "bookmaker": "betfair-ex",
+            "line": 0.5,
+            "over": 1.14,
+            "under": 7.25,
+            "market_id": "106"
+          },
+          {
+            "bookmaker": "betfair-ex",
+            "line": 1.5,
+            "over": 1.56,
+            "under": 2.58,
+            "market_id": "108"
           },
           {
             "bookmaker": "betfirst.be",
@@ -4646,27 +4557,6 @@
           },
           {
             "bookmaker": "bodog.eu",
-            "line": 2.25,
-            "over": 2.32,
-            "under": 1.571,
-            "market_id": "10170"
-          },
-          {
-            "bookmaker": "bodog.eu",
-            "line": 1.25,
-            "over": 1.377,
-            "under": 2.95,
-            "market_id": "10164"
-          },
-          {
-            "bookmaker": "bodog.eu",
-            "line": 0.5,
-            "over": 1.133,
-            "under": 5.5,
-            "market_id": "106"
-          },
-          {
-            "bookmaker": "bodog.eu",
             "line": 1.5,
             "over": 1.526,
             "under": 2.45,
@@ -4680,11 +4570,32 @@
             "market_id": "10166"
           },
           {
+            "bookmaker": "bodog.eu",
+            "line": 0.5,
+            "over": 1.133,
+            "under": 5.5,
+            "market_id": "106"
+          },
+          {
+            "bookmaker": "bodog.eu",
+            "line": 2.25,
+            "over": 2.32,
+            "under": 1.571,
+            "market_id": "10170"
+          },
+          {
+            "bookmaker": "bodog.eu",
+            "line": 1.25,
+            "over": 1.377,
+            "under": 2.95,
+            "market_id": "10164"
+          },
+          {
             "bookmaker": "bolsadeaposta-spb",
-            "line": 1.5,
-            "over": 1.448,
-            "under": 2.52,
-            "market_id": "108"
+            "line": 2.75,
+            "over": 2.97,
+            "under": 1.331,
+            "market_id": "10172"
           },
           {
             "bookmaker": "bolsadeaposta-spb",
@@ -4692,13 +4603,6 @@
             "over": 1.292,
             "under": 3.18,
             "market_id": "10164"
-          },
-          {
-            "bookmaker": "bolsadeaposta-spb",
-            "line": 2.0,
-            "over": 1.854,
-            "under": 1.884,
-            "market_id": "10168"
           },
           {
             "bookmaker": "bolsadeaposta-spb",
@@ -4716,13 +4620,6 @@
           },
           {
             "bookmaker": "bolsadeaposta-spb",
-            "line": 0.5,
-            "over": 1.452,
-            "under": 2.51,
-            "market_id": "10240"
-          },
-          {
-            "bookmaker": "bolsadeaposta-spb",
             "line": 1.75,
             "over": 1.595,
             "under": 2.22,
@@ -4730,10 +4627,24 @@
           },
           {
             "bookmaker": "bolsadeaposta-spb",
-            "line": 2.75,
-            "over": 2.97,
-            "under": 1.331,
-            "market_id": "10172"
+            "line": 1.5,
+            "over": 1.448,
+            "under": 2.52,
+            "market_id": "108"
+          },
+          {
+            "bookmaker": "bolsadeaposta-spb",
+            "line": 0.5,
+            "over": 1.452,
+            "under": 2.51,
+            "market_id": "10240"
+          },
+          {
+            "bookmaker": "bolsadeaposta-spb",
+            "line": 2.0,
+            "over": 1.854,
+            "under": 1.884,
+            "market_id": "10168"
           },
           {
             "bookmaker": "bovada.lv",
@@ -4741,27 +4652,6 @@
             "over": 2.6,
             "under": 1.465,
             "market_id": "1010"
-          },
-          {
-            "bookmaker": "bovada.lv",
-            "line": 2.25,
-            "over": 2.32,
-            "under": 1.571,
-            "market_id": "10170"
-          },
-          {
-            "bookmaker": "bovada.lv",
-            "line": 1.25,
-            "over": 1.377,
-            "under": 2.95,
-            "market_id": "10164"
-          },
-          {
-            "bookmaker": "bovada.lv",
-            "line": 0.5,
-            "over": 1.133,
-            "under": 5.5,
-            "market_id": "106"
           },
           {
             "bookmaker": "bovada.lv",
@@ -4776,6 +4666,27 @@
             "over": 1.714,
             "under": 2.08,
             "market_id": "10166"
+          },
+          {
+            "bookmaker": "bovada.lv",
+            "line": 0.5,
+            "over": 1.133,
+            "under": 5.5,
+            "market_id": "106"
+          },
+          {
+            "bookmaker": "bovada.lv",
+            "line": 2.25,
+            "over": 2.32,
+            "under": 1.571,
+            "market_id": "10170"
+          },
+          {
+            "bookmaker": "bovada.lv",
+            "line": 1.25,
+            "over": 1.377,
+            "under": 2.95,
+            "market_id": "10164"
           },
           {
             "bookmaker": "bwin",
@@ -5054,7 +4965,7 @@
             "bookmaker": "desertdiamond",
             "line": 2.5,
             "over": 2.55,
-            "under": 1.41,
+            "under": 1.4,
             "market_id": "1010"
           },
           {
@@ -5486,31 +5397,10 @@
           },
           {
             "bookmaker": "fair999-ex",
-            "line": 5.25,
-            "over": 20.78,
-            "under": 1.01,
-            "market_id": "10188"
-          },
-          {
-            "bookmaker": "fair999-ex",
-            "line": 6.25,
-            "over": 34.17,
+            "line": 7.0,
+            "over": 50.51,
             "under": null,
-            "market_id": "10194"
-          },
-          {
-            "bookmaker": "fair999-ex",
-            "line": 0.5,
-            "over": 1.14,
-            "under": 7.2,
-            "market_id": "106"
-          },
-          {
-            "bookmaker": "fair999-ex",
-            "line": 3.75,
-            "over": null,
-            "under": 1.1,
-            "market_id": "10178"
+            "market_id": "10198"
           },
           {
             "bookmaker": "fair999-ex",
@@ -5521,59 +5411,17 @@
           },
           {
             "bookmaker": "fair999-ex",
-            "line": 7.0,
-            "over": 50.51,
-            "under": null,
-            "market_id": "10198"
-          },
-          {
-            "bookmaker": "fair999-ex",
-            "line": 7.75,
-            "over": 50.99,
-            "under": null,
-            "market_id": "10202"
-          },
-          {
-            "bookmaker": "fair999-ex",
-            "line": 6.5,
-            "over": 34.33,
-            "under": null,
-            "market_id": "1018"
-          },
-          {
-            "bookmaker": "fair999-ex",
-            "line": 8.5,
-            "over": 51.0,
-            "under": null,
-            "market_id": "1022"
-          },
-          {
-            "bookmaker": "fair999-ex",
-            "line": 6.75,
-            "over": 50.99,
-            "under": null,
-            "market_id": "10196"
-          },
-          {
-            "bookmaker": "fair999-ex",
             "line": 1.75,
-            "over": 1.7,
-            "under": null,
+            "over": 1.71,
+            "under": 2.19,
             "market_id": "10166"
           },
           {
             "bookmaker": "fair999-ex",
-            "line": 1.0,
-            "over": 1.19,
-            "under": 4.92,
-            "market_id": "10162"
-          },
-          {
-            "bookmaker": "fair999-ex",
-            "line": 0.75,
-            "over": 1.16,
-            "under": 5.66,
-            "market_id": "10160"
+            "line": 6.25,
+            "over": 34.17,
+            "under": null,
+            "market_id": "10194"
           },
           {
             "bookmaker": "fair999-ex",
@@ -5584,38 +5432,10 @@
           },
           {
             "bookmaker": "fair999-ex",
-            "line": 6.0,
-            "over": 34.01,
-            "under": null,
-            "market_id": "10192"
-          },
-          {
-            "bookmaker": "fair999-ex",
-            "line": 8.0,
-            "over": 51.0,
-            "under": null,
-            "market_id": "10204"
-          },
-          {
-            "bookmaker": "fair999-ex",
-            "line": 7.25,
-            "over": 51.0,
-            "under": null,
-            "market_id": "10200"
-          },
-          {
-            "bookmaker": "fair999-ex",
-            "line": 5.5,
-            "over": 21.0,
-            "under": 1.01,
-            "market_id": "1016"
-          },
-          {
-            "bookmaker": "fair999-ex",
-            "line": 7.5,
-            "over": 50.71,
-            "under": null,
-            "market_id": "1020"
+            "line": 1.25,
+            "over": 1.37,
+            "under": 3.26,
+            "market_id": "10164"
           },
           {
             "bookmaker": "fair999-ex",
@@ -5626,10 +5446,52 @@
           },
           {
             "bookmaker": "fair999-ex",
-            "line": 1.25,
-            "over": 1.37,
-            "under": 3.26,
-            "market_id": "10164"
+            "line": 7.25,
+            "over": 51.0,
+            "under": null,
+            "market_id": "10200"
+          },
+          {
+            "bookmaker": "fair999-ex",
+            "line": 6.0,
+            "over": 34.01,
+            "under": null,
+            "market_id": "10192"
+          },
+          {
+            "bookmaker": "fair999-ex",
+            "line": 4.5,
+            "over": 14.63,
+            "under": 1.06,
+            "market_id": "1014"
+          },
+          {
+            "bookmaker": "fair999-ex",
+            "line": 4.0,
+            "over": 13.16,
+            "under": 1.06,
+            "market_id": "10180"
+          },
+          {
+            "bookmaker": "fair999-ex",
+            "line": 6.5,
+            "over": 34.33,
+            "under": null,
+            "market_id": "1018"
+          },
+          {
+            "bookmaker": "fair999-ex",
+            "line": 4.25,
+            "over": 13.9,
+            "under": 1.06,
+            "market_id": "10182"
+          },
+          {
+            "bookmaker": "fair999-ex",
+            "line": 2.0,
+            "over": 1.97,
+            "under": 1.85,
+            "market_id": "10168"
           },
           {
             "bookmaker": "fair999-ex",
@@ -5637,6 +5499,132 @@
             "over": 34.11,
             "under": null,
             "market_id": "10190"
+          },
+          {
+            "bookmaker": "fair999-ex",
+            "line": 7.5,
+            "over": 50.8,
+            "under": null,
+            "market_id": "1020"
+          },
+          {
+            "bookmaker": "fair999-ex",
+            "line": 5.25,
+            "over": 20.78,
+            "under": 1.01,
+            "market_id": "10188"
+          },
+          {
+            "bookmaker": "fair999-ex",
+            "line": 8.0,
+            "over": 50.99,
+            "under": null,
+            "market_id": "10204"
+          },
+          {
+            "bookmaker": "fair999-ex",
+            "line": 1.0,
+            "over": 1.19,
+            "under": 4.92,
+            "market_id": "10162"
+          },
+          {
+            "bookmaker": "fair999-ex",
+            "line": 6.75,
+            "over": 50.99,
+            "under": null,
+            "market_id": "10196"
+          },
+          {
+            "bookmaker": "fair999-ex",
+            "line": 2.5,
+            "over": 2.7,
+            "under": 1.51,
+            "market_id": "1010"
+          },
+          {
+            "bookmaker": "fair999-ex",
+            "line": 3.75,
+            "over": 7.84,
+            "under": 1.1,
+            "market_id": "10178"
+          },
+          {
+            "bookmaker": "fair999-ex",
+            "line": 3.25,
+            "over": 5.19,
+            "under": 1.2,
+            "market_id": "10176"
+          },
+          {
+            "bookmaker": "fair999-ex",
+            "line": 3.5,
+            "over": 5.76,
+            "under": 1.18,
+            "market_id": "1012"
+          },
+          {
+            "bookmaker": "fair999-ex",
+            "line": 0.75,
+            "over": 1.16,
+            "under": 5.66,
+            "market_id": "10160"
+          },
+          {
+            "bookmaker": "fair999-ex",
+            "line": 3.0,
+            "over": 4.62,
+            "under": 1.22,
+            "market_id": "10174"
+          },
+          {
+            "bookmaker": "fair999-ex",
+            "line": 2.25,
+            "over": 2.33,
+            "under": 1.63,
+            "market_id": "10170"
+          },
+          {
+            "bookmaker": "fair999-ex",
+            "line": 8.5,
+            "over": 51.0,
+            "under": null,
+            "market_id": "1022"
+          },
+          {
+            "bookmaker": "fair999-ex",
+            "line": 5.5,
+            "over": 21.0,
+            "under": 1.01,
+            "market_id": "1016"
+          },
+          {
+            "bookmaker": "fair999-ex",
+            "line": 7.75,
+            "over": 50.99,
+            "under": null,
+            "market_id": "10202"
+          },
+          {
+            "bookmaker": "fair999-ex",
+            "line": 2.75,
+            "over": 3.31,
+            "under": 1.35,
+            "market_id": "10172"
+          },
+          {
+            "bookmaker": "fair999-ex",
+            "line": 0.5,
+            "over": 1.14,
+            "under": 7.25,
+            "market_id": "106"
+          },
+          {
+            "bookmaker": "fair999-ex",
+            "line": 1.5,
+            "over": 1.56,
+            "under": 2.58,
+            "market_id": "108"
           },
           {
             "bookmaker": "fairpari",
@@ -5964,7 +5952,7 @@
             "bookmaker": "grosvenor",
             "line": 2.5,
             "over": 2.55,
-            "under": 1.41,
+            "under": 1.4,
             "market_id": "1010"
           },
           {
@@ -6293,7 +6281,7 @@
             "bookmaker": "leovegas.es",
             "line": 2.5,
             "over": 2.55,
-            "under": 1.41,
+            "under": 1.4,
             "market_id": "1010"
           },
           {
@@ -7117,10 +7105,10 @@
           },
           {
             "bookmaker": "ole777",
-            "line": 1.5,
-            "over": 1.448,
-            "under": 2.52,
-            "market_id": "108"
+            "line": 2.75,
+            "over": 2.97,
+            "under": 1.331,
+            "market_id": "10172"
           },
           {
             "bookmaker": "ole777",
@@ -7128,13 +7116,6 @@
             "over": 1.292,
             "under": 3.18,
             "market_id": "10164"
-          },
-          {
-            "bookmaker": "ole777",
-            "line": 2.0,
-            "over": 1.854,
-            "under": 1.884,
-            "market_id": "10168"
           },
           {
             "bookmaker": "ole777",
@@ -7152,13 +7133,6 @@
           },
           {
             "bookmaker": "ole777",
-            "line": 0.5,
-            "over": 1.452,
-            "under": 2.51,
-            "market_id": "10240"
-          },
-          {
-            "bookmaker": "ole777",
             "line": 1.75,
             "over": 1.595,
             "under": 2.22,
@@ -7166,45 +7140,24 @@
           },
           {
             "bookmaker": "ole777",
-            "line": 2.75,
-            "over": 2.97,
-            "under": 1.331,
-            "market_id": "10172"
+            "line": 1.5,
+            "over": 1.448,
+            "under": 2.52,
+            "market_id": "108"
           },
           {
-            "bookmaker": "orbitx",
-            "line": 5.25,
-            "over": 20.78,
-            "under": 1.01,
-            "market_id": "10188"
-          },
-          {
-            "bookmaker": "orbitx",
-            "line": 6.25,
-            "over": 34.17,
-            "under": null,
-            "market_id": "10194"
-          },
-          {
-            "bookmaker": "orbitx",
+            "bookmaker": "ole777",
             "line": 0.5,
-            "over": 1.14,
-            "under": 7.2,
-            "market_id": "106"
+            "over": 1.452,
+            "under": 2.51,
+            "market_id": "10240"
           },
           {
-            "bookmaker": "orbitx",
-            "line": 3.75,
-            "over": null,
-            "under": 1.1,
-            "market_id": "10178"
-          },
-          {
-            "bookmaker": "orbitx",
-            "line": 5.0,
-            "over": 20.56,
-            "under": 1.01,
-            "market_id": "10186"
+            "bookmaker": "ole777",
+            "line": 2.0,
+            "over": 1.854,
+            "under": 1.884,
+            "market_id": "10168"
           },
           {
             "bookmaker": "orbitx",
@@ -7215,52 +7168,24 @@
           },
           {
             "bookmaker": "orbitx",
-            "line": 7.75,
-            "over": 50.99,
-            "under": null,
-            "market_id": "10202"
-          },
-          {
-            "bookmaker": "orbitx",
-            "line": 6.5,
-            "over": 34.33,
-            "under": null,
-            "market_id": "1018"
-          },
-          {
-            "bookmaker": "orbitx",
-            "line": 8.5,
-            "over": 51.0,
-            "under": null,
-            "market_id": "1022"
-          },
-          {
-            "bookmaker": "orbitx",
-            "line": 6.75,
-            "over": 50.99,
-            "under": null,
-            "market_id": "10196"
+            "line": 5.0,
+            "over": 20.56,
+            "under": 1.01,
+            "market_id": "10186"
           },
           {
             "bookmaker": "orbitx",
             "line": 1.75,
-            "over": 1.7,
-            "under": null,
+            "over": 1.71,
+            "under": 2.19,
             "market_id": "10166"
           },
           {
             "bookmaker": "orbitx",
-            "line": 1.0,
-            "over": 1.19,
-            "under": 4.92,
-            "market_id": "10162"
-          },
-          {
-            "bookmaker": "orbitx",
-            "line": 0.75,
-            "over": 1.16,
-            "under": 5.66,
-            "market_id": "10160"
+            "line": 6.25,
+            "over": 34.17,
+            "under": null,
+            "market_id": "10194"
           },
           {
             "bookmaker": "orbitx",
@@ -7271,38 +7196,10 @@
           },
           {
             "bookmaker": "orbitx",
-            "line": 6.0,
-            "over": 34.01,
-            "under": null,
-            "market_id": "10192"
-          },
-          {
-            "bookmaker": "orbitx",
-            "line": 8.0,
-            "over": 51.0,
-            "under": null,
-            "market_id": "10204"
-          },
-          {
-            "bookmaker": "orbitx",
-            "line": 7.25,
-            "over": 51.0,
-            "under": null,
-            "market_id": "10200"
-          },
-          {
-            "bookmaker": "orbitx",
-            "line": 5.5,
-            "over": 21.0,
-            "under": 1.01,
-            "market_id": "1016"
-          },
-          {
-            "bookmaker": "orbitx",
-            "line": 7.5,
-            "over": 50.71,
-            "under": null,
-            "market_id": "1020"
+            "line": 1.25,
+            "over": 1.37,
+            "under": 3.26,
+            "market_id": "10164"
           },
           {
             "bookmaker": "orbitx",
@@ -7313,10 +7210,52 @@
           },
           {
             "bookmaker": "orbitx",
-            "line": 1.25,
-            "over": 1.37,
-            "under": 3.26,
-            "market_id": "10164"
+            "line": 7.25,
+            "over": 51.0,
+            "under": null,
+            "market_id": "10200"
+          },
+          {
+            "bookmaker": "orbitx",
+            "line": 6.0,
+            "over": 34.01,
+            "under": null,
+            "market_id": "10192"
+          },
+          {
+            "bookmaker": "orbitx",
+            "line": 4.5,
+            "over": 14.63,
+            "under": 1.06,
+            "market_id": "1014"
+          },
+          {
+            "bookmaker": "orbitx",
+            "line": 4.0,
+            "over": 13.16,
+            "under": 1.06,
+            "market_id": "10180"
+          },
+          {
+            "bookmaker": "orbitx",
+            "line": 6.5,
+            "over": 34.33,
+            "under": null,
+            "market_id": "1018"
+          },
+          {
+            "bookmaker": "orbitx",
+            "line": 4.25,
+            "over": 13.9,
+            "under": 1.06,
+            "market_id": "10182"
+          },
+          {
+            "bookmaker": "orbitx",
+            "line": 2.0,
+            "over": 1.97,
+            "under": 1.85,
+            "market_id": "10168"
           },
           {
             "bookmaker": "orbitx",
@@ -7324,6 +7263,132 @@
             "over": 34.11,
             "under": null,
             "market_id": "10190"
+          },
+          {
+            "bookmaker": "orbitx",
+            "line": 7.5,
+            "over": 50.8,
+            "under": null,
+            "market_id": "1020"
+          },
+          {
+            "bookmaker": "orbitx",
+            "line": 5.25,
+            "over": 20.78,
+            "under": 1.01,
+            "market_id": "10188"
+          },
+          {
+            "bookmaker": "orbitx",
+            "line": 8.0,
+            "over": 50.99,
+            "under": null,
+            "market_id": "10204"
+          },
+          {
+            "bookmaker": "orbitx",
+            "line": 1.0,
+            "over": 1.19,
+            "under": 4.92,
+            "market_id": "10162"
+          },
+          {
+            "bookmaker": "orbitx",
+            "line": 6.75,
+            "over": 50.99,
+            "under": null,
+            "market_id": "10196"
+          },
+          {
+            "bookmaker": "orbitx",
+            "line": 2.5,
+            "over": 2.7,
+            "under": 1.51,
+            "market_id": "1010"
+          },
+          {
+            "bookmaker": "orbitx",
+            "line": 3.75,
+            "over": 7.84,
+            "under": 1.1,
+            "market_id": "10178"
+          },
+          {
+            "bookmaker": "orbitx",
+            "line": 3.25,
+            "over": 5.19,
+            "under": 1.2,
+            "market_id": "10176"
+          },
+          {
+            "bookmaker": "orbitx",
+            "line": 3.5,
+            "over": 5.76,
+            "under": 1.18,
+            "market_id": "1012"
+          },
+          {
+            "bookmaker": "orbitx",
+            "line": 0.75,
+            "over": 1.16,
+            "under": 5.66,
+            "market_id": "10160"
+          },
+          {
+            "bookmaker": "orbitx",
+            "line": 3.0,
+            "over": 4.62,
+            "under": 1.22,
+            "market_id": "10174"
+          },
+          {
+            "bookmaker": "orbitx",
+            "line": 2.25,
+            "over": 2.33,
+            "under": 1.63,
+            "market_id": "10170"
+          },
+          {
+            "bookmaker": "orbitx",
+            "line": 8.5,
+            "over": 51.0,
+            "under": null,
+            "market_id": "1022"
+          },
+          {
+            "bookmaker": "orbitx",
+            "line": 5.5,
+            "over": 21.0,
+            "under": 1.01,
+            "market_id": "1016"
+          },
+          {
+            "bookmaker": "orbitx",
+            "line": 7.75,
+            "over": 50.99,
+            "under": null,
+            "market_id": "10202"
+          },
+          {
+            "bookmaker": "orbitx",
+            "line": 2.75,
+            "over": 3.31,
+            "under": 1.35,
+            "market_id": "10172"
+          },
+          {
+            "bookmaker": "orbitx",
+            "line": 0.5,
+            "over": 1.14,
+            "under": 7.25,
+            "market_id": "106"
+          },
+          {
+            "bookmaker": "orbitx",
+            "line": 1.5,
+            "over": 1.56,
+            "under": 2.58,
+            "market_id": "108"
           },
           {
             "bookmaker": "overtime.io",
@@ -7404,10 +7469,10 @@
           },
           {
             "bookmaker": "pin88",
-            "line": 1.5,
-            "over": 1.448,
-            "under": 2.52,
-            "market_id": "108"
+            "line": 2.75,
+            "over": 2.97,
+            "under": 1.331,
+            "market_id": "10172"
           },
           {
             "bookmaker": "pin88",
@@ -7415,13 +7480,6 @@
             "over": 1.292,
             "under": 3.18,
             "market_id": "10164"
-          },
-          {
-            "bookmaker": "pin88",
-            "line": 2.0,
-            "over": 1.854,
-            "under": 1.884,
-            "market_id": "10168"
           },
           {
             "bookmaker": "pin88",
@@ -7439,13 +7497,6 @@
           },
           {
             "bookmaker": "pin88",
-            "line": 0.5,
-            "over": 1.452,
-            "under": 2.51,
-            "market_id": "10240"
-          },
-          {
-            "bookmaker": "pin88",
             "line": 1.75,
             "over": 1.595,
             "under": 2.22,
@@ -7453,6 +7504,27 @@
           },
           {
             "bookmaker": "pin88",
+            "line": 1.5,
+            "over": 1.448,
+            "under": 2.52,
+            "market_id": "108"
+          },
+          {
+            "bookmaker": "pin88",
+            "line": 0.5,
+            "over": 1.452,
+            "under": 2.51,
+            "market_id": "10240"
+          },
+          {
+            "bookmaker": "pin88",
+            "line": 2.0,
+            "over": 1.854,
+            "under": 1.884,
+            "market_id": "10168"
+          },
+          {
+            "bookmaker": "pinnacle",
             "line": 2.75,
             "over": 2.97,
             "under": 1.331,
@@ -7460,24 +7532,10 @@
           },
           {
             "bookmaker": "pinnacle",
-            "line": 1.5,
-            "over": 1.448,
-            "under": 2.52,
-            "market_id": "108"
-          },
-          {
-            "bookmaker": "pinnacle",
             "line": 1.25,
             "over": 1.292,
             "under": 3.18,
             "market_id": "10164"
-          },
-          {
-            "bookmaker": "pinnacle",
-            "line": 2.0,
-            "over": 1.854,
-            "under": 1.884,
-            "market_id": "10168"
           },
           {
             "bookmaker": "pinnacle",
@@ -7495,13 +7553,6 @@
           },
           {
             "bookmaker": "pinnacle",
-            "line": 0.5,
-            "over": 1.452,
-            "under": 2.51,
-            "market_id": "10240"
-          },
-          {
-            "bookmaker": "pinnacle",
             "line": 1.75,
             "over": 1.595,
             "under": 2.22,
@@ -7509,13 +7560,20 @@
           },
           {
             "bookmaker": "pinnacle",
-            "line": 2.75,
-            "over": 2.97,
-            "under": 1.331,
-            "market_id": "10172"
+            "line": 1.5,
+            "over": 1.448,
+            "under": 2.52,
+            "market_id": "108"
           },
           {
-            "bookmaker": "pinnacle+30",
+            "bookmaker": "pinnacle",
+            "line": 0.5,
+            "over": 1.452,
+            "under": 2.51,
+            "market_id": "10240"
+          },
+          {
+            "bookmaker": "pinnacle",
             "line": 2.0,
             "over": 1.854,
             "under": 1.884,
@@ -7523,17 +7581,17 @@
           },
           {
             "bookmaker": "pinnacle+30",
+            "line": 1.25,
+            "over": 1.292,
+            "under": 3.18,
+            "market_id": "10164"
+          },
+          {
+            "bookmaker": "pinnacle+30",
             "line": 1.5,
             "over": 1.448,
             "under": 2.52,
             "market_id": "108"
-          },
-          {
-            "bookmaker": "pinnacle+30",
-            "line": 2.25,
-            "over": 2.17,
-            "under": 1.617,
-            "market_id": "10170"
           },
           {
             "bookmaker": "pinnacle+30",
@@ -7558,52 +7616,24 @@
           },
           {
             "bookmaker": "pinnacle+30",
+            "line": 2.0,
+            "over": 1.854,
+            "under": 1.884,
+            "market_id": "10168"
+          },
+          {
+            "bookmaker": "pinnacle+30",
+            "line": 2.25,
+            "over": 2.17,
+            "under": 1.617,
+            "market_id": "10170"
+          },
+          {
+            "bookmaker": "pinnacle+30",
             "line": 2.75,
             "over": 2.97,
             "under": 1.331,
             "market_id": "10172"
-          },
-          {
-            "bookmaker": "pinnacle+30",
-            "line": 1.25,
-            "over": 1.292,
-            "under": 3.18,
-            "market_id": "10164"
-          },
-          {
-            "bookmaker": "piwi247-ex",
-            "line": 5.25,
-            "over": 20.78,
-            "under": 1.01,
-            "market_id": "10188"
-          },
-          {
-            "bookmaker": "piwi247-ex",
-            "line": 6.25,
-            "over": 34.17,
-            "under": null,
-            "market_id": "10194"
-          },
-          {
-            "bookmaker": "piwi247-ex",
-            "line": 0.5,
-            "over": 1.14,
-            "under": 7.2,
-            "market_id": "106"
-          },
-          {
-            "bookmaker": "piwi247-ex",
-            "line": 3.75,
-            "over": null,
-            "under": 1.1,
-            "market_id": "10178"
-          },
-          {
-            "bookmaker": "piwi247-ex",
-            "line": 5.0,
-            "over": 20.56,
-            "under": 1.01,
-            "market_id": "10186"
           },
           {
             "bookmaker": "piwi247-ex",
@@ -7614,52 +7644,24 @@
           },
           {
             "bookmaker": "piwi247-ex",
-            "line": 7.75,
-            "over": 50.99,
-            "under": null,
-            "market_id": "10202"
-          },
-          {
-            "bookmaker": "piwi247-ex",
-            "line": 6.5,
-            "over": 34.33,
-            "under": null,
-            "market_id": "1018"
-          },
-          {
-            "bookmaker": "piwi247-ex",
-            "line": 8.5,
-            "over": 51.0,
-            "under": null,
-            "market_id": "1022"
-          },
-          {
-            "bookmaker": "piwi247-ex",
-            "line": 6.75,
-            "over": 50.99,
-            "under": null,
-            "market_id": "10196"
+            "line": 5.0,
+            "over": 20.56,
+            "under": 1.01,
+            "market_id": "10186"
           },
           {
             "bookmaker": "piwi247-ex",
             "line": 1.75,
-            "over": 1.7,
-            "under": null,
+            "over": 1.71,
+            "under": 2.19,
             "market_id": "10166"
           },
           {
             "bookmaker": "piwi247-ex",
-            "line": 1.0,
-            "over": 1.19,
-            "under": 4.92,
-            "market_id": "10162"
-          },
-          {
-            "bookmaker": "piwi247-ex",
-            "line": 0.75,
-            "over": 1.16,
-            "under": 5.66,
-            "market_id": "10160"
+            "line": 6.25,
+            "over": 34.17,
+            "under": null,
+            "market_id": "10194"
           },
           {
             "bookmaker": "piwi247-ex",
@@ -7670,38 +7672,10 @@
           },
           {
             "bookmaker": "piwi247-ex",
-            "line": 6.0,
-            "over": 34.01,
-            "under": null,
-            "market_id": "10192"
-          },
-          {
-            "bookmaker": "piwi247-ex",
-            "line": 8.0,
-            "over": 51.0,
-            "under": null,
-            "market_id": "10204"
-          },
-          {
-            "bookmaker": "piwi247-ex",
-            "line": 7.25,
-            "over": 51.0,
-            "under": null,
-            "market_id": "10200"
-          },
-          {
-            "bookmaker": "piwi247-ex",
-            "line": 5.5,
-            "over": 21.0,
-            "under": 1.01,
-            "market_id": "1016"
-          },
-          {
-            "bookmaker": "piwi247-ex",
-            "line": 7.5,
-            "over": 50.71,
-            "under": null,
-            "market_id": "1020"
+            "line": 1.25,
+            "over": 1.37,
+            "under": 3.26,
+            "market_id": "10164"
           },
           {
             "bookmaker": "piwi247-ex",
@@ -7712,10 +7686,52 @@
           },
           {
             "bookmaker": "piwi247-ex",
-            "line": 1.25,
-            "over": 1.37,
-            "under": 3.26,
-            "market_id": "10164"
+            "line": 7.25,
+            "over": 51.0,
+            "under": null,
+            "market_id": "10200"
+          },
+          {
+            "bookmaker": "piwi247-ex",
+            "line": 6.0,
+            "over": 34.01,
+            "under": null,
+            "market_id": "10192"
+          },
+          {
+            "bookmaker": "piwi247-ex",
+            "line": 4.5,
+            "over": 14.63,
+            "under": 1.06,
+            "market_id": "1014"
+          },
+          {
+            "bookmaker": "piwi247-ex",
+            "line": 4.0,
+            "over": 13.16,
+            "under": 1.06,
+            "market_id": "10180"
+          },
+          {
+            "bookmaker": "piwi247-ex",
+            "line": 6.5,
+            "over": 34.33,
+            "under": null,
+            "market_id": "1018"
+          },
+          {
+            "bookmaker": "piwi247-ex",
+            "line": 4.25,
+            "over": 13.9,
+            "under": 1.06,
+            "market_id": "10182"
+          },
+          {
+            "bookmaker": "piwi247-ex",
+            "line": 2.0,
+            "over": 1.97,
+            "under": 1.85,
+            "market_id": "10168"
           },
           {
             "bookmaker": "piwi247-ex",
@@ -7725,11 +7741,137 @@
             "market_id": "10190"
           },
           {
-            "bookmaker": "piwi247-spb",
+            "bookmaker": "piwi247-ex",
+            "line": 7.5,
+            "over": 50.8,
+            "under": null,
+            "market_id": "1020"
+          },
+          {
+            "bookmaker": "piwi247-ex",
+            "line": 5.25,
+            "over": 20.78,
+            "under": 1.01,
+            "market_id": "10188"
+          },
+          {
+            "bookmaker": "piwi247-ex",
+            "line": 8.0,
+            "over": 50.99,
+            "under": null,
+            "market_id": "10204"
+          },
+          {
+            "bookmaker": "piwi247-ex",
+            "line": 1.0,
+            "over": 1.19,
+            "under": 4.92,
+            "market_id": "10162"
+          },
+          {
+            "bookmaker": "piwi247-ex",
+            "line": 6.75,
+            "over": 50.99,
+            "under": null,
+            "market_id": "10196"
+          },
+          {
+            "bookmaker": "piwi247-ex",
+            "line": 2.5,
+            "over": 2.7,
+            "under": 1.51,
+            "market_id": "1010"
+          },
+          {
+            "bookmaker": "piwi247-ex",
+            "line": 3.75,
+            "over": 7.84,
+            "under": 1.1,
+            "market_id": "10178"
+          },
+          {
+            "bookmaker": "piwi247-ex",
+            "line": 3.25,
+            "over": 5.19,
+            "under": 1.2,
+            "market_id": "10176"
+          },
+          {
+            "bookmaker": "piwi247-ex",
+            "line": 3.5,
+            "over": 5.76,
+            "under": 1.18,
+            "market_id": "1012"
+          },
+          {
+            "bookmaker": "piwi247-ex",
+            "line": 0.75,
+            "over": 1.16,
+            "under": 5.66,
+            "market_id": "10160"
+          },
+          {
+            "bookmaker": "piwi247-ex",
+            "line": 3.0,
+            "over": 4.62,
+            "under": 1.22,
+            "market_id": "10174"
+          },
+          {
+            "bookmaker": "piwi247-ex",
+            "line": 2.25,
+            "over": 2.33,
+            "under": 1.63,
+            "market_id": "10170"
+          },
+          {
+            "bookmaker": "piwi247-ex",
+            "line": 8.5,
+            "over": 51.0,
+            "under": null,
+            "market_id": "1022"
+          },
+          {
+            "bookmaker": "piwi247-ex",
+            "line": 5.5,
+            "over": 21.0,
+            "under": 1.01,
+            "market_id": "1016"
+          },
+          {
+            "bookmaker": "piwi247-ex",
+            "line": 7.75,
+            "over": 50.99,
+            "under": null,
+            "market_id": "10202"
+          },
+          {
+            "bookmaker": "piwi247-ex",
+            "line": 2.75,
+            "over": 3.31,
+            "under": 1.35,
+            "market_id": "10172"
+          },
+          {
+            "bookmaker": "piwi247-ex",
+            "line": 0.5,
+            "over": 1.14,
+            "under": 7.25,
+            "market_id": "106"
+          },
+          {
+            "bookmaker": "piwi247-ex",
             "line": 1.5,
-            "over": 1.448,
-            "under": 2.52,
+            "over": 1.56,
+            "under": 2.58,
             "market_id": "108"
+          },
+          {
+            "bookmaker": "piwi247-spb",
+            "line": 2.75,
+            "over": 2.97,
+            "under": 1.331,
+            "market_id": "10172"
           },
           {
             "bookmaker": "piwi247-spb",
@@ -7737,13 +7879,6 @@
             "over": 1.292,
             "under": 3.18,
             "market_id": "10164"
-          },
-          {
-            "bookmaker": "piwi247-spb",
-            "line": 2.0,
-            "over": 1.854,
-            "under": 1.884,
-            "market_id": "10168"
           },
           {
             "bookmaker": "piwi247-spb",
@@ -7761,13 +7896,6 @@
           },
           {
             "bookmaker": "piwi247-spb",
-            "line": 0.5,
-            "over": 1.452,
-            "under": 2.51,
-            "market_id": "10240"
-          },
-          {
-            "bookmaker": "piwi247-spb",
             "line": 1.75,
             "over": 1.595,
             "under": 2.22,
@@ -7775,10 +7903,31 @@
           },
           {
             "bookmaker": "piwi247-spb",
-            "line": 2.75,
-            "over": 2.97,
-            "under": 1.331,
-            "market_id": "10172"
+            "line": 1.5,
+            "over": 1.448,
+            "under": 2.52,
+            "market_id": "108"
+          },
+          {
+            "bookmaker": "piwi247-spb",
+            "line": 0.5,
+            "over": 1.452,
+            "under": 2.51,
+            "market_id": "10240"
+          },
+          {
+            "bookmaker": "piwi247-spb",
+            "line": 2.0,
+            "over": 1.854,
+            "under": 1.884,
+            "market_id": "10168"
+          },
+          {
+            "bookmaker": "prolineplus",
+            "line": 2.5,
+            "over": 2.55,
+            "under": 1.4,
+            "market_id": "1010"
           },
           {
             "bookmaker": "prolineplus",
@@ -7788,18 +7937,11 @@
             "market_id": "108"
           },
           {
-            "bookmaker": "prolineplus",
-            "line": 2.5,
-            "over": 2.55,
-            "under": 1.41,
-            "market_id": "1010"
-          },
-          {
             "bookmaker": "ps3838",
-            "line": 1.5,
-            "over": 1.448,
-            "under": 2.52,
-            "market_id": "108"
+            "line": 2.75,
+            "over": 2.97,
+            "under": 1.331,
+            "market_id": "10172"
           },
           {
             "bookmaker": "ps3838",
@@ -7807,13 +7949,6 @@
             "over": 1.292,
             "under": 3.18,
             "market_id": "10164"
-          },
-          {
-            "bookmaker": "ps3838",
-            "line": 2.0,
-            "over": 1.854,
-            "under": 1.884,
-            "market_id": "10168"
           },
           {
             "bookmaker": "ps3838",
@@ -7831,13 +7966,6 @@
           },
           {
             "bookmaker": "ps3838",
-            "line": 0.5,
-            "over": 1.452,
-            "under": 2.51,
-            "market_id": "10240"
-          },
-          {
-            "bookmaker": "ps3838",
             "line": 1.75,
             "over": 1.595,
             "under": 2.22,
@@ -7845,10 +7973,115 @@
           },
           {
             "bookmaker": "ps3838",
-            "line": 2.75,
-            "over": 2.97,
-            "under": 1.331,
-            "market_id": "10172"
+            "line": 1.5,
+            "over": 1.448,
+            "under": 2.52,
+            "market_id": "108"
+          },
+          {
+            "bookmaker": "ps3838",
+            "line": 0.5,
+            "over": 1.452,
+            "under": 2.51,
+            "market_id": "10240"
+          },
+          {
+            "bookmaker": "ps3838",
+            "line": 2.0,
+            "over": 1.854,
+            "under": 1.884,
+            "market_id": "10168"
+          },
+          {
+            "bookmaker": "quigioco.it",
+            "line": 0.5,
+            "over": 1.05,
+            "under": 6.2,
+            "market_id": "106"
+          },
+          {
+            "bookmaker": "quigioco.it",
+            "line": 1.5,
+            "over": 1.44,
+            "under": 2.38,
+            "market_id": "108"
+          },
+          {
+            "bookmaker": "quigioco.it",
+            "line": 2.5,
+            "over": 6.7,
+            "under": null,
+            "market_id": "10228"
+          },
+          {
+            "bookmaker": "quigioco.it",
+            "line": 3.5,
+            "over": 14.75,
+            "under": null,
+            "market_id": "10230"
+          },
+          {
+            "bookmaker": "quigioco.it",
+            "line": 4.5,
+            "over": 8.9,
+            "under": null,
+            "market_id": "1014"
+          },
+          {
+            "bookmaker": "quigioco.it",
+            "line": 1.5,
+            "over": 2.81,
+            "under": 1.32,
+            "market_id": "10226"
+          },
+          {
+            "bookmaker": "quigioco.it",
+            "line": 0.5,
+            "over": 1.4,
+            "under": 2.43,
+            "market_id": "10240"
+          },
+          {
+            "bookmaker": "quigioco.it",
+            "line": 0.5,
+            "over": 1.34,
+            "under": 2.66,
+            "market_id": "10224"
+          },
+          {
+            "bookmaker": "quigioco.it",
+            "line": 3.5,
+            "over": 4.7,
+            "under": 1.11,
+            "market_id": "1012"
+          },
+          {
+            "bookmaker": "quigioco.it",
+            "line": 1.5,
+            "over": 3.15,
+            "under": 1.26,
+            "market_id": "10242"
+          },
+          {
+            "bookmaker": "quigioco.it",
+            "line": 3.5,
+            "over": 16.5,
+            "under": null,
+            "market_id": "10246"
+          },
+          {
+            "bookmaker": "quigioco.it",
+            "line": 2.5,
+            "over": 2.38,
+            "under": 1.45,
+            "market_id": "1010"
+          },
+          {
+            "bookmaker": "quigioco.it",
+            "line": 2.5,
+            "over": 7.8,
+            "under": null,
+            "market_id": "10244"
           },
           {
             "bookmaker": "rolletto",
@@ -7894,59 +8127,24 @@
           },
           {
             "bookmaker": "sharpbet",
-            "line": 2.0,
-            "over": 1.922,
-            "under": 1.818,
-            "market_id": "10168"
-          },
-          {
-            "bookmaker": "sharpbet",
             "line": 2.25,
-            "over": 2.221,
-            "under": 1.589,
+            "over": 2.222,
+            "under": 1.588,
             "market_id": "10170"
           },
           {
             "bookmaker": "sharpbet",
             "line": 1.75,
-            "over": 1.658,
-            "under": 2.107,
+            "over": 1.659,
+            "under": 2.106,
             "market_id": "10166"
           },
           {
-            "bookmaker": "sharpxch",
-            "line": 5.25,
-            "over": 20.78,
-            "under": 1.01,
-            "market_id": "10188"
-          },
-          {
-            "bookmaker": "sharpxch",
-            "line": 6.25,
-            "over": 34.17,
-            "under": null,
-            "market_id": "10194"
-          },
-          {
-            "bookmaker": "sharpxch",
-            "line": 0.5,
-            "over": 1.14,
-            "under": 7.2,
-            "market_id": "106"
-          },
-          {
-            "bookmaker": "sharpxch",
-            "line": 3.75,
-            "over": null,
-            "under": 1.1,
-            "market_id": "10178"
-          },
-          {
-            "bookmaker": "sharpxch",
-            "line": 5.0,
-            "over": 20.56,
-            "under": 1.01,
-            "market_id": "10186"
+            "bookmaker": "sharpbet",
+            "line": 2.0,
+            "over": 1.923,
+            "under": 1.817,
+            "market_id": "10168"
           },
           {
             "bookmaker": "sharpxch",
@@ -7957,52 +8155,24 @@
           },
           {
             "bookmaker": "sharpxch",
-            "line": 7.75,
-            "over": 50.99,
-            "under": null,
-            "market_id": "10202"
-          },
-          {
-            "bookmaker": "sharpxch",
-            "line": 6.5,
-            "over": 34.33,
-            "under": null,
-            "market_id": "1018"
-          },
-          {
-            "bookmaker": "sharpxch",
-            "line": 8.5,
-            "over": 51.0,
-            "under": null,
-            "market_id": "1022"
-          },
-          {
-            "bookmaker": "sharpxch",
-            "line": 6.75,
-            "over": 50.99,
-            "under": null,
-            "market_id": "10196"
+            "line": 5.0,
+            "over": 20.56,
+            "under": 1.01,
+            "market_id": "10186"
           },
           {
             "bookmaker": "sharpxch",
             "line": 1.75,
-            "over": 1.7,
-            "under": null,
+            "over": 1.71,
+            "under": 2.19,
             "market_id": "10166"
           },
           {
             "bookmaker": "sharpxch",
-            "line": 1.0,
-            "over": 1.19,
-            "under": 4.92,
-            "market_id": "10162"
-          },
-          {
-            "bookmaker": "sharpxch",
-            "line": 0.75,
-            "over": 1.16,
-            "under": 5.66,
-            "market_id": "10160"
+            "line": 6.25,
+            "over": 34.17,
+            "under": null,
+            "market_id": "10194"
           },
           {
             "bookmaker": "sharpxch",
@@ -8013,38 +8183,10 @@
           },
           {
             "bookmaker": "sharpxch",
-            "line": 6.0,
-            "over": 34.01,
-            "under": null,
-            "market_id": "10192"
-          },
-          {
-            "bookmaker": "sharpxch",
-            "line": 8.0,
-            "over": 51.0,
-            "under": null,
-            "market_id": "10204"
-          },
-          {
-            "bookmaker": "sharpxch",
-            "line": 7.25,
-            "over": 51.0,
-            "under": null,
-            "market_id": "10200"
-          },
-          {
-            "bookmaker": "sharpxch",
-            "line": 5.5,
-            "over": 21.0,
-            "under": 1.01,
-            "market_id": "1016"
-          },
-          {
-            "bookmaker": "sharpxch",
-            "line": 7.5,
-            "over": 50.71,
-            "under": null,
-            "market_id": "1020"
+            "line": 1.25,
+            "over": 1.37,
+            "under": 3.26,
+            "market_id": "10164"
           },
           {
             "bookmaker": "sharpxch",
@@ -8055,10 +8197,52 @@
           },
           {
             "bookmaker": "sharpxch",
-            "line": 1.25,
-            "over": 1.37,
-            "under": 3.26,
-            "market_id": "10164"
+            "line": 7.25,
+            "over": 51.0,
+            "under": null,
+            "market_id": "10200"
+          },
+          {
+            "bookmaker": "sharpxch",
+            "line": 6.0,
+            "over": 34.01,
+            "under": null,
+            "market_id": "10192"
+          },
+          {
+            "bookmaker": "sharpxch",
+            "line": 4.5,
+            "over": 14.63,
+            "under": 1.06,
+            "market_id": "1014"
+          },
+          {
+            "bookmaker": "sharpxch",
+            "line": 4.0,
+            "over": 13.16,
+            "under": 1.06,
+            "market_id": "10180"
+          },
+          {
+            "bookmaker": "sharpxch",
+            "line": 6.5,
+            "over": 34.33,
+            "under": null,
+            "market_id": "1018"
+          },
+          {
+            "bookmaker": "sharpxch",
+            "line": 4.25,
+            "over": 13.9,
+            "under": 1.06,
+            "market_id": "10182"
+          },
+          {
+            "bookmaker": "sharpxch",
+            "line": 2.0,
+            "over": 1.97,
+            "under": 1.85,
+            "market_id": "10168"
           },
           {
             "bookmaker": "sharpxch",
@@ -8066,6 +8250,132 @@
             "over": 34.11,
             "under": null,
             "market_id": "10190"
+          },
+          {
+            "bookmaker": "sharpxch",
+            "line": 7.5,
+            "over": 50.8,
+            "under": null,
+            "market_id": "1020"
+          },
+          {
+            "bookmaker": "sharpxch",
+            "line": 5.25,
+            "over": 20.78,
+            "under": 1.01,
+            "market_id": "10188"
+          },
+          {
+            "bookmaker": "sharpxch",
+            "line": 8.0,
+            "over": 50.99,
+            "under": null,
+            "market_id": "10204"
+          },
+          {
+            "bookmaker": "sharpxch",
+            "line": 1.0,
+            "over": 1.19,
+            "under": 4.92,
+            "market_id": "10162"
+          },
+          {
+            "bookmaker": "sharpxch",
+            "line": 6.75,
+            "over": 50.99,
+            "under": null,
+            "market_id": "10196"
+          },
+          {
+            "bookmaker": "sharpxch",
+            "line": 2.5,
+            "over": 2.7,
+            "under": 1.51,
+            "market_id": "1010"
+          },
+          {
+            "bookmaker": "sharpxch",
+            "line": 3.75,
+            "over": 7.84,
+            "under": 1.1,
+            "market_id": "10178"
+          },
+          {
+            "bookmaker": "sharpxch",
+            "line": 3.25,
+            "over": 5.19,
+            "under": 1.2,
+            "market_id": "10176"
+          },
+          {
+            "bookmaker": "sharpxch",
+            "line": 3.5,
+            "over": 5.76,
+            "under": 1.18,
+            "market_id": "1012"
+          },
+          {
+            "bookmaker": "sharpxch",
+            "line": 0.75,
+            "over": 1.16,
+            "under": 5.66,
+            "market_id": "10160"
+          },
+          {
+            "bookmaker": "sharpxch",
+            "line": 3.0,
+            "over": 4.62,
+            "under": 1.22,
+            "market_id": "10174"
+          },
+          {
+            "bookmaker": "sharpxch",
+            "line": 2.25,
+            "over": 2.33,
+            "under": 1.63,
+            "market_id": "10170"
+          },
+          {
+            "bookmaker": "sharpxch",
+            "line": 8.5,
+            "over": 51.0,
+            "under": null,
+            "market_id": "1022"
+          },
+          {
+            "bookmaker": "sharpxch",
+            "line": 5.5,
+            "over": 21.0,
+            "under": 1.01,
+            "market_id": "1016"
+          },
+          {
+            "bookmaker": "sharpxch",
+            "line": 7.75,
+            "over": 50.99,
+            "under": null,
+            "market_id": "10202"
+          },
+          {
+            "bookmaker": "sharpxch",
+            "line": 2.75,
+            "over": 3.31,
+            "under": 1.35,
+            "market_id": "10172"
+          },
+          {
+            "bookmaker": "sharpxch",
+            "line": 0.5,
+            "over": 1.14,
+            "under": 7.25,
+            "market_id": "106"
+          },
+          {
+            "bookmaker": "sharpxch",
+            "line": 1.5,
+            "over": 1.56,
+            "under": 2.58,
+            "market_id": "108"
           },
           {
             "bookmaker": "singbet",
@@ -8398,20 +8708,13 @@
           },
           {
             "bookmaker": "svenskaspel",
-            "line": 1.5,
-            "over": 1.5,
-            "under": 2.28,
-            "market_id": "108"
+            "line": 2.5,
+            "over": 2.55,
+            "under": 1.4,
+            "market_id": "1010"
           },
           {
             "bookmaker": "svenskaspel",
-            "line": 2.5,
-            "over": 2.55,
-            "under": 1.41,
-            "market_id": "1010"
-          },
-          {
-            "bookmaker": "tabtouch",
             "line": 1.5,
             "over": 1.5,
             "under": 2.28,
@@ -8421,8 +8724,15 @@
             "bookmaker": "tabtouch",
             "line": 2.5,
             "over": 2.55,
-            "under": 1.41,
+            "under": 1.4,
             "market_id": "1010"
+          },
+          {
+            "bookmaker": "tabtouch",
+            "line": 1.5,
+            "over": 1.5,
+            "under": 2.28,
+            "market_id": "108"
           },
           {
             "bookmaker": "tipico",
@@ -8811,13 +9121,20 @@
           },
           {
             "bookmaker": "unibet",
-            "line": 2.5,
-            "over": 2.55,
-            "under": 1.41,
-            "market_id": "1010"
+            "line": 1.5,
+            "over": 1.5,
+            "under": 2.28,
+            "market_id": "108"
           },
           {
             "bookmaker": "unibet",
+            "line": 2.5,
+            "over": 2.55,
+            "under": 1.4,
+            "market_id": "1010"
+          },
+          {
+            "bookmaker": "unibet.be",
             "line": 1.5,
             "over": 1.5,
             "under": 2.28,
@@ -8827,15 +9144,8 @@
             "bookmaker": "unibet.be",
             "line": 2.5,
             "over": 2.55,
-            "under": 1.41,
+            "under": 1.4,
             "market_id": "1010"
-          },
-          {
-            "bookmaker": "unibet.be",
-            "line": 1.5,
-            "over": 1.5,
-            "under": 2.28,
-            "market_id": "108"
           },
           {
             "bookmaker": "unibet.com.au",
@@ -10372,6 +10682,210 @@
         "candidate_count": 0,
         "note": "Research screen only. Timestamped pre-kickoff prices only; no bookmaker actions are performed."
       }
+    },
+    {
+      "fixture_id": "evt_NSJVQSGJ",
+      "kickoff": "2026-10-30T14:50:00+00:00",
+      "kickoff_local": "2026-10-30T15:50:00+01:00",
+      "home_team": "Al Diriyah",
+      "away_team": "Neom SC",
+      "league": "SaudiPL",
+      "league_id": "lg_EX4F3MDQ",
+      "division_code": null,
+      "fixture_status": "NS",
+      "model": "experimental_recent_goals_poisson",
+      "model_validated": false,
+      "betting_recommendation": false,
+      "historical_matches": {
+        "home": 3,
+        "away": 4
+      },
+      "team_name_matches": {
+        "home": {
+          "fixture_name": "Al Diriyah",
+          "historical_key": "aldiriyah",
+          "auto_matched": false
+        },
+        "away": {
+          "fixture_name": "Neom SC",
+          "historical_key": "neom",
+          "auto_matched": false
+        }
+      },
+      "status": "UNSUPPORTED_COMPETITION",
+      "reason": "This competition is not mapped to the historical dataset and the teams do not have enough exact-match history for a safe global estimate.",
+      "team_name_match_suggestions": {},
+      "fixture_source": "InferSports",
+      "source_fixture_id": "evt_NSJVQSGJ",
+      "value_bet_screen": {
+        "status": "DISABLED_UNVALIDATED",
+        "model_validated": false,
+        "markets": {
+          "1X2": {
+            "status": "DISABLED_UNVALIDATED",
+            "bookmaker_price_sets": 0,
+            "candidates": []
+          },
+          "BTTS": {
+            "status": "DISABLED_UNVALIDATED",
+            "bookmaker_price_sets": 0,
+            "candidates": []
+          },
+          "OVER_UNDER_1_5": {
+            "status": "DISABLED_UNVALIDATED",
+            "bookmaker_price_sets": 0,
+            "candidates": []
+          },
+          "OVER_UNDER_2_5": {
+            "status": "DISABLED_UNVALIDATED",
+            "bookmaker_price_sets": 0,
+            "candidates": []
+          },
+          "OVER_UNDER_3_5": {
+            "status": "DISABLED_UNVALIDATED",
+            "bookmaker_price_sets": 0,
+            "candidates": []
+          }
+        },
+        "candidate_count": 0,
+        "note": "Research screen only. Timestamped pre-kickoff prices only; no bookmaker actions are performed."
+      }
+    },
+    {
+      "fixture_id": "evt_FANH1TKC",
+      "kickoff": "2026-10-30T15:00:00+00:00",
+      "kickoff_local": "2026-10-30T16:00:00+01:00",
+      "home_team": "Asyut Petroleum",
+      "away_team": "Gounah",
+      "league": "EgyPL",
+      "league_id": "lg_9JWH2EVH",
+      "division_code": null,
+      "fixture_status": "NS",
+      "model": "experimental_recent_goals_poisson",
+      "model_validated": false,
+      "betting_recommendation": false,
+      "historical_matches": {
+        "home": 2,
+        "away": 0
+      },
+      "team_name_matches": {
+        "home": {
+          "fixture_name": "Asyut Petroleum",
+          "historical_key": "asyutpetroleum",
+          "auto_matched": false
+        },
+        "away": {
+          "fixture_name": "Gounah",
+          "historical_key": "gounah",
+          "auto_matched": false
+        }
+      },
+      "status": "UNSUPPORTED_COMPETITION",
+      "reason": "This competition is not mapped to the historical dataset and the teams do not have enough exact-match history for a safe global estimate.",
+      "team_name_match_suggestions": {},
+      "fixture_source": "InferSports",
+      "source_fixture_id": "evt_FANH1TKC",
+      "value_bet_screen": {
+        "status": "DISABLED_UNVALIDATED",
+        "model_validated": false,
+        "markets": {
+          "1X2": {
+            "status": "DISABLED_UNVALIDATED",
+            "bookmaker_price_sets": 0,
+            "candidates": []
+          },
+          "BTTS": {
+            "status": "DISABLED_UNVALIDATED",
+            "bookmaker_price_sets": 0,
+            "candidates": []
+          },
+          "OVER_UNDER_1_5": {
+            "status": "DISABLED_UNVALIDATED",
+            "bookmaker_price_sets": 0,
+            "candidates": []
+          },
+          "OVER_UNDER_2_5": {
+            "status": "DISABLED_UNVALIDATED",
+            "bookmaker_price_sets": 0,
+            "candidates": []
+          },
+          "OVER_UNDER_3_5": {
+            "status": "DISABLED_UNVALIDATED",
+            "bookmaker_price_sets": 0,
+            "candidates": []
+          }
+        },
+        "candidate_count": 0,
+        "note": "Research screen only. Timestamped pre-kickoff prices only; no bookmaker actions are performed."
+      }
+    },
+    {
+      "fixture_id": "evt_NSJVZ8GJ",
+      "kickoff": "2026-10-30T15:00:00+00:00",
+      "kickoff_local": "2026-10-30T16:00:00+01:00",
+      "home_team": "CSKA 1948 Sofia",
+      "away_team": "S.Varna",
+      "league": "BulFPFL",
+      "league_id": "lg_CBDDP3BP",
+      "division_code": null,
+      "fixture_status": "NS",
+      "model": "experimental_recent_goals_poisson",
+      "model_validated": false,
+      "betting_recommendation": false,
+      "historical_matches": {
+        "home": 0,
+        "away": 0
+      },
+      "team_name_matches": {
+        "home": {
+          "fixture_name": "CSKA 1948 Sofia",
+          "historical_key": "cska1948sofia",
+          "auto_matched": false
+        },
+        "away": {
+          "fixture_name": "S.Varna",
+          "historical_key": "svarna",
+          "auto_matched": false
+        }
+      },
+      "status": "UNSUPPORTED_COMPETITION",
+      "reason": "This competition is not mapped to the historical dataset and the teams do not have enough exact-match history for a safe global estimate.",
+      "team_name_match_suggestions": {},
+      "fixture_source": "InferSports",
+      "source_fixture_id": "evt_NSJVZ8GJ",
+      "value_bet_screen": {
+        "status": "DISABLED_UNVALIDATED",
+        "model_validated": false,
+        "markets": {
+          "1X2": {
+            "status": "DISABLED_UNVALIDATED",
+            "bookmaker_price_sets": 0,
+            "candidates": []
+          },
+          "BTTS": {
+            "status": "DISABLED_UNVALIDATED",
+            "bookmaker_price_sets": 0,
+            "candidates": []
+          },
+          "OVER_UNDER_1_5": {
+            "status": "DISABLED_UNVALIDATED",
+            "bookmaker_price_sets": 0,
+            "candidates": []
+          },
+          "OVER_UNDER_2_5": {
+            "status": "DISABLED_UNVALIDATED",
+            "bookmaker_price_sets": 0,
+            "candidates": []
+          },
+          "OVER_UNDER_3_5": {
+            "status": "DISABLED_UNVALIDATED",
+            "bookmaker_price_sets": 0,
+            "candidates": []
+          }
+        },
+        "candidate_count": 0,
+        "note": "Research screen only. Timestamped pre-kickoff prices only; no bookmaker actions are performed."
+      }
     }
   ],
   "notice": "Experimental research output only. Historical tests show the Poisson pipeline underperforms the market benchmark. Competition-scoped Elo is preferred when available but remains unvalidated for betting; Poisson remains primary when Elo history is unavailable. No betting recommendations or value bets are approved.",
@@ -10389,7 +10903,7 @@
   "primary_provider_request": {
     "provider": "5DollarFootballAPI",
     "status": "SUCCESS",
-    "requests_remaining": "59",
+    "requests_remaining": "58",
     "pages_fetched": 1,
     "fixtures_received": 5
   },
@@ -10414,12 +10928,12 @@
     "infersports": {
       "status": "AVAILABLE",
       "events_received": 200,
-      "future_same_day_events": 169,
+      "future_same_day_events": 175,
       "duplicates_skipped": 1,
-      "fixtures_added": 168,
+      "fixtures_added": 174,
       "error_type": null
     },
-    "fixtures_total_after_supplement": 177,
+    "fixtures_total_after_supplement": 183,
     "future_fixtures_considered": 25,
     "predictions_created": 4,
     "insufficient_history": 0,
@@ -10461,8 +10975,8 @@
       ],
       "max_btts_event_calls": 2,
       "quota": {
-        "remaining": "364",
-        "used": "136",
+        "remaining": "354",
+        "used": "146",
         "last_cost": "1"
       },
       "warning": null
@@ -10482,13 +10996,15 @@
     "markets": [
       "1X2",
       "BTTS",
-      "OVER_UNDER_2_5"
+      "OVER_UNDER_1_5",
+      "OVER_UNDER_2_5",
+      "OVER_UNDER_3_5"
     ],
     "bookmaker_price_sets_by_market": {
       "1X2": 65,
       "BTTS": 17,
-      "OVER_UNDER_2_5": 2,
       "OVER_UNDER_1_5": 0,
+      "OVER_UNDER_2_5": 2,
       "OVER_UNDER_3_5": 5
     },
     "candidate_count": 0,
@@ -10506,6 +11022,7 @@
             "full log_loss does not beat market",
             "holdout brier_score does not beat market",
             "holdout log_loss does not beat market",
+            "prospective paper evidence does not match the deployed calibration version",
             "insufficient settled prospective paper bets",
             "insufficient prospective observation dates",
             "prospective net ROI is not positive",
@@ -10517,6 +11034,8 @@
         "BTTS": {
           "status": "LOCKED",
           "failures": [
+            "validated calibration is not applied to live forecast probabilities",
+            "prospective paper evidence does not match the deployed calibration version",
             "insufficient settled prospective paper bets",
             "insufficient prospective observation dates",
             "prospective net ROI is not positive",
@@ -10528,6 +11047,8 @@
         "OVER_UNDER_1_5": {
           "status": "LOCKED",
           "failures": [
+            "validated calibration is not applied to live forecast probabilities",
+            "prospective paper evidence does not match the deployed calibration version",
             "insufficient settled prospective paper bets",
             "insufficient prospective observation dates",
             "prospective net ROI is not positive",
@@ -10539,6 +11060,8 @@
         "OVER_UNDER_2_5": {
           "status": "LOCKED",
           "failures": [
+            "validated calibration is not applied to live forecast probabilities",
+            "prospective paper evidence does not match the deployed calibration version",
             "insufficient settled prospective paper bets",
             "insufficient prospective observation dates",
             "prospective net ROI is not positive",
@@ -10550,6 +11073,8 @@
         "OVER_UNDER_3_5": {
           "status": "LOCKED",
           "failures": [
+            "validated calibration is not applied to live forecast probabilities",
+            "prospective paper evidence does not match the deployed calibration version",
             "insufficient settled prospective paper bets",
             "insufficient prospective observation dates",
             "prospective net ROI is not positive",
@@ -10566,15 +11091,16 @@
         "minimum_timestamped_odds_coverage": 0.98,
         "positive_net_roi": true,
         "positive_95_percent_roi_lower_bound": true,
-        "1x2_must_beat_market_on_full_and_recent_holdout": true
+        "1x2_must_beat_market_on_full_and_recent_holdout": true,
+        "paper_evidence_must_match_deployed_calibration_version": true
       },
       "alerts_enabled": false,
       "note": "Missing, incomplete or failing evidence keeps every market locked. Calibration alone does not prove profitability.",
-      "generated_at_utc": "2026-10-30T13:26:31.140537+00:00",
+      "generated_at_utc": "2026-10-30T13:34:05.707661+00:00",
       "backtest_provenance": {
-        "workflow_run_id": 41062872491,
-        "commit_sha": "a59f67e19ed8db60d3d6941dbbafb3a2b413bfc7",
-        "created_at": "2026-10-30T13:23:44Z",
+        "workflow_run_id": 41063763363,
+        "commit_sha": "0ffdb22ac0117d7ea174f790998a5a2c68f2d0d1",
+        "created_at": "2026-10-30T13:30:07Z",
         "dataset_provenance": {
           "input_file": "open_historical_matches.csv",
           "sha256": "5d4b0355dda14d2a59864771daf2ac7838816457e14385cefa35504e006de239",
@@ -10587,7 +11113,7 @@
       "paper_ledger_present": true,
       "paper_ledger_dates": 2
     },
-    "note": "Value candidates remain suppressed until repeated chronological out-of-sample validation passes."
+    "note": "Candidates require market-specific certification, complete odds, and timestamped pre-kickoff quotes."
   },
   "live_odds_sync": {
     "status": "AVAILABLE",
@@ -10610,6 +11136,17 @@
     ],
     "note": "Market prices are informational; model outputs remain experimental and are not betting advice."
   },
+  "goal_market_calibration": {
+    "status": "NO_COMPATIBLE_FORECASTS",
+    "model_version": null,
+    "training_cutoff_date": "2025-01-12",
+    "markets": [],
+    "compatible_forecasts": 21,
+    "applied_forecasts": 0,
+    "failures": {},
+    "training_method": "per-market Platt scaling fit on first 80% of forecast dates; evaluated on final 20%",
+    "note": "Frozen Platt coefficients were fitted before the later-date holdout and applied only to future report fixtures."
+  },
   "value_validation_certificate": {
     "schema_version": 1,
     "status": "LOCKED_INSUFFICIENT_EVIDENCE",
@@ -10623,6 +11160,7 @@
           "full log_loss does not beat market",
           "holdout brier_score does not beat market",
           "holdout log_loss does not beat market",
+          "prospective paper evidence does not match the deployed calibration version",
           "insufficient settled prospective paper bets",
           "insufficient prospective observation dates",
           "prospective net ROI is not positive",
@@ -10634,6 +11172,8 @@
       "BTTS": {
         "status": "LOCKED",
         "failures": [
+          "validated calibration is not applied to live forecast probabilities",
+          "prospective paper evidence does not match the deployed calibration version",
           "insufficient settled prospective paper bets",
           "insufficient prospective observation dates",
           "prospective net ROI is not positive",
@@ -10645,6 +11185,8 @@
       "OVER_UNDER_1_5": {
         "status": "LOCKED",
         "failures": [
+          "validated calibration is not applied to live forecast probabilities",
+          "prospective paper evidence does not match the deployed calibration version",
           "insufficient settled prospective paper bets",
           "insufficient prospective observation dates",
           "prospective net ROI is not positive",
@@ -10656,6 +11198,8 @@
       "OVER_UNDER_2_5": {
         "status": "LOCKED",
         "failures": [
+          "validated calibration is not applied to live forecast probabilities",
+          "prospective paper evidence does not match the deployed calibration version",
           "insufficient settled prospective paper bets",
           "insufficient prospective observation dates",
           "prospective net ROI is not positive",
@@ -10667,6 +11211,8 @@
       "OVER_UNDER_3_5": {
         "status": "LOCKED",
         "failures": [
+          "validated calibration is not applied to live forecast probabilities",
+          "prospective paper evidence does not match the deployed calibration version",
           "insufficient settled prospective paper bets",
           "insufficient prospective observation dates",
           "prospective net ROI is not positive",
@@ -10683,15 +11229,16 @@
       "minimum_timestamped_odds_coverage": 0.98,
       "positive_net_roi": true,
       "positive_95_percent_roi_lower_bound": true,
-      "1x2_must_beat_market_on_full_and_recent_holdout": true
+      "1x2_must_beat_market_on_full_and_recent_holdout": true,
+      "paper_evidence_must_match_deployed_calibration_version": true
     },
     "alerts_enabled": false,
     "note": "Missing, incomplete or failing evidence keeps every market locked. Calibration alone does not prove profitability.",
-    "generated_at_utc": "2026-10-30T13:26:31.140537+00:00",
+    "generated_at_utc": "2026-10-30T13:34:05.707661+00:00",
     "backtest_provenance": {
-      "workflow_run_id": 41062872491,
-      "commit_sha": "a59f67e19ed8db60d3d6941dbbafb3a2b413bfc7",
-      "created_at": "2026-10-30T13:23:44Z",
+      "workflow_run_id": 41063763363,
+      "commit_sha": "0ffdb22ac0117d7ea174f790998a5a2c68f2d0d1",
+      "created_at": "2026-10-30T13:30:07Z",
       "dataset_provenance": {
         "input_file": "open_historical_matches.csv",
         "sha256": "5d4b0355dda14d2a59864771daf2ac7838816457e14385cefa35504e006de239",
@@ -10705,5 +11252,5 @@
     "paper_ledger_dates": 2
   },
   "command_data_publication": "PUBLISHED",
-  "command_data_published_at_utc": "2026-10-30T13:26:34.096824+00:00"
+  "command_data_published_at_utc": "2026-10-30T13:34:08.414666+00:00"
 }
