@@ -60,3 +60,24 @@ def test_dashboard_data_exposes_value_screen_status_and_market_coverage(monkeypa
     payload = telegram.dashboard_data()
     assert payload["value_bet_screen"]["status"] == "DISABLED_UNVALIDATED"
     assert payload["value_bet_screen"]["markets"] == ["1X2", "BTTS", "OVER_UNDER_2_5"]
+    assert payload["value_validation_certificate"]["status"] == "LOCKED_INSUFFICIENT_EVIDENCE"
+    assert payload["value_validation_certificate"]["alerts_enabled"] is False
+
+
+def test_dashboard_data_exposes_published_validation_certificate(monkeypatch):
+    from api import telegram
+
+    certificate = {
+        "status": "PARTIALLY_VALIDATED",
+        "approved_markets": ["BTTS"],
+        "alerts_enabled": True,
+        "market_diagnostics": {"BTTS": {"status": "PASS"}},
+    }
+    monkeypatch.setattr(telegram, "load_latest_report", lambda: {
+        "as_of_date": "2026-10-30",
+        "predictions": [],
+        "value_validation_certificate": certificate,
+    })
+    monkeypatch.setattr(telegram, "load_paper_ledger", lambda: None)
+    payload = telegram.dashboard_data()
+    assert payload["value_validation_certificate"] == certificate
