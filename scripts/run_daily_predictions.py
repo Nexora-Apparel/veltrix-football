@@ -202,6 +202,47 @@ def _merge_api_sports_market_odds(
     return attached
 
 
+def _limit_fixture_payload(payload: dict, limit: int, timezone_name: str = "Africa/Lagos") -> dict:
+    """Keep at most N upcoming same-day fixtures, ordered by kickoff."""
+    from copy import deepcopy
+    result = deepcopy(payload)
+    rows = result.get("response")
+    if not isinstance(rows, list):
+        raise ValueError("Fixture provider response must contain a response list.")
+    zone = ZoneInfo(timezone_name)
+    now = datetime.now(zone)
+    eligible = []
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
+        fixture = row.get("fixture") if isinstance(row.get("fixture"), dict) else {}
+        status = fixture.get("status") if isinstance(fixture.get("status"), dict) else {}
+        short = str(status.get("short") or "").upper()
+        if short and short not in {"NS", "TBD"}:
+            continue
+        raw = fixture.get("date")
+        if not raw:
+            continue
+        try:
+            kickoff = datetime.fromisoformat(str(raw).replace("Z", "+00:00"))
+            if kickoff.tzinfo is None:
+                kickoff = kickoff.replace(tzinfo=zone)
+            kickoff = kickoff.astimezone(zone)
+        except (TypeError, ValueError, OverflowError):
+            continue
+        if kickoff.date() != now.date() or kickoff <= now:
+            continue
+        eligible.append((kickoff, row))
+    eligible.sort(key=lambda item: item[0])
+    cap = max(0, int(limit))
+    result["response"] = [row for _, row in eligible[:cap]]
+    meta = result.get("_veltrix_meta")
+    if isinstance(meta, dict):
+        meta["fixtures_before_delivery_cap"] = len(eligible)
+        meta["fixture_delivery_cap"] = cap
+        meta["fixtures_after_delivery_cap"] = len(result["response"])
+    return result
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--date", default=None, help="Fixture date YYYY-MM-DD in the selected timezone (defaults to today)")
@@ -209,6 +250,7 @@ def main() -> None:
     parser.add_argument("--output", default="reports/daily_predictions.json")
     parser.add_argument("--recent-cache", default="reports/recent_results_cache.json")
     parser.add_argument("--timezone", default="Africa/Lagos")
+    parser.add_argument("--max-fixtures", type=int, default=25, help="Maximum upcoming same-day fixtures to model and publish (default: 25)")
     args = parser.parse_args()
     try:
         target_date = date.fromisoformat(args.date) if args.date else datetime.now(ZoneInfo(args.timezone)).date()
@@ -232,6 +274,8 @@ def main() -> None:
             target_date.isoformat(),
             timezone_name=args.timezone,
         )
+        # Bound model workload and Telegram report size after cross-provider discovery.
+        payload = _limit_fixture_payload(payload, args.max_fixtures, args.timezone)
         base_history = load_historical_matches(args.history)
         cache_path = Path(args.recent_cache)
         cache_data, cached_rows = _load_recent_cache(cache_path)
