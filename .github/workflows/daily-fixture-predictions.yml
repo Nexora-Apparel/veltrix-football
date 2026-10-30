@@ -44,6 +44,7 @@ on:
       - "app/value_bets_runtime.py"
       - "tests/test_build_value_certificate.py"
       - "tests/test_value_bets_runtime.py"
+      - "tests/test_value_bets.py"
       - "scripts/evaluate_paper_predictions.py"
       - "scripts/filter_report_for_delivery.py"
       - "scripts/send_telegram_report.py"
