@@ -51,6 +51,13 @@ def prospective_value_rows(prediction: dict[str, Any], result: dict[str, Any]) -
     within each bookmaker; a selection must pass the same edge, expected-return,
     probability and odds bounds used by the production value screen.
     """
+    calibration = prediction.get("goal_market_calibration")
+    if (
+        not isinstance(calibration, dict)
+        or calibration.get("status") != "APPLIED_PROSPECTIVELY"
+        or not calibration.get("model_version")
+    ):
+        return []
     snapshot = prediction.get("the_odds_api_market_odds")
     if not isinstance(snapshot, dict):
         return []
@@ -165,6 +172,7 @@ def prospective_value_rows(prediction: dict[str, Any], result: dict[str, Any]) -
             "unit_stake": 1.0, "unit_profit": round(price - 1, 6) if won else -1.0,
             "settlement": "WON" if won else "LOST",
             "model": str(prediction.get("goal_markets_model") or prediction.get("model") or "unknown"),
+            "calibration_version": str(calibration.get("model_version")),
         })
     return rows
 
