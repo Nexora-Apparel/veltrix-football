@@ -52,12 +52,21 @@ def prospective_value_rows(prediction: dict[str, Any], result: dict[str, Any]) -
     probability and odds bounds used by the production value screen.
     """
     calibration = prediction.get("goal_market_calibration")
-    if (
-        prediction.get("goal_markets_model") != "experimental_recent_goals_poisson"
-        or not isinstance(calibration, dict)
-        or calibration.get("status") != "APPLIED_PROSPECTIVELY"
-        or not calibration.get("model_version")
-    ):
+    goal_calibration_ready = (
+        prediction.get("goal_markets_model") == "experimental_recent_goals_poisson"
+        and isinstance(calibration, dict)
+        and calibration.get("status") == "APPLIED_PROSPECTIVELY"
+        and bool(calibration.get("model_version"))
+    )
+    primary_model = str(prediction.get("model") or "")
+    if primary_model == "experimental_elo_by_competition":
+        one_x_two_source = prediction.get("poisson_probabilities")
+    elif primary_model == "experimental_recent_goals_poisson":
+        one_x_two_source = prediction.get("probabilities")
+    else:
+        one_x_two_source = None
+    one_x_two_source = one_x_two_source if isinstance(one_x_two_source, dict) else {}
+    if not one_x_two_source and not goal_calibration_ready:
         return []
     snapshot = prediction.get("the_odds_api_market_odds")
     if not isinstance(snapshot, dict):
@@ -77,18 +86,9 @@ def prospective_value_rows(prediction: dict[str, Any], result: dict[str, Any]) -
     home, away = str(prediction.get("home_team") or ""), str(prediction.get("away_team") or "")
     if not home or not away:
         return []
-    calibrated_markets = set(calibration.get("markets") or [])
+    calibrated_markets = set(calibration.get("markets") or []) if goal_calibration_ready else set()
     # The 1X2 certificate compares the recent-goals Poisson model with the
-    # market. If Elo is primary, use the explicitly retained Poisson alternative
-    # rather than accidentally paper-tracking Elo under a Poisson certificate.
-    primary_model = str(prediction.get("model") or "")
-    if primary_model == "experimental_elo_by_competition":
-        one_x_two_source = prediction.get("poisson_probabilities")
-    elif primary_model == "experimental_recent_goals_poisson":
-        one_x_two_source = prediction.get("probabilities")
-    else:
-        one_x_two_source = None
-    one_x_two_source = one_x_two_source if isinstance(one_x_two_source, dict) else {}
+    # market. If Elo is primary, use the explicitly retained Poisson alternative.
     definitions = [
         ("h2h", "1x2", {"home": home, "draw": "Draw", "away": away},
          {"home": one_x_two_source.get("H", one_x_two_source.get("home_win")),
@@ -115,7 +115,7 @@ def prospective_value_rows(prediction: dict[str, Any], result: dict[str, Any]) -
             "over_2_5": "over_2_5",
             "over_3_5": "over_3_5",
         }.get(market_name)
-        if calibration_key and calibration_key not in calibrated_markets:
+        if calibration_key and (not goal_calibration_ready or calibration_key not in calibrated_markets):
             continue
         books = markets.get(provider_market)
         if not isinstance(books, list):
@@ -195,9 +195,16 @@ def prospective_value_rows(prediction: dict[str, Any], result: dict[str, Any]) -
             "model": (
                 "experimental_recent_goals_poisson"
                 if market_name == "1x2"
-                else str(prediction.get("goal_markets_model") or prediction.get("model") or "unknown")
+                else str(prediction.get("goal_markets_model") or "unknown")
             ),
-            "calibration_version": str(calibration.get("model_version")),
+            "model_version": (
+                "experimental_recent_goals_poisson"
+                if market_name == "1x2"
+                else str(calibration.get("model_version"))
+            ),
+            "calibration_version": (
+                str(calibration.get("model_version")) if market_name != "1x2" else None
+            ),
         })
     return rows
 
