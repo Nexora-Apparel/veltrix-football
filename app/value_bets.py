@@ -36,7 +36,8 @@ def build_value_validation_certificate(
     approved: list[str] = []
     live = backtest_report.get("live_pipeline") or {}
     rolling = ((live.get("goal_markets") or {}).get("rolling_origin_calibration") or {})
-    paper = paper_report.get("markets") if isinstance(paper_report.get("markets"), Mapping) else {}
+    paper_source = paper_report.get("markets") or paper_report.get("value_validation_markets") or {}
+    paper = paper_source if isinstance(paper_source, Mapping) else {}
     goal_markets = {
         "BTTS": "btts_yes",
         "OVER_UNDER_1_5": "over_1_5",
@@ -57,6 +58,8 @@ def build_value_validation_certificate(
         lower = _safe_float(evidence.get("roi_lower_95_ci"))
         if lower is None or lower <= 0:
             reasons.append("95% ROI lower confidence bound is not positive")
+        if evidence.get("confidence_method") != "BOOTSTRAP_PERCENTILE_95":
+            reasons.append("release-grade bootstrap confidence interval is missing")
         coverage = _safe_float(evidence.get("timestamped_odds_coverage"))
         if coverage is None or coverage < 0.98:
             reasons.append("timestamped odds coverage is below 98%")
