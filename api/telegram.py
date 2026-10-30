@@ -136,7 +136,7 @@ function findValueBets(m){
 function renderValueBet(m,box){
  const bets=findValueBets(m),card=document.createElement('article');card.className='insightcard';
  const i=document.createElement('div');i.className='insighticon';i.textContent=bets.length?'◆':'◇';
- const t=document.createElement('div');t.className='insighttitle';t.textContent='AI Value Bet';
+ const t=document.createElement('div');t.className='insighttitle';t.textContent='AI Value Screen · 1X2 / BTTS / O-U';
  const v=document.createElement('div');v.className='insightbody insightvalue';const d=document.createElement('div');d.className='insightbody';
  if(bets.length){const b=bets[0];v.textContent=b.label+' · '+b.bookmaker+' @ '+b.price.toFixed(2);d.textContent='Model probability '+fmt(b.prob)+' · market implied '+fmt(1/b.price)+' · estimated edge '+(100*b.edge).toFixed(1)+' percentage points · expected return '+(100*b.ev).toFixed(1)+'% per unit stake. Experimental estimate only.'}
  else{v.textContent='No qualifying value bet identified';d.textContent='1X2, BTTS and Over/Under value alerts are locked until the model passes repeated chronological out-of-sample validation. Prices remain reference-only; no bet is recommended.'}
