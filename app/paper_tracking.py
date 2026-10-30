@@ -133,7 +133,8 @@ def merge_paper_ledger(ledger: dict[str, Any], evaluation: dict[str, Any]) -> di
             "settled_bets": metric.get("settled_bets", 0),
             "distinct_match_dates": metric.get("distinct_match_dates", 0),
             "net_roi": metric.get("paper_roi"),
-            "roi_lower_95_ci": metric.get("roi_lower_95_normal_approx"),
+            "roi_lower_95_ci": metric.get("roi_lower_95_ci"),
+            "confidence_method": metric.get("confidence_method"),
             "timestamped_odds_coverage": metric.get("timestamped_odds_coverage", 0.0),
             "confidence_method": "diagnostic normal approximation; not yet release-grade",
         }
@@ -530,7 +531,8 @@ def evaluate_report(report: dict[str, Any], results_payload: dict[str, Any]) -> 
                 "settled_bets": value.get("settled_bets", 0),
                 "distinct_match_dates": value.get("distinct_match_dates", 0),
                 "net_roi": value.get("paper_roi"),
-                "roi_lower_95_ci": value.get("roi_lower_95_normal_approx"),
+                "roi_lower_95_ci": value.get("roi_lower_95_ci"),
+                "confidence_method": value.get("confidence_method"),
                 "timestamped_odds_coverage": value.get("timestamped_odds_coverage", 0.0),
                 "confidence_method": "diagnostic normal approximation; not yet release-grade",
             }
