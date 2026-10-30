@@ -329,8 +329,8 @@ KEYBOARD = {
     "input_field_placeholder": "Choose a Veltrix command…",
 }
 BUTTON_COMMANDS = {
-    "1x2 predictions": "/today",
-    "1x2": "/today",
+    "1x2 predictions": "/1x2",
+    "1x2": "/1x2",
     "over/under goals": "/overunder",
     "over under goals": "/overunder",
     "btts": "/btts",
