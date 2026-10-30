@@ -315,6 +315,13 @@ def dashboard_data() -> dict:
             "status": "NOT_REPORTED", "model_validated": False,
             "markets": ["1X2", "BTTS", "OVER_UNDER_2_5"], "candidate_count": 0,
         },
+        "value_validation_certificate": report.get("value_validation_certificate") or {
+            "status": "LOCKED_INSUFFICIENT_EVIDENCE",
+            "approved_markets": [],
+            "alerts_enabled": False,
+            "market_diagnostics": {},
+            "note": "No current evidence-backed certificate is published; value alerts remain disabled.",
+        },
         "paper_tracking": paper_tracking,
         "warning": "Published forecasts are experimental and not validated for betting. The report may not be the latest live run.",
         "predictions": upcoming[:60],
