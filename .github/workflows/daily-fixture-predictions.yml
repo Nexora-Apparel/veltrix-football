@@ -41,6 +41,7 @@ on:
       - "scripts/run_paper_tracking.py"
       - "scripts/build_value_certificate.py"
       - "scripts/build_value_certificate_runtime.py"
+      - "scripts/build_value_certificate_runtime_v2.py"
       - "app/value_bets_runtime.py"
       - "app/value_bets.py"
       - "app/value_paper.py"
@@ -301,7 +302,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_REPOSITORY: ${{ github.repository }}
           PYTHONPATH: .
-        run: python scripts/build_value_certificate_runtime.py --report reports/daily_predictions.json --ledger reports/paper_tracking_ledger.json --output reports/value_validation_certificate.json
+        run: python scripts/build_value_certificate_runtime_v2.py --report reports/daily_predictions.json --ledger reports/paper_tracking_ledger.json --output reports/value_validation_certificate.json
 
       - name: Notify Telegram when live report generation fails
         if: (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && contains(github.event.head_commit.message, '[run-live-verification]')) || false) && !contains(github.event.head_commit.message, '[skip-telegram]') && failure() && steps.generate-report.outcome == 'failure'
