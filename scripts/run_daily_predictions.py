@@ -9,7 +9,7 @@ from datetime import date, datetime, timedelta
 from zoneinfo import ZoneInfo
 from pathlib import Path
 
-from app.live_predictions import LEAGUE_DIVISION_BY_CODE, _name_key, build_daily_report, load_historical_matches
+from app.live_predictions import LEAGUE_DIVISION_BY_CODE, LEAGUE_DIVISION_BY_ID, _name_key, build_daily_report, load_historical_matches
 from app.recent_results import fetch_recent_results_incremental
 from app.api_football_odds import APIFootballError  # legacy error type for compatibility helpers only
 from app.provider_adapters import FiveDollarFootballClient, ProviderAPIError, enrich_report_with_multi_source_odds, supplement_fixtures_from_odds_api, supplement_fixtures_from_infersports
@@ -247,7 +247,12 @@ def _limit_fixture_payload(
         league = row.get("league") if isinstance(row.get("league"), dict) else {}
         league_code = str(league.get("code") or "").upper()
         # Prioritize competitions explicitly mapped into the historical dataset.
-        priority = 0 if league_code in LEAGUE_DIVISION_BY_CODE else 1
+        league_id = league.get("id")
+        try:
+            mapped_id = int(league_id) in LEAGUE_DIVISION_BY_ID
+        except (TypeError, ValueError):
+            mapped_id = False
+        priority = 0 if (league_code in LEAGUE_DIVISION_BY_CODE or mapped_id) else 1
         eligible.append((priority, kickoff, row))
     eligible.sort(key=lambda item: (item[0], item[1]))
     cap = max(0, int(limit))
