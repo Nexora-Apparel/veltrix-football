@@ -220,6 +220,7 @@ def test_value_validation_certificate_can_release_only_markets_with_complete_evi
             "distinct_match_dates": 120,
             "net_roi": 0.04,
             "roi_lower_95_ci": 0.01,
+            "confidence_method": "BOOTSTRAP_PERCENTILE_95",
             "timestamped_odds_coverage": 0.995,
         }
         for market in ("1X2", "BTTS", "OVER_UNDER_1_5", "OVER_UNDER_2_5", "OVER_UNDER_3_5")
