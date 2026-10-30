@@ -51,3 +51,23 @@ def test_missing_or_invalid_market_data_produces_no_candidate():
         {"home": 2.0, "draw": 3.0},
         model_validated=True,
     ) == []
+
+
+def test_1x2_value_screen_supports_home_draw_away_outcomes():
+    result = screen_value_bets(
+        {"home_win": 0.70, "draw": 0.18, "away_win": 0.12},
+        {"home_win": 2.0, "draw": 4.5, "away_win": 7.0},
+        model_validated=True,
+    )
+    assert result
+    assert result[0]["selection"] == "home_win"
+    assert result[0]["edge"] >= 0.04
+    assert result[0]["expected_return_per_unit"] >= 0.05
+
+
+def test_1x2_value_screen_stays_disabled_without_validation():
+    result = screen_value_bets(
+        {"home_win": 0.70, "draw": 0.18, "away_win": 0.12},
+        {"home_win": 2.0, "draw": 4.5, "away_win": 7.0},
+    )
+    assert result == []
