@@ -174,7 +174,8 @@ def test_odds_api_supplements_only_future_same_day_fixtures_and_keeps_primary_ro
     assert "soccer_epl" in client.calls
     assert "soccer_netherlands_eredivisie" in client.calls
     assert "soccer_portugal_primeira_liga" in client.calls
-    assert "soccer_scotland_premiership" in client.calls
+    assert "soccer_argentina_primera_division" in client.calls
+    assert "soccer_brazil_campeonato" in client.calls
 
 
 def test_odds_api_fixture_supplement_is_noop_without_key():
