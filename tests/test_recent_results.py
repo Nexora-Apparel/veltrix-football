@@ -540,3 +540,37 @@ def test_gap_retries_are_throttled_to_weekly_even_when_forward_coverage_is_curre
     )
     assert sync["status"] == "GAPPED"
     assert sync["cache_state"]["history_gaps"] == ["2026-10-20"]
+
+
+def test_idle_gap_state_never_reports_a_reversed_refresh_range():
+    class MustNotCall:
+        provider_name = "5DollarFootballAPI"
+
+        def fixtures_between(self, *args, **kwargs):
+            raise AssertionError("No forward dates exist; only the weekly gap retry is throttled.")
+
+    historical = [{
+        "date": date(2026, 10, 29), "division": "E0", "home": "Latest",
+        "away": "Opponent", "home_key": "latest", "away_key": "opponent",
+        "home_goals": 1, "away_goals": 0,
+    }]
+    state = {
+        "source_provider": "5DollarFootballAPI",
+        "provider_error_classification_version": 1,
+        "coverage_state_version": 2,
+        "backfill_anchor_end": "2026-10-28",
+        "next_backfill_end_date": "2026-10-20",
+        "latest_covered_through": "2026-10-28",
+        "backfill_complete": True,
+        "history_gaps": ["2026-10-10"],
+        "last_gap_retry_on": "2026-10-28",
+    }
+    rows, sync = fetch_recent_results_incremental(
+        MustNotCall(), historical, date(2026, 10, 29), state,
+    )
+    assert rows == []
+    assert sync["status"] == "GAPPED"
+    assert sync["requested_start"] is None
+    assert sync["requested_end"] == "2026-10-29"
+    assert sync["ranges_requested"] == 0
+    assert sync["cache_state"]["history_gaps"] == ["2026-10-10"]
