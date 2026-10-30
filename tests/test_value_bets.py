@@ -140,3 +140,40 @@ def test_attach_value_screen_writes_report_level_validation_gate():
     assert attached["value_bet_screen"]["status"] == "DISABLED_UNVALIDATED"
     assert attached["value_bet_screen"]["markets"] == ["1X2", "BTTS", "OVER_UNDER_2_5"]
     assert attached["predictions"][0]["value_bet_screen"]["candidate_count"] == 0
+
+
+def test_value_validation_certificate_fails_closed_without_backtest_and_paper_evidence():
+    from app.value_bets import build_value_validation_certificate
+
+    certificate = build_value_validation_certificate({}, {})
+    assert certificate["status"] == "LOCKED_INSUFFICIENT_EVIDENCE"
+    assert certificate["betting_validation"] is False
+    assert certificate["approved_markets"] == []
+    assert certificate["alerts_enabled"] is False
+    assert all(
+        item["status"] == "LOCKED"
+        for item in certificate["market_diagnostics"].values()
+    )
+
+
+def test_value_screen_rejects_partial_or_unapproved_market_certificate():
+    from app.value_bets import screen_fixture_value_bets
+
+    prediction = {
+        "home_team": "Home FC", "away_team": "Away FC",
+        "probabilities": {"home_win": 0.70, "draw": 0.18, "away_win": 0.12},
+        "the_odds_api_market_odds": {"markets": {"h2h": [{
+            "bookmaker": "Book A", "outcomes": [
+                {"name": "Home FC", "price": 2.0},
+                {"name": "Draw", "price": 4.5},
+                {"name": "Away FC", "price": 7.0},
+            ],
+        }]}},
+    }
+    certificate = {
+        "schema_version": 1, "status": "PARTIALLY_VALIDATED",
+        "betting_validation": True, "approved_markets": ["BTTS"],
+    }
+    result = screen_fixture_value_bets(prediction, validation_certificate=certificate)
+    assert result["markets"]["1X2"]["status"] == "DISABLED_UNVALIDATED"
+    assert result["candidate_count"] == 0
