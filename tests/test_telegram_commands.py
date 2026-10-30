@@ -379,6 +379,7 @@ def test_1x2_command_displays_home_draw_away_and_real_h2h_prices():
         "home_team": "Arsenal", "away_team": "Chelsea", "league": "Premier League",
         "kickoff_local": (now + timedelta(hours=3)).isoformat(),
         "status": "EXPERIMENTAL_ONLY",
+        "prediction_basis": "competition-level historical goal-rate prior; team-specific history below minimum",
         "probabilities": {"home_win": 0.55, "draw": 0.25, "away_win": 0.20},
         "the_odds_api_market_odds": {"markets": {"h2h": [{
             "bookmaker": "Bookmaker A",
@@ -392,6 +393,7 @@ def test_1x2_command_displays_home_draw_away_and_real_h2h_prices():
     reply = handle_command("/1x2", report=report)
     assert "1X2 probabilities: Home 55% · Draw 25% · Away 20%" in reply
     assert "Bookmaker A" in reply
+    assert "Forecast basis: competition-level historical goal-rate prior; team-specific history below minimum" in reply
     assert "Arsenal 1.90" in reply
     assert "Draw 3.50" in reply
 
