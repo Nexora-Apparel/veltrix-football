@@ -239,3 +239,29 @@ def test_report_hides_plan_limited_history_details_from_prediction_alert():
     assert "Alpha FC vs Beta FC" in message
     assert "historical date(s) are inaccessible" not in message
     assert "provider plan" not in message
+
+
+def test_main_force_flag_resends_corrected_same_day_report(tmp_path, monkeypatch, capsys):
+    import json
+    from scripts import send_telegram_report as sender
+
+    report_path = tmp_path / "report.json"
+    report_path.write_text(json.dumps({
+        "as_of_date": "2026-10-27",
+        "same_day_only": True,
+        "timezone": "Africa/Lagos",
+        "predictions": [],
+    }), encoding="utf-8")
+    monkeypatch.setattr("sys.argv", ["send_telegram_report.py", "--report", str(report_path), "--ledger", str(tmp_path / "missing-ledger.json"), "--force"])
+    monkeypatch.setenv("GITHUB_REPOSITORY", "Nexora-Apparel/veltrix-football")
+    monkeypatch.setenv("GITHUB_TOKEN", "github-test-token")
+    monkeypatch.setenv("TELEGRAM_BOT_TOKEN", "telegram-test-token")
+    monkeypatch.setenv("TELEGRAM_CHAT_ID", "12345")
+    monkeypatch.setattr(sender, "_load_delivery_state", lambda repo, token: ({"version": 1, "sent_dates": ["2026-10-27"]}, "sha"))
+    sent = []
+    monkeypatch.setattr(sender, "send_message", lambda token, chat_id, message: sent.append(message))
+    monkeypatch.setattr(sender, "_record_delivery_date", lambda *args, **kwargs: None)
+
+    sender.main()
+    assert sent
+    assert "delivered for 2026-10-27" in capsys.readouterr().out
