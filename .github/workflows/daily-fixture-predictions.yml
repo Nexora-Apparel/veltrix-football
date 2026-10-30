@@ -337,8 +337,14 @@ jobs:
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_REPOSITORY: ${{ github.repository }}
+          FORCE_TELEGRAM_DELIVERY: ${{ github.event_name == 'push' && contains(github.event.head_commit.message, '[run-live-verification]') }}
           PYTHONPATH: .
-        run: python scripts/send_telegram_report.py --report reports/daily_predictions.json --ledger reports/paper_tracking_ledger.json
+        run: |
+          if [ "$FORCE_TELEGRAM_DELIVERY" = "true" ]; then
+            python scripts/send_telegram_report.py --report reports/daily_predictions.json --ledger reports/paper_tracking_ledger.json --force
+          else
+            python scripts/send_telegram_report.py --report reports/daily_predictions.json --ledger reports/paper_tracking_ledger.json
+          fi
       - name: Upload daily prediction report
         if: always() && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && contains(github.event.head_commit.message, '[run-live-verification]')) || false) && (steps.generate-report.outcome == 'success' || steps.filter-saved-report.outcome == 'success')
         uses: actions/upload-artifact@v7
