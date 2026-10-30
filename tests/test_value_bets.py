@@ -177,3 +177,63 @@ def test_value_screen_rejects_partial_or_unapproved_market_certificate():
     result = screen_fixture_value_bets(prediction, validation_certificate=certificate)
     assert result["markets"]["1X2"]["status"] == "DISABLED_UNVALIDATED"
     assert result["candidate_count"] == 0
+
+
+def test_value_validation_certificate_can_release_only_markets_with_complete_evidence():
+    from app.value_bets import build_value_validation_certificate, _certificate_allows
+
+    passing = {
+        "status": "CALIBRATION_DIAGNOSTIC_PASS",
+        "raw": {"matches": 2000},
+    }
+    backtest = {
+        "live_pipeline": {
+            "goal_markets": {
+                "rolling_origin_calibration": {
+                    "markets": {
+                        "btts_yes": passing,
+                        "over_1_5": passing,
+                        "over_2_5": passing,
+                        "over_3_5": passing,
+                    },
+                },
+            },
+            "historical_odds_subset": {
+                "models_compared_on_same_matches": {
+                    "live_poisson": {"brier_score": 0.18, "log_loss": 0.52},
+                    "market": {"brier_score": 0.20, "log_loss": 0.58},
+                },
+            },
+        },
+        "recent_holdout": {
+            "historical_odds_subset": {
+                "models_compared_on_same_matches": {
+                    "poisson": {"brier_score": 0.17, "log_loss": 0.50},
+                    "market": {"brier_score": 0.19, "log_loss": 0.55},
+                },
+            },
+        },
+    }
+    paper = {"markets": {
+        market: {
+            "settled_bets": 400,
+            "distinct_match_dates": 120,
+            "net_roi": 0.04,
+            "roi_lower_95_ci": 0.01,
+            "timestamped_odds_coverage": 0.995,
+        }
+        for market in ("1X2", "BTTS", "OVER_UNDER_1_5", "OVER_UNDER_2_5", "OVER_UNDER_3_5")
+    }}
+    certificate = build_value_validation_certificate(backtest, paper)
+    assert certificate["status"] == "VALIDATED"
+    assert set(certificate["approved_markets"]) == {
+        "1X2", "BTTS", "OVER_UNDER_1_5", "OVER_UNDER_2_5", "OVER_UNDER_3_5"
+    }
+    assert _certificate_allows(certificate, "1X2")
+    assert _certificate_allows(certificate, "BTTS")
+
+    del paper["markets"]["OVER_UNDER_1_5"]
+    partial = build_value_validation_certificate(backtest, paper)
+    assert partial["status"] == "PARTIALLY_VALIDATED"
+    assert _certificate_allows(partial, "BTTS")
+    assert not _certificate_allows(partial, "OVER_UNDER_1_5")
