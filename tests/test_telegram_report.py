@@ -355,3 +355,20 @@ def test_telegram_report_lists_all_fixtures_and_marks_ineligible_forecasts():
 
 
 # Controlled production verification: exercise corrected all-fixture Telegram delivery.
+
+
+
+def test_report_header_shows_goal_calibration_and_market_release_state():
+    report = sample_report()
+    report["goal_market_calibration"] = {
+        "status": "NO_COMPATIBLE_FORECASTS",
+        "compatible_forecasts": 0,
+        "applied_forecasts": 0,
+    }
+    report["value_validation_certificate"] = {
+        "status": "LOCKED_INSUFFICIENT_EVIDENCE",
+        "approved_markets": [],
+    }
+    message = format_report(report)
+    assert "Goal calibration: NO_COMPATIBLE_FORECASTS · applied: 0/0" in message
+    assert "Validation: LOCKED_INSUFFICIENT_EVIDENCE · approved: none" in message
