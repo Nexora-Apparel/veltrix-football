@@ -221,6 +221,7 @@ def test_value_validation_certificate_can_release_only_markets_with_complete_evi
     }
     paper = {
         "calibration_versions": ["goal-market-platt-v1"],
+        "value_model_versions": ["experimental_recent_goals_poisson"],
         "markets": {
         market: {
             "settled_bets": 400,
@@ -300,3 +301,47 @@ def test_value_validation_certificate_rejects_paper_rows_from_another_calibrator
     certificate = build_value_validation_certificate(backtest, paper)
     assert "prospective paper evidence does not match the deployed calibration version" in certificate["market_diagnostics"]["BTTS"]["failures"]
     assert certificate["alerts_enabled"] is False
+
+
+
+def test_1x2_certificate_uses_its_own_model_evidence_without_goal_calibration():
+    from app.value_bets import build_value_validation_certificate
+
+    backtest = {
+        "live_pipeline": {
+            "model": "experimental_recent_goals_poisson",
+            "historical_odds_subset": {
+                "models_compared_on_same_matches": {
+                    "live_poisson": {"brier_score": 0.18, "log_loss": 0.52},
+                    "market": {"brier_score": 0.20, "log_loss": 0.58},
+                },
+            },
+        },
+        "recent_holdout": {
+            "historical_odds_subset": {
+                "models_compared_on_same_matches": {
+                    "poisson": {"brier_score": 0.17, "log_loss": 0.50},
+                    "market": {"brier_score": 0.19, "log_loss": 0.55},
+                },
+            },
+        },
+    }
+    paper = {
+        "value_model_versions": ["experimental_recent_goals_poisson"],
+        "value_validation_markets_by_model_version": {
+            "experimental_recent_goals_poisson": {
+                "1X2": {
+                    "settled_bets": 400,
+                    "distinct_match_dates": 120,
+                    "net_roi": 0.04,
+                    "roi_lower_95_ci": 0.01,
+                    "confidence_method": "BOOTSTRAP_PERCENTILE_95",
+                    "timestamped_odds_coverage": 0.995,
+                },
+            },
+        },
+    }
+    certificate = build_value_validation_certificate(backtest, paper)
+    assert certificate["approved_markets"] == ["1X2"]
+    assert certificate["market_diagnostics"]["1X2"]["status"] == "PASS"
+    assert certificate["market_diagnostics"]["BTTS"]["status"] == "LOCKED"
