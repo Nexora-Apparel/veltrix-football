@@ -279,6 +279,119 @@ def _chronological_goal_calibration(rows: list[dict[str, Any]], probability_key:
     return output
 
 
+
+def _rolling_origin_goal_calibration(rows: list[dict[str, Any]], probability_key: str, *, folds: int = 4, min_training_matches: int = 500, min_test_matches: int = 100) -> dict[str, Any]:
+    """Repeated date-ordered Platt calibration; diagnostics only, never a betting approval."""
+    if folds < 2 or min_training_matches < 1 or min_test_matches < 1:
+        raise ValueError("Invalid rolling-origin validation thresholds")
+    definitions = {
+        "btts_yes": lambda r: int(r["home_goals"] > 0 and r["away_goals"] > 0),
+        "over_1_5": lambda r: int(r["home_goals"] + r["away_goals"] >= 2),
+        "over_2_5": lambda r: int(r["home_goals"] + r["away_goals"] >= 3),
+        "over_3_5": lambda r: int(r["home_goals"] + r["away_goals"] >= 4),
+    }
+    clean = [r for r in rows if isinstance(r.get(probability_key), dict) and r.get("match_date")]
+    dates = sorted({str(r["match_date"]) for r in clean})
+    if len(dates) < folds + 2:
+        return {"status": "INSUFFICIENT_DATES", "folds_evaluated": 0, "markets": {}}
+
+    def logit(p):
+        p = min(1 - 1e-6, max(1e-6, float(p)))
+        return math.log(p / (1 - p))
+
+    def sigmoid(z):
+        if z >= 0:
+            e = math.exp(-min(z, 700))
+            return 1 / (1 + e)
+        e = math.exp(max(z, -700))
+        return e / (1 + e)
+
+    def fit(pairs):
+        xs = [logit(p) for p, _ in pairs]
+        ys = [y for _, y in pairs]
+        a = math.log((sum(ys) + 1) / (len(ys) - sum(ys) + 1))
+        b = 1.0
+        for _ in range(100):
+            g0 = g1 = h00 = h01 = h11 = 0.0
+            for x, y in zip(xs, ys):
+                p = sigmoid(a + b * x)
+                w = max(1e-8, p * (1 - p))
+                g0 += p - y
+                g1 += (p - y) * x
+                h00 += w
+                h01 += w * x
+                h11 += w * x * x
+            det = h00 * (h11 + 1e-6) - h01 * h01
+            if abs(det) < 1e-12:
+                break
+            da = (g0 * (h11 + 1e-6) - g1 * h01) / det
+            db = (g1 * h00 - g0 * h01) / det
+            a -= da
+            b -= db
+            if not math.isfinite(a) or not math.isfinite(b):
+                raise ValueError("Non-finite rolling calibration fit")
+            if abs(da) + abs(db) < 1e-7:
+                break
+        return a, b
+
+    def score(pairs):
+        n = len(pairs)
+        if not n:
+            return {"matches": 0, "brier_score": None, "log_loss": None}
+        brier = loss = 0.0
+        for p, y in pairs:
+            p = min(1 - 1e-15, max(1e-15, p))
+            brier += (p - y) ** 2
+            loss -= y * math.log(p) + (1 - y) * math.log(1 - p)
+        return {"matches": n, "brier_score": brier / n, "log_loss": loss / n}
+
+    starts = sorted(set(min(len(dates) - 1, int(len(dates) * (0.5 + 0.1 * i))) for i in range(folds)))
+    result = {
+        "status": "ROLLING_ORIGIN_DIAGNOSTIC_ONLY",
+        "method": "expanding training window; non-overlapping later test windows; date-level no-leakage",
+        "folds_requested": folds, "folds_evaluated": 0, "markets": {},
+        "betting_validation": False,
+        "note": "Calibration performance is not profitability evidence. Value alerts remain disabled.",
+    }
+    for market, outcome_fn in definitions.items():
+        raw_all, cal_all, base_all, fold_rows = [], [], [], []
+        for index, start in enumerate(starts):
+            end = starts[index + 1] if index + 1 < len(starts) else len(dates)
+            train_days, test_days = set(dates[:start]), set(dates[start:end])
+            train = [r for r in clean if str(r["match_date"]) in train_days and market in r[probability_key]]
+            test = [r for r in clean if str(r["match_date"]) in test_days and market in r[probability_key]]
+            pairs = [(float(r[probability_key][market]), outcome_fn(r)) for r in train if _safe_float(r[probability_key].get(market)) is not None and 0 <= float(r[probability_key][market]) <= 1]
+            if len(pairs) < min_training_matches or len(test) < min_test_matches:
+                fold_rows.append({"fold": index + 1, "status": "INSUFFICIENT_MATCHES", "training_matches": len(pairs), "test_matches": len(test)})
+                continue
+            a, b = fit(pairs)
+            raw, calibrated, baseline = [], [], []
+            prior = []
+            for day in sorted(test_days):
+                day_rows = [r for r in test if str(r["match_date"]) == day]
+                base_p = (sum(prior) + 1) / (len(prior) + 2)
+                for row in day_rows:
+                    p = min(1 - 1e-6, max(1e-6, float(row[probability_key][market])))
+                    y = outcome_fn(row)
+                    raw.append((p, y))
+                    calibrated.append((sigmoid(a + b * logit(p)), y))
+                    baseline.append((base_p, y))
+                prior.extend(outcome_fn(r) for r in clean if str(r["match_date"]) == day)
+            rm, cm, bm = score(raw), score(calibrated), score(baseline)
+            passed = cm["brier_score"] < rm["brier_score"] and cm["log_loss"] < rm["log_loss"] and cm["brier_score"] < bm["brier_score"] and cm["log_loss"] < bm["log_loss"]
+            raw_all.extend(raw); cal_all.extend(calibrated); base_all.extend(baseline)
+            fold_rows.append({"fold": index + 1, "status": "EVALUATED", "training_matches": len(pairs), "test_matches": len(raw), "test_start": dates[start], "test_end": dates[end - 1], "raw": rm, "calibrated": cm, "expanding_baseline": bm, "beats_raw_and_baseline": passed})
+        rm, cm, bm = score(raw_all), score(cal_all), score(base_all)
+        evaluated = [f for f in fold_rows if f["status"] == "EVALUATED"]
+        wins = sum(bool(f["beats_raw_and_baseline"]) for f in evaluated)
+        aggregate = bool(raw_all) and cm["brier_score"] < rm["brier_score"] and cm["log_loss"] < rm["log_loss"] and cm["brier_score"] < bm["brier_score"] and cm["log_loss"] < bm["log_loss"]
+        passed = len(evaluated) >= max(2, math.ceil(folds * 0.75)) and wins >= math.ceil(len(evaluated) * 0.75) and aggregate
+        result["markets"][market] = {"status": "CALIBRATION_DIAGNOSTIC_PASS" if passed else "CALIBRATION_NOT_VALIDATED", "folds_evaluated": len(evaluated), "folds_beating_raw_and_baseline": wins, "raw": rm, "calibrated": cm, "expanding_baseline": bm, "aggregate_beats_raw_and_baseline": aggregate, "folds": fold_rows}
+        result["folds_evaluated"] = max(result["folds_evaluated"], len(evaluated))
+    result["all_goal_markets_calibration_pass"] = bool(result["markets"]) and all(v["status"] == "CALIBRATION_DIAGNOSTIC_PASS" for v in result["markets"].values())
+    return result
+
+
 def _historical_over_under_25_price_audit(rows: list[dict[str, Any]], probability_key: str = "goal_markets", *, edge_threshold: float = 0.05) -> dict[str, Any]:
     """Pair walk-forward O/U 2.5 probabilities with historical prices, without ROI claims."""
     available = [
@@ -853,6 +966,7 @@ def chronological_backtest(matches: Iterable[dict[str, Any]], *, min_training_ma
                 "metrics": live_goal_market_metrics,
                 "recent_holdout": live_goal_market_holdout_metrics if live_scored else None,
                 "chronological_calibration_experiment": _chronological_goal_calibration(live_scored, "live_goal_markets"),
+                "rolling_origin_calibration": _rolling_origin_goal_calibration(live_scored, "live_goal_markets"),
                 "note": "BTTS and totals derived from the same pre-match xG as the live Poisson baseline; calibration is report-only and is not applied to live forecasts.",
             },
             "dixon_coles_alternative": {
