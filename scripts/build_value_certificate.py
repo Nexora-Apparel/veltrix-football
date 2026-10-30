@@ -18,6 +18,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from app.value_bets import build_value_validation_certificate, attach_value_bet_screens
+from app.goal_market_calibration import apply_goal_market_calibration
 
 API_ROOT = "https://api.github.com"
 
@@ -92,7 +93,22 @@ def build(report_path: str, ledger_path: str, certificate_path: str, *, backtest
     else:
         ledger = {"markets": {}, "value_validation_markets": {}}
 
-    certificate = build_value_validation_certificate(backtest, ledger)
+    report_file = Path(report_path)
+    certificate_backtest = json.loads(json.dumps(backtest))
+    if report_file.exists():
+        report = json.loads(report_file.read_text(encoding="utf-8"))
+        if not isinstance(report, dict):
+            raise RuntimeError("Daily report has an unexpected structure.")
+        apply_goal_market_calibration(report, backtest)
+        calibration_meta = report.get("goal_market_calibration") or {}
+        goal_report = certificate_backtest.setdefault("live_pipeline", {}).setdefault("goal_markets", {})
+        goal_report["calibration_application"] = {
+            "status": calibration_meta.get("status"),
+            "model_version": calibration_meta.get("model_version"),
+            "markets": calibration_meta.get("markets", []),
+            "training_cutoff_date": calibration_meta.get("training_cutoff_date"),
+        }
+    certificate = build_value_validation_certificate(certificate_backtest, ledger)
     certificate["generated_at_utc"] = datetime.now(timezone.utc).isoformat()
     certificate["backtest_provenance"] = provenance
     certificate["paper_ledger_present"] = ledger_file.exists()
@@ -100,11 +116,7 @@ def build(report_path: str, ledger_path: str, certificate_path: str, *, backtest
     Path(certificate_path).parent.mkdir(parents=True, exist_ok=True)
     Path(certificate_path).write_text(json.dumps(certificate, indent=2, ensure_ascii=False), encoding="utf-8")
 
-    report_file = Path(report_path)
     if report_file.exists():
-        report = json.loads(report_file.read_text(encoding="utf-8"))
-        if not isinstance(report, dict):
-            raise RuntimeError("Daily report has an unexpected structure.")
         report["value_validation_certificate"] = certificate
         attach_value_bet_screens(report, validation_certificate=certificate)
         report_file.write_text(json.dumps(report, indent=2, ensure_ascii=False), encoding="utf-8")
