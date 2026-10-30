@@ -266,3 +266,24 @@ def test_main_force_flag_resends_corrected_same_day_report(tmp_path, monkeypatch
     sender.main()
     assert sent
     assert "delivered for 2026-10-27" in capsys.readouterr().out
+
+
+def test_telegram_report_includes_value_screen_status_and_only_supplied_candidates():
+    report = sample_report()
+    report["value_bet_screen"] = {
+        "status": "DISABLED_UNVALIDATED",
+        "markets": ["1X2", "BTTS", "OVER_UNDER_2_5"],
+    }
+    report["predictions"][0]["value_bet_screen"] = {
+        "markets": {
+            "1X2": {"candidates": [{
+                "selection": "home_win",
+                "decimal_odds": 2.1,
+                "edge_percentage_points": 5.5,
+                "expected_return_per_unit": 0.12,
+            }]},
+        },
+    }
+    message = format_report(report)
+    assert "Value screen: 1X2 / BTTS / Over-Under · DISABLED_UNVALIDATED" in message
+    assert "VALUE CANDIDATE: 1X2 home_win @ 2.10 · edge 5.5pp · expected return 12.0%" in message
