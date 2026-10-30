@@ -283,6 +283,8 @@ def dashboard_data() -> dict:
             "cumulative_metrics_by_model": ledger.get("cumulative_metrics_by_model") or {},
             "last_attempt": ledger.get("last_attempt") or {},
             "value_market_metrics_by_market": ledger.get("value_market_metrics_by_market") or {},
+            "value_validation_markets_by_model_version": ledger.get("value_validation_markets_by_model_version") or {},
+            "value_validation_markets_by_calibration_version": ledger.get("value_validation_markets_by_calibration_version") or {},
             "value_model_versions": ledger.get("value_model_versions") or [],
             "calibration_versions": ledger.get("calibration_versions") or [],
             "scored_matches": [
