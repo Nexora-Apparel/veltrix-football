@@ -78,11 +78,22 @@ def prospective_value_rows(prediction: dict[str, Any], result: dict[str, Any]) -
     if not home or not away:
         return []
     calibrated_markets = set(calibration.get("markets") or [])
+    # The 1X2 certificate compares the recent-goals Poisson model with the
+    # market. If Elo is primary, use the explicitly retained Poisson alternative
+    # rather than accidentally paper-tracking Elo under a Poisson certificate.
+    primary_model = str(prediction.get("model") or "")
+    if primary_model == "experimental_elo_by_competition":
+        one_x_two_source = prediction.get("poisson_probabilities")
+    elif primary_model == "experimental_recent_goals_poisson":
+        one_x_two_source = prediction.get("probabilities")
+    else:
+        one_x_two_source = None
+    one_x_two_source = one_x_two_source if isinstance(one_x_two_source, dict) else {}
     definitions = [
         ("h2h", "1x2", {"home": home, "draw": "Draw", "away": away},
-         {"home": (prediction.get("probabilities") or {}).get("H", (prediction.get("probabilities") or {}).get("home_win")) if isinstance(prediction.get("probabilities"), dict) else None,
-          "draw": (prediction.get("probabilities") or {}).get("D", (prediction.get("probabilities") or {}).get("draw")) if isinstance(prediction.get("probabilities"), dict) else None,
-          "away": (prediction.get("probabilities") or {}).get("A", (prediction.get("probabilities") or {}).get("away_win")) if isinstance(prediction.get("probabilities"), dict) else None},
+         {"home": one_x_two_source.get("H", one_x_two_source.get("home_win")),
+          "draw": one_x_two_source.get("D", one_x_two_source.get("draw")),
+          "away": one_x_two_source.get("A", one_x_two_source.get("away_win"))},
          "home" if home_goals > away_goals else "away" if home_goals < away_goals else "draw", None),
         ("btts", "btts", {"yes": "Yes", "no": "No"},
          {"yes": prediction.get("btts_yes"), "no": (1 - _prob(prediction.get("btts_yes"))) if _prob(prediction.get("btts_yes")) is not None else None},
@@ -181,7 +192,11 @@ def prospective_value_rows(prediction: dict[str, Any], result: dict[str, Any]) -
             "kickoff": kickoff.isoformat(), "actual_outcome": bool(won),
             "unit_stake": 1.0, "unit_profit": round(price - 1, 6) if won else -1.0,
             "settlement": "WON" if won else "LOST",
-            "model": str(prediction.get("goal_markets_model") or prediction.get("model") or "unknown"),
+            "model": (
+                "experimental_recent_goals_poisson"
+                if market_name == "1x2"
+                else str(prediction.get("goal_markets_model") or prediction.get("model") or "unknown")
+            ),
             "calibration_version": str(calibration.get("model_version")),
         })
     return rows
