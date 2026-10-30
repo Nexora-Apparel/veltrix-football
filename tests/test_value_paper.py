@@ -4,6 +4,7 @@ from app.value_paper import prospective_value_rows, summarize_value_market_rows
 def test_value_tracker_selects_one_best_edge_per_market_and_devigs_same_book():
     prediction = {
         "fixture_id": "event-1",
+        "goal_markets_model": "experimental_recent_goals_poisson",
         "goal_market_calibration": {
             "status": "APPLIED_PROSPECTIVELY",
             "model_version": "goal-platt-test-v1",
@@ -103,6 +104,7 @@ def test_value_tracker_rejects_forecasts_without_applied_calibration():
 def test_value_tracker_excludes_goal_markets_without_market_specific_calibration():
     prediction = {
         "fixture_id": "event-partial-calibration",
+        "goal_markets_model": "experimental_recent_goals_poisson",
         "goal_market_calibration": {
             "status": "APPLIED_PROSPECTIVELY",
             "model_version": "goal-platt-partial-v1",
