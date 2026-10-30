@@ -366,7 +366,10 @@ def _rolling_origin_goal_calibration(rows: list[dict[str, Any]], probability_key
                 continue
             a, b = fit(pairs)
             raw, calibrated, baseline = [], [], []
-            prior = []
+            prior = [
+                outcome_fn(r) for r in clean
+                if str(r["match_date"]) < dates[start]
+            ]
             for day in sorted(test_days):
                 day_rows = [r for r in test if str(r["match_date"]) == day]
                 base_p = (sum(prior) + 1) / (len(prior) + 2)
