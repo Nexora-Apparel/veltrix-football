@@ -13,7 +13,7 @@ from app.live_predictions import LEAGUE_DIVISION_BY_CODE, LEAGUE_DIVISION_BY_ID,
 from app.recent_results import fetch_recent_results_incremental
 from app.api_football_odds import APIFootballError  # legacy error type for compatibility helpers only
 from app.provider_adapters import FiveDollarFootballClient, ProviderAPIError, enrich_report_with_multi_source_odds, supplement_fixtures_from_odds_api, supplement_fixtures_from_infersports
-from app.value_bets import attach_value_bet_screens
+from app.value_bets_runtime import attach_value_bet_screens
 import math
 
 
