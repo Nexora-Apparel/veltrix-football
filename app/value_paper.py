@@ -65,9 +65,9 @@ def prospective_value_rows(prediction: dict[str, Any], result: dict[str, Any]) -
         return []
     definitions = [
         ("h2h", "1x2", {"home": home, "draw": "Draw", "away": away},
-         {"home": prediction.get("market_probabilities", {}).get("H") if isinstance(prediction.get("market_probabilities"), dict) else None,
-          "draw": prediction.get("market_probabilities", {}).get("D") if isinstance(prediction.get("market_probabilities"), dict) else None,
-          "away": prediction.get("market_probabilities", {}).get("A") if isinstance(prediction.get("market_probabilities"), dict) else None},
+         {"home": (prediction.get("market_probabilities") or {}).get("H", (prediction.get("market_probabilities") or {}).get("home_win")) if isinstance(prediction.get("market_probabilities"), dict) else None,
+          "draw": (prediction.get("market_probabilities") or {}).get("D", (prediction.get("market_probabilities") or {}).get("draw")) if isinstance(prediction.get("market_probabilities"), dict) else None,
+          "away": (prediction.get("market_probabilities") or {}).get("A", (prediction.get("market_probabilities") or {}).get("away_win")) if isinstance(prediction.get("market_probabilities"), dict) else None},
          "home" if home_goals > away_goals else "away" if home_goals < away_goals else "draw", None),
         ("btts", "btts", {"yes": "Yes", "no": "No"},
          {"yes": prediction.get("btts_yes"), "no": (1 - _prob(prediction.get("btts_yes"))) if _prob(prediction.get("btts_yes")) is not None else None},
