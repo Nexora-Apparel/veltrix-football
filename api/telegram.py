@@ -352,23 +352,45 @@ BUTTON_COMMANDS = {
 }
 
 
+def _split_telegram_text(text: str, limit: int = 3900) -> list[str]:
+    """Split long command reports without silently discarding later fixtures."""
+    remaining = str(text or "").strip()
+    if not remaining:
+        return ["No report text was generated."]
+    chunks: list[str] = []
+    while len(remaining) > limit:
+        split_at = remaining.rfind("\\n", 0, limit + 1)
+        if split_at <= 0:
+            split_at = limit
+        chunk = remaining[:split_at].strip()
+        if chunk:
+            chunks.append(chunk)
+        remaining = remaining[split_at:].lstrip()
+    if remaining:
+        chunks.append(remaining)
+    return chunks
+
+
 def _send_message(token: str, chat_id: str, text: str) -> None:
-    payload = json.dumps({
-        "chat_id": chat_id,
-        "text": text[:3900],
-        "disable_web_page_preview": True,
-        "reply_markup": KEYBOARD,
-    }).encode("utf-8")
-    request = Request(
-        f"https://api.telegram.org/bot{token}/sendMessage",
-        data=payload,
-        headers={"Content-Type": "application/json"},
-        method="POST",
-    )
-    with urlopen(request, timeout=8) as response:
-        result = json.loads(response.read().decode("utf-8"))
-        if response.status >= 300 or not result.get("ok"):
-            raise RuntimeError("Telegram rejected command reply")
+    """Deliver the complete reply in Telegram-safe chunks; never truncate reports."""
+    for index, chunk in enumerate(_split_telegram_text(text)):
+        payload = {
+            "chat_id": chat_id,
+            "text": chunk,
+            "disable_web_page_preview": True,
+        }
+        if index == 0:
+            payload["reply_markup"] = KEYBOARD
+        request = Request(
+            f"https://api.telegram.org/bot{token}/sendMessage",
+            data=json.dumps(payload).encode("utf-8"),
+            headers={"Content-Type": "application/json"},
+            method="POST",
+        )
+        with urlopen(request, timeout=8) as response:
+            result = json.loads(response.read().decode("utf-8"))
+            if response.status >= 300 or not result.get("ok"):
+                raise RuntimeError("Telegram rejected command reply")
 
 
 @app.get("/api/telegram")
