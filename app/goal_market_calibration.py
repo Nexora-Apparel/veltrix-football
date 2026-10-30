@@ -8,6 +8,7 @@ from __future__ import annotations
 import hashlib
 import json
 import math
+import re
 from typing import Any, Mapping
 
 MARKET_FIELDS = {
@@ -78,6 +79,8 @@ def apply_goal_market_calibration(
         failures["cutoff_date"] = "Calibration training cutoff date is missing."
     dataset_provenance = backtest_report.get("dataset_provenance") or {}
     dataset_sha256 = dataset_provenance.get("sha256") if isinstance(dataset_provenance, Mapping) else None
+    if not isinstance(dataset_sha256, str) or not re.fullmatch(r"[0-9a-fA-F]{64}", dataset_sha256):
+        failures["dataset_provenance"] = "A verified SHA-256 historical dataset fingerprint is required."
     canonical = {
         "cutoff": cutoff,
         "model_family": "experimental_recent_goals_poisson",
