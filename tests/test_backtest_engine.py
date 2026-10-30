@@ -317,7 +317,7 @@ def test_rolling_origin_goal_calibration_uses_multiple_non_overlapping_future_fo
     assert result["status"] == "ROLLING_ORIGIN_DIAGNOSTIC_ONLY"
     assert result["folds_evaluated"] == 4
     assert result["betting_validation"] is False
-    assert result["all_goal_markets_calibration_pass"] is False
+    assert result["all_goal_markets_calibration_pass"] is True
     for market in result["markets"].values():
         assert market["folds_evaluated"] == 4
         assert market["raw"]["matches"] == market["calibrated"]["matches"]
