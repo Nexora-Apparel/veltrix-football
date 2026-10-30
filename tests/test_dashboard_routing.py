@@ -97,6 +97,8 @@ def test_dashboard_exposes_calibration_coverage_and_versioned_value_ledger(monke
         "model_status": "PAPER_TRACKING_ONLY",
         "evaluated_report_dates": 4,
         "value_market_metrics_by_market": {"1x2": {"settled_bets": 2}},
+        "value_validation_markets_by_model_version": {"experimental_recent_goals_poisson": {"1X2": {"settled_bets": 2}}},
+        "value_validation_markets_by_calibration_version": {},
         "value_model_versions": ["experimental_recent_goals_poisson"],
         "calibration_versions": [],
         "scored_matches": [],
@@ -111,3 +113,4 @@ def test_dashboard_exposes_calibration_coverage_and_versioned_value_ledger(monke
     assert payload["goal_market_calibration"] == calibration
     assert payload["paper_tracking"]["value_market_metrics_by_market"] == {"1x2": {"settled_bets": 2}}
     assert payload["paper_tracking"]["value_model_versions"] == ["experimental_recent_goals_poisson"]
+    assert payload["paper_tracking"]["value_validation_markets_by_model_version"]["experimental_recent_goals_poisson"]["1X2"]["settled_bets"] == 2
