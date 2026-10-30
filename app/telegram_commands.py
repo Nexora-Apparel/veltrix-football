@@ -642,6 +642,8 @@ def handle_command(
                 f"⚽ {index}. {home} vs {away}",
                 f"🏆 {league}  ·  🕒 {kickoff}",
             ])
+            if row.get("prediction_basis"):
+                lines.append("Forecast basis: " + str(row.get("prediction_basis")))
             if command not in {"/overunder", "/btts"}:
                 lines.append(
                     f"1X2: Home {float(probs['home_win']):.0%}  ·  Draw {float(probs['draw']):.0%}  ·  Away {float(probs['away_win']):.0%}"
