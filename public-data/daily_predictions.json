@@ -1,6 +1,6 @@
 {
   "product": "Veltrix Football",
-  "generated_at_utc": "2026-10-30T11:59:43.735114+00:00",
+  "generated_at_utc": "2026-10-30T12:03:13.673110+00:00",
   "as_of_date": "2026-10-30",
   "timezone": "Africa/Lagos",
   "same_day_only": true,
@@ -13,27 +13,23 @@
   "future_fixtures_considered": 25,
   "fixtures_excluded_other_date_or_status": 0,
   "predictions_created": 0,
-  "insufficient_history": 2,
-  "unsupported_competitions": 23,
-  "fixtures_with_market_odds": 2,
+  "insufficient_history": 1,
+  "unsupported_competitions": 24,
+  "fixtures_with_market_odds": 1,
   "unsupported_competition_breakdown": {
-    "Croa U19": 1,
-    "Ethiopia": 1,
-    "HKPL": 1,
-    "Hun U19": 1,
-    "IndonesiaCham": 1,
-    "IndonesiaSL": 1,
-    "Iran": 1,
-    "JorU21": 1,
-    "Kosovo": 1,
-    "Pol(W)": 4,
+    "Bul B": 1,
+    "Cro2": 2,
+    "Egy2": 7,
+    "ILL": 4,
+    "Lebanon": 2,
     "Pol3rd": 2,
-    "RusU19": 4,
-    "Thai B": 1,
-    "ThaiOne": 2,
-    "TurU19": 1
+    "SaudiPL": 1,
+    "SouthAfricaW": 1,
+    "UAE1": 2,
+    "UAEU23": 1,
+    "VietV": 1
   },
-  "possible_team_name_mismatches": 2,
+  "possible_team_name_mismatches": 3,
   "primary_model_counts": {},
   "poisson_alternative_available": 0,
   "elo_alternative_available": 0,
@@ -92,7 +88,7 @@
           "h2h": [
             {
               "bookmaker": "LeoVegas",
-              "last_update": "2026-10-30T11:59:17Z",
+              "last_update": "2026-10-30T12:02:36Z",
               "outcomes": [
                 {
                   "name": "Elversberg",
@@ -113,7 +109,7 @@
             },
             {
               "bookmaker": "Betway",
-              "last_update": "2026-10-30T11:59:41Z",
+              "last_update": "2026-10-30T12:02:58Z",
               "outcomes": [
                 {
                   "name": "Elversberg",
@@ -134,7 +130,7 @@
             },
             {
               "bookmaker": "Smarkets",
-              "last_update": "2026-10-30T11:59:42Z",
+              "last_update": "2026-10-30T12:03:00Z",
               "outcomes": [
                 {
                   "name": "Elversberg",
@@ -155,7 +151,7 @@
             },
             {
               "bookmaker": "Unibet (UK)",
-              "last_update": "2026-10-30T11:59:43Z",
+              "last_update": "2026-10-30T12:02:59Z",
               "outcomes": [
                 {
                   "name": "Elversberg",
@@ -176,7 +172,7 @@
             },
             {
               "bookmaker": "Betfred (UK)",
-              "last_update": "2026-10-30T11:58:57Z",
+              "last_update": "2026-10-30T12:02:13Z",
               "outcomes": [
                 {
                   "name": "Elversberg",
@@ -197,7 +193,7 @@
             },
             {
               "bookmaker": "Coral",
-              "last_update": "2026-10-30T11:59:17Z",
+              "last_update": "2026-10-30T12:01:30Z",
               "outcomes": [
                 {
                   "name": "Elversberg",
@@ -218,7 +214,7 @@
             },
             {
               "bookmaker": "Ladbrokes",
-              "last_update": "2026-10-30T11:58:55Z",
+              "last_update": "2026-10-30T12:02:14Z",
               "outcomes": [
                 {
                   "name": "Elversberg",
@@ -239,7 +235,7 @@
             },
             {
               "bookmaker": "Betano (UK)",
-              "last_update": "2026-10-30T11:57:39Z",
+              "last_update": "2026-10-30T12:02:05Z",
               "outcomes": [
                 {
                   "name": "Elversberg",
@@ -260,7 +256,7 @@
             },
             {
               "bookmaker": "Bet Victor",
-              "last_update": "2026-10-30T11:59:12Z",
+              "last_update": "2026-10-30T12:01:45Z",
               "outcomes": [
                 {
                   "name": "Elversberg",
@@ -281,7 +277,7 @@
             },
             {
               "bookmaker": "888sport",
-              "last_update": "2026-10-30T11:58:55Z",
+              "last_update": "2026-10-30T12:02:14Z",
               "outcomes": [
                 {
                   "name": "Elversberg",
@@ -302,7 +298,7 @@
             },
             {
               "bookmaker": "William Hill",
-              "last_update": "2026-10-30T11:59:41Z",
+              "last_update": "2026-10-30T12:02:58Z",
               "outcomes": [
                 {
                   "name": "Elversberg",
@@ -323,7 +319,7 @@
             },
             {
               "bookmaker": "BoyleSports",
-              "last_update": "2026-10-30T11:58:37Z",
+              "last_update": "2026-10-30T12:02:18Z",
               "outcomes": [
                 {
                   "name": "Elversberg",
@@ -344,7 +340,7 @@
             },
             {
               "bookmaker": "LiveScore Bet",
-              "last_update": "2026-10-30T11:58:56Z",
+              "last_update": "2026-10-30T12:02:13Z",
               "outcomes": [
                 {
                   "name": "Elversberg",
@@ -365,7 +361,7 @@
             },
             {
               "bookmaker": "Virgin Bet",
-              "last_update": "2026-10-30T11:59:16Z",
+              "last_update": "2026-10-30T12:02:35Z",
               "outcomes": [
                 {
                   "name": "Elversberg",
@@ -386,7 +382,7 @@
             },
             {
               "bookmaker": "Grosvenor",
-              "last_update": "2026-10-30T11:59:41Z",
+              "last_update": "2026-10-30T12:02:58Z",
               "outcomes": [
                 {
                   "name": "Elversberg",
@@ -407,7 +403,7 @@
             },
             {
               "bookmaker": "Casumo",
-              "last_update": "2026-10-30T11:58:54Z",
+              "last_update": "2026-10-30T12:02:14Z",
               "outcomes": [
                 {
                   "name": "Elversberg",
@@ -428,7 +424,7 @@
             },
             {
               "bookmaker": "Matchbook",
-              "last_update": "2026-10-30T11:59:41Z",
+              "last_update": "2026-10-30T12:02:58Z",
               "outcomes": [
                 {
                   "name": "Elversberg",
@@ -449,7 +445,7 @@
             },
             {
               "bookmaker": "Paddy Power",
-              "last_update": "2026-10-30T11:59:21Z",
+              "last_update": "2026-10-30T12:01:30Z",
               "outcomes": [
                 {
                   "name": "Elversberg",
@@ -470,7 +466,7 @@
             },
             {
               "bookmaker": "Betfair Sportsbook",
-              "last_update": "2026-10-30T11:58:54Z",
+              "last_update": "2026-10-30T12:02:13Z",
               "outcomes": [
                 {
                   "name": "Elversberg",
@@ -491,7 +487,7 @@
             },
             {
               "bookmaker": "Betfair",
-              "last_update": "2026-10-30T11:59:41Z",
+              "last_update": "2026-10-30T12:02:58Z",
               "outcomes": [
                 {
                   "name": "Elversberg",
@@ -512,7 +508,7 @@
             },
             {
               "bookmaker": "Sky Bet",
-              "last_update": "2026-10-30T11:56:39Z",
+              "last_update": "2026-10-30T12:00:01Z",
               "outcomes": [
                 {
                   "name": "Elversberg",
@@ -535,7 +531,7 @@
           "totals": [
             {
               "bookmaker": "LeoVegas",
-              "last_update": "2026-10-30T11:59:17Z",
+              "last_update": "2026-10-30T12:02:36Z",
               "outcomes": [
                 {
                   "name": "Over",
@@ -551,7 +547,7 @@
             },
             {
               "bookmaker": "William Hill",
-              "last_update": "2026-10-30T11:59:41Z",
+              "last_update": "2026-10-30T12:02:58Z",
               "outcomes": [
                 {
                   "name": "Over",
@@ -567,7 +563,7 @@
             },
             {
               "bookmaker": "Grosvenor",
-              "last_update": "2026-10-30T11:59:41Z",
+              "last_update": "2026-10-30T12:02:58Z",
               "outcomes": [
                 {
                   "name": "Over",
@@ -583,7 +579,7 @@
             },
             {
               "bookmaker": "Casumo",
-              "last_update": "2026-10-30T11:58:54Z",
+              "last_update": "2026-10-30T12:02:14Z",
               "outcomes": [
                 {
                   "name": "Over",
@@ -601,7 +597,7 @@
           "btts": [
             {
               "bookmaker": "LeoVegas",
-              "last_update": "2026-10-30T11:59:17Z",
+              "last_update": "2026-10-30T12:02:36Z",
               "outcomes": [
                 {
                   "name": "Yes",
@@ -617,7 +613,7 @@
             },
             {
               "bookmaker": "Betfred (UK)",
-              "last_update": "2026-10-30T11:58:57Z",
+              "last_update": "2026-10-30T12:02:13Z",
               "outcomes": [
                 {
                   "name": "Yes",
@@ -633,7 +629,7 @@
             },
             {
               "bookmaker": "Coral",
-              "last_update": "2026-10-30T11:59:17Z",
+              "last_update": "2026-10-30T12:01:30Z",
               "outcomes": [
                 {
                   "name": "Yes",
@@ -649,7 +645,7 @@
             },
             {
               "bookmaker": "Ladbrokes",
-              "last_update": "2026-10-30T11:58:55Z",
+              "last_update": "2026-10-30T12:02:14Z",
               "outcomes": [
                 {
                   "name": "Yes",
@@ -665,7 +661,7 @@
             },
             {
               "bookmaker": "William Hill",
-              "last_update": "2026-10-30T11:59:41Z",
+              "last_update": "2026-10-30T12:02:58Z",
               "outcomes": [
                 {
                   "name": "Yes",
@@ -681,7 +677,7 @@
             },
             {
               "bookmaker": "LiveScore Bet",
-              "last_update": "2026-10-30T11:58:56Z",
+              "last_update": "2026-10-30T12:02:13Z",
               "outcomes": [
                 {
                   "name": "Yes",
@@ -697,7 +693,7 @@
             },
             {
               "bookmaker": "Virgin Bet",
-              "last_update": "2026-10-30T11:59:16Z",
+              "last_update": "2026-10-30T12:02:35Z",
               "outcomes": [
                 {
                   "name": "Yes",
@@ -713,7 +709,7 @@
             },
             {
               "bookmaker": "Matchbook",
-              "last_update": "2026-10-30T11:59:41Z",
+              "last_update": "2026-10-30T12:02:58Z",
               "outcomes": [
                 {
                   "name": "Yes",
@@ -729,7 +725,7 @@
             },
             {
               "bookmaker": "Paddy Power",
-              "last_update": "2026-10-30T11:58:59Z",
+              "last_update": "2026-10-30T12:02:40Z",
               "outcomes": [
                 {
                   "name": "Yes",
@@ -745,7 +741,7 @@
             },
             {
               "bookmaker": "Betfair",
-              "last_update": "2026-10-30T11:58:57Z",
+              "last_update": "2026-10-30T12:03:08Z",
               "outcomes": [
                 {
                   "name": "Yes",
@@ -761,18 +757,403 @@
             }
           ]
         },
-        "fetched_at": "2026-10-30T11:59:43.979539+00:00"
+        "fetched_at": "2026-10-30T12:03:13.932517+00:00"
       }
     },
     {
-      "fixture_id": "7932d9a82dcdb164a3e4ef5e03694ee3",
-      "kickoff": "2026-10-30T20:05:00+00:00",
-      "kickoff_local": "2026-10-30T21:05:00+01:00",
-      "home_team": "Lille",
-      "away_team": "RC Lens",
-      "league": "Ligue 1",
-      "league_id": null,
-      "division_code": "F1",
+      "fixture_id": "evt_8364TVM7",
+      "kickoff": "2026-10-30T12:15:00+00:00",
+      "kickoff_local": "2026-10-30T13:15:00+01:00",
+      "home_team": "Ha Noi FC",
+      "away_team": "Ninh Binh",
+      "league": "VietV",
+      "league_id": "lg_V6PMS270",
+      "division_code": null,
+      "fixture_status": "NS",
+      "model": "experimental_recent_goals_poisson",
+      "model_validated": false,
+      "betting_recommendation": false,
+      "historical_matches": {
+        "home": 2,
+        "away": 0
+      },
+      "team_name_matches": {
+        "home": {
+          "fixture_name": "Ha Noi FC",
+          "historical_key": "hanoi",
+          "auto_matched": false
+        },
+        "away": {
+          "fixture_name": "Ninh Binh",
+          "historical_key": "ninhbinh",
+          "auto_matched": false
+        }
+      },
+      "status": "UNSUPPORTED_COMPETITION",
+      "reason": "This competition is not mapped to the historical dataset and the teams do not have enough exact-match history for a safe global estimate.",
+      "team_name_match_suggestions": {},
+      "fixture_source": "InferSports",
+      "source_fixture_id": "evt_8364TVM7"
+    },
+    {
+      "fixture_id": "evt_RVZTQZNK",
+      "kickoff": "2026-10-30T12:15:00+00:00",
+      "kickoff_local": "2026-10-30T13:15:00+01:00",
+      "home_team": "Rilski Sportist",
+      "away_team": "Sandanski",
+      "league": "Bul B",
+      "league_id": "lg_CRNYP3BP",
+      "division_code": null,
+      "fixture_status": "NS",
+      "model": "experimental_recent_goals_poisson",
+      "model_validated": false,
+      "betting_recommendation": false,
+      "historical_matches": {
+        "home": 0,
+        "away": 0
+      },
+      "team_name_matches": {
+        "home": {
+          "fixture_name": "Rilski Sportist",
+          "historical_key": "rilskisportist",
+          "auto_matched": false
+        },
+        "away": {
+          "fixture_name": "Sandanski",
+          "historical_key": "sandanski",
+          "auto_matched": false
+        }
+      },
+      "status": "UNSUPPORTED_COMPETITION",
+      "reason": "This competition is not mapped to the historical dataset and the teams do not have enough exact-match history for a safe global estimate.",
+      "team_name_match_suggestions": {},
+      "fixture_source": "InferSports",
+      "source_fixture_id": "evt_RVZTQZNK"
+    },
+    {
+      "fixture_id": "evt_WB754JR6",
+      "kickoff": "2026-10-30T12:15:00+00:00",
+      "kickoff_local": "2026-10-30T13:15:00+01:00",
+      "home_team": "Shabab Al Sahel",
+      "away_team": "Al-Ahed",
+      "league": "Lebanon",
+      "league_id": "lg_W9PR6XBG",
+      "division_code": null,
+      "fixture_status": "NS",
+      "model": "experimental_recent_goals_poisson",
+      "model_validated": false,
+      "betting_recommendation": false,
+      "historical_matches": {
+        "home": 2,
+        "away": 3
+      },
+      "team_name_matches": {
+        "home": {
+          "fixture_name": "Shabab Al Sahel",
+          "historical_key": "shababalsahel",
+          "auto_matched": false
+        },
+        "away": {
+          "fixture_name": "Al-Ahed",
+          "historical_key": "alahed",
+          "auto_matched": false
+        }
+      },
+      "status": "UNSUPPORTED_COMPETITION",
+      "reason": "This competition is not mapped to the historical dataset and the teams do not have enough exact-match history for a safe global estimate.",
+      "team_name_match_suggestions": {},
+      "fixture_source": "InferSports",
+      "source_fixture_id": "evt_WB754JR6"
+    },
+    {
+      "fixture_id": "evt_83642KM7",
+      "kickoff": "2026-10-30T12:15:00+00:00",
+      "kickoff_local": "2026-10-30T13:15:00+01:00",
+      "home_team": "Tadamon Sour",
+      "away_team": "Safa Beirut",
+      "league": "Lebanon",
+      "league_id": "lg_W9PR6XBG",
+      "division_code": null,
+      "fixture_status": "NS",
+      "model": "experimental_recent_goals_poisson",
+      "model_validated": false,
+      "betting_recommendation": false,
+      "historical_matches": {
+        "home": 3,
+        "away": 0
+      },
+      "team_name_matches": {
+        "home": {
+          "fixture_name": "Tadamon Sour",
+          "historical_key": "tadamonsour",
+          "auto_matched": false
+        },
+        "away": {
+          "fixture_name": "Safa Beirut",
+          "historical_key": "safabeirut",
+          "auto_matched": false
+        }
+      },
+      "status": "UNSUPPORTED_COMPETITION",
+      "reason": "This competition is not mapped to the historical dataset and the teams do not have enough exact-match history for a safe global estimate.",
+      "team_name_match_suggestions": {},
+      "fixture_source": "InferSports",
+      "source_fixture_id": "evt_83642KM7"
+    },
+    {
+      "fixture_id": "evt_VE4K2JS2",
+      "kickoff": "2026-10-30T12:30:00+00:00",
+      "kickoff_local": "2026-10-30T13:30:00+01:00",
+      "home_team": "Abha",
+      "away_team": "Al Ittihad Jeddah",
+      "league": "SaudiPL",
+      "league_id": "lg_EX4F3MDQ",
+      "division_code": null,
+      "fixture_status": "NS",
+      "model": "experimental_recent_goals_poisson",
+      "model_validated": false,
+      "betting_recommendation": false,
+      "historical_matches": {
+        "home": 2,
+        "away": 0
+      },
+      "team_name_matches": {
+        "home": {
+          "fixture_name": "Abha",
+          "historical_key": "abha",
+          "auto_matched": false
+        },
+        "away": {
+          "fixture_name": "Al Ittihad Jeddah",
+          "historical_key": "alittihadjeddah",
+          "auto_matched": false
+        }
+      },
+      "status": "UNSUPPORTED_COMPETITION",
+      "reason": "This competition is not mapped to the historical dataset and the teams do not have enough exact-match history for a safe global estimate.",
+      "team_name_match_suggestions": {},
+      "fixture_source": "InferSports",
+      "source_fixture_id": "evt_VE4K2JS2"
+    },
+    {
+      "fixture_id": "evt_9DYM9NH2",
+      "kickoff": "2026-10-30T12:30:00+00:00",
+      "kickoff_local": "2026-10-30T13:30:00+01:00",
+      "home_team": "Proxy",
+      "away_team": "El Ismaily",
+      "league": "Egy2",
+      "league_id": "lg_CNFHP3BP",
+      "division_code": null,
+      "fixture_status": "NS",
+      "model": "experimental_recent_goals_poisson",
+      "model_validated": false,
+      "betting_recommendation": false,
+      "historical_matches": {
+        "home": 0,
+        "away": 0
+      },
+      "team_name_matches": {
+        "home": {
+          "fixture_name": "Proxy",
+          "historical_key": "proxy",
+          "auto_matched": false
+        },
+        "away": {
+          "fixture_name": "El Ismaily",
+          "historical_key": "elismaily",
+          "auto_matched": false
+        }
+      },
+      "status": "UNSUPPORTED_COMPETITION",
+      "reason": "This competition is not mapped to the historical dataset and the teams do not have enough exact-match history for a safe global estimate.",
+      "team_name_match_suggestions": {},
+      "fixture_source": "InferSports",
+      "source_fixture_id": "evt_9DYM9NH2"
+    },
+    {
+      "fixture_id": "evt_QNDYQXCS",
+      "kickoff": "2026-10-30T12:30:00+00:00",
+      "kickoff_local": "2026-10-30T13:30:00+01:00",
+      "home_team": "Kahraba Ismailia",
+      "away_team": "FC Masar",
+      "league": "Egy2",
+      "league_id": "lg_CNFHP3BP",
+      "division_code": null,
+      "fixture_status": "NS",
+      "model": "experimental_recent_goals_poisson",
+      "model_validated": false,
+      "betting_recommendation": false,
+      "historical_matches": {
+        "home": 0,
+        "away": 0
+      },
+      "team_name_matches": {
+        "home": {
+          "fixture_name": "Kahraba Ismailia",
+          "historical_key": "kahrabaismailia",
+          "auto_matched": false
+        },
+        "away": {
+          "fixture_name": "FC Masar",
+          "historical_key": "masar",
+          "auto_matched": false
+        }
+      },
+      "status": "UNSUPPORTED_COMPETITION",
+      "reason": "This competition is not mapped to the historical dataset and the teams do not have enough exact-match history for a safe global estimate.",
+      "team_name_match_suggestions": {},
+      "fixture_source": "InferSports",
+      "source_fixture_id": "evt_QNDYQXCS"
+    },
+    {
+      "fixture_id": "evt_E2RXERF3",
+      "kickoff": "2026-10-30T12:30:00+00:00",
+      "kickoff_local": "2026-10-30T13:30:00+01:00",
+      "home_team": "El Hadid",
+      "away_team": "Tanta",
+      "league": "Egy2",
+      "league_id": "lg_CNFHP3BP",
+      "division_code": null,
+      "fixture_status": "NS",
+      "model": "experimental_recent_goals_poisson",
+      "model_validated": false,
+      "betting_recommendation": false,
+      "historical_matches": {
+        "home": 0,
+        "away": 2
+      },
+      "team_name_matches": {
+        "home": {
+          "fixture_name": "El Hadid",
+          "historical_key": "elhadid",
+          "auto_matched": false
+        },
+        "away": {
+          "fixture_name": "Tanta",
+          "historical_key": "manta",
+          "auto_matched": true
+        }
+      },
+      "status": "UNSUPPORTED_COMPETITION",
+      "reason": "This competition is not mapped to the historical dataset and the teams do not have enough exact-match history for a safe global estimate.",
+      "team_name_match_suggestions": {},
+      "fixture_source": "InferSports",
+      "source_fixture_id": "evt_E2RXERF3"
+    },
+    {
+      "fixture_id": "evt_2MVZ2SAY",
+      "kickoff": "2026-10-30T12:30:00+00:00",
+      "kickoff_local": "2026-10-30T13:30:00+01:00",
+      "home_team": "Baladiyet El Mahallah",
+      "away_team": "Nasr Cairo",
+      "league": "Egy2",
+      "league_id": "lg_CNFHP3BP",
+      "division_code": null,
+      "fixture_status": "NS",
+      "model": "experimental_recent_goals_poisson",
+      "model_validated": false,
+      "betting_recommendation": false,
+      "historical_matches": {
+        "home": 0,
+        "away": 0
+      },
+      "team_name_matches": {
+        "home": {
+          "fixture_name": "Baladiyet El Mahallah",
+          "historical_key": "baladiyetelmahallah",
+          "auto_matched": false
+        },
+        "away": {
+          "fixture_name": "Nasr Cairo",
+          "historical_key": "nasrcairo",
+          "auto_matched": false
+        }
+      },
+      "status": "UNSUPPORTED_COMPETITION",
+      "reason": "This competition is not mapped to the historical dataset and the teams do not have enough exact-match history for a safe global estimate.",
+      "team_name_match_suggestions": {},
+      "fixture_source": "InferSports",
+      "source_fixture_id": "evt_2MVZ2SAY"
+    },
+    {
+      "fixture_id": "evt_H8BZ3J26",
+      "kickoff": "2026-10-30T12:30:00+00:00",
+      "kickoff_local": "2026-10-30T13:30:00+01:00",
+      "home_team": "Daklyeh",
+      "away_team": "El Entag El Harby",
+      "league": "Egy2",
+      "league_id": "lg_CNFHP3BP",
+      "division_code": null,
+      "fixture_status": "NS",
+      "model": "experimental_recent_goals_poisson",
+      "model_validated": false,
+      "betting_recommendation": false,
+      "historical_matches": {
+        "home": 0,
+        "away": 0
+      },
+      "team_name_matches": {
+        "home": {
+          "fixture_name": "Daklyeh",
+          "historical_key": "daklyeh",
+          "auto_matched": false
+        },
+        "away": {
+          "fixture_name": "El Entag El Harby",
+          "historical_key": "elentagelharby",
+          "auto_matched": false
+        }
+      },
+      "status": "UNSUPPORTED_COMPETITION",
+      "reason": "This competition is not mapped to the historical dataset and the teams do not have enough exact-match history for a safe global estimate.",
+      "team_name_match_suggestions": {},
+      "fixture_source": "InferSports",
+      "source_fixture_id": "evt_H8BZ3J26"
+    },
+    {
+      "fixture_id": "evt_CG8V57P3",
+      "kickoff": "2026-10-30T12:30:00+00:00",
+      "kickoff_local": "2026-10-30T13:30:00+01:00",
+      "home_team": "Pharco",
+      "away_team": "Telecom Egypt",
+      "league": "Egy2",
+      "league_id": "lg_CNFHP3BP",
+      "division_code": null,
+      "fixture_status": "NS",
+      "model": "experimental_recent_goals_poisson",
+      "model_validated": false,
+      "betting_recommendation": false,
+      "historical_matches": {
+        "home": 0,
+        "away": 0
+      },
+      "team_name_matches": {
+        "home": {
+          "fixture_name": "Pharco",
+          "historical_key": "pharco",
+          "auto_matched": false
+        },
+        "away": {
+          "fixture_name": "Telecom Egypt",
+          "historical_key": "telecomegypt",
+          "auto_matched": false
+        }
+      },
+      "status": "UNSUPPORTED_COMPETITION",
+      "reason": "This competition is not mapped to the historical dataset and the teams do not have enough exact-match history for a safe global estimate.",
+      "team_name_match_suggestions": {},
+      "fixture_source": "InferSports",
+      "source_fixture_id": "evt_CG8V57P3"
+    },
+    {
+      "fixture_id": "evt_QNDBDSCS",
+      "kickoff": "2026-10-30T12:30:00+00:00",
+      "kickoff_local": "2026-10-30T13:30:00+01:00",
+      "home_team": "Tersana SC",
+      "away_team": "Maleyet El Zayiat",
+      "league": "Egy2",
+      "league_id": "lg_CNFHP3BP",
+      "division_code": null,
       "fixture_status": "NS",
       "model": "experimental_recent_goals_poisson",
       "model_validated": false,
@@ -783,678 +1164,30 @@
       },
       "team_name_matches": {
         "home": {
-          "fixture_name": "Lille",
-          "historical_key": "lille",
-          "auto_matched": false
+          "fixture_name": "Tersana SC",
+          "historical_key": "ternana",
+          "auto_matched": true
         },
         "away": {
-          "fixture_name": "RC Lens",
-          "historical_key": "rclens",
+          "fixture_name": "Maleyet El Zayiat",
+          "historical_key": "maleyetelzayiat",
           "auto_matched": false
         }
       },
-      "status": "INSUFFICIENT_HISTORY",
-      "reason": "Each team needs at least 5 prior matches in the historical dataset.",
-      "team_name_match_suggestions": {
-        "away": [
-          "Lens",
-          "Orleans"
-        ]
-      },
-      "fixture_source": "The Odds API",
-      "source_fixture_id": "7932d9a82dcdb164a3e4ef5e03694ee3",
-      "the_odds_api_market_odds": {
-        "provider": "The Odds API",
-        "sport_key": "soccer_france_ligue_one",
-        "event_id": "7932d9a82dcdb164a3e4ef5e03694ee3",
-        "commence_time": "2026-10-30T20:05:00Z",
-        "markets": {
-          "h2h": [
-            {
-              "bookmaker": "Betfred (UK)",
-              "last_update": "2026-10-30T11:58:37Z",
-              "outcomes": [
-                {
-                  "name": "Lille",
-                  "price": 2.62,
-                  "point": null
-                },
-                {
-                  "name": "RC Lens",
-                  "price": 2.62,
-                  "point": null
-                },
-                {
-                  "name": "Draw",
-                  "price": 3.4,
-                  "point": null
-                }
-              ]
-            },
-            {
-              "bookmaker": "LeoVegas",
-              "last_update": "2026-10-30T11:59:00Z",
-              "outcomes": [
-                {
-                  "name": "Lille",
-                  "price": 2.65,
-                  "point": null
-                },
-                {
-                  "name": "RC Lens",
-                  "price": 2.6,
-                  "point": null
-                },
-                {
-                  "name": "Draw",
-                  "price": 3.3,
-                  "point": null
-                }
-              ]
-            },
-            {
-              "bookmaker": "Paddy Power",
-              "last_update": "2026-10-30T11:58:59Z",
-              "outcomes": [
-                {
-                  "name": "Lille",
-                  "price": 2.7,
-                  "point": null
-                },
-                {
-                  "name": "RC Lens",
-                  "price": 2.62,
-                  "point": null
-                },
-                {
-                  "name": "Draw",
-                  "price": 3.25,
-                  "point": null
-                }
-              ]
-            },
-            {
-              "bookmaker": "Smarkets",
-              "last_update": "2026-10-30T11:59:21Z",
-              "outcomes": [
-                {
-                  "name": "Lille",
-                  "price": 2.84,
-                  "point": null
-                },
-                {
-                  "name": "RC Lens",
-                  "price": 2.78,
-                  "point": null
-                },
-                {
-                  "name": "Draw",
-                  "price": 3.4,
-                  "point": null
-                }
-              ]
-            },
-            {
-              "bookmaker": "Unibet (UK)",
-              "last_update": "2026-10-30T11:57:09Z",
-              "outcomes": [
-                {
-                  "name": "Lille",
-                  "price": 2.65,
-                  "point": null
-                },
-                {
-                  "name": "RC Lens",
-                  "price": 2.65,
-                  "point": null
-                },
-                {
-                  "name": "Draw",
-                  "price": 3.3,
-                  "point": null
-                }
-              ]
-            },
-            {
-              "bookmaker": "Sky Bet",
-              "last_update": "2026-10-30T11:57:30Z",
-              "outcomes": [
-                {
-                  "name": "Lille",
-                  "price": 2.7,
-                  "point": null
-                },
-                {
-                  "name": "RC Lens",
-                  "price": 2.6,
-                  "point": null
-                },
-                {
-                  "name": "Draw",
-                  "price": 3.3,
-                  "point": null
-                }
-              ]
-            },
-            {
-              "bookmaker": "888sport",
-              "last_update": "2026-10-30T11:59:20Z",
-              "outcomes": [
-                {
-                  "name": "Lille",
-                  "price": 2.7,
-                  "point": null
-                },
-                {
-                  "name": "RC Lens",
-                  "price": 2.5,
-                  "point": null
-                },
-                {
-                  "name": "Draw",
-                  "price": 3.1,
-                  "point": null
-                }
-              ]
-            },
-            {
-              "bookmaker": "William Hill",
-              "last_update": "2026-10-30T11:59:23Z",
-              "outcomes": [
-                {
-                  "name": "Lille",
-                  "price": 2.7,
-                  "point": null
-                },
-                {
-                  "name": "RC Lens",
-                  "price": 2.5,
-                  "point": null
-                },
-                {
-                  "name": "Draw",
-                  "price": 3.1,
-                  "point": null
-                }
-              ]
-            },
-            {
-              "bookmaker": "Betfair",
-              "last_update": "2026-10-30T11:59:22Z",
-              "outcomes": [
-                {
-                  "name": "Lille",
-                  "price": 2.84,
-                  "point": null
-                },
-                {
-                  "name": "RC Lens",
-                  "price": 2.78,
-                  "point": null
-                },
-                {
-                  "name": "Draw",
-                  "price": 3.4,
-                  "point": null
-                }
-              ]
-            },
-            {
-              "bookmaker": "BoyleSports",
-              "last_update": "2026-10-30T11:59:23Z",
-              "outcomes": [
-                {
-                  "name": "Lille",
-                  "price": 2.6,
-                  "point": null
-                },
-                {
-                  "name": "RC Lens",
-                  "price": 2.4,
-                  "point": null
-                },
-                {
-                  "name": "Draw",
-                  "price": 3.4,
-                  "point": null
-                }
-              ]
-            },
-            {
-              "bookmaker": "Casumo",
-              "last_update": "2026-10-30T11:58:37Z",
-              "outcomes": [
-                {
-                  "name": "Lille",
-                  "price": 2.7,
-                  "point": null
-                },
-                {
-                  "name": "RC Lens",
-                  "price": 2.55,
-                  "point": null
-                },
-                {
-                  "name": "Draw",
-                  "price": 3.2,
-                  "point": null
-                }
-              ]
-            },
-            {
-              "bookmaker": "Virgin Bet",
-              "last_update": "2026-10-30T11:58:37Z",
-              "outcomes": [
-                {
-                  "name": "Lille",
-                  "price": 2.7,
-                  "point": null
-                },
-                {
-                  "name": "RC Lens",
-                  "price": 2.55,
-                  "point": null
-                },
-                {
-                  "name": "Draw",
-                  "price": 3.15,
-                  "point": null
-                }
-              ]
-            },
-            {
-              "bookmaker": "Grosvenor",
-              "last_update": "2026-10-30T11:59:22Z",
-              "outcomes": [
-                {
-                  "name": "Lille",
-                  "price": 2.65,
-                  "point": null
-                },
-                {
-                  "name": "RC Lens",
-                  "price": 2.55,
-                  "point": null
-                },
-                {
-                  "name": "Draw",
-                  "price": 3.2,
-                  "point": null
-                }
-              ]
-            },
-            {
-              "bookmaker": "LiveScore Bet",
-              "last_update": "2026-10-30T11:59:00Z",
-              "outcomes": [
-                {
-                  "name": "Lille",
-                  "price": 2.7,
-                  "point": null
-                },
-                {
-                  "name": "RC Lens",
-                  "price": 2.55,
-                  "point": null
-                },
-                {
-                  "name": "Draw",
-                  "price": 3.15,
-                  "point": null
-                }
-              ]
-            },
-            {
-              "bookmaker": "Betway",
-              "last_update": "2026-10-30T11:58:37Z",
-              "outcomes": [
-                {
-                  "name": "Lille",
-                  "price": 2.7,
-                  "point": null
-                },
-                {
-                  "name": "RC Lens",
-                  "price": 2.62,
-                  "point": null
-                },
-                {
-                  "name": "Draw",
-                  "price": 3.2,
-                  "point": null
-                }
-              ]
-            },
-            {
-              "bookmaker": "Betano (UK)",
-              "last_update": "2026-10-30T11:59:33Z",
-              "outcomes": [
-                {
-                  "name": "Lille",
-                  "price": 2.62,
-                  "point": null
-                },
-                {
-                  "name": "RC Lens",
-                  "price": 2.62,
-                  "point": null
-                },
-                {
-                  "name": "Draw",
-                  "price": 3.4,
-                  "point": null
-                }
-              ]
-            },
-            {
-              "bookmaker": "Bet Victor",
-              "last_update": "2026-10-30T11:57:23Z",
-              "outcomes": [
-                {
-                  "name": "Lille",
-                  "price": 2.62,
-                  "point": null
-                },
-                {
-                  "name": "RC Lens",
-                  "price": 2.62,
-                  "point": null
-                },
-                {
-                  "name": "Draw",
-                  "price": 3.4,
-                  "point": null
-                }
-              ]
-            },
-            {
-              "bookmaker": "Betfair Sportsbook",
-              "last_update": "2026-10-30T11:58:37Z",
-              "outcomes": [
-                {
-                  "name": "Lille",
-                  "price": 2.75,
-                  "point": null
-                },
-                {
-                  "name": "RC Lens",
-                  "price": 2.63,
-                  "point": null
-                },
-                {
-                  "name": "Draw",
-                  "price": 3.3,
-                  "point": null
-                }
-              ]
-            },
-            {
-              "bookmaker": "Ladbrokes",
-              "last_update": "2026-10-30T11:59:22Z",
-              "outcomes": [
-                {
-                  "name": "Lille",
-                  "price": 2.6,
-                  "point": null
-                },
-                {
-                  "name": "RC Lens",
-                  "price": 2.62,
-                  "point": null
-                },
-                {
-                  "name": "Draw",
-                  "price": 3.3,
-                  "point": null
-                }
-              ]
-            },
-            {
-              "bookmaker": "Coral",
-              "last_update": "2026-10-30T11:58:14Z",
-              "outcomes": [
-                {
-                  "name": "Lille",
-                  "price": 2.6,
-                  "point": null
-                },
-                {
-                  "name": "RC Lens",
-                  "price": 2.62,
-                  "point": null
-                },
-                {
-                  "name": "Draw",
-                  "price": 3.4,
-                  "point": null
-                }
-              ]
-            }
-          ],
-          "totals": [
-            {
-              "bookmaker": "LeoVegas",
-              "last_update": "2026-10-30T11:59:00Z",
-              "outcomes": [
-                {
-                  "name": "Over",
-                  "price": 1.98,
-                  "point": 2.5
-                },
-                {
-                  "name": "Under",
-                  "price": 1.77,
-                  "point": 2.5
-                }
-              ]
-            },
-            {
-              "bookmaker": "William Hill",
-              "last_update": "2026-10-30T11:59:23Z",
-              "outcomes": [
-                {
-                  "name": "Over",
-                  "price": 2.0,
-                  "point": 2.5
-                },
-                {
-                  "name": "Under",
-                  "price": 1.75,
-                  "point": 2.5
-                }
-              ]
-            },
-            {
-              "bookmaker": "Casumo",
-              "last_update": "2026-10-30T11:58:37Z",
-              "outcomes": [
-                {
-                  "name": "Over",
-                  "price": 1.85,
-                  "point": 2.5
-                },
-                {
-                  "name": "Under",
-                  "price": 1.89,
-                  "point": 2.5
-                }
-              ]
-            },
-            {
-              "bookmaker": "Grosvenor",
-              "last_update": "2026-10-30T11:59:22Z",
-              "outcomes": [
-                {
-                  "name": "Over",
-                  "price": 1.85,
-                  "point": 2.5
-                },
-                {
-                  "name": "Under",
-                  "price": 1.89,
-                  "point": 2.5
-                }
-              ]
-            }
-          ],
-          "btts": [
-            {
-              "bookmaker": "Betfred (UK)",
-              "last_update": "2026-10-30T11:58:37Z",
-              "outcomes": [
-                {
-                  "name": "Yes",
-                  "price": 1.73,
-                  "point": null
-                },
-                {
-                  "name": "No",
-                  "price": 2.0,
-                  "point": null
-                }
-              ]
-            },
-            {
-              "bookmaker": "LeoVegas",
-              "last_update": "2026-10-30T11:59:00Z",
-              "outcomes": [
-                {
-                  "name": "Yes",
-                  "price": 1.75,
-                  "point": null
-                },
-                {
-                  "name": "No",
-                  "price": 2.0,
-                  "point": null
-                }
-              ]
-            },
-            {
-              "bookmaker": "Paddy Power",
-              "last_update": "2026-10-30T11:58:32Z",
-              "outcomes": [
-                {
-                  "name": "Yes",
-                  "price": 1.73,
-                  "point": null
-                },
-                {
-                  "name": "No",
-                  "price": 2.0,
-                  "point": null
-                }
-              ]
-            },
-            {
-              "bookmaker": "William Hill",
-              "last_update": "2026-10-30T11:59:23Z",
-              "outcomes": [
-                {
-                  "name": "Yes",
-                  "price": 1.75,
-                  "point": null
-                },
-                {
-                  "name": "No",
-                  "price": 2.0,
-                  "point": null
-                }
-              ]
-            },
-            {
-              "bookmaker": "Betfair",
-              "last_update": "2026-10-30T11:59:00Z",
-              "outcomes": [
-                {
-                  "name": "Yes",
-                  "price": 1.82,
-                  "point": null
-                },
-                {
-                  "name": "No",
-                  "price": 2.18,
-                  "point": null
-                }
-              ]
-            },
-            {
-              "bookmaker": "Virgin Bet",
-              "last_update": "2026-10-30T11:58:37Z",
-              "outcomes": [
-                {
-                  "name": "Yes",
-                  "price": 1.65,
-                  "point": null
-                },
-                {
-                  "name": "No",
-                  "price": 2.12,
-                  "point": null
-                }
-              ]
-            },
-            {
-              "bookmaker": "LiveScore Bet",
-              "last_update": "2026-10-30T11:59:00Z",
-              "outcomes": [
-                {
-                  "name": "Yes",
-                  "price": 1.65,
-                  "point": null
-                },
-                {
-                  "name": "No",
-                  "price": 2.12,
-                  "point": null
-                }
-              ]
-            },
-            {
-              "bookmaker": "Ladbrokes",
-              "last_update": "2026-10-30T11:59:22Z",
-              "outcomes": [
-                {
-                  "name": "Yes",
-                  "price": 1.73,
-                  "point": null
-                },
-                {
-                  "name": "No",
-                  "price": 2.0,
-                  "point": null
-                }
-              ]
-            },
-            {
-              "bookmaker": "Coral",
-              "last_update": "2026-10-30T11:58:14Z",
-              "outcomes": [
-                {
-                  "name": "Yes",
-                  "price": 1.75,
-                  "point": null
-                },
-                {
-                  "name": "No",
-                  "price": 2.0,
-                  "point": null
-                }
-              ]
-            }
-          ]
-        },
-        "fetched_at": "2026-10-30T11:59:43.979811+00:00"
-      }
+      "status": "UNSUPPORTED_COMPETITION",
+      "reason": "This competition is not mapped to the historical dataset and the teams do not have enough exact-match history for a safe global estimate.",
+      "team_name_match_suggestions": {},
+      "fixture_source": "InferSports",
+      "source_fixture_id": "evt_QNDBDSCS"
     },
     {
-      "fixture_id": "evt_QNDG2VCS",
-      "kickoff": "2026-10-30T12:00:00+00:00",
-      "kickoff_local": "2026-10-30T13:00:00+01:00",
-      "home_team": "Persebaya",
-      "away_team": "Persijap",
-      "league": "IndonesiaSL",
-      "league_id": "lg_9XXJH2EV",
+      "fixture_id": "evt_YT1FWRBW",
+      "kickoff": "2026-10-30T12:30:00+00:00",
+      "kickoff_local": "2026-10-30T13:30:00+01:00",
+      "home_team": "Czestochowa B",
+      "away_team": "Row 1964 rybnik",
+      "league": "Pol3rd",
+      "league_id": "lg_RYSMNK1F",
       "division_code": null,
       "fixture_status": "NS",
       "model": "experimental_recent_goals_poisson",
@@ -1462,87 +1195,17 @@
       "betting_recommendation": false,
       "historical_matches": {
         "home": 0,
-        "away": 3
-      },
-      "team_name_matches": {
-        "home": {
-          "fixture_name": "Persebaya",
-          "historical_key": "persebaya",
-          "auto_matched": false
-        },
-        "away": {
-          "fixture_name": "Persijap",
-          "historical_key": "persijap",
-          "auto_matched": false
-        }
-      },
-      "status": "UNSUPPORTED_COMPETITION",
-      "reason": "This competition is not mapped to the historical dataset and the teams do not have enough exact-match history for a safe global estimate.",
-      "team_name_match_suggestions": {},
-      "fixture_source": "InferSports",
-      "source_fixture_id": "evt_QNDG2VCS"
-    },
-    {
-      "fixture_id": "evt_XZ5JSJDH",
-      "kickoff": "2026-10-30T12:00:00+00:00",
-      "kickoff_local": "2026-10-30T13:00:00+01:00",
-      "home_team": "Zob Ahan",
-      "away_team": "Esteghlal Khuzestan",
-      "league": "Iran",
-      "league_id": "lg_QVHCSBRM",
-      "division_code": null,
-      "fixture_status": "NS",
-      "model": "experimental_recent_goals_poisson",
-      "model_validated": false,
-      "betting_recommendation": false,
-      "historical_matches": {
-        "home": 3,
-        "away": 2
-      },
-      "team_name_matches": {
-        "home": {
-          "fixture_name": "Zob Ahan",
-          "historical_key": "zobahan",
-          "auto_matched": false
-        },
-        "away": {
-          "fixture_name": "Esteghlal Khuzestan",
-          "historical_key": "esteghlalkhuzestan",
-          "auto_matched": false
-        }
-      },
-      "status": "UNSUPPORTED_COMPETITION",
-      "reason": "This competition is not mapped to the historical dataset and the teams do not have enough exact-match history for a safe global estimate.",
-      "team_name_match_suggestions": {},
-      "fixture_source": "InferSports",
-      "source_fixture_id": "evt_XZ5JSJDH"
-    },
-    {
-      "fixture_id": "evt_PYMVCRWS",
-      "kickoff": "2026-10-30T12:00:00+00:00",
-      "kickoff_local": "2026-10-30T13:00:00+01:00",
-      "home_team": "Kowloon city",
-      "away_team": "HK Rangers",
-      "league": "HKPL",
-      "league_id": "lg_NSZHGJ4S",
-      "division_code": null,
-      "fixture_status": "NS",
-      "model": "experimental_recent_goals_poisson",
-      "model_validated": false,
-      "betting_recommendation": false,
-      "historical_matches": {
-        "home": 1,
         "away": 0
       },
       "team_name_matches": {
         "home": {
-          "fixture_name": "Kowloon city",
-          "historical_key": "kowlooncity",
+          "fixture_name": "Czestochowa B",
+          "historical_key": "czestochowab",
           "auto_matched": false
         },
         "away": {
-          "fixture_name": "HK Rangers",
-          "historical_key": "hkrangers",
+          "fixture_name": "Row 1964 rybnik",
+          "historical_key": "row1964rybnik",
           "auto_matched": false
         }
       },
@@ -1550,121 +1213,16 @@
       "reason": "This competition is not mapped to the historical dataset and the teams do not have enough exact-match history for a safe global estimate.",
       "team_name_match_suggestions": {},
       "fixture_source": "InferSports",
-      "source_fixture_id": "evt_PYMVCRWS"
+      "source_fixture_id": "evt_YT1FWRBW"
     },
     {
-      "fixture_id": "evt_H8BZ0126",
-      "kickoff": "2026-10-30T12:00:00+00:00",
-      "kickoff_local": "2026-10-30T13:00:00+01:00",
-      "home_team": "Sisaket United",
-      "away_team": "Ratchaburi",
-      "league": "ThaiOne",
-      "league_id": "lg_PNX5WSDE",
-      "division_code": null,
-      "fixture_status": "NS",
-      "model": "experimental_recent_goals_poisson",
-      "model_validated": false,
-      "betting_recommendation": false,
-      "historical_matches": {
-        "home": 3,
-        "away": 4
-      },
-      "team_name_matches": {
-        "home": {
-          "fixture_name": "Sisaket United",
-          "historical_key": "sisaketunited",
-          "auto_matched": false
-        },
-        "away": {
-          "fixture_name": "Ratchaburi",
-          "historical_key": "ratchaburi",
-          "auto_matched": false
-        }
-      },
-      "status": "UNSUPPORTED_COMPETITION",
-      "reason": "This competition is not mapped to the historical dataset and the teams do not have enough exact-match history for a safe global estimate.",
-      "team_name_match_suggestions": {},
-      "fixture_source": "InferSports",
-      "source_fixture_id": "evt_H8BZ0126"
-    },
-    {
-      "fixture_id": "evt_9DY71KH2",
-      "kickoff": "2026-10-30T12:00:00+00:00",
-      "kickoff_local": "2026-10-30T13:00:00+01:00",
-      "home_team": "FC Ballkani",
-      "away_team": "KF Drenica",
-      "league": "Kosovo",
-      "league_id": "lg_9MCRH2EV",
-      "division_code": null,
-      "fixture_status": "NS",
-      "model": "experimental_recent_goals_poisson",
-      "model_validated": false,
-      "betting_recommendation": false,
-      "historical_matches": {
-        "home": 2,
-        "away": 0
-      },
-      "team_name_matches": {
-        "home": {
-          "fixture_name": "FC Ballkani",
-          "historical_key": "ballkani",
-          "auto_matched": false
-        },
-        "away": {
-          "fixture_name": "KF Drenica",
-          "historical_key": "kfdrenica",
-          "auto_matched": false
-        }
-      },
-      "status": "UNSUPPORTED_COMPETITION",
-      "reason": "This competition is not mapped to the historical dataset and the teams do not have enough exact-match history for a safe global estimate.",
-      "team_name_match_suggestions": {},
-      "fixture_source": "InferSports",
-      "source_fixture_id": "evt_9DY71KH2"
-    },
-    {
-      "fixture_id": "evt_WB75MKR6",
-      "kickoff": "2026-10-30T12:00:00+00:00",
-      "kickoff_local": "2026-10-30T13:00:00+01:00",
-      "home_team": "Sheger Ketema",
-      "away_team": "Negele Arsi Ketema",
-      "league": "Ethiopia",
-      "league_id": "lg_27M4AYC5",
-      "division_code": null,
-      "fixture_status": "NS",
-      "model": "experimental_recent_goals_poisson",
-      "model_validated": false,
-      "betting_recommendation": false,
-      "historical_matches": {
-        "home": 2,
-        "away": 0
-      },
-      "team_name_matches": {
-        "home": {
-          "fixture_name": "Sheger Ketema",
-          "historical_key": "shegerketema",
-          "auto_matched": false
-        },
-        "away": {
-          "fixture_name": "Negele Arsi Ketema",
-          "historical_key": "negelearsiketema",
-          "auto_matched": false
-        }
-      },
-      "status": "UNSUPPORTED_COMPETITION",
-      "reason": "This competition is not mapped to the historical dataset and the teams do not have enough exact-match history for a safe global estimate.",
-      "team_name_match_suggestions": {},
-      "fixture_source": "InferSports",
-      "source_fixture_id": "evt_WB75MKR6"
-    },
-    {
-      "fixture_id": "evt_4RXYA4QV",
-      "kickoff": "2026-10-30T12:00:00+00:00",
-      "kickoff_local": "2026-10-30T13:00:00+01:00",
-      "home_team": "Mahasarakham Utd",
-      "away_team": "Chanthaburi",
-      "league": "Thai B",
-      "league_id": "lg_CNNBP3BP",
+      "fixture_id": "evt_NSJ6JCGJ",
+      "kickoff": "2026-10-30T12:50:00+00:00",
+      "kickoff_local": "2026-10-30T13:50:00+01:00",
+      "home_team": "Emirates",
+      "away_team": "Dabba al Fujairah",
+      "league": "UAE1",
+      "league_id": "lg_N6YFGJ4S",
       "division_code": null,
       "fixture_status": "NS",
       "model": "experimental_recent_goals_poisson",
@@ -1676,13 +1234,48 @@
       },
       "team_name_matches": {
         "home": {
-          "fixture_name": "Mahasarakham Utd",
-          "historical_key": "mahasarakhamutd",
+          "fixture_name": "Emirates",
+          "historical_key": "emirates",
           "auto_matched": false
         },
         "away": {
-          "fixture_name": "Chanthaburi",
-          "historical_key": "chanthaburi",
+          "fixture_name": "Dabba al Fujairah",
+          "historical_key": "dibbaalfujairah",
+          "auto_matched": true
+        }
+      },
+      "status": "UNSUPPORTED_COMPETITION",
+      "reason": "This competition is not mapped to the historical dataset and the teams do not have enough exact-match history for a safe global estimate.",
+      "team_name_match_suggestions": {},
+      "fixture_source": "InferSports",
+      "source_fixture_id": "evt_NSJ6JCGJ"
+    },
+    {
+      "fixture_id": "evt_RVZTJXNK",
+      "kickoff": "2026-10-30T12:50:00+00:00",
+      "kickoff_local": "2026-10-30T13:50:00+01:00",
+      "home_team": "Dibba Al Hisn",
+      "away_team": "Dubai city",
+      "league": "UAE1",
+      "league_id": "lg_N6YFGJ4S",
+      "division_code": null,
+      "fixture_status": "NS",
+      "model": "experimental_recent_goals_poisson",
+      "model_validated": false,
+      "betting_recommendation": false,
+      "historical_matches": {
+        "home": 1,
+        "away": 0
+      },
+      "team_name_matches": {
+        "home": {
+          "fixture_name": "Dibba Al Hisn",
+          "historical_key": "dibbaalhisn",
+          "auto_matched": false
+        },
+        "away": {
+          "fixture_name": "Dubai city",
+          "historical_key": "dubaicity",
           "auto_matched": false
         }
       },
@@ -1690,16 +1283,16 @@
       "reason": "This competition is not mapped to the historical dataset and the teams do not have enough exact-match history for a safe global estimate.",
       "team_name_match_suggestions": {},
       "fixture_source": "InferSports",
-      "source_fixture_id": "evt_4RXYA4QV"
+      "source_fixture_id": "evt_RVZTJXNK"
     },
     {
-      "fixture_id": "evt_XZ51F0DH",
-      "kickoff": "2026-10-30T12:00:00+00:00",
-      "kickoff_local": "2026-10-30T13:00:00+01:00",
-      "home_team": "Sisaket",
-      "away_team": "Ratchaburi",
-      "league": "ThaiOne",
-      "league_id": "lg_PNX5WSDE",
+      "fixture_id": "evt_QNDVVGCS",
+      "kickoff": "2026-10-30T12:55:00+00:00",
+      "kickoff_local": "2026-10-30T13:55:00+01:00",
+      "home_team": "Ajman",
+      "away_team": "Al Ain Abu Dhabi",
+      "league": "UAEU23",
+      "league_id": "lg_NTJ9GJ4S",
       "division_code": null,
       "fixture_status": "NS",
       "model": "experimental_recent_goals_poisson",
@@ -1707,17 +1300,40 @@
       "betting_recommendation": false,
       "historical_matches": {
         "home": 0,
-        "away": 4
+        "away": 0
+      },
+      "status": "UNSUPPORTED_COMPETITION",
+      "reason": "Women's, youth and reserve competitions require category-matched historical results; senior-team history is not used.",
+      "team_name_match_suggestions": {},
+      "fixture_source": "InferSports",
+      "source_fixture_id": "evt_QNDVVGCS"
+    },
+    {
+      "fixture_id": "evt_4RXYVAQV",
+      "kickoff": "2026-10-30T13:00:00+00:00",
+      "kickoff_local": "2026-10-30T14:00:00+01:00",
+      "home_team": "Maccabi Bnei Reineh",
+      "away_team": "Maccabi Herzliya",
+      "league": "ILL",
+      "league_id": "lg_E8CF3MDQ",
+      "division_code": null,
+      "fixture_status": "NS",
+      "model": "experimental_recent_goals_poisson",
+      "model_validated": false,
+      "betting_recommendation": false,
+      "historical_matches": {
+        "home": 0,
+        "away": 2
       },
       "team_name_matches": {
         "home": {
-          "fixture_name": "Sisaket",
-          "historical_key": "sisaket",
+          "fixture_name": "Maccabi Bnei Reineh",
+          "historical_key": "maccabibneireineh",
           "auto_matched": false
         },
         "away": {
-          "fixture_name": "Ratchaburi",
-          "historical_key": "ratchaburi",
+          "fixture_name": "Maccabi Herzliya",
+          "historical_key": "maccabiherzliya",
           "auto_matched": false
         }
       },
@@ -1725,16 +1341,51 @@
       "reason": "This competition is not mapped to the historical dataset and the teams do not have enough exact-match history for a safe global estimate.",
       "team_name_match_suggestions": {},
       "fixture_source": "InferSports",
-      "source_fixture_id": "evt_XZ51F0DH"
+      "source_fixture_id": "evt_4RXYVAQV"
     },
     {
-      "fixture_id": "evt_VE49NTS2",
-      "kickoff": "2026-10-30T12:00:00+00:00",
-      "kickoff_local": "2026-10-30T13:00:00+01:00",
-      "home_team": "Semen Padang",
-      "away_team": "Sumsel United",
-      "league": "IndonesiaCham",
-      "league_id": "lg_G6NKY6EA",
+      "fixture_id": "evt_PYMSTMWS",
+      "kickoff": "2026-10-30T13:00:00+00:00",
+      "kickoff_local": "2026-10-30T14:00:00+01:00",
+      "home_team": "Ahi Nazareth",
+      "away_team": "Kafr Qasim",
+      "league": "ILL",
+      "league_id": "lg_E8CF3MDQ",
+      "division_code": null,
+      "fixture_status": "NS",
+      "model": "experimental_recent_goals_poisson",
+      "model_validated": false,
+      "betting_recommendation": false,
+      "historical_matches": {
+        "home": 0,
+        "away": 2
+      },
+      "team_name_matches": {
+        "home": {
+          "fixture_name": "Ahi Nazareth",
+          "historical_key": "ahinazareth",
+          "auto_matched": false
+        },
+        "away": {
+          "fixture_name": "Kafr Qasim",
+          "historical_key": "kafrqasim",
+          "auto_matched": false
+        }
+      },
+      "status": "UNSUPPORTED_COMPETITION",
+      "reason": "This competition is not mapped to the historical dataset and the teams do not have enough exact-match history for a safe global estimate.",
+      "team_name_match_suggestions": {},
+      "fixture_source": "InferSports",
+      "source_fixture_id": "evt_PYMSTMWS"
+    },
+    {
+      "fixture_id": "evt_T9PADW68",
+      "kickoff": "2026-10-30T13:00:00+00:00",
+      "kickoff_local": "2026-10-30T14:00:00+01:00",
+      "home_team": "Hapoel Afula",
+      "away_team": "Maccabi Kiryat Gat",
+      "league": "ILL",
+      "league_id": "lg_E8CF3MDQ",
       "division_code": null,
       "fixture_status": "NS",
       "model": "experimental_recent_goals_poisson",
@@ -1746,13 +1397,13 @@
       },
       "team_name_matches": {
         "home": {
-          "fixture_name": "Semen Padang",
-          "historical_key": "semenpadang",
+          "fixture_name": "Hapoel Afula",
+          "historical_key": "hapoelafula",
           "auto_matched": false
         },
         "away": {
-          "fixture_name": "Sumsel United",
-          "historical_key": "sumselunited",
+          "fixture_name": "Maccabi Kiryat Gat",
+          "historical_key": "maccabikiryatgat",
           "auto_matched": false
         }
       },
@@ -1760,34 +1411,34 @@
       "reason": "This competition is not mapped to the historical dataset and the teams do not have enough exact-match history for a safe global estimate.",
       "team_name_match_suggestions": {},
       "fixture_source": "InferSports",
-      "source_fixture_id": "evt_VE49NTS2"
+      "source_fixture_id": "evt_T9PADW68"
     },
     {
-      "fixture_id": "evt_QNDB3KCS",
-      "kickoff": "2026-10-30T12:00:00+00:00",
-      "kickoff_local": "2026-10-30T13:00:00+01:00",
-      "home_team": "Leczna",
-      "away_team": "UKS SMS Lodz(W)",
-      "league": "Pol(W)",
-      "league_id": "lg_GS94Y6EA",
+      "fixture_id": "evt_M1EQP27T",
+      "kickoff": "2026-10-30T13:00:00+00:00",
+      "kickoff_local": "2026-10-30T14:00:00+01:00",
+      "home_team": "Hapoel Acre",
+      "away_team": "H.R.Letzion",
+      "league": "ILL",
+      "league_id": "lg_E8CF3MDQ",
       "division_code": null,
       "fixture_status": "NS",
       "model": "experimental_recent_goals_poisson",
       "model_validated": false,
       "betting_recommendation": false,
       "historical_matches": {
-        "home": 10,
+        "home": 2,
         "away": 0
       },
       "team_name_matches": {
         "home": {
-          "fixture_name": "Leczna",
-          "historical_key": "leczna",
+          "fixture_name": "Hapoel Acre",
+          "historical_key": "hapoelacre",
           "auto_matched": false
         },
         "away": {
-          "fixture_name": "UKS SMS Lodz(W)",
-          "historical_key": "ukssmslodzw",
+          "fixture_name": "H.R.Letzion",
+          "historical_key": "hrletzion",
           "auto_matched": false
         }
       },
@@ -1795,16 +1446,51 @@
       "reason": "This competition is not mapped to the historical dataset and the teams do not have enough exact-match history for a safe global estimate.",
       "team_name_match_suggestions": {},
       "fixture_source": "InferSports",
-      "source_fixture_id": "evt_QNDB3KCS"
+      "source_fixture_id": "evt_M1EQP27T"
     },
     {
-      "fixture_id": "evt_E2RDS4F3",
-      "kickoff": "2026-10-30T12:00:00+00:00",
-      "kickoff_local": "2026-10-30T13:00:00+01:00",
-      "home_team": "Slask",
-      "away_team": "GKS Katowice",
-      "league": "Pol(W)",
-      "league_id": "lg_GS94Y6EA",
+      "fixture_id": "evt_G53EJRY6",
+      "kickoff": "2026-10-30T13:00:00+00:00",
+      "kickoff_local": "2026-10-30T14:00:00+01:00",
+      "home_team": "Opatija",
+      "away_team": "NK Mladost Zdralovi",
+      "league": "Cro2",
+      "league_id": "lg_WGV7R6XB",
+      "division_code": null,
+      "fixture_status": "NS",
+      "model": "experimental_recent_goals_poisson",
+      "model_validated": false,
+      "betting_recommendation": false,
+      "historical_matches": {
+        "home": 2,
+        "away": 0
+      },
+      "team_name_matches": {
+        "home": {
+          "fixture_name": "Opatija",
+          "historical_key": "opatija",
+          "auto_matched": false
+        },
+        "away": {
+          "fixture_name": "NK Mladost Zdralovi",
+          "historical_key": "nkmladostzdralovi",
+          "auto_matched": false
+        }
+      },
+      "status": "UNSUPPORTED_COMPETITION",
+      "reason": "This competition is not mapped to the historical dataset and the teams do not have enough exact-match history for a safe global estimate.",
+      "team_name_match_suggestions": {},
+      "fixture_source": "InferSports",
+      "source_fixture_id": "evt_G53EJRY6"
+    },
+    {
+      "fixture_id": "evt_FAN8REKC",
+      "kickoff": "2026-10-30T13:00:00+00:00",
+      "kickoff_local": "2026-10-30T14:00:00+01:00",
+      "home_team": "NK Dubrava",
+      "away_team": "NK Sesvete",
+      "league": "Cro2",
+      "league_id": "lg_WGV7R6XB",
       "division_code": null,
       "fixture_status": "NS",
       "model": "experimental_recent_goals_poisson",
@@ -1812,17 +1498,17 @@
       "betting_recommendation": false,
       "historical_matches": {
         "home": 0,
-        "away": 10
+        "away": 0
       },
       "team_name_matches": {
         "home": {
-          "fixture_name": "Slask",
-          "historical_key": "slask",
+          "fixture_name": "NK Dubrava",
+          "historical_key": "nkdubrava",
           "auto_matched": false
         },
         "away": {
-          "fixture_name": "GKS Katowice",
-          "historical_key": "gkskatowice",
+          "fixture_name": "NK Sesvete",
+          "historical_key": "nksesvete",
           "auto_matched": false
         }
       },
@@ -1830,14 +1516,37 @@
       "reason": "This competition is not mapped to the historical dataset and the teams do not have enough exact-match history for a safe global estimate.",
       "team_name_match_suggestions": {},
       "fixture_source": "InferSports",
-      "source_fixture_id": "evt_E2RDS4F3"
+      "source_fixture_id": "evt_FAN8REKC"
     },
     {
-      "fixture_id": "evt_2MVJFNAY",
-      "kickoff": "2026-10-30T12:00:00+00:00",
-      "kickoff_local": "2026-10-30T13:00:00+01:00",
-      "home_team": "Miedz II",
-      "away_team": "Warta Gorzow Wielkopolski",
+      "fixture_id": "evt_T9PAVD68",
+      "kickoff": "2026-10-30T13:00:00+00:00",
+      "kickoff_local": "2026-10-30T14:00:00+01:00",
+      "home_team": "Richmond United(W)",
+      "away_team": "Pretoria",
+      "league": "SouthAfricaW",
+      "league_id": "lg_5HW2THT9",
+      "division_code": null,
+      "fixture_status": "NS",
+      "model": "experimental_recent_goals_poisson",
+      "model_validated": false,
+      "betting_recommendation": false,
+      "historical_matches": {
+        "home": 0,
+        "away": 0
+      },
+      "status": "UNSUPPORTED_COMPETITION",
+      "reason": "Women's, youth and reserve competitions require category-matched historical results; senior-team history is not used.",
+      "team_name_match_suggestions": {},
+      "fixture_source": "InferSports",
+      "source_fixture_id": "evt_T9PAVD68"
+    },
+    {
+      "fixture_id": "evt_CG8V0TP3",
+      "kickoff": "2026-10-30T13:00:00+00:00",
+      "kickoff_local": "2026-10-30T14:00:00+01:00",
+      "home_team": "Wieczysta Krakow II",
+      "away_team": "Wisla Krakow II",
       "league": "Pol3rd",
       "league_id": "lg_RYSMNK1F",
       "division_code": null,
@@ -1851,13 +1560,13 @@
       },
       "team_name_matches": {
         "home": {
-          "fixture_name": "Miedz II",
-          "historical_key": "miedzii",
+          "fixture_name": "Wieczysta Krakow II",
+          "historical_key": "wieczystakrakowii",
           "auto_matched": false
         },
         "away": {
-          "fixture_name": "Warta Gorzow Wielkopolski",
-          "historical_key": "wartagorzowwielkopolski",
+          "fixture_name": "Wisla Krakow II",
+          "historical_key": "wislakrakowii",
           "auto_matched": false
         }
       },
@@ -1865,296 +1574,7 @@
       "reason": "This competition is not mapped to the historical dataset and the teams do not have enough exact-match history for a safe global estimate.",
       "team_name_match_suggestions": {},
       "fixture_source": "InferSports",
-      "source_fixture_id": "evt_2MVJFNAY"
-    },
-    {
-      "fixture_id": "evt_A7S3KYX7",
-      "kickoff": "2026-10-30T12:00:00+00:00",
-      "kickoff_local": "2026-10-30T13:00:00+01:00",
-      "home_team": "Jagiellonia II",
-      "away_team": "Polonia Lidzbark Warminski",
-      "league": "Pol3rd",
-      "league_id": "lg_RYSMNK1F",
-      "division_code": null,
-      "fixture_status": "NS",
-      "model": "experimental_recent_goals_poisson",
-      "model_validated": false,
-      "betting_recommendation": false,
-      "historical_matches": {
-        "home": 0,
-        "away": 0
-      },
-      "team_name_matches": {
-        "home": {
-          "fixture_name": "Jagiellonia II",
-          "historical_key": "jagielloniaii",
-          "auto_matched": false
-        },
-        "away": {
-          "fixture_name": "Polonia Lidzbark Warminski",
-          "historical_key": "polonialidzbarkwarminski",
-          "auto_matched": false
-        }
-      },
-      "status": "UNSUPPORTED_COMPETITION",
-      "reason": "This competition is not mapped to the historical dataset and the teams do not have enough exact-match history for a safe global estimate.",
-      "team_name_match_suggestions": {},
-      "fixture_source": "InferSports",
-      "source_fixture_id": "evt_A7S3KYX7"
-    },
-    {
-      "fixture_id": "evt_VE49NBS2",
-      "kickoff": "2026-10-30T12:00:00+00:00",
-      "kickoff_local": "2026-10-30T13:00:00+01:00",
-      "home_team": "Gornik Leczna(W)",
-      "away_team": "UKS SMS Lodz(W)",
-      "league": "Pol(W)",
-      "league_id": "lg_GS94Y6EA",
-      "division_code": null,
-      "fixture_status": "NS",
-      "model": "experimental_recent_goals_poisson",
-      "model_validated": false,
-      "betting_recommendation": false,
-      "historical_matches": {
-        "home": 0,
-        "away": 0
-      },
-      "team_name_matches": {
-        "home": {
-          "fixture_name": "Gornik Leczna(W)",
-          "historical_key": "gorniklecznaw",
-          "auto_matched": false
-        },
-        "away": {
-          "fixture_name": "UKS SMS Lodz(W)",
-          "historical_key": "ukssmslodzw",
-          "auto_matched": false
-        }
-      },
-      "status": "UNSUPPORTED_COMPETITION",
-      "reason": "This competition is not mapped to the historical dataset and the teams do not have enough exact-match history for a safe global estimate.",
-      "team_name_match_suggestions": {},
-      "fixture_source": "InferSports",
-      "source_fixture_id": "evt_VE49NBS2"
-    },
-    {
-      "fixture_id": "evt_B60KNSVP",
-      "kickoff": "2026-10-30T12:00:00+00:00",
-      "kickoff_local": "2026-10-30T13:00:00+01:00",
-      "home_team": "Slask Wroclaw(W)",
-      "away_team": "Katowice(W)",
-      "league": "Pol(W)",
-      "league_id": "lg_GS94Y6EA",
-      "division_code": null,
-      "fixture_status": "NS",
-      "model": "experimental_recent_goals_poisson",
-      "model_validated": false,
-      "betting_recommendation": false,
-      "historical_matches": {
-        "home": 10,
-        "away": 0
-      },
-      "team_name_matches": {
-        "home": {
-          "fixture_name": "Slask Wroclaw(W)",
-          "historical_key": "slaskwroclaw",
-          "auto_matched": true
-        },
-        "away": {
-          "fixture_name": "Katowice(W)",
-          "historical_key": "katowicew",
-          "auto_matched": false
-        }
-      },
-      "status": "UNSUPPORTED_COMPETITION",
-      "reason": "This competition is not mapped to the historical dataset and the teams do not have enough exact-match history for a safe global estimate.",
-      "team_name_match_suggestions": {},
-      "fixture_source": "InferSports",
-      "source_fixture_id": "evt_B60KNSVP"
-    },
-    {
-      "fixture_id": "evt_4RXY3YQV",
-      "kickoff": "2026-10-30T12:00:00+00:00",
-      "kickoff_local": "2026-10-30T13:00:00+01:00",
-      "home_team": "Konyaspor U19",
-      "away_team": "Galatasaray U19",
-      "league": "TurU19",
-      "league_id": "lg_83GXM79R",
-      "division_code": null,
-      "fixture_status": "NS",
-      "model": "experimental_recent_goals_poisson",
-      "model_validated": false,
-      "betting_recommendation": false,
-      "historical_matches": {
-        "home": 0,
-        "away": 0
-      },
-      "status": "UNSUPPORTED_COMPETITION",
-      "reason": "Women's, youth and reserve competitions require category-matched historical results; senior-team history is not used.",
-      "team_name_match_suggestions": {},
-      "fixture_source": "InferSports",
-      "source_fixture_id": "evt_4RXY3YQV"
-    },
-    {
-      "fixture_id": "evt_B609TKVP",
-      "kickoff": "2026-10-30T12:00:00+00:00",
-      "kickoff_local": "2026-10-30T13:00:00+01:00",
-      "home_team": "Lokomotiv Moscow U19",
-      "away_team": "Dynamo Makhachkala U19",
-      "league": "RusU19",
-      "league_id": "lg_NTTXGJ4S",
-      "division_code": null,
-      "fixture_status": "NS",
-      "model": "experimental_recent_goals_poisson",
-      "model_validated": false,
-      "betting_recommendation": false,
-      "historical_matches": {
-        "home": 0,
-        "away": 0
-      },
-      "status": "UNSUPPORTED_COMPETITION",
-      "reason": "Women's, youth and reserve competitions require category-matched historical results; senior-team history is not used.",
-      "team_name_match_suggestions": {},
-      "fixture_source": "InferSports",
-      "source_fixture_id": "evt_B609TKVP"
-    },
-    {
-      "fixture_id": "evt_NSJEVEGJ",
-      "kickoff": "2026-10-30T12:00:00+00:00",
-      "kickoff_local": "2026-10-30T13:00:00+01:00",
-      "home_team": "Krasnodar U19",
-      "away_team": "Fakel Voronezh U19",
-      "league": "RusU19",
-      "league_id": "lg_NTTXGJ4S",
-      "division_code": null,
-      "fixture_status": "NS",
-      "model": "experimental_recent_goals_poisson",
-      "model_validated": false,
-      "betting_recommendation": false,
-      "historical_matches": {
-        "home": 0,
-        "away": 0
-      },
-      "status": "UNSUPPORTED_COMPETITION",
-      "reason": "Women's, youth and reserve competitions require category-matched historical results; senior-team history is not used.",
-      "team_name_match_suggestions": {},
-      "fixture_source": "InferSports",
-      "source_fixture_id": "evt_NSJEVEGJ"
-    },
-    {
-      "fixture_id": "evt_PYM5G9WS",
-      "kickoff": "2026-10-30T12:00:00+00:00",
-      "kickoff_local": "2026-10-30T13:00:00+01:00",
-      "home_team": "Akademiya Konoplev U19",
-      "away_team": "Spa.Moscow U19",
-      "league": "RusU19",
-      "league_id": "lg_NTTXGJ4S",
-      "division_code": null,
-      "fixture_status": "NS",
-      "model": "experimental_recent_goals_poisson",
-      "model_validated": false,
-      "betting_recommendation": false,
-      "historical_matches": {
-        "home": 0,
-        "away": 0
-      },
-      "status": "UNSUPPORTED_COMPETITION",
-      "reason": "Women's, youth and reserve competitions require category-matched historical results; senior-team history is not used.",
-      "team_name_match_suggestions": {},
-      "fixture_source": "InferSports",
-      "source_fixture_id": "evt_PYM5G9WS"
-    },
-    {
-      "fixture_id": "evt_B6096AVP",
-      "kickoff": "2026-10-30T12:00:00+00:00",
-      "kickoff_local": "2026-10-30T13:00:00+01:00",
-      "home_team": "Al Salt",
-      "away_team": "Jazeera Amman",
-      "league": "JorU21",
-      "league_id": "lg_RTGFNK1F",
-      "division_code": null,
-      "fixture_status": "NS",
-      "model": "experimental_recent_goals_poisson",
-      "model_validated": false,
-      "betting_recommendation": false,
-      "historical_matches": {
-        "home": 0,
-        "away": 0
-      },
-      "status": "UNSUPPORTED_COMPETITION",
-      "reason": "Women's, youth and reserve competitions require category-matched historical results; senior-team history is not used.",
-      "team_name_match_suggestions": {},
-      "fixture_source": "InferSports",
-      "source_fixture_id": "evt_B6096AVP"
-    },
-    {
-      "fixture_id": "evt_G53F52Y6",
-      "kickoff": "2026-10-30T12:00:00+00:00",
-      "kickoff_local": "2026-10-30T13:00:00+01:00",
-      "home_team": "Va.Budapest",
-      "away_team": "MTK Hungaria",
-      "league": "Hun U19",
-      "league_id": "lg_CRGSP3BP",
-      "division_code": null,
-      "fixture_status": "NS",
-      "model": "experimental_recent_goals_poisson",
-      "model_validated": false,
-      "betting_recommendation": false,
-      "historical_matches": {
-        "home": 0,
-        "away": 0
-      },
-      "status": "UNSUPPORTED_COMPETITION",
-      "reason": "Women's, youth and reserve competitions require category-matched historical results; senior-team history is not used.",
-      "team_name_match_suggestions": {},
-      "fixture_source": "InferSports",
-      "source_fixture_id": "evt_G53F52Y6"
-    },
-    {
-      "fixture_id": "evt_FANMA1KC",
-      "kickoff": "2026-10-30T12:00:00+00:00",
-      "kickoff_local": "2026-10-30T13:00:00+01:00",
-      "home_team": "Kustosija",
-      "away_team": "NK Lucko",
-      "league": "Croa U19",
-      "league_id": "lg_YTDVBW2M",
-      "division_code": null,
-      "fixture_status": "NS",
-      "model": "experimental_recent_goals_poisson",
-      "model_validated": false,
-      "betting_recommendation": false,
-      "historical_matches": {
-        "home": 0,
-        "away": 0
-      },
-      "status": "UNSUPPORTED_COMPETITION",
-      "reason": "Women's, youth and reserve competitions require category-matched historical results; senior-team history is not used.",
-      "team_name_match_suggestions": {},
-      "fixture_source": "InferSports",
-      "source_fixture_id": "evt_FANMA1KC"
-    },
-    {
-      "fixture_id": "evt_H8BJJ726",
-      "kickoff": "2026-10-30T12:00:00+00:00",
-      "kickoff_local": "2026-10-30T13:00:00+01:00",
-      "home_team": "Krasnodar",
-      "away_team": "Fakel Voronezh",
-      "league": "RusU19",
-      "league_id": "lg_NTTXGJ4S",
-      "division_code": null,
-      "fixture_status": "NS",
-      "model": "experimental_recent_goals_poisson",
-      "model_validated": false,
-      "betting_recommendation": false,
-      "historical_matches": {
-        "home": 0,
-        "away": 0
-      },
-      "status": "UNSUPPORTED_COMPETITION",
-      "reason": "Women's, youth and reserve competitions require category-matched historical results; senior-team history is not used.",
-      "team_name_match_suggestions": {},
-      "fixture_source": "InferSports",
-      "source_fixture_id": "evt_H8BJJ726"
+      "source_fixture_id": "evt_CG8V0TP3"
     }
   ],
   "notice": "Experimental research output only. Historical tests show the Poisson pipeline underperforms the market benchmark. Competition-scoped Elo is preferred when available but remains unvalidated for betting; Poisson remains primary when Elo history is unavailable. No betting recommendations or value bets are approved.",
@@ -2172,7 +1592,7 @@
   "primary_provider_request": {
     "provider": "5DollarFootballAPI",
     "status": "SUCCESS",
-    "requests_remaining": "58",
+    "requests_remaining": "59",
     "pages_fetched": 1,
     "fixtures_received": 5
   },
@@ -2180,7 +1600,7 @@
     "primary_provider": "5DollarFootballAPI",
     "supplemental_provider": "The Odds API",
     "the_odds_api": {
-      "fixtures_added": 2,
+      "fixtures_added": 1,
       "sports_queried": [
         "soccer_epl",
         "soccer_spain_la_liga",
@@ -2193,16 +1613,16 @@
     "infersports": {
       "status": "AVAILABLE",
       "events_received": 200,
-      "future_same_day_events": 192,
+      "future_same_day_events": 183,
       "duplicates_skipped": 1,
-      "fixtures_added": 191,
+      "fixtures_added": 182,
       "error_type": null
     },
-    "fixtures_total_after_supplement": 198,
+    "fixtures_total_after_supplement": 188,
     "future_fixtures_considered": 25,
     "predictions_created": 0,
-    "insufficient_history": 2,
-    "possible_team_name_mismatches": 2
+    "insufficient_history": 1,
+    "possible_team_name_mismatches": 3
   },
   "historical_data_coverage": {
     "status": "GAPPED_OR_STALE",
@@ -2231,15 +1651,14 @@
     },
     "the_odds_api": {
       "status": "AVAILABLE",
-      "fixtures_with_market_odds": 2,
+      "fixtures_with_market_odds": 1,
       "sports_queried": [
-        "soccer_germany_bundesliga",
-        "soccer_france_ligue_one"
+        "soccer_germany_bundesliga"
       ],
       "max_btts_event_calls": 3,
       "quota": {
-        "remaining": "447",
-        "used": "53",
+        "remaining": "444",
+        "used": "56",
         "last_cost": "1"
       },
       "warning": null
@@ -2259,7 +1678,7 @@
     "five_dollar_status": "NO_MATCHED_MARKET_ODDS",
     "the_odds_api_status": "AVAILABLE",
     "infer_sports_status": "DISABLED",
-    "fixtures_with_market_odds": 2,
+    "fixtures_with_market_odds": 1,
     "note": "Market odds are reference data; forecast probabilities remain experimental and unchanged."
   },
   "publication_status": "LIVE_REPORT_GENERATED_PENDING_PUBLICATION",
@@ -2275,5 +1694,5 @@
     "note": "Market prices are informational; model outputs remain experimental and are not betting advice."
   },
   "command_data_publication": "PUBLISHED",
-  "command_data_published_at_utc": "2026-10-30T11:59:49.191618+00:00"
+  "command_data_published_at_utc": "2026-10-30T12:03:22.268001+00:00"
 }
