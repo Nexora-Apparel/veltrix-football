@@ -359,7 +359,7 @@ def _split_telegram_text(text: str, limit: int = 3900) -> list[str]:
         return ["No report text was generated."]
     chunks: list[str] = []
     while len(remaining) > limit:
-        split_at = remaining.rfind("\\n", 0, limit + 1)
+        split_at = remaining.rfind("\n", 0, limit + 1)
         if split_at <= 0:
             split_at = limit
         chunk = remaining[:split_at].strip()
