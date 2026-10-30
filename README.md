@@ -63,9 +63,9 @@ A market is released independently; a pass in one market does not unlock the oth
 - at least 1,000 chronological walk-forward test matches;
 - at least 300 settled prospective candidate selections over at least 90 distinct match dates;
 - positive cumulative flat-stake ROI and a positive 95% lower confidence bound from a match-date-cluster bootstrap;
-- at least 98% timestamped pre-kickoff odds coverage; paper evidence must use the exact deployed calibration version.
+- at least 98% timestamped pre-kickoff odds coverage; paper evidence must use the exact deployed goal-market calibration version.
 
-1X2 additionally must beat the de-vigged market on both Brier score and log loss in full-period and recent-holdout comparisons, then satisfy the same prospective paper requirements. The current 1X2 model does not beat that market benchmark.
+1X2 is evaluated separately: the recent-goals Poisson model must beat the de-vigged market on both Brier score and log loss in full-period and recent-holdout comparisons, then meet the same prospective sample/ROI/coverage thresholds. Its paper evidence is tracked under the exact 1X2 model version and does not depend on the BTTS/totals calibrator. If Elo is primary for a fixture, the 1X2 value screen uses the explicitly retained recent-goals Poisson alternative so the live candidate model matches the benchmark and paper ledger. The current 1X2 model does not beat the market benchmark.
 
 The certificate is rebuilt from the latest successful historical backtest artifact and cumulative paper ledger before report publication. Missing artifacts, missing timestamps, insufficient sample size, failed diagnostics or mismatched calibration versions keep the relevant market locked. The theoretical expected-return calculation excludes price movement, stake limits, execution, fees and account restrictions. No bookmaker actions are performed, and no accumulator/10.00-odds or 50.00–100.00-odds slips are enabled.
 
