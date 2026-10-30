@@ -97,7 +97,6 @@ def apply_goal_market_calibration(
             model_name = prediction.get("goal_markets_model") or prediction.get("model")
             if model_name != "experimental_recent_goals_poisson":
                 continue
-            compatible_forecasts += 1
             raw_values = {}
             for market, field in MARKET_FIELDS.items():
                 raw = prediction.get(field)
@@ -109,6 +108,7 @@ def apply_goal_market_calibration(
                 if market not in applied:
                     applied.append(market)
             if raw_values:
+                compatible_forecasts += 1
                 applied_forecasts += 1
                 existing = prediction.get("raw_goal_market_probabilities")
                 if not isinstance(existing, dict):
