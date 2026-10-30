@@ -297,3 +297,29 @@ def test_telegram_report_labels_competition_prior_forecast_basis():
     )
     message = format_report(report)
     assert "FORECAST BASIS: competition-level historical goal-rate prior; team-specific history below minimum" in message
+
+
+def test_telegram_report_discloses_reference_prices_for_all_three_markets():
+    report = sample_report()
+    item = report["predictions"][0]
+    item["prediction_basis"] = "competition-level historical goal-rate prior; team-specific history below minimum"
+    item["the_odds_api_market_odds"] = {"markets": {
+        "h2h": [{"bookmaker": "Book A", "outcomes": [
+            {"name": "Alpha FC", "price": 2.10},
+            {"name": "Draw", "price": 3.20},
+            {"name": "Beta FC", "price": 3.60},
+        ]}],
+        "btts": [{"bookmaker": "Book B", "outcomes": [
+            {"name": "Yes", "price": 1.85}, {"name": "No", "price": 1.95},
+        ]}],
+        "totals": [{"bookmaker": "Book C", "outcomes": [
+            {"name": "Over", "point": 2.5, "price": 1.90},
+            {"name": "Under", "point": 2.5, "price": 1.95},
+        ]}],
+    }}
+    message = format_report(report)
+    assert "FORECAST BASIS: competition-level historical goal-rate prior" in message
+    assert "REFERENCE BOOKMAKER PRICES — NOT VALUE PICKS" in message
+    assert "1X2 · Book A: Alpha FC 2.10 / Draw 3.20 / Beta FC 3.60" in message
+    assert "BTTS · Book B: Yes 1.85 / No 1.95" in message
+    assert "O/U 2.5 · Book C: Over 2.5 1.90 / Under 2.5 1.95" in message
