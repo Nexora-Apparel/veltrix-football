@@ -202,15 +202,24 @@ def _merge_api_sports_market_odds(
     return attached
 
 
-def _limit_fixture_payload(payload: dict, limit: int, timezone_name: str = "Africa/Lagos") -> dict:
-    """Keep at most N upcoming same-day fixtures, ordered by kickoff."""
+def _limit_fixture_payload(
+    payload: dict,
+    limit: int,
+    timezone_name: str = "Africa/Lagos",
+    as_of_date: date | None = None,
+    now: datetime | None = None,
+) -> dict:
+    """Keep at most N eligible fixtures for the requested local date."""
     from copy import deepcopy
     result = deepcopy(payload)
     rows = result.get("response")
     if not isinstance(rows, list):
         raise ValueError("Fixture provider response must contain a response list.")
     zone = ZoneInfo(timezone_name)
-    now = datetime.now(zone)
+    current_time = now.astimezone(zone) if now is not None and now.tzinfo else (
+        now.replace(tzinfo=zone) if now is not None else datetime.now(zone)
+    )
+    target_date = as_of_date or current_time.date()
     eligible = []
     for row in rows:
         if not isinstance(row, dict):
@@ -230,7 +239,9 @@ def _limit_fixture_payload(payload: dict, limit: int, timezone_name: str = "Afri
             kickoff = kickoff.astimezone(zone)
         except (TypeError, ValueError, OverflowError):
             continue
-        if kickoff.date() != now.date() or kickoff <= now:
+        if kickoff.date() != target_date:
+            continue
+        if target_date == current_time.date() and kickoff <= current_time:
             continue
         eligible.append((kickoff, row))
     eligible.sort(key=lambda item: item[0])
@@ -275,7 +286,7 @@ def main() -> None:
             timezone_name=args.timezone,
         )
         # Bound model workload and Telegram report size after cross-provider discovery.
-        payload = _limit_fixture_payload(payload, args.max_fixtures, args.timezone)
+        payload = _limit_fixture_payload(payload, args.max_fixtures, args.timezone, as_of_date=target_date)
         base_history = load_historical_matches(args.history)
         cache_path = Path(args.recent_cache)
         cache_data, cached_rows = _load_recent_cache(cache_path)
