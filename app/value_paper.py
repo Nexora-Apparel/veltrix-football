@@ -45,7 +45,12 @@ def _devig(prices: dict[str, float]) -> dict[str, float] | None:
 
 
 def prospective_value_rows(prediction: dict[str, Any], result: dict[str, Any]) -> list[dict[str, Any]]:
-    """Select one highest-edge outcome per market using complete same-book odds."""
+    """Track only value-screen-qualified selections from complete, timestamped same-book odds.
+
+    A single selection is recorded per fixture and market. Prices are de-vigged
+    within each bookmaker; a selection must pass the same edge, expected-return,
+    probability and odds bounds used by the production value screen.
+    """
     snapshot = prediction.get("the_odds_api_market_odds")
     if not isinstance(snapshot, dict):
         return []
@@ -119,18 +124,33 @@ def prospective_value_rows(prediction: dict[str, Any], result: dict[str, Any]) -
             book_candidates.append((book, quote_time, prices, market_probs))
         if not book_candidates:
             continue
-        # Compare model probabilities with a complete, same-book de-vigged market.
+        # Apply production candidate gates before recording a prospective bet.
+        # This prevents ordinary forecasts and negative-edge prices from inflating
+        # the prospective value sample.
         viable = []
         for book, quote_time, prices, market_probs in book_candidates:
             for selection in labels:
                 model_p = _prob(model_probs.get(selection))
                 if model_p is None:
                     continue
+                price = prices[selection]
                 edge = model_p - market_probs[selection]
-                viable.append((edge, prices[selection], selection, model_p, market_probs[selection], book, quote_time))
+                expected_return = model_p * price - 1.0
+                if (
+                    model_p >= 0.45
+                    and 1.50 <= price <= 4.00
+                    and edge >= 0.04
+                    and expected_return >= 0.05
+                ):
+                    viable.append((
+                        expected_return, edge, price, selection, model_p,
+                        market_probs[selection], book, quote_time,
+                    ))
         if not viable:
             continue
-        edge, price, selection, model_p, market_p, book, quote_time = max(viable, key=lambda x: (x[0], x[1]))
+        _, edge, price, selection, model_p, market_p, book, quote_time = max(
+            viable, key=lambda row: (row[0], row[1], row[2])
+        )
         won = selection == actual
         rows.append({
             "fixture_id": prediction.get("fixture_id"),
@@ -150,7 +170,7 @@ def prospective_value_rows(prediction: dict[str, Any], result: dict[str, Any]) -
 
 
 def summarize_value_market_rows(rows: list[dict[str, Any]]) -> dict[str, Any]:
-    """Per-market settled ROI plus a conservative normal-approximation lower bound."""
+    """Per-market settled ROI with a date-clustered percentile bootstrap interval."""
     output: dict[str, Any] = {}
     for market in sorted({str(row.get("market")) for row in rows}):
         subset = [row for row in rows if row.get("market") == market]
@@ -159,20 +179,30 @@ def summarize_value_market_rows(rows: list[dict[str, Any]]) -> dict[str, Any]:
         stake = sum(float(row.get("unit_stake", 1)) for row in subset)
         net = sum(returns)
         roi = net / stake if stake else None
-        # Deterministic percentile bootstrap lower bound for mean unit return.
-        # Resampling is at the settled-selection level; repeated fixture selections
-        # are deduplicated before this function is called.
-        if n >= 2 and stake:
+        # Resample whole Lagos-local match dates, not individual selections.
+        # This preserves within-date dependence when multiple fixtures settle
+        # together and is more conservative than an IID selection bootstrap.
+        date_groups: dict[str, list[dict[str, Any]]] = {}
+        for row in subset:
+            day = str(row.get("kickoff", ""))[:10]
+            if day:
+                date_groups.setdefault(day, []).append(row)
+        dates = set(date_groups)
+        if len(dates) >= 2 and stake:
+            ordered_dates = sorted(dates)
             rng = random.Random(20261030 + sum(ord(ch) for ch in market))
             boot = []
-            for _ in range(2000):
-                sample = [returns[rng.randrange(n)] for _ in range(n)]
-                boot.append(sum(sample) / n)
+            for _ in range(4000):
+                sampled_dates = [ordered_dates[rng.randrange(len(ordered_dates))] for _ in ordered_dates]
+                sample_rows = [row for day in sampled_dates for row in date_groups[day]]
+                sample_stake = sum(float(row.get("unit_stake", 1)) for row in sample_rows)
+                sample_profit = sum(float(row.get("unit_profit", 0)) for row in sample_rows)
+                if sample_stake:
+                    boot.append(sample_profit / sample_stake)
             boot.sort()
-            lower = boot[max(0, int(0.025 * len(boot)) - 1)] * n / stake
+            lower = boot[max(0, math.floor(0.025 * (len(boot) - 1)))] if boot else None
         else:
             lower = None
-        dates = {str(row.get("kickoff", ""))[:10] for row in subset if row.get("kickoff")}
         timestamped = sum(bool(_ts(row.get("quote_updated_at")) and _ts(row.get("odds_fetched_at"))) for row in subset)
         output[market] = {
             "settled_bets": n, "distinct_match_dates": len(dates),
@@ -181,6 +211,6 @@ def summarize_value_market_rows(rows: list[dict[str, Any]]) -> dict[str, Any]:
             "roi_lower_95_ci": lower,
             "confidence_method": "BOOTSTRAP_PERCENTILE_95",
             "timestamped_odds_coverage": timestamped / n if n else 0.0,
-            "notice": "Prospective paper-only estimate; percentile bootstrap interval remains sensitive to dependence between selections and is not proof of executable returns."
+            "notice": "Prospective paper-only estimate; 95% percentile bootstrap resamples match-date clusters and is not proof of executable returns."
         }
     return output
