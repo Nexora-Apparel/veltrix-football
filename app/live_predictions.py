@@ -491,6 +491,47 @@ def predict_fixtures(
                     })
                     output.append(record)
                     continue
+                # If a competition is mapped but one or both teams lack enough
+                # exact-match results, fall back to a transparent league-only
+                # historical prior. This is not a team-strength forecast and
+                # remains experimental; it must never unlock value-bet alerts.
+                league_history = [
+                    match for match in usable
+                    if match.get("division") == fixture.get("division_code")
+                ]
+                if len(league_history) >= 50:
+                    league_home_xg = sum(match["home_goals"] for match in league_history) / len(league_history)
+                    league_away_xg = sum(match["away_goals"] for match in league_history) / len(league_history)
+                    league_prior = match_probabilities(league_home_xg, league_away_xg)
+                    record.update({
+                        "status": "EXPERIMENTAL_ONLY",
+                        "model": "experimental_competition_prior_poisson",
+                        "model_validated": False,
+                        "betting_recommendation": False,
+                        "prediction_basis": "competition-level historical goal-rate prior; team-specific history below minimum",
+                        "probabilities": {
+                            key: round(value, 4)
+                            for key, value in league_prior["one_x_two"].items()
+                        },
+                        "expected_goals": {
+                            "home": round(league_home_xg, 3),
+                            "away": round(league_away_xg, 3),
+                        },
+                        "btts_yes": round(league_prior["btts_yes"], 4),
+                        "over_2_5": round(league_prior["totals"]["over_2_5"], 4),
+                        "most_likely_scorelines": league_prior["most_likely_scorelines"][:3],
+                        "goal_markets_model": "experimental_competition_prior_poisson",
+                        "data_availability": {
+                            "historical_goals_for_against": "COMPETITION_BASELINE_ONLY",
+                            "competition_history_matches": len(league_history),
+                            "team_specific_history": "BELOW_MINIMUM",
+                            "true_expected_goals_xg": "UNAVAILABLE_FROM_CURRENT_HISTORICAL_FEED",
+                            "confirmed_lineups_injuries_suspensions": "NOT_CONNECTED",
+                            "live_bookmaker_odds": "REFERENCE_ONLY_IF_MATCHED",
+                        },
+                    })
+                    output.append(record)
+                    continue
                 suggestions: dict[str, list[str]] = {}
                 for side, team_name, team_key, history in (
                     ("home", fixture["home_team"], home_key, home_hist),
