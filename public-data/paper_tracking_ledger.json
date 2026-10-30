@@ -24,7 +24,18 @@
       },
       "model_versions": [
         "experimental_recent_goals_poisson"
-      ]
+      ],
+      "goal_market_selections_settled": 0,
+      "goal_market_metrics": {
+        "settled_selections": 0,
+        "wins": 0,
+        "losses": 0,
+        "win_rate": null,
+        "units_staked": 0,
+        "net_units": 0,
+        "paper_roi": null,
+        "notice": "Best quoted price in a pre-kickoff snapshot; flat 1-unit paper stakes; not proof of executable profit or bookmaker closing-line value."
+      }
     },
     {
       "report_date": "2026-10-27",
@@ -50,7 +61,18 @@
       "model_versions": [
         "experimental_elo_by_competition",
         "experimental_recent_goals_poisson"
-      ]
+      ],
+      "goal_market_selections_settled": 0,
+      "goal_market_metrics": {
+        "settled_selections": 0,
+        "wins": 0,
+        "losses": 0,
+        "win_rate": null,
+        "units_staked": 0,
+        "net_units": 0,
+        "paper_roi": null,
+        "notice": "Best quoted price in a pre-kickoff snapshot; flat 1-unit paper stakes; not proof of executable profit or bookmaker closing-line value."
+      }
     }
   ],
   "scored_matches": [
@@ -191,9 +213,9 @@
       "report_date": "2026-10-27"
     }
   ],
-  "updated_at_utc": "2026-10-29T17:48:26.261181+00:00",
+  "updated_at_utc": "2026-10-30T11:55:59.901635+00:00",
   "last_attempt": {
-    "report_date": "2026-10-28",
+    "report_date": "2026-10-29",
     "status": "EVALUATED",
     "attempts": [
       {
@@ -242,7 +264,7 @@
         "awaiting_result_or_match": 28
       },
       {
-        "report_date": "2026-10-28",
+        "report_date": "2026-10-29",
         "status": "NO_PREVIOUS_REPORT",
         "detail": "No saved daily report was found for this date."
       }
@@ -283,5 +305,17 @@
     "experimental_recent_goals_poisson"
   ],
   "evaluated_report_dates": 2,
-  "notice": "Retrospective paper evaluation only; no betting recommendation or profitability claim."
+  "notice": "Retrospective paper evaluation only; no betting recommendation or profitability claim.",
+  "goal_market_scored": [],
+  "goal_market_metrics": {
+    "settled_selections": 0,
+    "wins": 0,
+    "losses": 0,
+    "win_rate": null,
+    "units_staked": 0,
+    "net_units": 0,
+    "paper_roi": null,
+    "notice": "Best quoted price in a pre-kickoff snapshot; flat 1-unit paper stakes; not proof of executable profit or bookmaker closing-line value."
+  },
+  "goal_market_metrics_by_market": {}
 }
