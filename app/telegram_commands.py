@@ -28,7 +28,7 @@ COMMANDS: dict[str, str] = {
     "/value": "Combined value screen: 1X2, BTTS and Over/Under; candidates stay disabled until models pass validation.",
     "/overvalue": "Over/Under value screen status; requires model probabilities and real odds.",
     "/bttsvalue": "BTTS value screen status; requires model probabilities and real odds.",
-    "/odds": "Show matched BTTS and Over/Under bookmaker prices from the connected multi-source report.",
+    "/odds": "Show matched 1X2, BTTS and Over/Under bookmaker prices from the connected multi-source report.",
     "/oddsdiag": "Inspect saved multi-source fixture and odds coverage without spending API quota.",
     "/10odds": "Research shortlist targeting total decimal odds near 10.00 only when real odds are available; not a guarantee.",
     "/builder": "Explain the conservative multi-pick builder rules.",
@@ -442,7 +442,7 @@ def handle_command(
         rows = _future_fixtures(report)
         if not rows:
             return _reply("MULTI-SOURCE BOOKMAKER ODDS — NO CURRENT UPCOMING FIXTURES IN THE PUBLISHED REPORT\\nRefresh the daily report first. This command reads saved report data and does not call external providers.")
-        lines = ["BTTS + OVER/UNDER BOOKMAKER PRICES — REFERENCE DATA ONLY"]
+        lines = ["1X2 + BTTS + OVER/UNDER BOOKMAKER PRICES — REFERENCE DATA ONLY"]
         shown = 0
         for row in rows:
             sources = []
