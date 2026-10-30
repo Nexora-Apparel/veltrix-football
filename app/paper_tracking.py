@@ -533,7 +533,6 @@ def evaluate_report(report: dict[str, Any], results_payload: dict[str, Any]) -> 
                 "roi_lower_95_ci": value.get("roi_lower_95_ci"),
                 "confidence_method": value.get("confidence_method"),
                 "timestamped_odds_coverage": value.get("timestamped_odds_coverage", 0.0),
-                "confidence_method": "diagnostic normal approximation; not yet release-grade",
             }
             for key, value in summarize_value_market_rows(goal_market_scored).items()
             for aliases in [{"1x2": "1X2", "btts": "BTTS", "over_1_5": "OVER_UNDER_1_5", "over_2_5": "OVER_UNDER_2_5", "over_3_5": "OVER_UNDER_3_5"}]
