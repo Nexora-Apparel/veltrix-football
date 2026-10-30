@@ -548,3 +548,36 @@ def test_french_ligue_one_provider_aliases_match_historical_team_keys():
     from app.live_predictions import _name_key
     assert _name_key("LOSC Lille") == _name_key("Lille")
     assert _name_key("RC Lens") == _name_key("Lens")
+
+
+def test_mapped_competition_uses_explicit_league_prior_when_team_history_is_sparse():
+    fixture = _fixture("2026-10-23T15:00:00+01:00")
+    fixture["league"] = {"name": "Bundesliga", "code": "BL1"}
+    fixture["teams"]["home"]["name"] = "Newly Promoted Club"
+    fixture["teams"]["away"]["name"] = "Unfamiliar Opponent"
+    history = []
+    for index in range(50):
+        history.append({
+            "date": date(2026, 8, 1 + (index % 20)),
+            "home": f"League Home {index}",
+            "away": f"League Away {index}",
+            "home_key": f"leaguehome{index}",
+            "away_key": f"leagueaway{index}",
+            "home_goals": 2 if index % 2 == 0 else 1,
+            "away_goals": 1 if index % 3 == 0 else 0,
+            "division": "D1",
+        })
+    result = predict_fixtures(
+        [fixture], history, as_of=date(2026, 10, 23),
+        now=datetime(2026, 10, 23, 12, 0, tzinfo=ZoneInfo("Africa/Lagos")),
+    )
+    prediction = result[0]
+    assert prediction["status"] == "EXPERIMENTAL_ONLY"
+    assert prediction["model"] == "experimental_competition_prior_poisson"
+    assert prediction["model_validated"] is False
+    assert prediction["betting_recommendation"] is False
+    assert prediction["data_availability"]["competition_history_matches"] == 50
+    assert prediction["prediction_basis"].startswith("competition-level historical")
+    assert abs(sum(prediction["probabilities"].values()) - 1) < 0.0002
+    assert 0 <= prediction["btts_yes"] <= 1
+    assert 0 <= prediction["over_2_5"] <= 1
