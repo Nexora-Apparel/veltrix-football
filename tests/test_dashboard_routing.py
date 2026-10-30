@@ -12,6 +12,9 @@ def test_dashboard_root_handler_returns_html():
     assert "BTTS Yes" in response.body.decode("utf-8")
     assert "The Odds API" in response.body.decode("utf-8")
     assert 'id="trackingView"' in response.body.decode("utf-8")
+    assert 'id="valueValidation"' in response.body.decode("utf-8")
+    assert "Value validation" in response.body.decode("utf-8")
+    assert "Prospective " in response.body.decode("utf-8")
     assert 'data-view="trackingView"' in response.body.decode("utf-8")
     assert ".sectionview.active{display:block}" in response.body.decode("utf-8")
 
