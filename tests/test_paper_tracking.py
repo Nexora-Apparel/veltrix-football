@@ -606,6 +606,11 @@ def test_goal_market_paper_tracking_uses_only_pre_kickoff_odds_and_settles_flat_
         "predictions": [{
             **_prediction(55),
             "kickoff_local": "2026-10-23T18:00:00+01:00",
+            "goal_market_calibration": {
+                "status": "APPLIED_PROSPECTIVELY",
+                "model_version": "goal-platt-test-v1",
+                "markets": ["btts_yes", "over_2_5"],
+            },
             "btts_yes": 0.62,
             "over_2_5": 0.57,
             "goal_markets_model": "experimental_recent_goals_poisson",
