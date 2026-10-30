@@ -407,3 +407,23 @@ def test_1x2_command_is_registered_and_keyboard_label_routes_to_1x2():
     assert "/1x2" in COMMANDS
     from api.telegram import BUTTON_COMMANDS
     assert BUTTON_COMMANDS["1x2 predictions"] == "/1x2"
+
+
+def test_odds_command_includes_1x2_h2h_prices():
+    now = datetime.now(ZoneInfo("Africa/Lagos"))
+    report = {"predictions": [{
+        "home_team": "Arsenal", "away_team": "Chelsea", "league": "Premier League",
+        "kickoff_local": (now + timedelta(hours=3)).isoformat(),
+        "status": "EXPERIMENTAL_ONLY",
+        "probabilities": {"home_win": 0.5, "draw": 0.25, "away_win": 0.25},
+        "the_odds_api_market_odds": {"markets": {"h2h": [{
+            "bookmaker": "Bookmaker A",
+            "outcomes": [
+                {"name": "Arsenal", "price": 1.9},
+                {"name": "Draw", "price": 3.5},
+                {"name": "Chelsea", "price": 4.2},
+            ],
+        }]}},
+    }]}
+    reply = handle_command("/odds", report=report)
+    assert "1X2: Arsenal 1.90 / Draw 3.50 / Chelsea 4.20" in reply
