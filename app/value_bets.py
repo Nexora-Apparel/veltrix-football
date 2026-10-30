@@ -342,10 +342,8 @@ def screen_fixture_value_bets(
         }
         total_candidates += len(candidates)
     return {
-        "status": "DISABLED_UNVALIDATED" if not model_validated else (
-            "CANDIDATES_FOUND" if total_candidates else "NO_QUALIFYING_VALUE"
-        ),
-        "model_validated": bool(model_validated),
+        "status": "CANDIDATES_FOUND" if total_candidates else ("NO_QUALIFYING_VALUE" if isinstance(validation_certificate, Mapping) and validation_certificate.get("status") == "VALIDATED" else "DISABLED_UNVALIDATED"),
+        "model_validated": bool(isinstance(validation_certificate, Mapping) and validation_certificate.get("status") == "VALIDATED"),
         "markets": output,
         "candidate_count": total_candidates,
         "note": "Research screen only. No bookmaker actions are performed.",
