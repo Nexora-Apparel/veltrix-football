@@ -21,8 +21,20 @@ def _backtest():
                             "platt_intercept": intercept,
                             "platt_slope": slope,
                             "improved_brier_and_log_loss": True,
+                            "calibration_matches": 2000,
+                            "test_matches": 2000,
                         }
                         for key, (intercept, slope) in markets.items()
+                    },
+                },
+                "rolling_origin_calibration": {
+                    "markets": {
+                        key: {
+                            "status": "CALIBRATION_DIAGNOSTIC_PASS",
+                            "folds_evaluated": 4,
+                            "raw": {"matches": 2000},
+                        }
+                        for key in markets
                     },
                 },
             },
@@ -79,3 +91,20 @@ def test_does_not_transfer_team_model_calibration_to_competition_prior():
     assert report["goal_market_calibration"]["status"] == "NO_COMPATIBLE_FORECASTS"
     assert report["goal_market_calibration"]["compatible_forecasts"] == 0
     assert report["goal_market_calibration"]["applied_forecasts"] == 0
+
+
+
+def test_does_not_apply_calibration_without_four_fold_rolling_pass():
+    backtest = _backtest()
+    backtest["live_pipeline"]["goal_markets"]["rolling_origin_calibration"]["markets"]["btts_yes"]["status"] = "CALIBRATION_DIAGNOSTIC_FAIL"
+    report = {
+        "predictions": [{
+            "goal_markets_model": "experimental_recent_goals_poisson",
+            "btts_yes": 0.64, "over_1_5": 0.82, "over_2_5": 0.61, "over_3_5": 0.39,
+        }],
+    }
+    apply_goal_market_calibration(report, backtest)
+    row = report["predictions"][0]
+    assert row["btts_yes"] == 0.64
+    assert "btts_yes" not in row.get("goal_market_calibration", {}).get("markets", [])
+    assert report["goal_market_calibration"]["status"] == "PARTIAL_OR_UNAVAILABLE"
