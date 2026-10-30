@@ -120,7 +120,11 @@ def test_fixture_value_screen_can_rank_1x2_candidates_after_explicit_validation(
             ],
         }]}},
     }
-    result = screen_fixture_value_bets(prediction, model_validated=True)
+    certificate = {
+        "schema_version": 1, "status": "VALIDATED",
+        "betting_validation": True, "approved_markets": ["1X2"],
+    }
+    result = screen_fixture_value_bets(prediction, validation_certificate=certificate)
     candidates = result["markets"]["1X2"]["candidates"]
     assert candidates
     assert candidates[0]["selection"] == "home_win"
