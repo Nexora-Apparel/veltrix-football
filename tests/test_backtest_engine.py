@@ -285,3 +285,43 @@ def test_historical_over_under_price_audit_is_explicitly_non_validating():
     assert abs(audit["net_units"] - 1.2) < 1e-9
     assert audit["timestamp_quality"].startswith("UNVERIFIED")
     assert audit["profitability_claim_allowed"] is False
+
+
+
+def test_rolling_origin_goal_calibration_uses_multiple_non_overlapping_future_folds():
+    from datetime import date, timedelta
+    from app.backtest_engine import _rolling_origin_goal_calibration
+
+    rows = []
+    start = date(2020, 1, 1)
+    for i in range(1000):
+        p = 0.70 if i % 2 else 0.30
+        # Deliberately weak/noisy outcomes: this test checks protocol, not model skill.
+        outcome = (i % 4 in (0, 1))
+        rows.append({
+            "match_date": (start + timedelta(days=i)).isoformat(),
+            "home_goals": 1 if outcome else 0,
+            "away_goals": 1 if outcome else 0,
+            "goal_markets": {
+                "btts_yes": p,
+                "over_1_5": p,
+                "over_2_5": p,
+                "over_3_5": p,
+            },
+        })
+
+    result = _rolling_origin_goal_calibration(
+        rows, "goal_markets", folds=4,
+        min_training_matches=400, min_test_matches=50,
+    )
+    assert result["status"] == "ROLLING_ORIGIN_DIAGNOSTIC_ONLY"
+    assert result["folds_evaluated"] == 4
+    assert result["betting_validation"] is False
+    assert result["all_goal_markets_calibration_pass"] is False
+    for market in result["markets"].values():
+        assert market["folds_evaluated"] == 4
+        assert market["raw"]["matches"] == market["calibrated"]["matches"]
+        assert market["raw"]["matches"] == market["expanding_baseline"]["matches"]
+        evaluated = [fold for fold in market["folds"] if fold["status"] == "EVALUATED"]
+        assert len(evaluated) == 4
+        assert all(fold["test_matches"] >= 50 for fold in evaluated)
