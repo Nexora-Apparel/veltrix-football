@@ -76,6 +76,7 @@ def prospective_value_rows(prediction: dict[str, Any], result: dict[str, Any]) -
     home, away = str(prediction.get("home_team") or ""), str(prediction.get("away_team") or "")
     if not home or not away:
         return []
+    calibrated_markets = set(calibration.get("markets") or [])
     definitions = [
         ("h2h", "1x2", {"home": home, "draw": "Draw", "away": away},
          {"home": (prediction.get("probabilities") or {}).get("H", (prediction.get("probabilities") or {}).get("home_win")) if isinstance(prediction.get("probabilities"), dict) else None,
@@ -96,6 +97,14 @@ def prospective_value_rows(prediction: dict[str, Any], result: dict[str, Any]) -
 
     rows: list[dict[str, Any]] = []
     for provider_market, market_name, labels, model_probs, actual, line in definitions:
+        calibration_key = {
+            "btts": "btts_yes",
+            "over_1_5": "over_1_5",
+            "over_2_5": "over_2_5",
+            "over_3_5": "over_3_5",
+        }.get(market_name)
+        if calibration_key and calibration_key not in calibrated_markets:
+            continue
         books = markets.get(provider_market)
         if not isinstance(books, list):
             continue
