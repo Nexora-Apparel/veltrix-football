@@ -11,6 +11,111 @@ import math
 from typing import Mapping, Any
 
 
+
+def _certificate_allows(certificate: Any, market: str) -> bool:
+    """Require an evidence-backed, market-specific validation certificate."""
+    return (
+        isinstance(certificate, Mapping)
+        and certificate.get("status") == "VALIDATED"
+        and certificate.get("schema_version") == 1
+        and market in (certificate.get("approved_markets") or [])
+        and certificate.get("betting_validation") is True
+    )
+
+
+def build_value_validation_certificate(
+    backtest_report: Mapping[str, Any],
+    paper_report: Mapping[str, Any],
+    *,
+    min_walk_forward_matches: int = 1000,
+    min_paper_bets: int = 300,
+    min_paper_dates: int = 90,
+) -> dict[str, Any]:
+    """Fail-closed release certificate using backtest and prospective paper evidence."""
+    failures: dict[str, list[str]] = {}
+    approved: list[str] = []
+    live = backtest_report.get("live_pipeline") or {}
+    rolling = ((live.get("goal_markets") or {}).get("rolling_origin_calibration") or {})
+    paper = paper_report.get("markets") if isinstance(paper_report.get("markets"), Mapping) else {}
+    goal_markets = {
+        "BTTS": "btts_yes",
+        "OVER_UNDER_1_5": "over_1_5",
+        "OVER_UNDER_2_5": "over_2_5",
+        "OVER_UNDER_3_5": "over_3_5",
+    }
+
+    def check_paper(market: str) -> list[str]:
+        evidence = paper.get(market) or {}
+        reasons = []
+        if int(evidence.get("settled_bets") or 0) < min_paper_bets:
+            reasons.append("insufficient settled prospective paper bets")
+        if int(evidence.get("distinct_match_dates") or 0) < min_paper_dates:
+            reasons.append("insufficient prospective observation dates")
+        roi = _safe_float(evidence.get("net_roi"))
+        if roi is None or roi <= 0:
+            reasons.append("prospective net ROI is not positive")
+        lower = _safe_float(evidence.get("roi_lower_95_ci"))
+        if lower is None or lower <= 0:
+            reasons.append("95% ROI lower confidence bound is not positive")
+        coverage = _safe_float(evidence.get("timestamped_odds_coverage"))
+        if coverage is None or coverage < 0.98:
+            reasons.append("timestamped odds coverage is below 98%")
+        return reasons
+
+    for public_market, model_market in goal_markets.items():
+        reasons = []
+        diagnostic = (rolling.get("markets") or {}).get(model_market) or {}
+        if diagnostic.get("status") != "CALIBRATION_DIAGNOSTIC_PASS":
+            reasons.append("rolling-origin calibration did not pass")
+        if int((diagnostic.get("raw") or {}).get("matches") or 0) < min_walk_forward_matches:
+            reasons.append("insufficient independent walk-forward test matches")
+        reasons.extend(check_paper(public_market))
+        if reasons:
+            failures[public_market] = reasons
+        else:
+            approved.append(public_market)
+
+    # 1X2 must beat the market on both full live-pipeline data and the recent holdout.
+    full = ((live.get("historical_odds_subset") or {}).get("models_compared_on_same_matches") or {})
+    holdout = (((backtest_report.get("recent_holdout") or {}).get("historical_odds_subset") or {}).get("models_compared_on_same_matches") or {})
+    for scope, comparison in (("full", full), ("holdout", holdout)):
+        model = comparison.get("live_poisson") or comparison.get("poisson") or {}
+        market = comparison.get("market") or {}
+        if not model or not market:
+            failures.setdefault("1X2", []).append(f"{scope} market benchmark is missing")
+            continue
+        for metric in ("brier_score", "log_loss"):
+            mv, bv = _safe_float(model.get(metric)), _safe_float(market.get(metric))
+            if mv is None or bv is None or mv >= bv:
+                failures.setdefault("1X2", []).append(f"{scope} {metric} does not beat market")
+    failures.setdefault("1X2", []).extend(check_paper("1X2"))
+    if not failures.get("1X2"):
+        approved.append("1X2")
+
+    required = ["1X2", *goal_markets.keys()]
+    passed = len(approved) == len(required)
+    return {
+        "schema_version": 1,
+        "status": "VALIDATED" if passed else "LOCKED_INSUFFICIENT_EVIDENCE",
+        "betting_validation": passed,
+        "approved_markets": approved if passed else [],
+        "market_diagnostics": {
+            market: {"status": "PASS" if market in approved else "LOCKED", "failures": failures.get(market, [])}
+            for market in required
+        },
+        "requirements": {
+            "minimum_walk_forward_matches": min_walk_forward_matches,
+            "minimum_paper_bets_per_market": min_paper_bets,
+            "minimum_distinct_match_dates": min_paper_dates,
+            "minimum_timestamped_odds_coverage": 0.98,
+            "positive_net_roi": True,
+            "positive_95_percent_roi_lower_bound": True,
+            "1x2_must_beat_market_on_full_and_recent_holdout": True,
+        },
+        "alerts_enabled": passed,
+        "note": "Missing, incomplete or failing evidence keeps every market locked. Calibration alone does not prove profitability.",
+    }
+
 def _valid_probability(value: Any) -> bool:
     try:
         number = float(value)
@@ -154,13 +259,9 @@ def _outcome_odds(outcomes: Any, home_team: str, away_team: str, market: str) ->
 def screen_fixture_value_bets(
     prediction: Mapping[str, Any],
     *,
-    model_validated: bool = False,
+    validation_certificate: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
-    """Screen 1X2, BTTS and O/U 2.5 against same-bookmaker real prices.
-
-    The default is intentionally locked. A caller must explicitly pass
-    model_validated=True after repeated chronological out-of-sample validation.
-    """
+    """Screen only markets released by a formal validation certificate."""
     probability_sets = _market_probability_pairs(prediction)
     home = str(prediction.get("home_team") or "")
     away = str(prediction.get("away_team") or "")
@@ -224,7 +325,7 @@ def screen_fixture_value_bets(
         if probabilities:
             for price_row in prices:
                 found = screen_value_bets(
-                    probabilities, price_row["odds"], model_validated=model_validated
+                    probabilities, price_row["odds"], model_validated=_certificate_allows(validation_certificate, market)
                 )
                 for candidate in found:
                     candidates.append({
@@ -235,9 +336,7 @@ def screen_fixture_value_bets(
                     })
         candidates.sort(key=lambda row: (row["expected_return_per_unit"], row["edge"]), reverse=True)
         output[market] = {
-            "status": "DISABLED_UNVALIDATED" if not model_validated else (
-                "CANDIDATES_FOUND" if candidates else "NO_QUALIFYING_VALUE"
-            ),
+            "status": "CANDIDATES_FOUND" if candidates else ("NO_QUALIFYING_VALUE" if _certificate_allows(validation_certificate, market) else "DISABLED_UNVALIDATED"),
             "bookmaker_price_sets": len(prices),
             "candidates": candidates,
         }
@@ -256,9 +355,9 @@ def screen_fixture_value_bets(
 def attach_value_bet_screens(
     report: dict[str, Any],
     *,
-    model_validated: bool = False,
+    validation_certificate: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
-    """Attach a transparent value-screen result to every prediction and report."""
+    """Attach certificate-gated value screens to every prediction and report."""
     predictions = report.get("predictions")
     if not isinstance(predictions, list):
         predictions = []
@@ -268,20 +367,19 @@ def attach_value_bet_screens(
     for prediction in predictions:
         if not isinstance(prediction, dict):
             continue
-        screen = screen_fixture_value_bets(prediction, model_validated=model_validated)
+        screen = screen_fixture_value_bets(prediction, validation_certificate=validation_certificate)
         prediction["value_bet_screen"] = screen
         candidate_count += int(screen.get("candidate_count") or 0)
         for market, result in (screen.get("markets") or {}).items():
             aggregate[market] = aggregate.get(market, 0) + int(result.get("bookmaker_price_sets") or 0)
     report["value_bet_screen"] = {
-        "status": "DISABLED_UNVALIDATED" if not model_validated else (
-            "CANDIDATES_FOUND" if candidate_count else "NO_QUALIFYING_VALUE"
-        ),
-        "model_validated": bool(model_validated),
+        "status": "CANDIDATES_FOUND" if candidate_count else ("NO_QUALIFYING_VALUE" if isinstance(validation_certificate, Mapping) and validation_certificate.get("status") == "VALIDATED" else "DISABLED_UNVALIDATED"),
+        "model_validated": bool(isinstance(validation_certificate, Mapping) and validation_certificate.get("status") == "VALIDATED"),
         "markets": ["1X2", "BTTS", "OVER_UNDER_2_5"],
         "bookmaker_price_sets_by_market": aggregate,
         "candidate_count": candidate_count,
-        "alerts_enabled": False if not model_validated else True,
+        "alerts_enabled": bool(isinstance(validation_certificate, Mapping) and validation_certificate.get("status") == "VALIDATED" and validation_certificate.get("alerts_enabled") is True),
+        "validation_certificate": dict(validation_certificate) if isinstance(validation_certificate, Mapping) else None,
         "note": "Value candidates remain suppressed until repeated chronological out-of-sample validation passes.",
     }
     return report
