@@ -136,7 +136,6 @@ def merge_paper_ledger(ledger: dict[str, Any], evaluation: dict[str, Any]) -> di
             "roi_lower_95_ci": metric.get("roi_lower_95_ci"),
             "confidence_method": metric.get("confidence_method"),
             "timestamped_odds_coverage": metric.get("timestamped_odds_coverage", 0.0),
-            "confidence_method": "diagnostic normal approximation; not yet release-grade",
         }
     current["value_market_validation_notice"] = "Prospective paper evidence only; certificate remains locked until sample, date, ROI lower-bound and coverage thresholds pass."
     if should_merge_matches:
