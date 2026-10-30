@@ -178,7 +178,8 @@ def summarize_value_market_rows(rows: list[dict[str, Any]]) -> dict[str, Any]:
             "settled_bets": n, "distinct_match_dates": len(dates),
             "wins": sum(bool(row.get("actual_outcome")) for row in subset),
             "net_units": net, "paper_roi": roi,
-            "roi_lower_95_ci": lower,\n            "confidence_method": "BOOTSTRAP_PERCENTILE_95",
+            "roi_lower_95_ci": lower,
+            "confidence_method": "BOOTSTRAP_PERCENTILE_95",
             "timestamped_odds_coverage": timestamped / n if n else 0.0,
             "notice": "Prospective paper-only estimate; percentile bootstrap interval remains sensitive to dependence between selections and is not proof of executable returns."
         }
