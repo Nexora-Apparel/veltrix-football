@@ -150,16 +150,14 @@ def format_report_messages(report: dict[str, Any], ledger: dict[str, Any] | None
     day = str(report.get("as_of_date", "unknown date"))
     timezone_name = str(report.get("timezone", "Africa/Lagos"))
     predictions = report.get("predictions", [])
-    usable = [
-        item for item in predictions
-        if isinstance(item, dict) and item.get("status") == "EXPERIMENTAL_ONLY"
-    ]
+    fixtures = [item for item in predictions if isinstance(item, dict)]
+    usable = [item for item in fixtures if item.get("status") == "EXPERIMENTAL_ONLY"]
 
     header = [
         DIVIDER,
         f"⚽ VELTRIX FOOTBALL · PREDICTIONS",
         f"📅 {day} · Kick-off times: WAT",
-        f"Matches: {len(usable)}",
+        f"Fixtures retrieved: {len(fixtures)} · Research forecasts: {len(usable)}",
         "Value screen: 1X2 / BTTS / Over-Under · " + str((report.get("value_bet_screen") or {}).get("status") or "NOT_REPORTED"),
         "",
     ]
@@ -205,8 +203,30 @@ def format_report_messages(report: dict[str, Any], ledger: dict[str, Any] | None
         block.append("")
         blocks.append(block)
 
+    # Do not silently hide discovered fixtures just because the model cannot
+    # produce an eligible forecast. Publish the fixture and the explicit gate.
+    for item in fixtures:
+        if item.get("status") == "EXPERIMENTAL_ONLY":
+            continue
+        status = str(item.get("status") or "FORECAST_UNAVAILABLE").upper()
+        if status == "INSUFFICIENT_HISTORY":
+            reason = "Forecast withheld: insufficient reliable team history."
+        elif status == "UNSUPPORTED_COMPETITION":
+            reason = "Forecast withheld: competition is not mapped to a supported model."
+        else:
+            reason = "Forecast withheld: fixture did not pass model eligibility checks."
+        blocks.append([
+            DIVIDER,
+            f"⚽ {item.get('home_team') or 'Home'} vs {item.get('away_team') or 'Away'}",
+            f"🏆 {item.get('league') or 'Competition unavailable'} · 🕒 {_format_kickoff(item.get('kickoff_local') or item.get('kickoff'), timezone_name)}",
+            "FORECAST STATUS: " + status,
+            reason,
+            "No probabilities or betting signal published for this fixture.",
+            "",
+        ])
+
     if not blocks:
-        blocks.append([DIVIDER, "No usable predictions available for today.", ""])
+        blocks.append([DIVIDER, "No upcoming fixtures were retrieved for today.", ""])
 
     def render(selected: list[list[str]]) -> str:
         return "\n".join(header + [line for block in selected for line in block])
