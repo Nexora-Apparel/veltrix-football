@@ -1,9 +1,8 @@
-from app import goal_market_calibration as calibration_core
+from scripts.build_value_certificate_runtime_v2 import apply_calibration_from_artifact
 
 
 def test_runtime_adapter_reads_sample_counts_from_real_backtest_shape():
-    import scripts.build_value_certificate_runtime_v2  # noqa: F401
-
+    
     markets = {
         "btts_yes": (0.1, 0.2),
         "over_1_5": (0.2, 0.3),
@@ -52,7 +51,7 @@ def test_runtime_adapter_reads_sample_counts_from_real_backtest_shape():
             "over_3_5": 0.39,
         }],
     }
-    calibration_core.apply_goal_market_calibration(report, backtest)
+    apply_calibration_from_artifact(report, backtest)
     assert report["goal_market_calibration"]["status"] == "APPLIED_PROSPECTIVELY"
     assert report["goal_market_calibration"]["markets"] == sorted(markets)
     assert report["goal_market_calibration"]["compatible_forecasts"] == 1
