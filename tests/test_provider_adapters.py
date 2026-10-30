@@ -171,6 +171,9 @@ def test_odds_api_supplements_only_future_same_day_fixtures_and_keeps_primary_ro
     assert added["league"]["code"] == "PL"
     assert result["_veltrix_meta"]["supplemental_fixtures_added"] == 1
     assert "soccer_epl" in client.calls
+    assert "soccer_netherlands_eredivisie" in client.calls
+    assert "soccer_portugal_primeira_liga" in client.calls
+    assert "soccer_scotland_premiership" in client.calls
 
 
 def test_odds_api_fixture_supplement_is_noop_without_key():
