@@ -1,6 +1,6 @@
 """Build a fail-closed value-validation certificate from archived evidence.
 
-Live goal-market calibration is applied before value screening; Telegram is not
+Model-specific frozen goal-market calibration is applied before value screening; Telegram is not
 part of this controlled verification run.
 """
 from __future__ import annotations
