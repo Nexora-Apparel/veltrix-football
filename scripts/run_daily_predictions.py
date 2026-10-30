@@ -409,7 +409,7 @@ def main() -> None:
         )
         # Build all-market value diagnostics from actual same-bookmaker prices.
         # Alerts remain locked until repeated chronological validation passes.
-        report = attach_value_bet_screens(report, model_validated=False)
+        report = attach_value_bet_screens(report, validation_certificate=None)
         multi_odds = report.get("multi_source_odds_sync") or {}
         five_status = (multi_odds.get("five_dollar") or {}).get("status", "NOT_CONFIGURED")
         odds_api_status = (multi_odds.get("the_odds_api") or {}).get("status", "NOT_CONFIGURED")
