@@ -339,3 +339,20 @@ def test_fixture_delivery_cap_excludes_started_fixtures_for_today():
     )
     assert len(limited["response"]) == 1
     assert limited["response"][0]["fixture"]["date"].startswith("2026-10-30T13:00")
+
+
+def test_fixture_delivery_cap_prioritizes_historically_mapped_competitions():
+    from datetime import datetime
+    from zoneinfo import ZoneInfo
+
+    now = datetime(2026, 10, 30, 12, 0, tzinfo=ZoneInfo("Africa/Lagos"))
+    payload = {"response": [
+        {"fixture": {"date": "2026-10-30T13:00:00+01:00", "status": {"short": "NS"}},
+         "league": {"name": "Unmapped cup", "code": "CUP"}, "tag": "unmapped"},
+        {"fixture": {"date": "2026-10-30T18:00:00+01:00", "status": {"short": "NS"}},
+         "league": {"name": "Premier League", "code": "PL"}, "tag": "mapped"},
+    ]}
+    limited = daily_runner._limit_fixture_payload(
+        payload, 1, as_of_date=date(2026, 10, 30), now=now
+    )
+    assert [row["tag"] for row in limited["response"]] == ["mapped"]
