@@ -225,6 +225,8 @@ def test_daily_runner_refreshes_history_even_when_no_future_fixtures(tmp_path, m
     assert report["historical_data_coverage"]["contiguous_through"] == "2026-10-22"
     assert report["historical_data_coverage"]["latest_available_match_date"] == "2026-10-22"
     assert report["live_odds_sync"]["status"] == "SKIPPED_NO_FUTURE_FIXTURES"
+    assert report["value_bet_screen"]["status"] == "DISABLED_UNVALIDATED"
+    assert report["value_bet_screen"]["markets"] == ["1X2", "BTTS", "OVER_UNDER_2_5"]
 
 
 def test_daily_runner_refreshes_history_and_requests_odds_for_future_fixtures(tmp_path, monkeypatch):
