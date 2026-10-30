@@ -1,6 +1,6 @@
 {
   "product": "Veltrix Football",
-  "generated_at_utc": "2026-10-30T12:10:50.266424+00:00",
+  "generated_at_utc": "2026-10-30T12:11:54.823128+00:00",
   "as_of_date": "2026-10-30",
   "timezone": "Africa/Lagos",
   "same_day_only": true,
@@ -87,7 +87,7 @@
           "h2h": [
             {
               "bookmaker": "LeoVegas",
-              "last_update": "2026-10-30T12:10:30Z",
+              "last_update": "2026-10-30T12:11:36Z",
               "outcomes": [
                 {
                   "name": "Elversberg",
@@ -108,7 +108,7 @@
             },
             {
               "bookmaker": "Betway",
-              "last_update": "2026-10-30T12:09:44Z",
+              "last_update": "2026-10-30T12:10:50Z",
               "outcomes": [
                 {
                   "name": "Elversberg",
@@ -129,7 +129,7 @@
             },
             {
               "bookmaker": "Smarkets",
-              "last_update": "2026-10-30T12:10:30Z",
+              "last_update": "2026-10-30T12:11:36Z",
               "outcomes": [
                 {
                   "name": "Elversberg",
@@ -150,7 +150,7 @@
             },
             {
               "bookmaker": "Unibet (UK)",
-              "last_update": "2026-10-30T12:08:39Z",
+              "last_update": "2026-10-30T12:10:53Z",
               "outcomes": [
                 {
                   "name": "Elversberg",
@@ -171,7 +171,7 @@
             },
             {
               "bookmaker": "Betfred (UK)",
-              "last_update": "2026-10-30T12:10:06Z",
+              "last_update": "2026-10-30T12:11:14Z",
               "outcomes": [
                 {
                   "name": "Elversberg",
@@ -213,7 +213,7 @@
             },
             {
               "bookmaker": "Ladbrokes",
-              "last_update": "2026-10-30T12:10:06Z",
+              "last_update": "2026-10-30T12:11:14Z",
               "outcomes": [
                 {
                   "name": "Elversberg",
@@ -234,7 +234,7 @@
             },
             {
               "bookmaker": "Betano (UK)",
-              "last_update": "2026-10-30T12:09:11Z",
+              "last_update": "2026-10-30T12:11:24Z",
               "outcomes": [
                 {
                   "name": "Elversberg",
@@ -255,7 +255,7 @@
             },
             {
               "bookmaker": "Bet Victor",
-              "last_update": "2026-10-30T12:09:18Z",
+              "last_update": "2026-10-30T12:11:54Z",
               "outcomes": [
                 {
                   "name": "Elversberg",
@@ -276,7 +276,7 @@
             },
             {
               "bookmaker": "888sport",
-              "last_update": "2026-10-30T12:10:07Z",
+              "last_update": "2026-10-30T12:11:11Z",
               "outcomes": [
                 {
                   "name": "Elversberg",
@@ -297,7 +297,7 @@
             },
             {
               "bookmaker": "William Hill",
-              "last_update": "2026-10-30T12:09:45Z",
+              "last_update": "2026-10-30T12:10:51Z",
               "outcomes": [
                 {
                   "name": "Elversberg",
@@ -339,7 +339,7 @@
             },
             {
               "bookmaker": "LiveScore Bet",
-              "last_update": "2026-10-30T12:10:05Z",
+              "last_update": "2026-10-30T12:11:11Z",
               "outcomes": [
                 {
                   "name": "Elversberg",
@@ -360,7 +360,7 @@
             },
             {
               "bookmaker": "Virgin Bet",
-              "last_update": "2026-10-30T12:10:29Z",
+              "last_update": "2026-10-30T12:11:36Z",
               "outcomes": [
                 {
                   "name": "Elversberg",
@@ -381,7 +381,7 @@
             },
             {
               "bookmaker": "Grosvenor",
-              "last_update": "2026-10-30T12:09:44Z",
+              "last_update": "2026-10-30T12:10:51Z",
               "outcomes": [
                 {
                   "name": "Elversberg",
@@ -402,7 +402,7 @@
             },
             {
               "bookmaker": "Casumo",
-              "last_update": "2026-10-30T12:10:05Z",
+              "last_update": "2026-10-30T12:11:12Z",
               "outcomes": [
                 {
                   "name": "Elversberg",
@@ -423,7 +423,7 @@
             },
             {
               "bookmaker": "Matchbook",
-              "last_update": "2026-10-30T12:10:31Z",
+              "last_update": "2026-10-30T12:11:36Z",
               "outcomes": [
                 {
                   "name": "Elversberg",
@@ -465,7 +465,7 @@
             },
             {
               "bookmaker": "Betfair Sportsbook",
-              "last_update": "2026-10-30T12:10:05Z",
+              "last_update": "2026-10-30T12:11:12Z",
               "outcomes": [
                 {
                   "name": "Elversberg",
@@ -486,7 +486,7 @@
             },
             {
               "bookmaker": "Betfair",
-              "last_update": "2026-10-30T12:10:30Z",
+              "last_update": "2026-10-30T12:11:36Z",
               "outcomes": [
                 {
                   "name": "Elversberg",
@@ -507,7 +507,7 @@
             },
             {
               "bookmaker": "Sky Bet",
-              "last_update": "2026-10-30T12:10:05Z",
+              "last_update": "2026-10-30T12:11:11Z",
               "outcomes": [
                 {
                   "name": "Elversberg",
@@ -530,7 +530,7 @@
           "totals": [
             {
               "bookmaker": "LeoVegas",
-              "last_update": "2026-10-30T12:10:30Z",
+              "last_update": "2026-10-30T12:11:36Z",
               "outcomes": [
                 {
                   "name": "Over",
@@ -546,7 +546,7 @@
             },
             {
               "bookmaker": "William Hill",
-              "last_update": "2026-10-30T12:09:45Z",
+              "last_update": "2026-10-30T12:10:51Z",
               "outcomes": [
                 {
                   "name": "Over",
@@ -562,7 +562,7 @@
             },
             {
               "bookmaker": "Grosvenor",
-              "last_update": "2026-10-30T12:09:44Z",
+              "last_update": "2026-10-30T12:10:51Z",
               "outcomes": [
                 {
                   "name": "Over",
@@ -578,7 +578,7 @@
             },
             {
               "bookmaker": "Casumo",
-              "last_update": "2026-10-30T12:10:05Z",
+              "last_update": "2026-10-30T12:11:12Z",
               "outcomes": [
                 {
                   "name": "Over",
@@ -596,7 +596,7 @@
           "btts": [
             {
               "bookmaker": "LeoVegas",
-              "last_update": "2026-10-30T12:10:30Z",
+              "last_update": "2026-10-30T12:11:36Z",
               "outcomes": [
                 {
                   "name": "Yes",
@@ -612,7 +612,7 @@
             },
             {
               "bookmaker": "Betfred (UK)",
-              "last_update": "2026-10-30T12:10:06Z",
+              "last_update": "2026-10-30T12:11:14Z",
               "outcomes": [
                 {
                   "name": "Yes",
@@ -644,7 +644,7 @@
             },
             {
               "bookmaker": "Ladbrokes",
-              "last_update": "2026-10-30T12:10:06Z",
+              "last_update": "2026-10-30T12:11:14Z",
               "outcomes": [
                 {
                   "name": "Yes",
@@ -660,7 +660,7 @@
             },
             {
               "bookmaker": "William Hill",
-              "last_update": "2026-10-30T12:09:45Z",
+              "last_update": "2026-10-30T12:10:51Z",
               "outcomes": [
                 {
                   "name": "Yes",
@@ -676,7 +676,7 @@
             },
             {
               "bookmaker": "LiveScore Bet",
-              "last_update": "2026-10-30T12:10:05Z",
+              "last_update": "2026-10-30T12:11:11Z",
               "outcomes": [
                 {
                   "name": "Yes",
@@ -692,7 +692,7 @@
             },
             {
               "bookmaker": "Virgin Bet",
-              "last_update": "2026-10-30T12:10:29Z",
+              "last_update": "2026-10-30T12:11:36Z",
               "outcomes": [
                 {
                   "name": "Yes",
@@ -708,7 +708,7 @@
             },
             {
               "bookmaker": "Matchbook",
-              "last_update": "2026-10-30T12:10:31Z",
+              "last_update": "2026-10-30T12:11:36Z",
               "outcomes": [
                 {
                   "name": "Yes",
@@ -724,7 +724,7 @@
             },
             {
               "bookmaker": "Paddy Power",
-              "last_update": "2026-10-30T12:10:13Z",
+              "last_update": "2026-10-30T12:11:26Z",
               "outcomes": [
                 {
                   "name": "Yes",
@@ -740,7 +740,7 @@
             },
             {
               "bookmaker": "Betfair",
-              "last_update": "2026-10-30T12:10:36Z",
+              "last_update": "2026-10-30T12:11:23Z",
               "outcomes": [
                 {
                   "name": "Yes",
@@ -756,7 +756,7 @@
             }
           ]
         },
-        "fetched_at": "2026-10-30T12:10:51.242781+00:00"
+        "fetched_at": "2026-10-30T12:11:55.549706+00:00"
       },
       "value_bet_screen": {
         "status": "DISABLED_UNVALIDATED",
@@ -852,7 +852,7 @@
             },
             {
               "bookmaker": "Grosvenor",
-              "last_update": "2026-10-30T12:10:30Z",
+              "last_update": "2026-10-30T12:11:39Z",
               "outcomes": [
                 {
                   "name": "Casa Pia",
@@ -873,7 +873,7 @@
             },
             {
               "bookmaker": "Virgin Bet",
-              "last_update": "2026-10-30T12:10:05Z",
+              "last_update": "2026-10-30T12:11:12Z",
               "outcomes": [
                 {
                   "name": "Casa Pia",
@@ -894,7 +894,7 @@
             },
             {
               "bookmaker": "Casumo",
-              "last_update": "2026-10-30T12:09:45Z",
+              "last_update": "2026-10-30T12:10:51Z",
               "outcomes": [
                 {
                   "name": "Casa Pia",
@@ -915,7 +915,7 @@
             },
             {
               "bookmaker": "Betfred (UK)",
-              "last_update": "2026-10-30T12:09:45Z",
+              "last_update": "2026-10-30T12:10:51Z",
               "outcomes": [
                 {
                   "name": "Casa Pia",
@@ -957,16 +957,16 @@
             },
             {
               "bookmaker": "Betfair",
-              "last_update": "2026-10-30T12:10:30Z",
+              "last_update": "2026-10-30T12:11:37Z",
               "outcomes": [
                 {
                   "name": "Casa Pia",
-                  "price": 11.5,
+                  "price": 12.0,
                   "point": null
                 },
                 {
                   "name": "Sporting Lisbon",
-                  "price": 1.31,
+                  "price": 1.3,
                   "point": null
                 },
                 {
@@ -999,7 +999,7 @@
             },
             {
               "bookmaker": "Betano (UK)",
-              "last_update": "2026-10-30T12:09:13Z",
+              "last_update": "2026-10-30T12:11:49Z",
               "outcomes": [
                 {
                   "name": "Casa Pia",
@@ -1020,7 +1020,7 @@
             },
             {
               "bookmaker": "Betfair Sportsbook",
-              "last_update": "2026-10-30T12:09:48Z",
+              "last_update": "2026-10-30T12:10:51Z",
               "outcomes": [
                 {
                   "name": "Casa Pia",
@@ -1062,7 +1062,7 @@
             },
             {
               "bookmaker": "Betway",
-              "last_update": "2026-10-30T12:10:07Z",
+              "last_update": "2026-10-30T12:11:12Z",
               "outcomes": [
                 {
                   "name": "Casa Pia",
@@ -1083,7 +1083,7 @@
             },
             {
               "bookmaker": "Smarkets",
-              "last_update": "2026-10-30T12:10:31Z",
+              "last_update": "2026-10-30T12:11:36Z",
               "outcomes": [
                 {
                   "name": "Casa Pia",
@@ -1104,7 +1104,7 @@
             },
             {
               "bookmaker": "Unibet (UK)",
-              "last_update": "2026-10-30T12:09:47Z",
+              "last_update": "2026-10-30T12:10:53Z",
               "outcomes": [
                 {
                   "name": "Casa Pia",
@@ -1125,7 +1125,7 @@
             },
             {
               "bookmaker": "Ladbrokes",
-              "last_update": "2026-10-30T12:10:30Z",
+              "last_update": "2026-10-30T12:11:36Z",
               "outcomes": [
                 {
                   "name": "Casa Pia",
@@ -1146,7 +1146,7 @@
             },
             {
               "bookmaker": "Coral",
-              "last_update": "2026-10-30T12:10:31Z",
+              "last_update": "2026-10-30T12:11:36Z",
               "outcomes": [
                 {
                   "name": "Casa Pia",
@@ -1167,7 +1167,7 @@
             },
             {
               "bookmaker": "888sport",
-              "last_update": "2026-10-30T12:09:44Z",
+              "last_update": "2026-10-30T12:10:51Z",
               "outcomes": [
                 {
                   "name": "Casa Pia",
@@ -1188,7 +1188,7 @@
             },
             {
               "bookmaker": "William Hill",
-              "last_update": "2026-10-30T12:10:06Z",
+              "last_update": "2026-10-30T12:11:13Z",
               "outcomes": [
                 {
                   "name": "Casa Pia",
@@ -1209,7 +1209,7 @@
             },
             {
               "bookmaker": "BoyleSports",
-              "last_update": "2026-10-30T12:10:09Z",
+              "last_update": "2026-10-30T12:11:15Z",
               "outcomes": [
                 {
                   "name": "Casa Pia",
@@ -1230,7 +1230,7 @@
             },
             {
               "bookmaker": "Matchbook",
-              "last_update": "2026-10-30T12:10:29Z",
+              "last_update": "2026-10-30T12:11:36Z",
               "outcomes": [
                 {
                   "name": "Casa Pia",
@@ -1253,7 +1253,7 @@
           "totals": [
             {
               "bookmaker": "Grosvenor",
-              "last_update": "2026-10-30T12:10:30Z",
+              "last_update": "2026-10-30T12:11:39Z",
               "outcomes": [
                 {
                   "name": "Over",
@@ -1269,7 +1269,7 @@
             },
             {
               "bookmaker": "Casumo",
-              "last_update": "2026-10-30T12:09:45Z",
+              "last_update": "2026-10-30T12:10:51Z",
               "outcomes": [
                 {
                   "name": "Over",
@@ -1285,7 +1285,7 @@
             },
             {
               "bookmaker": "William Hill",
-              "last_update": "2026-10-30T12:10:06Z",
+              "last_update": "2026-10-30T12:11:13Z",
               "outcomes": [
                 {
                   "name": "Over",
@@ -1319,7 +1319,7 @@
             },
             {
               "bookmaker": "Virgin Bet",
-              "last_update": "2026-10-30T12:10:05Z",
+              "last_update": "2026-10-30T12:11:12Z",
               "outcomes": [
                 {
                   "name": "Yes",
@@ -1335,7 +1335,7 @@
             },
             {
               "bookmaker": "Betfred (UK)",
-              "last_update": "2026-10-30T12:09:45Z",
+              "last_update": "2026-10-30T12:10:51Z",
               "outcomes": [
                 {
                   "name": "Yes",
@@ -1351,7 +1351,7 @@
             },
             {
               "bookmaker": "Ladbrokes",
-              "last_update": "2026-10-30T12:10:30Z",
+              "last_update": "2026-10-30T12:11:36Z",
               "outcomes": [
                 {
                   "name": "Yes",
@@ -1367,7 +1367,7 @@
             },
             {
               "bookmaker": "Coral",
-              "last_update": "2026-10-30T12:10:31Z",
+              "last_update": "2026-10-30T12:11:36Z",
               "outcomes": [
                 {
                   "name": "Yes",
@@ -1383,7 +1383,7 @@
             },
             {
               "bookmaker": "William Hill",
-              "last_update": "2026-10-30T12:10:06Z",
+              "last_update": "2026-10-30T12:11:13Z",
               "outcomes": [
                 {
                   "name": "Yes",
@@ -1399,7 +1399,7 @@
             },
             {
               "bookmaker": "Matchbook",
-              "last_update": "2026-10-30T12:10:51Z",
+              "last_update": "2026-10-30T12:11:36Z",
               "outcomes": [
                 {
                   "name": "Yes",
@@ -1415,7 +1415,7 @@
             }
           ]
         },
-        "fetched_at": "2026-10-30T12:10:51.243112+00:00"
+        "fetched_at": "2026-10-30T12:11:55.550126+00:00"
       },
       "value_bet_screen": {
         "status": "DISABLED_UNVALIDATED",
@@ -1532,7 +1532,7 @@
             },
             {
               "bookmaker": "Betfair",
-              "last_update": "2026-10-30T12:10:14Z",
+              "last_update": "2026-10-30T12:11:21Z",
               "outcomes": [
                 {
                   "name": "Atlético Huracán",
@@ -1553,7 +1553,7 @@
             },
             {
               "bookmaker": "BoyleSports",
-              "last_update": "2026-10-30T12:10:15Z",
+              "last_update": "2026-10-30T12:11:23Z",
               "outcomes": [
                 {
                   "name": "Atlético Huracán",
@@ -1574,7 +1574,7 @@
             },
             {
               "bookmaker": "Smarkets",
-              "last_update": "2026-10-30T12:10:38Z",
+              "last_update": "2026-10-30T12:11:23Z",
               "outcomes": [
                 {
                   "name": "Atlético Huracán",
@@ -1595,7 +1595,7 @@
             },
             {
               "bookmaker": "Betfred (UK)",
-              "last_update": "2026-10-30T12:10:37Z",
+              "last_update": "2026-10-30T12:11:45Z",
               "outcomes": [
                 {
                   "name": "Atlético Huracán",
@@ -1616,7 +1616,7 @@
             },
             {
               "bookmaker": "Ladbrokes",
-              "last_update": "2026-10-30T12:10:13Z",
+              "last_update": "2026-10-30T12:11:20Z",
               "outcomes": [
                 {
                   "name": "Atlético Huracán",
@@ -1658,7 +1658,7 @@
             },
             {
               "bookmaker": "Virgin Bet",
-              "last_update": "2026-10-30T12:10:13Z",
+              "last_update": "2026-10-30T12:11:20Z",
               "outcomes": [
                 {
                   "name": "Atlético Huracán",
@@ -1679,7 +1679,7 @@
             },
             {
               "bookmaker": "LiveScore Bet",
-              "last_update": "2026-10-30T12:10:13Z",
+              "last_update": "2026-10-30T12:11:19Z",
               "outcomes": [
                 {
                   "name": "Atlético Huracán",
@@ -1700,7 +1700,7 @@
             },
             {
               "bookmaker": "Betfair Sportsbook",
-              "last_update": "2026-10-30T12:10:13Z",
+              "last_update": "2026-10-30T12:11:20Z",
               "outcomes": [
                 {
                   "name": "Atlético Huracán",
@@ -1721,7 +1721,7 @@
             },
             {
               "bookmaker": "Betway",
-              "last_update": "2026-10-30T12:10:35Z",
+              "last_update": "2026-10-30T12:11:41Z",
               "outcomes": [
                 {
                   "name": "Atlético Huracán",
@@ -1744,7 +1744,7 @@
           "totals": [],
           "btts": []
         },
-        "fetched_at": "2026-10-30T12:10:51.243281+00:00"
+        "fetched_at": "2026-10-30T12:11:55.550317+00:00"
       },
       "value_bet_screen": {
         "status": "DISABLED_UNVALIDATED",
@@ -1855,7 +1855,7 @@
             },
             {
               "bookmaker": "Betfair",
-              "last_update": "2026-10-30T12:10:14Z",
+              "last_update": "2026-10-30T12:11:21Z",
               "outcomes": [
                 {
                   "name": "Estudiantes de Río Cuarto",
@@ -1876,7 +1876,7 @@
             },
             {
               "bookmaker": "BoyleSports",
-              "last_update": "2026-10-30T12:10:15Z",
+              "last_update": "2026-10-30T12:11:23Z",
               "outcomes": [
                 {
                   "name": "Estudiantes de Río Cuarto",
@@ -1897,7 +1897,7 @@
             },
             {
               "bookmaker": "Betfred (UK)",
-              "last_update": "2026-10-30T12:10:37Z",
+              "last_update": "2026-10-30T12:11:45Z",
               "outcomes": [
                 {
                   "name": "Estudiantes de Río Cuarto",
@@ -1918,7 +1918,7 @@
             },
             {
               "bookmaker": "Smarkets",
-              "last_update": "2026-10-30T12:10:38Z",
+              "last_update": "2026-10-30T12:11:23Z",
               "outcomes": [
                 {
                   "name": "Estudiantes de Río Cuarto",
@@ -1939,7 +1939,7 @@
             },
             {
               "bookmaker": "Ladbrokes",
-              "last_update": "2026-10-30T12:10:13Z",
+              "last_update": "2026-10-30T12:11:20Z",
               "outcomes": [
                 {
                   "name": "Estudiantes de Río Cuarto",
@@ -1981,7 +1981,7 @@
             },
             {
               "bookmaker": "LiveScore Bet",
-              "last_update": "2026-10-30T12:10:13Z",
+              "last_update": "2026-10-30T12:11:19Z",
               "outcomes": [
                 {
                   "name": "Estudiantes de Río Cuarto",
@@ -2002,7 +2002,7 @@
             },
             {
               "bookmaker": "Virgin Bet",
-              "last_update": "2026-10-30T12:10:13Z",
+              "last_update": "2026-10-30T12:11:20Z",
               "outcomes": [
                 {
                   "name": "Estudiantes de Río Cuarto",
@@ -2023,7 +2023,7 @@
             },
             {
               "bookmaker": "Betway",
-              "last_update": "2026-10-30T12:10:35Z",
+              "last_update": "2026-10-30T12:11:41Z",
               "outcomes": [
                 {
                   "name": "Estudiantes de Río Cuarto",
@@ -2044,7 +2044,7 @@
             },
             {
               "bookmaker": "Betfair Sportsbook",
-              "last_update": "2026-10-30T12:10:13Z",
+              "last_update": "2026-10-30T12:11:20Z",
               "outcomes": [
                 {
                   "name": "Estudiantes de Río Cuarto",
@@ -2067,7 +2067,7 @@
           "totals": [],
           "btts": []
         },
-        "fetched_at": "2026-10-30T12:10:51.243344+00:00"
+        "fetched_at": "2026-10-30T12:11:55.550379+00:00"
       },
       "value_bet_screen": {
         "status": "DISABLED_UNVALIDATED",
@@ -3315,7 +3315,7 @@
   "primary_provider_request": {
     "provider": "5DollarFootballAPI",
     "status": "SUCCESS",
-    "requests_remaining": "57",
+    "requests_remaining": "56",
     "pages_fetched": 1,
     "fixtures_received": 5
   },
@@ -3386,8 +3386,8 @@
       ],
       "max_btts_event_calls": 2,
       "quota": {
-        "remaining": "430",
-        "used": "70",
+        "remaining": "422",
+        "used": "78",
         "last_cost": "1"
       },
       "warning": null
@@ -3440,5 +3440,5 @@
     "note": "Market prices are informational; model outputs remain experimental and are not betting advice."
   },
   "command_data_publication": "PUBLISHED",
-  "command_data_published_at_utc": "2026-10-30T12:11:00.279643+00:00"
+  "command_data_published_at_utc": "2026-10-30T12:12:04.798461+00:00"
 }
