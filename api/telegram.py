@@ -64,6 +64,8 @@ main{padding:20px clamp(12px,3vw,30px)}.eyebrow{color:var(--green);font-weight:8
 <section id="trackingView" class="sectionview">
 <div class="sectionhead"><div><div class="eyebrow">Retrospective evaluation</div><h2>Paper tracking & results</h2></div></div>
 <div class="notice">Paper tracking only · historical outcomes are not proof of profitability.</div>
+<div class="sectionhead"><div><div class="eyebrow">Release controls</div><h2>Value validation</h2></div></div>
+<div id="valueValidation" class="panel statusgrid" style="margin-top:12px"><div class="statusitem"><div class="stitle">Certificate</div><div class="svalue">Loading…</div></div></div>
 <div id="trackingMetrics" class="panel statusgrid" style="margin-top:12px"><div class="statusitem"><div class="stitle">Ledger</div><div class="svalue">Loading…</div></div></div>
 <div id="trackingModels" class="market-list" style="margin-top:12px"><div class="empty">Loading model metrics…</div></div>
 <div class="sectionhead"><div><div class="eyebrow">Settled forecasts</div><h2>Recent results</h2></div></div>
@@ -191,6 +193,21 @@ function setFilter(f){currentFilter=f;document.querySelectorAll('.filter').forEa
 document.getElementById('filters').addEventListener('click',e=>{const b=e.target.closest('button[data-filter]');if(b)setFilter(b.dataset.filter)});
 function renderPaperTracking(d){
  const data=d.paper_tracking||{};
+ const validation=document.getElementById('valueValidation');validation.replaceChildren();
+ const certificate=d.value_validation_certificate||{};
+ const calibration=d.goal_market_calibration||{};
+ const validationValues=[
+  ['Certificate',certificate.status||'LOCKED_INSUFFICIENT_EVIDENCE'],
+  ['Approved markets',(certificate.approved_markets||[]).join(', ')||'None'],
+  ['Goal calibration',calibration.status||'NOT_REPORTED'],
+  ['Calibrated forecasts',String(calibration.applied_forecasts??0)+' / '+String(calibration.compatible_forecasts??0)],
+  ['1X2 paper model versions',(data.value_model_versions||[]).join(', ')||'No settled value rows'],
+  ['Goal calibration versions',(data.calibration_versions||[]).length]
+ ];
+ for(const [title,value] of validationValues){const el=document.createElement('div');el.className='statusitem';const t=document.createElement('div');t.className='stitle';t.textContent=title;const v=document.createElement('div');v.className='svalue';v.textContent=value;el.append(t,v);validation.append(el)}
+ const valueMetrics=data.value_market_metrics_by_market||{};
+ const valueEntries=Object.entries(valueMetrics);
+ for(const [market,m] of valueEntries){const el=document.createElement('div');el.className='statusitem wide';const t=document.createElement('div');t.className='stitle';t.textContent='Prospective '+market.replaceAll('_',' ').toUpperCase();const v=document.createElement('div');v.className='svalue';const roi=Number(m.paper_roi);const lower=Number(m.roi_lower_95_ci);v.textContent=String(m.settled_bets??0)+' settled · ROI '+(Number.isFinite(roi)?(roi*100).toFixed(2)+'%':'—')+' · 95% lower bound '+(Number.isFinite(lower)?(lower*100).toFixed(2)+'%':'—');el.append(t,v);validation.append(el)}
  const metrics=document.getElementById('trackingMetrics');metrics.replaceChildren();
  if(!d.paper_tracking){metrics.innerHTML='<div class="statusitem wide"><div class="svalue">Paper-tracking ledger is not available yet.</div></div>';document.getElementById('trackingModels').innerHTML='<div class="empty">No model metrics published.</div>';document.getElementById('trackingResults').innerHTML='<div class="empty">No settled results published.</div>';return}
  const last=data.last_attempt||{};
