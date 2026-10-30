@@ -64,7 +64,7 @@ def test_predictions_alert_is_short_when_no_usable_forecasts():
     assert "🔔 🆕 NEW VELTRIX UPDATE" in message
     assert "Fixtures retrieved: 1 · Research forecasts: 0" in message
     assert "Forecast withheld: insufficient reliable team history." in message
-    assert "withheld" not in message
+    assert "No probabilities or betting signal published for this fixture." in message
 
 
 def test_report_hides_diagnostics_when_recent_data_refresh_is_incomplete():
@@ -116,9 +116,8 @@ def test_report_handles_no_usable_predictions_without_long_notes():
         {"status": "UNSUPPORTED_COMPETITION"},
     ]
     message = format_report(report)
-    assert "Fixtures retrieved: 1 · Research forecasts: 0" in message
+    assert "Fixtures retrieved: 2 · Research forecasts: 0" in message
     assert "No probabilities or betting signal published for this fixture." in message
-    assert "withheld" not in message
 
 
 def test_report_splits_without_dropping_fixtures_or_exceeding_limit():
@@ -344,7 +343,7 @@ def test_telegram_report_lists_all_fixtures_and_marks_ineligible_forecasts():
             "kickoff_local": "2026-10-23T19:00:00+01:00",
         },
     ]
-    message = "\\n".join(format_report_messages(report))
+    message = "\n".join(format_report_messages(report))
     assert "Fixtures retrieved: 3 · Research forecasts: 1" in message
     assert "Forecasted FC vs Modelled FC" in message
     assert "History Gap FC vs New Club FC" in message
