@@ -402,7 +402,7 @@ def supplement_fixtures_from_odds_api(
     *,
     timezone_name: str = "Africa/Lagos",
     client: TheOddsAPIClient | None = None,
-    max_sports: int = 8,
+    max_sports: int = 9,
     now: datetime | None = None,
 ) -> dict[str, Any]:
     """Supplement limited primary fixture coverage with same-day major-league events.
@@ -429,7 +429,8 @@ def supplement_fixtures_from_odds_api(
         "soccer_france_ligue_one": ("Ligue 1", "FL1"),
         "soccer_netherlands_eredivisie": ("Eredivisie", "DED"),
         "soccer_portugal_primeira_liga": ("Primeira Liga", "PPL"),
-        "soccer_scotland_premiership": ("Scottish Premiership", "SPL"),
+        "soccer_argentina_primera_division": ("Argentine Primera Division", "ARG"),
+        "soccer_brazil_campeonato": ("Brazilian Serie A", "BRA"),
     }
     rows = fixtures_payload.get("response")
     if not isinstance(rows, list):
@@ -462,7 +463,7 @@ def supplement_fixtures_from_odds_api(
     added = 0
     queried: list[str] = []
     failed: list[str] = []
-    for sport_key in list(league_by_sport)[:max(0, min(max_sports, 8))]:
+    for sport_key in list(league_by_sport)[:max(0, min(max_sports, 9))]:
         try:
             events = odds_client.events_for_sport(sport_key)
             queried.append(sport_key)
@@ -659,8 +660,8 @@ def enrich_report_with_multi_source_odds(
     infer_sports_client: InferSportsClient | None = None,
     enable_infersports: bool | None = None,
     max_fivedollar_fixtures: int = 15,
-    max_odds_api_sports: int = 8,
-    max_btts_events: int = 3,
+    max_odds_api_sports: int = 5,
+    max_btts_events: int = 2,
 ) -> dict[str, Any]:
     """Attach genuine BTTS/O-U prices from both providers without changing forecasts.
 
@@ -823,7 +824,8 @@ def enrich_report_with_multi_source_odds(
                 "soccer_france_ligue_one": ("ligue1", "frenchligue1"),
                 "soccer_netherlands_eredivisie": ("eredivisie", "dutcheredivisie"),
                 "soccer_portugal_primeira_liga": ("primeiraliga", "portugalprimeiraliga"),
-                "soccer_scotland_premiership": ("scottishpremiership", "scotlandpremiership"),
+                "soccer_argentina_primera_division": ("argentineprimera", "argentinaprimera", "ligaprofesional"),
+                "soccer_brazil_campeonato": ("brazilianseriea", "brasileirao", "brazileirao"),
             }
             league_keys = {_name_key(p.get("league")) for p in predictions if isinstance(p, dict) and p.get("league")}
             sports = [sport for sport, names in aliases.items() if any(any(name in league_key or league_key in name for name in names) for league_key in league_keys if league_key)][:max_odds_api_sports]
