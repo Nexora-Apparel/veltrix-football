@@ -114,6 +114,37 @@ def _format_kickoff(value: Any, timezone_name: str) -> str:
     return f"{parsed:%H:%M} {abbreviation}" if abbreviation else f"{parsed:%H:%M}"
 
 
+def _reference_market_lines(item: dict[str, Any]) -> list[str]:
+    """Render real matched odds as reference data; never label them value."""
+    odds = item.get("the_odds_api_market_odds")
+    markets = odds.get("markets") if isinstance(odds, dict) else {}
+    if not isinstance(markets, dict):
+        return []
+    lines: list[str] = []
+    for key, label in (("h2h", "1X2"), ("btts", "BTTS"), ("totals", "O/U 2.5")):
+        entries = markets.get(key) or []
+        if not isinstance(entries, list):
+            continue
+        market = next((entry for entry in entries if isinstance(entry, dict)), None)
+        if not market:
+            continue
+        outcomes = market.get("outcomes") or []
+        rendered = []
+        for outcome in outcomes:
+            if not isinstance(outcome, dict):
+                continue
+            price = outcome.get("price")
+            name = outcome.get("name")
+            if isinstance(price, (int, float)) and not isinstance(price, bool) and price > 1 and name:
+                point = outcome.get("point")
+                suffix = f" {point:g}" if isinstance(point, (int, float)) and key == "totals" else ""
+                rendered.append(f"{name}{suffix} {price:.2f}")
+        if rendered:
+            bookmaker = str(market.get("bookmaker") or "matched bookmaker")
+            lines.append(f"{label} · {bookmaker}: " + " / ".join(rendered[:3]))
+    return lines
+
+
 def format_report_messages(report: dict[str, Any], ledger: dict[str, Any] | None = None) -> list[str]:
     """Send only concise match predictions to Telegram; diagnostics stay on the website."""
     day = str(report.get("as_of_date", "unknown date"))
@@ -167,6 +198,13 @@ def format_report_messages(report: dict[str, Any], ledger: dict[str, Any] | None
                         float(candidate.get("expected_return_per_unit")) * 100.0,
                     )
                 )
+        basis = item.get("prediction_basis")
+        if basis:
+            block.append(f"MODEL BASIS: {basis}")
+        reference_lines = _reference_market_lines(item)
+        if reference_lines:
+            block.append("REFERENCE BOOKMAKER PRICES — NOT VALUE PICKS")
+            block.extend(reference_lines)
         block.append("")
         blocks.append(block)
 
