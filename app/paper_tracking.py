@@ -153,6 +153,25 @@ def merge_paper_ledger(ledger: dict[str, Any], evaluation: dict[str, Any]) -> di
             "confidence_method": metric.get("confidence_method"),
             "timestamped_odds_coverage": metric.get("timestamped_odds_coverage", 0.0),
         }
+    current["value_validation_markets_by_calibration_version"] = {}
+    for calibration_version in current["calibration_versions"]:
+        version_rows = [
+            row for row in current["goal_market_scored"]
+            if row.get("calibration_version") == calibration_version
+        ]
+        version_metrics = summarize_value_market_rows(version_rows)
+        current["value_validation_markets_by_calibration_version"][calibration_version] = {
+            aliases[key]: {
+                "settled_bets": value.get("settled_bets", 0),
+                "distinct_match_dates": value.get("distinct_match_dates", 0),
+                "net_roi": value.get("paper_roi"),
+                "roi_lower_95_ci": value.get("roi_lower_95_ci"),
+                "confidence_method": value.get("confidence_method"),
+                "timestamped_odds_coverage": value.get("timestamped_odds_coverage", 0.0),
+            }
+            for key, value in version_metrics.items()
+            if key in aliases
+        }
     current["value_market_validation_notice"] = "Prospective paper evidence only; certificate remains locked until sample, date, ROI lower-bound and coverage thresholds pass."
     if should_merge_matches:
         report_matches = [
