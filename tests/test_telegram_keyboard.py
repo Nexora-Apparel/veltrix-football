@@ -23,7 +23,7 @@ def test_keyboard_exposes_prediction_and_results_commands_only():
 
 
 def test_keyboard_buttons_route_to_existing_commands():
-    assert BUTTON_COMMANDS["1x2 predictions"] == "/today"
+    assert BUTTON_COMMANDS["1x2 predictions"] == "/1x2"
     assert BUTTON_COMMANDS["over/under goals"] == "/overunder"
     assert BUTTON_COMMANDS["btts"] == "/btts"
     assert BUTTON_COMMANDS["value bet"] == "/value"
