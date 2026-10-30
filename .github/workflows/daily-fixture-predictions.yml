@@ -337,7 +337,7 @@ jobs:
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_REPOSITORY: ${{ github.repository }}
-          FORCE_TELEGRAM_DELIVERY: ${{ github.event_name == 'push' && contains(github.event.head_commit.message, '[run-live-verification]') }}
+          FORCE_TELEGRAM_DELIVERY: ${{ github.event_name == 'push' && contains(github.event.head_commit.message, '[force-telegram-resend]') }}
           PYTHONPATH: .
         run: |
           if [ "$FORCE_TELEGRAM_DELIVERY" = "true" ]; then
