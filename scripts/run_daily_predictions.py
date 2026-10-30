@@ -248,8 +248,14 @@ def _limit_fixture_payload(
         league_code = str(league.get("code") or "").upper()
         # Prioritize competitions explicitly mapped into the historical dataset.
         league_id = league.get("id")
+        source = str(row.get("_veltrix_source") or "").casefold()
         try:
-            mapped_id = int(league_id) in LEAGUE_DIVISION_BY_ID
+            # Numeric IDs are provider-local. Only use the API-Football ID
+            # map for fixtures explicitly sourced from API-Football/API-Sports.
+            mapped_id = (
+                source in {"api-football", "api-sports"}
+                and int(league_id) in LEAGUE_DIVISION_BY_ID
+            )
         except (TypeError, ValueError):
             mapped_id = False
         priority = 0 if (league_code in LEAGUE_DIVISION_BY_CODE or mapped_id) else 1
