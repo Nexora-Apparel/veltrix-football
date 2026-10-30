@@ -287,3 +287,12 @@ def test_telegram_report_includes_value_screen_status_and_only_supplied_candidat
     message = format_report(report)
     assert "Value screen: 1X2 / BTTS / Over-Under · DISABLED_UNVALIDATED" in message
     assert "VALUE CANDIDATE: 1X2 home_win @ 2.10 · edge 5.5pp · expected return 12.0%" in message
+
+
+def test_telegram_report_labels_competition_prior_forecast_basis():
+    report = sample_report()
+    report["predictions"][0]["prediction_basis"] = (
+        "competition-level historical goal-rate prior; team-specific history below minimum"
+    )
+    message = format_report(report)
+    assert "FORECAST BASIS: competition-level historical goal-rate prior; team-specific history below minimum" in message
