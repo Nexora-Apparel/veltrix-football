@@ -33,6 +33,7 @@ def _backtest():
 def test_applies_frozen_calibration_and_preserves_raw_probabilities():
     report = {
         "predictions": [{
+            "goal_markets_model": "experimental_recent_goals_poisson",
             "btts_yes": 0.64,
             "over_1_5": 0.82,
             "over_2_5": 0.61,
@@ -54,6 +55,27 @@ def test_applies_frozen_calibration_and_preserves_raw_probabilities():
 def test_incomplete_calibration_does_not_claim_full_application():
     backtest = _backtest()
     del backtest["live_pipeline"]["goal_markets"]["chronological_calibration_experiment"]["markets"]["over_3_5"]
-    report = {"predictions": [{"btts_yes": 0.6, "over_1_5": 0.8, "over_2_5": 0.6, "over_3_5": 0.4}]}
+    report = {"predictions": [{"goal_markets_model": "experimental_recent_goals_poisson", "btts_yes": 0.6, "over_1_5": 0.8, "over_2_5": 0.6, "over_3_5": 0.4}]}
     apply_goal_market_calibration(report, backtest)
     assert report["goal_market_calibration"]["status"] == "PARTIAL_OR_UNAVAILABLE"
+
+
+
+def test_does_not_transfer_team_model_calibration_to_competition_prior():
+    report = {
+        "predictions": [{
+            "model": "experimental_competition_prior_poisson",
+            "goal_markets_model": "experimental_competition_prior_poisson",
+            "btts_yes": 0.64,
+            "over_1_5": 0.82,
+            "over_2_5": 0.61,
+            "over_3_5": 0.39,
+        }],
+    }
+    apply_goal_market_calibration(report, _backtest())
+    row = report["predictions"][0]
+    assert row["btts_yes"] == 0.64
+    assert "goal_market_calibration" not in row
+    assert report["goal_market_calibration"]["status"] == "NO_COMPATIBLE_FORECASTS"
+    assert report["goal_market_calibration"]["compatible_forecasts"] == 0
+    assert report["goal_market_calibration"]["applied_forecasts"] == 0
