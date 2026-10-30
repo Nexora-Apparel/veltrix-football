@@ -696,3 +696,30 @@ def test_goal_market_ledger_preserves_non_numeric_provider_fixture_ids():
     assert len(ledger["goal_market_scored"]) == 1
     assert ledger["goal_market_scored"][0]["fixture_id"] == "odds-event-abc123"
     assert ledger["goal_market_metrics"]["settled_selections"] == 1
+
+
+
+def test_ledger_separates_1x2_model_version_from_goal_calibration_versions():
+    evaluation = {
+        "report_date": "2026-10-30",
+        "matches": [],
+        "goal_market_matches": [{
+            "fixture_id": "event-1",
+            "market": "1x2",
+            "selection": "home",
+            "model": "experimental_recent_goals_poisson",
+            "model_version": "experimental_recent_goals_poisson",
+            "calibration_version": None,
+            "kickoff": "2026-10-30T17:00:00+00:00",
+            "unit_stake": 1.0,
+            "unit_profit": 0.9,
+            "actual_outcome": True,
+            "odds_fetched_at": "2026-10-30T15:00:00+00:00",
+            "quote_updated_at": "2026-10-30T14:55:00+00:00",
+        }],
+        "goal_market_metrics": {},
+    }
+    ledger = merge_paper_ledger({}, evaluation)
+    assert ledger["value_model_versions"] == ["experimental_recent_goals_poisson"]
+    assert ledger["value_validation_markets_by_model_version"]["experimental_recent_goals_poisson"]["1X2"]["settled_bets"] == 1
+    assert ledger["calibration_versions"] == []
