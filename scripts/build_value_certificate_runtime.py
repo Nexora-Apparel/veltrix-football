@@ -2,12 +2,13 @@
 from __future__ import annotations
 
 from app import value_bets as core
-from app.value_bets_runtime import screen_fixture_value_bets
+from app.value_bets_runtime import attach_value_bet_screens, screen_fixture_value_bets
 
 # The legacy attach helper resolves this module-level function at call time.
 # Replace it before importing the certificate CLI so both report-generation
 # paths use the same timestamp-safe implementation.
 core.screen_fixture_value_bets = screen_fixture_value_bets
+core.attach_value_bet_screens = attach_value_bet_screens
 
 from scripts.build_value_certificate import main
 
