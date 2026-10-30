@@ -875,6 +875,12 @@ def enrich_report_with_multi_source_odds(
             except ProviderAPIError:
                 continue
             for btts_event in btts_events:
+                if not isinstance(btts_event, dict):
+                    continue
+                if btts_event.get("id") and str(btts_event.get("id")) != event_id:
+                    continue
+                if btts_event.get("commence_time") and btts_event.get("commence_time") != event.get("commence_time"):
+                    continue
                 summary = _event_market_summary(btts_event)
                 if not summary.get("btts"):
                     continue
@@ -886,6 +892,9 @@ def enrich_report_with_multi_source_odds(
                     }
                     prediction["the_odds_api_market_odds"] = current
                 current["markets"]["btts"] = summary["btts"]
+                # Capture time must be at or after the BTTS request so the
+                # prospective tracker can verify quote_time <= fetched_at.
+                current["fetched_at"] = datetime.now(timezone.utc).isoformat()
                 if key not in attached_keys:
                     attached_keys.add(key)
                     odds_api_attached += 1
