@@ -400,3 +400,10 @@ def test_1x2_value_command_remains_disabled_without_validated_model():
     reply = handle_command("/1x2value")
     assert "NOT ENABLED" in reply
     assert "1X2, BTTS and Over/Under" in reply
+
+
+def test_1x2_command_is_registered_and_keyboard_label_routes_to_1x2():
+    from app.telegram_commands import COMMANDS
+    assert "/1x2" in COMMANDS
+    from api.telegram import BUTTON_COMMANDS
+    assert BUTTON_COMMANDS["1x2 predictions"] == "/1x2"
