@@ -44,12 +44,20 @@ def build_value_validation_certificate(
         and bool(calibration_application.get("model_version"))
         and isinstance(calibration_application.get("markets"), list)
     )
-    versioned_paper = paper_report.get("value_validation_markets_by_calibration_version")
-    if isinstance(versioned_paper, Mapping):
-        paper_source = versioned_paper.get(calibration_application.get("model_version")) or {}
+    versioned_calibration_paper = paper_report.get("value_validation_markets_by_calibration_version")
+    if isinstance(versioned_calibration_paper, Mapping):
+        calibration_paper_source = versioned_calibration_paper.get(calibration_application.get("model_version")) or {}
     else:
-        paper_source = paper_report.get("markets") or paper_report.get("value_validation_markets") or {}
-    paper = paper_source if isinstance(paper_source, Mapping) else {}
+        calibration_paper_source = paper_report.get("markets") or paper_report.get("value_validation_markets") or {}
+    calibration_paper = calibration_paper_source if isinstance(calibration_paper_source, Mapping) else {}
+
+    expected_1x2_model = str(live.get("model") or "experimental_recent_goals_poisson")
+    versioned_model_paper = paper_report.get("value_validation_markets_by_model_version")
+    if isinstance(versioned_model_paper, Mapping):
+        model_paper_source = versioned_model_paper.get(expected_1x2_model) or {}
+    else:
+        model_paper_source = paper_report.get("markets") or paper_report.get("value_validation_markets") or {}
+    model_paper = model_paper_source if isinstance(model_paper_source, Mapping) else {}
     goal_markets = {
         "BTTS": "btts_yes",
         "OVER_UNDER_1_5": "over_1_5",
@@ -58,12 +66,21 @@ def build_value_validation_certificate(
     }
 
     def check_paper(market: str) -> list[str]:
-        evidence = paper.get(market) or {}
-        reasons = []
-        deployed_version = calibration_application.get("model_version")
-        paper_versions = paper_report.get("calibration_versions") or []
-        if not deployed_version or deployed_version not in paper_versions:
-            reasons.append("prospective paper evidence does not match the deployed calibration version")
+        if market == "1X2":
+            evidence = model_paper.get("1X2") or {}
+            expected_version = expected_1x2_model
+            paper_versions = paper_report.get("value_model_versions") or []
+            if expected_version not in paper_versions:
+                reasons = ["prospective 1X2 paper evidence does not match the benchmarked model version"]
+            else:
+                reasons = []
+        else:
+            evidence = calibration_paper.get(market) or {}
+            deployed_version = calibration_application.get("model_version")
+            paper_versions = paper_report.get("calibration_versions") or []
+            reasons = []
+            if not deployed_version or deployed_version not in paper_versions:
+                reasons.append("prospective paper evidence does not match the deployed calibration version")
         if int(evidence.get("settled_bets") or 0) < min_paper_bets:
             reasons.append("insufficient settled prospective paper bets")
         if int(evidence.get("distinct_match_dates") or 0) < min_paper_dates:
@@ -134,6 +151,7 @@ def build_value_validation_certificate(
             "positive_95_percent_roi_lower_bound": True,
             "1x2_must_beat_market_on_full_and_recent_holdout": True,
             "paper_evidence_must_match_deployed_calibration_version": True,
+            "1x2_paper_evidence_must_match_benchmarked_model_version": True,
         },
         "alerts_enabled": any_passed,
         "note": "Missing, incomplete or failing evidence keeps every market locked. Calibration alone does not prove profitability.",
