@@ -10,6 +10,8 @@ from datetime import date, datetime
 from zoneinfo import ZoneInfo
 from typing import Any
 
+from app.value_paper import prospective_value_rows, summarize_value_market_rows
+
 COMPLETED_STATUSES = {"FT", "AET", "PEN"}
 OUTCOMES = ("H", "D", "A")
 
@@ -121,6 +123,8 @@ def merge_paper_ledger(ledger: dict[str, Any], evaluation: dict[str, Any]) -> di
         market: summarize_goal_market_paper([row for row in current["goal_market_scored"] if row.get("market") == market])
         for market in sorted({str(row.get("market")) for row in current["goal_market_scored"]})
     }
+    current["value_market_metrics_by_market"] = summarize_value_market_rows(current["goal_market_scored"])
+    current["value_market_validation_notice"] = "Prospective paper evidence only; certificate remains locked until sample, date, ROI lower-bound and coverage thresholds pass."
     if should_merge_matches:
         report_matches = [
             row for row in current["scored_matches"]
@@ -428,7 +432,7 @@ def evaluate_report(report: dict[str, Any], results_payload: dict[str, Any]) -> 
             awaiting_result += 1
             continue
 
-        goal_market_scored.extend(_goal_market_paper_rows(prediction, result))
+        goal_market_scored.extend(prospective_value_rows(prediction, result))
 
         forecast_models: list[tuple[str, Any]] = []
         if has_model_forecast:
@@ -507,5 +511,6 @@ def evaluate_report(report: dict[str, Any], results_payload: dict[str, Any]) -> 
         "matches": scored,
         "goal_market_matches": goal_market_scored,
         "goal_market_metrics": summarize_goal_market_paper(goal_market_scored),
-        "notice": "Retrospective 1X2 scoring plus prospective pre-kickoff BTTS/Over 2.5 paper tracking only; no betting recommendation or profitability claim.",
+        "value_market_metrics_by_market": summarize_value_market_rows(goal_market_scored),
+        "notice": "Retrospective 1X2 scoring plus prospective timestamped 1X2, BTTS and O/U 1.5/2.5/3.5 paper tracking only; no betting recommendation or profitability claim.",
     }
