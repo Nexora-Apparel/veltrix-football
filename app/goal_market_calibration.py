@@ -45,13 +45,23 @@ def apply_goal_market_calibration(
     live = backtest_report.get("live_pipeline") or {}
     goal = live.get("goal_markets") or {}
     experiment = goal.get("chronological_calibration_experiment") or {}
+    rolling = goal.get("rolling_origin_calibration") or {}
     cutoff = str(experiment.get("calibration_cutoff_date") or "")
     calibrators: dict[str, tuple[float, float]] = {}
     failures: dict[str, str] = {}
     for market in MARKET_FIELDS:
         item = (experiment.get("markets") or {}).get(market) or {}
-        if item.get("status") != "CALIBRATION_FIT_EVALUATED_ON_LATER_DATES" or item.get("improved_brier_and_log_loss") is not True:
-            failures[market] = "No chronological later-date calibration improvement is available."
+        rolling_item = (rolling.get("markets") or {}).get(market) or {}
+        if (
+            item.get("status") != "CALIBRATION_FIT_EVALUATED_ON_LATER_DATES"
+            or item.get("improved_brier_and_log_loss") is not True
+            or rolling_item.get("status") != "CALIBRATION_DIAGNOSTIC_PASS"
+            or int(rolling_item.get("folds_evaluated") or 0) < 4
+            or int((rolling_item.get("raw") or {}).get("matches") or 0) < 1000
+            or int(item.get("calibration_matches") or 0) < 1000
+            or int(item.get("test_matches") or 0) < 1000
+        ):
+            failures[market] = "Chronological holdout and four-fold rolling calibration requirements are not satisfied."
             continue
         try:
             intercept = float(item["platt_intercept"])
