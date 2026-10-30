@@ -56,6 +56,10 @@ def build_value_validation_certificate(
     def check_paper(market: str) -> list[str]:
         evidence = paper.get(market) or {}
         reasons = []
+        deployed_version = calibration_application.get("model_version")
+        paper_versions = paper_report.get("calibration_versions") or []
+        if not deployed_version or deployed_version not in paper_versions:
+            reasons.append("prospective paper evidence does not match the deployed calibration version")
         if int(evidence.get("settled_bets") or 0) < min_paper_bets:
             reasons.append("insufficient settled prospective paper bets")
         if int(evidence.get("distinct_match_dates") or 0) < min_paper_dates:
@@ -125,6 +129,7 @@ def build_value_validation_certificate(
             "positive_net_roi": True,
             "positive_95_percent_roi_lower_bound": True,
             "1x2_must_beat_market_on_full_and_recent_holdout": True,
+            "paper_evidence_must_match_deployed_calibration_version": True,
         },
         "alerts_enabled": any_passed,
         "note": "Missing, incomplete or failing evidence keeps every market locked. Calibration alone does not prove profitability.",
