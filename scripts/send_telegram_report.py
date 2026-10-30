@@ -18,6 +18,7 @@ import requests
 
 
 MAX_MESSAGE_LENGTH = 3900
+MESSAGE_PREFIX = "🔔 🆕 NEW VELTRIX UPDATE"
 DIVIDER = "━━━━━━━━━━━━━━━━━━━━"
 DELIVERY_STATE_PATH = "public-data/telegram_delivery_state.json"
 DELIVERY_STATE_BRANCH = "command-data"
@@ -231,7 +232,7 @@ def format_report_messages(report: dict[str, Any], ledger: dict[str, Any] | None
         blocks.append([DIVIDER, "No upcoming fixtures were retrieved for today.", ""])
 
     def render(selected: list[list[str]]) -> str:
-        return "\n".join(header + [line for block in selected for line in block])
+        return MESSAGE_PREFIX + "\n" + "\n".join(header + [line for block in selected for line in block])
 
     chunks: list[str] = []
     selected: list[list[str]] = []
@@ -249,8 +250,10 @@ def format_report_messages(report: dict[str, Any], ledger: dict[str, Any] | None
     if selected:
         chunks.append(render(selected))
     total = len(chunks)
+    # Prefix is included during chunk sizing, so the final Telegram payload
+    # never exceeds the limit after message numbering is added.
     return [
-        f"🔔 🆕 NEW VELTRIX UPDATE  •  MESSAGE {index}/{total}\n" + chunk
+        chunk.replace(MESSAGE_PREFIX, f"{MESSAGE_PREFIX}  •  MESSAGE {index}/{total}", 1)
         for index, chunk in enumerate(chunks, start=1)
     ]
 
