@@ -1,0 +1,112 @@
+"""Frozen, date-safe Platt calibration for live BTTS and full-time totals probabilities.
+
+Calibration coefficients are fitted only on the historical training window and
+are applied to future fixtures. This module never changes 1X2 probabilities.
+"""
+from __future__ import annotations
+
+import hashlib
+import json
+import math
+from typing import Any, Mapping
+
+MARKET_FIELDS = {
+    "btts_yes": "btts_yes",
+    "over_1_5": "over_1_5",
+    "over_2_5": "over_2_5",
+    "over_3_5": "over_3_5",
+}
+
+
+def _valid_probability(value: Any) -> bool:
+    try:
+        number = float(value)
+    except (TypeError, ValueError, OverflowError):
+        return False
+    return math.isfinite(number) and 0.0 <= number <= 1.0
+
+
+def _platt(probability: float, intercept: float, slope: float) -> float:
+    p = min(1.0 - 1e-6, max(1e-6, probability))
+    logit = math.log(p / (1.0 - p))
+    z = max(-700.0, min(700.0, intercept + slope * logit))
+    if z >= 0:
+        e = math.exp(-z)
+        return 1.0 / (1.0 + e)
+    e = math.exp(z)
+    return e / (1.0 + e)
+
+
+def apply_goal_market_calibration(
+    report: dict[str, Any],
+    backtest_report: Mapping[str, Any],
+) -> dict[str, Any]:
+    """Apply the frozen chronological holdout calibrators to report forecasts."""
+    live = backtest_report.get("live_pipeline") or {}
+    goal = live.get("goal_markets") or {}
+    experiment = goal.get("chronological_calibration_experiment") or {}
+    cutoff = str(experiment.get("calibration_cutoff_date") or "")
+    calibrators: dict[str, tuple[float, float]] = {}
+    failures: dict[str, str] = {}
+    for market in MARKET_FIELDS:
+        item = (experiment.get("markets") or {}).get(market) or {}
+        if item.get("status") != "CALIBRATION_FIT_EVALUATED_ON_LATER_DATES" or item.get("improved_brier_and_log_loss") is not True:
+            failures[market] = "No chronological later-date calibration improvement is available."
+            continue
+        try:
+            intercept = float(item["platt_intercept"])
+            slope = float(item["platt_slope"])
+        except (KeyError, TypeError, ValueError):
+            failures[market] = "Calibration coefficients are missing."
+            continue
+        if not math.isfinite(intercept) or not math.isfinite(slope):
+            failures[market] = "Calibration coefficients are non-finite."
+            continue
+        calibrators[market] = (intercept, slope)
+
+    if not cutoff:
+        failures["cutoff_date"] = "Calibration training cutoff date is missing."
+    canonical = {
+        "cutoff": cutoff,
+        "coefficients": {key: list(value) for key, value in sorted(calibrators.items())},
+    }
+    version = "goal-platt-" + hashlib.sha256(
+        json.dumps(canonical, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    ).hexdigest()[:16]
+    predictions = report.get("predictions")
+    applied: list[str] = []
+    if isinstance(predictions, list):
+        for prediction in predictions:
+            if not isinstance(prediction, dict):
+                continue
+            raw_values = {}
+            for market, field in MARKET_FIELDS.items():
+                raw = prediction.get(field)
+                if market not in calibrators or not _valid_probability(raw):
+                    continue
+                raw_values[field] = float(raw)
+                intercept, slope = calibrators[market]
+                prediction[field] = round(_platt(float(raw), intercept, slope), 6)
+                if market not in applied:
+                    applied.append(market)
+            if raw_values:
+                existing = prediction.get("raw_goal_market_probabilities")
+                if not isinstance(existing, dict):
+                    prediction["raw_goal_market_probabilities"] = raw_values
+                prediction["goal_market_calibration"] = {
+                    "status": "APPLIED_PROSPECTIVELY",
+                    "model_version": version,
+                    "training_cutoff_date": cutoff,
+                    "markets": sorted(raw_values),
+                }
+    complete = len(calibrators) == len(MARKET_FIELDS) and not failures
+    report["goal_market_calibration"] = {
+        "status": "APPLIED_PROSPECTIVELY" if complete else "PARTIAL_OR_UNAVAILABLE",
+        "model_version": version if complete else None,
+        "training_cutoff_date": cutoff or None,
+        "markets": sorted(calibrators),
+        "failures": failures,
+        "training_method": experiment.get("method"),
+        "note": "Frozen Platt coefficients were fitted before the later-date holdout and applied only to future report fixtures.",
+    }
+    return report
