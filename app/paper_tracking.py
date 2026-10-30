@@ -129,6 +129,11 @@ def merge_paper_ledger(ledger: dict[str, Any], evaluation: dict[str, Any]) -> di
         if candidate_time and (not previous_time or candidate_time < previous_time):
             unique_goal[key] = row
     current["goal_market_scored"] = list(unique_goal.values())
+    current["calibration_versions"] = sorted({
+        str(row.get("calibration_version"))
+        for row in current["goal_market_scored"]
+        if row.get("calibration_version")
+    })
     current["goal_market_metrics"] = summarize_goal_market_paper(current["goal_market_scored"])
     current["goal_market_metrics_by_market"] = {
         market: summarize_goal_market_paper([row for row in current["goal_market_scored"] if row.get("market") == market])
