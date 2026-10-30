@@ -4,6 +4,8 @@ from app.value_bets_runtime import screen_fixture_value_bets
 def _fixture():
     return {
         "fixture_id": "runtime-1",
+        "model": "experimental_recent_goals_poisson",
+        "goal_markets_model": "experimental_recent_goals_poisson",
         "home_team": "Alpha",
         "away_team": "Beta",
         "kickoff_local": "2026-10-30T18:00:00+01:00",
@@ -81,3 +83,24 @@ def test_runtime_screen_stays_locked_without_market_specific_certificate():
     assert result["status"] == "DISABLED_UNVALIDATED"
     assert result["candidate_count"] == 0
     assert result["markets"]["1X2"]["bookmaker_price_sets"] == 1
+
+
+
+def test_runtime_1x2_screen_uses_poisson_alternative_when_elo_is_primary():
+    fixture = _fixture()
+    fixture["model"] = "experimental_elo_by_competition"
+    fixture["probabilities"] = {"home_win": 0.99, "draw": 0.005, "away_win": 0.005}
+    fixture["poisson_probabilities"] = {"home_win": 0.70, "draw": 0.18, "away_win": 0.12}
+    result = screen_fixture_value_bets(fixture, validation_certificate=_certificate())
+    candidate = result["markets"]["1X2"]["candidates"][0]
+    assert candidate["model"] == "experimental_recent_goals_poisson"
+    assert candidate["model_probability"] == 0.70
+
+
+def test_runtime_1x2_screen_does_not_use_an_uncertified_model_family():
+    fixture = _fixture()
+    fixture["model"] = "experimental_competition_prior_poisson"
+    fixture["goal_markets_model"] = "experimental_competition_prior_poisson"
+    result = screen_fixture_value_bets(fixture, validation_certificate=_certificate())
+    assert result["markets"]["1X2"]["candidates"] == []
+    assert result["markets"]["1X2"]["status"] == "NO_QUALIFYING_VALUE"
