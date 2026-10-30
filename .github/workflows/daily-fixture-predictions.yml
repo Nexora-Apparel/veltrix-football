@@ -42,6 +42,8 @@ on:
       - "scripts/build_value_certificate.py"
       - "scripts/build_value_certificate_runtime.py"
       - "app/value_bets_runtime.py"
+      - "app/goal_market_calibration.py"
+      - "tests/test_goal_market_calibration.py"
       - "tests/test_build_value_certificate.py"
       - "tests/test_value_bets_runtime.py"
       - "tests/test_value_bets.py"
