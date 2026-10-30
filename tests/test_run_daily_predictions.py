@@ -342,6 +342,7 @@ def test_fixture_delivery_cap_excludes_started_fixtures_for_today():
 
 
 def test_fixture_delivery_cap_prioritizes_historically_mapped_competitions():
+    """Release gate: supported competitions must not be crowded out by feed noise."""
     from datetime import datetime
     from zoneinfo import ZoneInfo
 
