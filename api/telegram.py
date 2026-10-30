@@ -163,7 +163,7 @@ function renderRows(){
   const title=document.createElement('h3');title.className='prediction-title';title.textContent=(m.home_team||'Home')+' vs '+(m.away_team||'Away');
   const meta=document.createElement('div');meta.className='meta';meta.textContent=(m.league||'Competition')+' · '+(m.kickoff_local||m.kickoff||'Kickoff unavailable');
   const chips=document.createElement('div');chips.className='chips';
-  for(const [label,value] of [['BTTS Yes',fmt(m.btts_yes)],['Over 2.5',fmt(m.over_2_5)],['Under 2.5',Number.isFinite(num(m.over_2_5))?fmt(1-num(m.over_2_5)):'—']]){
+  const p=m.probabilities||{};for(const [label,value] of [['1X2 Home',fmt(p.home_win)],['1X2 Draw',fmt(p.draw)],['1X2 Away',fmt(p.away_win)],['BTTS Yes',fmt(m.btts_yes)],['Over 2.5',fmt(m.over_2_5)],['Under 2.5',Number.isFinite(num(m.over_2_5))?fmt(1-num(m.over_2_5)):'—']]){
    const chip=document.createElement('span');chip.className='chip';chip.textContent=label+' '+value;chips.append(chip);
   }
   const odds=marketPriceLines(m);const price=document.createElement('div');price.className='prices';price.textContent=odds.length?odds.join(' · '):'No matched market odds available';
