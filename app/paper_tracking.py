@@ -153,6 +153,28 @@ def merge_paper_ledger(ledger: dict[str, Any], evaluation: dict[str, Any]) -> di
             "confidence_method": metric.get("confidence_method"),
             "timestamped_odds_coverage": metric.get("timestamped_odds_coverage", 0.0),
         }
+    current["value_model_versions"] = sorted({
+        str(row.get("model_version"))
+        for row in current["goal_market_scored"]
+        if row.get("market") == "1x2" and row.get("model_version")
+    })
+    current["value_validation_markets_by_model_version"] = {}
+    for model_version in current["value_model_versions"]:
+        model_rows = [
+            row for row in current["goal_market_scored"]
+            if row.get("market") == "1x2" and row.get("model_version") == model_version
+        ]
+        model_metrics = summarize_value_market_rows(model_rows).get("1x2", {})
+        current["value_validation_markets_by_model_version"][model_version] = {
+            "1X2": {
+                "settled_bets": model_metrics.get("settled_bets", 0),
+                "distinct_match_dates": model_metrics.get("distinct_match_dates", 0),
+                "net_roi": model_metrics.get("paper_roi"),
+                "roi_lower_95_ci": model_metrics.get("roi_lower_95_ci"),
+                "confidence_method": model_metrics.get("confidence_method"),
+                "timestamped_odds_coverage": model_metrics.get("timestamped_odds_coverage", 0.0),
+            }
+        }
     current["value_validation_markets_by_calibration_version"] = {}
     for calibration_version in current["calibration_versions"]:
         version_rows = [
