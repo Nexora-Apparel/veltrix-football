@@ -76,8 +76,12 @@ def apply_goal_market_calibration(
 
     if not cutoff:
         failures["cutoff_date"] = "Calibration training cutoff date is missing."
+    dataset_provenance = backtest_report.get("dataset_provenance") or {}
+    dataset_sha256 = dataset_provenance.get("sha256") if isinstance(dataset_provenance, Mapping) else None
     canonical = {
         "cutoff": cutoff,
+        "model_family": "experimental_recent_goals_poisson",
+        "dataset_sha256": dataset_sha256,
         "coefficients": {key: list(value) for key, value in sorted(calibrators.items())},
     }
     version = "goal-platt-" + hashlib.sha256(
@@ -127,6 +131,7 @@ def apply_goal_market_calibration(
         "status": applied_status,
         "model_version": version if applied_status == "APPLIED_PROSPECTIVELY" else None,
         "training_cutoff_date": cutoff or None,
+        "dataset_sha256": dataset_sha256,
         "markets": sorted(applied),
         "compatible_forecasts": compatible_forecasts,
         "applied_forecasts": applied_forecasts,
