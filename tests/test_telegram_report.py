@@ -242,6 +242,7 @@ def test_report_hides_plan_limited_history_details_from_prediction_alert():
 
 
 def test_main_force_flag_resends_corrected_same_day_report(tmp_path, monkeypatch, capsys):
+    """Explicit opt-in resend for a corrected same-day publication."""
     """Controlled release check for corrected same-day delivery."""
     import json
     from scripts import send_telegram_report as sender
