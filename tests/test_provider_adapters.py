@@ -212,6 +212,7 @@ def test_multi_source_odds_enrichment_attaches_btts_and_totals_without_changing_
     assert prediction["source_fixture_id"] == 123
     assert prediction["five_dollar_market_odds"]["bookmakers"][0]["btts"] == {"yes": 1.8, "no": 2.0}
     assert prediction["five_dollar_market_odds"]["bookmakers"][0]["over_under"]["line"] == 2.5
+    assert prediction["five_dollar_market_odds"]["bookmakers"][0]["1x2"] == {"home": 2.0, "draw": 3.2, "away": 3.9}
     assert prediction["the_odds_api_market_odds"]["markets"]["totals"]
     assert prediction["the_odds_api_market_odds"]["markets"]["btts"]
     assert result["multi_source_odds_sync"]["five_dollar"]["status"] == "AVAILABLE"
@@ -407,3 +408,35 @@ def test_infersports_fixture_supplement_failure_keeps_primary_fixtures():
     )
     assert len(result["response"]) == 1
     assert result["_veltrix_meta"]["infersports_fixture_discovery"]["status"] == "FAILED"
+
+
+def test_fivedollar_1x2_only_odds_are_not_discarded():
+    class Only1X2:
+        api_key = "configured"
+        def fixture_odds(self, fixture_id):
+            return {"data": {"bookmakers": [{
+                "name": "Book A",
+                "odds": {"1x2": {"closing": {"home": 2.0, "draw": 3.2, "away": 3.9}}},
+            }]}}
+
+    class NoOddsAPI:
+        api_key = ""
+
+    report = {"predictions": [{
+        "home_team": "Arsenal", "away_team": "Chelsea",
+        "kickoff_local": "2026-10-29T16:00:00+01:00",
+        "status": "EXPERIMENTAL_ONLY",
+        "probabilities": {"home_win": 0.55, "draw": 0.25, "away_win": 0.20},
+    }]}
+    fixtures = {"response": [{
+        "fixture": {"id": 123, "date": "2026-10-29T15:00:00+00:00", "status": {"short": "NS"}},
+        "teams": {"home": {"name": "Arsenal"}, "away": {"name": "Chelsea"}},
+    }]}
+    result = enrich_report_with_multi_source_odds(
+        report, fixtures, five_dollar_client=Only1X2(), odds_api_client=NoOddsAPI()
+    )
+    prediction = result["predictions"][0]
+    assert prediction["five_dollar_market_odds"]["bookmakers"][0]["1x2"] == {
+        "home": 2.0, "draw": 3.2, "away": 3.9,
+    }
+    assert result["multi_source_odds_sync"]["five_dollar"]["status"] == "AVAILABLE"
