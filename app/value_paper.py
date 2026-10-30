@@ -5,6 +5,7 @@ Only timestamped, pre-kickoff snapshots are eligible. No bookmaker actions.
 from __future__ import annotations
 
 import math
+import random
 from datetime import datetime
 from typing import Any
 
@@ -158,11 +159,17 @@ def summarize_value_market_rows(rows: list[dict[str, Any]]) -> dict[str, Any]:
         stake = sum(float(row.get("unit_stake", 1)) for row in subset)
         net = sum(returns)
         roi = net / stake if stake else None
-        # One-sided 95% normal lower bound on mean unit return, scaled by stake.
-        if n > 1 and stake:
-            mean = sum(returns) / n
-            variance = sum((x - mean) ** 2 for x in returns) / (n - 1)
-            lower = (mean - 1.645 * math.sqrt(variance / n)) * n / stake
+        # Deterministic percentile bootstrap lower bound for mean unit return.
+        # Resampling is at the settled-selection level; repeated fixture selections
+        # are deduplicated before this function is called.
+        if n >= 2 and stake:
+            rng = random.Random(20261030 + sum(ord(ch) for ch in market))
+            boot = []
+            for _ in range(2000):
+                sample = [returns[rng.randrange(n)] for _ in range(n)]
+                boot.append(sum(sample) / n)
+            boot.sort()
+            lower = boot[max(0, int(0.025 * len(boot)) - 1)] * n / stake
         else:
             lower = None
         dates = {str(row.get("kickoff", ""))[:10] for row in subset if row.get("kickoff")}
@@ -171,8 +178,8 @@ def summarize_value_market_rows(rows: list[dict[str, Any]]) -> dict[str, Any]:
             "settled_bets": n, "distinct_match_dates": len(dates),
             "wins": sum(bool(row.get("actual_outcome")) for row in subset),
             "net_units": net, "paper_roi": roi,
-            "roi_lower_95_normal_approx": lower,
+            "roi_lower_95_ci": lower,\n            "confidence_method": "BOOTSTRAP_PERCENTILE_95",
             "timestamped_odds_coverage": timestamped / n if n else 0.0,
-            "notice": "Prospective paper-only estimate; normal-approximation lower bound is diagnostic, not a release-grade confidence interval."
+            "notice": "Prospective paper-only estimate; percentile bootstrap interval remains sensitive to dependence between selections and is not proof of executable returns."
         }
     return output
