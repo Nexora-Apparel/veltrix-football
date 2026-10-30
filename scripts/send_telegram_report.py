@@ -160,6 +160,9 @@ def format_report_messages(report: dict[str, Any], ledger: dict[str, Any] | None
         f"📅 {day} · Kick-off times: WAT",
         f"Fixtures retrieved: {len(fixtures)} · Research forecasts: {len(usable)}",
         "Value screen: 1X2 / BTTS / Over-Under · " + str((report.get("value_bet_screen") or {}).get("status") or "NOT_REPORTED"),
+        "Goal calibration: " + str((report.get("goal_market_calibration") or {}).get("status") or "NOT_REPORTED")
+        + " · applied: " + str((report.get("goal_market_calibration") or {}).get("applied_forecasts", 0))
+        + "/" + str((report.get("goal_market_calibration") or {}).get("compatible_forecasts", 0)),
         "Validation: " + str((report.get("value_validation_certificate") or {}).get("status") or "LOCKED_INSUFFICIENT_EVIDENCE")
         + " · approved: " + (", ".join((report.get("value_validation_certificate") or {}).get("approved_markets") or []) or "none"),
         "",
