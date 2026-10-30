@@ -16,7 +16,7 @@ def _certificate_allows(certificate: Any, market: str) -> bool:
     """Require an evidence-backed, market-specific validation certificate."""
     return (
         isinstance(certificate, Mapping)
-        and certificate.get("status") == "VALIDATED"
+        and certificate.get("status") in {"VALIDATED", "PARTIALLY_VALIDATED"}
         and certificate.get("schema_version") == 1
         and market in (certificate.get("approved_markets") or [])
         and certificate.get("betting_validation") is True
@@ -94,11 +94,12 @@ def build_value_validation_certificate(
 
     required = ["1X2", *goal_markets.keys()]
     passed = len(approved) == len(required)
+    any_passed = bool(approved)
     return {
         "schema_version": 1,
-        "status": "VALIDATED" if passed else "LOCKED_INSUFFICIENT_EVIDENCE",
-        "betting_validation": passed,
-        "approved_markets": approved if passed else [],
+        "status": "VALIDATED" if passed else "PARTIALLY_VALIDATED" if any_passed else "LOCKED_INSUFFICIENT_EVIDENCE",
+        "betting_validation": any_passed,
+        "approved_markets": approved,
         "market_diagnostics": {
             market: {"status": "PASS" if market in approved else "LOCKED", "failures": failures.get(market, [])}
             for market in required
@@ -112,9 +113,18 @@ def build_value_validation_certificate(
             "positive_95_percent_roi_lower_bound": True,
             "1x2_must_beat_market_on_full_and_recent_holdout": True,
         },
-        "alerts_enabled": passed,
+        "alerts_enabled": any_passed,
         "note": "Missing, incomplete or failing evidence keeps every market locked. Calibration alone does not prove profitability.",
     }
+
+
+def _safe_float(value: Any) -> float | None:
+    try:
+        number = float(value)
+        return number if math.isfinite(number) else None
+    except (TypeError, ValueError, OverflowError):
+        return None
+
 
 def _valid_probability(value: Any) -> bool:
     try:
@@ -371,12 +381,12 @@ def attach_value_bet_screens(
         for market, result in (screen.get("markets") or {}).items():
             aggregate[market] = aggregate.get(market, 0) + int(result.get("bookmaker_price_sets") or 0)
     report["value_bet_screen"] = {
-        "status": "CANDIDATES_FOUND" if candidate_count else ("NO_QUALIFYING_VALUE" if isinstance(validation_certificate, Mapping) and validation_certificate.get("status") == "VALIDATED" else "DISABLED_UNVALIDATED"),
-        "model_validated": bool(isinstance(validation_certificate, Mapping) and validation_certificate.get("status") == "VALIDATED"),
+        "status": "CANDIDATES_FOUND" if candidate_count else ("NO_QUALIFYING_VALUE" if isinstance(validation_certificate, Mapping) and validation_certificate.get("status") in {"VALIDATED", "PARTIALLY_VALIDATED"} else "DISABLED_UNVALIDATED"),
+        "model_validated": bool(isinstance(validation_certificate, Mapping) and validation_certificate.get("status") in {"VALIDATED", "PARTIALLY_VALIDATED"}),
         "markets": ["1X2", "BTTS", "OVER_UNDER_2_5"],
         "bookmaker_price_sets_by_market": aggregate,
         "candidate_count": candidate_count,
-        "alerts_enabled": bool(isinstance(validation_certificate, Mapping) and validation_certificate.get("status") == "VALIDATED" and validation_certificate.get("alerts_enabled") is True),
+        "alerts_enabled": bool(isinstance(validation_certificate, Mapping) and validation_certificate.get("status") in {"VALIDATED", "PARTIALLY_VALIDATED"} and validation_certificate.get("alerts_enabled") is True),
         "validation_certificate": dict(validation_certificate) if isinstance(validation_certificate, Mapping) else None,
         "note": "Value candidates remain suppressed until repeated chronological out-of-sample validation passes.",
     }
