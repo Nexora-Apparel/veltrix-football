@@ -83,6 +83,16 @@ The archived GitHub Actions report for **2026-10-25** was recovered from run `40
 
 The command-data paper ledger separately records **3 correct out of 4** scored 1X2 forecasts for 2026-10-24 (75%), and **2 out of 2 distinct fixtures** for 2026-10-27 for both the Elo and Poisson versions. These are tiny samples, not evidence of a stable 70% model. The two model versions on 2026-10-27 scored the same two fixtures, so they are not four independent observations. The recovered 2026-10-25 artifact's bundled paper ledger had zero scored forecasts at the time it was created.
 
+The expanded five-artifact reconstruction produced these provisional retrospective scores against the later cache:
+
+- **2026-10-24 11:53 UTC, API-Football-key workflow:** 61 eligible Poisson forecasts; 52 exact date/team result matches; 55.77% accuracy, Brier 0.6359, log loss 1.0589; 9 forecasts did not match a cached result.
+- **2026-10-24 18:21 and 18:43 UTC, same API-Football-key configuration:** 8 eligible forecasts in each snapshot; 7 matched; 42.86% accuracy, Brier 0.7329, log loss 1.1935. The 4-match paper ledger slice for this report date showed 3/4 correct (75%), which is the clearest source of the remembered roughly-70% figure; the larger 7-match retrospective set was materially lower.
+- **2026-10-25 00:49 UTC, football-data.org migration attempt:** 11 eligible forecasts; 9 matched; on 8 identical fixtures, Poisson and Elo each recorded 50.0% accuracy. The workflow used `FOOTBALL_DATA_TOKEN`, and the report recorded HTTP 400 invalid-token failure for its results refresh.
+- **2026-10-25 08:13 UTC, Highlightly run:** 47 eligible forecasts; 47 matched; on the 43-fixture common set, Poisson and Elo each recorded 62.79% accuracy, while the experimental Dixon-Coles alternative recorded 65.12%. This report recorded a Highlightly HTTP 429 quota/rate-limit warning during results refresh and zero valid 1X2 odds.
+
+**Critical provenance limitation:** all scored result rows in this reconstruction came from cache entries marked `LEGACY_UNATTRIBUTED`. The fixture-result joins used exact local date and normalized home/away team identity, but the cache does not retain a verified source provider or competition identifier for those legacy rows. Therefore every score above is provisional, not a provider-verified final accuracy claim. The 4-match 75% paper slice is too small to establish a stable 70% model. The API-Football-era sample itself scored 55.77% over 52 provisional matches, not 70%.
+
+
 `scripts/audit_historical_model.py` and the **Historical Model Reconstruction** workflow now compare the archived 2026-10-25 primary forecasts, stored Poisson/Elo alternatives, and Dixon-Coles alternative against the later completed-results cache. The audit scores models on their common exact-date/team-identity fixture set, excludes forecasts generated after kickoff, reports unmatched fixtures and provider provenance, and makes no live provider requests. Its output is retained as a 90-day workflow artifact. This is a retrospective diagnostic; it does not authorize value alerts.
 
 ## Chronological model comparison (new)
