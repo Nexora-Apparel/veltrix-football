@@ -78,8 +78,8 @@
       "report_date": "2026-10-30",
       "fixtures_scored": 0,
       "completed_forecasts_scored": 0,
-      "awaiting_result_or_match": 0,
-      "withheld_or_invalid_forecasts": 0,
+      "awaiting_result_or_match": 4,
+      "withheld_or_invalid_forecasts": 21,
       "metrics": {
         "matches": 0,
         "result_accuracy": null,
@@ -88,7 +88,17 @@
       },
       "metrics_by_model": {},
       "model_versions": [],
-      "tracking_state": "NO_FORECASTS_TO_SCORE"
+      "goal_market_selections_settled": 0,
+      "goal_market_metrics": {
+        "settled_selections": 0,
+        "wins": 0,
+        "losses": 0,
+        "win_rate": null,
+        "units_staked": 0,
+        "net_units": 0,
+        "paper_roi": null,
+        "notice": "Best quoted price in a pre-kickoff snapshot; flat 1-unit paper stakes; not proof of executable profit or bookmaker closing-line value."
+      }
     }
   ],
   "scored_matches": [
@@ -229,7 +239,7 @@
       "report_date": "2026-10-27"
     }
   ],
-  "updated_at_utc": "2026-10-31T14:36:28.125327+00:00",
+  "updated_at_utc": "2026-10-31T14:38:59.020321+00:00",
   "last_attempt": {
     "report_date": "2026-10-30",
     "status": "EVALUATED",
@@ -278,6 +288,21 @@
           }
         },
         "awaiting_result_or_match": 28
+      },
+      {
+        "report_date": "2026-10-30",
+        "status": "EVALUATED",
+        "detail": "Scored from 5324 cached completed matches; no live football-provider request was made.",
+        "fixtures_scored": 0,
+        "completed_forecasts_scored": 0,
+        "metrics": {
+          "matches": 0,
+          "result_accuracy": null,
+          "brier_score": null,
+          "log_loss": null
+        },
+        "metrics_by_model": {},
+        "awaiting_result_or_match": 4
       }
     ],
     "detail": null,
