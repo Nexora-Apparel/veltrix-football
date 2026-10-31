@@ -43,4 +43,4 @@ def test_verification_receipt_does_not_mislabel_failed_live_generation_as_tests_
         "VELTRIX_STEP_FIXTURE_GENERATION": "failure",
     })
     assert status["overall_status"] == "NEEDS_REVIEW"
-    assert status["validation_scope"] == "TESTS_ONLY"
+    assert status["validation_scope"] == "LIVE_PIPELINE"
