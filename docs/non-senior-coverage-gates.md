@@ -64,3 +64,8 @@ Final verification run requested on 2026-10-31: execute the complete test suite 
 
 
 Final verification receipt now includes the exact generated report's fixture counts, status distribution, visibility validation, odds status, value certificate state and evidence/paper-ledger summaries.
+
+
+## Provider-outage recovery
+
+Transient transport failures are retried with bounded backoff; definitive HTTP responses are not retried. If the primary fixture provider remains unreachable, the daily workflow attempts to restore the already-published report for the same Nigeria-local date, filters out past and other-date kickoffs, retains fixtures with unverified kickoff metadata, and labels the result `REUSED_SNAPSHOT_NOT_REFRESHED`. It never substitutes another date, fabricates fixtures, or describes a reused report as a fresh provider fetch. If no valid same-day snapshot exists, the run remains failed and the verification receipt records the failure.
