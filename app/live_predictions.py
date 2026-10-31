@@ -771,6 +771,37 @@ def build_daily_report(
         timezone_name=timezone_name,
         now=current_time,
     )
+    # The provider request is already scoped to the target local-day window.
+    # Retain scheduled fixtures whose kickoff timestamp is absent/malformed so
+    # the command centre never silently loses a fixture solely due to bad time
+    # metadata. Such rows receive no forecast until kickoff can be verified.
+    kickoff_unverified: list[dict[str, Any]] = []
+    for item in fixtures:
+        if not isinstance(item, dict) or _fixture_parts(item, timezone_name) is not None:
+            continue
+        fixture = item.get("fixture") if isinstance(item.get("fixture"), dict) else {}
+        status = str((fixture.get("status") or {}).get("short") or "").upper()
+        teams = item.get("teams") if isinstance(item.get("teams"), dict) else {}
+        home = (teams.get("home") or {}).get("name") if isinstance(teams.get("home"), dict) else None
+        away = (teams.get("away") or {}).get("name") if isinstance(teams.get("away"), dict) else None
+        league = item.get("league") if isinstance(item.get("league"), dict) else {}
+        if status not in {"NS", "TBD"} or not home or not away:
+            continue
+        kickoff_unverified.append({
+            "fixture_id": fixture.get("id"),
+            "kickoff": fixture.get("date"),
+            "kickoff_local": None,
+            "home_team": str(home),
+            "away_team": str(away),
+            "league": str(league.get("name") or "Competition unavailable"),
+            "status": "KICKOFF_UNVERIFIED",
+            "model": "not_evaluated",
+            "model_validated": False,
+            "betting_recommendation": False,
+            "reason": "Fixture retained because the provider returned it for the requested local day, but its kickoff timestamp is missing or invalid.",
+            "kickoff_verification": "MISSING_OR_INVALID",
+        })
+    predictions.extend(kickoff_unverified)
     if market_odds_by_fixture:
         eligible_statuses = {"EXPERIMENTAL_ONLY", "INSUFFICIENT_HISTORY", "UNSUPPORTED_COMPETITION"}
         for prediction in predictions:
@@ -797,10 +828,17 @@ def build_daily_report(
             default=None,
         ),
         "fixtures_received": len(fixtures),
-        "same_day_pre_match_fixtures": len(parsed_for_date),
+        "same_day_pre_match_fixtures": len(parsed_for_date) + len(kickoff_unverified),
         "past_kickoffs_excluded": past_kickoffs,
-        "future_fixtures_considered": future_kickoffs,
-        "fixtures_excluded_other_date_or_status": len(fixtures) - len(parsed_for_date),
+        "future_fixtures_considered": future_kickoffs + len(kickoff_unverified),
+        "kickoff_unverified_fixtures": len(kickoff_unverified),
+        "fixture_status_counts": {
+            "EXPERIMENTAL_ONLY": sum(p.get("status") == "EXPERIMENTAL_ONLY" for p in predictions),
+            "INSUFFICIENT_HISTORY": sum(p.get("status") == "INSUFFICIENT_HISTORY" for p in predictions),
+            "UNSUPPORTED_COMPETITION": sum(p.get("status") == "UNSUPPORTED_COMPETITION" for p in predictions),
+            "KICKOFF_UNVERIFIED": len(kickoff_unverified),
+        },
+        "fixtures_excluded_other_date_or_status": len(fixtures) - len(parsed_for_date) - len(kickoff_unverified),
         "predictions_created": sum(p["status"] == "EXPERIMENTAL_ONLY" for p in predictions),
         "insufficient_history": sum(p["status"] == "INSUFFICIENT_HISTORY" for p in predictions),
         "unsupported_competitions": sum(p["status"] == "UNSUPPORTED_COMPETITION" for p in predictions),
