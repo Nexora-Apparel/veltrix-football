@@ -116,7 +116,17 @@ def screen_fixture_value_intelligence(prediction: Mapping[str, Any]) -> dict[str
             }
             continue
         bayesian = bayesian_market_update(model_markets[market], consensus.get("probabilities", {}), model_prior_weight=0.35)
-        blended = shrink_to_market(bayesian.get("probabilities") if bayesian.get("status") == "UPDATED" else model_markets[market], consensus, model_weight=0.35)
+        blended = shrink_to_market(model_markets[market], consensus, model_weight=0.35)
+        if bayesian.get("status") == "UPDATED":
+            # Require agreement between the linear market blend and log-opinion update;
+            # the lower estimate is used for quote screening.
+            for outcome, probability in bayesian["probabilities"].items():
+                sigma = max(0.0, float((consensus.get("dispersion") or {}).get(outcome, 0.0)))
+                bayesian_lower = max(0.0, probability - 1.645 * sigma)
+                if outcome in blended["conservative_lower_bound"]:
+                    blended["conservative_lower_bound"][outcome] = min(
+                        blended["conservative_lower_bound"][outcome], bayesian_lower
+                    )
         candidates = []
         for row in price_rows:
             for outcome, price in row["odds"].items():
