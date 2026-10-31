@@ -49,3 +49,18 @@ def test_completed_result_settles_candidate_and_calculates_quote_level_roi():
     assert ledger["summary"]["shadow_candidate_wins"] == 1
     assert ledger["summary"]["shadow_candidate_quote_net_units"] == 1.2
     assert ledger["summary"]["shadow_candidate_quote_roi_percent"] == 120.0
+
+
+def test_corrected_result_does_not_overwrite_existing_settlement():
+    first = {"matches": [{
+        "fixture_id": 123, "fixture_status": "FT", "home_goals": 2, "away_goals": 1,
+    }]}
+    corrected = {"matches": [{
+        "fixture_id": 123, "fixture_status": "FT", "home_goals": 0, "away_goals": 1,
+    }]}
+    ledger = merge_evidence_ledger(None, report("2026-10-31T10:00:00+00:00"), first)
+    updated = merge_evidence_ledger(ledger, report("2026-10-31T10:00:00+00:00"), corrected)
+    yes = next(row for row in updated["observations"] if row["selection"] == "yes")
+    assert yes["settlement"]["home_goals"] == 2
+    assert len(updated["settlement_conflicts"]) == 2
+    assert all(row["status"] == "RESULT_CONFLICT_REVIEW_REQUIRED" for row in updated["settlement_conflicts"])
