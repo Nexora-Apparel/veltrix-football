@@ -92,10 +92,13 @@ def merge_paper_ledger(ledger: dict[str, Any], evaluation: dict[str, Any]) -> di
         for match in evaluation.get("goal_market_matches", []):
             current["goal_market_scored"].append({**match, "report_date": report_date})
     # A report-date + fixture ID pair is the stable identity for ledger rows.
-    unique: dict[tuple[str, int, str], dict[str, Any]] = {}
+    unique: dict[tuple[str, str, str], dict[str, Any]] = {}
     for row in current["scored_matches"]:
         try:
-            key = (str(row["report_date"]), int(row["fixture_id"]), str(row.get("model", "unknown")))
+            fixture_key = str(row["fixture_id"]).strip()
+            if not fixture_key or fixture_key.casefold() in {"none", "null"}:
+                continue
+            key = (str(row["report_date"]), fixture_key, str(row.get("model", "unknown")))
         except (KeyError, TypeError, ValueError):
             continue
         unique[key] = row
@@ -217,7 +220,7 @@ def merge_paper_ledger(ledger: dict[str, Any], evaluation: dict[str, Any]) -> di
             if str(row.get("report_date")) == str(report_date)
         )
         current["evaluations"][summary_index].update({
-            "fixtures_scored": len({int(row["fixture_id"]) for row in report_matches}),
+            "fixtures_scored": len({str(row["fixture_id"]) for row in report_matches}),
             "completed_forecasts_scored": len(report_matches),
             "metrics": report_metrics,
             "metrics_by_model": report_metrics_by_model,
@@ -478,7 +481,7 @@ def evaluate_report(report: dict[str, Any], results_payload: dict[str, Any]) -> 
     awaiting_result = 0
     withheld = 0
     missing_fixture_id = 0
-    fixtures_scored: set[int] = set()
+    fixtures_scored: set[str] = set()
     for prediction in predictions:
         status = prediction.get("status")
         has_model_forecast = status == "EXPERIMENTAL_ONLY"
@@ -488,10 +491,18 @@ def evaluate_report(report: dict[str, Any], results_payload: dict[str, Any]) -> 
         if not has_model_forecast and not has_market_forecast:
             continue
         fixture_id = prediction.get("fixture_id")
-        if not isinstance(fixture_id, int):
+        if isinstance(fixture_id, int) and not isinstance(fixture_id, bool):
+            fixture_key = str(fixture_id)
+            result = completed.get(fixture_id)
+        elif isinstance(fixture_id, str) and fixture_id.strip() and fixture_id.strip().casefold() not in {"none", "null"}:
+            # Supplemental feeds use opaque string event IDs. Their scores are
+            # reconciled by unique local-date + home/away identity, never by
+            # assuming provider IDs are interchangeable.
+            fixture_key = fixture_id.strip()
+            result = None
+        else:
             missing_fixture_id += 1
             continue
-        result = completed.get(fixture_id)
         if result is None:
             identity = _identity_key(
                 _prediction_day(prediction, timezone_name) or "",
@@ -551,7 +562,7 @@ def evaluate_report(report: dict[str, Any], results_payload: dict[str, Any]) -> 
             scored.append(scored_row)
             scored_this_fixture = True
         if scored_this_fixture:
-            fixtures_scored.add(fixture_id)
+            fixtures_scored.add(fixture_key)
 
     metrics_by_model = {
         model_name: summarize_scored_matches([
