@@ -77,6 +77,14 @@ The chronological backtest now reports a diagnostic under `favourite_underdog_au
 
 A valid neutrality review should compare model probabilities, calibration, Brier score and log loss on the same out-of-sample fixtures; break results down by competition and probability band; inspect underdog-win cases; and verify the model does not use future information. Do not increase underdog predictions by arbitrary rule. Change model features or weights only when chronological validation shows improvement. The diagnostic does not approve value alerts or betting use.
 
+## Archived 25 October 2026 model reconstruction
+
+The archived GitHub Actions report for **2026-10-25** was recovered from run `40175707059`. It was generated at 08:13 UTC using historical data through 2026-10-24. It contained 733 received fixtures, 619 same-day pre-match fixtures, and 614 report entries: **47 eligible research forecasts (21 competition Elo, 26 recent-goals Poisson), 498 unsupported competitions, and 69 insufficient-history fixtures**. Only 7.65% of report entries were eligible for probabilities. Sixteen possible team-name mismatches were flagged. No usable 1X2 odds were attached. Recent-results refresh was partial (2,671 added; only 1 of 8 requested ranges succeeded), with an HTTP 429 warning from the then-active Highlightly integration. This establishes a concrete data-coverage and provider-quota failure in that report; it does not establish the accuracy of its 47 forecasts.
+
+The command-data paper ledger separately records **3 correct out of 4** scored 1X2 forecasts for 2026-10-24 (75%), and **2 out of 2 distinct fixtures** for 2026-10-27 for both the Elo and Poisson versions. These are tiny samples, not evidence of a stable 70% model. The two model versions on 2026-10-27 scored the same two fixtures, so they are not four independent observations. The recovered 2026-10-25 artifact's bundled paper ledger had zero scored forecasts at the time it was created.
+
+`scripts/audit_historical_model.py` and the **Historical Model Reconstruction** workflow now compare the archived 2026-10-25 primary forecasts, stored Poisson/Elo alternatives, and Dixon-Coles alternative against the later completed-results cache. The audit scores models on their common exact-date/team-identity fixture set, excludes forecasts generated after kickoff, reports unmatched fixtures and provider provenance, and makes no live provider requests. Its output is retained as a 90-day workflow artifact. This is a retrospective diagnostic; it does not authorize value alerts.
+
 ## Chronological model comparison (new)
 Run a historical evaluation after importing the CSV:
 
