@@ -155,3 +155,72 @@ def poisson_scoreline_markets(home_lambda: float, away_lambda: float,
         over = sum(p for h, a, p in matrix if h + a > line) / mass
         result[f"over_{str(line).replace('.', '_')}"] = over
     return result
+
+
+def ensemble_probabilities(model_sets: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
+    """Equal-weight probability ensemble; returns unavailable unless >=2 models agree on keys."""
+    valid = []
+    for model in model_sets:
+        if not isinstance(model, Mapping) or not model:
+            continue
+        row = {str(k): _number(v) for k, v in model.items()}
+        if any(v is None or not 0 <= v <= 1 for v in row.values()):
+            continue
+        if abs(sum(float(v) for v in row.values()) - 1.0) > 0.03:
+            continue
+        valid.append({k: float(v) for k, v in row.items()})
+    if len(valid) < 2:
+        return {"status": "INSUFFICIENT_MODELS", "model_count": len(valid), "probabilities": {}}
+    common = set(valid[0])
+    for row in valid[1:]:
+        common &= set(row)
+    if len(common) < 2:
+        return {"status": "INCOMPATIBLE_MODEL_OUTPUTS", "model_count": len(valid), "probabilities": {}}
+    averaged = {key: mean(row[key] for row in valid) for key in common}
+    total = sum(averaged.values())
+    return {"status": "ENSEMBLE_READY", "model_count": len(valid),
+            "probabilities": {key: value / total for key, value in averaged.items()}}
+
+
+def bayesian_market_update(model_probabilities: Mapping[str, Any],
+                           market_consensus_probabilities: Mapping[str, Any],
+                           *, model_prior_weight: float = 0.35) -> dict[str, Any]:
+    """Log-opinion pool combining model prior and market evidence.
+
+    This is a Bayesian-inspired evidence update, not a fitted posterior: the
+    weight must be calibrated on chronological data before any release use.
+    """
+    if not 0 <= model_prior_weight <= 1:
+        raise ValueError("model_prior_weight must be between zero and one")
+    keys = set(model_probabilities) & set(market_consensus_probabilities)
+    if len(keys) < 2:
+        return {"status": "INSUFFICIENT_INPUTS", "probabilities": {}}
+    eps = 1e-9
+    logits = {}
+    for key in keys:
+        p = _number(model_probabilities[key])
+        q = _number(market_consensus_probabilities[key])
+        if p is None or q is None or not 0 <= p <= 1 or not 0 <= q <= 1:
+            return {"status": "INVALID_INPUTS", "probabilities": {}}
+        logits[key] = model_prior_weight * math.log(max(eps, p)) + (1-model_prior_weight) * math.log(max(eps, q))
+    peak = max(logits.values())
+    weights = {key: math.exp(value-peak) for key, value in logits.items()}
+    total = sum(weights.values())
+    return {"status": "UPDATED", "method": "BAYESIAN_INSPIRED_LOG_OPINION_POOL",
+            "model_prior_weight": model_prior_weight,
+            "probabilities": {key: value/total for key, value in weights.items()},
+            "calibration_status": "NOT_CALIBRATED"}
+
+
+def opportunity_quality_score(edge: float, expected_value: float, bookmaker_count: int,
+                              dispersion: float) -> dict[str, Any]:
+    """Transparent 0-100 research-priority score; never a probability or betting signal."""
+    e = max(0.0, min(1.0, (float(edge) / 0.12)))
+    v = max(0.0, min(1.0, (float(expected_value) / 0.20)))
+    coverage = max(0.0, min(1.0, int(bookmaker_count) / 5.0))
+    stability = max(0.0, 1.0 - min(1.0, max(0.0, float(dispersion)) / 0.08))
+    score = round(100 * (0.35*e + 0.30*v + 0.20*coverage + 0.15*stability), 1)
+    return {"score": score, "label": "RESEARCH_PRIORITY_ONLY",
+            "components": {"edge": round(e*100,1), "expected_value": round(v*100,1),
+                           "market_coverage": round(coverage*100,1), "price_stability": round(stability*100,1)},
+            "release_status": "LOCKED_SHADOW_MODE"}
