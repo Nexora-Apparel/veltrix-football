@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "workflow": "Daily Fixture Predictions",
+  "run_id": "41228695259",
+  "run_attempt": "1",
+  "event": "push",
+  "commit_sha": "86ec181454bc5ecf0b84d883891f2f6563b6a380",
+  "branch": "main",
+  "recorded_at_utc": "2026-10-31T18:17:59.209306+00:00",
+  "overall_status": "TESTS_PASSED",
+  "validation_scope": "TESTS_ONLY",
+  "steps": {
+    "unit_tests": "success",
+    "dashboard_js": "success",
+    "fixture_generation": "skipped",
+    "fixture_visibility": "skipped",
+    "value_evidence_update": "skipped",
+    "telegram_delivery": "skipped",
+    "command_data_publication": "skipped",
+    "paper_tracking": "skipped"
+  },
+  "release_status": "LOCKED_SHADOW_MODE",
+  "betting_alerts_enabled": false
+}
