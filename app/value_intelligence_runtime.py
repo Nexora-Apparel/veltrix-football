@@ -162,6 +162,10 @@ def screen_fixture_value_intelligence(prediction: Mapping[str, Any]) -> dict[str
                         ),
                     })
         candidates.sort(key=lambda x: x["expected_value_per_unit"], reverse=True)
+        candidate_quote_keys = [
+            {"bookmaker": row["bookmaker"], "selection": row["selection"]}
+            for row in candidates
+        ]
         output[market] = {
             "status": "SHADOW_CANDIDATES_FOUND" if candidates else "NO_QUALIFYING_SHADOW_PRICE",
             "bookmaker_count": consensus.get("bookmaker_count", 0),
@@ -172,6 +176,8 @@ def screen_fixture_value_intelligence(prediction: Mapping[str, Any]) -> dict[str
             "conservative_screening_probabilities": blended.get("conservative_lower_bound", {}),
             "raw_model_edge": blended.get("raw_model_edge", {}),
             "candidates": candidates[:5],
+            "candidate_count": len(candidates),
+            "candidate_quote_keys": candidate_quote_keys,
             "quote_timestamps": [row["last_update"] for row in price_rows],
             "bookmaker_quotes": price_rows,
             "method": blended.get("method"),
@@ -208,7 +214,7 @@ def attach_value_intelligence(report: dict[str, Any]) -> dict[str, Any]:
         for market, details in (diagnostics.get("markets") or {}).items():
             if details.get("bookmaker_count", 0):
                 counts[market] += int(details["bookmaker_count"])
-            candidates += len(details.get("candidates") or [])
+            candidates += int(details.get("candidate_count", len(details.get("candidates") or [])))
     report["value_intelligence"] = {
         "engine": "VELTRIX_VALUE_INTELLIGENCE_V1",
         "status": "SHADOW_MODE",
