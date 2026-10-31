@@ -11,7 +11,7 @@ import json
 import os
 import re
 import sys
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from pathlib import Path
 from urllib.error import HTTPError, URLError
 from urllib.parse import quote
@@ -68,6 +68,13 @@ def publish(path: str, local_file: Path, repo: str, token: str) -> None:
     print(f"Published {path} ({len(data)} bytes).")
 
 
+def _archive_report_path(report: dict, published_at: datetime) -> str:
+    """Return an immutable UTC-stamped archive path for a dated report snapshot."""
+    report_date = date.fromisoformat(str(report.get("as_of_date"))).isoformat()
+    timestamp = published_at.astimezone(timezone.utc).strftime("%Y%m%dT%H%M%S%fZ")
+    return f"public-data/archive/{report_date}/daily_predictions_{timestamp}.json"
+
+
 def _valid_recent_cache(cache: object) -> bool:
     """Accept the active v2 resumable cache and legacy v1 caches during migration."""
     return (
@@ -102,9 +109,14 @@ def main() -> int:
         # must retain their explicit reuse warning while still reporting that the
         # command-data branch received this exact snapshot.
         report["command_data_publication"] = "PUBLISHED"
-        report["command_data_published_at_utc"] = datetime.now(timezone.utc).isoformat()
+        published_at = datetime.now(timezone.utc)
+        report["command_data_published_at_utc"] = published_at.isoformat()
         report_path.write_text(json.dumps(report, indent=2, ensure_ascii=False), encoding="utf-8")
         publish("public-data/daily_predictions.json", report_path, repo, token)
+        # Preserve every generated snapshot, not only the latest mutable pointer.
+        # This makes future same-fixture model comparisons possible after artifact expiry.
+        archive_path = _archive_report_path(report, published_at)
+        publish(archive_path, report_path, repo, token)
         if args.ledger:
             ledger_path = Path(args.ledger)
             ledger = json.loads(ledger_path.read_text(encoding="utf-8"))
