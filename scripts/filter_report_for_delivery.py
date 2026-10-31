@@ -10,6 +10,20 @@ from zoneinfo import ZoneInfo
 
 from app.live_predictions import _name_key, _one_edit_apart, _team_variant_signature
 
+def _withhold_forecast(row: dict) -> dict:
+    """Keep the fixture visible while removing every model/value output."""
+    result = dict(row)
+    result["model"] = "not_evaluated"
+    for key in (
+        "probabilities", "poisson_probabilities", "elo_probabilities",
+        "expected_goals", "home_expected_goals", "away_expected_goals",
+        "btts_yes", "over_1_5", "over_2_5", "over_3_5",
+        "market_probabilities", "value_bet_screen", "value_intelligence",
+    ):
+        result.pop(key, None)
+    return result
+
+
 def _has_unsafe_auto_team_match(row: dict) -> bool:
     """Reject legacy fuzzy matches that violate the current conservative identity rules."""
     matches = row.get("team_name_matches") or {}
@@ -59,7 +73,7 @@ def filter_report_for_delivery(report: dict, now: datetime | None = None) -> dic
         if not value:
             missing_or_invalid_kickoff_rows += 1
             kickoff_unverified_rows_retained += 1
-            delivered_row = dict(row)
+            delivered_row = _withhold_forecast(row)
             delivered_row["status"] = "KICKOFF_UNVERIFIED"
             delivered_row["reason"] = "Fixture retained from the saved same-day report, but kickoff time is missing; forecast withheld until time can be verified."
             delivered_row["kickoff_verification"] = "MISSING"
@@ -87,7 +101,7 @@ def filter_report_for_delivery(report: dict, now: datetime | None = None) -> dic
         else:
             delivered_row = row
             if row.get("status") == "EXPERIMENTAL_ONLY" and _has_unsafe_auto_team_match(row):
-                delivered_row = dict(row)
+                delivered_row = _withhold_forecast(row)
                 delivered_row["status"] = "INSUFFICIENT_HISTORY"
                 delivered_row["reason"] = (
                     "Forecast withheld because the saved report used an unsafe fuzzy team-name match."
