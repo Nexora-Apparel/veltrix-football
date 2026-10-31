@@ -49,6 +49,7 @@ def filter_report_for_delivery(report: dict, now: datetime | None = None) -> dic
     past_rows_excluded = 0
     other_date_rows_excluded = 0
     missing_or_invalid_kickoff_rows = 0
+    kickoff_unverified_rows_retained = 0
     unsafe_team_identity_rows_withheld = 0
     for row in rows:
         if not isinstance(row, dict):
@@ -57,11 +58,23 @@ def filter_report_for_delivery(report: dict, now: datetime | None = None) -> dic
         value = row.get("kickoff_local")
         if not value:
             missing_or_invalid_kickoff_rows += 1
+            kickoff_unverified_rows_retained += 1
+            delivered_row = dict(row)
+            delivered_row["status"] = "KICKOFF_UNVERIFIED"
+            delivered_row["reason"] = "Fixture retained from the saved same-day report, but kickoff time is missing; forecast withheld until time can be verified."
+            delivered_row["kickoff_verification"] = "MISSING"
+            kept.append(delivered_row)
             continue
         try:
             kickoff = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
         except ValueError:
             missing_or_invalid_kickoff_rows += 1
+            kickoff_unverified_rows_retained += 1
+            delivered_row = dict(row)
+            delivered_row["status"] = "KICKOFF_UNVERIFIED"
+            delivered_row["reason"] = "Fixture retained from the saved same-day report, but kickoff time is invalid; forecast withheld until time can be verified."
+            delivered_row["kickoff_verification"] = "INVALID"
+            kept.append(delivered_row)
             continue
         if kickoff.tzinfo is None:
             kickoff = kickoff.replace(tzinfo=zone)
@@ -130,7 +143,8 @@ def filter_report_for_delivery(report: dict, now: datetime | None = None) -> dic
         "future_same_day_fixture_rows": len(kept),
         "past_kickoffs_excluded": past_rows_excluded,
         "other_date_rows_excluded": other_date_rows_excluded,
-        "missing_or_invalid_kickoff_rows_excluded": missing_or_invalid_kickoff_rows,
+        "missing_or_invalid_kickoff_rows_excluded": 0,
+        "kickoff_unverified_rows_retained": kickoff_unverified_rows_retained,
         "unsafe_team_identity_rows_withheld": unsafe_team_identity_rows_withheld,
     }
     # This script is used only by the quota-safe reuse path. Mark the snapshot so
