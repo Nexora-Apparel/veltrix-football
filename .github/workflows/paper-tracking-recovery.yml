@@ -9,6 +9,8 @@ on:
       - "app/paper_tracking.py"
       - "tests/test_paper_tracking.py"
       - "tests/test_run_paper_tracking.py"
+      - "scripts/rebuild_value_screen.py"
+      - "tests/test_rebuild_value_screen.py"
   workflow_dispatch:
     inputs:
       date:
@@ -49,6 +51,10 @@ jobs:
               raise SystemExit("Published report failed structural validation.")
           print("Loaded published report", report.get("as_of_date"), "with", len(report["predictions"]), "fixture rows.")
           PY
+      - name: Rebuild paper-only value screen from saved odds snapshots
+        env:
+          PYTHONPATH: .
+        run: python scripts/rebuild_value_screen.py --report reports/daily_predictions.json
       - name: Re-evaluate pending paper reports without live provider calls
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
