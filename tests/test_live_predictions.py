@@ -581,3 +581,20 @@ def test_mapped_competition_uses_explicit_league_prior_when_team_history_is_spar
     assert abs(sum(prediction["probabilities"].values()) - 1) < 0.0002
     assert 0 <= prediction["btts_yes"] <= 1
     assert 0 <= prediction["over_2_5"] <= 1
+
+
+def test_build_daily_report_retains_scheduled_fixture_without_kickoff():
+    fixture = _fixture(None)
+    report = build_daily_report(
+        {"response": [fixture]}, "unused.csv",
+        as_of=date(2026, 10, 23),
+        now=datetime(2026, 10, 23, 8, 0, tzinfo=ZoneInfo("Africa/Lagos")),
+        base_historical_matches=_history(),
+    )
+    assert len(report["predictions"]) == 1
+    row = report["predictions"][0]
+    assert row["fixture_id"] == 123
+    assert row["status"] == "KICKOFF_UNVERIFIED"
+    assert report["kickoff_unverified_fixtures"] == 1
+    assert report["future_fixtures_considered"] == 1
+    assert "probabilities" not in row
