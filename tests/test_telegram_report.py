@@ -168,7 +168,7 @@ def test_delivery_state_loads_published_dates_and_sha(monkeypatch):
     }
     monkeypatch.setattr("scripts.send_telegram_report._github_json", lambda *a, **k: payload)
     state, sha = _load_delivery_state("Nexora-Apparel/veltrix-football", "token")
-    assert state == {"version": 1, "sent_dates": ["2026-10-26", "2026-10-27"]}
+    assert state == {"version": 2, "sent_dates": ["2026-10-26", "2026-10-27"], "sent_report_hashes_by_date": {}}
     assert sha == "blob-sha"
 
 
@@ -185,16 +185,17 @@ def test_delivery_marker_is_saved_with_existing_sha_and_recent_dates(monkeypatch
         calls.append((url, token, method, body))
         return {"content": {"sha": "new-sha"}}
     monkeypatch.setattr("scripts.send_telegram_report._github_json", fake_github_json)
-    state = {"version": 1, "sent_dates": [f"2026-10-{day:02d}" for day in range(1, 31)]}
-    _record_delivery_date("Nexora-Apparel/veltrix-football", "token", "2026-10-31", state, "old-sha")
+    state = {"version": 2, "sent_dates": [f"2026-10-{day:02d}" for day in range(1, 31)], "sent_report_hashes_by_date": {}}
+    _record_delivery_date("Nexora-Apparel/veltrix-football", "token", "2026-10-31", "a" * 64, state, "old-sha")
     assert len(calls) == 1
     _, token, method, body = calls[0]
     assert token == "token" and method == "PUT"
     assert body["sha"] == "old-sha"
     saved = json.loads(base64.b64decode(body["content"]))
-    assert saved["version"] == 1
+    assert saved["version"] == 2
     assert saved["sent_dates"][-1] == "2026-10-31"
     assert len(saved["sent_dates"]) == 30
+    assert saved["sent_report_hashes_by_date"]["2026-10-31"] == ["a" * 64]
 
 
 
@@ -214,7 +215,12 @@ def test_main_skips_a_report_date_already_recorded_as_sent(tmp_path, monkeypatch
     monkeypatch.setenv("GITHUB_TOKEN", "github-test-token")
     monkeypatch.setenv("TELEGRAM_BOT_TOKEN", "telegram-test-token")
     monkeypatch.setenv("TELEGRAM_CHAT_ID", "12345")
-    monkeypatch.setattr(sender, "_load_delivery_state", lambda repo, token: ({"version": 1, "sent_dates": ["2026-10-27"]}, "sha"))
+    report = json.loads(report_path.read_text(encoding="utf-8"))
+    report_hash = sender._report_fingerprint(sender.format_report_messages(report))
+    monkeypatch.setattr(sender, "_load_delivery_state", lambda repo, token: ({
+        "version": 2, "sent_dates": ["2026-10-27"],
+        "sent_report_hashes_by_date": {"2026-10-27": [report_hash]},
+    }, "sha"))
     monkeypatch.setattr(sender, "send_message", lambda *args, **kwargs: (_ for _ in ()).throw(AssertionError("duplicate send attempted")))
 
     sender.main()
@@ -389,3 +395,29 @@ def test_telegram_retains_fixture_with_unverified_kickoff():
     assert "Fixtures retrieved: 1 · Research forecasts: 0" in message
     assert "Retained FC vs Visible United" in message
     assert "Fixture retained; forecast withheld because its kickoff time could not be verified." in message
+
+
+def test_legacy_sent_date_without_hash_allows_one_updated_same_day_report(monkeypatch):
+    from scripts import send_telegram_report as sender
+
+    messages = format_report_messages(sample_report())
+    report_hash = sender._report_fingerprint(messages)
+    legacy_state = {"version": 2, "sent_dates": ["2026-10-23"], "sent_report_hashes_by_date": {}}
+    assert sender._should_skip_delivery(legacy_state, "2026-10-23", report_hash) is False
+    updated = sender._mark_same_day_update(messages)
+    assert "UPDATED SAME-DAY REPORT" in updated[0]
+    assert sender._should_skip_delivery({
+        "version": 2,
+        "sent_dates": ["2026-10-23"],
+        "sent_report_hashes_by_date": {"2026-10-23": [report_hash]},
+    }, "2026-10-23", report_hash) is True
+
+
+def test_different_same_day_report_hash_is_not_suppressed():
+    from scripts.send_telegram_report import _should_skip_delivery
+    state = {
+        "version": 2,
+        "sent_dates": ["2026-10-23"],
+        "sent_report_hashes_by_date": {"2026-10-23": ["a" * 64]},
+    }
+    assert _should_skip_delivery(state, "2026-10-23", "b" * 64) is False
