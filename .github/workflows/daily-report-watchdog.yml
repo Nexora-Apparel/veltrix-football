@@ -1,6 +1,10 @@
 name: Daily Report Watchdog
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/daily-report-watchdog.yml"
   # Backup check after the normal 08:00 Africa/Lagos schedule.
   # It dispatches the live workflow only when today's report is still missing.
   schedule:
