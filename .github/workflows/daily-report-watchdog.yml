@@ -1,0 +1,102 @@
+name: Daily Report Watchdog
+
+on:
+  # Backup check after the normal 08:00 Africa/Lagos schedule.
+  # It dispatches the live workflow only when today's report is still missing.
+  schedule:
+    - cron: "0 16 * * *"
+  workflow_dispatch:
+
+permissions:
+  actions: write
+  contents: read
+
+concurrency:
+  group: veltrix-daily-report-watchdog
+  cancel-in-progress: false
+
+jobs:
+  ensure-daily-report:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Check today's published report
+        id: freshness
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPOSITORY: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          TODAY="$(TZ=Africa/Lagos date +%F)"
+          echo "today=$TODAY" >> "$GITHUB_OUTPUT"
+
+          REPORT_URL="https://raw.githubusercontent.com/$GH_REPOSITORY/command-data/public-data/daily_predictions.json"
+          REPORT_FILE="$(mktemp)"
+          if curl --fail --silent --show-error --max-time 20 "$REPORT_URL" -o "$REPORT_FILE"; then
+            python - "$REPORT_FILE" "$TODAY" >> "$GITHUB_OUTPUT" <<'PY'
+          import json, sys
+          path, today = sys.argv[1], sys.argv[2]
+          try:
+              report = json.load(open(path, encoding="utf-8"))
+          except Exception:
+              report = {}
+          fresh = (
+              report.get("as_of_date") == today
+              and report.get("command_data_publication") == "PUBLISHED"
+              and isinstance(report.get("predictions"), list)
+          )
+          print(f"fresh={'true' if fresh else 'false'}")
+          print(f"report_date={report.get('as_of_date', 'missing')}")
+          PY
+          else
+            echo "fresh=false" >> "$GITHUB_OUTPUT"
+            echo "report_date=unavailable" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Check for an active daily pipeline
+        id: active
+        if: steps.freshness.outputs.fresh != 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPOSITORY: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/$GH_REPOSITORY/actions/workflows/daily-fixture-predictions.yml/runs?per_page=20" \
+            -o /tmp/daily-runs.json
+          python - <<'PY' >> "$GITHUB_OUTPUT"
+          import json
+          data = json.load(open("/tmp/daily-runs.json", encoding="utf-8"))
+          active = any(
+              run.get("status") in {"queued", "in_progress"}
+              and run.get("event") in {"schedule", "workflow_dispatch"}
+              for run in data.get("workflow_runs", [])
+          )
+          print(f"active={'true' if active else 'false'}")
+          PY
+
+      - name: Dispatch today's report if missing
+        if: steps.freshness.outputs.fresh != 'true' && steps.active.outputs.active != 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPOSITORY: ${{ github.repository }}
+          TARGET_DATE: ${{ steps.freshness.outputs.today }}
+        run: |
+          set -euo pipefail
+          BODY="$(python -c 'import json,os; print(json.dumps({"ref":"main","inputs":{"date":os.environ["TARGET_DATE"]}}))')"
+          curl --fail --silent --show-error \
+            -X POST \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            -H "Content-Type: application/json" \
+            -d "$BODY" \
+            "https://api.github.com/repos/$GH_REPOSITORY/actions/workflows/daily-fixture-predictions.yml/dispatches"
+          echo "Today's report was missing; dispatched the normal live pipeline for $TARGET_DATE."
+
+      - name: Record healthy or already-running state
+        if: steps.freshness.outputs.fresh == 'true' || steps.active.outputs.active == 'true'
+        run: |
+          echo "Today's report is already published, or the normal daily pipeline is still active. No duplicate provider run was started."
