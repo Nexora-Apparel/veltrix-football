@@ -1,0 +1,46 @@
+import pytest
+
+from scripts.validate_fixture_visibility import validate_fixture_visibility
+
+
+def sample():
+    return {
+        "same_day_only": True,
+        "future_fixtures_considered": 3,
+        "predictions": [
+            {"home_team": "A", "away_team": "B", "status": "EXPERIMENTAL_ONLY", "probabilities": {"home_win": .5, "draw": .2, "away_win": .3}},
+            {"home_team": "C", "away_team": "D", "status": "INSUFFICIENT_HISTORY"},
+            {"home_team": "E", "away_team": "F", "status": "KICKOFF_UNVERIFIED"},
+        ],
+    }
+
+
+def test_fixture_visibility_counts_every_fixture_without_fabricating_forecasts():
+    report = sample()
+    result = validate_fixture_visibility(report)
+    assert result["status"] == "PASSED"
+    assert result["fixture_rows"] == 3
+    assert result["forecast_rows"] == 1
+    assert result["kickoff_unverified_rows"] == 1
+    assert report["fixture_visibility_validation"]["alerts_enabled"] is False
+
+
+def test_fixture_visibility_fails_if_any_fixture_row_is_missing():
+    report = sample()
+    report["predictions"].pop()
+    with pytest.raises(ValueError, match="visibility mismatch"):
+        validate_fixture_visibility(report)
+
+
+def test_non_forecast_fixture_cannot_carry_model_probabilities():
+    report = sample()
+    report["predictions"][1]["probabilities"] = {"home_win": .7, "draw": .2, "away_win": .1}
+    with pytest.raises(ValueError, match="unexpectedly contains probabilities"):
+        validate_fixture_visibility(report)
+
+
+def test_forecast_row_requires_probability_distribution():
+    report = sample()
+    report["predictions"][0].pop("probabilities")
+    with pytest.raises(ValueError, match="has no probability distribution"):
+        validate_fixture_visibility(report)
