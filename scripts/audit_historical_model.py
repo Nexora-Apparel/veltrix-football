@@ -126,6 +126,7 @@ def audit_report(report: dict[str, Any], cache: dict[str, Any]) -> dict[str, Any
     unmatched = []
     excluded_non_chronological = 0
     matched_by_provider = Counter()
+    fixture_details: dict[tuple[str, str, str], dict[str, Any]] = {}
 
     for item in report["predictions"]:
         if not isinstance(item, dict):
@@ -162,6 +163,19 @@ def audit_report(report: dict[str, Any], cache: dict[str, Any]) -> dict[str, Any
             })
             continue
         matched_by_provider[str(result["source_provider"])] += 1
+        detail = fixture_details.setdefault(key, {
+            "date": key[0],
+            "home_team": item.get("home_team"),
+            "away_team": item.get("away_team"),
+            "actual_result": result["actual"],
+            "home_goals": result["home_goals"],
+            "away_goals": result["away_goals"],
+            "result_source_provider": result["source_provider"],
+            "fixture_ids": [],
+            "models": {},
+        })
+        if item.get("fixture_id") is not None and item.get("fixture_id") not in detail["fixture_ids"]:
+            detail["fixture_ids"].append(item.get("fixture_id"))
 
         model_probabilities: dict[str, dict[str, float]] = {}
         primary = _probabilities(item.get("probabilities"))
@@ -185,6 +199,11 @@ def audit_report(report: dict[str, Any], cache: dict[str, Any]) -> dict[str, Any
             model_probabilities["experimental_recency_weighted_dixon_coles"] = dixon
 
         for model, probabilities in model_probabilities.items():
+            detail["models"][model] = {
+                "probabilities": probabilities,
+                "predicted_result": max(probabilities, key=probabilities.get),
+                "correct": max(probabilities, key=probabilities.get) == result["actual"],
+            }
             matched_rows[model].append({
                 "fixture_key": key,
                 "fixture_id": item.get("fixture_id"),
@@ -234,6 +253,8 @@ def audit_report(report: dict[str, Any], cache: dict[str, Any]) -> dict[str, Any
         "metrics_by_model_all_available_matches": model_metrics,
         "common_fixture_count_for_model_comparison": len(common),
         "metrics_by_model_on_common_fixtures": common_metrics,
+        "match_basis": "exact_Africa_Lagos_date_and_normalized_home_away_team_identity",
+        "matched_fixture_details": [fixture_details[key] for key in sorted(fixture_details)],
         "unmatched_examples": unmatched[:50],
         "interpretation": (
             "Descriptive retrospective audit only. It does not validate betting profitability. "
