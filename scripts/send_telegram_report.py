@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import argparse
 import base64
+import hashlib
 import json
 from datetime import datetime
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
@@ -58,18 +59,63 @@ def _load_delivery_state(repo: str, token: str) -> tuple[dict[str, Any], str | N
         encoded = payload.get("content")
         state = json.loads(base64.b64decode(encoded).decode("utf-8"))
         dates = state.get("sent_dates")
-        if state.get("version") != 1 or not isinstance(dates, list):
+        if state.get("version") not in {1, 2} or not isinstance(dates, list):
             raise ValueError("unsupported delivery state")
         sent_dates = sorted({str(value) for value in dates if isinstance(value, str) and len(value) == 10})
-        return {"version": 1, "sent_dates": sent_dates[-30:]}, str(payload["sha"])
+        raw_hashes = state.get("sent_report_hashes_by_date", {})
+        if not isinstance(raw_hashes, dict):
+            raise ValueError("invalid sent report hashes")
+        hashes: dict[str, list[str]] = {}
+        for report_day, values in raw_hashes.items():
+            if not isinstance(report_day, str) or len(report_day) != 10 or not isinstance(values, list):
+                raise ValueError("invalid sent report hash entry")
+            valid = [value.lower() for value in values if isinstance(value, str) and len(value) == 64 and all(ch in "0123456789abcdefABCDEF" for ch in value)]
+            hashes[report_day] = valid[-10:]
+        return {"version": 2, "sent_dates": sent_dates[-30:], "sent_report_hashes_by_date": hashes}, str(payload["sha"])
     except (KeyError, TypeError, ValueError, json.JSONDecodeError):
         raise RuntimeError("Published Telegram delivery guard is malformed; refusing a potentially duplicate send.") from None
 
 
-def _record_delivery_date(repo: str, token: str, sent_date: str, state: dict[str, Any], sha: str | None) -> None:
-    """Persist a successful report date so workflow reruns cannot resend it."""
+def _report_fingerprint(messages: list[str]) -> str:
+    """Stable hash of the exact Telegram report content, independent of run timestamps."""
+    canonical = "\n\n".join(messages).encode("utf-8")
+    return hashlib.sha256(canonical).hexdigest()
+
+
+def _should_skip_delivery(state: dict[str, Any], report_date: str, report_hash: str, force: bool = False) -> bool:
+    hashes = state.get("sent_report_hashes_by_date") or {}
+    known = hashes.get(report_date, []) if isinstance(hashes, dict) else []
+    return not force and report_hash in known
+
+
+def _mark_same_day_update(messages: list[str]) -> list[str]:
+    if not messages:
+        return messages
+    first, separator, rest = messages[0].partition("\n")
+    banner = "🔄 UPDATED SAME-DAY REPORT — refreshed fixture inventory"
+    messages = list(messages)
+    messages[0] = first + "\n" + banner + (separator + rest if separator else "")
+    return messages
+
+
+def _record_delivery_date(
+    repo: str, token: str, sent_date: str, report_hash: str,
+    state: dict[str, Any], sha: str | None,
+) -> None:
+    """Persist both the sent date and exact content hash to prevent stale same-day suppression."""
     dates = sorted(set(state.get("sent_dates", [])) | {sent_date})[-30:]
-    data = json.dumps({"version": 1, "sent_dates": dates}, indent=2).encode("utf-8")
+    hashes = dict(state.get("sent_report_hashes_by_date") or {})
+    current = list(hashes.get(sent_date, []))
+    if report_hash not in current:
+        current.append(report_hash)
+    hashes[sent_date] = current[-10:]
+    retained_dates = set(dates)
+    hashes = {day: values for day, values in hashes.items() if day in retained_dates}
+    data = json.dumps({
+        "version": 2,
+        "sent_dates": dates,
+        "sent_report_hashes_by_date": hashes,
+    }, indent=2).encode("utf-8")
     path = quote(DELIVERY_STATE_PATH, safe="/")
     url = f"https://api.github.com/repos/{repo}/contents/{path}"
     body = {
@@ -327,22 +373,28 @@ def main() -> None:
         report_date = str(report.get("as_of_date", ""))
         repo = os.environ.get("GITHUB_REPOSITORY", "").strip()
         github_token = os.environ.get("GITHUB_TOKEN", "").strip()
+        messages = format_report_messages(report, ledger)
+        report_hash = _report_fingerprint(messages)
         delivery_state = None
         delivery_sha = None
+        same_day_update = False
         if repo and github_token:
             delivery_state, delivery_sha = _load_delivery_state(repo, github_token)
-            if report_date in delivery_state["sent_dates"] and not args.force:
-                print(f"Telegram delivery skipped: a report for {report_date} was already sent.")
+            if _should_skip_delivery(delivery_state, report_date, report_hash, args.force):
+                print(f"Telegram delivery skipped: this exact report for {report_date} was already sent.")
                 return
+            same_day_update = report_date in delivery_state["sent_dates"]
         else:
             print("WARNING: persistent duplicate-prevention is unavailable outside GitHub Actions.", file=sys.stderr)
 
-        messages = format_report_messages(report, ledger)
+        if same_day_update and not args.force:
+            messages = _mark_same_day_update(messages)
+            print(f"Sending an updated same-day report for {report_date}; its fixture/report content differs from the last recorded delivery.")
         for index, message in enumerate(messages, start=1):
             send_message(token, chat_id, message)
             print(f"Telegram report part {index}/{len(messages)} delivered.")
         if delivery_state is not None:
-            _record_delivery_date(repo, github_token, report_date, delivery_state, delivery_sha)
+            _record_delivery_date(repo, github_token, report_date, report_hash, delivery_state, delivery_sha)
         print(f"Telegram report delivered for {report_date or 'unknown date'}.")
     except (OSError, json.JSONDecodeError, ValueError, RuntimeError, requests.RequestException) as exc:
         print(f"TELEGRAM REPORT FAILED: {exc}", file=sys.stderr)
