@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 
-from scripts.run_paper_tracking import load_cached_results_payload
+from scripts.run_paper_tracking import _report_forecast_count, load_cached_results_payload
 
 
 class FakeResponse:
@@ -60,3 +60,27 @@ def test_cached_results_payload_fails_closed_when_cache_is_unavailable(monkeypat
     result, status = load_cached_results_payload("Nexora-Apparel/veltrix-football")
     assert result == {"response": []}
     assert status == "CACHE_UNAVAILABLE"
+
+
+
+def test_report_forecast_count_accepts_opaque_supplemental_ids():
+    report = {
+        "predictions": [
+            {
+                "fixture_id": "odds-event-abc123",
+                "status": "EXPERIMENTAL_ONLY",
+                "probabilities": {"H": 0.5, "D": 0.25, "A": 0.25},
+            },
+            {
+                "fixture_id": None,
+                "status": "EXPERIMENTAL_ONLY",
+                "probabilities": {"H": 0.5, "D": 0.25, "A": 0.25},
+            },
+            {
+                "fixture_id": "infer-event-xyz",
+                "status": "UNSUPPORTED_COMPETITION",
+                "probabilities": {},
+            },
+        ]
+    }
+    assert _report_forecast_count(report) == 1
