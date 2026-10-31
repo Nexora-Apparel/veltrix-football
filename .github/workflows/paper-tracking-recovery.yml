@@ -5,6 +5,10 @@ on:
     branches: [main]
     paths:
       - ".github/workflows/paper-tracking-recovery.yml"
+      - "scripts/run_paper_tracking.py"
+      - "app/paper_tracking.py"
+      - "tests/test_paper_tracking.py"
+      - "tests/test_run_paper_tracking.py"
   workflow_dispatch:
     inputs:
       date:
