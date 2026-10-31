@@ -229,7 +229,7 @@
       "report_date": "2026-10-27"
     }
   ],
-  "updated_at_utc": "2026-10-31T13:29:55.085892+00:00",
+  "updated_at_utc": "2026-10-31T14:36:28.125327+00:00",
   "last_attempt": {
     "report_date": "2026-10-30",
     "status": "EVALUATED",
@@ -237,7 +237,7 @@
       {
         "report_date": "2026-10-24",
         "status": "EVALUATED",
-        "detail": "Scored from 5319 cached completed matches; no live football-provider request was made.",
+        "detail": "Scored from 5324 cached completed matches; no live football-provider request was made.",
         "fixtures_scored": 4,
         "completed_forecasts_scored": 4,
         "metrics": {
@@ -259,7 +259,7 @@
       {
         "report_date": "2026-10-27",
         "status": "EVALUATED",
-        "detail": "Scored from 5319 cached completed matches; no live football-provider request was made.",
+        "detail": "Scored from 5324 cached completed matches; no live football-provider request was made.",
         "fixtures_scored": 2,
         "completed_forecasts_scored": 4,
         "metrics": null,
@@ -278,11 +278,6 @@
           }
         },
         "awaiting_result_or_match": 28
-      },
-      {
-        "report_date": "2026-10-30",
-        "status": "NO_FORECASTS_TO_SCORE",
-        "detail": "The best saved report for this date contains no scoreable forecasts; provider quota was preserved."
       }
     ],
     "detail": null,
