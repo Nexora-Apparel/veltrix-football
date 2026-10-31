@@ -1,0 +1,73 @@
+name: Paper Tracking Recovery
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/paper-tracking-recovery.yml"
+  workflow_dispatch:
+    inputs:
+      date:
+        description: "Nigeria-local report date to evaluate (YYYY-MM-DD); blank means yesterday"
+        required: false
+        type: string
+
+permissions:
+  actions: read
+  contents: write
+
+concurrency:
+  group: veltrix-paper-tracking-recovery
+  cancel-in-progress: false
+
+jobs:
+  recover-paper-ledger:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+      - name: Install dependencies
+        run: python -m pip install -r requirements.txt
+      - name: Download latest published report
+        env:
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: |
+          mkdir -p reports
+          REPORT_URL="https://raw.githubusercontent.com/${GITHUB_REPOSITORY}/command-data/public-data/daily_predictions.json"
+          curl --fail --silent --show-error --retry 2 --max-time 30 "$REPORT_URL" -o reports/daily_predictions.json
+          python - <<'PY'
+          import json
+          report = json.load(open("reports/daily_predictions.json", encoding="utf-8"))
+          if not isinstance(report, dict) or not isinstance(report.get("predictions"), list):
+              raise SystemExit("Published report failed structural validation.")
+          print("Loaded published report", report.get("as_of_date"), "with", len(report["predictions"]), "fixture rows.")
+          PY
+      - name: Re-evaluate pending paper reports without live provider calls
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          GITHUB_RUN_ID: ${{ github.run_id }}
+          TARGET_DATE: ${{ inputs.date }}
+          PYTHONPATH: .
+        run: |
+          if [ -z "$TARGET_DATE" ]; then
+            TARGET_DATE="$(TZ=Africa/Lagos date -d 'yesterday' +%F)"
+          fi
+          python scripts/run_paper_tracking.py --date "$TARGET_DATE" --output reports/paper_tracking_ledger.json
+      - name: Upload cumulative paper ledger
+        uses: actions/upload-artifact@v7
+        with:
+          name: veltrix-paper-ledger
+          path: reports/paper_tracking_ledger.json
+          if-no-files-found: error
+          retention-days: 90
+      - name: Publish recovered ledger and current report snapshot
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          PYTHONPATH: .
+        run: |
+          python scripts/publish_command_data.py --report reports/daily_predictions.json --ledger reports/paper_tracking_ledger.json
