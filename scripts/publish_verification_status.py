@@ -5,6 +5,7 @@ import argparse
 import base64
 import json
 import os
+from pathlib import Path
 from datetime import datetime, timezone
 from urllib.error import HTTPError
 from urllib.parse import quote
@@ -13,6 +14,16 @@ from urllib.request import Request, urlopen
 
 BRANCH = "command-data"
 PATH = "public-data/verification_status.json"
+
+
+def _read_json(path_text: str) -> dict:
+    if not path_text:
+        return {}
+    try:
+        value = json.loads(Path(path_text).read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return {}
+    return value if isinstance(value, dict) else {}
 
 
 def build_status(env: dict[str, str]) -> dict:
@@ -42,6 +53,39 @@ def build_status(env: dict[str, str]) -> dict:
         passed = passed and steps["paper_tracking"] in {"success", "skipped"}
         passed = passed and steps["telegram_webhook"] in {"success", "skipped"}
         passed = passed and steps["telegram_delivery"] in {"success", "skipped"}
+    report = _read_json(env.get("VELTRIX_REPORT_PATH", "reports/daily_predictions.json"))
+    rows = report.get("predictions") if isinstance(report.get("predictions"), list) else []
+    row_counts: dict[str, int] = {}
+    for row in rows:
+        if isinstance(row, dict):
+            key = str(row.get("status") or "UNKNOWN").upper()
+            row_counts[key] = row_counts.get(key, 0) + 1
+    report_summary = None
+    if report:
+        report_summary = {
+            "as_of_date": report.get("as_of_date"),
+            "publication_status": report.get("publication_status"),
+            "fixtures_received": report.get("fixtures_received"),
+            "same_day_pre_match_fixtures": report.get("same_day_pre_match_fixtures"),
+            "future_fixtures_considered": report.get("future_fixtures_considered"),
+            "fixture_rows": len(rows),
+            "fixture_status_counts": row_counts,
+            "fixture_visibility_validation": report.get("fixture_visibility_validation"),
+            "historical_data_coverage": (report.get("historical_data_coverage") or {}).get("status"),
+            "live_odds_sync": (report.get("live_odds_sync") or {}).get("status"),
+            "value_intelligence": report.get("value_intelligence"),
+            "value_validation_certificate": (report.get("value_validation_certificate") or {}).get("status"),
+        }
+        if live and (
+            not isinstance(report.get("fixture_visibility_validation"), dict)
+            or report["fixture_visibility_validation"].get("status") != "PASSED"
+            or report.get("future_fixtures_considered") != len(rows)
+        ):
+            passed = False
+    elif live:
+        passed = False
+    evidence = _read_json(env.get("VELTRIX_VALUE_EVIDENCE_PATH", "reports/value_evidence_ledger.json"))
+    paper = _read_json(env.get("VELTRIX_PAPER_LEDGER_PATH", "reports/paper_tracking_ledger.json"))
     return {
         "schema_version": 1,
         "workflow": env.get("GITHUB_WORKFLOW"),
@@ -54,6 +98,12 @@ def build_status(env: dict[str, str]) -> dict:
         "overall_status": ("PASSED" if live else "TESTS_PASSED") if passed else "NEEDS_REVIEW",
         "validation_scope": "LIVE_PIPELINE" if live_attempted else "TESTS_ONLY",
         "steps": steps,
+        "report_summary": report_summary,
+        "value_evidence_summary": evidence.get("summary"),
+        "paper_tracking_summary": {
+            "evaluated_report_dates": paper.get("evaluated_report_dates"),
+            "cumulative_metrics_by_model": paper.get("cumulative_metrics_by_model"),
+        } if paper else None,
         "release_status": "LOCKED_SHADOW_MODE",
         "betting_alerts_enabled": False,
     }
