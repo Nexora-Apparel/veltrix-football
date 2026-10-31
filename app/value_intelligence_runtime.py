@@ -9,7 +9,7 @@ from __future__ import annotations
 from collections.abc import Mapping
 from typing import Any
 
-from app.value_intelligence import market_consensus, shrink_to_market, evaluate_price
+from app.value_intelligence import (market_consensus, shrink_to_market, evaluate_price,\n    poisson_scoreline_markets, ensemble_probabilities, bayesian_market_update, opportunity_quality_score)
 from app.value_bets_runtime import _eligible_snapshot, _eligible_quote, _map_outcomes
 
 
@@ -93,7 +93,7 @@ def screen_fixture_value_intelligence(prediction: Mapping[str, Any]) -> dict[str
                 "release_status": "LOCKED_SHADOW_MODE",
             }
             continue
-        blended = shrink_to_market(model_markets[market], consensus, model_weight=0.35)
+        bayesian = bayesian_market_update(model_markets[market], consensus.get("probabilities", {}), model_prior_weight=0.35)\n        blended = shrink_to_market(bayesian.get("probabilities") if bayesian.get("status") == "UPDATED" else model_markets[market], consensus, model_weight=0.35)
         candidates = []
         for row in price_rows:
             for outcome, price in row["odds"].items():
@@ -121,7 +121,7 @@ def screen_fixture_value_intelligence(prediction: Mapping[str, Any]) -> dict[str
             "candidates": candidates[:5],
             "quote_timestamps": [row["last_update"] for row in price_rows],
             "bookmaker_quotes": price_rows,
-            "method": blended.get("method"),
+            "method": blended.get("method"),\n            "bayesian_update": bayesian,\n            "model_ensemble_source": "model_probability_sets" if isinstance(prediction.get("model_probability_sets"), Mapping) else "single_model_or_scoreline",
             "uncertainty_note": blended.get("note"),
             "release_status": "LOCKED_SHADOW_MODE",
         }
