@@ -9,10 +9,15 @@ from __future__ import annotations
 import argparse
 import json
 import math
+import sys
 from collections import Counter, defaultdict
 from datetime import date, datetime
 from pathlib import Path
 from typing import Any
+
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 
 from app.live_predictions import _name_key
 
