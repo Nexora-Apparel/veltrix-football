@@ -125,4 +125,4 @@ def test_paper_candidates_require_prospective_goal_market_calibration():
     assert result["candidate_count"] == 0
     assert result["paper_candidate_count"] >= 4
     assert result["markets"]["BTTS"]["paper_candidates"][0]["status"] == "PAPER_ONLY_NOT_APPROVED"
-    assert result["alerts_enabled"] is False
+    assert result["model_validated"] is False
