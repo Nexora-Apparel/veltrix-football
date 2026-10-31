@@ -42,6 +42,8 @@ on:
       - "app/value_evidence_ledger.py"
       - "scripts/update_value_evidence_ledger.py"
       - "tests/test_value_evidence_ledger.py"
+      - "scripts/validate_fixture_visibility.py"
+      - "tests/test_fixture_visibility.py"
       - "scripts/publish_command_data.py"
       - "scripts/rebuild_value_screen.py"
       - "tests/test_rebuild_value_screen.py"
@@ -109,6 +111,8 @@ on:
       - "scripts/import_open_dataset.py"
       - "scripts/run_paper_tracking.py"
       - "scripts/evaluate_paper_predictions.py"
+      - "scripts/validate_fixture_visibility.py"
+      - "tests/test_fixture_visibility.py"
       - "scripts/send_telegram_report.py"
       - "scripts/filter_report_for_delivery.py"
       - "api/telegram.py"
@@ -340,6 +344,12 @@ jobs:
           GITHUB_REPOSITORY: ${{ github.repository }}
           PYTHONPATH: .
         run: python scripts/build_value_certificate_runtime_v2.py --report reports/daily_predictions.json --ledger reports/paper_tracking_ledger.json --output reports/value_validation_certificate.json
+
+      - name: Validate fixture visibility before publication and Telegram
+        if: (steps.generate-report.outcome == 'success' || steps.filter-saved-report.outcome == 'success')
+        env:
+          PYTHONPATH: .
+        run: python scripts/validate_fixture_visibility.py --report reports/daily_predictions.json
 
       - name: Notify Telegram when live report generation fails
         if: (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && contains(github.event.head_commit.message, '[run-live-verification]')) || false) && !contains(github.event.head_commit.message, '[skip-telegram]') && failure() && steps.generate-report.outcome == 'failure'
