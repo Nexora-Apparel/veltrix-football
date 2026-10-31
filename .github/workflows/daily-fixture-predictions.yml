@@ -312,6 +312,7 @@ jobs:
           if [ -z "${TARGET_DATE:-}" ]; then TARGET_DATE="$(TZ=Africa/Lagos date +%F)"; fi
           python scripts/run_daily_predictions.py --date "$TARGET_DATE" --history data/open_historical_matches.csv --output reports/daily_predictions.json --recent-cache reports/recent_results_cache.json
       - name: Enrich report with optional OddsPapi BTTS and Over Under prices
+        id: odds-enrichment
         if: (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && contains(github.event.head_commit.message, '[run-live-verification]')) || false) && steps.generate-report.outcome == 'success'
         env:
           ODDSPAPI_API_KEY: ${{ secrets.ODDSPAPI_API_KEY }}
@@ -335,6 +336,7 @@ jobs:
           fi
           python scripts/update_value_evidence_ledger.py --report reports/daily_predictions.json --ledger reports/value_evidence_ledger.previous.json --results reports/recent_results_cache.json --output reports/value_evidence_ledger.json
       - name: Upload prospective value evidence ledger
+        id: value-evidence-artifact
         if: always() && (steps.generate-report.outcome == 'success' || steps.filter-saved-report.outcome == 'success') && hashFiles('reports/value_evidence_ledger.json') != ''
         uses: actions/upload-artifact@v7
         with:
@@ -342,6 +344,7 @@ jobs:
           path: reports/value_evidence_ledger.json
           retention-days: 90
       - name: Build market-specific value validation certificate
+        id: value-certificate
         if: (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && contains(github.event.head_commit.message, '[run-live-verification]')) || false) && (steps.generate-report.outcome == 'success' || steps.filter-saved-report.outcome == 'success')
         continue-on-error: true
         env:
@@ -391,6 +394,7 @@ jobs:
             echo "::notice::Telegram delivery skipped because its two secrets are not both configured."
           fi
       - name: Register Telegram Command Centre webhook
+        id: telegram-webhook
         continue-on-error: true
         if: (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && contains(github.event.head_commit.message, '[run-live-verification]')) || false) && !contains(github.event.head_commit.message, '[skip-telegram]') && steps.telegram-config.outputs.configured == 'true'
         env:
@@ -421,6 +425,7 @@ jobs:
             python scripts/send_telegram_report.py --report reports/daily_predictions.json --ledger reports/paper_tracking_ledger.json
           fi
       - name: Upload daily prediction report
+        id: daily-report-artifact
         if: always() && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && contains(github.event.head_commit.message, '[run-live-verification]')) || false) && (steps.generate-report.outcome == 'success' || steps.filter-saved-report.outcome == 'success')
         uses: actions/upload-artifact@v7
         with:
@@ -430,6 +435,7 @@ jobs:
           retention-days: 90
 
       - name: Upload cumulative paper-tracking ledger
+        id: paper-ledger-artifact
         if: always() && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && contains(github.event.head_commit.message, '[run-live-verification]')) || false) && !contains(github.event.head_commit.message, '[reuse-report-40175707059]') && steps.paper-ledger-check.outputs.safe == 'true'
         uses: actions/upload-artifact@v7
         with:
@@ -474,8 +480,14 @@ jobs:
           VELTRIX_STEP_DASHBOARD_JS: ${{ steps.dashboard-js.outcome }}
           VELTRIX_STEP_FIXTURE_GENERATION: ${{ steps.generate-report.outcome }}
           VELTRIX_STEP_FIXTURE_VISIBILITY: ${{ steps.fixture-visibility-validation.outcome }}
+          VELTRIX_STEP_ODDS_ENRICHMENT: ${{ steps.odds-enrichment.outcome }}
           VELTRIX_STEP_VALUE_EVIDENCE_UPDATE: ${{ steps.value-evidence-update.outcome }}
+          VELTRIX_STEP_VALUE_EVIDENCE_ARTIFACT: ${{ steps.value-evidence-artifact.outcome }}
+          VELTRIX_STEP_VALUE_CERTIFICATE: ${{ steps.value-certificate.outcome }}
+          VELTRIX_STEP_TELEGRAM_WEBHOOK: ${{ steps.telegram-webhook.outcome }}
           VELTRIX_STEP_TELEGRAM_DELIVERY: ${{ steps.telegram-delivery.outcome }}
+          VELTRIX_STEP_DAILY_REPORT_ARTIFACT: ${{ steps.daily-report-artifact.outcome }}
+          VELTRIX_STEP_PAPER_LEDGER_ARTIFACT: ${{ steps.paper-ledger-artifact.outcome }}
           VELTRIX_STEP_COMMAND_DATA_PUBLICATION: ${{ steps.command-data-publication.outcome }}
           VELTRIX_STEP_PAPER_TRACKING: ${{ steps.paper-tracking.outcome }}
         run: python scripts/publish_verification_status.py
