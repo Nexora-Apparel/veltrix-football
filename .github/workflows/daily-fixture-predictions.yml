@@ -504,4 +504,7 @@ jobs:
           VELTRIX_STEP_PAPER_LEDGER_ARTIFACT: ${{ steps.paper-ledger-artifact.outcome }}
           VELTRIX_STEP_COMMAND_DATA_PUBLICATION: ${{ steps.command-data-publication.outcome }}
           VELTRIX_STEP_PAPER_TRACKING: ${{ steps.paper-tracking.outcome }}
+          VELTRIX_REPORT_PATH: reports/daily_predictions.json
+          VELTRIX_VALUE_EVIDENCE_PATH: reports/value_evidence_ledger.json
+          VELTRIX_PAPER_LEDGER_PATH: reports/paper_tracking_ledger.json
         run: python scripts/publish_verification_status.py
