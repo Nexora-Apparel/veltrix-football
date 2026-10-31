@@ -68,3 +68,23 @@ def test_report_aggregates_diagnostics_and_keeps_alerts_off():
     assert report["value_intelligence"]["fixtures_evaluated"] == 1
     assert report["value_intelligence"]["alerts_enabled"] is False
     assert "value_intelligence" in report["predictions"][0]
+
+
+def test_primary_elo_probabilities_are_not_replaced_by_poisson_alternative():
+    from app.value_intelligence_runtime import _model_market_probabilities
+    prediction = {
+        "model": "experimental_elo_by_competition",
+        "probabilities": {"home_win": 0.65, "draw": 0.20, "away_win": 0.15},
+        "poisson_probabilities": {"home_win": 0.30, "draw": 0.30, "away_win": 0.40},
+    }
+    assert _model_market_probabilities(prediction)["1X2"]["home_win"] == 0.65
+
+
+def test_single_bookmaker_cannot_generate_value_candidates():
+    fixture = _fixture()
+    fixture["the_odds_api_market_odds"]["markets"]["h2h"] = fixture["the_odds_api_market_odds"]["markets"]["h2h"][:1]
+    result = screen_fixture_value_intelligence(fixture)
+    market = result["markets"]["1X2"]
+    assert market["status"] == "INSUFFICIENT_BOOKMAKER_COVERAGE"
+    assert market["candidates"] == []
+    assert market["release_status"] == "LOCKED_SHADOW_MODE"
