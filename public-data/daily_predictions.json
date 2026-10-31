@@ -91545,10 +91545,10 @@
     "alerts_enabled": false
   },
   "command_data_publication": "PUBLISHED",
-  "command_data_published_at_utc": "2026-10-31T18:48:07.020432+00:00",
+  "command_data_published_at_utc": "2026-10-31T18:49:59.966572+00:00",
   "delivery_filter": {
     "applied": true,
-    "filtered_at": "2026-10-31T19:47:59.882349+01:00",
+    "filtered_at": "2026-10-31T19:49:54.413791+01:00",
     "saved_fixture_rows": 25,
     "future_same_day_fixture_rows": 25,
     "past_kickoffs_excluded": 0,
