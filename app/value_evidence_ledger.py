@@ -2,7 +2,6 @@
 from __future__ import annotations
 from collections.abc import Mapping
 from typing import Any
-from datetime import datetime
 
 VERSION = "VELTRIX_VALUE_EVIDENCE_V1"
 
@@ -96,9 +95,10 @@ def merge_evidence_ledger(previous: Mapping[str, Any] | None, report: Mapping[st
     for item in (results or {}).get("matches",[]):
         if isinstance(item,Mapping):
             result_rows.append(item)
-    settled=0
     # Result matching deliberately requires explicit fixture id and completed score.
     result_by_id={str(x.get("fixture_id")):x for x in result_rows if x.get("fixture_id") is not None}
+    settlement_conflicts=list(prior.get("settlement_conflicts") or [])
+    conflict_keys={(str(x.get("observation_id")), str(x.get("new_score"))) for x in settlement_conflicts if isinstance(x, Mapping)}
     for row in observations:
         result=result_by_id.get(str(row.get("fixture_id")))
         if not result: continue
@@ -114,15 +114,29 @@ def merge_evidence_ledger(previous: Mapping[str, Any] | None, report: Mapping[st
             total=hg+ag
             won=(sel=="over" and total>line) or (sel=="under" and total<line)
         else: continue
-        row["settlement"]={"status":"SETTLED","home_goals":hg,"away_goals":ag,"won":bool(won),
-                           "paper_profit_per_unit":float(row["decimal_odds"])-1 if won else -1.0}
-        settled+=1
+        settlement={"status":"SETTLED","home_goals":hg,"away_goals":ag,"won":bool(won),
+                    "paper_profit_per_unit":float(row["decimal_odds"])-1 if won else -1.0}
+        existing_settlement=row.get("settlement")
+        if isinstance(existing_settlement, Mapping) and dict(existing_settlement) != settlement:
+            new_score=f"{hg}-{ag}"
+            conflict_key=(str(row.get("observation_id")),new_score)
+            if conflict_key not in conflict_keys:
+                settlement_conflicts.append({
+                    "observation_id":row.get("observation_id"),
+                    "existing_settlement":dict(existing_settlement),
+                    "new_score":new_score,
+                    "new_settlement":settlement,
+                    "status":"RESULT_CONFLICT_REVIEW_REQUIRED",
+                })
+                conflict_keys.add(conflict_key)
+        elif not isinstance(existing_settlement, Mapping):
+            row["settlement"]=settlement
     settled_rows = [x for x in observations if isinstance(x.get("settlement"), Mapping)]
     settled_candidates = [x for x in settled_rows if x.get("shadow_candidate") is True]
     candidate_profit = sum(float(x["settlement"].get("paper_profit_per_unit", 0.0)) for x in settled_candidates)
     candidate_wins = sum(bool(x["settlement"].get("won")) for x in settled_candidates)
     return {"version":VERSION,"status":"SHADOW_ONLY","release_status":"LOCKED_SHADOW_MODE",
-            "observations":observations,"price_series":series,
+            "observations":observations,"price_series":series,"settlement_conflicts":settlement_conflicts,
             "summary":{"observations_total":len(observations),"observations_added":added,
                        "price_series":len(series),"series_with_multiple_snapshots":sum(x["observations"]>=2 for x in series),
                        "settled_observations":len(settled_rows),
