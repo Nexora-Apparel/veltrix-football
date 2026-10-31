@@ -5,9 +5,10 @@ on:
     branches: [main]
     paths:
       - ".github/workflows/daily-report-watchdog.yml"
-  # Backup check after the normal 08:00 Africa/Lagos schedule.
-  # It dispatches the live workflow only when today's report is still missing.
+  # Early backup check at 08:15 Africa/Lagos, plus a late recovery at 17:00 WAT.
+  # It dispatches the live workflow only when today's report is missing and no run is active.
   schedule:
+    - cron: "15 7 * * *"
     - cron: "0 16 * * *"
   workflow_dispatch:
 
