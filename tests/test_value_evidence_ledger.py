@@ -64,3 +64,15 @@ def test_corrected_result_does_not_overwrite_existing_settlement():
     assert yes["settlement"]["home_goals"] == 2
     assert len(updated["settlement_conflicts"]) == 2
     assert all(row["status"] == "RESULT_CONFLICT_REVIEW_REQUIRED" for row in updated["settlement_conflicts"])
+
+
+def test_legacy_candidate_counts_are_preserved_without_fabricating_settlements():
+    previous = {
+        "version": "VELTRIX_VALUE_EVIDENCE_V1",
+        "observations": [],
+        "summary": {"shadow_candidate_observations": 7},
+    }
+    ledger = merge_evidence_ledger(previous, {"as_of_date": "2026-10-31", "predictions": []})
+    assert ledger["summary"]["shadow_candidate_observations"] == 7
+    assert ledger["summary"]["legacy_candidate_observations_unannotated"] == 7
+    assert ledger["summary"]["settled_shadow_candidates"] == 0
