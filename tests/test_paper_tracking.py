@@ -169,17 +169,22 @@ def test_automation_writes_safe_ledger_when_github_credentials_are_missing(tmp_p
 
 
 
-def test_run_discovery_queries_schedule_and_dispatch_separately(monkeypatch):
+def test_run_discovery_queries_daily_and_recovery_workflows_separately(monkeypatch):
     calls = []
     def fake_github_get(session, url):
         calls.append(url)
-        if "event=schedule" in url:
+        if "daily-fixture-predictions.yml" in url and "event=schedule" in url:
             return {"workflow_runs": [{"id": 1, "event": "schedule", "created_at": "2026-10-23T07:00:00Z"}]}
-        return {"workflow_runs": [{"id": 2, "event": "workflow_dispatch", "created_at": "2026-10-24T07:00:00Z"}]}
+        if "daily-fixture-predictions.yml" in url:
+            return {"workflow_runs": [{"id": 2, "event": "workflow_dispatch", "created_at": "2026-10-24T07:00:00Z"}]}
+        if "event=push" in url:
+            return {"workflow_runs": [{"id": 3, "event": "push", "created_at": "2026-10-25T07:00:00Z"}]}
+        return {"workflow_runs": []}
     monkeypatch.setattr(tracking_runner, "github_get", fake_github_get)
     runs = tracking_runner.list_relevant_runs(object(), "owner/repo")
-    assert len(calls) == 2
-    assert [run["id"] for run in runs] == [2, 1]
+    assert len(calls) == 5
+    assert [run["id"] for run in runs] == [3, 2, 1]
+    assert any("paper-tracking-recovery.yml" in url for url in calls)
 
 
 
