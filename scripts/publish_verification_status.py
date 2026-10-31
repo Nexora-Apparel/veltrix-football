@@ -28,31 +28,34 @@ def _read_json(path_text: str) -> dict:
 
 def build_status(env: dict[str, str]) -> dict:
     keys = (
-        "unit_tests", "dashboard_js", "fixture_generation", "fixture_visibility",
-        "odds_enrichment", "value_evidence_update", "value_evidence_artifact",
-        "value_certificate", "telegram_webhook", "telegram_delivery",
-        "daily_report_artifact", "paper_ledger_artifact",
+        "unit_tests", "dashboard_js", "fixture_generation", "report_recovery",
+        "fixture_visibility", "odds_enrichment", "value_evidence_update",
+        "value_evidence_artifact", "value_certificate", "telegram_webhook",
+        "telegram_delivery", "daily_report_artifact", "paper_ledger_artifact",
         "command_data_publication", "paper_tracking",
     )
     steps = {key: env.get("VELTRIX_STEP_" + key.upper(), "not_run") for key in keys}
     critical = ("unit_tests", "dashboard_js")
     passed = all(steps[key] == "success" for key in critical)
     live = steps["fixture_generation"] == "success"
+    recovered = steps["report_recovery"] == "success"
     live_attempted = steps["fixture_generation"] not in {"skipped", "not_run"}
-    if live_attempted and not live:
+    if live_attempted and not live and not recovered:
         passed = False
-    if live:
+    if live or recovered:
         passed = passed and steps["fixture_visibility"] == "success"
-        passed = passed and steps["odds_enrichment"] in {"success", "skipped"}
         passed = passed and steps["value_evidence_update"] == "success"
         passed = passed and steps["value_evidence_artifact"] == "success"
-        passed = passed and steps["value_certificate"] == "success"
         passed = passed and steps["daily_report_artifact"] == "success"
         passed = passed and steps["paper_ledger_artifact"] in {"success", "skipped"}
         passed = passed and steps["command_data_publication"] == "success"
         passed = passed and steps["paper_tracking"] in {"success", "skipped"}
         passed = passed and steps["telegram_webhook"] in {"success", "skipped"}
-        passed = passed and steps["telegram_delivery"] in {"success", "skipped"}
+        passed = passed and steps["telegram_delivery"] == "success"
+        passed = passed and env.get("VELTRIX_TELEGRAM_CONFIGURED", "false").casefold() == "true"
+        if live:
+            passed = passed and steps["odds_enrichment"] in {"success", "skipped"}
+            passed = passed and steps["value_certificate"] == "success"
     report = _read_json(env.get("VELTRIX_REPORT_PATH", "reports/daily_predictions.json"))
     rows = report.get("predictions") if isinstance(report.get("predictions"), list) else []
     row_counts: dict[str, int] = {}
@@ -76,13 +79,13 @@ def build_status(env: dict[str, str]) -> dict:
             "value_intelligence": report.get("value_intelligence"),
             "value_validation_certificate": (report.get("value_validation_certificate") or {}).get("status"),
         }
-        if live and (
+        if (live or recovered) and (
             not isinstance(report.get("fixture_visibility_validation"), dict)
             or report["fixture_visibility_validation"].get("status") != "PASSED"
             or report.get("future_fixtures_considered") != len(rows)
         ):
             passed = False
-    elif live:
+    elif live or recovered:
         passed = False
     evidence = _read_json(env.get("VELTRIX_VALUE_EVIDENCE_PATH", "reports/value_evidence_ledger.json"))
     paper = _read_json(env.get("VELTRIX_PAPER_LEDGER_PATH", "reports/paper_tracking_ledger.json"))
@@ -95,8 +98,13 @@ def build_status(env: dict[str, str]) -> dict:
         "commit_sha": env.get("GITHUB_SHA"),
         "branch": env.get("GITHUB_REF_NAME"),
         "recorded_at_utc": datetime.now(timezone.utc).isoformat(),
-        "overall_status": ("PASSED" if live else "TESTS_PASSED") if passed else "NEEDS_REVIEW",
-        "validation_scope": "LIVE_PIPELINE" if live_attempted else "TESTS_ONLY",
+        "overall_status": (
+            "PASSED" if live else "DEGRADED_REUSED_SNAPSHOT" if recovered else "TESTS_PASSED"
+        ) if passed else "NEEDS_REVIEW",
+        "validation_scope": (
+            "LIVE_PIPELINE" if live else "SAME_DAY_RECOVERY" if recovered else "LIVE_PIPELINE" if live_attempted else "TESTS_ONLY"
+        ),
+        "telegram_configured": env.get("VELTRIX_TELEGRAM_CONFIGURED", "false").casefold() == "true",
         "steps": steps,
         "report_summary": report_summary,
         "value_evidence_summary": evidence.get("summary"),
