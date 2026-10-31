@@ -14,6 +14,7 @@ from app.recent_results import fetch_recent_results_incremental
 from app.api_football_odds import APIFootballError  # legacy error type for compatibility helpers only
 from app.provider_adapters import FiveDollarFootballClient, ProviderAPIError, enrich_report_with_multi_source_odds, supplement_fixtures_from_odds_api, supplement_fixtures_from_infersports
 from app.value_bets_runtime import attach_value_bet_screens
+from app.value_intelligence_runtime import attach_value_intelligence
 import math
 
 
@@ -428,6 +429,7 @@ def main() -> None:
         # Build all-market value diagnostics from actual same-bookmaker prices.
         # Alerts remain locked until repeated chronological validation passes.
         report = attach_value_bet_screens(report, validation_certificate=None)
+        report = attach_value_intelligence(report)
         multi_odds = report.get("multi_source_odds_sync") or {}
         five_status = (multi_odds.get("five_dollar") or {}).get("status", "NOT_CONFIGURED")
         odds_api_status = (multi_odds.get("the_odds_api") or {}).get("status", "NOT_CONFIGURED")
