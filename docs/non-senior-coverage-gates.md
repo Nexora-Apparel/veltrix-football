@@ -89,3 +89,6 @@ Recovery simulation execution: trigger the controlled no-provider-request failur
 
 
 Final production verification after recovery-path test: perform a fresh primary-provider fetch, verify all upcoming same-day fixture rows, send only if the rendered report differs from the last delivered content, and confirm publication.
+
+
+Final release verification after the controlled outage test: regenerate the current local-date fixture inventory from the primary provider, confirm no fixture rows are filtered out, refresh all available odds/value evidence, and publish the fresh report and receipt.
