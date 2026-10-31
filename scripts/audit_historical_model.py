@@ -225,6 +225,12 @@ def audit_report(report: dict[str, Any], cache: dict[str, Any]) -> dict[str, Any
         "unmatched_forecast_fixtures": len(unmatched),
         "excluded_non_chronological": excluded_non_chronological,
         "matched_result_sources": dict(matched_by_provider),
+        "result_provenance_verified": bool(matched_by_provider) and all(source != "LEGACY_UNATTRIBUTED" for source in matched_by_provider),
+        "result_provenance_warning": (
+            "Matched results include legacy rows with no recorded source provider; treat all retrospective scores as provisional."
+            if any(source == "LEGACY_UNATTRIBUTED" for source in matched_by_provider)
+            else None
+        ),
         "metrics_by_model_all_available_matches": model_metrics,
         "common_fixture_count_for_model_comparison": len(common),
         "metrics_by_model_on_common_fixtures": common_metrics,
