@@ -25,6 +25,8 @@ def build_status(env: dict[str, str]) -> dict:
     critical = ("unit_tests", "dashboard_js")
     passed = all(steps[key] == "success" for key in critical)
     live = steps["fixture_generation"] == "success"
+    if steps["fixture_generation"] not in {"success", "skipped"}:
+        passed = False
     if live:
         passed = passed and steps["fixture_visibility"] == "success"
         passed = passed and steps["value_evidence_update"] == "success"
