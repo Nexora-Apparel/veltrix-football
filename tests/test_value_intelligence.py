@@ -9,7 +9,7 @@ from app.value_intelligence import (
 def test_devig_removes_overround():
     result = devig({"home": 2.0, "draw": 3.5, "away": 4.0})
     assert sum(result.values()) == pytest.approx(1.0)
-    assert result["home"] > 0.5
+    assert result["home"] == pytest.approx((1 / 2.0) / (1 / 2.0 + 1 / 3.5 + 1 / 4.0))
 
 
 def test_consensus_uses_multiple_complete_book_sets():
