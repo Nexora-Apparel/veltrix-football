@@ -373,3 +373,19 @@ def test_report_header_shows_goal_calibration_and_market_release_state():
     message = format_report(report)
     assert "Goal calibration: NO_COMPATIBLE_FORECASTS · applied: 0/0" in message
     assert "Validation: LOCKED_INSUFFICIENT_EVIDENCE · approved: none" in message
+
+
+def test_telegram_retains_fixture_with_unverified_kickoff():
+    report = sample_report()
+    report["predictions"] = [{
+        "status": "KICKOFF_UNVERIFIED",
+        "home_team": "Retained FC",
+        "away_team": "Visible United",
+        "league": "Test League",
+        "kickoff_local": None,
+        "reason": "Kickoff timestamp missing",
+    }]
+    message = format_report(report)
+    assert "Fixtures retrieved: 1 · Research forecasts: 0" in message
+    assert "Retained FC vs Visible United" in message
+    assert "Fixture retained; forecast withheld because its kickoff time could not be verified." in message
