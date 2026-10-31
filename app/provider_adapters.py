@@ -76,7 +76,7 @@ def _json_request(url: str, headers: dict[str, str] | None = None, timeout: int 
                 continue
             reason_type = type(getattr(exc, "reason", exc)).__name__
             raise ProviderAPIError(
-                f"Provider network request to {host} failed after {attempts} attempts ({reason_type})."
+                f"Provider network request to {host} failed after {attempts} attempts ({type(exc).__name__}/{reason_type})."
             ) from None
         except (OSError, TimeoutError) as exc:
             if attempt + 1 < attempts:
