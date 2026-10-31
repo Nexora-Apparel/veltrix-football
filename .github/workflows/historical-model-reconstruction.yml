@@ -14,27 +14,52 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  reconstruct-october-25:
+  reconstruct-archived-reports:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 12
     steps:
       - name: Check out audit code
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Download archived 25 October prediction report
+      - name: Download 24 October morning report (API-Sports-era sample)
         uses: actions/download-artifact@v7
         with:
           name: veltrix-daily-predictions
-          path: reports/archive
+          path: reports/archive/2026-10-24-morning
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          repository: ${{ github.repository }}
+          run-id: 40091657947
+
+      - name: Download 24 October evening report
+        uses: actions/download-artifact@v7
+        with:
+          name: veltrix-daily-predictions
+          path: reports/archive/2026-10-24-evening
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          repository: ${{ github.repository }}
+          run-id: 40121951981
+
+      - name: Download 25 October midnight report (football-data.org migration attempt)
+        uses: actions/download-artifact@v7
+        with:
+          name: veltrix-daily-predictions
+          path: reports/archive/2026-10-25-midnight
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          repository: ${{ github.repository }}
+          run-id: 40144236021
+
+      - name: Download 25 October morning report (Highlightly quota-limited run)
+        uses: actions/download-artifact@v7
+        with:
+          name: veltrix-daily-predictions
+          path: reports/archive/2026-10-25-morning
           github-token: ${{ secrets.GITHUB_TOKEN }}
           repository: ${{ github.repository }}
           run-id: 40175707059
 
       - name: Retrieve saved completed-results cache
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
           mkdir -p reports
@@ -42,20 +67,31 @@ jobs:
           git show origin/command-data:public-data/recent_results_cache.json > reports/recent_results_cache.json
           test -s reports/recent_results_cache.json
 
-      - name: Install audit dependencies
+      - name: Install audit test dependency
         run: python -m pip install --disable-pip-version-check pytest
 
-      - name: Run historical reconstruction and common-fixture comparison
-        run: |
-          python -m pytest -q tests/test_historical_model_audit.py
-          python scripts/audit_historical_model.py \
-            --report reports/archive/daily_predictions.json \
-            --cache reports/recent_results_cache.json \
-            --output reports/historical_model_audit.json
+      - name: Run audit unit tests
+        run: python -m pytest -q tests/test_historical_model_audit.py
 
-      - name: Upload reconstructed audit
+      - name: Reconstruct each archived prediction sample
+        run: |
+          set -euo pipefail
+          for sample in 2026-10-24-morning 2026-10-24-evening 2026-10-25-midnight 2026-10-25-morning; do
+            REPORT="reports/archive/$sample/daily_predictions.json"
+            if [ ! -s "$REPORT" ]; then
+              echo "::warning::Archived report missing for $sample; skipping."
+              continue
+            fi
+            python scripts/audit_historical_model.py \
+              --report "$REPORT" \
+              --cache reports/recent_results_cache.json \
+              --output "reports/audits/$sample.json"
+          done
+          test -n "$(find reports/audits -maxdepth 1 -name '*.json' -print -quit)"
+
+      - name: Upload reconstructed comparison bundle
         uses: actions/upload-artifact@v4
         with:
-          name: veltrix-historical-model-audit
-          path: reports/historical_model_audit.json
+          name: veltrix-historical-model-audits
+          path: reports/audits/*.json
           retention-days: 90
