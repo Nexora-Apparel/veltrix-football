@@ -361,6 +361,43 @@ def test_fixture_delivery_cap_prioritizes_historically_mapped_competitions():
     assert [row["tag"] for row in limited["response"]] == ["mapped"]
 
 
+def test_fixture_delivery_cap_prefers_primary_provider_over_unmapped_supplements():
+    from datetime import datetime
+    from zoneinfo import ZoneInfo
+
+    now = datetime(2026, 10, 30, 12, 0, tzinfo=ZoneInfo("Africa/Lagos"))
+    payload = {
+        "_veltrix_meta": {"provider": "5DollarFootballAPI"},
+        "response": [
+            {
+                "fixture": {"date": "2026-10-30T13:00:00+01:00", "status": {"short": "NS"}},
+                "league": {"name": "Unmapped regional league", "code": "FD3"},
+                "_veltrix_source": "InferSports",
+                "tag": "supplement",
+            },
+            {
+                "fixture": {"date": "2026-10-30T18:00:00+01:00", "status": {"short": "NS"}},
+                "league": {"name": "Unmapped primary league", "code": None},
+                "_veltrix_source": "5DollarFootballAPI",
+                "tag": "primary",
+            },
+        ],
+    }
+    limited = daily_runner._limit_fixture_payload(
+        payload, 1, as_of_date=date(2026, 10, 30), now=now
+    )
+    assert [row["tag"] for row in limited["response"]] == ["primary"]
+    assert limited["_veltrix_meta"]["fixtures_by_source_before_cap"] == {
+        "5DollarFootballAPI": 1, "InferSports": 1
+    }
+    assert limited["_veltrix_meta"]["fixtures_by_source_after_cap"] == {
+        "5DollarFootballAPI": 1
+    }
+    assert limited["_veltrix_meta"]["fixture_selection_policy"] == (
+        "mapped_competition_then_primary_provider_then_kickoff"
+    )
+
+
 def test_fixture_cap_does_not_trust_provider_local_numeric_league_ids():
     from datetime import datetime
     from zoneinfo import ZoneInfo
