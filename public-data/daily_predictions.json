@@ -22,7 +22,7 @@
   "predictions_created": 10,
   "insufficient_history": 0,
   "unsupported_competitions": 15,
-  "fixtures_with_market_odds": 7,
+  "fixtures_with_market_odds": 0,
   "unsupported_competition_breakdown": {
     "BOLPD": 1,
     "BRA B": 1,
@@ -91402,8 +91402,8 @@
     "fixtures_with_market_odds": 6,
     "note": "Market odds are reference data; forecast probabilities remain experimental and unchanged."
   },
-  "publication_status": "LIVE_REPORT_GENERATED_PENDING_PUBLICATION",
-  "publication_notice": "Generated from this run's live fixture response. Public publication is confirmed separately by command_data_publication.",
+  "publication_status": "REUSED_SNAPSHOT_NOT_REFRESHED",
+  "publication_notice": "A saved same-day snapshot was reused because a new live report was unavailable; this run did not fetch fresh fixtures.",
   "oddspapi_odds": {
     "provider": "OddsPapi",
     "status": "AVAILABLE",
@@ -91545,5 +91545,16 @@
     "alerts_enabled": false
   },
   "command_data_publication": "PUBLISHED",
-  "command_data_published_at_utc": "2026-10-31T18:45:56.714594+00:00"
+  "command_data_published_at_utc": "2026-10-31T18:48:07.020432+00:00",
+  "delivery_filter": {
+    "applied": true,
+    "filtered_at": "2026-10-31T19:47:59.882349+01:00",
+    "saved_fixture_rows": 25,
+    "future_same_day_fixture_rows": 25,
+    "past_kickoffs_excluded": 0,
+    "other_date_rows_excluded": 0,
+    "missing_or_invalid_kickoff_rows_excluded": 0,
+    "kickoff_unverified_rows_retained": 0,
+    "unsafe_team_identity_rows_withheld": 0
+  }
 }
