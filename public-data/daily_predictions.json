@@ -8,21 +8,21 @@
   "historical_matches_available": 76968,
   "historical_data_through": "2026-10-30",
   "fixtures_received": 25,
-  "same_day_pre_match_fixtures": 25,
-  "past_kickoffs_excluded": 0,
-  "future_fixtures_considered": 25,
+  "same_day_pre_match_fixtures": 24,
+  "past_kickoffs_excluded": 1,
+  "future_fixtures_considered": 24,
   "kickoff_unverified_fixtures": 0,
   "fixture_status_counts": {
     "EXPERIMENTAL_ONLY": 10,
     "INSUFFICIENT_HISTORY": 0,
-    "UNSUPPORTED_COMPETITION": 15,
+    "UNSUPPORTED_COMPETITION": 14,
     "KICKOFF_UNVERIFIED": 0
   },
   "fixtures_excluded_other_date_or_status": 0,
   "predictions_created": 10,
   "insufficient_history": 0,
-  "unsupported_competitions": 15,
-  "fixtures_with_market_odds": 7,
+  "unsupported_competitions": 14,
+  "fixtures_with_market_odds": 0,
   "unsupported_competition_breakdown": {
     "BOLPD": 1,
     "BRA B": 1,
@@ -31,7 +31,6 @@
     "ECUSA": 1,
     "Fr2": 1,
     "HUNB1": 1,
-    "IsrBet": 1,
     "MLS": 2,
     "POL 2": 1
   },
@@ -65136,90 +65135,6 @@
       }
     },
     {
-      "fixture_id": "evt_M1EPK47T",
-      "kickoff": "2026-10-31T18:40:00+00:00",
-      "kickoff_local": "2026-10-31T19:40:00+01:00",
-      "home_team": "Amidar Ramat Gan",
-      "away_team": "Ironi Beit Dagan",
-      "league": "IsrBet",
-      "league_id": "lg_WVE8R6XB",
-      "division_code": null,
-      "fixture_status": "NS",
-      "model": "experimental_recent_goals_poisson",
-      "model_validated": false,
-      "betting_recommendation": false,
-      "historical_matches": {
-        "home": 0,
-        "away": 0
-      },
-      "team_name_matches": {
-        "home": {
-          "fixture_name": "Amidar Ramat Gan",
-          "historical_key": "amidarramatgan",
-          "auto_matched": false
-        },
-        "away": {
-          "fixture_name": "Ironi Beit Dagan",
-          "historical_key": "ironibeitdagan",
-          "auto_matched": false
-        }
-      },
-      "status": "UNSUPPORTED_COMPETITION",
-      "reason": "This competition is not mapped to the historical dataset and the teams do not have enough exact-match history for a safe global estimate.",
-      "team_name_match_suggestions": {},
-      "fixture_source": "InferSports",
-      "source_fixture_id": "evt_M1EPK47T",
-      "value_bet_screen": {
-        "status": "DISABLED_UNVALIDATED",
-        "model_validated": false,
-        "markets": {
-          "1X2": {
-            "status": "DISABLED_UNVALIDATED",
-            "bookmaker_price_sets": 0,
-            "candidates": [],
-            "paper_candidate_count": 0,
-            "paper_candidates": []
-          },
-          "BTTS": {
-            "status": "DISABLED_UNVALIDATED",
-            "bookmaker_price_sets": 0,
-            "candidates": [],
-            "paper_candidate_count": 0,
-            "paper_candidates": []
-          },
-          "OVER_UNDER_1_5": {
-            "status": "DISABLED_UNVALIDATED",
-            "bookmaker_price_sets": 0,
-            "candidates": [],
-            "paper_candidate_count": 0,
-            "paper_candidates": []
-          },
-          "OVER_UNDER_2_5": {
-            "status": "DISABLED_UNVALIDATED",
-            "bookmaker_price_sets": 0,
-            "candidates": [],
-            "paper_candidate_count": 0,
-            "paper_candidates": []
-          },
-          "OVER_UNDER_3_5": {
-            "status": "DISABLED_UNVALIDATED",
-            "bookmaker_price_sets": 0,
-            "candidates": [],
-            "paper_candidate_count": 0,
-            "paper_candidates": []
-          }
-        },
-        "candidate_count": 0,
-        "paper_candidate_count": 0,
-        "note": "Paper-only candidates are prospective research records, not approved betting alerts. Release remains certificate-gated; no bookmaker actions are performed."
-      },
-      "value_intelligence": {
-        "status": "NO_ELIGIBLE_TIMESTAMPED_ODDS",
-        "markets": {},
-        "release_status": "LOCKED_SHADOW_MODE"
-      }
-    },
-    {
       "fixture_id": "evt_NSJSQ3GJ",
       "kickoff": "2026-10-31T18:45:00+00:00",
       "kickoff_local": "2026-10-31T19:45:00+01:00",
@@ -91180,8 +91095,8 @@
     "fixtures_with_market_odds": 6,
     "note": "Market odds are reference data; forecast probabilities remain experimental and unchanged."
   },
-  "publication_status": "LIVE_REPORT_GENERATED_PENDING_PUBLICATION",
-  "publication_notice": "Generated from this run's live fixture response. Public publication is confirmed separately by command_data_publication.",
+  "publication_status": "REUSED_SNAPSHOT_NOT_REFRESHED",
+  "publication_notice": "A saved same-day snapshot was reused because a new live report was unavailable; this run did not fetch fresh fixtures.",
   "oddspapi_odds": {
     "provider": "OddsPapi",
     "status": "AVAILABLE",
@@ -91312,16 +91227,27 @@
   },
   "fixture_visibility_validation": {
     "status": "PASSED",
-    "fixture_rows": 25,
-    "expected_fixture_rows": 25,
+    "fixture_rows": 24,
+    "expected_fixture_rows": 24,
     "fixture_status_counts": {
       "EXPERIMENTAL_ONLY": 10,
-      "UNSUPPORTED_COMPETITION": 15
+      "UNSUPPORTED_COMPETITION": 14
     },
     "kickoff_unverified_rows": 0,
     "forecast_rows": 10,
     "alerts_enabled": false
   },
   "command_data_publication": "PUBLISHED",
-  "command_data_published_at_utc": "2026-10-31T18:38:08.616576+00:00"
+  "command_data_published_at_utc": "2026-10-31T18:40:15.349198+00:00",
+  "delivery_filter": {
+    "applied": true,
+    "filtered_at": "2026-10-31T19:40:08.697723+01:00",
+    "saved_fixture_rows": 25,
+    "future_same_day_fixture_rows": 24,
+    "past_kickoffs_excluded": 1,
+    "other_date_rows_excluded": 0,
+    "missing_or_invalid_kickoff_rows_excluded": 0,
+    "kickoff_unverified_rows_retained": 0,
+    "unsafe_team_identity_rows_withheld": 0
+  }
 }
