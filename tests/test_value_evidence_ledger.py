@@ -7,7 +7,9 @@ def report(ts, price=2.2):
       "value_intelligence":{"snapshot_fetched_at":ts,"markets":{"BTTS":{
        "model_probabilities":{"yes":.6,"no":.4},"market_consensus_probabilities":{"yes":.5,"no":.5},
        "conservative_screening_probabilities":{"yes":.55,"no":.45},
-       "bookmaker_quotes":[{"bookmaker":"Book","last_update":ts,"odds":{"yes":price,"no":1.8}}]}}}
+       "bookmaker_quotes":[{"bookmaker":"Book","last_update":ts,"odds":{"yes":price,"no":1.8}}],
+       "candidate_quote_keys":[{"bookmaker":"Book","selection":"yes"}],
+       "candidates":[{"bookmaker":"Book","selection":"yes","edge":0.1,"expected_value_per_unit":0.2}]}}}
     }]}
 
 def test_duplicate_observations_are_suppressed():
@@ -32,3 +34,18 @@ def test_second_timestamp_builds_provisional_clv_not_closing_line():
     yes=next(x for x in b["price_series"] if x["selection"]=="yes")
     assert yes["observations"]==2 and yes["clv_probability_points"]>0
     assert yes["closing_odds"] is None
+
+
+def test_completed_result_settles_candidate_and_calculates_quote_level_roi():
+    result = {"matches": [{
+        "fixture_id": 123, "fixture_status": "FT", "home_goals": 2, "away_goals": 1,
+    }]}
+    ledger = merge_evidence_ledger(None, report("2026-10-31T10:00:00+00:00"), result)
+    yes = next(row for row in ledger["observations"] if row["selection"] == "yes")
+    no = next(row for row in ledger["observations"] if row["selection"] == "no")
+    assert yes["settlement"]["won"] is True
+    assert no["settlement"]["won"] is False
+    assert ledger["summary"]["settled_shadow_candidates"] == 1
+    assert ledger["summary"]["shadow_candidate_wins"] == 1
+    assert ledger["summary"]["shadow_candidate_net_units"] == 1.2
+    assert ledger["summary"]["shadow_candidate_roi_percent"] == 120.0
