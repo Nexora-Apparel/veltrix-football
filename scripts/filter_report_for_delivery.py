@@ -109,6 +109,13 @@ def filter_report_for_delivery(report: dict, now: datetime | None = None) -> dic
     result["predictions_created"] = len(experimental)
     result["insufficient_history"] = len(insufficient)
     result["unsupported_competitions"] = len(unsupported)
+    result["kickoff_unverified_fixtures"] = sum(row.get("status") == "KICKOFF_UNVERIFIED" for row in kept)
+    result["fixture_status_counts"] = {
+        "EXPERIMENTAL_ONLY": len(experimental),
+        "INSUFFICIENT_HISTORY": len(insufficient),
+        "UNSUPPORTED_COMPETITION": len(unsupported),
+        "KICKOFF_UNVERIFIED": result["kickoff_unverified_fixtures"],
+    }
     result["unsupported_competition_breakdown"] = {
         str(league_name): sum(row.get("league") == league_name for row in unsupported)
         for league_name in sorted({row.get("league") for row in unsupported if row.get("league")})
