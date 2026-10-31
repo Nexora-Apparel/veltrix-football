@@ -220,6 +220,7 @@ jobs:
           GITHUB_REPOSITORY: ${{ github.repository }}
           GITHUB_RUN_ID: ${{ github.run_id }}
           TARGET_DATE: ${{ inputs.date }}
+          VELTRIX_TEST_FORCE_PROVIDER_OUTAGE: ${{ github.event_name == 'push' && contains(github.event.head_commit.message, '[simulate-provider-outage]') }}
           PYTHONPATH: .
         run: |
           if [ -z "$TARGET_DATE" ]; then TARGET_DATE="$(TZ=Africa/Lagos date +%F)"; fi
@@ -319,6 +320,10 @@ jobs:
           TARGET_DATE: ${{ inputs.date }}
           PYTHONPATH: .
         run: |
+          if [ "${VELTRIX_TEST_FORCE_PROVIDER_OUTAGE:-false}" = "true" ]; then
+            echo "::warning::Controlled provider-outage simulation; no provider request was made."
+            exit 1
+          fi
           if [ -z "$FIVEDOLLARFOOTBALL_API_KEY" ]; then
             echo "::error::Repository secret FIVEDOLLARFOOTBALL_API_KEY is missing."
             exit 1
