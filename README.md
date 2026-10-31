@@ -47,6 +47,16 @@ python -m scripts.import_open_dataset --from 2020-01-01 --to 2026-10-23 --output
 
 The importer discovers the source CSV path from the repository tree, validates required fields, normalizes scores, team names, date, available Elo/form/odds/statistics, skips malformed rows, and deduplicates by competition/date/home/away. Its summary reports match counts by competition code and calendar year so coverage gaps can be diagnosed. Optional odds and statistics remain empty when missing. A successful import on 2026-10-24 produced 70,444 completed matches across 38 competition codes from 2020-01-01 through 2026-10-24 (one malformed row skipped). The GitHub Actions workflow can run manually or weekly and uploads the generated CSV as an artifact for 30 days; this artifact is not a permanent database.
 
+## Current production coverage snapshot (2026-10-31)
+
+The scheduled daily workflow completed successfully on 2026-10-31 and the Telegram send step succeeded; the persistent delivery guard records `2026-10-31`. Its report contained 25 same-day fixtures, 17 research forecasts, 8 unsupported competitions, and 14 fixtures with matched market prices. The primary model mix was 7 competition Elo, 1 recent-goals Poisson, and **9 competition-prior Poisson** forecasts.
+
+Those 9 competition-prior forecasts are fallback baselines, not team-strength predictions: at least one team had fewer than the five required team-specific historical matches (some had zero). Their probabilities come from competition-wide scoring averages. The other 8 forecasts had sufficient team history for the selected Elo/Poisson path. Do not treat all 17 as equivalent-quality forecasts.
+
+Goal-market calibration was applied to 8 of 8 compatible forecasts. The value certificate remained `LOCKED_INSUFFICIENT_EVIDENCE`; no market was approved and no alerts were enabled. The current run had reference bookmaker prices for 14 fixtures, but timestamped odds coverage, prospective sample size, positive ROI/confidence bounds, and 1X2 market superiority were still insufficient. The 1X2 certificate also reports that the deployed prospective paper evidence does not match the benchmarked model version.
+
+The report was generated at 13:30 UTC despite the configured 07:00 UTC schedule. The daily watchdog now also checks at 07:15 UTC (08:15 WAT), in addition to its 16:00 UTC late recovery, so a missing report can be dispatched earlier rather than waiting until evening.
+
 ## Value screening safeguards
 The production value engine screens **1X2, BTTS, Over/Under 1.5, 2.5 and 3.5** independently. It:
 - removes proportional bookmaker margin from a complete same-book outcome set before calculating edge;
