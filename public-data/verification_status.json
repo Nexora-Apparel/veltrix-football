@@ -1,12 +1,12 @@
 {
   "schema_version": 1,
   "workflow": "Daily Fixture Predictions",
-  "run_id": "41228784180",
+  "run_id": "41228823720",
   "run_attempt": "1",
   "event": "push",
-  "commit_sha": "15192d2102f245812d182f2e9987e197b70e028d",
+  "commit_sha": "48f52abb563433ad804bf28571c6de5b21d4c4fa",
   "branch": "main",
-  "recorded_at_utc": "2026-10-31T18:20:02.015759+00:00",
+  "recorded_at_utc": "2026-10-31T18:21:06.134445+00:00",
   "overall_status": "PASSED",
   "validation_scope": "LIVE_PIPELINE",
   "steps": {
