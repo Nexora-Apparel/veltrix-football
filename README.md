@@ -34,7 +34,7 @@ Predictions are experimental and not validated for betting. The current Elo and 
 
 ## Daily pipeline
 
-The daily GitHub Actions workflow runs at 08:00 Africa/Lagos, fetches same-day fixtures, refreshes recent completed results using the resumable cache, generates the report, performs bounded odds enrichment, updates paper tracking, publishes command data, and optionally sends Telegram messages. If the primary fixture provider fails, no fallback fixtures or fabricated predictions are published. Optional odds-source failure does not block an otherwise valid report.
+The daily GitHub Actions workflow runs at 08:00 Africa/Lagos, fetches same-day fixtures, refreshes recent completed results using the resumable cache, generates the report, performs bounded odds enrichment, updates paper tracking, publishes command data, and optionally sends Telegram messages. A separate quota-safe Telegram Delivery Recovery workflow checks every 30 minutes for a current-day published report and sends it when its date is absent from the persistent delivery guard; it reads only saved command-data artifacts and makes no fixture/odds provider calls. If the primary fixture provider fails, no fallback fixtures or fabricated predictions are published. Optional odds-source failure does not block an otherwise valid report.
 
 The Telegram `/1x2` command reads Home/Draw/Away probabilities, and `/odds` reads saved 1X2, BTTS and Over/Under market prices; `/oddsdiag` inspects the saved provider coverage summary without making new provider calls. The dashboard displays the published report and matched market-odds counts. These are report snapshots, not a real-time trading interface.
 
