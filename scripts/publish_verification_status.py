@@ -85,6 +85,8 @@ def build_status(env: dict[str, str]) -> dict:
             or report.get("future_fixtures_considered") != len(rows)
         ):
             passed = False
+        if recovered and report.get("publication_status") != "REUSED_SNAPSHOT_NOT_REFRESHED":
+            passed = False
     elif live or recovered:
         passed = False
     evidence = _read_json(env.get("VELTRIX_VALUE_EVIDENCE_PATH", "reports/value_evidence_ledger.json"))
