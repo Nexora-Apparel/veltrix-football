@@ -47,5 +47,5 @@ def test_completed_result_settles_candidate_and_calculates_quote_level_roi():
     assert no["settlement"]["won"] is False
     assert ledger["summary"]["settled_shadow_candidates"] == 1
     assert ledger["summary"]["shadow_candidate_wins"] == 1
-    assert ledger["summary"]["shadow_candidate_net_units"] == 1.2
-    assert ledger["summary"]["shadow_candidate_roi_percent"] == 120.0
+    assert ledger["summary"]["shadow_candidate_quote_net_units"] == 1.2
+    assert ledger["summary"]["shadow_candidate_quote_roi_percent"] == 120.0
