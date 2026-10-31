@@ -36,10 +36,17 @@ def market_consensus(bookmaker_sets: Sequence[Mapping[str, Any]]) -> dict[str, A
     """Median de-vigged probability across complete books, with dispersion."""
     rows: dict[str, list[float]] = {}
     rejected = 0
+    expected_outcomes: set[str] | None = None
     for book in bookmaker_sets:
         try:
             probs = devig(book)
         except (TypeError, ValueError):
+            rejected += 1
+            continue
+        outcomes = set(probs)
+        if expected_outcomes is None:
+            expected_outcomes = outcomes
+        elif outcomes != expected_outcomes:
             rejected += 1
             continue
         for outcome, probability in probs.items():
