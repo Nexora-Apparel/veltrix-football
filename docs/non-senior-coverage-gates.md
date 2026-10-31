@@ -77,3 +77,6 @@ Final end-to-end run: verify the primary provider with bounded transport retries
 ## Telegram same-day update idempotency
 
 The delivery guard stores hashes of the exact rendered report messages per local date. An identical report is suppressed, but a changed fixture inventory or forecast for the same date is sent as an explicitly labelled same-day update. Legacy date-only markers are migrated by sending one update and recording its content hash.
+
+
+Final delivery verification: re-run the same-day report after the content-hash guard migration so the current 25-fixture inventory is sent once as an update rather than suppressed by a legacy date-only marker.
