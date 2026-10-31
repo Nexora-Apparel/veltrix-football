@@ -312,6 +312,7 @@ jobs:
 
       - name: Generate daily fixture report from 5DollarFootballAPI
         id: generate-report
+        continue-on-error: true
         if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && contains(github.event.head_commit.message, '[run-live-verification]')) || false && !contains(github.event.head_commit.message, '[reuse-report-40175707059]')
         env:
           FIVEDOLLARFOOTBALL_API_KEY: ${{ secrets.FIVEDOLLARFOOTBALL_API_KEY }}
@@ -444,9 +445,11 @@ jobs:
           TELEGRAM_WEBHOOK_SECRET: ${{ secrets.TELEGRAM_WEBHOOK_SECRET }}
         run: |
           if [ -z "$TELEGRAM_WEBHOOK_SECRET" ]; then
+            echo "configured=false" >> "$GITHUB_OUTPUT"
             echo "::notice::Telegram Command Centre webhook not registered; add TELEGRAM_WEBHOOK_SECRET to repository Actions secrets and Vercel environment variables."
           else
             python scripts/configure_telegram_webhook.py
+            echo "configured=true" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Send daily report to Telegram
@@ -526,7 +529,8 @@ jobs:
           VELTRIX_STEP_VALUE_EVIDENCE_UPDATE: ${{ steps.value-evidence-update.outcome }}
           VELTRIX_STEP_VALUE_EVIDENCE_ARTIFACT: ${{ steps.value-evidence-artifact.outcome }}
           VELTRIX_STEP_VALUE_CERTIFICATE: ${{ steps.value-certificate.outcome }}
-          VELTRIX_STEP_TELEGRAM_WEBHOOK: ${{ steps.telegram-webhook.outcome }}
+          VELTRIX_STEP_TELEGRAM_WEBHOOK: ${{ steps.telegram-webhook.outputs.configured == 'true' && steps.telegram-webhook.outcome == 'success' && 'success' || 'skipped' }}
+          VELTRIX_TELEGRAM_WEBHOOK_CONFIGURED: ${{ steps.telegram-webhook.outputs.configured }}
           VELTRIX_STEP_TELEGRAM_DELIVERY: ${{ steps.telegram-delivery.outcome }}
           VELTRIX_TELEGRAM_CONFIGURED: ${{ steps.telegram-config.outputs.configured }}
           VELTRIX_STEP_DAILY_REPORT_ARTIFACT: ${{ steps.daily-report-artifact.outcome }}
