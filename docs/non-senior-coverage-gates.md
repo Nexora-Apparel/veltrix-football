@@ -69,3 +69,6 @@ Final verification receipt now includes the exact generated report's fixture cou
 ## Provider-outage recovery
 
 Transient transport failures are retried with bounded backoff; definitive HTTP responses are not retried. If the primary fixture provider remains unreachable, the daily workflow attempts to restore the already-published report for the same Nigeria-local date, filters out past and other-date kickoffs, retains fixtures with unverified kickoff metadata, and labels the result `REUSED_SNAPSHOT_NOT_REFRESHED`. It never substitutes another date, fabricates fixtures, or describes a reused report as a fresh provider fetch. If no valid same-day snapshot exists, the run remains failed and the verification receipt records the failure.
+
+
+Final end-to-end run: verify the primary provider with bounded transport retries, automatically recover today's already-published report if necessary, validate every visible fixture row, and confirm publication and Telegram delivery state.
