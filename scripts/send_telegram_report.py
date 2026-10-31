@@ -223,6 +223,8 @@ def format_report_messages(report: dict[str, Any], ledger: dict[str, Any] | None
             reason = "Forecast withheld: insufficient reliable team history."
         elif status == "UNSUPPORTED_COMPETITION":
             reason = "Forecast withheld: competition is not mapped to a supported model."
+        elif status == "KICKOFF_UNVERIFIED":
+            reason = "Fixture retained; forecast withheld because its kickoff time could not be verified."
         else:
             reason = "Forecast withheld: fixture did not pass model eligibility checks."
         blocks.append([
