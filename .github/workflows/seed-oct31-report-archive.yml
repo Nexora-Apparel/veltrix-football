@@ -1,0 +1,39 @@
+name: Seed 31 October Report Archive
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/seed-oct31-report-archive.yml"
+
+permissions:
+  actions: read
+  contents: write
+
+jobs:
+  archive-saved-report:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Recover the already-generated 31 October report
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPOSITORY: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          mkdir -p reports/archive-seed
+          curl --fail --silent --show-error --location --retry 2 \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/$GH_REPOSITORY/actions/artifacts/13044353413/zip" \
+            -o reports/archive-seed/daily-report.zip
+          unzip -oq reports/archive-seed/daily-report.zip -d reports/archive-seed
+          test -s reports/archive-seed/daily_predictions.json
+
+      - name: Publish immutable snapshot without provider calls
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: python scripts/publish_command_data.py --report reports/archive-seed/daily_predictions.json
