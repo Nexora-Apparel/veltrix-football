@@ -25,7 +25,10 @@ MARKETS = {
 
 def _model_market_probabilities(prediction: Mapping[str, Any]) -> dict[str, dict[str, float]]:
     model = str(prediction.get("model") or "")
-    raw = prediction.get("poisson_probabilities") if model == "experimental_elo_by_competition" else prediction.get("probabilities") if model == "experimental_recent_goals_poisson" else None
+    # Use primary forecast probabilities first; do not silently substitute an alternative model.
+    raw = prediction.get("probabilities")
+    if not isinstance(raw, Mapping):
+        raw = prediction.get("poisson_probabilities")
     raw = raw if isinstance(raw, Mapping) else {}
     result: dict[str, dict[str, float]] = {}
     one_x_two = {
@@ -43,8 +46,9 @@ def _model_market_probabilities(prediction: Mapping[str, Any]) -> dict[str, dict
         value = prediction.get(f"over_{suffix}")
         if _valid_probability(value):
             result[f"OVER_UNDER_{suffix}"] = {"over": float(value), "under": 1.0 - float(value)}
-    home_lambda = prediction.get("home_expected_goals")
-    away_lambda = prediction.get("away_expected_goals")
+    expected = prediction.get("expected_goals") if isinstance(prediction.get("expected_goals"), Mapping) else {}
+    home_lambda = prediction.get("home_expected_goals", expected.get("home"))
+    away_lambda = prediction.get("away_expected_goals", expected.get("away"))
     if home_lambda is not None and away_lambda is not None:
         try:
             simulated = poisson_scoreline_markets(float(home_lambda), float(away_lambda))
@@ -108,7 +112,18 @@ def screen_fixture_value_intelligence(prediction: Mapping[str, Any]) -> dict[str
                 "odds": clean,
             })
         consensus = market_consensus(bookmaker_sets)
-        if consensus.get("status") not in {"CONSENSUS_READY", "SINGLE_BOOK_ONLY"}:
+        if consensus.get("status") == "SINGLE_BOOK_ONLY":
+            output[market] = {
+                "status": "INSUFFICIENT_BOOKMAKER_COVERAGE",
+                "bookmaker_count": 1,
+                "bookmaker_quotes": price_rows,
+                "market_consensus_probabilities": consensus.get("probabilities", {}),
+                "candidates": [],
+                "release_status": "LOCKED_SHADOW_MODE",
+                "note": "A single bookmaker is insufficient for a market-consensus value screen.",
+            }
+            continue
+        if consensus.get("status") != "CONSENSUS_READY":
             output[market] = {
                 "status": consensus.get("status"),
                 "bookmaker_count": 0,
