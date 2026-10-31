@@ -694,7 +694,60 @@ def handle_command(
             lines.append("Experimental estimates only — not validated betting advice.")
         return _reply("\n".join(lines))
 
-    if command in {"/overunder", "/btts", "/cleansheet", "/value", "/overvalue", "/bttsvalue", "/1x2value", "/10odds"}:
+    if command in {"/value", "/overvalue", "/bttsvalue", "/1x2value"}:
+        market_filter = None
+        if command == "/1x2value":
+            market_filter = {"1X2"}
+        elif command == "/bttsvalue":
+            market_filter = {"BTTS"}
+        elif command == "/overvalue":
+            market_filter = {"OVER_UNDER_1_5", "OVER_UNDER_2_5", "OVER_UNDER_3_5"}
+
+        candidates = []
+        for row in _future_fixtures(report):
+            screen = row.get("value_bet_screen") if isinstance(row.get("value_bet_screen"), dict) else {}
+            for market, details in (screen.get("markets") or {}).items():
+                if market_filter is not None and market not in market_filter:
+                    continue
+                if not isinstance(details, dict):
+                    continue
+                for candidate in details.get("paper_candidates") or []:
+                    if isinstance(candidate, dict):
+                        candidates.append((row, market, candidate))
+
+        certificate = (report or {}).get("value_validation_certificate") or {}
+        summary = (report or {}).get("value_bet_screen") or {}
+        lines = [
+            f"{command.upper()} — VALUE RESEARCH",
+            "Release certificate: " + str(certificate.get("status") or "LOCKED_INSUFFICIENT_EVIDENCE"),
+            "Approved markets: " + (", ".join(certificate.get("approved_markets") or []) or "none"),
+            f"Upcoming paper-only candidates: {len(candidates)}",
+            f"Release-approved candidates: {summary.get('candidate_count', 0)}",
+        ]
+        if candidates:
+            lines.append("")
+            for row, market, candidate in candidates[:10]:
+                probability = candidate.get("model_probability")
+                odds = candidate.get("decimal_odds")
+                edge = candidate.get("edge_percentage_points")
+                lines.append(f"⚽ {row.get('home_team')} vs {row.get('away_team')}")
+                lines.append(f"{market} · {str(candidate.get('selection', '')).upper()}")
+                if isinstance(probability, (int, float)) and isinstance(odds, (int, float)):
+                    lines.append(f"Model {probability:.1%} · Odds {odds:.2f}")
+                if isinstance(edge, (int, float)):
+                    lines.append(f"Estimated edge: {edge:.1f} percentage points")
+                lines.append(f"Bookmaker: {candidate.get('bookmaker') or 'not reported'}")
+                lines.append("PAPER ONLY — NOT APPROVED FOR BETTING")
+                lines.append("")
+        else:
+            lines.extend(["", "No upcoming fixture currently passes every paper-candidate threshold."])
+        lines.extend([
+            "Prospective shadow tracking only. No bookmaker actions.",
+            "Live value alerts remain locked until market-specific validation passes.",
+        ])
+        return _reply("\\n".join(lines))
+
+    if command in {"/overunder", "/btts", "/cleansheet", "/10odds"}:
         rows = _report_predictions(report)
         probability_coverage = {
             "1X2": sum(1 for row in rows if _valid_probability_vector(row.get("probabilities"))),
@@ -708,14 +761,13 @@ def handle_command(
             if markets.get("btts"): odds_coverage["BTTS"] += 1
             if markets.get("totals"): odds_coverage["Over/Under"] += 1
         lines = [
-            f"{command.upper()} — VALIDATION LOCKED",
+            f"{command.upper()} — VALIDATION STATUS",
             f"Upcoming forecast rows: {len(rows)}",
             "MODEL PROBABILITY COVERAGE (1X2 / BTTS / O-U): "
             + " / ".join(f"{k} {v}" for k, v in probability_coverage.items()),
             "BOOKMAKER PRICE COVERAGE (1X2 / BTTS / O-U): "
             + " / ".join(f"{k} {v}" for k, v in odds_coverage.items()),
-            "1X2, BTTS and Over/Under are included in the value-screen architecture.",
-            "No value selections are released until repeated chronological out-of-sample validation passes and prices have verifiable pre-kickoff timestamps.",
+            "No betting selections are released until market-specific validation passes.",
             "EXPERIMENTAL MODEL — NOT VALIDATED FOR BETTING. No bookmaker actions.",
         ]
         return _reply("\\n".join(lines))
