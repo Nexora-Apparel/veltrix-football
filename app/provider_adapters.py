@@ -11,7 +11,7 @@ import json
 import math
 import os
 import re
-import time
+import time as time_module
 import unicodedata
 from datetime import date, datetime, time, timedelta, timezone
 from typing import Any
@@ -72,7 +72,7 @@ def _json_request(url: str, headers: dict[str, str] | None = None, timeout: int 
             raise ProviderAPIError(f"Provider request to {host} failed with HTTP {exc.code}.") from None
         except URLError as exc:
             if attempt + 1 < attempts:
-                time.sleep(1 + attempt)
+                time_module.sleep(1 + attempt)
                 continue
             reason_type = type(getattr(exc, "reason", exc)).__name__
             raise ProviderAPIError(
