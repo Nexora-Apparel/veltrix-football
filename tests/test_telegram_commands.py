@@ -400,8 +400,9 @@ def test_1x2_command_displays_home_draw_away_and_real_h2h_prices():
 
 def test_1x2_value_command_remains_disabled_without_validated_model():
     reply = handle_command("/1x2value")
-    assert "VALIDATION LOCKED" in reply
-    assert "1X2, BTTS and Over/Under" in reply
+    assert "VALUE RESEARCH" in reply
+    assert "Release certificate: LOCKED_INSUFFICIENT_EVIDENCE" in reply
+    assert "Upcoming paper-only candidates: 0" in reply
 
 
 def test_1x2_command_is_registered_and_keyboard_label_routes_to_1x2():
@@ -438,6 +439,37 @@ def test_value_screen_reports_1x2_btts_totals_coverage_without_releasing_picks()
         "expected_goals": {"home": 1.6, "away": 0.9},
         "the_odds_api_market_odds": {"markets": {"h2h": [{}], "btts": [{}], "totals": [{}]}},
     }]})
-    assert "VALIDATION LOCKED" in reply
-    assert "1X2 1 / BTTS 1 / Over/Under 1" in reply
-    assert "No value selections are released" in reply
+    assert "VALUE RESEARCH" in reply
+    assert "Upcoming paper-only candidates: 0" in reply
+    assert "Live value alerts remain locked" in reply
+
+    
+
+def test_value_command_displays_only_upcoming_paper_candidates_as_unapproved():
+    now = datetime.now(ZoneInfo("Africa/Lagos"))
+    kickoff = (now + timedelta(hours=3)).isoformat()
+    report = {
+        "as_of_date": now.date().isoformat(),
+        "value_validation_certificate": {
+            "status": "LOCKED_INSUFFICIENT_EVIDENCE",
+            "approved_markets": [],
+        },
+        "value_bet_screen": {"status": "PAPER_ONLY_CANDIDATES", "candidate_count": 0, "paper_candidate_count": 1},
+        "predictions": [{
+            "home_team": "Arsenal", "away_team": "Chelsea",
+            "kickoff_local": kickoff, "status": "EXPERIMENTAL_ONLY",
+            "value_bet_screen": {"markets": {
+                "1X2": {"paper_candidates": [{
+                    "selection": "home", "model_probability": 0.56,
+                    "decimal_odds": 2.1, "edge_percentage_points": 6.5,
+                    "bookmaker": "Book A",
+                }]},
+            }},
+        }],
+    }
+    reply = handle_command("/value", report=report)
+    assert "Arsenal vs Chelsea" in reply
+    assert "1X2 · HOME" in reply
+    assert "Odds 2.10" in reply
+    assert "PAPER ONLY — NOT APPROVED FOR BETTING" in reply
+    assert "Live value alerts remain locked" in reply
