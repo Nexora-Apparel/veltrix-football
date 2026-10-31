@@ -43,6 +43,7 @@ def test_telegram_report_is_predictions_only_and_keeps_new_update_alert():
     assert "VELTRIX FOOTBALL · PREDICTIONS" in message
     assert "2026-10-23" in message
     assert "Fixtures retrieved: 1 · Research forecasts: 1" in message
+    assert "Paper-only candidates (not approved): 0" in message
     assert "Alpha FC vs Beta FC" in message
     assert "Example League" in message
     assert "Kickoff" not in message
