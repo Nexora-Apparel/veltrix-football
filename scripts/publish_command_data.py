@@ -90,6 +90,7 @@ def main() -> int:
     parser.add_argument("--report", required=True, help="Generated daily_predictions.json")
     parser.add_argument("--ledger", default=None, help="Validated paper_tracking_ledger.json (optional)")
     parser.add_argument("--recent-cache", default=None, help="Resumable recent-results cache (optional)")
+    parser.add_argument("--value-evidence", default=None, help="Append-only shadow value evidence ledger (optional)")
     args = parser.parse_args()
 
     repo = (os.getenv("GITHUB_REPOSITORY") or "").strip()
@@ -130,6 +131,18 @@ def main() -> int:
                 print("Ledger publication skipped: ledger failed structural validation.", file=sys.stderr)
             else:
                 publish("public-data/paper_tracking_ledger.json", ledger_path, repo, token)
+        if args.value_evidence:
+            evidence_path = Path(args.value_evidence)
+            evidence = json.loads(evidence_path.read_text(encoding="utf-8"))
+            if (
+                isinstance(evidence, dict)
+                and evidence.get("version") == "VELTRIX_VALUE_EVIDENCE_V1"
+                and evidence.get("release_status") == "LOCKED_SHADOW_MODE"
+                and isinstance(evidence.get("observations"), list)
+            ):
+                publish("public-data/value_evidence_ledger.json", evidence_path, repo, token)
+            else:
+                print("Value evidence publication skipped: ledger schema or release lock validation failed.", file=sys.stderr)
         if args.recent_cache:
             cache_path = Path(args.recent_cache)
             cache = json.loads(cache_path.read_text(encoding="utf-8"))
