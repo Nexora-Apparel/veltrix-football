@@ -57,6 +57,31 @@ def test_evaluator_falls_back_to_unique_local_date_and_team_identity():
     assert result["matches"][0]["actual"] == "H"
 
 
+def test_evaluator_scores_opaque_supplemental_fixture_id_by_unique_identity():
+    report = {
+        "timezone": "Africa/Lagos",
+        "as_of_date": "2026-10-30",
+        "predictions": [{
+            **_prediction("odds-event-aecb9d"),
+            "kickoff_local": "2026-10-30T18:00:00+01:00",
+        }],
+    }
+    result_payload = {"response": [{
+        "fixture": {"id": 987, "date": "2026-10-30", "status": {"short": "FT"}},
+        "teams": {"home": {"name": "Alpha FC"}, "away": {"name": "Beta FC"}},
+        "goals": {"home": 2, "away": 0},
+    }]}
+    result = evaluate_report(report, result_payload)
+    assert result["completed_forecasts_scored"] == 1
+    assert result["fixtures_scored"] == 1
+    assert result["matches"][0]["fixture_id"] == "odds-event-aecb9d"
+    assert result["matches"][0]["correct"] is True
+
+    ledger = merge_paper_ledger({}, result)
+    assert ledger["scored_matches"][0]["fixture_id"] == "odds-event-aecb9d"
+    assert ledger["cumulative_metrics"]["matches"] == 1
+
+
 def test_evaluator_does_not_use_ambiguous_identity_fallback():
     report = {
         "timezone": "Africa/Lagos",
@@ -557,6 +582,7 @@ def test_old_empty_evaluation_is_retried_and_marked_without_provider_call(tmp_pa
             "report_date": "2026-10-22", "fixtures_scored": 0,
             "completed_forecasts_scored": 0, "awaiting_result_or_match": 0,
             "withheld_or_invalid_forecasts": 0, "model_versions": [],
+            "tracking_state": "NO_FORECASTS_TO_SCORE",
         }],
         "scored_matches": [],
     })
