@@ -80,3 +80,6 @@ The delivery guard stores hashes of the exact rendered report messages per local
 
 
 Final delivery verification: re-run the same-day report after the content-hash guard migration so the current 25-fixture inventory is sent once as an update rather than suppressed by a legacy date-only marker.
+
+
+Controlled recovery-path test: the daily workflow accepts a one-run marker that fails fixture generation before any provider request, allowing the same-day snapshot recovery, filtering, visibility validation, Telegram idempotency and publication path to be exercised without consuming provider quota.
