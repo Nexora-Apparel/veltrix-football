@@ -61,3 +61,14 @@ def test_invalid_prices_and_lambdas_fail_closed():
         devig({"home": 1.0, "away": 2.0})
     with pytest.raises(ValueError):
         poisson_scoreline_markets(-1, 1)
+
+
+def test_consensus_rejects_books_with_inconsistent_outcome_sets():
+    result = market_consensus([
+        {"home": 2.0, "draw": 3.5, "away": 4.0},
+        {"home": 2.1, "draw": 3.4, "other": 4.0},
+    ])
+    assert result["status"] == "SINGLE_BOOK_ONLY"
+    assert result["bookmaker_count"] == 1
+    assert result["rejected_bookmaker_sets"] == 1
+    assert set(result["probabilities"]) == {"home", "draw", "away"}
