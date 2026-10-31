@@ -29,41 +29,32 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Download 24 October morning report (API-Sports-era sample)
-        uses: actions/download-artifact@v7
-        with:
-          path: reports/archive/2026-10-24-morning
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          repository: ${{ github.repository }}
-          artifact-ids: 12558709744
-          run-id: 40091657947
-
-      - name: Download 24 October evening report
-        uses: actions/download-artifact@v7
-        with:
-          path: reports/archive/2026-10-24-evening
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          repository: ${{ github.repository }}
-          artifact-ids: 12571259034
-          run-id: 40121951981
-
-      - name: Download 25 October midnight report (football-data.org migration attempt)
-        uses: actions/download-artifact@v7
-        with:
-          path: reports/archive/2026-10-25-midnight
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          repository: ${{ github.repository }}
-          artifact-ids: 12579952962
-          run-id: 40144236021
-
-      - name: Download 25 October morning report (Highlightly quota-limited run)
-        uses: actions/download-artifact@v7
-        with:
-          path: reports/archive/2026-10-25-morning
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          repository: ${{ github.repository }}
-          artifact-ids: 12591918825
-          run-id: 40175707059
+      - name: Download exact archived report artifacts
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPOSITORY: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          download_report() {
+            local artifact_id="$1"
+            local sample="$2"
+            local zip="reports/${sample}.zip"
+            local destination="reports/archive/${sample}"
+            mkdir -p "$destination"
+            curl --fail --silent --show-error --location --retry 2 \
+              -H "Authorization: Bearer $GH_TOKEN" \
+              -H "Accept: application/vnd.github+json" \
+              "https://api.github.com/repos/$GH_REPOSITORY/actions/artifacts/$artifact_id/zip" \
+              -o "$zip"
+            unzip -oq "$zip" -d "$destination"
+            test -s "$destination/daily_predictions.json"
+            echo "Recovered $sample from artifact $artifact_id"
+          }
+          download_report 12558709744 2026-10-24-1153
+          download_report 12569804955 2026-10-24-1821
+          download_report 12571259034 2026-10-24-1843
+          download_report 12579952962 2026-10-25-0049
+          download_report 12591918825 2026-10-25-0813
 
       - name: Retrieve saved completed-results cache
         run: |
@@ -82,18 +73,14 @@ jobs:
       - name: Reconstruct each archived prediction sample
         run: |
           set -euo pipefail
-          for sample in 2026-10-24-morning 2026-10-24-evening 2026-10-25-midnight 2026-10-25-morning; do
+          for sample in 2026-10-24-1153 2026-10-24-1821 2026-10-24-1843 2026-10-25-0049 2026-10-25-0813; do
             REPORT="reports/archive/$sample/daily_predictions.json"
-            if [ ! -s "$REPORT" ]; then
-              echo "::warning::Archived report missing for $sample; skipping."
-              continue
-            fi
             python scripts/audit_historical_model.py \
               --report "$REPORT" \
               --cache reports/recent_results_cache.json \
               --output "reports/audits/$sample.json"
           done
-          test -n "$(find reports/audits -maxdepth 1 -name '*.json' -print -quit)"
+          test "$(find reports/audits -maxdepth 1 -name '*.json' | wc -l)" -eq 5
 
       - name: Upload reconstructed comparison bundle
         uses: actions/upload-artifact@v4
