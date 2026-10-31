@@ -459,7 +459,7 @@ def test_json_request_retries_transient_network_failure_without_exposing_credent
     response.headers = {"Content-Type": "application/json"}
     response.read.return_value = b'{"success":1}'
     with patch("app.provider_adapters.urlopen", side_effect=[URLError("Temporary failure"), response]) as request, \
-         patch("app.provider_adapters.time.sleep") as sleep:
+         patch("app.provider_adapters.time_module.sleep") as sleep:
         status, headers, payload = _json_request(
             "https://api.5dollarfootballapi.com/v1/fixtures?secret=never-log-this",
             retries=2,
@@ -476,7 +476,7 @@ def test_json_request_reports_safe_host_and_network_error_class_after_retries():
     from app.provider_adapters import _json_request, ProviderAPIError
 
     with patch("app.provider_adapters.urlopen", side_effect=URLError("Temporary failure")), \
-         patch("app.provider_adapters.time.sleep"):
+         patch("app.provider_adapters.time_module.sleep"):
         try:
             _json_request("https://api.5dollarfootballapi.com/v1/fixtures", retries=1)
         except ProviderAPIError as exc:
