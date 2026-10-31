@@ -23,6 +23,8 @@ on:
       - "scripts/publish_command_data.py"
       - "tests/test_publish_command_data.py"
       - "tests/test_report_artifacts.py"
+      - "scripts/publish_verification_status.py"
+      - "tests/test_publish_verification_status.py"
       - "app/telegram_security.py"
       - "tests/test_telegram_security.py"
       - "tests/test_filter_report_for_delivery.py"
