@@ -258,16 +258,29 @@ def _limit_fixture_payload(
             )
         except (TypeError, ValueError):
             mapped_id = False
-        priority = 0 if (league_code in LEAGUE_DIVISION_BY_CODE or mapped_id) else 1
-        eligible.append((priority, kickoff, row))
-    eligible.sort(key=lambda item: (item[0], item[1]))
+        mapped_priority = 0 if (league_code in LEAGUE_DIVISION_BY_CODE or mapped_id) else 1
+        # Within the same historical-mapping tier, prefer the configured primary
+        # fixture provider over discovery-only supplemental feeds. This prevents
+        # unsupported supplement events from crowding out primary fixtures.
+        source_priority = 0 if source == "5dollarfootballapi" else 1
+        eligible.append((mapped_priority, source_priority, kickoff, row))
+    eligible.sort(key=lambda item: (item[0], item[1], item[2]))
     cap = max(0, int(limit))
-    result["response"] = [row for _, _, row in eligible[:cap]]
+    result["response"] = [row for _, _, _, row in eligible[:cap]]
     meta = result.get("_veltrix_meta")
     if isinstance(meta, dict):
+        def source_counts(items: list[dict]) -> dict[str, int]:
+            counts: dict[str, int] = {}
+            for item in items:
+                source_name = str(item.get("_veltrix_source") or "UNKNOWN")
+                counts[source_name] = counts.get(source_name, 0) + 1
+            return dict(sorted(counts.items()))
         meta["fixtures_before_delivery_cap"] = len(eligible)
         meta["fixture_delivery_cap"] = cap
         meta["fixtures_after_delivery_cap"] = len(result["response"])
+        meta["fixtures_by_source_before_cap"] = source_counts([row for _, _, _, row in eligible])
+        meta["fixtures_by_source_after_cap"] = source_counts(result["response"])
+        meta["fixture_selection_policy"] = "mapped_competition_then_primary_provider_then_kickoff"
     return result
 
 def main() -> None:
