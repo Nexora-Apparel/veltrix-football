@@ -44,6 +44,8 @@ on:
       - "tests/test_value_evidence_ledger.py"
       - "scripts/validate_fixture_visibility.py"
       - "tests/test_fixture_visibility.py"
+      - "scripts/publish_verification_status.py"
+      - "tests/test_publish_verification_status.py"
       - "scripts/publish_command_data.py"
       - "scripts/rebuild_value_screen.py"
       - "tests/test_rebuild_value_screen.py"
@@ -176,9 +178,11 @@ jobs:
       - name: Install dependencies
         run: python -m pip install -r requirements.txt
       - name: Run unit tests
+        id: unit-tests
         run: python -m pytest -q
 
       - name: Validate embedded dashboard JavaScript syntax
+        id: dashboard-js
         run: |
           python - <<'PY'
           import pathlib
@@ -315,6 +319,7 @@ jobs:
         run: python scripts/enrich_oddspapi_odds.py --report reports/daily_predictions.json
 
       - name: Restore and update prospective value evidence ledger
+        id: value-evidence-update
         if: (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && contains(github.event.head_commit.message, '[run-live-verification]')) || (github.event_name == 'push' && contains(github.event.head_commit.message, '[reuse-report-40175707059]'))) && (steps.generate-report.outcome == 'success' || steps.filter-saved-report.outcome == 'success')
         env:
           GITHUB_REPOSITORY: ${{ github.repository }}
@@ -346,6 +351,7 @@ jobs:
         run: python scripts/build_value_certificate_runtime_v2.py --report reports/daily_predictions.json --ledger reports/paper_tracking_ledger.json --output reports/value_validation_certificate.json
 
       - name: Validate fixture visibility before publication and Telegram
+        id: fixture-visibility-validation
         if: (steps.generate-report.outcome == 'success' || steps.filter-saved-report.outcome == 'success')
         env:
           PYTHONPATH: .
@@ -399,6 +405,7 @@ jobs:
           fi
 
       - name: Send daily report to Telegram
+        id: telegram-delivery
         if: (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && contains(github.event.head_commit.message, '[run-live-verification]')) || false) && !contains(github.event.head_commit.message, '[skip-telegram]') && steps.telegram-config.outputs.configured == 'true'
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
@@ -432,6 +439,7 @@ jobs:
           retention-days: 90
 
       - name: Publish validated command data snapshots
+        id: command-data-publication
         if: always() && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && contains(github.event.head_commit.message, '[run-live-verification]')) || (github.event_name == 'push' && contains(github.event.head_commit.message, '[reuse-report-40175707059]'))) && (steps.generate-report.outcome == 'success' || steps.filter-saved-report.outcome == 'success')
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -450,3 +458,24 @@ jobs:
             ARGS+=(--value-evidence reports/value_evidence_ledger.json)
           fi
           python scripts/publish_command_data.py "${ARGS[@]}"
+
+      - name: Publish machine-readable verification receipt
+        if: always()
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          GITHUB_WORKFLOW: ${{ github.workflow }}
+          GITHUB_RUN_ID: ${{ github.run_id }}
+          GITHUB_RUN_ATTEMPT: ${{ github.run_attempt }}
+          GITHUB_EVENT_NAME: ${{ github.event_name }}
+          GITHUB_SHA: ${{ github.sha }}
+          GITHUB_REF_NAME: ${{ github.ref_name }}
+          VELTRIX_STEP_UNIT_TESTS: ${{ steps.unit-tests.outcome }}
+          VELTRIX_STEP_DASHBOARD_JS: ${{ steps.dashboard-js.outcome }}
+          VELTRIX_STEP_FIXTURE_GENERATION: ${{ steps.generate-report.outcome }}
+          VELTRIX_STEP_FIXTURE_VISIBILITY: ${{ steps.fixture-visibility-validation.outcome }}
+          VELTRIX_STEP_VALUE_EVIDENCE_UPDATE: ${{ steps.value-evidence-update.outcome }}
+          VELTRIX_STEP_TELEGRAM_DELIVERY: ${{ steps.telegram-delivery.outcome }}
+          VELTRIX_STEP_COMMAND_DATA_PUBLICATION: ${{ steps.command-data-publication.outcome }}
+          VELTRIX_STEP_PAPER_TRACKING: ${{ steps.paper-tracking.outcome }}
+        run: python scripts/publish_verification_status.py
