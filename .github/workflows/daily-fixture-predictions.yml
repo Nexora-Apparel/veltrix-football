@@ -56,6 +56,7 @@ on:
       - "scripts/update_value_evidence_ledger.py"
       - "tests/test_value_evidence_ledger.py"
       - "tests/test_value_intelligence.py"
+      - "tests/test_value_intelligence_advanced.py"
       - "tests/test_value_intelligence_runtime.py"
       - "app/value_paper.py"
       - "tests/test_value_paper.py"
