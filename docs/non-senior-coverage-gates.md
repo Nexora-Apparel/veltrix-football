@@ -83,3 +83,6 @@ Final delivery verification: re-run the same-day report after the content-hash g
 
 
 Controlled recovery-path test: the daily workflow accepts a one-run marker that fails fixture generation before any provider request, allowing the same-day snapshot recovery, filtering, visibility validation, Telegram idempotency and publication path to be exercised without consuming provider quota.
+
+
+Recovery simulation execution: trigger the controlled no-provider-request failure path once and verify the published same-day snapshot remains visible and is explicitly labelled as reused.
