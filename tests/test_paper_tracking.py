@@ -604,6 +604,40 @@ def test_old_empty_evaluation_is_retried_and_marked_without_provider_call(tmp_pa
     assert ledger["evaluations"][0]["tracking_state"] == "NO_FORECASTS_TO_SCORE"
     assert ledger["last_attempt"]["status"] == "NO_FORECASTS_TO_SCORE"
 
+def test_target_date_with_no_forecasts_state_is_retried_after_id_fix(tmp_path, monkeypatch):
+    monkeypatch.setenv("GITHUB_REPOSITORY", "owner/repo")
+    monkeypatch.setenv("GITHUB_TOKEN", "test-token")
+    monkeypatch.setenv("GITHUB_RUN_ID", "999")
+    monkeypatch.setattr(tracking_runner, "list_relevant_runs", lambda session, repo: [])
+    monkeypatch.setattr(tracking_runner, "find_latest_ledger", lambda *args: {
+        "product": "Veltrix Football", "model_status": "PAPER_TRACKING_ONLY",
+        "evaluations": [{
+            "report_date": "2026-10-23", "fixtures_scored": 0,
+            "completed_forecasts_scored": 0, "awaiting_result_or_match": 0,
+            "withheld_or_invalid_forecasts": 0, "model_versions": [],
+            "tracking_state": "NO_FORECASTS_TO_SCORE",
+        }],
+        "scored_matches": [],
+    })
+    monkeypatch.setattr(tracking_runner, "find_daily_report", lambda *args: {
+        "as_of_date": "2026-10-23",
+        "predictions": [{
+            **_prediction("odds-event-opaque"),
+            "kickoff_local": "2026-10-23T18:00:00+01:00",
+        }],
+    })
+    monkeypatch.setattr(
+        tracking_runner, "load_cached_results_payload",
+        lambda repo: ({"response": []}, "CACHE_AVAILABLE"),
+    )
+    output = tmp_path / "ledger.json"
+    ledger = tracking_runner.run(date(2026, 10, 23), str(output))
+    evaluation = ledger["evaluations"][0]
+    assert ledger["last_attempt"]["status"] == "EVALUATED"
+    assert evaluation["awaiting_result_or_match"] == 1
+    assert evaluation.get("tracking_state") != "NO_FORECASTS_TO_SCORE"
+
+
 def test_paper_tracking_never_calls_live_provider_when_result_cache_is_unavailable(tmp_path, monkeypatch):
     monkeypatch.setenv("GITHUB_REPOSITORY", "owner/repo")
     monkeypatch.setenv("GITHUB_TOKEN", "test-token")
