@@ -11,11 +11,12 @@ import json
 import math
 import os
 import re
+import time
 import unicodedata
 from datetime import date, datetime, time, timedelta, timezone
 from typing import Any
 from urllib.error import HTTPError, URLError
-from urllib.parse import urlencode
+from urllib.parse import urlencode, urlparse
 from urllib.request import Request, urlopen
 from zoneinfo import ZoneInfo
 
@@ -57,18 +58,36 @@ def _name_key(value: Any) -> str:
     return _canonical_name_key(value)
 
 
-def _json_request(url: str, headers: dict[str, str] | None = None, timeout: int = 20):
+def _json_request(url: str, headers: dict[str, str] | None = None, timeout: int = 20, retries: int = 2):
     request = Request(url, headers={"Accept": "application/json", "User-Agent": "VeltrixFootball/1.0", **(headers or {})})
-    try:
-        with urlopen(request, timeout=timeout) as response:
-            payload = json.loads(response.read().decode("utf-8"))
-            return response.status, response.headers, payload
-    except HTTPError as exc:
-        raise ProviderAPIError(f"Provider request failed with HTTP {exc.code}.") from None
-    except (URLError, OSError, TimeoutError):
-        raise ProviderAPIError("Provider network request failed.") from None
-    except (UnicodeDecodeError, json.JSONDecodeError):
-        raise ProviderAPIError("Provider returned invalid JSON.") from None
+    host = urlparse(url).hostname or "unknown-provider"
+    attempts = max(0, min(int(retries), 3)) + 1
+    for attempt in range(attempts):
+        try:
+            with urlopen(request, timeout=timeout) as response:
+                payload = json.loads(response.read().decode("utf-8"))
+                return response.status, response.headers, payload
+        except HTTPError as exc:
+            # HTTP responses are definitive provider responses; do not burn quota retrying.
+            raise ProviderAPIError(f"Provider request to {host} failed with HTTP {exc.code}.") from None
+        except URLError as exc:
+            if attempt + 1 < attempts:
+                time.sleep(1 + attempt)
+                continue
+            reason_type = type(getattr(exc, "reason", exc)).__name__
+            raise ProviderAPIError(
+                f"Provider network request to {host} failed after {attempts} attempts ({reason_type})."
+            ) from None
+        except (OSError, TimeoutError) as exc:
+            if attempt + 1 < attempts:
+                time.sleep(1 + attempt)
+                continue
+            raise ProviderAPIError(
+                f"Provider network request to {host} failed after {attempts} attempts ({type(exc).__name__})."
+            ) from None
+        except (UnicodeDecodeError, json.JSONDecodeError):
+            raise ProviderAPIError(f"Provider {host} returned invalid JSON.") from None
+    raise ProviderAPIError(f"Provider network request to {host} failed after {attempts} attempts.")
 
 
 def _status_code(raw: Any) -> str:
