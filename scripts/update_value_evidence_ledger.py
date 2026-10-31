@@ -14,6 +14,6 @@ def main():
     results=json.loads(Path(a.results).read_text()) if a.results and Path(a.results).exists() else {}
     ledger=merge_evidence_ledger(previous,report,results)
     Path(a.output).parent.mkdir(parents=True,exist_ok=True)
-    Path(a.output).write_text(json.dumps(ledger,indent=2,ensure_ascii=False)+"\\n")
+    Path(a.output).write_text(json.dumps(ledger,indent=2,ensure_ascii=False)+"\n")
     print(json.dumps(ledger["summary"],sort_keys=True))
 if __name__=="__main__": main()
