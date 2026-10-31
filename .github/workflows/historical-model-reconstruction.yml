@@ -38,12 +38,12 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p reports
-          git fetch origin command-data --depth=1
+          git fetch origin command-data:refs/remotes/origin/command-data --depth=1
           git show origin/command-data:public-data/recent_results_cache.json > reports/recent_results_cache.json
           test -s reports/recent_results_cache.json
 
       - name: Install audit dependencies
-        run: python -m pip install --disable-pip-version-check -r requirements.txt
+        run: python -m pip install --disable-pip-version-check pytest
 
       - name: Run historical reconstruction and common-fixture comparison
         run: |
