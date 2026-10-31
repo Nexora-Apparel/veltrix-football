@@ -318,6 +318,7 @@ jobs:
           FIVEDOLLARFOOTBALL_API_KEY: ${{ secrets.FIVEDOLLARFOOTBALL_API_KEY }}
           THE_ODDS_API_KEY: ${{ secrets.THE_ODDS_API_KEY }}
           TARGET_DATE: ${{ inputs.date }}
+          VELTRIX_TEST_FORCE_PROVIDER_OUTAGE: ${{ github.event_name == 'push' && contains(github.event.head_commit.message, '[simulate-provider-outage]') }}
           PYTHONPATH: .
         run: |
           if [ "${VELTRIX_TEST_FORCE_PROVIDER_OUTAGE:-false}" = "true" ]; then
