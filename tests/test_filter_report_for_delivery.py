@@ -16,7 +16,7 @@ def sample_report():
             {"status": "EXPERIMENTAL_ONLY", "kickoff_local": "2026-10-25T10:00:00+01:00", "model": "elo", "probabilities": {"home_win": 0.5, "draw": 0.3, "away_win": 0.2}, "team_name_matches": {"home": {"fixture_name": "Alph FC", "historical_key": "alpha", "auto_matched": True}, "away": {"fixture_name": "Beta FC", "historical_key": "beta", "auto_matched": False}}},
             {"status": "EXPERIMENTAL_ONLY", "kickoff_local": "2026-10-25T07:00:00+01:00", "model": "poisson", "probabilities": {"home_win": 0.5, "draw": 0.3, "away_win": 0.2}},
             {"status": "UNSUPPORTED_COMPETITION", "kickoff_local": "2026-10-25T12:00:00+01:00", "league": "Unknown League"},
-            {"status": "EXPERIMENTAL_ONLY", "kickoff_local": None},
+            {"status": "EXPERIMENTAL_ONLY", "kickoff_local": None, "probabilities": {"home_win": 0.5, "draw": 0.3, "away_win": 0.2}},
         ],
     }
 
@@ -28,7 +28,8 @@ def test_filter_keeps_only_future_same_day_rows_and_recomputes_count():
     assert report["predictions_created"] == 1
     assert report["future_fixtures_considered"] == 3
     assert report["kickoff_unverified_fixtures"] == 1
-    assert any(row.get("status") == "KICKOFF_UNVERIFIED" for row in report["predictions"])
+    unverified = next(row for row in report["predictions"] if row.get("status") == "KICKOFF_UNVERIFIED")
+    assert "probabilities" not in unverified
     assert report["past_kickoffs_excluded"] == 1
     assert report["unsupported_competitions"] == 1
     assert report["insufficient_history"] == 0
@@ -59,6 +60,7 @@ def test_filter_withholds_legacy_forecast_with_unsafe_team_identity():
     unsafe = next(row for row in filtered["predictions"] if row.get("team_identity_withheld"))
     assert unsafe["status"] == "INSUFFICIENT_HISTORY"
     assert "unsafe fuzzy team-name match" in unsafe["reason"]
+    assert "probabilities" not in unsafe
     assert filtered["predictions_created"] == 0
     assert filtered["insufficient_history"] == 1
     assert filtered["delivery_filter"]["unsafe_team_identity_rows_withheld"] == 1
