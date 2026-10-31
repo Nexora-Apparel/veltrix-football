@@ -86,3 +86,6 @@ Controlled recovery-path test: the daily workflow accepts a one-run marker that 
 
 
 Recovery simulation execution: trigger the controlled no-provider-request failure path once and verify the published same-day snapshot remains visible and is explicitly labelled as reused.
+
+
+Final production verification after recovery-path test: perform a fresh primary-provider fetch, verify all upcoming same-day fixture rows, send only if the rendered report differs from the last delivered content, and confirm publication.
