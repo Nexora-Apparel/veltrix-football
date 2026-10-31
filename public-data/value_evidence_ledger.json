@@ -50416,7 +50416,7 @@
   "settlement_conflicts": [],
   "summary": {
     "observations_total": 1947,
-    "observations_added": 322,
+    "observations_added": 0,
     "price_series": 328,
     "series_with_multiple_snapshots": 325,
     "settled_observations": 0,
