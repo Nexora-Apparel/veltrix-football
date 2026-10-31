@@ -302,6 +302,28 @@ jobs:
           PYTHONPATH: .
         run: python scripts/enrich_oddspapi_odds.py --report reports/daily_predictions.json
 
+      - name: Restore and update prospective value evidence ledger
+        if: (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && contains(github.event.head_commit.message, '[run-live-verification]')) || (github.event_name == 'push' && contains(github.event.head_commit.message, '[reuse-report-40175707059]'))) && (steps.generate-report.outcome == 'success' || steps.filter-saved-report.outcome == 'success')
+        env:
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          PYTHONPATH: .
+        run: |
+          mkdir -p reports
+          LEDGER_URL="https://raw.githubusercontent.com/${GITHUB_REPOSITORY}/command-data/public-data/value_evidence_ledger.json"
+          if curl -fsSL --max-time 15 "$LEDGER_URL" -o reports/value_evidence_ledger.previous.json; then
+            echo "Restored existing append-only value evidence ledger."
+          else
+            printf '%s\\n' '{"version":"VELTRIX_VALUE_EVIDENCE_V1","observations":[],"price_series":[]}' > reports/value_evidence_ledger.previous.json
+            echo "No prior evidence ledger exists; initializing a new ledger."
+          fi
+          python scripts/update_value_evidence_ledger.py --report reports/daily_predictions.json --ledger reports/value_evidence_ledger.previous.json --results reports/recent_results_cache.json --output reports/value_evidence_ledger.json
+      - name: Upload prospective value evidence ledger
+        if: always() && (steps.generate-report.outcome == 'success' || steps.filter-saved-report.outcome == 'success') && hashFiles('reports/value_evidence_ledger.json') != ''
+        uses: actions/upload-artifact@v7
+        with:
+          name: veltrix-value-evidence-ledger
+          path: reports/value_evidence_ledger.json
+          retention-days: 90
       - name: Build market-specific value validation certificate
         if: (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && contains(github.event.head_commit.message, '[run-live-verification]')) || false) && (steps.generate-report.outcome == 'success' || steps.filter-saved-report.outcome == 'success')
         continue-on-error: true
