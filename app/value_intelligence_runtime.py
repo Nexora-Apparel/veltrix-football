@@ -120,6 +120,7 @@ def screen_fixture_value_intelligence(prediction: Mapping[str, Any]) -> dict[str
             "raw_model_edge": blended.get("raw_model_edge", {}),
             "candidates": candidates[:5],
             "quote_timestamps": [row["last_update"] for row in price_rows],
+            "bookmaker_quotes": price_rows,
             "method": blended.get("method"),
             "uncertainty_note": blended.get("note"),
             "release_status": "LOCKED_SHADOW_MODE",
