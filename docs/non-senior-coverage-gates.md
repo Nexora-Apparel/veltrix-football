@@ -61,3 +61,6 @@ Verification receipt contract: every full daily run records unit-test, dashboard
 
 
 Final verification run requested on 2026-10-31: execute the complete test suite and live same-day fixture pipeline, then publish the verification receipt only after all gated stages finish.
+
+
+Final verification receipt now includes the exact generated report's fixture counts, status distribution, visibility validation, odds status, value certificate state and evidence/paper-ledger summaries.
