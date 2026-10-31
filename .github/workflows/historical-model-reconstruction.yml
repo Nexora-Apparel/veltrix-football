@@ -32,7 +32,6 @@ jobs:
       - name: Download 24 October morning report (API-Sports-era sample)
         uses: actions/download-artifact@v7
         with:
-          name: veltrix-daily-predictions
           path: reports/archive/2026-10-24-morning
           github-token: ${{ secrets.GITHUB_TOKEN }}
           repository: ${{ github.repository }}
@@ -41,7 +40,6 @@ jobs:
       - name: Download 24 October evening report
         uses: actions/download-artifact@v7
         with:
-          name: veltrix-daily-predictions
           path: reports/archive/2026-10-24-evening
           github-token: ${{ secrets.GITHUB_TOKEN }}
           repository: ${{ github.repository }}
@@ -50,7 +48,6 @@ jobs:
       - name: Download 25 October midnight report (football-data.org migration attempt)
         uses: actions/download-artifact@v7
         with:
-          name: veltrix-daily-predictions
           path: reports/archive/2026-10-25-midnight
           github-token: ${{ secrets.GITHUB_TOKEN }}
           repository: ${{ github.repository }}
@@ -59,7 +56,6 @@ jobs:
       - name: Download 25 October morning report (Highlightly quota-limited run)
         uses: actions/download-artifact@v7
         with:
-          name: veltrix-daily-predictions
           path: reports/archive/2026-10-25-morning
           github-token: ${{ secrets.GITHUB_TOKEN }}
           repository: ${{ github.repository }}
