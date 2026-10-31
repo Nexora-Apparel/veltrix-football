@@ -55,3 +55,6 @@ This visibility rule is covered by report-generation, delivery-filter and Telegr
 ## End-to-end verification execution
 
 The production workflow must run the full test suite, fetch the target-day fixture response from the primary provider, preserve every eligible scheduled fixture row, validate row-count reconciliation, then deliver and publish only after validation succeeds.
+
+
+Verification receipt contract: every full daily run records unit-test, dashboard syntax, fixture generation, fixture-visibility, odds enrichment, value evidence, certificate, Telegram, artifact, paper tracking and command-data publication outcomes in `public-data/verification_status.json` on the `command-data` branch. A test-only push is labelled separately from a live run.
