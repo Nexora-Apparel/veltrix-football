@@ -436,4 +436,7 @@ jobs:
           if [ "$REUSE_REPORT" != "true" ] && [ -f reports/recent_results_cache.json ]; then
             ARGS+=(--recent-cache reports/recent_results_cache.json)
           fi
+          if [ -f reports/value_evidence_ledger.json ]; then
+            ARGS+=(--value-evidence reports/value_evidence_ledger.json)
+          fi
           python scripts/publish_command_data.py "${ARGS[@]}"
