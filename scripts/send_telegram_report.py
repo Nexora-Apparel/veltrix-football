@@ -161,6 +161,7 @@ def format_report_messages(report: dict[str, Any], ledger: dict[str, Any] | None
         f"Fixtures retrieved: {len(fixtures)} · Research forecasts: {len(usable)}",
         "Value screen: 1X2 / BTTS / Over-Under · " + str((report.get("value_bet_screen") or {}).get("status") or "NOT_REPORTED"),
         "Paper-only candidates (not approved): " + str((report.get("value_bet_screen") or {}).get("paper_candidate_count", 0)),
+        "Value intelligence: SHADOW MODE · fixtures evaluated: " + str((report.get("value_intelligence") or {}).get("fixtures_evaluated", 0)) + " · candidates: " + str((report.get("value_intelligence") or {}).get("shadow_candidate_count", 0)) + " · alerts OFF",
         "Goal calibration: " + str((report.get("goal_market_calibration") or {}).get("status") or "NOT_REPORTED")
         + " · applied: " + str((report.get("goal_market_calibration") or {}).get("applied_forecasts", 0))
         + "/" + str((report.get("goal_market_calibration") or {}).get("compatible_forecasts", 0)),
