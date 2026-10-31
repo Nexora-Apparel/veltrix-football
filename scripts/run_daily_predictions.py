@@ -376,6 +376,11 @@ def main() -> None:
             },
             "infersports": fixture_meta.get("infersports_fixture_discovery", {"status": "NOT_RUN"}),
             "fixtures_total_after_supplement": int(fixture_meta.get("fixtures_total_after_supplement", len(payload.get("response") or [])) or 0),
+            "fixture_selection": {
+                "policy": fixture_meta.get("fixture_selection_policy"),
+                "by_source_before_cap": fixture_meta.get("fixtures_by_source_before_cap", {}),
+                "by_source_after_cap": fixture_meta.get("fixtures_by_source_after_cap", {}),
+            },
             "future_fixtures_considered": report.get("future_fixtures_considered", 0),
             "predictions_created": report.get("predictions_created", 0),
             "insufficient_history": report.get("insufficient_history", 0),
