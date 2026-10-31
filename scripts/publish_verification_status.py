@@ -18,8 +18,10 @@ PATH = "public-data/verification_status.json"
 def build_status(env: dict[str, str]) -> dict:
     keys = (
         "unit_tests", "dashboard_js", "fixture_generation", "fixture_visibility",
-        "value_evidence_update", "telegram_delivery", "command_data_publication",
-        "paper_tracking",
+        "odds_enrichment", "value_evidence_update", "value_evidence_artifact",
+        "value_certificate", "telegram_webhook", "telegram_delivery",
+        "daily_report_artifact", "paper_ledger_artifact",
+        "command_data_publication", "paper_tracking",
     )
     steps = {key: env.get("VELTRIX_STEP_" + key.upper(), "not_run") for key in keys}
     critical = ("unit_tests", "dashboard_js")
@@ -29,9 +31,15 @@ def build_status(env: dict[str, str]) -> dict:
         passed = False
     if live:
         passed = passed and steps["fixture_visibility"] == "success"
+        passed = passed and steps["odds_enrichment"] in {"success", "skipped"}
         passed = passed and steps["value_evidence_update"] == "success"
+        passed = passed and steps["value_evidence_artifact"] == "success"
+        passed = passed and steps["value_certificate"] == "success"
+        passed = passed and steps["daily_report_artifact"] == "success"
+        passed = passed and steps["paper_ledger_artifact"] in {"success", "skipped"}
         passed = passed and steps["command_data_publication"] == "success"
         passed = passed and steps["paper_tracking"] in {"success", "skipped"}
+        passed = passed and steps["telegram_webhook"] in {"success", "skipped"}
         passed = passed and steps["telegram_delivery"] in {"success", "skipped"}
     return {
         "schema_version": 1,
