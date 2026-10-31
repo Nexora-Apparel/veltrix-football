@@ -258,6 +258,7 @@ def run(report_date: date, output_path: str) -> dict[str, Any]:
             if (
                 target_summary is None
                 or int(target_summary.get("awaiting_result_or_match", 0)) > 0
+                or target_summary.get("tracking_state") == "NO_FORECASTS_TO_SCORE"
                 or (
                     int(target_summary.get("completed_forecasts_scored", 0)) == 0
                     and not target_summary.get("model_versions")
