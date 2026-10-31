@@ -104,7 +104,8 @@ def merge_evidence_ledger(previous: Mapping[str, Any] | None, report: Mapping[st
         if not result: continue
         status=str(result.get("fixture_status") or "").upper()
         hg,ag=result.get("home_goals"),result.get("away_goals")
-        if status not in {"FT","AET","PEN"} or not isinstance(hg,int) or not isinstance(ag,int): continue
+        if (status not in {"FT","AET","PEN"} or not isinstance(hg,int) or isinstance(hg,bool)
+                or not isinstance(ag,int) or isinstance(ag,bool)): continue
         market,sel=row.get("market"),row.get("selection")
         if market=="1X2": won=(sel=="home_win" and hg>ag) or (sel=="draw" and hg==ag) or (sel=="away_win" and hg<ag)
         elif market=="BTTS": won=(sel=="yes" and hg>0 and ag>0) or (sel=="no" and (hg==0 or ag==0))
@@ -129,7 +130,7 @@ def merge_evidence_ledger(previous: Mapping[str, Any] | None, report: Mapping[st
                        "settled_shadow_candidates":len(settled_candidates),
                        "shadow_candidate_wins":candidate_wins,
                        "shadow_candidate_losses":len(settled_candidates)-candidate_wins,
-                       "shadow_candidate_net_units":round(candidate_profit,4),
-                       "shadow_candidate_roi_percent":round(candidate_profit/len(settled_candidates)*100,4) if settled_candidates else None,
+                       "shadow_candidate_quote_net_units":round(candidate_profit,4),
+                       "shadow_candidate_quote_roi_percent":round(candidate_profit/len(settled_candidates)*100,4) if settled_candidates else None,
                        "alerts_enabled":False},
             "last_report_date":report.get("as_of_date")}
