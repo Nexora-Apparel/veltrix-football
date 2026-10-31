@@ -320,7 +320,7 @@ jobs:
           if curl -fsSL --max-time 15 "$LEDGER_URL" -o reports/value_evidence_ledger.previous.json; then
             echo "Restored existing append-only value evidence ledger."
           else
-            printf '%s\\n' '{"version":"VELTRIX_VALUE_EVIDENCE_V1","observations":[],"price_series":[]}' > reports/value_evidence_ledger.previous.json
+            printf '%s\n' '{"version":"VELTRIX_VALUE_EVIDENCE_V1","observations":[],"price_series":[]}' > reports/value_evidence_ledger.previous.json
             echo "No prior evidence ledger exists; initializing a new ledger."
           fi
           python scripts/update_value_evidence_ledger.py --report reports/daily_predictions.json --ledger reports/value_evidence_ledger.previous.json --results reports/recent_results_cache.json --output reports/value_evidence_ledger.json
