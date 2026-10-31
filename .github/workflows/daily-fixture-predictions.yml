@@ -381,7 +381,7 @@ jobs:
           retention-days: 90
       - name: Build market-specific value validation certificate
         id: value-certificate
-        if: always() && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && contains(github.event.head_commit.message, '[run-live-verification]')) || false) && (steps.generate-report.outcome == 'success' || steps.report-recovery.outcome == 'success' || steps.filter-saved-report.outcome == 'success')
+        if: always() && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && contains(github.event.head_commit.message, '[run-live-verification]')) || false) && (steps.generate-report.outcome == 'success' || steps.filter-saved-report.outcome == 'success')
         continue-on-error: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -397,7 +397,7 @@ jobs:
         run: python scripts/validate_fixture_visibility.py --report reports/daily_predictions.json
 
       - name: Notify Telegram when live report generation fails
-        if: (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && contains(github.event.head_commit.message, '[run-live-verification]')) || false) && !contains(github.event.head_commit.message, '[skip-telegram]') && failure() && steps.generate-report.outcome == 'failure'
+        if: (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && contains(github.event.head_commit.message, '[run-live-verification]')) || false) && !contains(github.event.head_commit.message, '[skip-telegram]') && failure() && steps.generate-report.outcome == 'failure' && steps.report-recovery.outcome != 'success'
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
@@ -446,7 +446,7 @@ jobs:
 
       - name: Send daily report to Telegram
         id: telegram-delivery
-        if: (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && contains(github.event.head_commit.message, '[run-live-verification]')) || false) && !contains(github.event.head_commit.message, '[skip-telegram]') && steps.telegram-config.outputs.configured == 'true'
+        if: always() && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && contains(github.event.head_commit.message, '[run-live-verification]')) || false) && (steps.generate-report.outcome == 'success' || steps.report-recovery.outcome == 'success' || steps.filter-saved-report.outcome == 'success') && !contains(github.event.head_commit.message, '[skip-telegram]') && steps.telegram-config.outputs.configured == 'true'
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
@@ -462,7 +462,7 @@ jobs:
           fi
       - name: Upload daily prediction report
         id: daily-report-artifact
-        if: always() && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && contains(github.event.head_commit.message, '[run-live-verification]')) || false) && (steps.generate-report.outcome == 'success' || steps.filter-saved-report.outcome == 'success')
+        if: always() && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && contains(github.event.head_commit.message, '[run-live-verification]')) || false) && (steps.generate-report.outcome == 'success' || steps.report-recovery.outcome == 'success' || steps.filter-saved-report.outcome == 'success')
         uses: actions/upload-artifact@v7
         with:
           name: veltrix-daily-predictions
@@ -472,7 +472,7 @@ jobs:
 
       - name: Upload cumulative paper-tracking ledger
         id: paper-ledger-artifact
-        if: always() && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && contains(github.event.head_commit.message, '[run-live-verification]')) || false) && !contains(github.event.head_commit.message, '[reuse-report-40175707059]') && steps.paper-ledger-check.outputs.safe == 'true'
+        if: always() && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && contains(github.event.head_commit.message, '[run-live-verification]')) || false) && steps.paper-ledger-check.outputs.safe == 'true'
         uses: actions/upload-artifact@v7
         with:
           name: veltrix-paper-ledger
@@ -482,7 +482,7 @@ jobs:
 
       - name: Publish validated command data snapshots
         id: command-data-publication
-        if: always() && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && contains(github.event.head_commit.message, '[run-live-verification]')) || (github.event_name == 'push' && contains(github.event.head_commit.message, '[reuse-report-40175707059]'))) && (steps.generate-report.outcome == 'success' || steps.filter-saved-report.outcome == 'success')
+        if: always() && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && contains(github.event.head_commit.message, '[run-live-verification]')) || (github.event_name == 'push' && contains(github.event.head_commit.message, '[reuse-report-40175707059]'))) && (steps.generate-report.outcome == 'success' || steps.report-recovery.outcome == 'success' || steps.filter-saved-report.outcome == 'success')
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_REPOSITORY: ${{ github.repository }}
@@ -515,6 +515,7 @@ jobs:
           VELTRIX_STEP_UNIT_TESTS: ${{ steps.unit-tests.outcome }}
           VELTRIX_STEP_DASHBOARD_JS: ${{ steps.dashboard-js.outcome }}
           VELTRIX_STEP_FIXTURE_GENERATION: ${{ steps.generate-report.outcome }}
+          VELTRIX_STEP_REPORT_RECOVERY: ${{ steps.report-recovery.outcome }}
           VELTRIX_STEP_REPORT_RECOVERY: ${{ steps.report-recovery.outcome }}
           VELTRIX_STEP_FIXTURE_VISIBILITY: ${{ steps.fixture-visibility-validation.outcome }}
           VELTRIX_STEP_ODDS_ENRICHMENT: ${{ steps.odds-enrichment.outcome }}
