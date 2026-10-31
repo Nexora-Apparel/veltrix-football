@@ -446,3 +446,43 @@ def test_fivedollar_1x2_only_odds_are_not_discarded():
         "home": 2.0, "draw": 3.2, "away": 3.9,
     }
     assert result["multi_source_odds_sync"]["five_dollar"]["status"] == "AVAILABLE"
+
+
+def test_json_request_retries_transient_network_failure_without_exposing_credentials():
+    from urllib.error import URLError
+    from unittest.mock import MagicMock, patch
+    from app.provider_adapters import _json_request
+
+    response = MagicMock()
+    response.__enter__.return_value = response
+    response.status = 200
+    response.headers = {"Content-Type": "application/json"}
+    response.read.return_value = b'{"success":1}'
+    with patch("app.provider_adapters.urlopen", side_effect=[URLError("Temporary failure"), response]) as request, \
+         patch("app.provider_adapters.time.sleep") as sleep:
+        status, headers, payload = _json_request(
+            "https://api.5dollarfootballapi.com/v1/fixtures?secret=never-log-this",
+            retries=2,
+        )
+    assert status == 200
+    assert payload == {"success": 1}
+    assert request.call_count == 2
+    sleep.assert_called_once_with(1)
+
+
+def test_json_request_reports_safe_host_and_network_error_class_after_retries():
+    from urllib.error import URLError
+    from unittest.mock import patch
+    from app.provider_adapters import _json_request, ProviderAPIError
+
+    with patch("app.provider_adapters.urlopen", side_effect=URLError("Temporary failure")), \
+         patch("app.provider_adapters.time.sleep"):
+        try:
+            _json_request("https://api.5dollarfootballapi.com/v1/fixtures", retries=1)
+        except ProviderAPIError as exc:
+            message = str(exc)
+        else:
+            raise AssertionError("Expected sanitized provider network failure")
+    assert "api.5dollarfootballapi.com" in message
+    assert "URLError" in message
+    assert "secret" not in message
