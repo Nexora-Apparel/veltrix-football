@@ -73,6 +73,22 @@
         "paper_roi": null,
         "notice": "Best quoted price in a pre-kickoff snapshot; flat 1-unit paper stakes; not proof of executable profit or bookmaker closing-line value."
       }
+    },
+    {
+      "report_date": "2026-10-30",
+      "fixtures_scored": 0,
+      "completed_forecasts_scored": 0,
+      "awaiting_result_or_match": 0,
+      "withheld_or_invalid_forecasts": 0,
+      "metrics": {
+        "matches": 0,
+        "result_accuracy": null,
+        "brier_score": null,
+        "log_loss": null
+      },
+      "metrics_by_model": {},
+      "model_versions": [],
+      "tracking_state": "NO_FORECASTS_TO_SCORE"
     }
   ],
   "scored_matches": [
@@ -213,9 +229,9 @@
       "report_date": "2026-10-27"
     }
   ],
-  "updated_at_utc": "2026-10-30T13:57:26.882903+00:00",
+  "updated_at_utc": "2026-10-31T13:29:55.085892+00:00",
   "last_attempt": {
-    "report_date": "2026-10-29",
+    "report_date": "2026-10-30",
     "status": "EVALUATED",
     "attempts": [
       {
@@ -264,9 +280,9 @@
         "awaiting_result_or_match": 28
       },
       {
-        "report_date": "2026-10-29",
-        "status": "NO_PREVIOUS_REPORT",
-        "detail": "No saved daily report was found for this date."
+        "report_date": "2026-10-30",
+        "status": "NO_FORECASTS_TO_SCORE",
+        "detail": "The best saved report for this date contains no scoreable forecasts; provider quota was preserved."
       }
     ],
     "detail": null,
@@ -304,7 +320,7 @@
     "experimental_elo_by_competition",
     "experimental_recent_goals_poisson"
   ],
-  "evaluated_report_dates": 2,
+  "evaluated_report_dates": 3,
   "notice": "Retrospective paper evaluation only; no betting recommendation or profitability claim.",
   "goal_market_scored": [],
   "calibration_versions": [],
