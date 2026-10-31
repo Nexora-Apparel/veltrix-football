@@ -43,3 +43,10 @@ python scripts/audit_historical_csv.py --input data/womens_club_historical_match
 ```
 
 The source covers the English Women's Super League from 2011 and Women's Championship from 2014, with source-specific season structure. It is licensed CC BY-SA 4.0. Any public redistribution must include attribution and comply with ShareAlike requirements; verify how the license applies to the intended output before distributing it. This pilot does not cover lower-tier women's leagues or any reserve/youth competition.
+
+
+## Fixture visibility invariant
+
+A fixture may be excluded from probability generation, but it must not be silently removed from the fixture report solely because the model lacks history, the competition is unsupported, or kickoff metadata is missing. Such records remain visible with an explicit status; no forecast or betting signal is attached. A missing or invalid kickoff is labelled `KICKOFF_UNVERIFIED`. The same-day provider query remains the boundary for the fixture inventory, and confirmed past kickoffs or other-date fixtures are not presented as upcoming matches.
+
+This visibility rule is covered by report-generation, delivery-filter and Telegram tests.
