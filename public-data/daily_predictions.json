@@ -637,31 +637,42 @@
           "1X2": {
             "status": "DISABLED_UNVALIDATED",
             "bookmaker_price_sets": 21,
-            "candidates": []
+            "candidates": [],
+            "paper_candidate_count": 0,
+            "paper_candidates": []
           },
           "BTTS": {
             "status": "DISABLED_UNVALIDATED",
             "bookmaker_price_sets": 0,
-            "candidates": []
+            "candidates": [],
+            "paper_candidate_count": 0,
+            "paper_candidates": []
           },
           "OVER_UNDER_1_5": {
             "status": "DISABLED_UNVALIDATED",
             "bookmaker_price_sets": 0,
-            "candidates": []
+            "candidates": [],
+            "paper_candidate_count": 0,
+            "paper_candidates": []
           },
           "OVER_UNDER_2_5": {
             "status": "DISABLED_UNVALIDATED",
             "bookmaker_price_sets": 1,
-            "candidates": []
+            "candidates": [],
+            "paper_candidate_count": 0,
+            "paper_candidates": []
           },
           "OVER_UNDER_3_5": {
             "status": "DISABLED_UNVALIDATED",
             "bookmaker_price_sets": 3,
-            "candidates": []
+            "candidates": [],
+            "paper_candidate_count": 0,
+            "paper_candidates": []
           }
         },
         "candidate_count": 0,
-        "note": "Research screen only. Timestamped pre-kickoff prices only; no bookmaker actions are performed."
+        "paper_candidate_count": 0,
+        "note": "Paper-only candidates are prospective research records, not approved betting alerts. Release remains certificate-gated; no bookmaker actions are performed."
       }
     },
     {
@@ -1301,37 +1312,96 @@
         "fetched_at": "2026-10-31T13:30:22.955090+00:00"
       },
       "value_bet_screen": {
-        "status": "DISABLED_UNVALIDATED",
+        "status": "PAPER_ONLY_CANDIDATES",
         "model_validated": false,
         "markets": {
           "1X2": {
-            "status": "DISABLED_UNVALIDATED",
+            "status": "PAPER_ONLY_CANDIDATES",
             "bookmaker_price_sets": 21,
-            "candidates": []
+            "candidates": [],
+            "paper_candidate_count": 1,
+            "paper_candidates": [
+              {
+                "selection": "home_win",
+                "model_probability": 0.5499,
+                "devigged_market_probability": 0.23237962316817867,
+                "edge": 0.3175203768318214,
+                "edge_percentage_points": 31.752037683182138,
+                "decimal_odds": 4.0,
+                "expected_return_per_unit": 1.1996000000000002,
+                "status": "PAPER_ONLY_NOT_APPROVED",
+                "market": "1X2",
+                "model": "experimental_recent_goals_poisson",
+                "provider": "The Odds API",
+                "bookmaker": "Paddy Power",
+                "release_status": "LOCKED_UNVALIDATED"
+              }
+            ]
           },
           "BTTS": {
             "status": "DISABLED_UNVALIDATED",
             "bookmaker_price_sets": 0,
-            "candidates": []
+            "candidates": [],
+            "paper_candidate_count": 0,
+            "paper_candidates": []
           },
           "OVER_UNDER_1_5": {
             "status": "DISABLED_UNVALIDATED",
             "bookmaker_price_sets": 0,
-            "candidates": []
+            "candidates": [],
+            "paper_candidate_count": 0,
+            "paper_candidates": []
           },
           "OVER_UNDER_2_5": {
-            "status": "DISABLED_UNVALIDATED",
+            "status": "PAPER_ONLY_CANDIDATES",
             "bookmaker_price_sets": 1,
-            "candidates": []
+            "candidates": [],
+            "paper_candidate_count": 1,
+            "paper_candidates": [
+              {
+                "selection": "under",
+                "model_probability": 0.54884,
+                "devigged_market_probability": 0.3844221105527638,
+                "edge": 0.16441788944723618,
+                "edge_percentage_points": 16.44178894472362,
+                "decimal_odds": 2.45,
+                "expected_return_per_unit": 0.34465800000000013,
+                "status": "PAPER_ONLY_NOT_APPROVED",
+                "market": "OVER_UNDER_2_5",
+                "model": "experimental_recent_goals_poisson",
+                "provider": "The Odds API",
+                "bookmaker": "William Hill",
+                "release_status": "LOCKED_UNVALIDATED"
+              }
+            ]
           },
           "OVER_UNDER_3_5": {
-            "status": "DISABLED_UNVALIDATED",
+            "status": "PAPER_ONLY_CANDIDATES",
             "bookmaker_price_sets": 3,
-            "candidates": []
+            "candidates": [],
+            "paper_candidate_count": 1,
+            "paper_candidates": [
+              {
+                "selection": "under",
+                "model_probability": 0.764823,
+                "devigged_market_probability": 0.5943152454780362,
+                "edge": 0.17050775452196387,
+                "edge_percentage_points": 17.050775452196387,
+                "decimal_odds": 1.57,
+                "expected_return_per_unit": 0.20077211000000017,
+                "status": "PAPER_ONLY_NOT_APPROVED",
+                "market": "OVER_UNDER_3_5",
+                "model": "experimental_recent_goals_poisson",
+                "provider": "The Odds API",
+                "bookmaker": "LeoVegas",
+                "release_status": "LOCKED_UNVALIDATED"
+              }
+            ]
           }
         },
         "candidate_count": 0,
-        "note": "Research screen only. Timestamped pre-kickoff prices only; no bookmaker actions are performed."
+        "paper_candidate_count": 3,
+        "note": "Paper-only candidates are prospective research records, not approved betting alerts. Release remains certificate-gated; no bookmaker actions are performed."
       },
       "raw_goal_market_probabilities": {
         "btts_yes": 0.3417,
@@ -2126,31 +2196,42 @@
           "1X2": {
             "status": "DISABLED_UNVALIDATED",
             "bookmaker_price_sets": 21,
-            "candidates": []
+            "candidates": [],
+            "paper_candidate_count": 0,
+            "paper_candidates": []
           },
           "BTTS": {
             "status": "DISABLED_UNVALIDATED",
             "bookmaker_price_sets": 10,
-            "candidates": []
+            "candidates": [],
+            "paper_candidate_count": 0,
+            "paper_candidates": []
           },
           "OVER_UNDER_1_5": {
             "status": "DISABLED_UNVALIDATED",
             "bookmaker_price_sets": 0,
-            "candidates": []
+            "candidates": [],
+            "paper_candidate_count": 0,
+            "paper_candidates": []
           },
           "OVER_UNDER_2_5": {
             "status": "DISABLED_UNVALIDATED",
             "bookmaker_price_sets": 5,
-            "candidates": []
+            "candidates": [],
+            "paper_candidate_count": 0,
+            "paper_candidates": []
           },
           "OVER_UNDER_3_5": {
             "status": "DISABLED_UNVALIDATED",
             "bookmaker_price_sets": 0,
-            "candidates": []
+            "candidates": [],
+            "paper_candidate_count": 0,
+            "paper_candidates": []
           }
         },
         "candidate_count": 0,
-        "note": "Research screen only. Timestamped pre-kickoff prices only; no bookmaker actions are performed."
+        "paper_candidate_count": 0,
+        "note": "Paper-only candidates are prospective research records, not approved betting alerts. Release remains certificate-gated; no bookmaker actions are performed."
       }
     },
     {
@@ -2912,31 +2993,42 @@
           "1X2": {
             "status": "DISABLED_UNVALIDATED",
             "bookmaker_price_sets": 21,
-            "candidates": []
+            "candidates": [],
+            "paper_candidate_count": 0,
+            "paper_candidates": []
           },
           "BTTS": {
             "status": "DISABLED_UNVALIDATED",
             "bookmaker_price_sets": 10,
-            "candidates": []
+            "candidates": [],
+            "paper_candidate_count": 0,
+            "paper_candidates": []
           },
           "OVER_UNDER_1_5": {
             "status": "DISABLED_UNVALIDATED",
             "bookmaker_price_sets": 0,
-            "candidates": []
+            "candidates": [],
+            "paper_candidate_count": 0,
+            "paper_candidates": []
           },
           "OVER_UNDER_2_5": {
             "status": "DISABLED_UNVALIDATED",
             "bookmaker_price_sets": 4,
-            "candidates": []
+            "candidates": [],
+            "paper_candidate_count": 0,
+            "paper_candidates": []
           },
           "OVER_UNDER_3_5": {
             "status": "DISABLED_UNVALIDATED",
             "bookmaker_price_sets": 0,
-            "candidates": []
+            "candidates": [],
+            "paper_candidate_count": 0,
+            "paper_candidates": []
           }
         },
         "candidate_count": 0,
-        "note": "Research screen only. Timestamped pre-kickoff prices only; no bookmaker actions are performed."
+        "paper_candidate_count": 0,
+        "note": "Paper-only candidates are prospective research records, not approved betting alerts. Release remains certificate-gated; no bookmaker actions are performed."
       }
     },
     {
@@ -3553,31 +3645,42 @@
           "1X2": {
             "status": "DISABLED_UNVALIDATED",
             "bookmaker_price_sets": 21,
-            "candidates": []
+            "candidates": [],
+            "paper_candidate_count": 0,
+            "paper_candidates": []
           },
           "BTTS": {
             "status": "DISABLED_UNVALIDATED",
             "bookmaker_price_sets": 0,
-            "candidates": []
+            "candidates": [],
+            "paper_candidate_count": 0,
+            "paper_candidates": []
           },
           "OVER_UNDER_1_5": {
             "status": "DISABLED_UNVALIDATED",
             "bookmaker_price_sets": 0,
-            "candidates": []
+            "candidates": [],
+            "paper_candidate_count": 0,
+            "paper_candidates": []
           },
           "OVER_UNDER_2_5": {
             "status": "DISABLED_UNVALIDATED",
             "bookmaker_price_sets": 1,
-            "candidates": []
+            "candidates": [],
+            "paper_candidate_count": 0,
+            "paper_candidates": []
           },
           "OVER_UNDER_3_5": {
             "status": "DISABLED_UNVALIDATED",
             "bookmaker_price_sets": 4,
-            "candidates": []
+            "candidates": [],
+            "paper_candidate_count": 0,
+            "paper_candidates": []
           }
         },
         "candidate_count": 0,
-        "note": "Research screen only. Timestamped pre-kickoff prices only; no bookmaker actions are performed."
+        "paper_candidate_count": 0,
+        "note": "Paper-only candidates are prospective research records, not approved betting alerts. Release remains certificate-gated; no bookmaker actions are performed."
       }
     },
     {
@@ -4194,31 +4297,42 @@
           "1X2": {
             "status": "DISABLED_UNVALIDATED",
             "bookmaker_price_sets": 21,
-            "candidates": []
+            "candidates": [],
+            "paper_candidate_count": 0,
+            "paper_candidates": []
           },
           "BTTS": {
             "status": "DISABLED_UNVALIDATED",
             "bookmaker_price_sets": 0,
-            "candidates": []
+            "candidates": [],
+            "paper_candidate_count": 0,
+            "paper_candidates": []
           },
           "OVER_UNDER_1_5": {
             "status": "DISABLED_UNVALIDATED",
             "bookmaker_price_sets": 0,
-            "candidates": []
+            "candidates": [],
+            "paper_candidate_count": 0,
+            "paper_candidates": []
           },
           "OVER_UNDER_2_5": {
             "status": "DISABLED_UNVALIDATED",
             "bookmaker_price_sets": 5,
-            "candidates": []
+            "candidates": [],
+            "paper_candidate_count": 0,
+            "paper_candidates": []
           },
           "OVER_UNDER_3_5": {
             "status": "DISABLED_UNVALIDATED",
             "bookmaker_price_sets": 0,
-            "candidates": []
+            "candidates": [],
+            "paper_candidate_count": 0,
+            "paper_candidates": []
           }
         },
         "candidate_count": 0,
-        "note": "Research screen only. Timestamped pre-kickoff prices only; no bookmaker actions are performed."
+        "paper_candidate_count": 0,
+        "note": "Paper-only candidates are prospective research records, not approved betting alerts. Release remains certificate-gated; no bookmaker actions are performed."
       }
     },
     {
@@ -4835,31 +4949,42 @@
           "1X2": {
             "status": "DISABLED_UNVALIDATED",
             "bookmaker_price_sets": 21,
-            "candidates": []
+            "candidates": [],
+            "paper_candidate_count": 0,
+            "paper_candidates": []
           },
           "BTTS": {
             "status": "DISABLED_UNVALIDATED",
             "bookmaker_price_sets": 0,
-            "candidates": []
+            "candidates": [],
+            "paper_candidate_count": 0,
+            "paper_candidates": []
           },
           "OVER_UNDER_1_5": {
             "status": "DISABLED_UNVALIDATED",
             "bookmaker_price_sets": 0,
-            "candidates": []
+            "candidates": [],
+            "paper_candidate_count": 0,
+            "paper_candidates": []
           },
           "OVER_UNDER_2_5": {
             "status": "DISABLED_UNVALIDATED",
             "bookmaker_price_sets": 5,
-            "candidates": []
+            "candidates": [],
+            "paper_candidate_count": 0,
+            "paper_candidates": []
           },
           "OVER_UNDER_3_5": {
             "status": "DISABLED_UNVALIDATED",
             "bookmaker_price_sets": 0,
-            "candidates": []
+            "candidates": [],
+            "paper_candidate_count": 0,
+            "paper_candidates": []
           }
         },
         "candidate_count": 0,
-        "note": "Research screen only. Timestamped pre-kickoff prices only; no bookmaker actions are performed."
+        "paper_candidate_count": 0,
+        "note": "Paper-only candidates are prospective research records, not approved betting alerts. Release remains certificate-gated; no bookmaker actions are performed."
       },
       "oddspapi_market_odds": {
         "provider": "OddsPapi",
@@ -75317,31 +75442,42 @@
           "1X2": {
             "status": "DISABLED_UNVALIDATED",
             "bookmaker_price_sets": 20,
-            "candidates": []
+            "candidates": [],
+            "paper_candidate_count": 0,
+            "paper_candidates": []
           },
           "BTTS": {
             "status": "DISABLED_UNVALIDATED",
             "bookmaker_price_sets": 0,
-            "candidates": []
+            "candidates": [],
+            "paper_candidate_count": 0,
+            "paper_candidates": []
           },
           "OVER_UNDER_1_5": {
             "status": "DISABLED_UNVALIDATED",
             "bookmaker_price_sets": 0,
-            "candidates": []
+            "candidates": [],
+            "paper_candidate_count": 0,
+            "paper_candidates": []
           },
           "OVER_UNDER_2_5": {
             "status": "DISABLED_UNVALIDATED",
             "bookmaker_price_sets": 1,
-            "candidates": []
+            "candidates": [],
+            "paper_candidate_count": 0,
+            "paper_candidates": []
           },
           "OVER_UNDER_3_5": {
             "status": "DISABLED_UNVALIDATED",
             "bookmaker_price_sets": 3,
-            "candidates": []
+            "candidates": [],
+            "paper_candidate_count": 0,
+            "paper_candidates": []
           }
         },
         "candidate_count": 0,
-        "note": "Research screen only. Timestamped pre-kickoff prices only; no bookmaker actions are performed."
+        "paper_candidate_count": 0,
+        "note": "Paper-only candidates are prospective research records, not approved betting alerts. Release remains certificate-gated; no bookmaker actions are performed."
       }
     },
     {
@@ -75960,37 +76096,80 @@
         "fetched_at": "2026-10-31T13:30:22.955825+00:00"
       },
       "value_bet_screen": {
-        "status": "DISABLED_UNVALIDATED",
+        "status": "PAPER_ONLY_CANDIDATES",
         "model_validated": false,
         "markets": {
           "1X2": {
-            "status": "DISABLED_UNVALIDATED",
+            "status": "PAPER_ONLY_CANDIDATES",
             "bookmaker_price_sets": 20,
-            "candidates": []
+            "candidates": [],
+            "paper_candidate_count": 1,
+            "paper_candidates": [
+              {
+                "selection": "away_win",
+                "model_probability": 0.506,
+                "devigged_market_probability": 0.39374127672078163,
+                "edge": 0.11225872327921838,
+                "edge_percentage_points": 11.225872327921838,
+                "decimal_odds": 2.52,
+                "expected_return_per_unit": 0.27512000000000003,
+                "status": "PAPER_ONLY_NOT_APPROVED",
+                "market": "1X2",
+                "model": "experimental_recent_goals_poisson",
+                "provider": "The Odds API",
+                "bookmaker": "Smarkets",
+                "release_status": "LOCKED_UNVALIDATED"
+              }
+            ]
           },
           "BTTS": {
             "status": "DISABLED_UNVALIDATED",
             "bookmaker_price_sets": 0,
-            "candidates": []
+            "candidates": [],
+            "paper_candidate_count": 0,
+            "paper_candidates": []
           },
           "OVER_UNDER_1_5": {
             "status": "DISABLED_UNVALIDATED",
             "bookmaker_price_sets": 0,
-            "candidates": []
+            "candidates": [],
+            "paper_candidate_count": 0,
+            "paper_candidates": []
           },
           "OVER_UNDER_2_5": {
-            "status": "DISABLED_UNVALIDATED",
+            "status": "PAPER_ONLY_CANDIDATES",
             "bookmaker_price_sets": 4,
-            "candidates": []
+            "candidates": [],
+            "paper_candidate_count": 1,
+            "paper_candidates": [
+              {
+                "selection": "over",
+                "model_probability": 0.572767,
+                "devigged_market_probability": 0.468671679197995,
+                "edge": 0.10409532080200501,
+                "edge_percentage_points": 10.409532080200501,
+                "decimal_odds": 2.12,
+                "expected_return_per_unit": 0.21426604000000005,
+                "status": "PAPER_ONLY_NOT_APPROVED",
+                "market": "OVER_UNDER_2_5",
+                "model": "experimental_recent_goals_poisson",
+                "provider": "The Odds API",
+                "bookmaker": "Matchbook",
+                "release_status": "LOCKED_UNVALIDATED"
+              }
+            ]
           },
           "OVER_UNDER_3_5": {
             "status": "DISABLED_UNVALIDATED",
             "bookmaker_price_sets": 0,
-            "candidates": []
+            "candidates": [],
+            "paper_candidate_count": 0,
+            "paper_candidates": []
           }
         },
         "candidate_count": 0,
-        "note": "Research screen only. Timestamped pre-kickoff prices only; no bookmaker actions are performed."
+        "paper_candidate_count": 2,
+        "note": "Paper-only candidates are prospective research records, not approved betting alerts. Release remains certificate-gated; no bookmaker actions are performed."
       },
       "raw_goal_market_probabilities": {
         "btts_yes": 0.7139,
@@ -76620,37 +76799,80 @@
         "fetched_at": "2026-10-31T13:30:22.955455+00:00"
       },
       "value_bet_screen": {
-        "status": "DISABLED_UNVALIDATED",
+        "status": "PAPER_ONLY_CANDIDATES",
         "model_validated": false,
         "markets": {
           "1X2": {
             "status": "DISABLED_UNVALIDATED",
             "bookmaker_price_sets": 20,
-            "candidates": []
+            "candidates": [],
+            "paper_candidate_count": 0,
+            "paper_candidates": []
           },
           "BTTS": {
             "status": "DISABLED_UNVALIDATED",
             "bookmaker_price_sets": 0,
-            "candidates": []
+            "candidates": [],
+            "paper_candidate_count": 0,
+            "paper_candidates": []
           },
           "OVER_UNDER_1_5": {
             "status": "DISABLED_UNVALIDATED",
             "bookmaker_price_sets": 0,
-            "candidates": []
+            "candidates": [],
+            "paper_candidate_count": 0,
+            "paper_candidates": []
           },
           "OVER_UNDER_2_5": {
-            "status": "DISABLED_UNVALIDATED",
+            "status": "PAPER_ONLY_CANDIDATES",
             "bookmaker_price_sets": 1,
-            "candidates": []
+            "candidates": [],
+            "paper_candidate_count": 1,
+            "paper_candidates": [
+              {
+                "selection": "under",
+                "model_probability": 0.465971,
+                "devigged_market_probability": 0.31924882629107987,
+                "edge": 0.14672217370892016,
+                "edge_percentage_points": 14.672217370892016,
+                "decimal_odds": 2.9,
+                "expected_return_per_unit": 0.3513159000000001,
+                "status": "PAPER_ONLY_NOT_APPROVED",
+                "market": "OVER_UNDER_2_5",
+                "model": "experimental_recent_goals_poisson",
+                "provider": "The Odds API",
+                "bookmaker": "William Hill",
+                "release_status": "LOCKED_UNVALIDATED"
+              }
+            ]
           },
           "OVER_UNDER_3_5": {
-            "status": "DISABLED_UNVALIDATED",
+            "status": "PAPER_ONLY_CANDIDATES",
             "bookmaker_price_sets": 3,
-            "candidates": []
+            "candidates": [],
+            "paper_candidate_count": 1,
+            "paper_candidates": [
+              {
+                "selection": "under",
+                "model_probability": 0.6869970000000001,
+                "devigged_market_probability": 0.5399999999999999,
+                "edge": 0.14699700000000016,
+                "edge_percentage_points": 14.699700000000016,
+                "decimal_odds": 1.84,
+                "expected_return_per_unit": 0.2640744800000001,
+                "status": "PAPER_ONLY_NOT_APPROVED",
+                "market": "OVER_UNDER_3_5",
+                "model": "experimental_recent_goals_poisson",
+                "provider": "The Odds API",
+                "bookmaker": "Matchbook",
+                "release_status": "LOCKED_UNVALIDATED"
+              }
+            ]
           }
         },
         "candidate_count": 0,
-        "note": "Research screen only. Timestamped pre-kickoff prices only; no bookmaker actions are performed."
+        "paper_candidate_count": 2,
+        "note": "Paper-only candidates are prospective research records, not approved betting alerts. Release remains certificate-gated; no bookmaker actions are performed."
       },
       "raw_goal_market_probabilities": {
         "btts_yes": 0.6239,
@@ -77292,31 +77514,42 @@
           "1X2": {
             "status": "DISABLED_UNVALIDATED",
             "bookmaker_price_sets": 20,
-            "candidates": []
+            "candidates": [],
+            "paper_candidate_count": 0,
+            "paper_candidates": []
           },
           "BTTS": {
             "status": "DISABLED_UNVALIDATED",
             "bookmaker_price_sets": 0,
-            "candidates": []
+            "candidates": [],
+            "paper_candidate_count": 0,
+            "paper_candidates": []
           },
           "OVER_UNDER_1_5": {
             "status": "DISABLED_UNVALIDATED",
             "bookmaker_price_sets": 0,
-            "candidates": []
+            "candidates": [],
+            "paper_candidate_count": 0,
+            "paper_candidates": []
           },
           "OVER_UNDER_2_5": {
             "status": "DISABLED_UNVALIDATED",
             "bookmaker_price_sets": 1,
-            "candidates": []
+            "candidates": [],
+            "paper_candidate_count": 0,
+            "paper_candidates": []
           },
           "OVER_UNDER_3_5": {
             "status": "DISABLED_UNVALIDATED",
             "bookmaker_price_sets": 0,
-            "candidates": []
+            "candidates": [],
+            "paper_candidate_count": 0,
+            "paper_candidates": []
           }
         },
         "candidate_count": 0,
-        "note": "Research screen only. Timestamped pre-kickoff prices only; no bookmaker actions are performed."
+        "paper_candidate_count": 0,
+        "note": "Paper-only candidates are prospective research records, not approved betting alerts. Release remains certificate-gated; no bookmaker actions are performed."
       },
       "raw_goal_market_probabilities": {
         "btts_yes": 0.5919,
@@ -77460,31 +77693,42 @@
           "1X2": {
             "status": "DISABLED_UNVALIDATED",
             "bookmaker_price_sets": 0,
-            "candidates": []
+            "candidates": [],
+            "paper_candidate_count": 0,
+            "paper_candidates": []
           },
           "BTTS": {
             "status": "DISABLED_UNVALIDATED",
             "bookmaker_price_sets": 0,
-            "candidates": []
+            "candidates": [],
+            "paper_candidate_count": 0,
+            "paper_candidates": []
           },
           "OVER_UNDER_1_5": {
             "status": "DISABLED_UNVALIDATED",
             "bookmaker_price_sets": 0,
-            "candidates": []
+            "candidates": [],
+            "paper_candidate_count": 0,
+            "paper_candidates": []
           },
           "OVER_UNDER_2_5": {
             "status": "DISABLED_UNVALIDATED",
             "bookmaker_price_sets": 0,
-            "candidates": []
+            "candidates": [],
+            "paper_candidate_count": 0,
+            "paper_candidates": []
           },
           "OVER_UNDER_3_5": {
             "status": "DISABLED_UNVALIDATED",
             "bookmaker_price_sets": 0,
-            "candidates": []
+            "candidates": [],
+            "paper_candidate_count": 0,
+            "paper_candidates": []
           }
         },
         "candidate_count": 0,
-        "note": "Research screen only. Timestamped pre-kickoff prices only; no bookmaker actions are performed."
+        "paper_candidate_count": 0,
+        "note": "Paper-only candidates are prospective research records, not approved betting alerts. Release remains certificate-gated; no bookmaker actions are performed."
       },
       "raw_goal_market_probabilities": {
         "btts_yes": 0.4379,
@@ -78120,37 +78364,64 @@
         "fetched_at": "2026-10-31T13:30:22.955581+00:00"
       },
       "value_bet_screen": {
-        "status": "DISABLED_UNVALIDATED",
+        "status": "PAPER_ONLY_CANDIDATES",
         "model_validated": false,
         "markets": {
           "1X2": {
             "status": "DISABLED_UNVALIDATED",
             "bookmaker_price_sets": 20,
-            "candidates": []
+            "candidates": [],
+            "paper_candidate_count": 0,
+            "paper_candidates": []
           },
           "BTTS": {
             "status": "DISABLED_UNVALIDATED",
             "bookmaker_price_sets": 0,
-            "candidates": []
+            "candidates": [],
+            "paper_candidate_count": 0,
+            "paper_candidates": []
           },
           "OVER_UNDER_1_5": {
             "status": "DISABLED_UNVALIDATED",
             "bookmaker_price_sets": 0,
-            "candidates": []
+            "candidates": [],
+            "paper_candidate_count": 0,
+            "paper_candidates": []
           },
           "OVER_UNDER_2_5": {
             "status": "DISABLED_UNVALIDATED",
             "bookmaker_price_sets": 1,
-            "candidates": []
+            "candidates": [],
+            "paper_candidate_count": 0,
+            "paper_candidates": []
           },
           "OVER_UNDER_3_5": {
-            "status": "DISABLED_UNVALIDATED",
+            "status": "PAPER_ONLY_CANDIDATES",
             "bookmaker_price_sets": 3,
-            "candidates": []
+            "candidates": [],
+            "paper_candidate_count": 1,
+            "paper_candidates": [
+              {
+                "selection": "under",
+                "model_probability": 0.661693,
+                "devigged_market_probability": 0.5252525252525252,
+                "edge": 0.13644047474747478,
+                "edge_percentage_points": 13.644047474747477,
+                "decimal_odds": 1.88,
+                "expected_return_per_unit": 0.24398283999999992,
+                "status": "PAPER_ONLY_NOT_APPROVED",
+                "market": "OVER_UNDER_3_5",
+                "model": "experimental_recent_goals_poisson",
+                "provider": "The Odds API",
+                "bookmaker": "Matchbook",
+                "release_status": "LOCKED_UNVALIDATED"
+              }
+            ]
           }
         },
         "candidate_count": 0,
-        "note": "Research screen only. Timestamped pre-kickoff prices only; no bookmaker actions are performed."
+        "paper_candidate_count": 1,
+        "note": "Paper-only candidates are prospective research records, not approved betting alerts. Release remains certificate-gated; no bookmaker actions are performed."
       },
       "raw_goal_market_probabilities": {
         "btts_yes": 0.6936,
@@ -78792,31 +79063,42 @@
           "1X2": {
             "status": "DISABLED_UNVALIDATED",
             "bookmaker_price_sets": 20,
-            "candidates": []
+            "candidates": [],
+            "paper_candidate_count": 0,
+            "paper_candidates": []
           },
           "BTTS": {
             "status": "DISABLED_UNVALIDATED",
             "bookmaker_price_sets": 0,
-            "candidates": []
+            "candidates": [],
+            "paper_candidate_count": 0,
+            "paper_candidates": []
           },
           "OVER_UNDER_1_5": {
             "status": "DISABLED_UNVALIDATED",
             "bookmaker_price_sets": 0,
-            "candidates": []
+            "candidates": [],
+            "paper_candidate_count": 0,
+            "paper_candidates": []
           },
           "OVER_UNDER_2_5": {
             "status": "DISABLED_UNVALIDATED",
             "bookmaker_price_sets": 1,
-            "candidates": []
+            "candidates": [],
+            "paper_candidate_count": 0,
+            "paper_candidates": []
           },
           "OVER_UNDER_3_5": {
             "status": "DISABLED_UNVALIDATED",
             "bookmaker_price_sets": 3,
-            "candidates": []
+            "candidates": [],
+            "paper_candidate_count": 0,
+            "paper_candidates": []
           }
         },
         "candidate_count": 0,
-        "note": "Research screen only. Timestamped pre-kickoff prices only; no bookmaker actions are performed."
+        "paper_candidate_count": 0,
+        "note": "Paper-only candidates are prospective research records, not approved betting alerts. Release remains certificate-gated; no bookmaker actions are performed."
       },
       "oddspapi_market_odds": {
         "provider": "OddsPapi",
@@ -137245,31 +137527,42 @@
           "1X2": {
             "status": "DISABLED_UNVALIDATED",
             "bookmaker_price_sets": 0,
-            "candidates": []
+            "candidates": [],
+            "paper_candidate_count": 0,
+            "paper_candidates": []
           },
           "BTTS": {
             "status": "DISABLED_UNVALIDATED",
             "bookmaker_price_sets": 0,
-            "candidates": []
+            "candidates": [],
+            "paper_candidate_count": 0,
+            "paper_candidates": []
           },
           "OVER_UNDER_1_5": {
             "status": "DISABLED_UNVALIDATED",
             "bookmaker_price_sets": 0,
-            "candidates": []
+            "candidates": [],
+            "paper_candidate_count": 0,
+            "paper_candidates": []
           },
           "OVER_UNDER_2_5": {
             "status": "DISABLED_UNVALIDATED",
             "bookmaker_price_sets": 0,
-            "candidates": []
+            "candidates": [],
+            "paper_candidate_count": 0,
+            "paper_candidates": []
           },
           "OVER_UNDER_3_5": {
             "status": "DISABLED_UNVALIDATED",
             "bookmaker_price_sets": 0,
-            "candidates": []
+            "candidates": [],
+            "paper_candidate_count": 0,
+            "paper_candidates": []
           }
         },
         "candidate_count": 0,
-        "note": "Research screen only. Timestamped pre-kickoff prices only; no bookmaker actions are performed."
+        "paper_candidate_count": 0,
+        "note": "Paper-only candidates are prospective research records, not approved betting alerts. Release remains certificate-gated; no bookmaker actions are performed."
       }
     },
     {
@@ -137872,37 +138165,80 @@
         "fetched_at": "2026-10-31T13:30:22.955873+00:00"
       },
       "value_bet_screen": {
-        "status": "DISABLED_UNVALIDATED",
+        "status": "PAPER_ONLY_CANDIDATES",
         "model_validated": false,
         "markets": {
           "1X2": {
             "status": "DISABLED_UNVALIDATED",
             "bookmaker_price_sets": 20,
-            "candidates": []
+            "candidates": [],
+            "paper_candidate_count": 0,
+            "paper_candidates": []
           },
           "BTTS": {
             "status": "DISABLED_UNVALIDATED",
             "bookmaker_price_sets": 0,
-            "candidates": []
+            "candidates": [],
+            "paper_candidate_count": 0,
+            "paper_candidates": []
           },
           "OVER_UNDER_1_5": {
             "status": "DISABLED_UNVALIDATED",
             "bookmaker_price_sets": 0,
-            "candidates": []
+            "candidates": [],
+            "paper_candidate_count": 0,
+            "paper_candidates": []
           },
           "OVER_UNDER_2_5": {
-            "status": "DISABLED_UNVALIDATED",
+            "status": "PAPER_ONLY_CANDIDATES",
             "bookmaker_price_sets": 1,
-            "candidates": []
+            "candidates": [],
+            "paper_candidate_count": 1,
+            "paper_candidates": [
+              {
+                "selection": "under",
+                "model_probability": 0.49917900000000004,
+                "devigged_market_probability": 0.35467980295566504,
+                "edge": 0.144499197044335,
+                "edge_percentage_points": 14.449919704433501,
+                "decimal_odds": 2.62,
+                "expected_return_per_unit": 0.30784898000000016,
+                "status": "PAPER_ONLY_NOT_APPROVED",
+                "market": "OVER_UNDER_2_5",
+                "model": "experimental_recent_goals_poisson",
+                "provider": "The Odds API",
+                "bookmaker": "William Hill",
+                "release_status": "LOCKED_UNVALIDATED"
+              }
+            ]
           },
           "OVER_UNDER_3_5": {
-            "status": "DISABLED_UNVALIDATED",
+            "status": "PAPER_ONLY_CANDIDATES",
             "bookmaker_price_sets": 2,
-            "candidates": []
+            "candidates": [],
+            "paper_candidate_count": 1,
+            "paper_candidates": [
+              {
+                "selection": "under",
+                "model_probability": 0.7186,
+                "devigged_market_probability": 0.5958549222797926,
+                "edge": 0.12274507772020737,
+                "edge_percentage_points": 12.274507772020737,
+                "decimal_odds": 1.56,
+                "expected_return_per_unit": 0.12101600000000001,
+                "status": "PAPER_ONLY_NOT_APPROVED",
+                "market": "OVER_UNDER_3_5",
+                "model": "experimental_recent_goals_poisson",
+                "provider": "The Odds API",
+                "bookmaker": "Grosvenor",
+                "release_status": "LOCKED_UNVALIDATED"
+              }
+            ]
           }
         },
         "candidate_count": 0,
-        "note": "Research screen only. Timestamped pre-kickoff prices only; no bookmaker actions are performed."
+        "paper_candidate_count": 2,
+        "note": "Paper-only candidates are prospective research records, not approved betting alerts. Release remains certificate-gated; no bookmaker actions are performed."
       },
       "raw_goal_market_probabilities": {
         "btts_yes": 0.5353,
@@ -138001,31 +138337,42 @@
           "1X2": {
             "status": "DISABLED_UNVALIDATED",
             "bookmaker_price_sets": 0,
-            "candidates": []
+            "candidates": [],
+            "paper_candidate_count": 0,
+            "paper_candidates": []
           },
           "BTTS": {
             "status": "DISABLED_UNVALIDATED",
             "bookmaker_price_sets": 0,
-            "candidates": []
+            "candidates": [],
+            "paper_candidate_count": 0,
+            "paper_candidates": []
           },
           "OVER_UNDER_1_5": {
             "status": "DISABLED_UNVALIDATED",
             "bookmaker_price_sets": 0,
-            "candidates": []
+            "candidates": [],
+            "paper_candidate_count": 0,
+            "paper_candidates": []
           },
           "OVER_UNDER_2_5": {
             "status": "DISABLED_UNVALIDATED",
             "bookmaker_price_sets": 0,
-            "candidates": []
+            "candidates": [],
+            "paper_candidate_count": 0,
+            "paper_candidates": []
           },
           "OVER_UNDER_3_5": {
             "status": "DISABLED_UNVALIDATED",
             "bookmaker_price_sets": 0,
-            "candidates": []
+            "candidates": [],
+            "paper_candidate_count": 0,
+            "paper_candidates": []
           }
         },
         "candidate_count": 0,
-        "note": "Research screen only. Timestamped pre-kickoff prices only; no bookmaker actions are performed."
+        "paper_candidate_count": 0,
+        "note": "Paper-only candidates are prospective research records, not approved betting alerts. Release remains certificate-gated; no bookmaker actions are performed."
       }
     },
     {
@@ -138069,31 +138416,42 @@
           "1X2": {
             "status": "DISABLED_UNVALIDATED",
             "bookmaker_price_sets": 0,
-            "candidates": []
+            "candidates": [],
+            "paper_candidate_count": 0,
+            "paper_candidates": []
           },
           "BTTS": {
             "status": "DISABLED_UNVALIDATED",
             "bookmaker_price_sets": 0,
-            "candidates": []
+            "candidates": [],
+            "paper_candidate_count": 0,
+            "paper_candidates": []
           },
           "OVER_UNDER_1_5": {
             "status": "DISABLED_UNVALIDATED",
             "bookmaker_price_sets": 0,
-            "candidates": []
+            "candidates": [],
+            "paper_candidate_count": 0,
+            "paper_candidates": []
           },
           "OVER_UNDER_2_5": {
             "status": "DISABLED_UNVALIDATED",
             "bookmaker_price_sets": 0,
-            "candidates": []
+            "candidates": [],
+            "paper_candidate_count": 0,
+            "paper_candidates": []
           },
           "OVER_UNDER_3_5": {
             "status": "DISABLED_UNVALIDATED",
             "bookmaker_price_sets": 0,
-            "candidates": []
+            "candidates": [],
+            "paper_candidate_count": 0,
+            "paper_candidates": []
           }
         },
         "candidate_count": 0,
-        "note": "Research screen only. Timestamped pre-kickoff prices only; no bookmaker actions are performed."
+        "paper_candidate_count": 0,
+        "note": "Paper-only candidates are prospective research records, not approved betting alerts. Release remains certificate-gated; no bookmaker actions are performed."
       }
     },
     {
@@ -138137,31 +138495,42 @@
           "1X2": {
             "status": "DISABLED_UNVALIDATED",
             "bookmaker_price_sets": 0,
-            "candidates": []
+            "candidates": [],
+            "paper_candidate_count": 0,
+            "paper_candidates": []
           },
           "BTTS": {
             "status": "DISABLED_UNVALIDATED",
             "bookmaker_price_sets": 0,
-            "candidates": []
+            "candidates": [],
+            "paper_candidate_count": 0,
+            "paper_candidates": []
           },
           "OVER_UNDER_1_5": {
             "status": "DISABLED_UNVALIDATED",
             "bookmaker_price_sets": 0,
-            "candidates": []
+            "candidates": [],
+            "paper_candidate_count": 0,
+            "paper_candidates": []
           },
           "OVER_UNDER_2_5": {
             "status": "DISABLED_UNVALIDATED",
             "bookmaker_price_sets": 0,
-            "candidates": []
+            "candidates": [],
+            "paper_candidate_count": 0,
+            "paper_candidates": []
           },
           "OVER_UNDER_3_5": {
             "status": "DISABLED_UNVALIDATED",
             "bookmaker_price_sets": 0,
-            "candidates": []
+            "candidates": [],
+            "paper_candidate_count": 0,
+            "paper_candidates": []
           }
         },
         "candidate_count": 0,
-        "note": "Research screen only. Timestamped pre-kickoff prices only; no bookmaker actions are performed."
+        "paper_candidate_count": 0,
+        "note": "Paper-only candidates are prospective research records, not approved betting alerts. Release remains certificate-gated; no bookmaker actions are performed."
       }
     },
     {
@@ -138205,31 +138574,42 @@
           "1X2": {
             "status": "DISABLED_UNVALIDATED",
             "bookmaker_price_sets": 0,
-            "candidates": []
+            "candidates": [],
+            "paper_candidate_count": 0,
+            "paper_candidates": []
           },
           "BTTS": {
             "status": "DISABLED_UNVALIDATED",
             "bookmaker_price_sets": 0,
-            "candidates": []
+            "candidates": [],
+            "paper_candidate_count": 0,
+            "paper_candidates": []
           },
           "OVER_UNDER_1_5": {
             "status": "DISABLED_UNVALIDATED",
             "bookmaker_price_sets": 0,
-            "candidates": []
+            "candidates": [],
+            "paper_candidate_count": 0,
+            "paper_candidates": []
           },
           "OVER_UNDER_2_5": {
             "status": "DISABLED_UNVALIDATED",
             "bookmaker_price_sets": 0,
-            "candidates": []
+            "candidates": [],
+            "paper_candidate_count": 0,
+            "paper_candidates": []
           },
           "OVER_UNDER_3_5": {
             "status": "DISABLED_UNVALIDATED",
             "bookmaker_price_sets": 0,
-            "candidates": []
+            "candidates": [],
+            "paper_candidate_count": 0,
+            "paper_candidates": []
           }
         },
         "candidate_count": 0,
-        "note": "Research screen only. Timestamped pre-kickoff prices only; no bookmaker actions are performed."
+        "paper_candidate_count": 0,
+        "note": "Paper-only candidates are prospective research records, not approved betting alerts. Release remains certificate-gated; no bookmaker actions are performed."
       }
     },
     {
@@ -138273,31 +138653,42 @@
           "1X2": {
             "status": "DISABLED_UNVALIDATED",
             "bookmaker_price_sets": 0,
-            "candidates": []
+            "candidates": [],
+            "paper_candidate_count": 0,
+            "paper_candidates": []
           },
           "BTTS": {
             "status": "DISABLED_UNVALIDATED",
             "bookmaker_price_sets": 0,
-            "candidates": []
+            "candidates": [],
+            "paper_candidate_count": 0,
+            "paper_candidates": []
           },
           "OVER_UNDER_1_5": {
             "status": "DISABLED_UNVALIDATED",
             "bookmaker_price_sets": 0,
-            "candidates": []
+            "candidates": [],
+            "paper_candidate_count": 0,
+            "paper_candidates": []
           },
           "OVER_UNDER_2_5": {
             "status": "DISABLED_UNVALIDATED",
             "bookmaker_price_sets": 0,
-            "candidates": []
+            "candidates": [],
+            "paper_candidate_count": 0,
+            "paper_candidates": []
           },
           "OVER_UNDER_3_5": {
             "status": "DISABLED_UNVALIDATED",
             "bookmaker_price_sets": 0,
-            "candidates": []
+            "candidates": [],
+            "paper_candidate_count": 0,
+            "paper_candidates": []
           }
         },
         "candidate_count": 0,
-        "note": "Research screen only. Timestamped pre-kickoff prices only; no bookmaker actions are performed."
+        "paper_candidate_count": 0,
+        "note": "Paper-only candidates are prospective research records, not approved betting alerts. Release remains certificate-gated; no bookmaker actions are performed."
       }
     },
     {
@@ -138341,31 +138732,42 @@
           "1X2": {
             "status": "DISABLED_UNVALIDATED",
             "bookmaker_price_sets": 0,
-            "candidates": []
+            "candidates": [],
+            "paper_candidate_count": 0,
+            "paper_candidates": []
           },
           "BTTS": {
             "status": "DISABLED_UNVALIDATED",
             "bookmaker_price_sets": 0,
-            "candidates": []
+            "candidates": [],
+            "paper_candidate_count": 0,
+            "paper_candidates": []
           },
           "OVER_UNDER_1_5": {
             "status": "DISABLED_UNVALIDATED",
             "bookmaker_price_sets": 0,
-            "candidates": []
+            "candidates": [],
+            "paper_candidate_count": 0,
+            "paper_candidates": []
           },
           "OVER_UNDER_2_5": {
             "status": "DISABLED_UNVALIDATED",
             "bookmaker_price_sets": 0,
-            "candidates": []
+            "candidates": [],
+            "paper_candidate_count": 0,
+            "paper_candidates": []
           },
           "OVER_UNDER_3_5": {
             "status": "DISABLED_UNVALIDATED",
             "bookmaker_price_sets": 0,
-            "candidates": []
+            "candidates": [],
+            "paper_candidate_count": 0,
+            "paper_candidates": []
           }
         },
         "candidate_count": 0,
-        "note": "Research screen only. Timestamped pre-kickoff prices only; no bookmaker actions are performed."
+        "paper_candidate_count": 0,
+        "note": "Paper-only candidates are prospective research records, not approved betting alerts. Release remains certificate-gated; no bookmaker actions are performed."
       }
     },
     {
@@ -138409,31 +138811,42 @@
           "1X2": {
             "status": "DISABLED_UNVALIDATED",
             "bookmaker_price_sets": 0,
-            "candidates": []
+            "candidates": [],
+            "paper_candidate_count": 0,
+            "paper_candidates": []
           },
           "BTTS": {
             "status": "DISABLED_UNVALIDATED",
             "bookmaker_price_sets": 0,
-            "candidates": []
+            "candidates": [],
+            "paper_candidate_count": 0,
+            "paper_candidates": []
           },
           "OVER_UNDER_1_5": {
             "status": "DISABLED_UNVALIDATED",
             "bookmaker_price_sets": 0,
-            "candidates": []
+            "candidates": [],
+            "paper_candidate_count": 0,
+            "paper_candidates": []
           },
           "OVER_UNDER_2_5": {
             "status": "DISABLED_UNVALIDATED",
             "bookmaker_price_sets": 0,
-            "candidates": []
+            "candidates": [],
+            "paper_candidate_count": 0,
+            "paper_candidates": []
           },
           "OVER_UNDER_3_5": {
             "status": "DISABLED_UNVALIDATED",
             "bookmaker_price_sets": 0,
-            "candidates": []
+            "candidates": [],
+            "paper_candidate_count": 0,
+            "paper_candidates": []
           }
         },
         "candidate_count": 0,
-        "note": "Research screen only. Timestamped pre-kickoff prices only; no bookmaker actions are performed."
+        "paper_candidate_count": 0,
+        "note": "Paper-only candidates are prospective research records, not approved betting alerts. Release remains certificate-gated; no bookmaker actions are performed."
       }
     },
     {
@@ -138477,31 +138890,42 @@
           "1X2": {
             "status": "DISABLED_UNVALIDATED",
             "bookmaker_price_sets": 0,
-            "candidates": []
+            "candidates": [],
+            "paper_candidate_count": 0,
+            "paper_candidates": []
           },
           "BTTS": {
             "status": "DISABLED_UNVALIDATED",
             "bookmaker_price_sets": 0,
-            "candidates": []
+            "candidates": [],
+            "paper_candidate_count": 0,
+            "paper_candidates": []
           },
           "OVER_UNDER_1_5": {
             "status": "DISABLED_UNVALIDATED",
             "bookmaker_price_sets": 0,
-            "candidates": []
+            "candidates": [],
+            "paper_candidate_count": 0,
+            "paper_candidates": []
           },
           "OVER_UNDER_2_5": {
             "status": "DISABLED_UNVALIDATED",
             "bookmaker_price_sets": 0,
-            "candidates": []
+            "candidates": [],
+            "paper_candidate_count": 0,
+            "paper_candidates": []
           },
           "OVER_UNDER_3_5": {
             "status": "DISABLED_UNVALIDATED",
             "bookmaker_price_sets": 0,
-            "candidates": []
+            "candidates": [],
+            "paper_candidate_count": 0,
+            "paper_candidates": []
           }
         },
         "candidate_count": 0,
-        "note": "Research screen only. Timestamped pre-kickoff prices only; no bookmaker actions are performed."
+        "paper_candidate_count": 0,
+        "note": "Paper-only candidates are prospective research records, not approved betting alerts. Release remains certificate-gated; no bookmaker actions are performed."
       }
     },
     {
@@ -138545,31 +138969,42 @@
           "1X2": {
             "status": "DISABLED_UNVALIDATED",
             "bookmaker_price_sets": 0,
-            "candidates": []
+            "candidates": [],
+            "paper_candidate_count": 0,
+            "paper_candidates": []
           },
           "BTTS": {
             "status": "DISABLED_UNVALIDATED",
             "bookmaker_price_sets": 0,
-            "candidates": []
+            "candidates": [],
+            "paper_candidate_count": 0,
+            "paper_candidates": []
           },
           "OVER_UNDER_1_5": {
             "status": "DISABLED_UNVALIDATED",
             "bookmaker_price_sets": 0,
-            "candidates": []
+            "candidates": [],
+            "paper_candidate_count": 0,
+            "paper_candidates": []
           },
           "OVER_UNDER_2_5": {
             "status": "DISABLED_UNVALIDATED",
             "bookmaker_price_sets": 0,
-            "candidates": []
+            "candidates": [],
+            "paper_candidate_count": 0,
+            "paper_candidates": []
           },
           "OVER_UNDER_3_5": {
             "status": "DISABLED_UNVALIDATED",
             "bookmaker_price_sets": 0,
-            "candidates": []
+            "candidates": [],
+            "paper_candidate_count": 0,
+            "paper_candidates": []
           }
         },
         "candidate_count": 0,
-        "note": "Research screen only. Timestamped pre-kickoff prices only; no bookmaker actions are performed."
+        "paper_candidate_count": 0,
+        "note": "Paper-only candidates are prospective research records, not approved betting alerts. Release remains certificate-gated; no bookmaker actions are performed."
       }
     }
   ],
@@ -138679,7 +139114,7 @@
     "note": "Market prices are reference data only; model probabilities remain unchanged and unvalidated for betting."
   },
   "value_bet_screen": {
-    "status": "DISABLED_UNVALIDATED",
+    "status": "PAPER_ONLY_CANDIDATES",
     "model_validated": false,
     "markets": [
       "1X2",
@@ -138696,6 +139131,7 @@
       "OVER_UNDER_3_5": 24
     },
     "candidate_count": 0,
+    "paper_candidate_count": 10,
     "alerts_enabled": false,
     "validation_certificate": {
       "schema_version": 1,
@@ -138798,7 +139234,7 @@
       "paper_ledger_present": true,
       "paper_ledger_dates": 3
     },
-    "note": "Candidates require market-specific certification, complete odds, and timestamped pre-kickoff quotes."
+    "note": "Paper-only candidates are logged for prospective validation and are not approved betting alerts. Live alerts remain locked until market-specific evidence passes."
   },
   "live_odds_sync": {
     "status": "AVAILABLE",
@@ -138940,5 +139376,7 @@
     "paper_ledger_dates": 3
   },
   "command_data_publication": "PUBLISHED",
-  "command_data_published_at_utc": "2026-10-31T14:39:00.253528+00:00"
+  "command_data_published_at_utc": "2026-10-31T14:41:21.023978+00:00",
+  "value_screen_rebuilt_at_utc": "2026-10-31T14:41:10.013739+00:00",
+  "value_screen_rebuild_notice": "Rebuilt from saved pre-kickoff bookmaker snapshots. No football provider was called; paper-only candidates are not approved betting alerts."
 }
