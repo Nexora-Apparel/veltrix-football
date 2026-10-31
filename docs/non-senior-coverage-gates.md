@@ -72,3 +72,8 @@ Transient transport failures are retried with bounded backoff; definitive HTTP r
 
 
 Final end-to-end run: verify the primary provider with bounded transport retries, automatically recover today's already-published report if necessary, validate every visible fixture row, and confirm publication and Telegram delivery state.
+
+
+## Telegram same-day update idempotency
+
+The delivery guard stores hashes of the exact rendered report messages per local date. An identical report is suppressed, but a changed fixture inventory or forecast for the same date is sent as an explicitly labelled same-day update. Legacy date-only markers are migrated by sending one update and recording its content hash.
