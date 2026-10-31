@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 
-from scripts.run_paper_tracking import _report_forecast_count, load_cached_results_payload
+from scripts.run_paper_tracking import _report_forecast_count, list_relevant_runs, load_cached_results_payload
 
 
 class FakeResponse:
@@ -84,3 +84,24 @@ def test_report_forecast_count_accepts_opaque_supplemental_ids():
         ]
     }
     assert _report_forecast_count(report) == 1
+
+
+
+def test_list_relevant_runs_includes_paper_recovery_workflow(monkeypatch):
+    calls = []
+
+    def fake_github_get(session, url):
+        calls.append(url)
+        if "paper-tracking-recovery.yml" in url:
+            return {"workflow_runs": [{
+                "id": 202, "created_at": "2026-10-31T14:00:00Z",
+            }]}
+        return {"workflow_runs": [{
+            "id": 101, "created_at": "2026-10-30T08:00:00Z",
+        }]}
+
+    monkeypatch.setattr("scripts.run_paper_tracking.github_get", fake_github_get)
+    runs = list_relevant_runs(object(), "owner/repo")
+    assert [row["id"] for row in runs] == [202, 101]
+    assert any("paper-tracking-recovery.yml" in url and "event=push" in url for url in calls)
+    assert any("daily-fixture-predictions.yml" in url and "event=schedule" in url for url in calls)
