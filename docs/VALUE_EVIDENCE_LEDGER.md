@@ -30,3 +30,12 @@ Completed scores are joined only by explicit fixture ID and completed status. Su
 
 ## Known limitation
 The existing daily odds snapshot is not an intraday price collector. This implementation does not increase The Odds API request volume or create extra 30-minute polling. Therefore, CLV remains provisional until an appropriately quota-budgeted closing-price collection mechanism is added and validated.
+
+
+## Additional validation invariants
+
+- A consensus set is formed only from bookmaker rows containing the identical complete outcome set; mixed/incomplete outcome sets are rejected.
+- A single bookmaker can be recorded as a quote but cannot produce a shadow value candidate.
+- The ledger marks each candidate quote separately. The published ROI field is explicitly quote-level paper ROI, not a realized betting return or an independently validated staking strategy.
+- Settled observations are not silently overwritten if a provider later changes a final score. The original settlement remains and a `RESULT_CONFLICT_REVIEW_REQUIRED` record is added.
+- Fixture visibility is validated before Telegram delivery and command-data publication. Eligible fixture row counts must reconcile; unforecastable fixtures remain visible with an explicit reason.
