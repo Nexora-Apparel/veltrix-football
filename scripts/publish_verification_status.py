@@ -24,12 +24,13 @@ def build_status(env: dict[str, str]) -> dict:
     steps = {key: env.get("VELTRIX_STEP_" + key.upper(), "not_run") for key in keys}
     critical = ("unit_tests", "dashboard_js")
     passed = all(steps[key] == "success" for key in critical)
-    if steps["fixture_generation"] not in {"success", "skipped"}:
-        passed = False
-    if steps["fixture_visibility"] not in {"success", "skipped"}:
-        passed = False
-    if steps["command_data_publication"] not in {"success", "skipped"}:
-        passed = False
+    live = steps["fixture_generation"] == "success"
+    if live:
+        passed = passed and steps["fixture_visibility"] == "success"
+        passed = passed and steps["value_evidence_update"] == "success"
+        passed = passed and steps["command_data_publication"] == "success"
+        passed = passed and steps["paper_tracking"] in {"success", "skipped"}
+        passed = passed and steps["telegram_delivery"] in {"success", "skipped"}
     return {
         "schema_version": 1,
         "workflow": env.get("GITHUB_WORKFLOW"),
@@ -39,7 +40,8 @@ def build_status(env: dict[str, str]) -> dict:
         "commit_sha": env.get("GITHUB_SHA"),
         "branch": env.get("GITHUB_REF_NAME"),
         "recorded_at_utc": datetime.now(timezone.utc).isoformat(),
-        "overall_status": "PASSED" if passed else "NEEDS_REVIEW",
+        "overall_status": ("PASSED" if live else "TESTS_PASSED") if passed else "NEEDS_REVIEW",
+        "validation_scope": "LIVE_PIPELINE" if live else "TESTS_ONLY",
         "steps": steps,
         "release_status": "LOCKED_SHADOW_MODE",
         "betting_alerts_enabled": False,
