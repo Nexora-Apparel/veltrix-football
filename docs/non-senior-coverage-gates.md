@@ -50,3 +50,8 @@ The source covers the English Women's Super League from 2011 and Women's Champio
 A fixture may be excluded from probability generation, but it must not be silently removed from the fixture report solely because the model lacks history, the competition is unsupported, or kickoff metadata is missing. Such records remain visible with an explicit status; no forecast or betting signal is attached. A missing or invalid kickoff is labelled `KICKOFF_UNVERIFIED`. The same-day provider query remains the boundary for the fixture inventory, and confirmed past kickoffs or other-date fixtures are not presented as upcoming matches.
 
 This visibility rule is covered by report-generation, delivery-filter and Telegram tests.
+
+
+## End-to-end verification execution
+
+The production workflow must run the full test suite, fetch the target-day fixture response from the primary provider, preserve every eligible scheduled fixture row, validate row-count reconciliation, then deliver and publish only after validation succeeds.
