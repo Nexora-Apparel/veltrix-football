@@ -325,6 +325,28 @@ jobs:
           fi
           if [ -z "${TARGET_DATE:-}" ]; then TARGET_DATE="$(TZ=Africa/Lagos date +%F)"; fi
           python scripts/run_daily_predictions.py --date "$TARGET_DATE" --history data/open_historical_matches.csv --output reports/daily_predictions.json --recent-cache reports/recent_results_cache.json
+      - name: Recover today's saved report after a primary-provider outage
+        id: report-recovery
+        if: always() && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && contains(github.event.head_commit.message, '[run-live-verification]'))) && steps.generate-report.outcome == 'failure'
+        env:
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          PYTHONPATH: .
+        run: |
+          mkdir -p reports/recovery
+          SAVED_REPORT_URL="https://raw.githubusercontent.com/${GITHUB_REPOSITORY}/command-data/public-data/daily_predictions.json"
+          curl --fail --silent --show-error --retry 2 --max-time 45 "$SAVED_REPORT_URL" -o reports/recovery/daily_predictions.previous.json
+          python scripts/filter_report_for_delivery.py --input reports/recovery/daily_predictions.previous.json --output reports/daily_predictions.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          report = json.loads(Path("reports/daily_predictions.json").read_text(encoding="utf-8"))
+          print(json.dumps({
+              "status": "REUSED_SAME_DAY_SNAPSHOT",
+              "as_of_date": report.get("as_of_date"),
+              "fixtures_retained": len(report.get("predictions") or []),
+              "publication_status": report.get("publication_status"),
+          }, sort_keys=True))
+          PY
       - name: Enrich report with optional OddsPapi BTTS and Over Under prices
         id: odds-enrichment
         if: (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && contains(github.event.head_commit.message, '[run-live-verification]')) || false) && steps.generate-report.outcome == 'success'
@@ -335,7 +357,7 @@ jobs:
 
       - name: Restore and update prospective value evidence ledger
         id: value-evidence-update
-        if: (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && contains(github.event.head_commit.message, '[run-live-verification]')) || (github.event_name == 'push' && contains(github.event.head_commit.message, '[reuse-report-40175707059]'))) && (steps.generate-report.outcome == 'success' || steps.filter-saved-report.outcome == 'success')
+        if: always() && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && contains(github.event.head_commit.message, '[run-live-verification]')) || (github.event_name == 'push' && contains(github.event.head_commit.message, '[reuse-report-40175707059]'))) && (steps.generate-report.outcome == 'success' || steps.report-recovery.outcome == 'success' || steps.filter-saved-report.outcome == 'success')
         env:
           GITHUB_REPOSITORY: ${{ github.repository }}
           PYTHONPATH: .
@@ -351,7 +373,7 @@ jobs:
           python scripts/update_value_evidence_ledger.py --report reports/daily_predictions.json --ledger reports/value_evidence_ledger.previous.json --results reports/recent_results_cache.json --output reports/value_evidence_ledger.json
       - name: Upload prospective value evidence ledger
         id: value-evidence-artifact
-        if: always() && (steps.generate-report.outcome == 'success' || steps.filter-saved-report.outcome == 'success') && hashFiles('reports/value_evidence_ledger.json') != ''
+        if: always() && (steps.generate-report.outcome == 'success' || steps.report-recovery.outcome == 'success' || steps.filter-saved-report.outcome == 'success') && hashFiles('reports/value_evidence_ledger.json') != ''
         uses: actions/upload-artifact@v7
         with:
           name: veltrix-value-evidence-ledger
@@ -359,7 +381,7 @@ jobs:
           retention-days: 90
       - name: Build market-specific value validation certificate
         id: value-certificate
-        if: (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && contains(github.event.head_commit.message, '[run-live-verification]')) || false) && (steps.generate-report.outcome == 'success' || steps.filter-saved-report.outcome == 'success')
+        if: always() && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && contains(github.event.head_commit.message, '[run-live-verification]')) || false) && (steps.generate-report.outcome == 'success' || steps.report-recovery.outcome == 'success' || steps.filter-saved-report.outcome == 'success')
         continue-on-error: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -369,7 +391,7 @@ jobs:
 
       - name: Validate fixture visibility before publication and Telegram
         id: fixture-visibility-validation
-        if: (steps.generate-report.outcome == 'success' || steps.filter-saved-report.outcome == 'success')
+        if: always() && (steps.generate-report.outcome == 'success' || steps.report-recovery.outcome == 'success' || steps.filter-saved-report.outcome == 'success')
         env:
           PYTHONPATH: .
         run: python scripts/validate_fixture_visibility.py --report reports/daily_predictions.json
@@ -395,7 +417,7 @@ jobs:
             --data-urlencode "text=${MESSAGE}"
 
       - name: Check Telegram configuration
-        if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && contains(github.event.head_commit.message, '[run-live-verification]')) || false
+        if: always() && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && contains(github.event.head_commit.message, '[run-live-verification]')) || false) && (steps.generate-report.outcome == 'success' || steps.report-recovery.outcome == 'success' || steps.filter-saved-report.outcome == 'success')
         id: telegram-config
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
@@ -410,7 +432,7 @@ jobs:
       - name: Register Telegram Command Centre webhook
         id: telegram-webhook
         continue-on-error: true
-        if: (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && contains(github.event.head_commit.message, '[run-live-verification]')) || false) && !contains(github.event.head_commit.message, '[skip-telegram]') && steps.telegram-config.outputs.configured == 'true'
+        if: always() && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && contains(github.event.head_commit.message, '[run-live-verification]')) || false) && (steps.generate-report.outcome == 'success' || steps.report-recovery.outcome == 'success' || steps.filter-saved-report.outcome == 'success') && !contains(github.event.head_commit.message, '[skip-telegram]') && steps.telegram-config.outputs.configured == 'true'
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_WEBHOOK_URL: https://veltrix-football-commands.vercel.app/api/index
@@ -464,7 +486,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_REPOSITORY: ${{ github.repository }}
-          REUSE_REPORT: ${{ github.event_name == 'push' && contains(github.event.head_commit.message, '[reuse-report-40175707059]') }}
+          REUSE_REPORT: ${{ (github.event_name == 'push' && contains(github.event.head_commit.message, '[reuse-report-40175707059]')) || steps.report-recovery.outcome == 'success' }}
           PYTHONPATH: .
         run: |
           ARGS=(--report reports/daily_predictions.json)
@@ -493,6 +515,7 @@ jobs:
           VELTRIX_STEP_UNIT_TESTS: ${{ steps.unit-tests.outcome }}
           VELTRIX_STEP_DASHBOARD_JS: ${{ steps.dashboard-js.outcome }}
           VELTRIX_STEP_FIXTURE_GENERATION: ${{ steps.generate-report.outcome }}
+          VELTRIX_STEP_REPORT_RECOVERY: ${{ steps.report-recovery.outcome }}
           VELTRIX_STEP_FIXTURE_VISIBILITY: ${{ steps.fixture-visibility-validation.outcome }}
           VELTRIX_STEP_ODDS_ENRICHMENT: ${{ steps.odds-enrichment.outcome }}
           VELTRIX_STEP_VALUE_EVIDENCE_UPDATE: ${{ steps.value-evidence-update.outcome }}
@@ -500,6 +523,7 @@ jobs:
           VELTRIX_STEP_VALUE_CERTIFICATE: ${{ steps.value-certificate.outcome }}
           VELTRIX_STEP_TELEGRAM_WEBHOOK: ${{ steps.telegram-webhook.outcome }}
           VELTRIX_STEP_TELEGRAM_DELIVERY: ${{ steps.telegram-delivery.outcome }}
+          VELTRIX_TELEGRAM_CONFIGURED: ${{ steps.telegram-config.outputs.configured }}
           VELTRIX_STEP_DAILY_REPORT_ARTIFACT: ${{ steps.daily-report-artifact.outcome }}
           VELTRIX_STEP_PAPER_LEDGER_ARTIFACT: ${{ steps.paper-ledger-artifact.outcome }}
           VELTRIX_STEP_COMMAND_DATA_PUBLICATION: ${{ steps.command-data-publication.outcome }}
