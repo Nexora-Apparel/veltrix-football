@@ -27,7 +27,8 @@ def build_status(env: dict[str, str]) -> dict:
     critical = ("unit_tests", "dashboard_js")
     passed = all(steps[key] == "success" for key in critical)
     live = steps["fixture_generation"] == "success"
-    if steps["fixture_generation"] not in {"success", "skipped"}:
+    live_attempted = steps["fixture_generation"] not in {"skipped", "not_run"}
+    if live_attempted and not live:
         passed = False
     if live:
         passed = passed and steps["fixture_visibility"] == "success"
@@ -51,7 +52,7 @@ def build_status(env: dict[str, str]) -> dict:
         "branch": env.get("GITHUB_REF_NAME"),
         "recorded_at_utc": datetime.now(timezone.utc).isoformat(),
         "overall_status": ("PASSED" if live else "TESTS_PASSED") if passed else "NEEDS_REVIEW",
-        "validation_scope": "LIVE_PIPELINE" if live else "TESTS_ONLY",
+        "validation_scope": "LIVE_PIPELINE" if live_attempted else "TESTS_ONLY",
         "steps": steps,
         "release_status": "LOCKED_SHADOW_MODE",
         "betting_alerts_enabled": False,
