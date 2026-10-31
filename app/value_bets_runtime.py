@@ -107,13 +107,59 @@ def _map_outcomes(outcomes: Any, home: str, away: str, market: str) -> dict[str,
     return mapped
 
 
+def _paper_eligible_probabilities(prediction: Mapping[str, Any]) -> dict[str, dict[str, float]]:
+    """Return only model families/markets eligible for prospective shadow tracking."""
+    model_name = str(prediction.get("model") or "")
+    if model_name == "experimental_elo_by_competition":
+        raw = prediction.get("poisson_probabilities")
+    elif model_name == "experimental_recent_goals_poisson":
+        raw = prediction.get("probabilities")
+    else:
+        raw = None
+    raw = raw if isinstance(raw, Mapping) else {}
+    output: dict[str, dict[str, float]] = {}
+    one_x_two = {
+        "home_win": raw.get("home_win", raw.get("H")),
+        "draw": raw.get("draw", raw.get("D")),
+        "away_win": raw.get("away_win", raw.get("A")),
+    }
+    if all(core._valid_probability(value) for value in one_x_two.values()):
+        output["1X2"] = {key: float(value) for key, value in one_x_two.items()}
+
+    calibration = prediction.get("goal_market_calibration")
+    calibrated = (
+        prediction.get("goal_markets_model") == "experimental_recent_goals_poisson"
+        and isinstance(calibration, Mapping)
+        and calibration.get("status") == "APPLIED_PROSPECTIVELY"
+    )
+    if calibrated:
+        markets = set(calibration.get("markets") or [])
+        for public_market, calibration_key, field in (
+            ("BTTS", "btts_yes", "btts_yes"),
+            ("OVER_UNDER_1_5", "over_1_5", "over_1_5"),
+            ("OVER_UNDER_2_5", "over_2_5", "over_2_5"),
+            ("OVER_UNDER_3_5", "over_3_5", "over_3_5"),
+        ):
+            value = prediction.get(field)
+            if calibration_key in markets and core._valid_probability(value):
+                probability = float(value)
+                output[public_market] = (
+                    {"yes": probability, "no": 1.0 - probability}
+                    if public_market == "BTTS"
+                    else {"over": probability, "under": 1.0 - probability}
+                )
+    return output
+
+
 def screen_fixture_value_bets(
     prediction: Mapping[str, Any],
     *,
     validation_certificate: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
+    """Separate released value candidates from unapproved prospective paper candidates."""
     markets = ["1X2", "BTTS", "OVER_UNDER_1_5", "OVER_UNDER_2_5", "OVER_UNDER_3_5"]
     probabilities = _probabilities(prediction)
+    paper_probabilities = _paper_eligible_probabilities(prediction)
     price_sets: dict[str, list[dict[str, Any]]] = {market: [] for market in markets}
     snapshot = prediction.get("the_odds_api_market_odds")
     if _eligible_snapshot(snapshot, prediction):
@@ -142,14 +188,17 @@ def screen_fixture_value_bets(
 
     output: dict[str, Any] = {}
     candidate_count = 0
+    paper_candidate_count = 0
     for market in markets:
         candidates: list[dict[str, Any]] = []
+        paper_candidates: list[dict[str, Any]] = []
+        approved = core._certificate_allows(validation_certificate, market)
         model_probs = probabilities.get(market)
-        if model_probs:
-            for price_set in price_sets[market]:
+        paper_probs = paper_probabilities.get(market)
+        for price_set in price_sets[market]:
+            if model_probs:
                 for candidate in core.screen_value_bets(
-                    model_probs, price_set["odds"],
-                    model_validated=core._certificate_allows(validation_certificate, market),
+                    model_probs, price_set["odds"], model_validated=approved
                 ):
                     candidates.append({
                         **candidate, "market": market,
@@ -157,21 +206,56 @@ def screen_fixture_value_bets(
                         "provider": price_set["provider"],
                         "bookmaker": price_set["bookmaker"],
                     })
+            if paper_probs:
+                for candidate in core.screen_value_bets(
+                    paper_probs, price_set["odds"], model_validated=True
+                ):
+                    paper_candidates.append({
+                        **candidate, "market": market,
+                        "model": (
+                            "experimental_recent_goals_poisson"
+                            if market == "1X2"
+                            else str(prediction.get("goal_markets_model") or "experimental_recent_goals_poisson")
+                        ),
+                        "provider": price_set["provider"],
+                        "bookmaker": price_set["bookmaker"],
+                        "status": "CANDIDATE_NOT_GUARANTEED" if approved else "PAPER_ONLY_NOT_APPROVED",
+                        "release_status": "CERTIFIED" if approved else "LOCKED_UNVALIDATED",
+                    })
         candidates.sort(key=lambda row: (row["expected_return_per_unit"], row["edge"]), reverse=True)
-        approved = core._certificate_allows(validation_certificate, market)
+        paper_candidates.sort(
+            key=lambda row: (row["expected_return_per_unit"], row["edge"]),
+            reverse=True,
+        )
+        # The prospective ledger allows one best selection per fixture and market.
+        paper_candidates = paper_candidates[:1]
+        candidate_count += len(candidates)
+        paper_candidate_count += len(paper_candidates)
         output[market] = {
-            "status": "CANDIDATES_FOUND" if candidates else ("NO_QUALIFYING_VALUE" if approved else "DISABLED_UNVALIDATED"),
+            "status": (
+                "CANDIDATES_FOUND" if candidates
+                else "PAPER_ONLY_CANDIDATES" if paper_candidates and not approved
+                else "NO_QUALIFYING_VALUE" if approved
+                else "DISABLED_UNVALIDATED"
+            ),
             "bookmaker_price_sets": len(price_sets[market]),
             "candidates": candidates,
+            "paper_candidate_count": len(paper_candidates),
+            "paper_candidates": paper_candidates,
         }
-        candidate_count += len(candidates)
     any_approved = any(core._certificate_allows(validation_certificate, market) for market in markets)
     return {
-        "status": "CANDIDATES_FOUND" if candidate_count else ("NO_QUALIFYING_VALUE" if any_approved else "DISABLED_UNVALIDATED"),
+        "status": (
+            "CANDIDATES_FOUND" if candidate_count
+            else "PAPER_ONLY_CANDIDATES" if paper_candidate_count
+            else "NO_QUALIFYING_VALUE" if any_approved
+            else "DISABLED_UNVALIDATED"
+        ),
         "model_validated": any_approved,
         "markets": output,
         "candidate_count": candidate_count,
-        "note": "Research screen only. Timestamped pre-kickoff prices only; no bookmaker actions are performed.",
+        "paper_candidate_count": paper_candidate_count,
+        "note": "Paper-only candidates are prospective research records, not approved betting alerts. Release remains certificate-gated; no bookmaker actions are performed.",
     }
 
 
@@ -180,35 +264,43 @@ def attach_value_bet_screens(
     *,
     validation_certificate: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
-    """Attach the timestamp-safe market screen using the established report schema."""
+    """Attach released and paper-only candidate counts without weakening release gates."""
     predictions = report.get("predictions")
     if not isinstance(predictions, list):
         predictions = []
         report["predictions"] = predictions
     aggregate = {market: 0 for market in ("1X2", "BTTS", "OVER_UNDER_1_5", "OVER_UNDER_2_5", "OVER_UNDER_3_5")}
     candidate_count = 0
+    paper_candidate_count = 0
     for prediction in predictions:
         if not isinstance(prediction, dict):
             continue
         screen = screen_fixture_value_bets(prediction, validation_certificate=validation_certificate)
         prediction["value_bet_screen"] = screen
         candidate_count += int(screen.get("candidate_count") or 0)
+        paper_candidate_count += int(screen.get("paper_candidate_count") or 0)
         for market, result in (screen.get("markets") or {}).items():
             aggregate[market] = aggregate.get(market, 0) + int(result.get("bookmaker_price_sets") or 0)
     any_approved = any(
         core._certificate_allows(validation_certificate, market) for market in aggregate
     )
     report["value_bet_screen"] = {
-        "status": "CANDIDATES_FOUND" if candidate_count else ("NO_QUALIFYING_VALUE" if any_approved else "DISABLED_UNVALIDATED"),
+        "status": (
+            "CANDIDATES_FOUND" if candidate_count
+            else "PAPER_ONLY_CANDIDATES" if paper_candidate_count
+            else "NO_QUALIFYING_VALUE" if any_approved
+            else "DISABLED_UNVALIDATED"
+        ),
         "model_validated": any_approved,
         "markets": list(aggregate),
         "bookmaker_price_sets_by_market": aggregate,
         "candidate_count": candidate_count,
+        "paper_candidate_count": paper_candidate_count,
         "alerts_enabled": bool(
             any_approved and isinstance(validation_certificate, Mapping)
             and validation_certificate.get("alerts_enabled") is True
         ),
         "validation_certificate": dict(validation_certificate) if isinstance(validation_certificate, Mapping) else None,
-        "note": "Candidates require market-specific certification, complete odds, and timestamped pre-kickoff quotes.",
+        "note": "Paper-only candidates are logged for prospective validation and are not approved betting alerts. Live alerts remain locked until market-specific evidence passes.",
     }
     return report
