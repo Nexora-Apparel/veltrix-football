@@ -7,8 +7,6 @@ on:
       - ".github/workflows/historical-model-reconstruction.yml"
       - "scripts/audit_historical_model.py"
       - "tests/test_historical_model_audit.py"
-  schedule:
-    - cron: "15,45 * * * *"
   workflow_dispatch:
 
 permissions:
