@@ -9,7 +9,8 @@ from __future__ import annotations
 from collections.abc import Mapping
 from typing import Any
 
-from app.value_intelligence import (market_consensus, shrink_to_market, evaluate_price,\n    poisson_scoreline_markets, ensemble_probabilities, bayesian_market_update, opportunity_quality_score)
+from app.value_intelligence import (market_consensus, shrink_to_market, evaluate_price,
+    poisson_scoreline_markets, ensemble_probabilities, bayesian_market_update, opportunity_quality_score)
 from app.value_bets_runtime import _eligible_snapshot, _eligible_quote, _map_outcomes
 
 
@@ -42,6 +43,27 @@ def _model_market_probabilities(prediction: Mapping[str, Any]) -> dict[str, dict
         value = prediction.get(f"over_{suffix}")
         if _valid_probability(value):
             result[f"OVER_UNDER_{suffix}"] = {"over": float(value), "under": 1.0 - float(value)}
+    home_lambda = prediction.get("home_expected_goals")
+    away_lambda = prediction.get("away_expected_goals")
+    if home_lambda is not None and away_lambda is not None:
+        try:
+            simulated = poisson_scoreline_markets(float(home_lambda), float(away_lambda))
+            result.setdefault("1X2", {k: simulated[k] for k in ("home_win", "draw", "away_win")})
+            result.setdefault("BTTS", {"yes": simulated["btts_yes"], "no": 1-simulated["btts_yes"]})
+            for line in (1.5, 2.5, 3.5):
+                suffix = str(line).replace(".", "_")
+                value = simulated[f"over_{suffix}"]
+                result.setdefault(f"OVER_UNDER_{suffix}", {"over": value, "under": 1-value})
+        except (TypeError, ValueError, OverflowError):
+            pass
+    model_sets = prediction.get("model_probability_sets")
+    if isinstance(model_sets, Mapping):
+        for market, sets in model_sets.items():
+            if market not in result or not isinstance(sets, list):
+                continue
+            ensemble = ensemble_probabilities(sets)
+            if ensemble.get("status") == "ENSEMBLE_READY" and set(ensemble["probabilities"]) == set(result[market]):
+                result[market] = ensemble["probabilities"]
     return result
 
 
@@ -93,7 +115,8 @@ def screen_fixture_value_intelligence(prediction: Mapping[str, Any]) -> dict[str
                 "release_status": "LOCKED_SHADOW_MODE",
             }
             continue
-        bayesian = bayesian_market_update(model_markets[market], consensus.get("probabilities", {}), model_prior_weight=0.35)\n        blended = shrink_to_market(bayesian.get("probabilities") if bayesian.get("status") == "UPDATED" else model_markets[market], consensus, model_weight=0.35)
+        bayesian = bayesian_market_update(model_markets[market], consensus.get("probabilities", {}), model_prior_weight=0.35)
+        blended = shrink_to_market(bayesian.get("probabilities") if bayesian.get("status") == "UPDATED" else model_markets[market], consensus, model_weight=0.35)
         candidates = []
         for row in price_rows:
             for outcome, price in row["odds"].items():
@@ -107,6 +130,11 @@ def screen_fixture_value_intelligence(prediction: Mapping[str, Any]) -> dict[str
                         "bookmaker": row["bookmaker"],
                         "last_update": row["last_update"],
                         **evaluated,
+                        "quality": opportunity_quality_score(
+                            evaluated.get("edge", 0.0), evaluated.get("expected_value_per_unit", 0.0),
+                            int(consensus.get("bookmaker_count", 0)),
+                            max((consensus.get("dispersion") or {}).values(), default=0.0),
+                        ),
                     })
         candidates.sort(key=lambda x: x["expected_value_per_unit"], reverse=True)
         output[market] = {
@@ -121,7 +149,9 @@ def screen_fixture_value_intelligence(prediction: Mapping[str, Any]) -> dict[str
             "candidates": candidates[:5],
             "quote_timestamps": [row["last_update"] for row in price_rows],
             "bookmaker_quotes": price_rows,
-            "method": blended.get("method"),\n            "bayesian_update": bayesian,\n            "model_ensemble_source": "model_probability_sets" if isinstance(prediction.get("model_probability_sets"), Mapping) else "single_model_or_scoreline",
+            "method": blended.get("method"),
+            "bayesian_update": bayesian,
+            "model_ensemble_source": "model_probability_sets" if isinstance(prediction.get("model_probability_sets"), Mapping) else "single_model_or_scoreline",
             "uncertainty_note": blended.get("note"),
             "release_status": "LOCKED_SHADOW_MODE",
         }
