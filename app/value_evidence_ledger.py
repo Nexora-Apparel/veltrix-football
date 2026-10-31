@@ -135,12 +135,16 @@ def merge_evidence_ledger(previous: Mapping[str, Any] | None, report: Mapping[st
     settled_candidates = [x for x in settled_rows if x.get("shadow_candidate") is True]
     candidate_profit = sum(float(x["settlement"].get("paper_profit_per_unit", 0.0)) for x in settled_candidates)
     candidate_wins = sum(bool(x["settlement"].get("won")) for x in settled_candidates)
+    prior_summary = prior.get("summary") if isinstance(prior.get("summary"), Mapping) else {}
+    annotated_candidates = sum(1 for x in observations if x.get("shadow_candidate") is True)
+    legacy_candidates = max(0, int(prior_summary.get("shadow_candidate_observations", 0) or 0) - annotated_candidates)
     return {"version":VERSION,"status":"SHADOW_ONLY","release_status":"LOCKED_SHADOW_MODE",
             "observations":observations,"price_series":series,"settlement_conflicts":settlement_conflicts,
             "summary":{"observations_total":len(observations),"observations_added":added,
                        "price_series":len(series),"series_with_multiple_snapshots":sum(x["observations"]>=2 for x in series),
                        "settled_observations":len(settled_rows),
-                       "shadow_candidate_observations":sum(1 for x in observations if x.get("shadow_candidate") is True),
+                       "shadow_candidate_observations":annotated_candidates + legacy_candidates,
+                       "legacy_candidate_observations_unannotated":legacy_candidates,
                        "settled_shadow_candidates":len(settled_candidates),
                        "shadow_candidate_wins":candidate_wins,
                        "shadow_candidate_losses":len(settled_candidates)-candidate_wins,
