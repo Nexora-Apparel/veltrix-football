@@ -131,8 +131,11 @@ def _report_forecast_count(report: dict[str, Any]) -> int:
     return sum(
         1 for row in predictions
         if isinstance(row, dict)
-        and isinstance(row.get("fixture_id"), int)
-        and not isinstance(row.get("fixture_id"), bool)
+        and (
+            (isinstance(row.get("fixture_id"), int) and not isinstance(row.get("fixture_id"), bool))
+            or (isinstance(row.get("fixture_id"), str) and bool(row.get("fixture_id").strip())
+                and row.get("fixture_id").strip().casefold() not in {"none", "null"})
+        )
         and (
             (
                 row.get("status") == "EXPERIMENTAL_ONLY"
@@ -232,6 +235,7 @@ def run(report_date: date, output_path: str) -> dict[str, Any]:
                 for day, item in evaluation_by_date.items()
                 if (
                     int(item.get("awaiting_result_or_match", 0)) > 0
+                    or item.get("tracking_state") == "NO_FORECASTS_TO_SCORE"
                     or (
                         int(item.get("completed_forecasts_scored", 0)) == 0
                         and not item.get("model_versions")
