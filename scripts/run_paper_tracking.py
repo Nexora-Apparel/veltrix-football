@@ -81,18 +81,25 @@ def github_get(session: requests.Session, url: str) -> dict[str, Any]:
 
 
 def list_relevant_runs(session: requests.Session, repo: str) -> list[dict[str, Any]]:
-    # Query these event types separately so frequent push-triggered test runs
+    # Query report-producing runs separately so frequent push-triggered tests
     # cannot crowd scheduled/manual report runs out of GitHub's first page.
+    # Include the isolated recovery workflow because its ledger artifact is
+    # authoritative for subsequent daily paper-tracking runs.
     runs_by_id: dict[int, dict[str, Any]] = {}
-    for event in ("schedule", "workflow_dispatch"):
-        url = (
-            f"{API_ROOT}/repos/{repo}/actions/workflows/daily-fixture-predictions.yml/runs"
-            f"?event={event}&per_page=100&status=completed"
-        )
-        payload = github_get(session, url)
-        for run in payload.get("workflow_runs", []):
-            if isinstance(run.get("id"), int):
-                runs_by_id[run["id"]] = run
+    queries = (
+        ("daily-fixture-predictions.yml", ("schedule", "workflow_dispatch")),
+        ("paper-tracking-recovery.yml", ("push", "schedule", "workflow_dispatch")),
+    )
+    for workflow, events in queries:
+        for event in events:
+            url = (
+                f"{API_ROOT}/repos/{repo}/actions/workflows/{workflow}/runs"
+                f"?event={event}&per_page=100&status=completed"
+            )
+            payload = github_get(session, url)
+            for run in payload.get("workflow_runs", []):
+                if isinstance(run.get("id"), int):
+                    runs_by_id[run["id"]] = run
     return sorted(
         runs_by_id.values(),
         key=lambda run: run.get("created_at", ""),
