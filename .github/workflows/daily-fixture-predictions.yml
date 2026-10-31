@@ -1,4 +1,4 @@
-name: Daily Fixture Predictions # [run-live-verification] [simulate-provider-outage]
+name: Daily Fixture Predictions # [recovery-test-hook] [run-live-verification]
 # Live multi-source verification is opt-in via a marked commit; empty historical dates stay retryable; InferSports stays disabled until quote coverage is proven; no bookmaker actions are performed.
 
 on:
