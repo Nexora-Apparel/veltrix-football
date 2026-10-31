@@ -519,7 +519,7 @@ def handle_command(
             "",
             "Prices are provider-reported and may change. Forecast probabilities remain experimental; no value recommendations or bookmaker actions are generated.",
         ])
-        return _reply("\\n".join(lines))
+        return _reply("\n".join(lines))
 
     if command == "/status":
         return _reply(_status(report, ledger))
