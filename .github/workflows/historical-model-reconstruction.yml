@@ -36,6 +36,7 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           repository: ${{ github.repository }}
           artifact-ids: 12558709744
+          run-id: 40091657947
 
       - name: Download 24 October evening report
         uses: actions/download-artifact@v7
@@ -44,6 +45,7 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           repository: ${{ github.repository }}
           artifact-ids: 12571259034
+          run-id: 40121951981
 
       - name: Download 25 October midnight report (football-data.org migration attempt)
         uses: actions/download-artifact@v7
@@ -52,6 +54,7 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           repository: ${{ github.repository }}
           artifact-ids: 12579952962
+          run-id: 40144236021
 
       - name: Download 25 October morning report (Highlightly quota-limited run)
         uses: actions/download-artifact@v7
@@ -60,6 +63,7 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           repository: ${{ github.repository }}
           artifact-ids: 12591918825
+          run-id: 40175707059
 
       - name: Retrieve saved completed-results cache
         run: |
