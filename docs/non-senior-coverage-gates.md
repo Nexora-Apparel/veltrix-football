@@ -58,3 +58,6 @@ The production workflow must run the full test suite, fetch the target-day fixtu
 
 
 Verification receipt contract: every full daily run records unit-test, dashboard syntax, fixture generation, fixture-visibility, odds enrichment, value evidence, certificate, Telegram, artifact, paper tracking and command-data publication outcomes in `public-data/verification_status.json` on the `command-data` branch. A test-only push is labelled separately from a live run.
+
+
+Final verification run requested on 2026-10-31: execute the complete test suite and live same-day fixture pipeline, then publish the verification receipt only after all gated stages finish.
