@@ -39,6 +39,8 @@ on:
       - "tests/test_publish_command_data.py"
       - "scripts/import_open_dataset.py"
       - "scripts/run_paper_tracking.py"
+      - "scripts/rebuild_value_screen.py"
+      - "tests/test_rebuild_value_screen.py"
       - "scripts/build_value_certificate.py"
       - "scripts/build_value_certificate_runtime.py"
       - "scripts/build_value_certificate_runtime_v2.py"
