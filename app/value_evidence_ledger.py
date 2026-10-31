@@ -30,6 +30,15 @@ def _snapshot_rows(report: Mapping[str, Any]) -> list[dict[str, Any]]:
             probs=details.get("conservative_screening_probabilities") or {}
             model=details.get("model_probabilities") or {}
             consensus=details.get("market_consensus_probabilities") or {}
+            candidate_rows = details.get("candidate_quote_keys") or []
+            candidate_keys = {
+                (str(item.get("bookmaker") or "UNKNOWN"), str(item.get("selection") or ""))
+                for item in candidate_rows if isinstance(item, Mapping)
+            }
+            candidate_details = {
+                (str(item.get("bookmaker") or "UNKNOWN"), str(item.get("selection") or "")): item
+                for item in (details.get("candidates") or []) if isinstance(item, Mapping)
+            }
             for quote in details.get("bookmaker_quotes") or []:
                 if not isinstance(quote, Mapping): continue
                 timestamp=str(quote.get("last_update") or fetched or "")
@@ -45,6 +54,8 @@ def _snapshot_rows(report: Mapping[str, Any]) -> list[dict[str, Any]]:
                         "quote_timestamp":timestamp,"snapshot_fetched_at":fetched,"decimal_odds":float(odds),
                         "model_probability":model.get(selection),"market_consensus_probability":consensus.get(selection),
                         "conservative_probability":probs.get(selection),"model":fixture.get("model"),
+                        "shadow_candidate":(str(quote.get("bookmaker") or "UNKNOWN"), str(selection)) in candidate_keys,
+                        "candidate_evaluation":candidate_details.get((str(quote.get("bookmaker") or "UNKNOWN"), str(selection))),
                         "source":"The Odds API","evidence_status":"OBSERVED_QUOTE",
                     })
     return rows
@@ -105,10 +116,20 @@ def merge_evidence_ledger(previous: Mapping[str, Any] | None, report: Mapping[st
         row["settlement"]={"status":"SETTLED","home_goals":hg,"away_goals":ag,"won":bool(won),
                            "paper_profit_per_unit":float(row["decimal_odds"])-1 if won else -1.0}
         settled+=1
+    settled_rows = [x for x in observations if isinstance(x.get("settlement"), Mapping)]
+    settled_candidates = [x for x in settled_rows if x.get("shadow_candidate") is True]
+    candidate_profit = sum(float(x["settlement"].get("paper_profit_per_unit", 0.0)) for x in settled_candidates)
+    candidate_wins = sum(bool(x["settlement"].get("won")) for x in settled_candidates)
     return {"version":VERSION,"status":"SHADOW_ONLY","release_status":"LOCKED_SHADOW_MODE",
             "observations":observations,"price_series":series,
             "summary":{"observations_total":len(observations),"observations_added":added,
                        "price_series":len(series),"series_with_multiple_snapshots":sum(x["observations"]>=2 for x in series),
-                       "settled_observations":sum(1 for x in observations if isinstance(x.get("settlement"),Mapping)),
+                       "settled_observations":len(settled_rows),
+                       "shadow_candidate_observations":sum(1 for x in observations if x.get("shadow_candidate") is True),
+                       "settled_shadow_candidates":len(settled_candidates),
+                       "shadow_candidate_wins":candidate_wins,
+                       "shadow_candidate_losses":len(settled_candidates)-candidate_wins,
+                       "shadow_candidate_net_units":round(candidate_profit,4),
+                       "shadow_candidate_roi_percent":round(candidate_profit/len(settled_candidates)*100,4) if settled_candidates else None,
                        "alerts_enabled":False},
             "last_report_date":report.get("as_of_date")}
