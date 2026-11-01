@@ -17,6 +17,7 @@ from typing import Any, Iterable
 
 from app.prediction import match_probabilities
 from app.advanced_models import dixon_coles_1x2, recency_weighted_mean, rest_congestion_context
+from app.team_form import summarize_team_form
 
 MIN_TEAM_MATCHES = 5
 TEAM_WINDOW = 10
@@ -475,6 +476,18 @@ def predict_fixtures(
                 "model_validated": False,
                 "betting_recommendation": False,
                 "historical_matches": {"home": len(home_hist), "away": len(away_hist)},
+                "recent_form": {
+                    "home_team": {
+                        "overall": summarize_team_form(home_hist),
+                        "home_venue": summarize_team_form(home_hist, venue="home"),
+                    },
+                    "away_team": {
+                        "overall": summarize_team_form(away_hist),
+                        "away_venue": summarize_team_form(away_hist, venue="away"),
+                    },
+                    "as_of": target_date.isoformat(),
+                    "note": "Last-five and last-ten completed matches only; strictly pre-fixture; descriptive features, not probability adjustments.",
+                },
                 "team_name_matches": {
                     "home": {"fixture_name": fixture["home_team"], "historical_key": home_key,
                              "auto_matched": home_key != _name_key(fixture["home_team"])},
