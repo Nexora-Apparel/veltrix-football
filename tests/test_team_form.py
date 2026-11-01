@@ -7,12 +7,12 @@ def test_form_reports_recent_results_and_performance_metrics():
         (3, 0, "away"), (1, 0, "home"), (0, 2, "away"),
     ]
     result = summarize_team_form(rows)
-    assert result["last_5"]["form"] == "DLWDL"
+    assert result["last_5"]["form"] == "DLWWL"
     assert result["last_5"]["matches"] == 5
-    assert result["last_5"]["wins"] == 1
-    assert result["last_5"]["draws"] == 2
+    assert result["last_5"]["wins"] == 2
+    assert result["last_5"]["draws"] == 1
     assert result["last_5"]["losses"] == 2
-    assert result["last_5"]["points_per_game"] == 1.0
+    assert result["last_5"]["points_per_game"] == 1.4
     assert result["last_5"]["goals_for"] == 5
     assert result["last_5"]["goals_against"] == 4
 
