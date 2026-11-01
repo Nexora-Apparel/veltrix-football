@@ -370,7 +370,7 @@ def test_draw_margin_experiment_uses_chronological_holdout():
     from datetime import date, timedelta
     rows = []
     start = date(2024, 1, 1)
-    for i in range(600):
+    for i in range(800):
         rows.append({
             "match_date": (start + timedelta(days=i)).isoformat(),
             "actual": ("D" if i % 4 in (0, 1) else "H" if i % 4 == 2 else "A"),
