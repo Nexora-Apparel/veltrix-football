@@ -192,6 +192,19 @@ def _reference_market_lines(item: dict[str, Any]) -> list[str]:
     return lines
 
 
+def _format_recent_form(team_form: Any) -> str:
+    if not isinstance(team_form, dict):
+        return "N/A"
+    last_five = team_form.get("last_5")
+    if not isinstance(last_five, dict) or not last_five.get("matches"):
+        return "N/A"
+    form = str(last_five.get("form") or "—")
+    points = last_five.get("points_per_game")
+    if isinstance(points, (int, float)) and not isinstance(points, bool):
+        return f"{form} ({points:.2f} PPG)"
+    return form
+
+
 def format_report_messages(report: dict[str, Any], ledger: dict[str, Any] | None = None) -> list[str]:
     """Send only concise match predictions to Telegram; diagnostics stay on the website."""
     day = str(report.get("as_of_date", "unknown date"))
@@ -239,6 +252,11 @@ def format_report_messages(report: dict[str, Any], ledger: dict[str, Any] | None
             f"Over 3.5: {_format_percent(item.get('over_3_5'))} | Under 3.5: {_format_percent(1 - float(item.get('over_3_5'))) if isinstance(item.get('over_3_5'), (int, float)) and 0 <= item.get('over_3_5') <= 1 else '—'}",
             f"xG: {_format_goals(expected.get('home'))} - {_format_goals(expected.get('away'))}",
         ]
+        recent_form = item.get("recent_form") if isinstance(item.get("recent_form"), dict) else {}
+        home_form = _format_recent_form((recent_form.get("home_team") or {}).get("overall") if isinstance(recent_form.get("home_team"), dict) else None)
+        away_form = _format_recent_form((recent_form.get("away_team") or {}).get("overall") if isinstance(recent_form.get("away_team"), dict) else None)
+        if home_form != "N/A" or away_form != "N/A":
+            block.append(f"Recent form · last 5: Home {home_form} | Away {away_form}")
         prediction_basis = str(item.get("prediction_basis") or "").strip()
         if prediction_basis:
             block.append("FORECAST BASIS: " + prediction_basis)
