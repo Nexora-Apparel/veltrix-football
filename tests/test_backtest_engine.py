@@ -373,7 +373,7 @@ def test_draw_margin_experiment_uses_chronological_holdout():
     for i in range(600):
         rows.append({
             "match_date": (start + timedelta(days=i)).isoformat(),
-            "actual": ("D" if i % 3 == 0 else "H" if i % 3 == 1 else "A"),
+            "actual": ("D" if i % 4 in (0, 1) else "H" if i % 4 == 2 else "A"),
             "model": {"H": 0.40, "D": 0.30, "A": 0.30},
         })
     result = _chronological_draw_margin_experiment(rows, "model", margins=(0.0, 0.05, 0.11))
