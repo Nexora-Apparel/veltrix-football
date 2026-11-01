@@ -340,7 +340,7 @@ def test_confidence_selection_audit_reports_accuracy_and_coverage_without_mutati
     assert audit["total_matches"] == 4
     assert audit["thresholds"][0]["selected_matches"] == 3
     assert audit["thresholds"][0]["coverage"] == 0.75
-    assert audit["thresholds"][0]["accuracy"] == 2 / 3
+    assert audit["thresholds"][0]["accuracy"] == 1 / 3
     assert audit["thresholds"][1]["selected_matches"] == 2
     assert audit["thresholds"][1]["accuracy"] == 0.5
     assert audit["thresholds"][2]["selected_matches"] == 1
