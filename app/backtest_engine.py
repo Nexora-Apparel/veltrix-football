@@ -550,6 +550,56 @@ def _score_probabilities(rows: list[dict[str, Any]], model_name: str, *, bins: i
     }
 
 
+def _confidence_selection_audit(
+    rows: list[dict[str, Any]],
+    model_name: str,
+    *,
+    thresholds: tuple[float, ...] = (0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80),
+) -> dict[str, Any]:
+    """Measure selective accuracy/coverage when only confident forecasts are retained."""
+    outcomes = ("H", "D", "A")
+    bands: list[dict[str, Any]] = []
+    for threshold in thresholds:
+        selected = [
+            row for row in rows
+            if max(float(row[model_name][outcome]) for outcome in outcomes) >= threshold
+        ]
+        count = len(selected)
+        predicted_counts = {outcome: 0 for outcome in outcomes}
+        predicted_correct = {outcome: 0 for outcome in outcomes}
+        correct = 0
+        confidence_sum = 0.0
+        for row in selected:
+            probabilities = row[model_name]
+            prediction = max(outcomes, key=lambda outcome: probabilities[outcome])
+            confidence_sum += float(probabilities[prediction])
+            predicted_counts[prediction] += 1
+            hit = prediction == row["actual"]
+            correct += int(hit)
+            predicted_correct[prediction] += int(hit)
+        bands.append({
+            "minimum_top_probability": threshold,
+            "selected_matches": count,
+            "coverage": count / len(rows) if rows else None,
+            "accuracy": correct / count if count else None,
+            "mean_top_probability": confidence_sum / count if count else None,
+            "predicted_class_counts": predicted_counts,
+            "accuracy_by_predicted_class": {
+                outcome: (
+                    predicted_correct[outcome] / predicted_counts[outcome]
+                    if predicted_counts[outcome] else None
+                )
+                for outcome in outcomes
+            },
+        })
+    return {
+        "status": "CHRONOLOGICAL_SELECTIVE_ACCURACY_DIAGNOSTIC",
+        "total_matches": len(rows),
+        "thresholds": bands,
+        "note": "Thresholds are diagnostic only. A high accuracy at tiny coverage is not general model accuracy; no forecasts are suppressed by this audit.",
+    }
+
+
 def _compact_score(rows: list[dict[str, Any]], model_name: str) -> dict[str, Any] | None:
     """Calculate compact metrics without calibration bins for league breakdowns."""
     if not rows:
@@ -947,6 +997,10 @@ def chronological_backtest(matches: Iterable[dict[str, Any]], *, min_training_ma
     return {"status": "BACKTESTED_NOT_PROOF_OF_PROFIT", "test_matches": len(scored),
         "first_test_date": scored[0]["match_date"], "last_test_date": scored[-1]["match_date"],
         "models": metrics, "lower_log_loss_model": winner,
+        "confidence_selection_audit": {
+            "poisson": _confidence_selection_audit(scored, "poisson"),
+            "elo": _confidence_selection_audit(scored, "elo"),
+        },
         "favourite_underdog_audit": {
             "poisson": audit_favourites_and_underdogs(scored, model_key="poisson"),
             "elo": audit_favourites_and_underdogs(scored, model_key="elo"),
@@ -982,6 +1036,10 @@ def chronological_backtest(matches: Iterable[dict[str, Any]], *, min_training_ma
             "recent_holdout": live_holdout,
             "metrics_by_competition": live_metrics_by_competition,
             "historical_odds_subset": live_odds_subset,
+            "confidence_selection_audit": {
+                "poisson": _confidence_selection_audit(live_scored, "live_poisson"),
+                "elo": _confidence_selection_audit(live_elo_rows, "live_elo"),
+            },
             "favourite_underdog_audit": {
                 "poisson": audit_favourites_and_underdogs(live_scored, model_key="live_poisson"),
                 "elo": audit_favourites_and_underdogs(live_elo_rows, model_key="live_elo"),
