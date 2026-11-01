@@ -202,7 +202,7 @@ def format_report_messages(report: dict[str, Any], ledger: dict[str, Any] | None
 
     header = [
         DIVIDER,
-        f"⚽ VELTRIX FOOTBALL · PREDICTIONS",
+        f"⚽ VELTRIX FOOTBALL AI · DAILY INTELLIGENCE",
         f"📅 {day} · Kick-off times: WAT",
         f"Fixtures retrieved: {len(fixtures)} · Research forecasts: {len(usable)}",
         "Value screen: 1X2 / BTTS / Over-Under · " + str((report.get("value_bet_screen") or {}).get("status") or "NOT_REPORTED"),
