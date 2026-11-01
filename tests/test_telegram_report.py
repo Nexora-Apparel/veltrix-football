@@ -40,7 +40,7 @@ def sample_report():
 def test_telegram_report_is_predictions_only_and_keeps_new_update_alert():
     message = format_report(sample_report())
     assert "🔔 🆕 NEW VELTRIX UPDATE" in message
-    assert "VELTRIX FOOTBALL · PREDICTIONS" in message
+    assert "VELTRIX FOOTBALL AI · DAILY INTELLIGENCE" in message
     assert "2026-10-23" in message
     assert "Fixtures retrieved: 1 · Research forecasts: 1" in message
     assert "Paper-only candidates (not approved): 0" in message
