@@ -363,3 +363,23 @@ def test_outcome_balance_audit_detects_excess_home_class_predictions():
     assert audit["classes"]["H"]["precision"] == 0.5
     assert audit["classes"]["H"]["recall"] == 1.0
     assert round(audit["classes"]["H"]["prediction_share_gap_percentage_points"], 6) == round(100 / 3, 6)
+
+
+def test_draw_margin_experiment_uses_chronological_holdout():
+    from app.backtest_engine import _chronological_draw_margin_experiment
+    from datetime import date, timedelta
+    rows = []
+    start = date(2024, 1, 1)
+    for i in range(600):
+        rows.append({
+            "match_date": (start + timedelta(days=i)).isoformat(),
+            "actual": ("D" if i % 3 == 0 else "H" if i % 3 == 1 else "A"),
+            "model": {"H": 0.40, "D": 0.30, "A": 0.30},
+        })
+    result = _chronological_draw_margin_experiment(rows, "model", margins=(0.0, 0.05, 0.11))
+    assert result["status"] == "DIAGNOSTIC_ONLY_NOT_APPLIED"
+    assert result["calibration_cutoff_date"] > rows[0]["match_date"]
+    assert result["holdout_matches"] > 0
+    assert result["raw_argmax_holdout"]["matches"] == result["draw_margin_holdout"]["matches"]
+    assert result["draw_margin_holdout"]["predicted_class_counts"]["D"] > 0
+    assert result["improved_unseen_holdout_accuracy"] is True
