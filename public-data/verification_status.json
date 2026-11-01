@@ -1,35 +1,107 @@
 {
   "schema_version": 1,
   "workflow": "Daily Fixture Predictions",
-  "run_id": "41313735372",
+  "run_id": "41315359653",
   "run_attempt": "1",
-  "event": "push",
+  "event": "workflow_dispatch",
   "commit_sha": "57d90790a9b32c6ed31eec8e18fcde6e0d7af18e",
   "branch": "main",
-  "recorded_at_utc": "2026-11-01T13:57:38.384824+00:00",
-  "overall_status": "TESTS_PASSED",
-  "validation_scope": "TESTS_ONLY",
-  "telegram_configured": false,
+  "recorded_at_utc": "2026-11-01T14:17:43.297709+00:00",
+  "overall_status": "NEEDS_REVIEW",
+  "validation_scope": "LIVE_PIPELINE",
+  "telegram_configured": true,
   "steps": {
     "unit_tests": "success",
     "dashboard_js": "success",
-    "fixture_generation": "skipped",
+    "fixture_generation": "success",
     "report_recovery": "skipped",
-    "fixture_visibility": "skipped",
-    "odds_enrichment": "skipped",
-    "value_evidence_update": "skipped",
-    "value_evidence_artifact": "skipped",
-    "value_certificate": "skipped",
-    "telegram_webhook": "skipped",
-    "telegram_delivery": "skipped",
-    "daily_report_artifact": "skipped",
-    "paper_ledger_artifact": "skipped",
-    "command_data_publication": "skipped",
-    "paper_tracking": "skipped"
+    "fixture_visibility": "success",
+    "odds_enrichment": "success",
+    "value_evidence_update": "success",
+    "value_evidence_artifact": "success",
+    "value_certificate": "success",
+    "telegram_webhook": "success",
+    "telegram_delivery": "success",
+    "daily_report_artifact": "success",
+    "paper_ledger_artifact": "success",
+    "command_data_publication": "failure",
+    "paper_tracking": "success"
   },
-  "report_summary": null,
-  "value_evidence_summary": null,
-  "paper_tracking_summary": null,
+  "report_summary": {
+    "as_of_date": "2026-11-01",
+    "publication_status": "LIVE_REPORT_GENERATED_PENDING_PUBLICATION",
+    "fixtures_received": 25,
+    "same_day_pre_match_fixtures": 25,
+    "future_fixtures_considered": 25,
+    "fixture_rows": 25,
+    "fixture_status_counts": {
+      "EXPERIMENTAL_ONLY": 19,
+      "UNSUPPORTED_COMPETITION": 6
+    },
+    "fixture_visibility_validation": {
+      "status": "PASSED",
+      "fixture_rows": 25,
+      "expected_fixture_rows": 25,
+      "fixture_status_counts": {
+        "EXPERIMENTAL_ONLY": 19,
+        "UNSUPPORTED_COMPETITION": 6
+      },
+      "kickoff_unverified_rows": 0,
+      "forecast_rows": 19,
+      "alerts_enabled": false
+    },
+    "historical_data_coverage": "GAPPED_OR_STALE",
+    "live_odds_sync": "AVAILABLE",
+    "value_intelligence": {
+      "engine": "VELTRIX_VALUE_INTELLIGENCE_V1",
+      "status": "SHADOW_MODE",
+      "fixtures_evaluated": 11,
+      "bookmaker_price_sets_by_market": {
+        "1X2": 165,
+        "BTTS": 19,
+        "OVER_UNDER_1_5": 0,
+        "OVER_UNDER_2_5": 38,
+        "OVER_UNDER_3_5": 7
+      },
+      "shadow_candidate_count": 40,
+      "alerts_enabled": false,
+      "release_status": "LOCKED_SHADOW_MODE",
+      "note": "Market consensus, model shrinkage and quote-level screening are research-only. Existing value certificate remains authoritative."
+    },
+    "value_validation_certificate": "LOCKED_INSUFFICIENT_EVIDENCE"
+  },
+  "value_evidence_summary": {
+    "observations_total": 3505,
+    "observations_added": 623,
+    "price_series": 953,
+    "series_with_multiple_snapshots": 328,
+    "settled_observations": 1694,
+    "shadow_candidate_observations": 117,
+    "legacy_candidate_observations_unannotated": 0,
+    "settled_shadow_candidates": 50,
+    "shadow_candidate_wins": 8,
+    "shadow_candidate_losses": 42,
+    "shadow_candidate_quote_net_units": -35.84,
+    "shadow_candidate_quote_roi_percent": -71.68,
+    "alerts_enabled": false
+  },
+  "paper_tracking_summary": {
+    "evaluated_report_dates": 4,
+    "cumulative_metrics_by_model": {
+      "experimental_elo_by_competition": {
+        "matches": 2,
+        "result_accuracy": 1.0,
+        "brier_score": 0.40709547999999995,
+        "log_loss": 0.735957759728448
+      },
+      "experimental_recent_goals_poisson": {
+        "matches": 6,
+        "result_accuracy": 0.8333333333333334,
+        "brier_score": 0.4573796276053874,
+        "log_loss": 0.7955229558348996
+      }
+    }
+  },
   "release_status": "LOCKED_SHADOW_MODE",
   "betting_alerts_enabled": false
 }
