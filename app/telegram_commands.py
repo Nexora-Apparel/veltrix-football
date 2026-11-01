@@ -410,7 +410,7 @@ def handle_command(
         return _reply("Unknown command. Use /help to see available commands.")
 
     if command in {"/start", "/help"}:
-        lines = ["VELTRIX FOOTBALL — COMMAND CENTRE", "", "FIXTURES & MATCHES"]
+        lines = ["VELTRIX FOOTBALL AI — COMMAND CENTRE", "", "FIXTURES & MATCHES"]
         lines.extend(f"{cmd} — {desc}" for cmd, desc in COMMANDS.items())
         lines.extend([
             "",
