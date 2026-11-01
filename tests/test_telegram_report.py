@@ -33,6 +33,10 @@ def sample_report():
             "elo_probabilities": {"home_win": 0.6, "draw": 0.25, "away_win": 0.15},
             "btts_yes": 0.58,
             "over_2_5": 0.52,
+            "recent_form": {
+                "home_team": {"overall": {"last_5": {"matches": 5, "form": "WWDLL", "points_per_game": 1.4}}},
+                "away_team": {"overall": {"last_5": {"matches": 5, "form": "LLDWD", "points_per_game": 1.0}}},
+            },
         }],
     }
 
@@ -52,6 +56,7 @@ def test_telegram_report_is_predictions_only_and_keeps_new_update_alert():
     assert "BTTS Yes: 58%" in message
     assert "Over 2.5: 52% | Under 2.5: 48%" in message
     assert "xG: 1.40 - 0.80" in message
+    assert "Recent form · last 5: Home WWDLL (1.40 PPG) | Away LLDWD (1.00 PPG)" in message
     assert "PAPER TRACKING" not in message
     assert "DATA NOTICE" not in message
     assert "MULTI-SOURCE REFERENCE PRICES" not in message
