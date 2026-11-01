@@ -608,6 +608,35 @@ def _outcome_balance_audit(
     }
 
 
+def _chronological_draw_margin_experiment(rows: list[dict[str, Any]], model_name: str, *, margins: tuple[float, ...] = tuple(round(i * 0.01, 2) for i in range(26))) -> dict[str, Any]:
+    """Tune a draw decision margin on earlier dates and evaluate on later dates; diagnostics only."""
+    if not rows:
+        return {"status": "NO_DATA", "model": model_name}
+    dates = sorted({str(row["match_date"]) for row in rows if row.get("match_date")})
+    if len(dates) < 10:
+        return {"status": "INSUFFICIENT_DATES", "model": model_name, "dates": len(dates)}
+    cutoff = dates[min(len(dates) - 1, max(1, int(len(dates) * 0.8)))]
+    train = [row for row in rows if str(row["match_date"]) < cutoff]
+    test = [row for row in rows if str(row["match_date"]) >= cutoff]
+    if len(train) < 500 or len(test) < 100:
+        return {"status": "INSUFFICIENT_MATCHES", "model": model_name, "calibration_matches": len(train), "holdout_matches": len(test), "cutoff_date": cutoff}
+    def predict(probabilities: dict[str, float], margin: float) -> str:
+        if probabilities["D"] + margin >= max(probabilities["H"], probabilities["A"]):
+            return "D"
+        return "H" if probabilities["H"] >= probabilities["A"] else "A"
+    def score(sample: list[dict[str, Any]], margin: float) -> dict[str, Any]:
+        counts = {key: 0 for key in ("H", "D", "A")}
+        correct = 0
+        for row in sample:
+            chosen = predict(row[model_name], margin)
+            counts[chosen] += 1
+            correct += int(chosen == row["actual"])
+        n = len(sample)
+        return {"matches": n, "accuracy": correct / n if n else None, "predicted_class_counts": counts, "predicted_class_shares": {key: value / n for key, value in counts.items()} if n else {}}
+    best_margin = max(margins, key=lambda margin: (score(train, margin)["accuracy"], -margin))
+    raw = score(test, 0.0)
+    adjusted = score(test, best_margin)
+    return {"status": "DIAGNOSTIC_ONLY_NOT_APPLIED", "model": model_name, "method": "grid-search margin on first 80% of unique dates; evaluate on final 20%", "calibration_cutoff_date": cutoff, "calibration_matches": len(train), "holdout_matches": len(test), "selected_draw_margin": best_margin, "training_accuracy_at_selected_margin": score(train, best_margin)["accuracy"], "raw_argmax_holdout": raw, "draw_margin_holdout": adjusted, "holdout_accuracy_delta": adjusted["accuracy"] - raw["accuracy"], "improved_unseen_holdout_accuracy": adjusted["accuracy"] > raw["accuracy"], "note": "Decision-only experiment; probabilities and production predictions are not modified."}
 def _confidence_selection_audit(
     rows: list[dict[str, Any]],
     model_name: str,
@@ -1098,6 +1127,11 @@ def chronological_backtest(matches: Iterable[dict[str, Any]], *, min_training_ma
             "recent_holdout": live_holdout,
             "metrics_by_competition": live_metrics_by_competition,
             "historical_odds_subset": live_odds_subset,
+            "draw_margin_experiment": {
+                "poisson": _chronological_draw_margin_experiment(live_scored, "live_poisson"),
+                "elo": _chronological_draw_margin_experiment(live_elo_rows, "live_elo"),
+                "note": "Experimental decision rule only; not used in live forecasts.",
+            },
             "outcome_balance_audit": {
                 "poisson": _outcome_balance_audit(live_scored, "live_poisson"),
                 "elo": _outcome_balance_audit(live_elo_rows, "live_elo"),
