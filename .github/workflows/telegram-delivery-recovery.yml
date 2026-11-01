@@ -47,7 +47,7 @@ jobs:
           print(f"report_date={report.get('as_of_date', 'missing')}")
           print(f"today={today}")
           if not valid:
-              print("Published report is missing, stale, or structurally invalid; delivery skipped.")
+              print("::notice::Published report is missing, stale, or structurally invalid; delivery skipped.", file=__import__("sys").stderr)
           PY
 
       - name: Send today's report if not already delivered
