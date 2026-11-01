@@ -1,4 +1,5 @@
 from app.backtest_engine import (
+    _confidence_selection_audit,
     _historical_over_under_25_price_audit,
     _normalize_match,
     chronological_backtest,
@@ -325,3 +326,23 @@ def test_rolling_origin_goal_calibration_uses_multiple_non_overlapping_future_fo
         evaluated = [fold for fold in market["folds"] if fold["status"] == "EVALUATED"]
         assert len(evaluated) == 4
         assert all(fold["test_matches"] >= 50 for fold in evaluated)
+
+
+
+def test_confidence_selection_audit_reports_accuracy_and_coverage_without_mutating_rows():
+    rows = [
+        {"model": {"H": 0.80, "D": 0.10, "A": 0.10}, "actual": "H"},
+        {"model": {"H": 0.15, "D": 0.10, "A": 0.75}, "actual": "H"},
+        {"model": {"H": 0.55, "D": 0.30, "A": 0.15}, "actual": "D"},
+        {"model": {"H": 0.45, "D": 0.30, "A": 0.25}, "actual": "H"},
+    ]
+    audit = _confidence_selection_audit(rows, "model", thresholds=(0.50, 0.75, 0.80))
+    assert audit["total_matches"] == 4
+    assert audit["thresholds"][0]["selected_matches"] == 3
+    assert audit["thresholds"][0]["coverage"] == 0.75
+    assert audit["thresholds"][0]["accuracy"] == 2 / 3
+    assert audit["thresholds"][1]["selected_matches"] == 2
+    assert audit["thresholds"][1]["accuracy"] == 0.5
+    assert audit["thresholds"][2]["selected_matches"] == 1
+    assert audit["thresholds"][2]["accuracy"] == 1.0
+    assert len(rows) == 4
