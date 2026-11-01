@@ -550,6 +550,64 @@ def _score_probabilities(rows: list[dict[str, Any]], model_name: str, *, bins: i
     }
 
 
+def _outcome_balance_audit(
+    rows: list[dict[str, Any]],
+    model_name: str,
+) -> dict[str, Any]:
+    """Compare predicted H/D/A class frequency with observed frequency."""
+    outcomes = ("H", "D", "A")
+    actual_counts = {outcome: 0 for outcome in outcomes}
+    predicted_counts = {outcome: 0 for outcome in outcomes}
+    true_positive = {outcome: 0 for outcome in outcomes}
+    probability_sums = {outcome: 0.0 for outcome in outcomes}
+    for row in rows:
+        probabilities = row[model_name]
+        actual = row["actual"]
+        predicted = max(outcomes, key=lambda outcome: probabilities[outcome])
+        actual_counts[actual] += 1
+        predicted_counts[predicted] += 1
+        true_positive[predicted] += int(predicted == actual)
+        for outcome in outcomes:
+            probability_sums[outcome] += float(probabilities[outcome])
+    count = len(rows)
+    by_outcome = {}
+    for outcome in outcomes:
+        actual_n = actual_counts[outcome]
+        predicted_n = predicted_counts[outcome]
+        actual_share = actual_n / count if count else None
+        predicted_share = predicted_n / count if count else None
+        mean_probability = probability_sums[outcome] / count if count else None
+        by_outcome[outcome] = {
+            "actual_matches": actual_n,
+            "predicted_matches": predicted_n,
+            "actual_share": actual_share,
+            "predicted_share": predicted_share,
+            "prediction_share_gap_percentage_points": (
+                (predicted_share - actual_share) * 100
+                if predicted_share is not None and actual_share is not None else None
+            ),
+            "precision": true_positive[outcome] / predicted_n if predicted_n else None,
+            "recall": true_positive[outcome] / actual_n if actual_n else None,
+            "mean_predicted_probability": mean_probability,
+            "observed_frequency": actual_share,
+            "probability_minus_observed_percentage_points": (
+                (mean_probability - actual_share) * 100
+                if mean_probability is not None and actual_share is not None else None
+            ),
+        }
+    return {
+        "status": "CHRONOLOGICAL_CLASS_BALANCE_DIAGNOSTIC",
+        "matches": count,
+        "classes": by_outcome,
+        "home_bias_flag": (
+            "HOME_CLASS_OVERPREDICTED"
+            if count and by_outcome["H"]["prediction_share_gap_percentage_points"] > 5
+            else "HOME_CLASS_NOT_OVERPREDICTED_BY_MORE_THAN_5PP"
+        ) if count else "NO_DATA",
+        "note": "A positive home prediction-share gap means the model selects home wins more often than they occur; it is a diagnostic, not a causal explanation.",
+    }
+
+
 def _confidence_selection_audit(
     rows: list[dict[str, Any]],
     model_name: str,
@@ -997,6 +1055,10 @@ def chronological_backtest(matches: Iterable[dict[str, Any]], *, min_training_ma
     return {"status": "BACKTESTED_NOT_PROOF_OF_PROFIT", "test_matches": len(scored),
         "first_test_date": scored[0]["match_date"], "last_test_date": scored[-1]["match_date"],
         "models": metrics, "lower_log_loss_model": winner,
+        "outcome_balance_audit": {
+            "poisson": _outcome_balance_audit(scored, "poisson"),
+            "elo": _outcome_balance_audit(scored, "elo"),
+        },
         "confidence_selection_audit": {
             "poisson": _confidence_selection_audit(scored, "poisson"),
             "elo": _confidence_selection_audit(scored, "elo"),
@@ -1036,6 +1098,10 @@ def chronological_backtest(matches: Iterable[dict[str, Any]], *, min_training_ma
             "recent_holdout": live_holdout,
             "metrics_by_competition": live_metrics_by_competition,
             "historical_odds_subset": live_odds_subset,
+            "outcome_balance_audit": {
+                "poisson": _outcome_balance_audit(live_scored, "live_poisson"),
+                "elo": _outcome_balance_audit(live_elo_rows, "live_elo"),
+            },
             "confidence_selection_audit": {
                 "poisson": _confidence_selection_audit(live_scored, "live_poisson"),
                 "elo": _confidence_selection_audit(live_elo_rows, "live_elo"),
