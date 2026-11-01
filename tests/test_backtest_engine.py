@@ -1,5 +1,6 @@
 from app.backtest_engine import (
     _confidence_selection_audit,
+    _outcome_balance_audit,
     _historical_over_under_25_price_audit,
     _normalize_match,
     chronological_backtest,
@@ -346,3 +347,19 @@ def test_confidence_selection_audit_reports_accuracy_and_coverage_without_mutati
     assert audit["thresholds"][2]["selected_matches"] == 1
     assert audit["thresholds"][2]["accuracy"] == 1.0
     assert len(rows) == 4
+
+
+
+def test_outcome_balance_audit_detects_excess_home_class_predictions():
+    rows = [
+        {"model": {"H": 0.80, "D": 0.10, "A": 0.10}, "actual": "H"},
+        {"model": {"H": 0.60, "D": 0.30, "A": 0.10}, "actual": "D"},
+        {"model": {"H": 0.10, "D": 0.10, "A": 0.80}, "actual": "A"},
+    ]
+    audit = _outcome_balance_audit(rows, "model")
+    assert audit["home_bias_flag"] == "HOME_CLASS_OVERPREDICTED"
+    assert audit["classes"]["H"]["actual_matches"] == 1
+    assert audit["classes"]["H"]["predicted_matches"] == 2
+    assert audit["classes"]["H"]["precision"] == 0.5
+    assert audit["classes"]["H"]["recall"] == 1.0
+    assert audit["classes"]["H"]["prediction_share_gap_percentage_points"] == 100 / 3
