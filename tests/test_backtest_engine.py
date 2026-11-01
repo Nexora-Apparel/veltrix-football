@@ -362,4 +362,4 @@ def test_outcome_balance_audit_detects_excess_home_class_predictions():
     assert audit["classes"]["H"]["predicted_matches"] == 2
     assert audit["classes"]["H"]["precision"] == 0.5
     assert audit["classes"]["H"]["recall"] == 1.0
-    assert audit["classes"]["H"]["prediction_share_gap_percentage_points"] == 100 / 3
+    assert round(audit["classes"]["H"]["prediction_share_gap_percentage_points"], 6) == round(100 / 3, 6)
