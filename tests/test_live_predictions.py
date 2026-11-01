@@ -38,6 +38,11 @@ def test_prediction_uses_minimum_history_and_never_claims_validated():
     assert abs(sum(prediction["probabilities"].values()) - 1) < 0.0002
     assert prediction["expected_goals"]["home"] > 0
     assert prediction["expected_goals"]["away"] > 0
+    assert prediction["recent_form"]["home_team"]["overall"]["last_5"]["matches"] == 5
+    assert prediction["recent_form"]["home_team"]["home_venue"]["last_10"]["matches"] == 6
+    assert prediction["recent_form"]["away_team"]["overall"]["last_5"]["matches"] == 5
+    assert prediction["recent_form"]["away_team"]["away_venue"]["last_10"]["matches"] == 6
+    assert prediction["recent_form"]["as_of"] == "2026-10-23"
     assert prediction["data_availability"]["live_bookmaker_odds"] == "NOT_FETCHED_IN_THIS_RUN_API_FOOTBALL_ODDS_ENRICHMENT_NOT_CONFIRMED"
 
 
