@@ -161,8 +161,8 @@ on:
         required: false
         type: string
   schedule:
-    # 06:00 Africa/Lagos (WAT, UTC+1) = 05:00 UTC.
-    - cron: "0 5 * * *"
+    # Start at 05:00 Africa/Lagos (WAT, UTC+1) = 04:00 UTC, leaving a one-hour delivery buffer.
+    - cron: "0 4 * * *"
 
 # Ordinary pushes run tests only. A push commit containing [run-live-verification] intentionally runs the full live pipeline for controlled end-to-end verification.
 # Controlled verification is explicitly requested for this commit; keep provider failures visible and never publish fallback predictions.
