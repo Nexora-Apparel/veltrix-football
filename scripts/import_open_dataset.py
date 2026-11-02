@@ -313,7 +313,8 @@ def import_dataset(start_date: str, end_date: str, output: str, timeout: int = 9
         text_stream.close()
         response.close()
         session.close()
-    if saved == 0:
+    total_saved = saved + fallback_summary["matches_added"]
+    if total_saved == 0:
         out_path.unlink(missing_ok=True)
         raise RuntimeError("No valid completed matches found in the requested date range.")
     return {
