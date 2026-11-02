@@ -20,7 +20,7 @@ permissions:
 
 concurrency:
   group: veltrix-historical-model-backtest
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   backtest:
