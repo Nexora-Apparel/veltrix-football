@@ -176,7 +176,7 @@ on:
 # Serialize scheduled/manual live runs so they cannot overwrite each other's cache cursor.
 # Push-triggered test runs use a separate group and do not block live data runs.
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event_name == 'push' && 'tests' || 'live' }}
+  group: ${{ github.workflow }}-${{ github.event_name == 'push' && (contains(github.event.head_commit.message, '[reuse-report-40175707059]') && 'replay' || 'tests') || 'live' }}
   cancel-in-progress: false
 
 permissions:
