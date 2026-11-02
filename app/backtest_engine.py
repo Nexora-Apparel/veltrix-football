@@ -1099,6 +1099,7 @@ def chronological_backtest(matches: Iterable[dict[str, Any]], *, min_training_ma
                 "matches_with_valid_1x2_odds": len(live_holdout_odds_rows),
                 "models_compared_on_same_matches": {
                     "live_poisson": _score_probabilities(live_holdout_odds_rows, "live_poisson"),
+                    "live_dc": _score_probabilities(live_holdout_odds_rows, "live_dc"),
                     "market": _score_probabilities(live_holdout_odds_rows, "market"),
                 } if live_holdout_odds_rows else {},
             },
@@ -1118,6 +1119,7 @@ def chronological_backtest(matches: Iterable[dict[str, Any]], *, min_training_ma
             "matches_with_valid_1x2_odds": len(live_odds_rows),
             "models_compared_on_same_matches": {
                 "live_poisson": _score_probabilities(live_odds_rows, "live_poisson"),
+                "live_dc": _score_probabilities(live_odds_rows, "live_dc"),
                 "market": _score_probabilities(live_odds_rows, "market"),
             } if live_odds_rows else {},
             "warning": "Historical odds are indicative only; timestamp and closing-line quality are not verified.",
@@ -1158,10 +1160,15 @@ def chronological_backtest(matches: Iterable[dict[str, Any]], *, min_training_ma
         live_metrics_by_competition[division] = {
             "live_eligible_matches": len(competition_rows),
             "poisson": _compact_score(competition_rows, "live_poisson"),
+            "dixon_coles": _compact_score(competition_rows, "live_dc"),
             "elo": _compact_score(competition_elo_rows, "live_elo"),
             "historical_odds_matches": len(competition_odds_rows),
             "same_match_market_comparison": {
                 "poisson": _compact_score(competition_odds_rows, "live_poisson"),
+                "market": _compact_score(competition_odds_rows, "market"),
+            } if competition_odds_rows else {},
+            "dixon_coles_same_match_market_comparison": {
+                "dixon_coles": _compact_score(competition_odds_rows, "live_dc"),
                 "market": _compact_score(competition_odds_rows, "market"),
             } if competition_odds_rows else {},
             "elo_same_match_market_comparison": {
@@ -1281,14 +1288,17 @@ def chronological_backtest(matches: Iterable[dict[str, Any]], *, min_training_ma
             },
             "outcome_balance_audit": {
                 "poisson": _outcome_balance_audit(live_scored, "live_poisson"),
+                "dixon_coles": _outcome_balance_audit(live_scored, "live_dc"),
                 "elo": _outcome_balance_audit(live_elo_rows, "live_elo"),
             },
             "confidence_selection_audit": {
                 "poisson": _confidence_selection_audit(live_scored, "live_poisson"),
+                "dixon_coles": _confidence_selection_audit(live_scored, "live_dc"),
                 "elo": _confidence_selection_audit(live_elo_rows, "live_elo"),
             },
             "favourite_underdog_audit": {
                 "poisson": audit_favourites_and_underdogs(live_scored, model_key="live_poisson"),
+                "dixon_coles": audit_favourites_and_underdogs(live_scored, model_key="live_dc"),
                 "elo": audit_favourites_and_underdogs(live_elo_rows, model_key="live_elo"),
                 "note": "Evaluation-only subgroup diagnostic on market-covered walk-forward fixtures; not a causal measure of fame bias.",
             },
