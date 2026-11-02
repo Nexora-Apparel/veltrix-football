@@ -19867,7 +19867,7 @@
     "alerts_enabled": false
   },
   "command_data_publication": "PUBLISHED",
-  "command_data_published_at_utc": "2026-11-02T18:03:59.224500+00:00",
-  "value_screen_rebuilt_at_utc": "2026-11-02T18:03:48.805014+00:00",
+  "command_data_published_at_utc": "2026-11-02T18:09:31.824234+00:00",
+  "value_screen_rebuilt_at_utc": "2026-11-02T18:09:22.043332+00:00",
   "value_screen_rebuild_notice": "Rebuilt from saved pre-kickoff bookmaker snapshots. No football provider was called; paper-only candidates are not approved betting alerts."
 }
