@@ -521,3 +521,14 @@ def test_daily_runner_uses_odds_api_fixtures_and_cached_history_after_primary_42
     assert report["recent_results_sync"]["status"] == "SKIPPED_PRIMARY_PROVIDER_UNAVAILABLE"
     assert report["historical_data_coverage"]["status"] == "GAPPED_OR_STALE"
     assert report["publication_status"] == "LIVE_REPORT_GENERATED_PENDING_PUBLICATION"
+
+
+def test_cache_backfill_complete_requires_no_known_gaps_or_plan_limited_dates():
+    assert daily_runner._cache_backfill_complete({"backfill_complete": True}) is True
+    assert daily_runner._cache_backfill_complete({
+        "backfill_complete": True, "history_gaps": ["2026-09-28"],
+    }) is False
+    assert daily_runner._cache_backfill_complete({
+        "backfill_complete": True, "history_plan_limited_dates": ["2026-10-01"],
+    }) is False
+    assert daily_runner._cache_backfill_complete({"backfill_complete": False}) is False
