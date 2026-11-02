@@ -64,6 +64,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_REPOSITORY: ${{ github.repository }}
           PYTHONPATH: .
+          VELTRIX_HISTORY_REQUEST_DELAY_SECONDS: "10"
         run: |
           python scripts/backfill_history_gaps.py \
             --cache command-data/public-data/recent_results_cache.json \
