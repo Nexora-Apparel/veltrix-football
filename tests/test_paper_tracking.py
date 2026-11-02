@@ -425,6 +425,38 @@ def test_tracking_runner_evaluates_saved_report_and_writes_per_model_ledger(tmp_
 
 
 
+def test_same_fixture_model_is_not_duplicated_across_report_dates():
+    first = {
+        "report_date": "2026-10-22",
+        "fixtures_scored": 1,
+        "completed_forecasts_scored": 1,
+        "awaiting_result_or_match": 0,
+        "withheld_or_invalid_forecasts": 0,
+        "matches": [{
+            "fixture_id": "fixture-duplicate",
+            "model": "experimental_elo",
+            "home_team": "Alpha",
+            "away_team": "Beta",
+            "match_date": "2026-10-22",
+            "predicted": "H",
+            "actual": "H",
+            "correct": True,
+            "probabilities": {"H": 0.6, "D": 0.25, "A": 0.15},
+        }],
+        "goal_market_matches": [],
+    }
+    later = {
+        **first,
+        "report_date": "2026-10-23",
+        "matches": [{**first["matches"][0], "report_date": "2026-10-23"}],
+    }
+    ledger = merge_paper_ledger({}, first)
+    ledger = merge_paper_ledger(ledger, later)
+    assert len(ledger["scored_matches"]) == 1
+    assert ledger["scored_matches"][0]["report_date"] == "2026-10-22"
+    assert ledger["cumulative_metrics_by_model"]["experimental_elo"]["matches"] == 1
+
+
 def test_pending_report_date_is_updated_as_more_fixtures_finish():
     report = {
         "as_of_date": "2026-10-22",
