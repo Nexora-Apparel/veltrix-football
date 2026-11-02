@@ -601,6 +601,12 @@ def test_gap_backfill_keeps_unverified_empty_dates_and_records_secondary_rows(tm
         })
 
     class FakeAPI:
+        def leagues(self, page=1, per_page=100, active_since=None):
+            return {"response": [{"id": 7, "name": "Premier League"}], "pagination": {"has_more": False}}
+
+        def league_fixtures(self, league_id, start_date, end_date, timezone):
+            return {"provider": "5DollarFootballAPI", "response": [], "_veltrix_meta": {"pages_fetched": 1}}
+
         def fixtures(self, day, timezone):
             if day == "2026-09-28":
                 return {
