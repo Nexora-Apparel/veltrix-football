@@ -766,8 +766,8 @@ def predict_fixtures(
     ordered_output = sorted(
         output,
         key=lambda row: (
+            row.get("_delivery_order", 10**9),
             str(row.get("kickoff_local") or row.get("kickoff") or ""),
-            row.get("_delivery_order", 0),
         ),
     )
     return [{key: value for key, value in row.items() if key != "_delivery_order"} for row in ordered_output]
