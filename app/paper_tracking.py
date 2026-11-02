@@ -545,6 +545,7 @@ def evaluate_report(report: dict[str, Any], results_payload: dict[str, Any]) -> 
             actual = result["actual"]
             scored_row = {
                 "fixture_id": fixture_id,
+                "match_date": _prediction_day(prediction, timezone_name),
                 "model": model_name,
                 "home_team": prediction.get("home_team"),
                 "away_team": prediction.get("away_team"),
