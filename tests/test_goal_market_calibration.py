@@ -125,8 +125,9 @@ def test_missing_dataset_fingerprint_prevents_live_calibration():
         }],
     }
     apply_goal_market_calibration(report, backtest)
-    assert report["goal_market_calibration"]["status"] == "PARTIAL_OR_UNAVAILABLE"
+    assert report["goal_market_calibration"]["status"] == "NOT_APPLIED_SOURCE_RIGHTS_UNVERIFIED"
     assert "dataset_provenance" in report["goal_market_calibration"]["failures"]
+    assert "data_rights" in report["goal_market_calibration"]["failures"]
     assert "goal_market_calibration" not in report["predictions"][0]
 
 
