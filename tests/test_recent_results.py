@@ -718,60 +718,40 @@ def test_gap_backfill_weekly_cooldown_skips_provider_calls(tmp_path):
     assert report["provider_retry_after_date"] == (today + timedelta(days=7)).isoformat()
 
 
-def test_gap_backfill_uses_open_matchday_verified_coverage_without_primary_api(tmp_path):
+def test_gap_backfill_excludes_noncommercial_feed_and_preserves_gaps_during_cooldown(tmp_path):
     import json
-    from scripts.backfill_history_gaps import OPEN_MATCHDAY_DIVISIONS, run
+    from scripts.backfill_history_gaps import run
 
     gaps = ["2026-09-28", "2026-09-29"]
     cache_path = tmp_path / "cache.json"
     fallback_path = tmp_path / "fallback.csv"
     output_path = tmp_path / "out.json"
     cache_path.write_text(json.dumps({
-        "version": 2, "state": {"history_gaps": gaps}, "matches": [],
+        "version": 2,
+        "state": {"history_gaps": gaps, "last_gap_retry_on": "2026-11-02"},
+        "matches": [],
     }), encoding="utf-8")
     fallback_path.write_text(
-        "match_date,division,home_team,away_team,home_goals,away_goals\n",
+        "match_date,division,home_team,away_team,home_goals,away_goals\\n",
         encoding="utf-8",
     )
-    summary = {
-        "season": "2627", "generated_utc": "2026-11-02T05:14:20Z",
-        "leagues": [{
-            "folder": f"data/{folder}", "results": 20,
-            "latest": "2026-11-01", "errors": [],
-        } for folder in OPEN_MATCHDAY_DIVISIONS.values()],
-    }
-
-    class FakeResponse:
-        def __init__(self, text="", payload=None):
-            self.text = text
-            self._payload = payload
-        def raise_for_status(self):
-            return None
-        def json(self):
-            return self._payload
-
-    class FakeSession:
-        def get(self, url, timeout=30):
-            if url.endswith("build_summary.json"):
-                return FakeResponse(payload=summary)
-            return FakeResponse(text="gw,date,time,home,away,ft_home,ft_away,ft_result,source\n"
-                                     "1,2026-09-28,19:00,Home FC,Away FC,2,1,H,espn\n"
-                                     "1,2026-09-29,19:00,Home FC,Away FC,1,0,H,espn\n")
 
     class ForbiddenPrimaryAPI:
         def __getattr__(self, name):
-            raise AssertionError(f"Primary API should not be called: {name}")
+            raise AssertionError(f"Primary API should not be called during cooldown: {name}")
 
-    report = run(cache_path, fallback_path, output_path, ForbiddenPrimaryAPI(), FakeSession())
+    class ForbiddenSession:
+        def get(self, *args, **kwargs):
+            raise AssertionError("Non-commercial historical feed must not be requested.")
+
+    report = run(cache_path, fallback_path, output_path, ForbiddenPrimaryAPI(), ForbiddenSession())
     saved = json.loads(output_path.read_text(encoding="utf-8"))
-    assert report["status"] == "COMPLETE"
-    assert report["open_matchday"]["status"] == "VERIFIED_MAPPED_COMPETITION_COVERAGE"
-    assert report["open_matchday"]["files_verified"] == len(OPEN_MATCHDAY_DIVISIONS)
-    assert report["primary_resolved_dates"] == 0
-    assert report["open_matchday_resolved_dates"] == gaps
-    assert "history_gaps" not in saved["state"]
-    assert len(saved["matches"]) == 2 * len(OPEN_MATCHDAY_DIVISIONS)
-    assert all(row["source_provider"] == "open-matchday" for row in saved["matches"])
+    assert report["status"] == "PARTIAL_PROVIDER_RETRY_COOLDOWN"
+    assert report["provider_retry_cooldown_active"] is True
+    assert report["open_matchday"]["status"] == "SKIPPED_NONCOMMERCIAL_LICENSE"
+    assert report["open_matchday_resolved_dates"] == []
+    assert saved["state"]["history_gaps"] == gaps
+    assert saved["matches"] == []
 
 
 def test_noncommercial_open_matchday_source_is_never_ingested():
