@@ -123,6 +123,13 @@ OPENLIGADB_LEAGUES = (
     {"shortcut": "la1", "division": "SP1", "name": "La Liga"},
     {"shortcut": "bl1", "division": "D1", "name": "Bundesliga"},
     {"shortcut": "ucl", "division": "UCL", "name": "UEFA Champions League"},
+    {"shortcut": "bl2", "division": "D2", "name": "2. Bundesliga"},
+    {"shortcut": "bl3", "division": "D3", "name": "3. Liga"},
+    {"shortcut": "dfb", "division": "DFB", "name": "DFB-Pokal"},
+    {"shortcut": "uel2026", "division": "UEL", "name": "UEFA Europa League"},
+    {"shortcut": "uecl2026", "division": "UECL", "name": "UEFA Conference League"},
+    {"shortcut": "unl", "division": "UNL", "name": "UEFA Nations League"},
+    {"shortcut": "BLÖ", "division": "AUT1", "name": "Austrian Bundesliga"},
 )
 OPENLIGADB_DIVISION_BY_NAME = {
     "premier league": "E0", "english premier league": "E0", "england premier league": "E0",
