@@ -114,7 +114,12 @@ def test_market_reference_is_reported_on_covered_fixtures():
     live = result["live_pipeline"]
     assert live["historical_odds_subset"]["matches_with_valid_1x2_odds"] == live["matches"]
     assert live["metrics_by_competition"]["L1"]["historical_odds_matches"] == live["matches"]
-    assert set(live["historical_odds_subset"]["models_compared_on_same_matches"]) == {"live_poisson", "market"}
+    assert set(live["historical_odds_subset"]["models_compared_on_same_matches"]) == {"live_poisson", "live_dc", "market"}
+    assert live["historical_odds_subset"]["models_compared_on_same_matches"]["live_dc"]["matches"] == live["matches"]
+    assert live["metrics_by_competition"]["L1"]["dixon_coles"]["matches"] == live["matches"]
+    assert live["metrics_by_competition"]["L1"]["dixon_coles_same_match_market_comparison"]["market"]["matches"] == live["matches"]
+    assert live["outcome_balance_audit"]["dixon_coles"]["matches"] == live["matches"]
+    assert live["confidence_selection_audit"]["dixon_coles"]["total_matches"] == live["matches"]
     assert set(holdout_market["models_compared_on_same_matches"]) == {"poisson", "elo", "market"}
     for model in ("poisson", "elo", "market"):
         calibration = subset["models_compared_on_same_matches"][model]["calibration"]
