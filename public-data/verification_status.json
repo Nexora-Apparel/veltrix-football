@@ -1,12 +1,12 @@
 {
   "schema_version": 1,
   "workflow": "Daily Fixture Predictions",
-  "run_id": "41432101401",
+  "run_id": "41432112021",
   "run_attempt": "1",
-  "event": "workflow_dispatch",
-  "commit_sha": "a9b9e9133aa98330c757e3dfcec8a467d9eef9bc",
+  "event": "push",
+  "commit_sha": "e73072de65ce35f8af434c3fd2072e2e25ea8c8c",
   "branch": "main",
-  "recorded_at_utc": "2026-11-02T10:52:34.031882+00:00",
+  "recorded_at_utc": "2026-11-02T10:54:15.292204+00:00",
   "overall_status": "PASSED",
   "validation_scope": "LIVE_PIPELINE",
   "telegram_configured": true,
@@ -114,17 +114,5 @@
     }
   },
   "release_status": "LOCKED_SHADOW_MODE",
-  "betting_alerts_enabled": false,
-  "latest_test_run": {
-    "run_id": "41432302672",
-    "commit_sha": "9116070b54314da9f474bfbfa7257e681e6b052e",
-    "recorded_at_utc": "2026-11-02T10:53:54.406187+00:00",
-    "overall_status": "TESTS_PASSED",
-    "steps": {
-      "unit_tests": "success",
-      "dashboard_js": "success"
-    }
-  },
-  "latest_test_status": "TESTS_PASSED",
-  "last_test_run_id": "41432302672"
+  "betting_alerts_enabled": false
 }
