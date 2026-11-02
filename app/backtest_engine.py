@@ -355,44 +355,90 @@ def _rolling_origin_goal_calibration(rows: list[dict[str, Any]], probability_key
         "note": "Calibration performance is not profitability evidence. Value alerts remain disabled.",
     }
     for market, outcome_fn in definitions.items():
+        rows_by_day: dict[str, list[tuple[float, int]]] = defaultdict(list)
+        outcomes_by_day: dict[str, list[int]] = defaultdict(list)
+        for row in clean:
+            day = str(row["match_date"])
+            outcome = outcome_fn(row)
+            outcomes_by_day[day].append(outcome)
+            raw_probability = row[probability_key].get(market)
+            probability = _safe_float(raw_probability)
+            if probability is not None and 0.0 <= probability <= 1.0:
+                rows_by_day[day].append((probability, outcome))
+
         raw_all, cal_all, base_all, fold_rows = [], [], [], []
         for index, start in enumerate(starts):
             end = starts[index + 1] if index + 1 < len(starts) else len(dates)
-            train_days, test_days = set(dates[:start]), set(dates[start:end])
-            train = [r for r in clean if str(r["match_date"]) in train_days and market in r[probability_key]]
-            test = [r for r in clean if str(r["match_date"]) in test_days and market in r[probability_key]]
-            pairs = [(float(r[probability_key][market]), outcome_fn(r)) for r in train if _safe_float(r[probability_key].get(market)) is not None and 0 <= float(r[probability_key][market]) <= 1]
-            if len(pairs) < min_training_matches or len(test) < min_test_matches:
-                fold_rows.append({"fold": index + 1, "status": "INSUFFICIENT_MATCHES", "training_matches": len(pairs), "test_matches": len(test)})
+            train_days = dates[:start]
+            test_days = dates[start:end]
+            pairs = [pair for day in train_days for pair in rows_by_day.get(day, [])]
+            test_count = sum(len(rows_by_day.get(day, [])) for day in test_days)
+            if len(pairs) < min_training_matches or test_count < min_test_matches:
+                fold_rows.append({"fold": index + 1, "status": "INSUFFICIENT_MATCHES", "training_matches": len(pairs), "test_matches": test_count})
                 continue
+
             a, b = fit(pairs)
             raw, calibrated, baseline = [], [], []
-            prior = [
-                outcome_fn(r) for r in clean
-                if str(r["match_date"]) < dates[start]
-            ]
-            for day in sorted(test_days):
-                day_rows = [r for r in test if str(r["match_date"]) == day]
-                base_p = (sum(prior) + 1) / (len(prior) + 2)
-                for row in day_rows:
-                    p = min(1 - 1e-6, max(1e-6, float(row[probability_key][market])))
-                    y = outcome_fn(row)
-                    raw.append((p, y))
-                    calibrated.append((sigmoid(a + b * logit(p)), y))
-                    baseline.append((base_p, y))
-                prior.extend(outcome_fn(r) for r in clean if str(r["match_date"]) == day)
+            prior_sum = sum(sum(outcomes_by_day.get(day, [])) for day in train_days)
+            prior_count = sum(len(outcomes_by_day.get(day, [])) for day in train_days)
+            for day in test_days:
+                day_rows = rows_by_day.get(day, [])
+                base_probability = (prior_sum + 1) / (prior_count + 2)
+                for probability, outcome in day_rows:
+                    probability = min(1 - 1e-6, max(1e-6, probability))
+                    raw.append((probability, outcome))
+                    calibrated.append((sigmoid(a + b * logit(probability)), outcome))
+                    baseline.append((base_probability, outcome))
+                # Only after all fixtures on the date are scored do their
+                # outcomes enter the expanding baseline.
+                day_outcomes = outcomes_by_day.get(day, [])
+                prior_sum += sum(day_outcomes)
+                prior_count += len(day_outcomes)
+
             rm, cm, bm = score(raw), score(calibrated), score(baseline)
-            passed = cm["brier_score"] < rm["brier_score"] and cm["log_loss"] < rm["log_loss"] and cm["brier_score"] < bm["brier_score"] and cm["log_loss"] < bm["log_loss"]
-            raw_all.extend(raw); cal_all.extend(calibrated); base_all.extend(baseline)
-            fold_rows.append({"fold": index + 1, "status": "EVALUATED", "training_matches": len(pairs), "test_matches": len(raw), "test_start": dates[start], "test_end": dates[end - 1], "raw": rm, "calibrated": cm, "expanding_baseline": bm, "beats_raw_and_baseline": passed})
+            passed = (
+                cm["brier_score"] < rm["brier_score"]
+                and cm["log_loss"] < rm["log_loss"]
+                and cm["brier_score"] < bm["brier_score"]
+                and cm["log_loss"] < bm["log_loss"]
+            )
+            raw_all.extend(raw)
+            cal_all.extend(calibrated)
+            base_all.extend(baseline)
+            fold_rows.append({
+                "fold": index + 1, "status": "EVALUATED",
+                "training_matches": len(pairs), "test_matches": len(raw),
+                "training_end": train_days[-1], "test_start": test_days[0], "test_end": test_days[-1],
+                "raw": rm, "calibrated": cm, "expanding_baseline": bm,
+                "beats_raw_and_baseline": passed,
+            })
+
         rm, cm, bm = score(raw_all), score(cal_all), score(base_all)
-        evaluated = [f for f in fold_rows if f["status"] == "EVALUATED"]
-        wins = sum(bool(f["beats_raw_and_baseline"]) for f in evaluated)
-        aggregate = bool(raw_all) and cm["brier_score"] < rm["brier_score"] and cm["log_loss"] < rm["log_loss"] and cm["brier_score"] < bm["brier_score"] and cm["log_loss"] < bm["log_loss"]
-        passed = len(evaluated) >= max(2, math.ceil(folds * 0.75)) and wins >= math.ceil(len(evaluated) * 0.75) and aggregate
-        result["markets"][market] = {"status": "CALIBRATION_DIAGNOSTIC_PASS" if passed else "CALIBRATION_NOT_VALIDATED", "folds_evaluated": len(evaluated), "folds_beating_raw_and_baseline": wins, "raw": rm, "calibrated": cm, "expanding_baseline": bm, "aggregate_beats_raw_and_baseline": aggregate, "folds": fold_rows}
+        evaluated = [fold for fold in fold_rows if fold["status"] == "EVALUATED"]
+        wins = sum(bool(fold["beats_raw_and_baseline"]) for fold in evaluated)
+        aggregate = bool(raw_all) and (
+            cm["brier_score"] < rm["brier_score"]
+            and cm["log_loss"] < rm["log_loss"]
+            and cm["brier_score"] < bm["brier_score"]
+            and cm["log_loss"] < bm["log_loss"]
+        )
+        passed = (
+            len(evaluated) >= max(2, math.ceil(folds * 0.75))
+            and wins >= math.ceil(len(evaluated) * 0.75)
+            and aggregate
+        )
+        result["markets"][market] = {
+            "status": "CALIBRATION_DIAGNOSTIC_PASS" if passed else "CALIBRATION_NOT_VALIDATED",
+            "folds_evaluated": len(evaluated), "folds_beating_raw_and_baseline": wins,
+            "raw": rm, "calibrated": cm, "expanding_baseline": bm,
+            "aggregate_beats_raw_and_baseline": aggregate, "folds": fold_rows,
+        }
         result["folds_evaluated"] = max(result["folds_evaluated"], len(evaluated))
-    result["all_goal_markets_calibration_pass"] = bool(result["markets"]) and all(v["status"] == "CALIBRATION_DIAGNOSTIC_PASS" for v in result["markets"].values())
+    result["all_goal_markets_calibration_pass"] = bool(result["markets"]) and all(
+        market_result["status"] == "CALIBRATION_DIAGNOSTIC_PASS"
+        for market_result in result["markets"].values()
+    )
+    result["complexity_note"] = "Per-date outcome aggregation avoids rescanning the full historical dataset inside each test-date loop."
     return result
 
 
