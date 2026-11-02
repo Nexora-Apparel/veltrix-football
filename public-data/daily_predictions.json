@@ -44,13 +44,13 @@
   "poisson_alternative_available": 3,
   "elo_alternative_available": 5,
   "normal_bets": {
-    "target_combined_decimal_odds": 10.0,
+    "target_combined_decimal_odds": 10,
     "status": "NOT_GENERATED_MODEL_NOT_VALIDATED"
   },
   "value_bets": {
     "target_combined_decimal_odds": [
-      50.0,
-      100.0
+      50,
+      100
     ],
     "status": "NOT_GENERATED_MODEL_NOT_VALIDATED"
   },
@@ -80,7 +80,7 @@
               "matches": 3,
               "form": "LLW",
               "points": 3,
-              "points_per_game": 1.0,
+              "points_per_game": 1,
               "goals_for": 3,
               "goals_against": 5,
               "goal_difference": -2,
@@ -94,7 +94,7 @@
               "matches": 3,
               "form": "LLW",
               "points": 3,
-              "points_per_game": 1.0,
+              "points_per_game": 1,
               "goals_for": 3,
               "goals_against": 5,
               "goal_difference": -2,
@@ -111,7 +111,7 @@
               "matches": 1,
               "form": "L",
               "points": 0,
-              "points_per_game": 0.0,
+              "points_per_game": 0,
               "goals_for": 0,
               "goals_against": 1,
               "goal_difference": -1,
@@ -125,7 +125,7 @@
               "matches": 1,
               "form": "L",
               "points": 0,
-              "points_per_game": 0.0,
+              "points_per_game": 0,
               "goals_for": 0,
               "goals_against": 1,
               "goal_difference": -1,
@@ -144,7 +144,7 @@
               "matches": 5,
               "form": "DWDLL",
               "points": 5,
-              "points_per_game": 1.0,
+              "points_per_game": 1,
               "goals_for": 3,
               "goals_against": 6,
               "goal_difference": -3,
@@ -158,7 +158,7 @@
               "matches": 10,
               "form": "LLWDDDWDLL",
               "points": 10,
-              "points_per_game": 1.0,
+              "points_per_game": 1,
               "goals_for": 9,
               "goals_against": 13,
               "goal_difference": -4,
@@ -1549,7 +1549,7 @@
               "matches": 1,
               "form": "D",
               "points": 1,
-              "points_per_game": 1.0,
+              "points_per_game": 1,
               "goals_for": 1,
               "goals_against": 1,
               "goal_difference": 0,
@@ -1563,7 +1563,7 @@
               "matches": 1,
               "form": "D",
               "points": 1,
-              "points_per_game": 1.0,
+              "points_per_game": 1,
               "goals_for": 1,
               "goals_against": 1,
               "goal_difference": 0,
@@ -2257,7 +2257,7 @@
               "outcomes": [
                 {
                   "name": "Yes",
-                  "price": 2.0,
+                  "price": 2,
                   "point": null
                 },
                 {
@@ -2305,7 +2305,7 @@
               "outcomes": [
                 {
                   "name": "Yes",
-                  "price": 2.0,
+                  "price": 2,
                   "point": null
                 },
                 {
@@ -2726,7 +2726,7 @@
                 "last_update": "2026-11-02T09:28:16Z",
                 "odds": {
                   "no": 1.97,
-                  "yes": 2.0
+                  "yes": 2
                 }
               },
               {
@@ -2750,7 +2750,7 @@
                 "last_update": "2026-11-02T09:28:30Z",
                 "odds": {
                   "no": 1.97,
-                  "yes": 2.0
+                  "yes": 2
                 }
               },
               {
@@ -2950,7 +2950,7 @@
               "matches": 4,
               "form": "WWWW",
               "points": 12,
-              "points_per_game": 3.0,
+              "points_per_game": 3,
               "goals_for": 11,
               "goals_against": 3,
               "goal_difference": 8,
@@ -2964,7 +2964,7 @@
               "matches": 4,
               "form": "WWWW",
               "points": 12,
-              "points_per_game": 3.0,
+              "points_per_game": 3,
               "goals_for": 11,
               "goals_against": 3,
               "goal_difference": 8,
@@ -3156,7 +3156,7 @@
               "outcomes": [
                 {
                   "name": "Alverca",
-                  "price": 13.0,
+                  "price": 13,
                   "point": null
                 },
                 {
@@ -3187,7 +3187,7 @@
                 },
                 {
                   "name": "Draw",
-                  "price": 10.0,
+                  "price": 10,
                   "point": null
                 }
               ]
@@ -3198,7 +3198,7 @@
               "outcomes": [
                 {
                   "name": "Alverca",
-                  "price": 19.0,
+                  "price": 19,
                   "point": null
                 },
                 {
@@ -3208,7 +3208,7 @@
                 },
                 {
                   "name": "Draw",
-                  "price": 9.0,
+                  "price": 9,
                   "point": null
                 }
               ]
@@ -3219,7 +3219,7 @@
               "outcomes": [
                 {
                   "name": "Alverca",
-                  "price": 13.0,
+                  "price": 13,
                   "point": null
                 },
                 {
@@ -3229,7 +3229,7 @@
                 },
                 {
                   "name": "Draw",
-                  "price": 9.0,
+                  "price": 9,
                   "point": null
                 }
               ]
@@ -3240,7 +3240,7 @@
               "outcomes": [
                 {
                   "name": "Alverca",
-                  "price": 17.0,
+                  "price": 17,
                   "point": null
                 },
                 {
@@ -3250,7 +3250,7 @@
                 },
                 {
                   "name": "Draw",
-                  "price": 10.0,
+                  "price": 10,
                   "point": null
                 }
               ]
@@ -3261,7 +3261,7 @@
               "outcomes": [
                 {
                   "name": "Alverca",
-                  "price": 15.0,
+                  "price": 15,
                   "point": null
                 },
                 {
@@ -3271,7 +3271,7 @@
                 },
                 {
                   "name": "Draw",
-                  "price": 8.0,
+                  "price": 8,
                   "point": null
                 }
               ]
@@ -3282,7 +3282,7 @@
               "outcomes": [
                 {
                   "name": "Alverca",
-                  "price": 15.0,
+                  "price": 15,
                   "point": null
                 },
                 {
@@ -3292,7 +3292,7 @@
                 },
                 {
                   "name": "Draw",
-                  "price": 8.0,
+                  "price": 8,
                   "point": null
                 }
               ]
@@ -3303,7 +3303,7 @@
               "outcomes": [
                 {
                   "name": "Alverca",
-                  "price": 16.0,
+                  "price": 16,
                   "point": null
                 },
                 {
@@ -3313,7 +3313,7 @@
                 },
                 {
                   "name": "Draw",
-                  "price": 8.0,
+                  "price": 8,
                   "point": null
                 }
               ]
@@ -3324,7 +3324,7 @@
               "outcomes": [
                 {
                   "name": "Alverca",
-                  "price": 15.0,
+                  "price": 15,
                   "point": null
                 },
                 {
@@ -3345,7 +3345,7 @@
               "outcomes": [
                 {
                   "name": "Alverca",
-                  "price": 16.0,
+                  "price": 16,
                   "point": null
                 },
                 {
@@ -3355,7 +3355,7 @@
                 },
                 {
                   "name": "Draw",
-                  "price": 8.0,
+                  "price": 8,
                   "point": null
                 }
               ]
@@ -3366,7 +3366,7 @@
               "outcomes": [
                 {
                   "name": "Alverca",
-                  "price": 16.0,
+                  "price": 16,
                   "point": null
                 },
                 {
@@ -3376,7 +3376,7 @@
                 },
                 {
                   "name": "Draw",
-                  "price": 8.0,
+                  "price": 8,
                   "point": null
                 }
               ]
@@ -3387,7 +3387,7 @@
               "outcomes": [
                 {
                   "name": "Alverca",
-                  "price": 19.0,
+                  "price": 19,
                   "point": null
                 },
                 {
@@ -3397,7 +3397,7 @@
                 },
                 {
                   "name": "Draw",
-                  "price": 9.0,
+                  "price": 9,
                   "point": null
                 }
               ]
@@ -3408,7 +3408,7 @@
               "outcomes": [
                 {
                   "name": "Alverca",
-                  "price": 15.0,
+                  "price": 15,
                   "point": null
                 },
                 {
@@ -3429,7 +3429,7 @@
               "outcomes": [
                 {
                   "name": "Alverca",
-                  "price": 15.0,
+                  "price": 15,
                   "point": null
                 },
                 {
@@ -3450,7 +3450,7 @@
               "outcomes": [
                 {
                   "name": "Alverca",
-                  "price": 15.0,
+                  "price": 15,
                   "point": null
                 },
                 {
@@ -3460,7 +3460,7 @@
                 },
                 {
                   "name": "Draw",
-                  "price": 8.0,
+                  "price": 8,
                   "point": null
                 }
               ]
@@ -3471,7 +3471,7 @@
               "outcomes": [
                 {
                   "name": "Alverca",
-                  "price": 15.0,
+                  "price": 15,
                   "point": null
                 },
                 {
@@ -3481,7 +3481,7 @@
                 },
                 {
                   "name": "Draw",
-                  "price": 8.0,
+                  "price": 8,
                   "point": null
                 }
               ]
@@ -3492,7 +3492,7 @@
               "outcomes": [
                 {
                   "name": "Alverca",
-                  "price": 15.0,
+                  "price": 15,
                   "point": null
                 },
                 {
@@ -3502,7 +3502,7 @@
                 },
                 {
                   "name": "Draw",
-                  "price": 8.0,
+                  "price": 8,
                   "point": null
                 }
               ]
@@ -3513,7 +3513,7 @@
               "outcomes": [
                 {
                   "name": "Alverca",
-                  "price": 22.0,
+                  "price": 22,
                   "point": null
                 },
                 {
@@ -3534,7 +3534,7 @@
               "outcomes": [
                 {
                   "name": "Alverca",
-                  "price": 16.0,
+                  "price": 16,
                   "point": null
                 },
                 {
@@ -3544,7 +3544,7 @@
                 },
                 {
                   "name": "Draw",
-                  "price": 8.0,
+                  "price": 8,
                   "point": null
                 }
               ]
@@ -3555,7 +3555,7 @@
               "outcomes": [
                 {
                   "name": "Alverca",
-                  "price": 22.0,
+                  "price": 22,
                   "point": null
                 },
                 {
@@ -3756,8 +3756,8 @@
                   "label": "RESEARCH_PRIORITY_ONLY",
                   "components": {
                     "edge": 35.6,
-                    "expected_value": 100.0,
-                    "market_coverage": 100.0,
+                    "expected_value": 100,
+                    "market_coverage": 100,
                     "price_stability": 80.1
                   },
                   "release_status": "LOCKED_SHADOW_MODE"
@@ -3779,8 +3779,8 @@
                   "label": "RESEARCH_PRIORITY_ONLY",
                   "components": {
                     "edge": 35.6,
-                    "expected_value": 100.0,
-                    "market_coverage": 100.0,
+                    "expected_value": 100,
+                    "market_coverage": 100,
                     "price_stability": 80.1
                   },
                   "release_status": "LOCKED_SHADOW_MODE"
@@ -3827,14 +3827,14 @@
                 "odds": {
                   "draw": 7.5,
                   "home_win": 1.12,
-                  "away_win": 13.0
+                  "away_win": 13
                 }
               },
               {
                 "bookmaker": "Smarkets",
                 "last_update": "2026-11-02T09:28:27Z",
                 "odds": {
-                  "draw": 10.0,
+                  "draw": 10,
                   "home_win": 1.16,
                   "away_win": 21.01
                 }
@@ -3843,54 +3843,54 @@
                 "bookmaker": "Paddy Power",
                 "last_update": "2026-11-02T09:28:26Z",
                 "odds": {
-                  "draw": 9.0,
+                  "draw": 9,
                   "home_win": 1.11,
-                  "away_win": 19.0
+                  "away_win": 19
                 }
               },
               {
                 "bookmaker": "Betway",
                 "last_update": "2026-11-02T09:28:26Z",
                 "odds": {
-                  "draw": 9.0,
+                  "draw": 9,
                   "home_win": 1.14,
-                  "away_win": 13.0
+                  "away_win": 13
                 }
               },
               {
                 "bookmaker": "Sky Bet",
                 "last_update": "2026-11-02T09:27:01Z",
                 "odds": {
-                  "draw": 10.0,
+                  "draw": 10,
                   "home_win": 1.1,
-                  "away_win": 17.0
+                  "away_win": 17
                 }
               },
               {
                 "bookmaker": "888sport",
                 "last_update": "2026-11-02T09:28:04Z",
                 "odds": {
-                  "draw": 8.0,
+                  "draw": 8,
                   "home_win": 1.14,
-                  "away_win": 15.0
+                  "away_win": 15
                 }
               },
               {
                 "bookmaker": "William Hill",
                 "last_update": "2026-11-02T09:27:41Z",
                 "odds": {
-                  "draw": 8.0,
+                  "draw": 8,
                   "home_win": 1.14,
-                  "away_win": 15.0
+                  "away_win": 15
                 }
               },
               {
                 "bookmaker": "Virgin Bet",
                 "last_update": "2026-11-02T09:28:26Z",
                 "odds": {
-                  "draw": 8.0,
+                  "draw": 8,
                   "home_win": 1.15,
-                  "away_win": 16.0
+                  "away_win": 16
                 }
               },
               {
@@ -3899,34 +3899,34 @@
                 "odds": {
                   "draw": 7.5,
                   "home_win": 1.13,
-                  "away_win": 15.0
+                  "away_win": 15
                 }
               },
               {
                 "bookmaker": "Grosvenor",
                 "last_update": "2026-11-02T09:28:04Z",
                 "odds": {
-                  "draw": 8.0,
+                  "draw": 8,
                   "home_win": 1.15,
-                  "away_win": 16.0
+                  "away_win": 16
                 }
               },
               {
                 "bookmaker": "Casumo",
                 "last_update": "2026-11-02T09:28:26Z",
                 "odds": {
-                  "draw": 8.0,
+                  "draw": 8,
                   "home_win": 1.15,
-                  "away_win": 16.0
+                  "away_win": 16
                 }
               },
               {
                 "bookmaker": "Betfair Sportsbook",
                 "last_update": "2026-11-02T09:28:04Z",
                 "odds": {
-                  "draw": 9.0,
+                  "draw": 9,
                   "home_win": 1.12,
-                  "away_win": 19.0
+                  "away_win": 19
                 }
               },
               {
@@ -3935,7 +3935,7 @@
                 "odds": {
                   "draw": 7.5,
                   "home_win": 1.12,
-                  "away_win": 15.0
+                  "away_win": 15
                 }
               },
               {
@@ -3944,34 +3944,34 @@
                 "odds": {
                   "draw": 7.5,
                   "home_win": 1.12,
-                  "away_win": 15.0
+                  "away_win": 15
                 }
               },
               {
                 "bookmaker": "BoyleSports",
                 "last_update": "2026-11-02T09:28:29Z",
                 "odds": {
-                  "draw": 8.0,
+                  "draw": 8,
                   "home_win": 1.14,
-                  "away_win": 15.0
+                  "away_win": 15
                 }
               },
               {
                 "bookmaker": "Ladbrokes",
                 "last_update": "2026-11-02T09:28:26Z",
                 "odds": {
-                  "draw": 8.0,
+                  "draw": 8,
                   "home_win": 1.17,
-                  "away_win": 15.0
+                  "away_win": 15
                 }
               },
               {
                 "bookmaker": "Coral",
                 "last_update": "2026-11-02T09:27:42Z",
                 "odds": {
-                  "draw": 8.0,
+                  "draw": 8,
                   "home_win": 1.17,
-                  "away_win": 15.0
+                  "away_win": 15
                 }
               },
               {
@@ -3980,16 +3980,16 @@
                 "odds": {
                   "draw": 10.5,
                   "home_win": 1.16,
-                  "away_win": 22.0
+                  "away_win": 22
                 }
               },
               {
                 "bookmaker": "Unibet (UK)",
                 "last_update": "2026-11-02T09:28:27Z",
                 "odds": {
-                  "draw": 8.0,
+                  "draw": 8,
                   "home_win": 1.14,
-                  "away_win": 16.0
+                  "away_win": 16
                 }
               },
               {
@@ -3998,7 +3998,7 @@
                 "odds": {
                   "draw": 10.5,
                   "home_win": 1.16,
-                  "away_win": 22.0
+                  "away_win": 22
                 }
               }
             ],
@@ -4203,7 +4203,7 @@
               "matches": 4,
               "form": "WLDL",
               "points": 4,
-              "points_per_game": 1.0,
+              "points_per_game": 1,
               "goals_for": 3,
               "goals_against": 3,
               "goal_difference": 0,
@@ -4217,7 +4217,7 @@
               "matches": 4,
               "form": "WLDL",
               "points": 4,
-              "points_per_game": 1.0,
+              "points_per_game": 1,
               "goals_for": 3,
               "goals_against": 3,
               "goal_difference": 0,
@@ -4455,7 +4455,7 @@
                 },
                 {
                   "name": "Draw",
-                  "price": 3.0,
+                  "price": 3,
                   "point": null
                 }
               ]
@@ -4508,7 +4508,7 @@
               "outcomes": [
                 {
                   "name": "Gil Vicente",
-                  "price": 3.0,
+                  "price": 3,
                   "point": null
                 },
                 {
@@ -4539,7 +4539,7 @@
                 },
                 {
                   "name": "Draw",
-                  "price": 3.0,
+                  "price": 3,
                   "point": null
                 }
               ]
@@ -4560,7 +4560,7 @@
                 },
                 {
                   "name": "Draw",
-                  "price": 3.0,
+                  "price": 3,
                   "point": null
                 }
               ]
@@ -4760,7 +4760,7 @@
               "outcomes": [
                 {
                   "name": "Gil Vicente",
-                  "price": 3.0,
+                  "price": 3,
                   "point": null
                 },
                 {
@@ -4802,7 +4802,7 @@
               "outcomes": [
                 {
                   "name": "Gil Vicente",
-                  "price": 3.0,
+                  "price": 3,
                   "point": null
                 },
                 {
@@ -5018,7 +5018,7 @@
                 "bookmaker": "Betway",
                 "last_update": "2026-11-02T09:28:26Z",
                 "odds": {
-                  "draw": 3.0,
+                  "draw": 3,
                   "home_win": 2.9,
                   "away_win": 2.5
                 }
@@ -5046,7 +5046,7 @@
                 "last_update": "2026-11-02T09:28:27Z",
                 "odds": {
                   "draw": 3.2,
-                  "home_win": 3.0,
+                  "home_win": 3,
                   "away_win": 2.72
                 }
               },
@@ -5054,7 +5054,7 @@
                 "bookmaker": "888sport",
                 "last_update": "2026-11-02T09:28:04Z",
                 "odds": {
-                  "draw": 3.0,
+                  "draw": 3,
                   "home_win": 2.8,
                   "away_win": 2.5
                 }
@@ -5063,7 +5063,7 @@
                 "bookmaker": "William Hill",
                 "last_update": "2026-11-02T09:27:41Z",
                 "odds": {
-                  "draw": 3.0,
+                  "draw": 3,
                   "home_win": 2.8,
                   "away_win": 2.5
                 }
@@ -5154,7 +5154,7 @@
                 "last_update": "2026-11-02T09:28:26Z",
                 "odds": {
                   "draw": 3.25,
-                  "home_win": 3.0,
+                  "home_win": 3,
                   "away_win": 2.72
                 }
               },
@@ -5172,7 +5172,7 @@
                 "last_update": "2026-11-02T09:28:26Z",
                 "odds": {
                   "draw": 3.25,
-                  "home_win": 3.0,
+                  "home_win": 3,
                   "away_win": 2.72
                 }
               }
@@ -5371,7 +5371,7 @@
               "matches": 5,
               "form": "WDLLD",
               "points": 5,
-              "points_per_game": 1.0,
+              "points_per_game": 1,
               "goals_for": 2,
               "goals_against": 4,
               "goal_difference": -2,
@@ -5385,7 +5385,7 @@
               "matches": 5,
               "form": "WDLLD",
               "points": 5,
-              "points_per_game": 1.0,
+              "points_per_game": 1,
               "goals_for": 2,
               "goals_against": 4,
               "goal_difference": -2,
@@ -5720,7 +5720,7 @@
               "matches": 5,
               "form": "LWDDL",
               "points": 5,
-              "points_per_game": 1.0,
+              "points_per_game": 1,
               "goals_for": 4,
               "goals_against": 5,
               "goal_difference": -1,
@@ -5734,7 +5734,7 @@
               "matches": 10,
               "form": "DDDDDLWDDL",
               "points": 10,
-              "points_per_game": 1.0,
+              "points_per_game": 1,
               "goals_for": 6,
               "goals_against": 7,
               "goal_difference": -1,
@@ -6532,7 +6532,7 @@
                 },
                 {
                   "name": "Sassuolo",
-                  "price": 3.0,
+                  "price": 3,
                   "point": null
                 },
                 {
@@ -6979,7 +6979,7 @@
                 "last_update": "2026-11-02T09:28:30Z",
                 "odds": {
                   "draw": 3.8,
-                  "home_win": 3.0,
+                  "home_win": 3,
                   "away_win": 2.46
                 }
               },
@@ -7109,7 +7109,7 @@
                   "components": {
                     "edge": 40.2,
                     "expected_value": 36.9,
-                    "market_coverage": 60.0,
+                    "market_coverage": 60,
                     "price_stability": 97.2
                   },
                   "release_status": "LOCKED_SHADOW_MODE"
@@ -7132,7 +7132,7 @@
                   "components": {
                     "edge": 40.2,
                     "expected_value": 36.9,
-                    "market_coverage": 60.0,
+                    "market_coverage": 60,
                     "price_stability": 97.2
                   },
                   "release_status": "LOCKED_SHADOW_MODE"
@@ -7342,7 +7342,7 @@
               "matches": 10,
               "form": "LDDDWLLWDL",
               "points": 10,
-              "points_per_game": 1.0,
+              "points_per_game": 1,
               "goals_for": 16,
               "goals_against": 15,
               "goal_difference": 1,
@@ -7567,7 +7567,7 @@
               "outcomes": [
                 {
                   "name": "Brest",
-                  "price": 3.0,
+                  "price": 3,
                   "point": null
                 },
                 {
@@ -7588,7 +7588,7 @@
               "outcomes": [
                 {
                   "name": "Brest",
-                  "price": 3.0,
+                  "price": 3,
                   "point": null
                 },
                 {
@@ -7777,7 +7777,7 @@
               "outcomes": [
                 {
                   "name": "Brest",
-                  "price": 3.0,
+                  "price": 3,
                   "point": null
                 },
                 {
@@ -7819,7 +7819,7 @@
               "outcomes": [
                 {
                   "name": "Brest",
-                  "price": 3.0,
+                  "price": 3,
                   "point": null
                 },
                 {
@@ -8142,7 +8142,7 @@
                 "odds": {
                   "draw": 3.2,
                   "home_win": 2.45,
-                  "away_win": 3.0
+                  "away_win": 3
                 }
               },
               {
@@ -8151,7 +8151,7 @@
                 "odds": {
                   "draw": 3.3,
                   "home_win": 2.4,
-                  "away_win": 3.0
+                  "away_win": 3
                 }
               },
               {
@@ -8232,7 +8232,7 @@
                 "odds": {
                   "draw": 3.1,
                   "home_win": 2.45,
-                  "away_win": 3.0
+                  "away_win": 3
                 }
               },
               {
@@ -8250,7 +8250,7 @@
                 "odds": {
                   "draw": 3.2,
                   "home_win": 2.4,
-                  "away_win": 3.0
+                  "away_win": 3
                 }
               },
               {
@@ -8462,7 +8462,7 @@
               "matches": 5,
               "form": "WLLDD",
               "points": 5,
-              "points_per_game": 1.0,
+              "points_per_game": 1,
               "goals_for": 11,
               "goals_against": 12,
               "goal_difference": -1,
@@ -8493,7 +8493,7 @@
               "matches": 5,
               "form": "WLWWD",
               "points": 10,
-              "points_per_game": 2.0,
+              "points_per_game": 2,
               "goals_for": 12,
               "goals_against": 8,
               "goal_difference": 4,
@@ -8507,7 +8507,7 @@
               "matches": 5,
               "form": "WLWWD",
               "points": 10,
-              "points_per_game": 2.0,
+              "points_per_game": 2,
               "goals_for": 12,
               "goals_against": 8,
               "goal_difference": 4,
@@ -8557,7 +8557,7 @@
               "matches": 4,
               "form": "LLLL",
               "points": 0,
-              "points_per_game": 0.0,
+              "points_per_game": 0,
               "goals_for": 2,
               "goals_against": 9,
               "goal_difference": -7,
@@ -8571,7 +8571,7 @@
               "matches": 4,
               "form": "LLLL",
               "points": 0,
-              "points_per_game": 0.0,
+              "points_per_game": 0,
               "goals_for": 2,
               "goals_against": 9,
               "goal_difference": -7,
@@ -8704,7 +8704,7 @@
             "1x2": {
               "home": 1.5,
               "draw": 4.5,
-              "away": 6.0
+              "away": 6
             }
           }
         ],
@@ -8728,7 +8728,7 @@
                 },
                 {
                   "name": "Parma",
-                  "price": 6.0,
+                  "price": 6,
                   "point": null
                 },
                 {
@@ -8875,7 +8875,7 @@
                 },
                 {
                   "name": "Parma",
-                  "price": 6.0,
+                  "price": 6,
                   "point": null
                 },
                 {
@@ -8917,7 +8917,7 @@
                 },
                 {
                   "name": "Parma",
-                  "price": 6.0,
+                  "price": 6,
                   "point": null
                 },
                 {
@@ -9106,7 +9106,7 @@
                 },
                 {
                   "name": "Parma",
-                  "price": 6.0,
+                  "price": 6,
                   "point": null
                 },
                 {
@@ -9127,7 +9127,7 @@
                 },
                 {
                   "name": "Parma",
-                  "price": 6.0,
+                  "price": 6,
                   "point": null
                 },
                 {
@@ -9148,7 +9148,7 @@
                 },
                 {
                   "name": "Parma",
-                  "price": 6.0,
+                  "price": 6,
                   "point": null
                 },
                 {
@@ -9519,7 +9519,7 @@
               "matches": 5,
               "form": "DWDLL",
               "points": 5,
-              "points_per_game": 1.0,
+              "points_per_game": 1,
               "goals_for": 3,
               "goals_against": 6,
               "goal_difference": -3,
@@ -9533,7 +9533,7 @@
               "matches": 10,
               "form": "LLWDDDWDLL",
               "points": 10,
-              "points_per_game": 1.0,
+              "points_per_game": 1,
               "goals_for": 9,
               "goals_against": 13,
               "goal_difference": -4,
@@ -9826,7 +9826,7 @@
               "matches": 1,
               "form": "D",
               "points": 1,
-              "points_per_game": 1.0,
+              "points_per_game": 1,
               "goals_for": 1,
               "goals_against": 1,
               "goal_difference": 0,
@@ -9840,7 +9840,7 @@
               "matches": 1,
               "form": "D",
               "points": 1,
-              "points_per_game": 1.0,
+              "points_per_game": 1,
               "goals_for": 1,
               "goals_against": 1,
               "goal_difference": 0,
@@ -10066,7 +10066,7 @@
               "matches": 1,
               "form": "D",
               "points": 1,
-              "points_per_game": 1.0,
+              "points_per_game": 1,
               "goals_for": 0,
               "goals_against": 0,
               "goal_difference": 0,
@@ -10080,7 +10080,7 @@
               "matches": 1,
               "form": "D",
               "points": 1,
-              "points_per_game": 1.0,
+              "points_per_game": 1,
               "goals_for": 0,
               "goals_against": 0,
               "goal_difference": 0,
@@ -10251,7 +10251,7 @@
               "matches": 2,
               "form": "DD",
               "points": 2,
-              "points_per_game": 1.0,
+              "points_per_game": 1,
               "goals_for": 1,
               "goals_against": 1,
               "goal_difference": 0,
@@ -10265,7 +10265,7 @@
               "matches": 2,
               "form": "DD",
               "points": 2,
-              "points_per_game": 1.0,
+              "points_per_game": 1,
               "goals_for": 1,
               "goals_against": 1,
               "goal_difference": 0,
@@ -10282,7 +10282,7 @@
               "matches": 1,
               "form": "D",
               "points": 1,
-              "points_per_game": 1.0,
+              "points_per_game": 1,
               "goals_for": 0,
               "goals_against": 0,
               "goal_difference": 0,
@@ -10296,7 +10296,7 @@
               "matches": 1,
               "form": "D",
               "points": 1,
-              "points_per_game": 1.0,
+              "points_per_game": 1,
               "goals_for": 0,
               "goals_against": 0,
               "goal_difference": 0,
@@ -10498,7 +10498,7 @@
               "matches": 1,
               "form": "W",
               "points": 3,
-              "points_per_game": 3.0,
+              "points_per_game": 3,
               "goals_for": 2,
               "goals_against": 1,
               "goal_difference": 1,
@@ -10512,7 +10512,7 @@
               "matches": 1,
               "form": "W",
               "points": 3,
-              "points_per_game": 3.0,
+              "points_per_game": 3,
               "goals_for": 2,
               "goals_against": 1,
               "goal_difference": 1,
@@ -10778,7 +10778,7 @@
               "matches": 1,
               "form": "L",
               "points": 0,
-              "points_per_game": 0.0,
+              "points_per_game": 0,
               "goals_for": 1,
               "goals_against": 3,
               "goal_difference": -2,
@@ -10792,7 +10792,7 @@
               "matches": 1,
               "form": "L",
               "points": 0,
-              "points_per_game": 0.0,
+              "points_per_game": 0,
               "goals_for": 1,
               "goals_against": 3,
               "goal_difference": -2,
@@ -10963,7 +10963,7 @@
               "matches": 2,
               "form": "WW",
               "points": 6,
-              "points_per_game": 3.0,
+              "points_per_game": 3,
               "goals_for": 5,
               "goals_against": 0,
               "goal_difference": 5,
@@ -10977,7 +10977,7 @@
               "matches": 2,
               "form": "WW",
               "points": 6,
-              "points_per_game": 3.0,
+              "points_per_game": 3,
               "goals_for": 5,
               "goals_against": 0,
               "goal_difference": 5,
@@ -10994,7 +10994,7 @@
               "matches": 1,
               "form": "W",
               "points": 3,
-              "points_per_game": 3.0,
+              "points_per_game": 3,
               "goals_for": 3,
               "goals_against": 0,
               "goal_difference": 3,
@@ -11008,7 +11008,7 @@
               "matches": 1,
               "form": "W",
               "points": 3,
-              "points_per_game": 3.0,
+              "points_per_game": 3,
               "goals_for": 3,
               "goals_against": 0,
               "goal_difference": 3,
@@ -11362,7 +11362,7 @@
               "matches": 1,
               "form": "W",
               "points": 3,
-              "points_per_game": 3.0,
+              "points_per_game": 3,
               "goals_for": 1,
               "goals_against": 0,
               "goal_difference": 1,
@@ -11376,7 +11376,7 @@
               "matches": 1,
               "form": "W",
               "points": 3,
-              "points_per_game": 3.0,
+              "points_per_game": 3,
               "goals_for": 1,
               "goals_against": 0,
               "goal_difference": 1,
@@ -11395,7 +11395,7 @@
               "matches": 2,
               "form": "DW",
               "points": 4,
-              "points_per_game": 2.0,
+              "points_per_game": 2,
               "goals_for": 3,
               "goals_against": 2,
               "goal_difference": 1,
@@ -11409,7 +11409,7 @@
               "matches": 2,
               "form": "DW",
               "points": 4,
-              "points_per_game": 2.0,
+              "points_per_game": 2,
               "goals_for": 3,
               "goals_against": 2,
               "goal_difference": 1,
@@ -11426,7 +11426,7 @@
               "matches": 1,
               "form": "D",
               "points": 1,
-              "points_per_game": 1.0,
+              "points_per_game": 1,
               "goals_for": 1,
               "goals_against": 1,
               "goal_difference": 0,
@@ -11440,7 +11440,7 @@
               "matches": 1,
               "form": "D",
               "points": 1,
-              "points_per_game": 1.0,
+              "points_per_game": 1,
               "goals_for": 1,
               "goals_against": 1,
               "goal_difference": 0,
@@ -11763,7 +11763,7 @@
               "matches": 5,
               "form": "WWWWW",
               "points": 15,
-              "points_per_game": 3.0,
+              "points_per_game": 3,
               "goals_for": 14,
               "goals_against": 5,
               "goal_difference": 9,
@@ -11794,7 +11794,7 @@
               "matches": 5,
               "form": "WWWWW",
               "points": 15,
-              "points_per_game": 3.0,
+              "points_per_game": 3,
               "goals_for": 15,
               "goals_against": 0,
               "goal_difference": 15,
@@ -11808,7 +11808,7 @@
               "matches": 5,
               "form": "WWWWW",
               "points": 15,
-              "points_per_game": 3.0,
+              "points_per_game": 3,
               "goals_for": 15,
               "goals_against": 0,
               "goal_difference": 15,
@@ -12215,7 +12215,7 @@
               "matches": 2,
               "form": "DW",
               "points": 4,
-              "points_per_game": 2.0,
+              "points_per_game": 2,
               "goals_for": 3,
               "goals_against": 1,
               "goal_difference": 2,
@@ -12229,7 +12229,7 @@
               "matches": 2,
               "form": "DW",
               "points": 4,
-              "points_per_game": 2.0,
+              "points_per_game": 2,
               "goals_for": 3,
               "goals_against": 1,
               "goal_difference": 2,
@@ -12246,7 +12246,7 @@
               "matches": 1,
               "form": "D",
               "points": 1,
-              "points_per_game": 1.0,
+              "points_per_game": 1,
               "goals_for": 1,
               "goals_against": 1,
               "goal_difference": 0,
@@ -12260,7 +12260,7 @@
               "matches": 1,
               "form": "D",
               "points": 1,
-              "points_per_game": 1.0,
+              "points_per_game": 1,
               "goals_for": 1,
               "goals_against": 1,
               "goal_difference": 0,
@@ -12863,7 +12863,7 @@
               "matches": 2,
               "form": "LL",
               "points": 0,
-              "points_per_game": 0.0,
+              "points_per_game": 0,
               "goals_for": 3,
               "goals_against": 6,
               "goal_difference": -3,
@@ -12877,7 +12877,7 @@
               "matches": 2,
               "form": "LL",
               "points": 0,
-              "points_per_game": 0.0,
+              "points_per_game": 0,
               "goals_for": 3,
               "goals_against": 6,
               "goal_difference": -3,
@@ -12894,7 +12894,7 @@
               "matches": 1,
               "form": "L",
               "points": 0,
-              "points_per_game": 0.0,
+              "points_per_game": 0,
               "goals_for": 1,
               "goals_against": 3,
               "goal_difference": -2,
@@ -12908,7 +12908,7 @@
               "matches": 1,
               "form": "L",
               "points": 0,
-              "points_per_game": 0.0,
+              "points_per_game": 0,
               "goals_for": 1,
               "goals_against": 3,
               "goal_difference": -2,
@@ -13070,10 +13070,40 @@
     "ranges_succeeded": 1,
     "ranges_requested": 1,
     "backfill_complete": true,
-    "retryable_gap_date_count": 14,
+    "retryable_gap_date_count": 11,
     "provider_plan_limited_date_count": 0,
     "provider_plan_limited_dates": [],
-    "cache_path": "reports/recent_results_cache.json"
+    "cache_path": "reports/recent_results_cache.json",
+    "gap_backfill": {
+      "status": "PARTIAL_UNRESOLVED_SOURCE_GAPS",
+      "checked_at_utc": "2026-11-02T10:03:51Z",
+      "requested_gap_dates": 14,
+      "primary_resolved_dates": [
+        "2026-10-09",
+        "2026-10-10",
+        "2026-10-11"
+      ],
+      "primary_matches_added": 43,
+      "secondary_fallback_matches_added": 0,
+      "unresolved_dates": [
+        "2026-09-28",
+        "2026-09-29",
+        "2026-09-30",
+        "2026-10-01",
+        "2026-10-02",
+        "2026-10-03",
+        "2026-10-04",
+        "2026-10-05",
+        "2026-10-06",
+        "2026-10-07",
+        "2026-10-08"
+      ],
+      "timezone_crosscheck": [
+        "Africa/Lagos",
+        "UTC"
+      ],
+      "alerts_enabled": false
+    }
   },
   "multi_source_odds_sync": {
     "five_dollar": {
