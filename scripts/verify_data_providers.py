@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import sys
 from urllib.error import HTTPError, URLError
 from urllib.parse import urlencode
@@ -25,8 +26,28 @@ def request_json(url: str, headers: dict[str, str] | None = None):
             body = response.read().decode("utf-8")
             return response.status, response.headers, json.loads(body)
     except HTTPError as exc:
-        # Do not print URL or provider response body: either can contain sensitive material.
-        raise ProviderCheckError(f"HTTP {exc.code}") from None
+        # Do not print the URL or raw body; expose only safe quota metadata.
+        headers = exc.headers or {}
+        details = [f"HTTP {exc.code}"]
+        for source, label in (
+            ("Retry-After", "retry_after"),
+            ("X-RateLimit-Remaining", "remaining"),
+            ("X-RateLimit-Reset", "reset"),
+        ):
+            value = headers.get(source)
+            if value is not None and str(value).strip():
+                details.append(f"{label}={str(value).strip()[:40]}")
+        try:
+            body = exc.read(1024).decode("utf-8", errors="replace")
+            parsed = json.loads(body) if body else {}
+            reason = (parsed.get("error") or parsed.get("message")) if isinstance(parsed, dict) else None
+            if reason:
+                safe_reason = re.sub(r"[^A-Za-z0-9 _-]", "", str(reason))[:80]
+                if safe_reason:
+                    details.append(f"reason={safe_reason}")
+        except (OSError, UnicodeDecodeError, json.JSONDecodeError):
+            pass
+        raise ProviderCheckError("; ".join(details)) from None
     except (URLError, TimeoutError, OSError):
         raise ProviderCheckError("network request failed") from None
     except (UnicodeDecodeError, json.JSONDecodeError):
