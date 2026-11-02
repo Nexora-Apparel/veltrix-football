@@ -58,9 +58,15 @@ def rolling_origin_1x2_temperature(rows: list[dict[str, Any]], probability_key: 
             results.append({"fold": index + 1, "status": "INSUFFICIENT_MATCHES", "training_matches": len(train), "test_matches": len(test)})
             continue
         best_t, best_loss = 1.0, float("inf")
+        # Temperature fitting needs only training negative log loss.
+        # Avoid computing Brier and accuracy for all 51 grid candidates.
         for step in range(10, 61):
             t = step / 20.0
-            value = score(train, t)["log_loss"]
+            loss = 0.0
+            for row in train:
+                p = apply(row[probability_key], t)
+                loss -= math.log(max(1e-15, p[row["actual"]]))
+            value = loss / len(train)
             if value < best_loss:
                 best_t, best_loss = t, value
         raw, cal = score(test), score(test, best_t)
