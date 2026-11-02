@@ -12569,9 +12569,9 @@
     "covered_through": "2026-11-01",
     "ranges_succeeded": 1,
     "ranges_requested": 1,
-    "warning": "Catch-up progress: 1 of 1 date ranges refreshed; remaining dates will be handled in later runs.",
+    "warning": "Historical result backfill remains partial: 11 dates are unresolved after the 5DollarFootballAPI returned HTTP 429. Automatic retry is scheduled for 06:30 Africa/Lagos on 3 Nov 2026.",
     "provider_plan_limited_date_count": 0,
-    "retryable_gap_date_count": 14
+    "retryable_gap_date_count": 11
   },
   "primary_provider_request": {
     "provider": "5DollarFootballAPI",
@@ -12637,14 +12637,14 @@
     "covered_through": "2026-11-01",
     "ranges_succeeded": 1,
     "ranges_requested": 1,
-    "backfill_complete": true,
+    "backfill_complete": false,
     "retryable_gap_date_count": 11,
     "provider_plan_limited_date_count": 0,
     "provider_plan_limited_dates": [],
     "cache_path": "reports/recent_results_cache.json",
     "gap_backfill": {
-      "status": "PARTIAL_UNRESOLVED_SOURCE_GAPS",
-      "checked_at_utc": "2026-11-02T10:03:51Z",
+      "status": "PARTIAL_PROVIDER_RETRY_COOLDOWN",
+      "checked_at_utc": "2026-11-02T10:30:01Z",
       "requested_gap_dates": 14,
       "primary_resolved_dates": [
         "2026-10-09",
@@ -12653,6 +12653,10 @@
       ],
       "primary_matches_added": 43,
       "secondary_fallback_matches_added": 0,
+      "secondary_fallback_status": "SKIPPED_NONCOMMERCIAL_LICENSE",
+      "league_history_endpoint": "BLOCKED_HTTP_429",
+      "date_endpoint": "BLOCKED_HTTP_429",
+      "request_delay_seconds": 10,
       "unresolved_dates": [
         "2026-09-28",
         "2026-09-29",
@@ -12670,8 +12674,13 @@
         "Africa/Lagos",
         "UTC"
       ],
+      "provider_retry_after_date": "2026-11-03",
+      "next_automatic_retry_lagos": "06:30",
+      "note": "The primary provider returned HTTP 429 on both the league catalogue and date fixtures endpoints. Unlicensed or non-commercial fallback feeds are excluded. These dates remain explicitly unresolved pending a licensed provider response.",
       "alerts_enabled": false
-    }
+    },
+    "history_gap_backfill_complete": false,
+    "incremental_backfill_cursor_complete": true
   },
   "multi_source_odds_sync": {
     "five_dollar": {
