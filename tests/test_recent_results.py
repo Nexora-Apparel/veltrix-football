@@ -665,7 +665,7 @@ def test_gap_backfill_rate_limit_does_not_advance_retry_cursor(tmp_path):
     output_path = tmp_path / "out.json"
     cache_path.write_text(json.dumps({
         "version": 2,
-        "state": {"history_gaps": ["2026-09-28"], "last_gap_retry_on": "2026-10-27"},
+        "state": {"history_gaps": ["2026-09-28"], "last_gap_retry_on": "2026-10-20"},
         "matches": [],
     }), encoding="utf-8")
     fallback_path.write_text("match_date,division,home_team,away_team,home_goals,away_goals\n", encoding="utf-8")
@@ -674,11 +674,16 @@ def test_gap_backfill_rate_limit_does_not_advance_retry_cursor(tmp_path):
         def leagues(self, page=1, per_page=100):
             raise ProviderAPIError("Provider request failed with HTTP 429.")
 
-    report = run(cache_path, fallback_path, output_path, RateLimitedAPI())
+    class OfflineSession:
+        def get(self, url, timeout=30):
+            import requests
+            raise requests.ConnectionError("offline unit test")
+
+    report = run(cache_path, fallback_path, output_path, RateLimitedAPI(), OfflineSession())
     saved = json.loads(output_path.read_text(encoding="utf-8"))
     assert report["status"] == "PROVIDER_RATE_LIMITED"
     assert saved["state"]["history_gaps"] == ["2026-09-28"]
-    assert saved["state"]["last_gap_retry_on"] == "2026-10-27"
+    assert saved["state"]["last_gap_retry_on"] == "2026-10-20"
 
 
 def test_gap_backfill_weekly_cooldown_skips_provider_calls(tmp_path):
@@ -702,9 +707,15 @@ def test_gap_backfill_weekly_cooldown_skips_provider_calls(tmp_path):
         def leagues(self, **kwargs):
             raise AssertionError("Provider must not be called during retry cooldown.")
 
-    report = run(cache_path, fallback_path, output_path, MustNotCallAPI())
-    assert report["status"] == "RETRY_COOLDOWN"
-    assert report["retry_after_date"] == (today + timedelta(days=7)).isoformat()
+    class OfflineSession:
+        def get(self, url, timeout=30):
+            import requests
+            raise requests.ConnectionError("offline unit test")
+
+    report = run(cache_path, fallback_path, output_path, MustNotCallAPI(), OfflineSession())
+    assert report["status"] == "PARTIAL_PROVIDER_RETRY_COOLDOWN"
+    assert report["provider_retry_cooldown_active"] is True
+    assert report["provider_retry_after_date"] == (today + timedelta(days=7)).isoformat()
 
 
 def test_gap_backfill_uses_open_matchday_verified_coverage_without_primary_api(tmp_path):
