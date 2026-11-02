@@ -217,3 +217,5 @@ def test_dashboard_exposes_reused_snapshot_separately_from_successful_publicatio
     assert payload["publication_status"] == "PUBLISHED"
     assert payload["report_generation_status"] == "REUSED_SNAPSHOT_NOT_REFRESHED"
     assert "no fresh fixture retrieval" in payload["report_freshness_note"]
+
+# Controlled live report and Telegram end-to-end verification [run-live-verification].
