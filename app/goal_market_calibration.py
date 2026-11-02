@@ -81,6 +81,11 @@ def apply_goal_market_calibration(
     dataset_sha256 = dataset_provenance.get("sha256") if isinstance(dataset_provenance, Mapping) else None
     if not isinstance(dataset_sha256, str) or not re.fullmatch(r"[0-9a-fA-F]{64}", dataset_sha256):
         failures["dataset_provenance"] = "A verified SHA-256 historical dataset fingerprint is required."
+    if dataset_provenance.get("commercial_use_eligible") is not True:
+        failures["data_rights"] = (
+            dataset_provenance.get("rights_status")
+            or "COMMERCIAL_USE_NOT_EXPLICITLY_CLEARED"
+        )
     canonical = {
         "cutoff": cutoff,
         "model_family": "experimental_recent_goals_poisson",
@@ -129,7 +134,9 @@ def apply_goal_market_calibration(
                 }
     complete = calibration_ready
     applied_status = "APPLIED_PROSPECTIVELY" if complete and applied_forecasts > 0 else (
-        "NO_COMPATIBLE_FORECASTS" if complete else "PARTIAL_OR_UNAVAILABLE"
+        "NO_COMPATIBLE_FORECASTS" if complete else
+        "NOT_APPLIED_SOURCE_RIGHTS_UNVERIFIED" if "data_rights" in failures else
+        "PARTIAL_OR_UNAVAILABLE"
     )
     report["goal_market_calibration"] = {
         "status": applied_status,
