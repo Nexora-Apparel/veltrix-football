@@ -9,7 +9,8 @@ on:
     paths:
       - "app/backtest_engine.py"
       - "app/calibration.py"
-      - "scripts/run_backtest.py"\n      - "scripts/publish_model_validation.py"
+      - "scripts/run_backtest.py"
+      - "scripts/publish_model_validation.py"
       - "scripts/audit_historical_csv.py"
       - "tests/**"
       - "requirements.txt"
