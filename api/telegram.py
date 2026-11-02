@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import hmac
 import json
+import math
 import os
 from datetime import datetime
 from zoneinfo import ZoneInfo
@@ -305,7 +306,7 @@ def dashboard_data() -> dict:
         except (TypeError, ValueError, OverflowError):
             row.setdefault("fixture_visibility_note", "Kickoff could not be verified; fixture retained for visibility.")
             upcoming.append(row)
-    def _valid_market_price(value: Any) -> bool:
+    def _valid_market_price(value) -> bool:
         try:
             price = float(value)
             return math.isfinite(price) and price > 1.0
