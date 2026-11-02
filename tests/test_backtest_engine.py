@@ -422,3 +422,33 @@ def test_rolling_origin_1x2_temperature_calibration_uses_only_earlier_dates():
     assert all(fold["training_end"] < fold["test_start"] <= fold["test_end"] for fold in evaluated)
     assert all(0.5 <= fold["temperature"] <= 3.0 for fold in evaluated)
     assert all(evaluated[i]["test_end"] < evaluated[i + 1]["test_start"] for i in range(len(evaluated) - 1))
+
+
+def test_rolling_origin_1x2_vector_scaling_corrects_class_bias_without_leakage():
+    from datetime import date, timedelta
+    from app.calibration import rolling_origin_1x2_vector_scaling
+
+    rows = []
+    start = date(2020, 1, 1)
+    for i in range(1200):
+        actual = ("H", "D", "A")[i % 3]
+        rows.append({
+            "match_date": (start + timedelta(days=i)).isoformat(),
+            "actual": actual,
+            "live_poisson": {"H": 0.60, "D": 0.25, "A": 0.15},
+            "market": {"H": 1 / 3, "D": 1 / 3, "A": 1 / 3},
+        })
+    result = rolling_origin_1x2_vector_scaling(
+        rows, "live_poisson", folds=4,
+        min_training_matches=300, min_test_matches=50,
+        iterations=100, learning_rate=0.35, regularization=0.01,
+    )
+    assert result["folds_evaluated"] == 4
+    assert result["raw"]["matches"] == result["calibrated"]["matches"] == 600
+    assert result["calibration_diagnostic_pass"] is True
+    assert result["calibration_applied_to_live"] is False
+    assert result["betting_validation"] is False
+    evaluated = [fold for fold in result["folds"] if fold["status"] == "EVALUATED"]
+    assert all(fold["training_end"] < fold["test_start"] <= fold["test_end"] for fold in evaluated)
+    assert all(fold["test_end"] < evaluated[i + 1]["test_start"] for i, fold in enumerate(evaluated[:-1]))
+    assert result["beats_market_on_same_fixtures"] is False
