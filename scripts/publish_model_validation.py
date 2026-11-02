@@ -31,6 +31,8 @@ def build_summary(backtest: dict, coverage: dict, generated_at: str | None = Non
     market = _require_object(compared.get("market"), "market benchmark")
     elo = _require_object(models.get("elo"), "Elo metrics")
     poisson = _require_object(models.get("poisson"), "Poisson metrics")
+    same_elo = _require_object(compared.get("elo"), "same-fixture Elo metrics")
+    same_poisson = _require_object(compared.get("poisson"), "same-fixture Poisson metrics")
 
     live = _require_object(backtest.get("live_pipeline"), "live_pipeline")
     one_x_two = _require_object(live.get("one_x_two_calibration"), "one_x_two_calibration")
@@ -39,10 +41,10 @@ def build_summary(backtest: dict, coverage: dict, generated_at: str | None = Non
 
     market_outperforms = all(
         market.get(metric) is not None
-        and elo.get(metric) is not None
-        and poisson.get(metric) is not None
-        and market[metric] < elo[metric]
-        and market[metric] < poisson[metric]
+        and same_elo.get(metric) is not None
+        and same_poisson.get(metric) is not None
+        and market[metric] < same_elo[metric]
+        and market[metric] < same_poisson[metric]
         for metric in ("brier_score", "log_loss")
     )
 
@@ -99,10 +101,14 @@ def build_summary(backtest: dict, coverage: dict, generated_at: str | None = Non
             "test_matches": backtest.get("test_matches"),
             "first_test_date": backtest.get("first_test_date"),
             "last_test_date": backtest.get("last_test_date"),
-            "models": {
+            "full_sample_models": {
                 "poisson": {k: poisson.get(k) for k in ("matches", "result_accuracy", "brier_score", "log_loss")},
                 "elo": {k: elo.get(k) for k in ("matches", "result_accuracy", "brier_score", "log_loss")},
-                "market_same_fixtures": {k: market.get(k) for k in ("matches", "result_accuracy", "brier_score", "log_loss")},
+            },
+            "market_comparison_same_fixtures": {
+                "poisson": {k: same_poisson.get(k) for k in ("matches", "result_accuracy", "brier_score", "log_loss")},
+                "elo": {k: same_elo.get(k) for k in ("matches", "result_accuracy", "brier_score", "log_loss")},
+                "market": {k: market.get(k) for k in ("matches", "result_accuracy", "brier_score", "log_loss")},
             },
             "market_outperforms_both_on_brier_and_log_loss": market_outperforms,
             "release_status": "NOT_CERTIFIED_MARKET_OUTPERFORMED_MODELS" if market_outperforms else "NOT_CERTIFIED",
