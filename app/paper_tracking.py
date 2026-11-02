@@ -47,6 +47,7 @@ def merge_paper_ledger(ledger: dict[str, Any], evaluation: dict[str, Any]) -> di
     current.setdefault("evaluations", [])
     current.setdefault("scored_matches", [])
     current.setdefault("goal_market_scored", [])
+    current.setdefault("goal_market_probability_matches", [])
     report_date = evaluation.get("report_date")
     if not report_date:
         raise ValueError("Evaluation must include a report_date.")
@@ -61,6 +62,8 @@ def merge_paper_ledger(ledger: dict[str, Any], evaluation: dict[str, Any]) -> di
         "model_versions": sorted({str(row.get("model", "unknown")) for row in evaluation.get("matches", [])}),
         "goal_market_selections_settled": len(evaluation.get("goal_market_matches", [])),
         "goal_market_metrics": evaluation.get("goal_market_metrics", {}),
+        "goal_market_probability_metrics": evaluation.get("goal_market_probability_metrics", {}),
+        "goal_market_probability_matches": len(evaluation.get("goal_market_probability_matches", [])),
     }
     existing_index = next(
         (index for index, row in enumerate(current["evaluations"])
@@ -91,6 +94,8 @@ def merge_paper_ledger(ledger: dict[str, Any], evaluation: dict[str, Any]) -> di
             current["scored_matches"].append({**match, "report_date": report_date})
         for match in evaluation.get("goal_market_matches", []):
             current["goal_market_scored"].append({**match, "report_date": report_date})
+        for match in evaluation.get("goal_market_probability_matches", []):
+            current["goal_market_probability_matches"].append({**match, "report_date": report_date})
     # A settled fixture/model pair is the stable identity across report reruns.
     # Keep the earliest published forecast for that fixture/model to avoid
     # counting the same match again when a later report or retry is replayed.
@@ -141,12 +146,29 @@ def merge_paper_ledger(ledger: dict[str, Any], evaluation: dict[str, Any]) -> di
         if candidate_time and (not previous_time or candidate_time < previous_time):
             unique_goal[key] = row
     current["goal_market_scored"] = list(unique_goal.values())
+    # Calibration samples are unique by fixture, model head and market; keep
+    # the earliest published forecast so report reruns cannot inflate samples.
+    unique_goal_probabilities: dict[tuple[str, str, str], dict[str, Any]] = {}
+    for row in current["goal_market_probability_matches"]:
+        fixture_key = str(row.get("fixture_id") or "").strip()
+        model_key = str(row.get("model") or "").strip()
+        market_key = str(row.get("market") or "").strip()
+        if not fixture_key or not model_key or not market_key:
+            continue
+        key = (fixture_key, model_key, market_key)
+        previous = unique_goal_probabilities.get(key)
+        if previous is None or str(row.get("report_date") or "") < str(previous.get("report_date") or ""):
+            unique_goal_probabilities[key] = row
+    current["goal_market_probability_matches"] = list(unique_goal_probabilities.values())
     current["calibration_versions"] = sorted({
         str(row.get("calibration_version"))
         for row in current["goal_market_scored"]
         if row.get("calibration_version")
     })
     current["goal_market_metrics"] = summarize_goal_market_paper(current["goal_market_scored"])
+    current["goal_market_probability_metrics"] = summarize_goal_market_probability_scores(
+        current["goal_market_probability_matches"]
+    )
     current["goal_market_metrics_by_market"] = {
         market: summarize_goal_market_paper([row for row in current["goal_market_scored"] if row.get("market") == market])
         for market in sorted({str(row.get("market")) for row in current["goal_market_scored"]})
@@ -419,6 +441,93 @@ def _goal_market_paper_rows(prediction: dict[str, Any], result: dict[str, Any]) 
     return rows
 
 
+def _goal_market_probability_rows(
+    prediction: dict[str, Any], result: dict[str, Any]
+) -> list[dict[str, Any]]:
+    """Score binary BTTS/total probabilities without requiring bookmaker odds."""
+    candidates: dict[str, dict[str, Any]] = {}
+    base_model = str(prediction.get("goal_markets_model") or "experimental_recent_goals_poisson")
+    base_markets = {
+        "BTTS": (prediction.get("btts_yes"), None),
+        "OVER_UNDER_1_5": (prediction.get("over_1_5"), 1.5),
+        "OVER_UNDER_2_5": (prediction.get("over_2_5"), 2.5),
+        "OVER_UNDER_3_5": (prediction.get("over_3_5"), 3.5),
+    }
+    candidates[base_model] = base_markets
+
+    shadow = prediction.get("poisson_dc_shadow")
+    if isinstance(shadow, dict) and shadow.get("status") == "SHADOW_RESEARCH":
+        markets = shadow.get("markets")
+        if isinstance(markets, dict):
+            shadow_markets: dict[str, Any] = {}
+            btts = markets.get("btts")
+            if isinstance(btts, dict):
+                shadow_markets["BTTS"] = (btts.get("yes"), None)
+            totals = markets.get("totals")
+            if isinstance(totals, dict):
+                for raw_line, values in totals.items():
+                    if not isinstance(values, dict):
+                        continue
+                    try:
+                        line = float(raw_line)
+                    except (TypeError, ValueError):
+                        continue
+                    if math.isfinite(line):
+                        market = f"OVER_UNDER_{str(line).replace('.', '_')}"
+                        shadow_markets[market] = (values.get("over"), line)
+            candidates[str(shadow.get("model") or "experimental_poisson_dixon_coles_score_grid")] = shadow_markets
+
+    actual_btts = result["home_goals"] > 0 and result["away_goals"] > 0
+    total_goals = result["home_goals"] + result["away_goals"]
+    rows: list[dict[str, Any]] = []
+    for model_name, markets in candidates.items():
+        for market, (raw_probability, line) in markets.items():
+            if raw_probability is None:
+                continue
+            try:
+                probability = float(raw_probability)
+            except (TypeError, ValueError):
+                continue
+            if not math.isfinite(probability) or not 0 <= probability <= 1:
+                continue
+            actual = actual_btts if market == "BTTS" else total_goals > float(line)
+            clipped = min(1.0 - 1e-15, max(1e-15, probability))
+            rows.append({
+                "fixture_id": prediction.get("fixture_id"),
+                "match_date": _prediction_day(prediction, "Africa/Lagos"),
+                "model": model_name,
+                "market": market,
+                "selection": "YES" if market == "BTTS" else "OVER",
+                "line": line,
+                "probability": probability,
+                "actual_outcome": bool(actual),
+                "brier_score": (probability - float(actual)) ** 2,
+                "log_loss": -math.log(clipped if actual else 1.0 - clipped),
+                "correct": (probability >= 0.5) == bool(actual),
+            })
+    return rows
+
+
+def summarize_goal_market_probability_scores(
+    rows: list[dict[str, Any]]
+) -> dict[str, Any]:
+    """Aggregate proper scoring metrics separately for each model and goal market."""
+    summary: dict[str, Any] = {}
+    groups: dict[tuple[str, str], list[dict[str, Any]]] = {}
+    for row in rows:
+        key = (str(row.get("model") or "unknown"), str(row.get("market") or "unknown"))
+        groups.setdefault(key, []).append(row)
+    for (model, market), samples in sorted(groups.items()):
+        count = len(samples)
+        summary.setdefault(model, {})[market] = {
+            "matches": count,
+            "accuracy": sum(bool(row.get("correct")) for row in samples) / count,
+            "brier_score": sum(float(row["brier_score"]) for row in samples) / count,
+            "log_loss": sum(float(row["log_loss"]) for row in samples) / count,
+        }
+    return summary
+
+
 def summarize_goal_market_paper(rows: list[dict[str, Any]]) -> dict[str, Any]:
     """Summarize flat 1-unit paper returns; not a claim of executable betting profit."""
     count = len(rows)
@@ -487,6 +596,7 @@ def evaluate_report(report: dict[str, Any], results_payload: dict[str, Any]) -> 
 
     scored: list[dict[str, Any]] = []
     goal_market_scored: list[dict[str, Any]] = []
+    goal_market_probability_scored: list[dict[str, Any]] = []
     awaiting_result = 0
     withheld = 0
     missing_fixture_id = 0
@@ -523,6 +633,7 @@ def evaluate_report(report: dict[str, Any], results_payload: dict[str, Any]) -> 
             continue
 
         goal_market_scored.extend(prospective_value_rows(prediction, result))
+        goal_market_probability_scored.extend(_goal_market_probability_rows(prediction, result))
 
         forecast_models: list[tuple[str, Any]] = []
         if has_model_forecast:
@@ -602,6 +713,10 @@ def evaluate_report(report: dict[str, Any], results_payload: dict[str, Any]) -> 
         "matches": scored,
         "goal_market_matches": goal_market_scored,
         "goal_market_metrics": summarize_goal_market_paper(goal_market_scored),
+        "goal_market_probability_matches": goal_market_probability_scored,
+        "goal_market_probability_metrics": summarize_goal_market_probability_scores(
+            goal_market_probability_scored
+        ),
         "value_market_metrics_by_market": summarize_value_market_rows(goal_market_scored),
         "value_validation_markets": {
             aliases[key]: {
