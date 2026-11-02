@@ -91,17 +91,26 @@ def merge_paper_ledger(ledger: dict[str, Any], evaluation: dict[str, Any]) -> di
             current["scored_matches"].append({**match, "report_date": report_date})
         for match in evaluation.get("goal_market_matches", []):
             current["goal_market_scored"].append({**match, "report_date": report_date})
-    # A report-date + fixture ID pair is the stable identity for ledger rows.
-    unique: dict[tuple[str, str, str], dict[str, Any]] = {}
+    # A settled fixture/model pair is the stable identity across report reruns.
+    # Keep the earliest published forecast for that fixture/model to avoid
+    # counting the same match again when a later report or retry is replayed.
+    unique: dict[tuple[str, str], dict[str, Any]] = {}
     for row in current["scored_matches"]:
         try:
             fixture_key = str(row["fixture_id"]).strip()
             if not fixture_key or fixture_key.casefold() in {"none", "null"}:
                 continue
-            key = (str(row["report_date"]), fixture_key, str(row.get("model", "unknown")))
+            key = (fixture_key, str(row.get("model", "unknown")))
         except (KeyError, TypeError, ValueError):
             continue
-        unique[key] = row
+        previous = unique.get(key)
+        if previous is None:
+            unique[key] = row
+            continue
+        previous_day = str(previous.get("report_date") or "")
+        candidate_day = str(row.get("report_date") or "")
+        if candidate_day and (not previous_day or candidate_day < previous_day):
+            unique[key] = row
     current["scored_matches"] = list(unique.values())
     # Keep fixture IDs as strings here: supplemental odds providers may use
     # opaque event IDs that are not numeric. Do not discard otherwise valid rows.
