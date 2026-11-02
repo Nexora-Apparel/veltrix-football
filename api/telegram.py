@@ -279,8 +279,12 @@ def dashboard_data() -> dict:
     rows = report.get("predictions") if isinstance(report.get("predictions"), list) else []
     upcoming = []
     for row in rows:
-        if not isinstance(row, dict) or row.get("status") != "EXPERIMENTAL_ONLY":
+        if not isinstance(row, dict):
             continue
+        # Fixture visibility is independent of forecast eligibility. Keep
+        # unsupported competitions, insufficient-history rows and unverified
+        # kickoff rows visible with their explicit status; never invent odds
+        # or probabilities for them.
         raw = row.get("kickoff_local") or row.get("kickoff")
         try:
             kickoff = datetime.fromisoformat(str(raw).replace("Z", "+00:00"))
@@ -289,7 +293,8 @@ def dashboard_data() -> dict:
             if kickoff.astimezone(ZoneInfo("Africa/Lagos")) > now:
                 upcoming.append(row)
         except (TypeError, ValueError, OverflowError):
-            continue
+            row.setdefault("fixture_visibility_note", "Kickoff could not be verified; fixture retained for visibility.")
+            upcoming.append(row)
     ledger = load_paper_ledger()
     paper_tracking = None
     if isinstance(ledger, dict):
@@ -332,6 +337,8 @@ def dashboard_data() -> dict:
         "historical_data_coverage": report.get("historical_data_coverage"),
         "fixtures_received": report.get("fixtures_received", 0),
         "experimental_forecasts": sum(1 for row in rows if isinstance(row, dict) and row.get("status") == "EXPERIMENTAL_ONLY"),
+        "fixtures_visible": len(upcoming),
+        "unsupported_fixtures": sum(1 for row in upcoming if isinstance(row, dict) and row.get("status") != "EXPERIMENTAL_ONLY"),
         "fixtures_with_market_odds": report.get("fixtures_with_market_odds", 0),
         "goal_market_calibration": report.get("goal_market_calibration") or {
             "status": "NOT_REPORTED", "markets": [], "compatible_forecasts": 0,
