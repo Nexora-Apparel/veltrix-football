@@ -31,7 +31,7 @@
   },
   "report_summary": {
     "as_of_date": "2026-11-02",
-    "publication_status": "LIVE_REPORT_GENERATED_PENDING_PUBLICATION",
+    "publication_status": "PUBLISHED",
     "fixtures_received": 25,
     "same_day_pre_match_fixtures": 25,
     "same_day_fixtures_retained": 25,
@@ -73,7 +73,9 @@
       "release_status": "LOCKED_SHADOW_MODE",
       "note": "Market consensus, model shrinkage and quote-level screening are research-only. Existing value certificate remains authoritative."
     },
-    "value_validation_certificate": "LOCKED_INSUFFICIENT_EVIDENCE"
+    "value_validation_certificate": "LOCKED_INSUFFICIENT_EVIDENCE",
+    "command_data_publication": "PUBLISHED",
+    "command_data_published_at_utc": "2026-11-02T10:54:04.531709+00:00"
   },
   "value_evidence_summary": {
     "observations_total": 4494,
@@ -95,7 +97,7 @@
     "cumulative_metrics_by_model": {
       "experimental_elo_by_competition": {
         "matches": 2,
-        "result_accuracy": 1.0,
+        "result_accuracy": 1,
         "brier_score": 0.40709547999999995,
         "log_loss": 0.735957759728448
       },
@@ -127,5 +129,7 @@
   },
   "latest_test_status": "NEEDS_REVIEW",
   "last_test_run_id": "41432536713",
-  "last_full_pipeline_status": "PASSED"
+  "last_full_pipeline_status": "PASSED",
+  "publication_status": "PUBLISHED",
+  "command_data_published_at_utc": "2026-11-02T10:54:04.531709+00:00"
 }
