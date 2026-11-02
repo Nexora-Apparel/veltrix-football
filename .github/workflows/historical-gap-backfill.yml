@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - "scripts/backfill_history_gaps.py"
+      - "app/provider_adapters.py"
       - ".github/workflows/historical-gap-backfill.yml"
   workflow_dispatch:
     inputs:
