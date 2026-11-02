@@ -70,8 +70,41 @@ def _json_request(url: str, headers: dict[str, str] | None = None, timeout: int 
                 payload = json.loads(response.read().decode("utf-8"))
                 return response.status, response.headers, payload
         except HTTPError as exc:
-            # HTTP responses are definitive provider responses; do not burn quota retrying.
-            raise ProviderAPIError(f"Provider request to {host} failed with HTTP {exc.code}.") from None
+            # 5Dollar's hourly plans expose a short Retry-After for the separate
+            # per-minute burst ceiling. Honor that bounded wait once rather
+            # than turning a transient burst into a false historical outage.
+            response_headers = exc.headers or {}
+            retry_after_raw = response_headers.get("Retry-After")
+            remaining_raw = response_headers.get("X-RateLimit-Remaining")
+            reset_raw = response_headers.get("X-RateLimit-Reset")
+            retry_after = None
+            try:
+                retry_after = float(retry_after_raw) if retry_after_raw is not None else None
+            except (TypeError, ValueError):
+                retry_after = None
+            try:
+                remaining = int(remaining_raw) if remaining_raw is not None else None
+            except (TypeError, ValueError):
+                remaining = None
+            if (
+                host == "api.5dollarfootballapi.com" and exc.code == 429
+                and retry_after is not None and 0 < retry_after <= 60
+                and remaining != 0 and attempt + 1 < attempts
+            ):
+                time_module.sleep(retry_after)
+                continue
+            error = ProviderAPIError(
+                f"Provider request to {host} failed with HTTP {exc.code}"
+                + (f" (retry_after_seconds={retry_after:g})" if retry_after is not None else "")
+                + (f" (rate_limit_remaining={remaining})" if remaining is not None else "")
+                + (f" (rate_limit_reset={reset_raw})" if reset_raw else "")
+                + "."
+            )
+            error.status_code = exc.code
+            error.retry_after_seconds = retry_after
+            error.rate_limit_remaining = remaining
+            error.rate_limit_reset = reset_raw
+            raise error from None
         except URLError as exc:
             if attempt + 1 < attempts:
                 time_module.sleep(1 + attempt)
