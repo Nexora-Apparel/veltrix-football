@@ -298,8 +298,10 @@ def run(cache_path: Path, fallback_path: Path, output_path: Path, api: Any, sess
     if not rate_limited and not provider_cooldown_active:
         state["last_gap_retry_on"] = datetime.now(ZoneInfo("Africa/Lagos")).date().isoformat()
     state["gap_backfill_last_run"] = "2026-11-02"
-    state["gap_backfill_provider_resolved_dates"] = sorted(set(state.get("gap_backfill_provider_resolved_dates", [])) | resolved)
-    state["gap_backfill_open_matchday_resolved_dates"] = sorted(set(state.get("gap_backfill_open_matchday_resolved_dates", [])) | set(open_audit.get("resolved_dates") or []))
+    open_resolved_dates = set(open_audit.get("resolved_dates") or [])
+    provider_resolved_dates = resolved - open_resolved_dates
+    state["gap_backfill_provider_resolved_dates"] = sorted(set(state.get("gap_backfill_provider_resolved_dates", [])) | provider_resolved_dates)
+    state["gap_backfill_open_matchday_resolved_dates"] = sorted(set(state.get("gap_backfill_open_matchday_resolved_dates", [])) | open_resolved_dates)
     cache["version"] = 2
     cache["state"] = state
     cache["matches"] = merged
@@ -307,7 +309,8 @@ def run(cache_path: Path, fallback_path: Path, output_path: Path, api: Any, sess
     output_path.write_text(json.dumps(cache, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
     report = {
         "status": "PROVIDER_RATE_LIMITED" if rate_limited else ("COMPLETE" if not state.get("history_gaps") else ("PARTIAL_PROVIDER_RETRY_COOLDOWN" if provider_cooldown_active else "PARTIAL_UNRESOLVED_SOURCE_GAPS")),
-        "requested_gap_dates": len(gaps), "primary_resolved_dates": len(resolved),
+        "requested_gap_dates": len(gaps), "primary_resolved_dates": len(provider_resolved_dates),
+        "open_matchday_resolved_dates": sorted(open_resolved_dates), "all_resolved_dates": sorted(resolved),
         "unresolved_dates": state.get("history_gaps", []),
         "open_matchday": open_audit,
         "provider_retry_cooldown_active": provider_cooldown_active,
