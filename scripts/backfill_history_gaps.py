@@ -5,7 +5,7 @@ import csv
 import json
 import os
 import sys
-import time
+import time as time_module
 import re
 import unicodedata
 from datetime import date, datetime, timezone
@@ -142,7 +142,7 @@ def run(cache_path: Path, fallback_path: Path, output_path: Path, api: Any) -> d
                                 "source_provider": "5DollarFootballAPI_LEAGUE_FIXTURES",
                             })
                     league_scan["matches"] += len(rows)
-                    time.sleep(1.5)
+                    time_module.sleep(1.5)
                 except (ProviderAPIError, ValueError, OSError) as exc:
                     league_scan["failed_leagues"].append({"league_id": str(league_id), "error_type": type(exc).__name__, "error": str(exc)[:240]})
                     if "HTTP 429" in str(exc):
