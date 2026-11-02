@@ -109,7 +109,10 @@ jobs:
           data = json.load(open("/tmp/daily-runs.json", encoding="utf-8"))
           today = "${{ steps.freshness.outputs.today }}"
           for run in data.get("workflow_runs", []):
-              if run.get("event") not in {"schedule", "workflow_dispatch"}:
+              event = run.get("event")
+              title = str(run.get("display_title") or "")
+              is_live_push = event == "push" and "[run-live-verification]" in title
+              if event not in {"schedule", "workflow_dispatch"} and not is_live_push:
                   continue
               created = datetime.fromisoformat(run["created_at"].replace("Z", "+00:00")).astimezone(ZoneInfo("Africa/Lagos"))
               if created.date().isoformat() == today:
@@ -158,7 +161,13 @@ jobs:
           data = json.load(open("/tmp/daily-runs.json", encoding="utf-8"))
           active = any(
               run.get("status") in {"queued", "in_progress"}
-              and run.get("event") in {"schedule", "workflow_dispatch"}
+              and (
+                  run.get("event") in {"schedule", "workflow_dispatch"}
+                  or (
+                      run.get("event") == "push"
+                      and "[run-live-verification]" in str(run.get("display_title") or "")
+                  )
+              )
               for run in data.get("workflow_runs", [])
           )
           print(f"active={'true' if active else 'false'}")
