@@ -8,6 +8,8 @@ import sys
 import time as time_module
 import re
 import unicodedata
+import io
+import requests
 from datetime import date, datetime, timezone, timedelta
 from zoneinfo import ZoneInfo
 from pathlib import Path
@@ -50,6 +52,101 @@ def _mapped_league_division(league: dict[str, Any]) -> str | None:
     return None
 
 
+
+OPEN_MATCHDAY_BASE = "https://raw.githubusercontent.com/oladeeayo/open-matchday/master"
+OPEN_MATCHDAY_DIVISIONS = {
+    "E0": "ENG_1_premier-league", "E1": "ENG_2_championship",
+    "E2": "ENG_3_league-one", "E3": "ENG_4_league-two",
+    "EC": "ENG_5_national-league", "SC0": "SCO_1_premiership",
+    "SC1": "SCO_2_championship", "SC2": "SCO_3_league-one",
+    "SC3": "SCO_4_league-two", "D1": "GER_1_bundesliga",
+    "D2": "GER_2_2-bundesliga", "I1": "ITA_1_serie-a",
+    "I2": "ITA_2_serie-b", "SP1": "ESP_1_la-liga",
+    "SP2": "ESP_2_segunda-division", "F1": "FRA_1_ligue-1",
+    "F2": "FRA_2_ligue-2", "N1": "NED_1_eredivisie",
+    "B1": "BEL_1_pro-league", "P1": "POR_1_primeira-liga",
+    "T1": "TUR_1_super-lig", "G1": "GRE_1_super-league",
+    "SWE": "SWE_1_allsvenskan", "BSA": "BRA_1_serie-a",
+    "ARG": "ARG_1_liga-profesional",
+}
+
+
+def _open_matchday_backfill(session: Any, gaps: list[str]) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    """Import independently published 2026/27 results for every mapped competition."""
+    audit = {
+        "provider": "open-matchday", "season": "2627",
+        "status": "INCOMPLETE", "files_requested": len(OPEN_MATCHDAY_DIVISIONS),
+        "files_verified": 0, "files_failed": [], "matches_added": 0,
+        "resolved_dates": [], "attribution": "oladeeayo/open-matchday",
+        "source_terms": "Informational, non-commercial use only; no commercial reuse or redistribution without permission.",
+    }
+    if not gaps:
+        audit["status"] = "NOT_REQUIRED"
+        return [], audit
+    try:
+        response = session.get(f"{OPEN_MATCHDAY_BASE}/build_summary.json", timeout=30)
+        response.raise_for_status()
+        summary = response.json()
+        if summary.get("season") != "2627" or not isinstance(summary.get("leagues"), list):
+            raise ValueError("Unexpected open-matchday summary schema or season.")
+        audit["generated_utc"] = summary.get("generated_utc")
+    except (requests.RequestException, ValueError, OSError, AttributeError) as exc:
+        audit["files_failed"].append({"source": "build_summary.json", "error_type": type(exc).__name__})
+        return [], audit
+    metadata = {
+        str(row.get("folder") or "").strip(): row
+        for row in summary["leagues"] if isinstance(row, dict)
+    }
+    recovered = []
+    all_verified = True
+    for division, folder in OPEN_MATCHDAY_DIVISIONS.items():
+        meta = metadata.get(f"data/{folder}")
+        if (
+            not isinstance(meta, dict)
+            or int(meta.get("results") or 0) < 1
+            or str(meta.get("latest") or "") < max(gaps)
+            or meta.get("errors")
+        ):
+            all_verified = False
+            audit["files_failed"].append({"division": division, "folder": folder, "reason": "MISSING_OR_STALE_MANIFEST"})
+            continue
+        try:
+            response = session.get(f"{OPEN_MATCHDAY_BASE}/data/{folder}/results_2627.csv", timeout=30)
+            response.raise_for_status()
+            reader = csv.DictReader(io.StringIO(response.text))
+            required = {"date", "home", "away", "ft_home", "ft_away"}
+            if not reader.fieldnames or not required.issubset(set(reader.fieldnames)):
+                raise ValueError("Unexpected results CSV schema.")
+            for raw in reader:
+                day = str(raw.get("date") or "").strip()[:10]
+                if day not in gaps:
+                    continue
+                try:
+                    hg, ag = int(raw["ft_home"]), int(raw["ft_away"])
+                    home, away = str(raw.get("home") or "").strip(), str(raw.get("away") or "").strip()
+                    if hg < 0 or ag < 0 or not home or not away or _name_key(home) == _name_key(away):
+                        continue
+                except (KeyError, TypeError, ValueError):
+                    continue
+                recovered.append({
+                    "date": day, "division": division, "home": home, "away": away,
+                    "home_goals": hg, "away_goals": ag, "fixture_id": None,
+                    "fixture_status": "FT", "source_provider": "open-matchday",
+                    "source_detail": str(raw.get("source") or "unknown"),
+                })
+            audit["files_verified"] += 1
+        except (requests.RequestException, ValueError, OSError, csv.Error) as exc:
+            all_verified = False
+            audit["files_failed"].append({"division": division, "folder": folder, "error_type": type(exc).__name__})
+    audit["matches_added"] = len(recovered)
+    if all_verified and audit["files_verified"] == audit["files_requested"]:
+        audit["resolved_dates"] = sorted(gaps)
+        audit["status"] = "VERIFIED_MAPPED_COMPETITION_COVERAGE"
+    else:
+        audit["status"] = "PARTIAL_SOURCE_COVERAGE"
+    return recovered, audit
+
+
 def _fallback_rows(path: Path, gaps: set[str]) -> list[dict[str, Any]]:
     if not path.exists():
         return []
@@ -75,7 +172,7 @@ def _fallback_rows(path: Path, gaps: set[str]) -> list[dict[str, Any]]:
     return rows
 
 
-def run(cache_path: Path, fallback_path: Path, output_path: Path, api: Any) -> dict[str, Any]:
+def run(cache_path: Path, fallback_path: Path, output_path: Path, api: Any, session: Any = None) -> dict[str, Any]:
     cache = json.loads(cache_path.read_text(encoding="utf-8"))
     if cache.get("version") not in (1, 2) or not isinstance(cache.get("matches"), list):
         raise ValueError("Unsupported or malformed recent-results cache.")
@@ -107,13 +204,17 @@ def run(cache_path: Path, fallback_path: Path, output_path: Path, api: Any) -> d
     for row in fallback:
         fallback_by_day[row["date"]] = fallback_by_day.get(row["date"], 0) + 1
 
-    recovered: list[dict[str, Any]] = []
+    own_session = session is None
+    session = session or requests.Session()
+    open_rows, open_audit = _open_matchday_backfill(session, gaps)
+    recovered: list[dict[str, Any]] = list(open_rows)
     day_results = []
-    resolved = set()
+    resolved = set(open_audit.get("resolved_dates") or [])
+    unresolved_gaps = [day for day in gaps if day not in resolved]
     league_scan = {"active_mapped_leagues": 0, "successful_league_queries": 0, "matches": 0, "failed_leagues": []}
-    league_rows_by_day: dict[str, list[dict[str, Any]]] = {day: [] for day in gaps}
+    league_rows_by_day: dict[str, list[dict[str, Any]]] = {day: [] for day in unresolved_gaps}
     rate_limited = False
-    if gaps:
+    if unresolved_gaps:
         leagues = []
         page = 1
         try:
@@ -149,7 +250,7 @@ def run(cache_path: Path, fallback_path: Path, output_path: Path, api: Any) -> d
             for league, division in mapped:
                 league_id = league.get("id")
                 try:
-                    payload = api.league_fixtures(league_id, gaps[0], gaps[-1], "Africa/Lagos")
+                    payload = api.league_fixtures(league_id, unresolved_gaps[0], unresolved_gaps[-1], "Africa/Lagos")
                     rows = extract_completed_results(payload)
                     league_scan["successful_league_queries"] += 1
                     for row in rows:
@@ -169,6 +270,9 @@ def run(cache_path: Path, fallback_path: Path, output_path: Path, api: Any) -> d
                     if "HTTP 429" in str(exc):
                         rate_limited = True
                         break
+        for day in gaps:
+            if day in resolved:
+                day_results.append({"date": day, "status": "OPEN_MATCHDAY_VERIFIED", "matches": sum(1 for row in open_rows if row["date"] == day), "source": "open-matchday"})
         for day, rows in league_rows_by_day.items():
             if rows:
                 recovered.extend(rows)
@@ -205,6 +309,7 @@ def run(cache_path: Path, fallback_path: Path, output_path: Path, api: Any) -> d
         state["last_gap_retry_on"] = "2026-11-02"
     state["gap_backfill_last_run"] = "2026-11-02"
     state["gap_backfill_provider_resolved_dates"] = sorted(set(state.get("gap_backfill_provider_resolved_dates", [])) | resolved)
+    state["gap_backfill_open_matchday_resolved_dates"] = sorted(set(state.get("gap_backfill_open_matchday_resolved_dates", [])) | set(open_audit.get("resolved_dates") or []))
     cache["version"] = 2
     cache["state"] = state
     cache["matches"] = merged
@@ -214,6 +319,7 @@ def run(cache_path: Path, fallback_path: Path, output_path: Path, api: Any) -> d
         "status": "PROVIDER_RATE_LIMITED" if rate_limited else ("COMPLETE" if not state.get("history_gaps") else "PARTIAL_UNRESOLVED_SOURCE_GAPS"),
         "requested_gap_dates": len(gaps), "primary_resolved_dates": len(resolved),
         "unresolved_dates": state.get("history_gaps", []),
+        "open_matchday": open_audit,
         "league_endpoint_scan": league_scan,
         "league_endpoint_resolved_dates": sorted(day for day, rows in league_rows_by_day.items() if rows and day in resolved),
         "secondary_fallback_matches_added": len(fallback),
@@ -224,6 +330,8 @@ def run(cache_path: Path, fallback_path: Path, output_path: Path, api: Any) -> d
         "integrity": "Secondary results are added with provenance; unresolved dates are never silently marked complete.",
         "alerts_enabled": False,
     }
+    if own_session:
+        session.close()
     return report
 
 
