@@ -114,7 +114,7 @@ def test_does_not_apply_calibration_without_four_fold_rolling_pass():
 
 def test_missing_dataset_fingerprint_prevents_live_calibration():
     backtest = _backtest()
-    del backtest["dataset_provenance"]
+    del backtest["dataset_provenance"]["sha256"]
     report = {
         "predictions": [{
             "goal_markets_model": "experimental_recent_goals_poisson",
