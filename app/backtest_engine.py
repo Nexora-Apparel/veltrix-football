@@ -17,6 +17,7 @@ from typing import Any, Iterable
 from app.live_predictions import ELO_K, HOME_ELO_ADVANTAGE, MIN_TEAM_MATCHES, _name_key
 from app.advanced_models import dixon_coles_1x2, recency_weighted_mean
 from app.bias_audit import audit_favourites_and_underdogs
+from app.calibration import rolling_origin_1x2_temperature
 
 
 def _poisson_probs(lam: float, cap: int = 12) -> list[float]:
@@ -1110,6 +1111,11 @@ def chronological_backtest(matches: Iterable[dict[str, Any]], *, min_training_ma
             "first_test_date": live_dates[0] if live_dates else None,
             "last_test_date": live_dates[-1] if live_dates else None,
             "metrics": live_metrics,
+            "one_x_two_calibration": {
+                "live_poisson": rolling_origin_1x2_temperature(live_scored, "live_poisson"),
+                "live_elo": rolling_origin_1x2_temperature(live_scored, "live_elo"),
+                "note": "Rolling-origin temperature calibration is diagnostic only and is not applied to production probabilities.",
+            },
             "goal_markets": {
                 "metrics": live_goal_market_metrics,
                 "recent_holdout": live_goal_market_holdout_metrics if live_scored else None,
