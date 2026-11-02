@@ -675,6 +675,8 @@ def test_gap_backfill_rate_limit_records_retry_cursor(tmp_path):
     class RateLimitedAPI:
         def leagues(self, page=1, per_page=100):
             raise ProviderAPIError("Provider request failed with HTTP 429.")
+        def fixtures(self, day, timezone):
+            raise ProviderAPIError("Provider date endpoint failed with HTTP 429.")
 
     class OfflineSession:
         def get(self, url, timeout=30):
@@ -864,4 +866,49 @@ def test_gap_backfill_uses_date_endpoint_after_league_catalogue_429(tmp_path):
     assert report["league_endpoint_scan"]["error_type"] == "HTTP_429"
     assert report["date_endpoint"]["resolved_dates"] == ["2026-09-28"]
     assert saved["state"].get("history_gaps") is None
+    assert saved["matches"][0]["source_provider"] == "5DollarFootballAPI_DATE_FIXTURES"
+
+
+def test_gap_backfill_probes_date_endpoint_after_league_catalogue_429(tmp_path):
+    import json
+    from scripts.backfill_history_gaps import run
+    from app.provider_adapters import ProviderAPIError
+
+    day = "2026-09-28"
+    cache_path = tmp_path / "cache.json"
+    fallback_path = tmp_path / "fallback.csv"
+    output_path = tmp_path / "out.json"
+    cache_path.write_text(json.dumps({
+        "version": 2, "state": {"history_gaps": [day]}, "matches": [],
+    }), encoding="utf-8")
+    fallback_path.write_text(
+        "match_date,division,home_team,away_team,home_goals,away_goals\n",
+        encoding="utf-8",
+    )
+
+    class FakeSession:
+        def get(self, *args, **kwargs):
+            import requests
+            raise requests.ConnectionError("offline test")
+
+    class API:
+        def leagues(self, **kwargs):
+            raise ProviderAPIError("League catalogue HTTP 429.")
+        def fixtures(self, requested_day, timezone):
+            return {
+                "_veltrix_meta": {"pages_fetched": 1},
+                "response": [{
+                    "fixture": {"id": 654, "date": f"{requested_day}T12:00:00Z", "status": {"short": "FT"}},
+                    "teams": {"home": {"name": "Date Endpoint Home"}, "away": {"name": "Date Endpoint Away"}},
+                    "goals": {"home": 1, "away": 0},
+                    "league": {"code": "PL"},
+                }],
+            }
+
+    report = run(cache_path, fallback_path, output_path, API(), FakeSession(), force=True)
+    saved = json.loads(output_path.read_text(encoding="utf-8"))
+    assert report["date_endpoint"]["resolved_dates"] == [day]
+    assert report["date_endpoint"]["matches_added"] == 1
+    assert report["status"] == "COMPLETE"
+    assert not saved["state"].get("history_gaps")
     assert saved["matches"][0]["source_provider"] == "5DollarFootballAPI_DATE_FIXTURES"
