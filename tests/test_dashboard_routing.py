@@ -165,7 +165,7 @@ def test_dashboard_market_odds_count_uses_actual_fixture_quote_rows(monkeypatch)
             "status": "EXPERIMENTAL_ONLY",
             "kickoff_local": "2099-05-01T15:00:00+01:00",
             "the_odds_api_market_odds": {
-                "markets": {"h2h": [{"bookmaker": "Example", "outcomes": []}]},
+                "markets": {"h2h": [{"bookmaker": "Example", "outcomes": [{"name": "Home", "price": 2.1}]}]},
             },
         },
         {
