@@ -405,6 +405,12 @@ def main() -> None:
                     "ranges_requested": 0,
                     "warning": "Recent-results refresh skipped after primary-provider failure; existing cache retained.",
                     "provider_error_type": type(exc).__name__,
+                    "provider_error_details": {
+                        "status_code": getattr(exc, "status_code", None),
+                        "retry_after_seconds": getattr(exc, "retry_after_seconds", None),
+                        "rate_limit_remaining": getattr(exc, "rate_limit_remaining", None),
+                        "rate_limit_reset": getattr(exc, "rate_limit_reset", None),
+                    },
                     "cache_state": cache_data.get("state") or {},
                 }
         else:
