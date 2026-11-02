@@ -117,3 +117,40 @@ def test_dashboard_exposes_calibration_coverage_and_versioned_value_ledger(monke
     assert payload["paper_tracking"]["value_market_metrics_by_market"] == {"1x2": {"settled_bets": 2}}
     assert payload["paper_tracking"]["value_model_versions"] == ["experimental_recent_goals_poisson"]
     assert payload["paper_tracking"]["value_validation_markets_by_model_version"]["experimental_recent_goals_poisson"]["1X2"]["settled_bets"] == 2
+
+
+def test_dashboard_keeps_future_unsupported_fixtures_visible(monkeypatch):
+    from api import telegram
+
+    rows = [
+        {
+            "home_team": "Supported FC", "away_team": "Visitor FC",
+            "status": "EXPERIMENTAL_ONLY", "kickoff_local": "2099-05-01T15:00:00+01:00",
+            "probabilities": {"home_win": 0.4, "draw": 0.3, "away_win": 0.3},
+        },
+        {
+            "home_team": "Unsupported FC", "away_team": "Guest FC",
+            "status": "UNSUPPORTED_COMPETITION", "kickoff_local": "2099-05-01T17:00:00+01:00",
+        },
+        {
+            "home_team": "History Gap FC", "away_team": "No Data FC",
+            "status": "INSUFFICIENT_HISTORY", "kickoff_local": "2099-05-01T19:00:00+01:00",
+        },
+    ]
+    monkeypatch.setattr(telegram, "load_latest_report", lambda: {
+        "as_of_date": "2099-05-01",
+        "predictions": rows,
+        "fixtures_received": 3,
+        "fixtures_with_market_odds": 0,
+    })
+    monkeypatch.setattr(telegram, "load_paper_ledger", lambda: None)
+
+    payload = telegram.dashboard_data()
+    assert payload["fixtures_visible"] == 3
+    assert payload["experimental_forecasts"] == 1
+    assert payload["unsupported_fixtures"] == 2
+    assert [row["status"] for row in payload["predictions"]] == [
+        "EXPERIMENTAL_ONLY", "UNSUPPORTED_COMPETITION", "INSUFFICIENT_HISTORY"
+    ]
+    assert "probabilities" not in payload["predictions"][1]
+    assert "probabilities" not in payload["predictions"][2]
