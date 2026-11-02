@@ -173,11 +173,16 @@ def test_dashboard_market_odds_count_uses_actual_fixture_quote_rows(monkeypatch)
             "status": "UNSUPPORTED_COMPETITION",
             "kickoff_local": "2099-05-01T17:00:00+01:00",
         },
+        {
+            "home_team": "Past FC", "away_team": "Visitor FC",
+            "status": "UNSUPPORTED_COMPETITION",
+            "kickoff_local": "2020-05-01T15:00:00+01:00",
+        },
     ]
     monkeypatch.setattr(telegram, "load_latest_report", lambda: {
         "as_of_date": "2099-05-01",
         "predictions": rows,
-        "fixtures_received": 2,
+        "fixtures_received": 3,
         "fixtures_with_market_odds": 0,
         "live_odds_sync": {"fixtures_with_market_odds": 9},
     })
@@ -185,6 +190,9 @@ def test_dashboard_market_odds_count_uses_actual_fixture_quote_rows(monkeypatch)
 
     payload = telegram.dashboard_data()
     assert payload["fixtures_with_market_odds"] == 1
-    assert payload["fixtures_visible"] == 2
+    assert payload["fixtures_visible"] == 3
+    assert payload["unsupported_fixtures"] == 2
+    assert payload["predictions"][-1]["fixture_phase"] == "KICKOFF_PASSED"
+    assert "remains visible" in payload["predictions"][-1]["fixture_visibility_note"]
 
 # Controlled same-day report replay trigger [reuse-report-40175707059].
