@@ -453,7 +453,7 @@ def predict_fixtures(
     # share the same strictly pre-date history, so recomputing it per fixture is wasteful.
     elo_cache: dict[str, dict[str, Any]] = {}
     # Rebuild histories per target date so earlier dates are never duplicated.
-    output: list[dict[str, Any]] = list(visibility_rows)
+    output: list[dict[str, Any]] = []
     parsed_all = [
         p for item in fixtures
         if (p := _fixture_parts(item, timezone_name, include_started=True))
@@ -474,6 +474,7 @@ def predict_fixtures(
             "betting_recommendation": False, "historical_matches": {"home": 0, "away": 0},
             "status": status, "reason": reason, "team_name_match_suggestions": {},
         })
+    output.extend(visibility_rows)
     # Strict same-local-calendar-day rule: never include tomorrow or later dates.
     for target_date in ([today] if parsed_fixtures else []):
         team_history: dict[str, deque[tuple[int, int, str]]] = defaultdict(
