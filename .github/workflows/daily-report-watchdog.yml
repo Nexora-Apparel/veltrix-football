@@ -5,9 +5,12 @@ on:
     branches: [main]
     paths:
       - ".github/workflows/daily-report-watchdog.yml"
-  # Early backup check at 08:15 Africa/Lagos, plus a late recovery at 17:00 WAT.
-  # It dispatches the live workflow only when today's report is missing and no run is active.
+  # Backup checks at 05:30, 06:15 and 08:15 WAT, plus late recovery at 17:00.
+  # Each check dispatches the normal pipeline only when today's report is missing
+  # and no scheduled/manual pipeline is already active.
   schedule:
+    - cron: "30 4 * * *"
+    - cron: "15 5 * * *"
     - cron: "15 7 * * *"
     - cron: "0 16 * * *"
   workflow_dispatch:
