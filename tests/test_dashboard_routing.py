@@ -198,3 +198,22 @@ def test_dashboard_market_odds_count_uses_actual_fixture_quote_rows(monkeypatch)
 # Controlled same-day report replay trigger [reuse-report-40175707059].
 
 # Live verification trigger: exercise today's fixture, publication and delivery pipeline.
+
+
+def test_dashboard_exposes_reused_snapshot_separately_from_successful_publication(monkeypatch):
+    from api import telegram
+
+    monkeypatch.setattr(telegram, "load_latest_report", lambda: {
+        "as_of_date": "2026-11-02",
+        "generated_at_utc": "2026-11-02T09:28:34+00:00",
+        "command_data_publication": "PUBLISHED",
+        "publication_status": "REUSED_SNAPSHOT_NOT_REFRESHED",
+        "publication_notice": "A saved same-day snapshot was reused; no fresh fixture retrieval completed.",
+        "predictions": [],
+    })
+    monkeypatch.setattr(telegram, "load_paper_ledger", lambda: None)
+
+    payload = telegram.dashboard_data()
+    assert payload["publication_status"] == "PUBLISHED"
+    assert payload["report_generation_status"] == "REUSED_SNAPSHOT_NOT_REFRESHED"
+    assert "no fresh fixture retrieval" in payload["report_freshness_note"]
