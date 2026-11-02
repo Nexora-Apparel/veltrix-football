@@ -18,6 +18,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: veltrix-historical-model-backtest
+  cancel-in-progress: true
+
 jobs:
   backtest:
     runs-on: ubuntu-latest
