@@ -58,11 +58,10 @@ def run(cache_path: Path, fallback_path: Path, output_path: Path, api: Any) -> d
     league_scan = {"active_mapped_leagues": 0, "successful_league_queries": 0, "matches": 0, "failed_leagues": []}
     league_rows_by_day: dict[str, list[dict[str, Any]]] = {day: [] for day in gaps}
     if gaps:
-        active_since = int(datetime.combine(date.fromisoformat(gaps[0]), datetime.min.time(), tzinfo=timezone.utc).timestamp())
         leagues = []
         page = 1
         while page <= 20:
-            payload = api.leagues(page=page, per_page=100, active_since=active_since)
+            payload = api.leagues(page=page, per_page=100)
             leagues.extend(payload.get("response") or [])
             pagination = payload.get("pagination") or {}
             if not pagination.get("has_more"):
@@ -71,10 +70,19 @@ def run(cache_path: Path, fallback_path: Path, output_path: Path, api: Any) -> d
         mapped = [
             league for league in leagues
             if isinstance(league, dict)
-            and str(league.get("name") or "").strip().casefold() in LEAGUE_CODES
+            and str(league.get("name") or (league.get("league") or {}).get("name") or "").strip().casefold() in LEAGUE_CODES
             and league.get("id") is not None
         ]
+        league_scan["provider_leagues_returned"] = len(leagues)
+        league_scan["sample_league_names"] = [
+            str((row.get("name") or (row.get("league") or {}).get("name") or ""))
+            for row in leagues[:30] if isinstance(row, dict)
+        ]
         league_scan["active_mapped_leagues"] = len(mapped)
+        league_scan["mapped_league_names"] = [
+            str(row.get("name") or (row.get("league") or {}).get("name") or "")
+            for row in mapped
+        ]
         for league in mapped:
             league_id = league.get("id")
             try:
