@@ -14,6 +14,8 @@ def sample_backtest():
         "historical_odds_subset": {
             "matches_with_valid_1x2_odds": 900,
             "models_compared_on_same_matches": {
+                "poisson": {"matches": 900, "result_accuracy": 0.46, "brier_score": 0.63, "log_loss": 1.04},
+                "elo": {"matches": 900, "result_accuracy": 0.48, "brier_score": 0.62, "log_loss": 1.03},
                 "market": {"matches": 900, "result_accuracy": 0.50, "brier_score": 0.60, "log_loss": 1.00}
             },
         },
