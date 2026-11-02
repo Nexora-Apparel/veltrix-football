@@ -1,8 +1,10 @@
 """Live, bounded verification of provider fixtures and market endpoints.
 
-This script never prints credentials or full request URLs. The Odds API check is
-bounded to three soccer sport odds calls plus three event-specific BTTS calls.
-InferSports is keyless; its probe checks today's event list and at most three odds boards.
+This script never prints credentials or full request URLs. The 5Dollar probe
+uses one fixture request and at most three fixture-odds requests. The Odds API
+probe uses one sports catalogue request, at most three soccer sport-odds calls,
+and one event-specific BTTS call. InferSports is keyless; it checks today's
+event list and at most three odds boards.
 """
 from __future__ import annotations
 
