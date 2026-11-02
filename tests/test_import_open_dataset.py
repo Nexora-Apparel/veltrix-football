@@ -224,3 +224,5 @@ def test_import_dataset_keeps_fallback_only_results_when_primary_csv_has_no_rows
         rows = list(csv.DictReader(handle))
     assert len(rows) == 1
     assert rows[0]["source"] == "football-data.co.uk"
+
+# [run-live-verification] execute today's end-to-end delivery after importer repair.
