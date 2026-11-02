@@ -35,7 +35,24 @@
         "net_units": 0,
         "paper_roi": null,
         "notice": "Best quoted price in a pre-kickoff snapshot; flat 1-unit paper stakes; not proof of executable profit or bookmaker closing-line value."
-      }
+      },
+      "goal_market_probability_metrics": {
+        "experimental_recent_goals_poisson": {
+          "BTTS": {
+            "matches": 4,
+            "accuracy": 0.5,
+            "brier_score": 0.32513022750000004,
+            "log_loss": 0.8646136118045061
+          },
+          "OVER_UNDER_2_5": {
+            "matches": 4,
+            "accuracy": 0.5,
+            "brier_score": 0.354862495,
+            "log_loss": 0.9366726030387252
+          }
+        }
+      },
+      "goal_market_probability_matches": 8
     },
     {
       "report_date": "2026-10-27",
@@ -72,7 +89,24 @@
         "net_units": 0,
         "paper_roi": null,
         "notice": "Best quoted price in a pre-kickoff snapshot; flat 1-unit paper stakes; not proof of executable profit or bookmaker closing-line value."
-      }
+      },
+      "goal_market_probability_metrics": {
+        "experimental_recent_goals_poisson": {
+          "BTTS": {
+            "matches": 2,
+            "accuracy": 1.0,
+            "brier_score": 0.156373425,
+            "log_loss": 0.4974256587999596
+          },
+          "OVER_UNDER_2_5": {
+            "matches": 2,
+            "accuracy": 0.5,
+            "brier_score": 0.17064048499999998,
+            "log_loss": 0.5232888965190398
+          }
+        }
+      },
+      "goal_market_probability_matches": 4
     },
     {
       "report_date": "2026-10-30",
@@ -98,7 +132,9 @@
         "net_units": 0,
         "paper_roi": null,
         "notice": "Best quoted price in a pre-kickoff snapshot; flat 1-unit paper stakes; not proof of executable profit or bookmaker closing-line value."
-      }
+      },
+      "goal_market_probability_metrics": {},
+      "goal_market_probability_matches": 0
     },
     {
       "report_date": "2026-10-31",
@@ -161,7 +197,36 @@
         "net_units": 0.6,
         "paper_roi": 0.09999999999999999,
         "notice": "Best quoted price in a pre-kickoff snapshot; flat 1-unit paper stakes; not proof of executable profit or bookmaker closing-line value."
-      }
+      },
+      "goal_market_probability_metrics": {
+        "experimental_recent_goals_poisson": {
+          "BTTS": {
+            "matches": 7,
+            "accuracy": 0.2857142857142857,
+            "brier_score": 0.2824840385497143,
+            "log_loss": 0.7584520141470315
+          },
+          "OVER_UNDER_1_5": {
+            "matches": 7,
+            "accuracy": 0.7142857142857143,
+            "brier_score": 0.20297593521357143,
+            "log_loss": 0.5944527531738867
+          },
+          "OVER_UNDER_2_5": {
+            "matches": 7,
+            "accuracy": 0.0,
+            "brier_score": 0.2814773714122857,
+            "log_loss": 0.7563057719849235
+          },
+          "OVER_UNDER_3_5": {
+            "matches": 7,
+            "accuracy": 0.8571428571428571,
+            "brier_score": 0.15770759407499998,
+            "log_loss": 0.502401865568458
+          }
+        }
+      },
+      "goal_market_probability_matches": 28
     }
   ],
   "scored_matches": [
@@ -540,7 +605,7 @@
       "report_date": "2026-11-01"
     }
   ],
-  "updated_at_utc": "2026-11-02T18:03:57.972427+00:00",
+  "updated_at_utc": "2026-11-02T18:09:30.655006+00:00",
   "last_attempt": {
     "report_date": "2026-11-01",
     "status": "EVALUATED",
@@ -1009,5 +1074,595 @@
       }
     }
   },
-  "value_market_validation_notice": "Prospective paper evidence only; certificate remains locked until sample, date, ROI lower-bound and coverage thresholds pass."
+  "value_market_validation_notice": "Prospective paper evidence only; certificate remains locked until sample, date, ROI lower-bound and coverage thresholds pass.",
+  "goal_market_probability_matches": [
+    {
+      "fixture_id": 1550162,
+      "match_date": "2026-10-24",
+      "model": "experimental_recent_goals_poisson",
+      "market": "BTTS",
+      "selection": "YES",
+      "line": null,
+      "probability": 0.3621,
+      "actual_outcome": true,
+      "brier_score": 0.40691641,
+      "log_loss": 1.0158348622105415,
+      "correct": false,
+      "report_date": "2026-10-24"
+    },
+    {
+      "fixture_id": 1550162,
+      "match_date": "2026-10-24",
+      "model": "experimental_recent_goals_poisson",
+      "market": "OVER_UNDER_2_5",
+      "selection": "OVER",
+      "line": 2.5,
+      "probability": 0.3036,
+      "actual_outcome": true,
+      "brier_score": 0.48497296,
+      "log_loss": 1.1920442334606622,
+      "correct": false,
+      "report_date": "2026-10-24"
+    },
+    {
+      "fixture_id": 1552795,
+      "match_date": "2026-10-24",
+      "model": "experimental_recent_goals_poisson",
+      "market": "BTTS",
+      "selection": "YES",
+      "line": null,
+      "probability": 0.7,
+      "actual_outcome": true,
+      "brier_score": 0.09000000000000002,
+      "log_loss": 0.35667494393873245,
+      "correct": true,
+      "report_date": "2026-10-24"
+    },
+    {
+      "fixture_id": 1552795,
+      "match_date": "2026-10-24",
+      "model": "experimental_recent_goals_poisson",
+      "market": "OVER_UNDER_2_5",
+      "selection": "OVER",
+      "line": 2.5,
+      "probability": 0.7038,
+      "actual_outcome": true,
+      "brier_score": 0.08773444000000001,
+      "log_loss": 0.3512610540946523,
+      "correct": true,
+      "report_date": "2026-10-24"
+    },
+    {
+      "fixture_id": 1490556,
+      "match_date": "2026-10-24",
+      "model": "experimental_recent_goals_poisson",
+      "market": "BTTS",
+      "selection": "YES",
+      "line": null,
+      "probability": 0.5435,
+      "actual_outcome": true,
+      "brier_score": 0.20839225000000003,
+      "log_loss": 0.609725572420873,
+      "correct": true,
+      "report_date": "2026-10-24"
+    },
+    {
+      "fixture_id": 1490556,
+      "match_date": "2026-10-24",
+      "model": "experimental_recent_goals_poisson",
+      "market": "OVER_UNDER_2_5",
+      "selection": "OVER",
+      "line": 2.5,
+      "probability": 0.5327,
+      "actual_outcome": true,
+      "brier_score": 0.21836929000000005,
+      "log_loss": 0.6297968650591836,
+      "correct": true,
+      "report_date": "2026-10-24"
+    },
+    {
+      "fixture_id": 1490558,
+      "match_date": "2026-10-24",
+      "model": "experimental_recent_goals_poisson",
+      "market": "BTTS",
+      "selection": "YES",
+      "line": null,
+      "probability": 0.7715,
+      "actual_outcome": false,
+      "brier_score": 0.59521225,
+      "log_loss": 1.4762190686478776,
+      "correct": false,
+      "report_date": "2026-10-24"
+    },
+    {
+      "fixture_id": 1490558,
+      "match_date": "2026-10-24",
+      "model": "experimental_recent_goals_poisson",
+      "market": "OVER_UNDER_2_5",
+      "selection": "OVER",
+      "line": 2.5,
+      "probability": 0.7927,
+      "actual_outcome": false,
+      "brier_score": 0.62837329,
+      "log_loss": 1.573588259540403,
+      "correct": false,
+      "report_date": "2026-10-24"
+    },
+    {
+      "fixture_id": 1319199709,
+      "match_date": "2026-10-27",
+      "model": "experimental_recent_goals_poisson",
+      "market": "BTTS",
+      "selection": "YES",
+      "line": null,
+      "probability": 0.7018,
+      "actual_outcome": true,
+      "brier_score": 0.08892324000000001,
+      "log_loss": 0.35410681583302234,
+      "correct": true,
+      "report_date": "2026-10-27"
+    },
+    {
+      "fixture_id": 1319199709,
+      "match_date": "2026-10-27",
+      "model": "experimental_recent_goals_poisson",
+      "market": "OVER_UNDER_2_5",
+      "selection": "OVER",
+      "line": 2.5,
+      "probability": 0.7231,
+      "actual_outcome": true,
+      "brier_score": 0.07667361000000002,
+      "log_loss": 0.32420775380123096,
+      "correct": true,
+      "report_date": "2026-10-27"
+    },
+    {
+      "fixture_id": 1319198858,
+      "match_date": "2026-10-27",
+      "model": "experimental_recent_goals_poisson",
+      "market": "BTTS",
+      "selection": "YES",
+      "line": null,
+      "probability": 0.5269,
+      "actual_outcome": true,
+      "brier_score": 0.22382360999999998,
+      "log_loss": 0.6407445017668969,
+      "correct": true,
+      "report_date": "2026-10-27"
+    },
+    {
+      "fixture_id": 1319198858,
+      "match_date": "2026-10-27",
+      "model": "experimental_recent_goals_poisson",
+      "market": "OVER_UNDER_2_5",
+      "selection": "OVER",
+      "line": 2.5,
+      "probability": 0.4856,
+      "actual_outcome": true,
+      "brier_score": 0.26460735999999996,
+      "log_loss": 0.7223700392368486,
+      "correct": false,
+      "report_date": "2026-10-27"
+    },
+    {
+      "fixture_id": 1525495667,
+      "match_date": "2026-11-01",
+      "model": "experimental_recent_goals_poisson",
+      "market": "BTTS",
+      "selection": "YES",
+      "line": null,
+      "probability": 0.547613,
+      "actual_outcome": false,
+      "brier_score": 0.29987999776900004,
+      "log_loss": 0.7932172707852317,
+      "correct": false,
+      "report_date": "2026-11-01"
+    },
+    {
+      "fixture_id": 1525495667,
+      "match_date": "2026-11-01",
+      "model": "experimental_recent_goals_poisson",
+      "market": "OVER_UNDER_1_5",
+      "selection": "OVER",
+      "line": 1.5,
+      "probability": 0.780256,
+      "actual_outcome": true,
+      "brier_score": 0.048287425536000024,
+      "log_loss": 0.24813320801781596,
+      "correct": true,
+      "report_date": "2026-11-01"
+    },
+    {
+      "fixture_id": 1525495667,
+      "match_date": "2026-11-01",
+      "model": "experimental_recent_goals_poisson",
+      "market": "OVER_UNDER_2_5",
+      "selection": "OVER",
+      "line": 2.5,
+      "probability": 0.549231,
+      "actual_outcome": false,
+      "brier_score": 0.30165469136100004,
+      "log_loss": 0.7968002658181391,
+      "correct": false,
+      "report_date": "2026-11-01"
+    },
+    {
+      "fixture_id": 1525495667,
+      "match_date": "2026-11-01",
+      "model": "experimental_recent_goals_poisson",
+      "market": "OVER_UNDER_3_5",
+      "selection": "OVER",
+      "line": 3.5,
+      "probability": 0.327602,
+      "actual_outcome": false,
+      "brier_score": 0.107323070404,
+      "log_loss": 0.3969048518720881,
+      "correct": true,
+      "report_date": "2026-11-01"
+    },
+    {
+      "fixture_id": 3003243205,
+      "match_date": "2026-11-01",
+      "model": "experimental_recent_goals_poisson",
+      "market": "BTTS",
+      "selection": "YES",
+      "line": null,
+      "probability": 0.523277,
+      "actual_outcome": true,
+      "brier_score": 0.227264818729,
+      "log_loss": 0.6476443184139521,
+      "correct": true,
+      "report_date": "2026-11-01"
+    },
+    {
+      "fixture_id": 3003243205,
+      "match_date": "2026-11-01",
+      "model": "experimental_recent_goals_poisson",
+      "market": "OVER_UNDER_1_5",
+      "selection": "OVER",
+      "line": 1.5,
+      "probability": 0.736447,
+      "actual_outcome": true,
+      "brier_score": 0.06946018380900001,
+      "log_loss": 0.30591800765118876,
+      "correct": true,
+      "report_date": "2026-11-01"
+    },
+    {
+      "fixture_id": 3003243205,
+      "match_date": "2026-11-01",
+      "model": "experimental_recent_goals_poisson",
+      "market": "OVER_UNDER_2_5",
+      "selection": "OVER",
+      "line": 2.5,
+      "probability": 0.490829,
+      "actual_outcome": true,
+      "brier_score": 0.25925510724100004,
+      "log_loss": 0.7116594806863967,
+      "correct": false,
+      "report_date": "2026-11-01"
+    },
+    {
+      "fixture_id": 3003243205,
+      "match_date": "2026-11-01",
+      "model": "experimental_recent_goals_poisson",
+      "market": "OVER_UNDER_3_5",
+      "selection": "OVER",
+      "line": 3.5,
+      "probability": 0.271945,
+      "actual_outcome": true,
+      "brier_score": 0.530064083025,
+      "log_loss": 1.3021554390148584,
+      "correct": false,
+      "report_date": "2026-11-01"
+    },
+    {
+      "fixture_id": 2888389852,
+      "match_date": "2026-11-01",
+      "model": "experimental_recent_goals_poisson",
+      "market": "BTTS",
+      "selection": "YES",
+      "line": null,
+      "probability": 0.531334,
+      "actual_outcome": false,
+      "brier_score": 0.282315819556,
+      "log_loss": 0.7578649177557549,
+      "correct": false,
+      "report_date": "2026-11-01"
+    },
+    {
+      "fixture_id": 2888389852,
+      "match_date": "2026-11-01",
+      "model": "experimental_recent_goals_poisson",
+      "market": "OVER_UNDER_1_5",
+      "selection": "OVER",
+      "line": 1.5,
+      "probability": 0.743808,
+      "actual_outcome": false,
+      "brier_score": 0.553250340864,
+      "log_loss": 1.3618281156120287,
+      "correct": false,
+      "report_date": "2026-11-01"
+    },
+    {
+      "fixture_id": 2888389852,
+      "match_date": "2026-11-01",
+      "model": "experimental_recent_goals_poisson",
+      "market": "OVER_UNDER_2_5",
+      "selection": "OVER",
+      "line": 2.5,
+      "probability": 0.500547,
+      "actual_outcome": false,
+      "brier_score": 0.250547299209,
+      "log_loss": 0.6942417794147498,
+      "correct": false,
+      "report_date": "2026-11-01"
+    },
+    {
+      "fixture_id": 2888389852,
+      "match_date": "2026-11-01",
+      "model": "experimental_recent_goals_poisson",
+      "market": "OVER_UNDER_3_5",
+      "selection": "OVER",
+      "line": 3.5,
+      "probability": 0.281104,
+      "actual_outcome": false,
+      "brier_score": 0.07901945881600002,
+      "log_loss": 0.3300385770639876,
+      "correct": true,
+      "report_date": "2026-11-01"
+    },
+    {
+      "fixture_id": 2002532207,
+      "match_date": "2026-11-01",
+      "model": "experimental_recent_goals_poisson",
+      "market": "BTTS",
+      "selection": "YES",
+      "line": null,
+      "probability": 0.521112,
+      "actual_outcome": true,
+      "brier_score": 0.22933371654399998,
+      "log_loss": 0.6517902891225565,
+      "correct": true,
+      "report_date": "2026-11-01"
+    },
+    {
+      "fixture_id": 2002532207,
+      "match_date": "2026-11-01",
+      "model": "experimental_recent_goals_poisson",
+      "market": "OVER_UNDER_1_5",
+      "selection": "OVER",
+      "line": 1.5,
+      "probability": 0.73257,
+      "actual_outcome": true,
+      "brier_score": 0.07151880489999997,
+      "log_loss": 0.31119637951684886,
+      "correct": true,
+      "report_date": "2026-11-01"
+    },
+    {
+      "fixture_id": 2002532207,
+      "match_date": "2026-11-01",
+      "model": "experimental_recent_goals_poisson",
+      "market": "OVER_UNDER_2_5",
+      "selection": "OVER",
+      "line": 2.5,
+      "probability": 0.485692,
+      "actual_outcome": true,
+      "brier_score": 0.26451271886399996,
+      "log_loss": 0.7221806008387661,
+      "correct": false,
+      "report_date": "2026-11-01"
+    },
+    {
+      "fixture_id": 2002532207,
+      "match_date": "2026-11-01",
+      "model": "experimental_recent_goals_poisson",
+      "market": "OVER_UNDER_3_5",
+      "selection": "OVER",
+      "line": 3.5,
+      "probability": 0.267164,
+      "actual_outcome": false,
+      "brier_score": 0.07137660289600001,
+      "log_loss": 0.3108333401913356,
+      "correct": true,
+      "report_date": "2026-11-01"
+    },
+    {
+      "fixture_id": 103840859,
+      "match_date": "2026-11-01",
+      "model": "experimental_recent_goals_poisson",
+      "market": "BTTS",
+      "selection": "YES",
+      "line": null,
+      "probability": 0.546,
+      "actual_outcome": false,
+      "brier_score": 0.29811600000000005,
+      "log_loss": 0.7896580809407892,
+      "correct": false,
+      "report_date": "2026-11-01"
+    },
+    {
+      "fixture_id": 103840859,
+      "match_date": "2026-11-01",
+      "model": "experimental_recent_goals_poisson",
+      "market": "OVER_UNDER_1_5",
+      "selection": "OVER",
+      "line": 1.5,
+      "probability": 0.764851,
+      "actual_outcome": false,
+      "brier_score": 0.584997052201,
+      "log_loss": 1.4475359232048426,
+      "correct": false,
+      "report_date": "2026-11-01"
+    },
+    {
+      "fixture_id": 103840859,
+      "match_date": "2026-11-01",
+      "model": "experimental_recent_goals_poisson",
+      "market": "OVER_UNDER_2_5",
+      "selection": "OVER",
+      "line": 2.5,
+      "probability": 0.528511,
+      "actual_outcome": false,
+      "brier_score": 0.27932387712099993,
+      "log_loss": 0.7518595069792842,
+      "correct": false,
+      "report_date": "2026-11-01"
+    },
+    {
+      "fixture_id": 103840859,
+      "match_date": "2026-11-01",
+      "model": "experimental_recent_goals_poisson",
+      "market": "OVER_UNDER_3_5",
+      "selection": "OVER",
+      "line": 3.5,
+      "probability": 0.307708,
+      "actual_outcome": false,
+      "brier_score": 0.09468421326399999,
+      "log_loss": 0.36774744704887674,
+      "correct": true,
+      "report_date": "2026-11-01"
+    },
+    {
+      "fixture_id": 2981478499,
+      "match_date": "2026-11-01",
+      "model": "experimental_recent_goals_poisson",
+      "market": "BTTS",
+      "selection": "YES",
+      "line": null,
+      "probability": 0.571845,
+      "actual_outcome": false,
+      "brier_score": 0.32700670402500004,
+      "log_loss": 0.8482699994279441,
+      "correct": false,
+      "report_date": "2026-11-01"
+    },
+    {
+      "fixture_id": 2981478499,
+      "match_date": "2026-11-01",
+      "model": "experimental_recent_goals_poisson",
+      "market": "OVER_UNDER_1_5",
+      "selection": "OVER",
+      "line": 1.5,
+      "probability": 0.790032,
+      "actual_outcome": true,
+      "brier_score": 0.04408656102400002,
+      "log_loss": 0.23568182801231521,
+      "correct": true,
+      "report_date": "2026-11-01"
+    },
+    {
+      "fixture_id": 2981478499,
+      "match_date": "2026-11-01",
+      "model": "experimental_recent_goals_poisson",
+      "market": "OVER_UNDER_2_5",
+      "selection": "OVER",
+      "line": 2.5,
+      "probability": 0.562607,
+      "actual_outcome": false,
+      "brier_score": 0.316526636449,
+      "log_loss": 0.8269231745255083,
+      "correct": false,
+      "report_date": "2026-11-01"
+    },
+    {
+      "fixture_id": 2981478499,
+      "match_date": "2026-11-01",
+      "model": "experimental_recent_goals_poisson",
+      "market": "OVER_UNDER_3_5",
+      "selection": "OVER",
+      "line": 3.5,
+      "probability": 0.340534,
+      "actual_outcome": false,
+      "brier_score": 0.115963405156,
+      "log_loss": 0.41632486236146476,
+      "correct": true,
+      "report_date": "2026-11-01"
+    },
+    {
+      "fixture_id": 2403367992,
+      "match_date": "2026-11-01",
+      "model": "experimental_recent_goals_poisson",
+      "market": "BTTS",
+      "selection": "YES",
+      "line": null,
+      "probability": 0.559885,
+      "actual_outcome": false,
+      "brier_score": 0.313471213225,
+      "log_loss": 0.8207192225829916,
+      "correct": false,
+      "report_date": "2026-11-01"
+    },
+    {
+      "fixture_id": 2403367992,
+      "match_date": "2026-11-01",
+      "model": "experimental_recent_goals_poisson",
+      "market": "OVER_UNDER_1_5",
+      "selection": "OVER",
+      "line": 1.5,
+      "probability": 0.778119,
+      "actual_outcome": true,
+      "brier_score": 0.049231178161,
+      "log_loss": 0.2508758102021668,
+      "correct": true,
+      "report_date": "2026-11-01"
+    },
+    {
+      "fixture_id": 2403367992,
+      "match_date": "2026-11-01",
+      "model": "experimental_recent_goals_poisson",
+      "market": "OVER_UNDER_2_5",
+      "selection": "OVER",
+      "line": 2.5,
+      "probability": 0.546371,
+      "actual_outcome": false,
+      "brier_score": 0.29852126964100006,
+      "log_loss": 0.7904755956316211,
+      "correct": false,
+      "report_date": "2026-11-01"
+    },
+    {
+      "fixture_id": 2403367992,
+      "match_date": "2026-11-01",
+      "model": "experimental_recent_goals_poisson",
+      "market": "OVER_UNDER_3_5",
+      "selection": "OVER",
+      "line": 3.5,
+      "probability": 0.324842,
+      "actual_outcome": false,
+      "brier_score": 0.10552232496400002,
+      "log_loss": 0.39280854142659505,
+      "correct": true,
+      "report_date": "2026-11-01"
+    }
+  ],
+  "goal_market_probability_metrics": {
+    "experimental_recent_goals_poisson": {
+      "BTTS": {
+        "matches": 13,
+        "accuracy": 0.46153846153846156,
+        "brier_score": 0.2762043099883077,
+        "log_loss": 0.7509592202959356
+      },
+      "OVER_UNDER_1_5": {
+        "matches": 7,
+        "accuracy": 0.7142857142857143,
+        "brier_score": 0.20297593521357143,
+        "log_loss": 0.5944527531738867
+      },
+      "OVER_UNDER_2_5": {
+        "matches": 13,
+        "accuracy": 0.23076923076923078,
+        "brier_score": 0.28700558076046156,
+        "log_loss": 0.775954508391342
+      },
+      "OVER_UNDER_3_5": {
+        "matches": 7,
+        "accuracy": 0.8571428571428571,
+        "brier_score": 0.15770759407499998,
+        "log_loss": 0.502401865568458
+      }
+    }
+  }
 }
