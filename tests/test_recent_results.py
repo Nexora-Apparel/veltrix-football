@@ -772,7 +772,8 @@ def test_gap_backfill_excludes_noncommercial_feed_and_preserves_gaps_during_cool
     assert report["open_matchday"]["status"] == "SKIPPED_NONCOMMERCIAL_LICENSE"
     assert report["open_matchday_resolved_dates"] == []
     assert report["openligadb"]["status"] == "NO_DATA_AVAILABLE"
-    assert len(session.urls) == 4
+    from scripts.backfill_history_gaps import OPENLIGADB_LEAGUES
+    assert len(session.urls) == len(OPENLIGADB_LEAGUES)
     assert saved["state"]["history_gaps"] == gaps
     assert saved["matches"] == []
 
@@ -1094,3 +1095,46 @@ def test_openligadb_discovers_all_mapped_target_competitions_for_season_2026():
     assert audit["available_count"] == 7
     assert audit["mapped_count"] == 5
     assert audit["status"] == "MAPPED_LEAGUES_FOUND"
+
+
+def test_openligadb_gap_backfill_includes_europa_and_conference_league_results():
+    from scripts.backfill_history_gaps import _openligadb_gap_backfill
+
+    class Response:
+        def __init__(self, payload):
+            self.payload = payload
+        def raise_for_status(self):
+            return None
+        def json(self):
+            return self.payload
+
+    class Session:
+        def get(self, url, timeout=30, headers=None):
+            if "/uel2026/2026" in url:
+                return Response([{
+                    "matchID": 9201, "matchDateTimeUTC": "2026-10-01T17:45:00Z",
+                    "matchIsFinished": True,
+                    "team1": {"teamName": "Europa Home"}, "team2": {"teamName": "Europa Away"},
+                    "matchResults": [{
+                        "resultTypeID": 2, "resultTypeKind": "After90Minutes",
+                        "pointsTeam1": 2, "pointsTeam2": 0,
+                    }],
+                }])
+            if "/uecl2026/2026" in url:
+                return Response([{
+                    "matchID": 9202, "matchDateTimeUTC": "2026-10-01T19:00:00Z",
+                    "matchIsFinished": True,
+                    "team1": {"teamName": "Conference Home"}, "team2": {"teamName": "Conference Away"},
+                    "matchResults": [{
+                        "resultTypeID": 2, "resultTypeKind": "After90Minutes",
+                        "pointsTeam1": 1, "pointsTeam2": 1,
+                    }],
+                }])
+            return Response([])
+
+    rows, audit = _openligadb_gap_backfill(Session(), ["2026-10-01"], delay_seconds=0)
+    assert {row["division"] for row in rows} == {"UEL", "UECL"}
+    assert {row["source_license"] for row in rows} == {"ODbL-1.0"}
+    assert len(rows) == 2
+    assert audit["dates_covered"] == ["2026-10-01"]
+    assert audit["global_gap_resolution"] is False
