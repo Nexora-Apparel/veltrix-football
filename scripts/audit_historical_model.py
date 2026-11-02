@@ -255,7 +255,8 @@ def audit_report(report: dict[str, Any], cache: dict[str, Any]) -> dict[str, Any
             if any(source == "LEGACY_UNATTRIBUTED" for source in matched_by_provider)
             else None
         ),
-        "metrics_by_model_all_available_matches": model_metrics,\n        "class_distribution_diagnostics_by_model": class_distribution_by_model,
+        "metrics_by_model_all_available_matches": model_metrics,
+        "class_distribution_diagnostics_by_model": class_distribution_by_model,
         "common_fixture_count_for_model_comparison": len(common),
         "metrics_by_model_on_common_fixtures": common_metrics,
         "match_basis": "exact_Africa_Lagos_date_and_normalized_home_away_team_identity",
