@@ -537,9 +537,9 @@ def test_json_request_honors_bounded_5dollar_burst_retry_after():
     response.status = 200
     response.headers = {"Content-Type": "application/json"}
     response.read.return_value = b'{"success":1}'
-    with patch("app.provider_adapters.urlopen", side_effect=[burst, response]) as request, \\
-         patch("app.provider_adapters.time_module.sleep") as sleep:
-        status, _, payload = _json_request(url, retries=2)
+    with patch("app.provider_adapters.urlopen", side_effect=[burst, response]) as request:
+        with patch("app.provider_adapters.time_module.sleep") as sleep:
+            status, _, payload = _json_request(url, retries=2)
     assert status == 200 and payload == {"success": 1}
     assert request.call_count == 2
     sleep.assert_called_once_with(2.0)
