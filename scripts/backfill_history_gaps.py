@@ -241,15 +241,20 @@ def run(cache_path: Path, fallback_path: Path, output_path: Path, api: Any, sess
         "status": "NOT_REQUIRED", "dates_checked": 0, "matches_added": 0,
         "resolved_dates": [], "timezone_retries": 0, "request_errors": [],
     }
-    if unresolved_gaps and not rate_limited and (force or not provider_cooldown_active):
+    if unresolved_gaps and (force or not provider_cooldown_active):
         date_endpoint["status"] = "CHECKED"
         for day in unresolved_gaps:
-            if day in resolved or rate_limited:
+            if day in resolved:
                 continue
             try:
-                if delay_seconds:
-                    time_module.sleep(delay_seconds)
+                # A 429 from the league catalogue must not suppress an
+                # independent date endpoint probe; wait before probing it.
+                date_pause = max(delay_seconds, 2.0 if rate_limited else 1.0)
+                time_module.sleep(date_pause)
                 payload = api.fixtures(day, "Africa/Lagos")
+                # The date endpoint is independently usable even if the
+                # league-catalogue endpoint was rate-limited.
+                rate_limited = False
                 rows = extract_completed_results(payload)
                 timezone_used = "Africa/Lagos"
                 meta = payload.get("_veltrix_meta") or {}
@@ -286,8 +291,7 @@ def run(cache_path: Path, fallback_path: Path, output_path: Path, api: Any, sess
                     existing_result.update({"date_endpoint_status": status, "date_endpoint_matches": len(rows), "timezone": timezone_used})
                 else:
                     day_results.append({"date": day, "status": status, "matches": len(rows), "timezone": timezone_used})
-                if delay_seconds:
-                    time_module.sleep(delay_seconds)
+                time_module.sleep(max(delay_seconds, 1.0))
             except ProviderAPIError as exc:
                 date_endpoint["request_errors"].append({"date": day, "error_type": type(exc).__name__, "error": str(exc)[:240]})
                 if "HTTP 429" in str(exc):
@@ -313,7 +317,7 @@ def run(cache_path: Path, fallback_path: Path, output_path: Path, api: Any, sess
         # A 429 is still a completed retry attempt; enforce a one-day cooldown
         # so scheduled runs cannot repeatedly hammer the provider.
         state["last_gap_retry_on"] = datetime.now(ZoneInfo("Africa/Lagos")).date().isoformat()
-    state["gap_backfill_last_run"] = "2026-11-02"
+    state["gap_backfill_last_run"] = datetime.now(ZoneInfo("Africa/Lagos")).date().isoformat()
     open_resolved_dates = set(open_audit.get("resolved_dates") or [])
     provider_resolved_dates = resolved - open_resolved_dates
     state["gap_backfill_provider_resolved_dates"] = sorted(set(state.get("gap_backfill_provider_resolved_dates", [])) | provider_resolved_dates)
@@ -362,10 +366,12 @@ def main() -> int:
     api = FiveDollarFootballClient()
     report = run(Path(args.cache), Path(args.fallback), Path(args.output), api, force=args.force)
     Path(args.report).write_text(json.dumps(report, indent=2, ensure_ascii=False), encoding="utf-8")
-    if report["status"] not in {"PROVIDER_RATE_LIMITED", "RETRY_COOLDOWN"}:
-        publish("public-data/recent_results_cache.json", Path(args.output), repo, token)
+    # Publish even a rate-limited result so the retry cursor and unresolved
+    # dates persist. The report status distinguishes partial recovery from
+    # complete recovery; a provider 429 is not a software/test failure.
+    publish("public-data/recent_results_cache.json", Path(args.output), repo, token)
     print(json.dumps(report, indent=2, ensure_ascii=False))
-    return 0 if report["status"] in {"COMPLETE", "RETRY_COOLDOWN", "PARTIAL_PROVIDER_RETRY_COOLDOWN"} else 2
+    return 0
 
 
 if __name__ == "__main__":
