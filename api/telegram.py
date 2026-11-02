@@ -305,17 +305,36 @@ def dashboard_data() -> dict:
         except (TypeError, ValueError, OverflowError):
             row.setdefault("fixture_visibility_note", "Kickoff could not be verified; fixture retained for visibility.")
             upcoming.append(row)
+    def _valid_market_price(value: Any) -> bool:
+        try:
+            price = float(value)
+            return math.isfinite(price) and price > 1.0
+        except (TypeError, ValueError, OverflowError):
+            return False
+
     def has_matched_market_odds(row: dict) -> bool:
         odds = row.get("the_odds_api_market_odds")
         markets = odds.get("markets") if isinstance(odds, dict) else None
-        if isinstance(markets, dict) and any(
-            isinstance(markets.get(key), list) and markets.get(key)
-            for key in ("h2h", "btts", "totals")
-        ):
-            return True
+        if isinstance(markets, dict):
+            for key in ("h2h", "btts", "totals"):
+                for market in markets.get(key, []) if isinstance(markets.get(key), list) else []:
+                    outcomes = market.get("outcomes") if isinstance(market, dict) else None
+                    if isinstance(outcomes, list) and any(
+                        isinstance(outcome, dict)
+                        and _valid_market_price(outcome.get("price"))
+                        for outcome in outcomes
+                    ):
+                        return True
         five = row.get("five_dollar_market_odds")
         bookmakers = five.get("bookmakers") if isinstance(five, dict) else None
-        return isinstance(bookmakers, list) and bool(bookmakers)
+        return isinstance(bookmakers, list) and any(
+            isinstance(bookmaker, dict) and any(
+                _valid_market_price(value)
+                for group in bookmaker.values() if isinstance(group, dict)
+                for value in group.values()
+            )
+            for bookmaker in bookmakers
+        )
 
     matched_odds_rows = sum(1 for row in upcoming if has_matched_market_odds(row))
     live_odds = report.get("live_odds_sync") if isinstance(report.get("live_odds_sync"), dict) else {}
