@@ -1,35 +1,113 @@
 {
   "schema_version": 1,
   "workflow": "Daily Fixture Predictions",
-  "run_id": "41430167961",
+  "run_id": "41430179082",
   "run_attempt": "1",
   "event": "push",
-  "commit_sha": "8f3e2c88ead4d167f34009a4b1e087796cbd137c",
+  "commit_sha": "7580d3ba54b05eace04ee58561206469ad1e805d",
   "branch": "main",
-  "recorded_at_utc": "2026-11-02T10:37:13.276215+00:00",
-  "overall_status": "NEEDS_REVIEW",
+  "recorded_at_utc": "2026-11-02T10:37:41.479428+00:00",
+  "overall_status": "TESTS_PASSED",
   "validation_scope": "TESTS_ONLY",
-  "telegram_configured": false,
+  "telegram_configured": true,
   "steps": {
-    "unit_tests": "failure",
-    "dashboard_js": "skipped",
+    "unit_tests": "success",
+    "dashboard_js": "success",
     "fixture_generation": "skipped",
     "report_recovery": "skipped",
-    "fixture_visibility": "skipped",
+    "fixture_visibility": "success",
     "odds_enrichment": "skipped",
-    "value_evidence_update": "skipped",
-    "value_evidence_artifact": "skipped",
+    "value_evidence_update": "success",
+    "value_evidence_artifact": "success",
     "value_certificate": "skipped",
-    "telegram_webhook": "skipped",
-    "telegram_delivery": "skipped",
-    "daily_report_artifact": "skipped",
+    "telegram_webhook": "success",
+    "telegram_delivery": "success",
+    "daily_report_artifact": "success",
     "paper_ledger_artifact": "skipped",
-    "command_data_publication": "skipped",
+    "command_data_publication": "success",
     "paper_tracking": "skipped"
   },
-  "report_summary": null,
-  "value_evidence_summary": null,
-  "paper_tracking_summary": null,
+  "report_summary": {
+    "as_of_date": "2026-11-02",
+    "publication_status": "REUSED_SNAPSHOT_NOT_REFRESHED",
+    "fixtures_received": 25,
+    "same_day_pre_match_fixtures": 23,
+    "future_fixtures_considered": 23,
+    "fixture_rows": 23,
+    "fixture_status_counts": {
+      "EXPERIMENTAL_ONLY": 11,
+      "UNSUPPORTED_COMPETITION": 12
+    },
+    "fixture_visibility_validation": {
+      "status": "PASSED",
+      "fixture_rows": 23,
+      "expected_fixture_rows": 23,
+      "fixture_status_counts": {
+        "EXPERIMENTAL_ONLY": 11,
+        "UNSUPPORTED_COMPETITION": 12
+      },
+      "kickoff_unverified_rows": 0,
+      "forecast_rows": 11,
+      "alerts_enabled": false
+    },
+    "historical_data_coverage": "GAPPED_OR_STALE",
+    "live_odds_sync": "AVAILABLE",
+    "value_intelligence": {
+      "engine": "VELTRIX_VALUE_INTELLIGENCE_V1",
+      "status": "SHADOW_MODE",
+      "fixtures_evaluated": 7,
+      "bookmaker_price_sets_by_market": {
+        "1X2": 121,
+        "BTTS": 20,
+        "OVER_UNDER_1_5": 0,
+        "OVER_UNDER_2_5": 26,
+        "OVER_UNDER_3_5": 4
+      },
+      "shadow_candidate_count": 4,
+      "alerts_enabled": false,
+      "release_status": "LOCKED_SHADOW_MODE",
+      "note": "Market consensus, model shrinkage and quote-level screening are research-only. Existing value certificate remains authoritative."
+    },
+    "value_validation_certificate": "LOCKED_INSUFFICIENT_EVIDENCE"
+  },
+  "value_evidence_summary": {
+    "observations_total": 3968,
+    "observations_added": 0,
+    "price_series": 1416,
+    "series_with_multiple_snapshots": 328,
+    "settled_observations": 2087,
+    "shadow_candidate_observations": 121,
+    "legacy_candidate_observations_unannotated": 0,
+    "settled_shadow_candidates": 61,
+    "shadow_candidate_wins": 8,
+    "shadow_candidate_losses": 53,
+    "shadow_candidate_quote_net_units": -46.84,
+    "shadow_candidate_quote_roi_percent": -76.7869,
+    "alerts_enabled": false
+  },
+  "paper_tracking_summary": {
+    "evaluated_report_dates": 5,
+    "cumulative_metrics_by_model": {
+      "experimental_elo_by_competition": {
+        "matches": 2,
+        "result_accuracy": 1.0,
+        "brier_score": 0.40709547999999995,
+        "log_loss": 0.735957759728448
+      },
+      "experimental_elo_global_fallback": {
+        "matches": 7,
+        "result_accuracy": 0.7142857142857143,
+        "brier_score": 0.5426830413332765,
+        "log_loss": 0.9173709305780352
+      },
+      "experimental_recent_goals_poisson": {
+        "matches": 13,
+        "result_accuracy": 0.6153846153846154,
+        "brier_score": 0.503800205210751,
+        "log_loss": 0.859153042989978
+      }
+    }
+  },
   "release_status": "LOCKED_SHADOW_MODE",
   "betting_alerts_enabled": false
 }
