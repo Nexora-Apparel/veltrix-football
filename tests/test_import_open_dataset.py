@@ -180,6 +180,7 @@ def test_current_season_fallback_adds_completed_rows_and_deduplicates():
 
 
 def test_import_dataset_keeps_fallback_only_results_when_primary_csv_has_no_rows(tmp_path, monkeypatch):
+    import csv
     import requests
     from scripts import import_open_dataset as importer
 
