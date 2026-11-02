@@ -397,11 +397,12 @@ def predict_fixtures(
         # Never silently drop eligible fixtures when the history file is empty
         # or contains no records before the requested date. Emit explicit
         # withheld records so reports distinguish missing data from no fixtures.
-        parsed = [
-            p for item in fixtures
-            if (p := _fixture_parts(item, timezone_name, include_started=True))
-            and p["kickoff_date"] == today
-        ]
+        parsed = []
+        for delivery_order, item in enumerate(fixtures):
+            fixture = _fixture_parts(item, timezone_name, include_started=True)
+            if fixture and fixture["kickoff_date"] == today:
+                fixture["_delivery_order"] = delivery_order
+                parsed.append(fixture)
         visibility_rows, candidates = [], []
         for fixture in parsed:
             if fixture["kickoff_datetime"] <= current_time:
