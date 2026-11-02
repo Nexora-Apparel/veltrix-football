@@ -31,6 +31,9 @@ jobs:
   backfill:
     if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[run-gap-backfill]') || contains(github.event.head_commit.message, '[run-openligadb-backfill]')
     runs-on: ubuntu-latest
+    concurrency:
+      group: veltrix-5dollar-provider
+      cancel-in-progress: false
     timeout-minutes: 25
     steps:
       - uses: actions/checkout@v7
