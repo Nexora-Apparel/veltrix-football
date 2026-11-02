@@ -1,13 +1,13 @@
 {
   "schema_version": 1,
   "workflow": "Daily Fixture Predictions",
-  "run_id": "41432112021",
+  "run_id": "41439411937",
   "run_attempt": "1",
-  "event": "push",
-  "commit_sha": "e73072de65ce35f8af434c3fd2072e2e25ea8c8c",
+  "event": "schedule",
+  "commit_sha": "151758e3a2635c21a3d916a99ac34504c3524644",
   "branch": "main",
-  "recorded_at_utc": "2026-11-02T10:54:15.292204+00:00",
-  "overall_status": "NEEDS_REVIEW",
+  "recorded_at_utc": "2026-11-02T11:48:03.223828+00:00",
+  "overall_status": "PASSED",
   "validation_scope": "LIVE_PIPELINE",
   "telegram_configured": true,
   "steps": {
@@ -62,26 +62,24 @@
       "status": "SHADOW_MODE",
       "fixtures_evaluated": 7,
       "bookmaker_price_sets_by_market": {
-        "1X2": 142,
+        "1X2": 81,
         "BTTS": 20,
         "OVER_UNDER_1_5": 0,
-        "OVER_UNDER_2_5": 26,
-        "OVER_UNDER_3_5": 4
+        "OVER_UNDER_2_5": 25,
+        "OVER_UNDER_3_5": 5
       },
-      "shadow_candidate_count": 2,
+      "shadow_candidate_count": 0,
       "alerts_enabled": false,
       "release_status": "LOCKED_SHADOW_MODE",
       "note": "Market consensus, model shrinkage and quote-level screening are research-only. Existing value certificate remains authoritative."
     },
-    "value_validation_certificate": "LOCKED_INSUFFICIENT_EVIDENCE",
-    "command_data_publication": "PUBLISHED",
-    "command_data_published_at_utc": "2026-11-02T10:54:04.531709+00:00"
+    "value_validation_certificate": "LOCKED_INSUFFICIENT_EVIDENCE"
   },
   "value_evidence_summary": {
-    "observations_total": 4494,
-    "observations_added": 526,
-    "price_series": 1628,
-    "series_with_multiple_snapshots": 642,
+    "observations_total": 4837,
+    "observations_added": 343,
+    "price_series": 1688,
+    "series_with_multiple_snapshots": 789,
     "settled_observations": 2087,
     "shadow_candidate_observations": 123,
     "legacy_candidate_observations_unannotated": 0,
@@ -97,7 +95,7 @@
     "cumulative_metrics_by_model": {
       "experimental_elo_by_competition": {
         "matches": 2,
-        "result_accuracy": 1,
+        "result_accuracy": 1.0,
         "brier_score": 0.40709547999999995,
         "log_loss": 0.735957759728448
       },
@@ -116,20 +114,5 @@
     }
   },
   "release_status": "LOCKED_SHADOW_MODE",
-  "betting_alerts_enabled": false,
-  "latest_test_run": {
-    "run_id": "41434691561",
-    "commit_sha": "151758e3a2635c21a3d916a99ac34504c3524644",
-    "recorded_at_utc": "2026-11-02T11:11:27.346490+00:00",
-    "overall_status": "TESTS_PASSED",
-    "steps": {
-      "unit_tests": "success",
-      "dashboard_js": "success"
-    }
-  },
-  "latest_test_status": "TESTS_PASSED",
-  "last_test_run_id": "41434691561",
-  "last_full_pipeline_status": "NEEDS_REVIEW",
-  "publication_status": "PUBLISHED",
-  "command_data_published_at_utc": "2026-11-02T10:54:04.531709+00:00"
+  "betting_alerts_enabled": false
 }
