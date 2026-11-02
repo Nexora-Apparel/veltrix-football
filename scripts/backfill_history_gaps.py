@@ -440,8 +440,11 @@ def run(cache_path: Path, fallback_path: Path, output_path: Path, api: Any, sess
             except (ValueError, OSError) as exc:
                 date_endpoint["request_errors"].append({"date": day, "error_type": type(exc).__name__})
 
-    # Secondary open-data results are useful additions but cannot prove global
-    # date completeness, so they never clear a primary-provider date gap alone.
+    # OpenLigaDB is an independent, commercial-compatible ODbL source.
+    # Keep its provenance on every row and never clear a global gap from this
+    # narrower league subset alone.
+    openligadb_rows, openligadb_audit = _openligadb_gap_backfill(session, gaps, delay_seconds)
+    recovered.extend(openligadb_rows)
     recovered.extend(fallback)
     unique = {}
     for row in existing + recovered:
@@ -449,6 +452,35 @@ def run(cache_path: Path, fallback_path: Path, output_path: Path, api: Any, sess
         if key[0] and key[2] and key[3] and key not in unique:
             unique[key] = row
     merged = sorted(unique.values(), key=lambda r: (str(r.get("date") or ""), str(r.get("division") or ""), _name_key(r.get("home")), _name_key(r.get("away"))))
+    existing_keys = {
+        (str(row.get("date") or "")[:10], str(row.get("division") or ""), _name_key(row.get("home")), _name_key(row.get("away")))
+        for row in existing
+    }
+    openligadb_audit["matches_added"] = sum(
+        1 for row in merged
+        if row.get("source_provider") == "OpenLigaDB"
+        and (str(row.get("date") or "")[:10], str(row.get("division") or ""), _name_key(row.get("home")), _name_key(row.get("away"))) not in existing_keys
+    )
+    openligadb_audit["matches_already_present"] = max(0, openligadb_audit.get("matches_found", 0) - openligadb_audit["matches_added"])
+    state["openligadb_gap_backfill"] = {
+        "status": openligadb_audit["status"],
+        "last_checked_lagos": datetime.now(ZoneInfo("Africa/Lagos")).isoformat(),
+        "matches_found": openligadb_audit["matches_found"],
+        "matches_added": openligadb_audit["matches_added"],
+        "dates_covered": openligadb_audit["dates_covered"],
+        "competitions": [item["shortcut"] for item in openligadb_audit["competitions"] if item["matches_found"]],
+        "license": OPENLIGADB_LICENSE,
+        "attribution": OPENLIGADB_ATTRIBUTION,
+    }
+    source_licenses = state.get("source_licenses") if isinstance(state.get("source_licenses"), dict) else {}
+    source_licenses["OpenLigaDB"] = {
+        "license": OPENLIGADB_LICENSE,
+        "license_url": OPENLIGADB_LICENSE_URL,
+        "attribution": OPENLIGADB_ATTRIBUTION,
+        "source_url": "https://www.openligadb.de/",
+        "commercial_use": "Permitted subject to ODbL 1.0 attribution and share-alike obligations.",
+    }
+    state["source_licenses"] = source_licenses
     state["history_gaps"] = [day for day in gaps if day not in resolved]
     # Keep an explicit empty list when all dates are resolved. Consumers can
     # distinguish "checked and complete" from an older cache with no gap audit.
@@ -468,11 +500,20 @@ def run(cache_path: Path, fallback_path: Path, output_path: Path, api: Any, sess
     output_path.parent.mkdir(parents=True, exist_ok=True)
     output_path.write_text(json.dumps(cache, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
     report = {
-        "status": "PROVIDER_RATE_LIMITED" if rate_limited else ("COMPLETE" if not state.get("history_gaps") else ("PARTIAL_PROVIDER_RETRY_COOLDOWN" if provider_cooldown_active and not force else "PARTIAL_UNRESOLVED_SOURCE_GAPS")),
+        "status": (
+            "COMPLETE" if not state.get("history_gaps")
+            else "PARTIAL_OPENLIGADB_RECOVERY" if openligadb_audit.get("matches_found")
+            else "PROVIDER_RATE_LIMITED" if rate_limited
+            else "PARTIAL_PROVIDER_RETRY_COOLDOWN" if provider_cooldown_active and not force
+            else "PARTIAL_UNRESOLVED_SOURCE_GAPS"
+        ),
         "requested_gap_dates": len(gaps), "primary_resolved_dates": len(provider_resolved_dates),
         "open_matchday_resolved_dates": sorted(open_resolved_dates), "all_resolved_dates": sorted(resolved),
         "unresolved_dates": state.get("history_gaps", []),
         "open_matchday": open_audit,
+        "openligadb": openligadb_audit,
+        "openligadb_matches_added": openligadb_audit["matches_added"],
+        "primary_provider_rate_limited": rate_limited,
         "date_endpoint": date_endpoint,
         "request_delay_seconds": delay_seconds,
         "provider_retry_cooldown_active": provider_cooldown_active,
@@ -485,7 +526,7 @@ def run(cache_path: Path, fallback_path: Path, output_path: Path, api: Any, sess
         "league_endpoint_matches_added": sum(1 for row in recovered if row.get("source_provider") == "5DollarFootballAPI_LEAGUE_FIXTURES"),
         "cache_rows_before": len(existing), "cache_rows_after": len(merged),
         "date_results": day_results,
-        "integrity": "Secondary results are added with provenance; unresolved dates are never silently marked complete.",
+        "integrity": "OpenLigaDB rows retain ODbL provenance; this partial league subset never clears global date gaps. Unresolved dates are never silently marked complete.",
         "alerts_enabled": False,
     }
     return report
