@@ -175,6 +175,7 @@ def _openligadb_available_leagues(session: Any, season: int = 2026) -> tuple[lis
             raise ValueError("OpenLigaDB available-leagues response was not a JSON list.")
         audit["available_count"] = len(payload)
         mapped = []
+        unmapped = []
         seen = set()
         for item in payload:
             if not isinstance(item, dict):
@@ -185,13 +186,17 @@ def _openligadb_available_leagues(session: Any, season: int = 2026) -> tuple[lis
             shortcut = str(item.get("leagueShortcut") or "").strip()
             division = _openligadb_division(item)
             name = str(item.get("leagueName") or item.get("name") or "").strip()
-            if not shortcut or not division or (shortcut, division) in seen:
+            if not shortcut or not division:
+                unmapped.append({"shortcut": shortcut or None, "name": name or None})
+                continue
+            if (shortcut, division) in seen:
                 continue
             seen.add((shortcut, division))
             mapped.append({"shortcut": shortcut, "division": division, "name": name})
         mapped.sort(key=lambda row: (row["division"], row["shortcut"]))
         audit["mapped_count"] = len(mapped)
         audit["unmapped_count"] = max(0, audit["available_count"] - len(mapped))
+        audit["unmapped_name_sample"] = unmapped[:40]
         audit["status"] = "MAPPED_LEAGUES_FOUND" if mapped else "NO_MAPPED_LEAGUES"
         return mapped, audit
     except requests.HTTPError as exc:
@@ -234,7 +239,12 @@ def _openligadb_gap_backfill(session: Any, gaps: list[str], delay_seconds: float
             discovered, discovery_audit = _openligadb_available_leagues(client, 2026)
             audit["available_leagues_discovery"] = discovery_audit
             if discovered:
-                leagues = discovered
+                # Keep the known cross-competition shortcuts and merge API
+                # discoveries; the season catalogue can be incomplete or use
+                # alternate/test shortcuts for a given season.
+                by_shortcut = {item["shortcut"]: item for item in OPENLIGADB_LEAGUES}
+                by_shortcut.update({item["shortcut"]: item for item in discovered})
+                leagues = sorted(by_shortcut.values(), key=lambda row: (row["division"], row["shortcut"]))
             elif discovery_audit.get("status") == "HTTP_ERROR" and discovery_audit.get("status_code") == 429:
                 rate_limited = True
                 leagues = []
