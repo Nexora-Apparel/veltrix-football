@@ -1,6 +1,7 @@
 # Current-day delivery replay marker: 2026-11-02 verification attempt 2.
 # Live report verification trigger marker: [run-live-verification]
 """Retry known historical result gaps and publish only verified recovered scores."""
+# [run-openligadb-backfill] One-shot recovery pass after canonical shortcut mapping.
 # ODbL provenance is recorded per row; partial OpenLigaDB coverage never clears global gaps.
 # One-shot ODbL supplement after merging static and discovered competition shortcuts [run-openligadb-backfill].
 # ODbL-only recovery trigger [run-openligadb-backfill]; preserve the 5Dollar cooldown.
