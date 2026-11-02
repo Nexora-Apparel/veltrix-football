@@ -356,3 +356,102 @@ def _date_blocks(values: list[str], count: int):
     size = max(1, math.ceil(len(values) / count))
     for start in range(0, len(values), size):
         yield values[start:start+size]
+
+
+def extract_report_odds_snapshots(report: Mapping[str, Any]) -> list[dict[str, Any]]:
+    """Extract timestamped observed quotes from normalized daily report records.
+
+    5Dollar quotes use VELTRIX's fetched_at observation time because its standard
+    fixture-odds response does not timestamp every current/closing selection.
+    The Odds API market last_update is preferred where present. Missing quote
+    timestamps fall back to the report's fetched_at and are clearly labelled.
+    """
+    snapshots: list[dict[str, Any]] = []
+    for prediction in report.get("predictions") or []:
+        if not isinstance(prediction, Mapping):
+            continue
+        fixture_id = prediction.get("fixture_id")
+        if fixture_id is None:
+            continue
+        home = str(prediction.get("home_team") or "")
+        away = str(prediction.get("away_team") or "")
+        five = prediction.get("five_dollar_market_odds") or {}
+        if isinstance(five, Mapping):
+            observed_at = five.get("fetched_at")
+            for book in five.get("bookmakers") or []:
+                if not isinstance(book, Mapping):
+                    continue
+                bookmaker = str(book.get("bookmaker") or "unknown")
+                for market, selections, line in (
+                    ("1X2", (("home", "home"), ("draw", "draw"), ("away", "away")), None),
+                    ("BTTS", (("yes", "yes"), ("no", "no")), None),
+                    ("TOTALS", (("over", "over"), ("under", "under")), (book.get("over_under") or {}).get("line")),
+                ):
+                    if market == "1X2":
+                        prices = book.get("1x2") or {}
+                    elif market == "BTTS":
+                        prices = book.get("btts") or {}
+                    else:
+                        prices = book.get("over_under") or {}
+                    for selection, key in selections:
+                        price = prices.get(key)
+                        if price is None or observed_at is None:
+                            continue
+                        try:
+                            snapshots.append(capture_odds_snapshot(
+                                fixture_id=str(fixture_id), market=market, selection=selection,
+                                decimal_odds=float(price), bookmaker=bookmaker,
+                                captured_at=observed_at, source="5DollarFootballAPI",
+                                line=line, quote_id=f"{fixture_id}:{bookmaker}:{market}:{selection}:{observed_at}",
+                            ) | {"timestamp_basis": "VELTRIX_FETCH_OBSERVATION"})
+                        except (TypeError, ValueError):
+                            continue
+
+        odds_api = prediction.get("the_odds_api_market_odds") or {}
+        if not isinstance(odds_api, Mapping):
+            continue
+        fetched_at = odds_api.get("fetched_at")
+        market_map = odds_api.get("markets") or {}
+        for source_market, books in market_map.items():
+            if source_market not in {"h2h", "totals", "btts"} or not isinstance(books, list):
+                continue
+            market_name = {"h2h": "1X2", "totals": "TOTALS", "btts": "BTTS"}[source_market]
+            for book in books:
+                if not isinstance(book, Mapping):
+                    continue
+                bookmaker = str(book.get("bookmaker") or "unknown")
+                observed_at = book.get("last_update") or fetched_at
+                basis = "PROVIDER_LAST_UPDATE" if book.get("last_update") else "VELTRIX_FETCH_OBSERVATION"
+                for outcome in book.get("outcomes") or []:
+                    if not isinstance(outcome, Mapping) or observed_at is None:
+                        continue
+                    name = str(outcome.get("name") or "").strip()
+                    point = outcome.get("point")
+                    if source_market == "h2h":
+                        selection = "draw" if name.casefold() in {"draw", "tie"} else (
+                            "home" if name.casefold() == home.casefold() else
+                            "away" if name.casefold() == away.casefold() else ""
+                        )
+                        line = None
+                    elif source_market == "btts":
+                        selection = "yes" if name.casefold() in {"yes", "btts yes"} else (
+                            "no" if name.casefold() in {"no", "btts no"} else ""
+                        )
+                        line = None
+                    else:
+                        selection = "over" if name.casefold().startswith("over") else (
+                            "under" if name.casefold().startswith("under") else ""
+                        )
+                        line = point
+                    if not selection:
+                        continue
+                    try:
+                        snapshots.append(capture_odds_snapshot(
+                            fixture_id=str(fixture_id), market=market_name, selection=selection,
+                            decimal_odds=float(outcome["price"]), bookmaker=bookmaker,
+                            captured_at=observed_at, source="The Odds API", line=line,
+                            quote_id=f"{fixture_id}:{bookmaker}:{market_name}:{selection}:{point}:{observed_at}",
+                        ) | {"timestamp_basis": basis})
+                    except (KeyError, TypeError, ValueError):
+                        continue
+    return snapshots
