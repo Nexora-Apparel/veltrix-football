@@ -247,11 +247,17 @@ def run(cache_path: Path, fallback_path: Path, output_path: Path, api: Any, sess
             if day in resolved:
                 continue
             try:
+                date_fixtures = getattr(api, "fixtures", None)
+                if not callable(date_fixtures):
+                    date_endpoint["request_errors"].append({
+                        "date": day, "error_type": "DATE_ENDPOINT_UNAVAILABLE",
+                    })
+                    continue
                 # A 429 from the league catalogue must not suppress an
                 # independent date endpoint probe; wait before probing it.
                 date_pause = max(delay_seconds, 2.0 if rate_limited else 1.0)
                 time_module.sleep(date_pause)
-                payload = api.fixtures(day, "Africa/Lagos")
+                payload = date_fixtures(day, "Africa/Lagos")
                 # The date endpoint is independently usable even if the
                 # league-catalogue endpoint was rate-limited.
                 rate_limited = False
@@ -262,7 +268,7 @@ def run(cache_path: Path, fallback_path: Path, output_path: Path, api: Any, sess
                 if not rows:
                     if delay_seconds:
                         time_module.sleep(delay_seconds)
-                    utc_payload = api.fixtures(day, "UTC")
+                    utc_payload = date_fixtures(day, "UTC")
                     utc_rows = extract_completed_results(utc_payload)
                     date_endpoint["timezone_retries"] += 1
                     if utc_rows:
