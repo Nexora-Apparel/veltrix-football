@@ -12637,7 +12637,7 @@
     "covered_through": "2026-11-01",
     "ranges_succeeded": 1,
     "ranges_requested": 1,
-    "backfill_complete": true,
+    "backfill_complete": false,
     "retryable_gap_date_count": 11,
     "provider_plan_limited_date_count": 0,
     "provider_plan_limited_dates": [],
@@ -12676,7 +12676,9 @@
       "next_automatic_retry_lagos": "06:30",
       "note": "The 5DollarFootballAPI league-history request returned HTTP 429. Non-commercial fallback feeds are excluded from the production dataset. The remaining dates stay unresolved until a licensed provider response is available.",
       "alerts_enabled": false
-    }
+    },
+    "incremental_backfill_cursor_complete": true,
+    "history_gap_backfill_complete": false
   },
   "multi_source_odds_sync": {
     "five_dollar": {
