@@ -242,3 +242,117 @@ def feature_readiness_audit(features: Mapping[str, Any]) -> dict[str, Any]:
     return {"features": states, "ready_count": sum(v in ("VERIFIED", "MEASURED") for v in states.values()),
             "total_features": len(required),
             "production_feature_set_ready": all(v in ("VERIFIED", "MEASURED") for v in states.values())}
+
+
+def ppda_feature(opponent_passes_allowed: Any, defensive_actions: Any, *,
+                 source: str, observed_at: Any, forecast_at: Any) -> dict[str, Any]:
+    """Compute PPDA only from provider-sourced passes and defensive actions."""
+    try:
+        passes = float(opponent_passes_allowed)
+        actions = float(defensive_actions)
+        if not math.isfinite(passes) or not math.isfinite(actions) or passes < 0 or actions <= 0:
+            raise ValueError("PPDA requires finite non-negative passes and positive defensive actions")
+        record = verified_feature(passes / actions, source=source,
+                                  observed_at=observed_at, forecast_at=forecast_at)
+        record["metric"] = "PPDA"
+        return record
+    except (TypeError, ValueError) as exc:
+        return {"status": "REJECTED", "reason": str(exc)}
+
+
+def shot_conversion_feature(goals: Any, shots_on_target: Any, *,
+                            source: str, observed_at: Any,
+                            forecast_at: Any) -> dict[str, Any]:
+    """Compute goals per shot-on-target; denominator must be positive."""
+    try:
+        scored, shots = float(goals), float(shots_on_target)
+        if (not math.isfinite(scored) or not math.isfinite(shots)
+                or scored < 0 or shots <= 0 or scored > shots):
+            raise ValueError("shot conversion requires 0 <= goals <= shots_on_target and positive shots")
+        record = verified_feature(scored / shots, source=source,
+                                  observed_at=observed_at, forecast_at=forecast_at)
+        record["metric"] = "goals_per_shot_on_target"
+        return record
+    except (TypeError, ValueError) as exc:
+        return {"status": "REJECTED", "reason": str(exc)}
+
+
+def chronological_market_experiment(rows: Iterable[Mapping[str, Any]],
+                                    market_specs: Mapping[str, Mapping[str, str]],
+                                    *, minimum_training_matches: int = 1000,
+                                    minimum_test_matches: int = 100) -> dict[str, Any]:
+    """Score each market independently on disjoint future date blocks.
+
+    Each spec maps a market name to probability_key and actual_key. For 1X2,
+    probability_key must contain H/D/A probabilities and actual_key one of H/D/A.
+    Binary markets use probabilities in [0,1] and actual outcomes 0/1.
+    This evaluates supplied frozen forecasts; it does not fit models or calibrators.
+    """
+    source = [dict(row) for row in rows]
+    dates = sorted({str(row.get("match_date", "")) for row in source if row.get("match_date")})
+    report = {"method": "frozen out-of-sample forecasts; expanding date order; per-market scoring",
+              "dates": len(dates), "markets": {}}
+    if len(dates) < 3:
+        return {**report, "status": "INSUFFICIENT_DATES"}
+    # Reserve the first 60% of dates as history and split the remainder into
+    # up to four non-overlapping test blocks.
+    split = max(1, min(len(dates)-1, int(len(dates)*0.60)))
+    test_dates = dates[split:]
+    blocks = [list(block) for block in _date_blocks(test_dates, 4)]
+    for market, spec in market_specs.items():
+        probability_key, actual_key = spec.get("probability_key"), spec.get("actual_key")
+        folds = []
+        for index, block in enumerate(blocks, 1):
+            test_set = set(block)
+            items = [row for row in source if str(row.get("match_date")) in test_set]
+            clean = []
+            for row in items:
+                p, y = row.get(probability_key), row.get(actual_key)
+                if isinstance(p, Mapping):
+                    try:
+                        probs = {k: float(p[k]) for k in OUTCOMES_1X2}
+                        if y not in OUTCOMES_1X2 or any(not math.isfinite(v) or v < 0 or v > 1 for v in probs.values()) or abs(sum(probs.values())-1) > 1e-5:
+                            continue
+                        clean.append((probs, str(y)))
+                    except (KeyError, TypeError, ValueError):
+                        continue
+                else:
+                    try:
+                        probability, actual = float(p), int(y)
+                        if not math.isfinite(probability) or not 0 <= probability <= 1 or actual not in (0,1):
+                            continue
+                        clean.append((probability, actual))
+                    except (TypeError, ValueError):
+                        continue
+            training_count = sum(1 for row in source if str(row.get("match_date")) < block[0]
+                                 and row.get(probability_key) is not None
+                                 and row.get(actual_key) is not None)
+            if training_count < minimum_training_matches or len(clean) < minimum_test_matches:
+                folds.append({"fold": index, "status": "INSUFFICIENT_MATCHES",
+                              "training_matches": training_count, "test_matches": len(clean)})
+                continue
+            if clean and isinstance(clean[0][0], dict):
+                n = len(clean)
+                brier = sum(sum((p[k]-float(y==k))**2 for k in OUTCOMES_1X2) for p,y in clean)/n
+                loss = -sum(math.log(max(1e-15,p[y])) for p,y in clean)/n
+                accuracy = sum(max(p,key=p.get)==y for p,y in clean)/n
+                metrics = {"matches":n,"brier_score":brier,"log_loss":loss,"accuracy":accuracy}
+            else:
+                metrics = binary_market_metrics([{"probability":p,"actual":y} for p,y in clean])
+            folds.append({"fold":index,"status":"EVALUATED","training_matches":training_count,
+                          "test_matches":len(clean),"test_start":block[0],"test_end":block[-1],
+                          "metrics":metrics})
+        report["markets"][market] = {"folds":folds,
+            "evaluated_folds":sum(f["status"]=="EVALUATED" for f in folds),
+            "status":"EVALUATED" if any(f["status"]=="EVALUATED" for f in folds) else "INSUFFICIENT_MATCHES"}
+    report["status"] = "EVALUATED" if any(v["evaluated_folds"] for v in report["markets"].values()) else "INSUFFICIENT_MATCHES"
+    return report
+
+
+def _date_blocks(values: list[str], count: int):
+    """Yield up to count contiguous, non-overlapping date blocks."""
+    if not values:
+        return
+    size = max(1, math.ceil(len(values) / count))
+    for start in range(0, len(values), size):
+        yield values[start:start+size]
