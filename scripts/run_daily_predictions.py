@@ -320,6 +320,7 @@ def main() -> None:
         target_date = date.fromisoformat(args.date) if args.date else datetime.now(ZoneInfo(args.timezone)).date()
         api = FiveDollarFootballClient()
         primary_fixture_error = None
+        primary_fixture_error_details = None
         primary_provider_status = "SUCCESS"
         if not api.api_key:
             primary_provider_status = "NOT_CONFIGURED"
@@ -338,6 +339,12 @@ def main() -> None:
                 primary_fixture_count = len(payload.get("response") or [])
             except ProviderAPIError as exc:
                 primary_fixture_error = type(exc).__name__
+                primary_fixture_error_details = {
+                    "status_code": getattr(exc, "status_code", None),
+                    "retry_after_seconds": getattr(exc, "retry_after_seconds", None),
+                    "rate_limit_remaining": getattr(exc, "rate_limit_remaining", None),
+                    "rate_limit_reset": getattr(exc, "rate_limit_reset", None),
+                }
                 primary_provider_status = "RATE_LIMITED" if "HTTP 429" in str(exc) else "UNAVAILABLE"
                 primary_fixture_count = 0
                 payload = {
@@ -447,6 +454,7 @@ def main() -> None:
             "provider": fixture_meta.get("provider", "5DollarFootballAPI"),
             "status": primary_provider_status,
             "error_type": primary_fixture_error,
+            "error_details": primary_fixture_error_details,
             "requests_remaining": fixture_meta.get("requests_remaining"),
             "pages_fetched": fixture_meta.get("pages_fetched", 1),
             "fixtures_received": primary_fixture_count,
