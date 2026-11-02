@@ -318,8 +318,8 @@ def run(cache_path: Path, fallback_path: Path, output_path: Path, api: Any, sess
             unique[key] = row
     merged = sorted(unique.values(), key=lambda r: (str(r.get("date") or ""), str(r.get("division") or ""), _name_key(r.get("home")), _name_key(r.get("away"))))
     state["history_gaps"] = [day for day in gaps if day not in resolved]
-    if not state["history_gaps"]:
-        state.pop("history_gaps", None)
+    # Keep an explicit empty list when all dates are resolved. Consumers can
+    # distinguish "checked and complete" from an older cache with no gap audit.
     if (force or not provider_cooldown_active) and not rate_limited:
         # Only a completed non-rate-limited attempt advances the daily retry
         # cursor. A 429 remains immediately eligible for the next scheduled
