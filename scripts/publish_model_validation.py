@@ -144,6 +144,7 @@ def main() -> int:
     if not repo or not token:
         raise RuntimeError("GitHub publication context is missing.")
     publish("public-data/model_validation_report.json", output, repo, token)
+    publish("public-data/historical_coverage_audit.json", Path(args.coverage), repo, token)
     return 0
 
 
