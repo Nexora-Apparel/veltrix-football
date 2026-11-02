@@ -487,6 +487,11 @@ def main() -> None:
         )
         history_gaps = updated_cache_state.get("history_gaps") or []
         plan_limited_dates = updated_cache_state.get("history_plan_limited_dates") or []
+        cache_source_counts = {}
+        for cached_match in merged_recent_rows:
+            source_name = str(cached_match.get("source_provider") or "LEGACY_UNATTRIBUTED")
+            cache_source_counts[source_name] = cache_source_counts.get(source_name, 0) + 1
+        legacy_unattributed_rows = cache_source_counts.get("LEGACY_UNATTRIBUTED", 0)
         refresh_complete = cache_backfill_complete and not history_gaps and not plan_limited_dates and (
             not contiguous_candidate or contiguous_candidate >= (target_date - timedelta(days=1)).isoformat()
         )
@@ -512,6 +517,10 @@ def main() -> None:
             "retryable_gap_date_count": len(history_gaps) if isinstance(history_gaps, list) else 0,
             "provider_plan_limited_date_count": len(plan_limited_dates) if isinstance(plan_limited_dates, list) else 0,
             "provider_plan_limited_dates": plan_limited_dates if isinstance(plan_limited_dates, list) else [],
+            "recent_cache_rows": len(merged_recent_rows),
+            "recent_cache_source_counts": cache_source_counts,
+            "legacy_unattributed_rows": legacy_unattributed_rows,
+            "source_provenance_status": "PARTIAL_LEGACY_UNATTRIBUTED" if legacy_unattributed_rows else "ATTRIBUTED",
             "cache_path": str(cache_path),
         }
         report = enrich_report_with_multi_source_odds(
