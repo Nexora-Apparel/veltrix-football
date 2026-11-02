@@ -210,17 +210,42 @@ def rolling_origin_1x2_vector_scaling(
 
     def score(items, bias=None, market=False):
         if not items:
-            return {"matches": 0, "brier_score": None, "log_loss": None, "accuracy": None}
+            return {
+                "matches": 0, "brier_score": None, "log_loss": None, "accuracy": None,
+                "predicted_class_counts": {"H": 0, "D": 0, "A": 0},
+                "actual_class_counts": {"H": 0, "D": 0, "A": 0},
+                "class_precision_recall": {},
+            }
         brier = loss = correct = 0.0
+        predicted = {k: 0 for k in ("H", "D", "A")}
+        actual = {k: 0 for k in ("H", "D", "A")}
+        true_positive = {k: 0 for k in ("H", "D", "A")}
         for row in items:
             raw = row["market"] if market else row[probability_key]
             p = transform(raw, bias) if bias is not None and not market else raw
             y = row["actual"]
+            pick = max(p, key=p.get)
+            predicted[pick] += 1
+            actual[y] += 1
+            true_positive[y] += int(pick == y)
             brier += sum((p[k] - float(k == y)) ** 2 for k in ("H", "D", "A"))
             loss -= math.log(max(1e-15, p[y]))
-            correct += int(max(p, key=p.get) == y)
+            correct += int(pick == y)
         n = len(items)
-        return {"matches": n, "brier_score": brier / n, "log_loss": loss / n, "accuracy": correct / n}
+        class_metrics = {
+            k: {
+                "actual_share": actual[k] / n,
+                "predicted_share": predicted[k] / n,
+                "precision": true_positive[k] / predicted[k] if predicted[k] else None,
+                "recall": true_positive[k] / actual[k] if actual[k] else None,
+            }
+            for k in ("H", "D", "A")
+        }
+        return {
+            "matches": n, "brier_score": brier / n, "log_loss": loss / n, "accuracy": correct / n,
+            "predicted_class_counts": predicted, "actual_class_counts": actual,
+            "class_precision_recall": class_metrics,
+        }
 
     starts = sorted(set(min(len(dates) - 1, int(len(dates) * (0.5 + 0.1 * i))) for i in range(folds)))
     results, all_test, all_cal, all_market, all_market_cal = [], [], [], [], []
