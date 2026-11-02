@@ -179,26 +179,16 @@ def run(cache_path: Path, fallback_path: Path, output_path: Path, api: Any, sess
     state = cache.get("state") if isinstance(cache.get("state"), dict) else {}
     gaps = sorted({str(x) for x in state.get("history_gaps", []) if isinstance(x, str)})
     existing = list(cache["matches"])
+    provider_cooldown_active = False
+    retry_after_date = None
     if gaps and state.get("last_gap_retry_on"):
         try:
             last_retry = date.fromisoformat(str(state["last_gap_retry_on"]))
             today_lagos = datetime.now(ZoneInfo("Africa/Lagos")).date()
-            days_since_retry = (today_lagos - last_retry).days
+            provider_cooldown_active = (today_lagos - last_retry).days < 7
+            retry_after_date = (last_retry + timedelta(days=7)).isoformat()
         except (TypeError, ValueError):
-            days_since_retry = 7
-            last_retry = None
-        if days_since_retry < 7:
-            output_path.parent.mkdir(parents=True, exist_ok=True)
-            output_path.write_text(json.dumps(cache, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
-            return {
-                "status": "RETRY_COOLDOWN",
-                "requested_gap_dates": len(gaps),
-                "unresolved_dates": gaps,
-                "last_gap_retry_on": str(state.get("last_gap_retry_on")),
-                "retry_after_date": (last_retry + timedelta(days=7)).isoformat() if last_retry else None,
-                "provider_requests_made": 0,
-                "alerts_enabled": False,
-            }
+            provider_cooldown_active = False
     fallback = _fallback_rows(fallback_path, set(gaps))
     fallback_by_day: dict[str, int] = {}
     for row in fallback:
@@ -214,7 +204,7 @@ def run(cache_path: Path, fallback_path: Path, output_path: Path, api: Any, sess
     league_scan = {"active_mapped_leagues": 0, "successful_league_queries": 0, "matches": 0, "failed_leagues": []}
     league_rows_by_day: dict[str, list[dict[str, Any]]] = {day: [] for day in unresolved_gaps}
     rate_limited = False
-    if unresolved_gaps:
+    if unresolved_gaps and not provider_cooldown_active:
         leagues = []
         page = 1
         try:
@@ -305,8 +295,8 @@ def run(cache_path: Path, fallback_path: Path, output_path: Path, api: Any, sess
     state["history_gaps"] = [day for day in gaps if day not in resolved]
     if not state["history_gaps"]:
         state.pop("history_gaps", None)
-    if not rate_limited:
-        state["last_gap_retry_on"] = "2026-11-02"
+    if not rate_limited and not provider_cooldown_active:
+        state["last_gap_retry_on"] = datetime.now(ZoneInfo("Africa/Lagos")).date().isoformat()
     state["gap_backfill_last_run"] = "2026-11-02"
     state["gap_backfill_provider_resolved_dates"] = sorted(set(state.get("gap_backfill_provider_resolved_dates", [])) | resolved)
     state["gap_backfill_open_matchday_resolved_dates"] = sorted(set(state.get("gap_backfill_open_matchday_resolved_dates", [])) | set(open_audit.get("resolved_dates") or []))
@@ -316,10 +306,12 @@ def run(cache_path: Path, fallback_path: Path, output_path: Path, api: Any, sess
     output_path.parent.mkdir(parents=True, exist_ok=True)
     output_path.write_text(json.dumps(cache, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
     report = {
-        "status": "PROVIDER_RATE_LIMITED" if rate_limited else ("COMPLETE" if not state.get("history_gaps") else "PARTIAL_UNRESOLVED_SOURCE_GAPS"),
+        "status": "PROVIDER_RATE_LIMITED" if rate_limited else ("COMPLETE" if not state.get("history_gaps") else ("PARTIAL_PROVIDER_RETRY_COOLDOWN" if provider_cooldown_active else "PARTIAL_UNRESOLVED_SOURCE_GAPS")),
         "requested_gap_dates": len(gaps), "primary_resolved_dates": len(resolved),
         "unresolved_dates": state.get("history_gaps", []),
         "open_matchday": open_audit,
+        "provider_retry_cooldown_active": provider_cooldown_active,
+        "provider_retry_after_date": retry_after_date,
         "league_endpoint_scan": league_scan,
         "league_endpoint_resolved_dates": sorted(day for day, rows in league_rows_by_day.items() if rows and day in resolved),
         "secondary_fallback_matches_added": len(fallback),
