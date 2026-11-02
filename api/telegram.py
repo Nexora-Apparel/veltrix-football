@@ -13,7 +13,7 @@ from fastapi import FastAPI, Header, HTTPException, Request as FastAPIRequest
 from fastapi.responses import HTMLResponse, JSONResponse
 
 from app.telegram_commands import handle_command
-from app.report_artifacts import load_latest_report, load_paper_ledger
+from app.report_artifacts import load_latest_report, load_paper_ledger, load_model_validation_report
 from app.telegram_security import telegram_webhook_secret_token
 
 app = FastAPI(title="Veltrix Football Command Centre")
@@ -232,7 +232,7 @@ function renderPaperTracking(d){
 }
 function renderStatus(d){
  const box=document.getElementById('systemStatus');box.replaceChildren();const hist=d.historical_data_coverage||{};const odds=d.live_odds_sync||{};const primary=d.primary_provider_request||{};
- const vals=[['Report publication',d.publication_status||d.status||'UNKNOWN'],['Fixture source',(primary.provider||'Unknown')+' · '+(primary.status||'unknown')],['The Odds API',odds.the_odds_api_status||'unknown'],['Historical coverage',hist.status||'not reported']];
+ const validation=d.model_validation||{};const vals=[['Report publication',d.publication_status||d.status||'UNKNOWN'],['Fixture source',(primary.provider||'Unknown')+' · '+(primary.status||'unknown')],['The Odds API',odds.the_odds_api_status||'unknown'],['Historical coverage',hist.status||'not reported'],['Model validation',validation.status||'NOT_REPORTED']];
  for(const [title,value] of vals){const el=document.createElement('div');el.className='statusitem reveal';const t=document.createElement('div');t.className='stitle';t.textContent=title;const v=document.createElement('div');v.className='svalue';v.textContent=value;el.append(t,v);box.append(el)}
  const details=document.getElementById('statusDetails');const lines=[];
  lines.push('Forecast validation: '+(d.warning||'Experimental model; not validated for betting.'));
@@ -242,6 +242,14 @@ function renderStatus(d){
  lines.push('5Dollar odds: '+(d.multi_source_odds_sync?.five_dollar?.status||d.live_odds_sync?.five_dollar_status||'not reported')+'.');
  lines.push('The Odds API: '+(d.multi_source_odds_sync?.the_odds_api?.status||odds.the_odds_api_status||'not reported')+'. Matched fixtures: '+(odds.fixtures_with_market_odds??d.fixtures_with_market_odds??0)+'.');
  lines.push('Historical coverage: '+(hist.status||'not reported')+'.');if(Number(hist.provider_plan_limited_date_count)>0)lines.push('Provider-limited historical dates: '+hist.provider_plan_limited_date_count+'.');if(Number(hist.retryable_gap_date_count)>0)lines.push('Transient historical gaps queued for bounded retry: '+hist.retryable_gap_date_count+'.');
+ const validationData=d.model_validation||{};const dataset=validationData.dataset||{};const historical=validationData.historical_1x2||{};const models=historical.full_sample_models||{};const market=historical.market_comparison_same_fixtures||{};const market1x2=market.market||{};const elo=models.elo||{};const poisson=models.poisson||{};
+ if(validationData.status){lines.push('Validation dataset: '+(dataset.valid_rows??'—')+' valid matches · '+(dataset.competition_count??'—')+' competitions · '+(dataset.first_match_date||'—')+' to '+(dataset.last_match_date||'—')+'.');}
+ if(historical.release_status){lines.push('1X2 release: '+historical.release_status+'. Elo '+(Number.isFinite(Number(elo.result_accuracy))?(Number(elo.result_accuracy)*100).toFixed(2)+'%':'—')+' accuracy vs market '+(Number.isFinite(Number(market1x2.result_accuracy))?(Number(market1x2.result_accuracy)*100).toFixed(2)+'%':'—')+' on '+(market1x2.matches??'—')+' same-fixture odds matches.');}
+ const goalValidation=validationData.rolling_origin_goal_market_calibration||{};const goalMarkets=goalValidation.markets||{};const passedGoals=Object.entries(goalMarkets).filter(([,v])=>v&&v.status==='CALIBRATION_DIAGNOSTIC_PASS').map(([k])=>k.toUpperCase().replaceAll('_',' '));
+ if(passedGoals.length){lines.push('BTTS / totals calibration: '+passedGoals.join(', ')+' passed all '+(goalValidation.folds_evaluated||0)+' chronological diagnostic folds; report-only, not betting certification.');}
+ const oneXTwo=validationData.rolling_origin_1x2_calibration||{};const oneXTwoPass=Object.values(oneXTwo).filter(v=>v&&v.status==='ROLLING_ORIGIN_DIAGNOSTIC_ONLY'&&v.calibration_diagnostic_pass).length;
+ if(oneXTwoPass){lines.push('1X2 calibration: '+oneXTwoPass+' model variants improved their own calibration in rolling folds, but neither beat the bookmaker benchmark; no calibration change deployed.');}
+ lines.push('Value-betting release: '+(validationData.release_controls?.value_betting||'LOCKED')+'.');
  details.textContent=lines.join('\\n');observeReveals(box);observeReveals(details.parentElement);
 }
 function observeReveals(root=document){
@@ -283,6 +291,7 @@ def dashboard() -> HTMLResponse:
 @app.get("/api/dashboard-data")
 def dashboard_data() -> dict:
     report = load_latest_report()
+    model_validation = load_model_validation_report()
     if not isinstance(report, dict):
         return {"status": "UNAVAILABLE", "warning": "No published report could be loaded.", "predictions": []}
     now = datetime.now(ZoneInfo("Africa/Lagos"))
@@ -402,6 +411,7 @@ def dashboard_data() -> dict:
         "fixtures_visible": len(upcoming),
         "unsupported_fixtures": sum(1 for row in upcoming if isinstance(row, dict) and row.get("status") != "EXPERIMENTAL_ONLY"),
         "fixtures_with_market_odds": odds_count,
+        "model_validation": model_validation or {"status": "NOT_REPORTED", "dataset": {}, "historical_1x2": {}, "rolling_origin_1x2_calibration": {}, "rolling_origin_goal_market_calibration": {}, "release_controls": {}},
         "goal_market_calibration": report.get("goal_market_calibration") or {
             "status": "NOT_REPORTED", "markets": [], "compatible_forecasts": 0,
             "applied_forecasts": 0,
