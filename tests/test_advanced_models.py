@@ -73,3 +73,24 @@ def test_rest_congestion_context_rejects_invalid_window():
 
     with pytest.raises(ValueError):
         rest_congestion_context([], "alpha", "beta", date(2026, 10, 25), window_days=0)
+
+
+def test_rest_congestion_context_adds_load_windows_and_verified_travel():
+    from datetime import date
+    history = [
+        {"date": date(2026, 10, 1), "home_key": "alpha", "away_key": "beta",
+         "venue_latitude": 51.5, "venue_longitude": -0.1},
+        {"date": date(2026, 10, 15), "home_key": "gamma", "away_key": "alpha",
+         "venue_latitude": 51.5, "venue_longitude": -0.1},
+        {"date": date(2026, 10, 25), "home_key": "alpha", "away_key": "delta"},
+    ]
+    context = rest_congestion_context(
+        history, "alpha", "beta", date(2026, 10, 25),
+        target_venue_coordinates={"latitude": 48.8, "longitude": 2.3},
+    )
+    assert context["home"]["matches_in_previous_7_days"] == 0
+    assert context["home"]["matches_in_previous_14_days"] == 1
+    assert context["home"]["matches_in_previous_30_days"] == 2
+    assert context["home"]["travel_status"] == "VERIFIED_COORDINATE_DISTANCE"
+    assert context["home"]["travel_distance_km"] > 300
+    assert context["away"]["travel_distance_km"] is None
