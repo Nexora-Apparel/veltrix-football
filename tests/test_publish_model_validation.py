@@ -39,7 +39,7 @@ def sample_backtest():
                     "status": "CHRONOLOGICAL_CLASS_BALANCE_DIAGNOSTIC",
                     "matches": 100,
                     "home_bias_flag": "HOME_CLASS_OVERPREDICTED",
-                    "classes": {"H": {"actual_share": 0.43, "predicted_share": 0.65, "prediction_share_gap_percentage_points": 22.0}},
+                    "classes": {"H": {"actual_share": 0.43, "predicted_share": 0.65, "prediction_share_gap_percentage_points": 22.0, "mean_predicted_probability": 0.44, "observed_frequency": 0.43, "probability_minus_observed_percentage_points": 1.0}},
                 }
             },
             "confidence_selection_audit": {
@@ -100,7 +100,7 @@ def test_model_validation_summary_keeps_calibration_separate_from_certification(
     assert result["rolling_origin_goal_market_calibration"]["betting_certification"] is False
     assert result["release_controls"]["value_betting"] == "LOCKED_INSUFFICIENT_EVIDENCE"
     assert result["release_controls"]["alerts_enabled"] is False
-    assert result["class_balance_audit"]["poisson"]["home_bias_flag"] == "HOME_CLASS_OVERPREDICTED"
+    assert result["class_balance_audit"]["poisson"]["home_bias_flag"] == "HOME_CLASS_OVERPREDICTED"\n    assert result["class_balance_audit"]["poisson"]["classes"]["H"]["mean_predicted_probability"] == 0.44\n    assert result["class_balance_audit"]["poisson"]["classes"]["H"]["probability_minus_observed_percentage_points"] == 1.0
     assert result["confidence_selection_audit"]["elo"]["thresholds"][0]["coverage"] == 0.02
     assert result["favourite_underdog_audit"]["elo"]["underdog_wins"]["accuracy"] == 0.2
     assert result["draw_margin_experiment"]["models"]["elo"]["improved_unseen_holdout_accuracy"] is False
