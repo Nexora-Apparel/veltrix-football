@@ -688,7 +688,7 @@ def test_gap_backfill_rate_limit_records_retry_cursor(tmp_path):
     assert saved["state"]["last_gap_retry_on"] == datetime.now(ZoneInfo("Africa/Lagos")).date().isoformat()
 
 
-def test_gap_backfill_weekly_cooldown_skips_provider_calls(tmp_path):
+def test_gap_backfill_daily_cooldown_skips_provider_calls(tmp_path):
     import json
     from datetime import datetime, timedelta
     from zoneinfo import ZoneInfo
