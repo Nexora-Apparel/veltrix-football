@@ -16,7 +16,8 @@
     "EXPERIMENTAL_ONLY": 11,
     "INSUFFICIENT_HISTORY": 0,
     "UNSUPPORTED_COMPETITION": 12,
-    "KICKOFF_UNVERIFIED": 0
+    "KICKOFF_UNVERIFIED": 0,
+    "KICKOFF_PASSED": 0
   },
   "fixtures_excluded_other_date_or_status": 0,
   "predictions_created": 11,
@@ -13007,16 +13008,20 @@
     "alerts_enabled": false
   },
   "command_data_publication": "PUBLISHED",
-  "command_data_published_at_utc": "2026-11-02T10:12:59.100775+00:00",
+  "command_data_published_at_utc": "2026-11-02T10:37:30.031407+00:00",
   "delivery_filter": {
     "applied": true,
-    "filtered_at": "2026-11-02T11:12:50.032788+01:00",
-    "saved_fixture_rows": 25,
+    "filtered_at": "2026-11-02T11:37:24.520564+01:00",
+    "saved_fixture_rows": 23,
     "future_same_day_fixture_rows": 23,
-    "past_kickoffs_excluded": 2,
+    "same_day_fixture_rows_retained": 23,
+    "past_kickoffs_excluded": 0,
+    "past_kickoffs_retained": 0,
     "other_date_rows_excluded": 0,
     "missing_or_invalid_kickoff_rows_excluded": 0,
     "kickoff_unverified_rows_retained": 0,
     "unsafe_team_identity_rows_withheld": 0
-  }
+  },
+  "same_day_fixtures_retained": 23,
+  "past_kickoffs_retained": 0
 }
