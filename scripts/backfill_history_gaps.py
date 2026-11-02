@@ -320,9 +320,10 @@ def run(cache_path: Path, fallback_path: Path, output_path: Path, api: Any, sess
     state["history_gaps"] = [day for day in gaps if day not in resolved]
     if not state["history_gaps"]:
         state.pop("history_gaps", None)
-    if force or not provider_cooldown_active:
-        # A 429 is still a completed retry attempt; enforce a one-day cooldown
-        # so scheduled runs cannot repeatedly hammer the provider.
+    if (force or not provider_cooldown_active) and not rate_limited:
+        # Only a completed non-rate-limited attempt advances the daily retry
+        # cursor. A 429 remains immediately eligible for the next scheduled
+        # recovery window rather than being mislabelled as a completed retry.
         state["last_gap_retry_on"] = datetime.now(ZoneInfo("Africa/Lagos")).date().isoformat()
     state["gap_backfill_last_run"] = datetime.now(ZoneInfo("Africa/Lagos")).date().isoformat()
     open_resolved_dates = set(open_audit.get("resolved_dates") or [])
