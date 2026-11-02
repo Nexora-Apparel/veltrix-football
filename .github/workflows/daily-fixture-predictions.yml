@@ -1,4 +1,5 @@
-name: Daily Fixture Predictions # [recovery-test-hook] [run-live-verification]
+name: Daily Fixture Predictions
+# One-shot live verification: current fixtures, command-data publication, and Telegram receipt. # [recovery-test-hook] [run-live-verification]
 # [reuse-report-40175707059] controlled same-day report replay; 2026-11-02 live run.
 # Live multi-source verification is opt-in via a marked commit; empty historical dates stay retryable; InferSports stays disabled until quote coverage is proven; no bookmaker actions are performed.
 
