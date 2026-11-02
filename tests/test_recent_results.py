@@ -769,6 +769,6 @@ def test_gap_backfill_uses_open_matchday_verified_coverage_without_primary_api(t
     assert report["open_matchday"]["files_verified"] == len(OPEN_MATCHDAY_DIVISIONS)
     assert report["primary_resolved_dates"] == 0
     assert report["open_matchday_resolved_dates"] == gaps
-    assert saved["state"]["history_gaps"] == []
+    assert "history_gaps" not in saved["state"]
     assert len(saved["matches"]) == 2 * len(OPEN_MATCHDAY_DIVISIONS)
     assert all(row["source_provider"] == "open-matchday" for row in saved["matches"])
