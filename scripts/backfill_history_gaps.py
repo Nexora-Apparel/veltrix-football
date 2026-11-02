@@ -231,6 +231,72 @@ def run(cache_path: Path, fallback_path: Path, output_path: Path, api: Any, sess
                     "status": "PROVIDER_RATE_LIMITED" if rate_limited else "LEAGUE_ENDPOINT_EMPTY_UNVERIFIED",
                     "matches": 0,
                 })
+
+    date_endpoint = {
+        "status": "NOT_REQUIRED", "dates_checked": 0, "matches_added": 0,
+        "resolved_dates": [], "timezone_retries": 0, "request_errors": [],
+    }
+    delay_seconds = 0.0
+    try:
+        delay_seconds = max(0.0, min(30.0, float(os.getenv("VELTRIX_HISTORY_REQUEST_DELAY_SECONDS", "0"))))
+    except (TypeError, ValueError):
+        delay_seconds = 0.0
+    if unresolved_gaps and not rate_limited and not provider_cooldown_active or (force and unresolved_gaps and not rate_limited):
+        date_endpoint["status"] = "CHECKED"
+        for day in unresolved_gaps:
+            if day in resolved or rate_limited:
+                continue
+            try:
+                if delay_seconds:
+                    time_module.sleep(delay_seconds)
+                payload = api.fixtures(day, "Africa/Lagos")
+                rows = extract_completed_results(payload)
+                timezone_used = "Africa/Lagos"
+                meta = payload.get("_veltrix_meta") or {}
+                pages = int(meta.get("pages_fetched", 0) or 0)
+                if not rows:
+                    if delay_seconds:
+                        time_module.sleep(delay_seconds)
+                    utc_payload = api.fixtures(day, "UTC")
+                    utc_rows = extract_completed_results(utc_payload)
+                    date_endpoint["timezone_retries"] += 1
+                    if utc_rows:
+                        payload, rows, timezone_used = utc_payload, utc_rows, "UTC"
+                        meta = payload.get("_veltrix_meta") or {}
+                        pages = int(meta.get("pages_fetched", 0) or 0)
+                date_endpoint["dates_checked"] += 1
+                if rows and pages > 0:
+                    added = [{
+                        "date": row["date"].isoformat(), "division": row.get("division") or "",
+                        "home": row["home"], "away": row["away"],
+                        "home_goals": row["home_goals"], "away_goals": row["away_goals"],
+                        "fixture_id": row.get("fixture_id"),
+                        "fixture_status": row.get("fixture_status") or "FT",
+                        "source_provider": "5DollarFootballAPI_DATE_FIXTURES",
+                    } for row in rows]
+                    recovered.extend(added)
+                    resolved.add(day)
+                    date_endpoint["resolved_dates"].append(day)
+                    date_endpoint["matches_added"] += len(added)
+                    status = "DATE_RESULTS_RECOVERED"
+                else:
+                    status = "DATE_EMPTY_UNVERIFIED"
+                existing_result = next((item for item in day_results if item.get("date") == day), None)
+                if existing_result:
+                    existing_result.update({"date_endpoint_status": status, "date_endpoint_matches": len(rows), "timezone": timezone_used})
+                else:
+                    day_results.append({"date": day, "status": status, "matches": len(rows), "timezone": timezone_used})
+                if delay_seconds:
+                    time_module.sleep(delay_seconds)
+            except ProviderAPIError as exc:
+                date_endpoint["request_errors"].append({"date": day, "error_type": type(exc).__name__, "error": str(exc)[:240]})
+                if "HTTP 429" in str(exc):
+                    rate_limited = True
+                    date_endpoint["status"] = "RATE_LIMITED"
+                    break
+            except (ValueError, OSError) as exc:
+                date_endpoint["request_errors"].append({"date": day, "error_type": type(exc).__name__})
+
     # Secondary open-data results are useful additions but cannot prove global
     # date completeness, so they never clear a primary-provider date gap alone.
     recovered.extend(fallback)
@@ -263,13 +329,15 @@ def run(cache_path: Path, fallback_path: Path, output_path: Path, api: Any, sess
         "open_matchday_resolved_dates": sorted(open_resolved_dates), "all_resolved_dates": sorted(resolved),
         "unresolved_dates": state.get("history_gaps", []),
         "open_matchday": open_audit,
+        "date_endpoint": date_endpoint,
+        "request_delay_seconds": delay_seconds,
         "provider_retry_cooldown_active": provider_cooldown_active,
         "provider_retry_after_date": retry_after_date,
         "league_endpoint_scan": league_scan,
         "league_endpoint_resolved_dates": sorted(day for day, rows in league_rows_by_day.items() if rows and day in resolved),
         "secondary_fallback_matches_added": 0,
         "secondary_fallback_status": "SKIPPED_NONCOMMERCIAL_LICENSE",
-        "primary_matches_added": sum(1 for row in recovered if row.get("source_provider") == "5DollarFootballAPI"),
+        "primary_matches_added": sum(1 for row in recovered if row.get("source_provider") in {"5DollarFootballAPI", "5DollarFootballAPI_DATE_FIXTURES"}),
         "league_endpoint_matches_added": sum(1 for row in recovered if row.get("source_provider") == "5DollarFootballAPI_LEAGUE_FIXTURES"),
         "cache_rows_before": len(existing), "cache_rows_after": len(merged),
         "date_results": day_results,
