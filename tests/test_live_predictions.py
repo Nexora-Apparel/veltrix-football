@@ -38,6 +38,13 @@ def test_prediction_uses_minimum_history_and_never_claims_validated():
     assert abs(sum(prediction["probabilities"].values()) - 1) < 0.0002
     assert prediction["expected_goals"]["home"] > 0
     assert prediction["expected_goals"]["away"] > 0
+    dc_shadow = prediction["poisson_dc_shadow"]
+    assert dc_shadow["status"] == "SHADOW_RESEARCH"
+    dc_markets = dc_shadow["markets"]
+    assert abs(sum(dc_markets["1x2"].values()) - 1.0) < 1e-10
+    assert abs(sum(dc_markets["btts"].values()) - 1.0) < 1e-10
+    for totals in dc_markets["totals"].values():
+        assert abs(sum(totals.values()) - 1.0) < 1e-10
     assert prediction["recent_form"]["home_team"]["overall"]["last_5"]["matches"] == 5
     assert prediction["recent_form"]["home_team"]["home_venue"]["last_10"]["matches"] == 6
     assert prediction["recent_form"]["away_team"]["overall"]["last_5"]["matches"] == 5
