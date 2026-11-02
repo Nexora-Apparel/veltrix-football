@@ -334,6 +334,7 @@ def main() -> None:
             except ProviderAPIError as exc:
                 primary_fixture_error = type(exc).__name__
                 primary_provider_status = "RATE_LIMITED" if "HTTP 429" in str(exc) else "UNAVAILABLE"
+                primary_fixture_count = 0
                 payload = {
                     "response": [],
                     "_veltrix_meta": {
