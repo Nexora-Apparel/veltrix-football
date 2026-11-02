@@ -5,10 +5,11 @@ import csv
 import json
 import os
 import sys
+from datetime import date, datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from app.provider_adapters import FiveDollarFootballClient, ProviderAPIError
+from app.provider_adapters import FiveDollarFootballClient, ProviderAPIError, LEAGUE_CODES
 from app.recent_results import extract_completed_results
 from scripts.publish_command_data import publish
 from app.live_predictions import _name_key
@@ -54,6 +55,49 @@ def run(cache_path: Path, fallback_path: Path, output_path: Path, api: Any) -> d
     recovered: list[dict[str, Any]] = []
     day_results = []
     resolved = set()
+    league_scan = {"active_mapped_leagues": 0, "successful_league_queries": 0, "matches": 0, "failed_leagues": []}
+    league_rows_by_day: dict[str, list[dict[str, Any]]] = {day: [] for day in gaps}
+    if gaps:
+        active_since = int(datetime.combine(date.fromisoformat(gaps[0]), datetime.min.time(), tzinfo=timezone.utc).timestamp())
+        leagues = []
+        page = 1
+        while page <= 20:
+            payload = api.leagues(page=page, per_page=100, active_since=active_since)
+            leagues.extend(payload.get("response") or [])
+            pagination = payload.get("pagination") or {}
+            if not pagination.get("has_more"):
+                break
+            page += 1
+        mapped = [
+            league for league in leagues
+            if isinstance(league, dict)
+            and str(league.get("name") or "").strip().casefold() in LEAGUE_CODES
+            and league.get("id") is not None
+        ]
+        league_scan["active_mapped_leagues"] = len(mapped)
+        for league in mapped:
+            league_id = league.get("id")
+            try:
+                payload = api.league_fixtures(league_id, gaps[0], gaps[-1], "Africa/Lagos")
+                rows = extract_completed_results(payload)
+                league_scan["successful_league_queries"] += 1
+                for row in rows:
+                    day = row["date"].isoformat()
+                    if day in league_rows_by_day:
+                        league_rows_by_day[day].append({
+                            "date": day, "division": row.get("division") or "",
+                            "home": row["home"], "away": row["away"],
+                            "home_goals": row["home_goals"], "away_goals": row["away_goals"],
+                            "fixture_id": row.get("fixture_id"), "fixture_status": row.get("fixture_status") or "FT",
+                            "source_provider": "5DollarFootballAPI_LEAGUE_FIXTURES",
+                        })
+                league_scan["matches"] += len(rows)
+            except (ProviderAPIError, ValueError, OSError) as exc:
+                league_scan["failed_leagues"].append({"league_id": str(league_id), "error_type": type(exc).__name__})
+        for day, rows in league_rows_by_day.items():
+            if rows and league_scan["successful_league_queries"] == league_scan["active_mapped_leagues"] and league_scan["active_mapped_leagues"] > 0:
+                recovered.extend(rows)
+                resolved.add(day)
     for day in gaps:
         try:
             payload = api.fixtures(day, "Africa/Lagos")
@@ -109,8 +153,11 @@ def run(cache_path: Path, fallback_path: Path, output_path: Path, api: Any) -> d
         "status": "COMPLETE" if not state.get("history_gaps") else "PARTIAL_UNRESOLVED_SOURCE_GAPS",
         "requested_gap_dates": len(gaps), "primary_resolved_dates": len(resolved),
         "unresolved_dates": state.get("history_gaps", []),
+        "league_endpoint_scan": league_scan,
+        "league_endpoint_resolved_dates": sorted(day for day, rows in league_rows_by_day.items() if rows and day in resolved),
         "secondary_fallback_matches_added": len(fallback),
-        "primary_matches_added": len(recovered) - len(fallback),
+        "primary_matches_added": sum(1 for row in recovered if row.get("source_provider") == "5DollarFootballAPI"),
+        "league_endpoint_matches_added": sum(1 for row in recovered if row.get("source_provider") == "5DollarFootballAPI_LEAGUE_FIXTURES"),
         "cache_rows_before": len(existing), "cache_rows_after": len(merged),
         "date_results": day_results,
         "integrity": "Secondary results are added with provenance; unresolved dates are never silently marked complete.",
