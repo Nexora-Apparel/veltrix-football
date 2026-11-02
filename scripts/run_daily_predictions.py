@@ -74,6 +74,11 @@ def _load_recent_cache(path: Path) -> tuple[dict, list[dict]]:
     return {"version": 2, "matches": value["matches"], "state": state}, rows
 
 
+def _cache_backfill_complete(state: dict[str, Any]) -> bool:
+    """A backfill is complete only when the persisted cache has no known gaps."""
+    return bool(state.get("backfill_complete")) and not state.get("history_gaps") and not state.get("history_plan_limited_dates")
+
+
 def _merge_recent_rows(*groups: list[dict]) -> list[dict]:
     unique = {}
     for group in groups:
@@ -474,7 +479,7 @@ def main() -> None:
             default=None,
         )
         refresh_status = str(recent_sync.get("status") or "UNKNOWN").upper()
-        cache_backfill_complete = bool(updated_cache_state.get("backfill_complete"))
+        cache_backfill_complete = _cache_backfill_complete(updated_cache_state)
         latest_covered = updated_cache_state.get("latest_covered_through")
         contiguous_candidate = max(
             (value for value in (base_history_through, latest_covered) if value),
