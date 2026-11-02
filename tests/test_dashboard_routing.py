@@ -196,3 +196,5 @@ def test_dashboard_market_odds_count_uses_actual_fixture_quote_rows(monkeypatch)
     assert "remains visible" in payload["predictions"][-1]["fixture_visibility_note"]
 
 # Controlled same-day report replay trigger [reuse-report-40175707059].
+
+# Live verification trigger: exercise today's fixture, publication and delivery pipeline.
