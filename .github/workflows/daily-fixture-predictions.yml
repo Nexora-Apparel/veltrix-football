@@ -40,6 +40,7 @@ on:
       - "scripts/run_daily_predictions.py"
       - "tests/test_publish_command_data.py"
       - "scripts/import_open_dataset.py"
+      - "scripts/backfill_history_gaps.py"
       - "scripts/run_paper_tracking.py"
       - "app/value_evidence_ledger.py"
       - "scripts/update_value_evidence_ledger.py"
