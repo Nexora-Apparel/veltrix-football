@@ -1,6 +1,9 @@
 name: Historical Results Gap Backfill
 
 on:
+  schedule:
+    # Retry unresolved history only after the weekly provider cooldown; 06:30 WAT.
+    - cron: "30 5 * * *"
   workflow_dispatch:
     inputs:
       from:
