@@ -497,7 +497,13 @@ def main() -> None:
             "covered_through": recent_sync.get("covered_through"),
             "ranges_succeeded": recent_sync.get("ranges_succeeded"),
             "ranges_requested": recent_sync.get("ranges_requested"),
-            "backfill_complete": cache_backfill_complete,
+            # This flag describes the complete contiguous refresh, not merely
+            # whether the original historical import finished. Keep the base
+            # import marker separately so unresolved recent gaps cannot be
+            # mistaken for a complete history.
+            "backfill_complete": refresh_complete,
+            "base_backfill_complete": cache_backfill_complete,
+            "incremental_history_complete": refresh_complete,
             "retryable_gap_date_count": len(history_gaps) if isinstance(history_gaps, list) else 0,
             "provider_plan_limited_date_count": len(plan_limited_dates) if isinstance(plan_limited_dates, list) else 0,
             "provider_plan_limited_dates": plan_limited_dates if isinstance(plan_limited_dates, list) else [],
