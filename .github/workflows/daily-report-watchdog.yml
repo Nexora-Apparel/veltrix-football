@@ -63,10 +63,25 @@ jobs:
           set -euo pipefail
           TODAY="$(TZ=Africa/Lagos date +%F)"
           echo "today=$TODAY" >> "$GITHUB_OUTPUT"
+          CREATED_WINDOW="$(python - <<'PY'
+          from datetime import datetime, time, timedelta, timezone
+          from zoneinfo import ZoneInfo
+          today = datetime.now(ZoneInfo("Africa/Lagos")).date()
+          start = datetime.combine(today, time.min, ZoneInfo("Africa/Lagos")).astimezone(timezone.utc)
+          end = start + timedelta(days=1) - timedelta(seconds=1)
+          print(start.strftime("%Y-%m-%dT%H:%M:%SZ") + ".." + end.strftime("%Y-%m-%dT%H:%M:%SZ"))
+          PY
+          )"
+          echo "created_window=$CREATED_WINDOW" >> "$GITHUB_OUTPUT"
 
-          REPORT_URL="https://raw.githubusercontent.com/$GH_REPOSITORY/command-data/public-data/daily_predictions.json"
+          # This is a private repository: use the authenticated Contents API,
+          # not an unauthenticated raw.githubusercontent.com request.
+          REPORT_URL="https://api.github.com/repos/$GH_REPOSITORY/contents/public-data/daily_predictions.json?ref=command-data"
           REPORT_FILE="$(mktemp)"
-          if curl --fail --silent --show-error --max-time 20 "$REPORT_URL" -o "$REPORT_FILE"; then
+          if curl --fail --silent --show-error --max-time 20 \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "Accept: application/vnd.github.raw" \
+            "$REPORT_URL" -o "$REPORT_FILE"; then
             python - "$REPORT_FILE" "$TODAY" >> "$GITHUB_OUTPUT" <<'PY'
           import json, sys
           path, today = sys.argv[1], sys.argv[2]
@@ -97,10 +112,12 @@ jobs:
         run: |
           set -euo pipefail
           TODAY="${{ steps.freshness.outputs.today }}"
-          curl --fail --silent --show-error \
+          curl --fail --silent --show-error --get \
             -H "Authorization: Bearer $GH_TOKEN" \
             -H "Accept: application/vnd.github+json" \
-            "https://api.github.com/repos/$GH_REPOSITORY/actions/workflows/daily-fixture-predictions.yml/runs?per_page=50" \
+            --data-urlencode "per_page=100" \
+            --data-urlencode "created=${{ steps.freshness.outputs.created_window }}" \
+            "https://api.github.com/repos/$GH_REPOSITORY/actions/workflows/daily-fixture-predictions.yml/runs" \
             -o /tmp/daily-runs.json
           python - <<'PY' > /tmp/todays-run-ids.txt
           import json
