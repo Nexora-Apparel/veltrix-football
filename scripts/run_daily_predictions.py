@@ -314,13 +314,37 @@ def main() -> None:
     try:
         target_date = date.fromisoformat(args.date) if args.date else datetime.now(ZoneInfo(args.timezone)).date()
         api = FiveDollarFootballClient()
+        primary_fixture_error = None
+        primary_provider_status = "SUCCESS"
         if not api.api_key:
-            raise ProviderAPIError("FIVEDOLLARFOOTBALL_API_KEY is missing. Add it as a GitHub Actions repository secret; do not paste it into source code.")
-        payload = api.fixtures(target_date.isoformat(), args.timezone)
-        primary_fixture_count = len(payload.get("response") or [])
-        # The primary free-tier feed may expose only a small set of leagues on a
-        # given day. Supplement from the already-connected Odds API event lists,
-        # keeping only future fixtures on this same Lagos calendar date.
+            primary_provider_status = "NOT_CONFIGURED"
+            primary_fixture_error = "MISSING_API_KEY"
+            payload = {
+                "response": [],
+                "_veltrix_meta": {
+                    "provider": "5DollarFootballAPI",
+                    "primary_provider_status": primary_provider_status,
+                },
+            }
+            primary_fixture_count = 0
+        else:
+            try:
+                payload = api.fixtures(target_date.isoformat(), args.timezone)
+                primary_fixture_count = len(payload.get("response") or [])
+            except ProviderAPIError as exc:
+                primary_fixture_error = type(exc).__name__
+                primary_provider_status = "RATE_LIMITED" if "HTTP 429" in str(exc) else "UNAVAILABLE"
+                payload = {
+                    "response": [],
+                    "_veltrix_meta": {
+                        "provider": "5DollarFootballAPI",
+                        "primary_provider_status": primary_provider_status,
+                        "primary_error_type": primary_fixture_error,
+                    },
+                }
+        # The primary feed may be rate-limited or expose only a small set of
+        # leagues. In either case, use the already-connected Odds API and
+        # InferSports fixture feeds as independent same-day discovery sources.
         payload = supplement_fixtures_from_odds_api(
             payload,
             target_date.isoformat(),
@@ -335,19 +359,56 @@ def main() -> None:
         )
         # Bound model workload and Telegram report size after cross-provider discovery.
         payload = _limit_fixture_payload(payload, args.max_fixtures, args.timezone, as_of_date=target_date)
+        if primary_provider_status != "SUCCESS" and not (payload.get("response") or []):
+            raise ProviderAPIError(
+                "Primary fixture provider was unavailable and no supplemental source returned same-day fixtures."
+            )
         base_history = load_historical_matches(args.history)
         cache_path = Path(args.recent_cache)
         cache_data, cached_rows = _load_recent_cache(cache_path)
 
-        # Refresh one date range per run and persist the cursor/results so a large
-        # historical gap is backfilled over time without repeatedly exhausting quota.
-        recent_rows, recent_sync = fetch_recent_results_incremental(
-            api,
-            base_history,
-            target_date - timedelta(days=1),
-            cache_state=cache_data.get("state") or {},
-            timezone_name=args.timezone,
-        )
+        # Refresh one date range per run only when the primary provider is
+        # healthy. A 429 must not trigger another request for historical results;
+        # preserve the cache and make the degraded state explicit in the report.
+        if primary_provider_status == "SUCCESS":
+            try:
+                recent_rows, recent_sync = fetch_recent_results_incremental(
+                    api,
+                    base_history,
+                    target_date - timedelta(days=1),
+                    cache_state=cache_data.get("state") or {},
+                    timezone_name=args.timezone,
+                )
+            except ProviderAPIError as exc:
+                recent_rows = []
+                recent_sync = {
+                    "status": "PRIMARY_PROVIDER_UNAVAILABLE",
+                    "results_added": 0,
+                    "requested_start": None,
+                    "requested_end": (target_date - timedelta(days=1)).isoformat(),
+                    "covered_from": None,
+                    "covered_through": (cache_data.get("state") or {}).get("latest_covered_through"),
+                    "ranges_succeeded": 0,
+                    "ranges_requested": 0,
+                    "warning": "Recent-results refresh skipped after primary-provider failure; existing cache retained.",
+                    "provider_error_type": type(exc).__name__,
+                    "cache_state": cache_data.get("state") or {},
+                }
+        else:
+            recent_rows = []
+            recent_sync = {
+                "status": "SKIPPED_PRIMARY_PROVIDER_UNAVAILABLE",
+                "results_added": 0,
+                "requested_start": None,
+                "requested_end": (target_date - timedelta(days=1)).isoformat(),
+                "covered_from": None,
+                "covered_through": (cache_data.get("state") or {}).get("latest_covered_through"),
+                "ranges_succeeded": 0,
+                "ranges_requested": 0,
+                "warning": "Primary provider was unavailable for fixture discovery; cached historical results were retained without another provider request.",
+                "provider_error_type": primary_fixture_error,
+                "cache_state": cache_data.get("state") or {},
+            }
         updated_cache_state = recent_sync.pop("cache_state", cache_data.get("state") or {})
         merged_recent_rows = _merge_recent_rows(cached_rows, recent_rows)
         cache_path.parent.mkdir(parents=True, exist_ok=True)
@@ -378,7 +439,8 @@ def main() -> None:
         fixture_meta = payload.get("_veltrix_meta") if isinstance(payload.get("_veltrix_meta"), dict) else {}
         report["primary_provider_request"] = {
             "provider": fixture_meta.get("provider", "5DollarFootballAPI"),
-            "status": "SUCCESS",
+            "status": primary_provider_status,
+            "error_type": primary_fixture_error,
             "requests_remaining": fixture_meta.get("requests_remaining"),
             "pages_fetched": fixture_meta.get("pages_fetched", 1),
             "fixtures_received": primary_fixture_count,
@@ -387,6 +449,7 @@ def main() -> None:
         # This separates successful provider execution from actual model eligibility.
         report["fixture_discovery"] = {
             "primary_provider": fixture_meta.get("provider", "5DollarFootballAPI"),
+            "primary_provider_status": primary_provider_status,
             "supplemental_provider": fixture_meta.get("supplemental_fixture_source"),
             "the_odds_api": {
                 "fixtures_added": int(fixture_meta.get("supplemental_fixtures_added", 0) or 0),
