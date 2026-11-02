@@ -8,31 +8,31 @@
   "historical_matches_available": 77006,
   "historical_data_through": "2026-11-01",
   "fixtures_received": 25,
-  "same_day_pre_match_fixtures": 25,
-  "past_kickoffs_excluded": 0,
-  "future_fixtures_considered": 25,
+  "same_day_pre_match_fixtures": 23,
+  "past_kickoffs_excluded": 2,
+  "future_fixtures_considered": 23,
   "kickoff_unverified_fixtures": 0,
   "fixture_status_counts": {
     "EXPERIMENTAL_ONLY": 11,
     "INSUFFICIENT_HISTORY": 0,
-    "UNSUPPORTED_COMPETITION": 14,
+    "UNSUPPORTED_COMPETITION": 12,
     "KICKOFF_UNVERIFIED": 0
   },
   "fixtures_excluded_other_date_or_status": 0,
   "predictions_created": 11,
   "insufficient_history": 0,
-  "unsupported_competitions": 14,
-  "fixtures_with_market_odds": 9,
+  "unsupported_competitions": 12,
+  "fixtures_with_market_odds": 0,
   "unsupported_competition_breakdown": {
     "Iraq": 2,
-    "Kenya": 2,
+    "Kenya": 1,
     "NMFL1": 1,
     "SAL2": 1,
     "SSDrfef": 1,
     "Serbia LW": 1,
     "Spain La Liga": 1,
     "Turkey(W)": 1,
-    "Ukr1": 2,
+    "Ukr1": 1,
     "UkrPL": 2
   },
   "possible_team_name_mismatches": 2,
@@ -10011,438 +10011,6 @@
       }
     },
     {
-      "fixture_id": "evt_M1EW8N7T",
-      "kickoff": "2026-11-02T10:00:00+00:00",
-      "kickoff_local": "2026-11-02T11:00:00+01:00",
-      "home_team": "Kolos Kovalivka II",
-      "away_team": "Metalist Kharkiv",
-      "league": "Ukr1",
-      "league_id": "lg_A7NX7VJ8",
-      "division_code": null,
-      "fixture_status": "NS",
-      "model": "experimental_recent_goals_poisson",
-      "model_validated": false,
-      "betting_recommendation": false,
-      "historical_matches": {
-        "home": 2,
-        "away": 0
-      },
-      "recent_form": {
-        "home_team": {
-          "overall": {
-            "scope": "all_venues",
-            "last_5": {
-              "matches": 2,
-              "form": "DL",
-              "points": 1,
-              "points_per_game": 0.5,
-              "goals_for": 0,
-              "goals_against": 2,
-              "goal_difference": -2,
-              "clean_sheets": 1,
-              "failed_to_score": 2,
-              "wins": 0,
-              "draws": 1,
-              "losses": 1
-            },
-            "last_10": {
-              "matches": 2,
-              "form": "DL",
-              "points": 1,
-              "points_per_game": 0.5,
-              "goals_for": 0,
-              "goals_against": 2,
-              "goal_difference": -2,
-              "clean_sheets": 1,
-              "failed_to_score": 2,
-              "wins": 0,
-              "draws": 1,
-              "losses": 1
-            }
-          },
-          "home_venue": {
-            "scope": "home",
-            "last_5": {
-              "matches": 1,
-              "form": "D",
-              "points": 1,
-              "points_per_game": 1,
-              "goals_for": 0,
-              "goals_against": 0,
-              "goal_difference": 0,
-              "clean_sheets": 1,
-              "failed_to_score": 1,
-              "wins": 0,
-              "draws": 1,
-              "losses": 0
-            },
-            "last_10": {
-              "matches": 1,
-              "form": "D",
-              "points": 1,
-              "points_per_game": 1,
-              "goals_for": 0,
-              "goals_against": 0,
-              "goal_difference": 0,
-              "clean_sheets": 1,
-              "failed_to_score": 1,
-              "wins": 0,
-              "draws": 1,
-              "losses": 0
-            }
-          }
-        },
-        "away_team": {
-          "overall": {
-            "scope": "all_venues",
-            "last_5": {
-              "matches": 0,
-              "form": "",
-              "points": 0,
-              "points_per_game": null,
-              "goals_for": 0,
-              "goals_against": 0,
-              "goal_difference": 0,
-              "clean_sheets": 0,
-              "failed_to_score": 0,
-              "wins": 0,
-              "draws": 0,
-              "losses": 0
-            },
-            "last_10": {
-              "matches": 0,
-              "form": "",
-              "points": 0,
-              "points_per_game": null,
-              "goals_for": 0,
-              "goals_against": 0,
-              "goal_difference": 0,
-              "clean_sheets": 0,
-              "failed_to_score": 0,
-              "wins": 0,
-              "draws": 0,
-              "losses": 0
-            }
-          },
-          "away_venue": {
-            "scope": "away",
-            "last_5": {
-              "matches": 0,
-              "form": "",
-              "points": 0,
-              "points_per_game": null,
-              "goals_for": 0,
-              "goals_against": 0,
-              "goal_difference": 0,
-              "clean_sheets": 0,
-              "failed_to_score": 0,
-              "wins": 0,
-              "draws": 0,
-              "losses": 0
-            },
-            "last_10": {
-              "matches": 0,
-              "form": "",
-              "points": 0,
-              "points_per_game": null,
-              "goals_for": 0,
-              "goals_against": 0,
-              "goal_difference": 0,
-              "clean_sheets": 0,
-              "failed_to_score": 0,
-              "wins": 0,
-              "draws": 0,
-              "losses": 0
-            }
-          }
-        },
-        "as_of": "2026-11-02",
-        "note": "Last-five and last-ten completed matches only; strictly pre-fixture; descriptive features, not probability adjustments."
-      },
-      "team_name_matches": {
-        "home": {
-          "fixture_name": "Kolos Kovalivka II",
-          "historical_key": "koloskovalivkaii",
-          "auto_matched": false
-        },
-        "away": {
-          "fixture_name": "Metalist Kharkiv",
-          "historical_key": "metalistkharkiv",
-          "auto_matched": false
-        }
-      },
-      "status": "UNSUPPORTED_COMPETITION",
-      "reason": "This competition is not mapped to the historical dataset and the teams do not have enough exact-match history for a safe global estimate.",
-      "team_name_match_suggestions": {},
-      "fixture_source": "InferSports",
-      "source_fixture_id": "evt_M1EW8N7T",
-      "value_bet_screen": {
-        "status": "DISABLED_UNVALIDATED",
-        "model_validated": false,
-        "markets": {
-          "1X2": {
-            "status": "DISABLED_UNVALIDATED",
-            "bookmaker_price_sets": 0,
-            "candidates": [],
-            "paper_candidate_count": 0,
-            "paper_candidates": []
-          },
-          "BTTS": {
-            "status": "DISABLED_UNVALIDATED",
-            "bookmaker_price_sets": 0,
-            "candidates": [],
-            "paper_candidate_count": 0,
-            "paper_candidates": []
-          },
-          "OVER_UNDER_1_5": {
-            "status": "DISABLED_UNVALIDATED",
-            "bookmaker_price_sets": 0,
-            "candidates": [],
-            "paper_candidate_count": 0,
-            "paper_candidates": []
-          },
-          "OVER_UNDER_2_5": {
-            "status": "DISABLED_UNVALIDATED",
-            "bookmaker_price_sets": 0,
-            "candidates": [],
-            "paper_candidate_count": 0,
-            "paper_candidates": []
-          },
-          "OVER_UNDER_3_5": {
-            "status": "DISABLED_UNVALIDATED",
-            "bookmaker_price_sets": 0,
-            "candidates": [],
-            "paper_candidate_count": 0,
-            "paper_candidates": []
-          }
-        },
-        "candidate_count": 0,
-        "paper_candidate_count": 0,
-        "note": "Paper-only candidates are prospective research records, not approved betting alerts. Release remains certificate-gated; no bookmaker actions are performed."
-      },
-      "value_intelligence": {
-        "status": "NO_ELIGIBLE_TIMESTAMPED_ODDS",
-        "markets": {},
-        "release_status": "LOCKED_SHADOW_MODE"
-      }
-    },
-    {
-      "fixture_id": "evt_5KC8DHTH",
-      "kickoff": "2026-11-02T10:00:00+00:00",
-      "kickoff_local": "2026-11-02T11:00:00+01:00",
-      "home_team": "Ulinzi Stars",
-      "away_team": "Mathare United",
-      "league": "Kenya",
-      "league_id": "lg_WB8NR6XB",
-      "division_code": null,
-      "fixture_status": "NS",
-      "model": "experimental_recent_goals_poisson",
-      "model_validated": false,
-      "betting_recommendation": false,
-      "historical_matches": {
-        "home": 2,
-        "away": 2
-      },
-      "recent_form": {
-        "home_team": {
-          "overall": {
-            "scope": "all_venues",
-            "last_5": {
-              "matches": 2,
-              "form": "DD",
-              "points": 2,
-              "points_per_game": 1,
-              "goals_for": 1,
-              "goals_against": 1,
-              "goal_difference": 0,
-              "clean_sheets": 1,
-              "failed_to_score": 1,
-              "wins": 0,
-              "draws": 2,
-              "losses": 0
-            },
-            "last_10": {
-              "matches": 2,
-              "form": "DD",
-              "points": 2,
-              "points_per_game": 1,
-              "goals_for": 1,
-              "goals_against": 1,
-              "goal_difference": 0,
-              "clean_sheets": 1,
-              "failed_to_score": 1,
-              "wins": 0,
-              "draws": 2,
-              "losses": 0
-            }
-          },
-          "home_venue": {
-            "scope": "home",
-            "last_5": {
-              "matches": 1,
-              "form": "D",
-              "points": 1,
-              "points_per_game": 1,
-              "goals_for": 0,
-              "goals_against": 0,
-              "goal_difference": 0,
-              "clean_sheets": 1,
-              "failed_to_score": 1,
-              "wins": 0,
-              "draws": 1,
-              "losses": 0
-            },
-            "last_10": {
-              "matches": 1,
-              "form": "D",
-              "points": 1,
-              "points_per_game": 1,
-              "goals_for": 0,
-              "goals_against": 0,
-              "goal_difference": 0,
-              "clean_sheets": 1,
-              "failed_to_score": 1,
-              "wins": 0,
-              "draws": 1,
-              "losses": 0
-            }
-          }
-        },
-        "away_team": {
-          "overall": {
-            "scope": "all_venues",
-            "last_5": {
-              "matches": 2,
-              "form": "LD",
-              "points": 1,
-              "points_per_game": 0.5,
-              "goals_for": 0,
-              "goals_against": 1,
-              "goal_difference": -1,
-              "clean_sheets": 1,
-              "failed_to_score": 2,
-              "wins": 0,
-              "draws": 1,
-              "losses": 1
-            },
-            "last_10": {
-              "matches": 2,
-              "form": "LD",
-              "points": 1,
-              "points_per_game": 0.5,
-              "goals_for": 0,
-              "goals_against": 1,
-              "goal_difference": -1,
-              "clean_sheets": 1,
-              "failed_to_score": 2,
-              "wins": 0,
-              "draws": 1,
-              "losses": 1
-            }
-          },
-          "away_venue": {
-            "scope": "away",
-            "last_5": {
-              "matches": 2,
-              "form": "LD",
-              "points": 1,
-              "points_per_game": 0.5,
-              "goals_for": 0,
-              "goals_against": 1,
-              "goal_difference": -1,
-              "clean_sheets": 1,
-              "failed_to_score": 2,
-              "wins": 0,
-              "draws": 1,
-              "losses": 1
-            },
-            "last_10": {
-              "matches": 2,
-              "form": "LD",
-              "points": 1,
-              "points_per_game": 0.5,
-              "goals_for": 0,
-              "goals_against": 1,
-              "goal_difference": -1,
-              "clean_sheets": 1,
-              "failed_to_score": 2,
-              "wins": 0,
-              "draws": 1,
-              "losses": 1
-            }
-          }
-        },
-        "as_of": "2026-11-02",
-        "note": "Last-five and last-ten completed matches only; strictly pre-fixture; descriptive features, not probability adjustments."
-      },
-      "team_name_matches": {
-        "home": {
-          "fixture_name": "Ulinzi Stars",
-          "historical_key": "ulinzistars",
-          "auto_matched": false
-        },
-        "away": {
-          "fixture_name": "Mathare United",
-          "historical_key": "mathareunited",
-          "auto_matched": false
-        }
-      },
-      "status": "UNSUPPORTED_COMPETITION",
-      "reason": "This competition is not mapped to the historical dataset and the teams do not have enough exact-match history for a safe global estimate.",
-      "team_name_match_suggestions": {},
-      "fixture_source": "InferSports",
-      "source_fixture_id": "evt_5KC8DHTH",
-      "value_bet_screen": {
-        "status": "DISABLED_UNVALIDATED",
-        "model_validated": false,
-        "markets": {
-          "1X2": {
-            "status": "DISABLED_UNVALIDATED",
-            "bookmaker_price_sets": 0,
-            "candidates": [],
-            "paper_candidate_count": 0,
-            "paper_candidates": []
-          },
-          "BTTS": {
-            "status": "DISABLED_UNVALIDATED",
-            "bookmaker_price_sets": 0,
-            "candidates": [],
-            "paper_candidate_count": 0,
-            "paper_candidates": []
-          },
-          "OVER_UNDER_1_5": {
-            "status": "DISABLED_UNVALIDATED",
-            "bookmaker_price_sets": 0,
-            "candidates": [],
-            "paper_candidate_count": 0,
-            "paper_candidates": []
-          },
-          "OVER_UNDER_2_5": {
-            "status": "DISABLED_UNVALIDATED",
-            "bookmaker_price_sets": 0,
-            "candidates": [],
-            "paper_candidate_count": 0,
-            "paper_candidates": []
-          },
-          "OVER_UNDER_3_5": {
-            "status": "DISABLED_UNVALIDATED",
-            "bookmaker_price_sets": 0,
-            "candidates": [],
-            "paper_candidate_count": 0,
-            "paper_candidates": []
-          }
-        },
-        "candidate_count": 0,
-        "paper_candidate_count": 0,
-        "note": "Paper-only candidates are prospective research records, not approved betting alerts. Release remains certificate-gated; no bookmaker actions are performed."
-      },
-      "value_intelligence": {
-        "status": "NO_ELIGIBLE_TIMESTAMPED_ODDS",
-        "markets": {},
-        "release_status": "LOCKED_SHADOW_MODE"
-      }
-    },
-    {
       "fixture_id": "evt_A7SJFYX7",
       "kickoff": "2026-11-02T11:00:00+00:00",
       "kickoff_local": "2026-11-02T12:00:00+01:00",
@@ -13287,8 +12855,8 @@
     "fixtures_with_market_odds": 9,
     "note": "Market odds are reference data; forecast probabilities remain experimental and unchanged."
   },
-  "publication_status": "LIVE_REPORT_GENERATED_PENDING_PUBLICATION",
-  "publication_notice": "Generated from this run's live fixture response. Public publication is confirmed separately by command_data_publication.",
+  "publication_status": "REUSED_SNAPSHOT_NOT_REFRESHED",
+  "publication_notice": "A saved same-day snapshot was reused because a new live report was unavailable; this run did not fetch fresh fixtures.",
   "oddspapi_odds": {
     "provider": "OddsPapi",
     "status": "NO_MATCHED_MARKET_ODDS",
@@ -13419,16 +12987,27 @@
   },
   "fixture_visibility_validation": {
     "status": "PASSED",
-    "fixture_rows": 25,
-    "expected_fixture_rows": 25,
+    "fixture_rows": 23,
+    "expected_fixture_rows": 23,
     "fixture_status_counts": {
       "EXPERIMENTAL_ONLY": 11,
-      "UNSUPPORTED_COMPETITION": 14
+      "UNSUPPORTED_COMPETITION": 12
     },
     "kickoff_unverified_rows": 0,
     "forecast_rows": 11,
     "alerts_enabled": false
   },
   "command_data_publication": "PUBLISHED",
-  "command_data_published_at_utc": "2026-11-02T09:28:47.584549+00:00"
+  "command_data_published_at_utc": "2026-11-02T10:12:59.100775+00:00",
+  "delivery_filter": {
+    "applied": true,
+    "filtered_at": "2026-11-02T11:12:50.032788+01:00",
+    "saved_fixture_rows": 25,
+    "future_same_day_fixture_rows": 23,
+    "past_kickoffs_excluded": 2,
+    "other_date_rows_excluded": 0,
+    "missing_or_invalid_kickoff_rows_excluded": 0,
+    "kickoff_unverified_rows_retained": 0,
+    "unsafe_team_identity_rows_withheld": 0
+  }
 }
