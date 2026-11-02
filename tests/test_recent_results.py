@@ -574,3 +574,52 @@ def test_idle_gap_state_never_reports_a_reversed_refresh_range():
     assert sync["requested_end"] == "2026-10-29"
     assert sync["ranges_requested"] == 0
     assert sync["cache_state"]["history_gaps"] == ["2026-10-10"]
+
+
+def test_gap_backfill_keeps_unverified_empty_dates_and_records_secondary_rows(tmp_path):
+    import csv
+    import json
+    from scripts.backfill_history_gaps import run
+
+    cache_path = tmp_path / "cache.json"
+    fallback_path = tmp_path / "fallback.csv"
+    output_path = tmp_path / "out.json"
+    cache_path.write_text(json.dumps({
+        "version": 2,
+        "state": {"history_gaps": ["2026-09-28", "2026-09-29"]},
+        "matches": [],
+    }), encoding="utf-8")
+    with fallback_path.open("w", newline="", encoding="utf-8") as handle:
+        writer = csv.DictWriter(handle, fieldnames=[
+            "match_date", "division", "home_team", "away_team", "home_goals", "away_goals",
+        ])
+        writer.writeheader()
+        writer.writerow({
+            "match_date": "2026-09-29", "division": "E0",
+            "home_team": "Fallback FC", "away_team": "Other FC",
+            "home_goals": 1, "away_goals": 0,
+        })
+
+    class FakeAPI:
+        def fixtures(self, day, timezone):
+            if day == "2026-09-28":
+                return {
+                    "provider": "5DollarFootballAPI",
+                    "_veltrix_meta": {"pages_fetched": 1},
+                    "response": [{
+                        "fixture": {"id": 123, "date": "2026-09-28T12:00:00Z", "status": {"short": "FT"}},
+                        "teams": {"home": {"name": "Primary FC"}, "away": {"name": "Away FC"}},
+                        "goals": {"home": 2, "away": 1},
+                        "league": {"code": "PL"},
+                    }],
+                }
+            return {"provider": "5DollarFootballAPI", "_veltrix_meta": {"pages_fetched": 1}, "response": []}
+
+    report = run(cache_path, fallback_path, output_path, FakeAPI())
+    saved = json.loads(output_path.read_text(encoding="utf-8"))
+    assert report["primary_resolved_dates"] == 1
+    assert saved["state"]["history_gaps"] == ["2026-09-29"]
+    assert len(saved["matches"]) == 2
+    assert {row["source_provider"] for row in saved["matches"]} == {
+        "5DollarFootballAPI", "football-data.co.uk",
+    }
