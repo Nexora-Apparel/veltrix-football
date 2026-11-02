@@ -72,80 +72,19 @@ OPEN_MATCHDAY_DIVISIONS = {
 
 
 def _open_matchday_backfill(session: Any, gaps: list[str]) -> tuple[list[dict[str, Any]], dict[str, Any]]:
-    """Import independently published 2026/27 results for every mapped competition."""
-    audit = {
-        "provider": "open-matchday", "season": "2627",
-        "status": "INCOMPLETE", "files_requested": len(OPEN_MATCHDAY_DIVISIONS),
-        "files_verified": 0, "files_failed": [], "matches_added": 0,
-        "resolved_dates": [], "attribution": "oladeeayo/open-matchday",
-        "source_terms": "Informational, non-commercial use only; no commercial reuse or redistribution without permission.",
+    """Do not ingest a source whose published terms prohibit commercial use."""
+    return [], {
+        "provider": "open-matchday",
+        "season": "2627",
+        "status": "SKIPPED_NONCOMMERCIAL_LICENSE",
+        "files_requested": 0,
+        "files_verified": 0,
+        "files_failed": [],
+        "matches_added": 0,
+        "resolved_dates": [],
+        "attribution": "oladeeayo/open-matchday",
+        "source_terms": "Non-commercial restriction; excluded from the VELTRIX production/training dataset.",
     }
-    if not gaps:
-        audit["status"] = "NOT_REQUIRED"
-        return [], audit
-    try:
-        response = session.get(f"{OPEN_MATCHDAY_BASE}/build_summary.json", timeout=30)
-        response.raise_for_status()
-        summary = response.json()
-        if summary.get("season") != "2627" or not isinstance(summary.get("leagues"), list):
-            raise ValueError("Unexpected open-matchday summary schema or season.")
-        audit["generated_utc"] = summary.get("generated_utc")
-    except (requests.RequestException, ValueError, OSError, AttributeError) as exc:
-        audit["files_failed"].append({"source": "build_summary.json", "error_type": type(exc).__name__})
-        return [], audit
-    metadata = {
-        str(row.get("folder") or "").strip(): row
-        for row in summary["leagues"] if isinstance(row, dict)
-    }
-    recovered = []
-    all_verified = True
-    for division, folder in OPEN_MATCHDAY_DIVISIONS.items():
-        meta = metadata.get(f"data/{folder}")
-        if (
-            not isinstance(meta, dict)
-            or int(meta.get("results") or 0) < 1
-            or str(meta.get("latest") or "") < max(gaps)
-            or meta.get("errors")
-        ):
-            all_verified = False
-            audit["files_failed"].append({"division": division, "folder": folder, "reason": "MISSING_OR_STALE_MANIFEST"})
-            continue
-        try:
-            response = session.get(f"{OPEN_MATCHDAY_BASE}/data/{folder}/results_2627.csv", timeout=30)
-            response.raise_for_status()
-            reader = csv.DictReader(io.StringIO(response.text))
-            required = {"date", "home", "away", "ft_home", "ft_away"}
-            if not reader.fieldnames or not required.issubset(set(reader.fieldnames)):
-                raise ValueError("Unexpected results CSV schema.")
-            for raw in reader:
-                day = str(raw.get("date") or "").strip()[:10]
-                if day not in gaps:
-                    continue
-                try:
-                    hg, ag = int(raw["ft_home"]), int(raw["ft_away"])
-                    home, away = str(raw.get("home") or "").strip(), str(raw.get("away") or "").strip()
-                    if hg < 0 or ag < 0 or not home or not away or _name_key(home) == _name_key(away):
-                        continue
-                except (KeyError, TypeError, ValueError):
-                    continue
-                recovered.append({
-                    "date": day, "division": division, "home": home, "away": away,
-                    "home_goals": hg, "away_goals": ag, "fixture_id": None,
-                    "fixture_status": "FT", "source_provider": "open-matchday",
-                    "source_detail": str(raw.get("source") or "unknown"),
-                })
-            audit["files_verified"] += 1
-        except (requests.RequestException, ValueError, OSError, csv.Error) as exc:
-            all_verified = False
-            audit["files_failed"].append({"division": division, "folder": folder, "error_type": type(exc).__name__})
-    audit["matches_added"] = len(recovered)
-    if all_verified and audit["files_verified"] == audit["files_requested"]:
-        audit["resolved_dates"] = sorted(gaps)
-        audit["status"] = "VERIFIED_MAPPED_COMPETITION_COVERAGE"
-    else:
-        audit["status"] = "PARTIAL_SOURCE_COVERAGE"
-    return recovered, audit
-
 
 def _fallback_rows(path: Path, gaps: set[str]) -> list[dict[str, Any]]:
     if not path.exists():
@@ -185,11 +124,13 @@ def run(cache_path: Path, fallback_path: Path, output_path: Path, api: Any, sess
         try:
             last_retry = date.fromisoformat(str(state["last_gap_retry_on"]))
             today_lagos = datetime.now(ZoneInfo("Africa/Lagos")).date()
-            provider_cooldown_active = (today_lagos - last_retry).days < 7
-            retry_after_date = (last_retry + timedelta(days=7)).isoformat()
+            provider_cooldown_active = (today_lagos - last_retry).days < 1
+            retry_after_date = (last_retry + timedelta(days=1)).isoformat()
         except (TypeError, ValueError):
             provider_cooldown_active = False
-    fallback = _fallback_rows(fallback_path, set(gaps))
+    # Football-Data.co.uk explicitly limits its free CSV feed to private/academic
+    # use and excludes commercial products and model training. Do not ingest it.
+    fallback = []
     fallback_by_day: dict[str, int] = {}
     for row in fallback:
         fallback_by_day[row["date"]] = fallback_by_day.get(row["date"], 0) + 1
@@ -295,7 +236,9 @@ def run(cache_path: Path, fallback_path: Path, output_path: Path, api: Any, sess
     state["history_gaps"] = [day for day in gaps if day not in resolved]
     if not state["history_gaps"]:
         state.pop("history_gaps", None)
-    if not rate_limited and not provider_cooldown_active:
+    if not provider_cooldown_active:
+        # A 429 is still a completed retry attempt; enforce a one-day cooldown
+        # so scheduled runs cannot repeatedly hammer the provider.
         state["last_gap_retry_on"] = datetime.now(ZoneInfo("Africa/Lagos")).date().isoformat()
     state["gap_backfill_last_run"] = "2026-11-02"
     open_resolved_dates = set(open_audit.get("resolved_dates") or [])
@@ -317,7 +260,8 @@ def run(cache_path: Path, fallback_path: Path, output_path: Path, api: Any, sess
         "provider_retry_after_date": retry_after_date,
         "league_endpoint_scan": league_scan,
         "league_endpoint_resolved_dates": sorted(day for day, rows in league_rows_by_day.items() if rows and day in resolved),
-        "secondary_fallback_matches_added": len(fallback),
+        "secondary_fallback_matches_added": 0,
+        "secondary_fallback_status": "SKIPPED_NONCOMMERCIAL_LICENSE",
         "primary_matches_added": sum(1 for row in recovered if row.get("source_provider") == "5DollarFootballAPI"),
         "league_endpoint_matches_added": sum(1 for row in recovered if row.get("source_provider") == "5DollarFootballAPI_LEAGUE_FIXTURES"),
         "cache_rows_before": len(existing), "cache_rows_after": len(merged),
@@ -347,7 +291,7 @@ def main() -> int:
     if report["status"] not in {"PROVIDER_RATE_LIMITED", "RETRY_COOLDOWN"}:
         publish("public-data/recent_results_cache.json", Path(args.output), repo, token)
     print(json.dumps(report, indent=2, ensure_ascii=False))
-    return 0 if report["status"] in {"COMPLETE", "RETRY_COOLDOWN"} else 2
+    return 0 if report["status"] in {"COMPLETE", "RETRY_COOLDOWN", "PARTIAL_PROVIDER_RETRY_COOLDOWN"} else 2
 
 
 if __name__ == "__main__":
