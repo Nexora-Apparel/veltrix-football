@@ -90,16 +90,23 @@ def run(cache_path: Path, fallback_path: Path, output_path: Path, api: Any) -> d
     resolved = set()
     league_scan = {"active_mapped_leagues": 0, "successful_league_queries": 0, "matches": 0, "failed_leagues": []}
     league_rows_by_day: dict[str, list[dict[str, Any]]] = {day: [] for day in gaps}
+    rate_limited = False
     if gaps:
         leagues = []
         page = 1
-        while page <= 20:
-            payload = api.leagues(page=page, per_page=100)
-            leagues.extend(payload.get("response") or [])
-            pagination = payload.get("pagination") or {}
-            if not pagination.get("has_more"):
-                break
-            page += 1
+        try:
+            while page <= 20:
+                payload = api.leagues(page=page, per_page=100)
+                leagues.extend(payload.get("response") or [])
+                pagination = payload.get("pagination") or {}
+                if not pagination.get("has_more"):
+                    break
+                page += 1
+        except ProviderAPIError as exc:
+            rate_limited = "HTTP 429" in str(exc)
+            league_scan["error_type"] = "HTTP_429" if rate_limited else type(exc).__name__
+            league_scan["error"] = str(exc)[:240]
+
         mapped = [
             (league, _mapped_league_division(league))
             for league in leagues
@@ -116,60 +123,50 @@ def run(cache_path: Path, fallback_path: Path, output_path: Path, api: Any) -> d
             {"name": str(row.get("name") or row.get("league_name") or ((row.get("league") or {}).get("name") if isinstance(row.get("league"), dict) else "")), "division": division, "id": str(row.get("id"))}
             for row, division in mapped
         ]
-        for league, division in mapped:
-            league_id = league.get("id")
-            try:
-                payload = api.league_fixtures(league_id, gaps[0], gaps[-1], "Africa/Lagos")
-                rows = extract_completed_results(payload)
-                league_scan["successful_league_queries"] += 1
-                for row in rows:
-                    day = row["date"].isoformat()
-                    if day in league_rows_by_day:
-                        league_rows_by_day[day].append({
-                            "date": day, "division": row.get("division") or "",
-                            "home": row["home"], "away": row["away"],
-                            "home_goals": row["home_goals"], "away_goals": row["away_goals"],
-                            "fixture_id": row.get("fixture_id"), "fixture_status": row.get("fixture_status") or "FT",
-                            "source_provider": "5DollarFootballAPI_LEAGUE_FIXTURES",
-                        })
-                league_scan["matches"] += len(rows)
-            except (ProviderAPIError, ValueError, OSError) as exc:
-                league_scan["failed_leagues"].append({"league_id": str(league_id), "error_type": type(exc).__name__, "error": str(exc)[:240]})
+        if not rate_limited:
+            for league, division in mapped:
+                league_id = league.get("id")
+                try:
+                    payload = api.league_fixtures(league_id, gaps[0], gaps[-1], "Africa/Lagos")
+                    rows = extract_completed_results(payload)
+                    league_scan["successful_league_queries"] += 1
+                    for row in rows:
+                        day = row["date"].isoformat()
+                        if day in league_rows_by_day:
+                            league_rows_by_day[day].append({
+                                "date": day, "division": division or row.get("division") or "",
+                                "home": row["home"], "away": row["away"],
+                                "home_goals": row["home_goals"], "away_goals": row["away_goals"],
+                                "fixture_id": row.get("fixture_id"), "fixture_status": row.get("fixture_status") or "FT",
+                                "source_provider": "5DollarFootballAPI_LEAGUE_FIXTURES",
+                            })
+                    league_scan["matches"] += len(rows)
+                    time.sleep(1.5)
+                except (ProviderAPIError, ValueError, OSError) as exc:
+                    league_scan["failed_leagues"].append({"league_id": str(league_id), "error_type": type(exc).__name__, "error": str(exc)[:240]})
+                    if "HTTP 429" in str(exc):
+                        rate_limited = True
+                        break
         for day, rows in league_rows_by_day.items():
-            if rows and league_scan["successful_league_queries"] == league_scan["active_mapped_leagues"] and league_scan["active_mapped_leagues"] > 0:
+            if rows:
                 recovered.extend(rows)
-                resolved.add(day)
-    for day in gaps:
-        try:
-            payload = api.fixtures(day, "Africa/Lagos")
-            rows = extract_completed_results(payload)
-            timezone_used = "Africa/Lagos"
-            meta = payload.get("_veltrix_meta") or {}
-            pages = int(meta.get("pages_fetched", 0) or 0)
-            if not rows:
-                # Cross-check empty local-day windows against UTC to detect a
-                # provider timezone-boundary mismatch before retaining a gap.
-                utc_payload = api.fixtures(day, "UTC")
-                utc_rows = extract_completed_results(utc_payload)
-                if utc_rows:
-                    payload, rows, timezone_used = utc_payload, utc_rows, "UTC"
-                    meta = payload.get("_veltrix_meta") or {}
-                    pages = int(meta.get("pages_fetched", 0) or 0)
-            if rows and pages > 0:
-                recovered.extend({
-                    "date": row["date"].isoformat(), "division": row.get("division") or "",
-                    "home": row["home"], "away": row["away"],
-                    "home_goals": row["home_goals"], "away_goals": row["away_goals"],
-                    "fixture_id": row.get("fixture_id"), "fixture_status": row.get("fixture_status") or "FT",
-                    "source_provider": "5DollarFootballAPI",
-                } for row in rows)
-                resolved.add(day)
-                day_results.append({"date": day, "status": "PRIMARY_RESULTS_RECOVERED", "matches": len(rows), "pages": pages, "timezone": timezone_used, "secondary_matches": fallback_by_day.get(day, 0)})
+                if (
+                    not rate_limited
+                    and league_scan["active_mapped_leagues"] > 0
+                    and league_scan["successful_league_queries"] == league_scan["active_mapped_leagues"]
+                ):
+                    resolved.add(day)
+                day_results.append({
+                    "date": day,
+                    "status": "LEAGUE_RESULTS_RECOVERED" if day in resolved else "LEAGUE_RESULTS_PARTIAL",
+                    "matches": len(rows),
+                })
             else:
-                day_results.append({"date": day, "status": "PRIMARY_EMPTY_UNVERIFIED", "matches": 0, "pages": pages, "timezone_checks": ["Africa/Lagos", "UTC"], "secondary_matches": fallback_by_day.get(day, 0)})
-        except (ProviderAPIError, ValueError, OSError) as exc:
-            day_results.append({"date": day, "status": "PRIMARY_REQUEST_FAILED", "matches": 0, "secondary_matches": fallback_by_day.get(day, 0), "error_type": type(exc).__name__})
-
+                day_results.append({
+                    "date": day,
+                    "status": "PROVIDER_RATE_LIMITED" if rate_limited else "LEAGUE_ENDPOINT_EMPTY_UNVERIFIED",
+                    "matches": 0,
+                })
     # Secondary open-data results are useful additions but cannot prove global
     # date completeness, so they never clear a primary-provider date gap alone.
     recovered.extend(fallback)
@@ -182,7 +179,8 @@ def run(cache_path: Path, fallback_path: Path, output_path: Path, api: Any) -> d
     state["history_gaps"] = [day for day in gaps if day not in resolved]
     if not state["history_gaps"]:
         state.pop("history_gaps", None)
-    state["last_gap_retry_on"] = "2026-11-02"
+    if not rate_limited:
+        state["last_gap_retry_on"] = "2026-11-02"
     state["gap_backfill_last_run"] = "2026-11-02"
     state["gap_backfill_provider_resolved_dates"] = sorted(set(state.get("gap_backfill_provider_resolved_dates", [])) | resolved)
     cache["version"] = 2
@@ -191,7 +189,7 @@ def run(cache_path: Path, fallback_path: Path, output_path: Path, api: Any) -> d
     output_path.parent.mkdir(parents=True, exist_ok=True)
     output_path.write_text(json.dumps(cache, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
     report = {
-        "status": "COMPLETE" if not state.get("history_gaps") else "PARTIAL_UNRESOLVED_SOURCE_GAPS",
+        "status": "PROVIDER_RATE_LIMITED" if rate_limited else ("COMPLETE" if not state.get("history_gaps") else "PARTIAL_UNRESOLVED_SOURCE_GAPS"),
         "requested_gap_dates": len(gaps), "primary_resolved_dates": len(resolved),
         "unresolved_dates": state.get("history_gaps", []),
         "league_endpoint_scan": league_scan,
@@ -221,7 +219,8 @@ def main() -> int:
     api = FiveDollarFootballClient()
     report = run(Path(args.cache), Path(args.fallback), Path(args.output), api)
     Path(args.report).write_text(json.dumps(report, indent=2, ensure_ascii=False), encoding="utf-8")
-    publish("public-data/recent_results_cache.json", Path(args.output), repo, token)
+    if report["status"] != "PROVIDER_RATE_LIMITED":
+        publish("public-data/recent_results_cache.json", Path(args.output), repo, token)
     print(json.dumps(report, indent=2, ensure_ascii=False))
     return 0 if report["status"] == "COMPLETE" else 2
 
