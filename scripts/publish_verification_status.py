@@ -29,7 +29,7 @@ def _read_json(path_text: str) -> dict:
 def build_status(env: dict[str, str]) -> dict:
     keys = (
         "unit_tests", "dashboard_js", "fixture_generation", "report_recovery",
-        "fixture_visibility", "odds_enrichment", "value_evidence_update",
+        "same_day_report_download", "same_day_report_filter", "fixture_visibility", "odds_enrichment", "value_evidence_update",
         "value_evidence_artifact", "value_certificate", "telegram_webhook",
         "telegram_delivery", "daily_report_artifact", "paper_ledger_artifact",
         "command_data_publication", "paper_tracking",
@@ -38,7 +38,12 @@ def build_status(env: dict[str, str]) -> dict:
     critical = ("unit_tests", "dashboard_js")
     passed = all(steps[key] == "success" for key in critical)
     live = steps["fixture_generation"] == "success"
-    recovered = steps["report_recovery"] == "success"
+    report = _read_json(env.get("VELTRIX_REPORT_PATH", "reports/daily_predictions.json"))
+    same_day_replay = (
+        steps["same_day_report_filter"] == "success"
+        and report.get("publication_status") == "REUSED_SNAPSHOT_NOT_REFRESHED"
+    )
+    recovered = steps["report_recovery"] == "success" or same_day_replay
     live_attempted = steps["fixture_generation"] not in {"skipped", "not_run"}
     if live_attempted and not live and not recovered:
         passed = False
@@ -56,7 +61,6 @@ def build_status(env: dict[str, str]) -> dict:
         if live:
             passed = passed and steps["odds_enrichment"] in {"success", "skipped"}
             passed = passed and steps["value_certificate"] == "success"
-    report = _read_json(env.get("VELTRIX_REPORT_PATH", "reports/daily_predictions.json"))
     rows = report.get("predictions") if isinstance(report.get("predictions"), list) else []
     row_counts: dict[str, int] = {}
     for row in rows:
