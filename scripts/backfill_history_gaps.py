@@ -296,3 +296,5 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
+
+# Independent 2026/27 result recovery is sourced from open-matchday with explicit provenance.
