@@ -871,7 +871,7 @@ def test_gap_backfill_uses_date_endpoint_after_league_catalogue_429(tmp_path):
     assert report["status"] == "COMPLETE"
     assert report["league_endpoint_scan"]["error_type"] == "HTTP_429"
     assert report["date_endpoint"]["resolved_dates"] == ["2026-09-28"]
-    assert saved["state"].get("history_gaps") is None
+    assert saved["state"].get("history_gaps") == []
     assert saved["matches"][0]["source_provider"] == "5DollarFootballAPI_DATE_FIXTURES"
 
 
