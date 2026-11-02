@@ -1,6 +1,11 @@
 name: Historical Results Gap Backfill
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - "scripts/backfill_history_gaps.py"
+      - ".github/workflows/historical-gap-backfill.yml"
   workflow_dispatch:
     inputs:
       from:
