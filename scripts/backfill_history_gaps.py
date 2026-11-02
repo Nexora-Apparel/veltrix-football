@@ -758,3 +758,5 @@ if __name__ == "__main__":
 # One final bounded audit run after expanded 13-competition mapping: [run-openligadb-backfill]
 
 # Controlled primary-provider retry after successful credential smoke check: [run-gap-backfill]
+
+# Controlled forced retry after provider authentication recovered and quota reset was verified: [run-gap-backfill]
