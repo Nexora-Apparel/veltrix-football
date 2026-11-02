@@ -33,7 +33,15 @@ def _load(kind: str) -> dict[str, Any] | None:
         _cache[kind] = (now, None)
         return None
 
-    filename = "daily_predictions.json" if kind == "report" else "paper_tracking_ledger.json"
+    filenames = {
+        "report": "daily_predictions.json",
+        "ledger": "paper_tracking_ledger.json",
+        "model_validation": "model_validation_report.json",
+    }
+    filename = filenames.get(kind)
+    if not filename:
+        _cache[kind] = (now, None)
+        return None
     # Query the GitHub Contents API with its raw media type. Unlike the raw
     # branch CDN URL, this avoids stale CDN snapshots after publication.
     cache_buster = int(time.time())
@@ -66,6 +74,8 @@ def _load(kind: str) -> dict[str, Any] | None:
                     value = parsed
                 elif kind == "ledger" and isinstance(parsed.get("cumulative_metrics_by_model"), dict) and parsed.get("model_status") == "PAPER_TRACKING_ONLY":
                     value = parsed
+                elif kind == "model_validation" and parsed.get("status") == "RESEARCH_DIAGNOSTIC_ONLY" and isinstance(parsed.get("dataset"), dict):
+                    value = parsed
     except (HTTPError, URLError, OSError, TimeoutError, UnicodeDecodeError, json.JSONDecodeError, ValueError):
         value = None
 
@@ -81,3 +91,9 @@ def load_latest_report() -> dict[str, Any] | None:
 def load_paper_ledger() -> dict[str, Any] | None:
     """Load the published cumulative paper-tracking ledger, if one exists."""
     return _load("ledger")
+
+
+
+def load_model_validation_report() -> dict[str, Any] | None:
+    """Load the published chronological model-validation evidence snapshot."""
+    return _load("model_validation")
