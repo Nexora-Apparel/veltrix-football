@@ -771,7 +771,7 @@ def test_gap_backfill_excludes_noncommercial_feed_and_preserves_gaps_during_cool
     assert report["provider_retry_cooldown_active"] is True
     assert report["open_matchday"]["status"] == "SKIPPED_NONCOMMERCIAL_LICENSE"
     assert report["open_matchday_resolved_dates"] == []
-    assert report["openligadb"]["status"] == "NO_GAP_RESULTS"
+    assert report["openligadb"]["status"] == "NO_DATA_AVAILABLE"
     assert len(session.urls) == 4
     assert saved["state"]["history_gaps"] == gaps
     assert saved["matches"] == []
@@ -1034,3 +1034,32 @@ def test_openligadb_rows_are_added_without_silently_clearing_global_gap(tmp_path
     assert saved["state"]["history_gaps"] == ["2026-10-04"]
     assert saved["matches"][0]["source_provider"] == "OpenLigaDB"
     assert saved["state"]["source_licenses"]["OpenLigaDB"]["license"] == "ODbL-1.0"
+
+
+def test_openligadb_uses_after90minutes_kind_not_penalty_score():
+    from scripts.backfill_history_gaps import _openligadb_gap_backfill
+
+    class Response:
+        def raise_for_status(self):
+            return None
+        def json(self):
+            return [{
+                "matchID": 9010, "matchDateTimeUTC": "2026-10-01T19:00:00Z",
+                "matchIsFinished": True,
+                "team1": {"teamName": "Knockout FC"}, "team2": {"teamName": "Penalty FC"},
+                "matchResults": [
+                    {"resultTypeID": 1, "resultTypeKind": "HalfTime", "pointsTeam1": 0, "pointsTeam2": 0},
+                    {"resultTypeID": 5, "resultTypeKind": "After90Minutes", "pointsTeam1": 1, "pointsTeam2": 1},
+                    {"resultTypeID": 6, "resultTypeKind": "AfterPenalties", "pointsTeam1": 4, "pointsTeam2": 3},
+                ],
+            }]
+
+    class Session:
+        def get(self, url, timeout=30, headers=None):
+            return Response() if "/ucl/2026" in url else type("Empty", (), {"raise_for_status": lambda self: None, "json": lambda self: []})()
+
+    rows, audit = _openligadb_gap_backfill(Session(), ["2026-10-01"], delay_seconds=0)
+    ucl_rows = [row for row in rows if row["league_code"] == "ucl"]
+    assert len(ucl_rows) == 1
+    assert (ucl_rows[0]["home_goals"], ucl_rows[0]["away_goals"]) == (1, 1)
+    assert ucl_rows[0]["source_license"] == "ODbL-1.0"
