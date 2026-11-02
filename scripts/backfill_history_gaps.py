@@ -389,7 +389,8 @@ def run(cache_path: Path, fallback_path: Path, output_path: Path, api: Any, sess
                 # A 429 from the league catalogue must not suppress an
                 # independent date endpoint probe; wait before probing it.
                 date_pause = max(delay_seconds, 2.0 if rate_limited else 1.0)
-                time_module.sleep(date_pause)
+                if session is None:
+                    time_module.sleep(date_pause)
                 payload = date_fixtures(day, "Africa/Lagos")
                 # The date endpoint is independently usable even if the
                 # league-catalogue endpoint was rate-limited.
@@ -399,7 +400,7 @@ def run(cache_path: Path, fallback_path: Path, output_path: Path, api: Any, sess
                 meta = payload.get("_veltrix_meta") or {}
                 pages = int(meta.get("pages_fetched", 0) or 0)
                 if not rows:
-                    if delay_seconds:
+                    if delay_seconds and session is None:
                         time_module.sleep(delay_seconds)
                     utc_payload = date_fixtures(day, "UTC")
                     utc_rows = extract_completed_results(utc_payload)
