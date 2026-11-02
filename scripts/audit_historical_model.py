@@ -215,7 +215,11 @@ def audit_report(report: dict[str, Any], cache: dict[str, Any]) -> dict[str, Any
                 "source_provider": result["source_provider"],
             })
 
-    model_metrics = {model: _metric(rows) for model, rows in sorted(matched_rows.items())}\n    class_distribution_by_model = {\n        model: probability_distribution_audit(rows)\n        for model, rows in sorted(matched_rows.items())\n    }
+    model_metrics = {model: _metric(rows) for model, rows in sorted(matched_rows.items())}
+    class_distribution_by_model = {
+        model: probability_distribution_audit(rows)
+        for model, rows in sorted(matched_rows.items())
+    }
     model_sets = {
         model: {row["fixture_key"] for row in rows}
         for model, rows in matched_rows.items()
