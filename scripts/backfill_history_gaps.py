@@ -386,3 +386,5 @@ if __name__ == "__main__":
 # Independent 2026/27 result recovery is sourced from open-matchday with explicit provenance.
 
 # [run-gap-backfill] one explicitly throttled recovery pass for unresolved dates.
+
+# [run-gap-backfill] validate independent date endpoint after catalogue 429.
