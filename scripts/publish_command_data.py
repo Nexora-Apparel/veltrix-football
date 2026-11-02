@@ -39,34 +39,62 @@ def _github_json(url: str, token: str, method: str = "GET", body: dict | None = 
     return payload
 
 
+def _publish_large_blob(path: str, data: bytes, repo: str, token: str) -> None:
+    """Publish large snapshots through Git Data API, avoiding Contents API payload limits."""
+    root = f"{API_ROOT}/repos/{repo}"
+    ref = _github_json(f"{root}/git/ref/heads/{quote(BRANCH, safe='')}", token)
+    head_sha = ref.get("object", {}).get("sha")
+    if not isinstance(head_sha, str) or not head_sha:
+        raise ValueError("Could not resolve command-data branch head.")
+    head = _github_json(f"{root}/git/commits/{head_sha}", token)
+    base_tree = head.get("tree", {}).get("sha")
+    if not isinstance(base_tree, str) or not base_tree:
+        raise ValueError("Could not resolve command-data base tree.")
+    blob = _github_json(f"{root}/git/blobs", token, method="POST",
+        body={"content": base64.b64encode(data).decode("ascii"), "encoding": "base64"})
+    blob_sha = blob.get("sha")
+    if not isinstance(blob_sha, str) or not blob_sha:
+        raise ValueError("GitHub did not return a blob SHA.")
+    tree = _github_json(f"{root}/git/trees", token, method="POST",
+        body={"base_tree": base_tree, "tree": [
+            {"path": path, "mode": "100644", "type": "blob", "sha": blob_sha}]})
+    tree_sha = tree.get("sha")
+    if not isinstance(tree_sha, str) or not tree_sha:
+        raise ValueError("GitHub did not return a tree SHA.")
+    commit = _github_json(f"{root}/git/commits", token, method="POST",
+        body={"message": f"Publish latest Veltrix command data: {Path(path).name}",
+              "tree": tree_sha, "parents": [head_sha]})
+    commit_sha = commit.get("sha")
+    if not isinstance(commit_sha, str) or not commit_sha:
+        raise ValueError("GitHub did not return a commit SHA.")
+    _github_json(f"{root}/git/refs/heads/{quote(BRANCH, safe='')}", token,
+        method="PATCH", body={"sha": commit_sha, "force": False})
+
+
 def publish(path: str, local_file: Path, repo: str, token: str) -> None:
     data = local_file.read_bytes()
-    if len(data) > 4_000_000:
-        raise ValueError(f"{path} exceeds the 4 MB publication limit.")
     parsed = json.loads(data.decode("utf-8"))
     if not isinstance(parsed, dict):
         raise ValueError(f"{path} must contain a JSON object.")
-    encoded_path = quote(path, safe="/")
-    url = f"{API_ROOT}/repos/{repo}/contents/{encoded_path}"
-    current_sha = None
-    try:
-        existing = _github_json(f"{url}?ref={quote(BRANCH, safe='')}", token)
-        if isinstance(existing.get("sha"), str):
-            current_sha = existing["sha"]
-    except HTTPError as exc:
-        if exc.code != 404:
-            raise
-
-    payload = {
-        "message": f"Publish latest Veltrix command data: {Path(path).name}",
-        "content": base64.b64encode(data).decode("ascii"),
-        "branch": BRANCH,
-    }
-    if current_sha:
-        payload["sha"] = current_sha
-    _github_json(url, token, method="PUT", body=payload)
+    if len(data) > 900_000:
+        _publish_large_blob(path, data, repo, token)
+    else:
+        encoded_path = quote(path, safe="/")
+        url = f"{API_ROOT}/repos/{repo}/contents/{encoded_path}"
+        current_sha = None
+        try:
+            existing = _github_json(f"{url}?ref={quote(BRANCH, safe='')}", token)
+            if isinstance(existing.get("sha"), str):
+                current_sha = existing["sha"]
+        except HTTPError as exc:
+            if exc.code != 404:
+                raise
+        payload = {"message": f"Publish latest Veltrix command data: {Path(path).name}",
+                   "content": base64.b64encode(data).decode("ascii"), "branch": BRANCH}
+        if current_sha:
+            payload["sha"] = current_sha
+        _github_json(url, token, method="PUT", body=payload)
     print(f"Published {path} ({len(data)} bytes).")
-
 
 def _archive_report_path(report: dict, published_at: datetime) -> str:
     """Return an immutable UTC-stamped archive path for a dated report snapshot."""
@@ -105,6 +133,15 @@ def main() -> int:
         print("Publication refused: report failed structural validation.", file=sys.stderr)
         return 2
 
+    errors: list[str] = []
+
+    def attempt(label: str, action) -> None:
+        try:
+            action()
+        except (HTTPError, URLError, OSError, ValueError, json.JSONDecodeError) as exc:
+            errors.append(f"{label}: {type(exc).__name__}")
+            print(f"Publication failed for {label}: {type(exc).__name__}", file=sys.stderr)
+
     try:
         # Separate transport publication from snapshot freshness: reused reports
         # must retain their explicit reuse warning while still reporting that the
@@ -113,11 +150,9 @@ def main() -> int:
         published_at = datetime.now(timezone.utc)
         report["command_data_published_at_utc"] = published_at.isoformat()
         report_path.write_text(json.dumps(report, indent=2, ensure_ascii=False), encoding="utf-8")
-        publish("public-data/daily_predictions.json", report_path, repo, token)
-        # Preserve every generated snapshot, not only the latest mutable pointer.
-        # This makes future same-fixture model comparisons possible after artifact expiry.
+        attempt("daily report", lambda: publish("public-data/daily_predictions.json", report_path, repo, token))
         archive_path = _archive_report_path(report, published_at)
-        publish(archive_path, report_path, repo, token)
+        attempt("report archive", lambda: publish(archive_path, report_path, repo, token))
         if args.ledger:
             ledger_path = Path(args.ledger)
             ledger = json.loads(ledger_path.read_text(encoding="utf-8"))
@@ -130,7 +165,7 @@ def main() -> int:
                 # it with an incomplete first-run/error document.
                 print("Ledger publication skipped: ledger failed structural validation.", file=sys.stderr)
             else:
-                publish("public-data/paper_tracking_ledger.json", ledger_path, repo, token)
+                attempt("paper tracking ledger", lambda: publish("public-data/paper_tracking_ledger.json", ledger_path, repo, token))
         if args.value_evidence:
             evidence_path = Path(args.value_evidence)
             evidence = json.loads(evidence_path.read_text(encoding="utf-8"))
@@ -140,7 +175,7 @@ def main() -> int:
                 and evidence.get("release_status") == "LOCKED_SHADOW_MODE"
                 and isinstance(evidence.get("observations"), list)
             ):
-                publish("public-data/value_evidence_ledger.json", evidence_path, repo, token)
+                attempt("value evidence ledger", lambda: publish("public-data/value_evidence_ledger.json", evidence_path, repo, token))
             else:
                 print("Value evidence publication skipped: ledger schema or release lock validation failed.", file=sys.stderr)
         if args.recent_cache:
@@ -150,12 +185,14 @@ def main() -> int:
             # only for backward-compatible migration; otherwise the cursor and
             # historical matches would never be published for the next run.
             if _valid_recent_cache(cache):
-                publish("public-data/recent_results_cache.json", cache_path, repo, token)
+                attempt("recent-results cache", lambda: publish("public-data/recent_results_cache.json", cache_path, repo, token))
             else:
                 print("Recent-results cache publication skipped: cache schema validation failed.", file=sys.stderr)
     except (HTTPError, URLError, OSError, ValueError, json.JSONDecodeError) as exc:
-        # Never print request headers or the GitHub token.
         print(f"Command-data publication failed: {type(exc).__name__}", file=sys.stderr)
+        return 1
+    if errors:
+        print(f"Command-data publication completed with {len(errors)} failed snapshot(s).", file=sys.stderr)
         return 1
     return 0
 
