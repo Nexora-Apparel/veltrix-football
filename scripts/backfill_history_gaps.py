@@ -58,8 +58,18 @@ def run(cache_path: Path, fallback_path: Path, output_path: Path, api: Any) -> d
         try:
             payload = api.fixtures(day, "Africa/Lagos")
             rows = extract_completed_results(payload)
+            timezone_used = "Africa/Lagos"
             meta = payload.get("_veltrix_meta") or {}
             pages = int(meta.get("pages_fetched", 0) or 0)
+            if not rows:
+                # Cross-check empty local-day windows against UTC to detect a
+                # provider timezone-boundary mismatch before retaining a gap.
+                utc_payload = api.fixtures(day, "UTC")
+                utc_rows = extract_completed_results(utc_payload)
+                if utc_rows:
+                    payload, rows, timezone_used = utc_payload, utc_rows, "UTC"
+                    meta = payload.get("_veltrix_meta") or {}
+                    pages = int(meta.get("pages_fetched", 0) or 0)
             if rows and pages > 0:
                 recovered.extend({
                     "date": row["date"].isoformat(), "division": row.get("division") or "",
@@ -69,9 +79,9 @@ def run(cache_path: Path, fallback_path: Path, output_path: Path, api: Any) -> d
                     "source_provider": "5DollarFootballAPI",
                 } for row in rows)
                 resolved.add(day)
-                day_results.append({"date": day, "status": "PRIMARY_RESULTS_RECOVERED", "matches": len(rows), "pages": pages, "secondary_matches": fallback_by_day.get(day, 0)})
+                day_results.append({"date": day, "status": "PRIMARY_RESULTS_RECOVERED", "matches": len(rows), "pages": pages, "timezone": timezone_used, "secondary_matches": fallback_by_day.get(day, 0)})
             else:
-                day_results.append({"date": day, "status": "PRIMARY_EMPTY_UNVERIFIED", "matches": 0, "pages": pages, "secondary_matches": fallback_by_day.get(day, 0)})
+                day_results.append({"date": day, "status": "PRIMARY_EMPTY_UNVERIFIED", "matches": 0, "pages": pages, "timezone_checks": ["Africa/Lagos", "UTC"], "secondary_matches": fallback_by_day.get(day, 0)})
         except (ProviderAPIError, ValueError, OSError) as exc:
             day_results.append({"date": day, "status": "PRIMARY_REQUEST_FAILED", "matches": 0, "secondary_matches": fallback_by_day.get(day, 0), "error_type": type(exc).__name__})
 
