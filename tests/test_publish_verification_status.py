@@ -118,3 +118,56 @@ def test_recovery_without_telegram_configuration_is_not_marked_complete(tmp_path
         "VELTRIX_STEP_TELEGRAM_DELIVERY": "skipped",
     }
     assert build_status(env)["overall_status"] == "NEEDS_REVIEW"
+
+
+def test_test_only_receipt_preserves_last_full_telegram_delivery_status():
+    from scripts.publish_verification_status import merge_test_only_status
+
+    previous = {
+        "run_id": "live-123",
+        "overall_status": "DEGRADED_REUSED_SNAPSHOT",
+        "validation_scope": "SAME_DAY_RECOVERY",
+        "telegram_configured": True,
+        "steps": {"telegram_delivery": "success", "command_data_publication": "success"},
+        "report_summary": {"as_of_date": "2026-11-02", "fixture_rows": 23},
+    }
+    current = {
+        "run_id": "tests-456",
+        "commit_sha": "abc123",
+        "recorded_at_utc": "2026-11-02T10:40:00+00:00",
+        "overall_status": "TESTS_PASSED",
+        "validation_scope": "TESTS_ONLY",
+        "telegram_configured": False,
+        "steps": {"unit_tests": "success", "dashboard_js": "success"},
+    }
+
+    merged = merge_test_only_status(previous, current)
+    assert merged["run_id"] == "live-123"
+    assert merged["validation_scope"] == "SAME_DAY_RECOVERY"
+    assert merged["telegram_configured"] is True
+    assert merged["steps"]["telegram_delivery"] == "success"
+    assert merged["latest_test_status"] == "TESTS_PASSED"
+    assert merged["latest_test_run"]["run_id"] == "tests-456"
+
+
+def test_failed_test_only_receipt_marks_review_without_erasing_last_live_run():
+    from scripts.publish_verification_status import merge_test_only_status
+
+    previous = {
+        "run_id": "live-123",
+        "overall_status": "PASSED",
+        "validation_scope": "LIVE_PIPELINE",
+        "telegram_configured": True,
+        "steps": {"telegram_delivery": "success"},
+    }
+    current = {
+        "run_id": "tests-789",
+        "overall_status": "NEEDS_REVIEW",
+        "validation_scope": "TESTS_ONLY",
+        "steps": {"unit_tests": "failure", "dashboard_js": "success"},
+    }
+    merged = merge_test_only_status(previous, current)
+    assert merged["overall_status"] == "NEEDS_REVIEW"
+    assert merged["last_full_pipeline_status"] == "PASSED"
+    assert merged["run_id"] == "live-123"
+    assert merged["telegram_configured"] is True
