@@ -1,0 +1,385 @@
+{
+  "schema_version": 1,
+  "product": "VELTRIX FOOTBALL AI",
+  "generated_at_utc": "2026-11-02T10:51:52.204219+00:00",
+  "status": "RESEARCH_DIAGNOSTIC_ONLY",
+  "dataset": {
+    "input_file": "open_historical_matches.csv",
+    "sha256": "5d4b0355dda14d2a59864771daf2ac7838816457e14385cefa35504e006de239",
+    "bytes": 33275891,
+    "rows_loaded": 238854,
+    "first_match_date": "2000-07-28",
+    "last_match_date": "2026-09-03",
+    "audit_rows": 238854,
+    "valid_rows": 238854,
+    "invalid_rows": 0,
+    "duplicate_match_keys": 0,
+    "competition_count": 38,
+    "integrity_status": "PASS",
+    "missingness": {
+      "source": {
+        "count": 0,
+        "rate": 0.0
+      },
+      "division": {
+        "count": 0,
+        "rate": 0.0
+      },
+      "match_date": {
+        "count": 0,
+        "rate": 0.0
+      },
+      "home_team": {
+        "count": 0,
+        "rate": 0.0
+      },
+      "away_team": {
+        "count": 0,
+        "rate": 0.0
+      },
+      "home_goals": {
+        "count": 0,
+        "rate": 0.0
+      },
+      "away_goals": {
+        "count": 0,
+        "rate": 0.0
+      },
+      "full_time_result": {
+        "count": 0,
+        "rate": 0.0
+      },
+      "home_elo": {
+        "count": 88959,
+        "rate": 0.3724409053229169
+      },
+      "away_elo": {
+        "count": 89028,
+        "rate": 0.37272978472204776
+      },
+      "home_form3": {
+        "count": 1522,
+        "rate": 0.006372093412712368
+      },
+      "away_form3": {
+        "count": 1521,
+        "rate": 0.00636790675475395
+      },
+      "home_form5": {
+        "count": 1533,
+        "rate": 0.0064181466502549675
+      },
+      "away_form5": {
+        "count": 1532,
+        "rate": 0.006413959992296549
+      },
+      "home_odds": {
+        "count": 3041,
+        "rate": 0.012731626851549481
+      },
+      "draw_odds": {
+        "count": 3041,
+        "rate": 0.012731626851549481
+      },
+      "away_odds": {
+        "count": 3041,
+        "rate": 0.012731626851549481
+      },
+      "over25_odds": {
+        "count": 82169,
+        "rate": 0.3440134977852579
+      },
+      "under25_odds": {
+        "count": 82170,
+        "rate": 0.34401768444321634
+      },
+      "half_time_home_goals": {
+        "count": 54578,
+        "rate": 0.22849941805454377
+      },
+      "half_time_away_goals": {
+        "count": 54578,
+        "rate": 0.22849941805454377
+      },
+      "home_shots": {
+        "count": 116371,
+        "rate": 0.48720557327907427
+      },
+      "away_shots": {
+        "count": 116368,
+        "rate": 0.487193013305199
+      },
+      "home_shots_on_target": {
+        "count": 117177,
+        "rate": 0.49058001959355924
+      },
+      "away_shots_on_target": {
+        "count": 117174,
+        "rate": 0.490567459619684
+      }
+    }
+  },
+  "historical_1x2": {
+    "test_matches": 238389,
+    "first_test_date": "2000-08-18",
+    "last_test_date": "2026-09-03",
+    "full_sample_models": {
+      "poisson": {
+        "matches": 238389,
+        "result_accuracy": 0.4673495840831582,
+        "brier_score": 0.6299739061411241,
+        "log_loss": 1.04707469329979
+      },
+      "elo": {
+        "matches": 238389,
+        "result_accuracy": 0.48358355461032176,
+        "brier_score": 0.6179955635267618,
+        "log_loss": 1.0293549352762967
+      }
+    },
+    "market_comparison_same_fixtures": {
+      "poisson": {
+        "matches": 235464,
+        "result_accuracy": 0.46732409200557196,
+        "brier_score": 0.6299750440905212,
+        "log_loss": 1.0470704710468557
+      },
+      "elo": {
+        "matches": 235464,
+        "result_accuracy": 0.48360258893079194,
+        "brier_score": 0.6178905202775566,
+        "log_loss": 1.029201198090128
+      },
+      "market": {
+        "matches": 235464,
+        "result_accuracy": 0.5010702272958923,
+        "brier_score": 0.6017965404842179,
+        "log_loss": 1.0056012796471883
+      }
+    },
+    "market_outperforms_both_on_brier_and_log_loss": true,
+    "release_status": "NOT_CERTIFIED_MARKET_OUTPERFORMED_MODELS"
+  },
+  "rolling_origin_1x2_calibration": {
+    "live_poisson": {
+      "status": "ROLLING_ORIGIN_DIAGNOSTIC_ONLY",
+      "folds_requested": 4,
+      "folds_evaluated": 4,
+      "raw": {
+        "matches": 32541,
+        "brier_score": 0.6425383409991549,
+        "log_loss": 1.0657855131758238,
+        "accuracy": 0.45133831166835686
+      },
+      "calibrated": {
+        "matches": 32541,
+        "brier_score": 0.636100575470583,
+        "log_loss": 1.0554010965744827,
+        "accuracy": 0.45133831166835686
+      },
+      "market_on_same_odds_covered_fixtures": {
+        "matches": 32503,
+        "brier_score": 0.5991326786397037,
+        "log_loss": 1.0018047259877465,
+        "accuracy": 0.503491985355198
+      },
+      "beats_market_on_same_fixtures": false,
+      "market_anchor_blend_beats_market": false,
+      "calibration_diagnostic_pass": true,
+      "diagnostic_only": true,
+      "applied_to_production": false
+    },
+    "live_elo": {
+      "status": "ROLLING_ORIGIN_DIAGNOSTIC_ONLY",
+      "folds_requested": 4,
+      "folds_evaluated": 4,
+      "raw": {
+        "matches": 32161,
+        "brier_score": 0.6147778341500751,
+        "log_loss": 1.024825510412327,
+        "accuracy": 0.48826218090233514
+      },
+      "calibrated": {
+        "matches": 32161,
+        "brier_score": 0.6139882361097818,
+        "log_loss": 1.024040714895058,
+        "accuracy": 0.48826218090233514
+      },
+      "market_on_same_odds_covered_fixtures": {
+        "matches": 32125,
+        "brier_score": 0.5991691625751953,
+        "log_loss": 1.0018576794043592,
+        "accuracy": 0.5035019455252918
+      },
+      "beats_market_on_same_fixtures": false,
+      "market_anchor_blend_beats_market": false,
+      "calibration_diagnostic_pass": true,
+      "diagnostic_only": true,
+      "applied_to_production": false
+    },
+    "vector_scaling_live_poisson": {
+      "status": "ROLLING_ORIGIN_DIAGNOSTIC_ONLY",
+      "folds_requested": 4,
+      "folds_evaluated": 4,
+      "raw": {
+        "matches": 32541,
+        "brier_score": 0.6425383409991549,
+        "log_loss": 1.0657855131758238,
+        "accuracy": 0.45133831166835686
+      },
+      "calibrated": {
+        "matches": 32541,
+        "brier_score": 0.6418622808812524,
+        "log_loss": 1.0651094708143451,
+        "accuracy": 0.4516763467625457
+      },
+      "market_on_same_odds_covered_fixtures": {
+        "matches": 32503,
+        "brier_score": 0.5991326786397037,
+        "log_loss": 1.0018047259877465,
+        "accuracy": 0.503491985355198
+      },
+      "beats_market_on_same_fixtures": false,
+      "market_anchor_blend_beats_market": null,
+      "calibration_diagnostic_pass": true,
+      "diagnostic_only": true,
+      "applied_to_production": false
+    },
+    "vector_scaling_live_elo": {
+      "status": "ROLLING_ORIGIN_DIAGNOSTIC_ONLY",
+      "folds_requested": 4,
+      "folds_evaluated": 4,
+      "raw": {
+        "matches": 32161,
+        "brier_score": 0.6147778341500751,
+        "log_loss": 1.024825510412327,
+        "accuracy": 0.48826218090233514
+      },
+      "calibrated": {
+        "matches": 32161,
+        "brier_score": 0.6144373060254484,
+        "log_loss": 1.024369570320948,
+        "accuracy": 0.4890084263549019
+      },
+      "market_on_same_odds_covered_fixtures": {
+        "matches": 32125,
+        "brier_score": 0.5991691625751953,
+        "log_loss": 1.0018576794043592,
+        "accuracy": 0.5035019455252918
+      },
+      "beats_market_on_same_fixtures": false,
+      "market_anchor_blend_beats_market": null,
+      "calibration_diagnostic_pass": true,
+      "diagnostic_only": true,
+      "applied_to_production": false
+    }
+  },
+  "rolling_origin_goal_market_calibration": {
+    "folds_requested": 4,
+    "folds_evaluated": 4,
+    "markets": {
+      "btts_yes": {
+        "status": "CALIBRATION_DIAGNOSTIC_PASS",
+        "folds_evaluated": 4,
+        "folds_beating_raw_and_baseline": 4,
+        "raw": {
+          "matches": 32541,
+          "brier_score": 0.2571139670092586,
+          "log_loss": 0.7088417494867869
+        },
+        "calibrated": {
+          "matches": 32541,
+          "brier_score": 0.24816164824110432,
+          "log_loss": 0.6894556028464178
+        },
+        "expanding_baseline": {
+          "matches": 32541,
+          "brier_score": 0.248917491050253,
+          "log_loss": 0.690981087269409
+        },
+        "diagnostic_only": true,
+        "applied_to_production": false,
+        "betting_certification": false
+      },
+      "over_1_5": {
+        "status": "CALIBRATION_DIAGNOSTIC_PASS",
+        "folds_evaluated": 4,
+        "folds_beating_raw_and_baseline": 4,
+        "raw": {
+          "matches": 32541,
+          "brier_score": 0.19206878721486048,
+          "log_loss": 0.5741508257543657
+        },
+        "calibrated": {
+          "matches": 32541,
+          "brier_score": 0.1843405694573146,
+          "log_loss": 0.5547882398633899
+        },
+        "expanding_baseline": {
+          "matches": 32541,
+          "brier_score": 0.18546790171296887,
+          "log_loss": 0.5579300495442214
+        },
+        "diagnostic_only": true,
+        "applied_to_production": false,
+        "betting_certification": false
+      },
+      "over_2_5": {
+        "status": "CALIBRATION_DIAGNOSTIC_PASS",
+        "folds_evaluated": 4,
+        "folds_beating_raw_and_baseline": 4,
+        "raw": {
+          "matches": 32541,
+          "brier_score": 0.25991073112428015,
+          "log_loss": 0.7170839808264058
+        },
+        "calibrated": {
+          "matches": 32541,
+          "brier_score": 0.248178342978145,
+          "log_loss": 0.689486746977226
+        },
+        "expanding_baseline": {
+          "matches": 32541,
+          "brier_score": 0.2500747123972993,
+          "log_loss": 0.6932966161719123
+        },
+        "diagnostic_only": true,
+        "applied_to_production": false,
+        "betting_certification": false
+      },
+      "over_3_5": {
+        "status": "CALIBRATION_DIAGNOSTIC_PASS",
+        "folds_evaluated": 4,
+        "folds_beating_raw_and_baseline": 4,
+        "raw": {
+          "matches": 32541,
+          "brier_score": 0.2145742593621879,
+          "log_loss": 0.6259894433077858
+        },
+        "calibrated": {
+          "matches": 32541,
+          "brier_score": 0.205369788004731,
+          "log_loss": 0.6005873575602135
+        },
+        "expanding_baseline": {
+          "matches": 32541,
+          "brier_score": 0.2072305156445204,
+          "log_loss": 0.6050576995249776
+        },
+        "diagnostic_only": true,
+        "applied_to_production": false,
+        "betting_certification": false
+      }
+    },
+    "all_goal_markets_calibration_pass": true,
+    "diagnostic_only": true,
+    "applied_to_production": false,
+    "betting_certification": false
+  },
+  "release_controls": {
+    "value_betting": "LOCKED_INSUFFICIENT_EVIDENCE",
+    "alerts_enabled": false,
+    "calibration_changes_applied_to_live": false,
+    "reason": "Chronological calibration diagnostics are not proof of market-beating skill, positive ROI, or prospective validation."
+  }
+}
