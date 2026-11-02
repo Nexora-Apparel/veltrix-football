@@ -18,6 +18,11 @@ on:
         description: "Last unresolved date (YYYY-MM-DD); blank uses the cache gap list"
         required: false
         type: string
+      force:
+        description: "Bypass the one-day retry cooldown for this explicit recovery run"
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: write
@@ -28,6 +33,7 @@ concurrency:
 
 jobs:
   backfill:
+    if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[run-gap-backfill]')
     runs-on: ubuntu-latest
     timeout-minutes: 25
     steps:
@@ -63,7 +69,8 @@ jobs:
             --cache command-data/public-data/recent_results_cache.json \
             --fallback reports/gap_fallback.csv \
             --output reports/recent_results_cache.json \
-            --report reports/historical_gap_backfill.json
+            --report reports/historical_gap_backfill.json \
+            ${{ (inputs.force == true || contains(github.event.head_commit.message, '[run-gap-backfill]')) && '--force' || '' }}
       - name: Upload gap-backfill evidence
         if: always()
         uses: actions/upload-artifact@v7
