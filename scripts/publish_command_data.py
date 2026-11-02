@@ -96,6 +96,17 @@ def publish(path: str, local_file: Path, repo: str, token: str) -> None:
         _github_json(url, token, method="PUT", body=payload)
     print(f"Published {path} ({len(data)} bytes).")
 
+def _mark_report_publication(report: dict, published_at: datetime) -> None:
+    """Record transport publication without erasing a reused-snapshot warning."""
+    report["command_data_publication"] = "PUBLISHED"
+    report["command_data_published_at_utc"] = published_at.isoformat()
+    if report.get("publication_status") == "LIVE_REPORT_GENERATED_PENDING_PUBLICATION":
+        report["publication_status"] = "PUBLISHED"
+        report["publication_notice"] = (
+            "Generated from this run's live fixture response; publication to command-data is confirmed."
+        )
+
+
 def _archive_report_path(report: dict, published_at: datetime) -> str:
     """Return an immutable UTC-stamped archive path for a dated report snapshot."""
     report_date = date.fromisoformat(str(report.get("as_of_date"))).isoformat()
@@ -146,9 +157,8 @@ def main() -> int:
         # Separate transport publication from snapshot freshness: reused reports
         # must retain their explicit reuse warning while still reporting that the
         # command-data branch received this exact snapshot.
-        report["command_data_publication"] = "PUBLISHED"
         published_at = datetime.now(timezone.utc)
-        report["command_data_published_at_utc"] = published_at.isoformat()
+        _mark_report_publication(report, published_at)
         report_path.write_text(json.dumps(report, indent=2, ensure_ascii=False), encoding="utf-8")
         attempt("daily report", lambda: publish("public-data/daily_predictions.json", report_path, repo, token))
         archive_path = _archive_report_path(report, published_at)
