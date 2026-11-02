@@ -648,3 +648,29 @@ def test_historical_backfill_maps_country_prefixed_and_short_league_names():
     assert _mapped_league_division({"id": 3, "short_name": "EPL"}) == "PL"
     assert _mapped_league_division({"id": 4, "league_name": "Bundesliga"}) == "BL1"
     assert _mapped_league_division({"id": 5, "name": "Unmapped competition"}) is None
+
+
+def test_gap_backfill_rate_limit_does_not_advance_retry_cursor(tmp_path):
+    import json
+    from scripts.backfill_history_gaps import run
+    from app.provider_adapters import ProviderAPIError
+
+    cache_path = tmp_path / "cache.json"
+    fallback_path = tmp_path / "fallback.csv"
+    output_path = tmp_path / "out.json"
+    cache_path.write_text(json.dumps({
+        "version": 2,
+        "state": {"history_gaps": ["2026-09-28"], "last_gap_retry_on": "2026-10-27"},
+        "matches": [],
+    }), encoding="utf-8")
+    fallback_path.write_text("match_date,division,home_team,away_team,home_goals,away_goals\n", encoding="utf-8")
+
+    class RateLimitedAPI:
+        def leagues(self, page=1, per_page=100):
+            raise ProviderAPIError("Provider request failed with HTTP 429.")
+
+    report = run(cache_path, fallback_path, output_path, RateLimitedAPI())
+    saved = json.loads(output_path.read_text(encoding="utf-8"))
+    assert report["status"] == "PROVIDER_RATE_LIMITED"
+    assert saved["state"]["history_gaps"] == ["2026-09-28"]
+    assert saved["state"]["last_gap_retry_on"] == "2026-10-27"
