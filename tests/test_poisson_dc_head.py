@@ -51,3 +51,5 @@ def test_high_rate_requires_larger_score_grid():
     assert result["truncated_poisson_tail_estimate"]["upper_bound_union"] <= 1e-8
 
 # CI trigger: keep this file in the PR path filter.
+
+# Re-run PR validation after the CI workflow was added to main.
