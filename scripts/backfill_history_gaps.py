@@ -1,3 +1,4 @@
+# Current-day delivery replay marker: 2026-11-02 verification attempt 2.
 # Live report verification trigger marker: [run-live-verification]
 """Retry known historical result gaps and publish only verified recovered scores."""
 # Explicit recovery-run marker: [run-gap-backfill]
