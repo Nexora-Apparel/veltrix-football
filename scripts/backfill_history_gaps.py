@@ -321,10 +321,10 @@ def run(cache_path: Path, fallback_path: Path, output_path: Path, api: Any, sess
     state["history_gaps"] = [day for day in gaps if day not in resolved]
     # Keep an explicit empty list when all dates are resolved. Consumers can
     # distinguish "checked and complete" from an older cache with no gap audit.
-    if (force or not provider_cooldown_active) and not rate_limited:
-        # Only a completed non-rate-limited attempt advances the daily retry
-        # cursor. A 429 remains immediately eligible for the next scheduled
-        # recovery window rather than being mislabelled as a completed retry.
+    if force or not provider_cooldown_active:
+        # Record the attempt even when the provider rate-limits us. This
+        # prevents repeated code-push or watchdog runs from hammering a
+        # blocked endpoint; unresolved dates remain queued for the next day.
         state["last_gap_retry_on"] = datetime.now(ZoneInfo("Africa/Lagos")).date().isoformat()
     state["gap_backfill_last_run"] = datetime.now(ZoneInfo("Africa/Lagos")).date().isoformat()
     open_resolved_dates = set(open_audit.get("resolved_dates") or [])
