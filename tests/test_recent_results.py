@@ -1164,8 +1164,6 @@ def test_openligadb_discovery_merges_with_known_static_competition_shortcuts(mon
     class Session:
         def get(self, url, **kwargs):
             requested.append(url)
-            if False:
-                return None
         def close(self):
             return None
             if url.endswith("/getavailableleagues/2026"):
