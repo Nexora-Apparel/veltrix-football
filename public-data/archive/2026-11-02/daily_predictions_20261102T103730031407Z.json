@@ -12644,8 +12644,8 @@
     "provider_plan_limited_dates": [],
     "cache_path": "reports/recent_results_cache.json",
     "gap_backfill": {
-      "status": "PARTIAL_PROVIDER_RETRY_COOLDOWN",
-      "checked_at_utc": "2026-11-02T10:30:01Z",
+      "status": "PROVIDER_RATE_LIMITED",
+      "checked_at_utc": "2026-11-02T10:36:53.834114Z",
       "requested_gap_dates": 14,
       "primary_resolved_dates": [
         "2026-10-09",
@@ -12677,8 +12677,9 @@
       ],
       "provider_retry_after_date": "2026-11-03",
       "next_automatic_retry_lagos": "06:30",
-      "note": "The primary provider returned HTTP 429 on both the league catalogue and date fixtures endpoints. Unlicensed or non-commercial fallback feeds are excluded. These dates remain explicitly unresolved pending a licensed provider response.",
-      "alerts_enabled": false
+      "note": "The primary provider returned HTTP 429 on both the league catalogue and the date fixtures endpoint, including the paced independent date probe. Eleven dates remain unresolved. Unlicensed or non-commercial fallback feeds are excluded.",
+      "alerts_enabled": false,
+      "last_attempt_error": "Provider request to api.5dollarfootballapi.com failed with HTTP 429."
     },
     "incremental_backfill_cursor_complete": true,
     "history_gap_backfill_complete": false
