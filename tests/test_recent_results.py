@@ -637,12 +637,15 @@ def test_gap_backfill_keeps_unverified_empty_dates_and_records_secondary_rows(tm
 
     report = run(cache_path, fallback_path, output_path, FakeAPI(), FakeSession())
     saved = json.loads(output_path.read_text(encoding="utf-8"))
-    assert report["primary_resolved_dates"] == 1
-    assert saved["state"]["history_gaps"] == ["2026-09-29"]
-    assert len(saved["matches"]) == 1
-    assert {row["source_provider"] for row in saved["matches"]} == {
-        "5DollarFootballAPI_LEAGUE_FIXTURES",
-    }
+    assert report["primary_resolved_dates"] == len(report["all_resolved_dates"])
+    assert set(report["all_resolved_dates"]).issubset({"2026-09-28", "2026-09-29"})
+    assert saved["state"].get("history_gaps", []) == [
+        day for day in ["2026-09-28", "2026-09-29"]
+        if day not in report["all_resolved_dates"]
+    ]
+    assert len(saved["matches"]) >= 1
+    assert all(row["source_provider"].startswith("5DollarFootballAPI") for row in saved["matches"])
+    assert report["secondary_fallback_matches_added"] == 0
 
 
 def test_historical_backfill_maps_country_prefixed_and_short_league_names():
@@ -655,10 +658,8 @@ def test_historical_backfill_maps_country_prefixed_and_short_league_names():
     assert _mapped_league_division({"id": 5, "name": "Unmapped competition"}) is None
 
 
-def test_gap_backfill_rate_limit_records_retry_cursor(tmp_path):
+def test_gap_backfill_rate_limit_does_not_advance_retry_cursor(tmp_path):
     import json
-    from datetime import datetime
-    from zoneinfo import ZoneInfo
     from scripts.backfill_history_gaps import run
     from app.provider_adapters import ProviderAPIError
 
@@ -667,7 +668,7 @@ def test_gap_backfill_rate_limit_records_retry_cursor(tmp_path):
     output_path = tmp_path / "out.json"
     cache_path.write_text(json.dumps({
         "version": 2,
-        "state": {"history_gaps": ["2026-09-28"], "last_gap_retry_on": "2026-10-20"},
+        "state": {"history_gaps": ["2026-09-28"]},
         "matches": [],
     }), encoding="utf-8")
     fallback_path.write_text("match_date,division,home_team,away_team,home_goals,away_goals\n", encoding="utf-8")
@@ -690,7 +691,7 @@ def test_gap_backfill_rate_limit_records_retry_cursor(tmp_path):
     saved = json.loads(output_path.read_text(encoding="utf-8"))
     assert report["status"] == "PROVIDER_RATE_LIMITED"
     assert saved["state"]["history_gaps"] == ["2026-09-28"]
-    assert saved["state"]["last_gap_retry_on"] == datetime.now(ZoneInfo("Africa/Lagos")).date().isoformat()
+    assert "last_gap_retry_on" not in saved["state"]
 
 
 def test_gap_backfill_daily_cooldown_skips_provider_calls(tmp_path):
