@@ -1,6 +1,6 @@
 {
   "product": "Veltrix Football",
-  "generated_at_utc": "2026-11-02T10:52:11.383085+00:00",
+  "generated_at_utc": "2026-11-02T10:53:55.534096+00:00",
   "as_of_date": "2026-11-02",
   "timezone": "Africa/Lagos",
   "same_day_only": true,
@@ -319,7 +319,7 @@
           "h2h": [
             {
               "bookmaker": "Betfred (UK)",
-              "last_update": "2026-11-02T10:52:08Z",
+              "last_update": "2026-11-02T10:53:16Z",
               "outcomes": [
                 {
                   "name": "Fiorentina",
@@ -340,7 +340,7 @@
             },
             {
               "bookmaker": "Smarkets",
-              "last_update": "2026-11-02T10:51:49Z",
+              "last_update": "2026-11-02T10:53:38Z",
               "outcomes": [
                 {
                   "name": "Fiorentina",
@@ -361,7 +361,7 @@
             },
             {
               "bookmaker": "Unibet (UK)",
-              "last_update": "2026-11-02T10:51:47Z",
+              "last_update": "2026-11-02T10:52:55Z",
               "outcomes": [
                 {
                   "name": "Fiorentina",
@@ -382,7 +382,7 @@
             },
             {
               "bookmaker": "Betway",
-              "last_update": "2026-11-02T10:52:08Z",
+              "last_update": "2026-11-02T10:53:15Z",
               "outcomes": [
                 {
                   "name": "Fiorentina",
@@ -403,7 +403,7 @@
             },
             {
               "bookmaker": "888sport",
-              "last_update": "2026-11-02T10:51:45Z",
+              "last_update": "2026-11-02T10:52:53Z",
               "outcomes": [
                 {
                   "name": "Fiorentina",
@@ -424,7 +424,7 @@
             },
             {
               "bookmaker": "LeoVegas",
-              "last_update": "2026-11-02T10:51:23Z",
+              "last_update": "2026-11-02T10:53:46Z",
               "outcomes": [
                 {
                   "name": "Fiorentina",
@@ -445,7 +445,7 @@
             },
             {
               "bookmaker": "William Hill",
-              "last_update": "2026-11-02T10:51:22Z",
+              "last_update": "2026-11-02T10:53:37Z",
               "outcomes": [
                 {
                   "name": "Fiorentina",
@@ -466,7 +466,7 @@
             },
             {
               "bookmaker": "Casumo",
-              "last_update": "2026-11-02T10:52:08Z",
+              "last_update": "2026-11-02T10:53:17Z",
               "outcomes": [
                 {
                   "name": "Fiorentina",
@@ -487,7 +487,7 @@
             },
             {
               "bookmaker": "LiveScore Bet",
-              "last_update": "2026-11-02T10:51:22Z",
+              "last_update": "2026-11-02T10:53:36Z",
               "outcomes": [
                 {
                   "name": "Fiorentina",
@@ -508,7 +508,7 @@
             },
             {
               "bookmaker": "Virgin Bet",
-              "last_update": "2026-11-02T10:51:22Z",
+              "last_update": "2026-11-02T10:53:39Z",
               "outcomes": [
                 {
                   "name": "Fiorentina",
@@ -529,7 +529,7 @@
             },
             {
               "bookmaker": "Grosvenor",
-              "last_update": "2026-11-02T10:51:46Z",
+              "last_update": "2026-11-02T10:52:53Z",
               "outcomes": [
                 {
                   "name": "Fiorentina",
@@ -550,7 +550,7 @@
             },
             {
               "bookmaker": "BoyleSports",
-              "last_update": "2026-11-02T10:52:11Z",
+              "last_update": "2026-11-02T10:53:23Z",
               "outcomes": [
                 {
                   "name": "Fiorentina",
@@ -571,7 +571,7 @@
             },
             {
               "bookmaker": "Ladbrokes",
-              "last_update": "2026-11-02T10:51:23Z",
+              "last_update": "2026-11-02T10:53:36Z",
               "outcomes": [
                 {
                   "name": "Fiorentina",
@@ -592,7 +592,7 @@
             },
             {
               "bookmaker": "Coral",
-              "last_update": "2026-11-02T10:51:46Z",
+              "last_update": "2026-11-02T10:52:53Z",
               "outcomes": [
                 {
                   "name": "Fiorentina",
@@ -613,7 +613,7 @@
             },
             {
               "bookmaker": "Matchbook",
-              "last_update": "2026-11-02T10:52:08Z",
+              "last_update": "2026-11-02T10:53:37Z",
               "outcomes": [
                 {
                   "name": "Fiorentina",
@@ -655,7 +655,7 @@
             },
             {
               "bookmaker": "Betfair",
-              "last_update": "2026-11-02T10:52:08Z",
+              "last_update": "2026-11-02T10:53:38Z",
               "outcomes": [
                 {
                   "name": "Fiorentina",
@@ -697,7 +697,7 @@
             },
             {
               "bookmaker": "Bet Victor",
-              "last_update": "2026-11-02T10:49:46Z",
+              "last_update": "2026-11-02T10:52:24Z",
               "outcomes": [
                 {
                   "name": "Fiorentina",
@@ -706,19 +706,19 @@
                 },
                 {
                   "name": "Sassuolo",
-                  "price": 2.8,
+                  "price": 2.75,
                   "point": null
                 },
                 {
                   "name": "Draw",
-                  "price": 3.75,
+                  "price": 3.8,
                   "point": null
                 }
               ]
             },
             {
               "bookmaker": "Betano (UK)",
-              "last_update": "2026-11-02T10:50:53Z",
+              "last_update": "2026-11-02T10:53:41Z",
               "outcomes": [
                 {
                   "name": "Fiorentina",
@@ -739,7 +739,7 @@
             },
             {
               "bookmaker": "Betfair Sportsbook",
-              "last_update": "2026-11-02T10:52:08Z",
+              "last_update": "2026-11-02T10:53:14Z",
               "outcomes": [
                 {
                   "name": "Fiorentina",
@@ -762,7 +762,7 @@
           "totals": [
             {
               "bookmaker": "LeoVegas",
-              "last_update": "2026-11-02T10:51:23Z",
+              "last_update": "2026-11-02T10:53:46Z",
               "outcomes": [
                 {
                   "name": "Over",
@@ -778,7 +778,7 @@
             },
             {
               "bookmaker": "William Hill",
-              "last_update": "2026-11-02T10:51:22Z",
+              "last_update": "2026-11-02T10:53:37Z",
               "outcomes": [
                 {
                   "name": "Over",
@@ -794,7 +794,7 @@
             },
             {
               "bookmaker": "Casumo",
-              "last_update": "2026-11-02T10:52:08Z",
+              "last_update": "2026-11-02T10:53:17Z",
               "outcomes": [
                 {
                   "name": "Over",
@@ -810,7 +810,7 @@
             },
             {
               "bookmaker": "Grosvenor",
-              "last_update": "2026-11-02T10:51:46Z",
+              "last_update": "2026-11-02T10:52:53Z",
               "outcomes": [
                 {
                   "name": "Over",
@@ -827,7 +827,7 @@
           ],
           "btts": []
         },
-        "fetched_at": "2026-11-02T10:52:12.170859+00:00"
+        "fetched_at": "2026-11-02T10:53:56.153855+00:00"
       },
       "value_bet_screen": {
         "status": "PAPER_ONLY_CANDIDATES",
@@ -892,20 +892,20 @@
       "value_intelligence": {
         "status": "EVALUATED",
         "source": "The Odds API",
-        "snapshot_fetched_at": "2026-11-02T10:52:12.170859+00:00",
+        "snapshot_fetched_at": "2026-11-02T10:53:56.153855+00:00",
         "markets": {
           "1X2": {
             "status": "NO_QUALIFYING_SHADOW_PRICE",
             "bookmaker_count": 21,
             "market_consensus_probabilities": {
               "home_win": 0.3363560708409213,
-              "draw": 0.26055751966550245,
-              "away_win": 0.40308640949357627
+              "away_win": 0.40308640949357627,
+              "draw": 0.26055751966550245
             },
             "bookmaker_probability_dispersion": {
-              "home_win": 0.004387754797759828,
-              "draw": 0.006790175006489835,
-              "away_win": 0.005307244347255479
+              "home_win": 0.00458440581768935,
+              "away_win": 0.005248800055067834,
+              "draw": 0.0070442073589179685
             },
             "model_probabilities": {
               "home_win": 0.3752,
@@ -918,9 +918,9 @@
               "away_win": 0.3889511661708246
             },
             "conservative_screening_probabilities": {
-              "home_win": 0.3425922854710299,
-              "draw": 0.2499275498969008,
-              "away_win": 0.38010993384542646
+              "home_win": 0.34226879454324577,
+              "draw": 0.24950966667715652,
+              "away_win": 0.38020607470607515
             },
             "raw_model_edge": {
               "home_win": 0.038843929159078694,
@@ -931,162 +931,162 @@
             "candidate_count": 0,
             "candidate_quote_keys": [],
             "quote_timestamps": [
+              "2026-11-02T10:53:16Z",
+              "2026-11-02T10:53:38Z",
+              "2026-11-02T10:52:55Z",
+              "2026-11-02T10:53:15Z",
+              "2026-11-02T10:52:53Z",
+              "2026-11-02T10:53:46Z",
+              "2026-11-02T10:53:37Z",
+              "2026-11-02T10:53:17Z",
+              "2026-11-02T10:53:36Z",
+              "2026-11-02T10:53:39Z",
+              "2026-11-02T10:52:53Z",
+              "2026-11-02T10:53:23Z",
+              "2026-11-02T10:53:36Z",
+              "2026-11-02T10:52:53Z",
+              "2026-11-02T10:53:37Z",
               "2026-11-02T10:52:08Z",
-              "2026-11-02T10:51:49Z",
-              "2026-11-02T10:51:47Z",
-              "2026-11-02T10:52:08Z",
-              "2026-11-02T10:51:45Z",
-              "2026-11-02T10:51:23Z",
-              "2026-11-02T10:51:22Z",
-              "2026-11-02T10:52:08Z",
-              "2026-11-02T10:51:22Z",
-              "2026-11-02T10:51:22Z",
+              "2026-11-02T10:53:38Z",
               "2026-11-02T10:51:46Z",
-              "2026-11-02T10:52:11Z",
-              "2026-11-02T10:51:23Z",
-              "2026-11-02T10:51:46Z",
-              "2026-11-02T10:52:08Z",
-              "2026-11-02T10:52:08Z",
-              "2026-11-02T10:52:08Z",
-              "2026-11-02T10:51:46Z",
-              "2026-11-02T10:49:46Z",
-              "2026-11-02T10:50:53Z",
-              "2026-11-02T10:52:08Z"
+              "2026-11-02T10:52:24Z",
+              "2026-11-02T10:53:41Z",
+              "2026-11-02T10:53:14Z"
             ],
             "bookmaker_quotes": [
               {
                 "bookmaker": "Betfred (UK)",
-                "last_update": "2026-11-02T10:52:08Z",
+                "last_update": "2026-11-02T10:53:16Z",
                 "odds": {
                   "home_win": 2.8,
-                  "draw": 3.5,
-                  "away_win": 2.3
+                  "away_win": 2.3,
+                  "draw": 3.5
                 }
               },
               {
                 "bookmaker": "Smarkets",
-                "last_update": "2026-11-02T10:51:49Z",
+                "last_update": "2026-11-02T10:53:38Z",
                 "odds": {
                   "home_win": 2.98,
-                  "draw": 3.75,
-                  "away_win": 2.44
+                  "away_win": 2.44,
+                  "draw": 3.75
                 }
               },
               {
                 "bookmaker": "Unibet (UK)",
-                "last_update": "2026-11-02T10:51:47Z",
+                "last_update": "2026-11-02T10:52:55Z",
                 "odds": {
                   "home_win": 2.8,
-                  "draw": 3.6,
-                  "away_win": 2.35
+                  "away_win": 2.35,
+                  "draw": 3.6
                 }
               },
               {
                 "bookmaker": "Betway",
-                "last_update": "2026-11-02T10:52:08Z",
+                "last_update": "2026-11-02T10:53:15Z",
                 "odds": {
                   "home_win": 2.8,
-                  "draw": 3.75,
-                  "away_win": 2.3
+                  "away_win": 2.3,
+                  "draw": 3.75
                 }
               },
               {
                 "bookmaker": "888sport",
-                "last_update": "2026-11-02T10:51:45Z",
+                "last_update": "2026-11-02T10:52:53Z",
                 "odds": {
                   "home_win": 2.75,
-                  "draw": 3.4,
-                  "away_win": 2.3
+                  "away_win": 2.3,
+                  "draw": 3.4
                 }
               },
               {
                 "bookmaker": "LeoVegas",
-                "last_update": "2026-11-02T10:51:23Z",
+                "last_update": "2026-11-02T10:53:46Z",
                 "odds": {
                   "home_win": 2.75,
-                  "draw": 3.6,
-                  "away_win": 2.35
+                  "away_win": 2.35,
+                  "draw": 3.6
                 }
               },
               {
                 "bookmaker": "William Hill",
-                "last_update": "2026-11-02T10:51:22Z",
+                "last_update": "2026-11-02T10:53:37Z",
                 "odds": {
                   "home_win": 2.75,
-                  "draw": 3.4,
-                  "away_win": 2.3
+                  "away_win": 2.3,
+                  "draw": 3.4
                 }
               },
               {
                 "bookmaker": "Casumo",
-                "last_update": "2026-11-02T10:52:08Z",
+                "last_update": "2026-11-02T10:53:17Z",
                 "odds": {
                   "home_win": 2.75,
-                  "draw": 3.6,
-                  "away_win": 2.32
+                  "away_win": 2.32,
+                  "draw": 3.6
                 }
               },
               {
                 "bookmaker": "LiveScore Bet",
-                "last_update": "2026-11-02T10:51:22Z",
+                "last_update": "2026-11-02T10:53:36Z",
                 "odds": {
                   "home_win": 2.75,
-                  "draw": 3.55,
-                  "away_win": 2.3
+                  "away_win": 2.3,
+                  "draw": 3.55
                 }
               },
               {
                 "bookmaker": "Virgin Bet",
-                "last_update": "2026-11-02T10:51:22Z",
+                "last_update": "2026-11-02T10:53:39Z",
                 "odds": {
                   "home_win": 2.75,
-                  "draw": 3.55,
-                  "away_win": 2.3
+                  "away_win": 2.3,
+                  "draw": 3.55
                 }
               },
               {
                 "bookmaker": "Grosvenor",
-                "last_update": "2026-11-02T10:51:46Z",
+                "last_update": "2026-11-02T10:52:53Z",
                 "odds": {
                   "home_win": 2.75,
-                  "draw": 3.55,
-                  "away_win": 2.3
+                  "away_win": 2.3,
+                  "draw": 3.55
                 }
               },
               {
                 "bookmaker": "BoyleSports",
-                "last_update": "2026-11-02T10:52:11Z",
+                "last_update": "2026-11-02T10:53:23Z",
                 "odds": {
                   "home_win": 2.6,
-                  "draw": 3.75,
-                  "away_win": 2.15
+                  "away_win": 2.15,
+                  "draw": 3.75
                 }
               },
               {
                 "bookmaker": "Ladbrokes",
-                "last_update": "2026-11-02T10:51:23Z",
+                "last_update": "2026-11-02T10:53:36Z",
                 "odds": {
                   "home_win": 2.75,
-                  "draw": 3.6,
-                  "away_win": 2.37
+                  "away_win": 2.37,
+                  "draw": 3.6
                 }
               },
               {
                 "bookmaker": "Coral",
-                "last_update": "2026-11-02T10:51:46Z",
+                "last_update": "2026-11-02T10:52:53Z",
                 "odds": {
                   "home_win": 2.75,
-                  "draw": 3.6,
-                  "away_win": 2.37
+                  "away_win": 2.37,
+                  "draw": 3.6
                 }
               },
               {
                 "bookmaker": "Matchbook",
-                "last_update": "2026-11-02T10:52:08Z",
+                "last_update": "2026-11-02T10:53:37Z",
                 "odds": {
                   "home_win": 3.0,
-                  "draw": 3.8,
-                  "away_win": 2.44
+                  "away_win": 2.44,
+                  "draw": 3.8
                 }
               },
               {
@@ -1094,17 +1094,17 @@
                 "last_update": "2026-11-02T10:52:08Z",
                 "odds": {
                   "home_win": 2.8,
-                  "draw": 3.6,
-                  "away_win": 2.3
+                  "away_win": 2.3,
+                  "draw": 3.6
                 }
               },
               {
                 "bookmaker": "Betfair",
-                "last_update": "2026-11-02T10:52:08Z",
+                "last_update": "2026-11-02T10:53:38Z",
                 "odds": {
                   "home_win": 3.0,
-                  "draw": 3.8,
-                  "away_win": 2.44
+                  "away_win": 2.44,
+                  "draw": 3.8
                 }
               },
               {
@@ -1112,35 +1112,35 @@
                 "last_update": "2026-11-02T10:51:46Z",
                 "odds": {
                   "home_win": 2.8,
-                  "draw": 3.7,
-                  "away_win": 2.3
+                  "away_win": 2.3,
+                  "draw": 3.7
                 }
               },
               {
                 "bookmaker": "Bet Victor",
-                "last_update": "2026-11-02T10:49:46Z",
+                "last_update": "2026-11-02T10:52:24Z",
                 "odds": {
-                  "home_win": 2.8,
-                  "draw": 3.75,
-                  "away_win": 2.3
+                  "home_win": 2.75,
+                  "away_win": 2.3,
+                  "draw": 3.8
                 }
               },
               {
                 "bookmaker": "Betano (UK)",
-                "last_update": "2026-11-02T10:50:53Z",
+                "last_update": "2026-11-02T10:53:41Z",
                 "odds": {
                   "home_win": 2.75,
-                  "draw": 3.8,
-                  "away_win": 2.3
+                  "away_win": 2.3,
+                  "draw": 3.8
                 }
               },
               {
                 "bookmaker": "Betfair Sportsbook",
-                "last_update": "2026-11-02T10:52:08Z",
+                "last_update": "2026-11-02T10:53:14Z",
                 "odds": {
                   "home_win": 2.88,
-                  "draw": 3.6,
-                  "away_win": 2.3
+                  "away_win": 2.3,
+                  "draw": 3.6
                 }
               }
             ],
@@ -1151,8 +1151,8 @@
               "model_prior_weight": 0.35,
               "probabilities": {
                 "home_win": 0.34981014211334477,
-                "draw": 0.2613495070899936,
-                "away_win": 0.38884035079666174
+                "away_win": 0.38884035079666174,
+                "draw": 0.2613495070899936
               },
               "calibration_status": "NOT_CALIBRATED"
             },
@@ -1174,12 +1174,12 @@
             "status": "NO_QUALIFYING_SHADOW_PRICE",
             "bookmaker_count": 3,
             "market_consensus_probabilities": {
-              "over": 0.6155778894472362,
-              "under": 0.3844221105527638
+              "under": 0.3844221105527638,
+              "over": 0.6155778894472362
             },
             "bookmaker_probability_dispersion": {
-              "over": 0.010023306491051083,
-              "under": 0.010023306491051057
+              "under": 0.010023306491051057,
+              "over": 0.010023306491051083
             },
             "model_probabilities": {
               "over": 0.707,
@@ -1201,33 +1201,33 @@
             "candidate_count": 0,
             "candidate_quote_keys": [],
             "quote_timestamps": [
-              "2026-11-02T10:51:22Z",
-              "2026-11-02T10:52:08Z",
-              "2026-11-02T10:51:46Z"
+              "2026-11-02T10:53:37Z",
+              "2026-11-02T10:53:17Z",
+              "2026-11-02T10:52:53Z"
             ],
             "bookmaker_quotes": [
               {
                 "bookmaker": "William Hill",
-                "last_update": "2026-11-02T10:51:22Z",
+                "last_update": "2026-11-02T10:53:37Z",
                 "odds": {
-                  "over": 1.57,
-                  "under": 2.3
+                  "under": 2.3,
+                  "over": 1.57
                 }
               },
               {
                 "bookmaker": "Casumo",
-                "last_update": "2026-11-02T10:52:08Z",
+                "last_update": "2026-11-02T10:53:17Z",
                 "odds": {
-                  "over": 1.53,
-                  "under": 2.45
+                  "under": 2.45,
+                  "over": 1.53
                 }
               },
               {
                 "bookmaker": "Grosvenor",
-                "last_update": "2026-11-02T10:51:46Z",
+                "last_update": "2026-11-02T10:52:53Z",
                 "odds": {
-                  "over": 1.53,
-                  "under": 2.45
+                  "under": 2.45,
+                  "over": 1.53
                 }
               }
             ],
@@ -1237,8 +1237,8 @@
               "method": "BAYESIAN_INSPIRED_LOG_OPINION_POOL",
               "model_prior_weight": 0.35,
               "probabilities": {
-                "over": 0.6489286989185695,
-                "under": 0.3510713010814305
+                "under": 0.3510713010814305,
+                "over": 0.6489286989185695
               },
               "calibration_status": "NOT_CALIBRATED"
             },
@@ -1252,16 +1252,16 @@
             "bookmaker_quotes": [
               {
                 "bookmaker": "LeoVegas",
-                "last_update": "2026-11-02T10:51:23Z",
+                "last_update": "2026-11-02T10:53:46Z",
                 "odds": {
-                  "over": 2.25,
-                  "under": 1.58
+                  "under": 1.58,
+                  "over": 2.25
                 }
               }
             ],
             "market_consensus_probabilities": {
-              "over": 0.412532637075718,
-              "under": 0.587467362924282
+              "under": 0.587467362924282,
+              "over": 0.412532637075718
             },
             "candidates": [],
             "release_status": "LOCKED_SHADOW_MODE",
@@ -1547,7 +1547,7 @@
           "h2h": [
             {
               "bookmaker": "Betfred (UK)",
-              "last_update": "2026-11-02T10:52:08Z",
+              "last_update": "2026-11-02T10:53:16Z",
               "outcomes": [
                 {
                   "name": "Atalanta BC",
@@ -1568,7 +1568,7 @@
             },
             {
               "bookmaker": "Smarkets",
-              "last_update": "2026-11-02T10:51:49Z",
+              "last_update": "2026-11-02T10:53:38Z",
               "outcomes": [
                 {
                   "name": "Atalanta BC",
@@ -1589,7 +1589,7 @@
             },
             {
               "bookmaker": "Unibet (UK)",
-              "last_update": "2026-11-02T10:51:47Z",
+              "last_update": "2026-11-02T10:52:55Z",
               "outcomes": [
                 {
                   "name": "Atalanta BC",
@@ -1610,7 +1610,7 @@
             },
             {
               "bookmaker": "Betway",
-              "last_update": "2026-11-02T10:52:08Z",
+              "last_update": "2026-11-02T10:53:15Z",
               "outcomes": [
                 {
                   "name": "Atalanta BC",
@@ -1631,7 +1631,7 @@
             },
             {
               "bookmaker": "888sport",
-              "last_update": "2026-11-02T10:51:45Z",
+              "last_update": "2026-11-02T10:52:53Z",
               "outcomes": [
                 {
                   "name": "Atalanta BC",
@@ -1652,7 +1652,7 @@
             },
             {
               "bookmaker": "LeoVegas",
-              "last_update": "2026-11-02T10:51:23Z",
+              "last_update": "2026-11-02T10:53:46Z",
               "outcomes": [
                 {
                   "name": "Atalanta BC",
@@ -1673,7 +1673,7 @@
             },
             {
               "bookmaker": "William Hill",
-              "last_update": "2026-11-02T10:51:22Z",
+              "last_update": "2026-11-02T10:53:37Z",
               "outcomes": [
                 {
                   "name": "Atalanta BC",
@@ -1694,7 +1694,7 @@
             },
             {
               "bookmaker": "Casumo",
-              "last_update": "2026-11-02T10:52:08Z",
+              "last_update": "2026-11-02T10:53:17Z",
               "outcomes": [
                 {
                   "name": "Atalanta BC",
@@ -1715,7 +1715,7 @@
             },
             {
               "bookmaker": "Virgin Bet",
-              "last_update": "2026-11-02T10:51:22Z",
+              "last_update": "2026-11-02T10:53:40Z",
               "outcomes": [
                 {
                   "name": "Atalanta BC",
@@ -1736,7 +1736,7 @@
             },
             {
               "bookmaker": "Grosvenor",
-              "last_update": "2026-11-02T10:51:46Z",
+              "last_update": "2026-11-02T10:52:53Z",
               "outcomes": [
                 {
                   "name": "Atalanta BC",
@@ -1757,7 +1757,7 @@
             },
             {
               "bookmaker": "LiveScore Bet",
-              "last_update": "2026-11-02T10:51:22Z",
+              "last_update": "2026-11-02T10:53:36Z",
               "outcomes": [
                 {
                   "name": "Atalanta BC",
@@ -1778,7 +1778,7 @@
             },
             {
               "bookmaker": "BoyleSports",
-              "last_update": "2026-11-02T10:52:11Z",
+              "last_update": "2026-11-02T10:53:23Z",
               "outcomes": [
                 {
                   "name": "Atalanta BC",
@@ -1799,7 +1799,7 @@
             },
             {
               "bookmaker": "Ladbrokes",
-              "last_update": "2026-11-02T10:51:23Z",
+              "last_update": "2026-11-02T10:53:36Z",
               "outcomes": [
                 {
                   "name": "Atalanta BC",
@@ -1820,7 +1820,7 @@
             },
             {
               "bookmaker": "Coral",
-              "last_update": "2026-11-02T10:51:46Z",
+              "last_update": "2026-11-02T10:52:53Z",
               "outcomes": [
                 {
                   "name": "Atalanta BC",
@@ -1841,11 +1841,11 @@
             },
             {
               "bookmaker": "Matchbook",
-              "last_update": "2026-11-02T10:52:08Z",
+              "last_update": "2026-11-02T10:53:37Z",
               "outcomes": [
                 {
                   "name": "Atalanta BC",
-                  "price": 1.55,
+                  "price": 1.56,
                   "point": null
                 },
                 {
@@ -1883,7 +1883,7 @@
             },
             {
               "bookmaker": "Betfair",
-              "last_update": "2026-11-02T10:52:08Z",
+              "last_update": "2026-11-02T10:53:38Z",
               "outcomes": [
                 {
                   "name": "Atalanta BC",
@@ -1925,7 +1925,7 @@
             },
             {
               "bookmaker": "Bet Victor",
-              "last_update": "2026-11-02T10:49:46Z",
+              "last_update": "2026-11-02T10:52:24Z",
               "outcomes": [
                 {
                   "name": "Atalanta BC",
@@ -1946,7 +1946,7 @@
             },
             {
               "bookmaker": "Betano (UK)",
-              "last_update": "2026-11-02T10:50:53Z",
+              "last_update": "2026-11-02T10:53:41Z",
               "outcomes": [
                 {
                   "name": "Atalanta BC",
@@ -1967,7 +1967,7 @@
             },
             {
               "bookmaker": "Betfair Sportsbook",
-              "last_update": "2026-11-02T10:52:08Z",
+              "last_update": "2026-11-02T10:53:14Z",
               "outcomes": [
                 {
                   "name": "Atalanta BC",
@@ -1990,7 +1990,7 @@
           "totals": [
             {
               "bookmaker": "LeoVegas",
-              "last_update": "2026-11-02T10:51:23Z",
+              "last_update": "2026-11-02T10:53:46Z",
               "outcomes": [
                 {
                   "name": "Over",
@@ -2006,7 +2006,7 @@
             },
             {
               "bookmaker": "William Hill",
-              "last_update": "2026-11-02T10:51:22Z",
+              "last_update": "2026-11-02T10:53:37Z",
               "outcomes": [
                 {
                   "name": "Over",
@@ -2022,7 +2022,7 @@
             },
             {
               "bookmaker": "Casumo",
-              "last_update": "2026-11-02T10:52:08Z",
+              "last_update": "2026-11-02T10:53:17Z",
               "outcomes": [
                 {
                   "name": "Over",
@@ -2038,7 +2038,7 @@
             },
             {
               "bookmaker": "Grosvenor",
-              "last_update": "2026-11-02T10:51:46Z",
+              "last_update": "2026-11-02T10:52:53Z",
               "outcomes": [
                 {
                   "name": "Over",
@@ -2054,7 +2054,7 @@
             },
             {
               "bookmaker": "Matchbook",
-              "last_update": "2026-11-02T10:52:08Z",
+              "last_update": "2026-11-02T10:53:37Z",
               "outcomes": [
                 {
                   "name": "Over",
@@ -2071,7 +2071,7 @@
           ],
           "btts": []
         },
-        "fetched_at": "2026-11-02T10:52:12.170957+00:00"
+        "fetched_at": "2026-11-02T10:53:56.153932+00:00"
       },
       "value_bet_screen": {
         "status": "PAPER_ONLY_CANDIDATES",
@@ -2086,16 +2086,16 @@
               {
                 "selection": "home_win",
                 "model_probability": 0.7301,
-                "devigged_market_probability": 0.6391264036262491,
-                "edge": 0.09097359637375091,
-                "edge_percentage_points": 9.09735963737509,
-                "decimal_odds": 1.55,
-                "expected_return_per_unit": 0.13165500000000008,
+                "devigged_market_probability": 0.6376418352244697,
+                "edge": 0.09245816477553026,
+                "edge_percentage_points": 9.245816477553026,
+                "decimal_odds": 1.56,
+                "expected_return_per_unit": 0.13895600000000008,
                 "status": "PAPER_ONLY_NOT_APPROVED",
                 "market": "1X2",
                 "model": "experimental_recent_goals_poisson",
                 "provider": "The Odds API",
-                "bookmaker": "Smarkets",
+                "bookmaker": "Matchbook",
                 "release_status": "LOCKED_UNVALIDATED"
               }
             ]
@@ -2152,20 +2152,20 @@
       "value_intelligence": {
         "status": "EVALUATED",
         "source": "The Odds API",
-        "snapshot_fetched_at": "2026-11-02T10:52:12.170957+00:00",
+        "snapshot_fetched_at": "2026-11-02T10:53:56.153932+00:00",
         "markets": {
           "1X2": {
             "status": "NO_QUALIFYING_SHADOW_PRICE",
             "bookmaker_count": 21,
             "market_consensus_probabilities": {
               "home_win": 0.6285120167708677,
-              "draw": 0.21105593050712118,
-              "away_win": 0.16043205272201116
+              "away_win": 0.16043205272201116,
+              "draw": 0.21105593050712118
             },
             "bookmaker_probability_dispersion": {
-              "home_win": 0.006889442657679276,
-              "draw": 0.0039260735115821096,
-              "away_win": 0.00601173782704632
+              "home_win": 0.006776689970432875,
+              "away_win": 0.005962551195170476,
+              "draw": 0.003916775933530493
             },
             "model_probabilities": {
               "home_win": 0.5938,
@@ -2178,9 +2178,9 @@
               "away_win": 0.15471583426930727
             },
             "conservative_screening_probabilities": {
-              "home_win": 0.6050296777291815,
-              "draw": 0.22160051553941645,
-              "away_win": 0.14482652554381606
+              "home_win": 0.6052151558997019,
+              "draw": 0.22161581005531136,
+              "away_win": 0.14490743755325183
             },
             "raw_model_edge": {
               "home_win": -0.03471201677086766,
@@ -2191,162 +2191,162 @@
             "candidate_count": 0,
             "candidate_quote_keys": [],
             "quote_timestamps": [
+              "2026-11-02T10:53:16Z",
+              "2026-11-02T10:53:38Z",
+              "2026-11-02T10:52:55Z",
+              "2026-11-02T10:53:15Z",
+              "2026-11-02T10:52:53Z",
+              "2026-11-02T10:53:46Z",
+              "2026-11-02T10:53:37Z",
+              "2026-11-02T10:53:17Z",
+              "2026-11-02T10:53:40Z",
+              "2026-11-02T10:52:53Z",
+              "2026-11-02T10:53:36Z",
+              "2026-11-02T10:53:23Z",
+              "2026-11-02T10:53:36Z",
+              "2026-11-02T10:52:53Z",
+              "2026-11-02T10:53:37Z",
               "2026-11-02T10:52:08Z",
-              "2026-11-02T10:51:49Z",
-              "2026-11-02T10:51:47Z",
-              "2026-11-02T10:52:08Z",
-              "2026-11-02T10:51:45Z",
-              "2026-11-02T10:51:23Z",
-              "2026-11-02T10:51:22Z",
-              "2026-11-02T10:52:08Z",
-              "2026-11-02T10:51:22Z",
+              "2026-11-02T10:53:38Z",
               "2026-11-02T10:51:46Z",
-              "2026-11-02T10:51:22Z",
-              "2026-11-02T10:52:11Z",
-              "2026-11-02T10:51:23Z",
-              "2026-11-02T10:51:46Z",
-              "2026-11-02T10:52:08Z",
-              "2026-11-02T10:52:08Z",
-              "2026-11-02T10:52:08Z",
-              "2026-11-02T10:51:46Z",
-              "2026-11-02T10:49:46Z",
-              "2026-11-02T10:50:53Z",
-              "2026-11-02T10:52:08Z"
+              "2026-11-02T10:52:24Z",
+              "2026-11-02T10:53:41Z",
+              "2026-11-02T10:53:14Z"
             ],
             "bookmaker_quotes": [
               {
                 "bookmaker": "Betfred (UK)",
-                "last_update": "2026-11-02T10:52:08Z",
+                "last_update": "2026-11-02T10:53:16Z",
                 "odds": {
                   "home_win": 1.5,
-                  "draw": 4.5,
-                  "away_win": 6.0
+                  "away_win": 6.0,
+                  "draw": 4.5
                 }
               },
               {
                 "bookmaker": "Smarkets",
-                "last_update": "2026-11-02T10:51:49Z",
+                "last_update": "2026-11-02T10:53:38Z",
                 "odds": {
                   "home_win": 1.55,
-                  "draw": 4.7,
-                  "away_win": 6.6
+                  "away_win": 6.6,
+                  "draw": 4.7
                 }
               },
               {
                 "bookmaker": "Unibet (UK)",
-                "last_update": "2026-11-02T10:51:47Z",
+                "last_update": "2026-11-02T10:52:55Z",
                 "odds": {
                   "home_win": 1.5,
-                  "draw": 4.5,
-                  "away_win": 5.75
+                  "away_win": 5.75,
+                  "draw": 4.5
                 }
               },
               {
                 "bookmaker": "Betway",
-                "last_update": "2026-11-02T10:52:08Z",
+                "last_update": "2026-11-02T10:53:15Z",
                 "odds": {
                   "home_win": 1.5,
-                  "draw": 4.5,
-                  "away_win": 5.75
+                  "away_win": 5.75,
+                  "draw": 4.5
                 }
               },
               {
                 "bookmaker": "888sport",
-                "last_update": "2026-11-02T10:51:45Z",
+                "last_update": "2026-11-02T10:52:53Z",
                 "odds": {
                   "home_win": 1.5,
-                  "draw": 4.2,
-                  "away_win": 5.5
+                  "away_win": 5.5,
+                  "draw": 4.2
                 }
               },
               {
                 "bookmaker": "LeoVegas",
-                "last_update": "2026-11-02T10:51:23Z",
+                "last_update": "2026-11-02T10:53:46Z",
                 "odds": {
                   "home_win": 1.48,
-                  "draw": 4.5,
-                  "away_win": 5.6
+                  "away_win": 5.6,
+                  "draw": 4.5
                 }
               },
               {
                 "bookmaker": "William Hill",
-                "last_update": "2026-11-02T10:51:22Z",
+                "last_update": "2026-11-02T10:53:37Z",
                 "odds": {
                   "home_win": 1.5,
-                  "draw": 4.2,
-                  "away_win": 5.5
+                  "away_win": 5.5,
+                  "draw": 4.2
                 }
               },
               {
                 "bookmaker": "Casumo",
-                "last_update": "2026-11-02T10:52:08Z",
+                "last_update": "2026-11-02T10:53:17Z",
                 "odds": {
                   "home_win": 1.48,
-                  "draw": 4.35,
-                  "away_win": 6.0
+                  "away_win": 6.0,
+                  "draw": 4.35
                 }
               },
               {
                 "bookmaker": "Virgin Bet",
-                "last_update": "2026-11-02T10:51:22Z",
+                "last_update": "2026-11-02T10:53:40Z",
                 "odds": {
                   "home_win": 1.49,
-                  "draw": 4.3,
-                  "away_win": 5.8
+                  "away_win": 5.8,
+                  "draw": 4.3
                 }
               },
               {
                 "bookmaker": "Grosvenor",
-                "last_update": "2026-11-02T10:51:46Z",
+                "last_update": "2026-11-02T10:52:53Z",
                 "odds": {
                   "home_win": 1.47,
-                  "draw": 4.25,
-                  "away_win": 6.0
+                  "away_win": 6.0,
+                  "draw": 4.25
                 }
               },
               {
                 "bookmaker": "LiveScore Bet",
-                "last_update": "2026-11-02T10:51:22Z",
+                "last_update": "2026-11-02T10:53:36Z",
                 "odds": {
                   "home_win": 1.49,
-                  "draw": 4.3,
-                  "away_win": 5.8
+                  "away_win": 5.8,
+                  "draw": 4.3
                 }
               },
               {
                 "bookmaker": "BoyleSports",
-                "last_update": "2026-11-02T10:52:11Z",
+                "last_update": "2026-11-02T10:53:23Z",
                 "odds": {
                   "home_win": 1.44,
-                  "draw": 4.33,
-                  "away_win": 5.5
+                  "away_win": 5.5,
+                  "draw": 4.33
                 }
               },
               {
                 "bookmaker": "Ladbrokes",
-                "last_update": "2026-11-02T10:51:23Z",
+                "last_update": "2026-11-02T10:53:36Z",
                 "odds": {
                   "home_win": 1.5,
-                  "draw": 4.5,
-                  "away_win": 5.75
+                  "away_win": 5.75,
+                  "draw": 4.5
                 }
               },
               {
                 "bookmaker": "Coral",
-                "last_update": "2026-11-02T10:51:46Z",
+                "last_update": "2026-11-02T10:52:53Z",
                 "odds": {
                   "home_win": 1.5,
-                  "draw": 4.6,
-                  "away_win": 5.75
+                  "away_win": 5.75,
+                  "draw": 4.6
                 }
               },
               {
                 "bookmaker": "Matchbook",
-                "last_update": "2026-11-02T10:52:08Z",
+                "last_update": "2026-11-02T10:53:37Z",
                 "odds": {
-                  "home_win": 1.55,
-                  "draw": 4.7,
-                  "away_win": 6.6
+                  "home_win": 1.56,
+                  "away_win": 6.6,
+                  "draw": 4.7
                 }
               },
               {
@@ -2354,17 +2354,17 @@
                 "last_update": "2026-11-02T10:52:08Z",
                 "odds": {
                   "home_win": 1.5,
-                  "draw": 4.33,
-                  "away_win": 5.5
+                  "away_win": 5.5,
+                  "draw": 4.33
                 }
               },
               {
                 "bookmaker": "Betfair",
-                "last_update": "2026-11-02T10:52:08Z",
+                "last_update": "2026-11-02T10:53:38Z",
                 "odds": {
                   "home_win": 1.55,
-                  "draw": 4.7,
-                  "away_win": 6.6
+                  "away_win": 6.6,
+                  "draw": 4.7
                 }
               },
               {
@@ -2372,35 +2372,35 @@
                 "last_update": "2026-11-02T10:51:46Z",
                 "odds": {
                   "home_win": 1.5,
-                  "draw": 4.5,
-                  "away_win": 5.5
+                  "away_win": 5.5,
+                  "draw": 4.5
                 }
               },
               {
                 "bookmaker": "Bet Victor",
-                "last_update": "2026-11-02T10:49:46Z",
+                "last_update": "2026-11-02T10:52:24Z",
                 "odds": {
                   "home_win": 1.5,
-                  "draw": 4.4,
-                  "away_win": 6.0
+                  "away_win": 6.0,
+                  "draw": 4.4
                 }
               },
               {
                 "bookmaker": "Betano (UK)",
-                "last_update": "2026-11-02T10:50:53Z",
+                "last_update": "2026-11-02T10:53:41Z",
                 "odds": {
                   "home_win": 1.5,
-                  "draw": 4.4,
-                  "away_win": 6.0
+                  "away_win": 6.0,
+                  "draw": 4.4
                 }
               },
               {
                 "bookmaker": "Betfair Sportsbook",
-                "last_update": "2026-11-02T10:52:08Z",
+                "last_update": "2026-11-02T10:53:14Z",
                 "odds": {
                   "home_win": 1.5,
-                  "draw": 4.5,
-                  "away_win": 6.0
+                  "away_win": 6.0,
+                  "draw": 4.5
                 }
               }
             ],
@@ -2411,8 +2411,8 @@
               "model_prior_weight": 0.35,
               "probabilities": {
                 "home_win": 0.6171675233195345,
-                "draw": 0.22805890646596902,
-                "away_win": 0.15477357021449648
+                "away_win": 0.15477357021449648,
+                "draw": 0.22805890646596902
               },
               "calibration_status": "NOT_CALIBRATED"
             },
@@ -2434,12 +2434,12 @@
             "status": "NO_QUALIFYING_SHADOW_PRICE",
             "bookmaker_count": 5,
             "market_consensus_probabilities": {
-              "over": 0.5943152454780362,
-              "under": 0.40568475452196384
+              "under": 0.40568475452196384,
+              "over": 0.5943152454780362
             },
             "bookmaker_probability_dispersion": {
-              "over": 0.005527895243252443,
-              "under": 0.005527895243252414
+              "under": 0.005527895243252414,
+              "over": 0.005527895243252443
             },
             "model_probabilities": {
               "over": 0.5645,
@@ -2461,51 +2461,51 @@
             "candidate_count": 0,
             "candidate_quote_keys": [],
             "quote_timestamps": [
-              "2026-11-02T10:51:23Z",
-              "2026-11-02T10:51:22Z",
-              "2026-11-02T10:52:08Z",
-              "2026-11-02T10:51:46Z",
-              "2026-11-02T10:52:08Z"
+              "2026-11-02T10:53:46Z",
+              "2026-11-02T10:53:37Z",
+              "2026-11-02T10:53:17Z",
+              "2026-11-02T10:52:53Z",
+              "2026-11-02T10:53:37Z"
             ],
             "bookmaker_quotes": [
               {
                 "bookmaker": "LeoVegas",
-                "last_update": "2026-11-02T10:51:23Z",
+                "last_update": "2026-11-02T10:53:46Z",
                 "odds": {
-                  "over": 1.55,
-                  "under": 2.35
+                  "under": 2.35,
+                  "over": 1.55
                 }
               },
               {
                 "bookmaker": "William Hill",
-                "last_update": "2026-11-02T10:51:22Z",
+                "last_update": "2026-11-02T10:53:37Z",
                 "odds": {
-                  "over": 1.57,
-                  "under": 2.3
+                  "under": 2.3,
+                  "over": 1.57
                 }
               },
               {
                 "bookmaker": "Casumo",
-                "last_update": "2026-11-02T10:52:08Z",
+                "last_update": "2026-11-02T10:53:17Z",
                 "odds": {
-                  "over": 1.57,
-                  "under": 2.3
+                  "under": 2.3,
+                  "over": 1.57
                 }
               },
               {
                 "bookmaker": "Grosvenor",
-                "last_update": "2026-11-02T10:51:46Z",
+                "last_update": "2026-11-02T10:52:53Z",
                 "odds": {
-                  "over": 1.57,
-                  "under": 2.3
+                  "under": 2.3,
+                  "over": 1.57
                 }
               },
               {
                 "bookmaker": "Matchbook",
-                "last_update": "2026-11-02T10:52:08Z",
+                "last_update": "2026-11-02T10:53:37Z",
                 "odds": {
-                  "over": 1.64,
-                  "under": 2.54
+                  "under": 2.54,
+                  "over": 1.64
                 }
               }
             ],
@@ -2515,8 +2515,8 @@
               "method": "BAYESIAN_INSPIRED_LOG_OPINION_POOL",
               "model_prior_weight": 0.35,
               "probabilities": {
-                "over": 0.5839470397433746,
-                "under": 0.41605296025662536
+                "under": 0.41605296025662536,
+                "over": 0.5839470397433746
               },
               "calibration_status": "NOT_CALIBRATED"
             },
@@ -2809,7 +2809,7 @@
           "h2h": [
             {
               "bookmaker": "BoyleSports",
-              "last_update": "2026-11-02T10:51:08Z",
+              "last_update": "2026-11-02T10:52:40Z",
               "outcomes": [
                 {
                   "name": "Brest",
@@ -2851,7 +2851,7 @@
             },
             {
               "bookmaker": "Unibet (UK)",
-              "last_update": "2026-11-02T10:51:27Z",
+              "last_update": "2026-11-02T10:53:38Z",
               "outcomes": [
                 {
                   "name": "Brest",
@@ -2872,7 +2872,7 @@
             },
             {
               "bookmaker": "Coral",
-              "last_update": "2026-11-02T10:50:16Z",
+              "last_update": "2026-11-02T10:52:29Z",
               "outcomes": [
                 {
                   "name": "Brest",
@@ -2893,7 +2893,7 @@
             },
             {
               "bookmaker": "LeoVegas",
-              "last_update": "2026-11-02T10:51:23Z",
+              "last_update": "2026-11-02T10:53:36Z",
               "outcomes": [
                 {
                   "name": "Brest",
@@ -2914,7 +2914,7 @@
             },
             {
               "bookmaker": "Betano (UK)",
-              "last_update": "2026-11-02T10:51:32Z",
+              "last_update": "2026-11-02T10:53:50Z",
               "outcomes": [
                 {
                   "name": "Brest",
@@ -2935,7 +2935,7 @@
             },
             {
               "bookmaker": "LiveScore Bet",
-              "last_update": "2026-11-02T10:51:21Z",
+              "last_update": "2026-11-02T10:53:36Z",
               "outcomes": [
                 {
                   "name": "Brest",
@@ -2956,7 +2956,7 @@
             },
             {
               "bookmaker": "Virgin Bet",
-              "last_update": "2026-11-02T10:51:45Z",
+              "last_update": "2026-11-02T10:52:52Z",
               "outcomes": [
                 {
                   "name": "Brest",
@@ -2977,7 +2977,7 @@
             },
             {
               "bookmaker": "Grosvenor",
-              "last_update": "2026-11-02T10:51:46Z",
+              "last_update": "2026-11-02T10:52:52Z",
               "outcomes": [
                 {
                   "name": "Brest",
@@ -2998,7 +2998,7 @@
             },
             {
               "bookmaker": "Betfred (UK)",
-              "last_update": "2026-11-02T10:51:22Z",
+              "last_update": "2026-11-02T10:53:35Z",
               "outcomes": [
                 {
                   "name": "Brest",
@@ -3019,7 +3019,7 @@
             },
             {
               "bookmaker": "Casumo",
-              "last_update": "2026-11-02T10:51:22Z",
+              "last_update": "2026-11-02T10:53:43Z",
               "outcomes": [
                 {
                   "name": "Brest",
@@ -3040,7 +3040,7 @@
             },
             {
               "bookmaker": "Ladbrokes",
-              "last_update": "2026-11-02T10:51:22Z",
+              "last_update": "2026-11-02T10:53:35Z",
               "outcomes": [
                 {
                   "name": "Brest",
@@ -3082,7 +3082,7 @@
             },
             {
               "bookmaker": "Betfair",
-              "last_update": "2026-11-02T10:52:07Z",
+              "last_update": "2026-11-02T10:53:37Z",
               "outcomes": [
                 {
                   "name": "Brest",
@@ -3124,7 +3124,7 @@
             },
             {
               "bookmaker": "Betfair Sportsbook",
-              "last_update": "2026-11-02T10:51:45Z",
+              "last_update": "2026-11-02T10:52:58Z",
               "outcomes": [
                 {
                   "name": "Brest",
@@ -3145,7 +3145,7 @@
             },
             {
               "bookmaker": "Smarkets",
-              "last_update": "2026-11-02T10:51:24Z",
+              "last_update": "2026-11-02T10:53:16Z",
               "outcomes": [
                 {
                   "name": "Brest",
@@ -3166,7 +3166,7 @@
             },
             {
               "bookmaker": "888sport",
-              "last_update": "2026-11-02T10:51:45Z",
+              "last_update": "2026-11-02T10:52:52Z",
               "outcomes": [
                 {
                   "name": "Brest",
@@ -3187,7 +3187,7 @@
             },
             {
               "bookmaker": "William Hill",
-              "last_update": "2026-11-02T10:52:08Z",
+              "last_update": "2026-11-02T10:53:15Z",
               "outcomes": [
                 {
                   "name": "Brest",
@@ -3208,7 +3208,7 @@
             },
             {
               "bookmaker": "Betway",
-              "last_update": "2026-11-02T10:52:07Z",
+              "last_update": "2026-11-02T10:53:18Z",
               "outcomes": [
                 {
                   "name": "Brest",
@@ -3231,7 +3231,7 @@
           "totals": [
             {
               "bookmaker": "LeoVegas",
-              "last_update": "2026-11-02T10:51:23Z",
+              "last_update": "2026-11-02T10:53:36Z",
               "outcomes": [
                 {
                   "name": "Over",
@@ -3247,7 +3247,7 @@
             },
             {
               "bookmaker": "Grosvenor",
-              "last_update": "2026-11-02T10:51:46Z",
+              "last_update": "2026-11-02T10:52:52Z",
               "outcomes": [
                 {
                   "name": "Over",
@@ -3263,7 +3263,7 @@
             },
             {
               "bookmaker": "Casumo",
-              "last_update": "2026-11-02T10:51:22Z",
+              "last_update": "2026-11-02T10:53:43Z",
               "outcomes": [
                 {
                   "name": "Over",
@@ -3279,7 +3279,7 @@
             },
             {
               "bookmaker": "William Hill",
-              "last_update": "2026-11-02T10:52:08Z",
+              "last_update": "2026-11-02T10:53:15Z",
               "outcomes": [
                 {
                   "name": "Over",
@@ -3296,7 +3296,7 @@
           ],
           "btts": []
         },
-        "fetched_at": "2026-11-02T10:52:12.171181+00:00"
+        "fetched_at": "2026-11-02T10:53:56.154126+00:00"
       },
       "value_bet_screen": {
         "status": "PAPER_ONLY_CANDIDATES",
@@ -3361,20 +3361,20 @@
       "value_intelligence": {
         "status": "EVALUATED",
         "source": "The Odds API",
-        "snapshot_fetched_at": "2026-11-02T10:52:12.171181+00:00",
+        "snapshot_fetched_at": "2026-11-02T10:53:56.154126+00:00",
         "markets": {
           "1X2": {
             "status": "NO_QUALIFYING_SHADOW_PRICE",
             "bookmaker_count": 20,
             "market_consensus_probabilities": {
               "home_win": 0.3916562945467251,
-              "draw": 0.29465705227348427,
-              "away_win": 0.31368665317979066
+              "away_win": 0.31368665317979066,
+              "draw": 0.29465705227348427
             },
             "bookmaker_probability_dispersion": {
               "home_win": 0.004232331758692069,
-              "draw": 0.005661966976898711,
-              "away_win": 0.007413466444996441
+              "away_win": 0.007413466444996441,
+              "draw": 0.005661966976898711
             },
             "model_probabilities": {
               "home_win": 0.4318,
@@ -3400,35 +3400,35 @@
             "candidate_count": 0,
             "candidate_quote_keys": [],
             "quote_timestamps": [
-              "2026-11-02T10:51:08Z",
+              "2026-11-02T10:52:40Z",
               "2026-11-02T10:50:08Z",
-              "2026-11-02T10:51:27Z",
-              "2026-11-02T10:50:16Z",
-              "2026-11-02T10:51:23Z",
-              "2026-11-02T10:51:32Z",
-              "2026-11-02T10:51:21Z",
-              "2026-11-02T10:51:45Z",
-              "2026-11-02T10:51:46Z",
-              "2026-11-02T10:51:22Z",
-              "2026-11-02T10:51:22Z",
-              "2026-11-02T10:51:22Z",
+              "2026-11-02T10:53:38Z",
+              "2026-11-02T10:52:29Z",
+              "2026-11-02T10:53:36Z",
+              "2026-11-02T10:53:50Z",
+              "2026-11-02T10:53:36Z",
+              "2026-11-02T10:52:52Z",
+              "2026-11-02T10:52:52Z",
+              "2026-11-02T10:53:35Z",
+              "2026-11-02T10:53:43Z",
+              "2026-11-02T10:53:35Z",
               "2026-11-02T10:52:09Z",
-              "2026-11-02T10:52:07Z",
+              "2026-11-02T10:53:37Z",
               "2026-11-02T10:48:44Z",
-              "2026-11-02T10:51:45Z",
-              "2026-11-02T10:51:24Z",
-              "2026-11-02T10:51:45Z",
-              "2026-11-02T10:52:08Z",
-              "2026-11-02T10:52:07Z"
+              "2026-11-02T10:52:58Z",
+              "2026-11-02T10:53:16Z",
+              "2026-11-02T10:52:52Z",
+              "2026-11-02T10:53:15Z",
+              "2026-11-02T10:53:18Z"
             ],
             "bookmaker_quotes": [
               {
                 "bookmaker": "BoyleSports",
-                "last_update": "2026-11-02T10:51:08Z",
+                "last_update": "2026-11-02T10:52:40Z",
                 "odds": {
                   "home_win": 2.38,
-                  "draw": 3.25,
-                  "away_win": 2.75
+                  "away_win": 2.75,
+                  "draw": 3.25
                 }
               },
               {
@@ -3436,98 +3436,98 @@
                 "last_update": "2026-11-02T10:50:08Z",
                 "odds": {
                   "home_win": 2.38,
-                  "draw": 3.25,
-                  "away_win": 3.0
+                  "away_win": 3.0,
+                  "draw": 3.25
                 }
               },
               {
                 "bookmaker": "Unibet (UK)",
-                "last_update": "2026-11-02T10:51:27Z",
+                "last_update": "2026-11-02T10:53:38Z",
                 "odds": {
                   "home_win": 2.45,
-                  "draw": 3.25,
-                  "away_win": 3.0
+                  "away_win": 3.0,
+                  "draw": 3.25
                 }
               },
               {
                 "bookmaker": "Coral",
-                "last_update": "2026-11-02T10:50:16Z",
+                "last_update": "2026-11-02T10:52:29Z",
                 "odds": {
                   "home_win": 2.4,
-                  "draw": 3.3,
-                  "away_win": 3.0
+                  "away_win": 3.0,
+                  "draw": 3.3
                 }
               },
               {
                 "bookmaker": "LeoVegas",
-                "last_update": "2026-11-02T10:51:23Z",
+                "last_update": "2026-11-02T10:53:36Z",
                 "odds": {
                   "home_win": 2.4,
-                  "draw": 3.2,
-                  "away_win": 2.95
+                  "away_win": 2.95,
+                  "draw": 3.2
                 }
               },
               {
                 "bookmaker": "Betano (UK)",
-                "last_update": "2026-11-02T10:51:32Z",
+                "last_update": "2026-11-02T10:53:50Z",
                 "odds": {
                   "home_win": 2.38,
-                  "draw": 3.25,
-                  "away_win": 3.0
+                  "away_win": 3.0,
+                  "draw": 3.25
                 }
               },
               {
                 "bookmaker": "LiveScore Bet",
-                "last_update": "2026-11-02T10:51:21Z",
+                "last_update": "2026-11-02T10:53:36Z",
                 "odds": {
                   "home_win": 2.35,
-                  "draw": 3.1,
-                  "away_win": 2.95
+                  "away_win": 2.95,
+                  "draw": 3.1
                 }
               },
               {
                 "bookmaker": "Virgin Bet",
-                "last_update": "2026-11-02T10:51:45Z",
+                "last_update": "2026-11-02T10:52:52Z",
                 "odds": {
                   "home_win": 2.35,
-                  "draw": 3.1,
-                  "away_win": 2.95
+                  "away_win": 2.95,
+                  "draw": 3.1
                 }
               },
               {
                 "bookmaker": "Grosvenor",
-                "last_update": "2026-11-02T10:51:46Z",
+                "last_update": "2026-11-02T10:52:52Z",
                 "odds": {
                   "home_win": 2.35,
-                  "draw": 3.15,
-                  "away_win": 2.95
+                  "away_win": 2.95,
+                  "draw": 3.15
                 }
               },
               {
                 "bookmaker": "Betfred (UK)",
-                "last_update": "2026-11-02T10:51:22Z",
+                "last_update": "2026-11-02T10:53:35Z",
                 "odds": {
                   "home_win": 2.38,
-                  "draw": 3.1,
-                  "away_win": 2.8
+                  "away_win": 2.8,
+                  "draw": 3.1
                 }
               },
               {
                 "bookmaker": "Casumo",
-                "last_update": "2026-11-02T10:51:22Z",
+                "last_update": "2026-11-02T10:53:43Z",
                 "odds": {
                   "home_win": 2.38,
-                  "draw": 3.15,
-                  "away_win": 2.95
+                  "away_win": 2.95,
+                  "draw": 3.15
                 }
               },
               {
                 "bookmaker": "Ladbrokes",
-                "last_update": "2026-11-02T10:51:22Z",
+                "last_update": "2026-11-02T10:53:35Z",
                 "odds": {
                   "home_win": 2.4,
-                  "draw": 3.25,
-                  "away_win": 2.9
+                  "away_win": 2.9,
+                  "draw": 3.25
                 }
               },
               {
@@ -3535,17 +3535,17 @@
                 "last_update": "2026-11-02T10:52:09Z",
                 "odds": {
                   "home_win": 2.38,
-                  "draw": 3.1,
-                  "away_win": 3.1
+                  "away_win": 3.1,
+                  "draw": 3.1
                 }
               },
               {
                 "bookmaker": "Betfair",
-                "last_update": "2026-11-02T10:52:07Z",
+                "last_update": "2026-11-02T10:53:37Z",
                 "odds": {
                   "home_win": 2.54,
-                  "draw": 3.3,
-                  "away_win": 3.2
+                  "away_win": 3.2,
+                  "draw": 3.3
                 }
               },
               {
@@ -3553,53 +3553,53 @@
                 "last_update": "2026-11-02T10:48:44Z",
                 "odds": {
                   "home_win": 2.38,
-                  "draw": 3.2,
-                  "away_win": 3.1
+                  "away_win": 3.1,
+                  "draw": 3.2
                 }
               },
               {
                 "bookmaker": "Betfair Sportsbook",
-                "last_update": "2026-11-02T10:51:45Z",
+                "last_update": "2026-11-02T10:52:58Z",
                 "odds": {
                   "home_win": 2.4,
-                  "draw": 3.2,
-                  "away_win": 3.2
+                  "away_win": 3.2,
+                  "draw": 3.2
                 }
               },
               {
                 "bookmaker": "Smarkets",
-                "last_update": "2026-11-02T10:51:24Z",
+                "last_update": "2026-11-02T10:53:16Z",
                 "odds": {
                   "home_win": 2.52,
-                  "draw": 3.3,
-                  "away_win": 3.2
+                  "away_win": 3.2,
+                  "draw": 3.3
                 }
               },
               {
                 "bookmaker": "888sport",
-                "last_update": "2026-11-02T10:51:45Z",
+                "last_update": "2026-11-02T10:52:52Z",
                 "odds": {
                   "home_win": 2.38,
-                  "draw": 3.0,
-                  "away_win": 3.0
+                  "away_win": 3.0,
+                  "draw": 3.0
                 }
               },
               {
                 "bookmaker": "William Hill",
-                "last_update": "2026-11-02T10:52:08Z",
+                "last_update": "2026-11-02T10:53:15Z",
                 "odds": {
                   "home_win": 2.38,
-                  "draw": 3.1,
-                  "away_win": 3.0
+                  "away_win": 3.0,
+                  "draw": 3.1
                 }
               },
               {
                 "bookmaker": "Betway",
-                "last_update": "2026-11-02T10:52:07Z",
+                "last_update": "2026-11-02T10:53:18Z",
                 "odds": {
                   "home_win": 2.4,
-                  "draw": 3.2,
-                  "away_win": 3.0
+                  "away_win": 3.0,
+                  "draw": 3.2
                 }
               }
             ],
@@ -3610,8 +3610,8 @@
               "model_prior_weight": 0.35,
               "probabilities": {
                 "home_win": 0.40574169235323304,
-                "draw": 0.2796020242852,
-                "away_win": 0.314656283361567
+                "away_win": 0.314656283361567,
+                "draw": 0.2796020242852
               },
               "calibration_status": "NOT_CALIBRATED"
             },
@@ -3633,12 +3633,12 @@
             "status": "NO_QUALIFYING_SHADOW_PRICE",
             "bookmaker_count": 4,
             "market_consensus_probabilities": {
-              "over": 0.4529824561403508,
-              "under": 0.5470175438596492
+              "under": 0.5470175438596492,
+              "over": 0.4529824561403508
             },
             "bookmaker_probability_dispersion": {
-              "over": 0.0021008839651848106,
-              "under": 0.0021008839651848053
+              "under": 0.0021008839651848053,
+              "over": 0.0021008839651848106
             },
             "model_probabilities": {
               "over": 0.4502,
@@ -3660,42 +3660,42 @@
             "candidate_count": 0,
             "candidate_quote_keys": [],
             "quote_timestamps": [
-              "2026-11-02T10:51:23Z",
-              "2026-11-02T10:51:46Z",
-              "2026-11-02T10:51:22Z",
-              "2026-11-02T10:52:08Z"
+              "2026-11-02T10:53:36Z",
+              "2026-11-02T10:52:52Z",
+              "2026-11-02T10:53:43Z",
+              "2026-11-02T10:53:15Z"
             ],
             "bookmaker_quotes": [
               {
                 "bookmaker": "LeoVegas",
-                "last_update": "2026-11-02T10:51:23Z",
+                "last_update": "2026-11-02T10:53:36Z",
                 "odds": {
-                  "over": 2.05,
-                  "under": 1.7
+                  "under": 1.7,
+                  "over": 2.05
                 }
               },
               {
                 "bookmaker": "Grosvenor",
-                "last_update": "2026-11-02T10:51:46Z",
+                "last_update": "2026-11-02T10:52:52Z",
                 "odds": {
-                  "over": 2.08,
-                  "under": 1.72
+                  "under": 1.72,
+                  "over": 2.08
                 }
               },
               {
                 "bookmaker": "Casumo",
-                "last_update": "2026-11-02T10:51:22Z",
+                "last_update": "2026-11-02T10:53:43Z",
                 "odds": {
-                  "over": 2.08,
-                  "under": 1.72
+                  "under": 1.72,
+                  "over": 2.08
                 }
               },
               {
                 "bookmaker": "William Hill",
-                "last_update": "2026-11-02T10:52:08Z",
+                "last_update": "2026-11-02T10:53:15Z",
                 "odds": {
-                  "over": 2.05,
-                  "under": 1.73
+                  "under": 1.73,
+                  "over": 2.05
                 }
               }
             ],
@@ -3705,8 +3705,8 @@
               "method": "BAYESIAN_INSPIRED_LOG_OPINION_POOL",
               "model_prior_weight": 0.35,
               "probabilities": {
-                "over": 0.4520082531790393,
-                "under": 0.5479917468209607
+                "under": 0.5479917468209607,
+                "over": 0.4520082531790393
               },
               "calibration_status": "NOT_CALIBRATED"
             },
@@ -3999,7 +3999,7 @@
           "h2h": [
             {
               "bookmaker": "LeoVegas",
-              "last_update": "2026-11-02T10:51:41Z",
+              "last_update": "2026-11-02T10:52:49Z",
               "outcomes": [
                 {
                   "name": "Everton",
@@ -4020,7 +4020,7 @@
             },
             {
               "bookmaker": "Unibet (UK)",
-              "last_update": "2026-11-02T10:51:42Z",
+              "last_update": "2026-11-02T10:52:53Z",
               "outcomes": [
                 {
                   "name": "Everton",
@@ -4041,7 +4041,7 @@
             },
             {
               "bookmaker": "888sport",
-              "last_update": "2026-11-02T10:51:18Z",
+              "last_update": "2026-11-02T10:53:33Z",
               "outcomes": [
                 {
                   "name": "Everton",
@@ -4062,7 +4062,7 @@
             },
             {
               "bookmaker": "Betfred (UK)",
-              "last_update": "2026-11-02T10:51:18Z",
+              "last_update": "2026-11-02T10:53:35Z",
               "outcomes": [
                 {
                   "name": "Everton",
@@ -4083,7 +4083,7 @@
             },
             {
               "bookmaker": "William Hill",
-              "last_update": "2026-11-02T10:51:41Z",
+              "last_update": "2026-11-02T10:52:49Z",
               "outcomes": [
                 {
                   "name": "Everton",
@@ -4125,7 +4125,7 @@
             },
             {
               "bookmaker": "Sky Bet",
-              "last_update": "2026-11-02T10:48:44Z",
+              "last_update": "2026-11-02T10:53:10Z",
               "outcomes": [
                 {
                   "name": "Everton",
@@ -4146,7 +4146,7 @@
             },
             {
               "bookmaker": "Betfair",
-              "last_update": "2026-11-02T10:52:04Z",
+              "last_update": "2026-11-02T10:53:32Z",
               "outcomes": [
                 {
                   "name": "Everton",
@@ -4167,7 +4167,7 @@
             },
             {
               "bookmaker": "Smarkets",
-              "last_update": "2026-11-02T10:51:43Z",
+              "last_update": "2026-11-02T10:53:12Z",
               "outcomes": [
                 {
                   "name": "Everton",
@@ -4188,7 +4188,7 @@
             },
             {
               "bookmaker": "BoyleSports",
-              "last_update": "2026-11-02T10:51:41Z",
+              "last_update": "2026-11-02T10:52:48Z",
               "outcomes": [
                 {
                   "name": "Everton",
@@ -4209,7 +4209,7 @@
             },
             {
               "bookmaker": "Grosvenor",
-              "last_update": "2026-11-02T10:52:03Z",
+              "last_update": "2026-11-02T10:53:10Z",
               "outcomes": [
                 {
                   "name": "Everton",
@@ -4230,7 +4230,7 @@
             },
             {
               "bookmaker": "LiveScore Bet",
-              "last_update": "2026-11-02T10:51:41Z",
+              "last_update": "2026-11-02T10:52:48Z",
               "outcomes": [
                 {
                   "name": "Everton",
@@ -4251,7 +4251,7 @@
             },
             {
               "bookmaker": "Casumo",
-              "last_update": "2026-11-02T10:52:03Z",
+              "last_update": "2026-11-02T10:53:10Z",
               "outcomes": [
                 {
                   "name": "Everton",
@@ -4272,7 +4272,7 @@
             },
             {
               "bookmaker": "Virgin Bet",
-              "last_update": "2026-11-02T10:51:41Z",
+              "last_update": "2026-11-02T10:52:48Z",
               "outcomes": [
                 {
                   "name": "Everton",
@@ -4293,7 +4293,7 @@
             },
             {
               "bookmaker": "Betway",
-              "last_update": "2026-11-02T10:52:03Z",
+              "last_update": "2026-11-02T10:53:10Z",
               "outcomes": [
                 {
                   "name": "Everton",
@@ -4314,7 +4314,7 @@
             },
             {
               "bookmaker": "Betano (UK)",
-              "last_update": "2026-11-02T10:50:00Z",
+              "last_update": "2026-11-02T10:52:15Z",
               "outcomes": [
                 {
                   "name": "Everton",
@@ -4335,7 +4335,7 @@
             },
             {
               "bookmaker": "Bet Victor",
-              "last_update": "2026-11-02T10:51:11Z",
+              "last_update": "2026-11-02T10:53:50Z",
               "outcomes": [
                 {
                   "name": "Everton",
@@ -4356,7 +4356,7 @@
             },
             {
               "bookmaker": "Coral",
-              "last_update": "2026-11-02T10:50:34Z",
+              "last_update": "2026-11-02T10:52:49Z",
               "outcomes": [
                 {
                   "name": "Everton",
@@ -4365,7 +4365,7 @@
                 },
                 {
                   "name": "Newcastle United",
-                  "price": 2.15,
+                  "price": 2.1,
                   "point": null
                 },
                 {
@@ -4377,7 +4377,7 @@
             },
             {
               "bookmaker": "Ladbrokes",
-              "last_update": "2026-11-02T10:52:03Z",
+              "last_update": "2026-11-02T10:53:10Z",
               "outcomes": [
                 {
                   "name": "Everton",
@@ -4398,7 +4398,7 @@
             },
             {
               "bookmaker": "Matchbook",
-              "last_update": "2026-11-02T10:51:42Z",
+              "last_update": "2026-11-02T10:53:32Z",
               "outcomes": [
                 {
                   "name": "Everton",
@@ -4419,7 +4419,7 @@
             },
             {
               "bookmaker": "Betfair Sportsbook",
-              "last_update": "2026-11-02T10:52:03Z",
+              "last_update": "2026-11-02T10:53:11Z",
               "outcomes": [
                 {
                   "name": "Everton",
@@ -4442,7 +4442,7 @@
           "totals": [
             {
               "bookmaker": "LeoVegas",
-              "last_update": "2026-11-02T10:51:41Z",
+              "last_update": "2026-11-02T10:52:49Z",
               "outcomes": [
                 {
                   "name": "Over",
@@ -4458,7 +4458,7 @@
             },
             {
               "bookmaker": "William Hill",
-              "last_update": "2026-11-02T10:51:41Z",
+              "last_update": "2026-11-02T10:52:49Z",
               "outcomes": [
                 {
                   "name": "Over",
@@ -4474,7 +4474,7 @@
             },
             {
               "bookmaker": "Grosvenor",
-              "last_update": "2026-11-02T10:52:03Z",
+              "last_update": "2026-11-02T10:53:10Z",
               "outcomes": [
                 {
                   "name": "Over",
@@ -4490,7 +4490,7 @@
             },
             {
               "bookmaker": "Casumo",
-              "last_update": "2026-11-02T10:52:03Z",
+              "last_update": "2026-11-02T10:53:10Z",
               "outcomes": [
                 {
                   "name": "Over",
@@ -4508,7 +4508,7 @@
           "btts": [
             {
               "bookmaker": "LeoVegas",
-              "last_update": "2026-11-02T10:51:41Z",
+              "last_update": "2026-11-02T10:52:49Z",
               "outcomes": [
                 {
                   "name": "Yes",
@@ -4524,7 +4524,7 @@
             },
             {
               "bookmaker": "Betfred (UK)",
-              "last_update": "2026-11-02T10:51:18Z",
+              "last_update": "2026-11-02T10:53:35Z",
               "outcomes": [
                 {
                   "name": "Yes",
@@ -4540,7 +4540,7 @@
             },
             {
               "bookmaker": "William Hill",
-              "last_update": "2026-11-02T10:51:41Z",
+              "last_update": "2026-11-02T10:52:49Z",
               "outcomes": [
                 {
                   "name": "Yes",
@@ -4556,7 +4556,7 @@
             },
             {
               "bookmaker": "Paddy Power",
-              "last_update": "2026-11-02T10:51:08Z",
+              "last_update": "2026-11-02T10:53:40Z",
               "outcomes": [
                 {
                   "name": "Yes",
@@ -4572,7 +4572,7 @@
             },
             {
               "bookmaker": "Betfair",
-              "last_update": "2026-11-02T10:52:04Z",
+              "last_update": "2026-11-02T10:53:39Z",
               "outcomes": [
                 {
                   "name": "Yes",
@@ -4588,7 +4588,7 @@
             },
             {
               "bookmaker": "LiveScore Bet",
-              "last_update": "2026-11-02T10:51:41Z",
+              "last_update": "2026-11-02T10:53:56Z",
               "outcomes": [
                 {
                   "name": "Yes",
@@ -4604,7 +4604,7 @@
             },
             {
               "bookmaker": "Virgin Bet",
-              "last_update": "2026-11-02T10:51:41Z",
+              "last_update": "2026-11-02T10:53:56Z",
               "outcomes": [
                 {
                   "name": "Yes",
@@ -4620,7 +4620,7 @@
             },
             {
               "bookmaker": "Coral",
-              "last_update": "2026-11-02T10:50:34Z",
+              "last_update": "2026-11-02T10:52:49Z",
               "outcomes": [
                 {
                   "name": "Yes",
@@ -4629,14 +4629,14 @@
                 },
                 {
                   "name": "No",
-                  "price": 2.25,
+                  "price": 2.2,
                   "point": null
                 }
               ]
             },
             {
               "bookmaker": "Ladbrokes",
-              "last_update": "2026-11-02T10:52:03Z",
+              "last_update": "2026-11-02T10:53:10Z",
               "outcomes": [
                 {
                   "name": "Yes",
@@ -4645,14 +4645,14 @@
                 },
                 {
                   "name": "No",
-                  "price": 2.25,
+                  "price": 2.2,
                   "point": null
                 }
               ]
             },
             {
               "bookmaker": "Matchbook",
-              "last_update": "2026-11-02T10:51:42Z",
+              "last_update": "2026-11-02T10:53:32Z",
               "outcomes": [
                 {
                   "name": "Yes",
@@ -4668,7 +4668,7 @@
             }
           ]
         },
-        "fetched_at": "2026-11-02T10:52:12.228728+00:00"
+        "fetched_at": "2026-11-02T10:53:56.206817+00:00"
       },
       "value_bet_screen": {
         "status": "PAPER_ONLY_CANDIDATES",
@@ -4749,20 +4749,20 @@
       "value_intelligence": {
         "status": "EVALUATED",
         "source": "The Odds API",
-        "snapshot_fetched_at": "2026-11-02T10:52:12.228728+00:00",
+        "snapshot_fetched_at": "2026-11-02T10:53:56.206817+00:00",
         "markets": {
           "1X2": {
             "status": "NO_QUALIFYING_SHADOW_PRICE",
             "bookmaker_count": 21,
             "market_consensus_probabilities": {
               "home_win": 0.44252566778571023,
-              "draw": 0.2689911113481538,
-              "away_win": 0.288483220866136
+              "away_win": 0.288483220866136,
+              "draw": 0.2689911113481538
             },
             "bookmaker_probability_dispersion": {
-              "home_win": 0.002181152482940245,
-              "draw": 0.00421666839667382,
-              "away_win": 0.004152305062509204
+              "home_win": 0.002612294186707833,
+              "away_win": 0.004105629998880566,
+              "draw": 0.004371360010999276
             },
             "model_probabilities": {
               "home_win": 0.4698,
@@ -4775,9 +4775,9 @@
               "away_win": 0.2899940935629884
             },
             "conservative_screening_probabilities": {
-              "home_win": 0.44848368822627493,
-              "draw": 0.2507120874303124,
-              "away_win": 0.2831635517351607
+              "home_win": 0.44777446012357724,
+              "draw": 0.25045761972474706,
+              "away_win": 0.28324033221482986
             },
             "raw_model_edge": {
               "home_win": 0.027274332214289765,
@@ -4788,72 +4788,72 @@
             "candidate_count": 0,
             "candidate_quote_keys": [],
             "quote_timestamps": [
+              "2026-11-02T10:52:49Z",
+              "2026-11-02T10:52:53Z",
+              "2026-11-02T10:53:33Z",
+              "2026-11-02T10:53:35Z",
+              "2026-11-02T10:52:49Z",
               "2026-11-02T10:51:41Z",
-              "2026-11-02T10:51:42Z",
-              "2026-11-02T10:51:18Z",
-              "2026-11-02T10:51:18Z",
-              "2026-11-02T10:51:41Z",
-              "2026-11-02T10:51:41Z",
-              "2026-11-02T10:48:44Z",
-              "2026-11-02T10:52:04Z",
-              "2026-11-02T10:51:43Z",
-              "2026-11-02T10:51:41Z",
-              "2026-11-02T10:52:03Z",
-              "2026-11-02T10:51:41Z",
-              "2026-11-02T10:52:03Z",
-              "2026-11-02T10:51:41Z",
-              "2026-11-02T10:52:03Z",
-              "2026-11-02T10:50:00Z",
-              "2026-11-02T10:51:11Z",
-              "2026-11-02T10:50:34Z",
-              "2026-11-02T10:52:03Z",
-              "2026-11-02T10:51:42Z",
-              "2026-11-02T10:52:03Z"
+              "2026-11-02T10:53:10Z",
+              "2026-11-02T10:53:32Z",
+              "2026-11-02T10:53:12Z",
+              "2026-11-02T10:52:48Z",
+              "2026-11-02T10:53:10Z",
+              "2026-11-02T10:52:48Z",
+              "2026-11-02T10:53:10Z",
+              "2026-11-02T10:52:48Z",
+              "2026-11-02T10:53:10Z",
+              "2026-11-02T10:52:15Z",
+              "2026-11-02T10:53:50Z",
+              "2026-11-02T10:52:49Z",
+              "2026-11-02T10:53:10Z",
+              "2026-11-02T10:53:32Z",
+              "2026-11-02T10:53:11Z"
             ],
             "bookmaker_quotes": [
               {
                 "bookmaker": "LeoVegas",
-                "last_update": "2026-11-02T10:51:41Z",
+                "last_update": "2026-11-02T10:52:49Z",
                 "odds": {
                   "home_win": 2.12,
-                  "draw": 3.5,
-                  "away_win": 3.15
+                  "away_win": 3.15,
+                  "draw": 3.5
                 }
               },
               {
                 "bookmaker": "Unibet (UK)",
-                "last_update": "2026-11-02T10:51:42Z",
+                "last_update": "2026-11-02T10:52:53Z",
                 "odds": {
                   "home_win": 2.2,
-                  "draw": 3.6,
-                  "away_win": 3.25
+                  "away_win": 3.25,
+                  "draw": 3.6
                 }
               },
               {
                 "bookmaker": "888sport",
-                "last_update": "2026-11-02T10:51:18Z",
+                "last_update": "2026-11-02T10:53:33Z",
                 "odds": {
                   "home_win": 2.1,
-                  "draw": 3.4,
-                  "away_win": 3.25
+                  "away_win": 3.25,
+                  "draw": 3.4
                 }
               },
               {
                 "bookmaker": "Betfred (UK)",
-                "last_update": "2026-11-02T10:51:18Z",
+                "last_update": "2026-11-02T10:53:35Z",
                 "odds": {
                   "home_win": 2.15,
-                  "draw": 3.6,
-                  "away_win": 3.2
+                  "away_win": 3.2,
+                  "draw": 3.6
                 }
               },
               {
                 "bookmaker": "William Hill",
-                "last_update": "2026-11-02T10:51:41Z",
+                "last_update": "2026-11-02T10:52:49Z",
                 "odds": {
                   "home_win": 2.1,
-                  "draw": 3.4,
-                  "away_win": 3.25
+                  "away_win": 3.25,
+                  "draw": 3.4
                 }
               },
               {
@@ -4861,143 +4861,143 @@
                 "last_update": "2026-11-02T10:51:41Z",
                 "odds": {
                   "home_win": 2.1,
-                  "draw": 3.4,
-                  "away_win": 3.25
+                  "away_win": 3.25,
+                  "draw": 3.4
                 }
               },
               {
                 "bookmaker": "Sky Bet",
-                "last_update": "2026-11-02T10:48:44Z",
+                "last_update": "2026-11-02T10:53:10Z",
                 "odds": {
                   "home_win": 2.1,
-                  "draw": 3.5,
-                  "away_win": 3.25
+                  "away_win": 3.25,
+                  "draw": 3.5
                 }
               },
               {
                 "bookmaker": "Betfair",
-                "last_update": "2026-11-02T10:52:04Z",
+                "last_update": "2026-11-02T10:53:32Z",
                 "odds": {
                   "home_win": 2.24,
-                  "draw": 3.7,
-                  "away_win": 3.45
+                  "away_win": 3.45,
+                  "draw": 3.7
                 }
               },
               {
                 "bookmaker": "Smarkets",
-                "last_update": "2026-11-02T10:51:43Z",
+                "last_update": "2026-11-02T10:53:12Z",
                 "odds": {
                   "home_win": 2.24,
-                  "draw": 3.65,
-                  "away_win": 3.45
+                  "away_win": 3.45,
+                  "draw": 3.65
                 }
               },
               {
                 "bookmaker": "BoyleSports",
-                "last_update": "2026-11-02T10:51:41Z",
+                "last_update": "2026-11-02T10:52:48Z",
                 "odds": {
                   "home_win": 2.15,
-                  "draw": 3.5,
-                  "away_win": 3.25
+                  "away_win": 3.25,
+                  "draw": 3.5
                 }
               },
               {
                 "bookmaker": "Grosvenor",
-                "last_update": "2026-11-02T10:52:03Z",
+                "last_update": "2026-11-02T10:53:10Z",
                 "odds": {
                   "home_win": 2.14,
-                  "draw": 3.5,
-                  "away_win": 3.25
+                  "away_win": 3.25,
+                  "draw": 3.5
                 }
               },
               {
                 "bookmaker": "LiveScore Bet",
-                "last_update": "2026-11-02T10:51:41Z",
+                "last_update": "2026-11-02T10:52:48Z",
                 "odds": {
                   "home_win": 2.14,
-                  "draw": 3.45,
-                  "away_win": 3.25
+                  "away_win": 3.25,
+                  "draw": 3.45
                 }
               },
               {
                 "bookmaker": "Casumo",
-                "last_update": "2026-11-02T10:52:03Z",
+                "last_update": "2026-11-02T10:53:10Z",
                 "odds": {
                   "home_win": 2.16,
-                  "draw": 3.55,
-                  "away_win": 3.3
+                  "away_win": 3.3,
+                  "draw": 3.55
                 }
               },
               {
                 "bookmaker": "Virgin Bet",
-                "last_update": "2026-11-02T10:51:41Z",
+                "last_update": "2026-11-02T10:52:48Z",
                 "odds": {
                   "home_win": 2.12,
-                  "draw": 3.4,
-                  "away_win": 3.25
+                  "away_win": 3.25,
+                  "draw": 3.4
                 }
               },
               {
                 "bookmaker": "Betway",
-                "last_update": "2026-11-02T10:52:03Z",
+                "last_update": "2026-11-02T10:53:10Z",
                 "odds": {
                   "home_win": 2.1,
-                  "draw": 3.5,
-                  "away_win": 3.25
+                  "away_win": 3.25,
+                  "draw": 3.5
                 }
               },
               {
                 "bookmaker": "Betano (UK)",
-                "last_update": "2026-11-02T10:50:00Z",
+                "last_update": "2026-11-02T10:52:15Z",
                 "odds": {
                   "home_win": 2.1,
-                  "draw": 3.6,
-                  "away_win": 3.12
+                  "away_win": 3.12,
+                  "draw": 3.6
                 }
               },
               {
                 "bookmaker": "Bet Victor",
-                "last_update": "2026-11-02T10:51:11Z",
+                "last_update": "2026-11-02T10:53:50Z",
                 "odds": {
                   "home_win": 2.1,
-                  "draw": 3.6,
-                  "away_win": 3.12
+                  "away_win": 3.12,
+                  "draw": 3.6
                 }
               },
               {
                 "bookmaker": "Coral",
-                "last_update": "2026-11-02T10:50:34Z",
+                "last_update": "2026-11-02T10:52:49Z",
                 "odds": {
-                  "home_win": 2.15,
-                  "draw": 3.6,
-                  "away_win": 3.25
+                  "home_win": 2.1,
+                  "away_win": 3.25,
+                  "draw": 3.6
                 }
               },
               {
                 "bookmaker": "Ladbrokes",
-                "last_update": "2026-11-02T10:52:03Z",
+                "last_update": "2026-11-02T10:53:10Z",
                 "odds": {
                   "home_win": 2.1,
-                  "draw": 3.5,
-                  "away_win": 3.25
+                  "away_win": 3.25,
+                  "draw": 3.5
                 }
               },
               {
                 "bookmaker": "Matchbook",
-                "last_update": "2026-11-02T10:51:42Z",
+                "last_update": "2026-11-02T10:53:32Z",
                 "odds": {
                   "home_win": 2.24,
-                  "draw": 3.7,
-                  "away_win": 3.45
+                  "away_win": 3.45,
+                  "draw": 3.7
                 }
               },
               {
                 "bookmaker": "Betfair Sportsbook",
-                "last_update": "2026-11-02T10:52:03Z",
+                "last_update": "2026-11-02T10:53:11Z",
                 "odds": {
                   "home_win": 2.15,
-                  "draw": 3.5,
-                  "away_win": 3.3
+                  "away_win": 3.3,
+                  "draw": 3.5
                 }
               }
             ],
@@ -5008,8 +5008,8 @@
               "model_prior_weight": 0.35,
               "probabilities": {
                 "home_win": 0.4521778487046575,
-                "draw": 0.25764850694284086,
-                "away_win": 0.29017364435250165
+                "away_win": 0.29017364435250165,
+                "draw": 0.25764850694284086
               },
               "calibration_status": "NOT_CALIBRATED"
             },
@@ -5025,8 +5025,8 @@
               "yes": 0.5971576227390181
             },
             "bookmaker_probability_dispersion": {
-              "no": 0.008779021532053666,
-              "yes": 0.008779021532053706
+              "no": 0.010383850314643424,
+              "yes": 0.010383850314643447
             },
             "model_probabilities": {
               "yes": 0.5648,
@@ -5037,8 +5037,8 @@
               "no": 0.4141675452196383
             },
             "conservative_screening_probabilities": {
-              "yes": 0.5713909643601334,
-              "no": 0.3996452400791336
+              "yes": 0.5687510210127733,
+              "no": 0.3970052967317735
             },
             "raw_model_edge": {
               "yes": -0.0323576227390181,
@@ -5048,21 +5048,21 @@
             "candidate_count": 0,
             "candidate_quote_keys": [],
             "quote_timestamps": [
-              "2026-11-02T10:51:41Z",
-              "2026-11-02T10:51:18Z",
-              "2026-11-02T10:51:41Z",
-              "2026-11-02T10:51:08Z",
-              "2026-11-02T10:52:04Z",
-              "2026-11-02T10:51:41Z",
-              "2026-11-02T10:51:41Z",
-              "2026-11-02T10:50:34Z",
-              "2026-11-02T10:52:03Z",
-              "2026-11-02T10:51:42Z"
+              "2026-11-02T10:52:49Z",
+              "2026-11-02T10:53:35Z",
+              "2026-11-02T10:52:49Z",
+              "2026-11-02T10:53:40Z",
+              "2026-11-02T10:53:39Z",
+              "2026-11-02T10:53:56Z",
+              "2026-11-02T10:53:56Z",
+              "2026-11-02T10:52:49Z",
+              "2026-11-02T10:53:10Z",
+              "2026-11-02T10:53:32Z"
             ],
             "bookmaker_quotes": [
               {
                 "bookmaker": "LeoVegas",
-                "last_update": "2026-11-02T10:51:41Z",
+                "last_update": "2026-11-02T10:52:49Z",
                 "odds": {
                   "no": 2.3,
                   "yes": 1.57
@@ -5070,7 +5070,7 @@
               },
               {
                 "bookmaker": "Betfred (UK)",
-                "last_update": "2026-11-02T10:51:18Z",
+                "last_update": "2026-11-02T10:53:35Z",
                 "odds": {
                   "no": 2.25,
                   "yes": 1.57
@@ -5078,7 +5078,7 @@
               },
               {
                 "bookmaker": "William Hill",
-                "last_update": "2026-11-02T10:51:41Z",
+                "last_update": "2026-11-02T10:52:49Z",
                 "odds": {
                   "no": 2.3,
                   "yes": 1.57
@@ -5086,7 +5086,7 @@
               },
               {
                 "bookmaker": "Paddy Power",
-                "last_update": "2026-11-02T10:51:08Z",
+                "last_update": "2026-11-02T10:53:40Z",
                 "odds": {
                   "no": 2.4,
                   "yes": 1.5
@@ -5094,7 +5094,7 @@
               },
               {
                 "bookmaker": "Betfair",
-                "last_update": "2026-11-02T10:52:04Z",
+                "last_update": "2026-11-02T10:53:39Z",
                 "odds": {
                   "no": 2.46,
                   "yes": 1.64
@@ -5102,7 +5102,7 @@
               },
               {
                 "bookmaker": "LiveScore Bet",
-                "last_update": "2026-11-02T10:51:41Z",
+                "last_update": "2026-11-02T10:53:56Z",
                 "odds": {
                   "no": 2.33,
                   "yes": 1.55
@@ -5110,7 +5110,7 @@
               },
               {
                 "bookmaker": "Virgin Bet",
-                "last_update": "2026-11-02T10:51:41Z",
+                "last_update": "2026-11-02T10:53:56Z",
                 "odds": {
                   "no": 2.33,
                   "yes": 1.55
@@ -5118,23 +5118,23 @@
               },
               {
                 "bookmaker": "Coral",
-                "last_update": "2026-11-02T10:50:34Z",
+                "last_update": "2026-11-02T10:52:49Z",
                 "odds": {
-                  "no": 2.25,
+                  "no": 2.2,
                   "yes": 1.6
                 }
               },
               {
                 "bookmaker": "Ladbrokes",
-                "last_update": "2026-11-02T10:52:03Z",
+                "last_update": "2026-11-02T10:53:10Z",
                 "odds": {
-                  "no": 2.25,
+                  "no": 2.2,
                   "yes": 1.6
                 }
               },
               {
                 "bookmaker": "Matchbook",
-                "last_update": "2026-11-02T10:51:42Z",
+                "last_update": "2026-11-02T10:53:32Z",
                 "odds": {
                   "no": 2.46,
                   "yes": 1.64
@@ -5165,12 +5165,12 @@
             "status": "NO_QUALIFYING_SHADOW_PRICE",
             "bookmaker_count": 4,
             "market_consensus_probabilities": {
-              "over": 0.5602094240837696,
-              "under": 0.4397905759162304
+              "under": 0.4397905759162304,
+              "over": 0.5602094240837696
             },
             "bookmaker_probability_dispersion": {
-              "over": 0.002620829158077393,
-              "under": 0.0026208291580773766
+              "under": 0.0026208291580773766,
+              "over": 0.002620829158077393
             },
             "model_probabilities": {
               "over": 0.5704,
@@ -5192,42 +5192,42 @@
             "candidate_count": 0,
             "candidate_quote_keys": [],
             "quote_timestamps": [
-              "2026-11-02T10:51:41Z",
-              "2026-11-02T10:51:41Z",
-              "2026-11-02T10:52:03Z",
-              "2026-11-02T10:52:03Z"
+              "2026-11-02T10:52:49Z",
+              "2026-11-02T10:52:49Z",
+              "2026-11-02T10:53:10Z",
+              "2026-11-02T10:53:10Z"
             ],
             "bookmaker_quotes": [
               {
                 "bookmaker": "LeoVegas",
-                "last_update": "2026-11-02T10:51:41Z",
+                "last_update": "2026-11-02T10:52:49Z",
                 "odds": {
-                  "over": 1.68,
-                  "under": 2.1
+                  "under": 2.1,
+                  "over": 1.68
                 }
               },
               {
                 "bookmaker": "William Hill",
-                "last_update": "2026-11-02T10:51:41Z",
+                "last_update": "2026-11-02T10:52:49Z",
                 "odds": {
-                  "over": 1.67,
-                  "under": 2.15
+                  "under": 2.15,
+                  "over": 1.67
                 }
               },
               {
                 "bookmaker": "Grosvenor",
-                "last_update": "2026-11-02T10:52:03Z",
+                "last_update": "2026-11-02T10:53:10Z",
                 "odds": {
-                  "over": 1.68,
-                  "under": 2.14
+                  "under": 2.14,
+                  "over": 1.68
                 }
               },
               {
                 "bookmaker": "Casumo",
-                "last_update": "2026-11-02T10:52:03Z",
+                "last_update": "2026-11-02T10:53:10Z",
                 "odds": {
-                  "over": 1.68,
-                  "under": 2.14
+                  "under": 2.14,
+                  "over": 1.68
                 }
               }
             ],
@@ -5237,8 +5237,8 @@
               "method": "BAYESIAN_INSPIRED_LOG_OPINION_POOL",
               "model_prior_weight": 0.35,
               "probabilities": {
-                "over": 0.5637823574998629,
-                "under": 0.436217642500137
+                "under": 0.436217642500137,
+                "over": 0.5637823574998629
               },
               "calibration_status": "NOT_CALIBRATED"
             },
@@ -5486,7 +5486,7 @@
           "h2h": [
             {
               "bookmaker": "Betfred (UK)",
-              "last_update": "2026-11-02T10:51:22Z",
+              "last_update": "2026-11-02T10:53:36Z",
               "outcomes": [
                 {
                   "name": "CA Osasuna",
@@ -5507,7 +5507,7 @@
             },
             {
               "bookmaker": "Smarkets",
-              "last_update": "2026-11-02T10:52:09Z",
+              "last_update": "2026-11-02T10:53:38Z",
               "outcomes": [
                 {
                   "name": "CA Osasuna",
@@ -5528,7 +5528,7 @@
             },
             {
               "bookmaker": "LeoVegas",
-              "last_update": "2026-11-02T10:52:08Z",
+              "last_update": "2026-11-02T10:53:16Z",
               "outcomes": [
                 {
                   "name": "CA Osasuna",
@@ -5591,7 +5591,7 @@
             },
             {
               "bookmaker": "William Hill",
-              "last_update": "2026-11-02T10:51:23Z",
+              "last_update": "2026-11-02T10:53:36Z",
               "outcomes": [
                 {
                   "name": "CA Osasuna",
@@ -5612,7 +5612,7 @@
             },
             {
               "bookmaker": "Betfair",
-              "last_update": "2026-11-02T10:51:46Z",
+              "last_update": "2026-11-02T10:53:36Z",
               "outcomes": [
                 {
                   "name": "CA Osasuna",
@@ -5633,7 +5633,7 @@
             },
             {
               "bookmaker": "BoyleSports",
-              "last_update": "2026-11-02T10:51:24Z",
+              "last_update": "2026-11-02T10:53:39Z",
               "outcomes": [
                 {
                   "name": "CA Osasuna",
@@ -5654,7 +5654,7 @@
             },
             {
               "bookmaker": "Ladbrokes",
-              "last_update": "2026-11-02T10:52:08Z",
+              "last_update": "2026-11-02T10:53:15Z",
               "outcomes": [
                 {
                   "name": "CA Osasuna",
@@ -5675,7 +5675,7 @@
             },
             {
               "bookmaker": "Coral",
-              "last_update": "2026-11-02T10:51:46Z",
+              "last_update": "2026-11-02T10:52:53Z",
               "outcomes": [
                 {
                   "name": "CA Osasuna",
@@ -5717,7 +5717,7 @@
             },
             {
               "bookmaker": "Betano (UK)",
-              "last_update": "2026-11-02T10:51:34Z",
+              "last_update": "2026-11-02T10:53:48Z",
               "outcomes": [
                 {
                   "name": "CA Osasuna",
@@ -5738,7 +5738,7 @@
             },
             {
               "bookmaker": "Bet Victor",
-              "last_update": "2026-11-02T10:50:53Z",
+              "last_update": "2026-11-02T10:53:30Z",
               "outcomes": [
                 {
                   "name": "CA Osasuna",
@@ -5759,7 +5759,7 @@
             },
             {
               "bookmaker": "Betfair Sportsbook",
-              "last_update": "2026-11-02T10:51:22Z",
+              "last_update": "2026-11-02T10:53:36Z",
               "outcomes": [
                 {
                   "name": "CA Osasuna",
@@ -5780,7 +5780,7 @@
             },
             {
               "bookmaker": "Matchbook",
-              "last_update": "2026-11-02T10:52:07Z",
+              "last_update": "2026-11-02T10:53:36Z",
               "outcomes": [
                 {
                   "name": "CA Osasuna",
@@ -5801,7 +5801,7 @@
             },
             {
               "bookmaker": "LiveScore Bet",
-              "last_update": "2026-11-02T10:51:45Z",
+              "last_update": "2026-11-02T10:52:53Z",
               "outcomes": [
                 {
                   "name": "CA Osasuna",
@@ -5822,7 +5822,7 @@
             },
             {
               "bookmaker": "Grosvenor",
-              "last_update": "2026-11-02T10:51:46Z",
+              "last_update": "2026-11-02T10:52:53Z",
               "outcomes": [
                 {
                   "name": "CA Osasuna",
@@ -5843,7 +5843,7 @@
             },
             {
               "bookmaker": "Casumo",
-              "last_update": "2026-11-02T10:51:45Z",
+              "last_update": "2026-11-02T10:52:54Z",
               "outcomes": [
                 {
                   "name": "CA Osasuna",
@@ -5864,7 +5864,7 @@
             },
             {
               "bookmaker": "Virgin Bet",
-              "last_update": "2026-11-02T10:52:08Z",
+              "last_update": "2026-11-02T10:53:15Z",
               "outcomes": [
                 {
                   "name": "CA Osasuna",
@@ -5887,7 +5887,7 @@
           "totals": [
             {
               "bookmaker": "LeoVegas",
-              "last_update": "2026-11-02T10:52:08Z",
+              "last_update": "2026-11-02T10:53:16Z",
               "outcomes": [
                 {
                   "name": "Over",
@@ -5903,7 +5903,7 @@
             },
             {
               "bookmaker": "William Hill",
-              "last_update": "2026-11-02T10:51:23Z",
+              "last_update": "2026-11-02T10:53:36Z",
               "outcomes": [
                 {
                   "name": "Over",
@@ -5919,7 +5919,7 @@
             },
             {
               "bookmaker": "Matchbook",
-              "last_update": "2026-11-02T10:52:07Z",
+              "last_update": "2026-11-02T10:53:36Z",
               "outcomes": [
                 {
                   "name": "Over",
@@ -5935,7 +5935,7 @@
             },
             {
               "bookmaker": "Grosvenor",
-              "last_update": "2026-11-02T10:51:47Z",
+              "last_update": "2026-11-02T10:52:53Z",
               "outcomes": [
                 {
                   "name": "Over",
@@ -5944,14 +5944,14 @@
                 },
                 {
                   "name": "Under",
-                  "price": 1.66,
+                  "price": 1.65,
                   "point": 2.5
                 }
               ]
             },
             {
               "bookmaker": "Casumo",
-              "last_update": "2026-11-02T10:51:45Z",
+              "last_update": "2026-11-02T10:52:54Z",
               "outcomes": [
                 {
                   "name": "Over",
@@ -5960,7 +5960,7 @@
                 },
                 {
                   "name": "Under",
-                  "price": 1.66,
+                  "price": 1.65,
                   "point": 2.5
                 }
               ]
@@ -5969,7 +5969,7 @@
           "btts": [
             {
               "bookmaker": "Betfred (UK)",
-              "last_update": "2026-11-02T10:51:22Z",
+              "last_update": "2026-11-02T10:53:36Z",
               "outcomes": [
                 {
                   "name": "Yes",
@@ -5985,7 +5985,7 @@
             },
             {
               "bookmaker": "LeoVegas",
-              "last_update": "2026-11-02T10:52:08Z",
+              "last_update": "2026-11-02T10:53:16Z",
               "outcomes": [
                 {
                   "name": "Yes",
@@ -6001,7 +6001,7 @@
             },
             {
               "bookmaker": "Paddy Power",
-              "last_update": "2026-11-02T10:51:59Z",
+              "last_update": "2026-11-02T10:53:18Z",
               "outcomes": [
                 {
                   "name": "Yes",
@@ -6017,7 +6017,7 @@
             },
             {
               "bookmaker": "William Hill",
-              "last_update": "2026-11-02T10:51:23Z",
+              "last_update": "2026-11-02T10:53:36Z",
               "outcomes": [
                 {
                   "name": "Yes",
@@ -6033,7 +6033,7 @@
             },
             {
               "bookmaker": "Betfair",
-              "last_update": "2026-11-02T10:51:34Z",
+              "last_update": "2026-11-02T10:53:16Z",
               "outcomes": [
                 {
                   "name": "Yes",
@@ -6049,7 +6049,7 @@
             },
             {
               "bookmaker": "Ladbrokes",
-              "last_update": "2026-11-02T10:52:08Z",
+              "last_update": "2026-11-02T10:53:15Z",
               "outcomes": [
                 {
                   "name": "Yes",
@@ -6065,7 +6065,7 @@
             },
             {
               "bookmaker": "Coral",
-              "last_update": "2026-11-02T10:51:46Z",
+              "last_update": "2026-11-02T10:52:53Z",
               "outcomes": [
                 {
                   "name": "Yes",
@@ -6081,7 +6081,7 @@
             },
             {
               "bookmaker": "Matchbook",
-              "last_update": "2026-11-02T10:52:07Z",
+              "last_update": "2026-11-02T10:53:36Z",
               "outcomes": [
                 {
                   "name": "Yes",
@@ -6097,7 +6097,7 @@
             },
             {
               "bookmaker": "LiveScore Bet",
-              "last_update": "2026-11-02T10:51:45Z",
+              "last_update": "2026-11-02T10:52:53Z",
               "outcomes": [
                 {
                   "name": "Yes",
@@ -6113,7 +6113,7 @@
             },
             {
               "bookmaker": "Virgin Bet",
-              "last_update": "2026-11-02T10:52:08Z",
+              "last_update": "2026-11-02T10:53:15Z",
               "outcomes": [
                 {
                   "name": "Yes",
@@ -6129,7 +6129,7 @@
             }
           ]
         },
-        "fetched_at": "2026-11-02T10:52:12.285329+00:00"
+        "fetched_at": "2026-11-02T10:53:56.277072+00:00"
       },
       "value_bet_screen": {
         "status": "DISABLED_UNVALIDATED",
@@ -6178,20 +6178,20 @@
       "value_intelligence": {
         "status": "EVALUATED",
         "source": "The Odds API",
-        "snapshot_fetched_at": "2026-11-02T10:52:12.285329+00:00",
+        "snapshot_fetched_at": "2026-11-02T10:53:56.277072+00:00",
         "markets": {
           "1X2": {
             "status": "NO_QUALIFYING_SHADOW_PRICE",
             "bookmaker_count": 19,
             "market_consensus_probabilities": {
               "home_win": 0.439084176882636,
-              "draw": 0.2908002844172866,
-              "away_win": 0.2701155387000773
+              "away_win": 0.2701155387000773,
+              "draw": 0.2908002844172866
             },
             "bookmaker_probability_dispersion": {
               "home_win": 0.0038331325189287003,
-              "draw": 0.005643880402244713,
-              "away_win": 0.007830266804536965
+              "away_win": 0.007830266804536965,
+              "draw": 0.005643880402244713
             },
             "model_probabilities": {
               "home_win": 0.4481,
@@ -6217,52 +6217,52 @@
             "candidate_count": 0,
             "candidate_quote_keys": [],
             "quote_timestamps": [
-              "2026-11-02T10:51:22Z",
-              "2026-11-02T10:52:09Z",
-              "2026-11-02T10:52:08Z",
+              "2026-11-02T10:53:36Z",
+              "2026-11-02T10:53:38Z",
+              "2026-11-02T10:53:16Z",
               "2026-11-02T10:51:46Z",
               "2026-11-02T10:48:45Z",
-              "2026-11-02T10:51:23Z",
-              "2026-11-02T10:51:46Z",
-              "2026-11-02T10:51:24Z",
+              "2026-11-02T10:53:36Z",
+              "2026-11-02T10:53:36Z",
+              "2026-11-02T10:53:39Z",
+              "2026-11-02T10:53:15Z",
+              "2026-11-02T10:52:53Z",
               "2026-11-02T10:52:08Z",
-              "2026-11-02T10:51:46Z",
-              "2026-11-02T10:52:08Z",
-              "2026-11-02T10:51:34Z",
-              "2026-11-02T10:50:53Z",
-              "2026-11-02T10:51:22Z",
-              "2026-11-02T10:52:07Z",
-              "2026-11-02T10:51:45Z",
-              "2026-11-02T10:51:46Z",
-              "2026-11-02T10:51:45Z",
-              "2026-11-02T10:52:08Z"
+              "2026-11-02T10:53:48Z",
+              "2026-11-02T10:53:30Z",
+              "2026-11-02T10:53:36Z",
+              "2026-11-02T10:53:36Z",
+              "2026-11-02T10:52:53Z",
+              "2026-11-02T10:52:53Z",
+              "2026-11-02T10:52:54Z",
+              "2026-11-02T10:53:15Z"
             ],
             "bookmaker_quotes": [
               {
                 "bookmaker": "Betfred (UK)",
-                "last_update": "2026-11-02T10:51:22Z",
+                "last_update": "2026-11-02T10:53:36Z",
                 "odds": {
                   "home_win": 2.15,
-                  "draw": 3.3,
-                  "away_win": 3.5
+                  "away_win": 3.5,
+                  "draw": 3.3
                 }
               },
               {
                 "bookmaker": "Smarkets",
-                "last_update": "2026-11-02T10:52:09Z",
+                "last_update": "2026-11-02T10:53:38Z",
                 "odds": {
                   "home_win": 2.24,
-                  "draw": 3.3,
-                  "away_win": 3.85
+                  "away_win": 3.85,
+                  "draw": 3.3
                 }
               },
               {
                 "bookmaker": "LeoVegas",
-                "last_update": "2026-11-02T10:52:08Z",
+                "last_update": "2026-11-02T10:53:16Z",
                 "odds": {
                   "home_win": 2.15,
-                  "draw": 3.2,
-                  "away_win": 3.4
+                  "away_win": 3.4,
+                  "draw": 3.2
                 }
               },
               {
@@ -6270,8 +6270,8 @@
                 "last_update": "2026-11-02T10:51:46Z",
                 "odds": {
                   "home_win": 2.1,
-                  "draw": 3.1,
-                  "away_win": 3.6
+                  "away_win": 3.6,
+                  "draw": 3.1
                 }
               },
               {
@@ -6279,53 +6279,53 @@
                 "last_update": "2026-11-02T10:48:45Z",
                 "odds": {
                   "home_win": 2.1,
-                  "draw": 3.2,
-                  "away_win": 3.6
+                  "away_win": 3.6,
+                  "draw": 3.2
                 }
               },
               {
                 "bookmaker": "William Hill",
-                "last_update": "2026-11-02T10:51:23Z",
+                "last_update": "2026-11-02T10:53:36Z",
                 "odds": {
                   "home_win": 2.15,
-                  "draw": 3.2,
-                  "away_win": 3.4
+                  "away_win": 3.4,
+                  "draw": 3.2
                 }
               },
               {
                 "bookmaker": "Betfair",
-                "last_update": "2026-11-02T10:51:46Z",
+                "last_update": "2026-11-02T10:53:36Z",
                 "odds": {
                   "home_win": 2.24,
-                  "draw": 3.3,
-                  "away_win": 3.9
+                  "away_win": 3.9,
+                  "draw": 3.3
                 }
               },
               {
                 "bookmaker": "BoyleSports",
-                "last_update": "2026-11-02T10:51:24Z",
+                "last_update": "2026-11-02T10:53:39Z",
                 "odds": {
                   "home_win": 2.1,
-                  "draw": 3.25,
-                  "away_win": 3.3
+                  "away_win": 3.3,
+                  "draw": 3.25
                 }
               },
               {
                 "bookmaker": "Ladbrokes",
-                "last_update": "2026-11-02T10:52:08Z",
+                "last_update": "2026-11-02T10:53:15Z",
                 "odds": {
                   "home_win": 2.15,
-                  "draw": 3.1,
-                  "away_win": 3.6
+                  "away_win": 3.6,
+                  "draw": 3.1
                 }
               },
               {
                 "bookmaker": "Coral",
-                "last_update": "2026-11-02T10:51:46Z",
+                "last_update": "2026-11-02T10:52:53Z",
                 "odds": {
                   "home_win": 2.15,
-                  "draw": 3.2,
-                  "away_win": 3.6
+                  "away_win": 3.6,
+                  "draw": 3.2
                 }
               },
               {
@@ -6333,80 +6333,80 @@
                 "last_update": "2026-11-02T10:52:08Z",
                 "odds": {
                   "home_win": 2.15,
-                  "draw": 3.2,
-                  "away_win": 3.6
+                  "away_win": 3.6,
+                  "draw": 3.2
                 }
               },
               {
                 "bookmaker": "Betano (UK)",
-                "last_update": "2026-11-02T10:51:34Z",
+                "last_update": "2026-11-02T10:53:48Z",
                 "odds": {
                   "home_win": 2.15,
-                  "draw": 3.3,
-                  "away_win": 3.5
+                  "away_win": 3.5,
+                  "draw": 3.3
                 }
               },
               {
                 "bookmaker": "Bet Victor",
-                "last_update": "2026-11-02T10:50:53Z",
+                "last_update": "2026-11-02T10:53:30Z",
                 "odds": {
                   "home_win": 2.15,
-                  "draw": 3.3,
-                  "away_win": 3.5
+                  "away_win": 3.5,
+                  "draw": 3.3
                 }
               },
               {
                 "bookmaker": "Betfair Sportsbook",
-                "last_update": "2026-11-02T10:51:22Z",
+                "last_update": "2026-11-02T10:53:36Z",
                 "odds": {
                   "home_win": 2.15,
-                  "draw": 3.2,
-                  "away_win": 3.7
+                  "away_win": 3.7,
+                  "draw": 3.2
                 }
               },
               {
                 "bookmaker": "Matchbook",
-                "last_update": "2026-11-02T10:52:07Z",
+                "last_update": "2026-11-02T10:53:36Z",
                 "odds": {
                   "home_win": 2.24,
-                  "draw": 3.3,
-                  "away_win": 3.9
+                  "away_win": 3.9,
+                  "draw": 3.3
                 }
               },
               {
                 "bookmaker": "LiveScore Bet",
-                "last_update": "2026-11-02T10:51:45Z",
+                "last_update": "2026-11-02T10:52:53Z",
                 "odds": {
                   "home_win": 2.14,
-                  "draw": 3.2,
-                  "away_win": 3.4
+                  "away_win": 3.4,
+                  "draw": 3.2
                 }
               },
               {
                 "bookmaker": "Grosvenor",
-                "last_update": "2026-11-02T10:51:46Z",
+                "last_update": "2026-11-02T10:52:53Z",
                 "odds": {
                   "home_win": 2.14,
-                  "draw": 3.2,
-                  "away_win": 3.4
+                  "away_win": 3.4,
+                  "draw": 3.2
                 }
               },
               {
                 "bookmaker": "Casumo",
-                "last_update": "2026-11-02T10:51:45Z",
+                "last_update": "2026-11-02T10:52:54Z",
                 "odds": {
                   "home_win": 2.16,
-                  "draw": 3.3,
-                  "away_win": 3.45
+                  "away_win": 3.45,
+                  "draw": 3.3
                 }
               },
               {
                 "bookmaker": "Virgin Bet",
-                "last_update": "2026-11-02T10:52:08Z",
+                "last_update": "2026-11-02T10:53:15Z",
                 "odds": {
                   "home_win": 2.12,
-                  "draw": 3.15,
-                  "away_win": 3.35
+                  "away_win": 3.35,
+                  "draw": 3.15
                 }
               }
             ],
@@ -6417,8 +6417,8 @@
               "model_prior_weight": 0.35,
               "probabilities": {
                 "home_win": 0.4424628203521433,
-                "draw": 0.2802689086302372,
-                "away_win": 0.2772682710176196
+                "away_win": 0.2772682710176196,
+                "draw": 0.2802689086302372
               },
               "calibration_status": "NOT_CALIBRATED"
             },
@@ -6457,21 +6457,21 @@
             "candidate_count": 0,
             "candidate_quote_keys": [],
             "quote_timestamps": [
-              "2026-11-02T10:51:22Z",
-              "2026-11-02T10:52:08Z",
-              "2026-11-02T10:51:59Z",
-              "2026-11-02T10:51:23Z",
-              "2026-11-02T10:51:34Z",
-              "2026-11-02T10:52:08Z",
-              "2026-11-02T10:51:46Z",
-              "2026-11-02T10:52:07Z",
-              "2026-11-02T10:51:45Z",
-              "2026-11-02T10:52:08Z"
+              "2026-11-02T10:53:36Z",
+              "2026-11-02T10:53:16Z",
+              "2026-11-02T10:53:18Z",
+              "2026-11-02T10:53:36Z",
+              "2026-11-02T10:53:16Z",
+              "2026-11-02T10:53:15Z",
+              "2026-11-02T10:52:53Z",
+              "2026-11-02T10:53:36Z",
+              "2026-11-02T10:52:53Z",
+              "2026-11-02T10:53:15Z"
             ],
             "bookmaker_quotes": [
               {
                 "bookmaker": "Betfred (UK)",
-                "last_update": "2026-11-02T10:51:22Z",
+                "last_update": "2026-11-02T10:53:36Z",
                 "odds": {
                   "no": 1.8,
                   "yes": 1.91
@@ -6479,7 +6479,7 @@
               },
               {
                 "bookmaker": "LeoVegas",
-                "last_update": "2026-11-02T10:52:08Z",
+                "last_update": "2026-11-02T10:53:16Z",
                 "odds": {
                   "no": 1.85,
                   "yes": 1.9
@@ -6487,7 +6487,7 @@
               },
               {
                 "bookmaker": "Paddy Power",
-                "last_update": "2026-11-02T10:51:59Z",
+                "last_update": "2026-11-02T10:53:18Z",
                 "odds": {
                   "no": 1.85,
                   "yes": 1.85
@@ -6495,7 +6495,7 @@
               },
               {
                 "bookmaker": "William Hill",
-                "last_update": "2026-11-02T10:51:23Z",
+                "last_update": "2026-11-02T10:53:36Z",
                 "odds": {
                   "no": 1.8,
                   "yes": 1.95
@@ -6503,7 +6503,7 @@
               },
               {
                 "bookmaker": "Betfair",
-                "last_update": "2026-11-02T10:51:34Z",
+                "last_update": "2026-11-02T10:53:16Z",
                 "odds": {
                   "no": 1.97,
                   "yes": 1.99
@@ -6511,7 +6511,7 @@
               },
               {
                 "bookmaker": "Ladbrokes",
-                "last_update": "2026-11-02T10:52:08Z",
+                "last_update": "2026-11-02T10:53:15Z",
                 "odds": {
                   "no": 1.8,
                   "yes": 1.91
@@ -6519,7 +6519,7 @@
               },
               {
                 "bookmaker": "Coral",
-                "last_update": "2026-11-02T10:51:46Z",
+                "last_update": "2026-11-02T10:52:53Z",
                 "odds": {
                   "no": 1.8,
                   "yes": 1.91
@@ -6527,7 +6527,7 @@
               },
               {
                 "bookmaker": "Matchbook",
-                "last_update": "2026-11-02T10:52:07Z",
+                "last_update": "2026-11-02T10:53:36Z",
                 "odds": {
                   "no": 1.97,
                   "yes": 1.99
@@ -6535,7 +6535,7 @@
               },
               {
                 "bookmaker": "LiveScore Bet",
-                "last_update": "2026-11-02T10:51:45Z",
+                "last_update": "2026-11-02T10:52:53Z",
                 "odds": {
                   "no": 1.84,
                   "yes": 1.88
@@ -6543,7 +6543,7 @@
               },
               {
                 "bookmaker": "Virgin Bet",
-                "last_update": "2026-11-02T10:52:08Z",
+                "last_update": "2026-11-02T10:53:15Z",
                 "odds": {
                   "no": 1.84,
                   "yes": 1.88
@@ -6574,78 +6574,78 @@
             "status": "NO_QUALIFYING_SHADOW_PRICE",
             "bookmaker_count": 5,
             "market_consensus_probabilities": {
-              "over": 0.43229166666666663,
-              "under": 0.5677083333333334
+              "under": 0.5691906005221933,
+              "over": 0.4308093994778068
             },
             "bookmaker_probability_dispersion": {
-              "over": 0.0027328825772750358,
-              "under": 0.002732882577275017
+              "under": 0.0028934934277202737,
+              "over": 0.002893493427720312
             },
             "model_probabilities": {
               "over": 0.4738,
               "under": 0.5262
             },
             "market_shrunk_probabilities": {
-              "over": 0.44681958333333327,
-              "under": 0.5531804166666667
+              "over": 0.4458561096605744,
+              "under": 0.5541438903394256
             },
             "conservative_screening_probabilities": {
-              "over": 0.44224636781677273,
-              "under": 0.5486848248270493
+              "over": 0.44101163117109327,
+              "under": 0.5493840936508257
             },
             "raw_model_edge": {
-              "over": 0.04150833333333337,
-              "under": -0.04150833333333337
+              "over": 0.04299060052219322,
+              "under": -0.04299060052219328
             },
             "candidates": [],
             "candidate_count": 0,
             "candidate_quote_keys": [],
             "quote_timestamps": [
-              "2026-11-02T10:52:08Z",
-              "2026-11-02T10:51:23Z",
-              "2026-11-02T10:52:07Z",
-              "2026-11-02T10:51:47Z",
-              "2026-11-02T10:51:45Z"
+              "2026-11-02T10:53:16Z",
+              "2026-11-02T10:53:36Z",
+              "2026-11-02T10:53:36Z",
+              "2026-11-02T10:52:53Z",
+              "2026-11-02T10:52:54Z"
             ],
             "bookmaker_quotes": [
               {
                 "bookmaker": "LeoVegas",
-                "last_update": "2026-11-02T10:52:08Z",
+                "last_update": "2026-11-02T10:53:16Z",
                 "odds": {
-                  "over": 2.15,
-                  "under": 1.64
+                  "under": 1.64,
+                  "over": 2.15
                 }
               },
               {
                 "bookmaker": "William Hill",
-                "last_update": "2026-11-02T10:51:23Z",
+                "last_update": "2026-11-02T10:53:36Z",
                 "odds": {
-                  "over": 2.15,
-                  "under": 1.67
+                  "under": 1.67,
+                  "over": 2.15
                 }
               },
               {
                 "bookmaker": "Matchbook",
-                "last_update": "2026-11-02T10:52:07Z",
+                "last_update": "2026-11-02T10:53:36Z",
                 "odds": {
-                  "over": 2.32,
-                  "under": 1.74
+                  "under": 1.74,
+                  "over": 2.32
                 }
               },
               {
                 "bookmaker": "Grosvenor",
-                "last_update": "2026-11-02T10:51:47Z",
+                "last_update": "2026-11-02T10:52:53Z",
                 "odds": {
-                  "over": 2.18,
-                  "under": 1.66
+                  "under": 1.65,
+                  "over": 2.18
                 }
               },
               {
                 "bookmaker": "Casumo",
-                "last_update": "2026-11-02T10:51:45Z",
+                "last_update": "2026-11-02T10:52:54Z",
                 "odds": {
-                  "over": 2.18,
-                  "under": 1.66
+                  "under": 1.65,
+                  "over": 2.18
                 }
               }
             ],
@@ -6655,8 +6655,8 @@
               "method": "BAYESIAN_INSPIRED_LOG_OPINION_POOL",
               "model_prior_weight": 0.35,
               "probabilities": {
-                "over": 0.4467419596563902,
-                "under": 0.5532580403436097
+                "under": 0.5542285721403067,
+                "over": 0.4457714278596932
               },
               "calibration_status": "NOT_CALIBRATED"
             },
@@ -6932,7 +6932,7 @@
           "h2h": [
             {
               "bookmaker": "Betfred (UK)",
-              "last_update": "2026-11-02T10:52:04Z",
+              "last_update": "2026-11-02T10:53:11Z",
               "outcomes": [
                 {
                   "name": "Alverca",
@@ -6953,11 +6953,11 @@
             },
             {
               "bookmaker": "Smarkets",
-              "last_update": "2026-11-02T10:52:04Z",
+              "last_update": "2026-11-02T10:53:32Z",
               "outcomes": [
                 {
                   "name": "Alverca",
-                  "price": 21.01,
+                  "price": 20.0,
                   "point": null
                 },
                 {
@@ -6974,11 +6974,11 @@
             },
             {
               "bookmaker": "Paddy Power",
-              "last_update": "2026-11-02T10:51:18Z",
+              "last_update": "2026-11-02T10:53:32Z",
               "outcomes": [
                 {
                   "name": "Alverca",
-                  "price": 19.0,
+                  "price": 16.0,
                   "point": null
                 },
                 {
@@ -6988,14 +6988,14 @@
                 },
                 {
                   "name": "Draw",
-                  "price": 9.0,
+                  "price": 9.5,
                   "point": null
                 }
               ]
             },
             {
               "bookmaker": "Betway",
-              "last_update": "2026-11-02T10:51:18Z",
+              "last_update": "2026-11-02T10:53:32Z",
               "outcomes": [
                 {
                   "name": "Alverca",
@@ -7016,7 +7016,7 @@
             },
             {
               "bookmaker": "Sky Bet",
-              "last_update": "2026-11-02T10:51:41Z",
+              "last_update": "2026-11-02T10:53:09Z",
               "outcomes": [
                 {
                   "name": "Alverca",
@@ -7037,7 +7037,7 @@
             },
             {
               "bookmaker": "888sport",
-              "last_update": "2026-11-02T10:52:04Z",
+              "last_update": "2026-11-02T10:53:10Z",
               "outcomes": [
                 {
                   "name": "Alverca",
@@ -7058,7 +7058,7 @@
             },
             {
               "bookmaker": "William Hill",
-              "last_update": "2026-11-02T10:52:04Z",
+              "last_update": "2026-11-02T10:53:11Z",
               "outcomes": [
                 {
                   "name": "Alverca",
@@ -7079,7 +7079,7 @@
             },
             {
               "bookmaker": "Virgin Bet",
-              "last_update": "2026-11-02T10:51:18Z",
+              "last_update": "2026-11-02T10:53:32Z",
               "outcomes": [
                 {
                   "name": "Alverca",
@@ -7100,7 +7100,7 @@
             },
             {
               "bookmaker": "LiveScore Bet",
-              "last_update": "2026-11-02T10:51:42Z",
+              "last_update": "2026-11-02T10:52:49Z",
               "outcomes": [
                 {
                   "name": "Alverca",
@@ -7121,7 +7121,7 @@
             },
             {
               "bookmaker": "Grosvenor",
-              "last_update": "2026-11-02T10:51:18Z",
+              "last_update": "2026-11-02T10:53:32Z",
               "outcomes": [
                 {
                   "name": "Alverca",
@@ -7142,7 +7142,7 @@
             },
             {
               "bookmaker": "Casumo",
-              "last_update": "2026-11-02T10:51:19Z",
+              "last_update": "2026-11-02T10:53:34Z",
               "outcomes": [
                 {
                   "name": "Alverca",
@@ -7163,7 +7163,7 @@
             },
             {
               "bookmaker": "Betfair Sportsbook",
-              "last_update": "2026-11-02T10:51:46Z",
+              "last_update": "2026-11-02T10:52:49Z",
               "outcomes": [
                 {
                   "name": "Alverca",
@@ -7184,7 +7184,7 @@
             },
             {
               "bookmaker": "Betano (UK)",
-              "last_update": "2026-11-02T10:51:29Z",
+              "last_update": "2026-11-02T10:53:44Z",
               "outcomes": [
                 {
                   "name": "Alverca",
@@ -7205,7 +7205,7 @@
             },
             {
               "bookmaker": "Bet Victor",
-              "last_update": "2026-11-02T10:50:08Z",
+              "last_update": "2026-11-02T10:52:42Z",
               "outcomes": [
                 {
                   "name": "Alverca",
@@ -7226,7 +7226,7 @@
             },
             {
               "bookmaker": "BoyleSports",
-              "last_update": "2026-11-02T10:52:06Z",
+              "last_update": "2026-11-02T10:53:17Z",
               "outcomes": [
                 {
                   "name": "Alverca",
@@ -7247,7 +7247,7 @@
             },
             {
               "bookmaker": "Ladbrokes",
-              "last_update": "2026-11-02T10:51:18Z",
+              "last_update": "2026-11-02T10:53:33Z",
               "outcomes": [
                 {
                   "name": "Alverca",
@@ -7268,7 +7268,7 @@
             },
             {
               "bookmaker": "Coral",
-              "last_update": "2026-11-02T10:51:41Z",
+              "last_update": "2026-11-02T10:52:49Z",
               "outcomes": [
                 {
                   "name": "Alverca",
@@ -7289,7 +7289,7 @@
             },
             {
               "bookmaker": "Betfair",
-              "last_update": "2026-11-02T10:52:04Z",
+              "last_update": "2026-11-02T10:53:39Z",
               "outcomes": [
                 {
                   "name": "Alverca",
@@ -7310,7 +7310,7 @@
             },
             {
               "bookmaker": "Unibet (UK)",
-              "last_update": "2026-11-02T10:51:22Z",
+              "last_update": "2026-11-02T10:53:42Z",
               "outcomes": [
                 {
                   "name": "Alverca",
@@ -7331,7 +7331,7 @@
             },
             {
               "bookmaker": "Matchbook",
-              "last_update": "2026-11-02T10:52:04Z",
+              "last_update": "2026-11-02T10:53:32Z",
               "outcomes": [
                 {
                   "name": "Alverca",
@@ -7345,7 +7345,7 @@
                 },
                 {
                   "name": "Draw",
-                  "price": 10.5,
+                  "price": 11.0,
                   "point": null
                 }
               ]
@@ -7354,7 +7354,7 @@
           "totals": [
             {
               "bookmaker": "William Hill",
-              "last_update": "2026-11-02T10:52:04Z",
+              "last_update": "2026-11-02T10:53:11Z",
               "outcomes": [
                 {
                   "name": "Over",
@@ -7370,7 +7370,7 @@
             },
             {
               "bookmaker": "Grosvenor",
-              "last_update": "2026-11-02T10:51:18Z",
+              "last_update": "2026-11-02T10:53:32Z",
               "outcomes": [
                 {
                   "name": "Over",
@@ -7386,7 +7386,7 @@
             },
             {
               "bookmaker": "Casumo",
-              "last_update": "2026-11-02T10:51:19Z",
+              "last_update": "2026-11-02T10:53:34Z",
               "outcomes": [
                 {
                   "name": "Over",
@@ -7402,7 +7402,7 @@
             },
             {
               "bookmaker": "Matchbook",
-              "last_update": "2026-11-02T10:52:04Z",
+              "last_update": "2026-11-02T10:53:32Z",
               "outcomes": [
                 {
                   "name": "Over",
@@ -7419,7 +7419,7 @@
           ],
           "btts": []
         },
-        "fetched_at": "2026-11-02T10:52:12.171402+00:00"
+        "fetched_at": "2026-11-02T10:53:56.154290+00:00"
       },
       "value_bet_screen": {
         "status": "PAPER_ONLY_CANDIDATES",
@@ -7484,20 +7484,20 @@
       "value_intelligence": {
         "status": "EVALUATED",
         "source": "The Odds API",
-        "snapshot_fetched_at": "2026-11-02T10:52:12.171402+00:00",
+        "snapshot_fetched_at": "2026-11-02T10:53:56.154290+00:00",
         "markets": {
           "1X2": {
             "status": "SHADOW_CANDIDATES_FOUND",
             "bookmaker_count": 20,
             "market_consensus_probabilities": {
-              "home_win": 0.8272618018983763,
-              "draw": 0.11448054124500863,
-              "away_win": 0.058257656856615055
+              "home_win": 0.8260040463420641,
+              "away_win": 0.05968946678907527,
+              "draw": 0.1143064868688606
             },
             "bookmaker_probability_dispersion": {
-              "home_win": 0.014384082453435396,
-              "draw": 0.009148764806547744,
-              "away_win": 0.006453885667040332
+              "home_win": 0.01446034158693385,
+              "away_win": 0.006000341840872286,
+              "draw": 0.009809197583963118
             },
             "model_probabilities": {
               "home_win": 0.6863,
@@ -7505,63 +7505,63 @@
               "away_win": 0.0657
             },
             "market_shrunk_probabilities": {
-              "home_win": 0.7779251712339446,
-              "draw": 0.1611773518092556,
-              "away_win": 0.06086247695679979
+              "home_win": 0.7771076301223417,
+              "draw": 0.16106421646475938,
+              "away_win": 0.06179315341289893
             },
             "conservative_screening_probabilities": {
-              "home_win": 0.7542633555980434,
-              "draw": 0.13715587046738006,
-              "away_win": 0.050245835034518446
+              "home_win": 0.7533203682118356,
+              "draw": 0.13591094363537443,
+              "away_win": 0.051922591084664016
             },
             "raw_model_edge": {
-              "home_win": -0.14096180189837626,
-              "draw": 0.1334194587549914,
-              "away_win": 0.00744234314338494
+              "home_win": -0.13970404634206413,
+              "draw": 0.13359351313113943,
+              "away_win": 0.0060105332109247275
             },
             "candidates": [
               {
                 "selection": "draw",
-                "bookmaker": "Betfair",
-                "last_update": "2026-11-02T10:52:04Z",
+                "bookmaker": "Matchbook",
+                "last_update": "2026-11-02T10:53:32Z",
                 "status": "SHADOW_CANDIDATE",
-                "probability_used": 0.13715587046738006,
-                "decimal_odds": 10.5,
-                "implied_probability": 0.09523809523809523,
-                "edge": 0.04191777522928483,
-                "expected_value_per_unit": 0.44013663990749063,
+                "probability_used": 0.13591094363537443,
+                "decimal_odds": 11.0,
+                "implied_probability": 0.09090909090909091,
+                "edge": 0.045001852726283514,
+                "expected_value_per_unit": 0.49502037998911863,
                 "release_status": "LOCKED_SHADOW_MODE",
                 "quality": {
-                  "score": 74.5,
+                  "score": 75.4,
                   "label": "RESEARCH_PRIORITY_ONLY",
                   "components": {
-                    "edge": 34.9,
+                    "edge": 37.5,
                     "expected_value": 100.0,
                     "market_coverage": 100.0,
-                    "price_stability": 82.0
+                    "price_stability": 81.9
                   },
                   "release_status": "LOCKED_SHADOW_MODE"
                 }
               },
               {
                 "selection": "draw",
-                "bookmaker": "Matchbook",
-                "last_update": "2026-11-02T10:52:04Z",
+                "bookmaker": "Betfair",
+                "last_update": "2026-11-02T10:53:39Z",
                 "status": "SHADOW_CANDIDATE",
-                "probability_used": 0.13715587046738006,
+                "probability_used": 0.13591094363537443,
                 "decimal_odds": 10.5,
                 "implied_probability": 0.09523809523809523,
-                "edge": 0.04191777522928483,
-                "expected_value_per_unit": 0.44013663990749063,
+                "edge": 0.04067284839727919,
+                "expected_value_per_unit": 0.4270649081714315,
                 "release_status": "LOCKED_SHADOW_MODE",
                 "quality": {
-                  "score": 74.5,
+                  "score": 74.2,
                   "label": "RESEARCH_PRIORITY_ONLY",
                   "components": {
-                    "edge": 34.9,
+                    "edge": 33.9,
                     "expected_value": 100.0,
                     "market_coverage": 100.0,
-                    "price_stability": 82.0
+                    "price_stability": 81.9
                   },
                   "release_status": "LOCKED_SHADOW_MODE"
                 }
@@ -7570,215 +7570,215 @@
             "candidate_count": 2,
             "candidate_quote_keys": [
               {
-                "bookmaker": "Betfair",
+                "bookmaker": "Matchbook",
                 "selection": "draw"
               },
               {
-                "bookmaker": "Matchbook",
+                "bookmaker": "Betfair",
                 "selection": "draw"
               }
             ],
             "quote_timestamps": [
-              "2026-11-02T10:52:04Z",
-              "2026-11-02T10:52:04Z",
-              "2026-11-02T10:51:18Z",
-              "2026-11-02T10:51:18Z",
-              "2026-11-02T10:51:41Z",
-              "2026-11-02T10:52:04Z",
-              "2026-11-02T10:52:04Z",
-              "2026-11-02T10:51:18Z",
-              "2026-11-02T10:51:42Z",
-              "2026-11-02T10:51:18Z",
-              "2026-11-02T10:51:19Z",
-              "2026-11-02T10:51:46Z",
-              "2026-11-02T10:51:29Z",
-              "2026-11-02T10:50:08Z",
-              "2026-11-02T10:52:06Z",
-              "2026-11-02T10:51:18Z",
-              "2026-11-02T10:51:41Z",
-              "2026-11-02T10:52:04Z",
-              "2026-11-02T10:51:22Z",
-              "2026-11-02T10:52:04Z"
+              "2026-11-02T10:53:11Z",
+              "2026-11-02T10:53:32Z",
+              "2026-11-02T10:53:32Z",
+              "2026-11-02T10:53:32Z",
+              "2026-11-02T10:53:09Z",
+              "2026-11-02T10:53:10Z",
+              "2026-11-02T10:53:11Z",
+              "2026-11-02T10:53:32Z",
+              "2026-11-02T10:52:49Z",
+              "2026-11-02T10:53:32Z",
+              "2026-11-02T10:53:34Z",
+              "2026-11-02T10:52:49Z",
+              "2026-11-02T10:53:44Z",
+              "2026-11-02T10:52:42Z",
+              "2026-11-02T10:53:17Z",
+              "2026-11-02T10:53:33Z",
+              "2026-11-02T10:52:49Z",
+              "2026-11-02T10:53:39Z",
+              "2026-11-02T10:53:42Z",
+              "2026-11-02T10:53:32Z"
             ],
             "bookmaker_quotes": [
               {
                 "bookmaker": "Betfred (UK)",
-                "last_update": "2026-11-02T10:52:04Z",
+                "last_update": "2026-11-02T10:53:11Z",
                 "odds": {
                   "home_win": 1.12,
-                  "draw": 7.5,
-                  "away_win": 13.0
+                  "away_win": 13.0,
+                  "draw": 7.5
                 }
               },
               {
                 "bookmaker": "Smarkets",
-                "last_update": "2026-11-02T10:52:04Z",
+                "last_update": "2026-11-02T10:53:32Z",
                 "odds": {
                   "home_win": 1.15,
-                  "draw": 10.0,
-                  "away_win": 21.01
+                  "away_win": 20.0,
+                  "draw": 10.0
                 }
               },
               {
                 "bookmaker": "Paddy Power",
-                "last_update": "2026-11-02T10:51:18Z",
+                "last_update": "2026-11-02T10:53:32Z",
                 "odds": {
                   "home_win": 1.11,
-                  "draw": 9.0,
-                  "away_win": 19.0
+                  "away_win": 16.0,
+                  "draw": 9.5
                 }
               },
               {
                 "bookmaker": "Betway",
-                "last_update": "2026-11-02T10:51:18Z",
+                "last_update": "2026-11-02T10:53:32Z",
                 "odds": {
                   "home_win": 1.13,
-                  "draw": 9.0,
-                  "away_win": 15.0
+                  "away_win": 15.0,
+                  "draw": 9.0
                 }
               },
               {
                 "bookmaker": "Sky Bet",
-                "last_update": "2026-11-02T10:51:41Z",
+                "last_update": "2026-11-02T10:53:09Z",
                 "odds": {
                   "home_win": 1.1,
-                  "draw": 10.0,
-                  "away_win": 17.0
+                  "away_win": 17.0,
+                  "draw": 10.0
                 }
               },
               {
                 "bookmaker": "888sport",
-                "last_update": "2026-11-02T10:52:04Z",
+                "last_update": "2026-11-02T10:53:10Z",
                 "odds": {
                   "home_win": 1.14,
-                  "draw": 8.0,
-                  "away_win": 15.0
+                  "away_win": 15.0,
+                  "draw": 8.0
                 }
               },
               {
                 "bookmaker": "William Hill",
-                "last_update": "2026-11-02T10:52:04Z",
+                "last_update": "2026-11-02T10:53:11Z",
                 "odds": {
                   "home_win": 1.14,
-                  "draw": 8.0,
-                  "away_win": 15.0
+                  "away_win": 15.0,
+                  "draw": 8.0
                 }
               },
               {
                 "bookmaker": "Virgin Bet",
-                "last_update": "2026-11-02T10:51:18Z",
+                "last_update": "2026-11-02T10:53:32Z",
                 "odds": {
                   "home_win": 1.14,
-                  "draw": 8.0,
-                  "away_win": 17.0
+                  "away_win": 17.0,
+                  "draw": 8.0
                 }
               },
               {
                 "bookmaker": "LiveScore Bet",
-                "last_update": "2026-11-02T10:51:42Z",
+                "last_update": "2026-11-02T10:52:49Z",
                 "odds": {
                   "home_win": 1.12,
-                  "draw": 7.5,
-                  "away_win": 15.0
+                  "away_win": 15.0,
+                  "draw": 7.5
                 }
               },
               {
                 "bookmaker": "Grosvenor",
-                "last_update": "2026-11-02T10:51:18Z",
+                "last_update": "2026-11-02T10:53:32Z",
                 "odds": {
                   "home_win": 1.14,
-                  "draw": 8.0,
-                  "away_win": 17.0
+                  "away_win": 17.0,
+                  "draw": 8.0
                 }
               },
               {
                 "bookmaker": "Casumo",
-                "last_update": "2026-11-02T10:51:19Z",
+                "last_update": "2026-11-02T10:53:34Z",
                 "odds": {
                   "home_win": 1.14,
-                  "draw": 8.0,
-                  "away_win": 17.0
+                  "away_win": 17.0,
+                  "draw": 8.0
                 }
               },
               {
                 "bookmaker": "Betfair Sportsbook",
-                "last_update": "2026-11-02T10:51:46Z",
+                "last_update": "2026-11-02T10:52:49Z",
                 "odds": {
                   "home_win": 1.12,
-                  "draw": 9.0,
-                  "away_win": 19.0
+                  "away_win": 19.0,
+                  "draw": 9.0
                 }
               },
               {
                 "bookmaker": "Betano (UK)",
-                "last_update": "2026-11-02T10:51:29Z",
+                "last_update": "2026-11-02T10:53:44Z",
                 "odds": {
                   "home_win": 1.11,
-                  "draw": 8.0,
-                  "away_win": 15.0
+                  "away_win": 15.0,
+                  "draw": 8.0
                 }
               },
               {
                 "bookmaker": "Bet Victor",
-                "last_update": "2026-11-02T10:50:08Z",
+                "last_update": "2026-11-02T10:52:42Z",
                 "odds": {
                   "home_win": 1.11,
-                  "draw": 8.0,
-                  "away_win": 15.0
+                  "away_win": 15.0,
+                  "draw": 8.0
                 }
               },
               {
                 "bookmaker": "BoyleSports",
-                "last_update": "2026-11-02T10:52:06Z",
+                "last_update": "2026-11-02T10:53:17Z",
                 "odds": {
                   "home_win": 1.14,
-                  "draw": 8.0,
-                  "away_win": 15.0
+                  "away_win": 15.0,
+                  "draw": 8.0
                 }
               },
               {
                 "bookmaker": "Ladbrokes",
-                "last_update": "2026-11-02T10:51:18Z",
+                "last_update": "2026-11-02T10:53:33Z",
                 "odds": {
                   "home_win": 1.15,
-                  "draw": 8.5,
-                  "away_win": 15.0
+                  "away_win": 15.0,
+                  "draw": 8.5
                 }
               },
               {
                 "bookmaker": "Coral",
-                "last_update": "2026-11-02T10:51:41Z",
+                "last_update": "2026-11-02T10:52:49Z",
                 "odds": {
                   "home_win": 1.15,
-                  "draw": 8.5,
-                  "away_win": 15.0
+                  "away_win": 15.0,
+                  "draw": 8.5
                 }
               },
               {
                 "bookmaker": "Betfair",
-                "last_update": "2026-11-02T10:52:04Z",
+                "last_update": "2026-11-02T10:53:39Z",
                 "odds": {
                   "home_win": 1.15,
-                  "draw": 10.5,
-                  "away_win": 21.0
+                  "away_win": 21.0,
+                  "draw": 10.5
                 }
               },
               {
                 "bookmaker": "Unibet (UK)",
-                "last_update": "2026-11-02T10:51:22Z",
+                "last_update": "2026-11-02T10:53:42Z",
                 "odds": {
                   "home_win": 1.13,
-                  "draw": 8.0,
-                  "away_win": 17.0
+                  "away_win": 17.0,
+                  "draw": 8.0
                 }
               },
               {
                 "bookmaker": "Matchbook",
-                "last_update": "2026-11-02T10:52:04Z",
+                "last_update": "2026-11-02T10:53:32Z",
                 "odds": {
                   "home_win": 1.15,
-                  "draw": 10.5,
-                  "away_win": 21.0
+                  "away_win": 21.0,
+                  "draw": 11.0
                 }
               }
             ],
@@ -7788,9 +7788,9 @@
               "method": "BAYESIAN_INSPIRED_LOG_OPINION_POOL",
               "model_prior_weight": 0.35,
               "probabilities": {
-                "home_win": 0.7861511562570928,
-                "draw": 0.1522055885741511,
-                "away_win": 0.06164325516875615
+                "home_win": 0.7853324170542159,
+                "away_win": 0.06262050928479043,
+                "draw": 0.15204707366099376
               },
               "calibration_status": "NOT_CALIBRATED"
             },
@@ -7814,16 +7814,16 @@
             "bookmaker_quotes": [
               {
                 "bookmaker": "William Hill",
-                "last_update": "2026-11-02T10:52:04Z",
+                "last_update": "2026-11-02T10:53:11Z",
                 "odds": {
-                  "over": 1.3,
-                  "under": 3.25
+                  "under": 3.25,
+                  "over": 1.3
                 }
               }
             ],
             "market_consensus_probabilities": {
-              "over": 0.7142857142857143,
-              "under": 0.28571428571428575
+              "under": 0.28571428571428575,
+              "over": 0.7142857142857143
             },
             "candidates": [],
             "release_status": "LOCKED_SHADOW_MODE",
@@ -7833,12 +7833,12 @@
             "status": "NO_QUALIFYING_SHADOW_PRICE",
             "bookmaker_count": 3,
             "market_consensus_probabilities": {
-              "over": 0.5067385444743935,
-              "under": 0.4932614555256065
+              "under": 0.4932614555256065,
+              "over": 0.5067385444743935
             },
             "bookmaker_probability_dispersion": {
-              "over": 0.00584055921894996,
-              "under": 0.005840559218949934
+              "under": 0.005840559218949934,
+              "over": 0.00584055921894996
             },
             "model_probabilities": {
               "over": 0.4517,
@@ -7860,33 +7860,33 @@
             "candidate_count": 0,
             "candidate_quote_keys": [],
             "quote_timestamps": [
-              "2026-11-02T10:51:18Z",
-              "2026-11-02T10:51:19Z",
-              "2026-11-02T10:52:04Z"
+              "2026-11-02T10:53:32Z",
+              "2026-11-02T10:53:34Z",
+              "2026-11-02T10:53:32Z"
             ],
             "bookmaker_quotes": [
               {
                 "bookmaker": "Grosvenor",
-                "last_update": "2026-11-02T10:51:18Z",
+                "last_update": "2026-11-02T10:53:32Z",
                 "odds": {
-                  "over": 1.83,
-                  "under": 1.88
+                  "under": 1.88,
+                  "over": 1.83
                 }
               },
               {
                 "bookmaker": "Casumo",
-                "last_update": "2026-11-02T10:51:19Z",
+                "last_update": "2026-11-02T10:53:34Z",
                 "odds": {
-                  "over": 1.82,
-                  "under": 1.85
+                  "under": 1.85,
+                  "over": 1.82
                 }
               },
               {
                 "bookmaker": "Matchbook",
-                "last_update": "2026-11-02T10:52:04Z",
+                "last_update": "2026-11-02T10:53:32Z",
                 "odds": {
-                  "over": 1.92,
-                  "under": 2.06
+                  "under": 2.06,
+                  "over": 1.92
                 }
               }
             ],
@@ -7896,8 +7896,8 @@
               "method": "BAYESIAN_INSPIRED_LOG_OPINION_POOL",
               "model_prior_weight": 0.35,
               "probabilities": {
-                "over": 0.48742509166718867,
-                "under": 0.5125749083328114
+                "under": 0.5125749083328114,
+                "over": 0.48742509166718867
               },
               "calibration_status": "NOT_CALIBRATED"
             },
@@ -8179,7 +8179,7 @@
           "h2h": [
             {
               "bookmaker": "Betfred (UK)",
-              "last_update": "2026-11-02T10:52:04Z",
+              "last_update": "2026-11-02T10:53:11Z",
               "outcomes": [
                 {
                   "name": "Gil Vicente",
@@ -8200,7 +8200,7 @@
             },
             {
               "bookmaker": "Paddy Power",
-              "last_update": "2026-11-02T10:51:18Z",
+              "last_update": "2026-11-02T10:53:32Z",
               "outcomes": [
                 {
                   "name": "Gil Vicente",
@@ -8221,7 +8221,7 @@
             },
             {
               "bookmaker": "Betway",
-              "last_update": "2026-11-02T10:51:18Z",
+              "last_update": "2026-11-02T10:53:32Z",
               "outcomes": [
                 {
                   "name": "Gil Vicente",
@@ -8242,7 +8242,7 @@
             },
             {
               "bookmaker": "Sky Bet",
-              "last_update": "2026-11-02T10:51:41Z",
+              "last_update": "2026-11-02T10:53:09Z",
               "outcomes": [
                 {
                   "name": "Gil Vicente",
@@ -8263,7 +8263,7 @@
             },
             {
               "bookmaker": "Betfair Sportsbook",
-              "last_update": "2026-11-02T10:51:46Z",
+              "last_update": "2026-11-02T10:52:49Z",
               "outcomes": [
                 {
                   "name": "Gil Vicente",
@@ -8284,7 +8284,7 @@
             },
             {
               "bookmaker": "Smarkets",
-              "last_update": "2026-11-02T10:52:04Z",
+              "last_update": "2026-11-02T10:53:32Z",
               "outcomes": [
                 {
                   "name": "Gil Vicente",
@@ -8305,7 +8305,7 @@
             },
             {
               "bookmaker": "888sport",
-              "last_update": "2026-11-02T10:52:04Z",
+              "last_update": "2026-11-02T10:53:10Z",
               "outcomes": [
                 {
                   "name": "Gil Vicente",
@@ -8326,7 +8326,7 @@
             },
             {
               "bookmaker": "William Hill",
-              "last_update": "2026-11-02T10:52:04Z",
+              "last_update": "2026-11-02T10:53:11Z",
               "outcomes": [
                 {
                   "name": "Gil Vicente",
@@ -8347,7 +8347,7 @@
             },
             {
               "bookmaker": "LiveScore Bet",
-              "last_update": "2026-11-02T10:51:42Z",
+              "last_update": "2026-11-02T10:52:49Z",
               "outcomes": [
                 {
                   "name": "Gil Vicente",
@@ -8368,7 +8368,7 @@
             },
             {
               "bookmaker": "Casumo",
-              "last_update": "2026-11-02T10:51:19Z",
+              "last_update": "2026-11-02T10:53:34Z",
               "outcomes": [
                 {
                   "name": "Gil Vicente",
@@ -8389,7 +8389,7 @@
             },
             {
               "bookmaker": "Virgin Bet",
-              "last_update": "2026-11-02T10:51:18Z",
+              "last_update": "2026-11-02T10:53:32Z",
               "outcomes": [
                 {
                   "name": "Gil Vicente",
@@ -8410,7 +8410,7 @@
             },
             {
               "bookmaker": "Grosvenor",
-              "last_update": "2026-11-02T10:51:18Z",
+              "last_update": "2026-11-02T10:53:32Z",
               "outcomes": [
                 {
                   "name": "Gil Vicente",
@@ -8431,7 +8431,7 @@
             },
             {
               "bookmaker": "Betano (UK)",
-              "last_update": "2026-11-02T10:51:29Z",
+              "last_update": "2026-11-02T10:53:44Z",
               "outcomes": [
                 {
                   "name": "Gil Vicente",
@@ -8452,7 +8452,7 @@
             },
             {
               "bookmaker": "Bet Victor",
-              "last_update": "2026-11-02T10:50:08Z",
+              "last_update": "2026-11-02T10:52:42Z",
               "outcomes": [
                 {
                   "name": "Gil Vicente",
@@ -8473,7 +8473,7 @@
             },
             {
               "bookmaker": "BoyleSports",
-              "last_update": "2026-11-02T10:52:06Z",
+              "last_update": "2026-11-02T10:53:17Z",
               "outcomes": [
                 {
                   "name": "Gil Vicente",
@@ -8494,7 +8494,7 @@
             },
             {
               "bookmaker": "Ladbrokes",
-              "last_update": "2026-11-02T10:51:18Z",
+              "last_update": "2026-11-02T10:53:33Z",
               "outcomes": [
                 {
                   "name": "Gil Vicente",
@@ -8515,7 +8515,7 @@
             },
             {
               "bookmaker": "Coral",
-              "last_update": "2026-11-02T10:51:41Z",
+              "last_update": "2026-11-02T10:52:49Z",
               "outcomes": [
                 {
                   "name": "Gil Vicente",
@@ -8536,7 +8536,7 @@
             },
             {
               "bookmaker": "Betfair",
-              "last_update": "2026-11-02T10:52:04Z",
+              "last_update": "2026-11-02T10:53:39Z",
               "outcomes": [
                 {
                   "name": "Gil Vicente",
@@ -8557,7 +8557,7 @@
             },
             {
               "bookmaker": "Unibet (UK)",
-              "last_update": "2026-11-02T10:51:22Z",
+              "last_update": "2026-11-02T10:53:42Z",
               "outcomes": [
                 {
                   "name": "Gil Vicente",
@@ -8578,7 +8578,7 @@
             },
             {
               "bookmaker": "Matchbook",
-              "last_update": "2026-11-02T10:52:04Z",
+              "last_update": "2026-11-02T10:53:32Z",
               "outcomes": [
                 {
                   "name": "Gil Vicente",
@@ -8601,7 +8601,7 @@
           "totals": [
             {
               "bookmaker": "William Hill",
-              "last_update": "2026-11-02T10:52:04Z",
+              "last_update": "2026-11-02T10:53:11Z",
               "outcomes": [
                 {
                   "name": "Over",
@@ -8617,7 +8617,7 @@
             },
             {
               "bookmaker": "Casumo",
-              "last_update": "2026-11-02T10:51:19Z",
+              "last_update": "2026-11-02T10:53:34Z",
               "outcomes": [
                 {
                   "name": "Over",
@@ -8633,7 +8633,7 @@
             },
             {
               "bookmaker": "Grosvenor",
-              "last_update": "2026-11-02T10:51:18Z",
+              "last_update": "2026-11-02T10:53:32Z",
               "outcomes": [
                 {
                   "name": "Over",
@@ -8649,7 +8649,7 @@
             },
             {
               "bookmaker": "Matchbook",
-              "last_update": "2026-11-02T10:52:04Z",
+              "last_update": "2026-11-02T10:53:32Z",
               "outcomes": [
                 {
                   "name": "Over",
@@ -8666,7 +8666,7 @@
           ],
           "btts": []
         },
-        "fetched_at": "2026-11-02T10:52:12.171480+00:00"
+        "fetched_at": "2026-11-02T10:53:56.154350+00:00"
       },
       "value_bet_screen": {
         "status": "PAPER_ONLY_CANDIDATES",
@@ -8747,20 +8747,20 @@
       "value_intelligence": {
         "status": "EVALUATED",
         "source": "The Odds API",
-        "snapshot_fetched_at": "2026-11-02T10:52:12.171480+00:00",
+        "snapshot_fetched_at": "2026-11-02T10:53:56.154350+00:00",
         "markets": {
           "1X2": {
             "status": "NO_QUALIFYING_SHADOW_PRICE",
             "bookmaker_count": 20,
             "market_consensus_probabilities": {
               "home_win": 0.32668256645840793,
-              "draw": 0.30137906498271944,
-              "away_win": 0.37193836855887263
+              "away_win": 0.37193836855887263,
+              "draw": 0.30137906498271944
             },
             "bookmaker_probability_dispersion": {
               "home_win": 0.005514659569193286,
-              "draw": 0.0066626395287951385,
-              "away_win": 0.00599472288155521
+              "away_win": 0.00599472288155521,
+              "draw": 0.0066626395287951385
             },
             "model_probabilities": {
               "home_win": 0.4613,
@@ -8786,206 +8786,206 @@
             "candidate_count": 0,
             "candidate_quote_keys": [],
             "quote_timestamps": [
-              "2026-11-02T10:52:04Z",
-              "2026-11-02T10:51:18Z",
-              "2026-11-02T10:51:18Z",
-              "2026-11-02T10:51:41Z",
-              "2026-11-02T10:51:46Z",
-              "2026-11-02T10:52:04Z",
-              "2026-11-02T10:52:04Z",
-              "2026-11-02T10:52:04Z",
-              "2026-11-02T10:51:42Z",
-              "2026-11-02T10:51:19Z",
-              "2026-11-02T10:51:18Z",
-              "2026-11-02T10:51:18Z",
-              "2026-11-02T10:51:29Z",
-              "2026-11-02T10:50:08Z",
-              "2026-11-02T10:52:06Z",
-              "2026-11-02T10:51:18Z",
-              "2026-11-02T10:51:41Z",
-              "2026-11-02T10:52:04Z",
-              "2026-11-02T10:51:22Z",
-              "2026-11-02T10:52:04Z"
+              "2026-11-02T10:53:11Z",
+              "2026-11-02T10:53:32Z",
+              "2026-11-02T10:53:32Z",
+              "2026-11-02T10:53:09Z",
+              "2026-11-02T10:52:49Z",
+              "2026-11-02T10:53:32Z",
+              "2026-11-02T10:53:10Z",
+              "2026-11-02T10:53:11Z",
+              "2026-11-02T10:52:49Z",
+              "2026-11-02T10:53:34Z",
+              "2026-11-02T10:53:32Z",
+              "2026-11-02T10:53:32Z",
+              "2026-11-02T10:53:44Z",
+              "2026-11-02T10:52:42Z",
+              "2026-11-02T10:53:17Z",
+              "2026-11-02T10:53:33Z",
+              "2026-11-02T10:52:49Z",
+              "2026-11-02T10:53:39Z",
+              "2026-11-02T10:53:42Z",
+              "2026-11-02T10:53:32Z"
             ],
             "bookmaker_quotes": [
               {
                 "bookmaker": "Betfred (UK)",
-                "last_update": "2026-11-02T10:52:04Z",
+                "last_update": "2026-11-02T10:53:11Z",
                 "odds": {
                   "home_win": 2.62,
-                  "draw": 3.1,
-                  "away_win": 2.5
+                  "away_win": 2.5,
+                  "draw": 3.1
                 }
               },
               {
                 "bookmaker": "Paddy Power",
-                "last_update": "2026-11-02T10:51:18Z",
+                "last_update": "2026-11-02T10:53:32Z",
                 "odds": {
                   "home_win": 2.88,
-                  "draw": 3.1,
-                  "away_win": 2.5
+                  "away_win": 2.5,
+                  "draw": 3.1
                 }
               },
               {
                 "bookmaker": "Betway",
-                "last_update": "2026-11-02T10:51:18Z",
+                "last_update": "2026-11-02T10:53:32Z",
                 "odds": {
                   "home_win": 2.9,
-                  "draw": 3.0,
-                  "away_win": 2.5
+                  "away_win": 2.5,
+                  "draw": 3.0
                 }
               },
               {
                 "bookmaker": "Sky Bet",
-                "last_update": "2026-11-02T10:51:41Z",
+                "last_update": "2026-11-02T10:53:09Z",
                 "odds": {
                   "home_win": 2.8,
-                  "draw": 3.3,
-                  "away_win": 2.45
+                  "away_win": 2.45,
+                  "draw": 3.3
                 }
               },
               {
                 "bookmaker": "Betfair Sportsbook",
-                "last_update": "2026-11-02T10:51:46Z",
+                "last_update": "2026-11-02T10:52:49Z",
                 "odds": {
                   "home_win": 2.88,
-                  "draw": 3.2,
-                  "away_win": 2.5
+                  "away_win": 2.5,
+                  "draw": 3.2
                 }
               },
               {
                 "bookmaker": "Smarkets",
-                "last_update": "2026-11-02T10:52:04Z",
+                "last_update": "2026-11-02T10:53:32Z",
                 "odds": {
                   "home_win": 3.0,
-                  "draw": 3.2,
-                  "away_win": 2.68
+                  "away_win": 2.68,
+                  "draw": 3.2
                 }
               },
               {
                 "bookmaker": "888sport",
-                "last_update": "2026-11-02T10:52:04Z",
+                "last_update": "2026-11-02T10:53:10Z",
                 "odds": {
                   "home_win": 2.8,
-                  "draw": 3.0,
-                  "away_win": 2.5
+                  "away_win": 2.5,
+                  "draw": 3.0
                 }
               },
               {
                 "bookmaker": "William Hill",
-                "last_update": "2026-11-02T10:52:04Z",
+                "last_update": "2026-11-02T10:53:11Z",
                 "odds": {
                   "home_win": 2.8,
-                  "draw": 3.0,
-                  "away_win": 2.5
+                  "away_win": 2.5,
+                  "draw": 3.0
                 }
               },
               {
                 "bookmaker": "LiveScore Bet",
-                "last_update": "2026-11-02T10:51:42Z",
+                "last_update": "2026-11-02T10:52:49Z",
                 "odds": {
                   "home_win": 2.9,
-                  "draw": 3.1,
-                  "away_win": 2.5
+                  "away_win": 2.5,
+                  "draw": 3.1
                 }
               },
               {
                 "bookmaker": "Casumo",
-                "last_update": "2026-11-02T10:51:19Z",
+                "last_update": "2026-11-02T10:53:34Z",
                 "odds": {
                   "home_win": 2.9,
-                  "draw": 3.1,
-                  "away_win": 2.5
+                  "away_win": 2.5,
+                  "draw": 3.1
                 }
               },
               {
                 "bookmaker": "Virgin Bet",
-                "last_update": "2026-11-02T10:51:18Z",
+                "last_update": "2026-11-02T10:53:32Z",
                 "odds": {
                   "home_win": 2.9,
-                  "draw": 3.1,
-                  "away_win": 2.5
+                  "away_win": 2.5,
+                  "draw": 3.1
                 }
               },
               {
                 "bookmaker": "Grosvenor",
-                "last_update": "2026-11-02T10:51:18Z",
+                "last_update": "2026-11-02T10:53:32Z",
                 "odds": {
                   "home_win": 2.9,
-                  "draw": 3.1,
-                  "away_win": 2.5
+                  "away_win": 2.5,
+                  "draw": 3.1
                 }
               },
               {
                 "bookmaker": "Betano (UK)",
-                "last_update": "2026-11-02T10:51:29Z",
+                "last_update": "2026-11-02T10:53:44Z",
                 "odds": {
                   "home_win": 2.75,
-                  "draw": 3.1,
-                  "away_win": 2.45
+                  "away_win": 2.45,
+                  "draw": 3.1
                 }
               },
               {
                 "bookmaker": "Bet Victor",
-                "last_update": "2026-11-02T10:50:08Z",
+                "last_update": "2026-11-02T10:52:42Z",
                 "odds": {
                   "home_win": 2.75,
-                  "draw": 3.1,
-                  "away_win": 2.45
+                  "away_win": 2.45,
+                  "draw": 3.1
                 }
               },
               {
                 "bookmaker": "BoyleSports",
-                "last_update": "2026-11-02T10:52:06Z",
+                "last_update": "2026-11-02T10:53:17Z",
                 "odds": {
                   "home_win": 2.7,
-                  "draw": 2.9,
-                  "away_win": 2.5
+                  "away_win": 2.5,
+                  "draw": 2.9
                 }
               },
               {
                 "bookmaker": "Ladbrokes",
-                "last_update": "2026-11-02T10:51:18Z",
+                "last_update": "2026-11-02T10:53:33Z",
                 "odds": {
                   "home_win": 2.87,
-                  "draw": 3.2,
-                  "away_win": 2.45
+                  "away_win": 2.45,
+                  "draw": 3.2
                 }
               },
               {
                 "bookmaker": "Coral",
-                "last_update": "2026-11-02T10:51:41Z",
+                "last_update": "2026-11-02T10:52:49Z",
                 "odds": {
                   "home_win": 2.87,
-                  "draw": 3.25,
-                  "away_win": 2.5
+                  "away_win": 2.5,
+                  "draw": 3.25
                 }
               },
               {
                 "bookmaker": "Betfair",
-                "last_update": "2026-11-02T10:52:04Z",
+                "last_update": "2026-11-02T10:53:39Z",
                 "odds": {
                   "home_win": 3.0,
-                  "draw": 3.25,
-                  "away_win": 2.68
+                  "away_win": 2.68,
+                  "draw": 3.25
                 }
               },
               {
                 "bookmaker": "Unibet (UK)",
-                "last_update": "2026-11-02T10:51:22Z",
+                "last_update": "2026-11-02T10:53:42Z",
                 "odds": {
                   "home_win": 2.85,
-                  "draw": 3.2,
-                  "away_win": 2.55
+                  "away_win": 2.55,
+                  "draw": 3.2
                 }
               },
               {
                 "bookmaker": "Matchbook",
-                "last_update": "2026-11-02T10:52:04Z",
+                "last_update": "2026-11-02T10:53:32Z",
                 "odds": {
                   "home_win": 3.0,
-                  "draw": 3.25,
-                  "away_win": 2.7
+                  "away_win": 2.7,
+                  "draw": 3.25
                 }
               }
             ],
@@ -8996,8 +8996,8 @@
               "model_prior_weight": 0.35,
               "probabilities": {
                 "home_win": 0.3722027817644031,
-                "draw": 0.2939947872447015,
-                "away_win": 0.33380243099089546
+                "away_win": 0.33380243099089546,
+                "draw": 0.2939947872447015
               },
               "calibration_status": "NOT_CALIBRATED"
             },
@@ -9019,12 +9019,12 @@
             "status": "NO_QUALIFYING_SHADOW_PRICE",
             "bookmaker_count": 4,
             "market_consensus_probabilities": {
-              "over": 0.41901012373453317,
-              "under": 0.5809898762654668
+              "under": 0.5809898762654668,
+              "over": 0.41901012373453317
             },
             "bookmaker_probability_dispersion": {
-              "over": 0.011573309024778752,
-              "under": 0.0115733090247788
+              "under": 0.0115733090247788,
+              "over": 0.011573309024778752
             },
             "model_probabilities": {
               "over": 0.4166,
@@ -9046,42 +9046,42 @@
             "candidate_count": 0,
             "candidate_quote_keys": [],
             "quote_timestamps": [
-              "2026-11-02T10:52:04Z",
-              "2026-11-02T10:51:19Z",
-              "2026-11-02T10:51:18Z",
-              "2026-11-02T10:52:04Z"
+              "2026-11-02T10:53:11Z",
+              "2026-11-02T10:53:34Z",
+              "2026-11-02T10:53:32Z",
+              "2026-11-02T10:53:32Z"
             ],
             "bookmaker_quotes": [
               {
                 "bookmaker": "William Hill",
-                "last_update": "2026-11-02T10:52:04Z",
+                "last_update": "2026-11-02T10:53:11Z",
                 "odds": {
-                  "over": 2.15,
-                  "under": 1.65
+                  "under": 1.65,
+                  "over": 2.15
                 }
               },
               {
                 "bookmaker": "Casumo",
-                "last_update": "2026-11-02T10:51:19Z",
+                "last_update": "2026-11-02T10:53:34Z",
                 "odds": {
-                  "over": 2.25,
-                  "under": 1.56
+                  "under": 1.56,
+                  "over": 2.25
                 }
               },
               {
                 "bookmaker": "Grosvenor",
-                "last_update": "2026-11-02T10:51:18Z",
+                "last_update": "2026-11-02T10:53:32Z",
                 "odds": {
-                  "over": 2.28,
-                  "under": 1.57
+                  "under": 1.57,
+                  "over": 2.28
                 }
               },
               {
                 "bookmaker": "Matchbook",
-                "last_update": "2026-11-02T10:52:04Z",
+                "last_update": "2026-11-02T10:53:32Z",
                 "odds": {
-                  "over": 2.32,
-                  "under": 1.74
+                  "under": 1.74,
+                  "over": 2.32
                 }
               }
             ],
@@ -9091,8 +9091,8 @@
               "method": "BAYESIAN_INSPIRED_LOG_OPINION_POOL",
               "model_prior_weight": 0.35,
               "probabilities": {
-                "over": 0.41816613450043905,
-                "under": 0.581833865499561
+                "under": 0.581833865499561,
+                "over": 0.41816613450043905
               },
               "calibration_status": "NOT_CALIBRATED"
             },
@@ -20838,8 +20838,8 @@
       ],
       "max_btts_event_calls": 2,
       "quota": {
-        "remaining": "464",
-        "used": "36",
+        "remaining": "452",
+        "used": "48",
         "last_cost": "1"
       },
       "warning": null
@@ -20942,7 +20942,7 @@
       },
       "alerts_enabled": false,
       "note": "Missing, incomplete or failing evidence keeps every market locked. Calibration alone does not prove profitability.",
-      "generated_at_utc": "2026-11-02T10:52:17.498333+00:00",
+      "generated_at_utc": "2026-11-02T10:54:01.405973+00:00",
       "backtest_provenance": {
         "workflow_run_id": 41431633080,
         "commit_sha": "63651e590c892e625a1fc987115cf1ec9e067148",
@@ -21084,7 +21084,7 @@
     },
     "alerts_enabled": false,
     "note": "Missing, incomplete or failing evidence keeps every market locked. Calibration alone does not prove profitability.",
-    "generated_at_utc": "2026-11-02T10:52:17.498333+00:00",
+    "generated_at_utc": "2026-11-02T10:54:01.405973+00:00",
     "backtest_provenance": {
       "workflow_run_id": 41431633080,
       "commit_sha": "63651e590c892e625a1fc987115cf1ec9e067148",
@@ -21114,5 +21114,5 @@
     "alerts_enabled": false
   },
   "command_data_publication": "PUBLISHED",
-  "command_data_published_at_utc": "2026-11-02T10:52:22.549590+00:00"
+  "command_data_published_at_utc": "2026-11-02T10:54:04.531709+00:00"
 }
