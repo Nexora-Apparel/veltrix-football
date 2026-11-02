@@ -125,6 +125,32 @@
         "paper_roi": null,
         "notice": "Best quoted price in a pre-kickoff snapshot; flat 1-unit paper stakes; not proof of executable profit or bookmaker closing-line value."
       }
+    },
+    {
+      "report_date": "2026-11-01",
+      "fixtures_scored": 0,
+      "completed_forecasts_scored": 0,
+      "awaiting_result_or_match": 19,
+      "withheld_or_invalid_forecasts": 6,
+      "metrics": {
+        "matches": 0,
+        "result_accuracy": null,
+        "brier_score": null,
+        "log_loss": null
+      },
+      "metrics_by_model": {},
+      "model_versions": [],
+      "goal_market_selections_settled": 0,
+      "goal_market_metrics": {
+        "settled_selections": 0,
+        "wins": 0,
+        "losses": 0,
+        "win_rate": null,
+        "units_staked": 0,
+        "net_units": 0,
+        "paper_roi": null,
+        "notice": "Best quoted price in a pre-kickoff snapshot; flat 1-unit paper stakes; not proof of executable profit or bookmaker closing-line value."
+      }
     }
   ],
   "scored_matches": [
@@ -265,9 +291,9 @@
       "report_date": "2026-10-27"
     }
   ],
-  "updated_at_utc": "2026-11-01T14:16:50.070167+00:00",
+  "updated_at_utc": "2026-11-02T09:28:15.043436+00:00",
   "last_attempt": {
-    "report_date": "2026-10-31",
+    "report_date": "2026-11-01",
     "status": "EVALUATED",
     "attempts": [
       {
@@ -331,7 +357,7 @@
         "awaiting_result_or_match": 4
       },
       {
-        "report_date": "2026-10-31",
+        "report_date": "2026-11-01",
         "status": "EVALUATED",
         "detail": "Scored from 5324 cached completed matches; no live football-provider request was made.",
         "fixtures_scored": 0,
@@ -343,7 +369,7 @@
           "log_loss": null
         },
         "metrics_by_model": {},
-        "awaiting_result_or_match": 17
+        "awaiting_result_or_match": 19
       }
     ],
     "detail": null,
@@ -381,7 +407,7 @@
     "experimental_elo_by_competition",
     "experimental_recent_goals_poisson"
   ],
-  "evaluated_report_dates": 4,
+  "evaluated_report_dates": 5,
   "notice": "Retrospective paper evaluation only; no betting recommendation or profitability claim.",
   "goal_market_scored": [],
   "calibration_versions": [],
