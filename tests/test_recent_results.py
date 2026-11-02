@@ -629,3 +629,13 @@ def test_gap_backfill_keeps_unverified_empty_dates_and_records_secondary_rows(tm
     assert {row["source_provider"] for row in saved["matches"]} == {
         "5DollarFootballAPI", "football-data.co.uk",
     }
+
+
+def test_historical_backfill_maps_country_prefixed_and_short_league_names():
+    from scripts.backfill_history_gaps import _mapped_league_division
+
+    assert _mapped_league_division({"id": 1, "name": "England - Premier League"}) == "PL"
+    assert _mapped_league_division({"id": 2, "name": "La Liga"}) == "PD"
+    assert _mapped_league_division({"id": 3, "short_name": "EPL"}) == "PL"
+    assert _mapped_league_division({"id": 4, "league_name": "Bundesliga"}) == "BL1"
+    assert _mapped_league_division({"id": 5, "name": "Unmapped competition"}) is None
