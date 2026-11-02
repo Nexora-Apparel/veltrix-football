@@ -706,6 +706,15 @@ def predict_fixtures(
                 {key: round(value, 4) for key, value in elo_probabilities.items()}
                 if use_competition_elo else poisson_probabilities
             )
+            venue = fixture.get("venue") or {}
+            target_venue_coordinates = None
+            venue_latitude = venue.get("latitude", fixture.get("venue_latitude"))
+            venue_longitude = venue.get("longitude", fixture.get("venue_longitude"))
+            if venue_latitude is not None and venue_longitude is not None:
+                target_venue_coordinates = {
+                    "latitude": venue_latitude,
+                    "longitude": venue_longitude,
+                }
             record.update({
                 "status": "EXPERIMENTAL_ONLY",
                 "model": primary_model,
@@ -713,7 +722,8 @@ def predict_fixtures(
                 "elo_history": elo_metadata,
                 "expected_goals": {"home": round(home_xg, 3), "away": round(away_xg, 3)},
                 "rest_congestion_context": rest_congestion_context(
-                    usable, home_key, away_key, target_date, window_days=14
+                    usable, home_key, away_key, target_date, window_days=14,
+                    target_venue_coordinates=target_venue_coordinates
                 ),
                 "advanced_model_alternative": {
                     "model": "experimental_recency_weighted_dixon_coles",

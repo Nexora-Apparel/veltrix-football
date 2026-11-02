@@ -71,6 +71,20 @@ def dixon_coles_1x2(
     return {key: value / total for key, value in result.items()}
 
 
+def _haversine_km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
+    """Great-circle distance between two validated venue coordinates."""
+    import math
+    values = (lat1, lon1, lat2, lon2)
+    if any(not math.isfinite(value) for value in values):
+        raise ValueError("venue coordinates must be finite")
+    if not (-90 <= lat1 <= 90 and -90 <= lat2 <= 90 and -180 <= lon1 <= 180 and -180 <= lon2 <= 180):
+        raise ValueError("venue coordinates are outside valid ranges")
+    rad = math.pi / 180
+    dlat, dlon = (lat2 - lat1) * rad, (lon2 - lon1) * rad
+    a = math.sin(dlat / 2) ** 2 + math.cos(lat1 * rad) * math.cos(lat2 * rad) * math.sin(dlon / 2) ** 2
+    return 6371.0088 * 2 * math.asin(min(1.0, math.sqrt(a)))
+
+
 def rest_congestion_context(
     matches: Iterable[Mapping[str, Any]],
     home_key: str,
@@ -78,17 +92,18 @@ def rest_congestion_context(
     target_date: date,
     *,
     window_days: int = 14,
-) -> dict[str, dict[str, int | None]]:
-    """Describe rest and recent fixture congestion from past match dates only.
+    target_venue_coordinates: Mapping[str, Any] | None = None,
+) -> dict[str, dict[str, Any]]:
+    """Measure rest/congestion and coordinate-backed travel using prior matches only.
 
-    This is context for reviewers, not a probability adjustment: the data source
-    has dates but no verified lineup/injury or match-minute information.
+    Travel is emitted only when both the prior match venue and target venue have
+    valid coordinates. Missing coordinates remain explicitly unavailable.
+    This context is not applied to probabilities until separately validated.
     """
     if isinstance(window_days, bool) or not isinstance(window_days, int) or window_days < 1:
         raise ValueError("window_days must be a positive integer")
     rows = list(matches)
-    cutoff = target_date - timedelta(days=window_days)
-    result: dict[str, dict[str, int | None]] = {}
+    result: dict[str, dict[str, Any]] = {}
     for side, key in (("home", home_key), ("away", away_key)):
         previous = [
             row for row in rows
@@ -96,11 +111,36 @@ def rest_congestion_context(
             and row["date"] < target_date
             and key in (row.get("home_key"), row.get("away_key"))
         ]
-        last_date = max((row["date"] for row in previous), default=None)
-        recent_count = sum(cutoff <= row["date"] < target_date for row in previous)
+        previous.sort(key=lambda row: row["date"])
+        last = previous[-1] if previous else None
+        last_date = last.get("date") if last else None
+        counts = {
+            f"matches_in_previous_{days}_days": sum(
+                (target_date - row["date"]).days <= days for row in previous
+            )
+            for days in (7, 14, 30)
+        }
+        travel_km = None
+        travel_status = "UNAVAILABLE_TARGET_VENUE_COORDINATES"
+        if target_venue_coordinates is not None:
+            travel_status = "UNAVAILABLE_PREVIOUS_VENUE_COORDINATES"
+            if last is not None:
+                try:
+                    target_lat = float(target_venue_coordinates["latitude"])
+                    target_lon = float(target_venue_coordinates["longitude"])
+                    previous_lat = float(last["venue_latitude"])
+                    previous_lon = float(last["venue_longitude"])
+                    travel_km = _haversine_km(previous_lat, previous_lon, target_lat, target_lon)
+                    travel_status = "VERIFIED_COORDINATE_DISTANCE"
+                except (KeyError, TypeError, ValueError):
+                    pass
         result[side] = {
             "days_since_last_match": (target_date - last_date).days if last_date else None,
-            "matches_in_previous_14_days": recent_count,
+            "matches_in_previous_7_days": counts["matches_in_previous_7_days"],
+            "matches_in_previous_14_days": counts["matches_in_previous_14_days"],
+            "matches_in_previous_30_days": counts["matches_in_previous_30_days"],
+            "travel_distance_km": round(travel_km, 1) if travel_km is not None else None,
+            "travel_status": travel_status,
         }
     return result
 
