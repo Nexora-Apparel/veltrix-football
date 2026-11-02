@@ -1,0 +1,84 @@
+name: Historical Results Gap Backfill
+
+on:
+  workflow_dispatch:
+    inputs:
+      from:
+        description: "First unresolved date (YYYY-MM-DD); blank uses the cache gap list"
+        required: false
+        type: string
+      to:
+        description: "Last unresolved date (YYYY-MM-DD); blank uses the cache gap list"
+        required: false
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: veltrix-historical-gap-backfill
+  cancel-in-progress: false
+
+jobs:
+  backfill:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: main
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+      - name: Install dependencies
+        run: python -m pip install -r requirements.txt
+      - name: Fetch latest published results cache
+        uses: actions/checkout@v7
+        with:
+          ref: command-data
+          path: command-data
+          token: ${{ secrets.GITHUB_TOKEN }}
+          sparse-checkout: public-data/recent_results_cache.json
+          sparse-checkout-cone-mode: false
+      - name: Import secondary open results for the unresolved period
+        id: fallback
+        continue-on-error: true
+        env:
+          VELTRIX_ENABLE_FOOTBALL_DATA_FALLBACK: "true"
+        run: |
+          START="${{ inputs.from }}"
+          END="${{ inputs.to }}"
+          if [ -z "$START" ]; then START="2026-09-28"; fi
+          if [ -z "$END" ]; then END="2026-10-11"; fi
+          python scripts/import_open_dataset.py --from "$START" --to "$END" --output reports/gap_fallback.csv
+      - name: Ensure fallback file exists
+        if: always()
+        run: |
+          mkdir -p reports
+          if [ ! -f reports/gap_fallback.csv ]; then
+            printf 'source,division,match_date,home_team,away_team,home_goals,away_goals,full_time_result\n' > reports/gap_fallback.csv
+          fi
+      - name: Retry unresolved dates, merge sourced results, and publish cache
+        id: backfill
+        env:
+          FIVEDOLLARFOOTBALL_API_KEY: ${{ secrets.FIVEDOLLARFOOTBALL_API_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          PYTHONPATH: .
+        run: |
+          python scripts/backfill_history_gaps.py \
+            --cache command-data/public-data/recent_results_cache.json \
+            --fallback reports/gap_fallback.csv \
+            --output reports/recent_results_cache.json \
+            --report reports/historical_gap_backfill.json
+      - name: Upload gap-backfill evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: veltrix-historical-gap-backfill
+          path: |
+            reports/historical_gap_backfill.json
+            reports/recent_results_cache.json
+            reports/gap_fallback.csv
+          if-no-files-found: warn
+          retention-days: 90
