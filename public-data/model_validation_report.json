@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "product": "VELTRIX FOOTBALL AI",
-  "generated_at_utc": "2026-11-02T12:58:22.694270+00:00",
+  "generated_at_utc": "2026-11-02T17:09:50.406015+00:00",
   "status": "RESEARCH_DIAGNOSTIC_ONLY",
   "dataset": {
     "input_file": "open_historical_matches.csv",
@@ -516,7 +516,10 @@
     "poisson": {
       "status": "CHRONOLOGICAL_CLASS_BALANCE_DIAGNOSTIC",
       "matches": 67549,
-      "home_bias_flag": "HOME_CLASS_OVERPREDICTED",
+      "home_bias_flag": "HOME_ARGMAX_SELECTION_OVERFREQUENT",
+      "probability_mass_status": "WITHIN_5PP_OF_OBSERVED_CLASS_FREQUENCY",
+      "maximum_probability_mass_gap_percentage_points": 1.3298510123239793,
+      "note": "predicted_share is the frequency with which a class is the single argmax, not the mean probability assigned to that outcome. Mean predicted probability and its gap from observed frequency are reported separately.",
       "classes": {
         "H": {
           "actual_matches": 29185,
@@ -525,7 +528,10 @@
           "predicted_share": 0.6550356037839198,
           "prediction_share_gap_percentage_points": 22.29788745947386,
           "precision": 0.48150157072795896,
-          "recall": 0.7299982867911599
+          "recall": 0.7299982867911599,
+          "mean_predicted_probability": 0.434877598001712,
+          "observed_frequency": 0.4320567291891812,
+          "probability_minus_observed_percentage_points": 0.2820868812530797
         },
         "D": {
           "actual_matches": 17760,
@@ -534,7 +540,10 @@
           "predicted_share": 0.014552398999244992,
           "prediction_share_gap_percentage_points": -24.836785148558825,
           "precision": 0.28687690742624616,
-          "recall": 0.01587837837837838
+          "recall": 0.01587837837837838,
+          "mean_predicted_probability": 0.24962174036159346,
+          "observed_frequency": 0.26292025048483325,
+          "probability_minus_observed_percentage_points": -1.3298510123239793
         },
         "A": {
           "actual_matches": 20604,
@@ -543,14 +552,20 @@
           "predicted_share": 0.3304119972168352,
           "prediction_share_gap_percentage_points": 2.5388976890849566,
           "precision": 0.395223800349478,
-          "recall": 0.42812075325179577
+          "recall": 0.42812075325179577,
+          "mean_predicted_probability": 0.3155006616366929,
+          "observed_frequency": 0.3050230203259856,
+          "probability_minus_observed_percentage_points": 1.0477641310707275
         }
       }
     },
     "elo": {
       "status": "CHRONOLOGICAL_CLASS_BALANCE_DIAGNOSTIC",
       "matches": 66625,
-      "home_bias_flag": "HOME_CLASS_OVERPREDICTED",
+      "home_bias_flag": "HOME_ARGMAX_SELECTION_OVERFREQUENT",
+      "probability_mass_status": "WITHIN_5PP_OF_OBSERVED_CLASS_FREQUENCY",
+      "maximum_probability_mass_gap_percentage_points": 1.1074596201387676,
+      "note": "predicted_share is the frequency with which a class is the single argmax, not the mean probability assigned to that outcome. Mean predicted probability and its gap from observed frequency are reported separately.",
       "classes": {
         "H": {
           "actual_matches": 28780,
@@ -559,7 +574,10 @@
           "predicted_share": 0.7151069418386492,
           "prediction_share_gap_percentage_points": 28.31369606003753,
           "precision": 0.4929896734111326,
-          "recall": 0.8161223071577485
+          "recall": 0.8161223071577485,
+          "mean_predicted_probability": 0.4208953850368862,
+          "observed_frequency": 0.4319699812382739,
+          "probability_minus_observed_percentage_points": -1.1074596201387676
         },
         "D": {
           "actual_matches": 17514,
@@ -568,7 +586,10 @@
           "predicted_share": 0.0022964352720450283,
           "prediction_share_gap_percentage_points": -26.057786116322703,
           "precision": 0.3202614379084967,
-          "recall": 0.002797761790567546
+          "recall": 0.002797761790567546,
+          "mean_predicted_probability": 0.2646293490507734,
+          "observed_frequency": 0.26287429643527205,
+          "probability_minus_observed_percentage_points": 0.17550526155013513
         },
         "A": {
           "actual_matches": 20331,
@@ -577,7 +598,10 @@
           "predicted_share": 0.2825966228893058,
           "prediction_share_gap_percentage_points": -2.2559099437148236,
           "precision": 0.45650095602294455,
-          "recall": 0.4227534307215582
+          "recall": 0.4227534307215582,
+          "mean_predicted_probability": 0.3144752659123372,
+          "observed_frequency": 0.30515572232645405,
+          "probability_minus_observed_percentage_points": 0.9319543585883161
         }
       }
     }
