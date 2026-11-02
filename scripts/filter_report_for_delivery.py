@@ -60,7 +60,8 @@ def filter_report_for_delivery(report: dict, now: datetime | None = None) -> dic
     if not isinstance(rows, list):
         raise ValueError("Saved report predictions must be a list.")
     kept = []
-    past_rows_excluded = 0
+    past_rows_retained = 0
+    future_rows_retained = 0
     other_date_rows_excluded = 0
     missing_or_invalid_kickoff_rows = 0
     kickoff_unverified_rows_retained = 0
@@ -97,8 +98,17 @@ def filter_report_for_delivery(report: dict, now: datetime | None = None) -> dic
         if kickoff.date() != target_day:
             other_date_rows_excluded += 1
         elif kickoff <= current:
-            past_rows_excluded += 1
+            past_rows_retained += 1
+            delivered_row = _withhold_forecast(row)
+            delivered_row["status"] = "KICKOFF_PASSED"
+            delivered_row["reason"] = (
+                "Fixture retained for visibility, but kickoff has already passed; "
+                "pre-match probabilities and value outputs are withheld."
+            )
+            delivered_row["kickoff_verification"] = "VERIFIED_PAST"
+            kept.append(delivered_row)
         else:
+            future_rows_retained += 1
             delivered_row = row
             if row.get("status") == "EXPERIMENTAL_ONLY" and _has_unsafe_auto_team_match(row):
                 delivered_row = _withhold_forecast(row)
@@ -116,10 +126,12 @@ def filter_report_for_delivery(report: dict, now: datetime | None = None) -> dic
     experimental = [row for row in kept if row.get("status") == "EXPERIMENTAL_ONLY"]
     insufficient = [row for row in kept if row.get("status") == "INSUFFICIENT_HISTORY"]
     unsupported = [row for row in kept if row.get("status") == "UNSUPPORTED_COMPETITION"]
+    kickoff_passed = [row for row in kept if row.get("status") == "KICKOFF_PASSED"]
     result = dict(report)
     result["predictions"] = kept
-    result["same_day_pre_match_fixtures"] = len(kept)
-    result["future_fixtures_considered"] = len(kept)
+    result["same_day_fixtures_retained"] = len(kept)
+    result["same_day_pre_match_fixtures"] = future_rows_retained
+    result["future_fixtures_considered"] = future_rows_retained
     result["predictions_created"] = len(experimental)
     result["insufficient_history"] = len(insufficient)
     result["unsupported_competitions"] = len(unsupported)
@@ -129,6 +141,7 @@ def filter_report_for_delivery(report: dict, now: datetime | None = None) -> dic
         "INSUFFICIENT_HISTORY": len(insufficient),
         "UNSUPPORTED_COMPETITION": len(unsupported),
         "KICKOFF_UNVERIFIED": result["kickoff_unverified_fixtures"],
+        "KICKOFF_PASSED": len(kickoff_passed),
     }
     result["unsupported_competition_breakdown"] = {
         str(league_name): sum(row.get("league") == league_name for row in unsupported)
@@ -156,13 +169,16 @@ def filter_report_for_delivery(report: dict, now: datetime | None = None) -> dic
     result["fixtures_with_market_odds"] = sum(
         isinstance(row.get("market_probabilities"), dict) for row in kept
     )
-    result["past_kickoffs_excluded"] = int(report.get("past_kickoffs_excluded", 0)) + past_rows_excluded
+    result["past_kickoffs_excluded"] = int(report.get("past_kickoffs_excluded", 0))
+    result["past_kickoffs_retained"] = past_rows_retained
     result["delivery_filter"] = {
         "applied": True,
         "filtered_at": current.isoformat(),
         "saved_fixture_rows": len(rows),
-        "future_same_day_fixture_rows": len(kept),
-        "past_kickoffs_excluded": past_rows_excluded,
+        "future_same_day_fixture_rows": future_rows_retained,
+        "same_day_fixture_rows_retained": len(kept),
+        "past_kickoffs_excluded": 0,
+        "past_kickoffs_retained": past_rows_retained,
         "other_date_rows_excluded": other_date_rows_excluded,
         "missing_or_invalid_kickoff_rows_excluded": 0,
         "kickoff_unverified_rows_retained": kickoff_unverified_rows_retained,
@@ -215,6 +231,8 @@ def main() -> None:
             "as_of_date": filtered["as_of_date"],
             "saved_fixture_rows": filtered["delivery_filter"]["saved_fixture_rows"],
             "future_same_day_fixture_rows": filtered["delivery_filter"]["future_same_day_fixture_rows"],
+            "same_day_fixture_rows_retained": filtered["delivery_filter"]["same_day_fixture_rows_retained"],
+            "past_kickoffs_retained": filtered["delivery_filter"]["past_kickoffs_retained"],
             "usable_forecasts": filtered["predictions_created"],
             "unsafe_team_identity_rows_withheld": filtered["delivery_filter"]["unsafe_team_identity_rows_withheld"],
             "publication_status": filtered["publication_status"],

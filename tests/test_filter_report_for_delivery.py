@@ -21,16 +21,21 @@ def sample_report():
     }
 
 
-def test_filter_keeps_only_future_same_day_rows_and_recomputes_count():
+def test_filter_keeps_all_same_day_rows_and_withholds_past_forecasts():
     now = datetime(2026, 10, 25, 8, 0, tzinfo=ZoneInfo("Africa/Lagos"))
     report = filter_report_for_delivery(sample_report(), now)
-    assert len(report["predictions"]) == 3
+    assert len(report["predictions"]) == 4
     assert report["predictions_created"] == 1
-    assert report["future_fixtures_considered"] == 3
+    assert report["future_fixtures_considered"] == 1
+    assert report["same_day_fixtures_retained"] == 4
     assert report["kickoff_unverified_fixtures"] == 1
     unverified = next(row for row in report["predictions"] if row.get("status") == "KICKOFF_UNVERIFIED")
     assert "probabilities" not in unverified
-    assert report["past_kickoffs_excluded"] == 1
+    assert report["past_kickoffs_excluded"] == 0
+    assert report["past_kickoffs_retained"] == 1
+    passed = next(row for row in report["predictions"] if row.get("status") == "KICKOFF_PASSED")
+    assert "probabilities" not in passed
+    assert "btts_yes" not in passed
     assert report["unsupported_competitions"] == 1
     assert report["insufficient_history"] == 0
     assert report["predictions_created"] == 1
@@ -111,12 +116,13 @@ def test_filter_recomputes_status_counts_after_removing_rows():
     })
     now = datetime(2026, 10, 25, 8, 0, tzinfo=ZoneInfo("Africa/Lagos"))
     filtered = filter_report_for_delivery(report, now)
-    assert len(filtered["predictions"]) == 3
+    assert len(filtered["predictions"]) == 4
     assert (
         filtered["predictions_created"]
         + filtered["insufficient_history"]
         + filtered["unsupported_competitions"]
         + filtered["kickoff_unverified_fixtures"]
+        + filtered["fixture_status_counts"]["KICKOFF_PASSED"]
     ) == len(filtered["predictions"])
     assert filtered["predictions_created"] == 1
     assert filtered["unsupported_competitions"] == 1
