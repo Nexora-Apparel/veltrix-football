@@ -756,3 +756,5 @@ if __name__ == "__main__":
 # [run-gap-backfill] validate independent date endpoint after catalogue 429.
 
 # One final bounded audit run after expanded 13-competition mapping: [run-openligadb-backfill]
+
+# Controlled primary-provider retry after successful credential smoke check: [run-gap-backfill]
