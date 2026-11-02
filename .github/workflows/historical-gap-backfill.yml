@@ -1,10 +1,6 @@
 name: Historical Results Gap Backfill
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - "scripts/backfill_history_gaps.py"
   schedule:
     # Retry unresolved history 30 minutes after the 06:00 WAT report target.
     - cron: "30 5 * * *"
