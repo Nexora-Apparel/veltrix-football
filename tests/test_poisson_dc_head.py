@@ -49,3 +49,5 @@ def test_high_rate_requires_larger_score_grid():
         dixon_coles_markets(8.0, 8.0, max_goals=12)
     result = dixon_coles_markets(8.0, 8.0, max_goals=40)
     assert result["truncated_poisson_tail_estimate"]["upper_bound_union"] <= 1e-8
+
+# CI trigger: keep this file in the PR path filter.
