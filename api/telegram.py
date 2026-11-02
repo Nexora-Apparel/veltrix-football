@@ -169,7 +169,7 @@ function renderRows(){
  rows.forEach((m,i)=>{
   const card=document.createElement('article');card.className='prediction-card reveal';card.style.transitionDelay=Math.min(i*45,250)+'ms';
   const title=document.createElement('h3');title.className='prediction-title';title.textContent=(m.home_team||'Home')+' vs '+(m.away_team||'Away');
-  const meta=document.createElement('div');meta.className='meta';meta.textContent=(m.league||'Competition')+' · '+(m.kickoff_local||m.kickoff||'Kickoff unavailable');
+  const meta=document.createElement('div');meta.className='meta';meta.textContent=(m.league||'Competition')+' · '+(m.kickoff_local||m.kickoff||'Kickoff unavailable')+(m.fixture_visibility_note?' · '+m.fixture_visibility_note:'');
   const chips=document.createElement('div');chips.className='chips';
   const hasForecast=m.status==='EXPERIMENTAL_ONLY'&&m.probabilities&&typeof m.probabilities==='object';
   if(hasForecast){
@@ -264,7 +264,7 @@ async function loadDashboard(){
   document.getElementById('overviewTitle').textContent=reportDate?(reportDate===today?"Today's overview":'Report overview · '+reportDate):'Report overview';
   const stale=!!reportDate&&reportDate!==today;const reportNotice=document.getElementById('reportFreshness');if(reportNotice){reportNotice.textContent=stale?'Showing the saved report from '+reportDate+'. It is not today’s report; refresh the data pipeline for current fixtures.':(dashboardRows.length?'Current-day report loaded.':'No upcoming matches found in the current report.');reportNotice.classList.toggle('warn',stale||!dashboardRows.length);}
   text(document.getElementById('fixtures'),d.fixtures_received);text(document.getElementById('forecasts'),d.experimental_forecasts);text(document.getElementById('odds'),d.fixtures_with_market_odds);
-  renderFeatured(dashboardRows.find(m=>m&&m.status==='EXPERIMENTAL_ONLY')||dashboardRows[0]);renderRows();renderMarketOdds();renderPaperTracking(d);renderStatus(d);observeReveals(document);
+  renderFeatured(dashboardRows.find(m=>m&&m.status==='EXPERIMENTAL_ONLY'&&!m.fixture_visibility_note)||dashboardRows.find(m=>m&&m.status==='EXPERIMENTAL_ONLY')||dashboardRows[0]);renderRows();renderMarketOdds();renderPaperTracking(d);renderStatus(d);observeReveals(document);
   document.getElementById('reporttime').textContent='Report date '+(d.as_of_date||'unknown')+' · published '+(d.published_at_utc||'unknown')+' UTC';
  }catch(e){
   document.getElementById('featured').textContent='Published report unavailable. Please retry shortly.';
@@ -301,8 +301,13 @@ def dashboard_data() -> dict:
             if kickoff.tzinfo is None:
                 kickoff = kickoff.replace(tzinfo=ZoneInfo("Africa/Lagos"))
             if kickoff.astimezone(ZoneInfo("Africa/Lagos")) > now:
-                upcoming.append(row)
+                row.setdefault("fixture_phase", "UPCOMING")
+            else:
+                row.setdefault("fixture_phase", "KICKOFF_PASSED")
+                row.setdefault("fixture_visibility_note", "Kickoff has passed; fixture remains visible in this report.")
+            upcoming.append(row)
         except (TypeError, ValueError, OverflowError):
+            row.setdefault("fixture_phase", "KICKOFF_UNVERIFIED")
             row.setdefault("fixture_visibility_note", "Kickoff could not be verified; fixture retained for visibility.")
             upcoming.append(row)
     def _valid_market_price(value) -> bool:
