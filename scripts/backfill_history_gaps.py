@@ -410,7 +410,9 @@ def _openligadb_gap_backfill(session: Any, gaps: list[str], delay_seconds: float
             audit["competitions"].append(competition)
     finally:
         if own_session:
-            client.close()
+            close = getattr(client, "close", None)
+            if callable(close):
+                close()
 
     date_counts: dict[str, dict[str, Any]] = {}
     for row in rows:
