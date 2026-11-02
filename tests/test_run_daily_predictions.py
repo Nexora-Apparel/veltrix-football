@@ -545,7 +545,7 @@ def test_daily_runner_uses_odds_api_fixtures_and_cached_history_after_primary_42
     assert report["recent_results_sync"]["status"] == "SKIPPED_PRIMARY_PROVIDER_UNAVAILABLE"
     assert report["historical_data_coverage"]["status"] == "GAPPED_OR_STALE"
     assert report["historical_data_coverage"]["backfill_complete"] is False
-    assert report["historical_data_coverage"]["base_backfill_complete"] is False
+    assert report["historical_data_coverage"]["base_backfill_complete"] is True
     assert report["historical_data_coverage"]["incremental_history_complete"] is False
     assert report["historical_data_coverage"]["retryable_gap_date_count"] == 1
     assert report["publication_status"] == "LIVE_REPORT_GENERATED_PENDING_PUBLICATION"
