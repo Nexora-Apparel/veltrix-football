@@ -79,6 +79,7 @@ jobs:
               and report.get("command_data_publication") == "PUBLISHED"
               and isinstance(report.get("predictions"), list)
           )
+          print(f"published={'true' if fresh else 'false'}")
           print(f"fresh={'true' if fresh else 'false'}")
           print(f"report_date={report.get('as_of_date', 'missing')}")
           PY
@@ -87,9 +88,61 @@ jobs:
             echo "report_date=unavailable" >> "$GITHUB_OUTPUT"
           fi
 
+      - name: Verify Telegram delivery for today's published report
+        id: delivery
+        if: steps.freshness.outputs.published == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPOSITORY: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          TODAY="${{ steps.freshness.outputs.today }}"
+          curl --fail --silent --show-error \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/$GH_REPOSITORY/actions/workflows/daily-fixture-predictions.yml/runs?per_page=50" \
+            -o /tmp/daily-runs.json
+          python - <<'PY' > /tmp/todays-run-ids.txt
+          import json
+          from datetime import datetime
+          from zoneinfo import ZoneInfo
+          data = json.load(open("/tmp/daily-runs.json", encoding="utf-8"))
+          today = "${{ steps.freshness.outputs.today }}"
+          for run in data.get("workflow_runs", []):
+              if run.get("event") not in {"schedule", "workflow_dispatch"}:
+                  continue
+              created = datetime.fromisoformat(run["created_at"].replace("Z", "+00:00")).astimezone(ZoneInfo("Africa/Lagos"))
+              if created.date().isoformat() == today:
+                  print(run["id"])
+          PY
+          DELIVERED=false
+          while IFS= read -r RUN_ID; do
+            [ -n "$RUN_ID" ] || continue
+            curl --fail --silent --show-error \
+              -H "Authorization: Bearer $GH_TOKEN" \
+              -H "Accept: application/vnd.github+json" \
+              "https://api.github.com/repos/$GH_REPOSITORY/actions/runs/$RUN_ID/jobs?per_page=100" \
+              -o /tmp/daily-jobs.json
+            if python - <<'PY'
+          import json, sys
+          data = json.load(open("/tmp/daily-jobs.json", encoding="utf-8"))
+          for job in data.get("jobs", []):
+              for step in job.get("steps", []):
+                  if step.get("name") == "Send daily report to Telegram" and step.get("conclusion") == "success":
+                      raise SystemExit(0)
+          raise SystemExit(1)
+          PY
+            then
+              DELIVERED=true
+              break
+            fi
+          done < /tmp/todays-run-ids.txt
+          echo "delivered=$DELIVERED" >> "$GITHUB_OUTPUT"
+          echo "Telegram delivery verified: $DELIVERED"
+
       - name: Check for an active daily pipeline
         id: active
-        if: steps.freshness.outputs.fresh != 'true'
+        if: steps.freshness.outputs.fresh != 'true' || steps.delivery.outputs.delivered != 'true'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPOSITORY: ${{ github.repository }}
@@ -112,7 +165,7 @@ jobs:
           PY
 
       - name: Dispatch today's report if missing
-        if: steps.freshness.outputs.fresh != 'true' && steps.active.outputs.active != 'true'
+        if: (steps.freshness.outputs.fresh != 'true' || steps.delivery.outputs.delivered != 'true') && steps.active.outputs.active != 'true'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPOSITORY: ${{ github.repository }}
@@ -131,6 +184,6 @@ jobs:
           echo "Today's report was missing; dispatched the normal live pipeline for $TARGET_DATE."
 
       - name: Record healthy or already-running state
-        if: steps.freshness.outputs.fresh == 'true' || steps.active.outputs.active == 'true'
+        if: (steps.freshness.outputs.fresh == 'true' && steps.delivery.outputs.delivered == 'true') || steps.active.outputs.active == 'true'
         run: |
           echo "Today's report is already published, or the normal daily pipeline is still active. No duplicate provider run was started."
