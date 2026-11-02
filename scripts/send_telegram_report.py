@@ -305,7 +305,9 @@ def format_report_messages(report: dict[str, Any], ledger: dict[str, Any] | None
         blocks.append([DIVIDER, "No upcoming fixtures were retrieved for today.", ""])
 
     def render(selected: list[list[str]]) -> str:
-        return MESSAGE_PREFIX + "\n" + "\n".join(header + [line for block in selected for line in block])
+        body = header + [line for block in selected for line in block]
+        body.extend(["", "Football data by 5DollarFootballAPI — https://5dollarfootballapi.com"])
+        return MESSAGE_PREFIX + "\n" + "\n".join(body)
 
     chunks: list[str] = []
     selected: list[list[str]] = []
