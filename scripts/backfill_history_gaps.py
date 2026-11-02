@@ -152,7 +152,7 @@ def _openligadb_gap_backfill(session: Any, gaps: list[str], delay_seconds: float
     rate_limited = False
     try:
         for index, league in enumerate(OPENLIGADB_LEAGUES):
-            if index and delay_seconds > 0:
+            if own_session and index and delay_seconds > 0:
                 time_module.sleep(delay_seconds)
             url = f"https://api.openligadb.de/getmatchdata/{league['shortcut']}/2026"
             competition = {
