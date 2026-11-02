@@ -277,6 +277,7 @@ jobs:
           fi
 
       - name: Download previous same-day report for quota-safe delivery
+        id: previous-same-day-report
         if: github.event_name == 'push' && contains(github.event.head_commit.message, '[reuse-report-40175707059]')
         env:
           GITHUB_REPOSITORY: ${{ github.repository }}
@@ -527,6 +528,8 @@ jobs:
           VELTRIX_STEP_DASHBOARD_JS: ${{ steps.dashboard-js.outcome }}
           VELTRIX_STEP_FIXTURE_GENERATION: ${{ steps.generate-report.outcome }}
           VELTRIX_STEP_REPORT_RECOVERY: ${{ steps.report-recovery.outcome }}
+          VELTRIX_STEP_SAME_DAY_REPORT_DOWNLOAD: ${{ steps.previous-same-day-report.outcome }}
+          VELTRIX_STEP_SAME_DAY_REPORT_FILTER: ${{ steps.filter-saved-report.outcome }}
           VELTRIX_STEP_FIXTURE_VISIBILITY: ${{ steps.fixture-visibility-validation.outcome }}
           VELTRIX_STEP_ODDS_ENRICHMENT: ${{ steps.odds-enrichment.outcome }}
           VELTRIX_STEP_VALUE_EVIDENCE_UPDATE: ${{ steps.value-evidence-update.outcome }}
