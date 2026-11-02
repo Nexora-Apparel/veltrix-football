@@ -319,9 +319,10 @@ def test_daily_report_explains_fixture_filtering(tmp_path):
     assert report["predictions"][0]["fixture_id"] == 100
     assert report["predictions"][0]["status"] == "KICKOFF_PASSED"
     assert "probabilities" not in report["predictions"][0]
-    assert report["predictions"][1]["fixture_id"] == 200
-    assert report["predictions"][2]["fixture_id"] == 400
-    assert report["predictions"][2]["status"] == "KICKOFF_PASSED"
+    by_fixture = {row["fixture_id"]: row for row in report["predictions"]}
+    assert by_fixture[200]["status"] == "EXPERIMENTAL_ONLY"
+    assert by_fixture[400]["status"] == "FIXTURE_NOT_PREMATCH"
+    assert "probabilities" not in by_fixture[400]
     assert report["primary_model_counts"] == {"experimental_recent_goals_poisson": 1}
     assert report["possible_team_name_mismatches"] == 1
     assert report["poisson_alternative_available"] == 0
