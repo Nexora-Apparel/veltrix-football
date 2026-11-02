@@ -102,3 +102,57 @@ def test_large_blob_publication_preserves_existing_branch_tree(tmp_path, monkeyp
     monkeypatch.setattr(publisher, "_github_json", fake_github_json)
     publisher.publish("public-data/recent_results_cache.json", target, "owner/repo", "token")
     assert len(requests) == 6
+
+
+def test_one_snapshot_failure_does_not_block_later_publications(tmp_path, monkeypatch):
+    import json
+    import sys
+    from scripts import publish_command_data as publisher
+
+    report = tmp_path / "report.json"
+    ledger = tmp_path / "paper.json"
+    evidence = tmp_path / "evidence.json"
+    cache = tmp_path / "cache.json"
+    report.write_text(json.dumps({
+        "as_of_date": "2026-11-02",
+        "predictions": [],
+    }), encoding="utf-8")
+    ledger.write_text(json.dumps({
+        "model_status": "PAPER_TRACKING_ONLY",
+        "cumulative_metrics_by_model": {},
+    }), encoding="utf-8")
+    evidence.write_text(json.dumps({
+        "version": "VELTRIX_VALUE_EVIDENCE_V1",
+        "release_status": "LOCKED_SHADOW_MODE",
+        "observations": [],
+    }), encoding="utf-8")
+    cache.write_text(json.dumps({
+        "version": 2,
+        "matches": [],
+        "state": {},
+    }), encoding="utf-8")
+
+    monkeypatch.setenv("GITHUB_REPOSITORY", "owner/repo")
+    monkeypatch.setenv("GITHUB_TOKEN", "test-token")
+    monkeypatch.setattr(sys, "argv", [
+        "publish_command_data.py",
+        "--report", str(report),
+        "--ledger", str(ledger),
+        "--value-evidence", str(evidence),
+        "--recent-cache", str(cache),
+    ])
+
+    attempted = []
+
+    def fake_publish(path, local_file, repo, token):
+        attempted.append(path)
+        if path == "public-data/value_evidence_ledger.json":
+            raise OSError("simulated large-snapshot publication failure")
+
+    monkeypatch.setattr(publisher, "publish", fake_publish)
+
+    assert publisher.main() == 1
+    assert "public-data/daily_predictions.json" in attempted
+    assert "public-data/paper_tracking_ledger.json" in attempted
+    assert "public-data/value_evidence_ledger.json" in attempted
+    assert "public-data/recent_results_cache.json" in attempted
