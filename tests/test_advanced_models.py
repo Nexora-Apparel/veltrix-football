@@ -93,4 +93,4 @@ def test_rest_congestion_context_adds_load_windows_and_verified_travel():
     assert context["home"]["matches_in_previous_30_days"] == 2
     assert context["home"]["travel_status"] == "VERIFIED_COORDINATE_DISTANCE"
     assert context["home"]["travel_distance_km"] > 300
-    assert context["away"]["travel_distance_km"] is None
+    assert context["away"]["travel_distance_km"] > 300
