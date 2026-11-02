@@ -5,7 +5,7 @@ on:
     branches: ["feature/market-evidence-reliability"]
     paths:
       - "app/market_evidence.py"
-      - "tests/test_market_evidence.py"
+      - "tests/test_market_evidence.py"\n      - "scripts/audit_historical_model.py"\n      - "scripts/publish_model_validation.py"\n      - "tests/test_historical_model_audit.py"\n      - "tests/test_publish_model_validation.py"
       - ".github/workflows/market-evidence-tests.yml"
   pull_request:
     branches: [main]
