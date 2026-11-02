@@ -349,7 +349,7 @@ def dashboard_data() -> dict:
         live_odds_count = int(live_odds_count)
     except (TypeError, ValueError):
         live_odds_count = 0
-    odds_count = matched_odds_rows if matched_odds_rows else max(report_odds_count, live_odds_count)
+    odds_count = matched_odds_rows
 
     ledger = load_paper_ledger()
     paper_tracking = None
