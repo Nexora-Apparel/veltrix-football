@@ -34,7 +34,11 @@ def test_runtime_adapter_reads_sample_counts_from_real_backtest_shape():
         }
     }
     backtest = {
-        "dataset_provenance": {"sha256": "b" * 64},
+        "dataset_provenance": {
+            "sha256": "b" * 64,
+            "commercial_use_eligible": True,
+            "rights_status": "CLEARED_FOR_COMMERCIAL_USE",
+        },
         "live_pipeline": {
             "goal_markets": {
                 "chronological_calibration_experiment": experiment,
