@@ -674,3 +674,29 @@ def test_gap_backfill_rate_limit_does_not_advance_retry_cursor(tmp_path):
     assert report["status"] == "PROVIDER_RATE_LIMITED"
     assert saved["state"]["history_gaps"] == ["2026-09-28"]
     assert saved["state"]["last_gap_retry_on"] == "2026-10-27"
+
+
+def test_gap_backfill_weekly_cooldown_skips_provider_calls(tmp_path):
+    import json
+    from datetime import datetime, timedelta
+    from zoneinfo import ZoneInfo
+    from scripts.backfill_history_gaps import run
+
+    today = datetime.now(ZoneInfo("Africa/Lagos")).date()
+    cache_path = tmp_path / "cache.json"
+    fallback_path = tmp_path / "fallback.csv"
+    output_path = tmp_path / "out.json"
+    cache_path.write_text(json.dumps({
+        "version": 2,
+        "state": {"history_gaps": ["2026-09-28"], "last_gap_retry_on": today.isoformat()},
+        "matches": [],
+    }), encoding="utf-8")
+    fallback_path.write_text("match_date,division,home_team,away_team,home_goals,away_goals\n", encoding="utf-8")
+
+    class MustNotCallAPI:
+        def leagues(self, **kwargs):
+            raise AssertionError("Provider must not be called during retry cooldown.")
+
+    report = run(cache_path, fallback_path, output_path, MustNotCallAPI())
+    assert report["status"] == "RETRY_COOLDOWN"
+    assert report["retry_after_date"] == (today + timedelta(days=7)).isoformat()
