@@ -493,6 +493,7 @@ def main() -> None:
             default=None,
         )
         refresh_status = str(recent_sync.get("status") or "UNKNOWN").upper()
+        base_backfill_complete = bool(updated_cache_state.get("backfill_complete"))
         cache_backfill_complete = _cache_backfill_complete(updated_cache_state)
         latest_covered = updated_cache_state.get("latest_covered_through")
         contiguous_candidate = max(
@@ -526,7 +527,7 @@ def main() -> None:
             # import marker separately so unresolved recent gaps cannot be
             # mistaken for a complete history.
             "backfill_complete": refresh_complete,
-            "base_backfill_complete": cache_backfill_complete,
+            "base_backfill_complete": base_backfill_complete,
             "incremental_history_complete": refresh_complete,
             "retryable_gap_date_count": len(history_gaps) if isinstance(history_gaps, list) else 0,
             "provider_plan_limited_date_count": len(plan_limited_dates) if isinstance(plan_limited_dates, list) else 0,
