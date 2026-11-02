@@ -1,25 +1,27 @@
 {
   "schema_version": 1,
   "workflow": "Daily Fixture Predictions",
-  "run_id": "41430613513",
+  "run_id": "41432101401",
   "run_attempt": "1",
-  "event": "push",
-  "commit_sha": "803e6bfb572f533c26e4d7af9f89d6e11f502124",
+  "event": "workflow_dispatch",
+  "commit_sha": "a9b9e9133aa98330c757e3dfcec8a467d9eef9bc",
   "branch": "main",
-  "recorded_at_utc": "2026-11-02T10:41:23.659791+00:00",
-  "overall_status": "NEEDS_REVIEW",
-  "validation_scope": "SAME_DAY_RECOVERY",
+  "recorded_at_utc": "2026-11-02T10:52:34.031882+00:00",
+  "overall_status": "PASSED",
+  "validation_scope": "LIVE_PIPELINE",
   "telegram_configured": true,
   "steps": {
     "unit_tests": "success",
     "dashboard_js": "success",
-    "fixture_generation": "failure",
-    "report_recovery": "success",
+    "fixture_generation": "success",
+    "report_recovery": "skipped",
+    "same_day_report_download": "skipped",
+    "same_day_report_filter": "skipped",
     "fixture_visibility": "success",
-    "odds_enrichment": "skipped",
+    "odds_enrichment": "success",
     "value_evidence_update": "success",
     "value_evidence_artifact": "success",
-    "value_certificate": "skipped",
+    "value_certificate": "success",
     "telegram_webhook": "success",
     "telegram_delivery": "success",
     "daily_report_artifact": "success",
@@ -29,25 +31,28 @@
   },
   "report_summary": {
     "as_of_date": "2026-11-02",
-    "publication_status": "REUSED_SNAPSHOT_NOT_REFRESHED",
+    "publication_status": "LIVE_REPORT_GENERATED_PENDING_PUBLICATION",
     "fixtures_received": 25,
-    "same_day_pre_match_fixtures": 23,
-    "future_fixtures_considered": 23,
-    "fixture_rows": 23,
+    "same_day_pre_match_fixtures": 25,
+    "same_day_fixtures_retained": 25,
+    "past_kickoffs_retained": 0,
+    "duplicate_fixture_rows_removed": null,
+    "future_fixtures_considered": 25,
+    "fixture_rows": 25,
     "fixture_status_counts": {
-      "EXPERIMENTAL_ONLY": 11,
-      "UNSUPPORTED_COMPETITION": 12
+      "EXPERIMENTAL_ONLY": 9,
+      "UNSUPPORTED_COMPETITION": 16
     },
     "fixture_visibility_validation": {
       "status": "PASSED",
-      "fixture_rows": 23,
-      "expected_fixture_rows": 23,
+      "fixture_rows": 25,
+      "expected_fixture_rows": 25,
       "fixture_status_counts": {
-        "EXPERIMENTAL_ONLY": 11,
-        "UNSUPPORTED_COMPETITION": 12
+        "EXPERIMENTAL_ONLY": 9,
+        "UNSUPPORTED_COMPETITION": 16
       },
       "kickoff_unverified_rows": 0,
-      "forecast_rows": 11,
+      "forecast_rows": 9,
       "alerts_enabled": false
     },
     "historical_data_coverage": "GAPPED_OR_STALE",
@@ -57,13 +62,13 @@
       "status": "SHADOW_MODE",
       "fixtures_evaluated": 7,
       "bookmaker_price_sets_by_market": {
-        "1X2": 121,
+        "1X2": 142,
         "BTTS": 20,
         "OVER_UNDER_1_5": 0,
         "OVER_UNDER_2_5": 26,
         "OVER_UNDER_3_5": 4
       },
-      "shadow_candidate_count": 4,
+      "shadow_candidate_count": 2,
       "alerts_enabled": false,
       "release_status": "LOCKED_SHADOW_MODE",
       "note": "Market consensus, model shrinkage and quote-level screening are research-only. Existing value certificate remains authoritative."
@@ -71,12 +76,12 @@
     "value_validation_certificate": "LOCKED_INSUFFICIENT_EVIDENCE"
   },
   "value_evidence_summary": {
-    "observations_total": 3968,
-    "observations_added": 0,
-    "price_series": 1416,
-    "series_with_multiple_snapshots": 328,
+    "observations_total": 4494,
+    "observations_added": 526,
+    "price_series": 1628,
+    "series_with_multiple_snapshots": 642,
     "settled_observations": 2087,
-    "shadow_candidate_observations": 121,
+    "shadow_candidate_observations": 123,
     "legacy_candidate_observations_unannotated": 0,
     "settled_shadow_candidates": 61,
     "shadow_candidate_wins": 8,
@@ -109,18 +114,5 @@
     }
   },
   "release_status": "LOCKED_SHADOW_MODE",
-  "betting_alerts_enabled": false,
-  "latest_test_run": {
-    "run_id": "41431864607",
-    "commit_sha": "2b17ca68528d9b0c7a37f6be3db62236a13ab918",
-    "recorded_at_utc": "2026-11-02T10:50:09.913339+00:00",
-    "overall_status": "TESTS_PASSED",
-    "steps": {
-      "unit_tests": "success",
-      "dashboard_js": "success"
-    }
-  },
-  "latest_test_status": "TESTS_PASSED",
-  "last_test_run_id": "41431864607",
-  "last_full_pipeline_status": "NEEDS_REVIEW"
+  "betting_alerts_enabled": false
 }
