@@ -440,3 +440,84 @@ def test_fixture_delivery_cap_deduplicates_common_provider_aliases_before_refill
     assert set(tags) == {"newcastle-primary", "deportivo-primary", "unique"}
     assert limited["_veltrix_meta"]["duplicate_fixture_rows_removed"] == 2
     assert limited["_veltrix_meta"]["fixtures_after_deduplication"] == 3
+
+
+def test_daily_runner_uses_odds_api_fixtures_and_cached_history_after_primary_429(tmp_path, monkeypatch):
+    from app.provider_adapters import ProviderAPIError
+
+    output = tmp_path / "reports" / "daily.json"
+    _run_args(monkeypatch, output)
+    monkeypatch.setenv("FIVEDOLLARFOOTBALL_API_KEY", "test-key")
+    monkeypatch.setattr(daily_runner, "load_historical_matches", lambda path: [{"date": date(2026, 10, 20)}])
+
+    class RateLimitedAPI:
+        api_key = "test-key"
+
+        def fixtures(self, target_date, timezone):
+            raise ProviderAPIError("Provider request failed with HTTP 429.")
+
+    monkeypatch.setattr(daily_runner, "FiveDollarFootballClient", RateLimitedAPI)
+
+    def odds_fallback(payload, day, *, timezone_name):
+        payload["response"].append({
+            "fixture": {
+                "id": "odds-event-1",
+                "date": "2026-10-23T18:00:00+01:00",
+                "status": {"short": "NS"},
+            },
+            "teams": {
+                "home": {"name": "Fallback United"},
+                "away": {"name": "Fallback City"},
+            },
+            "league": {"id": None, "name": "Premier League", "code": "PL"},
+            "_veltrix_source": "The Odds API",
+        })
+        payload["_veltrix_meta"].update({
+            "supplemental_fixture_source": "The Odds API",
+            "supplemental_fixtures_added": 1,
+            "fixtures_total_after_supplement": 1,
+            "supplemental_sports_queried": ["soccer_epl"],
+            "supplemental_sports_failed": [],
+        })
+        return payload
+
+    monkeypatch.setattr(daily_runner, "supplement_fixtures_from_odds_api", odds_fallback)
+    monkeypatch.setattr(
+        daily_runner, "supplement_fixtures_from_infersports",
+        lambda payload, day, *, timezone_name: payload,
+    )
+    monkeypatch.setattr(
+        daily_runner, "fetch_recent_results_incremental",
+        lambda *args, **kwargs: (_ for _ in ()).throw(
+            AssertionError("Do not spend another primary-provider request after a fixture 429.")
+        ),
+    )
+
+    seen_payloads = []
+
+    def build_report(payload, *args, **kwargs):
+        seen_payloads.append(payload)
+        report = _report(1)
+        report["fixtures_received"] = len(payload["response"])
+        return report
+
+    monkeypatch.setattr(daily_runner, "build_daily_report", build_report)
+    monkeypatch.setattr(daily_runner, "enrich_report_with_multi_source_odds", lambda report, payload, **kwargs: report)
+    monkeypatch.setattr(
+        daily_runner, "attach_value_bet_screens",
+        lambda report, validation_certificate=None: report,
+    )
+    monkeypatch.setattr(daily_runner, "attach_value_intelligence", lambda report: report)
+
+    daily_runner.main()
+    report = json.loads(output.read_text(encoding="utf-8"))
+
+    assert len(seen_payloads) == 1
+    assert seen_payloads[0]["response"][0]["_veltrix_source"] == "The Odds API"
+    assert report["primary_provider_request"]["status"] == "RATE_LIMITED"
+    assert report["primary_provider_request"]["error_type"] == "ProviderAPIError"
+    assert report["fixture_discovery"]["primary_provider_status"] == "RATE_LIMITED"
+    assert report["fixture_discovery"]["the_odds_api"]["fixtures_added"] == 1
+    assert report["recent_results_sync"]["status"] == "SKIPPED_PRIMARY_PROVIDER_UNAVAILABLE"
+    assert report["historical_data_coverage"]["status"] == "GAPPED_OR_STALE"
+    assert report["publication_status"] == "LIVE_REPORT_GENERATED_PENDING_PUBLICATION"
