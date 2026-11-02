@@ -12643,8 +12643,8 @@
     "provider_plan_limited_dates": [],
     "cache_path": "reports/recent_results_cache.json",
     "gap_backfill": {
-      "status": "PARTIAL_UNRESOLVED_SOURCE_GAPS",
-      "checked_at_utc": "2026-11-02T10:03:51Z",
+      "status": "PROVIDER_RATE_LIMITED_UNRESOLVED_GAPS",
+      "checked_at_utc": "2026-11-02T10:16:27Z",
       "requested_gap_dates": 14,
       "primary_resolved_dates": [
         "2026-10-09",
@@ -12653,6 +12653,7 @@
       ],
       "primary_matches_added": 43,
       "secondary_fallback_matches_added": 0,
+      "league_history_endpoint": "ATTEMPTED_HTTP_429",
       "unresolved_dates": [
         "2026-09-28",
         "2026-09-29",
@@ -12670,6 +12671,7 @@
         "Africa/Lagos",
         "UTC"
       ],
+      "note": "The provider returned HTTP 429 during the league-history request. Further requests are paused; no dates were marked complete without result evidence.",
       "alerts_enabled": false
     }
   },
