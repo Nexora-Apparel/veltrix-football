@@ -1,6 +1,7 @@
 # Current-day delivery replay marker: 2026-11-02 verification attempt 2.
 # Live report verification trigger marker: [run-live-verification]
 """Retry known historical result gaps and publish only verified recovered scores."""
+# ODbL provenance is recorded per row; partial OpenLigaDB coverage never clears global gaps.
 # Controlled live refresh request after the 378-test regression pass [run-live-verification] [skip-telegram].
 # Explicit recovery-run marker: [run-gap-backfill]
 # 2026-11-02 forced one-shot historical gap recovery: [run-gap-backfill]
@@ -234,6 +235,7 @@ def _openligadb_gap_backfill(session: Any, gaps: list[str], delay_seconds: float
                         "fixture_id": match.get("matchID"), "fixture_status": "FT",
                         "source_provider": "OpenLigaDB",
                         "source_license": OPENLIGADB_LICENSE,
+                        "source_license_url": OPENLIGADB_LICENSE_URL,
                         "source_attribution": OPENLIGADB_ATTRIBUTION,
                         "source_url": url, "source_timezone": "UTC",
                         "source_updated_at": match.get("lastUpdateDateTime"),
