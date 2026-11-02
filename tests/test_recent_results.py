@@ -639,9 +639,9 @@ def test_gap_backfill_keeps_unverified_empty_dates_and_records_secondary_rows(tm
     saved = json.loads(output_path.read_text(encoding="utf-8"))
     assert report["primary_resolved_dates"] == 1
     assert saved["state"]["history_gaps"] == ["2026-09-29"]
-    assert len(saved["matches"]) == 2
+    assert len(saved["matches"]) == 1
     assert {row["source_provider"] for row in saved["matches"]} == {
-        "5DollarFootballAPI_LEAGUE_FIXTURES", "football-data.co.uk",
+        "5DollarFootballAPI_LEAGUE_FIXTURES",
     }
 
 
@@ -772,3 +772,16 @@ def test_gap_backfill_uses_open_matchday_verified_coverage_without_primary_api(t
     assert "history_gaps" not in saved["state"]
     assert len(saved["matches"]) == 2 * len(OPEN_MATCHDAY_DIVISIONS)
     assert all(row["source_provider"] == "open-matchday" for row in saved["matches"])
+
+
+def test_noncommercial_open_matchday_source_is_never_ingested():
+    from scripts.backfill_history_gaps import _open_matchday_backfill
+
+    class ForbiddenSession:
+        def get(self, *args, **kwargs):
+            raise AssertionError("Non-commercial source must not be requested")
+
+    rows, audit = _open_matchday_backfill(ForbiddenSession(), ["2026-09-28"])
+    assert rows == []
+    assert audit["status"] == "SKIPPED_NONCOMMERCIAL_LICENSE"
+    assert audit["matches_added"] == 0
