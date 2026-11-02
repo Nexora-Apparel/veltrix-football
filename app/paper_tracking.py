@@ -442,7 +442,7 @@ def _goal_market_paper_rows(prediction: dict[str, Any], result: dict[str, Any]) 
 
 
 def _goal_market_probability_rows(
-    prediction: dict[str, Any], result: dict[str, Any]
+    prediction: dict[str, Any], result: dict[str, Any], *, timezone_name: str
 ) -> list[dict[str, Any]]:
     """Score binary BTTS/total probabilities without requiring bookmaker odds."""
     candidates: dict[str, dict[str, Any]] = {}
@@ -494,7 +494,7 @@ def _goal_market_probability_rows(
             clipped = min(1.0 - 1e-15, max(1e-15, probability))
             rows.append({
                 "fixture_id": prediction.get("fixture_id"),
-                "match_date": _prediction_day(prediction, "Africa/Lagos"),
+                "match_date": _prediction_day(prediction, timezone_name),
                 "model": model_name,
                 "market": market,
                 "selection": "YES" if market == "BTTS" else "OVER",
@@ -633,7 +633,9 @@ def evaluate_report(report: dict[str, Any], results_payload: dict[str, Any]) -> 
             continue
 
         goal_market_scored.extend(prospective_value_rows(prediction, result))
-        goal_market_probability_scored.extend(_goal_market_probability_rows(prediction, result))
+        goal_market_probability_scored.extend(_goal_market_probability_rows(
+            prediction, result, timezone_name=timezone_name
+        ))
 
         forecast_models: list[tuple[str, Any]] = []
         if has_model_forecast:
