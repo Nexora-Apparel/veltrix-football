@@ -1,3 +1,4 @@
+# Same-day attribution replay is intentionally driven by the [reuse-report-40175707059] workflow marker.
 """Send a clearly labelled experimental daily report to Telegram."""
 from __future__ import annotations
 
