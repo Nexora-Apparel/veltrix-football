@@ -101,7 +101,7 @@ def run(cache_path: Path, fallback_path: Path, output_path: Path, api: Any) -> d
                         })
                 league_scan["matches"] += len(rows)
             except (ProviderAPIError, ValueError, OSError) as exc:
-                league_scan["failed_leagues"].append({"league_id": str(league_id), "error_type": type(exc).__name__})
+                league_scan["failed_leagues"].append({"league_id": str(league_id), "error_type": type(exc).__name__, "error": str(exc)[:240]})
         for day, rows in league_rows_by_day.items():
             if rows and league_scan["successful_league_queries"] == league_scan["active_mapped_leagues"] and league_scan["active_mapped_leagues"] > 0:
                 recovered.extend(rows)
