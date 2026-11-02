@@ -1,4 +1,5 @@
 name: Daily Report Watchdog
+# Manual recovery trigger: verify current-day publication and Telegram receipt without altering prediction data.
 
 on:
   push:
