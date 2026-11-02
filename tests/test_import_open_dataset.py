@@ -176,3 +176,51 @@ def test_current_season_fallback_adds_completed_rows_and_deduplicates():
     assert summary["matches_by_competition"] == {"E0": 1}
     assert len(rows) == 1
     assert rows[0]["home_team"] == "Arsenal"
+
+
+
+def test_import_dataset_keeps_fallback_only_results_when_primary_csv_has_no_rows(tmp_path, monkeypatch):
+    import requests
+    from scripts import import_open_dataset as importer
+
+    primary_csv = "Division,MatchDate,HomeTeam,AwayTeam,FTHome,FTAway\n"
+    fallback_csv = (
+        "Div,Date,HomeTeam,AwayTeam,FTHG,FTAG,FTR,B365H,B365D,B365A\n"
+        "E0,21/09/26,Arsenal,Chelsea,2,1,H,1.80,3.50,4.20\n"
+    )
+
+    class FakeResponse:
+        def __init__(self, body="", status=200):
+            self.content = body.encode("cp1252")
+            self.status_code = status
+        def raise_for_status(self):
+            if self.status_code >= 400:
+                raise requests.HTTPError(f"HTTP {self.status_code}")
+        def close(self):
+            pass
+
+    class FakeSession:
+        def __init__(self):
+            self.headers = {}
+        def get(self, url, timeout=90):
+            if url.endswith("matches.csv"):
+                return FakeResponse(primary_csv)
+            if url.endswith("/E0.csv"):
+                return FakeResponse(fallback_csv)
+            return FakeResponse(status=404)
+        def close(self):
+            pass
+
+    monkeypatch.setattr(importer.requests, "Session", FakeSession)
+    monkeypatch.setattr(importer, "find_matches_csv", lambda session: "https://example.test/matches.csv")
+    monkeypatch.setenv("VELTRIX_ENABLE_FOOTBALL_DATA_FALLBACK", "true")
+    output = tmp_path / "fallback-only.csv"
+    report = importer.import_dataset("2026-09-01", "2026-10-01", str(output))
+
+    assert report["matches_saved"] == 1
+    assert report["fallback_source"]["matches_added"] == 1
+    assert output.exists()
+    with output.open(newline="", encoding="utf-8") as handle:
+        rows = list(csv.DictReader(handle))
+    assert len(rows) == 1
+    assert rows[0]["source"] == "football-data.co.uk"
