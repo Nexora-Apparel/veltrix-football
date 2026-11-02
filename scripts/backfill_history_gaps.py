@@ -2,6 +2,7 @@
 # Live report verification trigger marker: [run-live-verification]
 """Retry known historical result gaps and publish only verified recovered scores."""
 # ODbL provenance is recorded per row; partial OpenLigaDB coverage never clears global gaps.
+# One-shot ODbL supplement after merging static and discovered competition shortcuts [run-openligadb-backfill].
 # ODbL-only recovery trigger [run-openligadb-backfill]; preserve the 5Dollar cooldown.
 # Controlled live refresh request after the 378-test regression pass [run-live-verification] [skip-telegram].
 # Explicit recovery-run marker: [run-gap-backfill]
