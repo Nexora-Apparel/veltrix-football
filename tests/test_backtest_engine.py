@@ -452,3 +452,6 @@ def test_rolling_origin_1x2_vector_scaling_corrects_class_bias_without_leakage()
     assert all(fold["training_end"] < fold["test_start"] <= fold["test_end"] for fold in evaluated)
     assert all(fold["test_end"] < evaluated[i + 1]["test_start"] for i, fold in enumerate(evaluated[:-1]))
     assert result["beats_market_on_same_fixtures"] is False
+    assert sum(result["raw"]["predicted_class_counts"].values()) == 600
+    assert sum(result["calibrated"]["predicted_class_counts"].values()) == 600
+    assert set(result["calibrated"]["class_precision_recall"]) == {"H", "D", "A"}
