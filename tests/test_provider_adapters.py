@@ -517,3 +517,55 @@ def test_fivedollar_league_fixtures_uses_unbounded_historical_window(monkeypatch
     assert result["response"][0]["fixture"]["status"]["short"] == "FT"
     assert result["response"][0]["goals"] == {"home": 2, "away": 0}
     assert result["_veltrix_meta"]["pages_fetched"] == 1
+
+
+def test_json_request_honors_bounded_5dollar_burst_retry_after():
+    import io
+    from email.message import Message
+    from urllib.error import HTTPError
+    from unittest.mock import MagicMock, patch
+    from app.provider_adapters import _json_request
+
+    url = "https://api.5dollarfootballapi.com/v1/fixtures"
+    headers = Message()
+    headers["Retry-After"] = "2"
+    headers["X-RateLimit-Remaining"] = "47"
+    headers["X-RateLimit-Reset"] = "1793616600"
+    burst = HTTPError(url, 429, "Burst limit exceeded", headers, io.BytesIO(b'{"error":"Burst limit exceeded"}'))
+    response = MagicMock()
+    response.__enter__.return_value = response
+    response.status = 200
+    response.headers = {"Content-Type": "application/json"}
+    response.read.return_value = b'{"success":1}'
+    with patch("app.provider_adapters.urlopen", side_effect=[burst, response]) as request, \\
+         patch("app.provider_adapters.time_module.sleep") as sleep:
+        status, _, payload = _json_request(url, retries=2)
+    assert status == 200 and payload == {"success": 1}
+    assert request.call_count == 2
+    sleep.assert_called_once_with(2.0)
+
+
+def test_json_request_does_not_retry_when_5dollar_hourly_quota_is_empty():
+    import io
+    from email.message import Message
+    from urllib.error import HTTPError
+    from unittest.mock import patch
+    from app.provider_adapters import _json_request, ProviderAPIError
+
+    url = "https://api.5dollarfootballapi.com/v1/fixtures"
+    headers = Message()
+    headers["Retry-After"] = "3600"
+    headers["X-RateLimit-Remaining"] = "0"
+    headers["X-RateLimit-Reset"] = "1793620200"
+    exhausted = HTTPError(url, 429, "Hourly quota exhausted", headers, io.BytesIO(b'{}'))
+    with patch("app.provider_adapters.urlopen", side_effect=exhausted) as request:
+        try:
+            _json_request(url, retries=2)
+        except ProviderAPIError as exc:
+            assert exc.status_code == 429
+            assert exc.retry_after_seconds == 3600
+            assert exc.rate_limit_remaining == 0
+            assert "rate_limit_remaining=0" in str(exc)
+        else:
+            raise AssertionError("Expected rate-limit exception")
+    assert request.call_count == 1
