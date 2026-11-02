@@ -5,6 +5,8 @@ import csv
 import json
 import os
 import sys
+import re
+import unicodedata
 from datetime import date, datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -13,6 +15,37 @@ from app.provider_adapters import FiveDollarFootballClient, ProviderAPIError, LE
 from app.recent_results import extract_completed_results
 from scripts.publish_command_data import publish
 from app.live_predictions import _name_key
+
+
+def _mapped_league_division(league: dict[str, Any]) -> str | None:
+    """Resolve provider league names even when country/short-name labels vary."""
+    nested = league.get("league") if isinstance(league.get("league"), dict) else {}
+    candidates = [
+        league.get("name"), league.get("league_name"), nested.get("name"),
+        league.get("short_name"), league.get("code"),
+    ]
+    inverse = {str(code).casefold(): str(code) for code in LEAGUE_CODES.values()}
+    aliases = {"epl": "PL", "ll": "PD", "sa": "SA", "bl1": "BL1", "fl1": "FL1"}
+    for value in candidates:
+        raw = str(value or "").strip()
+        if not raw:
+            continue
+        normalized = unicodedata.normalize("NFKD", raw.casefold())
+        normalized = "".join(ch for ch in normalized if not unicodedata.combining(ch))
+        normalized = re.sub(r"[^a-z0-9]+", " ", normalized).strip()
+        if normalized in LEAGUE_CODES:
+            return LEAGUE_CODES[normalized]
+        compact = normalized.replace(" ", "")
+        if compact in aliases:
+            return aliases[compact]
+        if compact in inverse:
+            return inverse[compact]
+        # Provider labels sometimes prefix the country or tier. Match only a
+        # complete mapped competition phrase, not a loose substring.
+        for name, division in sorted(LEAGUE_CODES.items(), key=lambda item: len(item[0]), reverse=True):
+            if normalized == name or normalized.endswith(" " + name) or normalized.startswith(name + " "):
+                return division
+    return None
 
 
 def _fallback_rows(path: Path, gaps: set[str]) -> list[dict[str, Any]]:
@@ -68,22 +101,22 @@ def run(cache_path: Path, fallback_path: Path, output_path: Path, api: Any) -> d
                 break
             page += 1
         mapped = [
-            league for league in leagues
-            if isinstance(league, dict)
-            and str(league.get("name") or (league.get("league") or {}).get("name") or "").strip().casefold() in LEAGUE_CODES
-            and league.get("id") is not None
+            (league, _mapped_league_division(league))
+            for league in leagues
+            if isinstance(league, dict) and league.get("id") is not None
+            and _mapped_league_division(league) is not None
         ]
         league_scan["provider_leagues_returned"] = len(leagues)
         league_scan["sample_league_names"] = [
-            str((row.get("name") or (row.get("league") or {}).get("name") or ""))
+            str(row.get("name") or row.get("league_name") or ((row.get("league") or {}).get("name") if isinstance(row.get("league"), dict) else "") or "")
             for row in leagues[:30] if isinstance(row, dict)
         ]
         league_scan["active_mapped_leagues"] = len(mapped)
         league_scan["mapped_league_names"] = [
-            str(row.get("name") or (row.get("league") or {}).get("name") or "")
-            for row in mapped
+            {"name": str(row.get("name") or row.get("league_name") or ((row.get("league") or {}).get("name") if isinstance(row.get("league"), dict) else "")), "division": division, "id": str(row.get("id"))}
+            for row, division in mapped
         ]
-        for league in mapped:
+        for league, division in mapped:
             league_id = league.get("id")
             try:
                 payload = api.league_fixtures(league_id, gaps[0], gaps[-1], "Africa/Lagos")
