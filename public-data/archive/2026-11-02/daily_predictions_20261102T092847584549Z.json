@@ -12643,8 +12643,8 @@
     "provider_plan_limited_dates": [],
     "cache_path": "reports/recent_results_cache.json",
     "gap_backfill": {
-      "status": "PROVIDER_RATE_LIMITED_UNRESOLVED_GAPS",
-      "checked_at_utc": "2026-11-02T10:16:27Z",
+      "status": "PARTIAL_PROVIDER_RETRY_COOLDOWN",
+      "checked_at_utc": "2026-11-02T10:22:22Z",
       "requested_gap_dates": 14,
       "primary_resolved_dates": [
         "2026-10-09",
@@ -12653,7 +12653,8 @@
       ],
       "primary_matches_added": 43,
       "secondary_fallback_matches_added": 0,
-      "league_history_endpoint": "ATTEMPTED_HTTP_429",
+      "secondary_fallback_status": "SKIPPED_NONCOMMERCIAL_LICENSE",
+      "league_history_endpoint": "BLOCKED_HTTP_429",
       "unresolved_dates": [
         "2026-09-28",
         "2026-09-29",
@@ -12671,7 +12672,9 @@
         "Africa/Lagos",
         "UTC"
       ],
-      "note": "The provider returned HTTP 429 during the league-history request. Further requests are paused; no dates were marked complete without result evidence.",
+      "provider_retry_after_date": "2026-11-03",
+      "next_automatic_retry_lagos": "06:30",
+      "note": "The 5DollarFootballAPI league-history request returned HTTP 429. Non-commercial fallback feeds are excluded from the production dataset. The remaining dates stay unresolved until a licensed provider response is available.",
       "alerts_enabled": false
     }
   },
