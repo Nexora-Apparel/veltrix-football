@@ -171,3 +171,39 @@ def test_failed_test_only_receipt_marks_review_without_erasing_last_live_run():
     assert merged["last_full_pipeline_status"] == "PASSED"
     assert merged["run_id"] == "live-123"
     assert merged["telegram_configured"] is True
+
+
+def test_idempotent_same_day_replay_is_recorded_as_delivery_verification(tmp_path):
+    import json
+    report_path = tmp_path / "daily_predictions.json"
+    report_path.write_text(json.dumps({
+        "as_of_date": "2026-11-02",
+        "publication_status": "REUSED_SNAPSHOT_NOT_REFRESHED",
+        "future_fixtures_considered": 1,
+        "predictions": [{"home_team": "A", "away_team": "B", "status": "UNSUPPORTED_COMPETITION"}],
+        "fixture_visibility_validation": {"status": "PASSED"},
+    }))
+    env = {
+        "VELTRIX_REPORT_PATH": str(report_path),
+        "VELTRIX_TELEGRAM_CONFIGURED": "true",
+        "VELTRIX_STEP_UNIT_TESTS": "success",
+        "VELTRIX_STEP_DASHBOARD_JS": "success",
+        "VELTRIX_STEP_FIXTURE_GENERATION": "skipped",
+        "VELTRIX_STEP_REPORT_RECOVERY": "skipped",
+        "VELTRIX_STEP_SAME_DAY_REPORT_DOWNLOAD": "success",
+        "VELTRIX_STEP_SAME_DAY_REPORT_FILTER": "success",
+        "VELTRIX_STEP_FIXTURE_VISIBILITY": "success",
+        "VELTRIX_STEP_VALUE_EVIDENCE_UPDATE": "success",
+        "VELTRIX_STEP_VALUE_EVIDENCE_ARTIFACT": "success",
+        "VELTRIX_STEP_DAILY_REPORT_ARTIFACT": "success",
+        "VELTRIX_STEP_PAPER_LEDGER_ARTIFACT": "skipped",
+        "VELTRIX_STEP_COMMAND_DATA_PUBLICATION": "success",
+        "VELTRIX_STEP_PAPER_TRACKING": "skipped",
+        "VELTRIX_STEP_TELEGRAM_WEBHOOK": "success",
+        "VELTRIX_STEP_TELEGRAM_DELIVERY": "success",
+    }
+    status = build_status(env)
+    assert status["overall_status"] == "DEGRADED_REUSED_SNAPSHOT"
+    assert status["validation_scope"] == "SAME_DAY_RECOVERY"
+    assert status["telegram_configured"] is True
+    assert status["report_summary"]["fixture_rows"] == 1
