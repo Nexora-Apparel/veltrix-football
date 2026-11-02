@@ -8,7 +8,8 @@ import sys
 import time as time_module
 import re
 import unicodedata
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timezone, timedelta
+from zoneinfo import ZoneInfo
 from pathlib import Path
 from typing import Any
 
@@ -97,7 +98,7 @@ def run(cache_path: Path, fallback_path: Path, output_path: Path, api: Any) -> d
                 "requested_gap_dates": len(gaps),
                 "unresolved_dates": gaps,
                 "last_gap_retry_on": str(state.get("last_gap_retry_on")),
-                "retry_after_date": (last_retry + __import__("datetime").timedelta(days=7)).isoformat() if last_retry else None,
+                "retry_after_date": (last_retry + timedelta(days=7)).isoformat() if last_retry else None,
                 "provider_requests_made": 0,
                 "alerts_enabled": False,
             }
