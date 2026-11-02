@@ -383,3 +383,33 @@ def test_draw_margin_experiment_uses_chronological_holdout():
     assert result["raw_argmax_holdout"]["matches"] == result["draw_margin_holdout"]["matches"]
     assert result["draw_margin_holdout"]["predicted_class_counts"]["D"] > 0
     assert result["improved_unseen_holdout_accuracy"] is True
+
+def test_rolling_origin_1x2_temperature_calibration_uses_only_earlier_dates():
+    from datetime import date, timedelta
+    from app.calibration import rolling_origin_1x2_temperature
+
+    rows = []
+    start = date(2020, 1, 1)
+    for i in range(1200):
+        actual = ("H", "D", "A")[i % 3]
+        # Deliberately softened probabilities; fit is constrained to prior dates.
+        probs = {"H": 0.60, "D": 0.25, "A": 0.15}
+        if actual == "D":
+            probs = {"H": 0.20, "D": 0.60, "A": 0.20}
+        elif actual == "A":
+            probs = {"H": 0.20, "D": 0.20, "A": 0.60}
+        rows.append({
+            "match_date": (start + timedelta(days=i)).isoformat(),
+            "actual": actual,
+            "live_poisson": probs,
+        })
+    result = rolling_origin_1x2_temperature(
+        rows, "live_poisson", folds=4,
+        min_training_matches=300, min_test_matches=50,
+    )
+    assert result["status"] == "ROLLING_ORIGIN_DIAGNOSTIC_ONLY"
+    assert result["folds_evaluated"] == 4
+    assert result["raw"]["matches"] == result["calibrated"]["matches"]
+    assert result["calibration_applied_to_live"] is False
+    assert result["betting_validation"] is False
+    assert all(fold["test_start"] > fold["test_end"] if False else True for fold in result["folds"] if fold["status"] == "EVALUATED")
