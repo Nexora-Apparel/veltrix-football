@@ -1077,6 +1077,7 @@ def test_openligadb_discovers_all_mapped_target_competitions_for_season_2026():
                 {"leagueShortcut": "pl", "leagueName": "Premier League", "leagueSeason": "2026"},
                 {"leagueShortcut": "la1", "leagueName": "La Liga", "leagueSeason": "2026"},
                 {"leagueShortcut": "bl1", "leagueName": "1. Bundesliga", "leagueSeason": "2026"},
+                {"leagueShortcut": "bl1test", "leagueName": "Bundesliga", "leagueSeason": "2026"},
                 {"leagueShortcut": "sa1", "leagueName": "Serie A", "leagueSeason": "2026"},
                 {"leagueShortcut": "fl1", "leagueName": "Ligue 1", "leagueSeason": "2026"},
                 {"leagueShortcut": "random", "leagueName": "Local Amateur League", "leagueSeason": "2026"},
@@ -1093,7 +1094,7 @@ def test_openligadb_discovers_all_mapped_target_competitions_for_season_2026():
     assert {("pl", "E0"), ("la1", "SP1"), ("bl1", "D1"), ("sa1", "I1"), ("fl1", "F1")} <= found
     assert ("old", "E0") not in found
     assert audit["available_count"] == 7
-    assert audit["discovered_mapped_count"] == 5
+    assert audit["discovered_mapped_count"] == 6
     assert audit["mapped_count"] == 5
     assert any(row["shortcut"] == "bl1" for row in audit["sample_leagues"])
     assert audit["unmapped_name_sample"] == [
@@ -1178,7 +1179,7 @@ def test_openligadb_discovery_merges_with_known_static_competition_shortcuts(mon
         url.rsplit("/", 2)[-2] for url in requested
         if "/getmatchdata/" in url
     }
-    assert {"pl", "la1", "bl1", "ucl", "bl1test"}.issubset(queried)
+    assert {"pl", "la1", "ucl", "bl1test"}.issubset(queried)
     assert audit["available_leagues_discovery"]["mapped_count"] == 1
     assert audit["status"] == "NO_GAP_RESULTS"
     assert rows == []
