@@ -481,6 +481,7 @@ def test_daily_runner_uses_odds_api_fixtures_and_cached_history_after_primary_42
         })
         return payload
 
+    output.parent.mkdir(parents=True, exist_ok=True)
     cache_path = output.parent / "recent_results_cache.json"
     cache_path.write_text(json.dumps({
         "version": 2,
