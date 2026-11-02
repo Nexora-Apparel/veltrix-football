@@ -128,27 +128,38 @@
     },
     {
       "report_date": "2026-11-01",
-      "fixtures_scored": 0,
-      "completed_forecasts_scored": 0,
-      "awaiting_result_or_match": 19,
+      "fixtures_scored": 7,
+      "completed_forecasts_scored": 14,
+      "awaiting_result_or_match": 12,
       "withheld_or_invalid_forecasts": 6,
-      "metrics": {
-        "matches": 0,
-        "result_accuracy": null,
-        "brier_score": null,
-        "log_loss": null
+      "metrics": null,
+      "metrics_by_model": {
+        "experimental_elo_global_fallback": {
+          "matches": 7,
+          "result_accuracy": 0.7142857142857143,
+          "brier_score": 0.5426830413332765,
+          "log_loss": 0.9173709305780352
+        },
+        "experimental_recent_goals_poisson": {
+          "matches": 7,
+          "result_accuracy": 0.42857142857142855,
+          "brier_score": 0.5435892717296341,
+          "log_loss": 0.9136931176943305
+        }
       },
-      "metrics_by_model": {},
-      "model_versions": [],
-      "goal_market_selections_settled": 0,
+      "model_versions": [
+        "experimental_elo_global_fallback",
+        "experimental_recent_goals_poisson"
+      ],
+      "goal_market_selections_settled": 6,
       "goal_market_metrics": {
-        "settled_selections": 0,
-        "wins": 0,
-        "losses": 0,
-        "win_rate": null,
-        "units_staked": 0,
-        "net_units": 0,
-        "paper_roi": null,
+        "settled_selections": 6,
+        "wins": 3,
+        "losses": 3,
+        "win_rate": 0.5,
+        "units_staked": 6.0,
+        "net_units": 0.6,
+        "paper_roi": 0.09999999999999999,
         "notice": "Best quoted price in a pre-kickoff snapshot; flat 1-unit paper stakes; not proof of executable profit or bookmaker closing-line value."
       }
     }
@@ -289,9 +300,247 @@
       "home_goals": 2,
       "away_goals": 6,
       "report_date": "2026-10-27"
+    },
+    {
+      "fixture_id": 1525495667,
+      "model": "experimental_recent_goals_poisson",
+      "home_team": "Lyon",
+      "away_team": "Angers",
+      "actual": "H",
+      "predicted": "H",
+      "probabilities": {
+        "H": 0.6381638163816381,
+        "D": 0.19001900190019003,
+        "A": 0.1718171817181718
+      },
+      "correct": true,
+      "home_goals": 2,
+      "away_goals": 0,
+      "report_date": "2026-11-01"
+    },
+    {
+      "fixture_id": 1525495667,
+      "model": "experimental_elo_global_fallback",
+      "home_team": "Lyon",
+      "away_team": "Angers",
+      "actual": "H",
+      "predicted": "H",
+      "probabilities": {
+        "H": 0.5875412458754125,
+        "D": 0.26137386261373863,
+        "A": 0.15108489151084892
+      },
+      "correct": true,
+      "home_goals": 2,
+      "away_goals": 0,
+      "report_date": "2026-11-01"
+    },
+    {
+      "fixture_id": 3003243205,
+      "model": "experimental_recent_goals_poisson",
+      "home_team": "Paris FC",
+      "away_team": "Monaco",
+      "actual": "H",
+      "predicted": "H",
+      "probabilities": {
+        "H": 0.4406,
+        "D": 0.2668,
+        "A": 0.2926
+      },
+      "correct": true,
+      "home_goals": 3,
+      "away_goals": 1,
+      "report_date": "2026-11-01"
+    },
+    {
+      "fixture_id": 3003243205,
+      "model": "experimental_elo_global_fallback",
+      "home_team": "Paris FC",
+      "away_team": "Monaco",
+      "actual": "H",
+      "predicted": "A",
+      "probabilities": {
+        "H": 0.3515,
+        "D": 0.2614,
+        "A": 0.3871
+      },
+      "correct": false,
+      "home_goals": 3,
+      "away_goals": 1,
+      "report_date": "2026-11-01"
+    },
+    {
+      "fixture_id": 2888389852,
+      "model": "experimental_recent_goals_poisson",
+      "home_team": "Liverpool",
+      "away_team": "Arsenal",
+      "actual": "A",
+      "predicted": "H",
+      "probabilities": {
+        "H": 0.3855,
+        "D": 0.2621,
+        "A": 0.3524
+      },
+      "correct": false,
+      "home_goals": 0,
+      "away_goals": 1,
+      "report_date": "2026-11-01"
+    },
+    {
+      "fixture_id": 2888389852,
+      "model": "experimental_elo_global_fallback",
+      "home_team": "Liverpool",
+      "away_team": "Arsenal",
+      "actual": "A",
+      "predicted": "A",
+      "probabilities": {
+        "H": 0.3309,
+        "D": 0.2614,
+        "A": 0.4077
+      },
+      "correct": true,
+      "home_goals": 0,
+      "away_goals": 1,
+      "report_date": "2026-11-01"
+    },
+    {
+      "fixture_id": 2002532207,
+      "model": "experimental_recent_goals_poisson",
+      "home_team": "Lecce",
+      "away_team": "Genoa",
+      "actual": "A",
+      "predicted": "H",
+      "probabilities": {
+        "H": 0.3972,
+        "D": 0.2746,
+        "A": 0.3282
+      },
+      "correct": false,
+      "home_goals": 1,
+      "away_goals": 2,
+      "report_date": "2026-11-01"
+    },
+    {
+      "fixture_id": 2002532207,
+      "model": "experimental_elo_global_fallback",
+      "home_team": "Lecce",
+      "away_team": "Genoa",
+      "actual": "A",
+      "predicted": "A",
+      "probabilities": {
+        "H": 0.3589,
+        "D": 0.2614,
+        "A": 0.3797
+      },
+      "correct": true,
+      "home_goals": 1,
+      "away_goals": 2,
+      "report_date": "2026-11-01"
+    },
+    {
+      "fixture_id": 103840859,
+      "model": "experimental_recent_goals_poisson",
+      "home_team": "Elche",
+      "away_team": "Valencia",
+      "actual": "A",
+      "predicted": "A",
+      "probabilities": {
+        "H": 0.2643264326432643,
+        "D": 0.23052305230523054,
+        "A": 0.5051505150515051
+      },
+      "correct": true,
+      "home_goals": 0,
+      "away_goals": 1,
+      "report_date": "2026-11-01"
+    },
+    {
+      "fixture_id": 103840859,
+      "model": "experimental_elo_global_fallback",
+      "home_team": "Elche",
+      "away_team": "Valencia",
+      "actual": "A",
+      "predicted": "H",
+      "probabilities": {
+        "H": 0.4545,
+        "D": 0.2614,
+        "A": 0.2841
+      },
+      "correct": false,
+      "home_goals": 0,
+      "away_goals": 1,
+      "report_date": "2026-11-01"
+    },
+    {
+      "fixture_id": 2981478499,
+      "model": "experimental_recent_goals_poisson",
+      "home_team": "Marseille",
+      "away_team": "Toulouse",
+      "actual": "H",
+      "predicted": "A",
+      "probabilities": {
+        "H": 0.3369,
+        "D": 0.2163,
+        "A": 0.4468
+      },
+      "correct": false,
+      "home_goals": 2,
+      "away_goals": 0,
+      "report_date": "2026-11-01"
+    },
+    {
+      "fixture_id": 2981478499,
+      "model": "experimental_elo_global_fallback",
+      "home_team": "Marseille",
+      "away_team": "Toulouse",
+      "actual": "H",
+      "predicted": "H",
+      "probabilities": {
+        "H": 0.4771522847715229,
+        "D": 0.26137386261373863,
+        "A": 0.26147385261473854
+      },
+      "correct": true,
+      "home_goals": 2,
+      "away_goals": 0,
+      "report_date": "2026-11-01"
+    },
+    {
+      "fixture_id": 2403367992,
+      "model": "experimental_recent_goals_poisson",
+      "home_team": "Juventus",
+      "away_team": "Napoli",
+      "actual": "H",
+      "predicted": "A",
+      "probabilities": {
+        "H": 0.30146985301469853,
+        "D": 0.22327767223277672,
+        "A": 0.47525247475252475
+      },
+      "correct": false,
+      "home_goals": 2,
+      "away_goals": 0,
+      "report_date": "2026-11-01"
+    },
+    {
+      "fixture_id": 2403367992,
+      "model": "experimental_elo_global_fallback",
+      "home_team": "Juventus",
+      "away_team": "Napoli",
+      "actual": "H",
+      "predicted": "H",
+      "probabilities": {
+        "H": 0.3752,
+        "D": 0.2614,
+        "A": 0.3634
+      },
+      "correct": true,
+      "home_goals": 2,
+      "away_goals": 0,
+      "report_date": "2026-11-01"
     }
   ],
-  "updated_at_utc": "2026-11-02T09:28:15.043436+00:00",
+  "updated_at_utc": "2026-11-02T10:12:31.737164+00:00",
   "last_attempt": {
     "report_date": "2026-11-01",
     "status": "EVALUATED",
@@ -299,7 +548,7 @@
       {
         "report_date": "2026-10-24",
         "status": "EVALUATED",
-        "detail": "Scored from 5324 cached completed matches; no live football-provider request was made.",
+        "detail": "Scored from 5405 cached completed matches; no live football-provider request was made.",
         "fixtures_scored": 4,
         "completed_forecasts_scored": 4,
         "metrics": {
@@ -321,7 +570,7 @@
       {
         "report_date": "2026-10-27",
         "status": "EVALUATED",
-        "detail": "Scored from 5324 cached completed matches; no live football-provider request was made.",
+        "detail": "Scored from 5405 cached completed matches; no live football-provider request was made.",
         "fixtures_scored": 2,
         "completed_forecasts_scored": 4,
         "metrics": null,
@@ -344,7 +593,7 @@
       {
         "report_date": "2026-10-30",
         "status": "EVALUATED",
-        "detail": "Scored from 5324 cached completed matches; no live football-provider request was made.",
+        "detail": "Scored from 5405 cached completed matches; no live football-provider request was made.",
         "fixtures_scored": 0,
         "completed_forecasts_scored": 0,
         "metrics": {
@@ -359,17 +608,25 @@
       {
         "report_date": "2026-11-01",
         "status": "EVALUATED",
-        "detail": "Scored from 5324 cached completed matches; no live football-provider request was made.",
-        "fixtures_scored": 0,
-        "completed_forecasts_scored": 0,
-        "metrics": {
-          "matches": 0,
-          "result_accuracy": null,
-          "brier_score": null,
-          "log_loss": null
+        "detail": "Scored from 5405 cached completed matches; no live football-provider request was made.",
+        "fixtures_scored": 7,
+        "completed_forecasts_scored": 14,
+        "metrics": null,
+        "metrics_by_model": {
+          "experimental_elo_global_fallback": {
+            "matches": 7,
+            "result_accuracy": 0.7142857142857143,
+            "brier_score": 0.5426830413332765,
+            "log_loss": 0.9173709305780352
+          },
+          "experimental_recent_goals_poisson": {
+            "matches": 7,
+            "result_accuracy": 0.42857142857142855,
+            "brier_score": 0.5435892717296341,
+            "log_loss": 0.9136931176943305
+          }
         },
-        "metrics_by_model": {},
-        "awaiting_result_or_match": 19
+        "awaiting_result_or_match": 12
       }
     ],
     "detail": null,
@@ -380,11 +637,17 @@
         "brier_score": 0.40709547999999995,
         "log_loss": 0.735957759728448
       },
+      "experimental_elo_global_fallback": {
+        "matches": 7,
+        "result_accuracy": 0.7142857142857143,
+        "brier_score": 0.5426830413332765,
+        "log_loss": 0.9173709305780352
+      },
       "experimental_recent_goals_poisson": {
-        "matches": 6,
-        "result_accuracy": 0.8333333333333334,
-        "brier_score": 0.4573796276053874,
-        "log_loss": 0.7955229558348996
+        "matches": 13,
+        "result_accuracy": 0.6153846153846154,
+        "brier_score": 0.503800205210751,
+        "log_loss": 0.859153042989978
       }
     }
   },
@@ -395,37 +658,356 @@
       "brier_score": 0.40709547999999995,
       "log_loss": 0.735957759728448
     },
+    "experimental_elo_global_fallback": {
+      "matches": 7,
+      "result_accuracy": 0.7142857142857143,
+      "brier_score": 0.5426830413332765,
+      "log_loss": 0.9173709305780352
+    },
     "experimental_recent_goals_poisson": {
-      "matches": 6,
-      "result_accuracy": 0.8333333333333334,
-      "brier_score": 0.4573796276053874,
-      "log_loss": 0.7955229558348996
+      "matches": 13,
+      "result_accuracy": 0.6153846153846154,
+      "brier_score": 0.503800205210751,
+      "log_loss": 0.859153042989978
     }
   },
   "cumulative_metrics": null,
   "model_versions": [
     "experimental_elo_by_competition",
+    "experimental_elo_global_fallback",
     "experimental_recent_goals_poisson"
   ],
   "evaluated_report_dates": 5,
   "notice": "Retrospective paper evaluation only; no betting recommendation or profitability claim.",
-  "goal_market_scored": [],
-  "calibration_versions": [],
+  "goal_market_scored": [
+    {
+      "fixture_id": 3003243205,
+      "home_team": "Paris FC",
+      "away_team": "Monaco",
+      "market": "over_2_5",
+      "selection": "under",
+      "model_probability": 0.509171,
+      "devigged_market_probability": 0.4473684210526316,
+      "decimal_odds": 2.1,
+      "implied_probability": 0.47619047619047616,
+      "edge": 0.06180257894736846,
+      "bookmaker": "William Hill",
+      "odds_provider": "The Odds API",
+      "odds_fetched_at": "2026-11-01T14:17:14.938334+00:00",
+      "quote_updated_at": "2026-11-01T14:17:07+00:00",
+      "kickoff": "2026-11-01T17:15:00+01:00",
+      "actual_outcome": false,
+      "unit_stake": 1.0,
+      "unit_profit": -1.0,
+      "settlement": "LOST",
+      "model": "experimental_recent_goals_poisson",
+      "model_version": "goal-platt-ab7a3e1fcaea30cf",
+      "calibration_version": "goal-platt-ab7a3e1fcaea30cf",
+      "report_date": "2026-11-01"
+    },
+    {
+      "fixture_id": 2888389852,
+      "home_team": "Liverpool",
+      "away_team": "Arsenal",
+      "market": "btts",
+      "selection": "no",
+      "model_probability": 0.468666,
+      "devigged_market_probability": 0.40632603406326034,
+      "decimal_odds": 2.44,
+      "implied_probability": 0.4098360655737705,
+      "edge": 0.06233996593673968,
+      "bookmaker": "Betfair",
+      "odds_provider": "The Odds API",
+      "odds_fetched_at": "2026-11-01T14:17:15.054539+00:00",
+      "quote_updated_at": "2026-11-01T14:16:52+00:00",
+      "kickoff": "2026-11-01T17:30:00+01:00",
+      "actual_outcome": true,
+      "unit_stake": 1.0,
+      "unit_profit": 1.44,
+      "settlement": "WON",
+      "model": "experimental_recent_goals_poisson",
+      "model_version": "goal-platt-ab7a3e1fcaea30cf",
+      "calibration_version": "goal-platt-ab7a3e1fcaea30cf",
+      "report_date": "2026-11-01"
+    },
+    {
+      "fixture_id": 2002532207,
+      "home_team": "Lecce",
+      "away_team": "Genoa",
+      "market": "over_2_5",
+      "selection": "over",
+      "model_probability": 0.485692,
+      "devigged_market_probability": 0.3942307692307692,
+      "decimal_odds": 2.52,
+      "implied_probability": 0.3968253968253968,
+      "edge": 0.0914612307692308,
+      "bookmaker": "Matchbook",
+      "odds_provider": "The Odds API",
+      "odds_fetched_at": "2026-11-01T14:17:14.938110+00:00",
+      "quote_updated_at": "2026-11-01T14:17:06+00:00",
+      "kickoff": "2026-11-01T18:00:00+01:00",
+      "actual_outcome": true,
+      "unit_stake": 1.0,
+      "unit_profit": 1.52,
+      "settlement": "WON",
+      "model": "experimental_recent_goals_poisson",
+      "model_version": "goal-platt-ab7a3e1fcaea30cf",
+      "calibration_version": "goal-platt-ab7a3e1fcaea30cf",
+      "report_date": "2026-11-01"
+    },
+    {
+      "fixture_id": 2981478499,
+      "home_team": "Marseille",
+      "away_team": "Toulouse",
+      "market": "over_3_5",
+      "selection": "under",
+      "model_probability": 0.659466,
+      "devigged_market_probability": 0.5706806282722513,
+      "decimal_odds": 1.64,
+      "implied_probability": 0.6097560975609756,
+      "edge": 0.0887853717277487,
+      "bookmaker": "LeoVegas",
+      "odds_provider": "The Odds API",
+      "odds_fetched_at": "2026-11-01T14:17:14.938429+00:00",
+      "quote_updated_at": "2026-11-01T14:16:41+00:00",
+      "kickoff": "2026-11-01T20:45:00+01:00",
+      "actual_outcome": true,
+      "unit_stake": 1.0,
+      "unit_profit": 0.64,
+      "settlement": "WON",
+      "model": "experimental_recent_goals_poisson",
+      "model_version": "goal-platt-ab7a3e1fcaea30cf",
+      "calibration_version": "goal-platt-ab7a3e1fcaea30cf",
+      "report_date": "2026-11-01"
+    },
+    {
+      "fixture_id": 2403367992,
+      "home_team": "Juventus",
+      "away_team": "Napoli",
+      "market": "1x2",
+      "selection": "away",
+      "model_probability": 0.4753,
+      "devigged_market_probability": 0.27473702977357817,
+      "decimal_odds": 3.6,
+      "implied_probability": 0.2777777777777778,
+      "edge": 0.20056297022642183,
+      "bookmaker": "Smarkets",
+      "odds_provider": "The Odds API",
+      "odds_fetched_at": "2026-11-01T14:17:14.938181+00:00",
+      "quote_updated_at": "2026-11-01T14:17:10+00:00",
+      "kickoff": "2026-11-01T20:45:00+01:00",
+      "actual_outcome": false,
+      "unit_stake": 1.0,
+      "unit_profit": -1.0,
+      "settlement": "LOST",
+      "model": "experimental_recent_goals_poisson",
+      "model_version": "experimental_recent_goals_poisson",
+      "calibration_version": null,
+      "report_date": "2026-11-01"
+    },
+    {
+      "fixture_id": 2403367992,
+      "home_team": "Juventus",
+      "away_team": "Napoli",
+      "market": "over_2_5",
+      "selection": "over",
+      "model_probability": 0.546371,
+      "devigged_market_probability": 0.48743718592964824,
+      "decimal_odds": 2.04,
+      "implied_probability": 0.49019607843137253,
+      "edge": 0.05893381407035181,
+      "bookmaker": "Matchbook",
+      "odds_provider": "The Odds API",
+      "odds_fetched_at": "2026-11-01T14:17:14.938181+00:00",
+      "quote_updated_at": "2026-11-01T14:17:06+00:00",
+      "kickoff": "2026-11-01T20:45:00+01:00",
+      "actual_outcome": false,
+      "unit_stake": 1.0,
+      "unit_profit": -1.0,
+      "settlement": "LOST",
+      "model": "experimental_recent_goals_poisson",
+      "model_version": "goal-platt-ab7a3e1fcaea30cf",
+      "calibration_version": "goal-platt-ab7a3e1fcaea30cf",
+      "report_date": "2026-11-01"
+    }
+  ],
+  "calibration_versions": [
+    "goal-platt-ab7a3e1fcaea30cf"
+  ],
   "goal_market_metrics": {
-    "settled_selections": 0,
-    "wins": 0,
-    "losses": 0,
-    "win_rate": null,
-    "units_staked": 0,
-    "net_units": 0,
-    "paper_roi": null,
+    "settled_selections": 6,
+    "wins": 3,
+    "losses": 3,
+    "win_rate": 0.5,
+    "units_staked": 6.0,
+    "net_units": 0.6,
+    "paper_roi": 0.09999999999999999,
     "notice": "Best quoted price in a pre-kickoff snapshot; flat 1-unit paper stakes; not proof of executable profit or bookmaker closing-line value."
   },
-  "goal_market_metrics_by_market": {},
-  "value_market_metrics_by_market": {},
-  "value_validation_markets": {},
-  "value_model_versions": [],
-  "value_validation_markets_by_model_version": {},
-  "value_validation_markets_by_calibration_version": {},
+  "goal_market_metrics_by_market": {
+    "1x2": {
+      "settled_selections": 1,
+      "wins": 0,
+      "losses": 1,
+      "win_rate": 0.0,
+      "units_staked": 1.0,
+      "net_units": -1.0,
+      "paper_roi": -1.0,
+      "notice": "Best quoted price in a pre-kickoff snapshot; flat 1-unit paper stakes; not proof of executable profit or bookmaker closing-line value."
+    },
+    "btts": {
+      "settled_selections": 1,
+      "wins": 1,
+      "losses": 0,
+      "win_rate": 1.0,
+      "units_staked": 1.0,
+      "net_units": 1.44,
+      "paper_roi": 1.44,
+      "notice": "Best quoted price in a pre-kickoff snapshot; flat 1-unit paper stakes; not proof of executable profit or bookmaker closing-line value."
+    },
+    "over_2_5": {
+      "settled_selections": 3,
+      "wins": 1,
+      "losses": 2,
+      "win_rate": 0.3333333333333333,
+      "units_staked": 3.0,
+      "net_units": -0.48,
+      "paper_roi": -0.16,
+      "notice": "Best quoted price in a pre-kickoff snapshot; flat 1-unit paper stakes; not proof of executable profit or bookmaker closing-line value."
+    },
+    "over_3_5": {
+      "settled_selections": 1,
+      "wins": 1,
+      "losses": 0,
+      "win_rate": 1.0,
+      "units_staked": 1.0,
+      "net_units": 0.64,
+      "paper_roi": 0.64,
+      "notice": "Best quoted price in a pre-kickoff snapshot; flat 1-unit paper stakes; not proof of executable profit or bookmaker closing-line value."
+    }
+  },
+  "value_market_metrics_by_market": {
+    "1x2": {
+      "settled_bets": 1,
+      "distinct_match_dates": 1,
+      "wins": 0,
+      "net_units": -1.0,
+      "paper_roi": -1.0,
+      "roi_lower_95_ci": null,
+      "confidence_method": "BOOTSTRAP_PERCENTILE_95",
+      "timestamped_odds_coverage": 1.0,
+      "notice": "Prospective paper-only estimate; 95% percentile bootstrap resamples match-date clusters and is not proof of executable returns."
+    },
+    "btts": {
+      "settled_bets": 1,
+      "distinct_match_dates": 1,
+      "wins": 1,
+      "net_units": 1.44,
+      "paper_roi": 1.44,
+      "roi_lower_95_ci": null,
+      "confidence_method": "BOOTSTRAP_PERCENTILE_95",
+      "timestamped_odds_coverage": 1.0,
+      "notice": "Prospective paper-only estimate; 95% percentile bootstrap resamples match-date clusters and is not proof of executable returns."
+    },
+    "over_2_5": {
+      "settled_bets": 3,
+      "distinct_match_dates": 1,
+      "wins": 1,
+      "net_units": -0.48,
+      "paper_roi": -0.16,
+      "roi_lower_95_ci": null,
+      "confidence_method": "BOOTSTRAP_PERCENTILE_95",
+      "timestamped_odds_coverage": 1.0,
+      "notice": "Prospective paper-only estimate; 95% percentile bootstrap resamples match-date clusters and is not proof of executable returns."
+    },
+    "over_3_5": {
+      "settled_bets": 1,
+      "distinct_match_dates": 1,
+      "wins": 1,
+      "net_units": 0.64,
+      "paper_roi": 0.64,
+      "roi_lower_95_ci": null,
+      "confidence_method": "BOOTSTRAP_PERCENTILE_95",
+      "timestamped_odds_coverage": 1.0,
+      "notice": "Prospective paper-only estimate; 95% percentile bootstrap resamples match-date clusters and is not proof of executable returns."
+    }
+  },
+  "value_validation_markets": {
+    "1X2": {
+      "settled_bets": 1,
+      "distinct_match_dates": 1,
+      "net_roi": -1.0,
+      "roi_lower_95_ci": null,
+      "confidence_method": "BOOTSTRAP_PERCENTILE_95",
+      "timestamped_odds_coverage": 1.0
+    },
+    "BTTS": {
+      "settled_bets": 1,
+      "distinct_match_dates": 1,
+      "net_roi": 1.44,
+      "roi_lower_95_ci": null,
+      "confidence_method": "BOOTSTRAP_PERCENTILE_95",
+      "timestamped_odds_coverage": 1.0
+    },
+    "OVER_UNDER_2_5": {
+      "settled_bets": 3,
+      "distinct_match_dates": 1,
+      "net_roi": -0.16,
+      "roi_lower_95_ci": null,
+      "confidence_method": "BOOTSTRAP_PERCENTILE_95",
+      "timestamped_odds_coverage": 1.0
+    },
+    "OVER_UNDER_3_5": {
+      "settled_bets": 1,
+      "distinct_match_dates": 1,
+      "net_roi": 0.64,
+      "roi_lower_95_ci": null,
+      "confidence_method": "BOOTSTRAP_PERCENTILE_95",
+      "timestamped_odds_coverage": 1.0
+    }
+  },
+  "value_model_versions": [
+    "experimental_recent_goals_poisson"
+  ],
+  "value_validation_markets_by_model_version": {
+    "experimental_recent_goals_poisson": {
+      "1X2": {
+        "settled_bets": 1,
+        "distinct_match_dates": 1,
+        "net_roi": -1.0,
+        "roi_lower_95_ci": null,
+        "confidence_method": "BOOTSTRAP_PERCENTILE_95",
+        "timestamped_odds_coverage": 1.0
+      }
+    }
+  },
+  "value_validation_markets_by_calibration_version": {
+    "goal-platt-ab7a3e1fcaea30cf": {
+      "BTTS": {
+        "settled_bets": 1,
+        "distinct_match_dates": 1,
+        "net_roi": 1.44,
+        "roi_lower_95_ci": null,
+        "confidence_method": "BOOTSTRAP_PERCENTILE_95",
+        "timestamped_odds_coverage": 1.0
+      },
+      "OVER_UNDER_2_5": {
+        "settled_bets": 3,
+        "distinct_match_dates": 1,
+        "net_roi": -0.16,
+        "roi_lower_95_ci": null,
+        "confidence_method": "BOOTSTRAP_PERCENTILE_95",
+        "timestamped_odds_coverage": 1.0
+      },
+      "OVER_UNDER_3_5": {
+        "settled_bets": 1,
+        "distinct_match_dates": 1,
+        "net_roi": 0.64,
+        "roi_lower_95_ci": null,
+        "confidence_method": "BOOTSTRAP_PERCENTILE_95",
+        "timestamped_odds_coverage": 1.0
+      }
+    }
+  },
   "value_market_validation_notice": "Prospective paper evidence only; certificate remains locked until sample, date, ROI lower-bound and coverage thresholds pass."
 }
