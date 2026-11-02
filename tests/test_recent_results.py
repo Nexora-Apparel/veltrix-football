@@ -767,3 +767,50 @@ def test_noncommercial_open_matchday_source_is_never_ingested():
     assert rows == []
     assert audit["status"] == "SKIPPED_NONCOMMERCIAL_LICENSE"
     assert audit["matches_added"] == 0
+
+
+
+def test_gap_backfill_recovers_completed_dates_from_primary_date_endpoint(tmp_path):
+    import json
+    from scripts.backfill_history_gaps import run
+
+    gaps = ["2026-09-28", "2026-09-29"]
+    cache_path = tmp_path / "cache.json"
+    fallback_path = tmp_path / "fallback.csv"
+    output_path = tmp_path / "out.json"
+    cache_path.write_text(json.dumps({
+        "version": 2, "state": {"history_gaps": gaps}, "matches": [],
+    }), encoding="utf-8")
+    fallback_path.write_text(
+        "match_date,division,home_team,away_team,home_goals,away_goals\n",
+        encoding="utf-8",
+    )
+
+    class FakeSession:
+        def get(self, *args, **kwargs):
+            import requests
+            raise requests.ConnectionError("offline test")
+
+    class DateAPI:
+        def leagues(self, **kwargs):
+            return {"response": [], "pagination": {"has_more": False}}
+        def fixtures(self, day, timezone):
+            if day == "2026-09-28":
+                return {
+                    "_veltrix_meta": {"pages_fetched": 1},
+                    "response": [{
+                        "fixture": {"id": 987, "date": "2026-09-28T12:00:00Z", "status": {"short": "FT"}},
+                        "teams": {"home": {"name": "Primary Home"}, "away": {"name": "Primary Away"}},
+                        "goals": {"home": 2, "away": 0},
+                        "league": {"code": "PL"},
+                    }],
+                }
+            return {"_veltrix_meta": {"pages_fetched": 1}, "response": []}
+
+    report = run(cache_path, fallback_path, output_path, DateAPI(), FakeSession())
+    saved = json.loads(output_path.read_text(encoding="utf-8"))
+    assert report["date_endpoint"]["resolved_dates"] == ["2026-09-28"]
+    assert report["date_endpoint"]["matches_added"] == 1
+    assert report["primary_resolved_dates"] == 1
+    assert saved["state"]["history_gaps"] == ["2026-09-29"]
+    assert saved["matches"][0]["source_provider"] == "5DollarFootballAPI_DATE_FIXTURES"
