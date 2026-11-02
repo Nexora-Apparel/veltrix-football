@@ -390,6 +390,9 @@ def predict_fixtures(
     current_time = current_time.astimezone(local_zone)
     today = as_of or current_time.date()
     usable = sorted((m for m in historical_matches if m["date"] < today), key=lambda row: row["date"])
+    # The visibility collection is required by both the sparse-history branch
+    # and the normal-history path; initialize it before either path diverges.
+    visibility_rows: list[dict[str, Any]] = []
     if not usable:
         # Never silently drop eligible fixtures when the history file is empty
         # or contains no records before the requested date. Emit explicit
