@@ -25,8 +25,8 @@ def sample_backtest():
                     "status": "ROLLING_ORIGIN_DIAGNOSTIC_ONLY",
                     "folds_requested": 4,
                     "folds_evaluated": 4,
-                    "raw": {"matches": 100, "brier_score": 0.64, "log_loss": 1.06},
-                    "calibrated": {"matches": 100, "brier_score": 0.63, "log_loss": 1.05},
+                    "raw": {"matches": 100, "brier_score": 0.64, "log_loss": 1.06, "predicted_class_counts": {"H": 70, "D": 0, "A": 30}, "actual_class_counts": {"H": 43, "D": 26, "A": 31}},
+                    "calibrated": {"matches": 100, "brier_score": 0.63, "log_loss": 1.05, "predicted_class_counts": {"H": 60, "D": 10, "A": 30}, "actual_class_counts": {"H": 43, "D": 26, "A": 31}, "class_precision_recall": {"D": {"precision": 0.3, "recall": 0.1}}},
                     "market_on_same_odds_covered_fixtures": {"matches": 95},
                     "beats_market_on_same_fixtures": False,
                     "market_anchor_blend_beats_market": False,
@@ -94,6 +94,8 @@ def test_model_validation_summary_keeps_calibration_separate_from_certification(
     assert result["dataset"]["integrity_status"] == "PASS"
     assert result["historical_1x2"]["market_outperforms_both_on_brier_and_log_loss"] is True
     assert result["rolling_origin_1x2_calibration"]["live_poisson"]["applied_to_production"] is False
+    assert result["rolling_origin_1x2_calibration"]["live_poisson"]["calibrated"]["predicted_class_counts"]["D"] == 10
+    assert result["rolling_origin_1x2_calibration"]["live_poisson"]["calibrated"]["class_precision_recall"]["D"]["recall"] == 0.1
     assert result["rolling_origin_goal_market_calibration"]["markets"]["btts_yes"]["diagnostic_only"] is True
     assert result["rolling_origin_goal_market_calibration"]["betting_certification"] is False
     assert result["release_controls"]["value_betting"] == "LOCKED_INSUFFICIENT_EVIDENCE"
