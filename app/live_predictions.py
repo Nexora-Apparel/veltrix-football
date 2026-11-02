@@ -722,7 +722,9 @@ def predict_fixtures(
                 "elo_history": elo_metadata,
                 "expected_goals": {"home": round(home_xg, 3), "away": round(away_xg, 3)},
                 "rest_congestion_context": rest_congestion_context(
-                    usable, home_key, away_key, target_date, window_days=14,\n                    target_venue_coordinates=target_venue_coordinates\n                ),
+                    usable, home_key, away_key, target_date, window_days=14,
+                    target_venue_coordinates=target_venue_coordinates
+                ),
                 "advanced_model_alternative": {
                     "model": "experimental_recency_weighted_dixon_coles",
                     "model_validated": False,
