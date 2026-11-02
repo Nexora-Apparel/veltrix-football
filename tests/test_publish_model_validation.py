@@ -162,3 +162,33 @@ def test_model_validation_publishes_dixon_coles_goal_market_diagnostics_separate
     assert dc["betting_certification"] is False
     assert result["alternative_models"]["dixon_coles"]["goal_markets_metrics"]["btts_yes"]["matches"] == 1200
     assert result["release_controls"]["value_betting"] == "LOCKED_INSUFFICIENT_EVIDENCE"
+
+
+
+def test_model_validation_publishes_dixon_coles_same_fixture_1x2_benchmarks():
+    backtest = sample_backtest()
+    live = backtest["live_pipeline"]
+    live["historical_odds_subset"] = {
+        "models_compared_on_same_matches": {
+            "live_dc": {"matches": 900, "result_accuracy": 0.49, "brier_score": 0.61, "log_loss": 1.02},
+            "market": {"matches": 900, "result_accuracy": 0.50, "brier_score": 0.60, "log_loss": 1.00},
+        }
+    }
+    live["recent_holdout"]["historical_odds_subset"] = {
+        "models_compared_on_same_matches": {
+            "live_dc": {"matches": 200, "result_accuracy": 0.48, "brier_score": 0.62, "log_loss": 1.03},
+            "market": {"matches": 200, "result_accuracy": 0.51, "brier_score": 0.59, "log_loss": 0.99},
+        }
+    }
+    live["metrics_by_competition"]["E0"]["dixon_coles"] = {
+        "matches": 20, "result_accuracy": 0.45, "brier_score": 0.64, "log_loss": 1.06
+    }
+    live["metrics_by_competition"]["E0"]["dixon_coles_same_match_market_comparison"] = {
+        "dixon_coles": {"matches": 18, "result_accuracy": 0.44, "brier_score": 0.63, "log_loss": 1.05},
+        "market": {"matches": 18, "result_accuracy": 0.50, "brier_score": 0.60, "log_loss": 1.00},
+    }
+    result = build_summary(backtest, sample_coverage(), "2026-11-02T00:00:00Z")
+    assert result["alternative_models"]["dixon_coles"]["historical_odds_same_fixture_comparison"]["model"]["matches"] == 900
+    assert result["recent_holdout"]["dixon_coles_market_comparison"]["market"]["matches"] == 200
+    assert result["metrics_by_competition"]["E0"]["dixon_coles"]["matches"] == 20
+    assert result["metrics_by_competition"]["E0"]["dixon_coles_market_comparison"]["market"]["matches"] == 18
