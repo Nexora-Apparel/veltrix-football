@@ -69,3 +69,30 @@ def test_rest_and_travel_use_only_prior_dated_matches():
     assert result["rest_hours"] == 96
     assert result["matches_last_7d"] == 1
     assert result["travel_distance_km"] > 100
+
+
+def test_ppda_and_shot_conversion_require_verified_inputs():
+    from app.market_evidence import ppda_feature, shot_conversion_feature
+    assert ppda_feature(120, 20, source="licensed-stats", observed_at=NOW,
+                        forecast_at=NOW)["value"] == 6
+    assert ppda_feature(120, 0, source="licensed-stats", observed_at=NOW,
+                        forecast_at=NOW)["status"] == "REJECTED"
+    assert shot_conversion_feature(4, 10, source="licensed-stats", observed_at=NOW,
+                                   forecast_at=NOW)["value"] == .4
+
+
+def test_market_experiment_keeps_markets_independent():
+    from app.market_evidence import chronological_market_experiment
+    rows = []
+    for day in range(1, 21):
+        rows.append({"match_date": f"2026-10-{day:02d}",
+                     "p_1x2": {"H": .45, "D": .25, "A": .30}, "actual_1x2": "H",
+                     "p_btts": .65, "actual_btts": 1,
+                     "p_over25": .60, "actual_over25": 1})
+    result = chronological_market_experiment(rows, {
+        "1X2": {"probability_key": "p_1x2", "actual_key": "actual_1x2"},
+        "BTTS": {"probability_key": "p_btts", "actual_key": "actual_btts"},
+        "OVER_2_5": {"probability_key": "p_over25", "actual_key": "actual_over25"},
+    }, minimum_training_matches=1, minimum_test_matches=1)
+    assert set(result["markets"]) == {"1X2", "BTTS", "OVER_2_5"}
+    assert all(value["evaluated_folds"] > 0 for value in result["markets"].values())
