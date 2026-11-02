@@ -75,3 +75,31 @@ def test_missing_data_source_fails_closed(monkeypatch):
     monkeypatch.setattr(report_artifacts, "urlopen", unavailable)
     assert report_artifacts.load_latest_report() is None
     assert report_artifacts.load_paper_ledger() is None
+
+
+def test_model_validation_loader_accepts_only_published_research_diagnostic(monkeypatch):
+    report = {
+        "status": "RESEARCH_DIAGNOSTIC_ONLY",
+        "dataset": {"valid_rows": 238854, "competition_count": 38},
+        "historical_1x2": {"release_status": "NOT_CERTIFIED_MARKET_OUTPERFORMED_MODELS"},
+    }
+    requested = []
+
+    def fake_urlopen(request, timeout):
+        requested.append(request.full_url)
+        return FakeResponse(json.dumps(report).encode())
+
+    monkeypatch.setattr(report_artifacts, "urlopen", fake_urlopen)
+    assert report_artifacts.load_model_validation_report() == report
+    assert len(requested) == 1
+    assert requested[0].split("?")[0].endswith("/public-data/model_validation_report.json")
+
+
+def test_model_validation_loader_rejects_unverified_snapshot(monkeypatch):
+    invalid = {"status": "OK", "dataset": {"valid_rows": 100}}
+    monkeypatch.setattr(
+        report_artifacts,
+        "urlopen",
+        lambda request, timeout: FakeResponse(json.dumps(invalid).encode()),
+    )
+    assert report_artifacts.load_model_validation_report() is None
