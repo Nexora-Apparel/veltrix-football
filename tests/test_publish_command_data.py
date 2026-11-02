@@ -156,3 +156,27 @@ def test_one_snapshot_failure_does_not_block_later_publications(tmp_path, monkey
     assert "public-data/paper_tracking_ledger.json" in attempted
     assert "public-data/value_evidence_ledger.json" in attempted
     assert "public-data/recent_results_cache.json" in attempted
+
+
+def test_publication_marker_confirms_live_report_but_preserves_reuse_warning():
+    from datetime import datetime, timezone
+    from scripts.publish_command_data import _mark_report_publication
+
+    published_at = datetime(2026, 11, 2, 10, 0, tzinfo=timezone.utc)
+    live = {
+        "publication_status": "LIVE_REPORT_GENERATED_PENDING_PUBLICATION",
+        "publication_notice": "Generated from this run's live fixture response.",
+    }
+    _mark_report_publication(live, published_at)
+    assert live["publication_status"] == "PUBLISHED"
+    assert live["command_data_publication"] == "PUBLISHED"
+    assert "publication to command-data is confirmed" in live["publication_notice"]
+
+    reused = {
+        "publication_status": "REUSED_SNAPSHOT_NOT_REFRESHED",
+        "publication_notice": "A previously generated report was reused.",
+    }
+    _mark_report_publication(reused, published_at)
+    assert reused["publication_status"] == "REUSED_SNAPSHOT_NOT_REFRESHED"
+    assert reused["command_data_publication"] == "PUBLISHED"
+    assert reused["publication_notice"] == "A previously generated report was reused."
