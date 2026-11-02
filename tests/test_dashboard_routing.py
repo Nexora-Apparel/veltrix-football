@@ -14,6 +14,8 @@ def test_dashboard_root_handler_returns_html():
     assert 'id="trackingView"' in response.body.decode("utf-8")
     assert 'id="valueValidation"' in response.body.decode("utf-8")
     assert "Value validation" in response.body.decode("utf-8")
+    assert "Model validation" in response.body.decode("utf-8")
+    assert "BTTS / totals calibration" in response.body.decode("utf-8")
     assert "Prospective " in response.body.decode("utf-8")
     assert 'data-view="trackingView"' in response.body.decode("utf-8")
     assert ".sectionview.active{display:block}" in response.body.decode("utf-8")
@@ -219,3 +221,38 @@ def test_dashboard_exposes_reused_snapshot_separately_from_successful_publicatio
     assert "no fresh fixture retrieval" in payload["report_freshness_note"]
 
 # Controlled live report and Telegram end-to-end verification [run-live-verification].
+
+
+def test_dashboard_exposes_model_validation_evidence(monkeypatch):
+    from api import telegram
+
+    validation = {
+        "status": "RESEARCH_DIAGNOSTIC_ONLY",
+        "dataset": {
+            "valid_rows": 238854,
+            "competition_count": 38,
+            "first_match_date": "2000-07-28",
+            "last_match_date": "2026-09-03",
+        },
+        "historical_1x2": {
+            "release_status": "NOT_CERTIFIED_MARKET_OUTPERFORMED_MODELS",
+            "full_sample_models": {"elo": {"result_accuracy": 0.4836}},
+            "market_comparison_same_fixtures": {"market": {"matches": 235464, "result_accuracy": 0.5011}},
+        },
+        "rolling_origin_1x2_calibration": {
+            "live_poisson": {"status": "ROLLING_ORIGIN_DIAGNOSTIC_ONLY", "calibration_diagnostic_pass": True},
+        },
+        "rolling_origin_goal_market_calibration": {
+            "folds_evaluated": 4,
+            "markets": {"btts_yes": {"status": "CALIBRATION_DIAGNOSTIC_PASS"}},
+        },
+        "release_controls": {"value_betting": "LOCKED_INSUFFICIENT_EVIDENCE"},
+    }
+    monkeypatch.setattr(telegram, "load_latest_report", lambda: {
+        "as_of_date": "2026-11-02",
+        "predictions": [],
+    })
+    monkeypatch.setattr(telegram, "load_paper_ledger", lambda: None)
+    monkeypatch.setattr(telegram, "load_model_validation_report", lambda: validation)
+    payload = telegram.dashboard_data()
+    assert payload["model_validation"] == validation
