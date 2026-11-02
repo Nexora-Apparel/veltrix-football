@@ -750,29 +750,29 @@ def test_gap_backfill_excludes_noncommercial_feed_and_preserves_gaps_during_cool
         def __getattr__(self, name):
             raise AssertionError(f"Primary API should not be called during cooldown: {name}")
 
-    class Response:
+    class FakeResponse:
         def raise_for_status(self):
             return None
         def json(self):
             return []
 
-    class LicensedSourceSession:
+    class OpenLigaSession:
         def __init__(self):
             self.urls = []
-        def get(self, url, *args, **kwargs):
-            self.urls.append(url)
+        def get(self, url, **kwargs):
             assert "api.openligadb.de" in url
-            return Response()
+            self.urls.append(url)
+            return FakeResponse()
 
-    licensed_session = LicensedSourceSession()
-    report = run(cache_path, fallback_path, output_path, ForbiddenPrimaryAPI(), licensed_session)
+    session = OpenLigaSession()
+    report = run(cache_path, fallback_path, output_path, ForbiddenPrimaryAPI(), session)
     saved = json.loads(output_path.read_text(encoding="utf-8"))
     assert report["status"] == "PARTIAL_PROVIDER_RETRY_COOLDOWN"
     assert report["provider_retry_cooldown_active"] is True
     assert report["open_matchday"]["status"] == "SKIPPED_NONCOMMERCIAL_LICENSE"
     assert report["open_matchday_resolved_dates"] == []
     assert report["openligadb"]["status"] == "NO_GAP_RESULTS"
-    assert len(licensed_session.urls) == 4
+    assert len(session.urls) == 4
     assert saved["state"]["history_gaps"] == gaps
     assert saved["matches"] == []
 
