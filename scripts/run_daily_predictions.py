@@ -91,8 +91,22 @@ def _merge_recent_rows(*groups: list[dict]) -> list[dict]:
     return sorted(unique.values(), key=lambda row: (row["date"], row.get("division", ""), row["home_key"], row["away_key"]))
 
 
+def _filter_licensed_recent_history(rows: list[dict]) -> tuple[list[dict], dict[str, int]]:
+    """Use only sources with an explicit commercial/redistribution basis in live modelling."""
+    allowed = {"5dollarfootballapi", "openligadb"}
+    accepted = []
+    excluded: dict[str, int] = {}
+    for row in rows:
+        source = str(row.get("source_provider") or "LEGACY_UNATTRIBUTED").strip()
+        if source.casefold() in allowed:
+            accepted.append(row)
+        else:
+            excluded[source] = excluded.get(source, 0) + 1
+    return accepted, excluded
+
+
 def _serialize_recent_cache(rows: list[dict]) -> list[dict]:
-    """Keep only score/history fields; omit internal keys to minimize published cache size."""
+    """Keep score/history fields and explicit source licensing metadata."""
     return [{
         "date": row["date"].isoformat(),
         "division": str(row.get("division") or ""),
@@ -103,6 +117,17 @@ def _serialize_recent_cache(rows: list[dict]) -> list[dict]:
         "fixture_id": row.get("fixture_id") if isinstance(row.get("fixture_id"), int) else None,
         "fixture_status": str(row.get("fixture_status") or "FT"),
         "source_provider": str(row.get("source_provider") or "LEGACY_UNATTRIBUTED"),
+        "source_license": str(row.get("source_license") or (
+            "5DOLLAR_API_COMMERCIAL_WITH_ATTRIBUTION"
+            if str(row.get("source_provider") or "").casefold() == "5dollarfootballapi"
+            else "ODBL-1.0" if str(row.get("source_provider") or "").casefold() == "openligadb"
+            else "UNVERIFIED_LEGACY_SOURCE"
+        )),
+        "source_attribution": str(row.get("source_attribution") or (
+            "5DollarFootballAPI" if str(row.get("source_provider") or "").casefold() == "5dollarfootballapi"
+            else "OpenLigaDB" if str(row.get("source_provider") or "").casefold() == "openligadb"
+            else "Source not recorded"
+        )),
     } for row in rows]
 
 
@@ -377,6 +402,11 @@ def main() -> None:
                 "Primary fixture provider was unavailable and no supplemental source returned same-day fixtures."
             )
         base_history = load_historical_matches(args.history)
+        licensed_history_only = os.getenv("VELTRIX_LIVE_HISTORY_LICENSED_ONLY", "").strip().lower() in {"1", "true", "yes"}
+        if licensed_history_only:
+            # The 238k Football-Data-derived snapshot is retained for research
+            # backtests only; production live forecasts use explicitly licensed rows.
+            base_history = []
         cache_path = Path(args.recent_cache)
         cache_data, cached_rows = _load_recent_cache(cache_path)
 
@@ -430,6 +460,10 @@ def main() -> None:
             }
         updated_cache_state = recent_sync.pop("cache_state", cache_data.get("state") or {})
         merged_recent_rows = _merge_recent_rows(cached_rows, recent_rows)
+        if licensed_history_only:
+            model_recent_rows, excluded_history_source_counts = _filter_licensed_recent_history(merged_recent_rows)
+        else:
+            model_recent_rows, excluded_history_source_counts = merged_recent_rows, {}
         cache_path.parent.mkdir(parents=True, exist_ok=True)
         cache_payload = {
             "version": 2,
@@ -450,11 +484,30 @@ def main() -> None:
             args.history,
             as_of=target_date,
             timezone_name=args.timezone,
-            additional_historical_matches=merged_recent_rows,
+            additional_historical_matches=model_recent_rows,
             base_historical_matches=base_history,
             market_odds_by_fixture=market_odds_by_fixture,
         )
         report["recent_results_sync"] = recent_sync
+        history_coverage = report.setdefault("historical_data_coverage", {})
+        model_source_counts = {}
+        for source_row in model_recent_rows:
+            source_name = str(source_row.get("source_provider") or "LEGACY_UNATTRIBUTED")
+            model_source_counts[source_name] = model_source_counts.get(source_name, 0) + 1
+        history_coverage.update({
+            "live_history_mode": "LICENSED_PROVIDERS_ONLY" if licensed_history_only else "RESEARCH_MODE",
+            "base_history_rows_used": len(base_history),
+            "recent_cache_rows_used": len(model_recent_rows),
+            "model_history_source_counts": model_source_counts,
+            "excluded_unverified_history_rows": sum(excluded_history_source_counts.values()),
+            "excluded_unverified_history_source_counts": excluded_history_source_counts,
+            "source_provenance_status": (
+                "LICENSED_PROVIDERS_ONLY_WITH_LEGACY_EXCLUDED"
+                if licensed_history_only else "RESEARCH_MODE_NOT_LICENSE_FILTERED"
+            ),
+        })
+        if licensed_history_only and isinstance(history_coverage, dict):
+            history_coverage["legacy_unattributed_rows"] = excluded_history_source_counts.get("LEGACY_UNATTRIBUTED", 0)
         fixture_meta = payload.get("_veltrix_meta") if isinstance(payload.get("_veltrix_meta"), dict) else {}
         report["primary_provider_request"] = {
             "provider": fixture_meta.get("provider", "5DollarFootballAPI"),
