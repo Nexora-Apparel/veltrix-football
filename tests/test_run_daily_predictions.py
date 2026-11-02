@@ -395,7 +395,7 @@ def test_fixture_delivery_cap_prefers_primary_provider_over_unmapped_supplements
         "5DollarFootballAPI": 1
     }
     assert limited["_veltrix_meta"]["fixture_selection_policy"] == (
-        "mapped_competition_then_primary_provider_then_kickoff"
+        "mapped_competition_then_pre_match_then_future_then_primary_provider_then_kickoff; canonical team aliases and five-minute cross-source deduplication"
     )
 
 
