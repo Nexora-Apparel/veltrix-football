@@ -67,7 +67,7 @@ def build_summary(backtest: dict, coverage: dict, generated_at: str | None = Non
     def compact_metrics(value: Any) -> dict | None:
         if not isinstance(value, dict):
             return None
-        return {k: value.get(k) for k in ("matches", "result_accuracy", "brier_score", "log_loss") if k in value}
+        return {k: value.get(k) for k in ("matches", "result_accuracy", "accuracy", "brier_score", "log_loss", "precision", "recall") if k in value}
 
     outcome_balance = {}
     for name, audit in _require_object(live.get("outcome_balance_audit", {}), "outcome_balance_audit").items():
@@ -128,8 +128,14 @@ def build_summary(backtest: dict, coverage: dict, generated_at: str | None = Non
             "calibration_matches": experiment.get("calibration_matches"),
             "holdout_matches": experiment.get("holdout_matches"),
             "selected_draw_margin": experiment.get("selected_draw_margin"),
-            "raw_argmax_holdout": compact_metrics(experiment.get("raw_argmax_holdout")),
-            "draw_margin_holdout": compact_metrics(experiment.get("draw_margin_holdout")),
+            "raw_argmax_holdout": {
+                **(compact_metrics(experiment.get("raw_argmax_holdout")) or {}),
+                "predicted_class_counts": (experiment.get("raw_argmax_holdout") or {}).get("predicted_class_counts"),
+            },
+            "draw_margin_holdout": {
+                **(compact_metrics(experiment.get("draw_margin_holdout")) or {}),
+                "predicted_class_counts": (experiment.get("draw_margin_holdout") or {}).get("predicted_class_counts"),
+            },
             "holdout_accuracy_delta": experiment.get("holdout_accuracy_delta"),
             "improved_unseen_holdout_accuracy": experiment.get("improved_unseen_holdout_accuracy"),
             "note": experiment.get("note"),
