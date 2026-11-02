@@ -135,7 +135,7 @@ def run(cache_path: Path, fallback_path: Path, output_path: Path, api: Any, sess
     for row in fallback:
         fallback_by_day[row["date"]] = fallback_by_day.get(row["date"], 0) + 1
 
-    # Do not ingest open-matchday: its published terms restrict use to
+    # [run-gap-backfill] Controlled one-shot retry; do not ingest open-matchday: its published terms restrict use to
     # non-commercial informational purposes. Historical recovery stays on
     # the contracted primary provider until a commercially permitted source
     # is explicitly approved and audited.
@@ -154,7 +154,7 @@ def run(cache_path: Path, fallback_path: Path, output_path: Path, api: Any, sess
     rate_limited = False
     delay_seconds = 0.0
     try:
-        delay_seconds = max(0.0, min(30.0, float(os.getenv("VELTRIX_HISTORY_REQUEST_DELAY_SECONDS", "0"))))
+        delay_seconds = max(0.0, min(30.0, float(os.getenv("VELTRIX_HISTORY_REQUEST_DELAY_SECONDS", "1.5"))))
     except (TypeError, ValueError):
         delay_seconds = 0.0
     if unresolved_gaps and (force or not provider_cooldown_active):
