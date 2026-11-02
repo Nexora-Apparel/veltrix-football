@@ -81,10 +81,15 @@ def build_summary(backtest: dict, coverage: dict, generated_at: str | None = Non
             "status": audit.get("status"),
             "matches": audit.get("matches"),
             "home_bias_flag": audit.get("home_bias_flag"),
+            "probability_mass_status": audit.get("probability_mass_status"),
+            "maximum_probability_mass_gap_percentage_points": audit.get("maximum_probability_mass_gap_percentage_points"),
+            "note": audit.get("note"),
             "classes": {
                 cls: {k: stats.get(k) for k in (
                     "actual_matches", "predicted_matches", "actual_share", "predicted_share",
                     "prediction_share_gap_percentage_points", "precision", "recall",
+                    "mean_predicted_probability", "observed_frequency",
+                    "probability_minus_observed_percentage_points",
                 )}
                 for cls, stats in (audit.get("classes") or {}).items()
                 if isinstance(stats, dict)

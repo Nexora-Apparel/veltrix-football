@@ -642,16 +642,31 @@ def _outcome_balance_audit(
                 if mean_probability is not None and actual_share is not None else None
             ),
         }
+    max_probability_gap = max(
+        (abs(by_outcome[key]["probability_minus_observed_percentage_points"])
+         for key in outcomes if by_outcome[key]["probability_minus_observed_percentage_points"] is not None),
+        default=None,
+    )
     return {
         "status": "CHRONOLOGICAL_CLASS_BALANCE_DIAGNOSTIC",
         "matches": count,
         "classes": by_outcome,
         "home_bias_flag": (
-            "HOME_CLASS_OVERPREDICTED"
+            "HOME_ARGMAX_SELECTION_OVERFREQUENT"
             if count and by_outcome["H"]["prediction_share_gap_percentage_points"] > 5
-            else "HOME_CLASS_NOT_OVERPREDICTED_BY_MORE_THAN_5PP"
+            else "HOME_ARGMAX_SELECTION_NOT_OVERFREQUENT"
         ) if count else "NO_DATA",
-        "note": "A positive home prediction-share gap means the model selects home wins more often than they occur; it is a diagnostic, not a causal explanation.",
+        "probability_mass_status": (
+            "WITHIN_5PP_OF_OBSERVED_CLASS_FREQUENCY"
+            if max_probability_gap is not None and max_probability_gap <= 5
+            else "PROBABILITY_MASS_MISALIGNMENT"
+        ) if count else "NO_DATA",
+        "maximum_probability_mass_gap_percentage_points": max_probability_gap,
+        "note": (
+            "predicted_share is the frequency with which a class is the single argmax, "
+            "not the mean probability assigned to that outcome. Mean predicted probability "
+            "and its gap from observed frequency are reported separately."
+        ),
     }
 
 
