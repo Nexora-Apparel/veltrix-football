@@ -438,7 +438,8 @@ def predict_fixtures(
             }
             for fixture in candidates
         ]
-        return visibility_rows + forecast_rows
+        ordered = sorted(visibility_rows + forecast_rows, key=lambda row: row.get("_delivery_order", 0))
+        return [{key: value for key, value in row.items() if key != "_delivery_order"} for row in ordered]
 
     known_team_names: dict[str, set[str]] = defaultdict(set)
     for match in usable:
@@ -454,11 +455,12 @@ def predict_fixtures(
     elo_cache: dict[str, dict[str, Any]] = {}
     # Rebuild histories per target date so earlier dates are never duplicated.
     output: list[dict[str, Any]] = []
-    parsed_all = [
-        p for item in fixtures
-        if (p := _fixture_parts(item, timezone_name, include_started=True))
-        and p["kickoff_date"] == today
-    ]
+    parsed_all = []
+    for delivery_order, item in enumerate(fixtures):
+        parsed = _fixture_parts(item, timezone_name, include_started=True)
+        if parsed and parsed["kickoff_date"] == today:
+            parsed["_delivery_order"] = delivery_order
+            parsed_all.append(parsed)
     visibility_rows, parsed_fixtures = [], []
     for fixture in parsed_all:
         if fixture["kickoff_datetime"] <= current_time:
@@ -758,7 +760,8 @@ def predict_fixtures(
                 ],
             })
             output.append(record)
-    return output
+    ordered_output = sorted(output, key=lambda row: row.get("_delivery_order", 0))
+    return [{key: value for key, value in row.items() if key != "_delivery_order"} for row in ordered_output]
 
 
 def build_daily_report(
