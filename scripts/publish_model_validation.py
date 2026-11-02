@@ -84,7 +84,7 @@ def build_summary(backtest: dict, coverage: dict, generated_at: str | None = Non
             "classes": {
                 cls: {k: stats.get(k) for k in (
                     "actual_matches", "predicted_matches", "actual_share", "predicted_share",
-                    "prediction_share_gap_percentage_points", "precision", "recall",
+                    "prediction_share_gap_percentage_points", "precision", "recall",\n                    "mean_predicted_probability", "observed_frequency",\n                    "probability_minus_observed_percentage_points",
                 )}
                 for cls, stats in (audit.get("classes") or {}).items()
                 if isinstance(stats, dict)
