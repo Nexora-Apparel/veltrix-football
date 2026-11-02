@@ -38,7 +38,9 @@ STATUS_MAP = {
     "unknown": "TBD", "postponed": "PST", "cancelled": "CANC",
 }
 LEAGUE_CODES = {
-    "premier league": "PL", "english premier league": "PL",
+    "premier league": "PL", "english premier league": "PL", "england premier league": "PL",
+    "france ligue 1": "FL1", "germany bundesliga i": "BL1",
+    "italy serie a": "SA", "spain la liga": "PD",
     "championship": "ELC", "league one": "EL1", "league two": "EL2",
     "la liga": "PD", "laliga": "PD", "serie a": "SA", "serie b": "SB",
     "bundesliga": "BL1", "2. bundesliga": "BL2", "ligue 1": "FL1",
