@@ -193,6 +193,7 @@ def build_summary(backtest: dict, coverage: dict, generated_at: str | None = Non
         metrics_by_competition[competition] = {
             "live_eligible_matches": stats.get("live_eligible_matches"),
             "poisson": compact_metrics(stats.get("poisson")),
+            "dixon_coles": compact_metrics(stats.get("dixon_coles")),
             "elo": compact_metrics(stats.get("elo")),
             "historical_odds_matches": stats.get("historical_odds_matches"),
             "poisson_market_comparison": {
@@ -202,6 +203,10 @@ def build_summary(backtest: dict, coverage: dict, generated_at: str | None = Non
             "elo_market_comparison": {
                 "model": compact_metrics((stats.get("elo_same_match_market_comparison") or {}).get("elo")),
                 "market": compact_metrics((stats.get("elo_same_match_market_comparison") or {}).get("market")),
+            },
+            "dixon_coles_market_comparison": {
+                "model": compact_metrics((stats.get("dixon_coles_same_match_market_comparison") or {}).get("dixon_coles")),
+                "market": compact_metrics((stats.get("dixon_coles_same_match_market_comparison") or {}).get("market")),
             },
         }
 
@@ -216,6 +221,14 @@ def build_summary(backtest: dict, coverage: dict, generated_at: str | None = Non
         "dixon_coles_goal_markets": compact_goal_market_metrics(
             (recent_holdout.get("dixon_coles_alternative") or {}).get("goal_markets_metrics") or {}
         ),
+        "dixon_coles_market_comparison": {
+            "model": compact_metrics(
+                ((recent_holdout.get("historical_odds_subset") or {}).get("models_compared_on_same_matches") or {}).get("live_dc")
+            ),
+            "market": compact_metrics(
+                ((recent_holdout.get("historical_odds_subset") or {}).get("models_compared_on_same_matches") or {}).get("market")
+            ),
+        },
         "elo_alternative": compact_metrics((recent_holdout.get("elo_alternative") or {}).get("metrics")),
     }
     dixon = _require_object(live.get("dixon_coles_alternative", {}), "dixon_coles_alternative")
@@ -281,6 +294,14 @@ def build_summary(backtest: dict, coverage: dict, generated_at: str | None = Non
                     dixon.get("goal_markets_metrics") or {}
                 ),
                 "same_match_goal_market_comparison": dixon.get("same_match_goal_market_comparison"),
+                "historical_odds_same_fixture_comparison": {
+                    "model": compact_metrics(
+                        ((live.get("historical_odds_subset") or {}).get("models_compared_on_same_matches") or {}).get("live_dc")
+                    ),
+                    "market": compact_metrics(
+                        ((live.get("historical_odds_subset") or {}).get("models_compared_on_same_matches") or {}).get("market")
+                    ),
+                },
                 "model_validated": dixon.get("model_validated"),
                 "production_applied": False,
             },
