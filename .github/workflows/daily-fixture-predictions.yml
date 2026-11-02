@@ -165,6 +165,7 @@ on:
     # Start at 05:00 Africa/Lagos (WAT, UTC+1) = 04:00 UTC, leaving a one-hour delivery buffer.
     - cron: "0 4 * * *"
 
+# Controlled same-day snapshot replay for the current 2026-11-02 report; no provider refetch.
 # Ordinary pushes run tests only. A push commit containing [run-live-verification] intentionally runs the full live pipeline for controlled end-to-end verification.
 # Controlled verification is explicitly requested for this commit; keep provider failures visible and never publish fallback predictions.
 # This prevents code commits and automated fixes from consuming live provider quotas.
