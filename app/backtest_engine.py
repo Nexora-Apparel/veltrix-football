@@ -16,6 +16,7 @@ from typing import Any, Iterable
 
 from app.live_predictions import ELO_K, HOME_ELO_ADVANTAGE, MIN_TEAM_MATCHES, _name_key
 from app.advanced_models import dixon_coles_1x2, recency_weighted_mean
+from app.poisson_dc_head import dixon_coles_markets
 from app.bias_audit import audit_favourites_and_underdogs
 from app.calibration import rolling_origin_1x2_temperature, rolling_origin_1x2_vector_scaling
 
@@ -545,6 +546,40 @@ def _score_goal_markets(rows: list[dict[str, Any]], probability_key: str = "goal
     return result
 
 
+def _compare_goal_market_heads(
+    rows: list[dict[str, Any]],
+    first_key: str = "live_goal_markets",
+    second_key: str = "live_dc_goal_markets",
+) -> dict[str, Any]:
+    """Compare two goal-market heads on exactly the same settled fixtures."""
+    first = _score_goal_markets(rows, first_key)["markets"]
+    second = _score_goal_markets(rows, second_key)["markets"]
+    comparison = {}
+    for market in sorted(set(first) & set(second)):
+        left, right = first[market], second[market]
+        if not left.get("matches") or left.get("matches") != right.get("matches"):
+            comparison[market] = {"status": "INSUFFICIENT_MATCHES"}
+            continue
+        comparison[market] = {
+            "matches": left["matches"],
+            "baseline_model": first_key,
+            "dixon_coles_model": second_key,
+            "brier_delta_dixon_coles_minus_baseline": right["brier_score"] - left["brier_score"],
+            "log_loss_delta_dixon_coles_minus_baseline": right["log_loss"] - left["log_loss"],
+            "accuracy_delta_dixon_coles_minus_baseline": right["accuracy"] - left["accuracy"],
+            "dixon_coles_beats_baseline_on_brier_and_log_loss": (
+                right["brier_score"] < left["brier_score"]
+                and right["log_loss"] < left["log_loss"]
+            ),
+        }
+    return {
+        "status": "SAME_FIXTURE_CHRONOLOGICAL_COMPARISON",
+        "matches": len(rows),
+        "delta_convention": "Dixon-Coles minus live recent-goals Poisson; negative Brier/log loss is better",
+        "markets": comparison,
+    }
+
+
 def _score_probabilities(rows: list[dict[str, Any]], model_name: str, *, bins: int = 10) -> dict[str, Any]:
     """Score multiclass forecasts and report one-vs-rest reliability by probability bin."""
     outcomes = ("H", "D", "A")
@@ -908,6 +943,21 @@ def chronological_backtest(matches: Iterable[dict[str, Any]], *, min_training_ma
                     live_dc_probs = dixon_coles_1x2(
                         weighted_home_xg, weighted_away_xg, rho=-0.05
                     )
+                    live_dc_score_grid = dixon_coles_markets(
+                        weighted_home_xg, weighted_away_xg, rho=-0.05, max_goals=30
+                    )
+                    dc_market_values = live_dc_score_grid["markets"]
+                    live_dc_goal_markets = {
+                        "btts_yes": dc_market_values["btts"]["yes"],
+                        "btts_no": dc_market_values["btts"]["no"],
+                    }
+                    for line in ("1.5", "2.5", "3.5"):
+                        live_dc_goal_markets[f"over_{line.replace('.', '_')}"] = (
+                            dc_market_values["totals"][line]["over"]
+                        )
+                        live_dc_goal_markets[f"under_{line.replace('.', '_')}"] = (
+                            dc_market_values["totals"][line]["under"]
+                        )
                     live_scored.append({
                         "match_date": day,
                         "division": m["division"],
@@ -919,6 +969,7 @@ def chronological_backtest(matches: Iterable[dict[str, Any]], *, min_training_ma
                         "live_poisson": live_probs,
                         "live_goal_markets": goal_market_probabilities(home_xg, away_xg),
                         "live_dc": live_dc_probs,
+                        "live_dc_goal_markets": live_dc_goal_markets,
                         "live_dc_home_xg": weighted_home_xg,
                         "live_dc_away_xg": weighted_away_xg,
                         **({"live_elo": live_elo_probs} if live_elo_probs is not None else {}),
@@ -1008,6 +1059,9 @@ def chronological_backtest(matches: Iterable[dict[str, Any]], *, min_training_ma
     live_metrics = _score_probabilities(live_scored, "live_poisson") if live_scored else None
     live_goal_market_metrics = _score_goal_markets(live_scored, "live_goal_markets") if live_scored else None
     live_dc_metrics = _score_probabilities(live_scored, "live_dc") if live_scored else None
+    live_dc_goal_market_metrics = (
+        _score_goal_markets(live_scored, "live_dc_goal_markets") if live_scored else None
+    )
     live_elo_rows = [row for row in live_scored if "live_elo" in row]
     live_elo_metrics = _score_probabilities(live_elo_rows, "live_elo") if live_elo_rows else None
     live_dates = sorted({row["match_date"] for row in live_scored})
@@ -1019,6 +1073,9 @@ def chronological_backtest(matches: Iterable[dict[str, Any]], *, min_training_ma
         live_holdout_metrics = _score_probabilities(live_holdout_rows, "live_poisson")
         live_goal_market_holdout_metrics = _score_goal_markets(live_holdout_rows, "live_goal_markets")
         live_dc_holdout_metrics = _score_probabilities(live_holdout_rows, "live_dc")
+        live_dc_goal_market_holdout_metrics = _score_goal_markets(
+            live_holdout_rows, "live_dc_goal_markets"
+        )
         live_elo_holdout_rows = [row for row in live_holdout_rows if "live_elo" in row]
         live_elo_odds_rows = [row for row in live_elo_rows if "market" in row]
         live_elo_holdout_odds_rows = [row for row in live_elo_holdout_rows if "market" in row]
@@ -1034,6 +1091,8 @@ def chronological_backtest(matches: Iterable[dict[str, Any]], *, min_training_ma
                 "model": "experimental_recency_weighted_dixon_coles",
                 "rho": -0.05,
                 "metrics": live_dc_holdout_metrics,
+                "goal_markets_metrics": live_dc_goal_market_holdout_metrics,
+                "same_match_goal_market_comparison": _compare_goal_market_heads(live_holdout_rows),
                 "model_validated": False,
             },
             "historical_odds_subset": {
@@ -1175,6 +1234,7 @@ def chronological_backtest(matches: Iterable[dict[str, Any]], *, min_training_ma
             "one_x_two_calibration": {
                 "live_poisson": rolling_origin_1x2_temperature(live_scored, "live_poisson"),
                 "live_elo": rolling_origin_1x2_temperature(live_scored, "live_elo"),
+                "live_dc": rolling_origin_1x2_temperature(live_scored, "live_dc"),
                 "vector_scaling_live_poisson": rolling_origin_1x2_vector_scaling(live_scored, "live_poisson"),
                 "vector_scaling_live_elo": rolling_origin_1x2_vector_scaling(live_scored, "live_elo"),
                 "note": "Rolling-origin temperature and class-offset calibration are diagnostic only and are not applied to production probabilities.",
@@ -1184,12 +1244,30 @@ def chronological_backtest(matches: Iterable[dict[str, Any]], *, min_training_ma
                 "recent_holdout": live_goal_market_holdout_metrics if live_scored else None,
                 "chronological_calibration_experiment": _chronological_goal_calibration(live_scored, "live_goal_markets"),
                 "rolling_origin_calibration": _rolling_origin_goal_calibration(live_scored, "live_goal_markets"),
-                "note": "BTTS and totals derived from the same pre-match xG as the live Poisson baseline; calibration is report-only and is not applied to live forecasts.",
+                "same_match_head_comparison": _compare_goal_market_heads(live_scored),
+                "dixon_coles_score_grid": {
+                    "model": "experimental_poisson_dixon_coles_score_grid",
+                    "metrics": live_dc_goal_market_metrics,
+                    "recent_holdout": live_dc_goal_market_holdout_metrics if live_scored else None,
+                    "chronological_calibration_experiment": _chronological_goal_calibration(
+                        live_scored, "live_dc_goal_markets"
+                    ),
+                    "rolling_origin_calibration": _rolling_origin_goal_calibration(
+                        live_scored, "live_dc_goal_markets"
+                    ),
+                    "same_match_comparison": _compare_goal_market_heads(live_scored),
+                    "rho": -0.05,
+                    "model_validated": False,
+                    "note": "Fixed-rho score-grid research head; all markets are derived from one corrected score distribution. Not promoted.",
+                },
+                "note": "BTTS and totals are evaluated from chronological pre-match expected goals; calibration is report-only and is not applied to live forecasts.",
             },
             "dixon_coles_alternative": {
                 "model": "experimental_recency_weighted_dixon_coles",
                 "rho": -0.05,
                 "metrics": live_dc_metrics,
+                "goal_markets_metrics": live_dc_goal_market_metrics,
+                "same_match_goal_market_comparison": _compare_goal_market_heads(live_scored),
                 "model_validated": False,
                 "note": "Alternative only; fixed rho has not been calibrated on a validation fold.",
             },

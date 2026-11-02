@@ -59,6 +59,16 @@ def test_backtest_predicts_only_after_training_and_is_deterministic():
     assert dc["metrics"]["matches"] == live["matches"]
     assert dc["metrics"]["brier_score"] >= 0
     assert dc["metrics"]["log_loss"] >= 0
+    assert dc["goal_markets_metrics"]["matches"] == live["matches"]
+    assert set(dc["goal_markets_metrics"]["markets"]) == {
+        "btts_yes", "btts_no", "over_1_5", "under_1_5",
+        "over_2_5", "under_2_5", "over_3_5", "under_3_5",
+    }
+    assert dc["goal_markets_metrics"]["markets"]["btts_yes"]["matches"] == live["matches"]
+    assert dc["same_match_goal_market_comparison"]["matches"] == live["matches"]
+    assert dc["same_match_goal_market_comparison"]["markets"]["over_2_5"]["matches"] == live["matches"]
+    assert dc["goal_markets_metrics"]["markets"]["over_2_5"]["brier_score"] >= 0
+    assert live["goal_markets"]["dixon_coles_score_grid"]["rolling_origin_calibration"]["betting_validation"] is False
     assert live["recent_holdout"]["dixon_coles_alternative"]["metrics"]["matches"] > 0
     assert live["first_test_date"] >= "2024-01-01"
     assert live["metrics"]["brier_score"] >= 0

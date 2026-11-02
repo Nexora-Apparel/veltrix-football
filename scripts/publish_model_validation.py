@@ -38,6 +38,10 @@ def build_summary(backtest: dict, coverage: dict, generated_at: str | None = Non
     one_x_two = _require_object(live.get("one_x_two_calibration"), "one_x_two_calibration")
     goal = _require_object(live.get("goal_markets"), "live goal_markets")
     rolling_goal = _require_object(goal.get("rolling_origin_calibration"), "goal rolling calibration")
+    dc_goal = _require_object(goal.get("dixon_coles_score_grid") or {}, "Dixon-Coles score-grid goal markets")
+    dc_goal_rolling = _require_object(
+        dc_goal.get("rolling_origin_calibration") or {}, "Dixon-Coles rolling goal calibration"
+    )
 
     market_outperforms = all(
         market.get(metric) is not None
@@ -72,6 +76,38 @@ def build_summary(backtest: dict, coverage: dict, generated_at: str | None = Non
             "precision", "recall", "predicted_class_counts", "actual_class_counts",
             "class_precision_recall",
         ) if k in value}
+
+    def compact_goal_market_metrics(value: Any) -> dict | None:
+        if not isinstance(value, dict):
+            return None
+        return {
+            str(name): {
+                key: market.get(key) for key in (
+                    "matches", "brier_score", "log_loss", "accuracy",
+                    "observed_frequency", "mean_predicted_probability",
+                ) if key in market
+            }
+            for name, market in (value.get("markets") or {}).items()
+            if isinstance(market, dict)
+        }
+
+    dc_goal_calibration_markets = {}
+    for name, result in _require_object(
+        dc_goal_rolling.get("markets") or {}, "Dixon-Coles goal calibration markets"
+    ).items():
+        if not isinstance(result, dict):
+            continue
+        dc_goal_calibration_markets[name] = {
+            "status": result.get("status", "NOT_EVALUATED"),
+            "folds_evaluated": result.get("folds_evaluated", 0),
+            "folds_beating_raw_and_baseline": result.get("folds_beating_raw_and_baseline", 0),
+            "raw": result.get("raw"),
+            "calibrated": result.get("calibrated"),
+            "expanding_baseline": result.get("expanding_baseline"),
+            "diagnostic_only": True,
+            "applied_to_production": False,
+            "betting_certification": False,
+        }
 
     outcome_balance = {}
     for name, audit in _require_object(live.get("outcome_balance_audit", {}), "outcome_balance_audit").items():
@@ -177,6 +213,9 @@ def build_summary(backtest: dict, coverage: dict, generated_at: str | None = Non
         "matches": recent_holdout.get("matches"),
         "metrics": compact_metrics(recent_holdout.get("metrics")),
         "dixon_coles_alternative": compact_metrics((recent_holdout.get("dixon_coles_alternative") or {}).get("metrics")),
+        "dixon_coles_goal_markets": compact_goal_market_metrics(
+            (recent_holdout.get("dixon_coles_alternative") or {}).get("goal_markets_metrics") or {}
+        ),
         "elo_alternative": compact_metrics((recent_holdout.get("elo_alternative") or {}).get("metrics")),
     }
     dixon = _require_object(live.get("dixon_coles_alternative", {}), "dixon_coles_alternative")
@@ -238,6 +277,10 @@ def build_summary(backtest: dict, coverage: dict, generated_at: str | None = Non
                 "model": dixon.get("model"),
                 "rho": dixon.get("rho"),
                 "metrics": compact_metrics(dixon.get("metrics")),
+                "goal_markets_metrics": compact_goal_market_metrics(
+                    dixon.get("goal_markets_metrics") or {}
+                ),
+                "same_match_goal_market_comparison": dixon.get("same_match_goal_market_comparison"),
                 "model_validated": dixon.get("model_validated"),
                 "production_applied": False,
             },
@@ -260,6 +303,21 @@ def build_summary(backtest: dict, coverage: dict, generated_at: str | None = Non
             "folds_requested": rolling_goal.get("folds_requested"),
             "folds_evaluated": rolling_goal.get("folds_evaluated"),
             "markets": goal_markets,
+            "dixon_coles_score_grid": {
+                "model": dc_goal.get("model", "experimental_poisson_dixon_coles_score_grid"),
+                "metrics": compact_goal_market_metrics(dc_goal.get("metrics") or {}),
+                "recent_holdout": compact_goal_market_metrics(dc_goal.get("recent_holdout") or {}),
+                "same_match_comparison": dc_goal.get("same_match_comparison"),
+                "rolling_origin_calibration": {
+                    "folds_requested": dc_goal_rolling.get("folds_requested"),
+                    "folds_evaluated": dc_goal_rolling.get("folds_evaluated"),
+                    "markets": dc_goal_calibration_markets,
+                    "betting_validation": False,
+                },
+                "diagnostic_only": True,
+                "applied_to_production": False,
+                "betting_certification": False,
+            },
             "all_goal_markets_calibration_pass": rolling_goal.get("all_goal_markets_calibration_pass"),
             "diagnostic_only": True,
             "applied_to_production": False,
