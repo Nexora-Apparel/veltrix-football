@@ -454,7 +454,12 @@ def test_daily_runner_uses_odds_api_fixtures_and_cached_history_after_primary_42
         api_key = "test-key"
 
         def fixtures(self, target_date, timezone):
-            raise ProviderAPIError("Provider request failed with HTTP 429.")
+            error = ProviderAPIError("Provider request failed with HTTP 429.")
+            error.status_code = 429
+            error.retry_after_seconds = 60.0
+            error.rate_limit_remaining = 42
+            error.rate_limit_reset = "1793617200"
+            raise error
 
     monkeypatch.setattr(daily_runner, "FiveDollarFootballClient", RateLimitedAPI)
 
@@ -528,6 +533,12 @@ def test_daily_runner_uses_odds_api_fixtures_and_cached_history_after_primary_42
     assert seen_payloads[0]["response"][0]["_veltrix_source"] == "The Odds API"
     assert report["primary_provider_request"]["status"] == "RATE_LIMITED"
     assert report["primary_provider_request"]["error_type"] == "ProviderAPIError"
+    assert report["primary_provider_request"]["error_details"] == {
+        "status_code": 429,
+        "retry_after_seconds": 60.0,
+        "rate_limit_remaining": 42,
+        "rate_limit_reset": "1793617200",
+    }
     assert report["fixture_discovery"]["primary_provider_status"] == "RATE_LIMITED"
     assert report["fixture_discovery"]["the_odds_api"]["fixtures_added"] == 1
     assert report["recent_results_sync"]["status"] == "SKIPPED_PRIMARY_PROVIDER_UNAVAILABLE"
