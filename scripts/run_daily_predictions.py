@@ -282,6 +282,9 @@ def _limit_fixture_payload(
     cap = max(0, int(limit))
     result["response"] = [item[5] for item in deduplicated[:cap]]
     meta = result.get("_veltrix_meta")
+    if not isinstance(meta, dict):
+        meta = {}
+        result["_veltrix_meta"] = meta
     if isinstance(meta, dict):
         def source_counts(items: list[dict]) -> dict[str, int]:
             counts: dict[str, int] = {}
