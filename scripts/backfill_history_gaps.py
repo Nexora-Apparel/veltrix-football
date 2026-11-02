@@ -139,8 +139,7 @@ def _openligadb_gap_backfill(session: Any, gaps: list[str], delay_seconds: float
         "source_home": "https://www.openligadb.de/", "status": "NOT_REQUESTED",
         "competitions": [], "matches_found": 0, "matches_added": 0,
         "dates_covered": [], "date_coverage": [], "resolved_dates": [],
-        "request_delay_seconds": delay_seconds,
-        "global_gap_resolution": False,
+        "request_delay_seconds": delay_seconds, "global_gap_resolution": False,
     }
     gap_set = set(gaps)
     if not gap_set:
@@ -158,7 +157,9 @@ def _openligadb_gap_backfill(session: Any, gaps: list[str], delay_seconds: float
             competition = {
                 "shortcut": league["shortcut"], "division": league["division"],
                 "name": league["name"], "url": url, "status": "NOT_CHECKED",
-                "matches_found": 0,
+                "total_matches": 0, "finished_matches": 0,
+                "gap_date_matches": 0, "full_time_candidates": 0,
+                "matches_found": 0, "date_range": None,
             }
             try:
                 response = client.get(
@@ -169,26 +170,54 @@ def _openligadb_gap_backfill(session: Any, gaps: list[str], delay_seconds: float
                 payload = response.json()
                 if not isinstance(payload, list):
                     raise ValueError("OpenLigaDB season response was not a JSON list.")
-                competition["status"] = "AVAILABLE"
+                competition["total_matches"] = len(payload)
+                season_dates = [
+                    str(match.get("matchDateTimeUTC") or match.get("matchDateTime") or "")[:10]
+                    for match in payload if isinstance(match, dict)
+                ]
+                season_dates = [day for day in season_dates if len(day) == 10]
+                if season_dates:
+                    competition["date_range"] = [min(season_dates), max(season_dates)]
+
                 for match in payload:
-                    if not isinstance(match, dict) or match.get("matchIsFinished") is not True:
+                    if not isinstance(match, dict):
                         continue
+                    if match.get("matchIsFinished") is True:
+                        competition["finished_matches"] += 1
                     kickoff = str(match.get("matchDateTimeUTC") or match.get("matchDateTime") or "")
                     day = kickoff[:10]
                     if day not in gap_set:
                         continue
+                    competition["gap_date_matches"] += 1
+                    if match.get("matchIsFinished") is not True:
+                        continue
+
                     results = match.get("matchResults") if isinstance(match.get("matchResults"), list) else []
+                    has_semantic_kind = any(
+                        isinstance(result, dict) and result.get("resultTypeKind")
+                        for result in results
+                    )
                     full_time = next((
                         result for result in results
-                        if isinstance(result, dict) and str(result.get("resultTypeID")) == "2"
+                        if isinstance(result, dict) and result.get("resultTypeKind") == "After90Minutes"
                     ), None)
+                    # Legacy league records predate resultTypeKind. Only in
+                    # those records is resultTypeID==2 a safe 90-minute proxy.
+                    if not full_time and not has_semantic_kind:
+                        full_time = next((
+                            result for result in results
+                            if isinstance(result, dict) and str(result.get("resultTypeID")) == "2"
+                        ), None)
                     if not full_time:
                         continue
+                    competition["full_time_candidates"] += 1
                     home_obj = match.get("team1") if isinstance(match.get("team1"), dict) else {}
                     away_obj = match.get("team2") if isinstance(match.get("team2"), dict) else {}
-                    home, away = str(home_obj.get("teamName") or "").strip(), str(away_obj.get("teamName") or "").strip()
+                    home = str(home_obj.get("teamName") or "").strip()
+                    away = str(away_obj.get("teamName") or "").strip()
                     try:
-                        home_goals, away_goals = int(full_time["pointsTeam1"]), int(full_time["pointsTeam2"])
+                        home_goals = int(full_time["pointsTeam1"])
+                        away_goals = int(full_time["pointsTeam2"])
                         date.fromisoformat(day)
                     except (KeyError, TypeError, ValueError):
                         continue
@@ -212,8 +241,18 @@ def _openligadb_gap_backfill(session: Any, gaps: list[str], delay_seconds: float
                         "league_code": league["shortcut"],
                         "matchday": (match.get("group") or {}).get("groupOrderID") if isinstance(match.get("group"), dict) else None,
                     })
-                competition["matches_found"] = sum(1 for row in rows if row["league_code"] == league["shortcut"])
-                competition["status"] = "RESULTS_FOUND" if competition["matches_found"] else "NO_GAP_RESULTS"
+
+                competition["matches_found"] = sum(
+                    1 for row in rows if row["league_code"] == league["shortcut"]
+                )
+                if competition["matches_found"]:
+                    competition["status"] = "RESULTS_FOUND"
+                elif competition["total_matches"] == 0:
+                    competition["status"] = "EMPTY_SEASON_RESPONSE"
+                elif competition["gap_date_matches"] == 0:
+                    competition["status"] = "NO_GAP_FIXTURES_IN_SEASON"
+                else:
+                    competition["status"] = "NO_90_MINUTE_RESULT_FOR_GAP_FIXTURES"
             except requests.HTTPError as exc:
                 status_code = getattr(getattr(exc, "response", None), "status_code", None)
                 competition.update({"status": "HTTP_ERROR", "error_type": "HTTPError", "status_code": status_code})
@@ -240,7 +279,13 @@ def _openligadb_gap_backfill(session: Any, gaps: list[str], delay_seconds: float
     audit["matches_found"] = len(rows)
     audit["dates_covered"] = sorted(date_counts)
     audit["date_coverage"] = [date_counts[day] for day in sorted(date_counts)]
-    audit["status"] = "PARTIAL_RATE_LIMITED" if rate_limited else ("PARTIAL_RECOVERY" if rows else "NO_GAP_RESULTS")
+    any_season_data = any(item.get("total_matches", 0) for item in audit["competitions"])
+    audit["status"] = (
+        "PARTIAL_RATE_LIMITED" if rate_limited
+        else "PARTIAL_RECOVERY" if rows
+        else "NO_GAP_RESULTS" if any_season_data
+        else "NO_DATA_AVAILABLE"
+    )
     return rows, audit
 
 
