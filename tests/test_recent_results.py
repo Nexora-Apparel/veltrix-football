@@ -675,6 +675,9 @@ def test_gap_backfill_rate_limit_records_retry_cursor(tmp_path):
     class RateLimitedAPI:
         def leagues(self, page=1, per_page=100):
             raise ProviderAPIError("Provider request failed with HTTP 429.")
+
+        def fixtures(self, day, timezone):
+            raise ProviderAPIError("Provider date endpoint returned HTTP 429.")
         def fixtures(self, day, timezone):
             raise ProviderAPIError("Provider date endpoint failed with HTTP 429.")
 
