@@ -2,8 +2,8 @@ name: Historical Results Gap Backfill
 
 on:
   schedule:
-    # Retry unresolved history only after the weekly provider cooldown; 06:30 WAT.
-    - cron: "30 5 * * *"
+    # Retry unresolved history once daily after the 06:00 WAT report window.
+    - cron: "0 7 * * *"
   workflow_dispatch:
     inputs:
       from:
@@ -43,24 +43,10 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           sparse-checkout: public-data/recent_results_cache.json
           sparse-checkout-cone-mode: false
-      - name: Import secondary open results for the unresolved period
-        id: fallback
-        continue-on-error: true
-        env:
-          VELTRIX_ENABLE_FOOTBALL_DATA_FALLBACK: "true"
-        run: |
-          START="${{ inputs.from }}"
-          END="${{ inputs.to }}"
-          if [ -z "$START" ]; then START="2026-09-28"; fi
-          if [ -z "$END" ]; then END="2026-10-11"; fi
-          python scripts/import_open_dataset.py --from "$START" --to "$END" --output reports/gap_fallback.csv
-      - name: Ensure fallback file exists
-        if: always()
+      - name: Disable non-commercial fallback data sources
         run: |
           mkdir -p reports
-          if [ ! -f reports/gap_fallback.csv ]; then
-            printf 'source,division,match_date,home_team,away_team,home_goals,away_goals,full_time_result\n' > reports/gap_fallback.csv
-          fi
+          printf 'source,division,match_date,home_team,away_team,home_goals,away_goals,full_time_result\\n' > reports/gap_fallback.csv
       - name: Retry unresolved dates, merge sourced results, and publish cache
         id: backfill
         env:
