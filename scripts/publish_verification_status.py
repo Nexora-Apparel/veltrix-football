@@ -74,6 +74,9 @@ def build_status(env: dict[str, str]) -> dict:
             "publication_status": report.get("publication_status"),
             "fixtures_received": report.get("fixtures_received"),
             "same_day_pre_match_fixtures": report.get("same_day_pre_match_fixtures"),
+            "same_day_fixtures_retained": report.get("same_day_fixtures_retained"),
+            "past_kickoffs_retained": report.get("past_kickoffs_retained"),
+            "duplicate_fixture_rows_removed": (report.get("fixture_discovery") or {}).get("duplicate_fixture_rows_removed"),
             "future_fixtures_considered": report.get("future_fixtures_considered"),
             "fixture_rows": len(rows),
             "fixture_status_counts": row_counts,
@@ -86,7 +89,7 @@ def build_status(env: dict[str, str]) -> dict:
         if (live or recovered) and (
             not isinstance(report.get("fixture_visibility_validation"), dict)
             or report["fixture_visibility_validation"].get("status") != "PASSED"
-            or report.get("future_fixtures_considered") != len(rows)
+            or report.get("same_day_fixtures_retained", report.get("future_fixtures_considered")) != len(rows)
         ):
             passed = False
         if recovered and report.get("publication_status") != "REUSED_SNAPSHOT_NOT_REFRESHED":

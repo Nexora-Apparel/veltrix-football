@@ -327,7 +327,7 @@ def test_fixture_delivery_cap_uses_requested_date_and_sorts_without_mutating_inp
     assert len(payload["response"]) == 4
 
 
-def test_fixture_delivery_cap_excludes_started_fixtures_for_today():
+def test_fixture_delivery_cap_retains_started_fixtures_after_future_fixtures():
     from datetime import datetime
     from zoneinfo import ZoneInfo
 
@@ -339,8 +339,9 @@ def test_fixture_delivery_cap_excludes_started_fixtures_for_today():
     limited = daily_runner._limit_fixture_payload(
         payload, 25, as_of_date=date(2026, 10, 30), now=now
     )
-    assert len(limited["response"]) == 1
+    assert len(limited["response"]) == 2
     assert limited["response"][0]["fixture"]["date"].startswith("2026-10-30T13:00")
+    assert limited["response"][1]["fixture"]["date"].startswith("2026-10-30T11:00")
 
 
 def test_fixture_delivery_cap_prioritizes_historically_mapped_competitions():
@@ -414,3 +415,28 @@ def test_fixture_cap_does_not_trust_provider_local_numeric_league_ids():
         payload, 1, as_of_date=date(2026, 10, 30), now=now
     )
     assert [row["tag"] for row in limited["response"]] == ["mapped"]
+
+
+def test_fixture_delivery_cap_deduplicates_common_provider_aliases_before_refilling_cap():
+    from datetime import datetime
+    from zoneinfo import ZoneInfo
+    now = datetime(2026, 11, 2, 8, 0, tzinfo=ZoneInfo("Africa/Lagos"))
+    def row(tag, home, away, league, kickoff="2026-11-02T18:00:00+01:00"):
+        return {
+            "fixture": {"date": kickoff, "status": {"short": "NS"}},
+            "teams": {"home": {"name": home}, "away": {"name": away}},
+            "league": {"name": league, "code": "PL" if "Premier" in league else "PD"},
+            "tag": tag,
+        }
+    payload = {"response": [
+        row("newcastle-primary", "Newcastle United", "Everton", "Premier League"),
+        row("newcastle-alias", "Newcastle", "Everton", "England Premier League"),
+        row("deportivo-primary", "Deportivo La Coruña", "CA Osasuna", "La Liga"),
+        row("deportivo-alias", "Deportivo A Coruna", "Osasuna", "Spain La Liga"),
+        row("unique", "Chelsea", "Arsenal", "Premier League", "2026-11-02T20:00:00+01:00"),
+    ]}
+    limited = daily_runner._limit_fixture_payload(payload, 3, as_of_date=date(2026, 11, 2), now=now)
+    tags = [item["tag"] for item in limited["response"]]
+    assert set(tags) == {"newcastle-primary", "deportivo-primary", "unique"}
+    assert limited["_veltrix_meta"]["duplicate_fixture_rows_removed"] == 2
+    assert limited["_veltrix_meta"]["fixtures_after_deduplication"] == 3

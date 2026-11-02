@@ -104,7 +104,7 @@ def test_utc_kickoff_is_converted_to_nigeria_calendar_date():
     assert result[0]["kickoff_local"].startswith("2026-10-23")
 
 
-def test_past_kickoffs_are_excluded_from_pre_match_report():
+def test_past_kickoffs_remain_visible_without_pre_match_forecasts():
     past = _fixture("2026-10-23T11:00:00+01:00")
     past["fixture"]["id"] = 100
     future = _fixture("2026-10-23T15:00:00+01:00")
@@ -114,8 +114,10 @@ def test_past_kickoffs_are_excluded_from_pre_match_report():
         timezone_name="Africa/Lagos",
         now=datetime(2026, 10, 23, 12, 0, tzinfo=ZoneInfo("Africa/Lagos")),
     )
-    assert [item["fixture_id"] for item in result] == [200]
-    assert result[0]["kickoff_local"].startswith("2026-10-23T15:00:00")
+    assert [item["fixture_id"] for item in result] == [100, 200]
+    assert result[0]["status"] == "KICKOFF_PASSED"
+    assert "probabilities" not in result[0]
+    assert result[1]["kickoff_local"].startswith("2026-10-23T15:00:00")
 
 
 
@@ -307,12 +309,19 @@ def test_daily_report_explains_fixture_filtering(tmp_path):
         now=datetime(2026, 10, 23, 12, 0, tzinfo=ZoneInfo("Africa/Lagos")),
     )
     assert report["fixtures_received"] == 4
-    assert report["same_day_pre_match_fixtures"] == 2
-    assert report["past_kickoffs_excluded"] == 1
+    assert report["same_day_pre_match_fixtures"] == 1
+    assert report["past_kickoffs_excluded"] == 0
+    assert report["past_kickoffs_retained"] == 1
     assert report["future_fixtures_considered"] == 1
-    assert report["fixtures_excluded_other_date_or_status"] == 2
-    assert len(report["predictions"]) == 1
-    assert report["predictions"][0]["fixture_id"] == 200
+    assert report["same_day_fixtures_retained"] == 3
+    assert report["fixtures_excluded_other_date_or_status"] == 1
+    assert len(report["predictions"]) == 3
+    assert report["predictions"][0]["fixture_id"] == 100
+    assert report["predictions"][0]["status"] == "KICKOFF_PASSED"
+    assert "probabilities" not in report["predictions"][0]
+    assert report["predictions"][1]["fixture_id"] == 200
+    assert report["predictions"][2]["fixture_id"] == 400
+    assert report["predictions"][2]["status"] == "KICKOFF_PASSED"
     assert report["primary_model_counts"] == {"experimental_recent_goals_poisson": 1}
     assert report["possible_team_name_mismatches"] == 1
     assert report["poisson_alternative_available"] == 0
@@ -333,14 +342,16 @@ def test_empty_history_withholds_eligible_fixtures_explicitly():
     assert "probabilities" not in result[0]
 
 
-def test_empty_history_still_excludes_past_and_other_day_fixtures():
+def test_empty_history_retains_past_fixture_and_excludes_other_day_fixture():
     past = _fixture("2026-10-23T11:00:00+01:00")
     tomorrow = _fixture("2026-10-24T15:00:00+01:00")
     result = predict_fixtures(
         [past, tomorrow], [], as_of=date(2026, 10, 23),
         now=datetime(2026, 10, 23, 12, 0, tzinfo=ZoneInfo("Africa/Lagos")),
     )
-    assert result == []
+    assert len(result) == 1
+    assert result[0]["status"] == "KICKOFF_PASSED"
+    assert "probabilities" not in result[0]
 
 
 
@@ -603,3 +614,18 @@ def test_build_daily_report_retains_scheduled_fixture_without_kickoff():
     assert report["kickoff_unverified_fixtures"] == 1
     assert report["future_fixtures_considered"] == 1
     assert "probabilities" not in row
+
+
+def test_common_fixture_aliases_normalize_for_cross_provider_deduplication():
+    assert _name_key("Newcastle United") == _name_key("Newcastle")
+    assert _name_key("Deportivo La Coruña") == _name_key("Deportivo A Coruna")
+    assert _name_key("CA Osasuna") == _name_key("Osasuna")
+
+
+def test_started_fixture_parts_can_be_read_for_visibility_only():
+    from app.live_predictions import _fixture_parts
+    fixture = _fixture("2026-10-23T11:00:00+01:00")
+    fixture["fixture"]["status"]["short"] = "FT"
+    assert _fixture_parts(fixture) is None
+    parts = _fixture_parts(fixture, include_started=True)
+    assert parts["fixture_status"] == "FT"

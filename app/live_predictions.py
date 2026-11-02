@@ -87,6 +87,10 @@ def _name_key(name: Any) -> str:
         "athleticomadrid": "atleticodemadrid",
         "athmadrid": "atleticodemadrid",
         "newcastleutd": "newcastleunited",
+        "newcastle": "newcastleunited",
+        "deportivolacoruna": "deportivocoruna",
+        "deportivoacoruna": "deportivocoruna",
+        "caosasuna": "osasuna",
         "westham": "westhamunited",
         "westhamutd": "westhamunited",
         "athleticclub": "athleticbilbao",
@@ -231,7 +235,7 @@ def _is_non_senior_competition(name: Any) -> bool:
     return any(re.search(pattern, normalized) for pattern in patterns)
 
 
-def _fixture_parts(item: dict[str, Any], timezone_name: str = "Africa/Lagos") -> dict[str, Any] | None:
+def _fixture_parts(item: dict[str, Any], timezone_name: str = "Africa/Lagos", *, include_started: bool = False) -> dict[str, Any] | None:
     fixture = item.get("fixture") or {}
     teams = item.get("teams") or {}
     league = item.get("league") or {}
@@ -240,7 +244,7 @@ def _fixture_parts(item: dict[str, Any], timezone_name: str = "Africa/Lagos") ->
     kickoff = fixture.get("date")
     status = (fixture.get("status") or {}).get("short")
     # Never issue a pre-match forecast for live, finished, cancelled, or postponed games.
-    if not home or not away or not kickoff or status not in {"NS", "TBD"}:
+    if not home or not away or not kickoff or (not include_started and status not in {"NS", "TBD"}):
         return None
     try:
         parsed = datetime.fromisoformat(str(kickoff).replace("Z", "+00:00"))
@@ -276,7 +280,7 @@ def _fixture_parts(item: dict[str, Any], timezone_name: str = "Africa/Lagos") ->
                 )
             )
         ),
-        "fixture_status": status,
+        "fixture_status": status or "UNKNOWN",
     }
 
 
@@ -390,13 +394,27 @@ def predict_fixtures(
         # Never silently drop eligible fixtures when the history file is empty
         # or contains no records before the requested date. Emit explicit
         # withheld records so reports distinguish missing data from no fixtures.
-        candidates = [
+        parsed = [
             p for item in fixtures
-            if (p := _fixture_parts(item, timezone_name))
+            if (p := _fixture_parts(item, timezone_name, include_started=True))
             and p["kickoff_date"] == today
-            and p["kickoff_datetime"] > current_time
         ]
-        return [
+        visibility_rows, candidates = [], []
+        for fixture in parsed:
+            if fixture["kickoff_datetime"] <= current_time:
+                status, reason = "KICKOFF_PASSED", "Fixture retained for visibility; kickoff has passed, so no pre-match forecast is issued."
+            elif fixture.get("fixture_status") not in {"NS", "TBD"}:
+                status, reason = "FIXTURE_NOT_PREMATCH", f"Fixture retained without a forecast because provider status is {fixture.get('fixture_status')}."
+            else:
+                candidates.append(fixture)
+                continue
+            visibility_rows.append({
+                **{k: v for k, v in fixture.items() if k not in {"kickoff_date", "kickoff_datetime"}},
+                "model": "not_evaluated", "model_validated": False,
+                "betting_recommendation": False, "historical_matches": {"home": 0, "away": 0},
+                "status": status, "reason": reason, "team_name_match_suggestions": {},
+            })
+        forecast_rows = [
             {
                 **{k: v for k, v in fixture.items() if k not in {"kickoff_date", "kickoff_datetime"}},
                 "model": "experimental_recent_goals_poisson",
@@ -417,6 +435,7 @@ def predict_fixtures(
             }
             for fixture in candidates
         ]
+        return visibility_rows + forecast_rows
 
     known_team_names: dict[str, set[str]] = defaultdict(set)
     for match in usable:
@@ -431,13 +450,27 @@ def predict_fixtures(
     # share the same strictly pre-date history, so recomputing it per fixture is wasteful.
     elo_cache: dict[str, dict[str, Any]] = {}
     # Rebuild histories per target date so earlier dates are never duplicated.
-    output: list[dict[str, Any]] = []
-    parsed_fixtures = [
+    output: list[dict[str, Any]] = list(visibility_rows)
+    parsed_all = [
         p for item in fixtures
-        if (p := _fixture_parts(item, timezone_name))
+        if (p := _fixture_parts(item, timezone_name, include_started=True))
         and p["kickoff_date"] == today
-        and p["kickoff_datetime"] > current_time
     ]
+    visibility_rows, parsed_fixtures = [], []
+    for fixture in parsed_all:
+        if fixture["kickoff_datetime"] <= current_time:
+            status, reason = "KICKOFF_PASSED", "Fixture retained for visibility; kickoff has passed, so no pre-match forecast is issued."
+        elif fixture.get("fixture_status") not in {"NS", "TBD"}:
+            status, reason = "FIXTURE_NOT_PREMATCH", f"Fixture retained without a forecast because provider status is {fixture.get('fixture_status')}."
+        else:
+            parsed_fixtures.append(fixture)
+            continue
+        visibility_rows.append({
+            **{k: v for k, v in fixture.items() if k not in {"kickoff_date", "kickoff_datetime"}},
+            "model": "not_evaluated", "model_validated": False,
+            "betting_recommendation": False, "historical_matches": {"home": 0, "away": 0},
+            "status": status, "reason": reason, "team_name_match_suggestions": {},
+        })
     # Strict same-local-calendar-day rule: never include tomorrow or later dates.
     for target_date in ([today] if parsed_fixtures else []):
         team_history: dict[str, deque[tuple[int, int, str]]] = defaultdict(
@@ -751,14 +784,13 @@ def build_daily_report(
 
     parsed_for_date = [
         part for item in fixtures
-        if (part := _fixture_parts(item, timezone_name))
+        if (part := _fixture_parts(item, timezone_name, include_started=True))
         and part["kickoff_date"] == target_date
     ]
-    past_kickoffs = sum(
-        part["kickoff_datetime"] <= current_time for part in parsed_for_date
-    )
+    past_kickoffs = sum(part["kickoff_datetime"] <= current_time for part in parsed_for_date)
     future_kickoffs = sum(
-        part["kickoff_datetime"] > current_time for part in parsed_for_date
+        part["kickoff_datetime"] > current_time and part.get("fixture_status") in {"NS", "TBD"}
+        for part in parsed_for_date
     )
     historical = list(base_historical_matches) if base_historical_matches is not None else load_historical_matches(history_path)
     if additional_historical_matches:
@@ -841,15 +873,19 @@ def build_daily_report(
             default=None,
         ),
         "fixtures_received": len(fixtures),
-        "same_day_pre_match_fixtures": len(parsed_for_date) + len(kickoff_unverified),
-        "past_kickoffs_excluded": past_kickoffs,
+        "same_day_pre_match_fixtures": future_kickoffs + len(kickoff_unverified),
+        "past_kickoffs_excluded": 0,
+        "past_kickoffs_retained": past_kickoffs,
         "future_fixtures_considered": future_kickoffs + len(kickoff_unverified),
+        "same_day_fixtures_retained": len(predictions),
         "kickoff_unverified_fixtures": len(kickoff_unverified),
         "fixture_status_counts": {
             "EXPERIMENTAL_ONLY": sum(p.get("status") == "EXPERIMENTAL_ONLY" for p in predictions),
             "INSUFFICIENT_HISTORY": sum(p.get("status") == "INSUFFICIENT_HISTORY" for p in predictions),
             "UNSUPPORTED_COMPETITION": sum(p.get("status") == "UNSUPPORTED_COMPETITION" for p in predictions),
             "KICKOFF_UNVERIFIED": len(kickoff_unverified),
+            "KICKOFF_PASSED": sum(p.get("status") == "KICKOFF_PASSED" for p in predictions),
+            "FIXTURE_NOT_PREMATCH": sum(p.get("status") == "FIXTURE_NOT_PREMATCH" for p in predictions),
         },
         "fixtures_excluded_other_date_or_status": len(fixtures) - len(parsed_for_date) - len(kickoff_unverified),
         "predictions_created": sum(p["status"] == "EXPERIMENTAL_ONLY" for p in predictions),

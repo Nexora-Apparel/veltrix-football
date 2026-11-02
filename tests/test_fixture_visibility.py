@@ -6,11 +6,13 @@ from scripts.validate_fixture_visibility import validate_fixture_visibility
 def sample():
     return {
         "same_day_only": True,
-        "future_fixtures_considered": 3,
+        "future_fixtures_considered": 2,
+        "same_day_fixtures_retained": 4,
         "predictions": [
             {"home_team": "A", "away_team": "B", "status": "EXPERIMENTAL_ONLY", "probabilities": {"home_win": .5, "draw": .2, "away_win": .3}},
             {"home_team": "C", "away_team": "D", "status": "INSUFFICIENT_HISTORY"},
             {"home_team": "E", "away_team": "F", "status": "KICKOFF_UNVERIFIED"},
+            {"home_team": "G", "away_team": "H", "status": "KICKOFF_PASSED"},
         ],
     }
 
@@ -19,15 +21,17 @@ def test_fixture_visibility_counts_every_fixture_without_fabricating_forecasts()
     report = sample()
     result = validate_fixture_visibility(report)
     assert result["status"] == "PASSED"
-    assert result["fixture_rows"] == 3
+    assert result["fixture_rows"] == 4
     assert result["forecast_rows"] == 1
     assert result["kickoff_unverified_rows"] == 1
+    assert result["fixture_status_counts"]["KICKOFF_PASSED"] == 1
     assert report["fixture_visibility_validation"]["alerts_enabled"] is False
 
 
 def test_fixture_visibility_fails_if_any_fixture_row_is_missing():
     report = sample()
     report["predictions"].pop()
+    report["same_day_fixtures_retained"] = 3
     with pytest.raises(ValueError, match="visibility mismatch"):
         validate_fixture_visibility(report)
 

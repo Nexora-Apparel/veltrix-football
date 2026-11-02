@@ -228,9 +228,7 @@ def _limit_fixture_payload(
             continue
         fixture = row.get("fixture") if isinstance(row.get("fixture"), dict) else {}
         status = fixture.get("status") if isinstance(fixture.get("status"), dict) else {}
-        short = str(status.get("short") or "").upper()
-        if short and short not in {"NS", "TBD"}:
-            continue
+        short = str(status.get("short") or "UNKNOWN").upper()
         raw = fixture.get("date")
         if not raw:
             continue
@@ -243,8 +241,8 @@ def _limit_fixture_payload(
             continue
         if kickoff.date() != target_date:
             continue
-        if target_date == current_time.date() and kickoff <= current_time:
-            continue
+        # Keep same-day started/finished rows visible; prediction logic will
+        # withhold pre-match probabilities for any non-NS/TBD fixture.
         league = row.get("league") if isinstance(row.get("league"), dict) else {}
         league_code = str(league.get("code") or "").upper()
         # Prioritize competitions explicitly mapped into the historical dataset.
@@ -260,14 +258,29 @@ def _limit_fixture_payload(
         except (TypeError, ValueError):
             mapped_id = False
         mapped_priority = 0 if (league_code in LEAGUE_DIVISION_BY_CODE or mapped_id) else 1
-        # Within the same historical-mapping tier, prefer the configured primary
-        # fixture provider over discovery-only supplemental feeds. This prevents
-        # unsupported supplement events from crowding out primary fixtures.
+        pre_match_priority = 0 if short in {"NS", "TBD"} else 1
+        kickoff_priority = 0 if kickoff > current_time else 1
         source_priority = 0 if source == "5dollarfootballapi" else 1
-        eligible.append((mapped_priority, source_priority, kickoff, row))
-    eligible.sort(key=lambda item: (item[0], item[1], item[2]))
+        eligible.append((mapped_priority, pre_match_priority, kickoff_priority, source_priority, kickoff, row))
+    eligible.sort(key=lambda item: (item[0], item[1], item[2], item[3], item[4]))
+    deduplicated = []
+    seen: dict[tuple[str, str, str], list[datetime]] = {}
+    duplicates_removed = 0
+    for item in eligible:
+        kickoff, row = item[4], item[5]
+        teams = row.get("teams") if isinstance(row.get("teams"), dict) else {}
+        home = (teams.get("home") or {}).get("name") if isinstance(teams.get("home"), dict) else None
+        away = (teams.get("away") or {}).get("name") if isinstance(teams.get("away"), dict) else None
+        if home and away:
+            key = (kickoff.date().isoformat(), _name_key(home), _name_key(away))
+            prior = seen.setdefault(key, [])
+            if any(abs((kickoff - existing).total_seconds()) <= 300 for existing in prior):
+                duplicates_removed += 1
+                continue
+            prior.append(kickoff)
+        deduplicated.append(item)
     cap = max(0, int(limit))
-    result["response"] = [row for _, _, _, row in eligible[:cap]]
+    result["response"] = [item[5] for item in deduplicated[:cap]]
     meta = result.get("_veltrix_meta")
     if isinstance(meta, dict):
         def source_counts(items: list[dict]) -> dict[str, int]:
@@ -277,11 +290,13 @@ def _limit_fixture_payload(
                 counts[source_name] = counts.get(source_name, 0) + 1
             return dict(sorted(counts.items()))
         meta["fixtures_before_delivery_cap"] = len(eligible)
+        meta["fixtures_after_deduplication"] = len(deduplicated)
+        meta["duplicate_fixture_rows_removed"] = duplicates_removed
         meta["fixture_delivery_cap"] = cap
         meta["fixtures_after_delivery_cap"] = len(result["response"])
-        meta["fixtures_by_source_before_cap"] = source_counts([row for _, _, _, row in eligible])
+        meta["fixtures_by_source_before_cap"] = source_counts([item[5] for item in eligible])
         meta["fixtures_by_source_after_cap"] = source_counts(result["response"])
-        meta["fixture_selection_policy"] = "mapped_competition_then_primary_provider_then_kickoff"
+        meta["fixture_selection_policy"] = "mapped_competition_then_pre_match_then_future_then_primary_provider_then_kickoff; canonical team aliases and five-minute cross-source deduplication"
     return result
 
 def main() -> None:

@@ -10,6 +10,7 @@ from typing import Any
 FORECAST_STATUSES = {"EXPERIMENTAL_ONLY"}
 NON_FORECAST_STATUSES = {
     "INSUFFICIENT_HISTORY", "UNSUPPORTED_COMPETITION", "KICKOFF_UNVERIFIED",
+    "KICKOFF_PASSED", "FIXTURE_NOT_PREMATCH",
 }
 
 
@@ -21,7 +22,7 @@ def validate_fixture_visibility(report: dict[str, Any]) -> dict[str, Any]:
         raise ValueError("Report predictions must be a list.")
     if any(not isinstance(row, dict) for row in rows):
         raise ValueError("A fixture row is malformed; refusing silent fixture loss.")
-    expected = report.get("future_fixtures_considered")
+    expected = report.get("same_day_fixtures_retained", report.get("future_fixtures_considered"))
     if expected is not None and int(expected) != len(rows):
         raise ValueError(
             f"Fixture visibility mismatch: report says {expected} eligible rows, but contains {len(rows)}."

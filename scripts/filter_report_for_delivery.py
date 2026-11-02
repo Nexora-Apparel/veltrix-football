@@ -127,6 +127,7 @@ def filter_report_for_delivery(report: dict, now: datetime | None = None) -> dic
     insufficient = [row for row in kept if row.get("status") == "INSUFFICIENT_HISTORY"]
     unsupported = [row for row in kept if row.get("status") == "UNSUPPORTED_COMPETITION"]
     kickoff_passed = [row for row in kept if row.get("status") == "KICKOFF_PASSED"]
+    not_prematch = [row for row in kept if row.get("status") == "FIXTURE_NOT_PREMATCH"]
     result = dict(report)
     result["predictions"] = kept
     result["same_day_fixtures_retained"] = len(kept)
@@ -142,6 +143,7 @@ def filter_report_for_delivery(report: dict, now: datetime | None = None) -> dic
         "UNSUPPORTED_COMPETITION": len(unsupported),
         "KICKOFF_UNVERIFIED": result["kickoff_unverified_fixtures"],
         "KICKOFF_PASSED": len(kickoff_passed),
+        "FIXTURE_NOT_PREMATCH": len(not_prematch),
     }
     result["unsupported_competition_breakdown"] = {
         str(league_name): sum(row.get("league") == league_name for row in unsupported)
