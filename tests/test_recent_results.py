@@ -1094,6 +1094,9 @@ def test_openligadb_discovers_all_mapped_target_competitions_for_season_2026():
     }
     assert audit["available_count"] == 7
     assert audit["mapped_count"] == 5
+    assert audit["unmapped_name_sample"] == [
+        {"shortcut": "random", "name": "Local Amateur League"},
+    ]
     assert audit["status"] == "MAPPED_LEAGUES_FOUND"
 
 
@@ -1138,3 +1141,40 @@ def test_openligadb_gap_backfill_includes_europa_and_conference_league_results()
     assert len(rows) == 2
     assert audit["dates_covered"] == ["2026-10-01"]
     assert audit["global_gap_resolution"] is False
+
+
+def test_openligadb_discovery_merges_with_known_static_competition_shortcuts(monkeypatch):
+    from scripts import backfill_history_gaps as backfill
+
+    available = [
+        {"leagueShortcut": "bl1test", "leagueName": "Bundesliga", "leagueSeason": "2026"},
+    ]
+    requested = []
+
+    class Response:
+        def __init__(self, payload):
+            self.payload = payload
+        def raise_for_status(self):
+            return None
+        def json(self):
+            return self.payload
+
+    class Session:
+        def get(self, url, **kwargs):
+            requested.append(url)
+            if url.endswith("/getavailableleagues/2026"):
+                return Response(available)
+            return Response([])
+
+    monkeypatch.setattr(backfill.requests, "Session", Session)
+    rows, audit = backfill._openligadb_gap_backfill(
+        None, ["2026-10-01"], delay_seconds=0,
+    )
+    queried = {
+        url.rsplit("/", 2)[-2] for url in requested
+        if "/getmatchdata/" in url
+    }
+    assert {"pl", "la1", "bl1", "ucl", "bl1test"}.issubset(queried)
+    assert audit["available_leagues_discovery"]["mapped_count"] == 1
+    assert audit["status"] == "NO_GAP_RESULTS"
+    assert rows == []
