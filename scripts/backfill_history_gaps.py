@@ -111,7 +111,7 @@ def _fallback_rows(path: Path, gaps: set[str]) -> list[dict[str, Any]]:
     return rows
 
 
-def run(cache_path: Path, fallback_path: Path, output_path: Path, api: Any, session: Any = None) -> dict[str, Any]:
+def run(cache_path: Path, fallback_path: Path, output_path: Path, api: Any, session: Any = None, force: bool = False) -> dict[str, Any]:
     cache = json.loads(cache_path.read_text(encoding="utf-8"))
     if cache.get("version") not in (1, 2) or not isinstance(cache.get("matches"), list):
         raise ValueError("Unsupported or malformed recent-results cache.")
@@ -135,17 +135,24 @@ def run(cache_path: Path, fallback_path: Path, output_path: Path, api: Any, sess
     for row in fallback:
         fallback_by_day[row["date"]] = fallback_by_day.get(row["date"], 0) + 1
 
-    own_session = session is None
-    session = session or requests.Session()
-    open_rows, open_audit = _open_matchday_backfill(session, gaps)
-    recovered: list[dict[str, Any]] = list(open_rows)
+    # Do not ingest open-matchday: its published terms restrict use to
+    # non-commercial informational purposes. Historical recovery stays on
+    # the contracted primary provider until a commercially permitted source
+    # is explicitly approved and audited.
+    open_rows: list[dict[str, Any]] = []
+    open_audit = {
+        "provider": "open-matchday", "status": "SKIPPED_NONCOMMERCIAL_LICENSE",
+        "files_requested": 0, "files_verified": 0, "matches_added": 0,
+        "resolved_dates": [],
+    }
+    recovered: list[dict[str, Any]] = []
     day_results = []
-    resolved = set(open_audit.get("resolved_dates") or [])
+    resolved = set()
     unresolved_gaps = [day for day in gaps if day not in resolved]
     league_scan = {"active_mapped_leagues": 0, "successful_league_queries": 0, "matches": 0, "failed_leagues": []}
     league_rows_by_day: dict[str, list[dict[str, Any]]] = {day: [] for day in unresolved_gaps}
     rate_limited = False
-    if unresolved_gaps and not provider_cooldown_active:
+    if unresolved_gaps and (force or not provider_cooldown_active):
         leagues = []
         page = 1
         try:
@@ -236,7 +243,7 @@ def run(cache_path: Path, fallback_path: Path, output_path: Path, api: Any, sess
     state["history_gaps"] = [day for day in gaps if day not in resolved]
     if not state["history_gaps"]:
         state.pop("history_gaps", None)
-    if not provider_cooldown_active:
+    if force or not provider_cooldown_active:
         # A 429 is still a completed retry attempt; enforce a one-day cooldown
         # so scheduled runs cannot repeatedly hammer the provider.
         state["last_gap_retry_on"] = datetime.now(ZoneInfo("Africa/Lagos")).date().isoformat()
@@ -251,7 +258,7 @@ def run(cache_path: Path, fallback_path: Path, output_path: Path, api: Any, sess
     output_path.parent.mkdir(parents=True, exist_ok=True)
     output_path.write_text(json.dumps(cache, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
     report = {
-        "status": "PROVIDER_RATE_LIMITED" if rate_limited else ("COMPLETE" if not state.get("history_gaps") else ("PARTIAL_PROVIDER_RETRY_COOLDOWN" if provider_cooldown_active else "PARTIAL_UNRESOLVED_SOURCE_GAPS")),
+        "status": "PROVIDER_RATE_LIMITED" if rate_limited else ("COMPLETE" if not state.get("history_gaps") else ("PARTIAL_PROVIDER_RETRY_COOLDOWN" if provider_cooldown_active and not force else "PARTIAL_UNRESOLVED_SOURCE_GAPS")),
         "requested_gap_dates": len(gaps), "primary_resolved_dates": len(provider_resolved_dates),
         "open_matchday_resolved_dates": sorted(open_resolved_dates), "all_resolved_dates": sorted(resolved),
         "unresolved_dates": state.get("history_gaps", []),
@@ -280,13 +287,14 @@ def main() -> int:
     parser.add_argument("--fallback", required=True)
     parser.add_argument("--output", required=True)
     parser.add_argument("--report", required=True)
+    parser.add_argument("--force", action="store_true", help="Bypass the daily retry cooldown for an explicitly requested run.")
     args = parser.parse_args()
     repo = (os.getenv("GITHUB_REPOSITORY") or "").strip()
     token = (os.getenv("GITHUB_TOKEN") or "").strip()
     if not repo or not token:
         raise RuntimeError("GitHub publication context is missing.")
     api = FiveDollarFootballClient()
-    report = run(Path(args.cache), Path(args.fallback), Path(args.output), api)
+    report = run(Path(args.cache), Path(args.fallback), Path(args.output), api, force=args.force)
     Path(args.report).write_text(json.dumps(report, indent=2, ensure_ascii=False), encoding="utf-8")
     if report["status"] not in {"PROVIDER_RATE_LIMITED", "RETRY_COOLDOWN"}:
         publish("public-data/recent_results_cache.json", Path(args.output), repo, token)
