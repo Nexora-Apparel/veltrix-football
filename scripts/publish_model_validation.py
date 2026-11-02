@@ -67,7 +67,11 @@ def build_summary(backtest: dict, coverage: dict, generated_at: str | None = Non
     def compact_metrics(value: Any) -> dict | None:
         if not isinstance(value, dict):
             return None
-        return {k: value.get(k) for k in ("matches", "result_accuracy", "accuracy", "brier_score", "log_loss", "precision", "recall") if k in value}
+        return {k: value.get(k) for k in (
+            "matches", "result_accuracy", "accuracy", "brier_score", "log_loss",
+            "precision", "recall", "predicted_class_counts", "actual_class_counts",
+            "class_precision_recall",
+        ) if k in value}
 
     outcome_balance = {}
     for name, audit in _require_object(live.get("outcome_balance_audit", {}), "outcome_balance_audit").items():
