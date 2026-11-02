@@ -20813,11 +20813,13 @@
     "covered_through": "2026-11-01",
     "ranges_succeeded": 0,
     "ranges_requested": 0,
-    "backfill_complete": true,
+    "backfill_complete": false,
     "retryable_gap_date_count": 11,
     "provider_plan_limited_date_count": 0,
     "provider_plan_limited_dates": [],
-    "cache_path": "reports/recent_results_cache.json"
+    "cache_path": "reports/recent_results_cache.json",
+    "base_backfill_complete": true,
+    "incremental_history_complete": false
   },
   "multi_source_odds_sync": {
     "five_dollar": {
@@ -20987,7 +20989,7 @@
     "note": "Market odds are reference data; forecast probabilities remain experimental and unchanged."
   },
   "publication_status": "PUBLISHED",
-  "publication_notice": "Generated from this run's live fixture response; publication to command-data is confirmed.",
+  "publication_notice": "Generated from this run's live fixture response; publication to command-data confirmed.",
   "oddspapi_odds": {
     "provider": "OddsPapi",
     "status": "AVAILABLE",
