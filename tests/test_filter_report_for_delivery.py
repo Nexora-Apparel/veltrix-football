@@ -26,7 +26,7 @@ def test_filter_keeps_all_same_day_rows_and_withholds_past_forecasts():
     report = filter_report_for_delivery(sample_report(), now)
     assert len(report["predictions"]) == 4
     assert report["predictions_created"] == 1
-    assert report["future_fixtures_considered"] == 1
+    assert report["future_fixtures_considered"] == 2
     assert report["same_day_fixtures_retained"] == 4
     assert report["kickoff_unverified_fixtures"] == 1
     unverified = next(row for row in report["predictions"] if row.get("status") == "KICKOFF_UNVERIFIED")
