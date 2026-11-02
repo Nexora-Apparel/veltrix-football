@@ -814,3 +814,54 @@ def test_gap_backfill_recovers_completed_dates_from_primary_date_endpoint(tmp_pa
     assert report["primary_resolved_dates"] == 1
     assert saved["state"]["history_gaps"] == ["2026-09-29"]
     assert saved["matches"][0]["source_provider"] == "5DollarFootballAPI_DATE_FIXTURES"
+
+
+def test_gap_backfill_uses_date_endpoint_after_league_catalogue_429(tmp_path):
+    import json
+    from scripts.backfill_history_gaps import run
+    from app.provider_adapters import ProviderAPIError
+
+    cache_path = tmp_path / "cache.json"
+    fallback_path = tmp_path / "fallback.csv"
+    output_path = tmp_path / "out.json"
+    cache_path.write_text(json.dumps({
+        "version": 2,
+        "state": {"history_gaps": ["2026-09-28"]},
+        "matches": [],
+    }), encoding="utf-8")
+    fallback_path.write_text(
+        "match_date,division,home_team,away_team,home_goals,away_goals,full_time_result\\n",
+        encoding="utf-8",
+    )
+
+    class DateEndpointAPI:
+        def leagues(self, page=1, per_page=100):
+            raise ProviderAPIError("League catalogue returned HTTP 429.")
+
+        def fixtures(self, day, timezone):
+            assert day == "2026-09-28"
+            assert timezone == "Africa/Lagos"
+            return {
+                "provider": "5DollarFootballAPI",
+                "_veltrix_meta": {"pages_fetched": 1},
+                "response": [{
+                    "fixture": {
+                        "id": 987, "date": "2026-09-28T12:00:00Z",
+                        "status": {"short": "FT"},
+                    },
+                    "teams": {
+                        "home": {"name": "Primary Home"},
+                        "away": {"name": "Primary Away"},
+                    },
+                    "goals": {"home": 2, "away": 0},
+                    "league": {"code": "PL"},
+                }],
+            }
+
+    report = run(cache_path, fallback_path, output_path, DateEndpointAPI())
+    saved = json.loads(output_path.read_text(encoding="utf-8"))
+    assert report["status"] == "COMPLETE"
+    assert report["league_endpoint_scan"]["error_type"] == "HTTP_429"
+    assert report["date_endpoint"]["resolved_dates"] == ["2026-09-28"]
+    assert saved["state"].get("history_gaps") is None
+    assert saved["matches"][0]["source_provider"] == "5DollarFootballAPI_DATE_FIXTURES"
