@@ -119,7 +119,33 @@ def build_status(env: dict[str, str]) -> dict:
     }
 
 
-def publish_status(status: dict, repo: str, token: str) -> None:
+def merge_test_only_status(previous: dict, current: dict) -> dict:
+    """Keep the last full delivery receipt when a later push only ran tests."""
+    if (
+        current.get("validation_scope") != "TESTS_ONLY"
+        or previous.get("validation_scope") not in {"LIVE_PIPELINE", "SAME_DAY_RECOVERY"}
+    ):
+        return current
+    merged = dict(previous)
+    merged["latest_test_run"] = {
+        "run_id": current.get("run_id"),
+        "commit_sha": current.get("commit_sha"),
+        "recorded_at_utc": current.get("recorded_at_utc"),
+        "overall_status": current.get("overall_status"),
+        "steps": {
+            "unit_tests": current.get("steps", {}).get("unit_tests"),
+            "dashboard_js": current.get("steps", {}).get("dashboard_js"),
+        },
+    }
+    merged["latest_test_status"] = current.get("overall_status")
+    merged["last_test_run_id"] = current.get("run_id")
+    if current.get("overall_status") != "TESTS_PASSED":
+        merged["last_full_pipeline_status"] = previous.get("overall_status")
+        merged["overall_status"] = "NEEDS_REVIEW"
+    return merged
+
+
+def publish_status(status: dict, repo: str, token: str) -> dict:
     api = f"https://api.github.com/repos/{repo}/contents/{quote(PATH, safe='/')}"
     headers = {
         "Accept": "application/vnd.github+json",
@@ -129,14 +155,23 @@ def publish_status(status: dict, repo: str, token: str) -> None:
         "Content-Type": "application/json",
     }
     sha = None
+    previous = {}
     request = Request(api + "?ref=" + quote(BRANCH, safe=""), headers=headers)
     try:
         with urlopen(request, timeout=15) as response:
-            current = json.loads(response.read().decode("utf-8"))
-            sha = current.get("sha")
+            current_file = json.loads(response.read().decode("utf-8"))
+            sha = current_file.get("sha")
+            encoded = current_file.get("content") or ""
+            if current_file.get("encoding") == "base64" and encoded:
+                try:
+                    previous_value = json.loads(base64.b64decode(encoded).decode("utf-8"))
+                    previous = previous_value if isinstance(previous_value, dict) else {}
+                except (ValueError, UnicodeDecodeError, json.JSONDecodeError):
+                    previous = {}
     except HTTPError as exc:
         if exc.code != 404:
             raise
+    status = merge_test_only_status(previous, status)
     data = json.dumps(status, indent=2, ensure_ascii=False).encode("utf-8")
     body = {
         "message": f"Record VELTRIX verification run {status.get('run_id')}",
@@ -148,6 +183,7 @@ def publish_status(status: dict, repo: str, token: str) -> None:
     request = Request(api, data=json.dumps(body).encode("utf-8"), headers=headers, method="PUT")
     with urlopen(request, timeout=20) as response:
         json.loads(response.read().decode("utf-8"))
+    return status
 
 
 def main() -> None:
@@ -158,8 +194,8 @@ def main() -> None:
     if not args.repo or not token:
         raise SystemExit("GITHUB_REPOSITORY and GITHUB_TOKEN are required.")
     status = build_status(dict(os.environ))
-    publish_status(status, args.repo, token)
-    print(json.dumps(status, indent=2))
+    published = publish_status(status, args.repo, token)
+    print(json.dumps(published, indent=2))
 
 
 if __name__ == "__main__":
