@@ -486,3 +486,34 @@ def test_json_request_reports_safe_host_and_network_error_class_after_retries():
     assert "api.5dollarfootballapi.com" in message
     assert "URLError" in message
     assert "secret" not in message
+
+
+def test_fivedollar_league_fixtures_uses_unbounded_historical_window(monkeypatch):
+    from app.provider_adapters import FiveDollarFootballClient
+
+    client = FiveDollarFootballClient("test-key")
+    calls = []
+
+    def fake_get(path, params):
+        calls.append((path, params))
+        return ({
+            "data": [{
+                "id": 123,
+                "league": {"id": 7, "name": "Premier League"},
+                "teams": {"home": {"id": 1, "name": "Home FC"}, "away": {"id": 2, "name": "Away FC"}},
+                "kickoff_utc": "2026-09-28T12:00:00+00:00",
+                "status": "finished",
+                "goals": {"home": 2, "away": 0},
+            }],
+            "pagination": {"has_more": False},
+        }, {"X-RateLimit-Remaining": "99"})
+
+    monkeypatch.setattr(client, "_get", fake_get)
+    result = client.league_fixtures(7, "2026-09-28", "2026-10-08")
+    assert calls[0][0] == "leagues/7/fixtures"
+    assert calls[0][1]["start_time"] < calls[0][1]["end_time"]
+    assert calls[0][1]["status"] == "finished"
+    assert result["results"] == 1
+    assert result["response"][0]["fixture"]["status"]["short"] == "FT"
+    assert result["response"][0]["goals"] == {"home": 2, "away": 0}
+    assert result["_veltrix_meta"]["pages_fetched"] == 1
