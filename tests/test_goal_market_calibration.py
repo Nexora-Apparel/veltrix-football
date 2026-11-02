@@ -9,7 +9,7 @@ def _backtest():
         "over_3_5": (-0.65, 0.29),
     }
     return {
-        "dataset_provenance": {"sha256": "a" * 64},
+        "dataset_provenance": {"sha256": "a" * 64, "commercial_use_eligible": True},
         "live_pipeline": {
             "goal_markets": {
                 "chronological_calibration_experiment": {
@@ -128,3 +128,21 @@ def test_missing_dataset_fingerprint_prevents_live_calibration():
     assert report["goal_market_calibration"]["status"] == "PARTIAL_OR_UNAVAILABLE"
     assert "dataset_provenance" in report["goal_market_calibration"]["failures"]
     assert "goal_market_calibration" not in report["predictions"][0]
+
+
+def test_blocks_live_calibration_when_upstream_data_rights_are_not_cleared():
+    backtest = _backtest()
+    backtest["dataset_provenance"]["commercial_use_eligible"] = False
+    backtest["dataset_provenance"]["rights_status"] = "RESEARCH_ONLY_UPSTREAM_SOURCE_RESTRICTS_COMMERCIAL_AI_MODEL_TRAINING"
+    report = {
+        "predictions": [{
+            "goal_markets_model": "experimental_recent_goals_poisson",
+            "btts_yes": 0.64, "over_1_5": 0.82, "over_2_5": 0.61, "over_3_5": 0.39,
+        }],
+    }
+    apply_goal_market_calibration(report, backtest)
+    assert report["goal_market_calibration"]["status"] == "NOT_APPLIED_SOURCE_RIGHTS_UNVERIFIED"
+    assert report["goal_market_calibration"]["applied_forecasts"] == 0
+    assert "data_rights" in report["goal_market_calibration"]["failures"]
+    assert report["predictions"][0]["btts_yes"] == 0.64
+    assert "raw_goal_market_probabilities" not in report["predictions"][0]
