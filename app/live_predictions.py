@@ -761,7 +761,15 @@ def predict_fixtures(
                 ],
             })
             output.append(record)
-    ordered_output = sorted(output, key=lambda row: row.get("_delivery_order", 0))
+    # Keep forecast and non-forecast rows in actual kickoff order; otherwise
+    # a finished fixture can be listed ahead of a later pre-match fixture.
+    ordered_output = sorted(
+        output,
+        key=lambda row: (
+            str(row.get("kickoff_local") or row.get("kickoff") or ""),
+            row.get("_delivery_order", 0),
+        ),
+    )
     return [{key: value for key, value in row.items() if key != "_delivery_order"} for row in ordered_output]
 
 
