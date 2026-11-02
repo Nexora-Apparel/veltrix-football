@@ -39,3 +39,66 @@ def test_daily_report_archive_path_rejects_invalid_report_date():
 
     with pytest.raises(ValueError):
         _archive_report_path({"as_of_date": "not-a-date"}, datetime.now(timezone.utc))
+
+
+def test_large_json_snapshot_uses_git_data_api_without_four_mb_rejection(tmp_path, monkeypatch):
+    import json
+    from scripts import publish_command_data as publisher
+
+    payload = {"observations": ["x" * 1000 for _ in range(1000)]}
+    target = tmp_path / "large.json"
+    target.write_text(json.dumps(payload), encoding="utf-8")
+    calls = []
+
+    def fake_github_json(url, token, method="GET", body=None):
+        calls.append((url, method, body))
+        if url.endswith("/git/ref/heads/command-data"):
+            return {"object": {"sha": "head-sha"}}
+        if url.endswith("/git/commits/head-sha"):
+            return {"tree": {"sha": "tree-base"}}
+        if url.endswith("/git/blobs"):
+            return {"sha": "blob-sha"}
+        if url.endswith("/git/trees"):
+            return {"sha": "tree-new"}
+        if url.endswith("/git/commits"):
+            return {"sha": "commit-new"}
+        if url.endswith("/git/refs/heads/command-data"):
+            return {"ref": "refs/heads/command-data"}
+        raise AssertionError(url)
+
+    monkeypatch.setattr(publisher, "_github_json", fake_github_json)
+    publisher.publish("public-data/value_evidence_ledger.json", target, "owner/repo", "token")
+    assert len(target.read_bytes()) > 900_000
+    assert any(url.endswith("/git/blobs") and method == "POST" for url, method, _ in calls)
+    assert any(url.endswith("/git/refs/heads/command-data") and method == "PATCH" for url, method, _ in calls)
+
+
+def test_large_blob_publication_preserves_existing_branch_tree(tmp_path, monkeypatch):
+    from scripts import publish_command_data as publisher
+
+    target = tmp_path / "snapshot.json"
+    target.write_text('{"data":"' + ("a" * 950_000) + '"}', encoding="utf-8")
+    requests = []
+
+    def fake_github_json(url, token, method="GET", body=None):
+        requests.append((url, method, body))
+        if url.endswith("/git/ref/heads/command-data"):
+            return {"object": {"sha": "parent"}}
+        if url.endswith("/git/commits/parent"):
+            return {"tree": {"sha": "base-tree"}}
+        if url.endswith("/git/blobs"):
+            return {"sha": "new-blob"}
+        if url.endswith("/git/trees"):
+            assert body["base_tree"] == "base-tree"
+            return {"sha": "new-tree"}
+        if url.endswith("/git/commits"):
+            assert body["parents"] == ["parent"]
+            return {"sha": "new-commit"}
+        if url.endswith("/git/refs/heads/command-data"):
+            assert body == {"sha": "new-commit", "force": False}
+            return {}
+        raise AssertionError(url)
+
+    monkeypatch.setattr(publisher, "_github_json", fake_github_json)
+    publisher.publish("public-data/recent_results_cache.json", target, "owner/repo", "token")
+    assert len(requests) == 6
