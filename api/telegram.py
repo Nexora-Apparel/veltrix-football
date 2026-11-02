@@ -305,6 +305,32 @@ def dashboard_data() -> dict:
         except (TypeError, ValueError, OverflowError):
             row.setdefault("fixture_visibility_note", "Kickoff could not be verified; fixture retained for visibility.")
             upcoming.append(row)
+    def has_matched_market_odds(row: dict) -> bool:
+        odds = row.get("the_odds_api_market_odds")
+        markets = odds.get("markets") if isinstance(odds, dict) else None
+        if isinstance(markets, dict) and any(
+            isinstance(markets.get(key), list) and markets.get(key)
+            for key in ("h2h", "btts", "totals")
+        ):
+            return True
+        five = row.get("five_dollar_market_odds")
+        bookmakers = five.get("bookmakers") if isinstance(five, dict) else None
+        return isinstance(bookmakers, list) and bool(bookmakers)
+
+    matched_odds_rows = sum(1 for row in upcoming if has_matched_market_odds(row))
+    live_odds = report.get("live_odds_sync") if isinstance(report.get("live_odds_sync"), dict) else {}
+    report_odds_count = report.get("fixtures_with_market_odds")
+    try:
+        report_odds_count = int(report_odds_count)
+    except (TypeError, ValueError):
+        report_odds_count = 0
+    live_odds_count = live_odds.get("fixtures_with_market_odds")
+    try:
+        live_odds_count = int(live_odds_count)
+    except (TypeError, ValueError):
+        live_odds_count = 0
+    odds_count = matched_odds_rows if matched_odds_rows else max(report_odds_count, live_odds_count)
+
     ledger = load_paper_ledger()
     paper_tracking = None
     if isinstance(ledger, dict):
@@ -349,7 +375,7 @@ def dashboard_data() -> dict:
         "experimental_forecasts": sum(1 for row in rows if isinstance(row, dict) and row.get("status") == "EXPERIMENTAL_ONLY"),
         "fixtures_visible": len(upcoming),
         "unsupported_fixtures": sum(1 for row in upcoming if isinstance(row, dict) and row.get("status") != "EXPERIMENTAL_ONLY"),
-        "fixtures_with_market_odds": report.get("fixtures_with_market_odds", 0),
+        "fixtures_with_market_odds": odds_count,
         "goal_market_calibration": report.get("goal_market_calibration") or {
             "status": "NOT_REPORTED", "markets": [], "compatible_forecasts": 0,
             "applied_forecasts": 0,
