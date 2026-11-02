@@ -63,7 +63,7 @@ def rolling_origin_1x2_temperature(rows: list[dict[str, Any]], probability_key: 
         raw, cal = score(test), score(test, best_t)
         market_rows = [r for r in test if isinstance(r.get("market"), dict)]
         market = score([{**r, probability_key: r["market"]} for r in market_rows]) if market_rows else None
-        results.append({"fold": index + 1, "status": "EVALUATED", "training_matches": len(train), "test_matches": len(test), "test_start": dates[start], "test_end": dates[end - 1], "temperature": best_t, "training_log_loss": best_loss, "raw": raw, "calibrated": cal, "market_same_fixtures": market, "improved_brier_and_log_loss": cal["brier_score"] < raw["brier_score"] and cal["log_loss"] < raw["log_loss"]})
+        results.append({"fold": index + 1, "status": "EVALUATED", "training_matches": len(train), "test_matches": len(test), "training_end": dates[start - 1], "test_start": dates[start], "test_end": dates[end - 1], "temperature": best_t, "training_log_loss": best_loss, "raw": raw, "calibrated": cal, "market_same_fixtures": market, "improved_brier_and_log_loss": cal["brier_score"] < raw["brier_score"] and cal["log_loss"] < raw["log_loss"]})
         all_test.extend(test)
         all_cal.extend((r, best_t) for r in test)
     evaluated = [r for r in results if r["status"] == "EVALUATED"]
