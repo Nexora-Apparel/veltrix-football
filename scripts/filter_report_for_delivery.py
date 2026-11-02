@@ -85,7 +85,7 @@ def filter_report_for_delivery(report: dict, now: datetime | None = None) -> dic
         except ValueError:
             missing_or_invalid_kickoff_rows += 1
             kickoff_unverified_rows_retained += 1
-            delivered_row = dict(row)
+            delivered_row = _withhold_forecast(row)
             delivered_row["status"] = "KICKOFF_UNVERIFIED"
             delivered_row["reason"] = "Fixture retained from the saved same-day report, but kickoff time is invalid; forecast withheld until time can be verified."
             delivered_row["kickoff_verification"] = "INVALID"
