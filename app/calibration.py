@@ -277,27 +277,15 @@ def rolling_origin_1x2_vector_scaling(
         all_market_cal.extend((r, bias) for r in market_rows)
 
     raw_total = score(all_test)
-    cal_total = None
-    if all_cal:
-        brier = loss = correct = 0.0
-        for row, bias in all_cal:
-            p, y = transform(row[probability_key], bias), row["actual"]
-            brier += sum((p[k] - float(k == y)) ** 2 for k in ("H", "D", "A"))
-            loss -= math.log(max(1e-15, p[y]))
-            correct += int(max(p, key=p.get) == y)
-        n = len(all_cal)
-        cal_total = {"matches": n, "brier_score": brier / n, "log_loss": loss / n, "accuracy": correct / n}
+    def score_calibrated(pairs):
+        calibrated_rows = [
+            {**row, probability_key: transform(row[probability_key], bias)}
+            for row, bias in pairs
+        ]
+        return score(calibrated_rows) if calibrated_rows else None
+    cal_total = score_calibrated(all_cal)
     market_total = score(all_market, market=True) if all_market else None
-    market_cal_total = None
-    if all_market_cal:
-        brier = loss = correct = 0.0
-        for row, bias in all_market_cal:
-            p, y = transform(row[probability_key], bias), row["actual"]
-            brier += sum((p[k] - float(k == y)) ** 2 for k in ("H", "D", "A"))
-            loss -= math.log(max(1e-15, p[y]))
-            correct += int(max(p, key=p.get) == y)
-        n = len(all_market_cal)
-        market_cal_total = {"matches": n, "brier_score": brier / n, "log_loss": loss / n, "accuracy": correct / n}
+    market_cal_total = score_calibrated(all_market_cal)
     evaluated = [r for r in results if r["status"] == "EVALUATED"]
     fold_wins = sum(r["improved_brier_and_log_loss"] for r in evaluated)
     beats_market = bool(market_total and market_cal_total and market_cal_total["brier_score"] < market_total["brier_score"] and market_cal_total["log_loss"] < market_total["log_loss"])
