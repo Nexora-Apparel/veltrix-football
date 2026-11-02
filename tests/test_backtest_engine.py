@@ -357,7 +357,9 @@ def test_outcome_balance_audit_detects_excess_home_class_predictions():
         {"model": {"H": 0.10, "D": 0.10, "A": 0.80}, "actual": "A"},
     ]
     audit = _outcome_balance_audit(rows, "model")
-    assert audit["home_bias_flag"] == "HOME_CLASS_OVERPREDICTED"
+    assert audit["home_bias_flag"] == "HOME_ARGMAX_SELECTION_OVERFREQUENT"
+    assert audit["probability_mass_status"] == "PROBABILITY_MASS_MISALIGNMENT"
+    assert audit["classes"]["H"]["mean_predicted_probability"] == pytest.approx(0.5)
     assert audit["classes"]["H"]["actual_matches"] == 1
     assert audit["classes"]["H"]["predicted_matches"] == 2
     assert audit["classes"]["H"]["precision"] == 0.5
