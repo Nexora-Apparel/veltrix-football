@@ -16,6 +16,8 @@ def test_dashboard_root_handler_returns_html():
     assert "Value validation" in response.body.decode("utf-8")
     assert "Model validation" in response.body.decode("utf-8")
     assert "BTTS / totals calibration" in response.body.decode("utf-8")
+    assert "Historical source rights" in response.body.decode("utf-8")
+    assert "Unresolved historical dates" in response.body.decode("utf-8")
     assert "Prospective " in response.body.decode("utf-8")
     assert 'data-view="trackingView"' in response.body.decode("utf-8")
     assert ".sectionview.active{display:block}" in response.body.decode("utf-8")
