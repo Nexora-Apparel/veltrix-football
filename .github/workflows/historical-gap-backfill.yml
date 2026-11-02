@@ -6,8 +6,8 @@ on:
     paths:
       - "scripts/backfill_history_gaps.py"
   schedule:
-    # Retry unresolved history once daily after the 06:00 WAT report window.
-    - cron: "0 7 * * *"
+    # Retry unresolved history 30 minutes after the 06:00 WAT report target.
+    - cron: "30 5 * * *"
   workflow_dispatch:
     inputs:
       from:
