@@ -64,6 +64,109 @@ def build_summary(backtest: dict, coverage: dict, generated_at: str | None = Non
             "betting_certification": False,
         }
 
+    def compact_metrics(value: Any) -> dict | None:
+        if not isinstance(value, dict):
+            return None
+        return {k: value.get(k) for k in ("matches", "result_accuracy", "brier_score", "log_loss") if k in value}
+
+    outcome_balance = {}
+    for name, audit in _require_object(live.get("outcome_balance_audit", {}), "outcome_balance_audit").items():
+        if not isinstance(audit, dict):
+            continue
+        outcome_balance[name] = {
+            "status": audit.get("status"),
+            "matches": audit.get("matches"),
+            "home_bias_flag": audit.get("home_bias_flag"),
+            "classes": {
+                cls: {k: stats.get(k) for k in (
+                    "actual_matches", "predicted_matches", "actual_share", "predicted_share",
+                    "prediction_share_gap_percentage_points", "precision", "recall",
+                )}
+                for cls, stats in (audit.get("classes") or {}).items()
+                if isinstance(stats, dict)
+            },
+        }
+
+    confidence_selection = {}
+    for name, audit in _require_object(live.get("confidence_selection_audit", {}), "confidence_selection_audit").items():
+        if not isinstance(audit, dict):
+            continue
+        confidence_selection[name] = {
+            "status": audit.get("status"),
+            "total_matches": audit.get("total_matches"),
+            "thresholds": [{
+                k: row.get(k) for k in (
+                    "minimum_top_probability", "selected_matches", "coverage", "accuracy",
+                    "mean_top_probability", "predicted_class_counts",
+                )
+            } for row in audit.get("thresholds", []) if isinstance(row, dict)],
+            "note": audit.get("note"),
+        }
+
+    favourite_underdog = {}
+    for name, audit in _require_object(live.get("favourite_underdog_audit", {}), "favourite_underdog_audit").items():
+        if not isinstance(audit, dict) or name == "note":
+            continue
+        favourite_underdog[name] = {
+            "status": audit.get("status"),
+            "overall": compact_metrics(audit.get("overall")),
+            "favourite_wins": compact_metrics(audit.get("favourite_wins")),
+            "underdog_wins": compact_metrics(audit.get("underdog_wins")),
+            "matches_with_market_classification": audit.get("matches_with_market_classification"),
+            "mean_model_probability_assigned_to_market_favourite": audit.get("mean_model_probability_assigned_to_market_favourite"),
+            "mean_model_probability_assigned_to_market_underdog": audit.get("mean_model_probability_assigned_to_market_underdog"),
+            "important_note": audit.get("important_note"),
+        }
+
+    draw_margin = {}
+    for name, experiment in _require_object(live.get("draw_margin_experiment", {}), "draw_margin_experiment").items():
+        if not isinstance(experiment, dict) or name == "note":
+            continue
+        draw_margin[name] = {
+            "status": experiment.get("status"),
+            "calibration_cutoff_date": experiment.get("calibration_cutoff_date"),
+            "calibration_matches": experiment.get("calibration_matches"),
+            "holdout_matches": experiment.get("holdout_matches"),
+            "selected_draw_margin": experiment.get("selected_draw_margin"),
+            "raw_argmax_holdout": compact_metrics(experiment.get("raw_argmax_holdout")),
+            "draw_margin_holdout": compact_metrics(experiment.get("draw_margin_holdout")),
+            "holdout_accuracy_delta": experiment.get("holdout_accuracy_delta"),
+            "improved_unseen_holdout_accuracy": experiment.get("improved_unseen_holdout_accuracy"),
+            "note": experiment.get("note"),
+        }
+
+    metrics_by_competition = {}
+    for competition, stats in _require_object(live.get("metrics_by_competition", {}), "metrics_by_competition").items():
+        if not isinstance(stats, dict):
+            continue
+        metrics_by_competition[competition] = {
+            "live_eligible_matches": stats.get("live_eligible_matches"),
+            "poisson": compact_metrics(stats.get("poisson")),
+            "elo": compact_metrics(stats.get("elo")),
+            "historical_odds_matches": stats.get("historical_odds_matches"),
+            "poisson_market_comparison": {
+                "model": compact_metrics((stats.get("same_match_market_comparison") or {}).get("poisson")),
+                "market": compact_metrics((stats.get("same_match_market_comparison") or {}).get("market")),
+            },
+            "elo_market_comparison": {
+                "model": compact_metrics((stats.get("elo_same_match_market_comparison") or {}).get("elo")),
+                "market": compact_metrics((stats.get("elo_same_match_market_comparison") or {}).get("market")),
+            },
+        }
+
+    recent_holdout = _require_object(live.get("recent_holdout", {}), "recent_holdout")
+    recent_holdout_summary = {
+        "method": recent_holdout.get("method"),
+        "start_date": recent_holdout.get("start_date"),
+        "end_date": recent_holdout.get("end_date"),
+        "matches": recent_holdout.get("matches"),
+        "metrics": compact_metrics(recent_holdout.get("metrics")),
+        "dixon_coles_alternative": compact_metrics((recent_holdout.get("dixon_coles_alternative") or {}).get("metrics")),
+        "elo_alternative": compact_metrics((recent_holdout.get("elo_alternative") or {}).get("metrics")),
+    }
+    dixon = _require_object(live.get("dixon_coles_alternative", {}), "dixon_coles_alternative")
+    elo_alternative = _require_object(live.get("elo_alternative", {}), "elo_alternative")
+
     one_x_two_models = {}
     for name, result in one_x_two.items():
         if name == "note" or not isinstance(result, dict):
@@ -114,6 +217,30 @@ def build_summary(backtest: dict, coverage: dict, generated_at: str | None = Non
             "release_status": "NOT_CERTIFIED_MARKET_OUTPERFORMED_MODELS" if market_outperforms else "NOT_CERTIFIED",
         },
         "rolling_origin_1x2_calibration": one_x_two_models,
+        "recent_holdout": recent_holdout_summary,
+        "alternative_models": {
+            "dixon_coles": {
+                "model": dixon.get("model"),
+                "rho": dixon.get("rho"),
+                "metrics": compact_metrics(dixon.get("metrics")),
+                "model_validated": dixon.get("model_validated"),
+                "production_applied": False,
+            },
+            "elo_alternative": {
+                "model": elo_alternative.get("model"),
+                "matches": elo_alternative.get("matches"),
+                "metrics": compact_metrics(elo_alternative.get("metrics")),
+                "production_applied": False,
+            },
+        },
+        "class_balance_audit": outcome_balance,
+        "confidence_selection_audit": confidence_selection,
+        "favourite_underdog_audit": favourite_underdog,
+        "draw_margin_experiment": {
+            "models": draw_margin,
+            "note": "Decision-only experiment; no draw-margin adjustment is applied to production probabilities.",
+        },
+        "metrics_by_competition": metrics_by_competition,
         "rolling_origin_goal_market_calibration": {
             "folds_requested": rolling_goal.get("folds_requested"),
             "folds_evaluated": rolling_goal.get("folds_evaluated"),
