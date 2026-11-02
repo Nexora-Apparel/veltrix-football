@@ -31,7 +31,7 @@ def test_fixture_visibility_counts_every_fixture_without_fabricating_forecasts()
 def test_fixture_visibility_fails_if_any_fixture_row_is_missing():
     report = sample()
     report["predictions"].pop()
-    report["same_day_fixtures_retained"] = 3
+    # Keep the original expected count: three rows remain but four were expected.
     with pytest.raises(ValueError, match="visibility mismatch"):
         validate_fixture_visibility(report)
 
