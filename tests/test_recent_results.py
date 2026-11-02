@@ -655,8 +655,10 @@ def test_historical_backfill_maps_country_prefixed_and_short_league_names():
     assert _mapped_league_division({"id": 5, "name": "Unmapped competition"}) is None
 
 
-def test_gap_backfill_rate_limit_does_not_advance_retry_cursor(tmp_path):
+def test_gap_backfill_rate_limit_records_retry_cursor(tmp_path):
     import json
+    from datetime import datetime
+    from zoneinfo import ZoneInfo
     from scripts.backfill_history_gaps import run
     from app.provider_adapters import ProviderAPIError
 
