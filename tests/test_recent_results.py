@@ -1093,9 +1093,9 @@ def test_openligadb_discovers_all_mapped_target_competitions_for_season_2026():
     found = {(row["shortcut"], row["division"]) for row in leagues}
     assert {("pl", "E0"), ("la1", "SP1"), ("bl1", "D1"), ("sa1", "I1"), ("fl1", "F1")} <= found
     assert ("old", "E0") not in found
-    assert audit["available_count"] == 7
-    assert audit["discovered_mapped_count"] == 6
-    assert audit["mapped_count"] == 5
+    assert audit["available_count"] == 8
+    assert audit["discovered_mapped_count"] == 5
+    assert audit["mapped_count"] == 13
     assert any(row["shortcut"] == "bl1" for row in audit["sample_leagues"])
     assert audit["unmapped_name_sample"] == [
         {"shortcut": "random", "name": "Local Amateur League"},
@@ -1179,7 +1179,8 @@ def test_openligadb_discovery_merges_with_known_static_competition_shortcuts(mon
         url.rsplit("/", 2)[-2] for url in requested
         if "/getmatchdata/" in url
     }
-    assert {"pl", "la1", "ucl", "bl1test"}.issubset(queried)
-    assert audit["available_leagues_discovery"]["mapped_count"] == 1
-    assert audit["status"] == "NO_GAP_RESULTS"
+    assert {"pl", "la1", "ucl", "bl1"}.issubset(queried)
+    assert "bl1test" not in queried
+    assert audit["available_leagues_discovery"]["mapped_count"] == 11
+    assert audit["status"] == "NO_DATA_AVAILABLE"
     assert rows == []
