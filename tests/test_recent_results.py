@@ -605,7 +605,16 @@ def test_gap_backfill_keeps_unverified_empty_dates_and_records_secondary_rows(tm
             return {"response": [{"id": 7, "name": "Premier League"}], "pagination": {"has_more": False}}
 
         def league_fixtures(self, league_id, start_date, end_date, timezone):
-            return {"provider": "5DollarFootballAPI", "response": [], "_veltrix_meta": {"pages_fetched": 1}}
+            return {
+                "provider": "5DollarFootballAPI",
+                "_veltrix_meta": {"pages_fetched": 1},
+                "response": [{
+                    "fixture": {"id": 124, "date": "2026-09-28T13:00:00Z", "status": {"short": "FT"}},
+                    "teams": {"home": {"name": "League FC"}, "away": {"name": "League Away"}},
+                    "goals": {"home": 3, "away": 1},
+                    "league": {"code": "PL"},
+                }],
+            }
 
         def fixtures(self, day, timezone):
             if day == "2026-09-28":
@@ -627,7 +636,7 @@ def test_gap_backfill_keeps_unverified_empty_dates_and_records_secondary_rows(tm
     assert saved["state"]["history_gaps"] == ["2026-09-29"]
     assert len(saved["matches"]) == 2
     assert {row["source_provider"] for row in saved["matches"]} == {
-        "5DollarFootballAPI", "football-data.co.uk",
+        "5DollarFootballAPI_LEAGUE_FIXTURES", "football-data.co.uk",
     }
 
 
