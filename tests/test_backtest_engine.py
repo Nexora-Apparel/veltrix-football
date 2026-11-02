@@ -416,6 +416,8 @@ def test_rolling_origin_1x2_temperature_calibration_uses_only_earlier_dates():
     assert result["market_on_same_odds_covered_fixtures"]["matches"] == result["raw"]["matches"]
     assert result["calibrated_on_same_odds_covered_fixtures"]["matches"] == result["raw"]["matches"]
     assert "beats_market_on_same_fixtures" in result
+    assert result["market_anchor_blend_on_same_fixtures"]["matches"] == result["raw"]["matches"]
+    assert result["market_anchor_blend_beats_market"] is True
     evaluated = [fold for fold in result["folds"] if fold["status"] == "EVALUATED"]
     assert all(fold["training_end"] < fold["test_start"] <= fold["test_end"] for fold in evaluated)
     assert all(0.5 <= fold["temperature"] <= 3.0 for fold in evaluated)
