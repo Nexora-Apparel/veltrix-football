@@ -154,3 +154,35 @@ def test_dashboard_keeps_future_unsupported_fixtures_visible(monkeypatch):
     ]
     assert "probabilities" not in payload["predictions"][1]
     assert "probabilities" not in payload["predictions"][2]
+
+
+def test_dashboard_market_odds_count_uses_actual_fixture_quote_rows(monkeypatch):
+    from api import telegram
+
+    rows = [
+        {
+            "home_team": "Quoted FC", "away_team": "Visitor FC",
+            "status": "EXPERIMENTAL_ONLY",
+            "kickoff_local": "2099-05-01T15:00:00+01:00",
+            "the_odds_api_market_odds": {
+                "markets": {"h2h": [{"bookmaker": "Example", "outcomes": []}]},
+            },
+        },
+        {
+            "home_team": "No Quote FC", "away_team": "Guest FC",
+            "status": "UNSUPPORTED_COMPETITION",
+            "kickoff_local": "2099-05-01T17:00:00+01:00",
+        },
+    ]
+    monkeypatch.setattr(telegram, "load_latest_report", lambda: {
+        "as_of_date": "2099-05-01",
+        "predictions": rows,
+        "fixtures_received": 2,
+        "fixtures_with_market_odds": 0,
+        "live_odds_sync": {"fixtures_with_market_odds": 9},
+    })
+    monkeypatch.setattr(telegram, "load_paper_ledger", lambda: None)
+
+    payload = telegram.dashboard_data()
+    assert payload["fixtures_with_market_odds"] == 1
+    assert payload["fixtures_visible"] == 2
