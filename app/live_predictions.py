@@ -17,6 +17,7 @@ from typing import Any, Iterable
 
 from app.prediction import match_probabilities
 from app.advanced_models import dixon_coles_1x2, recency_weighted_mean, rest_congestion_context
+from app.poisson_dc_head import dixon_coles_markets
 from app.team_form import summarize_team_form
 
 MIN_TEAM_MATCHES = 5
@@ -681,6 +682,31 @@ def predict_fixtures(
                 ).items()
             }
 
+            # Coherent score-grid shadow head: derive 1X2, BTTS and totals from
+            # the same corrected score distribution. Keep it separate from the
+            # production forecast until chronological validation supports promotion.
+            try:
+                dc_shadow_result = dixon_coles_markets(
+                    weighted_home_xg, weighted_away_xg, rho=-0.05, max_goals=30
+                )
+                dixon_coles_shadow = {
+                    "model": "experimental_poisson_dixon_coles_score_grid",
+                    "status": dc_shadow_result["status"],
+                    "rho": dc_shadow_result["rho"],
+                    "expected_goals": dc_shadow_result["expected_goals"],
+                    "markets": dc_shadow_result["markets"],
+                    "truncated_poisson_tail_estimate": dc_shadow_result[
+                        "truncated_poisson_tail_estimate"
+                    ],
+                }
+            except (ValueError, OverflowError) as exc:
+                dixon_coles_shadow = {
+                    "model": "experimental_poisson_dixon_coles_score_grid",
+                    "status": "SHADOW_UNAVAILABLE",
+                    "reason": str(exc),
+                    "markets": None,
+                }
+
             elo_probabilities, elo_metadata = _elo_probabilities(
                 usable,
                 fixture["home_team"],
@@ -725,6 +751,7 @@ def predict_fixtures(
                     usable, home_key, away_key, target_date, window_days=14,
                     target_venue_coordinates=target_venue_coordinates
                 ),
+                "poisson_dc_shadow": dixon_coles_shadow,
                 "advanced_model_alternative": {
                     "model": "experimental_recency_weighted_dixon_coles",
                     "model_validated": False,
