@@ -116,6 +116,134 @@ def _fallback_rows(path: Path, gaps: set[str]) -> list[dict[str, Any]]:
     return rows
 
 
+OPENLIGADB_LEAGUES = (
+    {"shortcut": "pl", "division": "E0", "name": "Premier League"},
+    {"shortcut": "la1", "division": "SP1", "name": "La Liga"},
+    {"shortcut": "bl1", "division": "D1", "name": "Bundesliga"},
+    {"shortcut": "ucl", "division": "UCL", "name": "UEFA Champions League"},
+)
+OPENLIGADB_LICENSE = "ODbL-1.0"
+OPENLIGADB_LICENSE_URL = "https://opendatacommons.org/licenses/odbl/1-0/"
+OPENLIGADB_ATTRIBUTION = "OpenLigaDB community-maintained football data, licensed under ODbL 1.0"
+
+
+def _openligadb_gap_backfill(session: Any, gaps: list[str], delay_seconds: float = 10.0) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    """Fetch finished scores from OpenLigaDB with explicit ODbL provenance.
+
+    This is a partial source only: it never clears a global date gap because
+    its competition coverage is narrower than VELTRIX's complete target set.
+    """
+    audit: dict[str, Any] = {
+        "provider": "OpenLigaDB", "season": 2026, "license": OPENLIGADB_LICENSE,
+        "license_url": OPENLIGADB_LICENSE_URL, "attribution": OPENLIGADB_ATTRIBUTION,
+        "source_home": "https://www.openligadb.de/", "status": "NOT_REQUESTED",
+        "competitions": [], "matches_found": 0, "matches_added": 0,
+        "dates_covered": [], "date_coverage": [], "resolved_dates": [],
+        "request_delay_seconds": delay_seconds,
+        "global_gap_resolution": False,
+    }
+    gap_set = set(gaps)
+    if not gap_set:
+        return [], audit
+    own_session = session is None
+    client = session or requests.Session()
+    rows: list[dict[str, Any]] = []
+    seen: set[tuple[str, str, str, str]] = set()
+    rate_limited = False
+    try:
+        for index, league in enumerate(OPENLIGADB_LEAGUES):
+            if index and delay_seconds > 0:
+                time_module.sleep(delay_seconds)
+            url = f"https://api.openligadb.de/getmatchdata/{league['shortcut']}/2026"
+            competition = {
+                "shortcut": league["shortcut"], "division": league["division"],
+                "name": league["name"], "url": url, "status": "NOT_CHECKED",
+                "matches_found": 0,
+            }
+            try:
+                response = client.get(
+                    url, timeout=30,
+                    headers={"User-Agent": "VELTRIX-FOOTBALL/1.0 (https://github.com/Nexora-Apparel/veltrix-football)"},
+                )
+                response.raise_for_status()
+                payload = response.json()
+                if not isinstance(payload, list):
+                    raise ValueError("OpenLigaDB season response was not a JSON list.")
+                competition["status"] = "AVAILABLE"
+                for match in payload:
+                    if not isinstance(match, dict) or match.get("matchIsFinished") is not True:
+                        continue
+                    kickoff = str(match.get("matchDateTimeUTC") or match.get("matchDateTime") or "")
+                    day = kickoff[:10]
+                    if day not in gap_set:
+                        continue
+                    results = match.get("matchResults") if isinstance(match.get("matchResults"), list) else []
+                    full_time = next((
+                        result for result in results
+                        if isinstance(result, dict) and str(result.get("resultTypeID")) == "2"
+                    ), None)
+                    if not full_time:
+                        continue
+                    home_obj = match.get("team1") if isinstance(match.get("team1"), dict) else {}
+                    away_obj = match.get("team2") if isinstance(match.get("team2"), dict) else {}
+                    home, away = str(home_obj.get("teamName") or "").strip(), str(away_obj.get("teamName") or "").strip()
+                    try:
+                        home_goals, away_goals = int(full_time["pointsTeam1"]), int(full_time["pointsTeam2"])
+                        date.fromisoformat(day)
+                    except (KeyError, TypeError, ValueError):
+                        continue
+                    if not home or not away or _name_key(home) == _name_key(away):
+                        continue
+                    key = (day, league["division"], _name_key(home), _name_key(away))
+                    if key in seen:
+                        continue
+                    seen.add(key)
+                    rows.append({
+                        "date": day, "division": league["division"],
+                        "home": home, "away": away,
+                        "home_goals": home_goals, "away_goals": away_goals,
+                        "fixture_id": match.get("matchID"), "fixture_status": "FT",
+                        "source_provider": "OpenLigaDB",
+                        "source_license": OPENLIGADB_LICENSE,
+                        "source_attribution": OPENLIGADB_ATTRIBUTION,
+                        "source_url": url, "source_timezone": "UTC",
+                        "source_updated_at": match.get("lastUpdateDateTime"),
+                        "league_name": match.get("leagueName") or league["name"],
+                        "league_code": league["shortcut"],
+                        "matchday": (match.get("group") or {}).get("groupOrderID") if isinstance(match.get("group"), dict) else None,
+                    })
+                competition["matches_found"] = sum(1 for row in rows if row["league_code"] == league["shortcut"])
+                competition["status"] = "RESULTS_FOUND" if competition["matches_found"] else "NO_GAP_RESULTS"
+            except requests.HTTPError as exc:
+                status_code = getattr(getattr(exc, "response", None), "status_code", None)
+                competition.update({"status": "HTTP_ERROR", "error_type": "HTTPError", "status_code": status_code})
+                if status_code == 429:
+                    rate_limited = True
+                    audit["request_errors"] = audit.get("request_errors", []) + [{
+                        "competition": league["shortcut"], "error_type": "HTTP_429",
+                    }]
+                    audit["competitions"].append(competition)
+                    break
+            except (requests.RequestException, ValueError, TypeError, KeyError) as exc:
+                competition.update({"status": "REQUEST_ERROR", "error_type": type(exc).__name__})
+            audit["competitions"].append(competition)
+    finally:
+        if own_session:
+            client.close()
+
+    date_counts: dict[str, dict[str, Any]] = {}
+    for row in rows:
+        entry = date_counts.setdefault(row["date"], {"date": row["date"], "matches": 0, "divisions": []})
+        entry["matches"] += 1
+        if row["division"] not in entry["divisions"]:
+            entry["divisions"].append(row["division"])
+    audit["matches_found"] = len(rows)
+    audit["dates_covered"] = sorted(date_counts)
+    audit["date_coverage"] = [date_counts[day] for day in sorted(date_counts)]
+    audit["status"] = "PARTIAL_RATE_LIMITED" if rate_limited else ("PARTIAL_RECOVERY" if rows else "NO_GAP_RESULTS")
+    return rows, audit
+
+
 def run(cache_path: Path, fallback_path: Path, output_path: Path, api: Any, session: Any = None, force: bool = False) -> dict[str, Any]:
     cache = json.loads(cache_path.read_text(encoding="utf-8"))
     if cache.get("version") not in (1, 2) or not isinstance(cache.get("matches"), list):
