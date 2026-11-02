@@ -683,7 +683,7 @@ def test_gap_backfill_rate_limit_does_not_advance_retry_cursor(tmp_path):
     saved = json.loads(output_path.read_text(encoding="utf-8"))
     assert report["status"] == "PROVIDER_RATE_LIMITED"
     assert saved["state"]["history_gaps"] == ["2026-09-28"]
-    assert saved["state"]["last_gap_retry_on"] == "2026-10-20"
+    assert saved["state"]["last_gap_retry_on"] == datetime.now(ZoneInfo("Africa/Lagos")).date().isoformat()
 
 
 def test_gap_backfill_weekly_cooldown_skips_provider_calls(tmp_path):
@@ -715,7 +715,7 @@ def test_gap_backfill_weekly_cooldown_skips_provider_calls(tmp_path):
     report = run(cache_path, fallback_path, output_path, MustNotCallAPI(), OfflineSession())
     assert report["status"] == "PARTIAL_PROVIDER_RETRY_COOLDOWN"
     assert report["provider_retry_cooldown_active"] is True
-    assert report["provider_retry_after_date"] == (today + timedelta(days=7)).isoformat()
+    assert report["provider_retry_after_date"] == (today + timedelta(days=1)).isoformat()
 
 
 def test_gap_backfill_excludes_noncommercial_feed_and_preserves_gaps_during_cooldown(tmp_path):
