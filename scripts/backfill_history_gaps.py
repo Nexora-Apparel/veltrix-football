@@ -132,6 +132,12 @@ OPENLIGADB_LEAGUES = (
     {"shortcut": "unl", "division": "UNL", "name": "UEFA Nations League"},
     {"shortcut": "BLÖ", "division": "AUT1", "name": "Austrian Bundesliga"},
 )
+OPENLIGADB_CANONICAL_SHORTCUT_BY_DIVISION = {
+    row["division"]: str(row["shortcut"]).casefold() for row in OPENLIGADB_LEAGUES
+}
+OPENLIGADB_DIVISION_BY_SHORTCUT = {
+    str(row["shortcut"]).casefold(): row["division"] for row in OPENLIGADB_LEAGUES
+}
 OPENLIGADB_DIVISION_BY_NAME = {
     "premier league": "E0", "english premier league": "E0", "england premier league": "E0",
     "la liga": "SP1", "laliga": "SP1", "spain la liga": "SP1",
@@ -162,7 +168,8 @@ def _openligadb_division(league: dict[str, Any]) -> str | None:
     normalized = unicodedata.normalize("NFKD", raw.casefold())
     normalized = "".join(ch for ch in normalized if not unicodedata.combining(ch))
     normalized = re.sub(r"[^a-z0-9]+", " ", normalized).strip()
-    return OPENLIGADB_DIVISION_BY_NAME.get(normalized)
+    shortcut = str(league.get("leagueShortcut") or "").strip().casefold()
+    return OPENLIGADB_DIVISION_BY_SHORTCUT.get(shortcut) or OPENLIGADB_DIVISION_BY_NAME.get(normalized)
 
 
 def _openligadb_available_leagues(session: Any, season: int = 2026) -> tuple[list[dict[str, Any]], dict[str, Any]]:
@@ -175,14 +182,25 @@ def _openligadb_available_leagues(session: Any, season: int = 2026) -> tuple[lis
         if not isinstance(payload, list):
             raise ValueError("OpenLigaDB available-leagues response was not a JSON list.")
         audit["available_count"] = len(payload)
-        mapped = []
+        mapped_candidates = []
         unmapped = []
-        seen = set()
+        audit["sample_leagues"] = [
+            {
+                "shortcut": str(item.get("leagueShortcut") or ""),
+                "name": str(item.get("leagueName") or item.get("name") or ""),
+                "season": str(item.get("leagueSeason") or ""),
+            }
+            for item in payload[:100] if isinstance(item, dict)
+        ]
         for item in payload:
             if not isinstance(item, dict):
                 continue
-            league_season = str(item.get("leagueSeason") or season)
-            if league_season != str(season):
+            league_season = str(item.get("leagueSeason") or season).strip()
+            if league_season and not (
+                league_season == str(season)
+                or league_season.startswith(f"{season}/")
+                or league_season.startswith(f"{season}-")
+            ):
                 continue
             shortcut = str(item.get("leagueShortcut") or "").strip()
             division = _openligadb_division(item)
@@ -190,13 +208,28 @@ def _openligadb_available_leagues(session: Any, season: int = 2026) -> tuple[lis
             if not shortcut or not division:
                 unmapped.append({"shortcut": shortcut or None, "name": name or None})
                 continue
-            if (shortcut, division) in seen:
+            canonical = OPENLIGADB_CANONICAL_SHORTCUT_BY_DIVISION.get(division)
+            if canonical and shortcut.casefold() != canonical:
                 continue
-            seen.add((shortcut, division))
-            mapped.append({"shortcut": shortcut, "division": division, "name": name})
+            mapped_candidates.append({"shortcut": shortcut, "division": division, "name": name})
+        mapped_candidates.sort(key=lambda row: (row["division"], row["shortcut"]))
+        mapped, seen_divisions = [], set()
+        for row in mapped_candidates:
+            if row["division"] in seen_divisions:
+                continue
+            seen_divisions.add(row["division"])
+            mapped.append(row)
+        discovered_mapped_count = len(mapped)
+        # The API discovery endpoint has incomplete season metadata. Preserve
+        # known canonical IDs even when its list omits them.
+        for fallback in OPENLIGADB_LEAGUES:
+            if fallback["division"] not in seen_divisions:
+                mapped.append(dict(fallback))
+                seen_divisions.add(fallback["division"])
         mapped.sort(key=lambda row: (row["division"], row["shortcut"]))
         audit["mapped_count"] = len(mapped)
-        audit["unmapped_count"] = max(0, audit["available_count"] - len(mapped))
+        audit["discovered_mapped_count"] = discovered_mapped_count
+        audit["unmapped_count"] = max(0, audit["available_count"] - discovered_mapped_count)
         audit["unmapped_name_sample"] = unmapped[:40]
         audit["status"] = "MAPPED_LEAGUES_FOUND" if mapped else "NO_MAPPED_LEAGUES"
         return mapped, audit

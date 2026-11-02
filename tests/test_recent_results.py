@@ -1089,11 +1089,13 @@ def test_openligadb_discovers_all_mapped_target_competitions_for_season_2026():
             return Response()
 
     leagues, audit = _openligadb_available_leagues(Session(), 2026)
-    assert {(row["shortcut"], row["division"]) for row in leagues} == {
-        ("pl", "E0"), ("la1", "SP1"), ("bl1", "D1"), ("sa1", "I1"), ("fl1", "F1"),
-    }
+    found = {(row["shortcut"], row["division"]) for row in leagues}
+    assert {("pl", "E0"), ("la1", "SP1"), ("bl1", "D1"), ("sa1", "I1"), ("fl1", "F1")} <= found
+    assert ("old", "E0") not in found
     assert audit["available_count"] == 7
-    assert audit["mapped_count"] == 5
+    assert audit["discovered_mapped_count"] == 5
+    assert audit["mapped_count"] >= 11
+    assert any(row["shortcut"] == "bl1test" for row in audit["sample_leagues"])
     assert audit["unmapped_name_sample"] == [
         {"shortcut": "random", "name": "Local Amateur League"},
     ]
