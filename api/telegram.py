@@ -180,7 +180,7 @@ function renderRows(){
    const chip=document.createElement('span');chip.className='chip';chip.textContent='FORECAST UNAVAILABLE · '+(m.status||'STATUS NOT REPORTED');chips.append(chip);
   }
   const odds=marketPriceLines(m);const price=document.createElement('div');price.className='prices';price.textContent=odds.length?odds.join(' · '):'No matched market odds available';
-  const open=document.createElement('button');open.type='button';open.className='refresh';open.textContent='View AI Insights & Value Bet →';open.style.marginTop='12px';
+  const open=document.createElement('button');open.type='button';open.className='refresh';open.textContent=hasForecast?'View AI Insights & Value Bet →':'View fixture status →';open.style.marginTop='12px';
   const detail=document.createElement('div');detail.hidden=true;detail.className='prediction-detail';detail.style.marginTop='14px';
   const close=document.createElement('button');close.type='button';close.className='refresh';close.textContent='← Back to predictions';
   const feature=document.createElement('div');const insightHead=document.createElement('div');insightHead.className='sectionhead';const heading=document.createElement('h2');heading.textContent='AI Insights';insightHead.append(heading);
@@ -264,7 +264,7 @@ async function loadDashboard(){
   document.getElementById('overviewTitle').textContent=reportDate?(reportDate===today?"Today's overview":'Report overview · '+reportDate):'Report overview';
   const stale=!!reportDate&&reportDate!==today;const reportNotice=document.getElementById('reportFreshness');if(reportNotice){reportNotice.textContent=stale?'Showing the saved report from '+reportDate+'. It is not today’s report; refresh the data pipeline for current fixtures.':(dashboardRows.length?'Current-day report loaded.':'No upcoming matches found in the current report.');reportNotice.classList.toggle('warn',stale||!dashboardRows.length);}
   text(document.getElementById('fixtures'),d.fixtures_received);text(document.getElementById('forecasts'),d.experimental_forecasts);text(document.getElementById('odds'),d.fixtures_with_market_odds);
-  renderFeatured(dashboardRows[0]);renderRows();renderMarketOdds();renderPaperTracking(d);renderStatus(d);observeReveals(document);
+  renderFeatured(dashboardRows.find(m=>m&&m.status==='EXPERIMENTAL_ONLY')||dashboardRows[0]);renderRows();renderMarketOdds();renderPaperTracking(d);renderStatus(d);observeReveals(document);
   document.getElementById('reporttime').textContent='Report date '+(d.as_of_date||'unknown')+' · published '+(d.published_at_utc||'unknown')+' UTC';
  }catch(e){
   document.getElementById('featured').textContent='Published report unavailable. Please retry shortly.';
