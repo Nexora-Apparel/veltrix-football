@@ -45,7 +45,7 @@ def rolling_origin_1x2_temperature(rows: list[dict[str, Any]], probability_key: 
         return {"matches": n, "brier_score": brier / n, "log_loss": loss / n, "accuracy": correct / n}
 
     starts = sorted(set(min(len(dates) - 1, int(len(dates) * (0.5 + 0.1 * i))) for i in range(folds)))
-    results, all_test, all_cal = [], [], []
+    results, all_test, all_cal, all_market, all_market_cal = [], [], [], [], []
     for index, start in enumerate(starts):
         end = starts[index + 1] if index + 1 < len(starts) else len(dates)
         train_days, test_days = set(dates[:start]), set(dates[start:end])
@@ -63,6 +63,8 @@ def rolling_origin_1x2_temperature(rows: list[dict[str, Any]], probability_key: 
         raw, cal = score(test), score(test, best_t)
         market_rows = [r for r in test if isinstance(r.get("market"), dict)]
         market = score([{**r, probability_key: r["market"]} for r in market_rows]) if market_rows else None
+        all_market.extend(market_rows)
+        all_market_cal.extend((r, best_t) for r in market_rows)
         results.append({"fold": index + 1, "status": "EVALUATED", "training_matches": len(train), "test_matches": len(test), "training_end": dates[start - 1], "test_start": dates[start], "test_end": dates[end - 1], "temperature": best_t, "training_log_loss": best_loss, "raw": raw, "calibrated": cal, "market_same_fixtures": market, "improved_brier_and_log_loss": cal["brier_score"] < raw["brier_score"] and cal["log_loss"] < raw["log_loss"]})
         all_test.extend(test)
         all_cal.extend((r, best_t) for r in test)
@@ -78,4 +80,23 @@ def rolling_origin_1x2_temperature(rows: list[dict[str, Any]], probability_key: 
             correct += int(max(p, key=p.get) == y)
         n = len(all_cal)
         cal_total = {"matches": n, "brier_score": brier / n, "log_loss": loss / n, "accuracy": correct / n}
-    return {**base, "folds": results, "folds_evaluated": len(evaluated), "raw": raw_total, "calibrated": cal_total, "calibration_diagnostic_pass": len(evaluated) == folds and all(r["improved_brier_and_log_loss"] for r in evaluated), "note": "A calibration pass does not establish market-beating skill or betting profitability; fitted temperatures are not applied to production."}
+    market_total = score([{**r, probability_key: r["market"]} for r in all_market]) if all_market else None
+    market_cal_total = None
+    if all_market_cal:
+        brier = loss = correct = 0.0
+        for row, t in all_market_cal:
+            p, y = apply(row[probability_key], t), row["actual"]
+            brier += sum((p[k] - float(k == y)) ** 2 for k in ("H", "D", "A"))
+            loss -= math.log(max(1e-15, p[y]))
+            correct += int(max(p, key=p.get) == y)
+        n = len(all_market_cal)
+        market_cal_total = {"matches": n, "brier_score": brier / n, "log_loss": loss / n, "accuracy": correct / n}
+    beats_market = bool(market_total and market_cal_total and
+        market_cal_total["brier_score"] < market_total["brier_score"] and
+        market_cal_total["log_loss"] < market_total["log_loss"])
+    return {**base, "folds": results, "folds_evaluated": len(evaluated), "raw": raw_total, "calibrated": cal_total,
+            "market_on_same_odds_covered_fixtures": market_total,
+            "calibrated_on_same_odds_covered_fixtures": market_cal_total,
+            "beats_market_on_same_fixtures": beats_market,
+            "calibration_diagnostic_pass": len(evaluated) == folds and all(r["improved_brier_and_log_loss"] for r in evaluated),
+            "note": "A calibration pass does not establish market-beating skill or betting profitability; fitted temperatures are not applied to production."}
