@@ -186,6 +186,9 @@ permissions:
 jobs:
   daily-predictions:
     runs-on: ubuntu-latest
+    concurrency:
+      group: ${{ (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && contains(github.event.head_commit.message, '[run-live-verification]'))) && 'veltrix-5dollar-provider' || format('veltrix-daily-tests-{0}', github.run_id) }}
+      cancel-in-progress: false
     timeout-minutes: 25
     steps:
       - uses: actions/checkout@v7
