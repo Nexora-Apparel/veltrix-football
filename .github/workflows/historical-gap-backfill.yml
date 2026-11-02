@@ -76,7 +76,7 @@ jobs:
             --fallback reports/gap_fallback.csv \
             --output reports/recent_results_cache.json \
             --report reports/historical_gap_backfill.json \
-            ${{ (inputs.force == true || contains(github.event.head_commit.message, '[run-gap-backfill]')) && '--force' || '' }}
+            ${{ (inputs.force == true || contains(github.event.head_commit.message, '[run-gap-backfill]') || contains(github.event.head_commit.message, '[force-gap-backfill]')) && '--force' || '' }}
       - name: Upload gap-backfill evidence
         if: always()
         uses: actions/upload-artifact@v7
