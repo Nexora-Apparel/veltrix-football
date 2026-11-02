@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "product": "VELTRIX FOOTBALL AI",
-  "generated_at_utc": "2026-11-02T18:14:38.878046+00:00",
+  "generated_at_utc": "2026-11-02T18:22:53.284954+00:00",
   "status": "RESEARCH_DIAGNOSTIC_ONLY",
   "dataset": {
     "input_file": "open_historical_matches.csv",
@@ -219,6 +219,34 @@
         "brier_score": 0.5991691625751953,
         "log_loss": 1.0018576794043592,
         "accuracy": 0.5035019455252918
+      },
+      "beats_market_on_same_fixtures": false,
+      "market_anchor_blend_beats_market": false,
+      "calibration_diagnostic_pass": true,
+      "diagnostic_only": true,
+      "applied_to_production": false
+    },
+    "live_dc": {
+      "status": "ROLLING_ORIGIN_DIAGNOSTIC_ONLY",
+      "folds_requested": 4,
+      "folds_evaluated": 4,
+      "raw": {
+        "matches": 32541,
+        "brier_score": 0.6436364972125078,
+        "log_loss": 1.0680048511289548,
+        "accuracy": 0.45026274545957407
+      },
+      "calibrated": {
+        "matches": 32541,
+        "brier_score": 0.6371594248202624,
+        "log_loss": 1.0570326896347442,
+        "accuracy": 0.45026274545957407
+      },
+      "market_on_same_odds_covered_fixtures": {
+        "matches": 32503,
+        "brier_score": 0.5991326786397037,
+        "log_loss": 1.0018047259877465,
+        "accuracy": 0.503491985355198
       },
       "beats_market_on_same_fixtures": false,
       "market_anchor_blend_beats_market": false,
@@ -480,6 +508,72 @@
       "brier_score": 0.6441138935604088,
       "log_loss": 1.0687434185128382
     },
+    "dixon_coles_goal_markets": {
+      "btts_yes": {
+        "matches": 11612,
+        "brier_score": 0.2568894539045951,
+        "log_loss": 0.7081744199119083,
+        "accuracy": 0.5188598002066828,
+        "observed_frequency": 0.5409920771615571,
+        "mean_predicted_probability": 0.509720073853805
+      },
+      "btts_no": {
+        "matches": 11612,
+        "brier_score": 0.2568894539045951,
+        "log_loss": 0.7081744199119083,
+        "accuracy": 0.5188598002066828,
+        "observed_frequency": 0.459007922838443,
+        "mean_predicted_probability": 0.490279926146195
+      },
+      "over_1_5": {
+        "matches": 11612,
+        "brier_score": 0.19073540900953725,
+        "log_loss": 0.5714621052851653,
+        "accuracy": 0.7450051670685498,
+        "observed_frequency": 0.75792283844299,
+        "mean_predicted_probability": 0.735520879065883
+      },
+      "under_1_5": {
+        "matches": 11612,
+        "brier_score": 0.19073540900953725,
+        "log_loss": 0.5714621052851653,
+        "accuracy": 0.7450051670685498,
+        "observed_frequency": 0.24207716155700998,
+        "mean_predicted_probability": 0.2644791209341169
+      },
+      "over_2_5": {
+        "matches": 11612,
+        "brier_score": 0.2618991048384783,
+        "log_loss": 0.7208474932983553,
+        "accuracy": 0.5230795728556665,
+        "observed_frequency": 0.5204960385807785,
+        "mean_predicted_probability": 0.4951002317845223
+      },
+      "under_2_5": {
+        "matches": 11612,
+        "brier_score": 0.2618991048384783,
+        "log_loss": 0.7208474932983553,
+        "accuracy": 0.5230795728556665,
+        "observed_frequency": 0.47950396141922147,
+        "mean_predicted_probability": 0.5048997682154777
+      },
+      "over_3_5": {
+        "matches": 11612,
+        "brier_score": 0.21347085985106742,
+        "log_loss": 0.6241340153802498,
+        "accuracy": 0.691784361005856,
+        "observed_frequency": 0.28909748535997243,
+        "mean_predicted_probability": 0.2910054645327237
+      },
+      "under_3_5": {
+        "matches": 11612,
+        "brier_score": 0.21347085985106742,
+        "log_loss": 0.6241340153802498,
+        "accuracy": 0.691784361005856,
+        "observed_frequency": 0.7109025146400275,
+        "mean_predicted_probability": 0.7089945354672764
+      }
+    },
     "elo_alternative": {
       "matches": 11458,
       "result_accuracy": 0.4901378949205795,
@@ -496,6 +590,151 @@
         "result_accuracy": 0.4482227716176405,
         "brier_score": 0.644973613584374,
         "log_loss": 1.069980557891417
+      },
+      "goal_markets_metrics": {
+        "btts_yes": {
+          "matches": 67549,
+          "brier_score": 0.257318969328556,
+          "log_loss": 0.709422410719052,
+          "accuracy": 0.5207330974551807,
+          "observed_frequency": 0.5255592236746658,
+          "mean_predicted_probability": 0.5018182405143449
+        },
+        "btts_no": {
+          "matches": 67549,
+          "brier_score": 0.257318969328556,
+          "log_loss": 0.709422410719052,
+          "accuracy": 0.5207330974551807,
+          "observed_frequency": 0.4744407763253342,
+          "mean_predicted_probability": 0.49818175948565513
+        },
+        "over_1_5": {
+          "matches": 67549,
+          "brier_score": 0.19673116959202583,
+          "log_loss": 0.5858010140445654,
+          "accuracy": 0.7306103717301514,
+          "observed_frequency": 0.7454440480243971,
+          "mean_predicted_probability": 0.7280568890437087
+        },
+        "under_1_5": {
+          "matches": 67549,
+          "brier_score": 0.19673116959202583,
+          "log_loss": 0.5858010140445654,
+          "accuracy": 0.7306103717301514,
+          "observed_frequency": 0.2545559519756029,
+          "mean_predicted_probability": 0.2719431109562913
+        },
+        "over_2_5": {
+          "matches": 67549,
+          "brier_score": 0.2603101380130118,
+          "log_loss": 0.7183654397532931,
+          "accuracy": 0.5335830286162637,
+          "observed_frequency": 0.5032642970288235,
+          "mean_predicted_probability": 0.48717877919547553
+        },
+        "under_2_5": {
+          "matches": 67549,
+          "brier_score": 0.2603101380130118,
+          "log_loss": 0.7183654397532931,
+          "accuracy": 0.5335830286162637,
+          "observed_frequency": 0.4967357029711765,
+          "mean_predicted_probability": 0.5128212208045245
+        },
+        "over_3_5": {
+          "matches": 67549,
+          "brier_score": 0.2104618026741042,
+          "log_loss": 0.6175777440493988,
+          "accuracy": 0.6959688522405957,
+          "observed_frequency": 0.2822839716354054,
+          "mean_predicted_probability": 0.28522608724988296
+        },
+        "under_3_5": {
+          "matches": 67549,
+          "brier_score": 0.2104618026741042,
+          "log_loss": 0.6175777440493988,
+          "accuracy": 0.6959688522405957,
+          "observed_frequency": 0.7177160283645946,
+          "mean_predicted_probability": 0.7147739127501171
+        }
+      },
+      "same_match_goal_market_comparison": {
+        "status": "SAME_FIXTURE_CHRONOLOGICAL_COMPARISON",
+        "matches": 67549,
+        "delta_convention": "Dixon-Coles minus live recent-goals Poisson; negative Brier/log loss is better",
+        "markets": {
+          "btts_no": {
+            "matches": 67549,
+            "baseline_model": "live_goal_markets",
+            "dixon_coles_model": "live_dc_goal_markets",
+            "brier_delta_dixon_coles_minus_baseline": 5.444967333545492e-05,
+            "log_loss_delta_dixon_coles_minus_baseline": 0.00017600016162000465,
+            "accuracy_delta_dixon_coles_minus_baseline": 0.0007994196805282128,
+            "dixon_coles_beats_baseline_on_brier_and_log_loss": false
+          },
+          "btts_yes": {
+            "matches": 67549,
+            "baseline_model": "live_goal_markets",
+            "dixon_coles_model": "live_dc_goal_markets",
+            "brier_delta_dixon_coles_minus_baseline": 5.444967333545492e-05,
+            "log_loss_delta_dixon_coles_minus_baseline": 0.00017600016162000465,
+            "accuracy_delta_dixon_coles_minus_baseline": 0.0007994196805282128,
+            "dixon_coles_beats_baseline_on_brier_and_log_loss": false
+          },
+          "over_1_5": {
+            "matches": 67549,
+            "baseline_model": "live_goal_markets",
+            "dixon_coles_model": "live_dc_goal_markets",
+            "brier_delta_dixon_coles_minus_baseline": 0.0002639708117695705,
+            "log_loss_delta_dixon_coles_minus_baseline": 0.0013559190713454683,
+            "accuracy_delta_dixon_coles_minus_baseline": -0.0001628447497372676,
+            "dixon_coles_beats_baseline_on_brier_and_log_loss": false
+          },
+          "over_2_5": {
+            "matches": 67549,
+            "baseline_model": "live_goal_markets",
+            "dixon_coles_model": "live_dc_goal_markets",
+            "brier_delta_dixon_coles_minus_baseline": 0.0005810181406243897,
+            "log_loss_delta_dixon_coles_minus_baseline": 0.0014662867230798016,
+            "accuracy_delta_dixon_coles_minus_baseline": -0.00028127729500071474,
+            "dixon_coles_beats_baseline_on_brier_and_log_loss": false
+          },
+          "over_3_5": {
+            "matches": 67549,
+            "baseline_model": "live_goal_markets",
+            "dixon_coles_model": "live_dc_goal_markets",
+            "brier_delta_dixon_coles_minus_baseline": 0.00047766058221157537,
+            "log_loss_delta_dixon_coles_minus_baseline": 0.0014816645659136984,
+            "accuracy_delta_dixon_coles_minus_baseline": -0.001954136996846767,
+            "dixon_coles_beats_baseline_on_brier_and_log_loss": false
+          },
+          "under_1_5": {
+            "matches": 67549,
+            "baseline_model": "live_goal_markets",
+            "dixon_coles_model": "live_dc_goal_markets",
+            "brier_delta_dixon_coles_minus_baseline": 0.0002639708117695705,
+            "log_loss_delta_dixon_coles_minus_baseline": 0.0013559190713454683,
+            "accuracy_delta_dixon_coles_minus_baseline": -0.0001628447497372676,
+            "dixon_coles_beats_baseline_on_brier_and_log_loss": false
+          },
+          "under_2_5": {
+            "matches": 67549,
+            "baseline_model": "live_goal_markets",
+            "dixon_coles_model": "live_dc_goal_markets",
+            "brier_delta_dixon_coles_minus_baseline": 0.0005810181406243897,
+            "log_loss_delta_dixon_coles_minus_baseline": 0.0014662867230798016,
+            "accuracy_delta_dixon_coles_minus_baseline": -0.00028127729500071474,
+            "dixon_coles_beats_baseline_on_brier_and_log_loss": false
+          },
+          "under_3_5": {
+            "matches": 67549,
+            "baseline_model": "live_goal_markets",
+            "dixon_coles_model": "live_dc_goal_markets",
+            "brier_delta_dixon_coles_minus_baseline": 0.00047766058221157537,
+            "log_loss_delta_dixon_coles_minus_baseline": 0.0014816645659136984,
+            "accuracy_delta_dixon_coles_minus_baseline": -0.001954136996846767,
+            "dixon_coles_beats_baseline_on_brier_and_log_loss": false
+          }
+        }
       },
       "model_validated": false,
       "production_applied": false
@@ -2673,6 +2912,322 @@
         "applied_to_production": false,
         "betting_certification": false
       }
+    },
+    "dixon_coles_score_grid": {
+      "model": "experimental_poisson_dixon_coles_score_grid",
+      "metrics": {
+        "btts_yes": {
+          "matches": 67549,
+          "brier_score": 0.257318969328556,
+          "log_loss": 0.709422410719052,
+          "accuracy": 0.5207330974551807,
+          "observed_frequency": 0.5255592236746658,
+          "mean_predicted_probability": 0.5018182405143449
+        },
+        "btts_no": {
+          "matches": 67549,
+          "brier_score": 0.257318969328556,
+          "log_loss": 0.709422410719052,
+          "accuracy": 0.5207330974551807,
+          "observed_frequency": 0.4744407763253342,
+          "mean_predicted_probability": 0.49818175948565513
+        },
+        "over_1_5": {
+          "matches": 67549,
+          "brier_score": 0.19673116959202583,
+          "log_loss": 0.5858010140445654,
+          "accuracy": 0.7306103717301514,
+          "observed_frequency": 0.7454440480243971,
+          "mean_predicted_probability": 0.7280568890437087
+        },
+        "under_1_5": {
+          "matches": 67549,
+          "brier_score": 0.19673116959202583,
+          "log_loss": 0.5858010140445654,
+          "accuracy": 0.7306103717301514,
+          "observed_frequency": 0.2545559519756029,
+          "mean_predicted_probability": 0.2719431109562913
+        },
+        "over_2_5": {
+          "matches": 67549,
+          "brier_score": 0.2603101380130118,
+          "log_loss": 0.7183654397532931,
+          "accuracy": 0.5335830286162637,
+          "observed_frequency": 0.5032642970288235,
+          "mean_predicted_probability": 0.48717877919547553
+        },
+        "under_2_5": {
+          "matches": 67549,
+          "brier_score": 0.2603101380130118,
+          "log_loss": 0.7183654397532931,
+          "accuracy": 0.5335830286162637,
+          "observed_frequency": 0.4967357029711765,
+          "mean_predicted_probability": 0.5128212208045245
+        },
+        "over_3_5": {
+          "matches": 67549,
+          "brier_score": 0.2104618026741042,
+          "log_loss": 0.6175777440493988,
+          "accuracy": 0.6959688522405957,
+          "observed_frequency": 0.2822839716354054,
+          "mean_predicted_probability": 0.28522608724988296
+        },
+        "under_3_5": {
+          "matches": 67549,
+          "brier_score": 0.2104618026741042,
+          "log_loss": 0.6175777440493988,
+          "accuracy": 0.6959688522405957,
+          "observed_frequency": 0.7177160283645946,
+          "mean_predicted_probability": 0.7147739127501171
+        }
+      },
+      "recent_holdout": {
+        "btts_yes": {
+          "matches": 11612,
+          "brier_score": 0.2568894539045951,
+          "log_loss": 0.7081744199119083,
+          "accuracy": 0.5188598002066828,
+          "observed_frequency": 0.5409920771615571,
+          "mean_predicted_probability": 0.509720073853805
+        },
+        "btts_no": {
+          "matches": 11612,
+          "brier_score": 0.2568894539045951,
+          "log_loss": 0.7081744199119083,
+          "accuracy": 0.5188598002066828,
+          "observed_frequency": 0.459007922838443,
+          "mean_predicted_probability": 0.490279926146195
+        },
+        "over_1_5": {
+          "matches": 11612,
+          "brier_score": 0.19073540900953725,
+          "log_loss": 0.5714621052851653,
+          "accuracy": 0.7450051670685498,
+          "observed_frequency": 0.75792283844299,
+          "mean_predicted_probability": 0.735520879065883
+        },
+        "under_1_5": {
+          "matches": 11612,
+          "brier_score": 0.19073540900953725,
+          "log_loss": 0.5714621052851653,
+          "accuracy": 0.7450051670685498,
+          "observed_frequency": 0.24207716155700998,
+          "mean_predicted_probability": 0.2644791209341169
+        },
+        "over_2_5": {
+          "matches": 11612,
+          "brier_score": 0.2618991048384783,
+          "log_loss": 0.7208474932983553,
+          "accuracy": 0.5230795728556665,
+          "observed_frequency": 0.5204960385807785,
+          "mean_predicted_probability": 0.4951002317845223
+        },
+        "under_2_5": {
+          "matches": 11612,
+          "brier_score": 0.2618991048384783,
+          "log_loss": 0.7208474932983553,
+          "accuracy": 0.5230795728556665,
+          "observed_frequency": 0.47950396141922147,
+          "mean_predicted_probability": 0.5048997682154777
+        },
+        "over_3_5": {
+          "matches": 11612,
+          "brier_score": 0.21347085985106742,
+          "log_loss": 0.6241340153802498,
+          "accuracy": 0.691784361005856,
+          "observed_frequency": 0.28909748535997243,
+          "mean_predicted_probability": 0.2910054645327237
+        },
+        "under_3_5": {
+          "matches": 11612,
+          "brier_score": 0.21347085985106742,
+          "log_loss": 0.6241340153802498,
+          "accuracy": 0.691784361005856,
+          "observed_frequency": 0.7109025146400275,
+          "mean_predicted_probability": 0.7089945354672764
+        }
+      },
+      "same_match_comparison": {
+        "status": "SAME_FIXTURE_CHRONOLOGICAL_COMPARISON",
+        "matches": 67549,
+        "delta_convention": "Dixon-Coles minus live recent-goals Poisson; negative Brier/log loss is better",
+        "markets": {
+          "btts_no": {
+            "matches": 67549,
+            "baseline_model": "live_goal_markets",
+            "dixon_coles_model": "live_dc_goal_markets",
+            "brier_delta_dixon_coles_minus_baseline": 5.444967333545492e-05,
+            "log_loss_delta_dixon_coles_minus_baseline": 0.00017600016162000465,
+            "accuracy_delta_dixon_coles_minus_baseline": 0.0007994196805282128,
+            "dixon_coles_beats_baseline_on_brier_and_log_loss": false
+          },
+          "btts_yes": {
+            "matches": 67549,
+            "baseline_model": "live_goal_markets",
+            "dixon_coles_model": "live_dc_goal_markets",
+            "brier_delta_dixon_coles_minus_baseline": 5.444967333545492e-05,
+            "log_loss_delta_dixon_coles_minus_baseline": 0.00017600016162000465,
+            "accuracy_delta_dixon_coles_minus_baseline": 0.0007994196805282128,
+            "dixon_coles_beats_baseline_on_brier_and_log_loss": false
+          },
+          "over_1_5": {
+            "matches": 67549,
+            "baseline_model": "live_goal_markets",
+            "dixon_coles_model": "live_dc_goal_markets",
+            "brier_delta_dixon_coles_minus_baseline": 0.0002639708117695705,
+            "log_loss_delta_dixon_coles_minus_baseline": 0.0013559190713454683,
+            "accuracy_delta_dixon_coles_minus_baseline": -0.0001628447497372676,
+            "dixon_coles_beats_baseline_on_brier_and_log_loss": false
+          },
+          "over_2_5": {
+            "matches": 67549,
+            "baseline_model": "live_goal_markets",
+            "dixon_coles_model": "live_dc_goal_markets",
+            "brier_delta_dixon_coles_minus_baseline": 0.0005810181406243897,
+            "log_loss_delta_dixon_coles_minus_baseline": 0.0014662867230798016,
+            "accuracy_delta_dixon_coles_minus_baseline": -0.00028127729500071474,
+            "dixon_coles_beats_baseline_on_brier_and_log_loss": false
+          },
+          "over_3_5": {
+            "matches": 67549,
+            "baseline_model": "live_goal_markets",
+            "dixon_coles_model": "live_dc_goal_markets",
+            "brier_delta_dixon_coles_minus_baseline": 0.00047766058221157537,
+            "log_loss_delta_dixon_coles_minus_baseline": 0.0014816645659136984,
+            "accuracy_delta_dixon_coles_minus_baseline": -0.001954136996846767,
+            "dixon_coles_beats_baseline_on_brier_and_log_loss": false
+          },
+          "under_1_5": {
+            "matches": 67549,
+            "baseline_model": "live_goal_markets",
+            "dixon_coles_model": "live_dc_goal_markets",
+            "brier_delta_dixon_coles_minus_baseline": 0.0002639708117695705,
+            "log_loss_delta_dixon_coles_minus_baseline": 0.0013559190713454683,
+            "accuracy_delta_dixon_coles_minus_baseline": -0.0001628447497372676,
+            "dixon_coles_beats_baseline_on_brier_and_log_loss": false
+          },
+          "under_2_5": {
+            "matches": 67549,
+            "baseline_model": "live_goal_markets",
+            "dixon_coles_model": "live_dc_goal_markets",
+            "brier_delta_dixon_coles_minus_baseline": 0.0005810181406243897,
+            "log_loss_delta_dixon_coles_minus_baseline": 0.0014662867230798016,
+            "accuracy_delta_dixon_coles_minus_baseline": -0.00028127729500071474,
+            "dixon_coles_beats_baseline_on_brier_and_log_loss": false
+          },
+          "under_3_5": {
+            "matches": 67549,
+            "baseline_model": "live_goal_markets",
+            "dixon_coles_model": "live_dc_goal_markets",
+            "brier_delta_dixon_coles_minus_baseline": 0.00047766058221157537,
+            "log_loss_delta_dixon_coles_minus_baseline": 0.0014816645659136984,
+            "accuracy_delta_dixon_coles_minus_baseline": -0.001954136996846767,
+            "dixon_coles_beats_baseline_on_brier_and_log_loss": false
+          }
+        }
+      },
+      "rolling_origin_calibration": {
+        "folds_requested": 4,
+        "folds_evaluated": 4,
+        "markets": {
+          "btts_yes": {
+            "status": "CALIBRATION_DIAGNOSTIC_PASS",
+            "folds_evaluated": 4,
+            "folds_beating_raw_and_baseline": 4,
+            "raw": {
+              "matches": 32541,
+              "brier_score": 0.25712085854625216,
+              "log_loss": 0.7089317053334664
+            },
+            "calibrated": {
+              "matches": 32541,
+              "brier_score": 0.24817117931668764,
+              "log_loss": 0.6894751249479757
+            },
+            "expanding_baseline": {
+              "matches": 32541,
+              "brier_score": 0.248917491050253,
+              "log_loss": 0.690981087269409
+            },
+            "diagnostic_only": true,
+            "applied_to_production": false,
+            "betting_certification": false
+          },
+          "over_1_5": {
+            "status": "CALIBRATION_DIAGNOSTIC_PASS",
+            "folds_evaluated": 4,
+            "folds_beating_raw_and_baseline": 4,
+            "raw": {
+              "matches": 32541,
+              "brier_score": 0.19235982861333298,
+              "log_loss": 0.5756582963550445
+            },
+            "calibrated": {
+              "matches": 32541,
+              "brier_score": 0.18442349138332653,
+              "log_loss": 0.5550194926537548
+            },
+            "expanding_baseline": {
+              "matches": 32541,
+              "brier_score": 0.18546790171296887,
+              "log_loss": 0.5579300495442214
+            },
+            "diagnostic_only": true,
+            "applied_to_production": false,
+            "betting_certification": false
+          },
+          "over_2_5": {
+            "status": "CALIBRATION_DIAGNOSTIC_PASS",
+            "folds_evaluated": 4,
+            "folds_beating_raw_and_baseline": 4,
+            "raw": {
+              "matches": 32541,
+              "brier_score": 0.26040967712668384,
+              "log_loss": 0.7183477171382519
+            },
+            "calibrated": {
+              "matches": 32541,
+              "brier_score": 0.2481691708821375,
+              "log_loss": 0.6894669646504753
+            },
+            "expanding_baseline": {
+              "matches": 32541,
+              "brier_score": 0.2500747123972993,
+              "log_loss": 0.6932966161719123
+            },
+            "diagnostic_only": true,
+            "applied_to_production": false,
+            "betting_certification": false
+          },
+          "over_3_5": {
+            "status": "CALIBRATION_DIAGNOSTIC_PASS",
+            "folds_evaluated": 4,
+            "folds_beating_raw_and_baseline": 4,
+            "raw": {
+              "matches": 32541,
+              "brier_score": 0.21515930206821737,
+              "log_loss": 0.6277833030217014
+            },
+            "calibrated": {
+              "matches": 32541,
+              "brier_score": 0.20542168432044922,
+              "log_loss": 0.6007318520275087
+            },
+            "expanding_baseline": {
+              "matches": 32541,
+              "brier_score": 0.2072305156445204,
+              "log_loss": 0.6050576995249776
+            },
+            "diagnostic_only": true,
+            "applied_to_production": false,
+            "betting_certification": false
+          }
+        },
+        "betting_validation": false
+      },
+      "diagnostic_only": true,
+      "applied_to_production": false,
+      "betting_certification": false
     },
     "all_goal_markets_calibration_pass": true,
     "diagnostic_only": true,
