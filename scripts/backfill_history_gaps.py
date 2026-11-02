@@ -1,4 +1,5 @@
 """Retry known historical result gaps and publish only verified recovered scores."""
+# Explicit recovery-run marker: [run-gap-backfill]
 from __future__ import annotations
 import argparse
 import csv
