@@ -81,6 +81,26 @@ def run(cache_path: Path, fallback_path: Path, output_path: Path, api: Any) -> d
     state = cache.get("state") if isinstance(cache.get("state"), dict) else {}
     gaps = sorted({str(x) for x in state.get("history_gaps", []) if isinstance(x, str)})
     existing = list(cache["matches"])
+    if gaps and state.get("last_gap_retry_on"):
+        try:
+            last_retry = date.fromisoformat(str(state["last_gap_retry_on"]))
+            today_lagos = datetime.now(ZoneInfo("Africa/Lagos")).date()
+            days_since_retry = (today_lagos - last_retry).days
+        except (TypeError, ValueError):
+            days_since_retry = 7
+            last_retry = None
+        if days_since_retry < 7:
+            output_path.parent.mkdir(parents=True, exist_ok=True)
+            output_path.write_text(json.dumps(cache, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
+            return {
+                "status": "RETRY_COOLDOWN",
+                "requested_gap_dates": len(gaps),
+                "unresolved_dates": gaps,
+                "last_gap_retry_on": str(state.get("last_gap_retry_on")),
+                "retry_after_date": (last_retry + __import__("datetime").timedelta(days=7)).isoformat() if last_retry else None,
+                "provider_requests_made": 0,
+                "alerts_enabled": False,
+            }
     fallback = _fallback_rows(fallback_path, set(gaps))
     fallback_by_day: dict[str, int] = {}
     for row in fallback:
@@ -220,10 +240,10 @@ def main() -> int:
     api = FiveDollarFootballClient()
     report = run(Path(args.cache), Path(args.fallback), Path(args.output), api)
     Path(args.report).write_text(json.dumps(report, indent=2, ensure_ascii=False), encoding="utf-8")
-    if report["status"] != "PROVIDER_RATE_LIMITED":
+    if report["status"] not in {"PROVIDER_RATE_LIMITED", "RETRY_COOLDOWN"}:
         publish("public-data/recent_results_cache.json", Path(args.output), repo, token)
     print(json.dumps(report, indent=2, ensure_ascii=False))
-    return 0 if report["status"] == "COMPLETE" else 2
+    return 0 if report["status"] in {"COMPLETE", "RETRY_COOLDOWN"} else 2
 
 
 if __name__ == "__main__":
