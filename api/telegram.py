@@ -69,7 +69,9 @@ main{padding:20px clamp(12px,3vw,30px)}.eyebrow{color:var(--green);font-weight:8
 <div id="valueValidation" class="panel statusgrid" style="margin-top:12px"><div class="statusitem"><div class="stitle">Certificate</div><div class="svalue">Loading…</div></div></div>
 <div id="trackingMetrics" class="panel statusgrid" style="margin-top:12px"><div class="statusitem"><div class="stitle">Ledger</div><div class="svalue">Loading…</div></div></div>
 <div id="trackingModels" class="market-list" style="margin-top:12px"><div class="empty">Loading model metrics…</div></div>
-<div class="sectionhead"><div><div class="eyebrow">Settled forecasts</div><h2>Recent results</h2></div></div>
+<div class="sectionhead"><div><div class="eyebrow">Settled forecasts</div><h2>Match history</h2></div></div>
+<div class="filters" id="historyFilters"><button class="filter active" data-history-filter="all" aria-pressed="true">All results</button><button class="filter" data-history-filter="wins" aria-pressed="false">Wins</button><button class="filter" data-history-filter="losses" aria-pressed="false">Losses</button><label class="filter" style="display:flex;align-items:center;gap:7px">Date <select id="historyDateSort" style="background:#061721;color:#d8edf3;border:0;outline:0"><option value="newest">Newest first</option><option value="oldest">Oldest first</option></select></label></div>
+<div id="historySummary" class="overview" style="margin-bottom:12px"></div>
 <div id="trackingResults" class="market-list"><div class="empty">Loading results…</div></div>
 </section>
 <div class="section-divider"></div>
@@ -226,9 +228,23 @@ function renderPaperTracking(d){
  const modelBox=document.getElementById('trackingModels');modelBox.replaceChildren();const models=data.cumulative_metrics_by_model||{};const entries=Object.entries(models);
  if(!entries.length){const empty=document.createElement('div');empty.className='empty';empty.textContent='No completed forecasts scored yet.';modelBox.append(empty)}
  for(const [name,m] of entries){const card=document.createElement('article');card.className='market-fixture';const title=document.createElement('h3');title.textContent=name.replaceAll('_',' ');const line=document.createElement('div');line.className='market-line';const acc=Number(m.result_accuracy);line.textContent=String(m.matches??0)+' scored · accuracy '+(Number.isFinite(acc)?(acc*100).toFixed(1)+'%':'—')+' · Brier '+(Number.isFinite(Number(m.brier_score))?Number(m.brier_score).toFixed(3):'—')+' · Log loss '+(Number.isFinite(Number(m.log_loss))?Number(m.log_loss).toFixed(3):'—');card.append(title,line);modelBox.append(card)}
- const results=document.getElementById('trackingResults');results.replaceChildren();const rows=Array.isArray(data.scored_matches)?data.scored_matches.slice().reverse():[];
- if(!rows.length){const empty=document.createElement('div');empty.className='empty';empty.textContent='No settled match results published yet.';results.append(empty)}
- for(const row of rows){const card=document.createElement('article');card.className='market-fixture';const title=document.createElement('h3');title.textContent=(row.home_team||'Home')+' '+(row.home_goals??'—')+' – '+(row.away_goals??'—')+' '+(row.away_team||'Away');const line=document.createElement('div');line.className='market-line';line.textContent=(row.report_date||'Date unknown')+' · Predicted '+(row.predicted||'—')+' · Actual '+(row.actual||'—')+' · '+(row.correct===true?'Correct':row.correct===false?'Incorrect':'Unscored');card.append(title,line);results.append(card)}
+ const results=document.getElementById('trackingResults');results.replaceChildren();
+ const rawRows=Array.isArray(data.scored_matches)?data.scored_matches.slice():[];
+ const seenFixtures=new Set();const allRows=rawRows.filter(row=>{const fixture=String(row.fixture_id||'').trim();const fallback=[dayOf(row),String(row.home_team||'').toLowerCase().replace(/[^a-z0-9]/g,''),String(row.away_team||'').toLowerCase().replace(/[^a-z0-9]/g,'')].join('|');const key=fixture? 'id:'+fixture : 'teams:'+fallback;if(seenFixtures.has(key))return false;seenFixtures.add(key);return true;});
+ const sortControl=document.getElementById('historyDateSort');const filterBox=document.getElementById('historyFilters');
+ let historyFilter='all';
+ const dayOf=row=>String(row.match_date||row.fixture_date||row.report_date||'').slice(0,10);
+ const sortRows=rows=>rows.sort((a,b)=>{const delta=dayOf(b).localeCompare(dayOf(a));return sortControl&&sortControl.value==='oldest'?-delta:delta});
+ const wins=allRows.filter(r=>r.correct===true),losses=allRows.filter(r=>r.correct===false);
+ const summary=document.getElementById('historySummary');summary.replaceChildren();
+ for(const [label,count] of [['Total settled',allRows.length],['Wins',wins.length],['Losses',losses.length]]){const metric=document.createElement('div');metric.className='metric';const l=document.createElement('div');l.className='label';l.textContent=label;const v=document.createElement('div');v.className='value';v.textContent=String(count);metric.append(l,v);summary.append(metric)}
+ const renderHistory=()=>{results.replaceChildren();let selected=historyFilter==='wins'?wins:historyFilter==='losses'?losses:allRows;selected=sortRows(selected.slice());
+ if(!selected.length){const empty=document.createElement('div');empty.className='empty';empty.textContent=allRows.length?'No '+historyFilter+' recorded in the settled history.':'No settled match results published yet.';results.append(empty);return}
+ const groups=new Map();for(const row of selected){const day=dayOf(row)||'Date unknown';if(!groups.has(day))groups.set(day,[]);groups.get(day).push(row)}
+ for(const [day,dayRows] of groups){const heading=document.createElement('div');heading.className='sectionhead';heading.style.margin='16px 2px 8px';const h=document.createElement('h2');h.textContent=day;const count=document.createElement('span');count.className='small muted';count.textContent=dayRows.length+' result'+(dayRows.length===1?'':'s');heading.append(h,count);results.append(heading);
+ for(const row of dayRows){const card=document.createElement('article');card.className='market-fixture';const title=document.createElement('h3');title.textContent=(row.home_team||'Home')+' '+(row.home_goals??'—')+' – '+(row.away_goals??'—')+' '+(row.away_team||'Away');const line=document.createElement('div');line.className='market-line';line.textContent='Predicted '+(row.predicted||'—')+' · Actual '+(row.actual||'—')+' · '+(row.correct===true?'WIN':row.correct===false?'LOSS':'UNSCORED')+' · Model '+(row.model||'unknown');if(row.report_date&&row.report_date!==day)line.textContent+=' · Report '+row.report_date;card.append(title,line);results.append(card)}}};
+ if(filterBox){filterBox.addEventListener('click',e=>{const button=e.target.closest('button[data-history-filter]');if(!button)return;historyFilter=button.dataset.historyFilter;filterBox.querySelectorAll('button[data-history-filter]').forEach(b=>{const active=b===button;b.classList.toggle('active',active);b.setAttribute('aria-pressed',active?'true':'false')});renderHistory()})}
+ if(sortControl)sortControl.addEventListener('change',renderHistory);renderHistory();
 }
 function renderStatus(d){
  const box=document.getElementById('systemStatus');box.replaceChildren();const hist=d.historical_data_coverage||{};const odds=d.live_odds_sync||{};const primary=d.primary_provider_request||{};
