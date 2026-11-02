@@ -344,8 +344,6 @@ def run(cache_path: Path, fallback_path: Path, output_path: Path, api: Any, sess
         "integrity": "Secondary results are added with provenance; unresolved dates are never silently marked complete.",
         "alerts_enabled": False,
     }
-    if own_session:
-        session.close()
     return report
 
 
