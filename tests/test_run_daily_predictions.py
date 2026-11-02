@@ -481,6 +481,17 @@ def test_daily_runner_uses_odds_api_fixtures_and_cached_history_after_primary_42
         })
         return payload
 
+    cache_path = output.parent / "recent_results_cache.json"
+    cache_path.write_text(json.dumps({
+        "version": 2,
+        "state": {
+            "backfill_complete": True,
+            "latest_covered_through": "2026-11-01",
+            "history_gaps": ["2026-09-28"],
+        },
+        "matches": [],
+    }), encoding="utf-8")
+
     monkeypatch.setattr(daily_runner, "supplement_fixtures_from_odds_api", odds_fallback)
     monkeypatch.setattr(
         daily_runner, "supplement_fixtures_from_infersports",
@@ -520,6 +531,10 @@ def test_daily_runner_uses_odds_api_fixtures_and_cached_history_after_primary_42
     assert report["fixture_discovery"]["the_odds_api"]["fixtures_added"] == 1
     assert report["recent_results_sync"]["status"] == "SKIPPED_PRIMARY_PROVIDER_UNAVAILABLE"
     assert report["historical_data_coverage"]["status"] == "GAPPED_OR_STALE"
+    assert report["historical_data_coverage"]["backfill_complete"] is False
+    assert report["historical_data_coverage"]["base_backfill_complete"] is True
+    assert report["historical_data_coverage"]["incremental_history_complete"] is False
+    assert report["historical_data_coverage"]["retryable_gap_date_count"] == 1
     assert report["publication_status"] == "LIVE_REPORT_GENERATED_PENDING_PUBLICATION"
 
 
