@@ -41,17 +41,17 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p reports/recovery
-          curl --fail --silent --show-error --location --retry 2 --max-time 90 \\
-            -H "Authorization: Bearer $GH_TOKEN" \\
-            -H "Accept: application/vnd.github+json" \\
-            "https://api.github.com/repos/$GH_REPOSITORY/actions/artifacts/13086149741/zip" \\
+          curl --fail --silent --show-error --location --retry 2 --max-time 90 \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/$GH_REPOSITORY/actions/artifacts/13086149741/zip" \
             -o reports/recovery/value-evidence-20261101.zip
-          curl --fail --silent --show-error --retry 2 --max-time 60 \\
-            "https://raw.githubusercontent.com/$GH_REPOSITORY/command-data/public-data/daily_predictions.json" \\
+          curl --fail --silent --show-error --retry 2 --max-time 60 \
+            "https://raw.githubusercontent.com/$GH_REPOSITORY/command-data/public-data/daily_predictions.json" \
             -o reports/recovery/daily_predictions.json
-          python scripts/reconcile_value_evidence_recovery.py \\
-            --artifact-zip reports/recovery/value-evidence-20261101.zip \\
-            --report reports/recovery/daily_predictions.json \\
+          python scripts/reconcile_value_evidence_recovery.py \
+            --artifact-zip reports/recovery/value-evidence-20261101.zip \
+            --report reports/recovery/daily_predictions.json \
             --output reports/recovery/value_evidence_ledger.reconciled.json
 
       - name: Check today's published report
