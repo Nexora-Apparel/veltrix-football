@@ -918,3 +918,106 @@ def test_gap_backfill_probes_date_endpoint_after_league_catalogue_429(tmp_path):
     assert report["status"] == "COMPLETE"
     assert not saved["state"].get("history_gaps")
     assert saved["matches"][0]["source_provider"] == "5DollarFootballAPI_DATE_FIXTURES"
+
+
+def test_openligadb_gap_import_uses_full_time_only_and_records_odbl_provenance():
+    from scripts.backfill_history_gaps import _openligadb_gap_backfill
+
+    class Response:
+        def __init__(self, payload):
+            self.payload = payload
+        def raise_for_status(self):
+            return None
+        def json(self):
+            return self.payload
+
+    class Session:
+        def get(self, url, timeout=30, headers=None):
+            if "/pl/2026" in url:
+                return Response([
+                    {
+                        "matchID": 9001, "matchDateTimeUTC": "2026-10-04T14:00:00Z",
+                        "matchIsFinished": True, "leagueName": "Premier League 2026/27",
+                        "team1": {"teamName": "Arsenal"}, "team2": {"teamName": "Chelsea"},
+                        "matchResults": [
+                            {"resultTypeID": 1, "pointsTeam1": 3, "pointsTeam2": 0},
+                            {"resultTypeID": 2, "pointsTeam1": 3, "pointsTeam2": 2},
+                        ],
+                    },
+                    {
+                        "matchID": 9002, "matchDateTimeUTC": "2026-10-04T16:00:00Z",
+                        "matchIsFinished": True,
+                        "team1": {"teamName": "Half Time FC"}, "team2": {"teamName": "Other FC"},
+                        "matchResults": [{"resultTypeID": 1, "pointsTeam1": 1, "pointsTeam2": 0}],
+                    },
+                    {
+                        "matchID": 9003, "matchDateTimeUTC": "2026-10-09T16:00:00Z",
+                        "matchIsFinished": True,
+                        "team1": {"teamName": "Outside Gap"}, "team2": {"teamName": "Other FC"},
+                        "matchResults": [{"resultTypeID": 2, "pointsTeam1": 1, "pointsTeam2": 0}],
+                    },
+                ])
+            return Response([])
+
+    rows, audit = _openligadb_gap_backfill(Session(), ["2026-10-04"], delay_seconds=0)
+    assert len(rows) == 1
+    assert rows[0]["home_goals"] == 3
+    assert rows[0]["away_goals"] == 2
+    assert rows[0]["division"] == "E0"
+    assert rows[0]["source_provider"] == "OpenLigaDB"
+    assert rows[0]["source_license"] == "ODbL-1.0"
+    assert audit["license"] == "ODbL-1.0"
+    assert audit["dates_covered"] == ["2026-10-04"]
+    assert audit["resolved_dates"] == []
+    assert audit["global_gap_resolution"] is False
+
+
+def test_openligadb_rows_are_added_without_silently_clearing_global_gap(tmp_path):
+    import json
+    from scripts.backfill_history_gaps import run
+    from app.provider_adapters import ProviderAPIError
+
+    cache_path = tmp_path / "cache.json"
+    fallback_path = tmp_path / "fallback.csv"
+    output_path = tmp_path / "out.json"
+    cache_path.write_text(json.dumps({
+        "version": 2,
+        "state": {"history_gaps": ["2026-10-04"]},
+        "matches": [],
+    }), encoding="utf-8")
+
+    class RateLimitedAPI:
+        def leagues(self, **kwargs):
+            raise ProviderAPIError("HTTP 429: rate limited")
+        def fixtures(self, day, timezone):
+            raise ProviderAPIError("HTTP 429: rate limited")
+        def league_fixtures(self, *args, **kwargs):
+            raise ProviderAPIError("HTTP 429: rate limited")
+
+    class Response:
+        def __init__(self, payload):
+            self.payload = payload
+        def raise_for_status(self):
+            return None
+        def json(self):
+            return self.payload
+
+    class Session:
+        def get(self, url, timeout=30, headers=None):
+            if "/pl/2026" in url:
+                return Response([{
+                    "matchID": 9001, "matchDateTimeUTC": "2026-10-04T14:00:00Z",
+                    "matchIsFinished": True, "leagueName": "Premier League 2026/27",
+                    "team1": {"teamName": "Arsenal"}, "team2": {"teamName": "Chelsea"},
+                    "matchResults": [{"resultTypeID": 2, "pointsTeam1": 2, "pointsTeam2": 1}],
+                }])
+            return Response([])
+
+    report = run(cache_path, fallback_path, output_path, RateLimitedAPI(), Session(), force=True)
+    saved = json.loads(output_path.read_text(encoding="utf-8"))
+    assert report["status"] == "PARTIAL_OPENLIGADB_RECOVERY"
+    assert report["primary_provider_rate_limited"] is True
+    assert report["openligadb_matches_added"] == 1
+    assert saved["state"]["history_gaps"] == ["2026-10-04"]
+    assert saved["matches"][0]["source_provider"] == "OpenLigaDB"
+    assert saved["state"]["source_licenses"]["OpenLigaDB"]["license"] == "ODbL-1.0"
