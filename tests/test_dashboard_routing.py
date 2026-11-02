@@ -186,3 +186,5 @@ def test_dashboard_market_odds_count_uses_actual_fixture_quote_rows(monkeypatch)
     payload = telegram.dashboard_data()
     assert payload["fixtures_with_market_odds"] == 1
     assert payload["fixtures_visible"] == 2
+
+# Controlled same-day report replay trigger [reuse-report-40175707059].
