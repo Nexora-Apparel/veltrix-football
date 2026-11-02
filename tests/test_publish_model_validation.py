@@ -120,3 +120,45 @@ def test_model_validation_summary_rejects_dataset_fingerprint_mismatch():
         assert "fingerprints do not match" in str(exc)
     else:
         raise AssertionError("Mismatched dataset fingerprints must be rejected.")
+
+
+
+def test_model_validation_publishes_dixon_coles_goal_market_diagnostics_separately():
+    backtest = sample_backtest()
+    backtest["live_pipeline"]["dixon_coles_alternative"]["goal_markets_metrics"] = {
+        "markets": {
+            "btts_yes": {"matches": 1200, "brier_score": 0.245, "log_loss": 0.68, "accuracy": 0.61},
+            "over_2_5": {"matches": 1200, "brier_score": 0.249, "log_loss": 0.69, "accuracy": 0.59},
+        }
+    }
+    backtest["live_pipeline"]["dixon_coles_alternative"]["same_match_goal_market_comparison"] = {
+        "matches": 1200,
+        "markets": {"btts_yes": {"dixon_coles_beats_baseline_on_brier_and_log_loss": True}},
+    }
+    backtest["live_pipeline"]["goal_markets"]["dixon_coles_score_grid"] = {
+        "model": "experimental_poisson_dixon_coles_score_grid",
+        "metrics": {"markets": {"btts_yes": {"matches": 1200, "brier_score": 0.245, "log_loss": 0.68}}},
+        "recent_holdout": {"markets": {"btts_yes": {"matches": 240, "brier_score": 0.247, "log_loss": 0.69}}},
+        "same_match_comparison": {"matches": 1200, "markets": {"btts_yes": {"matches": 1200}}},
+        "rolling_origin_calibration": {
+            "folds_requested": 4,
+            "folds_evaluated": 4,
+            "betting_validation": False,
+            "markets": {"btts_yes": {
+                "status": "CALIBRATION_NOT_VALIDATED",
+                "folds_evaluated": 4,
+                "folds_beating_raw_and_baseline": 2,
+                "raw": {"matches": 1200, "brier_score": 0.25, "log_loss": 0.70},
+                "calibrated": {"matches": 1200, "brier_score": 0.247, "log_loss": 0.69},
+                "expanding_baseline": {"matches": 1200, "brier_score": 0.248, "log_loss": 0.695},
+            }},
+        },
+    }
+    result = build_summary(backtest, sample_coverage(), "2026-11-02T00:00:00Z")
+    dc = result["rolling_origin_goal_market_calibration"]["dixon_coles_score_grid"]
+    assert dc["model"] == "experimental_poisson_dixon_coles_score_grid"
+    assert dc["metrics"]["btts_yes"]["matches"] == 1200
+    assert dc["rolling_origin_calibration"]["markets"]["btts_yes"]["folds_beating_raw_and_baseline"] == 2
+    assert dc["betting_certification"] is False
+    assert result["alternative_models"]["dixon_coles"]["goal_markets_metrics"]["btts_yes"]["matches"] == 1200
+    assert result["release_controls"]["value_betting"] == "LOCKED_INSUFFICIENT_EVIDENCE"
