@@ -402,6 +402,7 @@ def test_rolling_origin_1x2_temperature_calibration_uses_only_earlier_dates():
             "match_date": (start + timedelta(days=i)).isoformat(),
             "actual": actual,
             "live_poisson": probs,
+            "market": {"H": 1 / 3, "D": 1 / 3, "A": 1 / 3},
         })
     result = rolling_origin_1x2_temperature(
         rows, "live_poisson", folds=4,
@@ -412,6 +413,9 @@ def test_rolling_origin_1x2_temperature_calibration_uses_only_earlier_dates():
     assert result["raw"]["matches"] == result["calibrated"]["matches"]
     assert result["calibration_applied_to_live"] is False
     assert result["betting_validation"] is False
+    assert result["market_on_same_odds_covered_fixtures"]["matches"] == result["raw"]["matches"]
+    assert result["calibrated_on_same_odds_covered_fixtures"]["matches"] == result["raw"]["matches"]
+    assert "beats_market_on_same_fixtures" in result
     evaluated = [fold for fold in result["folds"] if fold["status"] == "EVALUATED"]
     assert all(fold["training_end"] < fold["test_start"] <= fold["test_end"] for fold in evaluated)
     assert all(0.5 <= fold["temperature"] <= 3.0 for fold in evaluated)
