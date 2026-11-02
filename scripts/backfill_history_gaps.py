@@ -152,6 +152,11 @@ def run(cache_path: Path, fallback_path: Path, output_path: Path, api: Any, sess
     league_scan = {"active_mapped_leagues": 0, "successful_league_queries": 0, "matches": 0, "failed_leagues": []}
     league_rows_by_day: dict[str, list[dict[str, Any]]] = {day: [] for day in unresolved_gaps}
     rate_limited = False
+    delay_seconds = 0.0
+    try:
+        delay_seconds = max(0.0, min(30.0, float(os.getenv("VELTRIX_HISTORY_REQUEST_DELAY_SECONDS", "0"))))
+    except (TypeError, ValueError):
+        delay_seconds = 0.0
     if unresolved_gaps and (force or not provider_cooldown_active):
         leagues = []
         page = 1
@@ -202,7 +207,7 @@ def run(cache_path: Path, fallback_path: Path, output_path: Path, api: Any, sess
                                 "source_provider": "5DollarFootballAPI_LEAGUE_FIXTURES",
                             })
                     league_scan["matches"] += len(rows)
-                    time_module.sleep(1.5)
+                    time_module.sleep(max(1.5, delay_seconds))
                 except (ProviderAPIError, ValueError, OSError) as exc:
                     league_scan["failed_leagues"].append({"league_id": str(league_id), "error_type": type(exc).__name__, "error": str(exc)[:240]})
                     if "HTTP 429" in str(exc):
@@ -236,12 +241,7 @@ def run(cache_path: Path, fallback_path: Path, output_path: Path, api: Any, sess
         "status": "NOT_REQUIRED", "dates_checked": 0, "matches_added": 0,
         "resolved_dates": [], "timezone_retries": 0, "request_errors": [],
     }
-    delay_seconds = 0.0
-    try:
-        delay_seconds = max(0.0, min(30.0, float(os.getenv("VELTRIX_HISTORY_REQUEST_DELAY_SECONDS", "0"))))
-    except (TypeError, ValueError):
-        delay_seconds = 0.0
-    if unresolved_gaps and not rate_limited and not provider_cooldown_active or (force and unresolved_gaps and not rate_limited):
+    if unresolved_gaps and not rate_limited and (force or not provider_cooldown_active):
         date_endpoint["status"] = "CHECKED"
         for day in unresolved_gaps:
             if day in resolved or rate_limited:
