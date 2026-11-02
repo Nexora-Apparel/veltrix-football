@@ -81,7 +81,7 @@ def run(cache_path: Path, fallback_path: Path, output_path: Path, api: Any) -> d
     unique = {}
     for row in existing + recovered:
         key = (str(row.get("date") or "")[:10], str(row.get("division") or ""), _name_key(row.get("home")), _name_key(row.get("away")))
-        if all(key) and key not in unique:
+        if key[0] and key[2] and key[3] and key not in unique:
             unique[key] = row
     merged = sorted(unique.values(), key=lambda r: (str(r.get("date") or ""), str(r.get("division") or ""), _name_key(r.get("home")), _name_key(r.get("away"))))
     state["history_gaps"] = [day for day in gaps if day not in resolved]
