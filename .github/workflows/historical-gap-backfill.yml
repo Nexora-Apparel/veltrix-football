@@ -1,4 +1,5 @@
 name: Historical Results Gap Backfill
+# One-shot ODbL recovery pass over the expanded 2026 European competition catalogue.
 
 on:
   schedule:
