@@ -13009,10 +13009,10 @@
     "alerts_enabled": false
   },
   "command_data_publication": "PUBLISHED",
-  "command_data_published_at_utc": "2026-11-02T10:37:30.031407+00:00",
+  "command_data_published_at_utc": "2026-11-02T10:41:11.922948+00:00",
   "delivery_filter": {
     "applied": true,
-    "filtered_at": "2026-11-02T11:37:24.520564+01:00",
+    "filtered_at": "2026-11-02T11:41:04.998303+01:00",
     "saved_fixture_rows": 23,
     "future_same_day_fixture_rows": 23,
     "same_day_fixture_rows_retained": 23,
