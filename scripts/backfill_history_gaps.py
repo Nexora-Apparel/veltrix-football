@@ -124,6 +124,76 @@ OPENLIGADB_LEAGUES = (
     {"shortcut": "bl1", "division": "D1", "name": "Bundesliga"},
     {"shortcut": "ucl", "division": "UCL", "name": "UEFA Champions League"},
 )
+OPENLIGADB_DIVISION_BY_NAME = {
+    "premier league": "E0", "english premier league": "E0", "england premier league": "E0",
+    "la liga": "SP1", "laliga": "SP1", "spain la liga": "SP1",
+    "bundesliga": "D1", "1 bundesliga": "D1", "germany bundesliga": "D1", "2 bundesliga": "D2",
+    "serie a": "I1", "italy serie a": "I1", "serie b": "I2", "italy serie b": "I2",
+    "ligue 1": "F1", "france ligue 1": "F1", "ligue 2": "F2", "france ligue 2": "F2",
+    "eredivisie": "N1", "netherlands eredivisie": "N1",
+    "primeira liga": "P1", "liga portugal": "P1", "portugal primeira liga": "P1",
+    "scottish premiership": "SC0", "scotland premiership": "SC0",
+    "brasileirao": "BSA", "brazilian serie a": "BSA", "brazil brasileirao": "BSA",
+    "allsvenskan": "SWE", "sweden allsvenskan": "SWE",
+    "belgian pro league": "B1", "jupiler pro league": "B1", "belgium pro league": "B1",
+    "super lig": "T1", "turkish super lig": "T1", "turkey super lig": "T1",
+    "uefa champions league": "UCL", "champions league": "UCL",
+    "uefa europa league": "UEL", "europa league": "UEL",
+    "championship": "E1", "english championship": "E1",
+    "league one": "E2", "english league one": "E2",
+    "league two": "E3", "english league two": "E3",
+    "scottish championship": "SC1", "scottish league one": "SC2",
+    "scottish league two": "SC3",
+    "segunda division": "SP2", "la liga 2": "SP2",
+    "greek super league": "G1",
+}
+
+
+def _openligadb_division(league: dict[str, Any]) -> str | None:
+    raw = str(league.get("leagueName") or league.get("name") or "").strip()
+    normalized = unicodedata.normalize("NFKD", raw.casefold())
+    normalized = "".join(ch for ch in normalized if not unicodedata.combining(ch))
+    normalized = re.sub(r"[^a-z0-9]+", " ", normalized).strip()
+    return OPENLIGADB_DIVISION_BY_NAME.get(normalized)
+
+
+def _openligadb_available_leagues(session: Any, season: int = 2026) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    url = f"https://api.openligadb.de/getavailableleagues/{season}"
+    audit = {"url": url, "status": "NOT_REQUESTED", "available_count": 0, "mapped_count": 0, "unmapped_count": 0}
+    try:
+        response = session.get(url, timeout=30, headers={"User-Agent": "VELTRIX-FOOTBALL/1.0"})
+        response.raise_for_status()
+        payload = response.json()
+        if not isinstance(payload, list):
+            raise ValueError("OpenLigaDB available-leagues response was not a JSON list.")
+        audit["available_count"] = len(payload)
+        mapped = []
+        seen = set()
+        for item in payload:
+            if not isinstance(item, dict):
+                continue
+            league_season = str(item.get("leagueSeason") or season)
+            if league_season != str(season):
+                continue
+            shortcut = str(item.get("leagueShortcut") or "").strip()
+            division = _openligadb_division(item)
+            name = str(item.get("leagueName") or item.get("name") or "").strip()
+            if not shortcut or not division or (shortcut, division) in seen:
+                continue
+            seen.add((shortcut, division))
+            mapped.append({"shortcut": shortcut, "division": division, "name": name})
+        mapped.sort(key=lambda row: (row["division"], row["shortcut"]))
+        audit["mapped_count"] = len(mapped)
+        audit["unmapped_count"] = max(0, audit["available_count"] - len(mapped))
+        audit["status"] = "MAPPED_LEAGUES_FOUND" if mapped else "NO_MAPPED_LEAGUES"
+        return mapped, audit
+    except requests.HTTPError as exc:
+        status_code = getattr(getattr(exc, "response", None), "status_code", None)
+        audit.update({"status": "HTTP_ERROR", "status_code": status_code, "error_type": "HTTPError"})
+        return [], audit
+    except (requests.RequestException, ValueError, TypeError) as exc:
+        audit.update({"status": "DISCOVERY_ERROR", "error_type": type(exc).__name__})
+        return [], audit
 OPENLIGADB_LICENSE = "ODbL-1.0"
 OPENLIGADB_LICENSE_URL = "https://opendatacommons.org/licenses/odbl/1-0/"
 OPENLIGADB_ATTRIBUTION = "OpenLigaDB community-maintained football data, licensed under ODbL 1.0"
@@ -152,7 +222,25 @@ def _openligadb_gap_backfill(session: Any, gaps: list[str], delay_seconds: float
     seen: set[tuple[str, str, str, str]] = set()
     rate_limited = False
     try:
-        for index, league in enumerate(OPENLIGADB_LEAGUES):
+        leagues = list(OPENLIGADB_LEAGUES)
+        if own_session:
+            discovered, discovery_audit = _openligadb_available_leagues(client, 2026)
+            audit["available_leagues_discovery"] = discovery_audit
+            if discovered:
+                leagues = discovered
+            elif discovery_audit.get("status") == "HTTP_ERROR" and discovery_audit.get("status_code") == 429:
+                rate_limited = True
+                leagues = []
+        else:
+            audit["available_leagues_discovery"] = {
+                "status": "SKIPPED_INJECTED_TEST_SESSION",
+                "available_count": 0, "mapped_count": len(leagues),
+            }
+        audit["mapped_competitions"] = [
+            {"shortcut": item["shortcut"], "division": item["division"], "name": item["name"]}
+            for item in leagues
+        ]
+        for index, league in enumerate(leagues):
             if own_session and index and delay_seconds > 0:
                 time_module.sleep(delay_seconds)
             url = f"https://api.openligadb.de/getmatchdata/{league['shortcut']}/2026"

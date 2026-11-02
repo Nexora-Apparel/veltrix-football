@@ -1063,3 +1063,34 @@ def test_openligadb_uses_after90minutes_kind_not_penalty_score():
     assert len(ucl_rows) == 1
     assert (ucl_rows[0]["home_goals"], ucl_rows[0]["away_goals"]) == (1, 1)
     assert ucl_rows[0]["source_license"] == "ODbL-1.0"
+
+
+def test_openligadb_discovers_all_mapped_target_competitions_for_season_2026():
+    from scripts.backfill_history_gaps import _openligadb_available_leagues
+
+    class Response:
+        def raise_for_status(self):
+            return None
+        def json(self):
+            return [
+                {"leagueShortcut": "pl", "leagueName": "Premier League", "leagueSeason": "2026"},
+                {"leagueShortcut": "la1", "leagueName": "La Liga", "leagueSeason": "2026"},
+                {"leagueShortcut": "bl1", "leagueName": "1. Bundesliga", "leagueSeason": "2026"},
+                {"leagueShortcut": "sa1", "leagueName": "Serie A", "leagueSeason": "2026"},
+                {"leagueShortcut": "fl1", "leagueName": "Ligue 1", "leagueSeason": "2026"},
+                {"leagueShortcut": "random", "leagueName": "Local Amateur League", "leagueSeason": "2026"},
+                {"leagueShortcut": "old", "leagueName": "Premier League", "leagueSeason": "2025"},
+            ]
+
+    class Session:
+        def get(self, url, **kwargs):
+            assert url.endswith("/getavailableleagues/2026")
+            return Response()
+
+    leagues, audit = _openligadb_available_leagues(Session(), 2026)
+    assert {(row["shortcut"], row["division"]) for row in leagues} == {
+        ("pl", "E0"), ("la1", "SP1"), ("bl1", "D1"), ("sa1", "I1"), ("fl1", "F1"),
+    }
+    assert audit["available_count"] == 7
+    assert audit["mapped_count"] == 5
+    assert audit["status"] == "MAPPED_LEAGUES_FOUND"
