@@ -820,3 +820,60 @@ def test_ledger_separates_1x2_model_version_from_goal_calibration_versions():
     assert ledger["value_model_versions"] == ["experimental_recent_goals_poisson"]
     assert ledger["value_validation_markets_by_model_version"]["experimental_recent_goals_poisson"]["1X2"]["settled_bets"] == 1
     assert ledger["calibration_versions"] == []
+
+
+
+def test_shadow_btts_and_totals_probabilities_are_scored_without_odds_and_deduplicated():
+    prediction = {
+        **_prediction(101),
+        "kickoff_local": "2026-10-23T18:00:00+01:00",
+        "goal_markets_model": "experimental_recent_goals_poisson",
+        "btts_yes": 0.60,
+        "over_1_5": 0.80,
+        "over_2_5": 0.65,
+        "over_3_5": 0.35,
+        "poisson_dc_shadow": {
+            "model": "experimental_poisson_dixon_coles_score_grid",
+            "status": "SHADOW_RESEARCH",
+            "markets": {
+                "1x2": {"H": 0.50, "D": 0.25, "A": 0.25},
+                "btts": {"yes": 0.75, "no": 0.25},
+                "totals": {
+                    "0.5": {"over": 0.95, "under": 0.05},
+                    "1.5": {"over": 0.85, "under": 0.15},
+                    "2.5": {"over": 0.70, "under": 0.30},
+                    "3.5": {"over": 0.40, "under": 0.60},
+                    "4.5": {"over": 0.20, "under": 0.80},
+                },
+            },
+        },
+    }
+    first = evaluate_report(
+        {"as_of_date": "2026-10-23", "timezone": "Africa/Lagos", "predictions": [prediction]},
+        {"response": [_result(101, 2, 1)]},
+    )
+    rows = first["goal_market_probability_matches"]
+    dc_btts = next(
+        row for row in rows
+        if row["model"] == "experimental_poisson_dixon_coles_score_grid"
+        and row["market"] == "BTTS"
+    )
+    dc_over_2_5 = next(
+        row for row in rows
+        if row["model"] == "experimental_poisson_dixon_coles_score_grid"
+        and row["market"] == "OVER_UNDER_2_5"
+    )
+    assert dc_btts["actual_outcome"] is True
+    assert dc_btts["brier_score"] == 0.0625
+    assert dc_over_2_5["actual_outcome"] is True
+    assert abs(dc_over_2_5["brier_score"] - 0.09) < 1e-12
+    assert first["goal_market_probability_metrics"]["experimental_poisson_dixon_coles_score_grid"]["BTTS"]["matches"] == 1
+
+    ledger = merge_paper_ledger({}, first)
+    later = evaluate_report(
+        {"as_of_date": "2026-10-24", "timezone": "Africa/Lagos", "predictions": [prediction]},
+        {"response": [_result(101, 2, 1)]},
+    )
+    ledger = merge_paper_ledger(ledger, later)
+    assert len(ledger["goal_market_probability_matches"]) == len(rows)
+    assert all(row["report_date"] == "2026-10-23" for row in ledger["goal_market_probability_matches"])
