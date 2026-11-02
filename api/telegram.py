@@ -249,6 +249,8 @@ function renderStatus(d){
  if(passedGoals.length){lines.push('BTTS / totals calibration: '+passedGoals.join(', ')+' passed all '+(goalValidation.folds_evaluated||0)+' chronological diagnostic folds; report-only, not betting certification.');}
  const oneXTwo=validationData.rolling_origin_1x2_calibration||{};const oneXTwoPass=Object.values(oneXTwo).filter(v=>v&&v.status==='ROLLING_ORIGIN_DIAGNOSTIC_ONLY'&&v.calibration_diagnostic_pass).length;
  if(oneXTwoPass){lines.push('1X2 calibration: '+oneXTwoPass+' model variants improved their own calibration in rolling folds, but neither beat the bookmaker benchmark; no calibration change deployed.');}
+ const provenance=validationData.dataset_provenance||{};if(provenance.rights_status){lines.push('Historical source rights: '+provenance.rights_status+' · commercial use eligible: '+(provenance.commercial_use_eligible===true?'yes':'no')+'.');}
+ const gaps=Array.isArray(hist.history_gaps)?hist.history_gaps:[];if(gaps.length){lines.push('Unresolved historical dates: '+gaps.join(', ')+'. Next retry: '+(hist.retry_after_date||'next scheduled bounded retry')+'.');}
  lines.push('Value-betting release: '+(validationData.release_controls?.value_betting||'LOCKED')+'.');
  details.textContent=lines.join('\\n');observeReveals(box);observeReveals(details.parentElement);
 }
