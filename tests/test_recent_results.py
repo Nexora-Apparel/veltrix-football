@@ -1095,7 +1095,7 @@ def test_openligadb_discovers_all_mapped_target_competitions_for_season_2026():
     assert audit["available_count"] == 7
     assert audit["discovered_mapped_count"] == 5
     assert audit["mapped_count"] == 5
-    assert any(row["shortcut"] == "bl1test" for row in audit["sample_leagues"])
+    assert any(row["shortcut"] == "bl1" for row in audit["sample_leagues"])
     assert audit["unmapped_name_sample"] == [
         {"shortcut": "random", "name": "Local Amateur League"},
     ]
@@ -1164,11 +1164,11 @@ def test_openligadb_discovery_merges_with_known_static_competition_shortcuts(mon
     class Session:
         def get(self, url, **kwargs):
             requested.append(url)
-        def close(self):
-            return None
             if url.endswith("/getavailableleagues/2026"):
                 return Response(available)
             return Response([])
+        def close(self):
+            return None
 
     monkeypatch.setattr(backfill.requests, "Session", Session)
     rows, audit = backfill._openligadb_gap_backfill(
