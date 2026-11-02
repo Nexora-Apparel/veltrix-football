@@ -262,7 +262,7 @@ async function loadDashboard(){
   const r=await fetch('/api/dashboard-data',{cache:'no-store'});if(!r.ok)throw new Error('Dashboard data unavailable');const d=await r.json();dashboardRows=Array.isArray(d.predictions)?d.predictions:[];
   const reportDate=String(d.as_of_date||'');const today=new Intl.DateTimeFormat('en-CA',{timeZone:'Africa/Lagos',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
   document.getElementById('overviewTitle').textContent=reportDate?(reportDate===today?"Today's overview":'Report overview · '+reportDate):'Report overview';
-  const stale=!!reportDate&&reportDate!==today;const reportNotice=document.getElementById('reportFreshness');if(reportNotice){reportNotice.textContent=stale?'Showing the saved report from '+reportDate+'. It is not today’s report; refresh the data pipeline for current fixtures.':(dashboardRows.length?'Current-day report loaded.':'No upcoming matches found in the current report.');reportNotice.classList.toggle('warn',stale||!dashboardRows.length);}
+  const stale=!!reportDate&&reportDate!==today;const reused=d.report_generation_status==='REUSED_SNAPSHOT_NOT_REFRESHED';const reportNotice=document.getElementById('reportFreshness');if(reportNotice){reportNotice.textContent=stale?'Showing the saved report from '+reportDate+'. It is not today’s report; refresh the data pipeline for current fixtures.':reused?'Same-day snapshot reused; no fresh fixture retrieval completed. '+(d.report_freshness_note||'The displayed report may be older than the latest provider data.'):(dashboardRows.length?'Current-day report loaded from the latest published run.':'No upcoming matches found in the current report.');reportNotice.classList.toggle('warn',stale||reused||!dashboardRows.length);}
   text(document.getElementById('fixtures'),d.fixtures_received);text(document.getElementById('forecasts'),d.experimental_forecasts);text(document.getElementById('odds'),d.fixtures_with_market_odds);
   renderFeatured(dashboardRows.find(m=>m&&m.status==='EXPERIMENTAL_ONLY'&&!m.fixture_visibility_note)||dashboardRows.find(m=>m&&m.status==='EXPERIMENTAL_ONLY')||dashboardRows[0]);renderRows();renderMarketOdds();renderPaperTracking(d);renderStatus(d);observeReveals(document);
   document.getElementById('reporttime').textContent='Report date '+(d.as_of_date||'unknown')+' · published '+(d.published_at_utc||'unknown')+' UTC';
@@ -392,6 +392,8 @@ def dashboard_data() -> dict:
         "generated_at_utc": report.get("generated_at_utc"),
         "published_at_utc": report.get("command_data_published_at_utc"),
         "publication_status": report.get("command_data_publication", "UNKNOWN"),
+        "report_generation_status": report.get("publication_status", "UNKNOWN"),
+        "report_freshness_note": report.get("publication_notice"),
         "primary_provider_request": report.get("primary_provider_request"),
         "live_odds_sync": report.get("live_odds_sync"),
         "historical_data_coverage": report.get("historical_data_coverage"),
