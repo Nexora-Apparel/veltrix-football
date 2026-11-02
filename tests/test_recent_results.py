@@ -658,8 +658,10 @@ def test_historical_backfill_maps_country_prefixed_and_short_league_names():
     assert _mapped_league_division({"id": 5, "name": "Unmapped competition"}) is None
 
 
-def test_gap_backfill_rate_limit_does_not_advance_retry_cursor(tmp_path):
+def test_gap_backfill_rate_limit_records_retry_cursor(tmp_path):
     import json
+    from datetime import datetime
+    from zoneinfo import ZoneInfo
     from scripts.backfill_history_gaps import run
     from app.provider_adapters import ProviderAPIError
 
@@ -691,7 +693,7 @@ def test_gap_backfill_rate_limit_does_not_advance_retry_cursor(tmp_path):
     saved = json.loads(output_path.read_text(encoding="utf-8"))
     assert report["status"] == "PROVIDER_RATE_LIMITED"
     assert saved["state"]["history_gaps"] == ["2026-09-28"]
-    assert "last_gap_retry_on" not in saved["state"]
+    assert saved["state"]["last_gap_retry_on"] == datetime.now(ZoneInfo("Africa/Lagos")).date().isoformat()
 
 
 def test_gap_backfill_daily_cooldown_skips_provider_calls(tmp_path):
