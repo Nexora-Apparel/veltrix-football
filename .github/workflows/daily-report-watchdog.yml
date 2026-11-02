@@ -6,11 +6,15 @@ on:
     branches: [main]
     paths:
       - ".github/workflows/daily-report-watchdog.yml"
-  # Backup checks at 05:30, 06:15 and 08:15 WAT, plus late recovery at 17:00.
+  # Backup checks at 05:15, 05:30, 05:45, 06:00 and 06:15 WAT,
+  # then 08:15 and 17:00 WAT. Each check avoids dispatching over an active run.
   # Each check dispatches the normal pipeline only when today's report is missing
   # and no scheduled/manual pipeline is already active.
   schedule:
+    - cron: "15 4 * * *"
     - cron: "30 4 * * *"
+    - cron: "45 4 * * *"
+    - cron: "0 5 * * *"
     - cron: "15 5 * * *"
     - cron: "15 7 * * *"
     - cron: "0 16 * * *"
@@ -90,14 +94,32 @@ jobs:
               report = json.load(open(path, encoding="utf-8"))
           except Exception:
               report = {}
+          from datetime import datetime
+          from zoneinfo import ZoneInfo
+          generation_status = str(report.get("publication_status") or report.get("report_generation_status") or "UNKNOWN").upper()
+          generated_at = report.get("generated_at_utc")
+          generated_today = False
+          try:
+              generated_today = datetime.fromisoformat(str(generated_at).replace("Z", "+00:00")).astimezone(ZoneInfo("Africa/Lagos")).date().isoformat() == today
+          except (TypeError, ValueError):
+              generated_today = False
+          not_reused = generation_status not in {
+              "REUSED_SNAPSHOT_NOT_REFRESHED",
+              "RECOVERED_SAVED_REPORT_NOT_REFRESHED",
+              "PRIMARY_PROVIDER_UNAVAILABLE",
+          }
           fresh = (
               report.get("as_of_date") == today
+              and generated_today
+              and not_reused
               and report.get("command_data_publication") == "PUBLISHED"
               and isinstance(report.get("predictions"), list)
           )
-          print(f"published={'true' if fresh else 'false'}")
+          print(f"published={'true' if report.get('command_data_publication') == 'PUBLISHED' else 'false'}")
           print(f"fresh={'true' if fresh else 'false'}")
           print(f"report_date={report.get('as_of_date', 'missing')}")
+          print(f"generation_status={generation_status}")
+          print(f"generated_today={'true' if generated_today else 'false'}")
           PY
           else
             echo "fresh=false" >> "$GITHUB_OUTPUT"
