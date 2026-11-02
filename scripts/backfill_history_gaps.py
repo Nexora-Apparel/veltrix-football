@@ -1,6 +1,7 @@
 # Current-day delivery replay marker: 2026-11-02 verification attempt 2.
 # Live report verification trigger marker: [run-live-verification]
 """Retry known historical result gaps and publish only verified recovered scores."""
+# Controlled live refresh request after the 378-test regression pass [run-live-verification] [skip-telegram].
 # Explicit recovery-run marker: [run-gap-backfill]
 # 2026-11-02 forced one-shot historical gap recovery: [run-gap-backfill]
 from __future__ import annotations
