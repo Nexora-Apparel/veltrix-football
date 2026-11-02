@@ -34,6 +34,27 @@ def sample_backtest():
                 },
                 "note": "diagnostic only",
             },
+            "outcome_balance_audit": {
+                "poisson": {
+                    "status": "CHRONOLOGICAL_CLASS_BALANCE_DIAGNOSTIC",
+                    "matches": 100,
+                    "home_bias_flag": "HOME_CLASS_OVERPREDICTED",
+                    "classes": {"H": {"actual_share": 0.43, "predicted_share": 0.65, "prediction_share_gap_percentage_points": 22.0}},
+                }
+            },
+            "confidence_selection_audit": {
+                "elo": {"status": "CHRONOLOGICAL_SELECTIVE_ACCURACY_DIAGNOSTIC", "total_matches": 100, "thresholds": [{"minimum_top_probability": 0.7, "selected_matches": 2, "coverage": 0.02, "accuracy": 1.0, "predicted_class_counts": {"H": 2, "D": 0, "A": 0}}]}
+            },
+            "favourite_underdog_audit": {
+                "elo": {"status": "diagnostic_only", "overall": {"matches": 100, "accuracy": 0.48}, "favourite_wins": {"matches": 50, "accuracy": 0.8}, "underdog_wins": {"matches": 20, "accuracy": 0.2}, "matches_with_market_classification": 90}
+            },
+            "draw_margin_experiment": {
+                "elo": {"status": "DIAGNOSTIC_ONLY_NOT_APPLIED", "holdout_matches": 100, "selected_draw_margin": 0.0, "raw_argmax_holdout": {"matches": 100, "accuracy": 0.48, "predicted_class_counts": {"H": 70, "D": 0, "A": 30}}, "draw_margin_holdout": {"matches": 100, "accuracy": 0.48, "predicted_class_counts": {"H": 70, "D": 0, "A": 30}}, "holdout_accuracy_delta": 0.0, "improved_unseen_holdout_accuracy": False}
+            },
+            "recent_holdout": {"method": "latest 20% of unique dates", "start_date": "2025-01-01", "end_date": "2026-09-03", "matches": 100, "metrics": {"matches": 100, "result_accuracy": 0.48, "brier_score": 0.62, "log_loss": 1.03}},
+            "dixon_coles_alternative": {"model": "experimental_recency_weighted_dixon_coles", "rho": -0.05, "metrics": {"matches": 100, "result_accuracy": 0.44, "brier_score": 0.64, "log_loss": 1.06}, "model_validated": False},
+            "elo_alternative": {"model": "experimental_elo_by_competition", "matches": 100, "metrics": {"matches": 100, "result_accuracy": 0.48, "brier_score": 0.62, "log_loss": 1.03}},
+            "metrics_by_competition": {"E0": {"live_eligible_matches": 20, "poisson": {"matches": 20, "result_accuracy": 0.45}, "elo": {"matches": 20, "result_accuracy": 0.48}, "historical_odds_matches": 18, "same_match_market_comparison": {"poisson": {"matches": 18, "result_accuracy": 0.44}, "market": {"matches": 18, "result_accuracy": 0.5}}, "elo_same_match_market_comparison": {"elo": {"matches": 18, "result_accuracy": 0.48}, "market": {"matches": 18, "result_accuracy": 0.5}}}},
             "goal_markets": {
                 "rolling_origin_calibration": {
                     "folds_requested": 4,
@@ -77,6 +98,13 @@ def test_model_validation_summary_keeps_calibration_separate_from_certification(
     assert result["rolling_origin_goal_market_calibration"]["betting_certification"] is False
     assert result["release_controls"]["value_betting"] == "LOCKED_INSUFFICIENT_EVIDENCE"
     assert result["release_controls"]["alerts_enabled"] is False
+    assert result["class_balance_audit"]["poisson"]["home_bias_flag"] == "HOME_CLASS_OVERPREDICTED"
+    assert result["confidence_selection_audit"]["elo"]["thresholds"][0]["coverage"] == 0.02
+    assert result["favourite_underdog_audit"]["elo"]["underdog_wins"]["accuracy"] == 0.2
+    assert result["draw_margin_experiment"]["models"]["elo"]["improved_unseen_holdout_accuracy"] is False
+    assert result["recent_holdout"]["matches"] == 100
+    assert result["alternative_models"]["dixon_coles"]["production_applied"] is False
+    assert result["metrics_by_competition"]["E0"]["elo_market_comparison"]["market"]["matches"] == 18
 
 
 def test_model_validation_summary_rejects_dataset_fingerprint_mismatch():
