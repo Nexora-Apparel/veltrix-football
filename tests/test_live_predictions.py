@@ -10,10 +10,10 @@ def _history():
     for day in range(1, 7):
         d = date(2026, 10, day)
         rows.extend([
-            {"date": d, "home": "Alpha FC", "away": f"Opponent {day}",
+            {"date": d, "division": "E0", "home": "Alpha FC", "away": f"Opponent {day}",
              "home_key": _name_key("Alpha FC"), "away_key": f"opponent{day}",
              "home_goals": 2, "away_goals": 0},
-            {"date": d, "home": f"Rival {day}", "away": "Beta FC",
+            {"date": d, "division": "E0", "home": f"Rival {day}", "away": "Beta FC",
              "home_key": f"rival{day}", "away_key": _name_key("Beta FC"),
              "home_goals": 1, "away_goals": 1},
         ])
@@ -24,7 +24,7 @@ def _fixture(kickoff="2026-10-23T15:00:00+01:00"):
     return {
         "fixture": {"id": 123, "date": kickoff, "status": {"short": "NS"}},
         "teams": {"home": {"name": "Alpha FC"}, "away": {"name": "Beta FC"}},
-        "league": {"name": "Test League"},
+        "league": {"name": "Test League", "code": "PL"},
     }
 
 
@@ -60,25 +60,70 @@ def test_insufficient_team_history_suppresses_probabilities():
     result = predict_fixtures([fixture], _history(), as_of=date(2026, 10, 23), now=datetime(2026, 10, 23, 12, 0, tzinfo=ZoneInfo("Africa/Lagos")))
     assert result[0]["status"] == "INSUFFICIENT_HISTORY"
     assert "probabilities" not in result[0]
+    assert result[0]["historical_matches"] == {"home": 0, "away": 6}
+    diagnostics = result[0]["team_history_diagnostics"]
+    assert diagnostics["home"]["fixture_name"] == "Unknown Club"
+    assert diagnostics["home"]["history_match_found"] is False
+    assert diagnostics["home"]["match_status"] == "NO_HISTORY_MATCH"
+    assert diagnostics["away"]["prior_matches"] == 6
 
 
-def test_unmapped_competition_with_insufficient_history_is_classified_unsupported():
+def test_unmapped_competition_with_insufficient_history_is_withheld():
     fixture = _fixture()
     fixture["league"].pop("id", None)
+    fixture["league"].pop("code", None)
     fixture["teams"]["home"]["name"] = "Unknown Club"
     result = predict_fixtures(
         [fixture], _history(), as_of=date(2026, 10, 23),
         now=datetime(2026, 10, 23, 12, 0, tzinfo=ZoneInfo("Africa/Lagos")),
     )
-    assert result[0]["status"] == "UNSUPPORTED_COMPETITION"
-    assert "not mapped to the historical dataset" in result[0]["reason"]
+    assert result[0]["status"] == "INSUFFICIENT_HISTORY"
+    assert "not mapped to a historical division" in result[0]["reason"]
     assert "probabilities" not in result[0]
 
+
+
+def test_team_history_and_baselines_are_isolated_by_competition():
+    fixture = _fixture()
+    base = _history()
+    other_division = [
+        {
+            "date": date(2026, 10, day), "division": "F1",
+            "home": f"French Home {day}", "away": f"French Away {day}",
+            "home_key": f"frenchhome{day}", "away_key": f"frenchaway{day}",
+            "home_goals": 8, "away_goals": 7,
+        }
+        for day in range(1, 7)
+    ]
+    baseline = predict_fixtures(
+        [fixture], base, as_of=date(2026, 10, 23),
+        now=datetime(2026, 10, 23, 12, 0, tzinfo=ZoneInfo("Africa/Lagos")),
+    )[0]
+    with_other_league = predict_fixtures(
+        [fixture], base + other_division, as_of=date(2026, 10, 23),
+        now=datetime(2026, 10, 23, 12, 0, tzinfo=ZoneInfo("Africa/Lagos")),
+    )[0]
+    assert baseline["status"] == "EXPERIMENTAL_ONLY"
+    assert with_other_league["status"] == "EXPERIMENTAL_ONLY"
+    assert with_other_league["historical_matches"] == baseline["historical_matches"]
+    assert with_other_league["expected_goals"] == baseline["expected_goals"]
+
+
+def test_unmapped_competition_cannot_borrow_another_leagues_team_history():
+    fixture = _fixture()
+    fixture["league"].pop("code", None)
+    result = predict_fixtures(
+        [fixture], _history(), as_of=date(2026, 10, 23),
+        now=datetime(2026, 10, 23, 12, 0, tzinfo=ZoneInfo("Africa/Lagos")),
+    )[0]
+    assert result["status"] == "INSUFFICIENT_HISTORY"
+    assert result["historical_matches"] == {"home": 0, "away": 0}
+    assert "probabilities" not in result
 
 def test_history_from_prediction_date_is_not_used():
     rows = _history()
     rows.append({
-        "date": date(2026, 10, 23), "home": "Alpha FC", "away": "Beta FC",
+        "date": date(2026, 10, 23), "division": "E0", "home": "Alpha FC", "away": "Beta FC",
         "home_key": _name_key("Alpha FC"), "away_key": _name_key("Beta FC"),
         "home_goals": 8, "away_goals": 0,
     })
@@ -150,10 +195,10 @@ def test_aliases_allow_known_fixture_name_variant_to_use_history():
     for day in range(1, 7):
         d = date(2026, 10, day)
         rows.extend([
-            {"date": d, "home": "Manchester United", "away": f"Opponent {day}",
+            {"date": d, "division": "E0", "home": "Manchester United", "away": f"Opponent {day}",
              "home_key": _name_key("Manchester United"), "away_key": _name_key(f"Opponent {day}"),
              "home_goals": 2, "away_goals": 0},
-            {"date": d, "home": f"Rival {day}", "away": "Beta FC",
+            {"date": d, "division": "E0", "home": f"Rival {day}", "away": "Beta FC",
              "home_key": _name_key(f"Rival {day}"), "away_key": _name_key("Beta FC"),
              "home_goals": 1, "away_goals": 1},
         ])
@@ -233,12 +278,12 @@ def test_goal_estimates_prefer_relevant_home_and_away_venue_history():
     for day in range(1, 7):
         d = date(2026, 10, day)
         rows.append({
-            "date": d, "home": "Alpha FC", "away": f"Opponent {day}",
+            "date": d, "division": "E0", "home": "Alpha FC", "away": f"Opponent {day}",
             "home_key": _name_key("Alpha FC"), "away_key": f"opponent{day}",
             "home_goals": 3, "away_goals": 0,
         })
         rows.append({
-            "date": d, "home": f"Rival {day}", "away": "Beta FC",
+            "date": d, "division": "E0", "home": f"Rival {day}", "away": "Beta FC",
             "home_key": f"rival{day}", "away_key": _name_key("Beta FC"),
             "home_goals": 1, "away_goals": 1,
         })
@@ -247,12 +292,12 @@ def test_goal_estimates_prefer_relevant_home_and_away_venue_history():
     for day in range(7, 13):
         d = date(2026, 10, day)
         rows.append({
-            "date": d, "home": f"Opponent Away {day}", "away": "Alpha FC",
+            "date": d, "division": "E0", "home": f"Opponent Away {day}", "away": "Alpha FC",
             "home_key": f"opponentaway{day}", "away_key": "alpha",
             "home_goals": 3, "away_goals": 0,
         })
         rows.append({
-            "date": d, "home": "Beta FC", "away": f"Rival Away {day}",
+            "date": d, "division": "E0", "home": "Beta FC", "away": f"Rival Away {day}",
             "home_key": "beta", "away_key": f"rivalaway{day}",
             "home_goals": 0, "away_goals": 2,
         })
@@ -288,12 +333,13 @@ def test_daily_report_explains_fixture_filtering(tmp_path):
     rows = _history()
     with history_path.open("w", newline="", encoding="utf-8") as handle:
         writer = csv.DictWriter(
-            handle, fieldnames=["match_date", "home_team", "away_team", "home_goals", "away_goals"]
+            handle, fieldnames=["match_date", "division", "home_team", "away_team", "home_goals", "away_goals"]
         )
         writer.writeheader()
         for row in rows:
             writer.writerow({
                 "match_date": row["date"].isoformat(),
+                "division": row.get("division", "E0"),
                 "home_team": row["home"],
                 "away_team": row["away"],
                 "home_goals": row["home_goals"],
@@ -317,7 +363,7 @@ def test_daily_report_explains_fixture_filtering(tmp_path):
     )
     assert report["fixtures_received"] == 4
     assert report["same_day_pre_match_fixtures"] == 1
-    assert report["past_kickoffs_excluded"] == 0
+    assert report["past_kickoffs_excluded"] == 1
     assert report["past_kickoffs_retained"] == 1
     assert report["future_fixtures_considered"] == 1
     assert report["same_day_fixtures_retained"] == 3
@@ -330,10 +376,13 @@ def test_daily_report_explains_fixture_filtering(tmp_path):
     assert by_fixture[200]["status"] == "EXPERIMENTAL_ONLY"
     assert by_fixture[400]["status"] == "FIXTURE_NOT_PREMATCH"
     assert "probabilities" not in by_fixture[400]
-    assert report["primary_model_counts"] == {"experimental_recent_goals_poisson": 1}
+    assert report["primary_model_counts"] == {"experimental_elo_by_competition": 1}
     assert report["possible_team_name_mismatches"] == 1
-    assert report["poisson_alternative_available"] == 0
-    assert report["elo_alternative_available"] == 1
+    assert len(report["team_history_match_diagnostics"]) == 1
+    assert report["team_history_match_diagnostics"][0]["historical_matches"] == {"home": 6, "away": 6}
+    assert report["teams_below_history_minimum"] == 0
+    assert report["poisson_alternative_available"] == 1
+    assert report["elo_alternative_available"] == 0
 
 
 
@@ -476,6 +525,7 @@ def test_provider_local_league_ids_never_map_to_api_football_divisions():
     from app.live_predictions import _fixture_parts
 
     fixture = _fixture()
+    fixture["league"].pop("code", None)
     fixture["league"]["id"] = 128  # API-Football's Argentina league ID
     fixture["_veltrix_source"] = "5DollarFootballAPI"
     parts = _fixture_parts(fixture)
@@ -484,6 +534,7 @@ def test_provider_local_league_ids_never_map_to_api_football_divisions():
 
     # Legacy/API-Football-shaped fixtures retain the existing ID mapping.
     api_fixture = _fixture()
+    api_fixture["league"].pop("code", None)
     api_fixture["league"]["id"] = 128
     api_parts = _fixture_parts(api_fixture)
     assert api_parts is not None
@@ -566,6 +617,8 @@ def test_senior_competition_with_empty_history_is_insufficient_history():
     )
     assert result[0]["status"] == "INSUFFICIENT_HISTORY"
     assert "probabilities" not in result[0]
+    assert result[0]["team_history_diagnostics"]["home"]["match_status"] == "NO_HISTORICAL_DATA"
+    assert result[0]["team_history_diagnostics"]["away"]["prior_matches"] == 0
 
 
 def test_french_ligue_one_provider_aliases_match_historical_team_keys():
@@ -574,7 +627,7 @@ def test_french_ligue_one_provider_aliases_match_historical_team_keys():
     assert _name_key("RC Lens") == _name_key("Lens")
 
 
-def test_mapped_competition_uses_explicit_league_prior_when_team_history_is_sparse():
+def test_mapped_competition_prior_is_not_published_when_team_history_is_sparse():
     fixture = _fixture("2026-10-23T15:00:00+01:00")
     fixture["league"] = {"name": "Bundesliga", "code": "BL1"}
     fixture["teams"]["home"]["name"] = "Newly Promoted Club"
@@ -596,15 +649,12 @@ def test_mapped_competition_uses_explicit_league_prior_when_team_history_is_spar
         now=datetime(2026, 10, 23, 12, 0, tzinfo=ZoneInfo("Africa/Lagos")),
     )
     prediction = result[0]
-    assert prediction["status"] == "EXPERIMENTAL_ONLY"
-    assert prediction["model"] == "experimental_competition_prior_poisson"
-    assert prediction["model_validated"] is False
-    assert prediction["betting_recommendation"] is False
-    assert prediction["data_availability"]["competition_history_matches"] == 50
-    assert prediction["prediction_basis"].startswith("competition-level historical")
-    assert abs(sum(prediction["probabilities"].values()) - 1) < 0.0002
-    assert 0 <= prediction["btts_yes"] <= 1
-    assert 0 <= prediction["over_2_5"] <= 1
+    assert prediction["status"] == "INSUFFICIENT_HISTORY"
+    assert prediction["data_availability"]["competition_specific_history"] == "AVAILABLE_BUT_NOT_USED_AS_FIXTURE_FORECAST"
+    assert prediction["data_availability"]["global_goal_rate_prior"] == "DIAGNOSTIC_ONLY_NOT_PUBLISHED"
+    assert "probabilities" not in prediction
+    assert "btts_yes" not in prediction
+    assert "over_2_5" not in prediction
 
 
 def test_build_daily_report_retains_scheduled_fixture_without_kickoff():
@@ -639,7 +689,7 @@ def test_started_fixture_parts_can_be_read_for_visibility_only():
     assert parts["fixture_status"] == "FT"
 
 
-def test_unmapped_senior_fixture_gets_explicit_low_data_forecast_from_licensed_global_history():
+def test_unmapped_senior_fixture_with_global_history_is_withheld_without_team_evidence():
     fixture = _fixture()
     fixture["league"] = {"name": "Unmapped Senior Competition"}
     fixture["teams"]["home"]["name"] = "Unknown Home"
@@ -662,11 +712,8 @@ def test_unmapped_senior_fixture_gets_explicit_low_data_forecast_from_licensed_g
         now=datetime(2026, 10, 23, 12, 0, tzinfo=ZoneInfo("Africa/Lagos")),
     )
     prediction = result[0]
-    assert prediction["status"] == "EXPERIMENTAL_LOW_DATA"
-    assert prediction["model"] == "experimental_global_licensed_prior_poisson"
-    assert prediction["model_validated"] is False
-    assert prediction["betting_recommendation"] is False
-    assert prediction["data_availability"]["licensed_global_history_matches"] == 40
-    assert abs(sum(prediction["probabilities"].values()) - 1) < 0.0002
-    assert 0 <= prediction["btts_yes"] <= 1
-    assert 0 <= prediction["over_2_5"] <= 1
+    assert prediction["status"] == "INSUFFICIENT_HISTORY"
+    assert prediction["data_availability"]["global_goal_rate_prior"] == "DIAGNOSTIC_ONLY_NOT_PUBLISHED"
+    assert "probabilities" not in prediction
+    assert "btts_yes" not in prediction
+    assert "over_2_5" not in prediction

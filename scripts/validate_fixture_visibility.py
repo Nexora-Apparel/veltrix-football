@@ -7,9 +7,9 @@ from pathlib import Path
 from typing import Any
 
 
-FORECAST_STATUSES = {"EXPERIMENTAL_ONLY", "EXPERIMENTAL_LOW_DATA"}
+FORECAST_STATUSES = {"EXPERIMENTAL_ONLY"}
 NON_FORECAST_STATUSES = {
-    "INSUFFICIENT_HISTORY", "UNSUPPORTED_COMPETITION", "KICKOFF_UNVERIFIED",
+    "INSUFFICIENT_HISTORY", "EXPERIMENTAL_LOW_DATA", "UNSUPPORTED_COMPETITION", "KICKOFF_UNVERIFIED",
     "KICKOFF_PASSED", "FIXTURE_NOT_PREMATCH",
 }
 
@@ -40,25 +40,23 @@ def validate_fixture_visibility(report: dict[str, Any]) -> dict[str, Any]:
         status = str(row.get("status") or "UNKNOWN").upper()
         counts[status] = counts.get(status, 0) + 1
 
-    # A cold or stale history cache must not silently publish a mostly empty
-    # predictions page when enough provider-attributed results exist for a
-    # conservative global prior. Women's/youth/reserve fixtures remain excluded
-    # until category-matched history is available.
+    # Sparse history is a visibility condition, not permission to synthesize
+    # fixture probabilities from a shared global/competition scoring prior.
+    # INSUFFICIENT_HISTORY rows remain visible and are checked above to ensure
+    # they carry no probability distribution.
     coverage = report.get("historical_data_coverage") or {}
     source_counts = coverage.get("recent_cache_source_counts") or {}
     try:
         licensed_global_rows = int(source_counts.get("5DollarFootballAPI", 0))
     except (TypeError, ValueError):
         licensed_global_rows = 0
-    non_senior_reason = (
-        "women's, youth and reserve competitions require category-matched historical results"
-    )
     senior_candidates = [
         row for row in rows
         if str(row.get("status") or "").upper() not in {
             "KICKOFF_UNVERIFIED", "KICKOFF_PASSED", "FIXTURE_NOT_PREMATCH"
         }
-        and non_senior_reason not in str(row.get("reason") or "").casefold()
+        and "women's, youth and reserve competitions require category-matched historical results"
+        not in str(row.get("reason") or "").casefold()
     ]
     forecast_rows = sum(
         str(row.get("status") or "").upper() in FORECAST_STATUSES
@@ -66,17 +64,8 @@ def validate_fixture_visibility(report: dict[str, Any]) -> dict[str, Any]:
         for row in rows
     )
     low_data_forecasts = counts.get("EXPERIMENTAL_LOW_DATA", 0)
-    forecast_coverage = (
-        forecast_rows / len(senior_candidates) if senior_candidates else 1.0
-    )
-    if licensed_global_rows >= 30 and senior_candidates and forecast_coverage < 0.90:
-        raise ValueError(
-            "Forecast coverage gate failed: "
-            f"{forecast_rows}/{len(senior_candidates)} senior fixtures have forecasts "
-            f"({forecast_coverage:.1%}) despite {licensed_global_rows} licensed provider results; "
-            "repair the model fallback before publication."
-        )
-
+    insufficient_history_rows = counts.get("INSUFFICIENT_HISTORY", 0)
+    forecast_coverage = forecast_rows / len(senior_candidates) if senior_candidates else 1.0
     result = {
         "status": "PASSED",
         "fixture_rows": len(rows),
@@ -85,8 +74,9 @@ def validate_fixture_visibility(report: dict[str, Any]) -> dict[str, Any]:
         "kickoff_unverified_rows": counts.get("KICKOFF_UNVERIFIED", 0),
         "forecast_rows": forecast_rows,
         "low_data_forecast_rows": low_data_forecasts,
+        "insufficient_history_rows": insufficient_history_rows,
         "senior_forecast_coverage": round(forecast_coverage, 4),
-        "licensed_global_history_rows": licensed_global_rows,
+        "licensed_global_history_rows_diagnostic_only": licensed_global_rows,
         "alerts_enabled": False,
     }
     report["fixture_visibility_validation"] = result

@@ -130,7 +130,7 @@ def test_filter_recomputes_status_counts_after_removing_rows():
 
 
 
-def test_filter_retains_low_data_forecasts_and_recounts_them_separately():
+def test_filter_withholds_legacy_low_data_forecasts_and_keeps_fixture_visible():
     report = {
         "as_of_date": "2026-10-25",
         "timezone": "Africa/Lagos",
@@ -142,10 +142,19 @@ def test_filter_retains_low_data_forecasts_and_recounts_them_separately():
             "kickoff_local": "2026-10-25T18:00:00+01:00",
             "model": "experimental_global_licensed_prior_poisson",
             "probabilities": {"home_win": .45, "draw": .28, "away_win": .27},
+            "btts_yes": .6,
+            "over_2_5": .55,
         }],
     }
     now = datetime(2026, 10, 25, 8, 0, tzinfo=ZoneInfo("Africa/Lagos"))
     filtered = filter_report_for_delivery(report, now)
-    assert filtered["predictions_created"] == 1
-    assert filtered["low_data_forecasts"] == 1
-    assert filtered["fixture_status_counts"]["EXPERIMENTAL_LOW_DATA"] == 1
+    row = filtered["predictions"][0]
+    assert filtered["same_day_fixtures_retained"] == 1
+    assert filtered["predictions_created"] == 0
+    assert filtered["low_data_forecasts"] == 0
+    assert filtered["insufficient_history"] == 1
+    assert row["status"] == "INSUFFICIENT_HISTORY"
+    assert "probabilities" not in row
+    assert "btts_yes" not in row
+    assert "over_2_5" not in row
+    assert filtered["fixture_status_counts"]["EXPERIMENTAL_LOW_DATA"] == 0
