@@ -44,12 +44,22 @@ def test_dashboard_data_handler_returns_json(monkeypatch):
         "predictions": [],
         "fixtures_received": 0,
         "fixtures_with_market_odds": 0,
+        "command_data_publication": "PUBLISHED",
+        "primary_provider_request": {"provider": "5DollarFootballAPI", "status": "SUCCESS"},
+        "multi_source_odds_sync": {
+            "five_dollar": {"status": "AVAILABLE"},
+            "the_odds_api": {"status": "AVAILABLE"},
+        },
     })
     payload = get_dashboard_data()
     assert payload["status"] == "OK"
     assert payload["as_of_date"] == "2026-10-27"
     assert payload["predictions"] == []
     assert payload["paper_tracking"]["model_status"] == "PAPER_TRACKING_ONLY"
+    assert payload["data_connection"]["status"] == "CONNECTED"
+    assert payload["data_connection"]["freshness"] == "STALE"
+    assert payload["multi_source_odds_sync"]["five_dollar"]["status"] == "AVAILABLE"
+    assert payload["multi_source_odds_sync"]["the_odds_api"]["status"] == "AVAILABLE"
 
 
 def test_dashboard_data_exposes_value_screen_status_and_market_coverage(monkeypatch):
