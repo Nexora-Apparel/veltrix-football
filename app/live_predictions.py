@@ -539,6 +539,16 @@ def predict_fixtures(
                 "model_validated": False,
                 "betting_recommendation": False,
                 "historical_matches": {"home": len(home_hist), "away": len(away_hist)},
+                "competition_history_scope": {
+                    "fixture_competition": fixture.get("league"),
+                    "provider_competition_id": fixture.get("league_id"),
+                    "mapped_historical_division": division_code or None,
+                    "prior_competition_matches": sum(
+                        str(match.get("division") or "").strip() == division_code
+                        for match in prior_rows
+                    ) if division_code else 0,
+                    "competition_baseline_available": bool(baseline),
+                },
                 "team_history_diagnostics": {
                     "home": {
                         "fixture_name": fixture["home_team"],
@@ -546,6 +556,7 @@ def predict_fixtures(
                         "resolved_history_key": home_key,
                         "prior_matches": len(home_hist),
                         "history_match_found": bool(home_hist),
+                        "division_code": division_code or None,
                     },
                     "away": {
                         "fixture_name": fixture["away_team"],
@@ -553,6 +564,7 @@ def predict_fixtures(
                         "resolved_history_key": away_key,
                         "prior_matches": len(away_hist),
                         "history_match_found": bool(away_hist),
+                        "division_code": division_code or None,
                     },
                 },
                 "recent_form": {
