@@ -335,3 +335,15 @@ def test_dashboard_data_optional_snapshots_cannot_break_core_report(monkeypatch)
     assert payload["predictions"][0]["home_team"] == "Always Visible FC"
     assert payload["paper_tracking"] is None
     assert payload["model_validation"]["status"] == "NOT_REPORTED"
+
+
+def test_vercel_skips_command_data_snapshot_deployments_without_blocking_main():
+    import json
+    from pathlib import Path
+
+    config = json.loads(Path("vercel.json").read_text(encoding="utf-8"))
+    command = config["ignoreCommand"]
+    assert 'VERCEL_GIT_COMMIT_REF' in command
+    assert 'command-data' in command
+    assert 'exit 0' in command
+    assert 'exit 1' in command
