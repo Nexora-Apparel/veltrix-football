@@ -127,3 +127,25 @@ def test_filter_recomputes_status_counts_after_removing_rows():
     assert filtered["predictions_created"] == 1
     assert filtered["unsupported_competitions"] == 1
     assert filtered["unsupported_competition_breakdown"] == {"Unknown League": 1}
+
+
+
+def test_filter_retains_low_data_forecasts_and_recounts_them_separately():
+    report = {
+        "as_of_date": "2026-10-25",
+        "timezone": "Africa/Lagos",
+        "same_day_only": True,
+        "predictions": [{
+            "status": "EXPERIMENTAL_LOW_DATA",
+            "home_team": "Unknown Home",
+            "away_team": "Unknown Away",
+            "kickoff_local": "2026-10-25T18:00:00+01:00",
+            "model": "experimental_global_licensed_prior_poisson",
+            "probabilities": {"home_win": .45, "draw": .28, "away_win": .27},
+        }],
+    }
+    now = datetime(2026, 10, 25, 8, 0, tzinfo=ZoneInfo("Africa/Lagos"))
+    filtered = filter_report_for_delivery(report, now)
+    assert filtered["predictions_created"] == 1
+    assert filtered["low_data_forecasts"] == 1
+    assert filtered["fixture_status_counts"]["EXPERIMENTAL_LOW_DATA"] == 1
