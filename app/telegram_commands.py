@@ -134,7 +134,7 @@ def _forecast_predictions(report: dict[str, Any] | None) -> list[dict[str, Any]]
     """Return only current-day, future, explicitly usable experimental forecasts."""
     return [
         row for row in _future_fixtures(report)
-        if row.get("status") == "EXPERIMENTAL_ONLY"
+        if row.get("status") in {"EXPERIMENTAL_ONLY", "EXPERIMENTAL_LOW_DATA"}
         and _valid_probability_vector(row.get("probabilities"))
     ]
 
@@ -625,7 +625,7 @@ def handle_command(
                 continue
 
             probs = row.get("probabilities")
-            if row.get("status") != "EXPERIMENTAL_ONLY" or not _valid_probability_vector(probs):
+            if row.get("status") not in {"EXPERIMENTAL_ONLY", "EXPERIMENTAL_LOW_DATA"} or not _valid_probability_vector(probs):
                 reason = row.get("reason") or row.get("status") or "forecast unavailable"
                 lines.extend([
                     f"━━━━━━━━━━━━━━━━━━━━",
