@@ -437,6 +437,18 @@ def predict_fixtures(
                     else "No historical matches dated before the fixture date are available."
                 ),
                 "team_name_match_suggestions": {},
+                "team_history_diagnostics": {
+                    side: {
+                        "fixture_name": fixture[f"{side}_team"],
+                        "normalized_key": _name_key(fixture[f"{side}_team"]),
+                        "resolved_history_key": None,
+                        "prior_matches": 0,
+                        "history_match_found": False,
+                        "match_status": "NO_HISTORICAL_DATA",
+                        "candidate_history_names": [],
+                    }
+                    for side in ("home", "away")
+                },
             }
             for fixture in candidates
         ]
