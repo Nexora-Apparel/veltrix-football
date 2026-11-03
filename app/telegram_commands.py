@@ -642,6 +642,8 @@ def handle_command(
                 f"⚽ {index}. {home} vs {away}",
                 f"🏆 {league}  ·  🕒 {kickoff}",
             ])
+            if row.get("status") == "EXPERIMENTAL_LOW_DATA":
+                lines.append("MODEL STATUS: LOW-DATA EXPERIMENTAL · NOT BETTING ELIGIBLE")
             if row.get("prediction_basis"):
                 lines.append("Forecast basis: " + str(row.get("prediction_basis")))
             if command not in {"/overunder", "/btts"}:
