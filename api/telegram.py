@@ -387,6 +387,12 @@ def dashboard_data() -> dict:
         live_odds_count = 0
     odds_count = matched_odds_rows
 
+    report_date = str(report.get("as_of_date") or "")
+    try:
+        report_age_days = max((now.date() - datetime.fromisoformat(report_date).date()).days, 0)
+    except (TypeError, ValueError, OverflowError):
+        report_age_days = None
+
     ledger = load_paper_ledger()
     paper_tracking = None
     if isinstance(ledger, dict):
@@ -430,7 +436,7 @@ def dashboard_data() -> dict:
             "status": "CONNECTED",
             "freshness": "CURRENT" if report.get("as_of_date") == now.date().isoformat() else "STALE",
             "report_date": report.get("as_of_date"),
-            "report_age_days": max((now.date() - datetime.fromisoformat(str(report.get("as_of_date"))).date()).days, 0) if report.get("as_of_date") else None,
+            "report_age_days": report_age_days,
             "published": report.get("command_data_publication") == "PUBLISHED",
             "provider": (report.get("primary_provider_request") or {}).get("provider") if isinstance(report.get("primary_provider_request"), dict) else None,
             "provider_status": (report.get("primary_provider_request") or {}).get("status") if isinstance(report.get("primary_provider_request"), dict) else None,
