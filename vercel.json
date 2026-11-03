@@ -2,11 +2,11 @@
   "routes": [
     {
       "src": "^/$",
-      "dest": "/api/index?route=dashboard"
+      "dest": "/api/dashboard"
     },
     {
       "src": "^/dashboard/?$",
-      "dest": "/api/index?route=dashboard"
+      "dest": "/api/dashboard"
     },
     {
       "src": "^/api/dashboard/?$",
@@ -14,7 +14,7 @@
     },
     {
       "src": "^/api/dashboard-data/?$",
-      "dest": "/api/index?route=dashboard-data"
+      "dest": "/api/dashboard_data"
     },
     {
       "handle": "filesystem"
