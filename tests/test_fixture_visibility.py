@@ -99,7 +99,7 @@ def test_fixture_visibility_rejects_any_legacy_low_data_probability_row():
         "home_team": f"Home {index}",
         "away_team": f"Away {index}",
         "status": "EXPERIMENTAL_ONLY" if index == 0 else "EXPERIMENTAL_LOW_DATA",
-        **({"probabilities": {"home_win": .4, "draw": .3, "away_win": .3}} if index == 0 else {}),
+        **({"probabilities": {"home_win": .4, "draw": .3, "away_win": .3}} if index in {0, 1} else {}),
     } for index in range(24)]
     rows.append({
         "home_team": "Women's Home",
