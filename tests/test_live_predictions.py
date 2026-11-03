@@ -376,7 +376,7 @@ def test_daily_report_explains_fixture_filtering(tmp_path):
     assert by_fixture[200]["status"] == "EXPERIMENTAL_ONLY"
     assert by_fixture[400]["status"] == "FIXTURE_NOT_PREMATCH"
     assert "probabilities" not in by_fixture[400]
-    assert report["primary_model_counts"] == {"experimental_recent_goals_poisson": 1}
+    assert report["primary_model_counts"] == {"experimental_elo_by_competition": 1}
     assert report["possible_team_name_mismatches"] == 1
     assert len(report["team_history_match_diagnostics"]) == 1
     assert report["team_history_match_diagnostics"][0]["historical_matches"] == {"home": 6, "away": 6}
