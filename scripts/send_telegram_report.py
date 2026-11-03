@@ -212,7 +212,7 @@ def format_report_messages(report: dict[str, Any], ledger: dict[str, Any] | None
     timezone_name = str(report.get("timezone", "Africa/Lagos"))
     predictions = report.get("predictions", [])
     fixtures = [item for item in predictions if isinstance(item, dict)]
-    usable = [item for item in fixtures if item.get("status") == "EXPERIMENTAL_ONLY"]
+    usable = [item for item in fixtures if item.get("status") in {"EXPERIMENTAL_ONLY", "EXPERIMENTAL_LOW_DATA"}]
 
     header = [
         DIVIDER,
@@ -253,6 +253,8 @@ def format_report_messages(report: dict[str, Any], ledger: dict[str, Any] | None
             f"Over 3.5: {_format_percent(item.get('over_3_5'))} | Under 3.5: {_format_percent(1 - float(item.get('over_3_5'))) if isinstance(item.get('over_3_5'), (int, float)) and 0 <= item.get('over_3_5') <= 1 else '—'}",
             f"xG: {_format_goals(expected.get('home'))} - {_format_goals(expected.get('away'))}",
         ]
+        if item.get("status") == "EXPERIMENTAL_LOW_DATA":
+            block.append("MODEL STATUS: LOW-DATA EXPERIMENTAL · NOT BETTING ELIGIBLE")
         recent_form = item.get("recent_form") if isinstance(item.get("recent_form"), dict) else {}
         home_form = _format_recent_form((recent_form.get("home_team") or {}).get("overall") if isinstance(recent_form.get("home_team"), dict) else None)
         away_form = _format_recent_form((recent_form.get("away_team") or {}).get("overall") if isinstance(recent_form.get("away_team"), dict) else None)
@@ -281,7 +283,7 @@ def format_report_messages(report: dict[str, Any], ledger: dict[str, Any] | None
     # Do not silently hide discovered fixtures just because the model cannot
     # produce an eligible forecast. Publish the fixture and the explicit gate.
     for item in fixtures:
-        if item.get("status") == "EXPERIMENTAL_ONLY":
+        if item.get("status") in {"EXPERIMENTAL_ONLY", "EXPERIMENTAL_LOW_DATA"}:
             continue
         status = str(item.get("status") or "FORECAST_UNAVAILABLE").upper()
         if status == "INSUFFICIENT_HISTORY":
