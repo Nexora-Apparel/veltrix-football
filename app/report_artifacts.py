@@ -77,7 +77,33 @@ def _load(kind: str) -> dict[str, Any] | None:
                 elif kind == "model_validation" and parsed.get("status") == "RESEARCH_DIAGNOSTIC_ONLY" and isinstance(parsed.get("dataset"), dict):
                     value = parsed
     except (HTTPError, URLError, OSError, TimeoutError, UnicodeDecodeError, json.JSONDecodeError, ValueError):
-        value = None
+        # The Contents API is the preferred uncached source, but its anonymous
+        # rate limit can temporarily block dashboard reads. Fall back to the
+        # public raw branch with a cache-busting query parameter so a published
+        # snapshot remains readable without requiring a GitHub token.
+        raw_url = (
+            f"https://raw.githubusercontent.com/{repo}/{branch}/public-data/{filename}"
+            f"?v={cache_buster}"
+        )
+        try:
+            raw_request = Request(raw_url, headers={
+                "User-Agent": "Veltrix-Football-Command-Centre",
+                "Cache-Control": "no-cache",
+                "Pragma": "no-cache",
+            })
+            with urlopen(raw_request, timeout=_TIMEOUT_SECONDS) as response:
+                raw = response.read(4_000_001)
+            if len(raw) <= 4_000_000:
+                parsed = json.loads(raw.decode("utf-8"))
+                if isinstance(parsed, dict):
+                    if kind == "report" and isinstance(parsed.get("predictions"), list) and parsed.get("status") != "NOT_YET_PUBLISHED":
+                        value = parsed
+                    elif kind == "ledger" and isinstance(parsed.get("cumulative_metrics_by_model"), dict) and parsed.get("model_status") == "PAPER_TRACKING_ONLY":
+                        value = parsed
+                    elif kind == "model_validation" and parsed.get("status") == "RESEARCH_DIAGNOSTIC_ONLY" and isinstance(parsed.get("dataset"), dict):
+                        value = parsed
+        except (HTTPError, URLError, OSError, TimeoutError, UnicodeDecodeError, json.JSONDecodeError, ValueError):
+            value = None
 
     _cache[kind] = (now, value)
     return value
