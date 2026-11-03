@@ -39,7 +39,7 @@ main{padding:20px clamp(12px,3vw,30px)}.eyebrow{color:var(--green);font-weight:8
 @media(min-width:760px){.featurelayout{display:grid;grid-template-columns:1.15fr .85fr;gap:14px;align-items:start}.featurelayout .sectionhead{margin-top:0}.feature{height:100%}.matchhero{padding:32px 0}.statusgrid{grid-template-columns:repeat(4,minmax(0,1fr))}}
 @media(max-width:520px){main{padding:14px 11px}.overview{gap:7px}.metric{padding:11px 9px}.metric .value{font-size:21px}.metric .label{font-size:10px}.feature{padding:14px}.matchhero{grid-template-columns:1fr 28px 1fr;padding:18px 0 14px}.probwrap{gap:10px;align-items:start}.ring{width:78px;height:78px}.ringtext{font-size:20px}.markets{gap:5px}.market{padding:8px 4px}.market .mvalue{font-size:14px}.market .mlabel{font-size:9px}.fixturelist{grid-template-columns:1fr}.brand{font-size:18px}.mark{font-size:33px}.tagline{font-size:10px}.live{padding:5px 8px}.statusgrid{grid-template-columns:1fr 1fr}}
 </style></head><body><div class="shell">
-<header class="topbar"><div class="headrow"><div><div class="brandbox"><div class="mark">V</div><div class="brand">VELTRIX<span>F O O T B A L L</span></div></div><div class="tagline">Command Centre · Football intelligence · Real published data</div></div><div class="live"><i class="dot"></i><span id="liveLabel">REPORT</span></div></div></header>
+<header class="topbar"><div class="headrow"><div><div class="brandbox"><div class="mark">V</div><div class="brand">VELTRIX<span>F O O T B A L L</span></div></div><div class="tagline">Command Centre · Football intelligence · Real published data</div></div><div class="live"><i class="dot"></i><span id="liveLabel">CHECKING DATA</span></div></div></header>
 <main>
 <section id="dashboardView" class="sectionview active">
 <div class="sectionhead" style="margin-top:0"><div><div class="eyebrow">Match intelligence</div><h2>Featured prediction</h2></div><button class="refresh" id="refresh" onclick="loadDashboard()">↻ Refresh</button></div>
@@ -248,12 +248,13 @@ function renderPaperTracking(d){
 }
 function renderStatus(d){
  const box=document.getElementById('systemStatus');box.replaceChildren();const hist=d.historical_data_coverage||{};const odds=d.live_odds_sync||{};const primary=d.primary_provider_request||{};
- const validation=d.model_validation||{};const vals=[['Report publication',d.publication_status||d.status||'UNKNOWN'],['Fixture source',(primary.provider||'Unknown')+' · '+(primary.status||'unknown')],['The Odds API',odds.the_odds_api_status||'unknown'],['Historical coverage',hist.status||'not reported'],['Model validation',validation.status||'NOT_REPORTED']];
+ const validation=d.model_validation||{};const connection=d.data_connection||{};const vals=[['Dashboard data',connection.status||'UNKNOWN'],['Report freshness',connection.freshness||'UNKNOWN'],['Report publication',d.publication_status||d.status||'UNKNOWN'],['Fixture source',(primary.provider||'Unknown')+' · '+(primary.status||'unknown')],['5DollarFootballAPI odds',(d.multi_source_odds_sync?.five_dollar?.status||'unknown')],['The Odds API',(d.multi_source_odds_sync?.the_odds_api?.status||odds.the_odds_api_status||'unknown')],['Historical coverage',hist.status||'not reported'],['Model validation',validation.status||'NOT_REPORTED']];
  for(const [title,value] of vals){const el=document.createElement('div');el.className='statusitem reveal';const t=document.createElement('div');t.className='stitle';t.textContent=title;const v=document.createElement('div');v.className='svalue';v.textContent=value;el.append(t,v);box.append(el)}
  const details=document.getElementById('statusDetails');const lines=[];
  lines.push('Forecast validation: '+(d.warning||'Experimental model; not validated for betting.'));
  lines.push('Report freshness: '+(d.as_of_date||'date unavailable')+' · generated '+(d.generated_at_utc||'unknown')+' UTC · published '+(d.published_at_utc||'unknown')+' UTC.');
- lines.push('Fixture provider: '+(primary.provider||'unknown')+' · '+(primary.status||'unknown')+'.');
+ lines.push('Dashboard data connection: '+(connection.status||'unknown')+' · freshness '+(connection.freshness||'unknown')+' · report age '+(connection.report_age_days??'unknown')+' days.');
+ lines.push('Fixture provider: '+(primary.provider||'unknown')+' · '+(primary.status||'unknown')+' · fixtures received from primary provider '+(primary.fixtures_received??'unknown')+'.');
  const remaining=Number(primary.requests_remaining);if(Number.isFinite(remaining))lines.push('Provider quota reported remaining: '+remaining+' requests.');
  lines.push('5Dollar odds: '+(d.multi_source_odds_sync?.five_dollar?.status||d.live_odds_sync?.five_dollar_status||'not reported')+'.');
  lines.push('The Odds API: '+(d.multi_source_odds_sync?.the_odds_api?.status||odds.the_odds_api_status||'not reported')+'. Matched fixtures: '+(odds.fixtures_with_market_odds??d.fixtures_with_market_odds??0)+'.');
@@ -286,13 +287,17 @@ async function loadDashboard(){
  const btn=document.getElementById('refresh');btn.disabled=true;btn.textContent='Loading…';
  try{
   const r=await fetch('/api/dashboard-data',{cache:'no-store'});if(!r.ok)throw new Error('Dashboard data unavailable');const d=await r.json();dashboardRows=Array.isArray(d.predictions)?d.predictions:[];
-  const reportDate=String(d.as_of_date||'');const today=new Intl.DateTimeFormat('en-CA',{timeZone:'Africa/Lagos',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
-  document.getElementById('overviewTitle').textContent=reportDate?(reportDate===today?"Today's overview":'Report overview · '+reportDate):'Report overview';
-  const stale=!!reportDate&&reportDate!==today;const reused=d.report_generation_status==='REUSED_SNAPSHOT_NOT_REFRESHED';const reportNotice=document.getElementById('reportFreshness');if(reportNotice){reportNotice.textContent=stale?'Showing the saved report from '+reportDate+'. It is not today’s report; refresh the data pipeline for current fixtures.':reused?'Same-day snapshot reused; no fresh fixture retrieval completed. '+(d.report_freshness_note||'The displayed report may be older than the latest provider data.'):(dashboardRows.length?'Current-day report loaded from the latest published run.':'No upcoming matches found in the current report.');reportNotice.classList.toggle('warn',stale||reused||!dashboardRows.length);}
+  const reportDate=String(d.as_of_date||'');const connection=d.data_connection||{};const stale=connection.freshness==='STALE'||(!!reportDate&&connection.freshness!=='CURRENT');const reused=d.report_generation_status==='REUSED_SNAPSHOT_NOT_REFRESHED';
+  const liveLabel=document.getElementById('liveLabel');if(liveLabel)liveLabel.textContent=connection.status==='CONNECTED'?(stale?'CONNECTED · STALE DATA':'DATA CONNECTED'):'DATA OFFLINE';
+  const dateParts=new Intl.DateTimeFormat('en-CA',{timeZone:'Africa/Lagos',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date());const today=dateParts.filter(p=>['year','month','day'].includes(p.type)).reduce((o,p)=>(o[p.type]=p.value,o),{});const todayKey=today.year+'-'+today.month+'-'+today.day;
+  document.getElementById('overviewTitle').textContent=reportDate?(reportDate===todayKey?"Today's overview":'Report overview · '+reportDate):'Report overview';
+  const localHour=Number(new Intl.DateTimeFormat('en-GB',{timeZone:'Africa/Lagos',hour:'2-digit',hourCycle:'h23'}).format(new Date()));const reportNotice=document.getElementById('reportFreshness');if(reportNotice){reportNotice.textContent=stale?'Published-data connection is working, but the latest report is '+reportDate+'. Today’s automated report is '+(localHour<6?'scheduled for 06:00 WAT':'overdue after 06:00 WAT')+'. Older fixtures remain visible in Predictions and are not treated as today’s featured picks.':reused?'The dashboard is connected, but this is a reused snapshot; no fresh fixture retrieval completed. '+(d.report_freshness_note||'Wait for the next successful live report.'):(dashboardRows.length?'Connected to the latest current-day published report.':'Connected, but no fixtures are present in the current report.');reportNotice.classList.toggle('warn',stale||reused||!dashboardRows.length);}
   text(document.getElementById('fixtures'),d.fixtures_received);text(document.getElementById('forecasts'),d.experimental_forecasts);text(document.getElementById('odds'),d.fixtures_with_market_odds);
-  renderFeatured(dashboardRows.find(m=>m&&m.status==='EXPERIMENTAL_ONLY'&&!m.fixture_visibility_note)||dashboardRows.find(m=>m&&m.status==='EXPERIMENTAL_ONLY')||dashboardRows[0]);renderRows();renderMarketOdds();renderPaperTracking(d);renderStatus(d);observeReveals(document);
+  const currentFixtures=stale?[]:dashboardRows.filter(m=>m&&m.fixture_phase==='UPCOMING');renderFeatured(currentFixtures.find(m=>m.status==='EXPERIMENTAL_ONLY')||currentFixtures[0]||null);renderRows();renderMarketOdds();renderPaperTracking(d);renderStatus(d);observeReveals(document);
   document.getElementById('reporttime').textContent='Report date '+(d.as_of_date||'unknown')+' · published '+(d.published_at_utc||'unknown')+' UTC';
  }catch(e){
+  const liveLabel=document.getElementById('liveLabel');if(liveLabel)liveLabel.textContent='DATA OFFLINE';
+  document.getElementById('reportFreshness').textContent='Dashboard data connection failed. Published predictions could not be loaded; retry the dashboard connection.';
   document.getElementById('featured').textContent='Published report unavailable. Please retry shortly.';
   document.getElementById('predictions').textContent='Dashboard data request failed.';
   document.getElementById('marketOdds').textContent='Market price data unavailable.';
@@ -421,7 +426,18 @@ def dashboard_data() -> dict:
         "publication_status": report.get("command_data_publication", "UNKNOWN"),
         "report_generation_status": report.get("publication_status", "UNKNOWN"),
         "report_freshness_note": report.get("publication_notice"),
+        "data_connection": {
+            "status": "CONNECTED",
+            "freshness": "CURRENT" if report.get("as_of_date") == now.date().isoformat() else "STALE",
+            "report_date": report.get("as_of_date"),
+            "report_age_days": max((now.date() - datetime.fromisoformat(str(report.get("as_of_date"))).date()).days, 0) if report.get("as_of_date") else None,
+            "published": report.get("command_data_publication") == "PUBLISHED",
+            "provider": (report.get("primary_provider_request") or {}).get("provider") if isinstance(report.get("primary_provider_request"), dict) else None,
+            "provider_status": (report.get("primary_provider_request") or {}).get("status") if isinstance(report.get("primary_provider_request"), dict) else None,
+            "checked_at_local": now.isoformat(),
+        },
         "primary_provider_request": report.get("primary_provider_request"),
+        "multi_source_odds_sync": report.get("multi_source_odds_sync"),
         "live_odds_sync": report.get("live_odds_sync"),
         "historical_data_coverage": report.get("historical_data_coverage"),
         "fixtures_received": report.get("fixtures_received", 0),
