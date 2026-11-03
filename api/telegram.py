@@ -506,6 +506,27 @@ def dashboard_data() -> dict:
 
     paper_tracking = None
     if isinstance(ledger, dict):
+        # Model-specific paper rows are retained in the source ledger for metrics,
+        # but the dashboard results API exposes one canonical row per fixture.
+        scored_rows = []
+        seen_scored_fixtures = set()
+        raw_scored_rows = ledger.get("scored_matches") if isinstance(ledger.get("scored_matches"), list) else []
+        for scored_row in raw_scored_rows:
+            if not isinstance(scored_row, dict):
+                continue
+            fixture_id = str(scored_row.get("fixture_id") or "").strip()
+            if fixture_id:
+                fixture_key = "id:" + fixture_id
+            else:
+                team_key = "|".join(
+                    re.sub(r"[^a-z0-9]", "", str(scored_row.get(field) or "").casefold())
+                    for field in ("home_team", "away_team")
+                )
+                fixture_key = "teams:" + str(scored_row.get("report_date") or "") + ":" + team_key
+            if fixture_key in seen_scored_fixtures:
+                continue
+            seen_scored_fixtures.add(fixture_key)
+            scored_rows.append(scored_row)
         paper_tracking = {
             "model_status": ledger.get("model_status", "PAPER_TRACKING_ONLY"),
             "updated_at_utc": ledger.get("updated_at_utc"),
@@ -517,6 +538,8 @@ def dashboard_data() -> dict:
             "value_validation_markets_by_calibration_version": ledger.get("value_validation_markets_by_calibration_version") or {},
             "value_model_versions": ledger.get("value_model_versions") or [],
             "calibration_versions": ledger.get("calibration_versions") or [],
+            "scored_matches_model_rows": len(raw_scored_rows),
+            "scored_matches_unique_fixtures": len(scored_rows),
             "scored_matches": [
                 {
                     "fixture_id": row.get("fixture_id"),
@@ -530,8 +553,7 @@ def dashboard_data() -> dict:
                     "report_date": row.get("report_date"),
                     "model": row.get("model"),
                 }
-                for row in (ledger.get("scored_matches") or [])
-                if isinstance(row, dict)
+                for row in scored_rows
             ],
             "notice": ledger.get("notice", "Retrospective paper evaluation only."),
         }
