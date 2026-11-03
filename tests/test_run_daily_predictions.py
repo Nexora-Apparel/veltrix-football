@@ -560,3 +560,14 @@ def test_cache_backfill_complete_requires_no_known_gaps_or_plan_limited_dates():
         "backfill_complete": True, "history_plan_limited_dates": ["2026-10-01"],
     }) is False
     assert daily_runner._cache_backfill_complete({"backfill_complete": False}) is False
+
+
+def test_filter_licensed_recent_history_excludes_unattributed_legacy_rows():
+    accepted, excluded = daily_runner._filter_licensed_recent_history([
+        {"source_provider": "5DollarFootballAPI", "home_key": "a", "away_key": "b"},
+        {"source_provider": "OpenLigaDB", "home_key": "c", "away_key": "d"},
+        {"source_provider": None, "home_key": "e", "away_key": "f"},
+        {"source_provider": "LEGACY_UNATTRIBUTED", "home_key": "g", "away_key": "h"},
+    ])
+    assert [row["source_provider"] for row in accepted] == ["5DollarFootballAPI", "OpenLigaDB"]
+    assert excluded == {"LEGACY_UNATTRIBUTED": 2}
