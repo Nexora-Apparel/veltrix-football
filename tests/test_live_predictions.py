@@ -534,6 +534,7 @@ def test_provider_local_league_ids_never_map_to_api_football_divisions():
 
     # Legacy/API-Football-shaped fixtures retain the existing ID mapping.
     api_fixture = _fixture()
+    api_fixture["league"].pop("code", None)
     api_fixture["league"]["id"] = 128
     api_parts = _fixture_parts(api_fixture)
     assert api_parts is not None
