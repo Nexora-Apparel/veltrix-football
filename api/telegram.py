@@ -5,6 +5,7 @@ import hmac
 import json
 import math
 import os
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 from zoneinfo import ZoneInfo
 from urllib.request import Request, urlopen
@@ -284,10 +285,49 @@ function setActiveView(id){
  window.scrollTo({top:0,behavior:'smooth'});
 }
 document.querySelectorAll('.navitem[data-view]').forEach(n=>n.addEventListener('click',e=>{e.preventDefault();setActiveView(n.dataset.view)}));
+async function fetchWithDeadline(url,ms){
+ const controller=new AbortController();const timer=setTimeout(()=>controller.abort(),ms);
+ try{return await fetch(url,{cache:'no-store',signal:controller.signal})}finally{clearTimeout(timer)}
+}
+async function fetchDashboardPayload(){
+ let apiError=null;
+ try{
+  const response=await fetchWithDeadline('/api/dashboard-data',6500);
+  if(response.ok){const payload=await response.json();if(payload&&payload.status==='OK'&&Array.isArray(payload.predictions))return payload;apiError=new Error('Dashboard API returned no published report')}
+  else apiError=new Error('Dashboard API HTTP '+response.status);
+ }catch(error){apiError=error}
+ // Independent browser-side recovery path: the published report is a static,
+ // public JSON snapshot. This keeps fixture visibility working if a serverless
+ // function, GitHub API rate limit, or Vercel runtime has a transient failure.
+ const stamp=Date.now();
+ const rawUrl='https://raw.githubusercontent.com/Nexora-Apparel/veltrix-football/command-data/public-data/daily_predictions.json?v='+stamp;
+ try{
+  const response=await fetchWithDeadline(rawUrl,7000);
+  if(!response.ok)throw new Error('Published snapshot HTTP '+response.status);
+  const report=await response.json();
+  if(!report||!Array.isArray(report.predictions)||!report.as_of_date)throw new Error('Published snapshot failed validation');
+  return {
+   ...report,status:'OK',predictions:report.predictions,
+   as_of_date:report.as_of_date,generated_at_utc:report.generated_at_utc,
+   published_at_utc:report.command_data_published_at_utc,
+   fixtures_received:report.fixtures_received??report.predictions.length,
+   experimental_forecasts:report.predictions.filter(x=>x&&x.status==='EXPERIMENTAL_ONLY').length,
+   fixtures_visible:report.predictions.length,
+   unsupported_fixtures:report.predictions.filter(x=>!x||x.status!=='EXPERIMENTAL_ONLY').length,
+   fixtures_with_market_odds:report.fixtures_with_market_odds??0,
+   data_connection:{status:'CONNECTED',freshness:'CURRENT',report_date:report.as_of_date,provider:(report.primary_provider_request||{}).provider,provider_status:(report.primary_provider_request||{}).status},
+   model_validation:{status:'NOT_LOADED_FROM_STATIC_FALLBACK',dataset:{},historical_1x2:{},release_controls:{}},
+   paper_tracking:null,
+   warning:'Dashboard is using the published static report because the live API is temporarily unavailable. Fixtures remain visible; status and paper-tracking details may be delayed.'
+  };
+ }catch(fallbackError){
+  throw new Error('Dashboard API failed ('+(apiError?.message||'unknown')+') and static report fallback failed ('+(fallbackError?.message||'unknown')+')');
+ }
+}
 async function loadDashboard(){
  const btn=document.getElementById('refresh');btn.disabled=true;btn.textContent='Loading…';
  try{
-  const r=await fetch('/api/dashboard-data',{cache:'no-store'});if(!r.ok)throw new Error('Dashboard data unavailable');const d=await r.json();dashboardRows=Array.isArray(d.predictions)?d.predictions:[];
+  const d=await fetchDashboardPayload();dashboardRows=Array.isArray(d.predictions)?d.predictions:[];
   const reportDate=String(d.as_of_date||'');const connection=d.data_connection||{};const stale=connection.freshness==='STALE'||(!!reportDate&&connection.freshness!=='CURRENT');const reused=d.report_generation_status==='REUSED_SNAPSHOT_NOT_REFRESHED';
   const liveLabel=document.getElementById('liveLabel');if(liveLabel)liveLabel.textContent=connection.status==='CONNECTED'?(stale?'CONNECTED · STALE DATA':'DATA CONNECTED'):'DATA OFFLINE';
   const dateParts=new Intl.DateTimeFormat('en-CA',{timeZone:'Africa/Lagos',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date());const today=dateParts.filter(p=>['year','month','day'].includes(p.type)).reduce((o,p)=>(o[p.type]=p.value,o),{});const todayKey=today.year+'-'+today.month+'-'+today.day;
@@ -314,8 +354,22 @@ def dashboard() -> HTMLResponse:
 
 @app.get("/api/dashboard-data")
 def dashboard_data() -> dict:
-    report = load_latest_report()
-    model_validation = load_model_validation_report()
+    # The daily report is the critical dependency. Validation and paper-ledger
+    # snapshots are optional panels and must never block fixture delivery.
+    def _safe_load(loader):
+        try:
+            return loader()
+        except Exception:
+            return None
+
+    with ThreadPoolExecutor(max_workers=3) as pool:
+        report_future = pool.submit(_safe_load, load_latest_report)
+        validation_future = pool.submit(_safe_load, load_model_validation_report)
+        ledger_future = pool.submit(_safe_load, load_paper_ledger)
+        report = report_future.result()
+        model_validation = validation_future.result()
+        ledger = ledger_future.result()
+
     if not isinstance(report, dict):
         return {"status": "UNAVAILABLE", "warning": "No published report could be loaded.", "predictions": []}
     now = datetime.now(ZoneInfo("Africa/Lagos"))
@@ -394,7 +448,6 @@ def dashboard_data() -> dict:
     except (TypeError, ValueError, OverflowError):
         report_age_days = None
 
-    ledger = load_paper_ledger()
     paper_tracking = None
     if isinstance(ledger, dict):
         paper_tracking = {
