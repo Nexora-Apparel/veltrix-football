@@ -740,7 +740,7 @@ def predict_fixtures(
                 }
 
             elo_probabilities, elo_metadata = _elo_probabilities(
-                usable,
+                prior_rows,
                 fixture["home_team"],
                 fixture["away_team"],
                 fixture.get("division_code"),
