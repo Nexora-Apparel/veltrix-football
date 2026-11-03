@@ -14,7 +14,7 @@ from fastapi import FastAPI, Header, HTTPException, Request as FastAPIRequest
 from fastapi.responses import HTMLResponse, JSONResponse
 
 from app.telegram_commands import handle_command
-from app.report_artifacts import load_latest_report, load_paper_ledger, load_model_validation_report
+from app.report_artifacts import load_latest_report, load_dashboard_snapshot, load_paper_ledger, load_model_validation_report
 from app.telegram_security import telegram_webhook_secret_token
 
 app = FastAPI(title="Veltrix Football Command Centre")
@@ -300,7 +300,7 @@ async function fetchDashboardPayload(){
  // public JSON snapshot. This keeps fixture visibility working if a serverless
  // function, GitHub API rate limit, or Vercel runtime has a transient failure.
  const stamp=Date.now();
- const rawUrl='https://raw.githubusercontent.com/Nexora-Apparel/veltrix-football/command-data/public-data/daily_predictions.json?v='+stamp;
+ const rawUrl='https://raw.githubusercontent.com/Nexora-Apparel/veltrix-football/command-data/public-data/dashboard_snapshot.json?v='+stamp;
  try{
   const response=await fetchWithDeadline(rawUrl,7000);
   if(!response.ok)throw new Error('Published snapshot HTTP '+response.status);
@@ -310,7 +310,7 @@ async function fetchDashboardPayload(){
  }catch(rawFallbackError){
   // Second CDN route is independent of raw.githubusercontent.com.
   try{
-   const cdn='https://cdn.jsdelivr.net/gh/Nexora-Apparel/veltrix-football@command-data/public-data/daily_predictions.json';
+   const cdn='https://cdn.jsdelivr.net/gh/Nexora-Apparel/veltrix-football@command-data/public-data/dashboard_snapshot.json';
    const response=await fetchWithDeadline(cdn+'?v='+stamp,6000);
    if(!response.ok)throw new Error('Mirror HTTP '+response.status);
    const report=await response.json();
@@ -319,7 +319,7 @@ async function fetchDashboardPayload(){
   }catch(mirrorError){
    // Final recovery route uses the GitHub Contents API; decode UTF-8 safely.
    try{
-    const api='https://api.github.com/repos/Nexora-Apparel/veltrix-football/contents/public-data/daily_predictions.json?ref=command-data&v='+stamp;
+    const api='https://api.github.com/repos/Nexora-Apparel/veltrix-football/contents/public-data/dashboard_snapshot.json?ref=command-data&v='+stamp;
     const response=await fetchWithDeadline(api,5000);
     if(!response.ok)throw new Error('GitHub API HTTP '+response.status);
     const wrapper=await response.json();
@@ -389,10 +389,12 @@ def dashboard_data() -> dict:
             return None
 
     with ThreadPoolExecutor(max_workers=3) as pool:
-        report_future = pool.submit(_safe_load, load_latest_report)
+        report_future = pool.submit(_safe_load, load_dashboard_snapshot)
         validation_future = pool.submit(_safe_load, load_model_validation_report)
         ledger_future = pool.submit(_safe_load, load_paper_ledger)
         report = report_future.result()
+        if not isinstance(report, dict):
+            report = _safe_load(load_latest_report)
         model_validation = validation_future.result()
         ledger = ledger_future.result()
 
