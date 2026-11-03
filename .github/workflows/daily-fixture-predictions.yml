@@ -164,8 +164,8 @@ on:
         required: false
         type: string
   schedule:
-    # Start at 05:00 Africa/Lagos (WAT, UTC+1) = 04:00 UTC, leaving a one-hour delivery buffer.
-    - cron: "0 4 * * *"
+    # Primary report starts at 06:00 Africa/Lagos (WAT, UTC+1) = 05:00 UTC.
+    - cron: "0 5 * * *"
 
 # Controlled same-day snapshot replay for the current 2026-11-02 report; no provider refetch.
 # Ordinary pushes run tests only. A push commit containing [run-live-verification] intentionally runs the full live pipeline for controlled end-to-end verification.
