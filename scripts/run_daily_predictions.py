@@ -411,13 +411,16 @@ def main() -> None:
         cache_data, cached_rows = _load_recent_cache(cache_path)
 
         # Refresh one date range per run only when the primary provider is
-        # healthy. A 429 must not trigger another request for historical results;
-        # preserve the cache and make the degraded state explicit in the report.
+        # healthy. In licensed-only production mode, anchor the incremental cursor
+        # to verified provider rows already in the cache, never the research dataset.
+        history_anchor = base_history
+        if licensed_history_only:
+            history_anchor, _ = _filter_licensed_recent_history(cached_rows)
         if primary_provider_status == "SUCCESS":
             try:
                 recent_rows, recent_sync = fetch_recent_results_incremental(
                     api,
-                    base_history,
+                    history_anchor,
                     target_date - timedelta(days=1),
                     cache_state=cache_data.get("state") or {},
                     timezone_name=args.timezone,
