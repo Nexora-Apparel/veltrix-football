@@ -188,7 +188,7 @@ def _merge_api_sports_market_odds(
     attached = 0
     for prediction in predictions:
         if not isinstance(prediction, dict) or prediction.get("status") not in {
-            "EXPERIMENTAL_ONLY", "INSUFFICIENT_HISTORY", "UNSUPPORTED_COMPETITION"
+            "EXPERIMENTAL_ONLY", "EXPERIMENTAL_LOW_DATA", "INSUFFICIENT_HISTORY", "UNSUPPORTED_COMPETITION"
         }:
             continue
         raw_kickoff = prediction.get("kickoff_local") or prediction.get("kickoff")
