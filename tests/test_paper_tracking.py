@@ -13,7 +13,7 @@ def _prediction(fixture_id, status="EXPERIMENTAL_ONLY", probabilities=None):
     }
     if probabilities is not None:
         row["probabilities"] = probabilities
-    elif status == "EXPERIMENTAL_ONLY":
+    elif status in {"EXPERIMENTAL_ONLY", "EXPERIMENTAL_LOW_DATA"}:
         row["probabilities"] = {"H": 0.6, "D": 0.25, "A": 0.15}
     return row
 
@@ -877,3 +877,18 @@ def test_shadow_btts_and_totals_probabilities_are_scored_without_odds_and_dedupl
     ledger = merge_paper_ledger(ledger, later)
     assert len(ledger["goal_market_probability_matches"]) == len(rows)
     assert all(row["report_date"] == "2026-10-23" for row in ledger["goal_market_probability_matches"])
+
+
+
+def test_evaluator_tracks_low_data_forecast_under_its_own_model_version():
+    prediction = _prediction(55, status="EXPERIMENTAL_LOW_DATA")
+    prediction["model"] = "experimental_global_licensed_prior_poisson"
+    report = {
+        "product": "Veltrix Football",
+        "as_of_date": "2026-10-23",
+        "predictions": [prediction],
+    }
+    result = evaluate_report(report, {"response": [_result(55, 1, 0)]})
+    assert result["completed_forecasts_scored"] == 1
+    assert result["matches"][0]["model"] == "experimental_global_licensed_prior_poisson"
+    assert result["matches"][0]["actual"] == "H"
