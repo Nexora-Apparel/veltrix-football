@@ -306,7 +306,7 @@ async function fetchDashboardPayload(){
   if(!response.ok)throw new Error('Published snapshot HTTP '+response.status);
   const report=await response.json();
   if(!report||!Array.isArray(report.predictions)||!report.as_of_date)throw new Error('Published snapshot failed validation');
-  return normalizeStaticReport(report);
+  return await normalizeStaticReport(report);
  }catch(rawFallbackError){
   // Second CDN route is independent of raw.githubusercontent.com.
   try{
@@ -315,7 +315,7 @@ async function fetchDashboardPayload(){
    if(!response.ok)throw new Error('Mirror HTTP '+response.status);
    const report=await response.json();
    if(!report||!Array.isArray(report.predictions)||!report.as_of_date)throw new Error('Mirror snapshot failed validation');
-   return normalizeStaticReport(report);
+   return await normalizeStaticReport(report);
   }catch(mirrorError){
    // Final recovery route uses the GitHub Contents API; decode UTF-8 safely.
    try{
@@ -327,15 +327,15 @@ async function fetchDashboardPayload(){
     const bytes=Uint8Array.from(atob(wrapper.content.replace(/\s/g,'')),c=>c.charCodeAt(0));
     const report=JSON.parse(new TextDecoder().decode(bytes));
     if(!report||!Array.isArray(report.predictions)||!report.as_of_date)throw new Error('GitHub API snapshot failed validation');
-    return normalizeStaticReport(report);
+    return await normalizeStaticReport(report);
    }catch(apiFallbackError){
     throw new Error('Dashboard API, raw CDN, mirror CDN and GitHub API all failed: '+(apiFallbackError?.message||'unknown'));
    }
   }
  }
 }
-function normalizeStaticReport(report){
- return {
+async function normalizeStaticReport(report){
+ const normalized = {
   ...report,status:'OK',predictions:report.predictions,
   as_of_date:report.as_of_date,generated_at_utc:report.generated_at_utc,
   published_at_utc:report.command_data_published_at_utc,
@@ -347,8 +347,28 @@ function normalizeStaticReport(report){
   data_connection:{status:'CONNECTED',freshness:report.as_of_date===new Intl.DateTimeFormat('en-CA',{timeZone:'Africa/Lagos',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date())?'CURRENT':'STALE',report_date:report.as_of_date,provider:(report.primary_provider_request||{}).provider,provider_status:(report.primary_provider_request||{}).status},
   model_validation:{status:'NOT_LOADED_FROM_STATIC_FALLBACK',dataset:{},historical_1x2:{},release_controls:{}},
   paper_tracking:null,
-  warning:'Dashboard is using the published static report because the live API is temporarily unavailable. Fixtures remain visible; status and paper-tracking details may be delayed.'
+  warning:'Dashboard is using the published static report because the live API is temporarily unavailable. Fixtures remain visible; paper history is loaded independently.'
  };
+ try{
+  const url='https://raw.githubusercontent.com/Nexora-Apparel/veltrix-football/command-data/public-data/paper_tracking_ledger.json?v='+Date.now();
+  const response=await fetchWithDeadline(url,3500);
+  if(response.ok){
+   const ledger=await response.json();
+   if(ledger&&ledger.model_status==='PAPER_TRACKING_ONLY'&&Array.isArray(ledger.scored_matches)){
+    normalized.paper_tracking={
+     model_status:ledger.model_status,updated_at_utc:ledger.updated_at_utc,
+     evaluated_report_dates:ledger.evaluated_report_dates,
+     cumulative_metrics_by_model:ledger.cumulative_metrics_by_model||{},
+     last_attempt:ledger.last_attempt||{},
+     value_market_metrics_by_market:ledger.value_market_metrics_by_market||{},
+     value_model_versions:ledger.value_model_versions||[],
+     calibration_versions:ledger.calibration_versions||[],
+     scored_matches:ledger.scored_matches
+    };
+   }
+  }
+ }catch(_ledgerFallbackError){}
+ return normalized;
 }
 async function loadDashboard(){
  const btn=document.getElementById('refresh');btn.disabled=true;btn.textContent='Loading…';
