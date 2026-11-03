@@ -42,33 +42,44 @@ def _github_json(url: str, token: str, method: str = "GET", body: dict | None = 
 def _publish_large_blob(path: str, data: bytes, repo: str, token: str) -> None:
     """Publish large snapshots through Git Data API, avoiding Contents API payload limits."""
     root = f"{API_ROOT}/repos/{repo}"
-    ref = _github_json(f"{root}/git/ref/heads/{quote(BRANCH, safe='')}", token)
-    head_sha = ref.get("object", {}).get("sha")
-    if not isinstance(head_sha, str) or not head_sha:
-        raise ValueError("Could not resolve command-data branch head.")
-    head = _github_json(f"{root}/git/commits/{head_sha}", token)
-    base_tree = head.get("tree", {}).get("sha")
-    if not isinstance(base_tree, str) or not base_tree:
-        raise ValueError("Could not resolve command-data base tree.")
-    blob = _github_json(f"{root}/git/blobs", token, method="POST",
-        body={"content": base64.b64encode(data).decode("ascii"), "encoding": "base64"})
-    blob_sha = blob.get("sha")
-    if not isinstance(blob_sha, str) or not blob_sha:
-        raise ValueError("GitHub did not return a blob SHA.")
-    tree = _github_json(f"{root}/git/trees", token, method="POST",
-        body={"base_tree": base_tree, "tree": [
-            {"path": path, "mode": "100644", "type": "blob", "sha": blob_sha}]})
-    tree_sha = tree.get("sha")
-    if not isinstance(tree_sha, str) or not tree_sha:
-        raise ValueError("GitHub did not return a tree SHA.")
-    commit = _github_json(f"{root}/git/commits", token, method="POST",
-        body={"message": f"Publish latest Veltrix command data: {Path(path).name}",
-              "tree": tree_sha, "parents": [head_sha]})
-    commit_sha = commit.get("sha")
-    if not isinstance(commit_sha, str) or not commit_sha:
-        raise ValueError("GitHub did not return a commit SHA.")
-    _github_json(f"{root}/git/refs/heads/{quote(BRANCH, safe='')}", token,
-        method="PATCH", body={"sha": commit_sha, "force": False})
+    ref_url = f"{root}/git/ref/heads/{quote(BRANCH, safe='')}"
+    update_url = f"{root}/git/refs/heads/{quote(BRANCH, safe='')}"
+    # Concurrent workflow publishers can advance command-data between the
+    # initial ref read and the final non-force update. Rebuild on the latest
+    # parent and retry only optimistic-concurrency conflicts.
+    for attempt_number in range(3):
+        ref = _github_json(ref_url, token)
+        head_sha = ref.get("object", {}).get("sha")
+        if not isinstance(head_sha, str) or not head_sha:
+            raise ValueError("Could not resolve command-data branch head.")
+        head = _github_json(f"{root}/git/commits/{head_sha}", token)
+        base_tree = head.get("tree", {}).get("sha")
+        if not isinstance(base_tree, str) or not base_tree:
+            raise ValueError("Could not resolve command-data base tree.")
+        blob = _github_json(f"{root}/git/blobs", token, method="POST",
+            body={"content": base64.b64encode(data).decode("ascii"), "encoding": "base64"})
+        blob_sha = blob.get("sha")
+        if not isinstance(blob_sha, str) or not blob_sha:
+            raise ValueError("GitHub did not return a blob SHA.")
+        tree = _github_json(f"{root}/git/trees", token, method="POST",
+            body={"base_tree": base_tree, "tree": [
+                {"path": path, "mode": "100644", "type": "blob", "sha": blob_sha}]})
+        tree_sha = tree.get("sha")
+        if not isinstance(tree_sha, str) or not tree_sha:
+            raise ValueError("GitHub did not return a tree SHA.")
+        commit = _github_json(f"{root}/git/commits", token, method="POST",
+            body={"message": f"Publish latest Veltrix command data: {Path(path).name}",
+                  "tree": tree_sha, "parents": [head_sha]})
+        commit_sha = commit.get("sha")
+        if not isinstance(commit_sha, str) or not commit_sha:
+            raise ValueError("GitHub did not return a commit SHA.")
+        try:
+            _github_json(update_url, token, method="PATCH",
+                body={"sha": commit_sha, "force": False})
+            return
+        except HTTPError as exc:
+            if exc.code not in {409, 422} or attempt_number == 2:
+                raise
 
 
 def publish(path: str, local_file: Path, repo: str, token: str) -> None:
@@ -174,7 +185,14 @@ def main() -> int:
     def attempt(label: str, action) -> None:
         try:
             action()
-        except (HTTPError, URLError, OSError, ValueError, json.JSONDecodeError) as exc:
+        except HTTPError as exc:
+            try:
+                detail = exc.read().decode("utf-8", "replace")[:500]
+            except Exception:
+                detail = ""
+            errors.append(f"{label}: HTTP {exc.code} {detail}".strip())
+            print(f"Publication failed for {label}: HTTP {exc.code} {detail}".strip(), file=sys.stderr)
+        except (URLError, OSError, ValueError, json.JSONDecodeError) as exc:
             errors.append(f"{label}: {type(exc).__name__}")
             print(f"Publication failed for {label}: {type(exc).__name__}", file=sys.stderr)
 
