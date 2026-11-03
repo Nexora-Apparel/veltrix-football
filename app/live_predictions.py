@@ -452,6 +452,48 @@ def predict_fixtures(
     home_baseline = max(0.05, sum(m["home_goals"] for m in usable) / len(usable))
     away_baseline = max(0.05, sum(m["away_goals"] for m in usable) / len(usable))
 
+    def apply_global_prior(record: dict[str, Any]) -> dict[str, Any]:
+        """Provide an explicit low-data baseline when licensed team/league history is sparse."""
+        prior = match_probabilities(home_baseline, away_baseline)
+        record.update({
+            "status": "EXPERIMENTAL_LOW_DATA",
+            "model": "experimental_global_licensed_prior_poisson",
+            "model_validated": False,
+            "betting_recommendation": False,
+            "prediction_basis": (
+                "licensed global home/away goal-rate prior only; team and competition history "
+                "are below minimum; low-confidence coverage fallback"
+            ),
+            "probabilities": {
+                key: round(value, 4) for key, value in prior["one_x_two"].items()
+            },
+            "expected_goals": {
+                "home": round(home_baseline, 3),
+                "away": round(away_baseline, 3),
+            },
+            "btts_yes": round(prior["btts_yes"], 4),
+            "over_1_5": round(prior["totals"]["over_1_5"], 4),
+            "over_2_5": round(prior["totals"]["over_2_5"], 4),
+            "over_3_5": round(prior["totals"]["over_3_5"], 4),
+            "most_likely_scorelines": prior["most_likely_scorelines"][:3],
+            "goal_markets_model": "experimental_global_licensed_prior_poisson",
+            "data_availability": {
+                "historical_goals_for_against": "LICENSED_GLOBAL_BASELINE_ONLY",
+                "licensed_global_history_matches": len(usable),
+                "team_specific_history": "BELOW_MINIMUM",
+                "competition_specific_history": "UNAVAILABLE_OR_BELOW_MINIMUM",
+                "true_expected_goals_xg": "UNAVAILABLE_FROM_CURRENT_HISTORICAL_FEED",
+                "confirmed_lineups_injuries_suspensions": "NOT_CONNECTED",
+                "live_bookmaker_odds": "REFERENCE_ONLY_IF_MATCHED",
+            },
+            "limitations": [
+                "Low-data coverage fallback; not a team-strength forecast.",
+                "Not validated for betting; value-bet eligibility is always false.",
+                "Global licensed goal rates may not represent this competition.",
+            ],
+        })
+        return record
+
     # Cache Elo ratings once per competition for this report date; all fixtures
     # share the same strictly pre-date history, so recomputing it per fixture is wasteful.
     elo_cache: dict[str, dict[str, Any]] = {}
@@ -538,12 +580,16 @@ def predict_fixtures(
             }
             if len(home_hist) < min_team_matches or len(away_hist) < min_team_matches:
                 if not fixture.get("division_code"):
-                    record.update({
-                        "status": "UNSUPPORTED_COMPETITION",
-                        "reason": "This competition is not mapped to the historical dataset and the teams do not have enough exact-match history for a safe global estimate.",
-                        "team_name_match_suggestions": {},
-                    })
-                    output.append(record)
+                    if len(usable) >= 30:
+                        record = apply_global_prior(record)
+                        output.append(record)
+                    else:
+                        record.update({
+                            "status": "UNSUPPORTED_COMPETITION",
+                            "reason": "This competition is not mapped to the historical dataset and fewer than 30 licensed historical matches are available for a safe global baseline.",
+                            "team_name_match_suggestions": {},
+                        })
+                        output.append(record)
                     continue
                 # If a competition is mapped but one or both teams lack enough
                 # exact-match results, fall back to a transparent league-only
@@ -586,6 +632,10 @@ def predict_fixtures(
                             "live_bookmaker_odds": "REFERENCE_ONLY_IF_MATCHED",
                         },
                     })
+                    output.append(record)
+                    continue
+                if len(usable) >= 30:
+                    record = apply_global_prior(record)
                     output.append(record)
                     continue
                 suggestions: dict[str, list[str]] = {}
@@ -901,7 +951,7 @@ def build_daily_report(
         })
     predictions.extend(kickoff_unverified)
     if market_odds_by_fixture:
-        eligible_statuses = {"EXPERIMENTAL_ONLY", "INSUFFICIENT_HISTORY", "UNSUPPORTED_COMPETITION"}
+        eligible_statuses = {"EXPERIMENTAL_ONLY", "EXPERIMENTAL_LOW_DATA", "INSUFFICIENT_HISTORY", "UNSUPPORTED_COMPETITION"}
         for prediction in predictions:
             if prediction.get("status") not in eligible_statuses:
                 continue
@@ -934,6 +984,7 @@ def build_daily_report(
         "kickoff_unverified_fixtures": len(kickoff_unverified),
         "fixture_status_counts": {
             "EXPERIMENTAL_ONLY": sum(p.get("status") == "EXPERIMENTAL_ONLY" for p in predictions),
+            "EXPERIMENTAL_LOW_DATA": sum(p.get("status") == "EXPERIMENTAL_LOW_DATA" for p in predictions),
             "INSUFFICIENT_HISTORY": sum(p.get("status") == "INSUFFICIENT_HISTORY" for p in predictions),
             "UNSUPPORTED_COMPETITION": sum(p.get("status") == "UNSUPPORTED_COMPETITION" for p in predictions),
             "KICKOFF_UNVERIFIED": len(kickoff_unverified),
@@ -941,7 +992,28 @@ def build_daily_report(
             "FIXTURE_NOT_PREMATCH": sum(p.get("status") == "FIXTURE_NOT_PREMATCH" for p in predictions),
         },
         "fixtures_excluded_other_date_or_status": len(fixtures) - len(parsed_for_date) - len(kickoff_unverified),
-        "predictions_created": sum(p["status"] == "EXPERIMENTAL_ONLY" for p in predictions),
+        "predictions_created": sum(
+            p.get("status") in {"EXPERIMENTAL_ONLY", "EXPERIMENTAL_LOW_DATA"}
+            and isinstance(p.get("probabilities"), dict)
+            for p in predictions
+        ),
+        "low_data_forecasts": sum(p.get("status") == "EXPERIMENTAL_LOW_DATA" for p in predictions),
+        "forecast_coverage": {
+            "forecast_rows": sum(
+                isinstance(p.get("probabilities"), dict)
+                and p.get("status") in {"EXPERIMENTAL_ONLY", "EXPERIMENTAL_LOW_DATA"}
+                for p in predictions
+            ),
+            "eligible_prematch_fixtures": future_kickoffs,
+            "coverage_rate": round(
+                sum(
+                    isinstance(p.get("probabilities"), dict)
+                    and p.get("status") in {"EXPERIMENTAL_ONLY", "EXPERIMENTAL_LOW_DATA"}
+                    for p in predictions
+                ) / future_kickoffs, 4
+            ) if future_kickoffs else 1.0,
+            "low_data_forecasts_are_not_betting_eligible": True,
+        },
         "insufficient_history": sum(p["status"] == "INSUFFICIENT_HISTORY" for p in predictions),
         "unsupported_competitions": sum(p["status"] == "UNSUPPORTED_COMPETITION" for p in predictions),
         "fixtures_with_market_odds": sum(
@@ -968,7 +1040,7 @@ def build_daily_report(
         ),
         "primary_model_counts": {
             model_name: sum(
-                p.get("status") == "EXPERIMENTAL_ONLY" and p.get("model") == model_name
+                p.get("status") in {"EXPERIMENTAL_ONLY", "EXPERIMENTAL_LOW_DATA"} and p.get("model") == model_name
                 for p in predictions
             )
             for model_name in sorted({
