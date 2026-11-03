@@ -1,6 +1,17 @@
 from api.dashboard import dashboard
 from api.dashboard_data import get_dashboard_data
 
+import pytest
+
+
+@pytest.fixture(autouse=True)
+def isolate_dashboard_data_source(monkeypatch):
+    """Keep routing tests deterministic; each test supplies its own report."""
+    import api.telegram
+
+    monkeypatch.setattr(api.telegram, "load_dashboard_snapshot", lambda: None)
+
+
 
 def test_dashboard_root_handler_returns_html():
     response = dashboard()
