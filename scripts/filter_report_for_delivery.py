@@ -110,7 +110,18 @@ def filter_report_for_delivery(report: dict, now: datetime | None = None) -> dic
         else:
             future_rows_retained += 1
             delivered_row = row
-            if row.get("status") in {"EXPERIMENTAL_ONLY", "EXPERIMENTAL_LOW_DATA"} and _has_unsafe_auto_team_match(row):
+            # Legacy snapshots may still contain a global/competition-prior
+            # forecast. Never re-publish those probabilities during quota-safe
+            # snapshot reuse: retain the fixture, not the unsupported forecast.
+            if row.get("status") == "EXPERIMENTAL_LOW_DATA":
+                delivered_row = _withhold_forecast(row)
+                delivered_row["status"] = "INSUFFICIENT_HISTORY"
+                delivered_row["reason"] = (
+                    "Legacy low-data forecast withheld during delivery: fixture-specific "
+                    "team history did not meet the minimum evidence requirement."
+                )
+                delivered_row["legacy_forecast_withheld"] = True
+            elif row.get("status") == "EXPERIMENTAL_ONLY" and _has_unsafe_auto_team_match(row):
                 delivered_row = _withhold_forecast(row)
                 delivered_row["status"] = "INSUFFICIENT_HISTORY"
                 delivered_row["reason"] = (
