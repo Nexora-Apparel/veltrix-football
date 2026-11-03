@@ -350,7 +350,7 @@ async function normalizeStaticReport(report){
   fixtures_received:report.fixtures_received??report.predictions.length,
   experimental_forecasts:report.predictions.filter(x=>hasModelForecast(x)).length,
   fixtures_visible:visibleRows.length,
-  unsupported_fixtures:report.predictions.filter(x=>!hasModelForecast(x)).length,
+  unsupported_fixtures:report.predictions.filter(x=>!x||!['EXPERIMENTAL_ONLY','EXPERIMENTAL_LOW_DATA'].includes(x.status)).length,
   fixtures_with_market_odds:report.fixtures_with_market_odds??0,
   data_connection:{status:'CONNECTED',freshness:report.as_of_date===new Intl.DateTimeFormat('en-CA',{timeZone:'Africa/Lagos',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date())?'CURRENT':'STALE',report_date:report.as_of_date,provider:(report.primary_provider_request||{}).provider,provider_status:(report.primary_provider_request||{}).status},
   model_validation:{status:'NOT_LOADED_FROM_STATIC_FALLBACK',dataset:{},historical_1x2:{},release_controls:{}},
@@ -561,7 +561,7 @@ def dashboard_data() -> dict:
         "fixtures_received": report.get("fixtures_received", 0),
         "experimental_forecasts": sum(1 for row in rows if isinstance(row, dict) and isinstance(row.get("probabilities"), dict) and row.get("status") in {"EXPERIMENTAL_ONLY", "EXPERIMENTAL_LOW_DATA"}),
         "fixtures_visible": len(upcoming),
-        "unsupported_fixtures": sum(1 for row in upcoming if isinstance(row, dict) and not (isinstance(row.get("probabilities"), dict) and row.get("status") in {"EXPERIMENTAL_ONLY", "EXPERIMENTAL_LOW_DATA"})),
+        "unsupported_fixtures": sum(1 for row in upcoming if isinstance(row, dict) and row.get("status") not in {"EXPERIMENTAL_ONLY", "EXPERIMENTAL_LOW_DATA"}),
         "fixtures_with_market_odds": odds_count,
         "model_validation": model_validation or {"status": "NOT_REPORTED", "dataset": {}, "historical_1x2": {}, "rolling_origin_1x2_calibration": {}, "rolling_origin_goal_market_calibration": {}, "release_controls": {}},
         "goal_market_calibration": report.get("goal_market_calibration") or {
