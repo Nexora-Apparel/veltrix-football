@@ -128,3 +128,6 @@ Rows with fewer than five prior matches remain visible as
 forecast. Snapshot-delivery filtering also strips legacy
 `EXPERIMENTAL_LOW_DATA` probability rows so old saved reports cannot
 re-publish the removed global/competition-prior forecasts.
+
+
+Chronology invariant: every per-fixture team-history count, venue-specific rate and division scoring baseline is built only from results strictly earlier than the target fixture date.
