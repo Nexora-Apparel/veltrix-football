@@ -207,3 +207,28 @@ def test_idempotent_same_day_replay_is_recorded_as_delivery_verification(tmp_pat
     assert status["validation_scope"] == "SAME_DAY_RECOVERY"
     assert status["telegram_configured"] is True
     assert status["report_summary"]["fixture_rows"] == 1
+
+
+def test_successful_test_only_run_clears_transient_test_failure():
+    from scripts.publish_verification_status import merge_test_only_status
+
+    previous = {
+        "run_id": "live-123",
+        "overall_status": "NEEDS_REVIEW",
+        "last_full_pipeline_status": "PASSED",
+        "validation_scope": "LIVE_PIPELINE",
+        "steps": {"telegram_delivery": "success"},
+    }
+    current = {
+        "run_id": "tests-790",
+        "overall_status": "TESTS_PASSED",
+        "validation_scope": "TESTS_ONLY",
+        "recorded_at_utc": "2026-11-03T07:30:00+00:00",
+        "steps": {"unit_tests": "success", "dashboard_js": "success"},
+    }
+
+    merged = merge_test_only_status(previous, current)
+    assert merged["overall_status"] == "PASSED"
+    assert merged["last_full_pipeline_status"] == "PASSED"
+    assert merged["run_id"] == "live-123"
+    assert merged["latest_test_status"] == "TESTS_PASSED"
