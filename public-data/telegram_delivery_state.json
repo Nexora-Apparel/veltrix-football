@@ -6,7 +6,8 @@
     "2026-10-30",
     "2026-10-31",
     "2026-11-01",
-    "2026-11-02"
+    "2026-11-02",
+    "2026-11-03"
   ],
   "sent_report_hashes_by_date": {
     "2026-10-31": [
@@ -26,6 +27,9 @@
       "2ee53c19f0f64df4f42959c835282af5b130b78dbdce88a4668c1c9751480563",
       "0b3d3537d9aac181b00d6fc9d64e608ae21a25df11a393fe473f33c0ffc12b08",
       "94dacd108f7058cc7a2ad9ade505b6aac92fb15fd35129cd12d7ffde5c8def42"
+    ],
+    "2026-11-03": [
+      "ed2bd13778b8deeb23ce437ed5cee7ab0c394a7be10390a71ef4d92eabb1cf85"
     ]
   }
 }
