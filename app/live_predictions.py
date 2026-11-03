@@ -1037,7 +1037,7 @@ def build_daily_report(
             )
             for model_name in sorted({
                 str(p.get("model")) for p in predictions
-                if p.get("status") == "EXPERIMENTAL_ONLY" and p.get("model")
+                if p.get("status") in {"EXPERIMENTAL_ONLY", "EXPERIMENTAL_LOW_DATA"} and p.get("model")
             })
         },
         "poisson_alternative_available": sum(
