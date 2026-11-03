@@ -159653,7 +159653,7 @@
   "settlement_conflicts": [],
   "summary": {
     "observations_total": 5019,
-    "observations_added": 91,
+    "observations_added": 0,
     "price_series": 1779,
     "series_with_multiple_snapshots": 880,
     "settled_observations": 2443,
