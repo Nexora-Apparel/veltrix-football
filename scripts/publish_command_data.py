@@ -135,7 +135,7 @@ def _dashboard_snapshot(report: dict) -> dict:
         "value_validation_certificate",
     )
     row_fields = (
-        "fixture_id", "id", "match_id", "league", "country", "competition",
+        "fixture_id", "id", "match_id", "league", "country", "competition", "status", "fixture_phase", "fixture_visibility_note",
         "home_team", "away_team", "home_team_id", "away_team_id",
         "kickoff", "kickoff_local", "status", "fixture_phase",
         "fixture_visibility_note", "probabilities", "btts_yes", "over_2_5",
