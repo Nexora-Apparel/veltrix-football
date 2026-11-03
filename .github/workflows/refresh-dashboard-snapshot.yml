@@ -1,0 +1,48 @@
+name: Refresh dashboard snapshot
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'api/telegram.py'
+      - 'app/report_artifacts.py'
+      - 'scripts/publish_command_data.py'
+      - '.github/workflows/refresh-dashboard-snapshot.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: veltrix-dashboard-snapshot-refresh
+  cancel-in-progress: false
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout application code
+        uses: actions/checkout@v4
+        with:
+          ref: main
+      - name: Checkout latest published report
+        uses: actions/checkout@v4
+        with:
+          ref: command-data
+          path: command-data
+          sparse-checkout: public-data/daily_predictions.json
+      - name: Prepare report
+        run: |
+          mkdir -p reports
+          cp command-data/public-data/daily_predictions.json reports/daily_predictions.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p = Path('reports/daily_predictions.json')
+          data = json.loads(p.read_text(encoding='utf-8'))
+          assert isinstance(data, dict) and isinstance(data.get('predictions'), list) and data.get('as_of_date')
+          print(f"Validated {len(data['predictions'])} fixtures for {data['as_of_date']}")
+          PY
+      - name: Publish compact dashboard projection
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          PYTHONPATH: .
+        run: python scripts/publish_command_data.py --report reports/daily_predictions.json
