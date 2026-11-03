@@ -1,4 +1,3 @@
-import io
 import json
 from urllib.parse import parse_qs, urlparse
 
@@ -23,25 +22,25 @@ def setup_function():
     report_artifacts._cache.clear()
 
 
-def test_report_loader_reads_published_snapshot_without_github_api_or_forecast(monkeypatch):
+def test_report_loader_reads_published_snapshot_from_raw_branch_without_forecast(monkeypatch):
     report = {"as_of_date": "2026-10-25", "predictions": [{"fixture_id": 1}]}
     requested = []
 
     def fake_urlopen(request, timeout):
-        requested.append(request.full_url)
+        requested.append((request.full_url, timeout))
         return FakeResponse(json.dumps(report).encode())
 
     monkeypatch.setattr(report_artifacts, "urlopen", fake_urlopen)
     assert report_artifacts.load_latest_report() == report
     assert len(requested) == 1
-    parsed_url = urlparse(requested[0])
+    parsed_url = urlparse(requested[0][0])
     assert parsed_url.scheme == "https"
-    assert parsed_url.netloc == "api.github.com"
-    assert parsed_url.path == "/repos/Nexora-Apparel/veltrix-football/contents/public-data/daily_predictions.json"
+    assert parsed_url.netloc == "raw.githubusercontent.com"
+    assert parsed_url.path == "/Nexora-Apparel/veltrix-football/command-data/public-data/daily_predictions.json"
     query = parse_qs(parsed_url.query)
-    assert query.get("ref") == ["command-data"]
     assert query.get("v", [""])[0].isdigit()
-    assert not any("/actions/" in url or "dispatches" in url for url in requested)
+    assert requested[0][1] <= report_artifacts._REPORT_TIMEOUT_SECONDS
+    assert not any("/actions/" in url for url, _ in requested)
 
 
 def test_ledger_loader_accepts_only_paper_tracking_ledger(monkeypatch):
@@ -58,23 +57,24 @@ def test_ledger_loader_accepts_only_paper_tracking_ledger(monkeypatch):
     assert report_artifacts.load_paper_ledger() == ledger
 
 
-def test_snapshot_loader_falls_back_to_raw_branch_when_contents_api_is_rate_limited(monkeypatch):
+def test_snapshot_loader_uses_short_contents_api_fallback_after_raw_failure(monkeypatch):
     from urllib.error import HTTPError
 
     report = {"as_of_date": "2026-11-03", "predictions": [{"fixture_id": 42}]}
     requested = []
 
     def fake_urlopen(request, timeout):
-        requested.append(request.full_url)
+        requested.append((request.full_url, timeout))
         if len(requested) == 1:
-            raise HTTPError(request.full_url, 403, "rate limited", {}, None)
+            raise HTTPError(request.full_url, 503, "raw CDN unavailable", {}, None)
         return FakeResponse(json.dumps(report).encode())
 
     monkeypatch.setattr(report_artifacts, "urlopen", fake_urlopen)
     assert report_artifacts.load_latest_report() == report
-    assert "api.github.com" in requested[0]
-    assert "raw.githubusercontent.com/Nexora-Apparel/veltrix-football/command-data/public-data/daily_predictions.json" in requested[1]
-    assert "v=" in requested[1]
+    assert "raw.githubusercontent.com" in requested[0][0]
+    assert "api.github.com" in requested[1][0]
+    assert "ref=command-data" in requested[1][0]
+    assert requested[1][1] == report_artifacts._API_FALLBACK_TIMEOUT_SECONDS
 
 
 def test_placeholder_report_is_not_treated_as_live_data(monkeypatch):
@@ -111,6 +111,7 @@ def test_model_validation_loader_accepts_only_published_research_diagnostic(monk
     monkeypatch.setattr(report_artifacts, "urlopen", fake_urlopen)
     assert report_artifacts.load_model_validation_report() == report
     assert len(requested) == 1
+    assert "raw.githubusercontent.com" in requested[0]
     assert requested[0].split("?")[0].endswith("/public-data/model_validation_report.json")
 
 
