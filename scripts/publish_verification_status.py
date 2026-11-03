@@ -147,8 +147,17 @@ def merge_test_only_status(previous: dict, current: dict) -> dict:
     merged["latest_test_status"] = current.get("overall_status")
     merged["last_test_run_id"] = current.get("run_id")
     if current.get("overall_status") != "TESTS_PASSED":
-        merged["last_full_pipeline_status"] = previous.get("overall_status")
+        # A failed test-only run should raise an alert without destroying the
+        # last full-pipeline result.
+        merged["last_full_pipeline_status"] = previous.get(
+            "last_full_pipeline_status", previous.get("overall_status")
+        )
         merged["overall_status"] = "NEEDS_REVIEW"
+    elif previous.get("overall_status") == "NEEDS_REVIEW" and previous.get("last_full_pipeline_status"):
+        # Clear a transient test-only failure after a subsequent green test run.
+        # The full pipeline result remains separately preserved.
+        merged["overall_status"] = previous["last_full_pipeline_status"]
+        merged["last_full_pipeline_status"] = previous["last_full_pipeline_status"]
     return merged
 
 
