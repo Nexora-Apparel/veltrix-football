@@ -455,14 +455,30 @@ def predict_fixtures(
         ordered = sorted(visibility_rows + forecast_rows, key=lambda row: row.get("_delivery_order", 0))
         return [{key: value for key, value in row.items() if key != "_delivery_order"} for row in ordered]
 
-    known_team_names: dict[str, set[str]] = defaultdict(set)
+    # Build team histories and scoring baselines by historical division. A
+    # provider's numeric competition ID is never used to infer a division; only
+    # an explicit normalized division code can unlock competition-specific data.
+    known_team_names_by_division: dict[str, dict[str, set[str]]] = defaultdict(lambda: defaultdict(set))
+    team_history_by_division: dict[str, dict[str, deque[tuple[int, int, str]]]] = defaultdict(
+        lambda: defaultdict(lambda: deque(maxlen=team_window))
+    )
+    division_baselines: dict[str, dict[str, float]] = {}
     for match in usable:
-        known_team_names[match["home_key"]].add(match["home"])
-        known_team_names[match["away_key"]].add(match["away"])
-    # Keep priors strictly positive so sparse or pathological data cannot cause
-    # division by zero in the rate ratios.
-    home_baseline = max(0.05, sum(m["home_goals"] for m in usable) / len(usable))
-    away_baseline = max(0.05, sum(m["away_goals"] for m in usable) / len(usable))
+        division = str(match.get("division") or "").strip()
+        if not division:
+            continue
+        known_team_names_by_division[division][match["home_key"]].add(match["home"])
+        known_team_names_by_division[division][match["away_key"]].add(match["away"])
+        division_history = team_history_by_division[division]
+        division_history[match["home_key"]].append((match["home_goals"], match["away_goals"], "home"))
+        division_history[match["away_key"]].append((match["away_goals"], match["home_goals"], "away"))
+    for division in team_history_by_division:
+        division_rows = [match for match in usable if str(match.get("division") or "").strip() == division]
+        if division_rows:
+            division_baselines[division] = {
+                "home": max(0.05, sum(row["home_goals"] for row in division_rows) / len(division_rows)),
+                "away": max(0.05, sum(row["away_goals"] for row in division_rows) / len(division_rows)),
+            }
 
     # Cache Elo ratings once per competition for this report date; all fixtures
     # share the same strictly pre-date history, so recomputing it per fixture is wasteful.
@@ -493,18 +509,7 @@ def predict_fixtures(
     output.extend(visibility_rows)
     # Strict same-local-calendar-day rule: never include tomorrow or later dates.
     for target_date in ([today] if parsed_fixtures else []):
-        team_history: dict[str, deque[tuple[int, int, str]]] = defaultdict(
-            lambda: deque(maxlen=team_window)
-        )
-        for match in usable:
-            if match["date"] >= target_date:
-                continue
-            team_history[match["home_key"]].append(
-                (match["home_goals"], match["away_goals"], "home")
-            )
-            team_history[match["away_key"]].append(
-                (match["away_goals"], match["home_goals"], "away")
-            )
+        # Histories are precomputed by historical division and contain only matches before the target date.
 
         for fixture in (p for p in parsed_fixtures if p["kickoff_date"] == target_date):
             if _is_non_senior_competition(fixture.get("league")):
@@ -519,10 +524,17 @@ def predict_fixtures(
                     "team_name_match_suggestions": {},
                 })
                 continue
-            known_keys = set(team_history)
+            division_code = str(fixture.get("division_code") or "").strip()
+            division_history = team_history_by_division.get(division_code, {})
+            known_team_names = known_team_names_by_division.get(division_code, {})
+            known_keys = set(division_history)
             home_key = _resolve_team_key(fixture["home_team"], known_keys)
             away_key = _resolve_team_key(fixture["away_team"], known_keys)
-            home_hist, away_hist = list(team_history[home_key]), list(team_history[away_key])
+            home_hist = list(division_history.get(home_key, ()))
+            away_hist = list(division_history.get(away_key, ()))
+            baseline = division_baselines.get(division_code)
+            home_baseline = baseline["home"] if baseline else 0.05
+            away_baseline = baseline["away"] if baseline else 0.05
             record: dict[str, Any] = {
                 **{k: v for k, v in fixture.items() if k not in {"kickoff_date", "kickoff_datetime"}},
                 "model": "experimental_recent_goals_poisson",
@@ -564,7 +576,7 @@ def predict_fixtures(
                              "auto_matched": away_key != _name_key(fixture["away_team"])},
                 },
             }
-            if len(home_hist) < min_team_matches or len(away_hist) < min_team_matches:
+            if not division_code or not baseline or len(home_hist) < min_team_matches or len(away_hist) < min_team_matches:
                 # A league-wide or global scoring prior contains no fixture-level
                 # team-strength signal. Publishing it as a fixture prediction makes
                 # unrelated matches share identical probabilities. Preserve the
@@ -605,7 +617,7 @@ def predict_fixtures(
                     "reason": (
                         f"Fixture forecast withheld: each team needs at least {min_team_matches} "
                         f"prior matches; home has {len(home_hist)} and away has {len(away_hist)}. "
-                        "Competition/global scoring priors are not substituted for team-specific evidence."
+                        + ("Fixture competition is not mapped to a historical division; cross-competition history is not substituted." if not division_code or not baseline else "Competition/global scoring priors are not substituted for team-specific evidence.")
                     ),
                     "insufficient_history_sides": missing_sides,
                     "team_name_match_suggestions": suggestions,
@@ -614,7 +626,7 @@ def predict_fixtures(
                         "team_specific_history": "INSUFFICIENT",
                         "competition_specific_history": (
                             "AVAILABLE_BUT_NOT_USED_AS_FIXTURE_FORECAST"
-                            if fixture.get("division_code") else "UNMAPPED_OR_UNAVAILABLE"
+                            if division_code and baseline else "UNMAPPED_OR_UNAVAILABLE"
                         ),
                         "global_goal_rate_prior": "DIAGNOSTIC_ONLY_NOT_PUBLISHED",
                     },
