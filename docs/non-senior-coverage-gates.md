@@ -103,3 +103,28 @@ A fixture becomes forecast-eligible only when both teams meet the configured pri
 Women's, youth, reserve, academy and B-team fixtures remain `UNSUPPORTED_COMPETITION` until category-matched history passes the coverage and chronological-evaluation requirements above.
 
 When at least 30 licensed global results exist, `scripts/validate_fixture_visibility.py` requires at least 90% forecast coverage across eligible senior fixtures before publication and Telegram delivery. If the fallback regresses and coverage drops below that threshold, the run fails closed rather than publishing a misleading one-of-many forecast report. All fixture rows remain in the report inventory with explicit statuses.
+
+
+## Fixture-level team-history diagnostics and alias review
+
+Every eligible senior fixture now records a `team_history_diagnostics` object for
+both sides. It includes the provider fixture name, normalized lookup key,
+resolved historical key (when one exists), count of strictly prior matches,
+whether a history match was found, and a match status. When history is absent
+or below the five-match minimum, the report also includes conservative
+candidate historical names in `team_name_match_suggestions`; these are
+suggestions only and are never automatically merged.
+
+The daily report exposes the same information in
+`team_history_match_diagnostics`, keyed by fixture ID and including both
+teams' counts and candidate names. Review these misses against the source CSV
+before adding exact aliases to `_name_key`. Do not create aliases from fuzzy
+similarity alone: verify that the provider name and historical name refer to
+the same senior men's club and competition. Preserve squad-category markers
+(women, youth, reserve, age group) when reviewing aliases.
+
+Rows with fewer than five prior matches remain visible as
+`INSUFFICIENT_HISTORY`, with no 1X2, BTTS, totals, scoreline, or expected-goals
+forecast. Snapshot-delivery filtering also strips legacy
+`EXPERIMENTAL_LOW_DATA` probability rows so old saved reports cannot
+re-publish the removed global/competition-prior forecasts.
