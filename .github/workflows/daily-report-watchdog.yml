@@ -93,10 +93,20 @@ jobs:
           generation_status = str(report.get("publication_status") or report.get("report_generation_status") or "UNKNOWN").upper()
           generated_at = report.get("generated_at_utc")
           generated_today = False
+          report_age_minutes = None
           try:
-              generated_today = datetime.fromisoformat(str(generated_at).replace("Z", "+00:00")).astimezone(ZoneInfo("Africa/Lagos")).date().isoformat() == today
+              generated_dt = datetime.fromisoformat(str(generated_at).replace("Z", "+00:00"))
+              if generated_dt.tzinfo is None:
+                  generated_dt = generated_dt.replace(tzinfo=__import__("datetime").timezone.utc)
+              now = datetime.now(__import__("datetime").timezone.utc)
+              report_age_minutes = (now - generated_dt.astimezone(__import__("datetime").timezone.utc)).total_seconds() / 60
+              generated_today = generated_dt.astimezone(ZoneInfo("Africa/Lagos")).date().isoformat() == today
           except (TypeError, ValueError):
               generated_today = False
+          # Watchdog runs at 06:10/06:25/06:40 WAT and later. Calendar-date
+          # equality alone is not freshness: reject old same-day snapshots.
+          max_age_minutes = 90
+          age_fresh = report_age_minutes is not None and 0 <= report_age_minutes <= max_age_minutes
           not_reused = generation_status not in {
               "REUSED_SNAPSHOT_NOT_REFRESHED",
               "RECOVERED_SAVED_REPORT_NOT_REFRESHED",
@@ -105,6 +115,7 @@ jobs:
           fresh = (
               report.get("as_of_date") == today
               and generated_today
+              and age_fresh
               and not_reused
               and report.get("command_data_publication") == "PUBLISHED"
               and isinstance(report.get("predictions"), list)
@@ -114,6 +125,8 @@ jobs:
           print(f"report_date={report.get('as_of_date', 'missing')}")
           print(f"generation_status={generation_status}")
           print(f"generated_today={'true' if generated_today else 'false'}")
+          print(f"report_age_minutes={report_age_minutes if report_age_minutes is not None else 'unknown'}")
+          print(f"age_fresh={'true' if age_fresh else 'false'}")
           PY
           else
             echo "fresh=false" >> "$GITHUB_OUTPUT"
