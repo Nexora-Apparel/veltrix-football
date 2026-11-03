@@ -51,7 +51,7 @@ def test_forecast_row_requires_probability_distribution():
 
 
 
-def test_low_data_experimental_forecast_is_counted_as_a_forecast():
+def test_legacy_low_data_forecast_probabilities_are_rejected():
     report = {
         "same_day_only": True,
         "future_fixtures_considered": 1,
@@ -62,17 +62,15 @@ def test_low_data_experimental_forecast_is_counted_as_a_forecast():
             "probabilities": {"home_win": .45, "draw": .28, "away_win": .27},
         }],
     }
-    result = validate_fixture_visibility(report)
-    assert result["forecast_rows"] == 1
-    assert result["low_data_forecast_rows"] == 1
-    assert result["senior_forecast_coverage"] == 1.0
+    with pytest.raises(ValueError, match="unexpectedly contains probabilities"):
+        validate_fixture_visibility(report)
 
 
-def test_fixture_visibility_blocks_one_of_twenty_five_when_licensed_history_is_sufficient():
+def test_fixture_visibility_accepts_withheld_low_history_fixtures_without_forecast_gate():
     rows = [{
         "home_team": f"Home {index}",
         "away_team": f"Away {index}",
-        "status": "EXPERIMENTAL_ONLY" if index == 0 else "UNSUPPORTED_COMPETITION",
+        "status": "EXPERIMENTAL_ONLY" if index == 0 else "INSUFFICIENT_HISTORY",
         **({"probabilities": {"home_win": .4, "draw": .3, "away_win": .3}} if index == 0 else {}),
     } for index in range(24)]
     rows.append({
@@ -89,16 +87,19 @@ def test_fixture_visibility_blocks_one_of_twenty_five_when_licensed_history_is_s
             "recent_cache_source_counts": {"5DollarFootballAPI": 96},
         },
     }
-    with pytest.raises(ValueError, match="Forecast coverage gate failed"):
-        validate_fixture_visibility(report)
+    result = validate_fixture_visibility(report)
+    assert result["fixture_rows"] == 25
+    assert result["forecast_rows"] == 1
+    assert result["insufficient_history_rows"] == 23
+    assert result["senior_forecast_coverage"] < 1.0
 
 
-def test_fixture_visibility_accepts_high_coverage_with_low_data_fallbacks():
+def test_fixture_visibility_rejects_any_legacy_low_data_probability_row():
     rows = [{
         "home_team": f"Home {index}",
         "away_team": f"Away {index}",
         "status": "EXPERIMENTAL_ONLY" if index == 0 else "EXPERIMENTAL_LOW_DATA",
-        "probabilities": {"home_win": .4, "draw": .3, "away_win": .3},
+        **({"probabilities": {"home_win": .4, "draw": .3, "away_win": .3}} if index == 0 else {}),
     } for index in range(24)]
     rows.append({
         "home_team": "Women's Home",
@@ -114,7 +115,5 @@ def test_fixture_visibility_accepts_high_coverage_with_low_data_fallbacks():
             "recent_cache_source_counts": {"5DollarFootballAPI": 96},
         },
     }
-    result = validate_fixture_visibility(report)
-    assert result["forecast_rows"] == 24
-    assert result["low_data_forecast_rows"] == 23
-    assert result["senior_forecast_coverage"] == 1.0
+    with pytest.raises(ValueError, match="unexpectedly contains probabilities"):
+        validate_fixture_visibility(report)
