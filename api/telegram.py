@@ -102,6 +102,7 @@ function marketPriceLines(m){
  return out;
 }
 function topProbability(m){const p=m.probabilities||{};const opts=[['Home',num(p.home_win)],['Draw',num(p.draw)],['Away',num(p.away_win)]].filter(x=>Number.isFinite(x[1]));opts.sort((a,b)=>b[1]-a[1]);return opts[0]||['Outcome',NaN]}
+function hasModelForecast(m){const p=m&&m.probabilities;return Boolean(p&&typeof p==='object'&&Number.isFinite(num(p.home_win))&&Number.isFinite(num(p.draw))&&Number.isFinite(num(p.away_win))&&Number.isFinite(num(m.btts_yes))&&Number.isFinite(num(m.over_2_5)))}
 async function fetchTeamBadge(team){
  try{const r=await fetch('https://www.thesportsdb.com/api/v1/json/3/searchteams.php?t='+encodeURIComponent(team));if(!r.ok)return null;const d=await r.json();const rows=Array.isArray(d.teams)?d.teams:[];const normalized=team.toLowerCase().replace(/[^a-z0-9]/g,'');const match=rows.find(x=>String(x.strSport||'').toLowerCase()==='soccer'&&String(x.strTeam||'').toLowerCase().replace(/[^a-z0-9]/g,'')===normalized)||rows.find(x=>String(x.strSport||'').toLowerCase()==='soccer');return match?.strBadge||match?.strTeamBadge||null}catch(e){return null}
 }
@@ -111,7 +112,7 @@ function teamVisual(name){
 function loadBadge(visual,name){fetchTeamBadge(name).then(url=>{if(!url)return;visual.img.onload=()=>{visual.img.style.display='block';visual.fallback.style.display='none'};visual.img.onerror=()=>{visual.img.style.display='none';visual.fallback.style.display='grid'};visual.img.src=url})}
 function renderFeatured(m,targetId='featured',insightTarget='insights'){
  const box=document.getElementById(targetId);box.replaceChildren();if(!m){box.className='empty';box.textContent='No upcoming eligible fixture is available in the published report.';if(insightTarget)renderInsights(null,insightTarget);return}box.className='feature';
- const top=document.createElement('div');top.className='featuretop';const left=document.createElement('div');const league=document.createElement('div');league.className='league';league.textContent=m.league||'Competition unavailable';const kickoff=document.createElement('div');kickoff.className='kickoff';kickoff.textContent=m.kickoff_local||m.kickoff||'Kickoff not supplied';left.append(league,kickoff);const badge=document.createElement('div');badge.className='forecastbadge';const hasForecast=m.status==='EXPERIMENTAL_ONLY'&&m.probabilities&&typeof m.probabilities==='object';badge.textContent=hasForecast?'EXPERIMENTAL MODEL':(m.status||'FORECAST UNAVAILABLE').replaceAll('_',' ');top.append(left,badge);
+ const top=document.createElement('div');top.className='featuretop';const left=document.createElement('div');const league=document.createElement('div');league.className='league';league.textContent=m.league||'Competition unavailable';const kickoff=document.createElement('div');kickoff.className='kickoff';kickoff.textContent=m.kickoff_local||m.kickoff||'Kickoff not supplied';left.append(league,kickoff);const badge=document.createElement('div');badge.className='forecastbadge';const hasForecast=hasModelForecast(m);badge.textContent=hasForecast?(m.status==='EXPERIMENTAL_LOW_DATA'?'LOW-DATA EXPERIMENTAL':'EXPERIMENTAL MODEL'):(m.status||'FORECAST UNAVAILABLE').replaceAll('_',' ');top.append(left,badge);
  const hero=document.createElement('div');hero.className='matchhero';const home=document.createElement('div');const hv=teamVisual(m.home_team);const hn=document.createElement('div');hn.className='teamname';hn.textContent=m.home_team||'Home team';const hc=document.createElement('div');hc.className='teamcaption';hc.textContent='HOME';home.append(hv.wrap,hn,hc);const vs=document.createElement('div');vs.className='versus';vs.textContent='VS';const away=document.createElement('div');const av=teamVisual(m.away_team);const an=document.createElement('div');an.className='teamname';an.textContent=m.away_team||'Away team';const ac=document.createElement('div');ac.className='teamcaption';ac.textContent='AWAY';away.append(av.wrap,an,ac);hero.append(home,vs,away);loadBadge(hv,m.home_team);loadBadge(av,m.away_team);
  const wrap=document.createElement('div');wrap.className='probwrap';
  if(hasForecast){
@@ -159,7 +160,7 @@ function renderInsights(m,targetId='insights'){
  rows.push(['◎','BTTS outlook',Number.isFinite(btts)?(btts>=.55?'Higher estimated chance both teams score':btts<=.45?'Model leans toward at least one team not scoring':'No strong BTTS lean'):'BTTS probability unavailable',Number.isFinite(btts)?'Model estimate: '+fmt(btts):'No value supplied.']);
  rows.push(['↗','Goal total',Number.isFinite(over)?(over>=.55?'Model leans Over 2.5':over<=.45?'Model leans Under 2.5':'No strong 2.5-goal lean'):'Totals estimate unavailable',Number.isFinite(over)?'Over 2.5 estimate: '+fmt(over):'No value supplied.']);
  rows.push(['⌁','Expected goals',Number.isFinite(homeX)&&Number.isFinite(awayX)?m.home_team+' '+homeX.toFixed(2)+' · '+m.away_team+' '+awayX.toFixed(2):'Expected-goals data unavailable','Goal estimates from the published model; not live xG statistics.']);
- if(m.prediction_basis)rows.push(['⚑','Prediction basis',m.prediction_basis,'Team-specific history is below the model minimum; this is a competition-level research prior only.']);
+ if(m.prediction_basis)rows.push(['⚑','Prediction basis',m.prediction_basis,'This fallback is explicitly low-confidence and is not eligible for betting recommendations.']);
  for(const [icon,title,value,desc] of rows){const card=document.createElement('article');card.className='insightcard';const a=document.createElement('div');a.className='insighticon';a.textContent=icon;const b=document.createElement('div');b.className='insighttitle';b.textContent=title;const c=document.createElement('div');c.className='insightbody insightvalue';c.textContent=value;const d=document.createElement('div');d.className='insightbody';d.textContent=desc;card.append(a,b,c,d);box.append(card)}
  renderValueBet(m,box);
 }
@@ -174,7 +175,7 @@ function renderRows(){
   const title=document.createElement('h3');title.className='prediction-title';title.textContent=(m.home_team||'Home')+' vs '+(m.away_team||'Away');
   const meta=document.createElement('div');meta.className='meta';meta.textContent=(m.league||'Competition')+' · '+(m.kickoff_local||m.kickoff||'Kickoff unavailable')+(m.fixture_visibility_note?' · '+m.fixture_visibility_note:'');
   const chips=document.createElement('div');chips.className='chips';
-  const hasForecast=m.status==='EXPERIMENTAL_ONLY'&&m.probabilities&&typeof m.probabilities==='object';
+  const hasForecast=hasModelForecast(m);
   if(hasForecast){
    const p=m.probabilities;for(const [label,value] of [['1X2 Home',fmt(p.home_win)],['1X2 Draw',fmt(p.draw)],['1X2 Away',fmt(p.away_win)],['BTTS Yes',fmt(m.btts_yes)],['Over 2.5',fmt(m.over_2_5)],['Under 2.5',Number.isFinite(num(m.over_2_5))?fmt(1-num(m.over_2_5)):'—']]){
     const chip=document.createElement('span');chip.className='chip';chip.textContent=label+' '+value;chips.append(chip);
@@ -347,9 +348,9 @@ async function normalizeStaticReport(report){
   as_of_date:report.as_of_date,generated_at_utc:report.generated_at_utc,
   published_at_utc:report.command_data_published_at_utc,
   fixtures_received:report.fixtures_received??report.predictions.length,
-  experimental_forecasts:report.predictions.filter(x=>x&&x.status==='EXPERIMENTAL_ONLY').length,
+  experimental_forecasts:report.predictions.filter(x=>hasModelForecast(x)).length,
   fixtures_visible:visibleRows.length,
-  unsupported_fixtures:report.predictions.filter(x=>!x||x.status!=='EXPERIMENTAL_ONLY').length,
+  unsupported_fixtures:report.predictions.filter(x=>!hasModelForecast(x)).length,
   fixtures_with_market_odds:report.fixtures_with_market_odds??0,
   data_connection:{status:'CONNECTED',freshness:report.as_of_date===new Intl.DateTimeFormat('en-CA',{timeZone:'Africa/Lagos',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date())?'CURRENT':'STALE',report_date:report.as_of_date,provider:(report.primary_provider_request||{}).provider,provider_status:(report.primary_provider_request||{}).status},
   model_validation:{status:'NOT_LOADED_FROM_STATIC_FALLBACK',dataset:{},historical_1x2:{},release_controls:{}},
@@ -558,9 +559,9 @@ def dashboard_data() -> dict:
         "live_odds_sync": report.get("live_odds_sync"),
         "historical_data_coverage": report.get("historical_data_coverage"),
         "fixtures_received": report.get("fixtures_received", 0),
-        "experimental_forecasts": sum(1 for row in rows if isinstance(row, dict) and row.get("status") == "EXPERIMENTAL_ONLY"),
+        "experimental_forecasts": sum(1 for row in rows if isinstance(row, dict) and isinstance(row.get("probabilities"), dict) and row.get("status") in {"EXPERIMENTAL_ONLY", "EXPERIMENTAL_LOW_DATA"}),
         "fixtures_visible": len(upcoming),
-        "unsupported_fixtures": sum(1 for row in upcoming if isinstance(row, dict) and row.get("status") != "EXPERIMENTAL_ONLY"),
+        "unsupported_fixtures": sum(1 for row in upcoming if isinstance(row, dict) and not (isinstance(row.get("probabilities"), dict) and row.get("status") in {"EXPERIMENTAL_ONLY", "EXPERIMENTAL_LOW_DATA"})),
         "fixtures_with_market_odds": odds_count,
         "model_validation": model_validation or {"status": "NOT_REPORTED", "dataset": {}, "historical_1x2": {}, "rolling_origin_1x2_calibration": {}, "rolling_origin_goal_market_calibration": {}, "release_controls": {}},
         "goal_market_calibration": report.get("goal_market_calibration") or {
