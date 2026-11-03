@@ -244,8 +244,8 @@ function renderPaperTracking(d){
  const groups=new Map();for(const row of selected){const day=dayOf(row)||'Date unknown';if(!groups.has(day))groups.set(day,[]);groups.get(day).push(row)}
  for(const [day,dayRows] of groups){const heading=document.createElement('div');heading.className='sectionhead';heading.style.margin='16px 2px 8px';const h=document.createElement('h2');h.textContent=day;const count=document.createElement('span');count.className='small muted';count.textContent=dayRows.length+' result'+(dayRows.length===1?'':'s');heading.append(h,count);results.append(heading);
  for(const row of dayRows){const card=document.createElement('article');card.className='market-fixture';const title=document.createElement('h3');title.textContent=(row.home_team||'Home')+' '+(row.home_goals??'—')+' – '+(row.away_goals??'—')+' '+(row.away_team||'Away');const line=document.createElement('div');line.className='market-line';line.textContent='Predicted '+(row.predicted||'—')+' · Actual '+(row.actual||'—')+' · '+(row.correct===true?'WIN':row.correct===false?'LOSS':'UNSCORED')+' · Model '+(row.model||'unknown');if(row.report_date&&row.report_date!==day)line.textContent+=' · Report '+row.report_date;card.append(title,line);results.append(card)}}};
- if(filterBox){filterBox.addEventListener('click',e=>{const button=e.target.closest('button[data-history-filter]');if(!button)return;historyFilter=button.dataset.historyFilter;filterBox.querySelectorAll('button[data-history-filter]').forEach(b=>{const active=b===button;b.classList.toggle('active',active);b.setAttribute('aria-pressed',active?'true':'false')});renderHistory()})}
- if(sortControl)sortControl.addEventListener('change',renderHistory);renderHistory();
+ if(filterBox){filterBox.onclick=e=>{const button=e.target.closest('button[data-history-filter]');if(!button)return;historyFilter=button.dataset.history-filter;filterBox.querySelectorAll('button[data-history-filter]').forEach(b=>{const active=b===button;b.classList.toggle('active',active);b.setAttribute('aria-pressed',active?'true':'false')});renderHistory()}}
+ if(sortControl)sortControl.onchange=renderHistory;renderHistory();
 }
 function renderStatus(d){
  const box=document.getElementById('systemStatus');box.replaceChildren();const hist=d.historical_data_coverage||{};const odds=d.live_odds_sync||{};const primary=d.primary_provider_request||{};
@@ -491,6 +491,7 @@ def dashboard_data() -> dict:
             "calibration_versions": ledger.get("calibration_versions") or [],
             "scored_matches": [
                 {
+                    "fixture_id": row.get("fixture_id"),
                     "home_team": row.get("home_team"),
                     "away_team": row.get("away_team"),
                     "actual": row.get("actual"),
@@ -501,7 +502,7 @@ def dashboard_data() -> dict:
                     "report_date": row.get("report_date"),
                     "model": row.get("model"),
                 }
-                for row in (ledger.get("scored_matches") or [])[-12:]
+                for row in (ledger.get("scored_matches") or [])
                 if isinstance(row, dict)
             ],
             "notice": ledger.get("notice", "Retrospective paper evaluation only."),
