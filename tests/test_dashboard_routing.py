@@ -27,6 +27,10 @@ def test_dashboard_root_handler_returns_html():
     assert "Prospective " in response.body.decode("utf-8")
     assert 'data-view="trackingView"' in response.body.decode("utf-8")
     assert ".sectionview.active{display:block}" in response.body.decode("utf-8")
+    assert "CONNECTED · STALE DATA" in response.body.decode("utf-8")
+    assert "DATA OFFLINE" in response.body.decode("utf-8")
+    assert "multi_source_odds_sync" in response.body.decode("utf-8")
+    assert "fixture_phase==='UPCOMING'" in response.body.decode("utf-8")
 
 
 def test_dashboard_data_handler_returns_json(monkeypatch):
@@ -274,3 +278,13 @@ def test_dashboard_exposes_model_validation_evidence(monkeypatch):
     monkeypatch.setattr(telegram, "load_model_validation_report", lambda: validation)
     payload = telegram.dashboard_data()
     assert payload["model_validation"] == validation
+
+
+def test_dashboard_reports_offline_when_no_published_snapshot_exists(monkeypatch):
+    from api import telegram
+
+    monkeypatch.setattr(telegram, "load_latest_report", lambda: None)
+    payload = telegram.dashboard_data()
+    assert payload["status"] == "UNAVAILABLE"
+    assert payload["warning"] == "No published report could be loaded."
+    assert payload["predictions"] == []
