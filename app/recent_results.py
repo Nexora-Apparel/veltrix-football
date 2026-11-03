@@ -283,18 +283,25 @@ def fetch_recent_results_incremental(
         state.pop("history_plan_limited_dates", None)
     if max_chunk_days < 1:
         raise ValueError("max_chunk_days must be positive")
-    if not historical_matches:
+    bootstrap_start_raw = state.get("bootstrap_start_date")
+    if bootstrap_start_raw:
+        try:
+            base_start = date.fromisoformat(str(bootstrap_start_raw))
+        except ValueError:
+            raise ValueError("bootstrap_start_date must be an ISO date.")
+        latest_base = base_start - timedelta(days=1)
+    elif historical_matches:
+        latest_base = max(row["date"] for row in historical_matches)
+        base_start = latest_base + timedelta(days=1)
+    else:
         return [], {
             "status": "NO_BASE_HISTORY", "results_added": 0,
             "requested_start": None, "requested_end": end_date.isoformat(),
             "covered_from": None, "covered_through": None,
             "ranges_succeeded": 0, "ranges_requested": 0,
-            "warning": "No base historical matches were available to anchor the refresh.",
+            "warning": "No verified historical rows or licensed bootstrap cursor are available.",
             "cache_state": state,
         }
-
-    latest_base = max(row["date"] for row in historical_matches)
-    base_start = latest_base + timedelta(days=1)
     if base_start > end_date and not state.get("backfill_anchor_end") and not state.get("history_gaps") and not state.get("history_plan_limited_dates"):
         state.update({
             "backfill_complete": True,
