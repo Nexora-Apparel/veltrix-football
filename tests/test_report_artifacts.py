@@ -58,6 +58,25 @@ def test_ledger_loader_accepts_only_paper_tracking_ledger(monkeypatch):
     assert report_artifacts.load_paper_ledger() == ledger
 
 
+def test_snapshot_loader_falls_back_to_raw_branch_when_contents_api_is_rate_limited(monkeypatch):
+    from urllib.error import HTTPError
+
+    report = {"as_of_date": "2026-11-03", "predictions": [{"fixture_id": 42}]}
+    requested = []
+
+    def fake_urlopen(request, timeout):
+        requested.append(request.full_url)
+        if len(requested) == 1:
+            raise HTTPError(request.full_url, 403, "rate limited", {}, None)
+        return FakeResponse(json.dumps(report).encode())
+
+    monkeypatch.setattr(report_artifacts, "urlopen", fake_urlopen)
+    assert report_artifacts.load_latest_report() == report
+    assert "api.github.com" in requested[0]
+    assert "raw.githubusercontent.com/Nexora-Apparel/veltrix-football/command-data/public-data/daily_predictions.json" in requested[1]
+    assert "v=" in requested[1]
+
+
 def test_placeholder_report_is_not_treated_as_live_data(monkeypatch):
     placeholder = {"status": "NOT_YET_PUBLISHED", "predictions": []}
     monkeypatch.setattr(
