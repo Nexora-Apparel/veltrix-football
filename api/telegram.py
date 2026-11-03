@@ -335,13 +335,20 @@ async function fetchDashboardPayload(){
  }
 }
 async function normalizeStaticReport(report){
+ const visibleRows=report.predictions.map(row=>{
+  if(!row||typeof row!=='object')return row;
+  const kickoff=Date.parse(row.kickoff_local||row.kickoff||'');
+  const phase=row.fixture_phase||(Number.isFinite(kickoff)?(kickoff>Date.now()?'UPCOMING':'KICKOFF_PASSED'):'KICKOFF_UNVERIFIED');
+  const note=row.fixture_visibility_note||(phase==='KICKOFF_PASSED'?'Kickoff has passed; fixture remains visible in this report.':phase==='KICKOFF_UNVERIFIED'?'Kickoff could not be verified; fixture retained for visibility.':undefined);
+  return {...row,fixture_phase:phase,...(note?{fixture_visibility_note:note}:{})};
+ });
  const normalized = {
-  ...report,status:'OK',predictions:report.predictions,
+  ...report,status:'OK',predictions:visibleRows,
   as_of_date:report.as_of_date,generated_at_utc:report.generated_at_utc,
   published_at_utc:report.command_data_published_at_utc,
   fixtures_received:report.fixtures_received??report.predictions.length,
   experimental_forecasts:report.predictions.filter(x=>x&&x.status==='EXPERIMENTAL_ONLY').length,
-  fixtures_visible:report.predictions.length,
+  fixtures_visible:visibleRows.length,
   unsupported_fixtures:report.predictions.filter(x=>!x||x.status!=='EXPERIMENTAL_ONLY').length,
   fixtures_with_market_odds:report.fixtures_with_market_odds??0,
   data_connection:{status:'CONNECTED',freshness:report.as_of_date===new Intl.DateTimeFormat('en-CA',{timeZone:'Africa/Lagos',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date())?'CURRENT':'STALE',report_date:report.as_of_date,provider:(report.primary_provider_request||{}).provider,provider_status:(report.primary_provider_request||{}).status},
