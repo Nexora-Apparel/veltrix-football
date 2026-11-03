@@ -35,6 +35,8 @@ def _parse_snapshot(raw: bytes, kind: str) -> dict[str, Any] | None:
         return None
     if kind == "report":
         return parsed if isinstance(parsed.get("predictions"), list) and parsed.get("status") != "NOT_YET_PUBLISHED" else None
+    if kind == "dashboard":
+        return parsed if parsed.get("snapshot_schema") == "VELTRIX_DASHBOARD_V1" and isinstance(parsed.get("predictions"), list) and parsed.get("as_of_date") else None
     if kind == "ledger":
         return parsed if isinstance(parsed.get("cumulative_metrics_by_model"), dict) and parsed.get("model_status") == "PAPER_TRACKING_ONLY" else None
     if kind == "model_validation":
@@ -56,6 +58,7 @@ def _load(kind: str) -> dict[str, Any] | None:
 
     filenames = {
         "report": "daily_predictions.json",
+        "dashboard": "dashboard_snapshot.json",
         "ledger": "paper_tracking_ledger.json",
         "model_validation": "model_validation_report.json",
     }
@@ -121,3 +124,8 @@ def load_paper_ledger() -> dict[str, Any] | None:
 def load_model_validation_report() -> dict[str, Any] | None:
     """Load the published chronological model-validation evidence snapshot."""
     return _load("model_validation")
+
+
+def load_dashboard_snapshot() -> dict[str, Any] | None:
+    """Load the compact public dashboard projection."""
+    return _load("dashboard")
