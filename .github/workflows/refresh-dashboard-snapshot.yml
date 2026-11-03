@@ -45,4 +45,16 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_REPOSITORY: ${{ github.repository }}
           PYTHONPATH: .
-        run: python scripts/publish_command_data.py --report reports/daily_predictions.json
+        run: |
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+          from scripts.publish_command_data import _dashboard_snapshot, publish
+          source = Path('reports/daily_predictions.json')
+          report = json.loads(source.read_text(encoding='utf-8'))
+          assert isinstance(report, dict) and isinstance(report.get('predictions'), list) and report.get('as_of_date')
+          target = Path('reports/dashboard_snapshot.json')
+          target.write_text(json.dumps(_dashboard_snapshot(report), separators=(',', ':'), ensure_ascii=False), encoding='utf-8')
+          publish('public-data/dashboard_snapshot.json', target, os.environ['GITHUB_REPOSITORY'], os.environ['GITHUB_TOKEN'])
+          print(f"Published compact dashboard snapshot for {report['as_of_date']} with {len(report['predictions'])} fixtures.")
+          PY
