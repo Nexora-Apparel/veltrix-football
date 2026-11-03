@@ -1,12 +1,12 @@
 {
   "schema_version": 1,
   "workflow": "Daily Fixture Predictions",
-  "run_id": "41595937486",
+  "run_id": "41635977044",
   "run_attempt": "1",
-  "event": "push",
-  "commit_sha": "c049102435182401050de2ec5e2d008b2eab419e",
+  "event": "schedule",
+  "commit_sha": "7f39bed00522f3f0cfa275ada3c1a019fd6423fe",
   "branch": "main",
-  "recorded_at_utc": "2026-11-03T07:24:30.848440+00:00",
+  "recorded_at_utc": "2026-11-03T12:30:04.373143+00:00",
   "overall_status": "PASSED",
   "validation_scope": "LIVE_PIPELINE",
   "telegram_configured": true,
@@ -40,22 +40,23 @@
     "future_fixtures_considered": 25,
     "fixture_rows": 25,
     "fixture_status_counts": {
-      "EXPERIMENTAL_LOW_DATA": 15,
-      "UNSUPPORTED_COMPETITION": 10
+      "INSUFFICIENT_HISTORY": 13,
+      "UNSUPPORTED_COMPETITION": 12
     },
     "fixture_visibility_validation": {
       "status": "PASSED",
       "fixture_rows": 25,
       "expected_fixture_rows": 25,
       "fixture_status_counts": {
-        "EXPERIMENTAL_LOW_DATA": 15,
-        "UNSUPPORTED_COMPETITION": 10
+        "INSUFFICIENT_HISTORY": 13,
+        "UNSUPPORTED_COMPETITION": 12
       },
       "kickoff_unverified_rows": 0,
-      "forecast_rows": 15,
-      "low_data_forecast_rows": 15,
-      "senior_forecast_coverage": 1.0,
-      "licensed_global_history_rows": 149,
+      "forecast_rows": 0,
+      "low_data_forecast_rows": 0,
+      "insufficient_history_rows": 13,
+      "senior_forecast_coverage": 0.0,
+      "licensed_global_history_rows_diagnostic_only": 198,
       "alerts_enabled": false
     },
     "historical_data_coverage": "GAPPED_OR_STALE",
@@ -65,13 +66,13 @@
       "status": "SHADOW_MODE",
       "fixtures_evaluated": 1,
       "bookmaker_price_sets_by_market": {
-        "1X2": 21,
-        "BTTS": 9,
+        "1X2": 0,
+        "BTTS": 0,
         "OVER_UNDER_1_5": 0,
-        "OVER_UNDER_2_5": 5,
+        "OVER_UNDER_2_5": 0,
         "OVER_UNDER_3_5": 0
       },
-      "shadow_candidate_count": 13,
+      "shadow_candidate_count": 0,
       "alerts_enabled": false,
       "release_status": "LOCKED_SHADOW_MODE",
       "note": "Market consensus, model shrinkage and quote-level screening are research-only. Existing value certificate remains authoritative."
@@ -80,7 +81,7 @@
   },
   "value_evidence_summary": {
     "observations_total": 5019,
-    "observations_added": 91,
+    "observations_added": 0,
     "price_series": 1779,
     "series_with_multiple_snapshots": 880,
     "settled_observations": 2443,
@@ -117,18 +118,5 @@
     }
   },
   "release_status": "LOCKED_SHADOW_MODE",
-  "betting_alerts_enabled": false,
-  "latest_test_run": {
-    "run_id": "41618703831",
-    "commit_sha": "7f39bed00522f3f0cfa275ada3c1a019fd6423fe",
-    "recorded_at_utc": "2026-11-03T10:23:08.657442+00:00",
-    "overall_status": "TESTS_PASSED",
-    "steps": {
-      "unit_tests": "success",
-      "dashboard_js": "success"
-    }
-  },
-  "latest_test_status": "TESTS_PASSED",
-  "last_test_run_id": "41618703831",
-  "last_full_pipeline_status": "PASSED"
+  "betting_alerts_enabled": false
 }
