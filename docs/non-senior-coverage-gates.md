@@ -94,10 +94,12 @@ Final production verification after recovery-path test: perform a fresh primary-
 Final release verification after the controlled outage test: regenerate the current local-date fixture inventory from the primary provider, confirm no fixture rows are filtered out, refresh all available odds/value evidence, and publish the fresh report and receipt.
 
 
-## Senior competition low-data forecast fallback
+## Senior competition sparse-history policy
 
-Senior fixtures from unmapped competitions, or with insufficient team-specific history, may receive a clearly separated global licensed-goal-rate prior only when at least 30 provider-attributed 5DollarFootballAPI results dated before the fixture date are available. These rows use status `EXPERIMENTAL_LOW_DATA` and model `experimental_global_licensed_prior_poisson`. They are coverage forecasts, not team-strength forecasts: they remain unvalidated, are never betting-eligible, and are tracked separately from the primary model.
+Senior fixtures without the minimum team-specific prior-match sample are retained in the report as `INSUFFICIENT_HISTORY`, with no 1X2, BTTS, totals, scoreline or expected-goals forecast. A global or competition-level scoring prior may be retained as a diagnostic, but it must never be presented as a fixture prediction: it contains no information distinguishing the two teams and can make unrelated fixtures display identical probabilities.
 
-Women's, youth, reserve, academy and B-team fixtures remain excluded from this senior prior until category-matched history passes the coverage and chronological-evaluation requirements above.
+A fixture becomes forecast-eligible only when both teams meet the configured prior-match minimum and the normal team-specific, venue-aware model path can run. Improving coverage therefore requires verified historical backfill, stable team identity resolution and correct competition mapping—not lowering the minimum or relabelling shared priors as predictions.
+
+Women's, youth, reserve, academy and B-team fixtures remain `UNSUPPORTED_COMPETITION` until category-matched history passes the coverage and chronological-evaluation requirements above.
 
 When at least 30 licensed global results exist, `scripts/validate_fixture_visibility.py` requires at least 90% forecast coverage across eligible senior fixtures before publication and Telegram delivery. If the fallback regresses and coverage drops below that threshold, the run fails closed rather than publishing a misleading one-of-many forecast report. All fixture rows remain in the report inventory with explicit statuses.
