@@ -62,7 +62,7 @@ def test_insufficient_team_history_suppresses_probabilities():
     assert "probabilities" not in result[0]
 
 
-def test_unmapped_competition_with_insufficient_history_is_classified_unsupported():
+def test_unmapped_competition_with_insufficient_history_is_withheld():
     fixture = _fixture()
     fixture["league"].pop("id", None)
     fixture["teams"]["home"]["name"] = "Unknown Club"
@@ -70,8 +70,8 @@ def test_unmapped_competition_with_insufficient_history_is_classified_unsupporte
         [fixture], _history(), as_of=date(2026, 10, 23),
         now=datetime(2026, 10, 23, 12, 0, tzinfo=ZoneInfo("Africa/Lagos")),
     )
-    assert result[0]["status"] == "UNSUPPORTED_COMPETITION"
-    assert "not mapped to the historical dataset" in result[0]["reason"]
+    assert result[0]["status"] == "INSUFFICIENT_HISTORY"
+    assert "team-specific evidence" in result[0]["reason"]
     assert "probabilities" not in result[0]
 
 
@@ -574,7 +574,7 @@ def test_french_ligue_one_provider_aliases_match_historical_team_keys():
     assert _name_key("RC Lens") == _name_key("Lens")
 
 
-def test_mapped_competition_uses_explicit_league_prior_when_team_history_is_sparse():
+def test_mapped_competition_prior_is_not_published_when_team_history_is_sparse():
     fixture = _fixture("2026-10-23T15:00:00+01:00")
     fixture["league"] = {"name": "Bundesliga", "code": "BL1"}
     fixture["teams"]["home"]["name"] = "Newly Promoted Club"
@@ -596,15 +596,12 @@ def test_mapped_competition_uses_explicit_league_prior_when_team_history_is_spar
         now=datetime(2026, 10, 23, 12, 0, tzinfo=ZoneInfo("Africa/Lagos")),
     )
     prediction = result[0]
-    assert prediction["status"] == "EXPERIMENTAL_ONLY"
-    assert prediction["model"] == "experimental_competition_prior_poisson"
-    assert prediction["model_validated"] is False
-    assert prediction["betting_recommendation"] is False
-    assert prediction["data_availability"]["competition_history_matches"] == 50
-    assert prediction["prediction_basis"].startswith("competition-level historical")
-    assert abs(sum(prediction["probabilities"].values()) - 1) < 0.0002
-    assert 0 <= prediction["btts_yes"] <= 1
-    assert 0 <= prediction["over_2_5"] <= 1
+    assert prediction["status"] == "INSUFFICIENT_HISTORY"
+    assert prediction["data_availability"]["competition_specific_history"] == "AVAILABLE_BUT_NOT_USED_AS_FIXTURE_FORECAST"
+    assert prediction["data_availability"]["global_goal_rate_prior"] == "DIAGNOSTIC_ONLY_NOT_PUBLISHED"
+    assert "probabilities" not in prediction
+    assert "btts_yes" not in prediction
+    assert "over_2_5" not in prediction
 
 
 def test_build_daily_report_retains_scheduled_fixture_without_kickoff():
@@ -639,7 +636,7 @@ def test_started_fixture_parts_can_be_read_for_visibility_only():
     assert parts["fixture_status"] == "FT"
 
 
-def test_unmapped_senior_fixture_gets_explicit_low_data_forecast_from_licensed_global_history():
+def test_unmapped_senior_fixture_with_global_history_is_withheld_without_team_evidence():
     fixture = _fixture()
     fixture["league"] = {"name": "Unmapped Senior Competition"}
     fixture["teams"]["home"]["name"] = "Unknown Home"
@@ -662,11 +659,8 @@ def test_unmapped_senior_fixture_gets_explicit_low_data_forecast_from_licensed_g
         now=datetime(2026, 10, 23, 12, 0, tzinfo=ZoneInfo("Africa/Lagos")),
     )
     prediction = result[0]
-    assert prediction["status"] == "EXPERIMENTAL_LOW_DATA"
-    assert prediction["model"] == "experimental_global_licensed_prior_poisson"
-    assert prediction["model_validated"] is False
-    assert prediction["betting_recommendation"] is False
-    assert prediction["data_availability"]["licensed_global_history_matches"] == 40
-    assert abs(sum(prediction["probabilities"].values()) - 1) < 0.0002
-    assert 0 <= prediction["btts_yes"] <= 1
-    assert 0 <= prediction["over_2_5"] <= 1
+    assert prediction["status"] == "INSUFFICIENT_HISTORY"
+    assert prediction["data_availability"]["global_goal_rate_prior"] == "DIAGNOSTIC_ONLY_NOT_PUBLISHED"
+    assert "probabilities" not in prediction
+    assert "btts_yes" not in prediction
+    assert "over_2_5" not in prediction
