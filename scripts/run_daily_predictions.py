@@ -414,15 +414,30 @@ def main() -> None:
         # healthy. In licensed-only production mode, anchor the incremental cursor
         # to verified provider rows already in the cache, never the research dataset.
         history_anchor = base_history
+        history_cache_state = dict(cache_data.get("state") or {})
         if licensed_history_only:
             history_anchor, _ = _filter_licensed_recent_history(cached_rows)
+            if history_cache_state.get("history_source_mode") != "LICENSED_ONLY":
+                # Start a clean, provider-attributed 56-day bootstrap. The provider
+                # supports three months on the Free plan; one seven-day chunk is
+                # fetched per scheduled run to stay inside the hourly request cap.
+                bootstrap_end = target_date - timedelta(days=1)
+                history_cache_state = {
+                    "coverage_state_version": 2,
+                    "source_provider": "5DollarFootballAPI",
+                    "history_source_mode": "LICENSED_ONLY",
+                    "bootstrap_start_date": (bootstrap_end - timedelta(days=55)).isoformat(),
+                    "backfill_anchor_end": bootstrap_end.isoformat(),
+                    "next_backfill_end_date": bootstrap_end.isoformat(),
+                    "backfill_complete": False,
+                }
         if primary_provider_status == "SUCCESS":
             try:
                 recent_rows, recent_sync = fetch_recent_results_incremental(
                     api,
                     history_anchor,
                     target_date - timedelta(days=1),
-                    cache_state=cache_data.get("state") or {},
+                    cache_state=history_cache_state,
                     timezone_name=args.timezone,
                 )
             except ProviderAPIError as exc:
