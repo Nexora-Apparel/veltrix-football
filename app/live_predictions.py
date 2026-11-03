@@ -986,6 +986,26 @@ def build_daily_report(
             )
             for p in predictions
         ),
+        # Machine-readable per-fixture diagnostics make provider/history name
+        # mismatches auditable and provide reviewed candidates for an alias table.
+        "team_history_match_diagnostics": [
+            {
+                "fixture_id": p.get("fixture_id"),
+                "home_team": p.get("home_team"),
+                "away_team": p.get("away_team"),
+                "historical_matches": p.get("historical_matches", {}),
+                "teams": p.get("team_history_diagnostics", {}),
+                "suggested_history_names": p.get("team_name_match_suggestions", {}),
+            }
+            for p in predictions if p.get("team_history_diagnostics")
+        ],
+        "teams_below_history_minimum": sum(
+            sum(
+                int((p.get("historical_matches") or {}).get(side, 0)) < MIN_TEAM_MATCHES
+                for side in ("home", "away")
+            )
+            for p in predictions if p.get("team_history_diagnostics")
+        ),
         "primary_model_counts": {
             model_name: sum(
                 p.get("status") in {"EXPERIMENTAL_ONLY", "EXPERIMENTAL_LOW_DATA"} and p.get("model") == model_name
