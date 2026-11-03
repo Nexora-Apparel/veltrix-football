@@ -428,3 +428,18 @@ def test_different_same_day_report_hash_is_not_suppressed():
         "sent_report_hashes_by_date": {"2026-10-23": ["a" * 64]},
     }
     assert _should_skip_delivery(state, "2026-10-23", "b" * 64) is False
+
+
+
+def test_telegram_includes_low_data_forecast_with_explicit_non_betting_label():
+    report = sample_report()
+    report["predictions"][0]["status"] = "EXPERIMENTAL_LOW_DATA"
+    report["predictions"][0]["model"] = "experimental_global_licensed_prior_poisson"
+    report["predictions"][0]["prediction_basis"] = "licensed global goal-rate prior only"
+    report["predictions"][0]["betting_recommendation"] = False
+    message = format_report(report)
+    assert "Fixtures retrieved: 1 · Research forecasts: 1" in message
+    assert "Alpha FC vs Beta FC" in message
+    assert "1X2: Home 50% | Draw 25% | Away 25%" in message
+    assert "MODEL STATUS: LOW-DATA EXPERIMENTAL · NOT BETTING ELIGIBLE" in message
+    assert "Forecast withheld" not in message
