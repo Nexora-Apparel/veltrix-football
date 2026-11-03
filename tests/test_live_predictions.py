@@ -60,6 +60,8 @@ def test_insufficient_team_history_suppresses_probabilities():
     result = predict_fixtures([fixture], _history(), as_of=date(2026, 10, 23), now=datetime(2026, 10, 23, 12, 0, tzinfo=ZoneInfo("Africa/Lagos")))
     assert result[0]["status"] == "INSUFFICIENT_HISTORY"
     assert "probabilities" not in result[0]
+    assert result[0]["team_history_diagnostics"]["home"]["match_status"] == "NO_HISTORICAL_DATA"
+    assert result[0]["team_history_diagnostics"]["away"]["prior_matches"] == 0
     assert result[0]["historical_matches"] == {"home": 0, "away": 6}
     diagnostics = result[0]["team_history_diagnostics"]
     assert diagnostics["home"]["fixture_name"] == "Unknown Club"
