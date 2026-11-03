@@ -17,8 +17,29 @@ from urllib.request import Request, urlopen
 DEFAULT_REPOSITORY = "Nexora-Apparel/veltrix-football"
 DEFAULT_BRANCH = "command-data"
 CACHE_SECONDS = 30
-_TIMEOUT_SECONDS = 5
+# Vercel Hobby functions have a short execution budget. The report is required;
+# ledger and model-validation snapshots are optional enrichments.
+_REPORT_TIMEOUT_SECONDS = 3.0
+_OPTIONAL_TIMEOUT_SECONDS = 1.25
+_API_FALLBACK_TIMEOUT_SECONDS = 1.0
 _cache: dict[str, tuple[float, dict[str, Any] | None]] = {}
+
+
+def _parse_snapshot(raw: bytes, kind: str) -> dict[str, Any] | None:
+    if len(raw) > 4_000_000:
+        return None
+    parsed: Any = json.loads(raw.decode("utf-8"))
+    if isinstance(parsed, dict) and isinstance(parsed.get("content"), str) and parsed.get("encoding") == "base64":
+        parsed = json.loads(base64.b64decode(parsed["content"]).decode("utf-8"))
+    if not isinstance(parsed, dict):
+        return None
+    if kind == "report":
+        return parsed if isinstance(parsed.get("predictions"), list) and parsed.get("status") != "NOT_YET_PUBLISHED" else None
+    if kind == "ledger":
+        return parsed if isinstance(parsed.get("cumulative_metrics_by_model"), dict) and parsed.get("model_status") == "PAPER_TRACKING_ONLY" else None
+    if kind == "model_validation":
+        return parsed if parsed.get("status") == "RESEARCH_DIAGNOSTIC_ONLY" and isinstance(parsed.get("dataset"), dict) else None
+    return None
 
 
 def _load(kind: str) -> dict[str, Any] | None:
@@ -42,66 +63,44 @@ def _load(kind: str) -> dict[str, Any] | None:
     if not filename:
         _cache[kind] = (now, None)
         return None
-    # Query the GitHub Contents API with its raw media type. Unlike the raw
-    # branch CDN URL, this avoids stale CDN snapshots after publication.
+
     cache_buster = int(time.time())
-    url = (
-        f"https://api.github.com/repos/{repo}/contents/public-data/{filename}"
-        f"?ref={branch}&v={cache_buster}"
-    )
-    request = Request(url, headers={
+    headers = {
         "User-Agent": "Veltrix-Football-Command-Centre",
-        "Accept": "application/vnd.github.raw+json",
         "Cache-Control": "no-cache",
         "Pragma": "no-cache",
-    })
+    }
     value: dict[str, Any] | None = None
+
+    # Public raw snapshots avoid GitHub Contents API's low anonymous rate limit.
+    # This is one bounded request rather than a 5s API call followed by a
+    # second 5s CDN fallback, which could exceed Vercel's function time budget.
+    raw_url = (
+        f"https://raw.githubusercontent.com/{repo}/{branch}/public-data/{filename}"
+        f"?v={cache_buster}"
+    )
+    timeout = _REPORT_TIMEOUT_SECONDS if kind == "report" else _OPTIONAL_TIMEOUT_SECONDS
     try:
-        with urlopen(request, timeout=_TIMEOUT_SECONDS) as response:
-            raw = response.read(4_000_001)
-        if len(raw) <= 4_000_000:
-            # The raw media type normally returns JSON bytes. Keep a fallback
-            # for GitHub/API proxies that return the standard base64 envelope.
-            try:
-                parsed = json.loads(raw.decode("utf-8"))
-            except (UnicodeDecodeError, json.JSONDecodeError):
-                parsed = None
-            if isinstance(parsed, dict) and isinstance(parsed.get("content"), str) and parsed.get("encoding") == "base64":
-                decoded = base64.b64decode(parsed["content"])
-                parsed = json.loads(decoded.decode("utf-8"))
-            if isinstance(parsed, dict):
-                if kind == "report" and isinstance(parsed.get("predictions"), list) and parsed.get("status") != "NOT_YET_PUBLISHED":
-                    value = parsed
-                elif kind == "ledger" and isinstance(parsed.get("cumulative_metrics_by_model"), dict) and parsed.get("model_status") == "PAPER_TRACKING_ONLY":
-                    value = parsed
-                elif kind == "model_validation" and parsed.get("status") == "RESEARCH_DIAGNOSTIC_ONLY" and isinstance(parsed.get("dataset"), dict):
-                    value = parsed
+        request = Request(raw_url, headers=headers)
+        with urlopen(request, timeout=timeout) as response:
+            value = _parse_snapshot(response.read(4_000_001), kind)
     except (HTTPError, URLError, OSError, TimeoutError, UnicodeDecodeError, json.JSONDecodeError, ValueError):
-        # The Contents API is the preferred uncached source, but its anonymous
-        # rate limit can temporarily block dashboard reads. Fall back to the
-        # public raw branch with a cache-busting query parameter so a published
-        # snapshot remains readable without requiring a GitHub token.
-        raw_url = (
-            f"https://raw.githubusercontent.com/{repo}/{branch}/public-data/{filename}"
-            f"?v={cache_buster}"
+        value = None
+
+    # Short, bounded Contents API fallback for transient raw-CDN failures.
+    # Never let optional panels consume the report endpoint's execution budget.
+    if value is None:
+        api_url = (
+            f"https://api.github.com/repos/{repo}/contents/public-data/{filename}"
+            f"?ref={branch}&v={cache_buster}"
         )
         try:
-            raw_request = Request(raw_url, headers={
-                "User-Agent": "Veltrix-Football-Command-Centre",
-                "Cache-Control": "no-cache",
-                "Pragma": "no-cache",
+            request = Request(api_url, headers={
+                **headers,
+                "Accept": "application/vnd.github.raw+json",
             })
-            with urlopen(raw_request, timeout=_TIMEOUT_SECONDS) as response:
-                raw = response.read(4_000_001)
-            if len(raw) <= 4_000_000:
-                parsed = json.loads(raw.decode("utf-8"))
-                if isinstance(parsed, dict):
-                    if kind == "report" and isinstance(parsed.get("predictions"), list) and parsed.get("status") != "NOT_YET_PUBLISHED":
-                        value = parsed
-                    elif kind == "ledger" and isinstance(parsed.get("cumulative_metrics_by_model"), dict) and parsed.get("model_status") == "PAPER_TRACKING_ONLY":
-                        value = parsed
-                    elif kind == "model_validation" and parsed.get("status") == "RESEARCH_DIAGNOSTIC_ONLY" and isinstance(parsed.get("dataset"), dict):
-                        value = parsed
+            with urlopen(request, timeout=_API_FALLBACK_TIMEOUT_SECONDS) as response:
+                value = _parse_snapshot(response.read(4_000_001), kind)
         except (HTTPError, URLError, OSError, TimeoutError, UnicodeDecodeError, json.JSONDecodeError, ValueError):
             value = None
 
@@ -117,7 +116,6 @@ def load_latest_report() -> dict[str, Any] | None:
 def load_paper_ledger() -> dict[str, Any] | None:
     """Load the published cumulative paper-tracking ledger, if one exists."""
     return _load("ledger")
-
 
 
 def load_model_validation_report() -> dict[str, Any] | None:
