@@ -34,10 +34,29 @@ def test_dashboard_root_handler_returns_html():
     assert "fixtures retained without forecasts" in response.body.decode("utf-8")
     assert "Selected fixture sources" in response.body.decode("utf-8")
     assert "fetchDashboardPayload" in response.body.decode("utf-8")
-    assert "raw.githubusercontent.com/Nexora-Apparel/veltrix-football/command-data/public-data/daily_predictions.json" in response.body.decode("utf-8")
+    assert "raw.githubusercontent.com/Nexora-Apparel/veltrix-football/command-data/public-data/dashboard_snapshot.json" in response.body.decode("utf-8")
     assert "fetchWithDeadline" in response.body.decode("utf-8")
-    assert "cdn.jsdelivr.net/gh/Nexora-Apparel/veltrix-football@command-data/public-data/daily_predictions.json" in response.body.decode("utf-8")
-    assert "api.github.com/repos/Nexora-Apparel/veltrix-football/contents/public-data/daily_predictions.json" in response.body.decode("utf-8")
+    assert "cdn.jsdelivr.net/gh/Nexora-Apparel/veltrix-football@command-data/public-data/dashboard_snapshot.json" in response.body.decode("utf-8")
+    assert "api.github.com/repos/Nexora-Apparel/veltrix-football/contents/public-data/dashboard_snapshot.json" in response.body.decode("utf-8")
+
+
+
+def test_tracking_history_renderer_is_safe_and_keeps_complete_fixture_history():
+    from api.telegram import DASHBOARD_HTML
+    import api.telegram
+
+    renderer = DASHBOARD_HTML.split("function renderPaperTracking(d){", 1)[1].split(
+        "\nfunction renderStatus(d){", 1
+    )[0]
+    assert renderer.index("const dayOf=") < renderer.index("const seenFixtures")
+    assert "button.dataset.historyFilter" in renderer
+    assert "button.dataset.history-filter" not in renderer
+    assert '"fixture_id": row.get("fixture_id")' in api.telegram.dashboard_data.__code__.co_consts or (
+        '"fixture_id": row.get("fixture_id")' in open("api/telegram.py", encoding="utf-8").read()
+    )
+    assert 'for row in (ledger.get("scored_matches") or [])[-12:]' not in open(
+        "api/telegram.py", encoding="utf-8"
+    ).read()
 
 
 def test_dashboard_data_handler_returns_json(monkeypatch):
