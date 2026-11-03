@@ -730,15 +730,18 @@ def test_gap_backfill_daily_cooldown_skips_provider_calls(tmp_path):
 
 def test_gap_backfill_excludes_noncommercial_feed_and_preserves_gaps_during_cooldown(tmp_path):
     import json
+    from datetime import datetime
+    from zoneinfo import ZoneInfo
     from scripts.backfill_history_gaps import run
 
+    today = datetime.now(ZoneInfo("Africa/Lagos")).date()
     gaps = ["2026-09-28", "2026-09-29"]
     cache_path = tmp_path / "cache.json"
     fallback_path = tmp_path / "fallback.csv"
     output_path = tmp_path / "out.json"
     cache_path.write_text(json.dumps({
         "version": 2,
-        "state": {"history_gaps": gaps, "last_gap_retry_on": "2026-11-02"},
+        "state": {"history_gaps": gaps, "last_gap_retry_on": today.isoformat()},
         "matches": [],
     }), encoding="utf-8")
     fallback_path.write_text(
