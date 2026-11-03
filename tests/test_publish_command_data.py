@@ -180,3 +180,47 @@ def test_publication_marker_confirms_live_report_but_preserves_reuse_warning():
     assert reused["publication_status"] == "REUSED_SNAPSHOT_NOT_REFRESHED"
     assert reused["command_data_publication"] == "PUBLISHED"
     assert reused["publication_notice"] == "A previously generated report was reused."
+
+
+
+def test_large_blob_publication_retries_when_command_data_branch_moves(tmp_path, monkeypatch):
+    import io
+    from urllib.error import HTTPError
+    from scripts import publish_command_data as publisher
+
+    target = tmp_path / "large.json"
+    target.write_text('{"data":"' + ("x" * 950_000) + '"}', encoding="utf-8")
+    calls = []
+    ref_reads = 0
+    patch_attempts = 0
+
+    def fake_github_json(url, token, method="GET", body=None):
+        nonlocal ref_reads, patch_attempts
+        calls.append((url, method, body))
+        if url.endswith("/git/ref/heads/command-data"):
+            ref_reads += 1
+            return {"object": {"sha": f"head-{ref_reads}"}}
+        if url.endswith("/git/commits/head-1"):
+            return {"tree": {"sha": "base-tree-1"}}
+        if url.endswith("/git/commits/head-2"):
+            return {"tree": {"sha": "base-tree-2"}}
+        if url.endswith("/git/blobs"):
+            return {"sha": f"blob-{ref_reads}"}
+        if url.endswith("/git/trees"):
+            return {"sha": f"tree-{ref_reads}"}
+        if url.endswith("/git/commits"):
+            return {"sha": f"commit-{ref_reads}"}
+        if url.endswith("/git/refs/heads/command-data"):
+            patch_attempts += 1
+            if patch_attempts == 1:
+                raise HTTPError(url, 409, "Conflict", {}, io.BytesIO(b"branch advanced"))
+            return {"ref": "refs/heads/command-data"}
+        raise AssertionError(url)
+
+    monkeypatch.setattr(publisher, "_github_json", fake_github_json)
+    publisher.publish("public-data/daily_predictions.json", target, "owner/repo", "token")
+    assert ref_reads == 2
+    assert patch_attempts == 2
+    second_tree = next(body for url, method, body in calls
+                       if url.endswith("/git/trees") and body["base_tree"] == "base-tree-2")
+    assert second_tree["tree"][0]["sha"] == "blob-2"
