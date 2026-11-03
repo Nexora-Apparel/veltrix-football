@@ -182,6 +182,18 @@ def test_today_excludes_withheld_fixtures_and_only_shows_real_forecasts():
                 "status": "EXPERIMENTAL_ONLY",
                 "probabilities": {"home_win": 0.5, "draw": 0.3, "away_win": 0.2},
             },
+            {
+                "fixture_id": 3,
+                "home_team": "Low Data FC",
+                "away_team": "Unknown United",
+                "league": "Unmapped Senior League",
+                "kickoff_local": future_kickoff,
+                "status": "EXPERIMENTAL_LOW_DATA",
+                "prediction_basis": "licensed global goal-rate prior only",
+                "probabilities": {"home_win": 0.45, "draw": 0.28, "away_win": 0.27},
+                "btts_yes": 0.51,
+                "over_2_5": 0.49,
+            },
         ]
     }
     today = handle_command("/today", report=report)
@@ -189,10 +201,12 @@ def test_today_excludes_withheld_fixtures_and_only_shows_real_forecasts():
     status = handle_command("/status", report=report)
 
     assert "Forecast FC vs Model FC" in today
+    assert "Low Data FC vs Unknown United" in today
+    assert "MODEL STATUS: LOW-DATA EXPERIMENTAL · NOT BETTING ELIGIBLE" in today
     assert "Withheld FC" not in today
     assert "Withheld FC vs Unknown FC" in fixtures
-    assert "Usable experimental forecasts: 1" in status
-    assert "Fixtures in report: 2" in status
+    assert "Usable experimental forecasts: 2" in status
+    assert "Fixtures in report: 3" in status
 
 
 def test_tomorrow_and_live_commands_do_not_relabel_same_day_snapshot():
