@@ -603,7 +603,7 @@ def evaluate_report(report: dict[str, Any], results_payload: dict[str, Any]) -> 
     fixtures_scored: set[str] = set()
     for prediction in predictions:
         status = prediction.get("status")
-        has_model_forecast = status == "EXPERIMENTAL_ONLY"
+        has_model_forecast = status in {"EXPERIMENTAL_ONLY", "EXPERIMENTAL_LOW_DATA"}
         has_market_forecast = isinstance(prediction.get("market_probabilities"), dict)
         if status in {"INSUFFICIENT_HISTORY", "UNSUPPORTED_COMPETITION"}:
             withheld += 1
