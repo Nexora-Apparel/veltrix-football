@@ -1,13 +1,13 @@
 {
   "schema_version": 1,
   "workflow": "Daily Fixture Predictions",
-  "run_id": "41439411937",
+  "run_id": "41555156016",
   "run_attempt": "1",
-  "event": "schedule",
-  "commit_sha": "151758e3a2635c21a3d916a99ac34504c3524644",
+  "event": "workflow_dispatch",
+  "commit_sha": "a63ba0899cce5150d85a9d9a14ad69c58f70c7ce",
   "branch": "main",
-  "recorded_at_utc": "2026-11-02T11:48:03.223828+00:00",
-  "overall_status": "NEEDS_REVIEW",
+  "recorded_at_utc": "2026-11-03T00:47:33.192613+00:00",
+  "overall_status": "PASSED",
   "validation_scope": "LIVE_PIPELINE",
   "telegram_configured": true,
   "steps": {
@@ -30,7 +30,7 @@
     "paper_tracking": "success"
   },
   "report_summary": {
-    "as_of_date": "2026-11-02",
+    "as_of_date": "2026-11-03",
     "publication_status": "PUBLISHED",
     "fixtures_received": 25,
     "same_day_pre_match_fixtures": 25,
@@ -40,19 +40,19 @@
     "future_fixtures_considered": 25,
     "fixture_rows": 25,
     "fixture_status_counts": {
-      "EXPERIMENTAL_ONLY": 9,
-      "UNSUPPORTED_COMPETITION": 16
+      "EXPERIMENTAL_ONLY": 1,
+      "UNSUPPORTED_COMPETITION": 24
     },
     "fixture_visibility_validation": {
       "status": "PASSED",
       "fixture_rows": 25,
       "expected_fixture_rows": 25,
       "fixture_status_counts": {
-        "EXPERIMENTAL_ONLY": 9,
-        "UNSUPPORTED_COMPETITION": 16
+        "EXPERIMENTAL_ONLY": 1,
+        "UNSUPPORTED_COMPETITION": 24
       },
       "kickoff_unverified_rows": 0,
-      "forecast_rows": 9,
+      "forecast_rows": 1,
       "alerts_enabled": false
     },
     "historical_data_coverage": "GAPPED_OR_STALE",
@@ -60,15 +60,15 @@
     "value_intelligence": {
       "engine": "VELTRIX_VALUE_INTELLIGENCE_V1",
       "status": "SHADOW_MODE",
-      "fixtures_evaluated": 7,
+      "fixtures_evaluated": 1,
       "bookmaker_price_sets_by_market": {
-        "1X2": 81,
-        "BTTS": 20,
+        "1X2": 21,
+        "BTTS": 9,
         "OVER_UNDER_1_5": 0,
-        "OVER_UNDER_2_5": 25,
-        "OVER_UNDER_3_5": 5
+        "OVER_UNDER_2_5": 5,
+        "OVER_UNDER_3_5": 0
       },
-      "shadow_candidate_count": 0,
+      "shadow_candidate_count": 4,
       "alerts_enabled": false,
       "release_status": "LOCKED_SHADOW_MODE",
       "note": "Market consensus, model shrinkage and quote-level screening are research-only. Existing value certificate remains authoritative."
@@ -76,22 +76,22 @@
     "value_validation_certificate": "LOCKED_INSUFFICIENT_EVIDENCE"
   },
   "value_evidence_summary": {
-    "observations_total": 4837,
-    "observations_added": 343,
-    "price_series": 1688,
+    "observations_total": 4928,
+    "observations_added": 91,
+    "price_series": 1779,
     "series_with_multiple_snapshots": 789,
-    "settled_observations": 2087,
-    "shadow_candidate_observations": 123,
+    "settled_observations": 2443,
+    "shadow_candidate_observations": 127,
     "legacy_candidate_observations_unannotated": 0,
-    "settled_shadow_candidates": 61,
-    "shadow_candidate_wins": 8,
+    "settled_shadow_candidates": 63,
+    "shadow_candidate_wins": 10,
     "shadow_candidate_losses": 53,
-    "shadow_candidate_quote_net_units": -46.84,
-    "shadow_candidate_quote_roi_percent": -76.7869,
+    "shadow_candidate_quote_net_units": -45.78,
+    "shadow_candidate_quote_roi_percent": -72.6667,
     "alerts_enabled": false
   },
   "paper_tracking_summary": {
-    "evaluated_report_dates": 5,
+    "evaluated_report_dates": 6,
     "cumulative_metrics_by_model": {
       "experimental_elo_by_competition": {
         "matches": 2,
@@ -114,18 +114,5 @@
     }
   },
   "release_status": "LOCKED_SHADOW_MODE",
-  "betting_alerts_enabled": false,
-  "latest_test_run": {
-    "run_id": "41555016129",
-    "commit_sha": "90bdde7b1c477976b32052dc94f7824a3014e9e5",
-    "recorded_at_utc": "2026-11-03T00:46:18.594567+00:00",
-    "overall_status": "TESTS_PASSED",
-    "steps": {
-      "unit_tests": "success",
-      "dashboard_js": "success"
-    }
-  },
-  "latest_test_status": "TESTS_PASSED",
-  "last_test_run_id": "41555016129",
-  "last_full_pipeline_status": "NEEDS_REVIEW"
+  "betting_alerts_enabled": false
 }
