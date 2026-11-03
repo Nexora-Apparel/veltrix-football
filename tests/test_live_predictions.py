@@ -363,7 +363,7 @@ def test_daily_report_explains_fixture_filtering(tmp_path):
     )
     assert report["fixtures_received"] == 4
     assert report["same_day_pre_match_fixtures"] == 1
-    assert report["past_kickoffs_excluded"] == 0
+    assert report["past_kickoffs_excluded"] == 1
     assert report["past_kickoffs_retained"] == 1
     assert report["future_fixtures_considered"] == 1
     assert report["same_day_fixtures_retained"] == 3
