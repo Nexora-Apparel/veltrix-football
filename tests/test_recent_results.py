@@ -1187,3 +1187,32 @@ def test_openligadb_discovery_merges_with_known_static_competition_shortcuts(mon
     assert audit["available_leagues_discovery"]["mapped_count"] == 11
     assert audit["status"] == "NO_DATA_AVAILABLE"
     assert rows == []
+
+
+def test_incremental_refresh_bootstraps_a_licensed_history_window_without_research_base_rows():
+    class FakeAPI:
+        def __init__(self):
+            self.calls = []
+
+        def fixtures_between(self, start, end, timezone):
+            self.calls.append((start, end, timezone))
+            return {"response": [_fixture(end)]}
+
+    api = FakeAPI()
+    state = {
+        "coverage_state_version": 2,
+        "source_provider": "5DollarFootballAPI",
+        "history_source_mode": "LICENSED_ONLY",
+        "bootstrap_start_date": "2026-09-01",
+        "backfill_anchor_end": "2026-10-24",
+        "next_backfill_end_date": "2026-10-24",
+        "backfill_complete": False,
+    }
+    rows, meta = fetch_recent_results_incremental(
+        api, [], date(2026, 10, 24), cache_state=state
+    )
+    assert api.calls == [("2026-10-18", "2026-10-24", "Africa/Lagos")]
+    assert len(rows) == 1
+    assert meta["status"] == "PARTIAL"
+    assert meta["cache_state"]["history_source_mode"] == "LICENSED_ONLY"
+    assert meta["cache_state"]["next_backfill_end_date"] == "2026-10-17"
