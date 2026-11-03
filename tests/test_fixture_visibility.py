@@ -48,3 +48,73 @@ def test_forecast_row_requires_probability_distribution():
     report["predictions"][0].pop("probabilities")
     with pytest.raises(ValueError, match="has no probability distribution"):
         validate_fixture_visibility(report)
+
+
+
+def test_low_data_experimental_forecast_is_counted_as_a_forecast():
+    report = {
+        "same_day_only": True,
+        "future_fixtures_considered": 1,
+        "predictions": [{
+            "home_team": "Unknown Home",
+            "away_team": "Unknown Away",
+            "status": "EXPERIMENTAL_LOW_DATA",
+            "probabilities": {"home_win": .45, "draw": .28, "away_win": .27},
+        }],
+    }
+    result = validate_fixture_visibility(report)
+    assert result["forecast_rows"] == 1
+    assert result["low_data_forecast_rows"] == 1
+    assert result["senior_forecast_coverage"] == 1.0
+
+
+def test_fixture_visibility_blocks_one_of_twenty_five_when_licensed_history_is_sufficient():
+    rows = [{
+        "home_team": f"Home {index}",
+        "away_team": f"Away {index}",
+        "status": "EXPERIMENTAL_ONLY" if index == 0 else "UNSUPPORTED_COMPETITION",
+        **({"probabilities": {"home_win": .4, "draw": .3, "away_win": .3}} if index == 0 else {}),
+    } for index in range(24)]
+    rows.append({
+        "home_team": "Women's Home",
+        "away_team": "Women's Away",
+        "status": "UNSUPPORTED_COMPETITION",
+        "reason": "Women's, youth and reserve competitions require category-matched historical results; senior-team history is not used.",
+    })
+    report = {
+        "same_day_only": True,
+        "future_fixtures_considered": 25,
+        "predictions": rows,
+        "historical_data_coverage": {
+            "recent_cache_source_counts": {"5DollarFootballAPI": 96},
+        },
+    }
+    with pytest.raises(ValueError, match="Forecast coverage gate failed"):
+        validate_fixture_visibility(report)
+
+
+def test_fixture_visibility_accepts_high_coverage_with_low_data_fallbacks():
+    rows = [{
+        "home_team": f"Home {index}",
+        "away_team": f"Away {index}",
+        "status": "EXPERIMENTAL_ONLY" if index == 0 else "EXPERIMENTAL_LOW_DATA",
+        "probabilities": {"home_win": .4, "draw": .3, "away_win": .3},
+    } for index in range(24)]
+    rows.append({
+        "home_team": "Women's Home",
+        "away_team": "Women's Away",
+        "status": "UNSUPPORTED_COMPETITION",
+        "reason": "Women's, youth and reserve competitions require category-matched historical results; senior-team history is not used.",
+    })
+    report = {
+        "same_day_only": True,
+        "future_fixtures_considered": 25,
+        "predictions": rows,
+        "historical_data_coverage": {
+            "recent_cache_source_counts": {"5DollarFootballAPI": 96},
+        },
+    }
+    result = validate_fixture_visibility(report)
+    assert result["forecast_rows"] == 24
+    assert result["low_data_forecast_rows"] == 23
+    assert result["senior_forecast_coverage"] == 1.0
