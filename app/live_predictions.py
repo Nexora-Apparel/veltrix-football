@@ -452,48 +452,6 @@ def predict_fixtures(
     home_baseline = max(0.05, sum(m["home_goals"] for m in usable) / len(usable))
     away_baseline = max(0.05, sum(m["away_goals"] for m in usable) / len(usable))
 
-    def apply_global_prior(record: dict[str, Any]) -> dict[str, Any]:
-        """Provide an explicit low-data baseline when licensed team/league history is sparse."""
-        prior = match_probabilities(home_baseline, away_baseline)
-        record.update({
-            "status": "EXPERIMENTAL_LOW_DATA",
-            "model": "experimental_global_licensed_prior_poisson",
-            "model_validated": False,
-            "betting_recommendation": False,
-            "prediction_basis": (
-                "licensed global home/away goal-rate prior only; team and competition history "
-                "are below minimum; low-confidence coverage fallback"
-            ),
-            "probabilities": {
-                key: round(value, 4) for key, value in prior["one_x_two"].items()
-            },
-            "expected_goals": {
-                "home": round(home_baseline, 3),
-                "away": round(away_baseline, 3),
-            },
-            "btts_yes": round(prior["btts_yes"], 4),
-            "over_1_5": round(prior["totals"]["over_1_5"], 4),
-            "over_2_5": round(prior["totals"]["over_2_5"], 4),
-            "over_3_5": round(prior["totals"]["over_3_5"], 4),
-            "most_likely_scorelines": prior["most_likely_scorelines"][:3],
-            "goal_markets_model": "experimental_global_licensed_prior_poisson",
-            "data_availability": {
-                "historical_goals_for_against": "LICENSED_GLOBAL_BASELINE_ONLY",
-                "licensed_global_history_matches": len(usable),
-                "team_specific_history": "BELOW_MINIMUM",
-                "competition_specific_history": "UNAVAILABLE_OR_BELOW_MINIMUM",
-                "true_expected_goals_xg": "UNAVAILABLE_FROM_CURRENT_HISTORICAL_FEED",
-                "confirmed_lineups_injuries_suspensions": "NOT_CONNECTED",
-                "live_bookmaker_odds": "REFERENCE_ONLY_IF_MATCHED",
-            },
-            "limitations": [
-                "Low-data coverage fallback; not a team-strength forecast.",
-                "Not validated for betting; value-bet eligibility is always false.",
-                "Global licensed goal rates may not represent this competition.",
-            ],
-        })
-        return record
-
     # Cache Elo ratings once per competition for this report date; all fixtures
     # share the same strictly pre-date history, so recomputing it per fixture is wasteful.
     elo_cache: dict[str, dict[str, Any]] = {}
@@ -579,71 +537,16 @@ def predict_fixtures(
                 },
             }
             if len(home_hist) < min_team_matches or len(away_hist) < min_team_matches:
-                if not fixture.get("division_code"):
-                    if len(usable) >= 30:
-                        record = apply_global_prior(record)
-                        output.append(record)
-                    else:
-                        record.update({
-                            "status": "UNSUPPORTED_COMPETITION",
-                            "reason": "This competition is not mapped to the historical dataset and fewer than 30 licensed historical matches are available for a safe global baseline.",
-                            "team_name_match_suggestions": {},
-                        })
-                        output.append(record)
-                    continue
-                # If a competition is mapped but one or both teams lack enough
-                # exact-match results, fall back to a transparent league-only
-                # historical prior. This is not a team-strength forecast and
-                # remains experimental; it must never unlock value-bet alerts.
-                league_history = [
-                    match for match in usable
-                    if match.get("division") == fixture.get("division_code")
-                ]
-                if len(league_history) >= 50:
-                    league_home_xg = sum(match["home_goals"] for match in league_history) / len(league_history)
-                    league_away_xg = sum(match["away_goals"] for match in league_history) / len(league_history)
-                    league_prior = match_probabilities(league_home_xg, league_away_xg)
-                    record.update({
-                        "status": "EXPERIMENTAL_ONLY",
-                        "model": "experimental_competition_prior_poisson",
-                        "model_validated": False,
-                        "betting_recommendation": False,
-                        "prediction_basis": "competition-level historical goal-rate prior; team-specific history below minimum",
-                        "probabilities": {
-                            key: round(value, 4)
-                            for key, value in league_prior["one_x_two"].items()
-                        },
-                        "expected_goals": {
-                            "home": round(league_home_xg, 3),
-                            "away": round(league_away_xg, 3),
-                        },
-                        "btts_yes": round(league_prior["btts_yes"], 4),
-                        "over_1_5": round(league_prior["totals"]["over_1_5"], 4),
-                        "over_2_5": round(league_prior["totals"]["over_2_5"], 4),
-                        "over_3_5": round(league_prior["totals"]["over_3_5"], 4),
-                        "most_likely_scorelines": league_prior["most_likely_scorelines"][:3],
-                        "goal_markets_model": "experimental_competition_prior_poisson",
-                        "data_availability": {
-                            "historical_goals_for_against": "COMPETITION_BASELINE_ONLY",
-                            "competition_history_matches": len(league_history),
-                            "team_specific_history": "BELOW_MINIMUM",
-                            "true_expected_goals_xg": "UNAVAILABLE_FROM_CURRENT_HISTORICAL_FEED",
-                            "confirmed_lineups_injuries_suspensions": "NOT_CONNECTED",
-                            "live_bookmaker_odds": "REFERENCE_ONLY_IF_MATCHED",
-                        },
-                    })
-                    output.append(record)
-                    continue
-                if len(usable) >= 30:
-                    record = apply_global_prior(record)
-                    output.append(record)
-                    continue
+                # A league-wide or global scoring prior contains no fixture-level
+                # team-strength signal. Publishing it as a fixture prediction makes
+                # unrelated matches share identical probabilities. Preserve the
+                # fixture, but withhold all model probabilities until both teams
+                # meet the minimum prior-match requirement.
                 suggestions: dict[str, list[str]] = {}
                 for side, team_name, team_key, history in (
                     ("home", fixture["home_team"], home_key, home_hist),
                     ("away", fixture["away_team"], away_key, away_hist),
                 ):
-                    # Suggestions are diagnostics only; never silently merge fuzzy names.
                     if not history:
                         close_keys = get_close_matches(
                             team_key, list(known_team_names), n=3, cutoff=0.72
@@ -654,10 +557,28 @@ def predict_fixtures(
                         })
                         if display_names:
                             suggestions[side] = display_names[:3]
+                missing_sides = [
+                    side for side, count in (("home", len(home_hist)), ("away", len(away_hist)))
+                    if count < min_team_matches
+                ]
                 record.update({
                     "status": "INSUFFICIENT_HISTORY",
-                    "reason": f"Each team needs at least {min_team_matches} prior matches in the historical dataset.",
+                    "reason": (
+                        f"Fixture forecast withheld: each team needs at least {min_team_matches} "
+                        f"prior matches; home has {len(home_hist)} and away has {len(away_hist)}. "
+                        "Competition/global scoring priors are not substituted for team-specific evidence."
+                    ),
+                    "insufficient_history_sides": missing_sides,
                     "team_name_match_suggestions": suggestions,
+                    "data_availability": {
+                        "historical_goals_for_against": "TEAM_HISTORY_BELOW_MINIMUM",
+                        "team_specific_history": "INSUFFICIENT",
+                        "competition_specific_history": (
+                            "AVAILABLE_BUT_NOT_USED_AS_FIXTURE_FORECAST"
+                            if fixture.get("division_code") else "UNMAPPED_OR_UNAVAILABLE"
+                        ),
+                        "global_goal_rate_prior": "DIAGNOSTIC_ONLY_NOT_PUBLISHED",
+                    },
                 })
                 output.append(record)
                 continue
