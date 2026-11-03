@@ -60,6 +60,12 @@ def test_insufficient_team_history_suppresses_probabilities():
     result = predict_fixtures([fixture], _history(), as_of=date(2026, 10, 23), now=datetime(2026, 10, 23, 12, 0, tzinfo=ZoneInfo("Africa/Lagos")))
     assert result[0]["status"] == "INSUFFICIENT_HISTORY"
     assert "probabilities" not in result[0]
+    assert result[0]["historical_matches"] == {"home": 0, "away": 6}
+    diagnostics = result[0]["team_history_diagnostics"]
+    assert diagnostics["home"]["fixture_name"] == "Unknown Club"
+    assert diagnostics["home"]["history_match_found"] is False
+    assert diagnostics["home"]["match_status"] == "NO_HISTORY_MATCH"
+    assert diagnostics["away"]["prior_matches"] == 6
 
 
 def test_unmapped_competition_with_insufficient_history_is_withheld():
@@ -332,6 +338,9 @@ def test_daily_report_explains_fixture_filtering(tmp_path):
     assert "probabilities" not in by_fixture[400]
     assert report["primary_model_counts"] == {"experimental_recent_goals_poisson": 1}
     assert report["possible_team_name_mismatches"] == 1
+    assert len(report["team_history_match_diagnostics"]) == 1
+    assert report["team_history_match_diagnostics"][0]["historical_matches"] == {"home": 6, "away": 6}
+    assert report["teams_below_history_minimum"] == 0
     assert report["poisson_alternative_available"] == 0
     assert report["elo_alternative_available"] == 1
 
