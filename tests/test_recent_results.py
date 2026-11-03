@@ -189,12 +189,13 @@ def test_daily_report_merges_recent_results_and_reports_freshness(tmp_path):
     with history_path.open("w", newline="", encoding="utf-8") as handle:
         writer = csv.DictWriter(
             handle,
-            fieldnames=["match_date", "home_team", "away_team", "home_goals", "away_goals"],
+            fieldnames=["match_date", "division", "home_team", "away_team", "home_goals", "away_goals"],
         )
         writer.writeheader()
         for day in range(1, 13):
             writer.writerow({
                 "match_date": f"2026-10-{day:02d}",
+                "division": "E0",
                 "home_team": "Alpha FC" if day % 2 else f"Opponent {day}",
                 "away_team": f"Opponent {day}" if day % 2 else "Beta FC",
                 "home_goals": 2 if day % 2 else 0,
