@@ -1,13 +1,13 @@
 {
   "schema_version": 1,
   "workflow": "Daily Fixture Predictions",
-  "run_id": "41555156016",
+  "run_id": "41595937486",
   "run_attempt": "1",
-  "event": "workflow_dispatch",
-  "commit_sha": "a63ba0899cce5150d85a9d9a14ad69c58f70c7ce",
+  "event": "push",
+  "commit_sha": "c049102435182401050de2ec5e2d008b2eab419e",
   "branch": "main",
-  "recorded_at_utc": "2026-11-03T00:47:33.192613+00:00",
-  "overall_status": "NEEDS_REVIEW",
+  "recorded_at_utc": "2026-11-03T07:24:30.848440+00:00",
+  "overall_status": "PASSED",
   "validation_scope": "LIVE_PIPELINE",
   "telegram_configured": true,
   "steps": {
@@ -40,19 +40,22 @@
     "future_fixtures_considered": 25,
     "fixture_rows": 25,
     "fixture_status_counts": {
-      "EXPERIMENTAL_ONLY": 1,
-      "UNSUPPORTED_COMPETITION": 24
+      "EXPERIMENTAL_LOW_DATA": 15,
+      "UNSUPPORTED_COMPETITION": 10
     },
     "fixture_visibility_validation": {
       "status": "PASSED",
       "fixture_rows": 25,
       "expected_fixture_rows": 25,
       "fixture_status_counts": {
-        "EXPERIMENTAL_ONLY": 1,
-        "UNSUPPORTED_COMPETITION": 24
+        "EXPERIMENTAL_LOW_DATA": 15,
+        "UNSUPPORTED_COMPETITION": 10
       },
       "kickoff_unverified_rows": 0,
-      "forecast_rows": 1,
+      "forecast_rows": 15,
+      "low_data_forecast_rows": 15,
+      "senior_forecast_coverage": 1.0,
+      "licensed_global_history_rows": 149,
       "alerts_enabled": false
     },
     "historical_data_coverage": "GAPPED_OR_STALE",
@@ -68,7 +71,7 @@
         "OVER_UNDER_2_5": 5,
         "OVER_UNDER_3_5": 0
       },
-      "shadow_candidate_count": 4,
+      "shadow_candidate_count": 13,
       "alerts_enabled": false,
       "release_status": "LOCKED_SHADOW_MODE",
       "note": "Market consensus, model shrinkage and quote-level screening are research-only. Existing value certificate remains authoritative."
@@ -76,12 +79,12 @@
     "value_validation_certificate": "LOCKED_INSUFFICIENT_EVIDENCE"
   },
   "value_evidence_summary": {
-    "observations_total": 4928,
+    "observations_total": 5019,
     "observations_added": 91,
     "price_series": 1779,
-    "series_with_multiple_snapshots": 789,
+    "series_with_multiple_snapshots": 880,
     "settled_observations": 2443,
-    "shadow_candidate_observations": 127,
+    "shadow_candidate_observations": 140,
     "legacy_candidate_observations_unannotated": 0,
     "settled_shadow_candidates": 63,
     "shadow_candidate_wins": 10,
@@ -100,32 +103,19 @@
         "log_loss": 0.735957759728448
       },
       "experimental_elo_global_fallback": {
-        "matches": 7,
-        "result_accuracy": 0.7142857142857143,
-        "brier_score": 0.5426830413332765,
-        "log_loss": 0.9173709305780352
+        "matches": 11,
+        "result_accuracy": 0.45454545454545453,
+        "brier_score": 0.6474686318566981,
+        "log_loss": 1.0706515812482393
       },
       "experimental_recent_goals_poisson": {
-        "matches": 13,
-        "result_accuracy": 0.6153846153846154,
-        "brier_score": 0.503800205210751,
-        "log_loss": 0.859153042989978
+        "matches": 17,
+        "result_accuracy": 0.5882352941176471,
+        "brier_score": 0.572680289956807,
+        "log_loss": 0.9613840646687183
       }
     }
   },
   "release_status": "LOCKED_SHADOW_MODE",
-  "betting_alerts_enabled": false,
-  "latest_test_run": {
-    "run_id": "41595746217",
-    "commit_sha": "fda5e34fee964127d51f04173079cdc35d5f8ead",
-    "recorded_at_utc": "2026-11-03T07:22:25.463489+00:00",
-    "overall_status": "TESTS_PASSED",
-    "steps": {
-      "unit_tests": "success",
-      "dashboard_js": "success"
-    }
-  },
-  "latest_test_status": "TESTS_PASSED",
-  "last_test_run_id": "41595746217",
-  "last_full_pipeline_status": "NEEDS_REVIEW"
+  "betting_alerts_enabled": false
 }
