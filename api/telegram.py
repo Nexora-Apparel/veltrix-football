@@ -320,9 +320,48 @@ async function fetchDashboardPayload(){
    paper_tracking:null,
    warning:'Dashboard is using the published static report because the live API is temporarily unavailable. Fixtures remain visible; status and paper-tracking details may be delayed.'
   };
- }catch(fallbackError){
-  throw new Error('Dashboard API failed ('+(apiError?.message||'unknown')+') and static report fallback failed ('+(fallbackError?.message||'unknown')+')');
+ }catch(rawFallbackError){
+  // Second CDN route is independent of raw.githubusercontent.com.
+  try{
+   const cdn='https://cdn.jsdelivr.net/gh/Nexora-Apparel/veltrix-football@command-data/public-data/daily_predictions.json';
+   const response=await fetchWithDeadline(cdn+'?v='+stamp,6000);
+   if(!response.ok)throw new Error('Mirror HTTP '+response.status);
+   const report=await response.json();
+   if(!report||!Array.isArray(report.predictions)||!report.as_of_date)throw new Error('Mirror snapshot failed validation');
+   return normalizeStaticReport(report);
+  }catch(mirrorError){
+   // Final recovery route uses the GitHub Contents API; decode UTF-8 safely.
+   try{
+    const api='https://api.github.com/repos/Nexora-Apparel/veltrix-football/contents/public-data/daily_predictions.json?ref=command-data&v='+stamp;
+    const response=await fetchWithDeadline(api,5000);
+    if(!response.ok)throw new Error('GitHub API HTTP '+response.status);
+    const wrapper=await response.json();
+    if(!wrapper||!wrapper.content)throw new Error('GitHub API returned no file content');
+    const bytes=Uint8Array.from(atob(wrapper.content.replace(/\\s/g,'')),c=>c.charCodeAt(0));
+    const report=JSON.parse(new TextDecoder().decode(bytes));
+    if(!report||!Array.isArray(report.predictions)||!report.as_of_date)throw new Error('GitHub API snapshot failed validation');
+    return normalizeStaticReport(report);
+   }catch(apiFallbackError){
+    throw new Error('Dashboard API, raw CDN, mirror CDN and GitHub API all failed: '+(apiFallbackError?.message||'unknown'));
+   }
+  }
  }
+}
+function normalizeStaticReport(report){
+ return {
+  ...report,status:'OK',predictions:report.predictions,
+  as_of_date:report.as_of_date,generated_at_utc:report.generated_at_utc,
+  published_at_utc:report.command_data_published_at_utc,
+  fixtures_received:report.fixtures_received??report.predictions.length,
+  experimental_forecasts:report.predictions.filter(x=>x&&x.status==='EXPERIMENTAL_ONLY').length,
+  fixtures_visible:report.predictions.length,
+  unsupported_fixtures:report.predictions.filter(x=>!x||x.status!=='EXPERIMENTAL_ONLY').length,
+  fixtures_with_market_odds:report.fixtures_with_market_odds??0,
+  data_connection:{status:'CONNECTED',freshness:'CURRENT',report_date:report.as_of_date,provider:(report.primary_provider_request||{}).provider,provider_status:(report.primary_provider_request||{}).status},
+  model_validation:{status:'NOT_LOADED_FROM_STATIC_FALLBACK',dataset:{},historical_1x2:{},release_controls:{}},
+  paper_tracking:null,
+  warning:'Dashboard is using the published static report because the live API is temporarily unavailable. Fixtures remain visible; status and paper-tracking details may be delayed.'
+ };
 }
 async function loadDashboard(){
  const btn=document.getElementById('refresh');btn.disabled=true;btn.textContent='Loading…';
