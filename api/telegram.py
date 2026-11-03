@@ -306,20 +306,7 @@ async function fetchDashboardPayload(){
   if(!response.ok)throw new Error('Published snapshot HTTP '+response.status);
   const report=await response.json();
   if(!report||!Array.isArray(report.predictions)||!report.as_of_date)throw new Error('Published snapshot failed validation');
-  return {
-   ...report,status:'OK',predictions:report.predictions,
-   as_of_date:report.as_of_date,generated_at_utc:report.generated_at_utc,
-   published_at_utc:report.command_data_published_at_utc,
-   fixtures_received:report.fixtures_received??report.predictions.length,
-   experimental_forecasts:report.predictions.filter(x=>x&&x.status==='EXPERIMENTAL_ONLY').length,
-   fixtures_visible:report.predictions.length,
-   unsupported_fixtures:report.predictions.filter(x=>!x||x.status!=='EXPERIMENTAL_ONLY').length,
-   fixtures_with_market_odds:report.fixtures_with_market_odds??0,
-   data_connection:{status:'CONNECTED',freshness:'CURRENT',report_date:report.as_of_date,provider:(report.primary_provider_request||{}).provider,provider_status:(report.primary_provider_request||{}).status},
-   model_validation:{status:'NOT_LOADED_FROM_STATIC_FALLBACK',dataset:{},historical_1x2:{},release_controls:{}},
-   paper_tracking:null,
-   warning:'Dashboard is using the published static report because the live API is temporarily unavailable. Fixtures remain visible; status and paper-tracking details may be delayed.'
-  };
+  return normalizeStaticReport(report);
  }catch(rawFallbackError){
   // Second CDN route is independent of raw.githubusercontent.com.
   try{
@@ -357,7 +344,7 @@ function normalizeStaticReport(report){
   fixtures_visible:report.predictions.length,
   unsupported_fixtures:report.predictions.filter(x=>!x||x.status!=='EXPERIMENTAL_ONLY').length,
   fixtures_with_market_odds:report.fixtures_with_market_odds??0,
-  data_connection:{status:'CONNECTED',freshness:'CURRENT',report_date:report.as_of_date,provider:(report.primary_provider_request||{}).provider,provider_status:(report.primary_provider_request||{}).status},
+  data_connection:{status:'CONNECTED',freshness:report.as_of_date===new Intl.DateTimeFormat('en-CA',{timeZone:'Africa/Lagos',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date())?'CURRENT':'STALE',report_date:report.as_of_date,provider:(report.primary_provider_request||{}).provider,provider_status:(report.primary_provider_request||{}).status},
   model_validation:{status:'NOT_LOADED_FROM_STATIC_FALLBACK',dataset:{},historical_1x2:{},release_controls:{}},
   paper_tracking:null,
   warning:'Dashboard is using the published static report because the live API is temporarily unavailable. Fixtures remain visible; status and paper-tracking details may be delayed.'
