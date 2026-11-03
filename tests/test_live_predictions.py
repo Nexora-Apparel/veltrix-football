@@ -637,3 +637,36 @@ def test_started_fixture_parts_can_be_read_for_visibility_only():
     assert _fixture_parts(fixture) is None
     parts = _fixture_parts(fixture, include_started=True)
     assert parts["fixture_status"] == "FT"
+
+
+def test_unmapped_senior_fixture_gets_explicit_low_data_forecast_from_licensed_global_history():
+    fixture = _fixture()
+    fixture["league"] = {"name": "Unmapped Senior Competition"}
+    fixture["teams"]["home"]["name"] = "Unknown Home"
+    fixture["teams"]["away"]["name"] = "Unknown Away"
+    history = []
+    for index in range(40):
+        history.append({
+            "date": date(2026, 8, 1) + __import__("datetime").timedelta(days=index),
+            "home": f"Historical Home {index}",
+            "away": f"Historical Away {index}",
+            "home_key": f"historicalhome{index}",
+            "away_key": f"historicalaway{index}",
+            "home_goals": 1 + index % 2,
+            "away_goals": index % 2,
+            "division": "",
+            "source_provider": "5DollarFootballAPI",
+        })
+    result = predict_fixtures(
+        [fixture], history, as_of=date(2026, 10, 23),
+        now=datetime(2026, 10, 23, 12, 0, tzinfo=ZoneInfo("Africa/Lagos")),
+    )
+    prediction = result[0]
+    assert prediction["status"] == "EXPERIMENTAL_LOW_DATA"
+    assert prediction["model"] == "experimental_global_licensed_prior_poisson"
+    assert prediction["model_validated"] is False
+    assert prediction["betting_recommendation"] is False
+    assert prediction["data_availability"]["licensed_global_history_matches"] == 40
+    assert abs(sum(prediction["probabilities"].values()) - 1) < 0.0002
+    assert 0 <= prediction["btts_yes"] <= 1
+    assert 0 <= prediction["over_2_5"] <= 1
