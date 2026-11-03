@@ -124,6 +124,31 @@ def _valid_recent_cache(cache: object) -> bool:
     )
 
 
+def _dashboard_snapshot(report: dict) -> dict:
+    """Create a compact projection of the published report."""
+    top_level = (
+        "as_of_date", "generated_at_utc", "command_data_publication",
+        "command_data_published_at_utc", "publication_status", "publication_notice",
+        "primary_provider_request", "fixture_discovery", "multi_source_odds_sync",
+        "live_odds_sync", "historical_data_coverage", "fixtures_received",
+        "fixtures_with_market_odds", "goal_market_calibration", "value_bet_screen",
+        "value_validation_certificate",
+    )
+    row_fields = (
+        "fixture_id", "id", "match_id", "league", "country", "competition",
+        "home_team", "away_team", "home_team_id", "away_team_id",
+        "kickoff", "kickoff_local", "status", "fixture_phase",
+        "fixture_visibility_note", "probabilities", "btts_yes", "over_2_5",
+        "expected_goals", "prediction_basis", "five_dollar_market_odds",
+        "the_odds_api_market_odds", "infer_sports_market_odds", "odds", "market_odds",
+    )
+    rows = report.get("predictions") if isinstance(report.get("predictions"), list) else []
+    compact_rows = [{key: row[key] for key in row_fields if key in row} for row in rows if isinstance(row, dict)]
+    payload = {key: report[key] for key in top_level if key in report}
+    payload["predictions"] = compact_rows
+    payload["snapshot_schema"] = "VELTRIX_DASHBOARD_V1"
+    return payload
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--report", required=True, help="Generated daily_predictions.json")
@@ -161,6 +186,9 @@ def main() -> int:
         _mark_report_publication(report, published_at)
         report_path.write_text(json.dumps(report, indent=2, ensure_ascii=False), encoding="utf-8")
         attempt("daily report", lambda: publish("public-data/daily_predictions.json", report_path, repo, token))
+        dashboard_path = report_path.parent / "dashboard_snapshot.json"
+        dashboard_path.write_text(json.dumps(_dashboard_snapshot(report), separators=(",", ":"), ensure_ascii=False), encoding="utf-8")
+        attempt("compact dashboard snapshot", lambda: publish("public-data/dashboard_snapshot.json", dashboard_path, repo, token))
         archive_path = _archive_report_path(report, published_at)
         attempt("report archive", lambda: publish(archive_path, report_path, repo, token))
         if args.ledger:
