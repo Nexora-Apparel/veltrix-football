@@ -31,6 +31,8 @@ def test_dashboard_root_handler_returns_html():
     assert "DATA OFFLINE" in response.body.decode("utf-8")
     assert "multi_source_odds_sync" in response.body.decode("utf-8")
     assert "fixture_phase==='UPCOMING'" in response.body.decode("utf-8")
+    assert "fixtures retained without forecasts" in response.body.decode("utf-8")
+    assert "Selected fixture sources" in response.body.decode("utf-8")
 
 
 def test_dashboard_data_handler_returns_json(monkeypatch):
@@ -54,6 +56,12 @@ def test_dashboard_data_handler_returns_json(monkeypatch):
             "five_dollar": {"status": "AVAILABLE"},
             "the_odds_api": {"status": "AVAILABLE"},
         },
+        "fixture_discovery": {
+            "primary_provider": "5DollarFootballAPI",
+            "the_odds_api": {"fixtures_added": 1},
+            "infersports": {"events_received": 5, "fixtures_added": 3},
+            "fixture_selection": {"by_source_after_cap": {"InferSports": 3, "The Odds API": 1}},
+        },
     })
     payload = get_dashboard_data()
     assert payload["status"] == "OK"
@@ -64,6 +72,8 @@ def test_dashboard_data_handler_returns_json(monkeypatch):
     assert payload["data_connection"]["freshness"] == "STALE"
     assert payload["multi_source_odds_sync"]["five_dollar"]["status"] == "AVAILABLE"
     assert payload["multi_source_odds_sync"]["the_odds_api"]["status"] == "AVAILABLE"
+    assert payload["fixture_discovery"]["infersports"]["fixtures_added"] == 3
+    assert payload["fixture_discovery"]["fixture_selection"]["by_source_after_cap"]["InferSports"] == 3
 
 
 def test_dashboard_data_exposes_value_screen_status_and_market_coverage(monkeypatch):
