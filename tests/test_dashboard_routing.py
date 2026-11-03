@@ -36,6 +36,8 @@ def test_dashboard_root_handler_returns_html():
     assert "fetchDashboardPayload" in response.body.decode("utf-8")
     assert "raw.githubusercontent.com/Nexora-Apparel/veltrix-football/command-data/public-data/daily_predictions.json" in response.body.decode("utf-8")
     assert "fetchWithDeadline" in response.body.decode("utf-8")
+    assert "cdn.jsdelivr.net/gh/Nexora-Apparel/veltrix-football@command-data/public-data/daily_predictions.json" in response.body.decode("utf-8")
+    assert "api.github.com/repos/Nexora-Apparel/veltrix-football/contents/public-data/daily_predictions.json" in response.body.decode("utf-8")
 
 
 def test_dashboard_data_handler_returns_json(monkeypatch):
