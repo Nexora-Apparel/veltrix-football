@@ -33,6 +33,9 @@ def test_dashboard_root_handler_returns_html():
     assert "fixture_phase==='UPCOMING'" in response.body.decode("utf-8")
     assert "fixtures retained without forecasts" in response.body.decode("utf-8")
     assert "Selected fixture sources" in response.body.decode("utf-8")
+    assert "fetchDashboardPayload" in response.body.decode("utf-8")
+    assert "raw.githubusercontent.com/Nexora-Apparel/veltrix-football/command-data/public-data/daily_predictions.json" in response.body.decode("utf-8")
+    assert "fetchWithDeadline" in response.body.decode("utf-8")
 
 
 def test_dashboard_data_handler_returns_json(monkeypatch):
@@ -298,3 +301,35 @@ def test_dashboard_reports_offline_when_no_published_snapshot_exists(monkeypatch
     assert payload["status"] == "UNAVAILABLE"
     assert payload["warning"] == "No published report could be loaded."
     assert payload["predictions"] == []
+
+
+
+def test_dashboard_data_optional_snapshots_cannot_break_core_report(monkeypatch):
+    from api import telegram
+
+    report = {
+        "as_of_date": "2099-05-01",
+        "predictions": [{
+            "home_team": "Always Visible FC",
+            "away_team": "Guest FC",
+            "status": "UNSUPPORTED_COMPETITION",
+            "kickoff_local": "2099-05-01T15:00:00+01:00",
+        }],
+        "fixtures_received": 1,
+        "command_data_publication": "PUBLISHED",
+    }
+
+    monkeypatch.setattr(telegram, "load_latest_report", lambda: report)
+
+    def optional_failure():
+        raise TimeoutError("optional snapshot timed out")
+
+    monkeypatch.setattr(telegram, "load_paper_ledger", optional_failure)
+    monkeypatch.setattr(telegram, "load_model_validation_report", optional_failure)
+
+    payload = telegram.dashboard_data()
+    assert payload["status"] == "OK"
+    assert payload["fixtures_visible"] == 1
+    assert payload["predictions"][0]["home_team"] == "Always Visible FC"
+    assert payload["paper_tracking"] is None
+    assert payload["model_validation"]["status"] == "NOT_REPORTED"
