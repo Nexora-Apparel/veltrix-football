@@ -517,6 +517,22 @@ def predict_fixtures(
                 "model_validated": False,
                 "betting_recommendation": False,
                 "historical_matches": {"home": len(home_hist), "away": len(away_hist)},
+                "team_history_diagnostics": {
+                    "home": {
+                        "fixture_name": fixture["home_team"],
+                        "normalized_key": _name_key(fixture["home_team"]),
+                        "resolved_history_key": home_key,
+                        "prior_matches": len(home_hist),
+                        "history_match_found": bool(home_hist),
+                    },
+                    "away": {
+                        "fixture_name": fixture["away_team"],
+                        "normalized_key": _name_key(fixture["away_team"]),
+                        "resolved_history_key": away_key,
+                        "prior_matches": len(away_hist),
+                        "history_match_found": bool(away_hist),
+                    },
+                },
                 "recent_form": {
                     "home_team": {
                         "overall": summarize_team_form(home_hist),
@@ -547,16 +563,27 @@ def predict_fixtures(
                     ("home", fixture["home_team"], home_key, home_hist),
                     ("away", fixture["away_team"], away_key, away_hist),
                 ):
-                    if not history:
+                    # Suggestions are diagnostic only. Never auto-merge a fuzzy
+                    # candidate: aliases are added only after identity review.
+                    if len(history) < min_team_matches:
                         close_keys = get_close_matches(
-                            team_key, list(known_team_names), n=3, cutoff=0.72
+                            team_key, list(known_team_names), n=5, cutoff=0.68
                         )
                         display_names = sorted({
                             label for candidate in close_keys
+                            if candidate != team_key
                             for label in known_team_names[candidate]
                         })
                         if display_names:
-                            suggestions[side] = display_names[:3]
+                            suggestions[side] = display_names[:5]
+                        record["team_history_diagnostics"][side]["candidate_history_names"] = (
+                            display_names[:5]
+                        )
+                        record["team_history_diagnostics"][side]["match_status"] = (
+                            "NO_HISTORY_MATCH" if not history else "BELOW_MINIMUM_HISTORY"
+                        )
+                    else:
+                        record["team_history_diagnostics"][side]["match_status"] = "MATCHED"
                 missing_sides = [
                     side for side, count in (("home", len(home_hist)), ("away", len(away_hist)))
                     if count < min_team_matches
