@@ -455,37 +455,14 @@ def predict_fixtures(
         ordered = sorted(visibility_rows + forecast_rows, key=lambda row: row.get("_delivery_order", 0))
         return [{key: value for key, value in row.items() if key != "_delivery_order"} for row in ordered]
 
-    # Build team histories and scoring baselines by historical division. A
-    # provider's numeric competition ID is never used to infer a division; only
-    # an explicit normalized division code can unlock competition-specific data.
-    known_team_names_by_division: dict[str, dict[str, set[str]]] = defaultdict(lambda: defaultdict(set))
-    team_history_by_division: dict[str, dict[str, deque[tuple[int, int, str]]]] = defaultdict(
-        lambda: defaultdict(lambda: deque(maxlen=team_window))
-    )
-    division_baselines: dict[str, dict[str, float]] = {}
-    for match in usable:
-        division = str(match.get("division") or "").strip()
-        if not division:
-            continue
-        known_team_names_by_division[division][match["home_key"]].add(match["home"])
-        known_team_names_by_division[division][match["away_key"]].add(match["away"])
-        division_history = team_history_by_division[division]
-        division_history[match["home_key"]].append((match["home_goals"], match["away_goals"], "home"))
-        division_history[match["away_key"]].append((match["away_goals"], match["home_goals"], "away"))
-    for division in team_history_by_division:
-        division_rows = [match for match in usable if str(match.get("division") or "").strip() == division]
-        if division_rows:
-            division_baselines[division] = {
-                "home": max(0.05, sum(row["home_goals"] for row in division_rows) / len(division_rows)),
-                "away": max(0.05, sum(row["away_goals"] for row in division_rows) / len(division_rows)),
-            }
-
+    # Histories are rebuilt per target date below so no match on or after
+    # kickoff date can enter team counts, rates, aliases or scoring baselines.
+    output: list[dict[str, Any]] = []
+    parsed_all = []
     # Cache Elo ratings once per competition for this report date; all fixtures
     # share the same strictly pre-date history, so recomputing it per fixture is wasteful.
     elo_cache: dict[str, dict[str, Any]] = {}
     # Rebuild histories per target date so earlier dates are never duplicated.
-    output: list[dict[str, Any]] = []
-    parsed_all = []
     for delivery_order, item in enumerate(fixtures):
         parsed = _fixture_parts(item, timezone_name, include_started=True)
         if parsed and parsed["kickoff_date"] == today:
@@ -509,7 +486,28 @@ def predict_fixtures(
     output.extend(visibility_rows)
     # Strict same-local-calendar-day rule: never include tomorrow or later dates.
     for target_date in ([today] if parsed_fixtures else []):
-        # Histories are precomputed by historical division and contain only matches before the target date.
+        known_team_names_by_division: dict[str, dict[str, set[str]]] = defaultdict(lambda: defaultdict(set))
+        team_history_by_division: dict[str, dict[str, deque[tuple[int, int, str]]]] = defaultdict(
+            lambda: defaultdict(lambda: deque(maxlen=team_window))
+        )
+        division_baselines: dict[str, dict[str, float]] = {}
+        prior_rows = [match for match in usable if match["date"] < target_date]
+        for match in prior_rows:
+            division = str(match.get("division") or "").strip()
+            if not division:
+                continue
+            known_team_names_by_division[division][match["home_key"]].add(match["home"])
+            known_team_names_by_division[division][match["away_key"]].add(match["away"])
+            division_history = team_history_by_division[division]
+            division_history[match["home_key"]].append((match["home_goals"], match["away_goals"], "home"))
+            division_history[match["away_key"]].append((match["away_goals"], match["home_goals"], "away"))
+        for division in team_history_by_division:
+            division_rows = [match for match in prior_rows if str(match.get("division") or "").strip() == division]
+            if division_rows:
+                division_baselines[division] = {
+                    "home": max(0.05, sum(row["home_goals"] for row in division_rows) / len(division_rows)),
+                    "away": max(0.05, sum(row["away_goals"] for row in division_rows) / len(division_rows)),
+                }
 
         for fixture in (p for p in parsed_fixtures if p["kickoff_date"] == target_date):
             if _is_non_senior_competition(fixture.get("league")):
