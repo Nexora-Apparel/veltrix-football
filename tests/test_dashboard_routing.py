@@ -377,3 +377,34 @@ def test_vercel_skips_command_data_snapshot_deployments_without_blocking_main():
     assert 'command-data' in command
     assert 'exit 0' in command
     assert 'exit 1' in command
+
+
+def test_dashboard_api_deduplicates_paper_tracking_rows_by_fixture_id(monkeypatch):
+    from api import telegram
+
+    monkeypatch.setattr(telegram, "load_latest_report", lambda: {
+        "as_of_date": "2099-05-01",
+        "predictions": [],
+        "fixtures_received": 0,
+    })
+    monkeypatch.setattr(telegram, "load_model_validation_report", lambda: None)
+    monkeypatch.setattr(telegram, "load_paper_ledger", lambda: {
+        "model_status": "PAPER_TRACKING_ONLY",
+        "scored_matches": [
+            {
+                "fixture_id": 9001, "home_team": "Alpha", "away_team": "Beta",
+                "report_date": "2099-04-30", "model": "experimental_recent_goals_poisson",
+            },
+            {
+                "fixture_id": 9001, "home_team": "Alpha", "away_team": "Beta",
+                "report_date": "2099-04-30", "model": "experimental_elo_global_fallback",
+            },
+        ],
+    })
+
+    payload = telegram.dashboard_data()
+    tracking = payload["paper_tracking"]
+    assert tracking["scored_matches_model_rows"] == 2
+    assert tracking["scored_matches_unique_fixtures"] == 1
+    assert len(tracking["scored_matches"]) == 1
+    assert tracking["scored_matches"][0]["model"] == "experimental_recent_goals_poisson"
