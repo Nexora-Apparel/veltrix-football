@@ -195,10 +195,10 @@ def test_aliases_allow_known_fixture_name_variant_to_use_history():
     for day in range(1, 7):
         d = date(2026, 10, day)
         rows.extend([
-            {"date": d, "home": "Manchester United", "away": f"Opponent {day}",
+            {"date": d, "division": "E0", "home": "Manchester United", "away": f"Opponent {day}",
              "home_key": _name_key("Manchester United"), "away_key": _name_key(f"Opponent {day}"),
              "home_goals": 2, "away_goals": 0},
-            {"date": d, "home": f"Rival {day}", "away": "Beta FC",
+            {"date": d, "division": "E0", "home": f"Rival {day}", "away": "Beta FC",
              "home_key": _name_key(f"Rival {day}"), "away_key": _name_key("Beta FC"),
              "home_goals": 1, "away_goals": 1},
         ])
@@ -278,12 +278,12 @@ def test_goal_estimates_prefer_relevant_home_and_away_venue_history():
     for day in range(1, 7):
         d = date(2026, 10, day)
         rows.append({
-            "date": d, "home": "Alpha FC", "away": f"Opponent {day}",
+            "date": d, "division": "E0", "home": "Alpha FC", "away": f"Opponent {day}",
             "home_key": _name_key("Alpha FC"), "away_key": f"opponent{day}",
             "home_goals": 3, "away_goals": 0,
         })
         rows.append({
-            "date": d, "home": f"Rival {day}", "away": "Beta FC",
+            "date": d, "division": "E0", "home": f"Rival {day}", "away": "Beta FC",
             "home_key": f"rival{day}", "away_key": _name_key("Beta FC"),
             "home_goals": 1, "away_goals": 1,
         })
@@ -292,12 +292,12 @@ def test_goal_estimates_prefer_relevant_home_and_away_venue_history():
     for day in range(7, 13):
         d = date(2026, 10, day)
         rows.append({
-            "date": d, "home": f"Opponent Away {day}", "away": "Alpha FC",
+            "date": d, "division": "E0", "home": f"Opponent Away {day}", "away": "Alpha FC",
             "home_key": f"opponentaway{day}", "away_key": "alpha",
             "home_goals": 3, "away_goals": 0,
         })
         rows.append({
-            "date": d, "home": "Beta FC", "away": f"Rival Away {day}",
+            "date": d, "division": "E0", "home": "Beta FC", "away": f"Rival Away {day}",
             "home_key": "beta", "away_key": f"rivalaway{day}",
             "home_goals": 0, "away_goals": 2,
         })
@@ -333,12 +333,13 @@ def test_daily_report_explains_fixture_filtering(tmp_path):
     rows = _history()
     with history_path.open("w", newline="", encoding="utf-8") as handle:
         writer = csv.DictWriter(
-            handle, fieldnames=["match_date", "home_team", "away_team", "home_goals", "away_goals"]
+            handle, fieldnames=["match_date", "division", "home_team", "away_team", "home_goals", "away_goals"]
         )
         writer.writeheader()
         for row in rows:
             writer.writerow({
                 "match_date": row["date"].isoformat(),
+                "division": row.get("division", "E0"),
                 "home_team": row["home"],
                 "away_team": row["away"],
                 "home_goals": row["home_goals"],
@@ -524,6 +525,7 @@ def test_provider_local_league_ids_never_map_to_api_football_divisions():
     from app.live_predictions import _fixture_parts
 
     fixture = _fixture()
+    fixture["league"].pop("code", None)
     fixture["league"]["id"] = 128  # API-Football's Argentina league ID
     fixture["_veltrix_source"] = "5DollarFootballAPI"
     parts = _fixture_parts(fixture)
