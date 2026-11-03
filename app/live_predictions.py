@@ -947,7 +947,9 @@ def build_daily_report(
         ),
         "fixtures_received": len(fixtures),
         "same_day_pre_match_fixtures": future_kickoffs + len(kickoff_unverified),
-        "past_kickoffs_excluded": 0,
+        # Counted as excluded from pre-match forecasting even though their
+        # fixture rows remain visible in the report.
+        "past_kickoffs_excluded": past_kickoffs,
         "past_kickoffs_retained": past_kickoffs,
         "future_fixtures_considered": future_kickoffs + len(kickoff_unverified),
         "same_day_fixtures_retained": len(predictions),
