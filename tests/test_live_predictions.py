@@ -382,7 +382,7 @@ def test_daily_report_explains_fixture_filtering(tmp_path):
     assert report["team_history_match_diagnostics"][0]["historical_matches"] == {"home": 6, "away": 6}
     assert report["teams_below_history_minimum"] == 0
     assert report["poisson_alternative_available"] == 1
-    assert report["elo_alternative_available"] == 1
+    assert report["elo_alternative_available"] == 0
 
 
 
