@@ -24,7 +24,7 @@ def _fixture(kickoff="2026-10-23T15:00:00+01:00"):
     return {
         "fixture": {"id": 123, "date": kickoff, "status": {"short": "NS"}},
         "teams": {"home": {"name": "Alpha FC"}, "away": {"name": "Beta FC"}},
-        "league": {"name": "Test League", "code": "PL"},
+        "league": {"name": "Test League", "code": "E0"},
     }
 
 
