@@ -19,5 +19,6 @@
     {
       "handle": "filesystem"
     }
-  ]
+  ],
+  "ignoreCommand": "if [ \"$VERCEL_GIT_COMMIT_REF\" = \"command-data\" ]; then exit 0; else exit 1; fi"
 }
