@@ -2,10 +2,7 @@ name: Daily Report Watchdog
 # Manual recovery trigger: verify current-day publication and Telegram receipt without altering prediction data.
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - ".github/workflows/daily-report-watchdog.yml"
+  # Scheduled recovery only; editing workflow code must never dispatch a live report.
   # Recovery starts only AFTER the 06:00 WAT primary schedule: 06:10, 06:25,
   # 06:40 WAT, then 08:15 and 17:00 WAT. Never dispatch an early report.
   # Each check dispatches only when today's report is missing and no live run is active.
