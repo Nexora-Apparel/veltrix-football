@@ -231,10 +231,10 @@ function renderPaperTracking(d){
  for(const [name,m] of entries){const card=document.createElement('article');card.className='market-fixture';const title=document.createElement('h3');title.textContent=name.replaceAll('_',' ');const line=document.createElement('div');line.className='market-line';const acc=Number(m.result_accuracy);line.textContent=String(m.matches??0)+' scored · accuracy '+(Number.isFinite(acc)?(acc*100).toFixed(1)+'%':'—')+' · Brier '+(Number.isFinite(Number(m.brier_score))?Number(m.brier_score).toFixed(3):'—')+' · Log loss '+(Number.isFinite(Number(m.log_loss))?Number(m.log_loss).toFixed(3):'—');card.append(title,line);modelBox.append(card)}
  const results=document.getElementById('trackingResults');results.replaceChildren();
  const rawRows=Array.isArray(data.scored_matches)?data.scored_matches.slice():[];
+ const dayOf=row=>String(row.match_date||row.fixture_date||row.report_date||'').slice(0,10);
  const seenFixtures=new Set();const allRows=rawRows.filter(row=>{const fixture=String(row.fixture_id||'').trim();const fallback=[dayOf(row),String(row.home_team||'').toLowerCase().replace(/[^a-z0-9]/g,''),String(row.away_team||'').toLowerCase().replace(/[^a-z0-9]/g,'')].join('|');const key=fixture? 'id:'+fixture : 'teams:'+fallback;if(seenFixtures.has(key))return false;seenFixtures.add(key);return true;});
  const sortControl=document.getElementById('historyDateSort');const filterBox=document.getElementById('historyFilters');
  let historyFilter='all';
- const dayOf=row=>String(row.match_date||row.fixture_date||row.report_date||'').slice(0,10);
  const sortRows=rows=>rows.sort((a,b)=>{const delta=dayOf(b).localeCompare(dayOf(a));return sortControl&&sortControl.value==='oldest'?-delta:delta});
  const wins=allRows.filter(r=>r.correct===true),losses=allRows.filter(r=>r.correct===false);
  const summary=document.getElementById('historySummary');summary.replaceChildren();
