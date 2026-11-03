@@ -227,6 +227,34 @@
         }
       },
       "goal_market_probability_matches": 28
+    },
+    {
+      "report_date": "2026-11-02",
+      "fixtures_scored": 0,
+      "completed_forecasts_scored": 0,
+      "awaiting_result_or_match": 11,
+      "withheld_or_invalid_forecasts": 14,
+      "metrics": {
+        "matches": 0,
+        "result_accuracy": null,
+        "brier_score": null,
+        "log_loss": null
+      },
+      "metrics_by_model": {},
+      "model_versions": [],
+      "goal_market_selections_settled": 0,
+      "goal_market_metrics": {
+        "settled_selections": 0,
+        "wins": 0,
+        "losses": 0,
+        "win_rate": null,
+        "units_staked": 0,
+        "net_units": 0,
+        "paper_roi": null,
+        "notice": "Best quoted price in a pre-kickoff snapshot; flat 1-unit paper stakes; not proof of executable profit or bookmaker closing-line value."
+      },
+      "goal_market_probability_metrics": {},
+      "goal_market_probability_matches": 0
     }
   ],
   "scored_matches": [
@@ -605,9 +633,9 @@
       "report_date": "2026-11-01"
     }
   ],
-  "updated_at_utc": "2026-11-02T18:09:30.655006+00:00",
+  "updated_at_utc": "2026-11-03T00:46:53.280117+00:00",
   "last_attempt": {
-    "report_date": "2026-11-01",
+    "report_date": "2026-11-02",
     "status": "EVALUATED",
     "attempts": [
       {
@@ -671,27 +699,19 @@
         "awaiting_result_or_match": 4
       },
       {
-        "report_date": "2026-11-01",
+        "report_date": "2026-11-02",
         "status": "EVALUATED",
         "detail": "Scored from 5405 cached completed matches; no live football-provider request was made.",
-        "fixtures_scored": 7,
-        "completed_forecasts_scored": 14,
-        "metrics": null,
-        "metrics_by_model": {
-          "experimental_elo_global_fallback": {
-            "matches": 7,
-            "result_accuracy": 0.7142857142857143,
-            "brier_score": 0.5426830413332765,
-            "log_loss": 0.9173709305780352
-          },
-          "experimental_recent_goals_poisson": {
-            "matches": 7,
-            "result_accuracy": 0.42857142857142855,
-            "brier_score": 0.5435892717296341,
-            "log_loss": 0.9136931176943305
-          }
+        "fixtures_scored": 0,
+        "completed_forecasts_scored": 0,
+        "metrics": {
+          "matches": 0,
+          "result_accuracy": null,
+          "brier_score": null,
+          "log_loss": null
         },
-        "awaiting_result_or_match": 12
+        "metrics_by_model": {},
+        "awaiting_result_or_match": 11
       }
     ],
     "detail": null,
@@ -742,7 +762,7 @@
     "experimental_elo_global_fallback",
     "experimental_recent_goals_poisson"
   ],
-  "evaluated_report_dates": 5,
+  "evaluated_report_dates": 6,
   "notice": "Retrospective paper evaluation only; no betting recommendation or profitability claim.",
   "goal_market_scored": [
     {
