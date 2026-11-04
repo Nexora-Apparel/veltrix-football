@@ -1,13 +1,13 @@
 {
   "schema_version": 1,
   "workflow": "Daily Fixture Predictions",
-  "run_id": "41660798429",
+  "run_id": "41831180278",
   "run_attempt": "1",
-  "event": "workflow_dispatch",
+  "event": "schedule",
   "commit_sha": "7f39bed00522f3f0cfa275ada3c1a019fd6423fe",
   "branch": "main",
-  "recorded_at_utc": "2026-11-03T15:10:28.773579+00:00",
-  "overall_status": "NEEDS_REVIEW",
+  "recorded_at_utc": "2026-11-04T12:41:48.893541+00:00",
+  "overall_status": "PASSED",
   "validation_scope": "LIVE_PIPELINE",
   "telegram_configured": true,
   "steps": {
@@ -30,7 +30,7 @@
     "paper_tracking": "success"
   },
   "report_summary": {
-    "as_of_date": "2026-11-03",
+    "as_of_date": "2026-11-04",
     "publication_status": "PUBLISHED",
     "fixtures_received": 25,
     "same_day_pre_match_fixtures": 25,
@@ -40,23 +40,23 @@
     "future_fixtures_considered": 25,
     "fixture_rows": 25,
     "fixture_status_counts": {
-      "INSUFFICIENT_HISTORY": 16,
-      "UNSUPPORTED_COMPETITION": 9
+      "INSUFFICIENT_HISTORY": 14,
+      "UNSUPPORTED_COMPETITION": 11
     },
     "fixture_visibility_validation": {
       "status": "PASSED",
       "fixture_rows": 25,
       "expected_fixture_rows": 25,
       "fixture_status_counts": {
-        "INSUFFICIENT_HISTORY": 16,
-        "UNSUPPORTED_COMPETITION": 9
+        "INSUFFICIENT_HISTORY": 14,
+        "UNSUPPORTED_COMPETITION": 11
       },
       "kickoff_unverified_rows": 0,
       "forecast_rows": 0,
       "low_data_forecast_rows": 0,
-      "insufficient_history_rows": 16,
+      "insufficient_history_rows": 14,
       "senior_forecast_coverage": 0.0,
-      "licensed_global_history_rows_diagnostic_only": 246,
+      "licensed_global_history_rows_diagnostic_only": 293,
       "alerts_enabled": false
     },
     "historical_data_coverage": "GAPPED_OR_STALE",
@@ -64,7 +64,7 @@
     "value_intelligence": {
       "engine": "VELTRIX_VALUE_INTELLIGENCE_V1",
       "status": "SHADOW_MODE",
-      "fixtures_evaluated": 1,
+      "fixtures_evaluated": 2,
       "bookmaker_price_sets_by_market": {
         "1X2": 0,
         "BTTS": 0,
@@ -95,7 +95,7 @@
     "alerts_enabled": false
   },
   "paper_tracking_summary": {
-    "evaluated_report_dates": 6,
+    "evaluated_report_dates": 7,
     "cumulative_metrics_by_model": {
       "experimental_elo_by_competition": {
         "matches": 2,
@@ -118,18 +118,5 @@
     }
   },
   "release_status": "LOCKED_SHADOW_MODE",
-  "betting_alerts_enabled": false,
-  "latest_test_run": {
-    "run_id": "41722418578",
-    "commit_sha": "7f39bed00522f3f0cfa275ada3c1a019fd6423fe",
-    "recorded_at_utc": "2026-11-03T21:31:21.959899+00:00",
-    "overall_status": "NEEDS_REVIEW",
-    "steps": {
-      "unit_tests": "failure",
-      "dashboard_js": "skipped"
-    }
-  },
-  "latest_test_status": "NEEDS_REVIEW",
-  "last_test_run_id": "41722418578",
-  "last_full_pipeline_status": "PASSED"
+  "betting_alerts_enabled": false
 }
