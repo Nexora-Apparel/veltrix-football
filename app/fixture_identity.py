@@ -204,7 +204,10 @@ def unique_prediction_match(
                 "home": {"name": prediction.get("home_team")},
                 "away": {"name": prediction.get("away_team")},
             },
-            "league": {"name": prediction.get("league")},
+            "league": {
+                "name": prediction.get("league"),
+                "country": prediction.get("league_country"),
+            },
             "_veltrix_source": prediction.get("fixture_source") or "PREDICTION",
         }
         if fixtures_match(event_row, prediction_row, timezone_name=timezone_name):
