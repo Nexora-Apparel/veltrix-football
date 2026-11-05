@@ -471,70 +471,66 @@ def predict_fixtures(
     # and the normal-history path; initialize it before either path diverges.
     visibility_rows: list[dict[str, Any]] = []
     if not usable:
-        # Never silently drop eligible fixtures when the history file is empty
-        # or contains no records before the requested date. Emit explicit
-        # withheld records so reports distinguish missing data from no fixtures.
+        # With no historical rows at all, retain a conservative league-neutral
+        # prior rather than suppressing every fixture. This is explicitly a
+        # low-evidence estimate; it is not eligible for value-bet certification.
         parsed = []
-        malformed_visibility = []
+        visibility = []
         for delivery_order, item in enumerate(fixtures):
             fixture = _fixture_parts(item, timezone_name, include_started=True)
             if fixture and fixture["kickoff_date"] == today:
                 fixture["_delivery_order"] = delivery_order
-                parsed.append(fixture)
+                if fixture.get("reconciliation_status") == "AMBIGUOUS":
+                    visibility.append({**{k:v for k,v in fixture.items() if k not in {"kickoff_date","kickoff_datetime"}},
+                        "status":"AMBIGUOUS_FIXTURE_IDENTITY","reason":"Fixture identity is ambiguous; no forecast is issued.",
+                        "model":"not_evaluated","model_validated":False,"betting_recommendation":False,
+                        "historical_matches":{"home":0,"away":0}})
+                elif fixture["kickoff_datetime"] <= current_time:
+                    visibility.append({**{k:v for k,v in fixture.items() if k not in {"kickoff_date","kickoff_datetime"}},
+                        "status":"KICKOFF_PASSED","reason":"Kickoff has passed; no pre-match forecast is issued.",
+                        "model":"not_evaluated","model_validated":False,"betting_recommendation":False,
+                        "historical_matches":{"home":0,"away":0}})
+                elif fixture.get("fixture_status") not in {"NS","TBD"}:
+                    visibility.append({**{k:v for k,v in fixture.items() if k not in {"kickoff_date","kickoff_datetime"}},
+                        "status":"FIXTURE_NOT_PREMATCH","reason":"Provider has not confirmed a pre-match fixture status.",
+                        "model":"not_evaluated","model_validated":False,"betting_recommendation":False,
+                        "historical_matches":{"home":0,"away":0}})
+                else:
+                    parsed.append(fixture)
             elif fixture is None and isinstance(item, dict):
-                malformed_visibility.append(_invalid_fixture_visibility(item, delivery_order))
-        visibility_rows, candidates = malformed_visibility, []
+                visibility.append(_invalid_fixture_visibility(item, delivery_order))
+        forecasts = []
         for fixture in parsed:
-            if fixture.get("reconciliation_status") == "AMBIGUOUS":
-                status, reason = "AMBIGUOUS_FIXTURE_IDENTITY", "Fixture retained but quarantined: provider records could not be reconciled safely. No prediction is issued."
-            elif fixture["kickoff_datetime"] <= current_time:
-                status, reason = "KICKOFF_PASSED", "Fixture retained for visibility; kickoff has passed, so no pre-match forecast is issued."
-            elif fixture.get("fixture_status") not in {"NS", "TBD"}:
-                status, reason = "FIXTURE_NOT_PREMATCH", f"Fixture retained without a forecast because provider status is {fixture.get('fixture_status')}."
+            if _is_non_senior_competition(fixture.get("league")):
+                # Never borrow senior-team results for youth, women's or reserve sides.
+                # A neutral prior is permitted, but carries the lowest evidence grade.
+                evidence_scope = "CATEGORY_NEUTRAL_PRIOR"
             else:
-                candidates.append(fixture)
-                continue
-            visibility_rows.append({
-                **{k: v for k, v in fixture.items() if k not in {"kickoff_date", "kickoff_datetime"}},
-                "model": "not_evaluated", "model_validated": False,
-                "betting_recommendation": False, "historical_matches": {"home": 0, "away": 0},
-                "status": status, "reason": reason, "team_name_match_suggestions": {},
+                evidence_scope = "GLOBAL_NEUTRAL_PRIOR"
+            home_xg, away_xg = 1.35, 1.10
+            estimate = match_probabilities(home_xg, away_xg)
+            probs = {k: round(v,4) for k,v in estimate["one_x_two"].items()}
+            forecasts.append({
+                **{k:v for k,v in fixture.items() if k not in {"kickoff_date","kickoff_datetime"}},
+                "model":"adaptive_poisson_neutral_prior","model_validated":False,
+                "status":"LOW_HISTORY_FORECAST","betting_recommendation":False,
+                "historical_matches":{"home":0,"away":0},
+                "expected_goals":{"home":round(home_xg,3),"away":round(away_xg,3)},
+                "probabilities":probs,"btts_yes":round(estimate["btts_yes"],4),
+                "over_1_5":round(estimate["totals"]["over_1_5"],4),
+                "over_2_5":round(estimate["totals"]["over_2_5"],4),
+                "over_3_5":round(estimate["totals"]["over_3_5"],4),
+                "most_likely_scorelines":estimate["most_likely_scorelines"][:3],
+                "prediction_basis":"No verified prior results were available. A conservative competition-neutral scoring prior was used; confidence is limited.",
+                "evidence_grade":"VERY_LOW","evidence_scope":evidence_scope,
+                "team_history_diagnostics":{side:{"fixture_name":fixture[f"{side}_team"],
+                    "normalized_key":_name_key(fixture[f"{side}_team"]),"prior_matches":0,
+                    "history_match_found":False,"match_status":"NO_HISTORICAL_DATA"}
+                    for side in ("home","away")},
+                "value_bet_screen":{"status":"NOT_ELIGIBLE_LOW_EVIDENCE","markets":{}},
             })
-        forecast_rows = [
-            {
-                **{k: v for k, v in fixture.items() if k not in {"kickoff_date", "kickoff_datetime"}},
-                "model": "experimental_recent_goals_poisson",
-                "model_validated": False,
-                "betting_recommendation": False,
-                "historical_matches": {"home": 0, "away": 0},
-                "status": (
-                    "UNSUPPORTED_COMPETITION"
-                    if _is_non_senior_competition(fixture.get("league"))
-                    else "INSUFFICIENT_HISTORY"
-                ),
-                "reason": (
-                    "Women's, youth and reserve competitions require category-matched historical results; senior-team history is not used."
-                    if _is_non_senior_competition(fixture.get("league"))
-                    else "No historical matches dated before the fixture date are available."
-                ),
-                "team_name_match_suggestions": {},
-                "team_history_diagnostics": {
-                    side: {
-                        "fixture_name": fixture[f"{side}_team"],
-                        "normalized_key": _name_key(fixture[f"{side}_team"]),
-                        "resolved_history_key": None,
-                        "prior_matches": 0,
-                        "history_match_found": False,
-                        "match_status": "NO_HISTORICAL_DATA",
-                        "candidate_history_names": [],
-                    }
-                    for side in ("home", "away")
-                },
-            }
-            for fixture in candidates
-        ]
-        ordered = sorted(visibility_rows + forecast_rows, key=lambda row: row.get("_delivery_order", 0))
-        return [{key: value for key, value in row.items() if key != "_delivery_order"} for row in ordered]
+        ordered=sorted(visibility+forecasts,key=lambda row:row.get("_delivery_order",0))
+        return [{k:v for k,v in row.items() if k!="_delivery_order"} for row in ordered]
 
     # Histories are rebuilt per target date below so no match on or after
     # kickoff date can enter team counts, rates, aliases or scoring baselines.
