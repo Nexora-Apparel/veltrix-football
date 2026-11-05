@@ -695,7 +695,7 @@ def handle_command(
             lines.extend([
                 "━━━━━━━━━━━━━━━━━━━━",
                 "Method: independent-Poisson estimates from expected goals.",
-                "Not calibrated or validated for betting. Prices are reference data only.",
+                "Estimates are not guaranteed outcomes. Prices are reference data only; value recommendations require separate market validation.",
             ])
         else:
             lines.append("Estimates are not guaranteed outcomes. Value recommendations require separate market validation.")
