@@ -100,3 +100,23 @@ def test_provider_failure_returns_safe_status_without_leaking_credentials():
     assert result["status"] == "PROVIDER_UNAVAILABLE"
     assert "secret" not in str(result)
     assert result["model_eligible"] is False
+
+
+def test_report_annotation_records_disabled_research_without_changing_predictions(tmp_path, monkeypatch):
+    import json
+
+    monkeypatch.delenv("TAVILY_API_KEY", raising=False)
+    source = tmp_path / "daily_predictions.json"
+    original = {
+        "as_of_date": "2026-11-06",
+        "predictions": [_fixture(), _fixture(status="UNSUPPORTED_COMPETITION")],
+    }
+    source.write_text(json.dumps(original), encoding="utf-8")
+
+    result = research.annotate_report_file(str(source))
+
+    saved = json.loads(source.read_text(encoding="utf-8"))
+    assert result["status"] == "DISABLED_MISSING_CREDENTIAL"
+    assert result["fixtures_searched"] == 1
+    assert saved["predictions"] == original["predictions"]
+    assert saved["research_evidence"]["model_eligible_facts"] == 0
