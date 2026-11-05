@@ -292,16 +292,16 @@ def reconcile_fixture_rows(
                 ambiguous_pairs.append((i, j, "competition_identity_conflict"))
             # A different squad category is a distinct event.
 
-    groups: dict[int, list[int]] = defaultdict(list)
-    for index in range(len(valid)):
-        groups[root(index)].append(index)
-
     ambiguous_indices: dict[int, set[str]] = defaultdict(set)
     for i, j, reason in ambiguous_pairs:
         ambiguous_indices[i].add(reason)
         ambiguous_indices[j].add(reason)
         # One visible quarantine row retains every ambiguous source record.
         union(i, j)
+
+    groups: dict[int, list[int]] = defaultdict(list)
+    for index in range(len(valid)):
+        groups[root(index)].append(index)
 
     output: list[dict[str, Any]] = []
     merged_groups = 0
