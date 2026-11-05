@@ -582,7 +582,7 @@ def predict_fixtures(
         for fixture in (p for p in parsed_fixtures if p["kickoff_date"] == target_date):
             if _is_non_senior_competition(fixture.get("league")):
                 # Never borrow senior-team history for youth, women's or reserve squads.
-                home_xg, away_xg = 1.35, 1.10
+                home_xg = away_xg = NEUTRAL_GOALS_PER_TEAM
                 estimate = match_probabilities(home_xg, away_xg)
                 output.append({
                     **{k:v for k,v in fixture.items() if k not in {"kickoff_date","kickoff_datetime"}},
