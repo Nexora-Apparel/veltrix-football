@@ -33,6 +33,8 @@ UNVERIFIED_TEAM_ALIAS_CANDIDATES = {
     "almirante": "almirantebrown",
     "agropecuario": "agropecuarioargentino",
     "cafmidland": "ferrocarrilmidland",
+    "gimnasialp": "gimnasialaplata",
+    "belgrano": "belgranodecordoba",
 }
 COMPETITION_CATEGORY_OVERRIDES = {
     "argr": "reserve",
