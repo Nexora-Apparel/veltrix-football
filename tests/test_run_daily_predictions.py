@@ -326,6 +326,7 @@ def test_fixture_delivery_cap_uses_requested_date_and_sorts_without_mutating_inp
     assert [row["tag"] for row in limited["response"]] == ["finished", "early", "late"]
     assert len(payload["response"]) == 4
     assert limited["_veltrix_meta"]["legacy_fixture_cap_ignored"] == 1
+    assert limited["_veltrix_meta"]["fixtures_after_reconciliation"] == 3
 
 
 def test_fixture_delivery_cap_retains_started_fixtures_after_future_fixtures():
