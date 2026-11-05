@@ -121,7 +121,7 @@ def filter_report_for_delivery(report: dict, now: datetime | None = None) -> dic
                     "team history did not meet the minimum evidence requirement."
                 )
                 delivered_row["legacy_forecast_withheld"] = True
-            elif row.get("status") == "EXPERIMENTAL_ONLY" and _has_unsafe_auto_team_match(row):
+            elif row.get("status") in {"EXPERIMENTAL_ONLY", "LOW_HISTORY_FORECAST"} and _has_unsafe_auto_team_match(row):
                 delivered_row = _withhold_forecast(row)
                 delivered_row["status"] = "INSUFFICIENT_HISTORY"
                 delivered_row["reason"] = (
@@ -134,8 +134,8 @@ def filter_report_for_delivery(report: dict, now: datetime | None = None) -> dic
     # Recompute every counter that describes the delivered prediction rows.
     # Otherwise the saved JSON can contain 594 rows but stale status counts
     # totaling 614, which makes the command centre appear internally inconsistent.
-    experimental = [row for row in kept if row.get("status") in {"EXPERIMENTAL_ONLY", "EXPERIMENTAL_LOW_DATA"}]
-    low_data_experimental = [row for row in experimental if row.get("status") == "EXPERIMENTAL_LOW_DATA"]
+    experimental = [row for row in kept if row.get("status") in {"EXPERIMENTAL_ONLY", "EXPERIMENTAL_LOW_DATA", "LOW_HISTORY_FORECAST"}]
+    low_data_experimental = [row for row in experimental if row.get("status") in {"EXPERIMENTAL_LOW_DATA", "LOW_HISTORY_FORECAST"}]
     insufficient = [row for row in kept if row.get("status") == "INSUFFICIENT_HISTORY"]
     unsupported = [row for row in kept if row.get("status") == "UNSUPPORTED_COMPETITION"]
     kickoff_passed = [row for row in kept if row.get("status") == "KICKOFF_PASSED"]
@@ -152,7 +152,8 @@ def filter_report_for_delivery(report: dict, now: datetime | None = None) -> dic
     result["kickoff_unverified_fixtures"] = sum(row.get("status") == "KICKOFF_UNVERIFIED" for row in kept)
     result["fixture_status_counts"] = {
         "EXPERIMENTAL_ONLY": sum(row.get("status") == "EXPERIMENTAL_ONLY" for row in experimental),
-        "EXPERIMENTAL_LOW_DATA": len(low_data_experimental),
+        "EXPERIMENTAL_LOW_DATA": sum(row.get("status") == "EXPERIMENTAL_LOW_DATA" for row in experimental),
+        "LOW_HISTORY_FORECAST": sum(row.get("status") == "LOW_HISTORY_FORECAST" for row in experimental),
         "INSUFFICIENT_HISTORY": len(insufficient),
         "UNSUPPORTED_COMPETITION": len(unsupported),
         "KICKOFF_UNVERIFIED": result["kickoff_unverified_fixtures"],

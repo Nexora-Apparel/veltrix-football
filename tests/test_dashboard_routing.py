@@ -216,7 +216,7 @@ def test_dashboard_keeps_future_unsupported_fixtures_visible(monkeypatch):
 
     payload = telegram.dashboard_data()
     assert payload["fixtures_visible"] == 3
-    assert payload["experimental_forecasts"] == 1
+    assert payload["available_forecasts"] == 1
     assert payload["unsupported_fixtures"] == 2
     assert [row["status"] for row in payload["predictions"]] == [
         "EXPERIMENTAL_ONLY", "UNSUPPORTED_COMPETITION", "INSUFFICIENT_HISTORY"
