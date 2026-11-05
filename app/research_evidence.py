@@ -7,9 +7,12 @@ it can enter the pre-kickoff training/inference store.
 """
 from __future__ import annotations
 
+import argparse
 import ipaddress
+import json
 import os
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Any, Iterable
 from urllib.parse import urlparse
 
@@ -171,3 +174,33 @@ def research_missing_fixtures(
         "results": results,
         "safety": "No search result is automatically imported into historical data or prediction features.",
     }
+
+
+def annotate_report_file(report_path: str, output_path: str | None = None) -> dict[str, Any]:
+    """Attach source leads to a report without changing prediction probabilities."""
+    source = Path(report_path)
+    report = json.loads(source.read_text(encoding="utf-8"))
+    fixtures = report.get("predictions", []) if isinstance(report, dict) else []
+    report["research_evidence"] = research_missing_fixtures(fixtures)
+    destination = Path(output_path) if output_path else source
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    destination.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\\n", encoding="utf-8")
+    return report["research_evidence"]
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description="Attach quarantined research source leads to a VELTRIX report.")
+    parser.add_argument("--report", required=True)
+    parser.add_argument("--output")
+    args = parser.parse_args()
+    result = annotate_report_file(args.report, args.output)
+    print(json.dumps({
+        "status": result.get("status"),
+        "fixtures_searched": result.get("fixtures_searched", 0),
+        "model_eligible_facts": result.get("model_eligible_facts", 0),
+    }))
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
