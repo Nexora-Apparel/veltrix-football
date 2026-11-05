@@ -236,13 +236,20 @@ def _merge_api_sports_market_odds(
 
 def _limit_fixture_payload(
     payload: dict,
-    limit: int,
+    limit: int = 0,
     timezone_name: str = "Africa/Lagos",
     as_of_date: date | None = None,
     now: datetime | None = None,
 ) -> dict:
-    """Keep at most N eligible fixtures for the requested local date."""
+    """Select the requested local date and reconcile without dropping provenance.
+
+    The legacy limit argument is retained for CLI compatibility but is no
+    longer allowed to truncate discovered fixtures. Fixture visibility and
+    provider traceability take precedence over a fixed report-size target.
+    """
     from copy import deepcopy
+    from app.fixture_identity import reconcile_fixture_rows
+
     result = deepcopy(payload)
     rows = result.get("response")
     if not isinstance(rows, list):
@@ -252,13 +259,11 @@ def _limit_fixture_payload(
         now.replace(tzinfo=zone) if now is not None else datetime.now(zone)
     )
     target_date = as_of_date or current_time.date()
-    eligible = []
+    eligible: list[dict] = []
     for row in rows:
         if not isinstance(row, dict):
             continue
         fixture = row.get("fixture") if isinstance(row.get("fixture"), dict) else {}
-        status = fixture.get("status") if isinstance(fixture.get("status"), dict) else {}
-        short = str(status.get("short") or "UNKNOWN").upper()
         raw = fixture.get("date")
         if not raw:
             continue
@@ -269,67 +274,34 @@ def _limit_fixture_payload(
             kickoff = kickoff.astimezone(zone)
         except (TypeError, ValueError, OverflowError):
             continue
-        if kickoff.date() != target_date:
-            continue
-        # Keep same-day started/finished rows visible; prediction logic will
-        # withhold pre-match probabilities for any non-NS/TBD fixture.
-        league = row.get("league") if isinstance(row.get("league"), dict) else {}
-        league_code = str(league.get("code") or "").upper()
-        # Prioritize competitions explicitly mapped into the historical dataset.
-        league_id = league.get("id")
-        source = str(row.get("_veltrix_source") or "").casefold()
-        try:
-            # Numeric IDs are provider-local. Only use the API-Football ID
-            # map for fixtures explicitly sourced from API-Football/API-Sports.
-            mapped_id = (
-                source in {"api-football", "api-sports"}
-                and int(league_id) in LEAGUE_DIVISION_BY_ID
-            )
-        except (TypeError, ValueError):
-            mapped_id = False
-        mapped_priority = 0 if (league_code in LEAGUE_DIVISION_BY_CODE or mapped_id) else 1
-        pre_match_priority = 0 if short in {"NS", "TBD"} else 1
-        kickoff_priority = 0 if kickoff > current_time else 1
-        source_priority = 0 if source == "5dollarfootballapi" else 1
-        eligible.append((mapped_priority, pre_match_priority, kickoff_priority, source_priority, kickoff, row))
-    eligible.sort(key=lambda item: (item[0], item[1], item[2], item[3], item[4]))
-    deduplicated = []
-    seen: dict[tuple[str, str, str], list[datetime]] = {}
-    duplicates_removed = 0
-    for item in eligible:
-        kickoff, row = item[4], item[5]
-        teams = row.get("teams") if isinstance(row.get("teams"), dict) else {}
-        home = (teams.get("home") or {}).get("name") if isinstance(teams.get("home"), dict) else None
-        away = (teams.get("away") or {}).get("name") if isinstance(teams.get("away"), dict) else None
-        if home and away:
-            key = (kickoff.date().isoformat(), _name_key(home), _name_key(away))
-            prior = seen.setdefault(key, [])
-            if any(abs((kickoff - existing).total_seconds()) <= 300 for existing in prior):
-                duplicates_removed += 1
-                continue
-            prior.append(kickoff)
-        deduplicated.append(item)
-    cap = max(0, int(limit))
-    result["response"] = [item[5] for item in deduplicated[:cap]]
+        if kickoff.date() == target_date:
+            eligible.append(row)
+
+    canonical, reconciliation = reconcile_fixture_rows(
+        eligible, timezone_name=timezone_name,
+    )
+    # Do not enforce the historical 25-row cap: it silently discarded real
+    # fixtures and their provider IDs before the report could explain coverage.
+    result["response"] = canonical
     meta = result.get("_veltrix_meta")
     if not isinstance(meta, dict):
         meta = {}
         result["_veltrix_meta"] = meta
-    if isinstance(meta, dict):
-        def source_counts(items: list[dict]) -> dict[str, int]:
-            counts: dict[str, int] = {}
-            for item in items:
-                source_name = str(item.get("_veltrix_source") or "UNKNOWN")
-                counts[source_name] = counts.get(source_name, 0) + 1
-            return dict(sorted(counts.items()))
-        meta["fixtures_before_delivery_cap"] = len(eligible)
-        meta["fixtures_after_deduplication"] = len(deduplicated)
-        meta["duplicate_fixture_rows_removed"] = duplicates_removed
-        meta["fixture_delivery_cap"] = cap
-        meta["fixtures_after_delivery_cap"] = len(result["response"])
-        meta["fixtures_by_source_before_cap"] = source_counts([item[5] for item in eligible])
-        meta["fixtures_by_source_after_cap"] = source_counts(result["response"])
-        meta["fixture_selection_policy"] = "mapped_competition_then_pre_match_then_future_then_primary_provider_then_kickoff; canonical team aliases and five-minute cross-source deduplication"
+
+    def source_counts(items: list[dict]) -> dict[str, int]:
+        counts: dict[str, int] = {}
+        for item in items:
+            source_name = str(item.get("_veltrix_source") or item.get("provider") or "UNKNOWN")
+            counts[source_name] = counts.get(source_name, 0) + 1
+        return dict(sorted(counts.items()))
+
+    meta["fixtures_before_reconciliation"] = len(eligible)
+    meta["fixture_reconciliation"] = reconciliation
+    meta["fixtures_after_reconciliation"] = len(canonical)
+    meta["fixtures_by_source_before_reconciliation"] = source_counts(eligible)
+    meta["fixtures_by_source_after_reconciliation"] = source_counts(canonical)
+    meta["legacy_fixture_cap_ignored"] = max(0, int(limit or 0))
+    meta["fixture_selection_policy"] = reconciliation["policy"] + "; no fixed fixture cap"
     return result
 
 def main() -> None:
@@ -339,7 +311,7 @@ def main() -> None:
     parser.add_argument("--output", default="reports/daily_predictions.json")
     parser.add_argument("--recent-cache", default="reports/recent_results_cache.json")
     parser.add_argument("--timezone", default="Africa/Lagos")
-    parser.add_argument("--max-fixtures", type=int, default=25, help="Maximum upcoming same-day fixtures to model and publish (default: 25)")
+    parser.add_argument("--max-fixtures", type=int, default=0, help="Deprecated compatibility option; all discovered same-day fixtures are retained")
     args = parser.parse_args()
     try:
         target_date = date.fromisoformat(args.date) if args.date else datetime.now(ZoneInfo(args.timezone)).date()
