@@ -34,6 +34,10 @@ UNVERIFIED_TEAM_ALIAS_CANDIDATES = {
     "agropecuario": "agropecuarioargentino",
     "cafmidland": "ferrocarrilmidland",
 }
+COMPETITION_CATEGORY_OVERRIDES = {
+    "argr": "reserve",
+    "polw": "women",
+}
 COMPETITION_ALIASES = {
     "braa": "brazilianseriea",
     "brazilseriea": "brazilianseriea",
@@ -108,13 +112,14 @@ def competition_identity(row: dict[str, Any]) -> tuple[str, str, str] | None:
     country = _plain(league.get("country"))
     if not name:
         return None
-    category = "senior"
-    if re.search(r"(women|womens|ladies|feminin|femenino|feminino)", name):
-        category = "women"
-    elif re.search(r"(u19|u20|u21|u23|youth|academy|junior)", name):
-        category = "youth"
-    elif re.search(r"(reserve|reserves|secondteam|bteam|ii|iii)", name):
-        category = "reserve"
+    category = COMPETITION_CATEGORY_OVERRIDES.get(name, "senior")
+    if category == "senior":
+        if re.search(r"(women|womens|ladies|feminin|femenino|feminino)", name):
+            category = "women"
+        elif re.search(r"(u19|u20|u21|u23|youth|academy|junior)", name):
+            category = "youth"
+        elif re.search(r"(reserve|reserves|secondteam|bteam|ii|iii)", name):
+            category = "reserve"
     return category, country, COMPETITION_ALIASES.get(name, name)
 
 
