@@ -1,0 +1,122 @@
+from __future__ import annotations
+
+from app.fixture_identity import reconcile_fixture_rows, team_identity
+
+
+def fixture(
+    fixture_id: str,
+    provider: str,
+    home: str,
+    away: str,
+    competition_id: str | int | None,
+    competition: str | None,
+    kickoff: str,
+):
+    return {
+        "fixture": {
+            "id": fixture_id,
+            "date": kickoff,
+            "status": {"short": "NS"},
+        },
+        "teams": {
+            "home": {"id": f"{provider}-home-{fixture_id}", "name": home},
+            "away": {"id": f"{provider}-away-{fixture_id}", "name": away},
+        },
+        "league": {"id": competition_id, "name": competition},
+        "_veltrix_source": provider,
+    }
+
+
+def test_cross_provider_verified_aliases_merge_and_keep_all_source_ids():
+    rows = [
+        fixture(
+            "5d-100", "5DollarFootballAPI", "Atletico Paranaense", "Vasco da Gama",
+            71, "Brazilian Serie A", "2026-11-04T22:30:00Z",
+        ),
+        fixture(
+            "infer-200", "InferSports", "Atletico PR", "Vasco DG",
+            "lg-bra", "Bra A", "2026-11-04T22:32:00Z",
+        ),
+    ]
+
+    canonical, meta = reconcile_fixture_rows(rows)
+
+    assert len(canonical) == 1
+    assert meta["confirmed_duplicate_groups"] == 1
+    merged = canonical[0]
+    assert merged["_veltrix_canonical_fixture"] is True
+    assert merged["_veltrix_reconciliation_status"] == "MATCHED"
+    assert merged["_veltrix_source_fixture_ids"] == [
+        {"provider": "5DollarFootballAPI", "fixture_id": "5d-100"},
+        {"provider": "InferSports", "fixture_id": "infer-200"},
+    ]
+    assert {item["competition_id"] for item in merged["_veltrix_provenance"]} == {71, "lg-bra"}
+    assert {item["provider"] for item in merged["_veltrix_provenance"]} == {
+        "5DollarFootballAPI", "InferSports",
+    }
+
+
+def test_senior_and_u19_fixtures_are_never_merged():
+    rows = [
+        fixture("senior-1", "ProviderA", "Zilina", "Helsinki", 10,
+                "Domestic Cup", "2026-11-04T15:30:00Z"),
+        fixture("youth-1", "ProviderB", "Zilina U19", "Helsinki U19", "youth-10",
+                "UEFA U19", "2026-11-04T15:30:00Z"),
+    ]
+
+    canonical, meta = reconcile_fixture_rows(rows)
+
+    assert len(canonical) == 2
+    assert meta["confirmed_duplicate_groups"] == 0
+    assert {row["fixture"]["id"] for row in canonical} == {"senior-1", "youth-1"}
+
+
+def test_reserve_identity_is_distinct_from_senior_club_identity():
+    senior = team_identity("Almirante Brown")
+    reserve = team_identity("Almirante Brown (R)")
+
+    assert senior[0] == reserve[0]
+    assert senior[1] == ()
+    assert reserve[1] == ("reserve",)
+
+    rows = [
+        fixture("senior-2", "ProviderA", "Almirante Brown", "Belgrano",
+                "arg-senior", "Argentine Primera Division", "2026-11-04T16:00:00Z"),
+        fixture("reserve-2", "ProviderB", "Almirante Brown (R)", "Belgrano (R)",
+                "arg-reserve", "Argentina Reserve League", "2026-11-04T16:00:00Z"),
+    ]
+
+    canonical, _ = reconcile_fixture_rows(rows)
+
+    assert len(canonical) == 2
+
+
+def test_same_team_doubleheaders_with_distinct_kickoffs_are_preserved():
+    rows = [
+        fixture("match-early", "ProviderA", "Club A", "Club B", 55,
+                "Premier League", "2026-11-04T12:00:00Z"),
+        fixture("match-late", "ProviderA", "Club A", "Club B", 55,
+                "Premier League", "2026-11-04T14:00:00Z"),
+    ]
+
+    canonical, meta = reconcile_fixture_rows(rows)
+
+    assert len(canonical) == 2
+    assert meta["confirmed_duplicate_groups"] == 0
+    assert {row["fixture"]["id"] for row in canonical} == {"match-early", "match-late"}
+
+
+def test_missing_competition_identity_quarantines_instead_of_dropping():
+    rows = [
+        fixture("unknown-a", "ProviderA", "Club A", "Club B", 55,
+                None, "2026-11-04T12:00:00Z"),
+        fixture("unknown-b", "ProviderB", "Club A", "Club B", 99,
+                None, "2026-11-04T12:01:00Z"),
+    ]
+
+    canonical, meta = reconcile_fixture_rows(rows)
+
+    assert len(canonical) == 2
+    assert meta["quarantined_rows"] == 2
+    assert all(row["_veltrix_reconciliation_status"] == "AMBIGUOUS" for row in canonical)
+    assert {row["fixture"]["id"] for row in canonical} == {"unknown-a", "unknown-b"}
