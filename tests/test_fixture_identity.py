@@ -189,3 +189,24 @@ def test_unverified_provider_team_abbreviations_are_quarantined_not_merged():
     assert canonical[0]["_veltrix_reconciliation_status"] == "AMBIGUOUS"
     assert "team_alias_not_verified" in canonical[0]["_veltrix_quarantine_reasons"]
     assert {row["fixture_id"] for row in canonical[0]["_veltrix_source_fixture_ids"]} == {"primary-1", "infer-1"}
+
+
+
+def test_same_teams_same_competition_with_small_kickoff_drift_is_quarantined():
+    rows = [
+        fixture("feed-a", "ProviderA", "Club A", "Club B", 55,
+                "Premier League", "2026-11-04T12:00:00Z"),
+        fixture("feed-b", "ProviderB", "Club A", "Club B", "epl",
+                "Premier League", "2026-11-04T12:15:00Z"),
+    ]
+
+    canonical, meta = reconcile_fixture_rows(rows)
+
+    assert len(canonical) == 1
+    assert meta["confirmed_duplicate_groups"] == 0
+    assert meta["quarantined_rows"] == 2
+    assert canonical[0]["_veltrix_reconciliation_status"] == "AMBIGUOUS"
+    assert "kickoff_proximity_conflict" in canonical[0]["_veltrix_quarantine_reasons"]
+    assert {record["fixture_id"] for record in canonical[0]["_veltrix_source_fixture_ids"]} == {
+        "feed-a", "feed-b",
+    }
