@@ -53,6 +53,7 @@ def validate_fixture_visibility(report: dict[str, Any]) -> dict[str, Any]:
         if str(row.get("status") or "").upper() not in {
             "KICKOFF_UNVERIFIED", "KICKOFF_PASSED", "FIXTURE_NOT_PREMATCH"
         }
+        and row.get("evidence_scope") != "CATEGORY_NEUTRAL_PRIOR"
         and "women's, youth and reserve competitions require category-matched historical results"
         not in str(row.get("reason") or "").casefold()
     ]
