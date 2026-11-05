@@ -17,19 +17,9 @@ KICKOFF_AMBIGUITY_WINDOW_SECONDS = 3600
 
 # Curated aliases are deliberately exact and context-gated by competition,
 # squad category, orientation and kickoff. Add entries only after source review.
-TEAM_ALIASES = {
-    # Stable, widely established club abbreviations. These are still
-    # competition/category/kickoff gated before they can merge fixtures.
-    "manutd": "manchesterunited",
-    "manchesterutd": "manchesterunited",
-    "manunited": "manchesterunited",
-    "barca": "barcelona",
-    "newcastle": "newcastleunited",
-    "newcastleutd": "newcastleunited",
-    "deportivolacoruna": "deportivocoruna",
-    "deportivoacoruna": "deportivocoruna",
-    "caosasuna": "osasuna",
-}
+# No name-only aliases are currently certified by a provider team-ID
+# crosswalk. Add an alias only after source IDs and club identity are verified.
+TEAM_ALIASES: dict[str, str] = {}
 # Observed provider abbreviations without a verified team-ID crosswalk.
 # They may trigger quarantine but are deliberately NOT merge aliases.
 UNVERIFIED_TEAM_ALIAS_CANDIDATES = {
@@ -82,7 +72,7 @@ def team_identity(value: Any) -> tuple[str, tuple[str, ...]]:
         ("u19", r"(?:\s*\(u19\)|\s+u19)$"),
         ("u21", r"(?:\s*\(u21\)|\s+u21)$"),
         ("u23", r"(?:\s*\(u23\)|\s+u23)$"),
-        ("reserve", r"(?:\s*\((?:r|reserves?)\)|\s+(?:reserves?|b\s*team|ii|iii|iv))$"),
+        ("reserve", r"(?:\s*\((?:r|reserves?)\)|\s+(?:reserves?|b|b\s*team|ii|iii|iv))$"),
     )
     base = raw
     changed = True
@@ -94,14 +84,21 @@ def team_identity(value: Any) -> tuple[str, tuple[str, ...]]:
                 base = re.sub(pattern, "", base).strip()
                 changed = True
                 break
-    key = _plain(base)
+    tokens = re.findall(r"[a-z0-9]+", _plain(base))
+    edge_markers = {"fc", "afc", "cf", "sc", "ac", "as", "ec", "sbv", "acf", "cd", "ud", "bc"}
+    while tokens and tokens[0] in edge_markers:
+        tokens.pop(0)
+    while tokens and tokens[-1] in edge_markers:
+        tokens.pop()
+    key = "".join(tokens)
     key = TEAM_ALIASES.get(key, key)
     return key, tuple(sorted(category))
 
 
-def competition_identity(row: dict[str, Any]) -> tuple[str, str] | None:
+def competition_identity(row: dict[str, Any]) -> tuple[str, str, str] | None:
     league = row.get("league") if isinstance(row.get("league"), dict) else {}
     name = _plain(league.get("name"))
+    country = _plain(league.get("country"))
     if not name:
         return None
     category = "senior"
@@ -111,7 +108,7 @@ def competition_identity(row: dict[str, Any]) -> tuple[str, str] | None:
         category = "youth"
     elif re.search(r"(reserve|reserves|secondteam|bteam|ii|iii)", name):
         category = "reserve"
-    return category, COMPETITION_ALIASES.get(name, name)
+    return category, country, COMPETITION_ALIASES.get(name, name)
 
 
 def _kickoff(row: dict[str, Any], timezone_name: str) -> datetime | None:
@@ -156,6 +153,7 @@ def _provenance(row: dict[str, Any], identity: dict[str, Any]) -> dict[str, Any]
         "fixture_id": fixture.get("id"),
         "competition_id": league.get("id"),
         "competition_name": league.get("name"),
+        "competition_country": league.get("country"),
         "home_team_id": home.get("id"),
         "away_team_id": away.get("id"),
         "home_team_name": home.get("name"),
@@ -208,7 +206,10 @@ def unique_prediction_match(
                 "home": {"name": prediction.get("home_team")},
                 "away": {"name": prediction.get("away_team")},
             },
-            "league": {"name": prediction.get("league")},
+            "league": {
+                "name": prediction.get("league"),
+                "country": prediction.get("league_country"),
+            },
             "_veltrix_source": prediction.get("fixture_source") or "PREDICTION",
         }
         if fixtures_match(event_row, prediction_row, timezone_name=timezone_name):
@@ -288,25 +289,31 @@ def reconcile_fixture_rows(
             if not same_teams and not possible_unverified_alias:
                 continue
             if a["competition"] is not None and a["competition"] == b["competition"]:
-                if not same_teams:
-                    ambiguous_pairs.append((i, j, "team_alias_not_verified"))
-                elif seconds <= kickoff_tolerance_seconds:
+                if same_teams and seconds <= kickoff_tolerance_seconds:
                     # Source-local competition IDs are recorded but never compared
                     # across providers. The normalized, category-aware competition
                     # identity is the cross-provider join key.
                     union(i, j)
-                else:
+                elif same_teams:
                     ambiguous_pairs.append((i, j, "kickoff_proximity_conflict"))
+                else:
+                    ambiguous_pairs.append((i, j, "team_alias_not_verified"))
             elif a["competition"] is None or b["competition"] is None:
                 ambiguous_pairs.append((i, j, "competition_identity_missing"))
             elif a["competition"][0] == b["competition"][0]:
-                # Same squad tier, same teams and same kickoff but different
-                # competition labels: alias coverage is insufficient to prove
-                # identity, so quarantine rather than guessing.
+                # Same squad tier and near-identical team identity, but competition
+                # country/name does not agree. Quarantine instead of guessing.
                 ambiguous_pairs.append((i, j, "competition_identity_conflict"))
             # A different squad category is a distinct event.
 
     ambiguous_indices: dict[int, set[str]] = defaultdict(set)
+    for index, identity in enumerate(identities):
+        if not identity["kickoff"]:
+            ambiguous_indices[index].add("missing_or_invalid_kickoff")
+        if not identity["home_key"] or not identity["away_key"]:
+            ambiguous_indices[index].add("missing_team_identity")
+        if identity["competition"] is None:
+            ambiguous_indices[index].add("missing_competition_identity")
     for i, j, reason in ambiguous_pairs:
         ambiguous_indices[i].add(reason)
         ambiguous_indices[j].add(reason)
@@ -363,5 +370,5 @@ def reconcile_fixture_rows(
         "quarantined_rows": quarantined_rows,
         "ambiguous_pairs": len(ambiguous_pairs),
         "kickoff_tolerance_seconds": kickoff_tolerance_seconds,
-        "policy": "provider-local IDs; competition and squad-category aware; home/away orientation preserved; five-minute confirmed-match tolerance; one-hour ambiguity quarantine window; ambiguous records retained",
+        "policy": "provider-local IDs; competition and squad-category aware; home/away orientation preserved; five-minute kickoff tolerance; ambiguous records quarantined",
     }
