@@ -131,11 +131,29 @@ def _identity(row: dict[str, Any], timezone_name: str) -> dict[str, Any]:
     away = teams.get("away") if isinstance(teams.get("away"), dict) else {}
     home_key, home_category = team_identity(home.get("name"))
     away_key, away_category = team_identity(away.get("name"))
+    competition = competition_identity(row)
+    competition_category = competition[0] if competition else "unknown"
+    competition_name = competition[2] if competition else ""
+    age_match = re.search(r"u(19|20|21|23)", competition_name)
+    if competition_category == "youth":
+        inherited_category = ("youth", "u" + age_match.group(1)) if age_match else ("youth",)
+    elif competition_category in {"women", "reserve"}:
+        inherited_category = (competition_category,)
+    else:
+        inherited_category = ()
+    def effective_category(category: tuple[str, ...]) -> tuple[str, ...]:
+        if not category:
+            return inherited_category
+        if len(category) == 1 and category[0] in {"u19", "u20", "u21", "u23"}:
+            return ("youth", category[0])
+        return category
+    home_category = effective_category(home_category)
+    away_category = effective_category(away_category)
     kickoff = _kickoff(row, timezone_name)
     return {
         "home_key": home_key, "away_key": away_key,
         "home_category": home_category, "away_category": away_category,
-        "competition": competition_identity(row), "kickoff": kickoff,
+        "competition": competition, "kickoff": kickoff,
         "source": str(row.get("_veltrix_source") or row.get("provider") or "UNKNOWN"),
         "fixture_id": (row.get("fixture") or {}).get("id"),
         "competition_id": (row.get("league") or {}).get("id"),
