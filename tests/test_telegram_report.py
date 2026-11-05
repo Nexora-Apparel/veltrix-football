@@ -122,7 +122,7 @@ def test_report_handles_no_usable_predictions_without_long_notes():
         {"status": "UNSUPPORTED_COMPETITION"},
     ]
     message = format_report(report)
-    assert "Fixtures retrieved: 2 · Research forecasts: 0" in message
+    assert "Fixtures analysed: 0" in message
     assert "No probabilities or betting signal published for this fixture." in message
 
 
@@ -331,7 +331,7 @@ def test_telegram_report_discloses_reference_prices_for_all_three_markets():
         ]}],
     }}
     message = format_report(report)
-    assert "FORECAST BASIS: competition-level historical goal-rate prior" in message
+    assert "WHY THIS VERDICT: competition-level historical goal-rate prior" in message
     assert "REFERENCE BOOKMAKER PRICES — NOT VALUE PICKS" in message
     assert "1X2 · Book A: Alpha FC 2.10 / Draw 3.20 / Beta FC 3.60" in message
     assert "BTTS · Book B: Yes 1.85 / No 1.95" in message
@@ -383,8 +383,8 @@ def test_report_header_shows_goal_calibration_and_market_release_state():
         "approved_markets": [],
     }
     message = format_report(report)
-    assert "Goal calibration: NO_COMPATIBLE_FORECASTS · applied: 0/0" in message
-    assert "Validation: LOCKED_INSUFFICIENT_EVIDENCE · approved: none" in message
+    assert "Goal calibration:" not in message
+    assert "Validation:" not in message
 
 
 def test_telegram_retains_fixture_with_unverified_kickoff():
