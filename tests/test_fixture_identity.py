@@ -27,7 +27,7 @@ def fixture(
     }
 
 
-def test_cross_provider_verified_aliases_merge_and_keep_all_source_ids():
+def test_cross_provider_same_identity_merges_and_keeps_all_source_ids():
     rows = [
         fixture(
             "5d-100", "5DollarFootballAPI", "Manchester United", "Chelsea",
