@@ -498,25 +498,26 @@ def predict_fixtures(
                 visibility.append(_invalid_fixture_visibility(item, delivery_order))
         forecasts = []
         for fixture in parsed:
-            home_xg, away_xg = 1.35, 1.10
-            estimate = match_probabilities(home_xg, away_xg)
-            forecasts.append({
-                **{k:v for k,v in fixture.items() if k not in {"kickoff_date","kickoff_datetime"}},
-                "model":"adaptive_poisson_neutral_prior","model_validated":False,
-                "status":"LOW_HISTORY_FORECAST","betting_recommendation":False,
-                "historical_matches":{"home":0,"away":0},
-                "expected_goals":{"home":round(home_xg,3),"away":round(away_xg,3)},
-                "probabilities":{k:round(v,4) for k,v in estimate["one_x_two"].items()},
-                "btts_yes":round(estimate["btts_yes"],4),
-                "over_1_5":round(estimate["totals"]["over_1_5"],4),
-                "over_2_5":round(estimate["totals"]["over_2_5"],4),
-                "over_3_5":round(estimate["totals"]["over_3_5"],4),
-                "most_likely_scorelines":estimate["most_likely_scorelines"][:3],
-                "prediction_basis":"No verified prior results were available. A conservative scoring prior was used; confidence is very limited.",
-                "evidence_grade":"VERY_LOW",
-                "evidence_scope":"CATEGORY_NEUTRAL_PRIOR" if _is_non_senior_competition(fixture.get("league")) else "GLOBAL_NEUTRAL_PRIOR",
-                "value_bet_screen":{"status":"NOT_ELIGIBLE_LOW_EVIDENCE","markets":{}},
-            })
+            base = {k:v for k,v in fixture.items() if k not in {"kickoff_date","kickoff_datetime"}}
+            if _is_non_senior_competition(fixture.get("league")):
+                forecasts.append({
+                    **base, "model":"not_evaluated", "model_validated":False,
+                    "status":"UNSUPPORTED_COMPETITION", "betting_recommendation":False,
+                    "historical_matches":{"home":0,"away":0},
+                    "evidence_grade":"VERY_LOW", "evidence_scope":"CATEGORY_HISTORY_REQUIRED",
+                    "reason":"No category-matched historical results are available. Senior-team data and neutral priors are not substituted.",
+                    "value_bet_screen":{"status":"NOT_ELIGIBLE_NO_CATEGORY_HISTORY","markets":{}},
+                })
+            else:
+                forecasts.append({
+                    **base, "model":"not_evaluated", "model_validated":False,
+                    "status":"INSUFFICIENT_HISTORY", "betting_recommendation":False,
+                    "historical_matches":{"home":0,"away":0},
+                    "evidence_grade":"VERY_LOW", "evidence_scope":"NO_TEAM_HISTORY",
+                    "reason":"No verified prior results are available for either team. A shared global prior is diagnostic only and is not published as a match forecast.",
+                    "diagnostic_scoring_prior":{"home":1.35,"away":1.10},
+                    "value_bet_screen":{"status":"NOT_ELIGIBLE_NO_TEAM_HISTORY","markets":{}},
+                })
         ordered=sorted(visibility+forecasts,key=lambda row:row.get("_delivery_order",0))
         return [{k:v for k,v in row.items() if k!="_delivery_order"} for row in ordered]
 
@@ -582,24 +583,16 @@ def predict_fixtures(
 
         for fixture in (p for p in parsed_fixtures if p["kickoff_date"] == target_date):
             if _is_non_senior_competition(fixture.get("league")):
-                # Never borrow senior-team history for youth, women's or reserve squads.
-                home_xg, away_xg = 1.35, 1.10
-                estimate = match_probabilities(home_xg, away_xg)
+                # Category-specific history is mandatory; never substitute senior
+                # records or a neutral prior as if it were a fixture forecast.
                 output.append({
                     **{k:v for k,v in fixture.items() if k not in {"kickoff_date","kickoff_datetime"}},
-                    "model":"adaptive_poisson_neutral_prior","model_validated":False,
-                    "betting_recommendation":False,"status":"LOW_HISTORY_FORECAST",
+                    "model":"not_evaluated", "model_validated":False,
+                    "betting_recommendation":False, "status":"UNSUPPORTED_COMPETITION",
                     "historical_matches":{"home":0,"away":0},
-                    "expected_goals":{"home":round(home_xg,3),"away":round(away_xg,3)},
-                    "probabilities":{k:round(v,4) for k,v in estimate["one_x_two"].items()},
-                    "btts_yes":round(estimate["btts_yes"],4),
-                    "over_1_5":round(estimate["totals"]["over_1_5"],4),
-                    "over_2_5":round(estimate["totals"]["over_2_5"],4),
-                    "over_3_5":round(estimate["totals"]["over_3_5"],4),
-                    "most_likely_scorelines":estimate["most_likely_scorelines"][:3],
-                    "prediction_basis":"No category-matched results are available. A neutral scoring prior was used without borrowing senior-team data.",
-                    "evidence_grade":"VERY_LOW","evidence_scope":"CATEGORY_NEUTRAL_PRIOR",
-                    "value_bet_screen":{"status":"NOT_ELIGIBLE_LOW_EVIDENCE","markets":{}},
+                    "evidence_grade":"VERY_LOW", "evidence_scope":"CATEGORY_HISTORY_REQUIRED",
+                    "reason":"No category-matched historical results are available. Senior-team data and neutral priors are not substituted.",
+                    "value_bet_screen":{"status":"NOT_ELIGIBLE_NO_CATEGORY_HISTORY","markets":{}},
                 })
                 continue
             division_code = str(fixture.get("division_code") or "").strip()
@@ -692,6 +685,26 @@ def predict_fixtures(
                 total_evidence=len(home_hist)+len(away_hist)
                 grade=("VERY_LOW" if total_evidence==0 else "LOW" if total_evidence<=3 else "MODERATE")
                 missing_sides=[side for side,count in evidence_counts.items() if count==0]
+                if total_evidence == 0:
+                    # A shared prior cannot distinguish these teams. Keep it as a
+                    # diagnostic only; do not publish generic percentages/xG.
+                    record.update({
+                        "status":"INSUFFICIENT_HISTORY", "model":"not_evaluated",
+                        "model_validated":False, "betting_recommendation":False,
+                        "evidence_grade":"VERY_LOW", "evidence_scope":"NO_TEAM_HISTORY",
+                        "reason":"No prior team results were found. A competition/global scoring prior is diagnostic only and is not published as a match forecast.",
+                        "diagnostic_scoring_prior":{"home":round(prior_home,3),"away":round(prior_away,3)},
+                        "insufficient_history_sides":["home","away"],
+                        "data_availability":{
+                            "historical_goals_for_against":"UNAVAILABLE",
+                            "team_specific_history":"NONE",
+                            "competition_specific_history":"AVAILABLE" if baseline else "UNAVAILABLE",
+                            "fallback_prior":"COMPETITION" if baseline else "GLOBAL",
+                        },
+                        "value_bet_screen":{"status":"NOT_ELIGIBLE_NO_TEAM_HISTORY","markets":{}},
+                    })
+                    output.append(record)
+                    continue
                 record.update({
                     "status":"LOW_HISTORY_FORECAST","model":"adaptive_poisson_sparse_history",
                     "model_validated":False,"betting_recommendation":False,
