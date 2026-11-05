@@ -254,7 +254,12 @@ def reconcile_fixture_rows(
                 union(i, j)
             elif a["competition"] is None or b["competition"] is None:
                 ambiguous_pairs.append((i, j, "competition_identity_missing"))
-            # A known, different competition or squad category is a distinct event.
+            elif a["competition"][0] == b["competition"][0]:
+                # Same squad tier, same teams and same kickoff but different
+                # competition labels: alias coverage is insufficient to prove
+                # identity, so quarantine rather than guessing.
+                ambiguous_pairs.append((i, j, "competition_identity_conflict"))
+            # A different squad category is a distinct event.
 
     groups: dict[int, list[int]] = defaultdict(list)
     for index in range(len(valid)):
