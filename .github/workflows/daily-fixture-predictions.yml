@@ -169,7 +169,7 @@ on:
         type: string
   schedule:
     # Primary report starts at 06:00 Africa/Lagos (WAT, UTC+1) = 05:00 UTC.
-    - cron: "0 5 * * *"
+    - cron: "0 4 * * *"
 
 # Controlled same-day snapshot replay for the current 2026-11-02 report; no provider refetch.
 # Ordinary pushes run tests only. A push commit containing [run-live-verification] intentionally runs the full live pipeline for controlled end-to-end verification.
@@ -463,6 +463,14 @@ jobs:
             echo "configured=true" >> "$GITHUB_OUTPUT"
           fi
 
+      - name: Hold scheduled delivery until 06:00 WAT
+        if: github.event_name == 'schedule'
+        run: |
+          # The full ingestion/model pipeline starts at 05:00 WAT.
+          # Hold only the final Telegram send until 06:00 WAT (05:00 UTC).
+          while [ "$(date -u +%H%M)" -lt "0500" ]; do
+            sleep 5
+          done
       - name: Send daily report to Telegram
         id: telegram-delivery
         if: always() && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && contains(github.event.head_commit.message, '[run-live-verification]')) || (github.event_name == 'push' && contains(github.event.head_commit.message, '[reuse-report-40175707059]')) || false) && (steps.generate-report.outcome == 'success' || steps.report-recovery.outcome == 'success' || steps.filter-saved-report.outcome == 'success') && !contains(github.event.head_commit.message, '[skip-telegram]') && steps.telegram-config.outputs.configured == 'true'
