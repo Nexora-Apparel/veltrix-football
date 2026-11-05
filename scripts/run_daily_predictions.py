@@ -188,7 +188,7 @@ def _merge_api_sports_market_odds(
     attached = 0
     for prediction in predictions:
         if not isinstance(prediction, dict) or prediction.get("status") not in {
-            "EXPERIMENTAL_ONLY", "EXPERIMENTAL_LOW_DATA", "INSUFFICIENT_HISTORY", "UNSUPPORTED_COMPETITION"
+            "EXPERIMENTAL_ONLY", "EXPERIMENTAL_LOW_DATA", "LOW_HISTORY_FORECAST", "INSUFFICIENT_HISTORY", "UNSUPPORTED_COMPETITION"
         }:
             continue
         raw_kickoff = prediction.get("kickoff_local") or prediction.get("kickoff")
@@ -638,7 +638,7 @@ def main() -> None:
                 bool(item.get("five_dollar_market_odds") or item.get("the_odds_api_market_odds") or item.get("infer_sports_market_odds"))
                 for item in report.get("predictions", []) if isinstance(item, dict)
             ),
-            "note": "Market odds are reference data; forecast probabilities remain experimental and unchanged.",
+            "note": "Market odds are reference data; they do not change forecast probabilities, and betting certification remains separate.",
         }
         report["fixtures_with_market_odds"] = report["live_odds_sync"]["fixtures_with_market_odds"]
         # Distinguish a report built from this live run from a reused snapshot.
