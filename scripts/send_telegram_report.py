@@ -263,6 +263,12 @@ def format_report_messages(report: dict[str, Any], ledger: dict[str, Any] | None
                         float(candidate.get("expected_return_per_unit")) * 100.0,
                     )
                 )
+        if not any(
+            (result.get("candidates") or [])
+            for result in (value_screen.get("markets") or {}).values()
+            if isinstance(result, dict)
+        ):
+            block.append("VALUE BET VERDICT: No qualifying value bet at the available prices.")
         reference_lines = _reference_market_lines(item)
         if reference_lines:
             block.append("REFERENCE BOOKMAKER PRICES — NOT VALUE PICKS")
