@@ -300,7 +300,7 @@ def test_telegram_report_includes_value_screen_status_and_only_supplied_candidat
     message = format_report(report)
     assert "Value screen: 1X2 / BTTS / Over-Under · DISABLED_UNVALIDATED" not in message
     assert "LOCKED_INSUFFICIENT_EVIDENCE" not in message
-    assert "VALUE BET VERDICT: 1X2 home_win @ 2.10 · estimated edge 5.5pp · expected return 12.0%" in message
+    assert "VALUE BET VERDICT: 1X2 home_win @ 2.10 · estimated edge 5.5pp · expected return 12.0% · approved" in message
 
 
 def test_telegram_report_labels_competition_prior_forecast_basis():
