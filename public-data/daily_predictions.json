@@ -2821,13 +2821,13 @@
   "poisson_alternative_available": 0,
   "elo_alternative_available": 0,
   "normal_bets": {
-    "target_combined_decimal_odds": 10.0,
+    "target_combined_decimal_odds": 10,
     "status": "NOT_GENERATED_MODEL_NOT_VALIDATED"
   },
   "value_bets": {
     "target_combined_decimal_odds": [
-      50.0,
-      100.0
+      50,
+      100
     ],
     "status": "NOT_GENERATED_MODEL_NOT_VALIDATED"
   },
@@ -25617,7 +25617,7 @@
               "outcomes": [
                 {
                   "name": "Aldosivi Mar del Plata",
-                  "price": 7.0,
+                  "price": 7,
                   "point": null
                 },
                 {
@@ -25638,7 +25638,7 @@
               "outcomes": [
                 {
                   "name": "Aldosivi Mar del Plata",
-                  "price": 7.0,
+                  "price": 7,
                   "point": null
                 },
                 {
@@ -25680,7 +25680,7 @@
               "outcomes": [
                 {
                   "name": "Aldosivi Mar del Plata",
-                  "price": 7.0,
+                  "price": 7,
                   "point": null
                 },
                 {
@@ -25743,7 +25743,7 @@
               "outcomes": [
                 {
                   "name": "Aldosivi Mar del Plata",
-                  "price": 7.0,
+                  "price": 7,
                   "point": null
                 },
                 {
@@ -25774,7 +25774,7 @@
                 },
                 {
                   "name": "Draw",
-                  "price": 4.0,
+                  "price": 4,
                   "point": null
                 }
               ]
@@ -25806,7 +25806,7 @@
               "outcomes": [
                 {
                   "name": "Aldosivi Mar del Plata",
-                  "price": 7.0,
+                  "price": 7,
                   "point": null
                 },
                 {
@@ -25827,7 +25827,7 @@
               "outcomes": [
                 {
                   "name": "Aldosivi Mar del Plata",
-                  "price": 7.0,
+                  "price": 7,
                   "point": null
                 },
                 {
@@ -25848,7 +25848,7 @@
               "outcomes": [
                 {
                   "name": "Aldosivi Mar del Plata",
-                  "price": 7.0,
+                  "price": 7,
                   "point": null
                 },
                 {
@@ -25989,8 +25989,8 @@
                   "label": "RESEARCH_PRIORITY_ONLY",
                   "components": {
                     "edge": 79.2,
-                    "expected_value": 100.0,
-                    "market_coverage": 100.0,
+                    "expected_value": 100,
+                    "market_coverage": 100,
                     "price_stability": 85.7
                   },
                   "release_status": "LOCKED_SHADOW_MODE"
@@ -26012,8 +26012,8 @@
                   "label": "RESEARCH_PRIORITY_ONLY",
                   "components": {
                     "edge": 79.2,
-                    "expected_value": 100.0,
-                    "market_coverage": 100.0,
+                    "expected_value": 100,
+                    "market_coverage": 100,
                     "price_stability": 85.7
                   },
                   "release_status": "LOCKED_SHADOW_MODE"
@@ -26035,8 +26035,8 @@
                   "label": "RESEARCH_PRIORITY_ONLY",
                   "components": {
                     "edge": 64.9,
-                    "expected_value": 100.0,
-                    "market_coverage": 100.0,
+                    "expected_value": 100,
+                    "market_coverage": 100,
                     "price_stability": 85.7
                   },
                   "release_status": "LOCKED_SHADOW_MODE"
@@ -26048,7 +26048,7 @@
                 "last_update": "2026-11-05T11:50:14Z",
                 "status": "SHADOW_CANDIDATE",
                 "probability_used": 0.21125970969662358,
-                "decimal_odds": 7.0,
+                "decimal_odds": 7,
                 "implied_probability": 0.14285714285714285,
                 "edge": 0.06840256683948073,
                 "expected_value_per_unit": 0.4788179678763651,
@@ -26057,9 +26057,9 @@
                   "score": 82.8,
                   "label": "RESEARCH_PRIORITY_ONLY",
                   "components": {
-                    "edge": 57.0,
-                    "expected_value": 100.0,
-                    "market_coverage": 100.0,
+                    "edge": 57,
+                    "expected_value": 100,
+                    "market_coverage": 100,
                     "price_stability": 85.7
                   },
                   "release_status": "LOCKED_SHADOW_MODE"
@@ -26071,7 +26071,7 @@
                 "last_update": "2026-11-05T11:50:37Z",
                 "status": "SHADOW_CANDIDATE",
                 "probability_used": 0.21125970969662358,
-                "decimal_odds": 7.0,
+                "decimal_odds": 7,
                 "implied_probability": 0.14285714285714285,
                 "edge": 0.06840256683948073,
                 "expected_value_per_unit": 0.4788179678763651,
@@ -26080,9 +26080,9 @@
                   "score": 82.8,
                   "label": "RESEARCH_PRIORITY_ONLY",
                   "components": {
-                    "edge": 57.0,
-                    "expected_value": 100.0,
-                    "market_coverage": 100.0,
+                    "edge": 57,
+                    "expected_value": 100,
+                    "market_coverage": 100,
                     "price_stability": 85.7
                   },
                   "release_status": "LOCKED_SHADOW_MODE"
@@ -26160,7 +26160,7 @@
                 "last_update": "2026-11-05T11:50:14Z",
                 "odds": {
                   "draw": 4.2,
-                  "home_win": 7.0,
+                  "home_win": 7,
                   "away_win": 1.36
                 }
               },
@@ -26169,7 +26169,7 @@
                 "last_update": "2026-11-05T11:50:37Z",
                 "odds": {
                   "draw": 4.2,
-                  "home_win": 7.0,
+                  "home_win": 7,
                   "away_win": 1.36
                 }
               },
@@ -26187,7 +26187,7 @@
                 "last_update": "2026-11-05T11:49:31Z",
                 "odds": {
                   "draw": 4.5,
-                  "home_win": 7.0,
+                  "home_win": 7,
                   "away_win": 1.42
                 }
               },
@@ -26214,7 +26214,7 @@
                 "last_update": "2026-11-05T11:49:52Z",
                 "odds": {
                   "draw": 4.33,
-                  "home_win": 7.0,
+                  "home_win": 7,
                   "away_win": 1.4
                 }
               },
@@ -26222,7 +26222,7 @@
                 "bookmaker": "Sky Bet",
                 "last_update": "2026-11-05T11:48:25Z",
                 "odds": {
-                  "draw": 4.0,
+                  "draw": 4,
                   "home_win": 6.25,
                   "away_win": 1.4
                 }
@@ -26241,7 +26241,7 @@
                 "last_update": "2026-11-05T11:49:33Z",
                 "odds": {
                   "draw": 4.33,
-                  "home_win": 7.0,
+                  "home_win": 7,
                   "away_win": 1.4
                 }
               },
@@ -26250,7 +26250,7 @@
                 "last_update": "2026-11-05T11:49:52Z",
                 "odds": {
                   "draw": 4.5,
-                  "home_win": 7.0,
+                  "home_win": 7,
                   "away_win": 1.43
                 }
               },
@@ -26259,7 +26259,7 @@
                 "last_update": "2026-11-05T11:49:52Z",
                 "odds": {
                   "draw": 4.5,
-                  "home_win": 7.0,
+                  "home_win": 7,
                   "away_win": 1.44
                 }
               }
@@ -37150,7 +37150,7 @@
               "outcomes": [
                 {
                   "name": "Belgrano de Cordoba",
-                  "price": 3.0,
+                  "price": 3,
                   "point": null
                 },
                 {
@@ -37255,7 +37255,7 @@
               "outcomes": [
                 {
                   "name": "Belgrano de Cordoba",
-                  "price": 3.0,
+                  "price": 3,
                   "point": null
                 },
                 {
@@ -37297,7 +37297,7 @@
               "outcomes": [
                 {
                   "name": "Belgrano de Cordoba",
-                  "price": 3.0,
+                  "price": 3,
                   "point": null
                 },
                 {
@@ -37339,7 +37339,7 @@
               "outcomes": [
                 {
                   "name": "Belgrano de Cordoba",
-                  "price": 3.0,
+                  "price": 3,
                   "point": null
                 },
                 {
@@ -37349,7 +37349,7 @@
                 },
                 {
                   "name": "Draw",
-                  "price": 3.0,
+                  "price": 3,
                   "point": null
                 }
               ]
@@ -37529,7 +37529,7 @@
                 "odds": {
                   "draw": 3.1,
                   "home_win": 2.25,
-                  "away_win": 3.0
+                  "away_win": 3
                 }
               },
               {
@@ -37574,7 +37574,7 @@
                 "odds": {
                   "draw": 3.2,
                   "home_win": 2.2,
-                  "away_win": 3.0
+                  "away_win": 3
                 }
               },
               {
@@ -37592,7 +37592,7 @@
                 "odds": {
                   "draw": 3.3,
                   "home_win": 2.25,
-                  "away_win": 3.0
+                  "away_win": 3
                 }
               },
               {
@@ -37608,9 +37608,9 @@
                 "bookmaker": "BoyleSports",
                 "last_update": "2026-11-05T11:49:33Z",
                 "odds": {
-                  "draw": 3.0,
+                  "draw": 3,
                   "home_win": 2.25,
-                  "away_win": 3.0
+                  "away_win": 3
                 }
               },
               {
@@ -38781,7 +38781,7 @@
   "publication_notice": "Generated from this run's live fixture response; publication to command-data is confirmed.",
   "research_evidence": {
     "status": "DISABLED_MISSING_CREDENTIAL",
-    "fixtures_searched": 25,
+    "fixtures_searched": 0,
     "model_eligible_facts": 0,
     "results": [
       {
@@ -38910,7 +38910,11 @@
         "model_eligible": false
       }
     ],
-    "safety": "No search result is automatically imported into historical data or prediction features."
+    "safety": "No search result is automatically imported into historical data or prediction features.",
+    "fixtures_queued": 25,
+    "fixtures_attempted": 0,
+    "fixtures_with_sources": 0,
+    "source_count": 0
   },
   "goal_market_calibration": {
     "status": "NOT_APPLIED_SOURCE_RIGHTS_UNVERIFIED",
