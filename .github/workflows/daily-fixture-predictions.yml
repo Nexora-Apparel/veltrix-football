@@ -364,6 +364,18 @@ jobs:
               "publication_status": report.get("publication_status"),
           }, sort_keys=True))
           PY
+      - name: Discover external research sources for missing-history fixtures
+        if: always() && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && contains(github.event.head_commit.message, '[run-live-verification]'))) && (steps.generate-report.outcome == 'success' || steps.report-recovery.outcome == 'success')
+        env:
+          TAVILY_API_KEY: ${{ secrets.TAVILY_API_KEY }}
+          PYTHONPATH: .
+        run: |
+          if [ -f reports/daily_predictions.json ]; then
+            python -m app.research_evidence --report reports/daily_predictions.json
+          else
+            echo "::warning::No report available for source discovery."
+          fi
+
       - name: Enrich report with optional OddsPapi BTTS and Over Under prices
         id: odds-enrichment
         if: (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && contains(github.event.head_commit.message, '[run-live-verification]')) || false) && steps.generate-report.outcome == 'success'
