@@ -120,3 +120,54 @@ def test_missing_competition_identity_quarantines_instead_of_dropping():
     assert meta["quarantined_rows"] == 2
     assert all(row["_veltrix_reconciliation_status"] == "AMBIGUOUS" for row in canonical)
     assert {row["fixture"]["id"] for row in canonical} == {"unknown-a", "unknown-b"}
+
+
+
+def test_same_teams_and_kickoff_with_conflicting_competitions_are_quarantined():
+    rows = [
+        fixture("comp-a", "ProviderA", "Club A", "Club B", 1,
+                "League Alpha", "2026-11-04T12:00:00Z"),
+        fixture("comp-b", "ProviderB", "Club A", "Club B", 2,
+                "League Beta", "2026-11-04T12:01:00Z"),
+    ]
+
+    canonical, meta = reconcile_fixture_rows(rows)
+
+    assert len(canonical) == 2
+    assert meta["quarantined_rows"] == 2
+    assert all(row["_veltrix_reconciliation_status"] == "AMBIGUOUS" for row in canonical)
+
+
+def test_inter_is_not_misclassified_as_a_reserve_team():
+    from app.live_predictions import _name_key, _team_variant_signature
+
+    assert _team_variant_signature(_name_key("Inter")) == ()
+    assert "reserve" in _team_variant_signature(_name_key("Almirante Brown (R)"))
+    assert "women" in _team_variant_signature(_name_key("Arsenal (W)"))
+
+
+def test_fixture_selection_does_not_truncate_provider_records_at_25():
+    from datetime import date, datetime
+    from scripts.run_daily_predictions import _limit_fixture_payload
+
+    rows = [
+        fixture(
+            f"fixture-{index}", "ProviderA", f"Home Club {index}", f"Away Club {index}",
+            "premier-league", "Premier League",
+            f"2026-11-04T{12 + index // 60:02d}:{index % 60:02d}:00Z",
+        )
+        for index in range(30)
+    ]
+    payload = {"response": rows}
+    selected = _limit_fixture_payload(
+        payload, 25, as_of_date=date(2026, 11, 4),
+        now=datetime.fromisoformat("2026-11-04T09:00:00+01:00"),
+    )
+
+    assert len(selected["response"]) == 30
+    assert len({
+        record["fixture_id"]
+        for row in selected["response"]
+        for record in row["_veltrix_source_fixture_ids"]
+    }) == 30
+    assert selected["_veltrix_meta"]["legacy_fixture_cap_ignored"] == 25
