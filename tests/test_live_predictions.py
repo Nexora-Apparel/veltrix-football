@@ -812,3 +812,47 @@ def test_sparse_history_is_symmetric_when_fixture_sides_are_swapped():
     assert abs(forward["probabilities"]["home_win"] - reverse["probabilities"]["away_win"]) < 1e-4
     assert abs(forward["probabilities"]["away_win"] - reverse["probabilities"]["home_win"]) < 1e-4
     assert abs(forward["probabilities"]["draw"] - reverse["probabilities"]["draw"]) < 1e-4
+
+def test_strict_publication_withholds_identical_generic_fallbacks_for_distinct_fixtures():
+    from app.live_predictions import build_daily_report
+
+    first = _fixture("2026-10-23T15:00:00+01:00")
+    first["fixture"]["id"] = 123
+    first["teams"]["home"]["name"] = "Unseen Iraq Club"
+    first["teams"]["away"]["name"] = "Unseen Iraq Opponent"
+    first["league"] = {"name": "Iraq Premier League", "code": "PL"}
+
+    second = _fixture("2026-10-23T16:00:00+01:00")
+    second["fixture"]["id"] = 456
+    second["teams"]["home"]["name"] = "Unseen Israel Women"
+    second["teams"]["away"]["name"] = "Unseen Israel Women Opponent"
+    second["league"] = {"name": "Israel Women's League", "code": "PL"}
+
+    report = build_daily_report(
+        {"response": [first, second]},
+        "unused.csv",
+        as_of=date(2026, 10, 23),
+        now=datetime(2026, 10, 23, 12, 0, tzinfo=ZoneInfo("Africa/Lagos")),
+        base_historical_matches=[],
+        additional_historical_matches=[],
+        strict_publication=True,
+    )
+
+    assert len(report["predictions"]) == 2
+    by_id = {row["fixture_id"]: row for row in report["predictions"]}
+    assert set(by_id) == {123, 456}
+    for row in by_id.values():
+        assert row["status"] in {"INSUFFICIENT_HISTORY", "UNSUPPORTED_COMPETITION"}
+        assert row["historical_matches"] == {"home": 0, "away": 0}
+        for field in (
+            "probabilities", "market_probabilities", "expected_goals",
+            "btts_yes", "over_1_5", "over_2_5", "over_3_5",
+            "most_likely_scorelines", "poisson_probabilities",
+            "elo_probabilities", "poisson_dc_shadow",
+        ):
+            assert field not in row
+        assert row["betting_recommendation"] is False
+
+    # The distinct fixtures must not expose the same generic probability vector.
+    assert all("probabilities" not in row for row in by_id.values())
+
