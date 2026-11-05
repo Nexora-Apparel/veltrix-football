@@ -13,6 +13,7 @@ from typing import Any
 from zoneinfo import ZoneInfo
 
 KICKOFF_TOLERANCE_SECONDS = 300
+KICKOFF_AMBIGUITY_WINDOW_SECONDS = 3600
 
 # Curated aliases are deliberately exact and context-gated by competition,
 # squad category, orientation and kickoff. Add entries only after source review.
@@ -277,7 +278,7 @@ def reconcile_fixture_rows(
                 and a["home_key"] == b["home_key"] and a["away_key"] == b["away_key"]
                 and same_categories
             )
-            if seconds > kickoff_tolerance_seconds or not same_categories:
+            if seconds > KICKOFF_AMBIGUITY_WINDOW_SECONDS or not same_categories:
                 continue
             possible_unverified_alias = bool(a["home_key"] and a["away_key"] and b["home_key"] and b["away_key"]) and (
                 UNVERIFIED_TEAM_ALIAS_CANDIDATES.get(a["home_key"], a["home_key"])
@@ -288,19 +289,20 @@ def reconcile_fixture_rows(
             if not same_teams and not possible_unverified_alias:
                 continue
             if a["competition"] is not None and a["competition"] == b["competition"]:
-                if same_teams:
+                if same_teams and seconds <= kickoff_tolerance_seconds:
                     # Source-local competition IDs are recorded but never compared
                     # across providers. The normalized, category-aware competition
                     # identity is the cross-provider join key.
                     union(i, j)
+                elif same_teams:
+                    ambiguous_pairs.append((i, j, "kickoff_proximity_conflict"))
                 else:
                     ambiguous_pairs.append((i, j, "team_alias_not_verified"))
             elif a["competition"] is None or b["competition"] is None:
                 ambiguous_pairs.append((i, j, "competition_identity_missing"))
             elif a["competition"][0] == b["competition"][0]:
-                # Same squad tier, same teams and same kickoff but different
-                # competition labels: alias coverage is insufficient to prove
-                # identity, so quarantine rather than guessing.
+                # Same squad tier and near-identical team identity, but competition
+                # country/name does not agree. Quarantine instead of guessing.
                 ambiguous_pairs.append((i, j, "competition_identity_conflict"))
             # A different squad category is a distinct event.
 
