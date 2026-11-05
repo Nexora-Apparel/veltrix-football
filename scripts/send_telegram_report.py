@@ -264,16 +264,24 @@ def format_report_messages(report: dict[str, Any], ledger: dict[str, Any] | None
             block.append("WHY THIS VERDICT: " + prediction_basis)
         value_screen = item.get("value_bet_screen") if isinstance(item.get("value_bet_screen"), dict) else {}
         for market, result in (value_screen.get("markets") or {}).items():
-            for candidate in (result.get("candidates") or [])[:2]:
+            released = (result.get("candidates") or [])[:2]
+            shadow = (result.get("paper_candidates") or [])[:2]
+            for candidate in released:
                 block.append(
-                     "VALUE BET VERDICT: {} {} @ {:.2f} · estimated edge {:.1f}pp · expected return {:.1f}%".format(
+                    "VALUE BET VERDICT: {} {} @ {:.2f} · estimated edge {:.1f}pp · approved".format(
                         market, candidate.get("selection"), float(candidate.get("decimal_odds")),
                         float(candidate.get("edge_percentage_points")),
-                        float(candidate.get("expected_return_per_unit")) * 100.0,
+                    )
+                )
+            for candidate in shadow:
+                block.append(
+                    "VALUE BET VERDICT: Potential edge under review · {} {} @ {:.2f} · edge {:.1f}pp · not approved".format(
+                        market, candidate.get("selection"), float(candidate.get("decimal_odds")),
+                        float(candidate.get("edge_percentage_points")),
                     )
                 )
         if not any(
-            (result.get("candidates") or [])
+            (result.get("candidates") or []) or (result.get("paper_candidates") or [])
             for result in (value_screen.get("markets") or {}).values()
             if isinstance(result, dict)
         ):
