@@ -246,3 +246,27 @@ def test_same_named_competitions_in_different_countries_are_not_merged():
     assert meta["quarantined_rows"] == 2
     assert canonical[0]["_veltrix_reconciliation_status"] == "AMBIGUOUS"
     assert "competition_identity_conflict" in canonical[0]["_veltrix_quarantine_reasons"]
+
+
+
+def test_same_competition_name_in_different_countries_is_quarantined():
+    left = fixture(
+        "country-a", "ProviderA", "United FC", "City FC", 1,
+        "Premier League", "2026-11-04T18:00:00Z",
+    )
+    right = fixture(
+        "country-b", "ProviderB", "United FC", "City FC", "pl-2",
+        "Premier League", "2026-11-04T18:01:00Z",
+    )
+    left["league"]["country"] = "England"
+    right["league"]["country"] = "Scotland"
+
+    canonical, meta = reconcile_fixture_rows([left, right])
+
+    assert len(canonical) == 1
+    assert canonical[0]["_veltrix_reconciliation_status"] == "AMBIGUOUS"
+    assert "competition_identity_conflict" in canonical[0]["_veltrix_quarantine_reasons"]
+    assert {item["competition_country"] for item in canonical[0]["_veltrix_provenance"]} == {
+        "England", "Scotland",
+    }
+    assert meta["quarantined_rows"] == 2
