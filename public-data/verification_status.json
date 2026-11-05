@@ -1,12 +1,12 @@
 {
   "schema_version": 1,
   "workflow": "Daily Fixture Predictions",
-  "run_id": "42035038619",
+  "run_id": "42055209500",
   "run_attempt": "1",
   "event": "workflow_dispatch",
   "commit_sha": "aa3f9943548614a9c02fed804629f26389909612",
   "branch": "main",
-  "recorded_at_utc": "2026-11-05T13:23:30.281938+00:00",
+  "recorded_at_utc": "2026-11-05T15:29:45.944823+00:00",
   "overall_status": "PASSED",
   "validation_scope": "LIVE_PIPELINE",
   "telegram_configured": true,
@@ -32,30 +32,30 @@
   "report_summary": {
     "as_of_date": "2026-11-05",
     "publication_status": "PUBLISHED",
-    "fixtures_received": 112,
-    "same_day_pre_match_fixtures": 112,
-    "same_day_fixtures_retained": 112,
+    "fixtures_received": 90,
+    "same_day_pre_match_fixtures": 90,
+    "same_day_fixtures_retained": 90,
     "past_kickoffs_retained": 0,
     "duplicate_fixture_rows_removed": null,
-    "future_fixtures_considered": 112,
-    "fixture_rows": 112,
+    "future_fixtures_considered": 90,
+    "fixture_rows": 90,
     "fixture_status_counts": {
-      "LOW_HISTORY_FORECAST": 111,
+      "LOW_HISTORY_FORECAST": 89,
       "AMBIGUOUS_FIXTURE_IDENTITY": 1
     },
     "fixture_visibility_validation": {
       "status": "PASSED",
-      "fixture_rows": 112,
-      "expected_fixture_rows": 112,
+      "fixture_rows": 90,
+      "expected_fixture_rows": 90,
       "fixture_status_counts": {
-        "LOW_HISTORY_FORECAST": 111,
+        "LOW_HISTORY_FORECAST": 89,
         "AMBIGUOUS_FIXTURE_IDENTITY": 1
       },
       "kickoff_unverified_rows": 0,
-      "forecast_rows": 111,
-      "low_data_forecast_rows": 111,
+      "forecast_rows": 89,
+      "low_data_forecast_rows": 89,
       "insufficient_history_rows": 0,
-      "senior_forecast_coverage": 1.2333,
+      "senior_forecast_coverage": 1.2027,
       "licensed_global_history_rows_diagnostic_only": 397,
       "alerts_enabled": false
     },
@@ -80,12 +80,12 @@
     "value_validation_certificate": "LOCKED_INSUFFICIENT_EVIDENCE"
   },
   "value_evidence_summary": {
-    "observations_total": 5283,
+    "observations_total": 5371,
     "observations_added": 88,
     "price_series": 1867,
     "series_with_multiple_snapshots": 968,
     "settled_observations": 2443,
-    "shadow_candidate_observations": 176,
+    "shadow_candidate_observations": 188,
     "legacy_candidate_observations_unannotated": 0,
     "settled_shadow_candidates": 63,
     "shadow_candidate_wins": 10,
@@ -118,18 +118,5 @@
     }
   },
   "release_status": "LOCKED_SHADOW_MODE",
-  "betting_alerts_enabled": false,
-  "latest_test_run": {
-    "run_id": "42043563974",
-    "commit_sha": "6840318632110db31ac13344b948dce65b1c7f65",
-    "recorded_at_utc": "2026-11-05T14:18:36.313682+00:00",
-    "overall_status": "TESTS_PASSED",
-    "steps": {
-      "unit_tests": "success",
-      "dashboard_js": "success"
-    }
-  },
-  "latest_test_status": "TESTS_PASSED",
-  "last_test_run_id": "42043563974",
-  "last_full_pipeline_status": "PASSED"
+  "betting_alerts_enabled": false
 }
