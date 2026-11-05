@@ -147,6 +147,7 @@ def filter_report_for_delivery(report: dict, now: datetime | None = None) -> dic
     result["future_fixtures_considered"] = future_rows_retained
     result["predictions_created"] = len(experimental)
     result["low_data_forecasts"] = len(low_data_experimental)
+    result["low_history_forecasts"] = sum(row.get("status") == "LOW_HISTORY_FORECAST" for row in experimental)
     result["insufficient_history"] = len(insufficient)
     result["unsupported_competitions"] = len(unsupported)
     result["kickoff_unverified_fixtures"] = sum(row.get("status") == "KICKOFF_UNVERIFIED" for row in kept)
