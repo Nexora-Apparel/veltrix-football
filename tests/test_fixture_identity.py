@@ -290,3 +290,90 @@ def test_same_teams_same_competition_with_small_kickoff_drift_is_quarantined():
     assert {record["fixture_id"] for record in canonical[0]["_veltrix_source_fixture_ids"]} == {
         "feed-a", "feed-b",
     }
+
+
+def test_u19_competition_supplies_squad_identity_when_team_names_omit_suffix():
+    rows = [
+        fixture("youth-a", "ProviderA", "Zilina", "Helsinki", 700,
+                "UEFA U19", "2026-11-04T15:30:00Z"),
+        fixture("youth-b", "ProviderB", "Zilina U19", "Helsinki U19", "youth-700",
+                "UEFA U19", "2026-11-04T15:31:00Z"),
+    ]
+
+    canonical, meta = reconcile_fixture_rows(rows)
+
+    assert len(canonical) == 1
+    assert meta["confirmed_duplicate_groups"] == 1
+    assert meta["quarantined_rows"] == 0
+    assert canonical[0]["_veltrix_reconciliation_status"] == "MATCHED"
+    assert {item["fixture_id"] for item in canonical[0]["_veltrix_source_fixture_ids"]} == {
+        "youth-a", "youth-b",
+    }
+
+
+def test_observed_u19_name_variants_are_quarantined_until_team_ids_verify_alias():
+    rows = [
+        fixture("sheriff-short", "InferSports", "Sheriff", "Farul",
+                "lg-youth", "UEFA U19", "2026-11-04T17:00:00Z"),
+        fixture("sheriff-full", "InferSports", "Sheriff Tiraspol U19", "Farul Constanta U19",
+                "lg-youth", "UEFA U19", "2026-11-04T17:00:00Z"),
+    ]
+
+    canonical, meta = reconcile_fixture_rows(rows)
+
+    assert len(canonical) == 1
+    assert meta["confirmed_duplicate_groups"] == 0
+    assert meta["quarantined_rows"] == 2
+    assert canonical[0]["_veltrix_reconciliation_status"] == "AMBIGUOUS"
+    assert "team_alias_not_verified" in canonical[0]["_veltrix_quarantine_reasons"]
+    assert {item["fixture_id"] for item in canonical[0]["_veltrix_source_fixture_ids"]} == {
+        "sheriff-short", "sheriff-full",
+    }
+
+
+def test_observed_reserve_name_variants_are_quarantined_not_auto_aliased():
+    rows = [
+        fixture("reserve-short", "InferSports", "Almirante", "DD.Belgrano",
+                "lg-reserve", "Argentina Reserve League", "2026-11-04T17:00:00Z"),
+        fixture("reserve-full", "InferSports", "Almirante Brown(R)", "DD.Belgrano(R)",
+                "lg-reserve", "Argentina Reserve League", "2026-11-04T17:00:00Z"),
+    ]
+
+    canonical, meta = reconcile_fixture_rows(rows)
+
+    assert len(canonical) == 1
+    assert meta["confirmed_duplicate_groups"] == 0
+    assert meta["quarantined_rows"] == 2
+    assert canonical[0]["_veltrix_reconciliation_status"] == "AMBIGUOUS"
+    assert "team_alias_not_verified" in canonical[0]["_veltrix_quarantine_reasons"]
+    assert {item["fixture_id"] for item in canonical[0]["_veltrix_source_fixture_ids"]} == {
+        "reserve-short", "reserve-full",
+    }
+
+
+def test_abbreviated_womens_competition_keeps_unmarked_teams_separate_from_senior():
+    rows = [
+        fixture("senior-pol", "ProviderA", "GKS Katowice", "UKS SMS Lodz",
+                "pol-senior", "Poland Ekstraklasa", "2026-11-04T17:00:00Z"),
+        fixture("women-pol", "ProviderB", "GKS Katowice", "UKS SMS Lodz",
+                "pol-women", "Pol(W)", "2026-11-04T17:00:00Z"),
+    ]
+
+    canonical, meta = reconcile_fixture_rows(rows)
+
+    assert len(canonical) == 2
+    assert meta["confirmed_duplicate_groups"] == 0
+
+
+def test_abbreviated_argentine_reserve_competition_infers_reserve_squad():
+    rows = [
+        fixture("senior-arg", "ProviderA", "Almirante Brown", "Belgrano",
+                "arg-senior", "Argentine Primera Division", "2026-11-04T17:00:00Z"),
+        fixture("reserve-arg", "ProviderB", "Almirante Brown", "Belgrano",
+                "arg-reserve", "Arg(R)", "2026-11-04T17:00:00Z"),
+    ]
+
+    canonical, meta = reconcile_fixture_rows(rows)
+
+    assert len(canonical) == 2
+    assert meta["confirmed_duplicate_groups"] == 0
