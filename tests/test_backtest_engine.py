@@ -472,3 +472,14 @@ def test_rolling_origin_1x2_vector_scaling_corrects_class_bias_without_leakage()
     assert sum(result["raw"]["predicted_class_counts"].values()) == 600
     assert sum(result["calibrated"]["predicted_class_counts"].values()) == 600
     assert set(result["calibrated"]["class_precision_recall"]) == {"H", "D", "A"}
+
+
+
+def test_default_elo_has_no_automatic_home_advantage():
+    from app.backtest_engine import _elo_probs
+    from app.live_predictions import HOME_ELO_ADVANTAGE
+
+    assert HOME_ELO_ADVANTAGE == 0.0
+    probabilities = _elo_probs(1500.0, 1500.0, HOME_ELO_ADVANTAGE, 0.25)
+    assert abs(probabilities["H"] - probabilities["A"]) < 1e-12
+    assert probabilities["D"] == 0.25
