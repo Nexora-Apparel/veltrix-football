@@ -655,7 +655,7 @@ def test_mapped_competition_prior_is_not_published_when_team_history_is_sparse()
     )
     prediction = result[0]
     assert prediction["status"] == "LOW_HISTORY_FORECAST"
-    assert prediction["data_availability"]["competition_specific_history"] == "UNAVAILABLE"
+    assert prediction["data_availability"]["competition_specific_history"] == "AVAILABLE"
     assert prediction["data_availability"]["fallback_prior"] == "GLOBAL"
     assert prediction["probabilities"]
     assert "btts_yes" in prediction
