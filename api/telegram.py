@@ -340,7 +340,7 @@ async function fetchDashboardPayload(){
     if(!response.ok)throw new Error('GitHub API HTTP '+response.status);
     const wrapper=await response.json();
     if(!wrapper||!wrapper.content)throw new Error('GitHub API returned no file content');
-    const bytes=Uint8Array.from(atob(wrapper.content.replace(/\s/g,'')),c=>c.charCodeAt(0));
+    const bytes=Uint8Array.from(atob(wrapper.content.replace(/\\s/g,'')),c=>c.charCodeAt(0));
     const report=JSON.parse(new TextDecoder().decode(bytes));
     if(!report||!Array.isArray(report.predictions)||!report.as_of_date)throw new Error('GitHub API snapshot failed validation');
     return await normalizeStaticReport(report);
