@@ -16,19 +16,9 @@ KICKOFF_TOLERANCE_SECONDS = 300
 
 # Curated aliases are deliberately exact and context-gated by competition,
 # squad category, orientation and kickoff. Add entries only after source review.
-TEAM_ALIASES = {
-    # Stable, widely established club abbreviations. These are still
-    # competition/category/kickoff gated before they can merge fixtures.
-    "manutd": "manchesterunited",
-    "manchesterutd": "manchesterunited",
-    "manunited": "manchesterunited",
-    "barca": "barcelona",
-    "newcastle": "newcastleunited",
-    "newcastleutd": "newcastleunited",
-    "deportivolacoruna": "deportivocoruna",
-    "deportivoacoruna": "deportivocoruna",
-    "caosasuna": "osasuna",
-}
+# No name-only aliases are currently certified by a provider team-ID
+# crosswalk. Add an alias only after source IDs and club identity are verified.
+TEAM_ALIASES: dict[str, str] = {}
 # Observed provider abbreviations without a verified team-ID crosswalk.
 # They may trigger quarantine but are deliberately NOT merge aliases.
 UNVERIFIED_TEAM_ALIAS_CANDIDATES = {
@@ -98,9 +88,10 @@ def team_identity(value: Any) -> tuple[str, tuple[str, ...]]:
     return key, tuple(sorted(category))
 
 
-def competition_identity(row: dict[str, Any]) -> tuple[str, str] | None:
+def competition_identity(row: dict[str, Any]) -> tuple[str, str, str] | None:
     league = row.get("league") if isinstance(row.get("league"), dict) else {}
     name = _plain(league.get("name"))
+    country = _plain(league.get("country"))
     if not name:
         return None
     category = "senior"
@@ -110,7 +101,7 @@ def competition_identity(row: dict[str, Any]) -> tuple[str, str] | None:
         category = "youth"
     elif re.search(r"(reserve|reserves|secondteam|bteam|ii|iii)", name):
         category = "reserve"
-    return category, COMPETITION_ALIASES.get(name, name)
+    return category, country, COMPETITION_ALIASES.get(name, name)
 
 
 def _kickoff(row: dict[str, Any], timezone_name: str) -> datetime | None:
