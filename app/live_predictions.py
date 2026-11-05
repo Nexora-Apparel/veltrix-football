@@ -985,7 +985,7 @@ def build_daily_report(
         prediction.get("status") == "KICKOFF_UNVERIFIED" for prediction in predictions
     )
     if market_odds_by_fixture:
-        eligible_statuses = {"EXPERIMENTAL_ONLY", "EXPERIMENTAL_LOW_DATA", "INSUFFICIENT_HISTORY", "UNSUPPORTED_COMPETITION"}
+        eligible_statuses = {"EXPERIMENTAL_ONLY", "EXPERIMENTAL_LOW_DATA", "LOW_HISTORY_FORECAST", "INSUFFICIENT_HISTORY", "UNSUPPORTED_COMPETITION"}
         for prediction in predictions:
             if prediction.get("status") not in eligible_statuses:
                 continue
@@ -1003,7 +1003,7 @@ def build_daily_report(
         "as_of_date": target_date.isoformat(),
         "timezone": timezone_name,
         "same_day_only": True,
-        "model_status": "EXPERIMENTAL_NOT_VALIDATED",
+        "model_status": "EVIDENCE_WEIGHTED_NOT_CERTIFIED",
         "historical_matches_available": sum(row["date"] < target_date for row in historical),
         "historical_data_through": max(
             (row["date"].isoformat() for row in historical if row["date"] < target_date),
@@ -1021,6 +1021,7 @@ def build_daily_report(
         "fixture_status_counts": {
             "EXPERIMENTAL_ONLY": sum(p.get("status") == "EXPERIMENTAL_ONLY" for p in predictions),
             "EXPERIMENTAL_LOW_DATA": sum(p.get("status") == "EXPERIMENTAL_LOW_DATA" for p in predictions),
+            "LOW_HISTORY_FORECAST": sum(p.get("status") == "LOW_HISTORY_FORECAST" for p in predictions),
             "INSUFFICIENT_HISTORY": sum(p.get("status") == "INSUFFICIENT_HISTORY" for p in predictions),
             "UNSUPPORTED_COMPETITION": sum(p.get("status") == "UNSUPPORTED_COMPETITION" for p in predictions),
             "KICKOFF_UNVERIFIED": kickoff_unverified_count,
@@ -1029,22 +1030,26 @@ def build_daily_report(
         },
         "fixtures_excluded_other_date_or_status": len(fixtures) - len(parsed_for_date) - kickoff_unverified_count,
         "predictions_created": sum(
-            p.get("status") in {"EXPERIMENTAL_ONLY", "EXPERIMENTAL_LOW_DATA"}
+            p.get("status") in {"EXPERIMENTAL_ONLY", "EXPERIMENTAL_LOW_DATA", "LOW_HISTORY_FORECAST"}
             and isinstance(p.get("probabilities"), dict)
             for p in predictions
         ),
         "low_data_forecasts": sum(p.get("status") == "EXPERIMENTAL_LOW_DATA" for p in predictions),
+        "low_history_forecasts": sum(
+            p.get("status") == "LOW_HISTORY_FORECAST" and isinstance(p.get("probabilities"), dict)
+            for p in predictions
+        ),
         "forecast_coverage": {
             "forecast_rows": sum(
                 isinstance(p.get("probabilities"), dict)
-                and p.get("status") in {"EXPERIMENTAL_ONLY", "EXPERIMENTAL_LOW_DATA"}
+                and p.get("status") in {"EXPERIMENTAL_ONLY", "EXPERIMENTAL_LOW_DATA", "LOW_HISTORY_FORECAST"}
                 for p in predictions
             ),
             "eligible_prematch_fixtures": future_kickoffs,
             "coverage_rate": round(
                 sum(
                     isinstance(p.get("probabilities"), dict)
-                    and p.get("status") in {"EXPERIMENTAL_ONLY", "EXPERIMENTAL_LOW_DATA"}
+                    and p.get("status") in {"EXPERIMENTAL_ONLY", "EXPERIMENTAL_LOW_DATA", "LOW_HISTORY_FORECAST"}
                     for p in predictions
                 ) / future_kickoffs, 4
             ) if future_kickoffs else 1.0,
@@ -1096,12 +1101,12 @@ def build_daily_report(
         ),
         "primary_model_counts": {
             model_name: sum(
-                p.get("status") in {"EXPERIMENTAL_ONLY", "EXPERIMENTAL_LOW_DATA"} and p.get("model") == model_name
+                p.get("status") in {"EXPERIMENTAL_ONLY", "EXPERIMENTAL_LOW_DATA", "LOW_HISTORY_FORECAST"} and p.get("model") == model_name
                 for p in predictions
             )
             for model_name in sorted({
                 str(p.get("model")) for p in predictions
-                if p.get("status") in {"EXPERIMENTAL_ONLY", "EXPERIMENTAL_LOW_DATA"} and p.get("model")
+                if p.get("status") in {"EXPERIMENTAL_ONLY", "EXPERIMENTAL_LOW_DATA", "LOW_HISTORY_FORECAST"} and p.get("model")
             })
         },
         "poisson_alternative_available": sum(
@@ -1115,5 +1120,5 @@ def build_daily_report(
         "normal_bets": {"target_combined_decimal_odds": 10.0, "status": "NOT_GENERATED_MODEL_NOT_VALIDATED"},
         "value_bets": {"target_combined_decimal_odds": [50.0, 100.0], "status": "NOT_GENERATED_MODEL_NOT_VALIDATED"},
         "predictions": predictions,
-        "notice": "Experimental research output only. Historical tests show the Poisson pipeline underperforms the market benchmark. Competition-scoped Elo is preferred when available but remains unvalidated for betting; Poisson remains primary when Elo history is unavailable. No betting recommendations or value bets are approved.",
+        "notice": "Evidence-weighted forecasts are provided with explicit evidence grades. Historical testing has not certified the model for betting; value-bet alerts remain locked until each market independently passes release validation.",
     }

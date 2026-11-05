@@ -142,11 +142,29 @@ def filter_report_for_delivery(report: dict, now: datetime | None = None) -> dic
     not_prematch = [row for row in kept if row.get("status") == "FIXTURE_NOT_PREMATCH"]
     result = dict(report)
     result["predictions"] = kept
+    result["model_status"] = "EVIDENCE_WEIGHTED_NOT_CERTIFIED"
+    result["notice"] = (
+        "Evidence-weighted forecasts are provided with explicit evidence grades. "
+        "Historical testing has not certified the model for betting; value-bet alerts "
+        "remain locked until each market independently passes release validation."
+    )
     result["same_day_fixtures_retained"] = len(kept)
     result["same_day_pre_match_fixtures"] = future_rows_retained
     result["future_fixtures_considered"] = future_rows_retained
     result["predictions_created"] = len(experimental)
     result["low_data_forecasts"] = len(low_data_experimental)
+    result["low_history_forecasts"] = sum(row.get("status") == "LOW_HISTORY_FORECAST" for row in experimental)
+    forecast_rows = sum(
+        isinstance(row.get("probabilities"), dict)
+        and row.get("status") in {"EXPERIMENTAL_ONLY", "EXPERIMENTAL_LOW_DATA", "LOW_HISTORY_FORECAST"}
+        for row in kept
+    )
+    result["forecast_coverage"] = {
+        "forecast_rows": forecast_rows,
+        "eligible_prematch_fixtures": future_rows_retained,
+        "coverage_rate": round(forecast_rows / future_rows_retained, 4) if future_rows_retained else 1.0,
+        "low_data_forecasts_are_not_betting_eligible": True,
+    }
     result["insufficient_history"] = len(insufficient)
     result["unsupported_competitions"] = len(unsupported)
     result["kickoff_unverified_fixtures"] = sum(row.get("status") == "KICKOFF_UNVERIFIED" for row in kept)

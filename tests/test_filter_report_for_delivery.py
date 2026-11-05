@@ -130,6 +130,39 @@ def test_filter_recomputes_status_counts_after_removing_rows():
 
 
 
+
+def test_filter_counts_adaptive_low_history_forecast_and_removes_legacy_experimental_notice():
+    report = {
+        "as_of_date": "2026-10-25",
+        "timezone": "Africa/Lagos",
+        "same_day_only": True,
+        "model_status": "EXPERIMENTAL_NOT_VALIDATED",
+        "notice": "Experimental research output only.",
+        "predictions": [{
+            "fixture_id": "fixture-low-history",
+            "status": "LOW_HISTORY_FORECAST",
+            "home_team": "Unknown Home",
+            "away_team": "Unknown Away",
+            "kickoff_local": "2026-10-25T18:00:00+01:00",
+            "evidence_grade": "VERY_LOW",
+            "historical_matches": {"home": 0, "away": 0},
+            "probabilities": {"home_win": .45, "draw": .28, "away_win": .27},
+        }],
+    }
+    now = datetime(2026, 10, 25, 8, 0, tzinfo=ZoneInfo("Africa/Lagos"))
+
+    filtered = filter_report_for_delivery(report, now)
+
+    assert filtered["predictions_created"] == 1
+    assert filtered["low_history_forecasts"] == 1
+    assert filtered["forecast_coverage"]["forecast_rows"] == 1
+    assert filtered["forecast_coverage"]["coverage_rate"] == 1.0
+    assert filtered["model_status"] == "EVIDENCE_WEIGHTED_NOT_CERTIFIED"
+    assert "experimental" not in filtered["notice"].lower()
+    assert filtered["predictions"][0]["probabilities"] == report["predictions"][0]["probabilities"]
+
+
+
 def test_filter_withholds_legacy_low_data_forecasts_and_keeps_fixture_visible():
     report = {
         "as_of_date": "2026-10-25",

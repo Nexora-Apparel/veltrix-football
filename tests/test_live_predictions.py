@@ -404,6 +404,32 @@ def test_empty_history_generates_conservative_neutral_prior_forecast():
     assert result[0]["value_bet_screen"]["status"] == "NOT_ELIGIBLE_LOW_EVIDENCE"
 
 
+
+def test_daily_report_counts_adaptive_low_history_forecasts_correctly(tmp_path):
+    history_path = tmp_path / "missing-history.csv"
+    history_path.write_text("match_date,home_team,away_team,home_goals,away_goals\n", encoding="utf-8")
+    report = build_daily_report(
+        {"response": [_fixture("2026-10-23T15:00:00+01:00")]},
+        history_path,
+        as_of=date(2026, 10, 23),
+        now=datetime(2026, 10, 23, 12, 0, tzinfo=ZoneInfo("Africa/Lagos")),
+        market_odds_by_fixture={123: {
+            "model": "market_consensus",
+            "probabilities": {"home": 0.4, "draw": 0.3, "away": 0.3},
+            "bookmakers_count": 3,
+        }},
+    )
+
+    assert report["fixture_status_counts"]["LOW_HISTORY_FORECAST"] == 1
+    assert report["predictions"][0]["market_probabilities"] == {"home": 0.4, "draw": 0.3, "away": 0.3}
+    assert report["predictions_created"] == 1
+    assert report["low_history_forecasts"] == 1
+    assert report["forecast_coverage"]["forecast_rows"] == 1
+    assert report["forecast_coverage"]["coverage_rate"] == 1.0
+    assert report["model_status"] == "EVIDENCE_WEIGHTED_NOT_CERTIFIED"
+    assert "experimental" not in report["notice"].lower()
+
+
 def test_empty_history_retains_past_fixture_and_excludes_other_day_fixture():
     past = _fixture("2026-10-23T11:00:00+01:00")
     tomorrow = _fixture("2026-10-24T15:00:00+01:00")
@@ -439,9 +465,9 @@ def test_daily_report_warns_backtest_does_not_validate_live_pipeline(tmp_path):
         as_of=date(2026, 10, 23),
         now=datetime(2026, 10, 23, 12, 0, tzinfo=ZoneInfo("Africa/Lagos")),
     )
-    assert "underperforms the market benchmark" in report["notice"]
-    assert "No betting recommendations" in report["notice"]
-    assert report["model_status"] == "EXPERIMENTAL_NOT_VALIDATED"
+    assert "has not certified the model for betting" in report["notice"]
+    assert "value-bet alerts remain locked" in report["notice"]
+    assert report["model_status"] == "EVIDENCE_WEIGHTED_NOT_CERTIFIED"
     assert report["normal_bets"]["status"] == "NOT_GENERATED_MODEL_NOT_VALIDATED"
 
 
