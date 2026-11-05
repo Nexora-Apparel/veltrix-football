@@ -260,12 +260,24 @@ def _limit_fixture_payload(
     )
     target_date = as_of_date or current_time.date()
     eligible: list[dict] = []
+    invalid_source_records: list[dict[str, Any]] = []
     for row in rows:
         if not isinstance(row, dict):
             continue
         fixture = row.get("fixture") if isinstance(row.get("fixture"), dict) else {}
+        league = row.get("league") if isinstance(row.get("league"), dict) else {}
+        teams = row.get("teams") if isinstance(row.get("teams"), dict) else {}
+        home = teams.get("home") if isinstance(teams.get("home"), dict) else {}
+        away = teams.get("away") if isinstance(teams.get("away"), dict) else {}
         raw = fixture.get("date")
         if not raw:
+            invalid_source_records.append({
+                "provider": str(row.get("_veltrix_source") or row.get("provider") or "UNKNOWN"),
+                "fixture_id": fixture.get("id"),
+                "competition_id": league.get("id"),
+                "home_team_id": home.get("id"), "away_team_id": away.get("id"),
+                "reason": "MISSING_KICKOFF",
+            })
             continue
         try:
             kickoff = datetime.fromisoformat(str(raw).replace("Z", "+00:00"))
@@ -273,6 +285,14 @@ def _limit_fixture_payload(
                 kickoff = kickoff.replace(tzinfo=zone)
             kickoff = kickoff.astimezone(zone)
         except (TypeError, ValueError, OverflowError):
+            invalid_source_records.append({
+                "provider": str(row.get("_veltrix_source") or row.get("provider") or "UNKNOWN"),
+                "fixture_id": fixture.get("id"),
+                "competition_id": league.get("id"),
+                "home_team_id": home.get("id"), "away_team_id": away.get("id"),
+                "raw_kickoff": str(raw),
+                "reason": "INVALID_KICKOFF",
+            })
             continue
         if kickoff.date() == target_date:
             eligible.append(row)
@@ -291,11 +311,18 @@ def _limit_fixture_payload(
     def source_counts(items: list[dict]) -> dict[str, int]:
         counts: dict[str, int] = {}
         for item in items:
-            source_name = str(item.get("_veltrix_source") or item.get("provider") or "UNKNOWN")
-            counts[source_name] = counts.get(source_name, 0) + 1
+            provenance = item.get("_veltrix_provenance")
+            source_names = (
+                [str(record.get("provider") or "UNKNOWN") for record in provenance if isinstance(record, dict)]
+                if isinstance(provenance, list) and provenance else
+                [str(item.get("_veltrix_source") or item.get("provider") or "UNKNOWN")]
+            )
+            for source_name in source_names:
+                counts[source_name] = counts.get(source_name, 0) + 1
         return dict(sorted(counts.items()))
 
     meta["fixtures_before_reconciliation"] = len(eligible)
+    meta["invalid_fixture_source_records"] = invalid_source_records
     meta["fixture_reconciliation"] = reconciliation
     meta["fixtures_after_reconciliation"] = len(canonical)
     meta["fixtures_by_source_before_reconciliation"] = source_counts(eligible)
