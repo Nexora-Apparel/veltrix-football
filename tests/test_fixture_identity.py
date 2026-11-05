@@ -349,3 +349,31 @@ def test_observed_reserve_name_variants_are_quarantined_not_auto_aliased():
     assert {item["fixture_id"] for item in canonical[0]["_veltrix_source_fixture_ids"]} == {
         "reserve-short", "reserve-full",
     }
+
+
+def test_abbreviated_womens_competition_keeps_unmarked_teams_separate_from_senior():
+    rows = [
+        fixture("senior-pol", "ProviderA", "GKS Katowice", "UKS SMS Lodz",
+                "pol-senior", "Poland Ekstraklasa", "2026-11-04T17:00:00Z"),
+        fixture("women-pol", "ProviderB", "GKS Katowice", "UKS SMS Lodz",
+                "pol-women", "Pol(W)", "2026-11-04T17:00:00Z"),
+    ]
+
+    canonical, meta = reconcile_fixture_rows(rows)
+
+    assert len(canonical) == 2
+    assert meta["confirmed_duplicate_groups"] == 0
+
+
+def test_abbreviated_argentine_reserve_competition_infers_reserve_squad():
+    rows = [
+        fixture("senior-arg", "ProviderA", "Almirante Brown", "Belgrano",
+                "arg-senior", "Argentine Primera Division", "2026-11-04T17:00:00Z"),
+        fixture("reserve-arg", "ProviderB", "Almirante Brown", "Belgrano",
+                "arg-reserve", "Arg(R)", "2026-11-04T17:00:00Z"),
+    ]
+
+    canonical, meta = reconcile_fixture_rows(rows)
+
+    assert len(canonical) == 2
+    assert meta["confirmed_duplicate_groups"] == 0
