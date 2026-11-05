@@ -13,6 +13,7 @@ from typing import Any
 from zoneinfo import ZoneInfo
 
 KICKOFF_TOLERANCE_SECONDS = 300
+KICKOFF_AMBIGUITY_WINDOW_SECONDS = 3600
 
 # Curated aliases are deliberately exact and context-gated by competition,
 # squad category, orientation and kickoff. Add entries only after source review.
@@ -276,7 +277,7 @@ def reconcile_fixture_rows(
                 and a["home_key"] == b["home_key"] and a["away_key"] == b["away_key"]
                 and same_categories
             )
-            if seconds > kickoff_tolerance_seconds or not same_categories:
+            if seconds > KICKOFF_AMBIGUITY_WINDOW_SECONDS or not same_categories:
                 continue
             possible_unverified_alias = bool(a["home_key"] and a["away_key"] and b["home_key"] and b["away_key"]) and (
                 UNVERIFIED_TEAM_ALIAS_CANDIDATES.get(a["home_key"], a["home_key"])
@@ -287,13 +288,15 @@ def reconcile_fixture_rows(
             if not same_teams and not possible_unverified_alias:
                 continue
             if a["competition"] is not None and a["competition"] == b["competition"]:
-                if same_teams:
+                if not same_teams:
+                    ambiguous_pairs.append((i, j, "team_alias_not_verified"))
+                elif seconds <= kickoff_tolerance_seconds:
                     # Source-local competition IDs are recorded but never compared
                     # across providers. The normalized, category-aware competition
                     # identity is the cross-provider join key.
                     union(i, j)
                 else:
-                    ambiguous_pairs.append((i, j, "team_alias_not_verified"))
+                    ambiguous_pairs.append((i, j, "kickoff_proximity_conflict"))
             elif a["competition"] is None or b["competition"] is None:
                 ambiguous_pairs.append((i, j, "competition_identity_missing"))
             elif a["competition"][0] == b["competition"][0]:
@@ -360,5 +363,5 @@ def reconcile_fixture_rows(
         "quarantined_rows": quarantined_rows,
         "ambiguous_pairs": len(ambiguous_pairs),
         "kickoff_tolerance_seconds": kickoff_tolerance_seconds,
-        "policy": "provider-local IDs; competition and squad-category aware; home/away orientation preserved; five-minute kickoff tolerance; ambiguous records quarantined",
+        "policy": "provider-local IDs; competition and squad-category aware; home/away orientation preserved; five-minute confirmed-match tolerance; one-hour ambiguity quarantine window; ambiguous records retained",
     }

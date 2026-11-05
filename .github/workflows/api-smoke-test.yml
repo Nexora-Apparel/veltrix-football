@@ -5,6 +5,8 @@ on:
     branches: [main]
     paths:
       - "app/provider_adapters.py"
+      - "app/fixture_identity.py"
+      - "tests/test_fixture_identity.py"
       - "scripts/verify_data_providers.py"
       - "scripts/verify_multi_source_integration.py"
       - "tests/test_provider_adapters.py"
@@ -13,6 +15,8 @@ on:
     branches: [main]
     paths:
       - "app/provider_adapters.py"
+      - "app/fixture_identity.py"
+      - "tests/test_fixture_identity.py"
       - "scripts/verify_data_providers.py"
       - "scripts/verify_multi_source_integration.py"
       - "tests/test_provider_adapters.py"
