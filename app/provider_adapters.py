@@ -961,6 +961,17 @@ def enrich_report_with_multi_source_odds(
             "soccer_argentina_primera_division": "Argentine Primera Division",
             "soccer_brazil_campeonato": "Brazilian Serie A",
         }
+        sport_countries = {
+            "soccer_epl": "England",
+            "soccer_spain_la_liga": "Spain",
+            "soccer_germany_bundesliga": "Germany",
+            "soccer_italy_serie_a": "Italy",
+            "soccer_france_ligue_one": "France",
+            "soccer_netherlands_eredivisie": "Netherlands",
+            "soccer_portugal_primeira_liga": "Portugal",
+            "soccer_argentina_primera_division": "Argentina",
+            "soccer_brazil_campeonato": "Brazil",
+        }
         for sport_key, event in odds_events:
             event_row = {
                 "fixture": {"id": event.get("id"), "date": event.get("commence_time")},
@@ -968,7 +979,7 @@ def enrich_report_with_multi_source_odds(
                     "home": {"name": event.get("home_team")},
                     "away": {"name": event.get("away_team")},
                 },
-                "league": {"id": sport_key, "name": sport_competition_names.get(sport_key)},
+                "league": {"id": sport_key, "name": sport_competition_names.get(sport_key), "country": sport_countries.get(sport_key)},
                 "_veltrix_source": "The Odds API",
             }
             prediction = unique_prediction_match(event_row, predictions, timezone_name=timezone_name)
@@ -997,7 +1008,7 @@ def enrich_report_with_multi_source_odds(
                     "home": {"name": event.get("home_team")},
                     "away": {"name": event.get("away_team")},
                 },
-                "league": {"id": sport_key, "name": sport_competition_names.get(sport_key)},
+                "league": {"id": sport_key, "name": sport_competition_names.get(sport_key), "country": sport_countries.get(sport_key)},
                 "_veltrix_source": "The Odds API",
             }
             prediction = unique_prediction_match(event_row, predictions, timezone_name=timezone_name)
@@ -1067,6 +1078,10 @@ def enrich_report_with_multi_source_odds(
                     competition.get("name") or competition.get("display_name")
                     if isinstance(competition, dict) else str(competition or "")
                 )
+                competition_country = (
+                    competition.get("country") if isinstance(competition, dict)
+                    else event.get("country")
+                )
                 competition_id = (
                     competition.get("id") if isinstance(competition, dict)
                     else event.get("competition_id") or event.get("league_id")
@@ -1077,7 +1092,7 @@ def enrich_report_with_multi_source_odds(
                         "home": {"name": home_name, "id": (home_obj.get("id") if isinstance(home_obj, dict) else None)},
                         "away": {"name": away_name, "id": (away_obj.get("id") if isinstance(away_obj, dict) else None)},
                     },
-                    "league": {"id": competition_id, "name": competition_name},
+                    "league": {"id": competition_id, "name": competition_name, "country": competition_country},
                     "_veltrix_source": "InferSports",
                 }
                 prediction = unique_prediction_match(event_row, predictions, timezone_name=timezone_name)
