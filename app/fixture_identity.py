@@ -152,6 +152,7 @@ def _provenance(row: dict[str, Any], identity: dict[str, Any]) -> dict[str, Any]
         "fixture_id": fixture.get("id"),
         "competition_id": league.get("id"),
         "competition_name": league.get("name"),
+        "competition_country": league.get("country"),
         "home_team_id": home.get("id"),
         "away_team_id": away.get("id"),
         "home_team_name": home.get("name"),
