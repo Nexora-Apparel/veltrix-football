@@ -19,10 +19,10 @@ COMMANDS: dict[str, str] = {
     "/fixtures": "Show fixtures available in the current report.",
     "/match": "Inspect a named fixture: /match Arsenal vs Chelsea",
     "/live": "Show live matches only when live-status data is connected.",
-    "/1x2": "1X2: Home/Draw/Away outcome probabilities from the current experimental forecast.",
+    "/1x2": "1X2: Home/Draw/Away outcome probabilities from the current match forecast.",
     "/1x2value": "1X2 value screen; show paper-only candidates, while live alerts require validated probabilities and timestamped bookmaker prices.",
-    "/overunder": "PRIMARY MARKET: experimental Over/Under 0.5–4.5 goal probabilities from model expected goals.",
-    "/btts": "PRIMARY MARKET: experimental Both Teams To Score Yes/No probabilities from model expected goals.",
+    "/overunder": "PRIMARY MARKET: Over/Under 0.5–4.5 goal probabilities from model expected goals.",
+    "/btts": "PRIMARY MARKET: Both Teams To Score Yes/No probabilities from model expected goals.",
     "/goals": "Expected-goals summary for available forecasts.",
     "/cleansheet": "Clean-sheet estimates; unavailable until calibrated team-goal probabilities exist.",
     "/value": "Combined 1X2, BTTS and Over/Under value screen; show paper-only candidates while live alerts remain validation-gated.",
@@ -131,7 +131,7 @@ def _valid_probability_vector(probabilities: Any) -> bool:
 
 
 def _forecast_predictions(report: dict[str, Any] | None) -> list[dict[str, Any]]:
-    """Return only current-day, future, explicitly usable experimental forecasts."""
+    """Return only current-day, future, usable match forecasts."""
     return [
         row for row in _future_fixtures(report)
         if row.get("status") in {"EXPERIMENTAL_ONLY", "EXPERIMENTAL_LOW_DATA", "LOW_HISTORY_FORECAST"}
@@ -625,7 +625,7 @@ def handle_command(
                 continue
 
             probs = row.get("probabilities")
-            if row.get("status") not in {"EXPERIMENTAL_ONLY", "EXPERIMENTAL_LOW_DATA"} or not _valid_probability_vector(probs):
+            if row.get("status") not in {"EXPERIMENTAL_ONLY", "EXPERIMENTAL_LOW_DATA", "LOW_HISTORY_FORECAST"} or not _valid_probability_vector(probs):
                 reason = row.get("reason") or row.get("status") or "forecast unavailable"
                 lines.extend([
                     f"━━━━━━━━━━━━━━━━━━━━",
@@ -643,9 +643,9 @@ def handle_command(
                 f"🏆 {league}  ·  🕒 {kickoff}",
             ])
             if row.get("status") == "EXPERIMENTAL_LOW_DATA":
-                lines.append("MODEL STATUS: LOW-DATA EXPERIMENTAL · NOT BETTING ELIGIBLE")
+                lines.append("LIMITED EVIDENCE · VALUE BET NOT RECOMMENDED")
             if row.get("prediction_basis"):
-                lines.append("Forecast basis: " + str(row.get("prediction_basis")))
+                lines.append("Why this verdict: " + str(row.get("prediction_basis")))
             if command not in {"/overunder", "/btts"}:
                 lines.append(
                     f"1X2: Home {float(probs['home_win']):.0%}  ·  Draw {float(probs['draw']):.0%}  ·  Away {float(probs['away_win']):.0%}"
