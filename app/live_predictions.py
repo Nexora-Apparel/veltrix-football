@@ -535,20 +535,20 @@ def predict_fixtures(
     # kickoff date can enter team counts, rates, aliases or scoring baselines.
     output: list[dict[str, Any]] = []
     parsed_all = []
+    malformed_visibility = []
     # Cache Elo ratings once per competition for this report date; all fixtures
     # share the same strictly pre-date history, so recomputing it per fixture is wasteful.
     elo_cache: dict[str, dict[str, Any]] = {}
     # Rebuild histories per target date so earlier dates are never duplicated.
     for delivery_order, item in enumerate(fixtures):
         parsed = _fixture_parts(item, timezone_name, include_started=True)
-        if parsed and parsed["kickoff_date"] == today:
+        if parsed is None:
+            if isinstance(item, dict):
+                malformed_visibility.append(_invalid_fixture_visibility(item, delivery_order))
+        elif parsed["kickoff_date"] == today:
             parsed["_delivery_order"] = delivery_order
             parsed_all.append(parsed)
-    visibility_rows, parsed_fixtures = [], []
-    parsed_orders = {row.get("_delivery_order") for row in parsed_all}
-    for delivery_order, item in enumerate(fixtures):
-        if delivery_order not in parsed_orders and isinstance(item, dict):
-            visibility_rows.append(_invalid_fixture_visibility(item, delivery_order))
+    visibility_rows, parsed_fixtures = malformed_visibility, []
     for fixture in parsed_all:
         if fixture.get("reconciliation_status") == "AMBIGUOUS":
             status, reason = "AMBIGUOUS_FIXTURE_IDENTITY", "Fixture retained but quarantined: provider records could not be reconciled safely. No prediction is issued."
