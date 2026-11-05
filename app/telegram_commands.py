@@ -184,7 +184,7 @@ def _goal_market_probabilities(row: dict[str, Any]) -> dict[str, float] | None:
         return None
     home, away = means
     total = home + away
-    # Independent Poisson approximation; explicitly experimental, not calibrated.
+    # Independent Poisson approximation; not yet calibrated.
     markets = {
         "over_0_prob": _poisson_probability_at_least(1, total),
         "over_1_prob": _poisson_probability_at_least(2, total),
@@ -353,7 +353,7 @@ def _status(report: dict[str, Any] | None, ledger: dict[str, Any] | None) -> str
         "VELTRIX COMMAND CENTRE — STATUS\n"
         f"Current report: {'available' if report_is_current else 'not loaded or no longer current'}\n"
         f"Fixtures in report: {len(fixtures)}\n"
-        f"Usable experimental forecasts: {len(predictions)}\n"
+        f"Available match forecasts: {len(predictions)}\n"
         f"Recent-results refresh: {history_status}\n"
         f"Historical coverage: {history_coverage}\n"
         f"Report freshness / reuse: {freshness_status}\n"
@@ -415,7 +415,7 @@ def handle_command(
         lines.extend([
             "",
             "SAFETY",
-            "Forecasts are experimental. Odds/value screens need real odds and validated probabilities.",
+            "Predictions are evidence-weighted estimates. Value verdicts require current bookmaker prices and sufficient validation.",
             "No picks or odds are fabricated; no bets are placed.",
         ])
         return _reply("\n".join(lines))
@@ -594,16 +594,16 @@ def handle_command(
                 return _reply(body)
 
         titles = {
-            "/overunder": "🎯 PRIMARY MARKET — OVER / UNDER GOALS (EXPERIMENTAL)",
-            "/btts": "🎯 PRIMARY MARKET — BOTH TEAMS TO SCORE (EXPERIMENTAL)",
-            "/1x2": "⚽ 1X2 MARKET — HOME / DRAW / AWAY (EXPERIMENTAL)",
+            "/overunder": "🎯 PRIMARY MARKET — OVER / UNDER GOALS",
+            "/btts": "🎯 PRIMARY MARKET — BOTH TEAMS TO SCORE",
+            "/1x2": "⚽ 1X2 MARKET — HOME / DRAW / AWAY",
             "/fixtures": "FIXTURE LIST",
         }
-        lines = [titles.get(command, f"{command.upper()} — EXPERIMENTAL REPORT")]
+        lines = [titles.get(command, f"{command.upper()} — MATCH REPORT")]
         if command in {"/overunder", "/btts", "/1x2"}:
             lines.extend([
                 f"📅 {report.get('as_of_date', 'Today')}  ·  {len(selected)} matches  ·  Kick-off times: WAT",
-                "Model estimates only — not validated betting advice.",
+                "Probability estimates and evidence-based verdicts; value eligibility is assessed separately.",
                 "",
             ])
         else:
@@ -631,7 +631,7 @@ def handle_command(
                     f"━━━━━━━━━━━━━━━━━━━━",
                     f"⚽ {home} vs {away}",
                     f"🏆 {league}  ·  🕒 {kickoff}",
-                    f"Forecast withheld: {reason}",
+                    f"Analysis unavailable: {reason}",
                     "",
                 ])
                 continue
@@ -689,11 +689,11 @@ def handle_command(
         if command in {"/overunder", "/btts"}:
             lines.extend([
                 "━━━━━━━━━━━━━━━━━━━━",
-                "Method: independent-Poisson estimates from experimental expected goals.",
+                "Method: independent-Poisson estimates from expected goals.",
                 "Not calibrated or validated for betting. Prices are reference data only.",
             ])
         else:
-            lines.append("Experimental estimates only — not validated betting advice.")
+            lines.append("Estimates are not guaranteed outcomes. Value recommendations require separate market validation.")
         return _reply("\n".join(lines))
 
     if command in {"/value", "/overvalue", "/bttsvalue", "/1x2value"}:
@@ -770,7 +770,7 @@ def handle_command(
             "BOOKMAKER PRICE COVERAGE (1X2 / BTTS / O-U): "
             + " / ".join(f"{k} {v}" for k, v in odds_coverage.items()),
             "No betting selections are released until market-specific validation passes.",
-            "EXPERIMENTAL MODEL — NOT VALIDATED FOR BETTING. No bookmaker actions.",
+            "Value-bet alerts remain locked pending market-specific validation. No bookmaker actions.",
         ]
         return _reply("\\n".join(lines))
 
