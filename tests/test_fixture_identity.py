@@ -189,3 +189,23 @@ def test_unverified_provider_team_abbreviations_are_quarantined_not_merged():
     assert canonical[0]["_veltrix_reconciliation_status"] == "AMBIGUOUS"
     assert "team_alias_not_verified" in canonical[0]["_veltrix_quarantine_reasons"]
     assert {row["fixture_id"] for row in canonical[0]["_veltrix_source_fixture_ids"]} == {"primary-1", "infer-1"}
+
+
+def test_missing_kickoff_fixture_is_retained_and_quarantined():
+    row = fixture(
+        "missing-kickoff", "ProviderA", "Club A", "Club B",
+        55, "Premier League", "2026-11-04T12:00:00Z",
+    )
+    row["fixture"]["date"] = None
+
+    from scripts.run_daily_predictions import _limit_fixture_payload
+    from datetime import date
+
+    selected = _limit_fixture_payload(
+        {"response": [row]}, 25, as_of_date=date(2026, 11, 4),
+    )
+
+    assert len(selected["response"]) == 1
+    assert selected["response"][0]["fixture"]["id"] == "missing-kickoff"
+    assert selected["response"][0]["_veltrix_reconciliation_status"] == "AMBIGUOUS"
+    assert "MISSING_KICKOFF" in selected["_veltrix_meta"]["invalid_fixture_source_records"][0]["reason"]
