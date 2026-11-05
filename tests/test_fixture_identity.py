@@ -34,8 +34,8 @@ def test_cross_provider_verified_aliases_merge_and_keep_all_source_ids():
             39, "Premier League", "2026-11-04T22:30:00Z",
         ),
         fixture(
-            "infer-200", "InferSports", "Man Utd", "Chelsea",
-            "lg-epl", "English Premier League", "2026-11-04T22:32:00Z",
+            "infer-200", "InferSports", "Manchester United", "Chelsea",
+            "lg-epl", "Premier League", "2026-11-04T22:32:00Z",
         ),
     ]
 
@@ -228,3 +228,21 @@ def test_b_team_is_not_merged_with_senior_club():
     ]
     canonical, _ = reconcile_fixture_rows(rows)
     assert len(canonical) == 2
+
+
+def test_same_named_competitions_in_different_countries_are_not_merged():
+    rows = [
+        fixture("eng-1", "ProviderA", "Club A", "Club B", 1,
+                "Premier League", "2026-11-04T12:00:00Z"),
+        fixture("rsa-1", "ProviderB", "Club A", "Club B", 2,
+                "Premier League", "2026-11-04T12:01:00Z"),
+    ]
+    rows[0]["league"]["country"] = "England"
+    rows[1]["league"]["country"] = "South Africa"
+
+    canonical, meta = reconcile_fixture_rows(rows)
+
+    assert len(canonical) == 1
+    assert meta["quarantined_rows"] == 2
+    assert canonical[0]["_veltrix_reconciliation_status"] == "AMBIGUOUS"
+    assert "competition_identity_conflict" in canonical[0]["_veltrix_quarantine_reasons"]
