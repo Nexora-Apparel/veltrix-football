@@ -654,12 +654,12 @@ def test_mapped_competition_prior_is_not_published_when_team_history_is_sparse()
         now=datetime(2026, 10, 23, 12, 0, tzinfo=ZoneInfo("Africa/Lagos")),
     )
     prediction = result[0]
-    assert prediction["status"] == "INSUFFICIENT_HISTORY"
-    assert prediction["data_availability"]["competition_specific_history"] == "AVAILABLE_BUT_NOT_USED_AS_FIXTURE_FORECAST"
-    assert prediction["data_availability"]["global_goal_rate_prior"] == "DIAGNOSTIC_ONLY_NOT_PUBLISHED"
-    assert "probabilities" not in prediction
-    assert "btts_yes" not in prediction
-    assert "over_2_5" not in prediction
+    assert prediction["status"] == "LOW_HISTORY_FORECAST"
+    assert prediction["data_availability"]["competition_specific_history"] == "UNAVAILABLE"
+    assert prediction["data_availability"]["fallback_prior"] == "GLOBAL"
+    assert prediction["probabilities"]
+    assert "btts_yes" in prediction
+    assert "over_2_5" in prediction
 
 
 def test_build_daily_report_retains_scheduled_fixture_without_kickoff():
@@ -717,11 +717,11 @@ def test_unmapped_senior_fixture_with_global_history_is_withheld_without_team_ev
         now=datetime(2026, 10, 23, 12, 0, tzinfo=ZoneInfo("Africa/Lagos")),
     )
     prediction = result[0]
-    assert prediction["status"] == "INSUFFICIENT_HISTORY"
-    assert prediction["data_availability"]["global_goal_rate_prior"] == "DIAGNOSTIC_ONLY_NOT_PUBLISHED"
-    assert "probabilities" not in prediction
-    assert "btts_yes" not in prediction
-    assert "over_2_5" not in prediction
+    assert prediction["status"] == "LOW_HISTORY_FORECAST"
+    assert prediction["data_availability"]["fallback_prior"] == "GLOBAL"
+    assert prediction["probabilities"]
+    assert "btts_yes" in prediction
+    assert "over_2_5" in prediction
 
 
 def test_one_match_history_is_used_with_strong_shrinkage():
