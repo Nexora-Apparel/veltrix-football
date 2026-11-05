@@ -59,7 +59,7 @@ def _name_key(name: Any) -> str:
     """
     raw_name = str(name or "").strip().casefold()
     # Preserve only explicit squad suffix markers before punctuation is removed.
-    explicit_reserve = bool(re.search(r"(?:\(\s*r\s*\)|\s+r)$", raw_name))
+    explicit_reserve = bool(re.search(r"(?:\(\s*(?:r|b)\s*\)|\s+(?:r|b))$", raw_name))
     explicit_women = bool(re.search(r"(?:\(\s*w\s*\)|\s+w)$", raw_name))
     normalized = unicodedata.normalize("NFKD", raw_name)
     normalized = "".join(char for char in normalized if not unicodedata.combining(char))
@@ -141,7 +141,7 @@ def _team_variant_signature(key: str) -> tuple[str, ...]:
         markers.append("u" + age.group(1))
     reserve = re.search(r"(?:reserves|reserve|bteam|ii|iii|iv|2|3|reservemarker)$", key)
     if reserve:
-        markers.append(reserve.group(0))
+        markers.append("r" if reserve.group(0) == "reservemarker" else reserve.group(0))
     return tuple(markers)
 
 
@@ -192,8 +192,11 @@ def _resolve_team_key(name: Any, known_keys: Iterable[str]) -> str:
     """
     key = _name_key(name)
     candidates = list(set(known_keys))
-    if key in candidates or not candidates:
+    display_key = key.replace("reservemarker", "").replace("womenmarker", "")
+    if key in candidates:
         return key
+    if not candidates:
+        return display_key
     signature = _team_variant_signature(key)
     compatible = [
         candidate for candidate in candidates
@@ -201,7 +204,7 @@ def _resolve_team_key(name: Any, known_keys: Iterable[str]) -> str:
         and _one_edit_apart(key, candidate)
     ]
     # If more than one historical team is one edit away, the identity is ambiguous.
-    return compatible[0] if len(compatible) == 1 else key
+    return compatible[0] if len(compatible) == 1 else display_key
 
 
 def load_historical_matches(path: str | Path) -> list[dict[str, Any]]:
