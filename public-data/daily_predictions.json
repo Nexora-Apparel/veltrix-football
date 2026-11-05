@@ -1,11 +1,11 @@
 {
   "product": "Veltrix Football",
-  "generated_at_utc": "2026-11-05T11:37:12.479702+00:00",
+  "generated_at_utc": "2026-11-05T11:50:38.871373+00:00",
   "as_of_date": "2026-11-05",
   "timezone": "Africa/Lagos",
   "same_day_only": true,
-  "model_status": "EXPERIMENTAL_NOT_VALIDATED",
-  "historical_matches_available": 385,
+  "model_status": "EVIDENCE_WEIGHTED_NOT_CERTIFIED",
+  "historical_matches_available": 441,
   "historical_data_through": "2026-11-02",
   "fixtures_received": 129,
   "same_day_pre_match_fixtures": 129,
@@ -17,6 +17,7 @@
   "fixture_status_counts": {
     "EXPERIMENTAL_ONLY": 0,
     "EXPERIMENTAL_LOW_DATA": 0,
+    "LOW_HISTORY_FORECAST": 128,
     "INSUFFICIENT_HISTORY": 0,
     "UNSUPPORTED_COMPETITION": 0,
     "KICKOFF_UNVERIFIED": 0,
@@ -24,12 +25,13 @@
     "FIXTURE_NOT_PREMATCH": 0
   },
   "fixtures_excluded_other_date_or_status": 0,
-  "predictions_created": 0,
+  "predictions_created": 128,
   "low_data_forecasts": 0,
+  "low_history_forecasts": 128,
   "forecast_coverage": {
-    "forecast_rows": 0,
+    "forecast_rows": 128,
     "eligible_prematch_fixtures": 129,
-    "coverage_rate": 0.0,
+    "coverage_rate": 0.9922,
     "low_data_forecasts_are_not_betting_eligible": true
   },
   "insufficient_history": 0,
@@ -2812,7 +2814,10 @@
     }
   ],
   "teams_below_history_minimum": 198,
-  "primary_model_counts": {},
+  "primary_model_counts": {
+    "adaptive_poisson_neutral_prior": 29,
+    "adaptive_poisson_sparse_history": 99
+  },
   "poisson_alternative_available": 0,
   "elo_alternative_available": 0,
   "normal_bets": {
@@ -3043,33 +3048,33 @@
       },
       "status": "LOW_HISTORY_FORECAST",
       "probabilities": {
-        "home_win": 0.4738,
-        "draw": 0.2283,
-        "away_win": 0.2979
+        "home_win": 0.4846,
+        "draw": 0.2278,
+        "away_win": 0.2876
       },
       "expected_goals": {
-        "home": 1.818,
-        "away": 1.403
+        "home": 1.832,
+        "away": 1.367
       },
-      "btts_yes": 0.6316,
-      "over_1_5": 0.8315,
-      "over_2_5": 0.6244,
-      "over_3_5": 0.4021,
+      "btts_yes": 0.6259,
+      "over_1_5": 0.8287,
+      "over_2_5": 0.62,
+      "over_3_5": 0.3974,
       "most_likely_scorelines": [
         {
           "home_goals": 1,
           "away_goals": 1,
-          "probability": 0.10181311621379863
+          "probability": 0.10216594245558572
         },
         {
           "home_goals": 2,
           "away_goals": 1,
-          "probability": 0.09255737837618055
+          "probability": 0.09359419671668172
         },
         {
           "home_goals": 1,
           "away_goals": 0,
-          "probability": 0.07258898100428235
+          "probability": 0.07471837582572688
         }
       ],
       "evidence_grade": "VERY_LOW",
@@ -3350,33 +3355,33 @@
       },
       "status": "LOW_HISTORY_FORECAST",
       "probabilities": {
-        "home_win": 0.4738,
-        "draw": 0.2283,
-        "away_win": 0.2979
+        "home_win": 0.4846,
+        "draw": 0.2278,
+        "away_win": 0.2876
       },
       "expected_goals": {
-        "home": 1.818,
-        "away": 1.403
+        "home": 1.832,
+        "away": 1.367
       },
-      "btts_yes": 0.6316,
-      "over_1_5": 0.8315,
-      "over_2_5": 0.6244,
-      "over_3_5": 0.4021,
+      "btts_yes": 0.6259,
+      "over_1_5": 0.8287,
+      "over_2_5": 0.62,
+      "over_3_5": 0.3974,
       "most_likely_scorelines": [
         {
           "home_goals": 1,
           "away_goals": 1,
-          "probability": 0.10181311621379863
+          "probability": 0.10216594245558572
         },
         {
           "home_goals": 2,
           "away_goals": 1,
-          "probability": 0.09255737837618055
+          "probability": 0.09359419671668172
         },
         {
           "home_goals": 1,
           "away_goals": 0,
-          "probability": 0.07258898100428235
+          "probability": 0.07471837582572688
         }
       ],
       "evidence_grade": "VERY_LOW",
@@ -3657,33 +3662,33 @@
       },
       "status": "LOW_HISTORY_FORECAST",
       "probabilities": {
-        "home_win": 0.4738,
-        "draw": 0.2283,
-        "away_win": 0.2979
+        "home_win": 0.4846,
+        "draw": 0.2278,
+        "away_win": 0.2876
       },
       "expected_goals": {
-        "home": 1.818,
-        "away": 1.403
+        "home": 1.832,
+        "away": 1.367
       },
-      "btts_yes": 0.6316,
-      "over_1_5": 0.8315,
-      "over_2_5": 0.6244,
-      "over_3_5": 0.4021,
+      "btts_yes": 0.6259,
+      "over_1_5": 0.8287,
+      "over_2_5": 0.62,
+      "over_3_5": 0.3974,
       "most_likely_scorelines": [
         {
           "home_goals": 1,
           "away_goals": 1,
-          "probability": 0.10181311621379863
+          "probability": 0.10216594245558572
         },
         {
           "home_goals": 2,
           "away_goals": 1,
-          "probability": 0.09255737837618055
+          "probability": 0.09359419671668172
         },
         {
           "home_goals": 1,
           "away_goals": 0,
-          "probability": 0.07258898100428235
+          "probability": 0.07471837582572688
         }
       ],
       "evidence_grade": "VERY_LOW",
@@ -3964,33 +3969,33 @@
       },
       "status": "LOW_HISTORY_FORECAST",
       "probabilities": {
-        "home_win": 0.4738,
-        "draw": 0.2283,
-        "away_win": 0.2979
+        "home_win": 0.4846,
+        "draw": 0.2278,
+        "away_win": 0.2876
       },
       "expected_goals": {
-        "home": 1.818,
-        "away": 1.403
+        "home": 1.832,
+        "away": 1.367
       },
-      "btts_yes": 0.6316,
-      "over_1_5": 0.8315,
-      "over_2_5": 0.6244,
-      "over_3_5": 0.4021,
+      "btts_yes": 0.6259,
+      "over_1_5": 0.8287,
+      "over_2_5": 0.62,
+      "over_3_5": 0.3974,
       "most_likely_scorelines": [
         {
           "home_goals": 1,
           "away_goals": 1,
-          "probability": 0.10181311621379863
+          "probability": 0.10216594245558572
         },
         {
           "home_goals": 2,
           "away_goals": 1,
-          "probability": 0.09255737837618055
+          "probability": 0.09359419671668172
         },
         {
           "home_goals": 1,
           "away_goals": 0,
-          "probability": 0.07258898100428235
+          "probability": 0.07471837582572688
         }
       ],
       "evidence_grade": "VERY_LOW",
@@ -4271,33 +4276,33 @@
       },
       "status": "LOW_HISTORY_FORECAST",
       "probabilities": {
-        "home_win": 0.4738,
-        "draw": 0.2283,
-        "away_win": 0.2979
+        "home_win": 0.4846,
+        "draw": 0.2278,
+        "away_win": 0.2876
       },
       "expected_goals": {
-        "home": 1.818,
-        "away": 1.403
+        "home": 1.832,
+        "away": 1.367
       },
-      "btts_yes": 0.6316,
-      "over_1_5": 0.8315,
-      "over_2_5": 0.6244,
-      "over_3_5": 0.4021,
+      "btts_yes": 0.6259,
+      "over_1_5": 0.8287,
+      "over_2_5": 0.62,
+      "over_3_5": 0.3974,
       "most_likely_scorelines": [
         {
           "home_goals": 1,
           "away_goals": 1,
-          "probability": 0.10181311621379863
+          "probability": 0.10216594245558572
         },
         {
           "home_goals": 2,
           "away_goals": 1,
-          "probability": 0.09255737837618055
+          "probability": 0.09359419671668172
         },
         {
           "home_goals": 1,
           "away_goals": 0,
-          "probability": 0.07258898100428235
+          "probability": 0.07471837582572688
         }
       ],
       "evidence_grade": "VERY_LOW",
@@ -4578,33 +4583,33 @@
       },
       "status": "LOW_HISTORY_FORECAST",
       "probabilities": {
-        "home_win": 0.4738,
-        "draw": 0.2283,
-        "away_win": 0.2979
+        "home_win": 0.4846,
+        "draw": 0.2278,
+        "away_win": 0.2876
       },
       "expected_goals": {
-        "home": 1.818,
-        "away": 1.403
+        "home": 1.832,
+        "away": 1.367
       },
-      "btts_yes": 0.6316,
-      "over_1_5": 0.8315,
-      "over_2_5": 0.6244,
-      "over_3_5": 0.4021,
+      "btts_yes": 0.6259,
+      "over_1_5": 0.8287,
+      "over_2_5": 0.62,
+      "over_3_5": 0.3974,
       "most_likely_scorelines": [
         {
           "home_goals": 1,
           "away_goals": 1,
-          "probability": 0.10181311621379863
+          "probability": 0.10216594245558572
         },
         {
           "home_goals": 2,
           "away_goals": 1,
-          "probability": 0.09255737837618055
+          "probability": 0.09359419671668172
         },
         {
           "home_goals": 1,
           "away_goals": 0,
-          "probability": 0.07258898100428235
+          "probability": 0.07471837582572688
         }
       ],
       "evidence_grade": "VERY_LOW",
@@ -5014,33 +5019,33 @@
       },
       "status": "LOW_HISTORY_FORECAST",
       "probabilities": {
-        "home_win": 0.4738,
-        "draw": 0.2283,
-        "away_win": 0.2979
+        "home_win": 0.4846,
+        "draw": 0.2278,
+        "away_win": 0.2876
       },
       "expected_goals": {
-        "home": 1.818,
-        "away": 1.403
+        "home": 1.832,
+        "away": 1.367
       },
-      "btts_yes": 0.6316,
-      "over_1_5": 0.8315,
-      "over_2_5": 0.6244,
-      "over_3_5": 0.4021,
+      "btts_yes": 0.6259,
+      "over_1_5": 0.8287,
+      "over_2_5": 0.62,
+      "over_3_5": 0.3974,
       "most_likely_scorelines": [
         {
           "home_goals": 1,
           "away_goals": 1,
-          "probability": 0.10181311621379863
+          "probability": 0.10216594245558572
         },
         {
           "home_goals": 2,
           "away_goals": 1,
-          "probability": 0.09255737837618055
+          "probability": 0.09359419671668172
         },
         {
           "home_goals": 1,
           "away_goals": 0,
-          "probability": 0.07258898100428235
+          "probability": 0.07471837582572688
         }
       ],
       "evidence_grade": "VERY_LOW",
@@ -5579,33 +5584,33 @@
       },
       "status": "LOW_HISTORY_FORECAST",
       "probabilities": {
-        "home_win": 0.4738,
-        "draw": 0.2283,
-        "away_win": 0.2979
+        "home_win": 0.4846,
+        "draw": 0.2278,
+        "away_win": 0.2876
       },
       "expected_goals": {
-        "home": 1.818,
-        "away": 1.403
+        "home": 1.832,
+        "away": 1.367
       },
-      "btts_yes": 0.6316,
-      "over_1_5": 0.8315,
-      "over_2_5": 0.6244,
-      "over_3_5": 0.4021,
+      "btts_yes": 0.6259,
+      "over_1_5": 0.8287,
+      "over_2_5": 0.62,
+      "over_3_5": 0.3974,
       "most_likely_scorelines": [
         {
           "home_goals": 1,
           "away_goals": 1,
-          "probability": 0.10181311621379863
+          "probability": 0.10216594245558572
         },
         {
           "home_goals": 2,
           "away_goals": 1,
-          "probability": 0.09255737837618055
+          "probability": 0.09359419671668172
         },
         {
           "home_goals": 1,
           "away_goals": 0,
-          "probability": 0.07258898100428235
+          "probability": 0.07471837582572688
         }
       ],
       "evidence_grade": "VERY_LOW",
@@ -6402,33 +6407,33 @@
       },
       "status": "LOW_HISTORY_FORECAST",
       "probabilities": {
-        "home_win": 0.4738,
-        "draw": 0.2283,
-        "away_win": 0.2979
+        "home_win": 0.4846,
+        "draw": 0.2278,
+        "away_win": 0.2876
       },
       "expected_goals": {
-        "home": 1.818,
-        "away": 1.403
+        "home": 1.832,
+        "away": 1.367
       },
-      "btts_yes": 0.6316,
-      "over_1_5": 0.8315,
-      "over_2_5": 0.6244,
-      "over_3_5": 0.4021,
+      "btts_yes": 0.6259,
+      "over_1_5": 0.8287,
+      "over_2_5": 0.62,
+      "over_3_5": 0.3974,
       "most_likely_scorelines": [
         {
           "home_goals": 1,
           "away_goals": 1,
-          "probability": 0.10181311621379863
+          "probability": 0.10216594245558572
         },
         {
           "home_goals": 2,
           "away_goals": 1,
-          "probability": 0.09255737837618055
+          "probability": 0.09359419671668172
         },
         {
           "home_goals": 1,
           "away_goals": 0,
-          "probability": 0.07258898100428235
+          "probability": 0.07471837582572688
         }
       ],
       "evidence_grade": "VERY_LOW",
@@ -6838,33 +6843,33 @@
       },
       "status": "LOW_HISTORY_FORECAST",
       "probabilities": {
-        "home_win": 0.4738,
-        "draw": 0.2283,
-        "away_win": 0.2979
+        "home_win": 0.4846,
+        "draw": 0.2278,
+        "away_win": 0.2876
       },
       "expected_goals": {
-        "home": 1.818,
-        "away": 1.403
+        "home": 1.832,
+        "away": 1.367
       },
-      "btts_yes": 0.6316,
-      "over_1_5": 0.8315,
-      "over_2_5": 0.6244,
-      "over_3_5": 0.4021,
+      "btts_yes": 0.6259,
+      "over_1_5": 0.8287,
+      "over_2_5": 0.62,
+      "over_3_5": 0.3974,
       "most_likely_scorelines": [
         {
           "home_goals": 1,
           "away_goals": 1,
-          "probability": 0.10181311621379863
+          "probability": 0.10216594245558572
         },
         {
           "home_goals": 2,
           "away_goals": 1,
-          "probability": 0.09255737837618055
+          "probability": 0.09359419671668172
         },
         {
           "home_goals": 1,
           "away_goals": 0,
-          "probability": 0.07258898100428235
+          "probability": 0.07471837582572688
         }
       ],
       "evidence_grade": "VERY_LOW",
@@ -7145,33 +7150,33 @@
       },
       "status": "LOW_HISTORY_FORECAST",
       "probabilities": {
-        "home_win": 0.4738,
-        "draw": 0.2283,
-        "away_win": 0.2979
+        "home_win": 0.4846,
+        "draw": 0.2278,
+        "away_win": 0.2876
       },
       "expected_goals": {
-        "home": 1.818,
-        "away": 1.403
+        "home": 1.832,
+        "away": 1.367
       },
-      "btts_yes": 0.6316,
-      "over_1_5": 0.8315,
-      "over_2_5": 0.6244,
-      "over_3_5": 0.4021,
+      "btts_yes": 0.6259,
+      "over_1_5": 0.8287,
+      "over_2_5": 0.62,
+      "over_3_5": 0.3974,
       "most_likely_scorelines": [
         {
           "home_goals": 1,
           "away_goals": 1,
-          "probability": 0.10181311621379863
+          "probability": 0.10216594245558572
         },
         {
           "home_goals": 2,
           "away_goals": 1,
-          "probability": 0.09255737837618055
+          "probability": 0.09359419671668172
         },
         {
           "home_goals": 1,
           "away_goals": 0,
-          "probability": 0.07258898100428235
+          "probability": 0.07471837582572688
         }
       ],
       "evidence_grade": "VERY_LOW",
@@ -7452,33 +7457,33 @@
       },
       "status": "LOW_HISTORY_FORECAST",
       "probabilities": {
-        "home_win": 0.4738,
-        "draw": 0.2283,
-        "away_win": 0.2979
+        "home_win": 0.4846,
+        "draw": 0.2278,
+        "away_win": 0.2876
       },
       "expected_goals": {
-        "home": 1.818,
-        "away": 1.403
+        "home": 1.832,
+        "away": 1.367
       },
-      "btts_yes": 0.6316,
-      "over_1_5": 0.8315,
-      "over_2_5": 0.6244,
-      "over_3_5": 0.4021,
+      "btts_yes": 0.6259,
+      "over_1_5": 0.8287,
+      "over_2_5": 0.62,
+      "over_3_5": 0.3974,
       "most_likely_scorelines": [
         {
           "home_goals": 1,
           "away_goals": 1,
-          "probability": 0.10181311621379863
+          "probability": 0.10216594245558572
         },
         {
           "home_goals": 2,
           "away_goals": 1,
-          "probability": 0.09255737837618055
+          "probability": 0.09359419671668172
         },
         {
           "home_goals": 1,
           "away_goals": 0,
-          "probability": 0.07258898100428235
+          "probability": 0.07471837582572688
         }
       ],
       "evidence_grade": "VERY_LOW",
@@ -7759,33 +7764,33 @@
       },
       "status": "LOW_HISTORY_FORECAST",
       "probabilities": {
-        "home_win": 0.4738,
-        "draw": 0.2283,
-        "away_win": 0.2979
+        "home_win": 0.4846,
+        "draw": 0.2278,
+        "away_win": 0.2876
       },
       "expected_goals": {
-        "home": 1.818,
-        "away": 1.403
+        "home": 1.832,
+        "away": 1.367
       },
-      "btts_yes": 0.6316,
-      "over_1_5": 0.8315,
-      "over_2_5": 0.6244,
-      "over_3_5": 0.4021,
+      "btts_yes": 0.6259,
+      "over_1_5": 0.8287,
+      "over_2_5": 0.62,
+      "over_3_5": 0.3974,
       "most_likely_scorelines": [
         {
           "home_goals": 1,
           "away_goals": 1,
-          "probability": 0.10181311621379863
+          "probability": 0.10216594245558572
         },
         {
           "home_goals": 2,
           "away_goals": 1,
-          "probability": 0.09255737837618055
+          "probability": 0.09359419671668172
         },
         {
           "home_goals": 1,
           "away_goals": 0,
-          "probability": 0.07258898100428235
+          "probability": 0.07471837582572688
         }
       ],
       "evidence_grade": "VERY_LOW",
@@ -8066,33 +8071,33 @@
       },
       "status": "LOW_HISTORY_FORECAST",
       "probabilities": {
-        "home_win": 0.4738,
-        "draw": 0.2283,
-        "away_win": 0.2979
+        "home_win": 0.4846,
+        "draw": 0.2278,
+        "away_win": 0.2876
       },
       "expected_goals": {
-        "home": 1.818,
-        "away": 1.403
+        "home": 1.832,
+        "away": 1.367
       },
-      "btts_yes": 0.6316,
-      "over_1_5": 0.8315,
-      "over_2_5": 0.6244,
-      "over_3_5": 0.4021,
+      "btts_yes": 0.6259,
+      "over_1_5": 0.8287,
+      "over_2_5": 0.62,
+      "over_3_5": 0.3974,
       "most_likely_scorelines": [
         {
           "home_goals": 1,
           "away_goals": 1,
-          "probability": 0.10181311621379863
+          "probability": 0.10216594245558572
         },
         {
           "home_goals": 2,
           "away_goals": 1,
-          "probability": 0.09255737837618055
+          "probability": 0.09359419671668172
         },
         {
           "home_goals": 1,
           "away_goals": 0,
-          "probability": 0.07258898100428235
+          "probability": 0.07471837582572688
         }
       ],
       "evidence_grade": "VERY_LOW",
@@ -8373,33 +8378,33 @@
       },
       "status": "LOW_HISTORY_FORECAST",
       "probabilities": {
-        "home_win": 0.4738,
-        "draw": 0.2283,
-        "away_win": 0.2979
+        "home_win": 0.4846,
+        "draw": 0.2278,
+        "away_win": 0.2876
       },
       "expected_goals": {
-        "home": 1.818,
-        "away": 1.403
+        "home": 1.832,
+        "away": 1.367
       },
-      "btts_yes": 0.6316,
-      "over_1_5": 0.8315,
-      "over_2_5": 0.6244,
-      "over_3_5": 0.4021,
+      "btts_yes": 0.6259,
+      "over_1_5": 0.8287,
+      "over_2_5": 0.62,
+      "over_3_5": 0.3974,
       "most_likely_scorelines": [
         {
           "home_goals": 1,
           "away_goals": 1,
-          "probability": 0.10181311621379863
+          "probability": 0.10216594245558572
         },
         {
           "home_goals": 2,
           "away_goals": 1,
-          "probability": 0.09255737837618055
+          "probability": 0.09359419671668172
         },
         {
           "home_goals": 1,
           "away_goals": 0,
-          "probability": 0.07258898100428235
+          "probability": 0.07471837582572688
         }
       ],
       "evidence_grade": "VERY_LOW",
@@ -8680,33 +8685,33 @@
       },
       "status": "LOW_HISTORY_FORECAST",
       "probabilities": {
-        "home_win": 0.4738,
-        "draw": 0.2283,
-        "away_win": 0.2979
+        "home_win": 0.4846,
+        "draw": 0.2278,
+        "away_win": 0.2876
       },
       "expected_goals": {
-        "home": 1.818,
-        "away": 1.403
+        "home": 1.832,
+        "away": 1.367
       },
-      "btts_yes": 0.6316,
-      "over_1_5": 0.8315,
-      "over_2_5": 0.6244,
-      "over_3_5": 0.4021,
+      "btts_yes": 0.6259,
+      "over_1_5": 0.8287,
+      "over_2_5": 0.62,
+      "over_3_5": 0.3974,
       "most_likely_scorelines": [
         {
           "home_goals": 1,
           "away_goals": 1,
-          "probability": 0.10181311621379863
+          "probability": 0.10216594245558572
         },
         {
           "home_goals": 2,
           "away_goals": 1,
-          "probability": 0.09255737837618055
+          "probability": 0.09359419671668172
         },
         {
           "home_goals": 1,
           "away_goals": 0,
-          "probability": 0.07258898100428235
+          "probability": 0.07471837582572688
         }
       ],
       "evidence_grade": "VERY_LOW",
@@ -8987,33 +8992,33 @@
       },
       "status": "LOW_HISTORY_FORECAST",
       "probabilities": {
-        "home_win": 0.4738,
-        "draw": 0.2283,
-        "away_win": 0.2979
+        "home_win": 0.4846,
+        "draw": 0.2278,
+        "away_win": 0.2876
       },
       "expected_goals": {
-        "home": 1.818,
-        "away": 1.403
+        "home": 1.832,
+        "away": 1.367
       },
-      "btts_yes": 0.6316,
-      "over_1_5": 0.8315,
-      "over_2_5": 0.6244,
-      "over_3_5": 0.4021,
+      "btts_yes": 0.6259,
+      "over_1_5": 0.8287,
+      "over_2_5": 0.62,
+      "over_3_5": 0.3974,
       "most_likely_scorelines": [
         {
           "home_goals": 1,
           "away_goals": 1,
-          "probability": 0.10181311621379863
+          "probability": 0.10216594245558572
         },
         {
           "home_goals": 2,
           "away_goals": 1,
-          "probability": 0.09255737837618055
+          "probability": 0.09359419671668172
         },
         {
           "home_goals": 1,
           "away_goals": 0,
-          "probability": 0.07258898100428235
+          "probability": 0.07471837582572688
         }
       ],
       "evidence_grade": "VERY_LOW",
@@ -9294,33 +9299,33 @@
       },
       "status": "LOW_HISTORY_FORECAST",
       "probabilities": {
-        "home_win": 0.4738,
-        "draw": 0.2283,
-        "away_win": 0.2979
+        "home_win": 0.4846,
+        "draw": 0.2278,
+        "away_win": 0.2876
       },
       "expected_goals": {
-        "home": 1.818,
-        "away": 1.403
+        "home": 1.832,
+        "away": 1.367
       },
-      "btts_yes": 0.6316,
-      "over_1_5": 0.8315,
-      "over_2_5": 0.6244,
-      "over_3_5": 0.4021,
+      "btts_yes": 0.6259,
+      "over_1_5": 0.8287,
+      "over_2_5": 0.62,
+      "over_3_5": 0.3974,
       "most_likely_scorelines": [
         {
           "home_goals": 1,
           "away_goals": 1,
-          "probability": 0.10181311621379863
+          "probability": 0.10216594245558572
         },
         {
           "home_goals": 2,
           "away_goals": 1,
-          "probability": 0.09255737837618055
+          "probability": 0.09359419671668172
         },
         {
           "home_goals": 1,
           "away_goals": 0,
-          "probability": 0.07258898100428235
+          "probability": 0.07471837582572688
         }
       ],
       "evidence_grade": "VERY_LOW",
@@ -9601,33 +9606,33 @@
       },
       "status": "LOW_HISTORY_FORECAST",
       "probabilities": {
-        "home_win": 0.4738,
-        "draw": 0.2283,
-        "away_win": 0.2979
+        "home_win": 0.4846,
+        "draw": 0.2278,
+        "away_win": 0.2876
       },
       "expected_goals": {
-        "home": 1.818,
-        "away": 1.403
+        "home": 1.832,
+        "away": 1.367
       },
-      "btts_yes": 0.6316,
-      "over_1_5": 0.8315,
-      "over_2_5": 0.6244,
-      "over_3_5": 0.4021,
+      "btts_yes": 0.6259,
+      "over_1_5": 0.8287,
+      "over_2_5": 0.62,
+      "over_3_5": 0.3974,
       "most_likely_scorelines": [
         {
           "home_goals": 1,
           "away_goals": 1,
-          "probability": 0.10181311621379863
+          "probability": 0.10216594245558572
         },
         {
           "home_goals": 2,
           "away_goals": 1,
-          "probability": 0.09255737837618055
+          "probability": 0.09359419671668172
         },
         {
           "home_goals": 1,
           "away_goals": 0,
-          "probability": 0.07258898100428235
+          "probability": 0.07471837582572688
         }
       ],
       "evidence_grade": "VERY_LOW",
@@ -9908,33 +9913,33 @@
       },
       "status": "LOW_HISTORY_FORECAST",
       "probabilities": {
-        "home_win": 0.4738,
-        "draw": 0.2283,
-        "away_win": 0.2979
+        "home_win": 0.4846,
+        "draw": 0.2278,
+        "away_win": 0.2876
       },
       "expected_goals": {
-        "home": 1.818,
-        "away": 1.403
+        "home": 1.832,
+        "away": 1.367
       },
-      "btts_yes": 0.6316,
-      "over_1_5": 0.8315,
-      "over_2_5": 0.6244,
-      "over_3_5": 0.4021,
+      "btts_yes": 0.6259,
+      "over_1_5": 0.8287,
+      "over_2_5": 0.62,
+      "over_3_5": 0.3974,
       "most_likely_scorelines": [
         {
           "home_goals": 1,
           "away_goals": 1,
-          "probability": 0.10181311621379863
+          "probability": 0.10216594245558572
         },
         {
           "home_goals": 2,
           "away_goals": 1,
-          "probability": 0.09255737837618055
+          "probability": 0.09359419671668172
         },
         {
           "home_goals": 1,
           "away_goals": 0,
-          "probability": 0.07258898100428235
+          "probability": 0.07471837582572688
         }
       ],
       "evidence_grade": "VERY_LOW",
@@ -10215,33 +10220,33 @@
       },
       "status": "LOW_HISTORY_FORECAST",
       "probabilities": {
-        "home_win": 0.4738,
-        "draw": 0.2283,
-        "away_win": 0.2979
+        "home_win": 0.4846,
+        "draw": 0.2278,
+        "away_win": 0.2876
       },
       "expected_goals": {
-        "home": 1.818,
-        "away": 1.403
+        "home": 1.832,
+        "away": 1.367
       },
-      "btts_yes": 0.6316,
-      "over_1_5": 0.8315,
-      "over_2_5": 0.6244,
-      "over_3_5": 0.4021,
+      "btts_yes": 0.6259,
+      "over_1_5": 0.8287,
+      "over_2_5": 0.62,
+      "over_3_5": 0.3974,
       "most_likely_scorelines": [
         {
           "home_goals": 1,
           "away_goals": 1,
-          "probability": 0.10181311621379863
+          "probability": 0.10216594245558572
         },
         {
           "home_goals": 2,
           "away_goals": 1,
-          "probability": 0.09255737837618055
+          "probability": 0.09359419671668172
         },
         {
           "home_goals": 1,
           "away_goals": 0,
-          "probability": 0.07258898100428235
+          "probability": 0.07471837582572688
         }
       ],
       "evidence_grade": "VERY_LOW",
@@ -10522,33 +10527,33 @@
       },
       "status": "LOW_HISTORY_FORECAST",
       "probabilities": {
-        "home_win": 0.4738,
-        "draw": 0.2283,
-        "away_win": 0.2979
+        "home_win": 0.4846,
+        "draw": 0.2278,
+        "away_win": 0.2876
       },
       "expected_goals": {
-        "home": 1.818,
-        "away": 1.403
+        "home": 1.832,
+        "away": 1.367
       },
-      "btts_yes": 0.6316,
-      "over_1_5": 0.8315,
-      "over_2_5": 0.6244,
-      "over_3_5": 0.4021,
+      "btts_yes": 0.6259,
+      "over_1_5": 0.8287,
+      "over_2_5": 0.62,
+      "over_3_5": 0.3974,
       "most_likely_scorelines": [
         {
           "home_goals": 1,
           "away_goals": 1,
-          "probability": 0.10181311621379863
+          "probability": 0.10216594245558572
         },
         {
           "home_goals": 2,
           "away_goals": 1,
-          "probability": 0.09255737837618055
+          "probability": 0.09359419671668172
         },
         {
           "home_goals": 1,
           "away_goals": 0,
-          "probability": 0.07258898100428235
+          "probability": 0.07471837582572688
         }
       ],
       "evidence_grade": "VERY_LOW",
@@ -11232,33 +11237,33 @@
       },
       "status": "LOW_HISTORY_FORECAST",
       "probabilities": {
-        "home_win": 0.4738,
-        "draw": 0.2283,
-        "away_win": 0.2979
+        "home_win": 0.4846,
+        "draw": 0.2278,
+        "away_win": 0.2876
       },
       "expected_goals": {
-        "home": 1.818,
-        "away": 1.403
+        "home": 1.832,
+        "away": 1.367
       },
-      "btts_yes": 0.6316,
-      "over_1_5": 0.8315,
-      "over_2_5": 0.6244,
-      "over_3_5": 0.4021,
+      "btts_yes": 0.6259,
+      "over_1_5": 0.8287,
+      "over_2_5": 0.62,
+      "over_3_5": 0.3974,
       "most_likely_scorelines": [
         {
           "home_goals": 1,
           "away_goals": 1,
-          "probability": 0.10181311621379863
+          "probability": 0.10216594245558572
         },
         {
           "home_goals": 2,
           "away_goals": 1,
-          "probability": 0.09255737837618055
+          "probability": 0.09359419671668172
         },
         {
           "home_goals": 1,
           "away_goals": 0,
-          "probability": 0.07258898100428235
+          "probability": 0.07471837582572688
         }
       ],
       "evidence_grade": "VERY_LOW",
@@ -11797,33 +11802,33 @@
       },
       "status": "LOW_HISTORY_FORECAST",
       "probabilities": {
-        "home_win": 0.4738,
-        "draw": 0.2283,
-        "away_win": 0.2979
+        "home_win": 0.4846,
+        "draw": 0.2278,
+        "away_win": 0.2876
       },
       "expected_goals": {
-        "home": 1.818,
-        "away": 1.403
+        "home": 1.832,
+        "away": 1.367
       },
-      "btts_yes": 0.6316,
-      "over_1_5": 0.8315,
-      "over_2_5": 0.6244,
-      "over_3_5": 0.4021,
+      "btts_yes": 0.6259,
+      "over_1_5": 0.8287,
+      "over_2_5": 0.62,
+      "over_3_5": 0.3974,
       "most_likely_scorelines": [
         {
           "home_goals": 1,
           "away_goals": 1,
-          "probability": 0.10181311621379863
+          "probability": 0.10216594245558572
         },
         {
           "home_goals": 2,
           "away_goals": 1,
-          "probability": 0.09255737837618055
+          "probability": 0.09359419671668172
         },
         {
           "home_goals": 1,
           "away_goals": 0,
-          "probability": 0.07258898100428235
+          "probability": 0.07471837582572688
         }
       ],
       "evidence_grade": "VERY_LOW",
@@ -12104,33 +12109,33 @@
       },
       "status": "LOW_HISTORY_FORECAST",
       "probabilities": {
-        "home_win": 0.4738,
-        "draw": 0.2283,
-        "away_win": 0.2979
+        "home_win": 0.4846,
+        "draw": 0.2278,
+        "away_win": 0.2876
       },
       "expected_goals": {
-        "home": 1.818,
-        "away": 1.403
+        "home": 1.832,
+        "away": 1.367
       },
-      "btts_yes": 0.6316,
-      "over_1_5": 0.8315,
-      "over_2_5": 0.6244,
-      "over_3_5": 0.4021,
+      "btts_yes": 0.6259,
+      "over_1_5": 0.8287,
+      "over_2_5": 0.62,
+      "over_3_5": 0.3974,
       "most_likely_scorelines": [
         {
           "home_goals": 1,
           "away_goals": 1,
-          "probability": 0.10181311621379863
+          "probability": 0.10216594245558572
         },
         {
           "home_goals": 2,
           "away_goals": 1,
-          "probability": 0.09255737837618055
+          "probability": 0.09359419671668172
         },
         {
           "home_goals": 1,
           "away_goals": 0,
-          "probability": 0.07258898100428235
+          "probability": 0.07471837582572688
         }
       ],
       "evidence_grade": "VERY_LOW",
@@ -12411,33 +12416,33 @@
       },
       "status": "LOW_HISTORY_FORECAST",
       "probabilities": {
-        "home_win": 0.4738,
-        "draw": 0.2283,
-        "away_win": 0.2979
+        "home_win": 0.4846,
+        "draw": 0.2278,
+        "away_win": 0.2876
       },
       "expected_goals": {
-        "home": 1.818,
-        "away": 1.403
+        "home": 1.832,
+        "away": 1.367
       },
-      "btts_yes": 0.6316,
-      "over_1_5": 0.8315,
-      "over_2_5": 0.6244,
-      "over_3_5": 0.4021,
+      "btts_yes": 0.6259,
+      "over_1_5": 0.8287,
+      "over_2_5": 0.62,
+      "over_3_5": 0.3974,
       "most_likely_scorelines": [
         {
           "home_goals": 1,
           "away_goals": 1,
-          "probability": 0.10181311621379863
+          "probability": 0.10216594245558572
         },
         {
           "home_goals": 2,
           "away_goals": 1,
-          "probability": 0.09255737837618055
+          "probability": 0.09359419671668172
         },
         {
           "home_goals": 1,
           "away_goals": 0,
-          "probability": 0.07258898100428235
+          "probability": 0.07471837582572688
         }
       ],
       "evidence_grade": "VERY_LOW",
@@ -12718,33 +12723,33 @@
       },
       "status": "LOW_HISTORY_FORECAST",
       "probabilities": {
-        "home_win": 0.4738,
-        "draw": 0.2283,
-        "away_win": 0.2979
+        "home_win": 0.4846,
+        "draw": 0.2278,
+        "away_win": 0.2876
       },
       "expected_goals": {
-        "home": 1.818,
-        "away": 1.403
+        "home": 1.832,
+        "away": 1.367
       },
-      "btts_yes": 0.6316,
-      "over_1_5": 0.8315,
-      "over_2_5": 0.6244,
-      "over_3_5": 0.4021,
+      "btts_yes": 0.6259,
+      "over_1_5": 0.8287,
+      "over_2_5": 0.62,
+      "over_3_5": 0.3974,
       "most_likely_scorelines": [
         {
           "home_goals": 1,
           "away_goals": 1,
-          "probability": 0.10181311621379863
+          "probability": 0.10216594245558572
         },
         {
           "home_goals": 2,
           "away_goals": 1,
-          "probability": 0.09255737837618055
+          "probability": 0.09359419671668172
         },
         {
           "home_goals": 1,
           "away_goals": 0,
-          "probability": 0.07258898100428235
+          "probability": 0.07471837582572688
         }
       ],
       "evidence_grade": "VERY_LOW",
@@ -13025,33 +13030,33 @@
       },
       "status": "LOW_HISTORY_FORECAST",
       "probabilities": {
-        "home_win": 0.4738,
-        "draw": 0.2283,
-        "away_win": 0.2979
+        "home_win": 0.4846,
+        "draw": 0.2278,
+        "away_win": 0.2876
       },
       "expected_goals": {
-        "home": 1.818,
-        "away": 1.403
+        "home": 1.832,
+        "away": 1.367
       },
-      "btts_yes": 0.6316,
-      "over_1_5": 0.8315,
-      "over_2_5": 0.6244,
-      "over_3_5": 0.4021,
+      "btts_yes": 0.6259,
+      "over_1_5": 0.8287,
+      "over_2_5": 0.62,
+      "over_3_5": 0.3974,
       "most_likely_scorelines": [
         {
           "home_goals": 1,
           "away_goals": 1,
-          "probability": 0.10181311621379863
+          "probability": 0.10216594245558572
         },
         {
           "home_goals": 2,
           "away_goals": 1,
-          "probability": 0.09255737837618055
+          "probability": 0.09359419671668172
         },
         {
           "home_goals": 1,
           "away_goals": 0,
-          "probability": 0.07258898100428235
+          "probability": 0.07471837582572688
         }
       ],
       "evidence_grade": "VERY_LOW",
@@ -13332,33 +13337,33 @@
       },
       "status": "LOW_HISTORY_FORECAST",
       "probabilities": {
-        "home_win": 0.4738,
-        "draw": 0.2283,
-        "away_win": 0.2979
+        "home_win": 0.4846,
+        "draw": 0.2278,
+        "away_win": 0.2876
       },
       "expected_goals": {
-        "home": 1.818,
-        "away": 1.403
+        "home": 1.832,
+        "away": 1.367
       },
-      "btts_yes": 0.6316,
-      "over_1_5": 0.8315,
-      "over_2_5": 0.6244,
-      "over_3_5": 0.4021,
+      "btts_yes": 0.6259,
+      "over_1_5": 0.8287,
+      "over_2_5": 0.62,
+      "over_3_5": 0.3974,
       "most_likely_scorelines": [
         {
           "home_goals": 1,
           "away_goals": 1,
-          "probability": 0.10181311621379863
+          "probability": 0.10216594245558572
         },
         {
           "home_goals": 2,
           "away_goals": 1,
-          "probability": 0.09255737837618055
+          "probability": 0.09359419671668172
         },
         {
           "home_goals": 1,
           "away_goals": 0,
-          "probability": 0.07258898100428235
+          "probability": 0.07471837582572688
         }
       ],
       "evidence_grade": "VERY_LOW",
@@ -13639,33 +13644,33 @@
       },
       "status": "LOW_HISTORY_FORECAST",
       "probabilities": {
-        "home_win": 0.4738,
-        "draw": 0.2283,
-        "away_win": 0.2979
+        "home_win": 0.4846,
+        "draw": 0.2278,
+        "away_win": 0.2876
       },
       "expected_goals": {
-        "home": 1.818,
-        "away": 1.403
+        "home": 1.832,
+        "away": 1.367
       },
-      "btts_yes": 0.6316,
-      "over_1_5": 0.8315,
-      "over_2_5": 0.6244,
-      "over_3_5": 0.4021,
+      "btts_yes": 0.6259,
+      "over_1_5": 0.8287,
+      "over_2_5": 0.62,
+      "over_3_5": 0.3974,
       "most_likely_scorelines": [
         {
           "home_goals": 1,
           "away_goals": 1,
-          "probability": 0.10181311621379863
+          "probability": 0.10216594245558572
         },
         {
           "home_goals": 2,
           "away_goals": 1,
-          "probability": 0.09255737837618055
+          "probability": 0.09359419671668172
         },
         {
           "home_goals": 1,
           "away_goals": 0,
-          "probability": 0.07258898100428235
+          "probability": 0.07471837582572688
         }
       ],
       "evidence_grade": "VERY_LOW",
@@ -13946,33 +13951,33 @@
       },
       "status": "LOW_HISTORY_FORECAST",
       "probabilities": {
-        "home_win": 0.4738,
-        "draw": 0.2283,
-        "away_win": 0.2979
+        "home_win": 0.4846,
+        "draw": 0.2278,
+        "away_win": 0.2876
       },
       "expected_goals": {
-        "home": 1.818,
-        "away": 1.403
+        "home": 1.832,
+        "away": 1.367
       },
-      "btts_yes": 0.6316,
-      "over_1_5": 0.8315,
-      "over_2_5": 0.6244,
-      "over_3_5": 0.4021,
+      "btts_yes": 0.6259,
+      "over_1_5": 0.8287,
+      "over_2_5": 0.62,
+      "over_3_5": 0.3974,
       "most_likely_scorelines": [
         {
           "home_goals": 1,
           "away_goals": 1,
-          "probability": 0.10181311621379863
+          "probability": 0.10216594245558572
         },
         {
           "home_goals": 2,
           "away_goals": 1,
-          "probability": 0.09255737837618055
+          "probability": 0.09359419671668172
         },
         {
           "home_goals": 1,
           "away_goals": 0,
-          "probability": 0.07258898100428235
+          "probability": 0.07471837582572688
         }
       ],
       "evidence_grade": "VERY_LOW",
@@ -14382,33 +14387,33 @@
       },
       "status": "LOW_HISTORY_FORECAST",
       "probabilities": {
-        "home_win": 0.4738,
-        "draw": 0.2283,
-        "away_win": 0.2979
+        "home_win": 0.4846,
+        "draw": 0.2278,
+        "away_win": 0.2876
       },
       "expected_goals": {
-        "home": 1.818,
-        "away": 1.403
+        "home": 1.832,
+        "away": 1.367
       },
-      "btts_yes": 0.6316,
-      "over_1_5": 0.8315,
-      "over_2_5": 0.6244,
-      "over_3_5": 0.4021,
+      "btts_yes": 0.6259,
+      "over_1_5": 0.8287,
+      "over_2_5": 0.62,
+      "over_3_5": 0.3974,
       "most_likely_scorelines": [
         {
           "home_goals": 1,
           "away_goals": 1,
-          "probability": 0.10181311621379863
+          "probability": 0.10216594245558572
         },
         {
           "home_goals": 2,
           "away_goals": 1,
-          "probability": 0.09255737837618055
+          "probability": 0.09359419671668172
         },
         {
           "home_goals": 1,
           "away_goals": 0,
-          "probability": 0.07258898100428235
+          "probability": 0.07471837582572688
         }
       ],
       "evidence_grade": "VERY_LOW",
@@ -14689,33 +14694,33 @@
       },
       "status": "LOW_HISTORY_FORECAST",
       "probabilities": {
-        "home_win": 0.4738,
-        "draw": 0.2283,
-        "away_win": 0.2979
+        "home_win": 0.4846,
+        "draw": 0.2278,
+        "away_win": 0.2876
       },
       "expected_goals": {
-        "home": 1.818,
-        "away": 1.403
+        "home": 1.832,
+        "away": 1.367
       },
-      "btts_yes": 0.6316,
-      "over_1_5": 0.8315,
-      "over_2_5": 0.6244,
-      "over_3_5": 0.4021,
+      "btts_yes": 0.6259,
+      "over_1_5": 0.8287,
+      "over_2_5": 0.62,
+      "over_3_5": 0.3974,
       "most_likely_scorelines": [
         {
           "home_goals": 1,
           "away_goals": 1,
-          "probability": 0.10181311621379863
+          "probability": 0.10216594245558572
         },
         {
           "home_goals": 2,
           "away_goals": 1,
-          "probability": 0.09255737837618055
+          "probability": 0.09359419671668172
         },
         {
           "home_goals": 1,
           "away_goals": 0,
-          "probability": 0.07258898100428235
+          "probability": 0.07471837582572688
         }
       ],
       "evidence_grade": "VERY_LOW",
@@ -14996,33 +15001,33 @@
       },
       "status": "LOW_HISTORY_FORECAST",
       "probabilities": {
-        "home_win": 0.4738,
-        "draw": 0.2283,
-        "away_win": 0.2979
+        "home_win": 0.4846,
+        "draw": 0.2278,
+        "away_win": 0.2876
       },
       "expected_goals": {
-        "home": 1.818,
-        "away": 1.403
+        "home": 1.832,
+        "away": 1.367
       },
-      "btts_yes": 0.6316,
-      "over_1_5": 0.8315,
-      "over_2_5": 0.6244,
-      "over_3_5": 0.4021,
+      "btts_yes": 0.6259,
+      "over_1_5": 0.8287,
+      "over_2_5": 0.62,
+      "over_3_5": 0.3974,
       "most_likely_scorelines": [
         {
           "home_goals": 1,
           "away_goals": 1,
-          "probability": 0.10181311621379863
+          "probability": 0.10216594245558572
         },
         {
           "home_goals": 2,
           "away_goals": 1,
-          "probability": 0.09255737837618055
+          "probability": 0.09359419671668172
         },
         {
           "home_goals": 1,
           "away_goals": 0,
-          "probability": 0.07258898100428235
+          "probability": 0.07471837582572688
         }
       ],
       "evidence_grade": "VERY_LOW",
@@ -15303,33 +15308,33 @@
       },
       "status": "LOW_HISTORY_FORECAST",
       "probabilities": {
-        "home_win": 0.4738,
-        "draw": 0.2283,
-        "away_win": 0.2979
+        "home_win": 0.4846,
+        "draw": 0.2278,
+        "away_win": 0.2876
       },
       "expected_goals": {
-        "home": 1.818,
-        "away": 1.403
+        "home": 1.832,
+        "away": 1.367
       },
-      "btts_yes": 0.6316,
-      "over_1_5": 0.8315,
-      "over_2_5": 0.6244,
-      "over_3_5": 0.4021,
+      "btts_yes": 0.6259,
+      "over_1_5": 0.8287,
+      "over_2_5": 0.62,
+      "over_3_5": 0.3974,
       "most_likely_scorelines": [
         {
           "home_goals": 1,
           "away_goals": 1,
-          "probability": 0.10181311621379863
+          "probability": 0.10216594245558572
         },
         {
           "home_goals": 2,
           "away_goals": 1,
-          "probability": 0.09255737837618055
+          "probability": 0.09359419671668172
         },
         {
           "home_goals": 1,
           "away_goals": 0,
-          "probability": 0.07258898100428235
+          "probability": 0.07471837582572688
         }
       ],
       "evidence_grade": "VERY_LOW",
@@ -15610,33 +15615,33 @@
       },
       "status": "LOW_HISTORY_FORECAST",
       "probabilities": {
-        "home_win": 0.4738,
-        "draw": 0.2283,
-        "away_win": 0.2979
+        "home_win": 0.4846,
+        "draw": 0.2278,
+        "away_win": 0.2876
       },
       "expected_goals": {
-        "home": 1.818,
-        "away": 1.403
+        "home": 1.832,
+        "away": 1.367
       },
-      "btts_yes": 0.6316,
-      "over_1_5": 0.8315,
-      "over_2_5": 0.6244,
-      "over_3_5": 0.4021,
+      "btts_yes": 0.6259,
+      "over_1_5": 0.8287,
+      "over_2_5": 0.62,
+      "over_3_5": 0.3974,
       "most_likely_scorelines": [
         {
           "home_goals": 1,
           "away_goals": 1,
-          "probability": 0.10181311621379863
+          "probability": 0.10216594245558572
         },
         {
           "home_goals": 2,
           "away_goals": 1,
-          "probability": 0.09255737837618055
+          "probability": 0.09359419671668172
         },
         {
           "home_goals": 1,
           "away_goals": 0,
-          "probability": 0.07258898100428235
+          "probability": 0.07471837582572688
         }
       ],
       "evidence_grade": "VERY_LOW",
@@ -15917,33 +15922,33 @@
       },
       "status": "LOW_HISTORY_FORECAST",
       "probabilities": {
-        "home_win": 0.4738,
-        "draw": 0.2283,
-        "away_win": 0.2979
+        "home_win": 0.4846,
+        "draw": 0.2278,
+        "away_win": 0.2876
       },
       "expected_goals": {
-        "home": 1.818,
-        "away": 1.403
+        "home": 1.832,
+        "away": 1.367
       },
-      "btts_yes": 0.6316,
-      "over_1_5": 0.8315,
-      "over_2_5": 0.6244,
-      "over_3_5": 0.4021,
+      "btts_yes": 0.6259,
+      "over_1_5": 0.8287,
+      "over_2_5": 0.62,
+      "over_3_5": 0.3974,
       "most_likely_scorelines": [
         {
           "home_goals": 1,
           "away_goals": 1,
-          "probability": 0.10181311621379863
+          "probability": 0.10216594245558572
         },
         {
           "home_goals": 2,
           "away_goals": 1,
-          "probability": 0.09255737837618055
+          "probability": 0.09359419671668172
         },
         {
           "home_goals": 1,
           "away_goals": 0,
-          "probability": 0.07258898100428235
+          "probability": 0.07471837582572688
         }
       ],
       "evidence_grade": "VERY_LOW",
@@ -16224,33 +16229,33 @@
       },
       "status": "LOW_HISTORY_FORECAST",
       "probabilities": {
-        "home_win": 0.4738,
-        "draw": 0.2283,
-        "away_win": 0.2979
+        "home_win": 0.4846,
+        "draw": 0.2278,
+        "away_win": 0.2876
       },
       "expected_goals": {
-        "home": 1.818,
-        "away": 1.403
+        "home": 1.832,
+        "away": 1.367
       },
-      "btts_yes": 0.6316,
-      "over_1_5": 0.8315,
-      "over_2_5": 0.6244,
-      "over_3_5": 0.4021,
+      "btts_yes": 0.6259,
+      "over_1_5": 0.8287,
+      "over_2_5": 0.62,
+      "over_3_5": 0.3974,
       "most_likely_scorelines": [
         {
           "home_goals": 1,
           "away_goals": 1,
-          "probability": 0.10181311621379863
+          "probability": 0.10216594245558572
         },
         {
           "home_goals": 2,
           "away_goals": 1,
-          "probability": 0.09255737837618055
+          "probability": 0.09359419671668172
         },
         {
           "home_goals": 1,
           "away_goals": 0,
-          "probability": 0.07258898100428235
+          "probability": 0.07471837582572688
         }
       ],
       "evidence_grade": "VERY_LOW",
@@ -16531,33 +16536,33 @@
       },
       "status": "LOW_HISTORY_FORECAST",
       "probabilities": {
-        "home_win": 0.4738,
-        "draw": 0.2283,
-        "away_win": 0.2979
+        "home_win": 0.4846,
+        "draw": 0.2278,
+        "away_win": 0.2876
       },
       "expected_goals": {
-        "home": 1.818,
-        "away": 1.403
+        "home": 1.832,
+        "away": 1.367
       },
-      "btts_yes": 0.6316,
-      "over_1_5": 0.8315,
-      "over_2_5": 0.6244,
-      "over_3_5": 0.4021,
+      "btts_yes": 0.6259,
+      "over_1_5": 0.8287,
+      "over_2_5": 0.62,
+      "over_3_5": 0.3974,
       "most_likely_scorelines": [
         {
           "home_goals": 1,
           "away_goals": 1,
-          "probability": 0.10181311621379863
+          "probability": 0.10216594245558572
         },
         {
           "home_goals": 2,
           "away_goals": 1,
-          "probability": 0.09255737837618055
+          "probability": 0.09359419671668172
         },
         {
           "home_goals": 1,
           "away_goals": 0,
-          "probability": 0.07258898100428235
+          "probability": 0.07471837582572688
         }
       ],
       "evidence_grade": "VERY_LOW",
@@ -16838,33 +16843,33 @@
       },
       "status": "LOW_HISTORY_FORECAST",
       "probabilities": {
-        "home_win": 0.4738,
-        "draw": 0.2283,
-        "away_win": 0.2979
+        "home_win": 0.4846,
+        "draw": 0.2278,
+        "away_win": 0.2876
       },
       "expected_goals": {
-        "home": 1.818,
-        "away": 1.403
+        "home": 1.832,
+        "away": 1.367
       },
-      "btts_yes": 0.6316,
-      "over_1_5": 0.8315,
-      "over_2_5": 0.6244,
-      "over_3_5": 0.4021,
+      "btts_yes": 0.6259,
+      "over_1_5": 0.8287,
+      "over_2_5": 0.62,
+      "over_3_5": 0.3974,
       "most_likely_scorelines": [
         {
           "home_goals": 1,
           "away_goals": 1,
-          "probability": 0.10181311621379863
+          "probability": 0.10216594245558572
         },
         {
           "home_goals": 2,
           "away_goals": 1,
-          "probability": 0.09255737837618055
+          "probability": 0.09359419671668172
         },
         {
           "home_goals": 1,
           "away_goals": 0,
-          "probability": 0.07258898100428235
+          "probability": 0.07471837582572688
         }
       ],
       "evidence_grade": "VERY_LOW",
@@ -17145,33 +17150,33 @@
       },
       "status": "LOW_HISTORY_FORECAST",
       "probabilities": {
-        "home_win": 0.4738,
-        "draw": 0.2283,
-        "away_win": 0.2979
+        "home_win": 0.4846,
+        "draw": 0.2278,
+        "away_win": 0.2876
       },
       "expected_goals": {
-        "home": 1.818,
-        "away": 1.403
+        "home": 1.832,
+        "away": 1.367
       },
-      "btts_yes": 0.6316,
-      "over_1_5": 0.8315,
-      "over_2_5": 0.6244,
-      "over_3_5": 0.4021,
+      "btts_yes": 0.6259,
+      "over_1_5": 0.8287,
+      "over_2_5": 0.62,
+      "over_3_5": 0.3974,
       "most_likely_scorelines": [
         {
           "home_goals": 1,
           "away_goals": 1,
-          "probability": 0.10181311621379863
+          "probability": 0.10216594245558572
         },
         {
           "home_goals": 2,
           "away_goals": 1,
-          "probability": 0.09255737837618055
+          "probability": 0.09359419671668172
         },
         {
           "home_goals": 1,
           "away_goals": 0,
-          "probability": 0.07258898100428235
+          "probability": 0.07471837582572688
         }
       ],
       "evidence_grade": "VERY_LOW",
@@ -17452,33 +17457,33 @@
       },
       "status": "LOW_HISTORY_FORECAST",
       "probabilities": {
-        "home_win": 0.4738,
-        "draw": 0.2283,
-        "away_win": 0.2979
+        "home_win": 0.4846,
+        "draw": 0.2278,
+        "away_win": 0.2876
       },
       "expected_goals": {
-        "home": 1.818,
-        "away": 1.403
+        "home": 1.832,
+        "away": 1.367
       },
-      "btts_yes": 0.6316,
-      "over_1_5": 0.8315,
-      "over_2_5": 0.6244,
-      "over_3_5": 0.4021,
+      "btts_yes": 0.6259,
+      "over_1_5": 0.8287,
+      "over_2_5": 0.62,
+      "over_3_5": 0.3974,
       "most_likely_scorelines": [
         {
           "home_goals": 1,
           "away_goals": 1,
-          "probability": 0.10181311621379863
+          "probability": 0.10216594245558572
         },
         {
           "home_goals": 2,
           "away_goals": 1,
-          "probability": 0.09255737837618055
+          "probability": 0.09359419671668172
         },
         {
           "home_goals": 1,
           "away_goals": 0,
-          "probability": 0.07258898100428235
+          "probability": 0.07471837582572688
         }
       ],
       "evidence_grade": "VERY_LOW",
@@ -18017,33 +18022,33 @@
       },
       "status": "LOW_HISTORY_FORECAST",
       "probabilities": {
-        "home_win": 0.4738,
-        "draw": 0.2283,
-        "away_win": 0.2979
+        "home_win": 0.4846,
+        "draw": 0.2278,
+        "away_win": 0.2876
       },
       "expected_goals": {
-        "home": 1.818,
-        "away": 1.403
+        "home": 1.832,
+        "away": 1.367
       },
-      "btts_yes": 0.6316,
-      "over_1_5": 0.8315,
-      "over_2_5": 0.6244,
-      "over_3_5": 0.4021,
+      "btts_yes": 0.6259,
+      "over_1_5": 0.8287,
+      "over_2_5": 0.62,
+      "over_3_5": 0.3974,
       "most_likely_scorelines": [
         {
           "home_goals": 1,
           "away_goals": 1,
-          "probability": 0.10181311621379863
+          "probability": 0.10216594245558572
         },
         {
           "home_goals": 2,
           "away_goals": 1,
-          "probability": 0.09255737837618055
+          "probability": 0.09359419671668172
         },
         {
           "home_goals": 1,
           "away_goals": 0,
-          "probability": 0.07258898100428235
+          "probability": 0.07471837582572688
         }
       ],
       "evidence_grade": "VERY_LOW",
@@ -18324,33 +18329,33 @@
       },
       "status": "LOW_HISTORY_FORECAST",
       "probabilities": {
-        "home_win": 0.4738,
-        "draw": 0.2283,
-        "away_win": 0.2979
+        "home_win": 0.4846,
+        "draw": 0.2278,
+        "away_win": 0.2876
       },
       "expected_goals": {
-        "home": 1.818,
-        "away": 1.403
+        "home": 1.832,
+        "away": 1.367
       },
-      "btts_yes": 0.6316,
-      "over_1_5": 0.8315,
-      "over_2_5": 0.6244,
-      "over_3_5": 0.4021,
+      "btts_yes": 0.6259,
+      "over_1_5": 0.8287,
+      "over_2_5": 0.62,
+      "over_3_5": 0.3974,
       "most_likely_scorelines": [
         {
           "home_goals": 1,
           "away_goals": 1,
-          "probability": 0.10181311621379863
+          "probability": 0.10216594245558572
         },
         {
           "home_goals": 2,
           "away_goals": 1,
-          "probability": 0.09255737837618055
+          "probability": 0.09359419671668172
         },
         {
           "home_goals": 1,
           "away_goals": 0,
-          "probability": 0.07258898100428235
+          "probability": 0.07471837582572688
         }
       ],
       "evidence_grade": "VERY_LOW",
@@ -18631,33 +18636,33 @@
       },
       "status": "LOW_HISTORY_FORECAST",
       "probabilities": {
-        "home_win": 0.4738,
-        "draw": 0.2283,
-        "away_win": 0.2979
+        "home_win": 0.4846,
+        "draw": 0.2278,
+        "away_win": 0.2876
       },
       "expected_goals": {
-        "home": 1.818,
-        "away": 1.403
+        "home": 1.832,
+        "away": 1.367
       },
-      "btts_yes": 0.6316,
-      "over_1_5": 0.8315,
-      "over_2_5": 0.6244,
-      "over_3_5": 0.4021,
+      "btts_yes": 0.6259,
+      "over_1_5": 0.8287,
+      "over_2_5": 0.62,
+      "over_3_5": 0.3974,
       "most_likely_scorelines": [
         {
           "home_goals": 1,
           "away_goals": 1,
-          "probability": 0.10181311621379863
+          "probability": 0.10216594245558572
         },
         {
           "home_goals": 2,
           "away_goals": 1,
-          "probability": 0.09255737837618055
+          "probability": 0.09359419671668172
         },
         {
           "home_goals": 1,
           "away_goals": 0,
-          "probability": 0.07258898100428235
+          "probability": 0.07471837582572688
         }
       ],
       "evidence_grade": "VERY_LOW",
@@ -18938,33 +18943,33 @@
       },
       "status": "LOW_HISTORY_FORECAST",
       "probabilities": {
-        "home_win": 0.4738,
-        "draw": 0.2283,
-        "away_win": 0.2979
+        "home_win": 0.4846,
+        "draw": 0.2278,
+        "away_win": 0.2876
       },
       "expected_goals": {
-        "home": 1.818,
-        "away": 1.403
+        "home": 1.832,
+        "away": 1.367
       },
-      "btts_yes": 0.6316,
-      "over_1_5": 0.8315,
-      "over_2_5": 0.6244,
-      "over_3_5": 0.4021,
+      "btts_yes": 0.6259,
+      "over_1_5": 0.8287,
+      "over_2_5": 0.62,
+      "over_3_5": 0.3974,
       "most_likely_scorelines": [
         {
           "home_goals": 1,
           "away_goals": 1,
-          "probability": 0.10181311621379863
+          "probability": 0.10216594245558572
         },
         {
           "home_goals": 2,
           "away_goals": 1,
-          "probability": 0.09255737837618055
+          "probability": 0.09359419671668172
         },
         {
           "home_goals": 1,
           "away_goals": 0,
-          "probability": 0.07258898100428235
+          "probability": 0.07471837582572688
         }
       ],
       "evidence_grade": "VERY_LOW",
@@ -19245,33 +19250,33 @@
       },
       "status": "LOW_HISTORY_FORECAST",
       "probabilities": {
-        "home_win": 0.4738,
-        "draw": 0.2283,
-        "away_win": 0.2979
+        "home_win": 0.4846,
+        "draw": 0.2278,
+        "away_win": 0.2876
       },
       "expected_goals": {
-        "home": 1.818,
-        "away": 1.403
+        "home": 1.832,
+        "away": 1.367
       },
-      "btts_yes": 0.6316,
-      "over_1_5": 0.8315,
-      "over_2_5": 0.6244,
-      "over_3_5": 0.4021,
+      "btts_yes": 0.6259,
+      "over_1_5": 0.8287,
+      "over_2_5": 0.62,
+      "over_3_5": 0.3974,
       "most_likely_scorelines": [
         {
           "home_goals": 1,
           "away_goals": 1,
-          "probability": 0.10181311621379863
+          "probability": 0.10216594245558572
         },
         {
           "home_goals": 2,
           "away_goals": 1,
-          "probability": 0.09255737837618055
+          "probability": 0.09359419671668172
         },
         {
           "home_goals": 1,
           "away_goals": 0,
-          "probability": 0.07258898100428235
+          "probability": 0.07471837582572688
         }
       ],
       "evidence_grade": "VERY_LOW",
@@ -19552,33 +19557,33 @@
       },
       "status": "LOW_HISTORY_FORECAST",
       "probabilities": {
-        "home_win": 0.4738,
-        "draw": 0.2283,
-        "away_win": 0.2979
+        "home_win": 0.4846,
+        "draw": 0.2278,
+        "away_win": 0.2876
       },
       "expected_goals": {
-        "home": 1.818,
-        "away": 1.403
+        "home": 1.832,
+        "away": 1.367
       },
-      "btts_yes": 0.6316,
-      "over_1_5": 0.8315,
-      "over_2_5": 0.6244,
-      "over_3_5": 0.4021,
+      "btts_yes": 0.6259,
+      "over_1_5": 0.8287,
+      "over_2_5": 0.62,
+      "over_3_5": 0.3974,
       "most_likely_scorelines": [
         {
           "home_goals": 1,
           "away_goals": 1,
-          "probability": 0.10181311621379863
+          "probability": 0.10216594245558572
         },
         {
           "home_goals": 2,
           "away_goals": 1,
-          "probability": 0.09255737837618055
+          "probability": 0.09359419671668172
         },
         {
           "home_goals": 1,
           "away_goals": 0,
-          "probability": 0.07258898100428235
+          "probability": 0.07471837582572688
         }
       ],
       "evidence_grade": "VERY_LOW",
@@ -19988,33 +19993,33 @@
       },
       "status": "LOW_HISTORY_FORECAST",
       "probabilities": {
-        "home_win": 0.4738,
-        "draw": 0.2283,
-        "away_win": 0.2979
+        "home_win": 0.4846,
+        "draw": 0.2278,
+        "away_win": 0.2876
       },
       "expected_goals": {
-        "home": 1.818,
-        "away": 1.403
+        "home": 1.832,
+        "away": 1.367
       },
-      "btts_yes": 0.6316,
-      "over_1_5": 0.8315,
-      "over_2_5": 0.6244,
-      "over_3_5": 0.4021,
+      "btts_yes": 0.6259,
+      "over_1_5": 0.8287,
+      "over_2_5": 0.62,
+      "over_3_5": 0.3974,
       "most_likely_scorelines": [
         {
           "home_goals": 1,
           "away_goals": 1,
-          "probability": 0.10181311621379863
+          "probability": 0.10216594245558572
         },
         {
           "home_goals": 2,
           "away_goals": 1,
-          "probability": 0.09255737837618055
+          "probability": 0.09359419671668172
         },
         {
           "home_goals": 1,
           "away_goals": 0,
-          "probability": 0.07258898100428235
+          "probability": 0.07471837582572688
         }
       ],
       "evidence_grade": "VERY_LOW",
@@ -20295,33 +20300,33 @@
       },
       "status": "LOW_HISTORY_FORECAST",
       "probabilities": {
-        "home_win": 0.4738,
-        "draw": 0.2283,
-        "away_win": 0.2979
+        "home_win": 0.4846,
+        "draw": 0.2278,
+        "away_win": 0.2876
       },
       "expected_goals": {
-        "home": 1.818,
-        "away": 1.403
+        "home": 1.832,
+        "away": 1.367
       },
-      "btts_yes": 0.6316,
-      "over_1_5": 0.8315,
-      "over_2_5": 0.6244,
-      "over_3_5": 0.4021,
+      "btts_yes": 0.6259,
+      "over_1_5": 0.8287,
+      "over_2_5": 0.62,
+      "over_3_5": 0.3974,
       "most_likely_scorelines": [
         {
           "home_goals": 1,
           "away_goals": 1,
-          "probability": 0.10181311621379863
+          "probability": 0.10216594245558572
         },
         {
           "home_goals": 2,
           "away_goals": 1,
-          "probability": 0.09255737837618055
+          "probability": 0.09359419671668172
         },
         {
           "home_goals": 1,
           "away_goals": 0,
-          "probability": 0.07258898100428235
+          "probability": 0.07471837582572688
         }
       ],
       "evidence_grade": "VERY_LOW",
@@ -20602,33 +20607,33 @@
       },
       "status": "LOW_HISTORY_FORECAST",
       "probabilities": {
-        "home_win": 0.4738,
-        "draw": 0.2283,
-        "away_win": 0.2979
+        "home_win": 0.4846,
+        "draw": 0.2278,
+        "away_win": 0.2876
       },
       "expected_goals": {
-        "home": 1.818,
-        "away": 1.403
+        "home": 1.832,
+        "away": 1.367
       },
-      "btts_yes": 0.6316,
-      "over_1_5": 0.8315,
-      "over_2_5": 0.6244,
-      "over_3_5": 0.4021,
+      "btts_yes": 0.6259,
+      "over_1_5": 0.8287,
+      "over_2_5": 0.62,
+      "over_3_5": 0.3974,
       "most_likely_scorelines": [
         {
           "home_goals": 1,
           "away_goals": 1,
-          "probability": 0.10181311621379863
+          "probability": 0.10216594245558572
         },
         {
           "home_goals": 2,
           "away_goals": 1,
-          "probability": 0.09255737837618055
+          "probability": 0.09359419671668172
         },
         {
           "home_goals": 1,
           "away_goals": 0,
-          "probability": 0.07258898100428235
+          "probability": 0.07471837582572688
         }
       ],
       "evidence_grade": "VERY_LOW",
@@ -20909,33 +20914,33 @@
       },
       "status": "LOW_HISTORY_FORECAST",
       "probabilities": {
-        "home_win": 0.4738,
-        "draw": 0.2283,
-        "away_win": 0.2979
+        "home_win": 0.4846,
+        "draw": 0.2278,
+        "away_win": 0.2876
       },
       "expected_goals": {
-        "home": 1.818,
-        "away": 1.403
+        "home": 1.832,
+        "away": 1.367
       },
-      "btts_yes": 0.6316,
-      "over_1_5": 0.8315,
-      "over_2_5": 0.6244,
-      "over_3_5": 0.4021,
+      "btts_yes": 0.6259,
+      "over_1_5": 0.8287,
+      "over_2_5": 0.62,
+      "over_3_5": 0.3974,
       "most_likely_scorelines": [
         {
           "home_goals": 1,
           "away_goals": 1,
-          "probability": 0.10181311621379863
+          "probability": 0.10216594245558572
         },
         {
           "home_goals": 2,
           "away_goals": 1,
-          "probability": 0.09255737837618055
+          "probability": 0.09359419671668172
         },
         {
           "home_goals": 1,
           "away_goals": 0,
-          "probability": 0.07258898100428235
+          "probability": 0.07471837582572688
         }
       ],
       "evidence_grade": "VERY_LOW",
@@ -21216,33 +21221,33 @@
       },
       "status": "LOW_HISTORY_FORECAST",
       "probabilities": {
-        "home_win": 0.4738,
-        "draw": 0.2283,
-        "away_win": 0.2979
+        "home_win": 0.4846,
+        "draw": 0.2278,
+        "away_win": 0.2876
       },
       "expected_goals": {
-        "home": 1.818,
-        "away": 1.403
+        "home": 1.832,
+        "away": 1.367
       },
-      "btts_yes": 0.6316,
-      "over_1_5": 0.8315,
-      "over_2_5": 0.6244,
-      "over_3_5": 0.4021,
+      "btts_yes": 0.6259,
+      "over_1_5": 0.8287,
+      "over_2_5": 0.62,
+      "over_3_5": 0.3974,
       "most_likely_scorelines": [
         {
           "home_goals": 1,
           "away_goals": 1,
-          "probability": 0.10181311621379863
+          "probability": 0.10216594245558572
         },
         {
           "home_goals": 2,
           "away_goals": 1,
-          "probability": 0.09255737837618055
+          "probability": 0.09359419671668172
         },
         {
           "home_goals": 1,
           "away_goals": 0,
-          "probability": 0.07258898100428235
+          "probability": 0.07471837582572688
         }
       ],
       "evidence_grade": "VERY_LOW",
@@ -21523,33 +21528,33 @@
       },
       "status": "LOW_HISTORY_FORECAST",
       "probabilities": {
-        "home_win": 0.4738,
-        "draw": 0.2283,
-        "away_win": 0.2979
+        "home_win": 0.4846,
+        "draw": 0.2278,
+        "away_win": 0.2876
       },
       "expected_goals": {
-        "home": 1.818,
-        "away": 1.403
+        "home": 1.832,
+        "away": 1.367
       },
-      "btts_yes": 0.6316,
-      "over_1_5": 0.8315,
-      "over_2_5": 0.6244,
-      "over_3_5": 0.4021,
+      "btts_yes": 0.6259,
+      "over_1_5": 0.8287,
+      "over_2_5": 0.62,
+      "over_3_5": 0.3974,
       "most_likely_scorelines": [
         {
           "home_goals": 1,
           "away_goals": 1,
-          "probability": 0.10181311621379863
+          "probability": 0.10216594245558572
         },
         {
           "home_goals": 2,
           "away_goals": 1,
-          "probability": 0.09255737837618055
+          "probability": 0.09359419671668172
         },
         {
           "home_goals": 1,
           "away_goals": 0,
-          "probability": 0.07258898100428235
+          "probability": 0.07471837582572688
         }
       ],
       "evidence_grade": "VERY_LOW",
@@ -21830,33 +21835,33 @@
       },
       "status": "LOW_HISTORY_FORECAST",
       "probabilities": {
-        "home_win": 0.4738,
-        "draw": 0.2283,
-        "away_win": 0.2979
+        "home_win": 0.4846,
+        "draw": 0.2278,
+        "away_win": 0.2876
       },
       "expected_goals": {
-        "home": 1.818,
-        "away": 1.403
+        "home": 1.832,
+        "away": 1.367
       },
-      "btts_yes": 0.6316,
-      "over_1_5": 0.8315,
-      "over_2_5": 0.6244,
-      "over_3_5": 0.4021,
+      "btts_yes": 0.6259,
+      "over_1_5": 0.8287,
+      "over_2_5": 0.62,
+      "over_3_5": 0.3974,
       "most_likely_scorelines": [
         {
           "home_goals": 1,
           "away_goals": 1,
-          "probability": 0.10181311621379863
+          "probability": 0.10216594245558572
         },
         {
           "home_goals": 2,
           "away_goals": 1,
-          "probability": 0.09255737837618055
+          "probability": 0.09359419671668172
         },
         {
           "home_goals": 1,
           "away_goals": 0,
-          "probability": 0.07258898100428235
+          "probability": 0.07471837582572688
         }
       ],
       "evidence_grade": "VERY_LOW",
@@ -22137,33 +22142,33 @@
       },
       "status": "LOW_HISTORY_FORECAST",
       "probabilities": {
-        "home_win": 0.4738,
-        "draw": 0.2283,
-        "away_win": 0.2979
+        "home_win": 0.4846,
+        "draw": 0.2278,
+        "away_win": 0.2876
       },
       "expected_goals": {
-        "home": 1.818,
-        "away": 1.403
+        "home": 1.832,
+        "away": 1.367
       },
-      "btts_yes": 0.6316,
-      "over_1_5": 0.8315,
-      "over_2_5": 0.6244,
-      "over_3_5": 0.4021,
+      "btts_yes": 0.6259,
+      "over_1_5": 0.8287,
+      "over_2_5": 0.62,
+      "over_3_5": 0.3974,
       "most_likely_scorelines": [
         {
           "home_goals": 1,
           "away_goals": 1,
-          "probability": 0.10181311621379863
+          "probability": 0.10216594245558572
         },
         {
           "home_goals": 2,
           "away_goals": 1,
-          "probability": 0.09255737837618055
+          "probability": 0.09359419671668172
         },
         {
           "home_goals": 1,
           "away_goals": 0,
-          "probability": 0.07258898100428235
+          "probability": 0.07471837582572688
         }
       ],
       "evidence_grade": "VERY_LOW",
@@ -22444,33 +22449,33 @@
       },
       "status": "LOW_HISTORY_FORECAST",
       "probabilities": {
-        "home_win": 0.4738,
-        "draw": 0.2283,
-        "away_win": 0.2979
+        "home_win": 0.4846,
+        "draw": 0.2278,
+        "away_win": 0.2876
       },
       "expected_goals": {
-        "home": 1.818,
-        "away": 1.403
+        "home": 1.832,
+        "away": 1.367
       },
-      "btts_yes": 0.6316,
-      "over_1_5": 0.8315,
-      "over_2_5": 0.6244,
-      "over_3_5": 0.4021,
+      "btts_yes": 0.6259,
+      "over_1_5": 0.8287,
+      "over_2_5": 0.62,
+      "over_3_5": 0.3974,
       "most_likely_scorelines": [
         {
           "home_goals": 1,
           "away_goals": 1,
-          "probability": 0.10181311621379863
+          "probability": 0.10216594245558572
         },
         {
           "home_goals": 2,
           "away_goals": 1,
-          "probability": 0.09255737837618055
+          "probability": 0.09359419671668172
         },
         {
           "home_goals": 1,
           "away_goals": 0,
-          "probability": 0.07258898100428235
+          "probability": 0.07471837582572688
         }
       ],
       "evidence_grade": "VERY_LOW",
@@ -22751,33 +22756,33 @@
       },
       "status": "LOW_HISTORY_FORECAST",
       "probabilities": {
-        "home_win": 0.4738,
-        "draw": 0.2283,
-        "away_win": 0.2979
+        "home_win": 0.4846,
+        "draw": 0.2278,
+        "away_win": 0.2876
       },
       "expected_goals": {
-        "home": 1.818,
-        "away": 1.403
+        "home": 1.832,
+        "away": 1.367
       },
-      "btts_yes": 0.6316,
-      "over_1_5": 0.8315,
-      "over_2_5": 0.6244,
-      "over_3_5": 0.4021,
+      "btts_yes": 0.6259,
+      "over_1_5": 0.8287,
+      "over_2_5": 0.62,
+      "over_3_5": 0.3974,
       "most_likely_scorelines": [
         {
           "home_goals": 1,
           "away_goals": 1,
-          "probability": 0.10181311621379863
+          "probability": 0.10216594245558572
         },
         {
           "home_goals": 2,
           "away_goals": 1,
-          "probability": 0.09255737837618055
+          "probability": 0.09359419671668172
         },
         {
           "home_goals": 1,
           "away_goals": 0,
-          "probability": 0.07258898100428235
+          "probability": 0.07471837582572688
         }
       ],
       "evidence_grade": "VERY_LOW",
@@ -23058,33 +23063,33 @@
       },
       "status": "LOW_HISTORY_FORECAST",
       "probabilities": {
-        "home_win": 0.4738,
-        "draw": 0.2283,
-        "away_win": 0.2979
+        "home_win": 0.4846,
+        "draw": 0.2278,
+        "away_win": 0.2876
       },
       "expected_goals": {
-        "home": 1.818,
-        "away": 1.403
+        "home": 1.832,
+        "away": 1.367
       },
-      "btts_yes": 0.6316,
-      "over_1_5": 0.8315,
-      "over_2_5": 0.6244,
-      "over_3_5": 0.4021,
+      "btts_yes": 0.6259,
+      "over_1_5": 0.8287,
+      "over_2_5": 0.62,
+      "over_3_5": 0.3974,
       "most_likely_scorelines": [
         {
           "home_goals": 1,
           "away_goals": 1,
-          "probability": 0.10181311621379863
+          "probability": 0.10216594245558572
         },
         {
           "home_goals": 2,
           "away_goals": 1,
-          "probability": 0.09255737837618055
+          "probability": 0.09359419671668172
         },
         {
           "home_goals": 1,
           "away_goals": 0,
-          "probability": 0.07258898100428235
+          "probability": 0.07471837582572688
         }
       ],
       "evidence_grade": "VERY_LOW",
@@ -23365,33 +23370,33 @@
       },
       "status": "LOW_HISTORY_FORECAST",
       "probabilities": {
-        "home_win": 0.4738,
-        "draw": 0.2283,
-        "away_win": 0.2979
+        "home_win": 0.4846,
+        "draw": 0.2278,
+        "away_win": 0.2876
       },
       "expected_goals": {
-        "home": 1.818,
-        "away": 1.403
+        "home": 1.832,
+        "away": 1.367
       },
-      "btts_yes": 0.6316,
-      "over_1_5": 0.8315,
-      "over_2_5": 0.6244,
-      "over_3_5": 0.4021,
+      "btts_yes": 0.6259,
+      "over_1_5": 0.8287,
+      "over_2_5": 0.62,
+      "over_3_5": 0.3974,
       "most_likely_scorelines": [
         {
           "home_goals": 1,
           "away_goals": 1,
-          "probability": 0.10181311621379863
+          "probability": 0.10216594245558572
         },
         {
           "home_goals": 2,
           "away_goals": 1,
-          "probability": 0.09255737837618055
+          "probability": 0.09359419671668172
         },
         {
           "home_goals": 1,
           "away_goals": 0,
-          "probability": 0.07258898100428235
+          "probability": 0.07471837582572688
         }
       ],
       "evidence_grade": "VERY_LOW",
@@ -23672,33 +23677,33 @@
       },
       "status": "LOW_HISTORY_FORECAST",
       "probabilities": {
-        "home_win": 0.4738,
-        "draw": 0.2283,
-        "away_win": 0.2979
+        "home_win": 0.4846,
+        "draw": 0.2278,
+        "away_win": 0.2876
       },
       "expected_goals": {
-        "home": 1.818,
-        "away": 1.403
+        "home": 1.832,
+        "away": 1.367
       },
-      "btts_yes": 0.6316,
-      "over_1_5": 0.8315,
-      "over_2_5": 0.6244,
-      "over_3_5": 0.4021,
+      "btts_yes": 0.6259,
+      "over_1_5": 0.8287,
+      "over_2_5": 0.62,
+      "over_3_5": 0.3974,
       "most_likely_scorelines": [
         {
           "home_goals": 1,
           "away_goals": 1,
-          "probability": 0.10181311621379863
+          "probability": 0.10216594245558572
         },
         {
           "home_goals": 2,
           "away_goals": 1,
-          "probability": 0.09255737837618055
+          "probability": 0.09359419671668172
         },
         {
           "home_goals": 1,
           "away_goals": 0,
-          "probability": 0.07258898100428235
+          "probability": 0.07471837582572688
         }
       ],
       "evidence_grade": "VERY_LOW",
@@ -23979,33 +23984,33 @@
       },
       "status": "LOW_HISTORY_FORECAST",
       "probabilities": {
-        "home_win": 0.4738,
-        "draw": 0.2283,
-        "away_win": 0.2979
+        "home_win": 0.4846,
+        "draw": 0.2278,
+        "away_win": 0.2876
       },
       "expected_goals": {
-        "home": 1.818,
-        "away": 1.403
+        "home": 1.832,
+        "away": 1.367
       },
-      "btts_yes": 0.6316,
-      "over_1_5": 0.8315,
-      "over_2_5": 0.6244,
-      "over_3_5": 0.4021,
+      "btts_yes": 0.6259,
+      "over_1_5": 0.8287,
+      "over_2_5": 0.62,
+      "over_3_5": 0.3974,
       "most_likely_scorelines": [
         {
           "home_goals": 1,
           "away_goals": 1,
-          "probability": 0.10181311621379863
+          "probability": 0.10216594245558572
         },
         {
           "home_goals": 2,
           "away_goals": 1,
-          "probability": 0.09255737837618055
+          "probability": 0.09359419671668172
         },
         {
           "home_goals": 1,
           "away_goals": 0,
-          "probability": 0.07258898100428235
+          "probability": 0.07471837582572688
         }
       ],
       "evidence_grade": "VERY_LOW",
@@ -24286,33 +24291,33 @@
       },
       "status": "LOW_HISTORY_FORECAST",
       "probabilities": {
-        "home_win": 0.4738,
-        "draw": 0.2283,
-        "away_win": 0.2979
+        "home_win": 0.4846,
+        "draw": 0.2278,
+        "away_win": 0.2876
       },
       "expected_goals": {
-        "home": 1.818,
-        "away": 1.403
+        "home": 1.832,
+        "away": 1.367
       },
-      "btts_yes": 0.6316,
-      "over_1_5": 0.8315,
-      "over_2_5": 0.6244,
-      "over_3_5": 0.4021,
+      "btts_yes": 0.6259,
+      "over_1_5": 0.8287,
+      "over_2_5": 0.62,
+      "over_3_5": 0.3974,
       "most_likely_scorelines": [
         {
           "home_goals": 1,
           "away_goals": 1,
-          "probability": 0.10181311621379863
+          "probability": 0.10216594245558572
         },
         {
           "home_goals": 2,
           "away_goals": 1,
-          "probability": 0.09255737837618055
+          "probability": 0.09359419671668172
         },
         {
           "home_goals": 1,
           "away_goals": 0,
-          "probability": 0.07258898100428235
+          "probability": 0.07471837582572688
         }
       ],
       "evidence_grade": "VERY_LOW",
@@ -24593,33 +24598,33 @@
       },
       "status": "LOW_HISTORY_FORECAST",
       "probabilities": {
-        "home_win": 0.4738,
-        "draw": 0.2283,
-        "away_win": 0.2979
+        "home_win": 0.4846,
+        "draw": 0.2278,
+        "away_win": 0.2876
       },
       "expected_goals": {
-        "home": 1.818,
-        "away": 1.403
+        "home": 1.832,
+        "away": 1.367
       },
-      "btts_yes": 0.6316,
-      "over_1_5": 0.8315,
-      "over_2_5": 0.6244,
-      "over_3_5": 0.4021,
+      "btts_yes": 0.6259,
+      "over_1_5": 0.8287,
+      "over_2_5": 0.62,
+      "over_3_5": 0.3974,
       "most_likely_scorelines": [
         {
           "home_goals": 1,
           "away_goals": 1,
-          "probability": 0.10181311621379863
+          "probability": 0.10216594245558572
         },
         {
           "home_goals": 2,
           "away_goals": 1,
-          "probability": 0.09255737837618055
+          "probability": 0.09359419671668172
         },
         {
           "home_goals": 1,
           "away_goals": 0,
-          "probability": 0.07258898100428235
+          "probability": 0.07471837582572688
         }
       ],
       "evidence_grade": "VERY_LOW",
@@ -24900,33 +24905,33 @@
       },
       "status": "LOW_HISTORY_FORECAST",
       "probabilities": {
-        "home_win": 0.4738,
-        "draw": 0.2283,
-        "away_win": 0.2979
+        "home_win": 0.4846,
+        "draw": 0.2278,
+        "away_win": 0.2876
       },
       "expected_goals": {
-        "home": 1.818,
-        "away": 1.403
+        "home": 1.832,
+        "away": 1.367
       },
-      "btts_yes": 0.6316,
-      "over_1_5": 0.8315,
-      "over_2_5": 0.6244,
-      "over_3_5": 0.4021,
+      "btts_yes": 0.6259,
+      "over_1_5": 0.8287,
+      "over_2_5": 0.62,
+      "over_3_5": 0.3974,
       "most_likely_scorelines": [
         {
           "home_goals": 1,
           "away_goals": 1,
-          "probability": 0.10181311621379863
+          "probability": 0.10216594245558572
         },
         {
           "home_goals": 2,
           "away_goals": 1,
-          "probability": 0.09255737837618055
+          "probability": 0.09359419671668172
         },
         {
           "home_goals": 1,
           "away_goals": 0,
-          "probability": 0.07258898100428235
+          "probability": 0.07471837582572688
         }
       ],
       "evidence_grade": "VERY_LOW",
@@ -25207,33 +25212,33 @@
       },
       "status": "LOW_HISTORY_FORECAST",
       "probabilities": {
-        "home_win": 0.4738,
-        "draw": 0.2283,
-        "away_win": 0.2979
+        "home_win": 0.4846,
+        "draw": 0.2278,
+        "away_win": 0.2876
       },
       "expected_goals": {
-        "home": 1.818,
-        "away": 1.403
+        "home": 1.832,
+        "away": 1.367
       },
-      "btts_yes": 0.6316,
-      "over_1_5": 0.8315,
-      "over_2_5": 0.6244,
-      "over_3_5": 0.4021,
+      "btts_yes": 0.6259,
+      "over_1_5": 0.8287,
+      "over_2_5": 0.62,
+      "over_3_5": 0.3974,
       "most_likely_scorelines": [
         {
           "home_goals": 1,
           "away_goals": 1,
-          "probability": 0.10181311621379863
+          "probability": 0.10216594245558572
         },
         {
           "home_goals": 2,
           "away_goals": 1,
-          "probability": 0.09255737837618055
+          "probability": 0.09359419671668172
         },
         {
           "home_goals": 1,
           "away_goals": 0,
-          "probability": 0.07258898100428235
+          "probability": 0.07471837582572688
         }
       ],
       "evidence_grade": "VERY_LOW",
@@ -25514,33 +25519,33 @@
       },
       "status": "LOW_HISTORY_FORECAST",
       "probabilities": {
-        "home_win": 0.4738,
-        "draw": 0.2283,
-        "away_win": 0.2979
+        "home_win": 0.4846,
+        "draw": 0.2278,
+        "away_win": 0.2876
       },
       "expected_goals": {
-        "home": 1.818,
-        "away": 1.403
+        "home": 1.832,
+        "away": 1.367
       },
-      "btts_yes": 0.6316,
-      "over_1_5": 0.8315,
-      "over_2_5": 0.6244,
-      "over_3_5": 0.4021,
+      "btts_yes": 0.6259,
+      "over_1_5": 0.8287,
+      "over_2_5": 0.62,
+      "over_3_5": 0.3974,
       "most_likely_scorelines": [
         {
           "home_goals": 1,
           "away_goals": 1,
-          "probability": 0.10181311621379863
+          "probability": 0.10216594245558572
         },
         {
           "home_goals": 2,
           "away_goals": 1,
-          "probability": 0.09255737837618055
+          "probability": 0.09359419671668172
         },
         {
           "home_goals": 1,
           "away_goals": 0,
-          "probability": 0.07258898100428235
+          "probability": 0.07471837582572688
         }
       ],
       "evidence_grade": "VERY_LOW",
@@ -25608,7 +25613,7 @@
           "h2h": [
             {
               "bookmaker": "LiveScore Bet",
-              "last_update": "2026-11-05T11:36:34Z",
+              "last_update": "2026-11-05T11:50:14Z",
               "outcomes": [
                 {
                   "name": "Aldosivi Mar del Plata",
@@ -25629,7 +25634,7 @@
             },
             {
               "bookmaker": "Virgin Bet",
-              "last_update": "2026-11-05T11:36:12Z",
+              "last_update": "2026-11-05T11:50:37Z",
               "outcomes": [
                 {
                   "name": "Aldosivi Mar del Plata",
@@ -25650,7 +25655,7 @@
             },
             {
               "bookmaker": "Betfred (UK)",
-              "last_update": "2026-11-05T11:36:12Z",
+              "last_update": "2026-11-05T11:50:15Z",
               "outcomes": [
                 {
                   "name": "Aldosivi Mar del Plata",
@@ -25671,7 +25676,7 @@
             },
             {
               "bookmaker": "Unibet (UK)",
-              "last_update": "2026-11-05T11:36:56Z",
+              "last_update": "2026-11-05T11:49:31Z",
               "outcomes": [
                 {
                   "name": "Aldosivi Mar del Plata",
@@ -25692,7 +25697,7 @@
             },
             {
               "bookmaker": "Betfair",
-              "last_update": "2026-11-05T11:36:55Z",
+              "last_update": "2026-11-05T11:50:35Z",
               "outcomes": [
                 {
                   "name": "Aldosivi Mar del Plata",
@@ -25713,7 +25718,7 @@
             },
             {
               "bookmaker": "Paddy Power",
-              "last_update": "2026-11-05T11:36:12Z",
+              "last_update": "2026-11-05T11:49:09Z",
               "outcomes": [
                 {
                   "name": "Aldosivi Mar del Plata",
@@ -25734,7 +25739,7 @@
             },
             {
               "bookmaker": "Betfair Sportsbook",
-              "last_update": "2026-11-05T11:36:11Z",
+              "last_update": "2026-11-05T11:49:52Z",
               "outcomes": [
                 {
                   "name": "Aldosivi Mar del Plata",
@@ -25755,7 +25760,7 @@
             },
             {
               "bookmaker": "Sky Bet",
-              "last_update": "2026-11-05T11:36:32Z",
+              "last_update": "2026-11-05T11:48:25Z",
               "outcomes": [
                 {
                   "name": "Aldosivi Mar del Plata",
@@ -25776,7 +25781,7 @@
             },
             {
               "bookmaker": "Smarkets",
-              "last_update": "2026-11-05T11:36:33Z",
+              "last_update": "2026-11-05T11:50:35Z",
               "outcomes": [
                 {
                   "name": "Aldosivi Mar del Plata",
@@ -25797,7 +25802,7 @@
             },
             {
               "bookmaker": "BoyleSports",
-              "last_update": "2026-11-05T11:36:57Z",
+              "last_update": "2026-11-05T11:49:33Z",
               "outcomes": [
                 {
                   "name": "Aldosivi Mar del Plata",
@@ -25818,7 +25823,7 @@
             },
             {
               "bookmaker": "Betway",
-              "last_update": "2026-11-05T11:36:54Z",
+              "last_update": "2026-11-05T11:49:52Z",
               "outcomes": [
                 {
                   "name": "Aldosivi Mar del Plata",
@@ -25839,7 +25844,7 @@
             },
             {
               "bookmaker": "Ladbrokes",
-              "last_update": "2026-11-05T11:36:55Z",
+              "last_update": "2026-11-05T11:49:52Z",
               "outcomes": [
                 {
                   "name": "Aldosivi Mar del Plata",
@@ -25863,7 +25868,7 @@
           "btts": [
             {
               "bookmaker": "LiveScore Bet",
-              "last_update": "2026-11-05T11:36:34Z",
+              "last_update": "2026-11-05T11:50:14Z",
               "outcomes": [
                 {
                   "name": "Yes",
@@ -25879,7 +25884,7 @@
             },
             {
               "bookmaker": "Virgin Bet",
-              "last_update": "2026-11-05T11:36:12Z",
+              "last_update": "2026-11-05T11:50:37Z",
               "outcomes": [
                 {
                   "name": "Yes",
@@ -25895,7 +25900,7 @@
             },
             {
               "bookmaker": "Betfred (UK)",
-              "last_update": "2026-11-05T11:36:12Z",
+              "last_update": "2026-11-05T11:50:15Z",
               "outcomes": [
                 {
                   "name": "Yes",
@@ -25911,7 +25916,7 @@
             },
             {
               "bookmaker": "Ladbrokes",
-              "last_update": "2026-11-05T11:36:55Z",
+              "last_update": "2026-11-05T11:49:52Z",
               "outcomes": [
                 {
                   "name": "Yes",
@@ -25927,63 +25932,63 @@
             }
           ]
         },
-        "fetched_at": "2026-11-05T11:37:12.893774+00:00"
+        "fetched_at": "2026-11-05T11:50:39.205893+00:00"
       },
       "value_intelligence": {
         "status": "EVALUATED",
         "source": "The Odds API",
-        "snapshot_fetched_at": "2026-11-05T11:37:12.893774+00:00",
+        "snapshot_fetched_at": "2026-11-05T11:50:39.205893+00:00",
         "markets": {
           "1X2": {
             "status": "SHADOW_CANDIDATES_FOUND",
             "bookmaker_count": 12,
             "market_consensus_probabilities": {
-              "away_win": 0.6569161979636168,
               "draw": 0.2119670445061502,
-              "home_win": 0.1311167575302329
+              "home_win": 0.1311167575302329,
+              "away_win": 0.6569161979636168
             },
             "bookmaker_probability_dispersion": {
-              "away_win": 0.011403317671281823,
               "draw": 0.003994752297062423,
-              "home_win": 0.008990348838503852
+              "home_win": 0.008990348838503852,
+              "away_win": 0.011403317671281823
             },
             "model_probabilities": {
-              "home_win": 0.4738,
-              "draw": 0.2283,
-              "away_win": 0.2979
+              "home_win": 0.4846,
+              "draw": 0.2278,
+              "away_win": 0.2876
             },
             "market_shrunk_probabilities": {
-              "home_win": 0.25105589239465137,
-              "draw": 0.21768357892899765,
-              "away_win": 0.531260528676351
+              "home_win": 0.2548358923946514,
+              "draw": 0.21750857892899764,
+              "away_win": 0.5276555286763509
             },
             "conservative_screening_probabilities": {
-              "home_win": 0.20835498460708754,
-              "draw": 0.21111221140032996,
-              "away_win": 0.5125020711070923
+              "home_win": 0.21125970969662358,
+              "draw": 0.21093721140032995,
+              "away_win": 0.5088970711070923
             },
             "raw_model_edge": {
-              "home_win": 0.3426832424697671,
-              "draw": 0.016332955493849804,
-              "away_win": -0.3590161979636168
+              "home_win": 0.35348324246976703,
+              "draw": 0.015832955493849804,
+              "away_win": -0.36931619796361675
             },
             "candidates": [
               {
                 "selection": "home_win",
                 "bookmaker": "Betfair",
-                "last_update": "2026-11-05T11:36:55Z",
+                "last_update": "2026-11-05T11:50:35Z",
                 "status": "SHADOW_CANDIDATE",
-                "probability_used": 0.20835498460708754,
+                "probability_used": 0.21125970969662358,
                 "decimal_odds": 8.6,
                 "implied_probability": 0.11627906976744186,
-                "edge": 0.09207591483964568,
-                "expected_value_per_unit": 0.7918528676209529,
+                "edge": 0.09498063992918172,
+                "expected_value_per_unit": 0.8168335033909628,
                 "release_status": "LOCKED_SHADOW_MODE",
                 "quality": {
-                  "score": 89.7,
+                  "score": 90.6,
                   "label": "RESEARCH_PRIORITY_ONLY",
                   "components": {
-                    "edge": 76.7,
+                    "edge": 79.2,
                     "expected_value": 100.0,
                     "market_coverage": 100.0,
                     "price_stability": 85.7
@@ -25994,19 +25999,19 @@
               {
                 "selection": "home_win",
                 "bookmaker": "Smarkets",
-                "last_update": "2026-11-05T11:36:33Z",
+                "last_update": "2026-11-05T11:50:35Z",
                 "status": "SHADOW_CANDIDATE",
-                "probability_used": 0.20835498460708754,
+                "probability_used": 0.21125970969662358,
                 "decimal_odds": 8.6,
                 "implied_probability": 0.11627906976744186,
-                "edge": 0.09207591483964568,
-                "expected_value_per_unit": 0.7918528676209529,
+                "edge": 0.09498063992918172,
+                "expected_value_per_unit": 0.8168335033909628,
                 "release_status": "LOCKED_SHADOW_MODE",
                 "quality": {
-                  "score": 89.7,
+                  "score": 90.6,
                   "label": "RESEARCH_PRIORITY_ONLY",
                   "components": {
-                    "edge": 76.7,
+                    "edge": 79.2,
                     "expected_value": 100.0,
                     "market_coverage": 100.0,
                     "price_stability": 85.7
@@ -26017,19 +26022,19 @@
               {
                 "selection": "home_win",
                 "bookmaker": "Betfred (UK)",
-                "last_update": "2026-11-05T11:36:12Z",
+                "last_update": "2026-11-05T11:50:15Z",
                 "status": "SHADOW_CANDIDATE",
-                "probability_used": 0.20835498460708754,
+                "probability_used": 0.21125970969662358,
                 "decimal_odds": 7.5,
                 "implied_probability": 0.13333333333333333,
-                "edge": 0.07502165127375421,
-                "expected_value_per_unit": 0.5626623845531566,
+                "edge": 0.07792637636329025,
+                "expected_value_per_unit": 0.5844478227246768,
                 "release_status": "LOCKED_SHADOW_MODE",
                 "quality": {
-                  "score": 84.7,
+                  "score": 85.6,
                   "label": "RESEARCH_PRIORITY_ONLY",
                   "components": {
-                    "edge": 62.5,
+                    "edge": 64.9,
                     "expected_value": 100.0,
                     "market_coverage": 100.0,
                     "price_stability": 85.7
@@ -26040,19 +26045,19 @@
               {
                 "selection": "home_win",
                 "bookmaker": "LiveScore Bet",
-                "last_update": "2026-11-05T11:36:34Z",
+                "last_update": "2026-11-05T11:50:14Z",
                 "status": "SHADOW_CANDIDATE",
-                "probability_used": 0.20835498460708754,
+                "probability_used": 0.21125970969662358,
                 "decimal_odds": 7.0,
                 "implied_probability": 0.14285714285714285,
-                "edge": 0.06549784174994469,
-                "expected_value_per_unit": 0.45848489224961275,
+                "edge": 0.06840256683948073,
+                "expected_value_per_unit": 0.4788179678763651,
                 "release_status": "LOCKED_SHADOW_MODE",
                 "quality": {
-                  "score": 82.0,
+                  "score": 82.8,
                   "label": "RESEARCH_PRIORITY_ONLY",
                   "components": {
-                    "edge": 54.6,
+                    "edge": 57.0,
                     "expected_value": 100.0,
                     "market_coverage": 100.0,
                     "price_stability": 85.7
@@ -26063,19 +26068,19 @@
               {
                 "selection": "home_win",
                 "bookmaker": "Virgin Bet",
-                "last_update": "2026-11-05T11:36:12Z",
+                "last_update": "2026-11-05T11:50:37Z",
                 "status": "SHADOW_CANDIDATE",
-                "probability_used": 0.20835498460708754,
+                "probability_used": 0.21125970969662358,
                 "decimal_odds": 7.0,
                 "implied_probability": 0.14285714285714285,
-                "edge": 0.06549784174994469,
-                "expected_value_per_unit": 0.45848489224961275,
+                "edge": 0.06840256683948073,
+                "expected_value_per_unit": 0.4788179678763651,
                 "release_status": "LOCKED_SHADOW_MODE",
                 "quality": {
-                  "score": 82.0,
+                  "score": 82.8,
                   "label": "RESEARCH_PRIORITY_ONLY",
                   "components": {
-                    "edge": 54.6,
+                    "edge": 57.0,
                     "expected_value": 100.0,
                     "market_coverage": 100.0,
                     "price_stability": 85.7
@@ -26136,126 +26141,126 @@
               }
             ],
             "quote_timestamps": [
-              "2026-11-05T11:36:34Z",
-              "2026-11-05T11:36:12Z",
-              "2026-11-05T11:36:12Z",
-              "2026-11-05T11:36:56Z",
-              "2026-11-05T11:36:55Z",
-              "2026-11-05T11:36:12Z",
-              "2026-11-05T11:36:11Z",
-              "2026-11-05T11:36:32Z",
-              "2026-11-05T11:36:33Z",
-              "2026-11-05T11:36:57Z",
-              "2026-11-05T11:36:54Z",
-              "2026-11-05T11:36:55Z"
+              "2026-11-05T11:50:14Z",
+              "2026-11-05T11:50:37Z",
+              "2026-11-05T11:50:15Z",
+              "2026-11-05T11:49:31Z",
+              "2026-11-05T11:50:35Z",
+              "2026-11-05T11:49:09Z",
+              "2026-11-05T11:49:52Z",
+              "2026-11-05T11:48:25Z",
+              "2026-11-05T11:50:35Z",
+              "2026-11-05T11:49:33Z",
+              "2026-11-05T11:49:52Z",
+              "2026-11-05T11:49:52Z"
             ],
             "bookmaker_quotes": [
               {
                 "bookmaker": "LiveScore Bet",
-                "last_update": "2026-11-05T11:36:34Z",
+                "last_update": "2026-11-05T11:50:14Z",
                 "odds": {
-                  "away_win": 1.36,
                   "draw": 4.2,
-                  "home_win": 7.0
+                  "home_win": 7.0,
+                  "away_win": 1.36
                 }
               },
               {
                 "bookmaker": "Virgin Bet",
-                "last_update": "2026-11-05T11:36:12Z",
+                "last_update": "2026-11-05T11:50:37Z",
                 "odds": {
-                  "away_win": 1.36,
                   "draw": 4.2,
-                  "home_win": 7.0
+                  "home_win": 7.0,
+                  "away_win": 1.36
                 }
               },
               {
                 "bookmaker": "Betfred (UK)",
-                "last_update": "2026-11-05T11:36:12Z",
+                "last_update": "2026-11-05T11:50:15Z",
                 "odds": {
-                  "away_win": 1.36,
                   "draw": 4.2,
-                  "home_win": 7.5
+                  "home_win": 7.5,
+                  "away_win": 1.36
                 }
               },
               {
                 "bookmaker": "Unibet (UK)",
-                "last_update": "2026-11-05T11:36:56Z",
+                "last_update": "2026-11-05T11:49:31Z",
                 "odds": {
-                  "away_win": 1.42,
                   "draw": 4.5,
-                  "home_win": 7.0
+                  "home_win": 7.0,
+                  "away_win": 1.42
                 }
               },
               {
                 "bookmaker": "Betfair",
-                "last_update": "2026-11-05T11:36:55Z",
+                "last_update": "2026-11-05T11:50:35Z",
                 "odds": {
-                  "away_win": 1.43,
                   "draw": 4.7,
-                  "home_win": 8.6
+                  "home_win": 8.6,
+                  "away_win": 1.43
                 }
               },
               {
                 "bookmaker": "Paddy Power",
-                "last_update": "2026-11-05T11:36:12Z",
+                "last_update": "2026-11-05T11:49:09Z",
                 "odds": {
-                  "away_win": 1.4,
                   "draw": 4.2,
-                  "home_win": 6.5
+                  "home_win": 6.5,
+                  "away_win": 1.4
                 }
               },
               {
                 "bookmaker": "Betfair Sportsbook",
-                "last_update": "2026-11-05T11:36:11Z",
+                "last_update": "2026-11-05T11:49:52Z",
                 "odds": {
-                  "away_win": 1.4,
                   "draw": 4.33,
-                  "home_win": 7.0
+                  "home_win": 7.0,
+                  "away_win": 1.4
                 }
               },
               {
                 "bookmaker": "Sky Bet",
-                "last_update": "2026-11-05T11:36:32Z",
+                "last_update": "2026-11-05T11:48:25Z",
                 "odds": {
-                  "away_win": 1.4,
                   "draw": 4.0,
-                  "home_win": 6.25
+                  "home_win": 6.25,
+                  "away_win": 1.4
                 }
               },
               {
                 "bookmaker": "Smarkets",
-                "last_update": "2026-11-05T11:36:33Z",
+                "last_update": "2026-11-05T11:50:35Z",
                 "odds": {
-                  "away_win": 1.43,
                   "draw": 4.6,
-                  "home_win": 8.6
+                  "home_win": 8.6,
+                  "away_win": 1.43
                 }
               },
               {
                 "bookmaker": "BoyleSports",
-                "last_update": "2026-11-05T11:36:57Z",
+                "last_update": "2026-11-05T11:49:33Z",
                 "odds": {
-                  "away_win": 1.4,
                   "draw": 4.33,
-                  "home_win": 7.0
+                  "home_win": 7.0,
+                  "away_win": 1.4
                 }
               },
               {
                 "bookmaker": "Betway",
-                "last_update": "2026-11-05T11:36:54Z",
+                "last_update": "2026-11-05T11:49:52Z",
                 "odds": {
-                  "away_win": 1.43,
                   "draw": 4.5,
-                  "home_win": 7.0
+                  "home_win": 7.0,
+                  "away_win": 1.43
                 }
               },
               {
                 "bookmaker": "Ladbrokes",
-                "last_update": "2026-11-05T11:36:55Z",
+                "last_update": "2026-11-05T11:49:52Z",
                 "odds": {
-                  "away_win": 1.44,
                   "draw": 4.5,
-                  "home_win": 7.0
+                  "home_win": 7.0,
+                  "away_win": 1.44
                 }
               }
             ],
@@ -26265,9 +26270,9 @@
               "method": "BAYESIAN_INSPIRED_LOG_OPINION_POOL",
               "model_prior_weight": 0.35,
               "probabilities": {
-                "away_win": 0.5406988946013904,
-                "draw": 0.23615699695218323,
-                "home_win": 0.22314410844642638
+                "draw": 0.23716930021770397,
+                "home_win": 0.22604883353596242,
+                "away_win": 0.5367818662463335
               },
               "calibration_status": "NOT_CALIBRATED"
             },
@@ -26287,34 +26292,34 @@
               "yes": 0.003953694608088866
             },
             "model_probabilities": {
-              "yes": 0.6316,
-              "no": 0.36839999999999995
+              "yes": 0.6259,
+              "no": 0.3741
             },
             "market_shrunk_probabilities": {
-              "yes": 0.5104314030384273,
-              "no": 0.48956859696157284
+              "yes": 0.5084364030384272,
+              "no": 0.4915635969615729
             },
             "conservative_screening_probabilities": {
-              "yes": 0.503927575408121,
-              "no": 0.4821003983354977
+              "yes": 0.501932575408121,
+              "no": 0.4842361901577291
             },
             "raw_model_edge": {
-              "yes": 0.18641322609472744,
-              "no": -0.18641322609472755
+              "yes": 0.1807132260947274,
+              "no": -0.1807132260947275
             },
             "candidates": [],
             "candidate_count": 0,
             "candidate_quote_keys": [],
             "quote_timestamps": [
-              "2026-11-05T11:36:34Z",
-              "2026-11-05T11:36:12Z",
-              "2026-11-05T11:36:12Z",
-              "2026-11-05T11:36:55Z"
+              "2026-11-05T11:50:14Z",
+              "2026-11-05T11:50:37Z",
+              "2026-11-05T11:50:15Z",
+              "2026-11-05T11:49:52Z"
             ],
             "bookmaker_quotes": [
               {
                 "bookmaker": "LiveScore Bet",
-                "last_update": "2026-11-05T11:36:34Z",
+                "last_update": "2026-11-05T11:50:14Z",
                 "odds": {
                   "no": 1.66,
                   "yes": 2.07
@@ -26322,7 +26327,7 @@
               },
               {
                 "bookmaker": "Virgin Bet",
-                "last_update": "2026-11-05T11:36:12Z",
+                "last_update": "2026-11-05T11:50:37Z",
                 "odds": {
                   "no": 1.67,
                   "yes": 2.08
@@ -26330,7 +26335,7 @@
               },
               {
                 "bookmaker": "Betfred (UK)",
-                "last_update": "2026-11-05T11:36:12Z",
+                "last_update": "2026-11-05T11:50:15Z",
                 "odds": {
                   "no": 1.67,
                   "yes": 2.1
@@ -26338,7 +26343,7 @@
               },
               {
                 "bookmaker": "Ladbrokes",
-                "last_update": "2026-11-05T11:36:55Z",
+                "last_update": "2026-11-05T11:49:52Z",
                 "odds": {
                   "no": 1.7,
                   "yes": 2.05
@@ -26351,8 +26356,8 @@
               "method": "BAYESIAN_INSPIRED_LOG_OPINION_POOL",
               "model_prior_weight": 0.35,
               "probabilities": {
-                "no": 0.488604225965804,
-                "yes": 0.511395774034196
+                "no": 0.4907400177880354,
+                "yes": 0.5092599822119647
               },
               "calibration_status": "NOT_CALIBRATED"
             },
@@ -26596,33 +26601,33 @@
       },
       "status": "LOW_HISTORY_FORECAST",
       "probabilities": {
-        "home_win": 0.4738,
-        "draw": 0.2283,
-        "away_win": 0.2979
+        "home_win": 0.4846,
+        "draw": 0.2278,
+        "away_win": 0.2876
       },
       "expected_goals": {
-        "home": 1.818,
-        "away": 1.403
+        "home": 1.832,
+        "away": 1.367
       },
-      "btts_yes": 0.6316,
-      "over_1_5": 0.8315,
-      "over_2_5": 0.6244,
-      "over_3_5": 0.4021,
+      "btts_yes": 0.6259,
+      "over_1_5": 0.8287,
+      "over_2_5": 0.62,
+      "over_3_5": 0.3974,
       "most_likely_scorelines": [
         {
           "home_goals": 1,
           "away_goals": 1,
-          "probability": 0.10181311621379863
+          "probability": 0.10216594245558572
         },
         {
           "home_goals": 2,
           "away_goals": 1,
-          "probability": 0.09255737837618055
+          "probability": 0.09359419671668172
         },
         {
           "home_goals": 1,
           "away_goals": 0,
-          "probability": 0.07258898100428235
+          "probability": 0.07471837582572688
         }
       ],
       "evidence_grade": "VERY_LOW",
@@ -27806,33 +27811,33 @@
       },
       "status": "LOW_HISTORY_FORECAST",
       "probabilities": {
-        "home_win": 0.4738,
-        "draw": 0.2283,
-        "away_win": 0.2979
+        "home_win": 0.4846,
+        "draw": 0.2278,
+        "away_win": 0.2876
       },
       "expected_goals": {
-        "home": 1.818,
-        "away": 1.403
+        "home": 1.832,
+        "away": 1.367
       },
-      "btts_yes": 0.6316,
-      "over_1_5": 0.8315,
-      "over_2_5": 0.6244,
-      "over_3_5": 0.4021,
+      "btts_yes": 0.6259,
+      "over_1_5": 0.8287,
+      "over_2_5": 0.62,
+      "over_3_5": 0.3974,
       "most_likely_scorelines": [
         {
           "home_goals": 1,
           "away_goals": 1,
-          "probability": 0.10181311621379863
+          "probability": 0.10216594245558572
         },
         {
           "home_goals": 2,
           "away_goals": 1,
-          "probability": 0.09255737837618055
+          "probability": 0.09359419671668172
         },
         {
           "home_goals": 1,
           "away_goals": 0,
-          "probability": 0.07258898100428235
+          "probability": 0.07471837582572688
         }
       ],
       "evidence_grade": "VERY_LOW",
@@ -28371,33 +28376,33 @@
       },
       "status": "LOW_HISTORY_FORECAST",
       "probabilities": {
-        "home_win": 0.4738,
-        "draw": 0.2283,
-        "away_win": 0.2979
+        "home_win": 0.4846,
+        "draw": 0.2278,
+        "away_win": 0.2876
       },
       "expected_goals": {
-        "home": 1.818,
-        "away": 1.403
+        "home": 1.832,
+        "away": 1.367
       },
-      "btts_yes": 0.6316,
-      "over_1_5": 0.8315,
-      "over_2_5": 0.6244,
-      "over_3_5": 0.4021,
+      "btts_yes": 0.6259,
+      "over_1_5": 0.8287,
+      "over_2_5": 0.62,
+      "over_3_5": 0.3974,
       "most_likely_scorelines": [
         {
           "home_goals": 1,
           "away_goals": 1,
-          "probability": 0.10181311621379863
+          "probability": 0.10216594245558572
         },
         {
           "home_goals": 2,
           "away_goals": 1,
-          "probability": 0.09255737837618055
+          "probability": 0.09359419671668172
         },
         {
           "home_goals": 1,
           "away_goals": 0,
-          "probability": 0.07258898100428235
+          "probability": 0.07471837582572688
         }
       ],
       "evidence_grade": "VERY_LOW",
@@ -28807,33 +28812,33 @@
       },
       "status": "LOW_HISTORY_FORECAST",
       "probabilities": {
-        "home_win": 0.4738,
-        "draw": 0.2283,
-        "away_win": 0.2979
+        "home_win": 0.4846,
+        "draw": 0.2278,
+        "away_win": 0.2876
       },
       "expected_goals": {
-        "home": 1.818,
-        "away": 1.403
+        "home": 1.832,
+        "away": 1.367
       },
-      "btts_yes": 0.6316,
-      "over_1_5": 0.8315,
-      "over_2_5": 0.6244,
-      "over_3_5": 0.4021,
+      "btts_yes": 0.6259,
+      "over_1_5": 0.8287,
+      "over_2_5": 0.62,
+      "over_3_5": 0.3974,
       "most_likely_scorelines": [
         {
           "home_goals": 1,
           "away_goals": 1,
-          "probability": 0.10181311621379863
+          "probability": 0.10216594245558572
         },
         {
           "home_goals": 2,
           "away_goals": 1,
-          "probability": 0.09255737837618055
+          "probability": 0.09359419671668172
         },
         {
           "home_goals": 1,
           "away_goals": 0,
-          "probability": 0.07258898100428235
+          "probability": 0.07471837582572688
         }
       ],
       "evidence_grade": "VERY_LOW",
@@ -29114,33 +29119,33 @@
       },
       "status": "LOW_HISTORY_FORECAST",
       "probabilities": {
-        "home_win": 0.4738,
-        "draw": 0.2283,
-        "away_win": 0.2979
+        "home_win": 0.4846,
+        "draw": 0.2278,
+        "away_win": 0.2876
       },
       "expected_goals": {
-        "home": 1.818,
-        "away": 1.403
+        "home": 1.832,
+        "away": 1.367
       },
-      "btts_yes": 0.6316,
-      "over_1_5": 0.8315,
-      "over_2_5": 0.6244,
-      "over_3_5": 0.4021,
+      "btts_yes": 0.6259,
+      "over_1_5": 0.8287,
+      "over_2_5": 0.62,
+      "over_3_5": 0.3974,
       "most_likely_scorelines": [
         {
           "home_goals": 1,
           "away_goals": 1,
-          "probability": 0.10181311621379863
+          "probability": 0.10216594245558572
         },
         {
           "home_goals": 2,
           "away_goals": 1,
-          "probability": 0.09255737837618055
+          "probability": 0.09359419671668172
         },
         {
           "home_goals": 1,
           "away_goals": 0,
-          "probability": 0.07258898100428235
+          "probability": 0.07471837582572688
         }
       ],
       "evidence_grade": "VERY_LOW",
@@ -29421,33 +29426,33 @@
       },
       "status": "LOW_HISTORY_FORECAST",
       "probabilities": {
-        "home_win": 0.4738,
-        "draw": 0.2283,
-        "away_win": 0.2979
+        "home_win": 0.4846,
+        "draw": 0.2278,
+        "away_win": 0.2876
       },
       "expected_goals": {
-        "home": 1.818,
-        "away": 1.403
+        "home": 1.832,
+        "away": 1.367
       },
-      "btts_yes": 0.6316,
-      "over_1_5": 0.8315,
-      "over_2_5": 0.6244,
-      "over_3_5": 0.4021,
+      "btts_yes": 0.6259,
+      "over_1_5": 0.8287,
+      "over_2_5": 0.62,
+      "over_3_5": 0.3974,
       "most_likely_scorelines": [
         {
           "home_goals": 1,
           "away_goals": 1,
-          "probability": 0.10181311621379863
+          "probability": 0.10216594245558572
         },
         {
           "home_goals": 2,
           "away_goals": 1,
-          "probability": 0.09255737837618055
+          "probability": 0.09359419671668172
         },
         {
           "home_goals": 1,
           "away_goals": 0,
-          "probability": 0.07258898100428235
+          "probability": 0.07471837582572688
         }
       ],
       "evidence_grade": "VERY_LOW",
@@ -29728,33 +29733,33 @@
       },
       "status": "LOW_HISTORY_FORECAST",
       "probabilities": {
-        "home_win": 0.4738,
-        "draw": 0.2283,
-        "away_win": 0.2979
+        "home_win": 0.4846,
+        "draw": 0.2278,
+        "away_win": 0.2876
       },
       "expected_goals": {
-        "home": 1.818,
-        "away": 1.403
+        "home": 1.832,
+        "away": 1.367
       },
-      "btts_yes": 0.6316,
-      "over_1_5": 0.8315,
-      "over_2_5": 0.6244,
-      "over_3_5": 0.4021,
+      "btts_yes": 0.6259,
+      "over_1_5": 0.8287,
+      "over_2_5": 0.62,
+      "over_3_5": 0.3974,
       "most_likely_scorelines": [
         {
           "home_goals": 1,
           "away_goals": 1,
-          "probability": 0.10181311621379863
+          "probability": 0.10216594245558572
         },
         {
           "home_goals": 2,
           "away_goals": 1,
-          "probability": 0.09255737837618055
+          "probability": 0.09359419671668172
         },
         {
           "home_goals": 1,
           "away_goals": 0,
-          "probability": 0.07258898100428235
+          "probability": 0.07471837582572688
         }
       ],
       "evidence_grade": "VERY_LOW",
@@ -30035,33 +30040,33 @@
       },
       "status": "LOW_HISTORY_FORECAST",
       "probabilities": {
-        "home_win": 0.4738,
-        "draw": 0.2283,
-        "away_win": 0.2979
+        "home_win": 0.4846,
+        "draw": 0.2278,
+        "away_win": 0.2876
       },
       "expected_goals": {
-        "home": 1.818,
-        "away": 1.403
+        "home": 1.832,
+        "away": 1.367
       },
-      "btts_yes": 0.6316,
-      "over_1_5": 0.8315,
-      "over_2_5": 0.6244,
-      "over_3_5": 0.4021,
+      "btts_yes": 0.6259,
+      "over_1_5": 0.8287,
+      "over_2_5": 0.62,
+      "over_3_5": 0.3974,
       "most_likely_scorelines": [
         {
           "home_goals": 1,
           "away_goals": 1,
-          "probability": 0.10181311621379863
+          "probability": 0.10216594245558572
         },
         {
           "home_goals": 2,
           "away_goals": 1,
-          "probability": 0.09255737837618055
+          "probability": 0.09359419671668172
         },
         {
           "home_goals": 1,
           "away_goals": 0,
-          "probability": 0.07258898100428235
+          "probability": 0.07471837582572688
         }
       ],
       "evidence_grade": "VERY_LOW",
@@ -30342,33 +30347,33 @@
       },
       "status": "LOW_HISTORY_FORECAST",
       "probabilities": {
-        "home_win": 0.4738,
-        "draw": 0.2283,
-        "away_win": 0.2979
+        "home_win": 0.4846,
+        "draw": 0.2278,
+        "away_win": 0.2876
       },
       "expected_goals": {
-        "home": 1.818,
-        "away": 1.403
+        "home": 1.832,
+        "away": 1.367
       },
-      "btts_yes": 0.6316,
-      "over_1_5": 0.8315,
-      "over_2_5": 0.6244,
-      "over_3_5": 0.4021,
+      "btts_yes": 0.6259,
+      "over_1_5": 0.8287,
+      "over_2_5": 0.62,
+      "over_3_5": 0.3974,
       "most_likely_scorelines": [
         {
           "home_goals": 1,
           "away_goals": 1,
-          "probability": 0.10181311621379863
+          "probability": 0.10216594245558572
         },
         {
           "home_goals": 2,
           "away_goals": 1,
-          "probability": 0.09255737837618055
+          "probability": 0.09359419671668172
         },
         {
           "home_goals": 1,
           "away_goals": 0,
-          "probability": 0.07258898100428235
+          "probability": 0.07471837582572688
         }
       ],
       "evidence_grade": "VERY_LOW",
@@ -30649,33 +30654,33 @@
       },
       "status": "LOW_HISTORY_FORECAST",
       "probabilities": {
-        "home_win": 0.4738,
-        "draw": 0.2283,
-        "away_win": 0.2979
+        "home_win": 0.4846,
+        "draw": 0.2278,
+        "away_win": 0.2876
       },
       "expected_goals": {
-        "home": 1.818,
-        "away": 1.403
+        "home": 1.832,
+        "away": 1.367
       },
-      "btts_yes": 0.6316,
-      "over_1_5": 0.8315,
-      "over_2_5": 0.6244,
-      "over_3_5": 0.4021,
+      "btts_yes": 0.6259,
+      "over_1_5": 0.8287,
+      "over_2_5": 0.62,
+      "over_3_5": 0.3974,
       "most_likely_scorelines": [
         {
           "home_goals": 1,
           "away_goals": 1,
-          "probability": 0.10181311621379863
+          "probability": 0.10216594245558572
         },
         {
           "home_goals": 2,
           "away_goals": 1,
-          "probability": 0.09255737837618055
+          "probability": 0.09359419671668172
         },
         {
           "home_goals": 1,
           "away_goals": 0,
-          "probability": 0.07258898100428235
+          "probability": 0.07471837582572688
         }
       ],
       "evidence_grade": "VERY_LOW",
@@ -30956,33 +30961,33 @@
       },
       "status": "LOW_HISTORY_FORECAST",
       "probabilities": {
-        "home_win": 0.4738,
-        "draw": 0.2283,
-        "away_win": 0.2979
+        "home_win": 0.4846,
+        "draw": 0.2278,
+        "away_win": 0.2876
       },
       "expected_goals": {
-        "home": 1.818,
-        "away": 1.403
+        "home": 1.832,
+        "away": 1.367
       },
-      "btts_yes": 0.6316,
-      "over_1_5": 0.8315,
-      "over_2_5": 0.6244,
-      "over_3_5": 0.4021,
+      "btts_yes": 0.6259,
+      "over_1_5": 0.8287,
+      "over_2_5": 0.62,
+      "over_3_5": 0.3974,
       "most_likely_scorelines": [
         {
           "home_goals": 1,
           "away_goals": 1,
-          "probability": 0.10181311621379863
+          "probability": 0.10216594245558572
         },
         {
           "home_goals": 2,
           "away_goals": 1,
-          "probability": 0.09255737837618055
+          "probability": 0.09359419671668172
         },
         {
           "home_goals": 1,
           "away_goals": 0,
-          "probability": 0.07258898100428235
+          "probability": 0.07471837582572688
         }
       ],
       "evidence_grade": "VERY_LOW",
@@ -31263,33 +31268,33 @@
       },
       "status": "LOW_HISTORY_FORECAST",
       "probabilities": {
-        "home_win": 0.4738,
-        "draw": 0.2283,
-        "away_win": 0.2979
+        "home_win": 0.4846,
+        "draw": 0.2278,
+        "away_win": 0.2876
       },
       "expected_goals": {
-        "home": 1.818,
-        "away": 1.403
+        "home": 1.832,
+        "away": 1.367
       },
-      "btts_yes": 0.6316,
-      "over_1_5": 0.8315,
-      "over_2_5": 0.6244,
-      "over_3_5": 0.4021,
+      "btts_yes": 0.6259,
+      "over_1_5": 0.8287,
+      "over_2_5": 0.62,
+      "over_3_5": 0.3974,
       "most_likely_scorelines": [
         {
           "home_goals": 1,
           "away_goals": 1,
-          "probability": 0.10181311621379863
+          "probability": 0.10216594245558572
         },
         {
           "home_goals": 2,
           "away_goals": 1,
-          "probability": 0.09255737837618055
+          "probability": 0.09359419671668172
         },
         {
           "home_goals": 1,
           "away_goals": 0,
-          "probability": 0.07258898100428235
+          "probability": 0.07471837582572688
         }
       ],
       "evidence_grade": "VERY_LOW",
@@ -31570,33 +31575,33 @@
       },
       "status": "LOW_HISTORY_FORECAST",
       "probabilities": {
-        "home_win": 0.4738,
-        "draw": 0.2283,
-        "away_win": 0.2979
+        "home_win": 0.4846,
+        "draw": 0.2278,
+        "away_win": 0.2876
       },
       "expected_goals": {
-        "home": 1.818,
-        "away": 1.403
+        "home": 1.832,
+        "away": 1.367
       },
-      "btts_yes": 0.6316,
-      "over_1_5": 0.8315,
-      "over_2_5": 0.6244,
-      "over_3_5": 0.4021,
+      "btts_yes": 0.6259,
+      "over_1_5": 0.8287,
+      "over_2_5": 0.62,
+      "over_3_5": 0.3974,
       "most_likely_scorelines": [
         {
           "home_goals": 1,
           "away_goals": 1,
-          "probability": 0.10181311621379863
+          "probability": 0.10216594245558572
         },
         {
           "home_goals": 2,
           "away_goals": 1,
-          "probability": 0.09255737837618055
+          "probability": 0.09359419671668172
         },
         {
           "home_goals": 1,
           "away_goals": 0,
-          "probability": 0.07258898100428235
+          "probability": 0.07471837582572688
         }
       ],
       "evidence_grade": "VERY_LOW",
@@ -31877,33 +31882,33 @@
       },
       "status": "LOW_HISTORY_FORECAST",
       "probabilities": {
-        "home_win": 0.4738,
-        "draw": 0.2283,
-        "away_win": 0.2979
+        "home_win": 0.4846,
+        "draw": 0.2278,
+        "away_win": 0.2876
       },
       "expected_goals": {
-        "home": 1.818,
-        "away": 1.403
+        "home": 1.832,
+        "away": 1.367
       },
-      "btts_yes": 0.6316,
-      "over_1_5": 0.8315,
-      "over_2_5": 0.6244,
-      "over_3_5": 0.4021,
+      "btts_yes": 0.6259,
+      "over_1_5": 0.8287,
+      "over_2_5": 0.62,
+      "over_3_5": 0.3974,
       "most_likely_scorelines": [
         {
           "home_goals": 1,
           "away_goals": 1,
-          "probability": 0.10181311621379863
+          "probability": 0.10216594245558572
         },
         {
           "home_goals": 2,
           "away_goals": 1,
-          "probability": 0.09255737837618055
+          "probability": 0.09359419671668172
         },
         {
           "home_goals": 1,
           "away_goals": 0,
-          "probability": 0.07258898100428235
+          "probability": 0.07471837582572688
         }
       ],
       "evidence_grade": "VERY_LOW",
@@ -32184,33 +32189,33 @@
       },
       "status": "LOW_HISTORY_FORECAST",
       "probabilities": {
-        "home_win": 0.4738,
-        "draw": 0.2283,
-        "away_win": 0.2979
+        "home_win": 0.4846,
+        "draw": 0.2278,
+        "away_win": 0.2876
       },
       "expected_goals": {
-        "home": 1.818,
-        "away": 1.403
+        "home": 1.832,
+        "away": 1.367
       },
-      "btts_yes": 0.6316,
-      "over_1_5": 0.8315,
-      "over_2_5": 0.6244,
-      "over_3_5": 0.4021,
+      "btts_yes": 0.6259,
+      "over_1_5": 0.8287,
+      "over_2_5": 0.62,
+      "over_3_5": 0.3974,
       "most_likely_scorelines": [
         {
           "home_goals": 1,
           "away_goals": 1,
-          "probability": 0.10181311621379863
+          "probability": 0.10216594245558572
         },
         {
           "home_goals": 2,
           "away_goals": 1,
-          "probability": 0.09255737837618055
+          "probability": 0.09359419671668172
         },
         {
           "home_goals": 1,
           "away_goals": 0,
-          "probability": 0.07258898100428235
+          "probability": 0.07471837582572688
         }
       ],
       "evidence_grade": "VERY_LOW",
@@ -32491,33 +32496,33 @@
       },
       "status": "LOW_HISTORY_FORECAST",
       "probabilities": {
-        "home_win": 0.4738,
-        "draw": 0.2283,
-        "away_win": 0.2979
+        "home_win": 0.4846,
+        "draw": 0.2278,
+        "away_win": 0.2876
       },
       "expected_goals": {
-        "home": 1.818,
-        "away": 1.403
+        "home": 1.832,
+        "away": 1.367
       },
-      "btts_yes": 0.6316,
-      "over_1_5": 0.8315,
-      "over_2_5": 0.6244,
-      "over_3_5": 0.4021,
+      "btts_yes": 0.6259,
+      "over_1_5": 0.8287,
+      "over_2_5": 0.62,
+      "over_3_5": 0.3974,
       "most_likely_scorelines": [
         {
           "home_goals": 1,
           "away_goals": 1,
-          "probability": 0.10181311621379863
+          "probability": 0.10216594245558572
         },
         {
           "home_goals": 2,
           "away_goals": 1,
-          "probability": 0.09255737837618055
+          "probability": 0.09359419671668172
         },
         {
           "home_goals": 1,
           "away_goals": 0,
-          "probability": 0.07258898100428235
+          "probability": 0.07471837582572688
         }
       ],
       "evidence_grade": "VERY_LOW",
@@ -32798,33 +32803,33 @@
       },
       "status": "LOW_HISTORY_FORECAST",
       "probabilities": {
-        "home_win": 0.4738,
-        "draw": 0.2283,
-        "away_win": 0.2979
+        "home_win": 0.4846,
+        "draw": 0.2278,
+        "away_win": 0.2876
       },
       "expected_goals": {
-        "home": 1.818,
-        "away": 1.403
+        "home": 1.832,
+        "away": 1.367
       },
-      "btts_yes": 0.6316,
-      "over_1_5": 0.8315,
-      "over_2_5": 0.6244,
-      "over_3_5": 0.4021,
+      "btts_yes": 0.6259,
+      "over_1_5": 0.8287,
+      "over_2_5": 0.62,
+      "over_3_5": 0.3974,
       "most_likely_scorelines": [
         {
           "home_goals": 1,
           "away_goals": 1,
-          "probability": 0.10181311621379863
+          "probability": 0.10216594245558572
         },
         {
           "home_goals": 2,
           "away_goals": 1,
-          "probability": 0.09255737837618055
+          "probability": 0.09359419671668172
         },
         {
           "home_goals": 1,
           "away_goals": 0,
-          "probability": 0.07258898100428235
+          "probability": 0.07471837582572688
         }
       ],
       "evidence_grade": "VERY_LOW",
@@ -33105,33 +33110,33 @@
       },
       "status": "LOW_HISTORY_FORECAST",
       "probabilities": {
-        "home_win": 0.4738,
-        "draw": 0.2283,
-        "away_win": 0.2979
+        "home_win": 0.4846,
+        "draw": 0.2278,
+        "away_win": 0.2876
       },
       "expected_goals": {
-        "home": 1.818,
-        "away": 1.403
+        "home": 1.832,
+        "away": 1.367
       },
-      "btts_yes": 0.6316,
-      "over_1_5": 0.8315,
-      "over_2_5": 0.6244,
-      "over_3_5": 0.4021,
+      "btts_yes": 0.6259,
+      "over_1_5": 0.8287,
+      "over_2_5": 0.62,
+      "over_3_5": 0.3974,
       "most_likely_scorelines": [
         {
           "home_goals": 1,
           "away_goals": 1,
-          "probability": 0.10181311621379863
+          "probability": 0.10216594245558572
         },
         {
           "home_goals": 2,
           "away_goals": 1,
-          "probability": 0.09255737837618055
+          "probability": 0.09359419671668172
         },
         {
           "home_goals": 1,
           "away_goals": 0,
-          "probability": 0.07258898100428235
+          "probability": 0.07471837582572688
         }
       ],
       "evidence_grade": "VERY_LOW",
@@ -33412,33 +33417,33 @@
       },
       "status": "LOW_HISTORY_FORECAST",
       "probabilities": {
-        "home_win": 0.4738,
-        "draw": 0.2283,
-        "away_win": 0.2979
+        "home_win": 0.4846,
+        "draw": 0.2278,
+        "away_win": 0.2876
       },
       "expected_goals": {
-        "home": 1.818,
-        "away": 1.403
+        "home": 1.832,
+        "away": 1.367
       },
-      "btts_yes": 0.6316,
-      "over_1_5": 0.8315,
-      "over_2_5": 0.6244,
-      "over_3_5": 0.4021,
+      "btts_yes": 0.6259,
+      "over_1_5": 0.8287,
+      "over_2_5": 0.62,
+      "over_3_5": 0.3974,
       "most_likely_scorelines": [
         {
           "home_goals": 1,
           "away_goals": 1,
-          "probability": 0.10181311621379863
+          "probability": 0.10216594245558572
         },
         {
           "home_goals": 2,
           "away_goals": 1,
-          "probability": 0.09255737837618055
+          "probability": 0.09359419671668172
         },
         {
           "home_goals": 1,
           "away_goals": 0,
-          "probability": 0.07258898100428235
+          "probability": 0.07471837582572688
         }
       ],
       "evidence_grade": "VERY_LOW",
@@ -33719,33 +33724,33 @@
       },
       "status": "LOW_HISTORY_FORECAST",
       "probabilities": {
-        "home_win": 0.4738,
-        "draw": 0.2283,
-        "away_win": 0.2979
+        "home_win": 0.4846,
+        "draw": 0.2278,
+        "away_win": 0.2876
       },
       "expected_goals": {
-        "home": 1.818,
-        "away": 1.403
+        "home": 1.832,
+        "away": 1.367
       },
-      "btts_yes": 0.6316,
-      "over_1_5": 0.8315,
-      "over_2_5": 0.6244,
-      "over_3_5": 0.4021,
+      "btts_yes": 0.6259,
+      "over_1_5": 0.8287,
+      "over_2_5": 0.62,
+      "over_3_5": 0.3974,
       "most_likely_scorelines": [
         {
           "home_goals": 1,
           "away_goals": 1,
-          "probability": 0.10181311621379863
+          "probability": 0.10216594245558572
         },
         {
           "home_goals": 2,
           "away_goals": 1,
-          "probability": 0.09255737837618055
+          "probability": 0.09359419671668172
         },
         {
           "home_goals": 1,
           "away_goals": 0,
-          "probability": 0.07258898100428235
+          "probability": 0.07471837582572688
         }
       ],
       "evidence_grade": "VERY_LOW",
@@ -34026,33 +34031,33 @@
       },
       "status": "LOW_HISTORY_FORECAST",
       "probabilities": {
-        "home_win": 0.4738,
-        "draw": 0.2283,
-        "away_win": 0.2979
+        "home_win": 0.4846,
+        "draw": 0.2278,
+        "away_win": 0.2876
       },
       "expected_goals": {
-        "home": 1.818,
-        "away": 1.403
+        "home": 1.832,
+        "away": 1.367
       },
-      "btts_yes": 0.6316,
-      "over_1_5": 0.8315,
-      "over_2_5": 0.6244,
-      "over_3_5": 0.4021,
+      "btts_yes": 0.6259,
+      "over_1_5": 0.8287,
+      "over_2_5": 0.62,
+      "over_3_5": 0.3974,
       "most_likely_scorelines": [
         {
           "home_goals": 1,
           "away_goals": 1,
-          "probability": 0.10181311621379863
+          "probability": 0.10216594245558572
         },
         {
           "home_goals": 2,
           "away_goals": 1,
-          "probability": 0.09255737837618055
+          "probability": 0.09359419671668172
         },
         {
           "home_goals": 1,
           "away_goals": 0,
-          "probability": 0.07258898100428235
+          "probability": 0.07471837582572688
         }
       ],
       "evidence_grade": "VERY_LOW",
@@ -34333,33 +34338,33 @@
       },
       "status": "LOW_HISTORY_FORECAST",
       "probabilities": {
-        "home_win": 0.4738,
-        "draw": 0.2283,
-        "away_win": 0.2979
+        "home_win": 0.4846,
+        "draw": 0.2278,
+        "away_win": 0.2876
       },
       "expected_goals": {
-        "home": 1.818,
-        "away": 1.403
+        "home": 1.832,
+        "away": 1.367
       },
-      "btts_yes": 0.6316,
-      "over_1_5": 0.8315,
-      "over_2_5": 0.6244,
-      "over_3_5": 0.4021,
+      "btts_yes": 0.6259,
+      "over_1_5": 0.8287,
+      "over_2_5": 0.62,
+      "over_3_5": 0.3974,
       "most_likely_scorelines": [
         {
           "home_goals": 1,
           "away_goals": 1,
-          "probability": 0.10181311621379863
+          "probability": 0.10216594245558572
         },
         {
           "home_goals": 2,
           "away_goals": 1,
-          "probability": 0.09255737837618055
+          "probability": 0.09359419671668172
         },
         {
           "home_goals": 1,
           "away_goals": 0,
-          "probability": 0.07258898100428235
+          "probability": 0.07471837582572688
         }
       ],
       "evidence_grade": "VERY_LOW",
@@ -34640,33 +34645,33 @@
       },
       "status": "LOW_HISTORY_FORECAST",
       "probabilities": {
-        "home_win": 0.4738,
-        "draw": 0.2283,
-        "away_win": 0.2979
+        "home_win": 0.4846,
+        "draw": 0.2278,
+        "away_win": 0.2876
       },
       "expected_goals": {
-        "home": 1.818,
-        "away": 1.403
+        "home": 1.832,
+        "away": 1.367
       },
-      "btts_yes": 0.6316,
-      "over_1_5": 0.8315,
-      "over_2_5": 0.6244,
-      "over_3_5": 0.4021,
+      "btts_yes": 0.6259,
+      "over_1_5": 0.8287,
+      "over_2_5": 0.62,
+      "over_3_5": 0.3974,
       "most_likely_scorelines": [
         {
           "home_goals": 1,
           "away_goals": 1,
-          "probability": 0.10181311621379863
+          "probability": 0.10216594245558572
         },
         {
           "home_goals": 2,
           "away_goals": 1,
-          "probability": 0.09255737837618055
+          "probability": 0.09359419671668172
         },
         {
           "home_goals": 1,
           "away_goals": 0,
-          "probability": 0.07258898100428235
+          "probability": 0.07471837582572688
         }
       ],
       "evidence_grade": "VERY_LOW",
@@ -34947,33 +34952,33 @@
       },
       "status": "LOW_HISTORY_FORECAST",
       "probabilities": {
-        "home_win": 0.4738,
-        "draw": 0.2283,
-        "away_win": 0.2979
+        "home_win": 0.4846,
+        "draw": 0.2278,
+        "away_win": 0.2876
       },
       "expected_goals": {
-        "home": 1.818,
-        "away": 1.403
+        "home": 1.832,
+        "away": 1.367
       },
-      "btts_yes": 0.6316,
-      "over_1_5": 0.8315,
-      "over_2_5": 0.6244,
-      "over_3_5": 0.4021,
+      "btts_yes": 0.6259,
+      "over_1_5": 0.8287,
+      "over_2_5": 0.62,
+      "over_3_5": 0.3974,
       "most_likely_scorelines": [
         {
           "home_goals": 1,
           "away_goals": 1,
-          "probability": 0.10181311621379863
+          "probability": 0.10216594245558572
         },
         {
           "home_goals": 2,
           "away_goals": 1,
-          "probability": 0.09255737837618055
+          "probability": 0.09359419671668172
         },
         {
           "home_goals": 1,
           "away_goals": 0,
-          "probability": 0.07258898100428235
+          "probability": 0.07471837582572688
         }
       ],
       "evidence_grade": "VERY_LOW",
@@ -35254,33 +35259,33 @@
       },
       "status": "LOW_HISTORY_FORECAST",
       "probabilities": {
-        "home_win": 0.4738,
-        "draw": 0.2283,
-        "away_win": 0.2979
+        "home_win": 0.4846,
+        "draw": 0.2278,
+        "away_win": 0.2876
       },
       "expected_goals": {
-        "home": 1.818,
-        "away": 1.403
+        "home": 1.832,
+        "away": 1.367
       },
-      "btts_yes": 0.6316,
-      "over_1_5": 0.8315,
-      "over_2_5": 0.6244,
-      "over_3_5": 0.4021,
+      "btts_yes": 0.6259,
+      "over_1_5": 0.8287,
+      "over_2_5": 0.62,
+      "over_3_5": 0.3974,
       "most_likely_scorelines": [
         {
           "home_goals": 1,
           "away_goals": 1,
-          "probability": 0.10181311621379863
+          "probability": 0.10216594245558572
         },
         {
           "home_goals": 2,
           "away_goals": 1,
-          "probability": 0.09255737837618055
+          "probability": 0.09359419671668172
         },
         {
           "home_goals": 1,
           "away_goals": 0,
-          "probability": 0.07258898100428235
+          "probability": 0.07471837582572688
         }
       ],
       "evidence_grade": "VERY_LOW",
@@ -35690,33 +35695,33 @@
       },
       "status": "LOW_HISTORY_FORECAST",
       "probabilities": {
-        "home_win": 0.4738,
-        "draw": 0.2283,
-        "away_win": 0.2979
+        "home_win": 0.4846,
+        "draw": 0.2278,
+        "away_win": 0.2876
       },
       "expected_goals": {
-        "home": 1.818,
-        "away": 1.403
+        "home": 1.832,
+        "away": 1.367
       },
-      "btts_yes": 0.6316,
-      "over_1_5": 0.8315,
-      "over_2_5": 0.6244,
-      "over_3_5": 0.4021,
+      "btts_yes": 0.6259,
+      "over_1_5": 0.8287,
+      "over_2_5": 0.62,
+      "over_3_5": 0.3974,
       "most_likely_scorelines": [
         {
           "home_goals": 1,
           "away_goals": 1,
-          "probability": 0.10181311621379863
+          "probability": 0.10216594245558572
         },
         {
           "home_goals": 2,
           "away_goals": 1,
-          "probability": 0.09255737837618055
+          "probability": 0.09359419671668172
         },
         {
           "home_goals": 1,
           "away_goals": 0,
-          "probability": 0.07258898100428235
+          "probability": 0.07471837582572688
         }
       ],
       "evidence_grade": "VERY_LOW",
@@ -35997,33 +36002,33 @@
       },
       "status": "LOW_HISTORY_FORECAST",
       "probabilities": {
-        "home_win": 0.4738,
-        "draw": 0.2283,
-        "away_win": 0.2979
+        "home_win": 0.4846,
+        "draw": 0.2278,
+        "away_win": 0.2876
       },
       "expected_goals": {
-        "home": 1.818,
-        "away": 1.403
+        "home": 1.832,
+        "away": 1.367
       },
-      "btts_yes": 0.6316,
-      "over_1_5": 0.8315,
-      "over_2_5": 0.6244,
-      "over_3_5": 0.4021,
+      "btts_yes": 0.6259,
+      "over_1_5": 0.8287,
+      "over_2_5": 0.62,
+      "over_3_5": 0.3974,
       "most_likely_scorelines": [
         {
           "home_goals": 1,
           "away_goals": 1,
-          "probability": 0.10181311621379863
+          "probability": 0.10216594245558572
         },
         {
           "home_goals": 2,
           "away_goals": 1,
-          "probability": 0.09255737837618055
+          "probability": 0.09359419671668172
         },
         {
           "home_goals": 1,
           "away_goals": 0,
-          "probability": 0.07258898100428235
+          "probability": 0.07471837582572688
         }
       ],
       "evidence_grade": "VERY_LOW",
@@ -36433,33 +36438,33 @@
       },
       "status": "LOW_HISTORY_FORECAST",
       "probabilities": {
-        "home_win": 0.4738,
-        "draw": 0.2283,
-        "away_win": 0.2979
+        "home_win": 0.4846,
+        "draw": 0.2278,
+        "away_win": 0.2876
       },
       "expected_goals": {
-        "home": 1.818,
-        "away": 1.403
+        "home": 1.832,
+        "away": 1.367
       },
-      "btts_yes": 0.6316,
-      "over_1_5": 0.8315,
-      "over_2_5": 0.6244,
-      "over_3_5": 0.4021,
+      "btts_yes": 0.6259,
+      "over_1_5": 0.8287,
+      "over_2_5": 0.62,
+      "over_3_5": 0.3974,
       "most_likely_scorelines": [
         {
           "home_goals": 1,
           "away_goals": 1,
-          "probability": 0.10181311621379863
+          "probability": 0.10216594245558572
         },
         {
           "home_goals": 2,
           "away_goals": 1,
-          "probability": 0.09255737837618055
+          "probability": 0.09359419671668172
         },
         {
           "home_goals": 1,
           "away_goals": 0,
-          "probability": 0.07258898100428235
+          "probability": 0.07471837582572688
         }
       ],
       "evidence_grade": "VERY_LOW",
@@ -36740,33 +36745,33 @@
       },
       "status": "LOW_HISTORY_FORECAST",
       "probabilities": {
-        "home_win": 0.4738,
-        "draw": 0.2283,
-        "away_win": 0.2979
+        "home_win": 0.4846,
+        "draw": 0.2278,
+        "away_win": 0.2876
       },
       "expected_goals": {
-        "home": 1.818,
-        "away": 1.403
+        "home": 1.832,
+        "away": 1.367
       },
-      "btts_yes": 0.6316,
-      "over_1_5": 0.8315,
-      "over_2_5": 0.6244,
-      "over_3_5": 0.4021,
+      "btts_yes": 0.6259,
+      "over_1_5": 0.8287,
+      "over_2_5": 0.62,
+      "over_3_5": 0.3974,
       "most_likely_scorelines": [
         {
           "home_goals": 1,
           "away_goals": 1,
-          "probability": 0.10181311621379863
+          "probability": 0.10216594245558572
         },
         {
           "home_goals": 2,
           "away_goals": 1,
-          "probability": 0.09255737837618055
+          "probability": 0.09359419671668172
         },
         {
           "home_goals": 1,
           "away_goals": 0,
-          "probability": 0.07258898100428235
+          "probability": 0.07471837582572688
         }
       ],
       "evidence_grade": "VERY_LOW",
@@ -37047,33 +37052,33 @@
       },
       "status": "LOW_HISTORY_FORECAST",
       "probabilities": {
-        "home_win": 0.4738,
-        "draw": 0.2283,
-        "away_win": 0.2979
+        "home_win": 0.4846,
+        "draw": 0.2278,
+        "away_win": 0.2876
       },
       "expected_goals": {
-        "home": 1.818,
-        "away": 1.403
+        "home": 1.832,
+        "away": 1.367
       },
-      "btts_yes": 0.6316,
-      "over_1_5": 0.8315,
-      "over_2_5": 0.6244,
-      "over_3_5": 0.4021,
+      "btts_yes": 0.6259,
+      "over_1_5": 0.8287,
+      "over_2_5": 0.62,
+      "over_3_5": 0.3974,
       "most_likely_scorelines": [
         {
           "home_goals": 1,
           "away_goals": 1,
-          "probability": 0.10181311621379863
+          "probability": 0.10216594245558572
         },
         {
           "home_goals": 2,
           "away_goals": 1,
-          "probability": 0.09255737837618055
+          "probability": 0.09359419671668172
         },
         {
           "home_goals": 1,
           "away_goals": 0,
-          "probability": 0.07258898100428235
+          "probability": 0.07471837582572688
         }
       ],
       "evidence_grade": "VERY_LOW",
@@ -37141,7 +37146,7 @@
           "h2h": [
             {
               "bookmaker": "Betfred (UK)",
-              "last_update": "2026-11-05T11:36:12Z",
+              "last_update": "2026-11-05T11:50:15Z",
               "outcomes": [
                 {
                   "name": "Belgrano de Cordoba",
@@ -37162,7 +37167,7 @@
             },
             {
               "bookmaker": "LiveScore Bet",
-              "last_update": "2026-11-05T11:36:34Z",
+              "last_update": "2026-11-05T11:50:14Z",
               "outcomes": [
                 {
                   "name": "Belgrano de Cordoba",
@@ -37183,7 +37188,7 @@
             },
             {
               "bookmaker": "Virgin Bet",
-              "last_update": "2026-11-05T11:36:12Z",
+              "last_update": "2026-11-05T11:50:37Z",
               "outcomes": [
                 {
                   "name": "Belgrano de Cordoba",
@@ -37204,7 +37209,7 @@
             },
             {
               "bookmaker": "Unibet (UK)",
-              "last_update": "2026-11-05T11:36:56Z",
+              "last_update": "2026-11-05T11:49:31Z",
               "outcomes": [
                 {
                   "name": "Belgrano de Cordoba",
@@ -37225,7 +37230,7 @@
             },
             {
               "bookmaker": "Betfair",
-              "last_update": "2026-11-05T11:36:55Z",
+              "last_update": "2026-11-05T11:50:35Z",
               "outcomes": [
                 {
                   "name": "Belgrano de Cordoba",
@@ -37246,7 +37251,7 @@
             },
             {
               "bookmaker": "Paddy Power",
-              "last_update": "2026-11-05T11:36:12Z",
+              "last_update": "2026-11-05T11:49:09Z",
               "outcomes": [
                 {
                   "name": "Belgrano de Cordoba",
@@ -37267,7 +37272,7 @@
             },
             {
               "bookmaker": "Sky Bet",
-              "last_update": "2026-11-05T11:36:32Z",
+              "last_update": "2026-11-05T11:48:25Z",
               "outcomes": [
                 {
                   "name": "Belgrano de Cordoba",
@@ -37288,7 +37293,7 @@
             },
             {
               "bookmaker": "Betfair Sportsbook",
-              "last_update": "2026-11-05T11:36:11Z",
+              "last_update": "2026-11-05T11:49:52Z",
               "outcomes": [
                 {
                   "name": "Belgrano de Cordoba",
@@ -37309,7 +37314,7 @@
             },
             {
               "bookmaker": "Smarkets",
-              "last_update": "2026-11-05T11:36:33Z",
+              "last_update": "2026-11-05T11:50:35Z",
               "outcomes": [
                 {
                   "name": "Belgrano de Cordoba",
@@ -37330,7 +37335,7 @@
             },
             {
               "bookmaker": "BoyleSports",
-              "last_update": "2026-11-05T11:36:57Z",
+              "last_update": "2026-11-05T11:49:33Z",
               "outcomes": [
                 {
                   "name": "Belgrano de Cordoba",
@@ -37351,7 +37356,7 @@
             },
             {
               "bookmaker": "Betway",
-              "last_update": "2026-11-05T11:36:54Z",
+              "last_update": "2026-11-05T11:49:52Z",
               "outcomes": [
                 {
                   "name": "Belgrano de Cordoba",
@@ -37365,14 +37370,14 @@
                 },
                 {
                   "name": "Draw",
-                  "price": 3.0,
+                  "price": 3.1,
                   "point": null
                 }
               ]
             },
             {
               "bookmaker": "Ladbrokes",
-              "last_update": "2026-11-05T11:36:55Z",
+              "last_update": "2026-11-05T11:49:52Z",
               "outcomes": [
                 {
                   "name": "Belgrano de Cordoba",
@@ -37396,7 +37401,7 @@
           "btts": [
             {
               "bookmaker": "Betfred (UK)",
-              "last_update": "2026-11-05T11:36:12Z",
+              "last_update": "2026-11-05T11:50:15Z",
               "outcomes": [
                 {
                   "name": "Yes",
@@ -37412,7 +37417,7 @@
             },
             {
               "bookmaker": "LiveScore Bet",
-              "last_update": "2026-11-05T11:36:34Z",
+              "last_update": "2026-11-05T11:50:14Z",
               "outcomes": [
                 {
                   "name": "Yes",
@@ -37428,7 +37433,7 @@
             },
             {
               "bookmaker": "Virgin Bet",
-              "last_update": "2026-11-05T11:36:12Z",
+              "last_update": "2026-11-05T11:50:37Z",
               "outcomes": [
                 {
                   "name": "Yes",
@@ -37444,7 +37449,7 @@
             },
             {
               "bookmaker": "Ladbrokes",
-              "last_update": "2026-11-05T11:36:55Z",
+              "last_update": "2026-11-05T11:49:52Z",
               "outcomes": [
                 {
                   "name": "Yes",
@@ -37460,170 +37465,170 @@
             }
           ]
         },
-        "fetched_at": "2026-11-05T11:37:13.005809+00:00"
+        "fetched_at": "2026-11-05T11:50:39.279994+00:00"
       },
       "value_intelligence": {
         "status": "EVALUATED",
         "source": "The Odds API",
-        "snapshot_fetched_at": "2026-11-05T11:37:13.005809+00:00",
+        "snapshot_fetched_at": "2026-11-05T11:50:39.279994+00:00",
         "markets": {
           "1X2": {
             "status": "NO_QUALIFYING_SHADOW_PRICE",
             "bookmaker_count": 12,
             "market_consensus_probabilities": {
-              "away_win": 0.3018980491872277,
-              "draw": 0.2893366927093291,
-              "home_win": 0.4087652581034432
+              "draw": 0.28915522136031163,
+              "home_win": 0.4091360792571424,
+              "away_win": 0.30170869938254596
             },
             "bookmaker_probability_dispersion": {
-              "away_win": 0.00969206875547292,
-              "draw": 0.008125758615584283,
-              "home_win": 0.0069226860002007
+              "draw": 0.007132746609729954,
+              "home_win": 0.006633332332206741,
+              "away_win": 0.009508903281103834
             },
             "model_probabilities": {
-              "home_win": 0.4738,
-              "draw": 0.2283,
-              "away_win": 0.2979
+              "home_win": 0.4846,
+              "draw": 0.2278,
+              "away_win": 0.2876
             },
             "market_shrunk_probabilities": {
-              "home_win": 0.4315274177672381,
-              "draw": 0.2679738502610639,
-              "away_win": 0.30049873197169796
+              "home_win": 0.43554845151714255,
+              "draw": 0.2676808938842026,
+              "away_win": 0.29677065459865487
             },
             "conservative_screening_probabilities": {
-              "home_win": 0.4201395992969079,
-              "draw": 0.2536793190588261,
-              "away_win": 0.284555278868945
+              "home_win": 0.42459004024976493,
+              "draw": 0.25511881087602645,
+              "away_win": 0.28112850870123907
             },
             "raw_model_edge": {
-              "home_win": 0.06503474189655678,
-              "draw": -0.0610366927093291,
-              "away_win": -0.003998049187227681
+              "home_win": 0.07546392074285757,
+              "draw": -0.06135522136031163,
+              "away_win": -0.014108699382545942
             },
             "candidates": [],
             "candidate_count": 0,
             "candidate_quote_keys": [],
             "quote_timestamps": [
-              "2026-11-05T11:36:12Z",
-              "2026-11-05T11:36:34Z",
-              "2026-11-05T11:36:12Z",
-              "2026-11-05T11:36:56Z",
-              "2026-11-05T11:36:55Z",
-              "2026-11-05T11:36:12Z",
-              "2026-11-05T11:36:32Z",
-              "2026-11-05T11:36:11Z",
-              "2026-11-05T11:36:33Z",
-              "2026-11-05T11:36:57Z",
-              "2026-11-05T11:36:54Z",
-              "2026-11-05T11:36:55Z"
+              "2026-11-05T11:50:15Z",
+              "2026-11-05T11:50:14Z",
+              "2026-11-05T11:50:37Z",
+              "2026-11-05T11:49:31Z",
+              "2026-11-05T11:50:35Z",
+              "2026-11-05T11:49:09Z",
+              "2026-11-05T11:48:25Z",
+              "2026-11-05T11:49:52Z",
+              "2026-11-05T11:50:35Z",
+              "2026-11-05T11:49:33Z",
+              "2026-11-05T11:49:52Z",
+              "2026-11-05T11:49:52Z"
             ],
             "bookmaker_quotes": [
               {
                 "bookmaker": "Betfred (UK)",
-                "last_update": "2026-11-05T11:36:12Z",
+                "last_update": "2026-11-05T11:50:15Z",
                 "odds": {
-                  "away_win": 3.0,
                   "draw": 3.1,
-                  "home_win": 2.25
+                  "home_win": 2.25,
+                  "away_win": 3.0
                 }
               },
               {
                 "bookmaker": "LiveScore Bet",
-                "last_update": "2026-11-05T11:36:34Z",
+                "last_update": "2026-11-05T11:50:14Z",
                 "odds": {
-                  "away_win": 2.9,
                   "draw": 3.1,
-                  "home_win": 2.2
+                  "home_win": 2.2,
+                  "away_win": 2.9
                 }
               },
               {
                 "bookmaker": "Virgin Bet",
-                "last_update": "2026-11-05T11:36:12Z",
+                "last_update": "2026-11-05T11:50:37Z",
                 "odds": {
-                  "away_win": 2.9,
                   "draw": 3.1,
-                  "home_win": 2.2
+                  "home_win": 2.2,
+                  "away_win": 2.9
                 }
               },
               {
                 "bookmaker": "Unibet (UK)",
-                "last_update": "2026-11-05T11:36:56Z",
+                "last_update": "2026-11-05T11:49:31Z",
                 "odds": {
-                  "away_win": 3.25,
                   "draw": 3.25,
-                  "home_win": 2.25
+                  "home_win": 2.25,
+                  "away_win": 3.25
                 }
               },
               {
                 "bookmaker": "Betfair",
-                "last_update": "2026-11-05T11:36:55Z",
+                "last_update": "2026-11-05T11:50:35Z",
                 "odds": {
-                  "away_win": 3.5,
                   "draw": 3.25,
-                  "home_win": 2.34
+                  "home_win": 2.34,
+                  "away_win": 3.5
                 }
               },
               {
                 "bookmaker": "Paddy Power",
-                "last_update": "2026-11-05T11:36:12Z",
+                "last_update": "2026-11-05T11:49:09Z",
                 "odds": {
-                  "away_win": 3.0,
                   "draw": 3.2,
-                  "home_win": 2.2
+                  "home_win": 2.2,
+                  "away_win": 3.0
                 }
               },
               {
                 "bookmaker": "Sky Bet",
-                "last_update": "2026-11-05T11:36:32Z",
+                "last_update": "2026-11-05T11:48:25Z",
                 "odds": {
-                  "away_win": 2.9,
                   "draw": 3.1,
-                  "home_win": 2.2
+                  "home_win": 2.2,
+                  "away_win": 2.9
                 }
               },
               {
                 "bookmaker": "Betfair Sportsbook",
-                "last_update": "2026-11-05T11:36:11Z",
+                "last_update": "2026-11-05T11:49:52Z",
                 "odds": {
-                  "away_win": 3.0,
                   "draw": 3.3,
-                  "home_win": 2.25
+                  "home_win": 2.25,
+                  "away_win": 3.0
                 }
               },
               {
                 "bookmaker": "Smarkets",
-                "last_update": "2026-11-05T11:36:33Z",
+                "last_update": "2026-11-05T11:50:35Z",
                 "odds": {
-                  "away_win": 3.45,
                   "draw": 3.25,
-                  "home_win": 2.34
+                  "home_win": 2.34,
+                  "away_win": 3.45
                 }
               },
               {
                 "bookmaker": "BoyleSports",
-                "last_update": "2026-11-05T11:36:57Z",
+                "last_update": "2026-11-05T11:49:33Z",
                 "odds": {
-                  "away_win": 3.0,
                   "draw": 3.0,
-                  "home_win": 2.25
+                  "home_win": 2.25,
+                  "away_win": 3.0
                 }
               },
               {
                 "bookmaker": "Betway",
-                "last_update": "2026-11-05T11:36:54Z",
+                "last_update": "2026-11-05T11:49:52Z",
                 "odds": {
-                  "away_win": 3.2,
-                  "draw": 3.0,
-                  "home_win": 2.3
+                  "draw": 3.1,
+                  "home_win": 2.3,
+                  "away_win": 3.2
                 }
               },
               {
                 "bookmaker": "Ladbrokes",
-                "last_update": "2026-11-05T11:36:55Z",
+                "last_update": "2026-11-05T11:49:52Z",
                 "odds": {
-                  "away_win": 3.2,
                   "draw": 3.3,
-                  "home_win": 2.25
+                  "home_win": 2.25,
+                  "away_win": 3.2
                 }
               }
             ],
@@ -37633,9 +37638,9 @@
               "method": "BAYESIAN_INSPIRED_LOG_OPINION_POOL",
               "model_prior_weight": 0.35,
               "probabilities": {
-                "away_win": 0.30132204933636275,
-                "draw": 0.2670461919814623,
-                "home_win": 0.43163175868217496
+                "draw": 0.26685217904903225,
+                "home_win": 0.435501871936245,
+                "away_win": 0.29764594901472274
               },
               "calibration_status": "NOT_CALIBRATED"
             },
@@ -37655,34 +37660,34 @@
               "yes": 0.0047510284338688575
             },
             "model_probabilities": {
-              "yes": 0.6316,
-              "no": 0.36839999999999995
+              "yes": 0.6259,
+              "no": 0.3741
             },
             "market_shrunk_probabilities": {
-              "yes": 0.5587409625249978,
-              "no": 0.44125903747500217
+              "yes": 0.5567459625249979,
+              "no": 0.44325403747500214
             },
             "conservative_screening_probabilities": {
-              "yes": 0.5509255207512835,
-              "no": 0.4326113671958529
+              "yes": 0.5489305207512836,
+              "no": 0.4347188017265172
             },
             "raw_model_edge": {
-              "yes": 0.1120908268846188,
-              "no": -0.1120908268846188
+              "yes": 0.10639082688461876,
+              "no": -0.10639082688461876
             },
             "candidates": [],
             "candidate_count": 0,
             "candidate_quote_keys": [],
             "quote_timestamps": [
-              "2026-11-05T11:36:12Z",
-              "2026-11-05T11:36:34Z",
-              "2026-11-05T11:36:12Z",
-              "2026-11-05T11:36:55Z"
+              "2026-11-05T11:50:15Z",
+              "2026-11-05T11:50:14Z",
+              "2026-11-05T11:50:37Z",
+              "2026-11-05T11:49:52Z"
             ],
             "bookmaker_quotes": [
               {
                 "bookmaker": "Betfred (UK)",
-                "last_update": "2026-11-05T11:36:12Z",
+                "last_update": "2026-11-05T11:50:15Z",
                 "odds": {
                   "no": 1.91,
                   "yes": 1.8
@@ -37690,7 +37695,7 @@
               },
               {
                 "bookmaker": "LiveScore Bet",
-                "last_update": "2026-11-05T11:36:34Z",
+                "last_update": "2026-11-05T11:50:14Z",
                 "odds": {
                   "no": 1.93,
                   "yes": 1.75
@@ -37698,7 +37703,7 @@
               },
               {
                 "bookmaker": "Virgin Bet",
-                "last_update": "2026-11-05T11:36:12Z",
+                "last_update": "2026-11-05T11:50:37Z",
                 "odds": {
                   "no": 1.95,
                   "yes": 1.77
@@ -37706,7 +37711,7 @@
               },
               {
                 "bookmaker": "Ladbrokes",
-                "last_update": "2026-11-05T11:36:55Z",
+                "last_update": "2026-11-05T11:49:52Z",
                 "odds": {
                   "no": 1.91,
                   "yes": 1.8
@@ -37719,8 +37724,8 @@
               "method": "BAYESIAN_INSPIRED_LOG_OPINION_POOL",
               "model_prior_weight": 0.35,
               "probabilities": {
-                "no": 0.44042680896956715,
-                "yes": 0.5595731910304329
+                "no": 0.44253424350023146,
+                "yes": 0.5574657564997686
               },
               "calibration_status": "NOT_CALIBRATED"
             },
@@ -37964,33 +37969,33 @@
       },
       "status": "LOW_HISTORY_FORECAST",
       "probabilities": {
-        "home_win": 0.4738,
-        "draw": 0.2283,
-        "away_win": 0.2979
+        "home_win": 0.4846,
+        "draw": 0.2278,
+        "away_win": 0.2876
       },
       "expected_goals": {
-        "home": 1.818,
-        "away": 1.403
+        "home": 1.832,
+        "away": 1.367
       },
-      "btts_yes": 0.6316,
-      "over_1_5": 0.8315,
-      "over_2_5": 0.6244,
-      "over_3_5": 0.4021,
+      "btts_yes": 0.6259,
+      "over_1_5": 0.8287,
+      "over_2_5": 0.62,
+      "over_3_5": 0.3974,
       "most_likely_scorelines": [
         {
           "home_goals": 1,
           "away_goals": 1,
-          "probability": 0.10181311621379863
+          "probability": 0.10216594245558572
         },
         {
           "home_goals": 2,
           "away_goals": 1,
-          "probability": 0.09255737837618055
+          "probability": 0.09359419671668172
         },
         {
           "home_goals": 1,
           "away_goals": 0,
-          "probability": 0.07258898100428235
+          "probability": 0.07471837582572688
         }
       ],
       "evidence_grade": "VERY_LOW",
@@ -38387,33 +38392,33 @@
       },
       "status": "LOW_HISTORY_FORECAST",
       "probabilities": {
-        "home_win": 0.4738,
-        "draw": 0.2283,
-        "away_win": 0.2979
+        "home_win": 0.4846,
+        "draw": 0.2278,
+        "away_win": 0.2876
       },
       "expected_goals": {
-        "home": 1.818,
-        "away": 1.403
+        "home": 1.832,
+        "away": 1.367
       },
-      "btts_yes": 0.6316,
-      "over_1_5": 0.8315,
-      "over_2_5": 0.6244,
-      "over_3_5": 0.4021,
+      "btts_yes": 0.6259,
+      "over_1_5": 0.8287,
+      "over_2_5": 0.62,
+      "over_3_5": 0.3974,
       "most_likely_scorelines": [
         {
           "home_goals": 1,
           "away_goals": 1,
-          "probability": 0.10181311621379863
+          "probability": 0.10216594245558572
         },
         {
           "home_goals": 2,
           "away_goals": 1,
-          "probability": 0.09255737837618055
+          "probability": 0.09359419671668172
         },
         {
           "home_goals": 1,
           "away_goals": 0,
-          "probability": 0.07258898100428235
+          "probability": 0.07471837582572688
         }
       ],
       "evidence_grade": "VERY_LOW",
@@ -38479,19 +38484,19 @@
       }
     }
   ],
-  "notice": "Experimental research output only. Historical tests show the Poisson pipeline underperforms the market benchmark. Competition-scoped Elo is preferred when available but remains unvalidated for betting; Poisson remains primary when Elo history is unavailable. No betting recommendations or value bets are approved.",
+  "notice": "Evidence-weighted forecasts are provided with explicit evidence grades. Historical testing has not certified the model for betting; value-bet alerts remain locked until each market independently passes release validation.",
   "recent_results_sync": {
     "status": "PARTIAL",
-    "results_added": 0,
-    "requested_start": "2026-09-22",
-    "requested_end": "2026-09-28",
-    "covered_from": null,
-    "covered_through": null,
-    "ranges_succeeded": 6,
+    "results_added": 56,
+    "requested_start": "2026-09-15",
+    "requested_end": "2026-09-21",
+    "covered_from": "2026-09-15",
+    "covered_through": "2026-09-20",
+    "ranges_succeeded": 7,
     "ranges_requested": 8,
-    "warning": "No fixtures returned for 7 historical date(s); dates remain retryable.",
+    "warning": "No fixtures returned for 1 historical date(s); dates remain retryable.",
     "provider_plan_limited_date_count": 0,
-    "retryable_gap_date_count": 22
+    "retryable_gap_date_count": 23
   },
   "historical_data_coverage": {
     "status": "GAPPED_OR_STALE",
@@ -38499,21 +38504,21 @@
     "contiguous_through": null,
     "latest_available_match_date": "2026-11-02",
     "refresh_status": "PARTIAL",
-    "requested_start": "2026-09-22",
-    "requested_end": "2026-09-28",
-    "covered_from": null,
-    "covered_through": null,
-    "ranges_succeeded": 6,
+    "requested_start": "2026-09-15",
+    "requested_end": "2026-09-21",
+    "covered_from": "2026-09-15",
+    "covered_through": "2026-09-20",
+    "ranges_succeeded": 7,
     "ranges_requested": 8,
     "backfill_complete": false,
     "base_backfill_complete": false,
     "incremental_history_complete": false,
-    "retryable_gap_date_count": 22,
+    "retryable_gap_date_count": 23,
     "provider_plan_limited_date_count": 0,
     "provider_plan_limited_dates": [],
-    "recent_cache_rows": 5622,
+    "recent_cache_rows": 5678,
     "recent_cache_source_counts": {
-      "5DollarFootballAPI": 293,
+      "5DollarFootballAPI": 349,
       "LEGACY_UNATTRIBUTED": 5237,
       "OpenLigaDB": 92
     },
@@ -38526,7 +38531,7 @@
     "status": "SUCCESS",
     "error_type": null,
     "error_details": null,
-    "requests_remaining": "59",
+    "requests_remaining": "51",
     "pages_fetched": 1,
     "fixtures_received": 0
   },
@@ -38580,7 +38585,7 @@
       "legacy_fixture_cap_ignored": 0
     },
     "future_fixtures_considered": 129,
-    "predictions_created": 0,
+    "predictions_created": 128,
     "insufficient_history": 0,
     "possible_team_name_mismatches": 10
   },
@@ -38599,8 +38604,8 @@
       ],
       "max_btts_event_calls": 2,
       "quota": {
-        "remaining": "398",
-        "used": "102",
+        "remaining": "394",
+        "used": "106",
         "last_cost": "1"
       },
       "warning": null
@@ -38719,11 +38724,11 @@
       },
       "alerts_enabled": false,
       "note": "Missing, incomplete or failing evidence keeps every market locked. Calibration alone does not prove profitability.",
-      "generated_at_utc": "2026-11-05T11:37:20.076298+00:00",
+      "generated_at_utc": "2026-11-05T11:50:48.991877+00:00",
       "backtest_provenance": {
-        "workflow_run_id": 41999780856,
-        "commit_sha": "730872cceb09884f8dbb7d9486e5089f9d2fe305",
-        "created_at": "2026-11-05T09:07:25Z",
+        "workflow_run_id": 42020200264,
+        "commit_sha": "c50f38537b623e6bc3afd42bf37b6c77df935335",
+        "created_at": "2026-11-05T11:35:28Z",
         "dataset_provenance": {
           "input_file": "open_historical_matches.csv",
           "sha256": "5d4b0355dda14d2a59864771daf2ac7838816457e14385cefa35504e006de239",
@@ -38770,10 +38775,143 @@
     "the_odds_api_status": "AVAILABLE",
     "infer_sports_status": "DISABLED",
     "fixtures_with_market_odds": 2,
-    "note": "Market odds are reference data; forecast probabilities remain experimental and unchanged."
+    "note": "Market odds are reference data; they do not change forecast probabilities, and betting certification remains separate."
   },
   "publication_status": "PUBLISHED",
   "publication_notice": "Generated from this run's live fixture response; publication to command-data is confirmed.",
+  "research_evidence": {
+    "status": "DISABLED_MISSING_CREDENTIAL",
+    "fixtures_searched": 25,
+    "model_eligible_facts": 0,
+    "results": [
+      {
+        "status": "DISABLED_MISSING_CREDENTIAL",
+        "sources": [],
+        "model_eligible": false
+      },
+      {
+        "status": "DISABLED_MISSING_CREDENTIAL",
+        "sources": [],
+        "model_eligible": false
+      },
+      {
+        "status": "DISABLED_MISSING_CREDENTIAL",
+        "sources": [],
+        "model_eligible": false
+      },
+      {
+        "status": "DISABLED_MISSING_CREDENTIAL",
+        "sources": [],
+        "model_eligible": false
+      },
+      {
+        "status": "DISABLED_MISSING_CREDENTIAL",
+        "sources": [],
+        "model_eligible": false
+      },
+      {
+        "status": "DISABLED_MISSING_CREDENTIAL",
+        "sources": [],
+        "model_eligible": false
+      },
+      {
+        "status": "DISABLED_MISSING_CREDENTIAL",
+        "sources": [],
+        "model_eligible": false
+      },
+      {
+        "status": "DISABLED_MISSING_CREDENTIAL",
+        "sources": [],
+        "model_eligible": false
+      },
+      {
+        "status": "DISABLED_MISSING_CREDENTIAL",
+        "sources": [],
+        "model_eligible": false
+      },
+      {
+        "status": "DISABLED_MISSING_CREDENTIAL",
+        "sources": [],
+        "model_eligible": false
+      },
+      {
+        "status": "DISABLED_MISSING_CREDENTIAL",
+        "sources": [],
+        "model_eligible": false
+      },
+      {
+        "status": "DISABLED_MISSING_CREDENTIAL",
+        "sources": [],
+        "model_eligible": false
+      },
+      {
+        "status": "DISABLED_MISSING_CREDENTIAL",
+        "sources": [],
+        "model_eligible": false
+      },
+      {
+        "status": "DISABLED_MISSING_CREDENTIAL",
+        "sources": [],
+        "model_eligible": false
+      },
+      {
+        "status": "DISABLED_MISSING_CREDENTIAL",
+        "sources": [],
+        "model_eligible": false
+      },
+      {
+        "status": "DISABLED_MISSING_CREDENTIAL",
+        "sources": [],
+        "model_eligible": false
+      },
+      {
+        "status": "DISABLED_MISSING_CREDENTIAL",
+        "sources": [],
+        "model_eligible": false
+      },
+      {
+        "status": "DISABLED_MISSING_CREDENTIAL",
+        "sources": [],
+        "model_eligible": false
+      },
+      {
+        "status": "DISABLED_MISSING_CREDENTIAL",
+        "sources": [],
+        "model_eligible": false
+      },
+      {
+        "status": "DISABLED_MISSING_CREDENTIAL",
+        "sources": [],
+        "model_eligible": false
+      },
+      {
+        "status": "DISABLED_MISSING_CREDENTIAL",
+        "sources": [],
+        "model_eligible": false
+      },
+      {
+        "status": "DISABLED_MISSING_CREDENTIAL",
+        "sources": [],
+        "model_eligible": false
+      },
+      {
+        "status": "DISABLED_MISSING_CREDENTIAL",
+        "sources": [],
+        "model_eligible": false
+      },
+      {
+        "status": "DISABLED_MISSING_CREDENTIAL",
+        "sources": [],
+        "model_eligible": false
+      },
+      {
+        "status": "DISABLED_MISSING_CREDENTIAL",
+        "sources": [],
+        "model_eligible": false
+      }
+    ],
+    "safety": "No search result is automatically imported into historical data or prediction features."
+  },
   "goal_market_calibration": {
     "status": "NOT_APPLIED_SOURCE_RIGHTS_UNVERIFIED",
     "model_version": null,
@@ -38873,11 +39011,11 @@
     },
     "alerts_enabled": false,
     "note": "Missing, incomplete or failing evidence keeps every market locked. Calibration alone does not prove profitability.",
-    "generated_at_utc": "2026-11-05T11:37:20.076298+00:00",
+    "generated_at_utc": "2026-11-05T11:50:48.991877+00:00",
     "backtest_provenance": {
-      "workflow_run_id": 41999780856,
-      "commit_sha": "730872cceb09884f8dbb7d9486e5089f9d2fe305",
-      "created_at": "2026-11-05T09:07:25Z",
+      "workflow_run_id": 42020200264,
+      "commit_sha": "c50f38537b623e6bc3afd42bf37b6c77df935335",
+      "created_at": "2026-11-05T11:35:28Z",
       "dataset_provenance": {
         "input_file": "open_historical_matches.csv",
         "sha256": "5d4b0355dda14d2a59864771daf2ac7838816457e14385cefa35504e006de239",
@@ -38912,9 +39050,9 @@
     "low_data_forecast_rows": 128,
     "insufficient_history_rows": 0,
     "senior_forecast_coverage": 1.28,
-    "licensed_global_history_rows_diagnostic_only": 293,
+    "licensed_global_history_rows_diagnostic_only": 349,
     "alerts_enabled": false
   },
   "command_data_publication": "PUBLISHED",
-  "command_data_published_at_utc": "2026-11-05T11:37:32.733822+00:00"
+  "command_data_published_at_utc": "2026-11-05T11:51:00.615161+00:00"
 }
