@@ -407,7 +407,7 @@ def test_empty_history_generates_conservative_neutral_prior_forecast():
 
 def test_daily_report_counts_adaptive_low_history_forecasts_correctly(tmp_path):
     history_path = tmp_path / "missing-history.csv"
-    history_path.write_text("match_date,home_team,away_team,home_goals,away_goals\\n", encoding="utf-8")
+    history_path.write_text("match_date,home_team,away_team,home_goals,away_goals\n", encoding="utf-8")
     report = build_daily_report(
         {"response": [_fixture("2026-10-23T15:00:00+01:00")]},
         history_path,
