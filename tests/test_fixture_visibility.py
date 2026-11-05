@@ -94,6 +94,34 @@ def test_fixture_visibility_accepts_withheld_low_history_fixtures_without_foreca
     assert result["senior_forecast_coverage"] < 1.0
 
 
+
+def test_category_neutral_forecasts_do_not_inflate_senior_coverage():
+    report = {
+        "same_day_only": True,
+        "future_fixtures_considered": 2,
+        "predictions": [
+            {
+                "home_team": "Senior A", "away_team": "Senior B",
+                "status": "LOW_HISTORY_FORECAST",
+                "probabilities": {"home_win": .45, "draw": .28, "away_win": .27},
+                "evidence_scope": "SENIOR_COMPETITION_PRIOR",
+            },
+            {
+                "home_team": "Youth A", "away_team": "Youth B",
+                "status": "LOW_HISTORY_FORECAST",
+                "probabilities": {"home_win": .45, "draw": .28, "away_win": .27},
+                "evidence_scope": "CATEGORY_NEUTRAL_PRIOR",
+            },
+        ],
+    }
+
+    result = validate_fixture_visibility(report)
+
+    assert result["forecast_rows"] == 2
+    assert result["senior_forecast_rows"] == 1
+    assert result["senior_forecast_coverage"] == 1.0
+
+
 def test_fixture_visibility_rejects_any_legacy_low_data_probability_row():
     rows = [{
         "home_team": f"Home {index}",
