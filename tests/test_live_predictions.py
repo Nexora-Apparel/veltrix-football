@@ -568,17 +568,17 @@ def test_non_senior_competitions_cannot_borrow_senior_historical_divisions():
     womens_fixture["league"] = {"name": "Swedish Women's League", "code": "SWE"}
     assert _fixture_parts(womens_fixture)["division_code"] is None
 
-    # Even when team names have enough senior historical matches, category
-    # mismatch must withhold the prediction instead of falling back globally.
+    # Even when team names have senior historical matches, never borrow those
+    # results for a women's competition; use only a neutral category prior.
     predictions = predict_fixtures(
         [womens_fixture],
         _history(),
         as_of=date(2026, 10, 23),
         now=datetime(2026, 10, 23, 12, 0, tzinfo=ZoneInfo("Africa/Lagos")),
     )
-    assert predictions[0]["status"] == "UNSUPPORTED_COMPETITION"
-    assert "category-matched historical results" in predictions[0]["reason"]
-    assert "probabilities" not in predictions[0]
+    assert predictions[0]["status"] == "LOW_HISTORY_FORECAST"
+    assert predictions[0]["probabilities"]
+    assert predictions[0]["evidence_scope"] == "CATEGORY_NEUTRAL_PRIOR"
 
     youth_fixture = _fixture()
     youth_fixture["league"] = {"name": "U21 League", "id": 39}
@@ -602,28 +602,28 @@ def test_non_senior_competitions_cannot_borrow_senior_historical_divisions():
 
 
 
-def test_non_senior_competition_stays_unsupported_when_history_is_empty():
+def test_non_senior_competition_uses_neutral_prior_when_category_history_is_empty():
     fixture = _fixture()
     fixture["league"]["name"] = "England Women's League"
     result = predict_fixtures(
         [fixture], [], as_of=date(2026, 10, 23),
         now=datetime(2026, 10, 23, 12, 0, tzinfo=ZoneInfo("Africa/Lagos")),
     )
-    assert result[0]["status"] == "UNSUPPORTED_COMPETITION"
-    assert "category-matched historical results" in result[0]["reason"]
-    assert "probabilities" not in result[0]
+    assert result[0]["status"] == "LOW_HISTORY_FORECAST"
+    assert result[0]["probabilities"]
+    assert result[0]["evidence_scope"] == "CATEGORY_NEUTRAL_PRIOR"
 
 
-def test_senior_competition_with_empty_history_is_insufficient_history():
+def test_senior_competition_with_empty_history_uses_neutral_prior():
     fixture = _fixture()
     result = predict_fixtures(
         [fixture], [], as_of=date(2026, 10, 23),
         now=datetime(2026, 10, 23, 12, 0, tzinfo=ZoneInfo("Africa/Lagos")),
     )
-    assert result[0]["status"] == "INSUFFICIENT_HISTORY"
-    assert "probabilities" not in result[0]
-    assert result[0]["team_history_diagnostics"]["home"]["match_status"] == "NO_HISTORICAL_DATA"
-    assert result[0]["team_history_diagnostics"]["away"]["prior_matches"] == 0
+    assert result[0]["status"] == "LOW_HISTORY_FORECAST"
+    assert result[0]["probabilities"]
+    assert result[0]["evidence_grade"] == "VERY_LOW"
+    assert result[0]["historical_matches"] == {"home": 0, "away": 0}
 
 
 def test_french_ligue_one_provider_aliases_match_historical_team_keys():
