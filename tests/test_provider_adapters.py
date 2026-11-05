@@ -172,6 +172,8 @@ def test_odds_api_supplements_only_future_same_day_fixtures_and_keeps_primary_ro
     assert added["fixture"]["status"]["short"] == "NS"
     assert added["league"]["code"] == "PL"
     assert added["league"]["id"] == "soccer_epl"
+    assert added["league"]["country"] == "England"
+    assert added["_veltrix_source_competition_id"] == "soccer_epl"
     assert retained_same_team_event["teams"]["home"]["name"] == "Frosinone"
     assert result["_veltrix_meta"]["supplemental_fixtures_added"] == 2
     assert "soccer_epl" in client.calls
@@ -371,8 +373,9 @@ def test_infersports_fixture_supplement_adds_only_future_same_day_and_deduplicat
             self.calls.append((day, timezone_name))
             return [
                 {"id": "new-1", "scheduled_at": "2026-10-29T16:00:00Z",
-                 "home_team": {"name": "Arsenal"}, "away_team": {"name": "Chelsea"},
-                 "competition": {"id": 39, "name": "Premier League"}},
+                 "home_team": {"id": 101, "name": "Arsenal"},
+                 "away_team": {"id": 202, "name": "Chelsea"},
+                 "competition": {"id": 39, "name": "Premier League", "country": "England"}},
                 {"id": "dup", "scheduled_at": "2026-10-29T17:00:00Z",
                  "home_team": "Frosinone", "away_team": "Lecce",
                  "league": {"name": "Serie A"}},
@@ -398,6 +401,10 @@ def test_infersports_fixture_supplement_adds_only_future_same_day_and_deduplicat
     retained_same_team_event = next(row for row in result["response"] if row["fixture"]["id"] == "dup")
     assert added["_veltrix_source"] == "InferSports"
     assert added["teams"]["home"]["name"] == "Arsenal"
+    assert added["teams"]["home"]["id"] == 101
+    assert added["teams"]["away"]["id"] == 202
+    assert added["league"]["country"] == "England"
+    assert added["_veltrix_source_competition_id"] == 39
     assert added["league"]["code"] == "PL"
     assert retained_same_team_event["teams"]["home"]["name"] == "Frosinone"
     assert result["_veltrix_meta"]["infersports_fixture_discovery"] == {
