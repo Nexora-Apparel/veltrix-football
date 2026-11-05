@@ -83,7 +83,13 @@ def team_identity(value: Any) -> tuple[str, tuple[str, ...]]:
                 base = re.sub(pattern, "", base).strip()
                 changed = True
                 break
-    key = _plain(base)
+    tokens = re.findall(r"[a-z0-9]+", _plain(base))
+    edge_markers = {"fc", "afc", "cf", "sc", "ac", "as", "ec", "sbv", "acf", "cd", "ud", "bc"}
+    while tokens and tokens[0] in edge_markers:
+        tokens.pop(0)
+    while tokens and tokens[-1] in edge_markers:
+        tokens.pop()
+    key = "".join(tokens)
     key = TEAM_ALIASES.get(key, key)
     return key, tuple(sorted(category))
 
