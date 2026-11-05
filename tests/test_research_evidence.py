@@ -36,7 +36,8 @@ def _fixture(**overrides):
     return fixture
 
 
-def test_search_without_credential_is_disabled_and_does_not_call_provider():
+def test_search_without_credential_is_disabled_and_does_not_call_provider(monkeypatch):
+    monkeypatch.delenv("TAVILY_API_KEY", raising=False)
     session = FakeSession({"results": []})
     result = research.search_fixture_evidence(_fixture(), api_key="", session=session)
 
@@ -82,7 +83,7 @@ def test_research_batch_only_queries_low_history_fixtures():
         _fixture(status="LOW_HISTORY_FORECAST", fixture_id="sparse"),
     ]
 
-    result = research.research_missing_fixtures(fixtures, api_key="test-key", max_fixtures=1)
+    result = research.research_missing_fixtures(fixtures, api_key="test-key", max_fixtures=1, session=session)
 
     assert result["fixtures_searched"] == 1
     assert result["model_eligible_facts"] == 0
