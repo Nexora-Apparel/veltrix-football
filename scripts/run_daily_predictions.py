@@ -1,3 +1,4 @@
+# One-shot report refresh trigger: 2026-11-05; no runtime behavior change.
 """Fetch today's fixtures, refresh completed results, and write an experimental report."""
 from __future__ import annotations
 
