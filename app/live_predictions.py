@@ -670,59 +670,61 @@ def predict_fixtures(
                 },
             }
             if not division_code or not baseline or len(home_hist) < min_team_matches or len(away_hist) < min_team_matches:
-                # A league-wide or global scoring prior contains no fixture-level
-                # team-strength signal. Publishing it as a fixture prediction makes
-                # unrelated matches share identical probabilities. Preserve the
-                # fixture, but withhold all model probabilities until both teams
-                # meet the minimum prior-match requirement.
-                suggestions: dict[str, list[str]] = {}
-                for side, team_name, team_key, history in (
-                    ("home", fixture["home_team"], home_key, home_hist),
-                    ("away", fixture["away_team"], away_key, away_hist),
-                ):
-                    # Suggestions are diagnostic only. Never auto-merge a fuzzy
-                    # candidate: aliases are added only after identity review.
-                    if len(history) < min_team_matches:
-                        close_keys = get_close_matches(
-                            team_key, list(known_team_names), n=5, cutoff=0.68
-                        )
-                        display_names = sorted({
-                            label for candidate in close_keys
-                            if candidate != team_key
-                            for label in known_team_names[candidate]
-                        })
-                        if display_names:
-                            suggestions[side] = display_names[:5]
-                        record["team_history_diagnostics"][side]["candidate_history_names"] = (
-                            display_names[:5]
-                        )
-                        record["team_history_diagnostics"][side]["match_status"] = (
-                            "NO_HISTORY_MATCH" if not history else "BELOW_MINIMUM_HISTORY"
-                        )
-                    else:
-                        record["team_history_diagnostics"][side]["match_status"] = "MATCHED"
-                missing_sides = [
-                    side for side, count in (("home", len(home_hist)), ("away", len(away_hist)))
-                    if count < min_team_matches
-                ]
+                # Adaptive evidence path: use whatever verified team history exists,
+                # shrink it toward a competition prior (or global prior if unmapped),
+                # and never require an arbitrary five-match hard gate.
+                global_home = sum(row["home_goals"] for row in prior_rows) / len(prior_rows) if prior_rows else 1.35
+                global_away = sum(row["away_goals"] for row in prior_rows) / len(prior_rows) if prior_rows else 1.10
+                prior_home = baseline["home"] if baseline else max(0.65, global_home)
+                prior_away = baseline["away"] if baseline else max(0.55, global_away)
+                def adaptive_rate(history, venue, scored_prior, conceded_prior):
+                    relevant = [row for row in history if row[2] == venue] or history
+                    if not relevant:
+                        return scored_prior, conceded_prior
+                    n=len(relevant)
+                    weight=n/(n+4.0)
+                    scored=sum(row[0] for row in relevant)/n
+                    conceded=sum(row[1] for row in relevant)/n
+                    return (weight*scored+(1-weight)*scored_prior,
+                            weight*conceded+(1-weight)*conceded_prior)
+                hs,hc=adaptive_rate(home_hist,"home",prior_home,prior_away)
+                aw,ac=adaptive_rate(away_hist,"away",prior_away,prior_home)
+                home_xg=min(5.0,max(0.05,prior_home*(hs/prior_home)*(ac/prior_home)))
+                away_xg=min(5.0,max(0.05,prior_away*(aw/prior_away)*(hc/prior_away)))
+                estimate=match_probabilities(home_xg,away_xg)
+                evidence_counts={"home":len(home_hist),"away":len(away_hist)}
+                total_evidence=len(home_hist)+len(away_hist)
+                grade=("VERY_LOW" if total_evidence==0 else "LOW" if total_evidence<=3 else "MODERATE")
+                missing_sides=[side for side,count in evidence_counts.items() if count==0]
                 record.update({
-                    "status": "INSUFFICIENT_HISTORY",
-                    "reason": (
-                        f"Fixture forecast withheld: each team needs at least {min_team_matches} "
-                        f"prior matches; home has {len(home_hist)} and away has {len(away_hist)}. "
-                        + ("Fixture competition is not mapped to a historical division; cross-competition history is not substituted." if not division_code or not baseline else "Competition/global scoring priors are not substituted for team-specific evidence.")
+                    "status":"LOW_HISTORY_FORECAST",
+                    "model":"adaptive_poisson_sparse_history",
+                    "model_validated":False,
+                    "betting_recommendation":False,
+                    "probabilities":{k:round(v,4) for k,v in estimate["one_x_two"].items()},
+                    "expected_goals":{"home":round(home_xg,3),"away":round(away_xg,3)},
+                    "btts_yes":round(estimate["btts_yes"],4),
+                    "over_1_5":round(estimate["totals"]["over_1_5"],4),
+                    "over_2_5":round(estimate["totals"]["over_2_5"],4),
+                    "over_3_5":round(estimate["totals"]["over_3_5"],4),
+                    "most_likely_scorelines":estimate["most_likely_scorelines"][:3],
+                    "evidence_grade":grade,
+                    "prediction_basis":(
+                        "Both teams have limited verified history; estimates are strongly shrunk toward "
+                        "competition scoring rates."
+                        if not missing_sides else
+                        ("No prior team results were found; a conservative competition/global scoring prior was used."
+                         if len(missing_sides)==2 else
+                         "One team has no matched history. The available team's results are shrunk toward competition/global scoring rates.")
                     ),
-                    "insufficient_history_sides": missing_sides,
-                    "team_name_match_suggestions": suggestions,
-                    "data_availability": {
-                        "historical_goals_for_against": "TEAM_HISTORY_BELOW_MINIMUM",
-                        "team_specific_history": "INSUFFICIENT",
-                        "competition_specific_history": (
-                            "AVAILABLE_BUT_NOT_USED_AS_FIXTURE_FORECAST"
-                            if division_code and baseline else "UNMAPPED_OR_UNAVAILABLE"
-                        ),
-                        "global_goal_rate_prior": "DIAGNOSTIC_ONLY_NOT_PUBLISHED",
+                    "insufficient_history_sides":missing_sides,
+                    "data_availability":{
+                        "historical_goals_for_against":"PARTIAL" if total_evidence else "UNAVAILABLE",
+                        "team_specific_history":"PARTIAL" if total_evidence else "NONE",
+                        "competition_specific_history":"AVAILABLE" if baseline else "UNAVAILABLE",
+                        "fallback_prior":"COMPETITION" if baseline else "GLOBAL",
                     },
+                    "value_bet_screen":{"status":"NOT_ELIGIBLE_LOW_EVIDENCE","markets":{}},
                 })
                 output.append(record)
                 continue
