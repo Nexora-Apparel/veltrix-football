@@ -46,8 +46,7 @@ def test_telegram_report_is_predictions_only_and_keeps_new_update_alert():
     assert "🔔 🆕 NEW VELTRIX UPDATE" in message
     assert "VELTRIX FOOTBALL AI · DAILY INTELLIGENCE" in message
     assert "2026-10-23" in message
-    assert "Fixtures retrieved: 1 · Research forecasts: 1" in message
-    assert "Paper-only candidates (not approved): 0" in message
+    assert "Fixtures analysed: 1" in message
     assert "Alpha FC vs Beta FC" in message
     assert "Example League" in message
     assert "Kickoff" not in message
@@ -69,7 +68,7 @@ def test_predictions_alert_is_short_when_no_usable_forecasts():
     report["predictions"] = [{"status": "INSUFFICIENT_HISTORY"}]
     message = format_report(report)
     assert "🔔 🆕 NEW VELTRIX UPDATE" in message
-    assert "Fixtures retrieved: 1 · Research forecasts: 0" in message
+    assert "Fixtures analysed: 0" in message
     assert "Forecast withheld: insufficient reliable team history." in message
     assert "No probabilities or betting signal published for this fixture." in message
 
@@ -299,9 +298,9 @@ def test_telegram_report_includes_value_screen_status_and_only_supplied_candidat
         },
     }
     message = format_report(report)
-    assert "Value screen: 1X2 / BTTS / Over-Under · DISABLED_UNVALIDATED" in message
-    assert "Validation: LOCKED_INSUFFICIENT_EVIDENCE · approved: none" in message
-    assert "VALUE CANDIDATE: 1X2 home_win @ 2.10 · edge 5.5pp · expected return 12.0%" in message
+    assert "Value screen: 1X2 / BTTS / Over-Under · DISABLED_UNVALIDATED" not in message
+    assert "LOCKED_INSUFFICIENT_EVIDENCE" not in message
+    assert "VALUE BET VERDICT: 1X2 home_win @ 2.10 · estimated edge 5.5pp · expected return 12.0%" in message
 
 
 def test_telegram_report_labels_competition_prior_forecast_basis():
@@ -310,7 +309,7 @@ def test_telegram_report_labels_competition_prior_forecast_basis():
         "competition-level historical goal-rate prior; team-specific history below minimum"
     )
     message = format_report(report)
-    assert "FORECAST BASIS: competition-level historical goal-rate prior; team-specific history below minimum" in message
+    assert "WHY THIS VERDICT: competition-level historical goal-rate prior; team-specific history below minimum" in message
 
 
 def test_telegram_report_discloses_reference_prices_for_all_three_markets():
