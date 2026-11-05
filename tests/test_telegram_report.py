@@ -358,7 +358,7 @@ def test_telegram_report_lists_all_fixtures_and_marks_ineligible_forecasts():
         },
     ]
     message = "\n".join(format_report_messages(report))
-    assert "Fixtures retrieved: 3 · Research forecasts: 1" in message
+    assert "Fixtures analysed: 1" in message
     assert "Forecasted FC vs Modelled FC" in message
     assert "History Gap FC vs New Club FC" in message
     assert "Cup Side vs Regional Side" in message
@@ -398,7 +398,7 @@ def test_telegram_retains_fixture_with_unverified_kickoff():
         "reason": "Kickoff timestamp missing",
     }]
     message = format_report(report)
-    assert "Fixtures retrieved: 1 · Research forecasts: 0" in message
+    assert "Fixtures analysed: 0" in message
     assert "Retained FC vs Visible United" in message
     assert "Fixture retained; forecast withheld because its kickoff time could not be verified." in message
 
@@ -437,7 +437,7 @@ def test_telegram_withholds_legacy_low_data_forecast_probabilities():
     report["predictions"][0]["prediction_basis"] = "licensed global goal-rate prior only"
     report["predictions"][0]["betting_recommendation"] = False
     message = format_report(report)
-    assert "Fixtures retrieved: 1 · Research forecasts: 0" in message
+    assert "Fixtures analysed: 0" in message
     assert "Alpha FC vs Beta FC" in message
     assert "FORECAST STATUS: INSUFFICIENT_HISTORY" in message
     assert "Legacy low-data forecast withheld" in message
