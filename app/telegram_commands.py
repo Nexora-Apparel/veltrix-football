@@ -134,7 +134,7 @@ def _forecast_predictions(report: dict[str, Any] | None) -> list[dict[str, Any]]
     """Return only current-day, future, explicitly usable experimental forecasts."""
     return [
         row for row in _future_fixtures(report)
-        if row.get("status") in {"EXPERIMENTAL_ONLY", "EXPERIMENTAL_LOW_DATA"}
+        if row.get("status") in {"EXPERIMENTAL_ONLY", "EXPERIMENTAL_LOW_DATA", "LOW_HISTORY_FORECAST"}
         and _valid_probability_vector(row.get("probabilities"))
     ]
 
