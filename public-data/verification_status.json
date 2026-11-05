@@ -1,12 +1,12 @@
 {
   "schema_version": 1,
   "workflow": "Daily Fixture Predictions",
-  "run_id": "41857768794",
+  "run_id": "42020200079",
   "run_attempt": "1",
-  "event": "workflow_dispatch",
-  "commit_sha": "7f39bed00522f3f0cfa275ada3c1a019fd6423fe",
+  "event": "push",
+  "commit_sha": "c50f38537b623e6bc3afd42bf37b6c77df935335",
   "branch": "main",
-  "recorded_at_utc": "2026-11-04T15:28:27.334946+00:00",
+  "recorded_at_utc": "2026-11-05T11:37:49.699179+00:00",
   "overall_status": "PASSED",
   "validation_scope": "LIVE_PIPELINE",
   "telegram_configured": true,
@@ -30,32 +30,32 @@
     "paper_tracking": "success"
   },
   "report_summary": {
-    "as_of_date": "2026-11-04",
+    "as_of_date": "2026-11-05",
     "publication_status": "PUBLISHED",
-    "fixtures_received": 25,
-    "same_day_pre_match_fixtures": 25,
-    "same_day_fixtures_retained": 25,
+    "fixtures_received": 129,
+    "same_day_pre_match_fixtures": 129,
+    "same_day_fixtures_retained": 129,
     "past_kickoffs_retained": 0,
     "duplicate_fixture_rows_removed": null,
-    "future_fixtures_considered": 25,
-    "fixture_rows": 25,
+    "future_fixtures_considered": 129,
+    "fixture_rows": 129,
     "fixture_status_counts": {
-      "INSUFFICIENT_HISTORY": 15,
-      "UNSUPPORTED_COMPETITION": 10
+      "LOW_HISTORY_FORECAST": 128,
+      "AMBIGUOUS_FIXTURE_IDENTITY": 1
     },
     "fixture_visibility_validation": {
       "status": "PASSED",
-      "fixture_rows": 25,
-      "expected_fixture_rows": 25,
+      "fixture_rows": 129,
+      "expected_fixture_rows": 129,
       "fixture_status_counts": {
-        "INSUFFICIENT_HISTORY": 15,
-        "UNSUPPORTED_COMPETITION": 10
+        "LOW_HISTORY_FORECAST": 128,
+        "AMBIGUOUS_FIXTURE_IDENTITY": 1
       },
       "kickoff_unverified_rows": 0,
-      "forecast_rows": 0,
-      "low_data_forecast_rows": 0,
-      "insufficient_history_rows": 15,
-      "senior_forecast_coverage": 0.0,
+      "forecast_rows": 128,
+      "low_data_forecast_rows": 128,
+      "insufficient_history_rows": 0,
+      "senior_forecast_coverage": 1.28,
       "licensed_global_history_rows_diagnostic_only": 293,
       "alerts_enabled": false
     },
@@ -66,13 +66,13 @@
       "status": "SHADOW_MODE",
       "fixtures_evaluated": 2,
       "bookmaker_price_sets_by_market": {
-        "1X2": 0,
-        "BTTS": 0,
+        "1X2": 24,
+        "BTTS": 8,
         "OVER_UNDER_1_5": 0,
         "OVER_UNDER_2_5": 0,
         "OVER_UNDER_3_5": 0
       },
-      "shadow_candidate_count": 0,
+      "shadow_candidate_count": 12,
       "alerts_enabled": false,
       "release_status": "LOCKED_SHADOW_MODE",
       "note": "Market consensus, model shrinkage and quote-level screening are research-only. Existing value certificate remains authoritative."
@@ -80,12 +80,12 @@
     "value_validation_certificate": "LOCKED_INSUFFICIENT_EVIDENCE"
   },
   "value_evidence_summary": {
-    "observations_total": 5019,
-    "observations_added": 0,
-    "price_series": 1779,
+    "observations_total": 5107,
+    "observations_added": 88,
+    "price_series": 1867,
     "series_with_multiple_snapshots": 880,
     "settled_observations": 2443,
-    "shadow_candidate_observations": 140,
+    "shadow_candidate_observations": 152,
     "legacy_candidate_observations_unannotated": 0,
     "settled_shadow_candidates": 63,
     "shadow_candidate_wins": 10,
@@ -95,7 +95,7 @@
     "alerts_enabled": false
   },
   "paper_tracking_summary": {
-    "evaluated_report_dates": 7,
+    "evaluated_report_dates": 8,
     "cumulative_metrics_by_model": {
       "experimental_elo_by_competition": {
         "matches": 2,
@@ -118,18 +118,5 @@
     }
   },
   "release_status": "LOCKED_SHADOW_MODE",
-  "betting_alerts_enabled": false,
-  "latest_test_run": {
-    "run_id": "42020157110",
-    "commit_sha": "07169bcb0f001c88331b9c4cdf4a125aeee64ba9",
-    "recorded_at_utc": "2026-11-05T11:35:55.913877+00:00",
-    "overall_status": "TESTS_PASSED",
-    "steps": {
-      "unit_tests": "success",
-      "dashboard_js": "success"
-    }
-  },
-  "latest_test_status": "TESTS_PASSED",
-  "last_test_run_id": "42020157110",
-  "last_full_pipeline_status": "PASSED"
+  "betting_alerts_enabled": false
 }
