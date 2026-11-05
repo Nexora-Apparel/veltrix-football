@@ -626,7 +626,12 @@ def handle_command(
 
             probs = row.get("probabilities")
             if row.get("status") not in {"EXPERIMENTAL_ONLY", "EXPERIMENTAL_LOW_DATA", "LOW_HISTORY_FORECAST"} or not _valid_probability_vector(probs):
-                reason = row.get("reason") or row.get("status") or "forecast unavailable"
+                reason = row.get("reason") or {
+                    "EXPERIMENTAL_ONLY": "The probability data is incomplete or invalid.",
+                    "EXPERIMENTAL_LOW_DATA": "Historical evidence is limited.",
+                    "INSUFFICIENT_HISTORY": "Historical evidence is limited.",
+                    "UNSUPPORTED_COMPETITION": "Competition-specific data is not available.",
+                }.get(str(row.get("status") or ""), "Forecast data is unavailable.")
                 lines.extend([
                     f"━━━━━━━━━━━━━━━━━━━━",
                     f"⚽ {home} vs {away}",
