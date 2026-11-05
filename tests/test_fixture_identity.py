@@ -377,3 +377,73 @@ def test_abbreviated_argentine_reserve_competition_infers_reserve_squad():
 
     assert len(canonical) == 2
     assert meta["confirmed_duplicate_groups"] == 0
+
+def test_november_4_published_fixture_identity_audit_preserves_every_provider_id():
+    rows = [
+        fixture("9c9b60495c9667d04bcdba59483a623f", "The Odds API",
+                "Atletico Paranaense", "Vasco da Gama", None,
+                "Brazilian Serie A", "2026-11-04T22:30:00Z"),
+        fixture("evt_WB7SJMR6", "InferSports",
+                "Atletico PR", "Vasco DG", "lg_TF968DXK",
+                "Bra A", "2026-11-04T22:30:00Z"),
+        fixture("00471c0b94da413be9689767f2d4a571", "The Odds API",
+                "Flamengo", "Grêmio", None,
+                "Brazilian Serie A", "2026-11-04T22:30:00Z"),
+        fixture("evt_CG8BZVP3", "InferSports",
+                "Flamengo", "Gremio PA", "lg_TF968DXK",
+                "Bra A", "2026-11-04T22:30:00Z"),
+        fixture("evt_B60XEEVP", "InferSports",
+                "Zilina", "Helsinki", "lg_H84K26EK",
+                "UEFAU19", "2026-11-04T15:30:00Z"),
+        fixture("evt_9DY03SH2", "InferSports",
+                "Zilina U19", "Helsinki U19", "lg_H84K26EK",
+                "UEFAU19", "2026-11-04T15:31:00Z"),
+        fixture("evt_4RXTN5QV", "InferSports",
+                "Sheriff", "Farul", "lg_H84K26EK",
+                "UEFAU19", "2026-11-04T16:00:00Z"),
+        fixture("evt_QND65ZCS", "InferSports",
+                "Sheriff Tiraspol U19", "Farul Constanta U19", "lg_H84K26EK",
+                "UEFAU19", "2026-11-04T16:00:00Z"),
+        fixture("evt_PYMFBFWS", "InferSports",
+                "Super Nova", "Hammarby", "lg_H84K26EK",
+                "UEFAU19", "2026-11-04T16:00:00Z"),
+        fixture("evt_CG8EE7P3", "InferSports",
+                "Super Nova U19", "Hammarby U19", "lg_H84K26EK",
+                "UEFAU19", "2026-11-04T16:01:00Z"),
+        fixture("evt_B60X73VP", "InferSports",
+                "Almirante", "DD.Belgrano", "lg_M42A7TV6",
+                "Arg(R)", "2026-11-04T16:00:00Z"),
+        fixture("evt_QND6XRCS", "InferSports",
+                "Almirante Brown(R)", "DD.Belgrano(R)", "lg_M42A7TV6",
+                "Arg(R)", "2026-11-04T16:00:00Z"),
+        fixture("evt_YT1AMNBW", "InferSports",
+                "Agropecuario", "CAF midland", "lg_M42A7TV6",
+                "Arg(R)", "2026-11-04T16:00:00Z"),
+        fixture("evt_YT1A3VBW", "InferSports",
+                "Agropecuario Argentino(R)", "Ferrocarril Midland(R)", "lg_M42A7TV6",
+                "Arg(R)", "2026-11-04T16:00:00Z"),
+    ]
+    for row in rows:
+        if row["_veltrix_source"] == "The Odds API":
+            row["league"]["country"] = "Brazil"
+        elif row["league"]["name"] in {"Brazilian Serie A", "Bra A"}:
+            row["league"]["country"] = "Brazil"
+
+    canonical, meta = reconcile_fixture_rows(rows)
+
+    assert len(canonical) == 7
+    assert meta["input_rows"] == 14
+    assert meta["confirmed_duplicate_groups"] == 2
+    assert meta["quarantined_rows"] == 10
+    preserved = {
+        record["fixture_id"]
+        for row in canonical
+        for record in row["_veltrix_source_fixture_ids"]
+    }
+    assert preserved == {row["fixture"]["id"] for row in rows}
+    assert len(preserved) == 14
+    assert all(row["_veltrix_provenance"] for row in canonical)
+    assert all(
+        len(row["_veltrix_source_fixture_ids"]) == 2
+        for row in canonical
+    )
