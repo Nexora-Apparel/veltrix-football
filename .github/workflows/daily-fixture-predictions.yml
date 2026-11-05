@@ -172,6 +172,7 @@ on:
     - cron: "0 4 * * *"
     # Post-fix verification uses the [run-live-verification] push marker for controlled end-to-end checks.
     # Research counters distinguish queued fixtures from searches actually executed.
+    # Verified history requires exact squad identity and two independent trusted sources.
 
 # Controlled same-day snapshot replay for the current 2026-11-02 report; no provider refetch.
 # Ordinary pushes run tests only. A push commit containing [run-live-verification] intentionally runs the full live pipeline for controlled end-to-end verification.
