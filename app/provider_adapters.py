@@ -161,6 +161,7 @@ def normalize_fivedollar_fixture(item: dict[str, Any]) -> dict[str, Any]:
         },
         "goals": {"home": goals.get("home"), "away": goals.get("away")},
         "_veltrix_source": "5DollarFootballAPI",
+        "_veltrix_source_competition_id": league.get("id"),
         "_source_status": item.get("status"),
     }
 
