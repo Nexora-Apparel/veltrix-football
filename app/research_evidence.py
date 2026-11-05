@@ -110,7 +110,7 @@ def search_fixture_evidence(
     sources: list[dict[str, Any]] = []
     seen: set[str] = set()
     results = body.get("results", []) if isinstance(body, dict) else []
-    for item in results[:MAX_RESULTS_PER_FIXTURE] if isinstance(results, list) else []:
+    for item in (results[:MAX_RESULTS_PER_FIXTURE] if isinstance(results, list) else []):
         if not isinstance(item, dict):
             continue
         url = str(item.get("url") or "").strip()
