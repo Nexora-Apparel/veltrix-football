@@ -184,7 +184,7 @@ def annotate_report_file(report_path: str, output_path: str | None = None) -> di
     report["research_evidence"] = research_missing_fixtures(fixtures)
     destination = Path(output_path) if output_path else source
     destination.parent.mkdir(parents=True, exist_ok=True)
-    destination.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\\n", encoding="utf-8")
+    destination.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     return report["research_evidence"]
 
 
