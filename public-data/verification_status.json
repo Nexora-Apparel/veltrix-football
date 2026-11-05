@@ -118,5 +118,17 @@
     }
   },
   "release_status": "LOCKED_SHADOW_MODE",
-  "betting_alerts_enabled": false
+  "betting_alerts_enabled": false,
+  "latest_test_run": {
+    "run_id": "42075008293",
+    "commit_sha": "fecfaabae87fce933656b6b15381d14a7429ce1c",
+    "recorded_at_utc": "2026-11-05T17:29:36.645591+00:00",
+    "overall_status": "TESTS_PASSED",
+    "steps": {
+      "unit_tests": "success",
+      "dashboard_js": "success"
+    }
+  },
+  "latest_test_status": "TESTS_PASSED",
+  "last_test_run_id": "42075008293"
 }
