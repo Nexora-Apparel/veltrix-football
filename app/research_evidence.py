@@ -155,6 +155,7 @@ def research_missing_fixtures(
     *,
     api_key: str | None = None,
     max_fixtures: int = 25,
+    session: Any = requests,
 ) -> dict[str, Any]:
     """Search only fixtures whose history is incomplete; preserve all identities."""
     results = []
@@ -166,7 +167,7 @@ def research_missing_fixtures(
         status = str(fixture.get("status") or "").upper()
         if status not in RESEARCHABLE_STATUSES:
             continue
-        results.append(search_fixture_evidence(fixture, api_key=api_key))
+        results.append(search_fixture_evidence(fixture, api_key=api_key, session=session))
     return {
         "status": "DISABLED_MISSING_CREDENTIAL" if not api_key and not os.getenv("TAVILY_API_KEY") else "RESEARCH_COMPLETE",
         "fixtures_searched": len(results),
