@@ -120,9 +120,9 @@
   "release_status": "LOCKED_SHADOW_MODE",
   "betting_alerts_enabled": false,
   "latest_test_run": {
-    "run_id": "42017734656",
-    "commit_sha": "6552de3f736bb2befc6fba27a88dc679217ec385",
-    "recorded_at_utc": "2026-11-05T11:17:27.862611+00:00",
+    "run_id": "42017765085",
+    "commit_sha": "7cda91aabf1f8bf46ef03b99b906916592d44cd6",
+    "recorded_at_utc": "2026-11-05T11:17:44.942369+00:00",
     "overall_status": "NEEDS_REVIEW",
     "steps": {
       "unit_tests": "failure",
@@ -130,6 +130,6 @@
     }
   },
   "latest_test_status": "NEEDS_REVIEW",
-  "last_test_run_id": "42017734656",
+  "last_test_run_id": "42017765085",
   "last_full_pipeline_status": "PASSED"
 }
