@@ -325,6 +325,7 @@ def _invalid_fixture_visibility(item: dict[str, Any], delivery_order: int) -> di
     league = item.get("league") if isinstance(item.get("league"), dict) else {}
     source = str(item.get("_veltrix_source") or item.get("provider") or "UNKNOWN")
     reasons = item.get("_veltrix_quarantine_reasons") or ["missing_or_invalid_kickoff"]
+    kickoff_only_failure = set(reasons).issubset({"missing_or_invalid_kickoff"})
     return {
         "_delivery_order": delivery_order,
         "fixture_id": fixture.get("id"),
@@ -350,8 +351,12 @@ def _invalid_fixture_visibility(item: dict[str, Any], delivery_order: int) -> di
         "model_validated": False,
         "betting_recommendation": False,
         "historical_matches": {"home": 0, "away": 0},
-        "status": "AMBIGUOUS_FIXTURE_IDENTITY",
-        "reason": "Provider fixture retained for visibility, but its kickoff or identity data is invalid. No forecast is issued.",
+        "status": "KICKOFF_UNVERIFIED" if kickoff_only_failure else "AMBIGUOUS_FIXTURE_IDENTITY",
+        "reason": (
+            "Provider fixture retained for visibility, but kickoff time is missing or invalid. No forecast is issued."
+            if kickoff_only_failure else
+            "Provider fixture retained for visibility, but its identity data is ambiguous. No forecast is issued."
+        ),
         "team_name_match_suggestions": {},
     }
 
@@ -985,6 +990,9 @@ def build_daily_report(
     )
     # predict_fixtures already retains malformed kickoff rows as quarantined
     # visibility records in both sparse-history and normal-history paths.
+    kickoff_unverified_count = sum(
+        prediction.get("status") == "KICKOFF_UNVERIFIED" for prediction in predictions
+    )
     if market_odds_by_fixture:
         eligible_statuses = {"EXPERIMENTAL_ONLY", "EXPERIMENTAL_LOW_DATA", "INSUFFICIENT_HISTORY", "UNSUPPORTED_COMPETITION"}
         for prediction in predictions:
@@ -1011,24 +1019,24 @@ def build_daily_report(
             default=None,
         ),
         "fixtures_received": len(fixtures),
-        "same_day_pre_match_fixtures": future_kickoffs + len(kickoff_unverified),
+        "same_day_pre_match_fixtures": future_kickoffs + kickoff_unverified_count,
         # Counted as excluded from pre-match forecasting even though their
         # fixture rows remain visible in the report.
         "past_kickoffs_excluded": past_kickoffs,
         "past_kickoffs_retained": past_kickoffs,
-        "future_fixtures_considered": future_kickoffs + len(kickoff_unverified),
+        "future_fixtures_considered": future_kickoffs + kickoff_unverified_count,
         "same_day_fixtures_retained": len(predictions),
-        "kickoff_unverified_fixtures": len(kickoff_unverified),
+        "kickoff_unverified_fixtures": kickoff_unverified_count,
         "fixture_status_counts": {
             "EXPERIMENTAL_ONLY": sum(p.get("status") == "EXPERIMENTAL_ONLY" for p in predictions),
             "EXPERIMENTAL_LOW_DATA": sum(p.get("status") == "EXPERIMENTAL_LOW_DATA" for p in predictions),
             "INSUFFICIENT_HISTORY": sum(p.get("status") == "INSUFFICIENT_HISTORY" for p in predictions),
             "UNSUPPORTED_COMPETITION": sum(p.get("status") == "UNSUPPORTED_COMPETITION" for p in predictions),
-            "KICKOFF_UNVERIFIED": len(kickoff_unverified),
+            "KICKOFF_UNVERIFIED": kickoff_unverified_count,
             "KICKOFF_PASSED": sum(p.get("status") == "KICKOFF_PASSED" for p in predictions),
             "FIXTURE_NOT_PREMATCH": sum(p.get("status") == "FIXTURE_NOT_PREMATCH" for p in predictions),
         },
-        "fixtures_excluded_other_date_or_status": len(fixtures) - len(parsed_for_date) - len(kickoff_unverified),
+        "fixtures_excluded_other_date_or_status": len(fixtures) - len(parsed_for_date) - kickoff_unverified_count,
         "predictions_created": sum(
             p.get("status") in {"EXPERIMENTAL_ONLY", "EXPERIMENTAL_LOW_DATA"}
             and isinstance(p.get("probabilities"), dict)
