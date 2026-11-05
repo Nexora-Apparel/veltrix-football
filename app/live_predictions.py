@@ -131,7 +131,7 @@ def _team_variant_signature(key: str) -> tuple[str, ...]:
         ("women", r"(?:women|womens|ladies|feminin|femenino|feminino|womenmarker)$"),
         ("youth", r"(?:youth|academy|junior|juniors)$"),
         ("age_group", r"u(?:1[0-9]|2[0-3])$"),
-        ("reserve", r"(?:reserves|reserve|bteam|ii|iii|iv|2|3|reservemarker)$"),
+        ("reserve", r"(?:reserves|reserve|bteam|ii|iii|iv|2|3|b|reservemarker)$"),
     ):
         if re.search(pattern, key):
             markers.append(label)
@@ -139,7 +139,7 @@ def _team_variant_signature(key: str) -> tuple[str, ...]:
     age = re.search(r"u(1[0-9]|2[0-3])$", key)
     if age:
         markers.append("u" + age.group(1))
-    reserve = re.search(r"(?:reserves|reserve|bteam|ii|iii|iv|2|3|reservemarker)$", key)
+    reserve = re.search(r"(?:reserves|reserve|bteam|ii|iii|iv|2|3|b|reservemarker)$", key)
     if reserve:
         markers.append("r" if reserve.group(0) == "reservemarker" else reserve.group(0))
     return tuple(markers)
