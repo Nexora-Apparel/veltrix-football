@@ -510,15 +510,15 @@ def supplement_fixtures_from_odds_api(
     current = current.astimezone(zone)
 
     league_by_sport = {
-        "soccer_epl": ("Premier League", "PL"),
-        "soccer_spain_la_liga": ("La Liga", "PD"),
-        "soccer_germany_bundesliga": ("Bundesliga", "BL1"),
-        "soccer_italy_serie_a": ("Serie A", "SA"),
-        "soccer_france_ligue_one": ("Ligue 1", "FL1"),
-        "soccer_netherlands_eredivisie": ("Eredivisie", "DED"),
-        "soccer_portugal_primeira_liga": ("Primeira Liga", "PPL"),
-        "soccer_argentina_primera_division": ("Argentine Primera Division", "ARG"),
-        "soccer_brazil_campeonato": ("Brazilian Serie A", "BRA"),
+        "soccer_epl": ("Premier League", "PL", "England"),
+        "soccer_spain_la_liga": ("La Liga", "PD", "Spain"),
+        "soccer_germany_bundesliga": ("Bundesliga", "BL1", "Germany"),
+        "soccer_italy_serie_a": ("Serie A", "SA", "Italy"),
+        "soccer_france_ligue_one": ("Ligue 1", "FL1", "France"),
+        "soccer_netherlands_eredivisie": ("Eredivisie", "DED", "Netherlands"),
+        "soccer_portugal_primeira_liga": ("Primeira Liga", "PPL", "Portugal"),
+        "soccer_argentina_primera_division": ("Argentine Primera Division", "ARG", "Argentina"),
+        "soccer_brazil_campeonato": ("Brazilian Serie A", "BRA", "Brazil"),
     }
     rows = fixtures_payload.get("response")
     if not isinstance(rows, list):
@@ -558,7 +558,7 @@ def supplement_fixtures_from_odds_api(
         except ProviderAPIError:
             failed.append(sport_key)
             continue
-        league_name, division_code = league_by_sport[sport_key]
+        league_name, division_code, league_country = league_by_sport[sport_key]
         for event in events:
             home, away = event.get("home_team"), event.get("away_team")
             raw = event.get("commence_time")
@@ -586,7 +586,10 @@ def supplement_fixtures_from_odds_api(
                     "status": {"short": "NS", "long": "scheduled"},
                 },
                 "teams": {"home": {"id": None, "name": home}, "away": {"id": None, "name": away}},
-                "league": {"id": sport_key, "name": league_name, "code": division_code, "season": None},
+                "league": {
+                    "id": sport_key, "name": league_name, "country": league_country,
+                    "code": division_code, "season": None,
+                },
                 "_veltrix_source": "The Odds API",
                 "_veltrix_source_competition_id": sport_key,
                 "_supplemental_event_id": str(event_id or ""),
@@ -637,6 +640,11 @@ def supplement_fixtures_from_infersports(
             value = value.get("name") or value.get("display_name") or value.get("short_name")
         return str(value or "").strip()
 
+    def team_id(value: Any) -> Any:
+        if isinstance(value, dict):
+            return value.get("id") or value.get("team_id") or value.get("provider_id")
+        return None
+
     def local_key(home: Any, away: Any) -> tuple[str, str, str]:
         return (target_day.isoformat(), _name_key(home), _name_key(away))
 
@@ -674,8 +682,10 @@ def supplement_fixtures_from_infersports(
         error_type = type(exc).__name__
 
     for event in events:
-        home = team_name(event.get("home_team") or event.get("home"))
-        away = team_name(event.get("away_team") or event.get("away"))
+        home_value = event.get("home_team") or event.get("home")
+        away_value = event.get("away_team") or event.get("away")
+        home = team_name(home_value)
+        away = team_name(away_value)
         raw = event.get("scheduled_at") or event.get("kickoff") or event.get("commence_time") or event.get("date")
         if not home or not away or not isinstance(raw, str):
             continue
@@ -698,9 +708,11 @@ def supplement_fixtures_from_infersports(
         if isinstance(competition, dict):
             league_name = str(competition.get("name") or competition.get("display_name") or "").strip()
             league_id = competition.get("id")
+            league_country = competition.get("country") or event.get("country")
         else:
             league_name = str(event.get("competition_name") or event.get("league_name") or competition or "").strip()
             league_id = event.get("competition_id") or event.get("league_id")
+            league_country = event.get("country") or event.get("competition_country")
         league_name = league_name or "Unknown Competition"
         event_id = event.get("id")
         rows.append({
@@ -711,11 +723,11 @@ def supplement_fixtures_from_infersports(
                 "status": {"short": "NS", "long": "scheduled"},
             },
             "teams": {
-                "home": {"id": None, "name": home},
-                "away": {"id": None, "name": away},
+                "home": {"id": team_id(home_value), "name": home},
+                "away": {"id": team_id(away_value), "name": away},
             },
             "league": {
-                "id": league_id, "name": league_name,
+                "id": league_id, "name": league_name, "country": league_country,
                 "code": LEAGUE_CODES.get(league_name.casefold()), "season": None,
             },
             "_veltrix_source": "InferSports",
