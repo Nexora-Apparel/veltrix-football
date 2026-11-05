@@ -116,10 +116,10 @@ def test_missing_competition_identity_quarantines_instead_of_dropping():
 
     canonical, meta = reconcile_fixture_rows(rows)
 
-    assert len(canonical) == 2
+    assert len(canonical) == 1
     assert meta["quarantined_rows"] == 2
-    assert all(row["_veltrix_reconciliation_status"] == "AMBIGUOUS" for row in canonical)
-    assert {row["fixture"]["id"] for row in canonical} == {"unknown-a", "unknown-b"}
+    assert canonical[0]["_veltrix_reconciliation_status"] == "AMBIGUOUS"
+    assert {row["fixture_id"] for row in canonical[0]["_veltrix_source_fixture_ids"]} == {"unknown-a", "unknown-b"}
 
 
 
@@ -133,9 +133,9 @@ def test_same_teams_and_kickoff_with_conflicting_competitions_are_quarantined():
 
     canonical, meta = reconcile_fixture_rows(rows)
 
-    assert len(canonical) == 2
+    assert len(canonical) == 1
     assert meta["quarantined_rows"] == 2
-    assert all(row["_veltrix_reconciliation_status"] == "AMBIGUOUS" for row in canonical)
+    assert canonical[0]["_veltrix_reconciliation_status"] == "AMBIGUOUS"
 
 
 def test_inter_is_not_misclassified_as_a_reserve_team():
@@ -183,8 +183,9 @@ def test_unverified_provider_team_abbreviations_are_quarantined_not_merged():
 
     canonical, meta = reconcile_fixture_rows(rows)
 
-    assert len(canonical) == 2
+    assert len(canonical) == 1
     assert meta["confirmed_duplicate_groups"] == 0
     assert meta["quarantined_rows"] == 2
-    assert all(row["_veltrix_reconciliation_status"] == "AMBIGUOUS" for row in canonical)
-    assert all("team_alias_not_verified" in row["_veltrix_quarantine_reasons"] for row in canonical)
+    assert canonical[0]["_veltrix_reconciliation_status"] == "AMBIGUOUS"
+    assert "team_alias_not_verified" in canonical[0]["_veltrix_quarantine_reasons"]
+    assert {row["fixture_id"] for row in canonical[0]["_veltrix_source_fixture_ids"]} == {"primary-1", "infer-1"}
