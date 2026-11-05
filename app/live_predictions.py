@@ -1027,6 +1027,7 @@ def build_daily_report(
         "kickoff_unverified_fixtures": kickoff_unverified_count,
         "fixture_status_counts": {
             "EXPERIMENTAL_ONLY": sum(p.get("status") == "EXPERIMENTAL_ONLY" for p in predictions),
+            "LOW_HISTORY_FORECAST": sum(p.get("status") == "LOW_HISTORY_FORECAST" for p in predictions),
             "EXPERIMENTAL_LOW_DATA": sum(p.get("status") == "EXPERIMENTAL_LOW_DATA" for p in predictions),
             "INSUFFICIENT_HISTORY": sum(p.get("status") == "INSUFFICIENT_HISTORY" for p in predictions),
             "UNSUPPORTED_COMPETITION": sum(p.get("status") == "UNSUPPORTED_COMPETITION" for p in predictions),
