@@ -236,7 +236,12 @@ def reconcile_fixture_rows(
         a = identities[i]
         for j in range(i + 1, len(valid)):
             b = identities[j]
-            if a["fixture_id"] is not None and a["source"] == b["source"] and a["fixture_id"] == b["fixture_id"]:
+            if (
+                a["fixture_id"] is not None
+                and a["source"] != "UNKNOWN"
+                and a["source"] == b["source"]
+                and str(a["fixture_id"]) == str(b["fixture_id"])
+            ):
                 same_core = (
                     bool(a["home_key"] and a["away_key"])
                     and a["home_key"] == b["home_key"] and a["away_key"] == b["away_key"]
