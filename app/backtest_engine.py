@@ -821,8 +821,8 @@ def chronological_backtest(matches: Iterable[dict[str, Any]], *, min_training_ma
     if not clean:
         raise ValueError("No valid matches supplied")
 
-    # Per-league team history stores (goals scored, goals conceded) split by venue.
-    venue_history: dict[tuple[str, str, str], deque[tuple[int, int]]] = defaultdict(lambda: deque(maxlen=form_window))
+    # Per-league team history stores the same all-venue evidence for either side.
+    team_history: dict[tuple[str, str], deque[tuple[int, int]]] = defaultdict(lambda: deque(maxlen=form_window))
     ratings: dict[tuple[str, str], float] = defaultdict(lambda: 1500.0)
     league_totals: dict[str, list[int]] = defaultdict(lambda: [0, 0, 0]) # matches, home goals, away goals
     league_draws: dict[str, list[int]] = defaultdict(lambda: [0, 0])
@@ -907,16 +907,15 @@ def chronological_backtest(matches: Iterable[dict[str, Any]], *, min_training_ma
                     ))
                     live_probs = poisson_1x2(home_xg, away_xg)
 
-                    # Separate research candidate: recency-weighted venue form and
+                    # Separate research candidate: recency-weighted all-venue team form and
                     # Dixon-Coles low-score correction. Same-day results are still
                     # excluded because histories are updated only after this loop.
                     def weighted_live_rate(
                         history: list[tuple[int, int, str]],
-                        venue: str,
                         scored_prior: float,
                         conceded_prior: float,
                     ) -> tuple[float, float]:
-                        relevant = [row for row in history if row[2] == venue] or history
+                        relevant = history
                         weight = len(relevant) / (len(relevant) + 4.0)
                         scored = recency_weighted_mean([row[0] for row in relevant], decay=0.85)
                         conceded = recency_weighted_mean([row[1] for row in relevant], decay=0.85)
@@ -926,10 +925,10 @@ def chronological_backtest(matches: Iterable[dict[str, Any]], *, min_training_ma
                         )
 
                     whs, whc = weighted_live_rate(
-                        home_hist, "home", live_home_baseline, live_away_baseline
+                        home_hist, neutral_team_rate, neutral_team_rate
                     )
                     was, wac = weighted_live_rate(
-                        away_hist, "away", live_away_baseline, live_home_baseline
+                        away_hist, neutral_team_rate, neutral_team_rate
                     )
                     weighted_home_xg = min(5.0, max(0.05,
                         live_home_baseline * (whs / live_home_baseline)
@@ -978,20 +977,19 @@ def chronological_backtest(matches: Iterable[dict[str, Any]], *, min_training_ma
             lid, home, away = m["division"], m["home_team"], m["away_team"]
             totals = league_totals[lid]
             if history_count >= min_training_matches and totals[0] >= 10:
-                avg_home = max(0.15, totals[1] / totals[0])
-                avg_away = max(0.15, totals[2] / totals[0])
-                # Shrink sparse venue samples toward the league scoring average.
-                def rate(team: str, venue: str, index: int, prior: float) -> float:
-                    hist = list(venue_history[(lid, team, venue)])
+                neutral_team_rate = max(0.15, (totals[1] + totals[2]) / (2 * totals[0]))
+                # Both teams use the same all-venue history window and neutral league baseline.
+                def rate(team: str, index: int, prior: float) -> float:
+                    hist = list(team_history[(lid, team)])
                     values = [x[index] for x in hist]
                     strength = 5.0
                     return (sum(values) + strength * prior) / (len(values) + strength)
-                home_attack = rate(home, "home", 0, avg_home) / avg_home
-                away_defence = rate(away, "away", 1, avg_home) / avg_home
-                away_attack = rate(away, "away", 0, avg_away) / avg_away
-                home_defence = rate(home, "home", 1, avg_away) / avg_away
-                home_lambda = min(5.0, max(0.15, avg_home * home_attack * away_defence))
-                away_lambda = min(5.0, max(0.15, avg_away * away_attack * home_defence))
+                home_attack = rate(home, 0, neutral_team_rate) / neutral_team_rate
+                away_defence = rate(away, 1, neutral_team_rate) / neutral_team_rate
+                away_attack = rate(away, 0, neutral_team_rate) / neutral_team_rate
+                home_defence = rate(home, 1, neutral_team_rate) / neutral_team_rate
+                home_lambda = min(5.0, max(0.15, neutral_team_rate * home_attack * away_defence))
+                away_lambda = min(5.0, max(0.15, neutral_team_rate * away_attack * home_defence))
                 poisson = poisson_1x2(home_lambda, away_lambda)
                 draws = league_draws[lid]
                 draw_rate = (draws[1] + 3.0) / (draws[0] + 10.0)
@@ -1014,8 +1012,8 @@ def chronological_backtest(matches: Iterable[dict[str, Any]], *, min_training_ma
             delta = elo_k * goal_weight * (actual_score - expected)
             ratings[(lid, home)] = rh + delta
             ratings[(lid, away)] = ra - delta
-            venue_history[(lid, home, "home")].append((hg, ag))
-            venue_history[(lid, away, "away")].append((ag, hg))
+            team_history[(lid, home)].append((hg, ag))
+            team_history[(lid, away)].append((ag, hg))
             league_totals[lid][0] += 1
             league_totals[lid][1] += hg
             league_totals[lid][2] += ag
