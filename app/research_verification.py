@@ -99,7 +99,7 @@ def verify_structured_match_evidence(
         if not matching_trust_roots:
             rejected += 1
             continue
-        trust_root = max(matching_trust_roots, key=len)
+        trust_root = min(matching_trust_roots, key=len)
         if (
             _key(record.get("home_team")) != home
             or _key(record.get("away_team")) != away
