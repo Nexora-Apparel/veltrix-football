@@ -17,6 +17,16 @@ KICKOFF_TOLERANCE_SECONDS = 300
 # Curated aliases are deliberately exact and context-gated by competition,
 # squad category, orientation and kickoff. Add entries only after source review.
 TEAM_ALIASES = {
+    # Stable, widely established club abbreviations. These are still
+    # competition/category/kickoff gated before they can merge fixtures.
+    "manutd": "manchesterunited",
+    "manchesterutd": "manchesterunited",
+    "manunited": "manchesterunited",
+    "barca": "barcelona",
+}
+# Observed provider abbreviations without a verified team-ID crosswalk.
+# They may trigger quarantine but are deliberately NOT merge aliases.
+UNVERIFIED_TEAM_ALIAS_CANDIDATES = {
     "atleticopr": "atleticoparanaense",
     "vascodg": "vascodagama",
     "gremiopa": "gremio",
@@ -241,17 +251,32 @@ def reconcile_fixture_rows(
             if not a["kickoff"] or not b["kickoff"]:
                 continue
             seconds = abs((a["kickoff"] - b["kickoff"]).total_seconds())
+            same_categories = (
+                a["home_category"] == b["home_category"]
+                and a["away_category"] == b["away_category"]
+            )
             same_teams = (
                 a["home_key"] == b["home_key"] and a["away_key"] == b["away_key"]
-                and a["home_category"] == b["home_category"] and a["away_category"] == b["away_category"]
+                and same_categories
             )
-            if not same_teams or seconds > kickoff_tolerance_seconds:
+            if seconds > kickoff_tolerance_seconds or not same_categories:
+                continue
+            possible_unverified_alias = (
+                UNVERIFIED_TEAM_ALIAS_CANDIDATES.get(a["home_key"], a["home_key"])
+                == UNVERIFIED_TEAM_ALIAS_CANDIDATES.get(b["home_key"], b["home_key"])
+                and UNVERIFIED_TEAM_ALIAS_CANDIDATES.get(a["away_key"], a["away_key"])
+                == UNVERIFIED_TEAM_ALIAS_CANDIDATES.get(b["away_key"], b["away_key"])
+            )
+            if not same_teams and not possible_unverified_alias:
                 continue
             if a["competition"] is not None and a["competition"] == b["competition"]:
-                # Source-local competition IDs are recorded but never compared
-                # across providers. The normalized, category-aware competition
-                # identity is the cross-provider join key.
-                union(i, j)
+                if same_teams:
+                    # Source-local competition IDs are recorded but never compared
+                    # across providers. The normalized, category-aware competition
+                    # identity is the cross-provider join key.
+                    union(i, j)
+                else:
+                    ambiguous_pairs.append((i, j, "team_alias_not_verified"))
             elif a["competition"] is None or b["competition"] is None:
                 ambiguous_pairs.append((i, j, "competition_identity_missing"))
             elif a["competition"][0] == b["competition"][0]:
