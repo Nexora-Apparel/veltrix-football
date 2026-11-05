@@ -202,6 +202,7 @@ def test_multi_source_odds_enrichment_attaches_btts_and_totals_without_changing_
         "predictions": [{
             "fixture_id": 123, "home_team": "Arsenal", "away_team": "Chelsea",
             "kickoff_local": "2026-10-29T16:00:00+01:00", "league": "Premier League",
+            "league_country": "England",
             "status": "EXPERIMENTAL_ONLY", "probabilities": {"btts_yes": 0.61},
         }],
     }

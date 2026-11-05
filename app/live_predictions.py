@@ -131,7 +131,7 @@ def _team_variant_signature(key: str) -> tuple[str, ...]:
         ("women", r"(?:women|womens|ladies|feminin|femenino|feminino|womenmarker)$"),
         ("youth", r"(?:youth|academy|junior|juniors)$"),
         ("age_group", r"u(?:1[0-9]|2[0-3])$"),
-        ("reserve", r"(?:reserves|reserve|bteam|ii|iii|iv|2|3|reservemarker)$"),
+        ("reserve", r"(?:reserves|reserve|bteam|ii|iii|iv|2|3|b|reservemarker)$"),
     ):
         if re.search(pattern, key):
             markers.append(label)
@@ -139,7 +139,7 @@ def _team_variant_signature(key: str) -> tuple[str, ...]:
     age = re.search(r"u(1[0-9]|2[0-3])$", key)
     if age:
         markers.append("u" + age.group(1))
-    reserve = re.search(r"(?:reserves|reserve|bteam|ii|iii|iv|2|3|reservemarker)$", key)
+    reserve = re.search(r"(?:reserves|reserve|bteam|ii|iii|iv|2|3|b|reservemarker)$", key)
     if reserve:
         markers.append("r" if reserve.group(0) == "reservemarker" else reserve.group(0))
     return tuple(markers)
@@ -293,6 +293,7 @@ def _fixture_parts(item: dict[str, Any], timezone_name: str = "Africa/Lagos", *,
         "home_team": home,
         "away_team": away,
         "league": league.get("name"),
+        "league_country": league.get("country"),
         "league_id": league.get("id"),
         # League IDs are provider-local. The ID map above contains API-Football
         # IDs only; never apply it to 5Dollar/other-provider IDs, which can collide
@@ -312,6 +313,51 @@ def _fixture_parts(item: dict[str, Any], timezone_name: str = "Africa/Lagos", *,
             )
         ),
         "fixture_status": status or "UNKNOWN",
+    }
+
+
+def _invalid_fixture_visibility(item: dict[str, Any], delivery_order: int) -> dict[str, Any]:
+    """Keep malformed provider fixtures visible without fabricating kickoff data."""
+    fixture = item.get("fixture") if isinstance(item.get("fixture"), dict) else {}
+    teams = item.get("teams") if isinstance(item.get("teams"), dict) else {}
+    home = teams.get("home") if isinstance(teams.get("home"), dict) else {}
+    away = teams.get("away") if isinstance(teams.get("away"), dict) else {}
+    league = item.get("league") if isinstance(item.get("league"), dict) else {}
+    source = str(item.get("_veltrix_source") or item.get("provider") or "UNKNOWN")
+    reasons = item.get("_veltrix_quarantine_reasons") or ["missing_or_invalid_kickoff"]
+    kickoff_only_failure = set(reasons).issubset({"missing_or_invalid_kickoff"})
+    return {
+        "_delivery_order": delivery_order,
+        "fixture_id": fixture.get("id"),
+        "source_fixture_id": fixture.get("id"),
+        "fixture_source": source,
+        "source_fixture_ids": item.get("_veltrix_source_fixture_ids") or [
+            {"provider": source, "fixture_id": fixture.get("id")}
+        ],
+        "provider_provenance": item.get("_veltrix_provenance") or [],
+        "source_competition_id": league.get("id"),
+        "home_team_id": home.get("id"),
+        "away_team_id": away.get("id"),
+        "home_team": home.get("name") or "Unknown home team",
+        "away_team": away.get("name") or "Unknown away team",
+        "league": league.get("name") or "Unknown competition",
+        "league_id": league.get("id"),
+        "kickoff": fixture.get("date"),
+        "kickoff_local": None,
+        "fixture_status": ((fixture.get("status") or {}).get("short") or "UNKNOWN"),
+        "reconciliation_status": "AMBIGUOUS",
+        "quarantine_reasons": reasons,
+        "model": "not_evaluated",
+        "model_validated": False,
+        "betting_recommendation": False,
+        "historical_matches": {"home": 0, "away": 0},
+        "status": "KICKOFF_UNVERIFIED" if kickoff_only_failure else "AMBIGUOUS_FIXTURE_IDENTITY",
+        "reason": (
+            "Provider fixture retained for visibility, but kickoff time is missing or invalid. No forecast is issued."
+            if kickoff_only_failure else
+            "Provider fixture retained for visibility, but its identity data is ambiguous. No forecast is issued."
+        ),
+        "team_name_match_suggestions": {},
     }
 
 
@@ -429,12 +475,15 @@ def predict_fixtures(
         # or contains no records before the requested date. Emit explicit
         # withheld records so reports distinguish missing data from no fixtures.
         parsed = []
+        malformed_visibility = []
         for delivery_order, item in enumerate(fixtures):
             fixture = _fixture_parts(item, timezone_name, include_started=True)
             if fixture and fixture["kickoff_date"] == today:
                 fixture["_delivery_order"] = delivery_order
                 parsed.append(fixture)
-        visibility_rows, candidates = [], []
+            elif fixture is None and isinstance(item, dict):
+                malformed_visibility.append(_invalid_fixture_visibility(item, delivery_order))
+        visibility_rows, candidates = malformed_visibility, []
         for fixture in parsed:
             if fixture.get("reconciliation_status") == "AMBIGUOUS":
                 status, reason = "AMBIGUOUS_FIXTURE_IDENTITY", "Fixture retained but quarantined: provider records could not be reconciled safely. No prediction is issued."
@@ -491,16 +540,20 @@ def predict_fixtures(
     # kickoff date can enter team counts, rates, aliases or scoring baselines.
     output: list[dict[str, Any]] = []
     parsed_all = []
+    malformed_visibility = []
     # Cache Elo ratings once per competition for this report date; all fixtures
     # share the same strictly pre-date history, so recomputing it per fixture is wasteful.
     elo_cache: dict[str, dict[str, Any]] = {}
     # Rebuild histories per target date so earlier dates are never duplicated.
     for delivery_order, item in enumerate(fixtures):
         parsed = _fixture_parts(item, timezone_name, include_started=True)
-        if parsed and parsed["kickoff_date"] == today:
+        if parsed is None:
+            if isinstance(item, dict):
+                malformed_visibility.append(_invalid_fixture_visibility(item, delivery_order))
+        elif parsed["kickoff_date"] == today:
             parsed["_delivery_order"] = delivery_order
             parsed_all.append(parsed)
-    visibility_rows, parsed_fixtures = [], []
+    visibility_rows, parsed_fixtures = malformed_visibility, []
     for fixture in parsed_all:
         if fixture.get("reconciliation_status") == "AMBIGUOUS":
             status, reason = "AMBIGUOUS_FIXTURE_IDENTITY", "Fixture retained but quarantined: provider records could not be reconciled safely. No prediction is issued."
@@ -935,37 +988,11 @@ def build_daily_report(
         timezone_name=timezone_name,
         now=current_time,
     )
-    # The provider request is already scoped to the target local-day window.
-    # Retain scheduled fixtures whose kickoff timestamp is absent/malformed so
-    # the command centre never silently loses a fixture solely due to bad time
-    # metadata. Such rows receive no forecast until kickoff can be verified.
-    kickoff_unverified: list[dict[str, Any]] = []
-    for item in fixtures:
-        if not isinstance(item, dict) or _fixture_parts(item, timezone_name) is not None:
-            continue
-        fixture = item.get("fixture") if isinstance(item.get("fixture"), dict) else {}
-        status = str((fixture.get("status") or {}).get("short") or "").upper()
-        teams = item.get("teams") if isinstance(item.get("teams"), dict) else {}
-        home = (teams.get("home") or {}).get("name") if isinstance(teams.get("home"), dict) else None
-        away = (teams.get("away") or {}).get("name") if isinstance(teams.get("away"), dict) else None
-        league = item.get("league") if isinstance(item.get("league"), dict) else {}
-        if status not in {"NS", "TBD"} or not home or not away:
-            continue
-        kickoff_unverified.append({
-            "fixture_id": fixture.get("id"),
-            "kickoff": fixture.get("date"),
-            "kickoff_local": None,
-            "home_team": str(home),
-            "away_team": str(away),
-            "league": str(league.get("name") or "Competition unavailable"),
-            "status": "KICKOFF_UNVERIFIED",
-            "model": "not_evaluated",
-            "model_validated": False,
-            "betting_recommendation": False,
-            "reason": "Fixture retained because the provider returned it for the requested local day, but its kickoff timestamp is missing or invalid.",
-            "kickoff_verification": "MISSING_OR_INVALID",
-        })
-    predictions.extend(kickoff_unverified)
+    # predict_fixtures already retains malformed kickoff rows as quarantined
+    # visibility records in both sparse-history and normal-history paths.
+    kickoff_unverified_count = sum(
+        prediction.get("status") == "KICKOFF_UNVERIFIED" for prediction in predictions
+    )
     if market_odds_by_fixture:
         eligible_statuses = {"EXPERIMENTAL_ONLY", "EXPERIMENTAL_LOW_DATA", "INSUFFICIENT_HISTORY", "UNSUPPORTED_COMPETITION"}
         for prediction in predictions:
@@ -992,24 +1019,24 @@ def build_daily_report(
             default=None,
         ),
         "fixtures_received": len(fixtures),
-        "same_day_pre_match_fixtures": future_kickoffs + len(kickoff_unverified),
+        "same_day_pre_match_fixtures": future_kickoffs + kickoff_unverified_count,
         # Counted as excluded from pre-match forecasting even though their
         # fixture rows remain visible in the report.
         "past_kickoffs_excluded": past_kickoffs,
         "past_kickoffs_retained": past_kickoffs,
-        "future_fixtures_considered": future_kickoffs + len(kickoff_unverified),
+        "future_fixtures_considered": future_kickoffs + kickoff_unverified_count,
         "same_day_fixtures_retained": len(predictions),
-        "kickoff_unverified_fixtures": len(kickoff_unverified),
+        "kickoff_unverified_fixtures": kickoff_unverified_count,
         "fixture_status_counts": {
             "EXPERIMENTAL_ONLY": sum(p.get("status") == "EXPERIMENTAL_ONLY" for p in predictions),
             "EXPERIMENTAL_LOW_DATA": sum(p.get("status") == "EXPERIMENTAL_LOW_DATA" for p in predictions),
             "INSUFFICIENT_HISTORY": sum(p.get("status") == "INSUFFICIENT_HISTORY" for p in predictions),
             "UNSUPPORTED_COMPETITION": sum(p.get("status") == "UNSUPPORTED_COMPETITION" for p in predictions),
-            "KICKOFF_UNVERIFIED": len(kickoff_unverified),
+            "KICKOFF_UNVERIFIED": kickoff_unverified_count,
             "KICKOFF_PASSED": sum(p.get("status") == "KICKOFF_PASSED" for p in predictions),
             "FIXTURE_NOT_PREMATCH": sum(p.get("status") == "FIXTURE_NOT_PREMATCH" for p in predictions),
         },
-        "fixtures_excluded_other_date_or_status": len(fixtures) - len(parsed_for_date) - len(kickoff_unverified),
+        "fixtures_excluded_other_date_or_status": len(fixtures) - len(parsed_for_date) - kickoff_unverified_count,
         "predictions_created": sum(
             p.get("status") in {"EXPERIMENTAL_ONLY", "EXPERIMENTAL_LOW_DATA"}
             and isinstance(p.get("probabilities"), dict)
