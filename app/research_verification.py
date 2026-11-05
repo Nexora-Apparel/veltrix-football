@@ -95,9 +95,11 @@ def verify_structured_match_evidence(
             rejected += 1
             continue
         host = (urlparse(url).hostname or "").lower()
-        if not _trusted_host(host, trusted):
+        matching_trust_roots = [domain for domain in trusted if host == domain or host.endswith("." + domain)]
+        if not matching_trust_roots:
             rejected += 1
             continue
+        trust_root = max(matching_trust_roots, key=len)
         if (
             _key(record.get("home_team")) != home
             or _key(record.get("away_team")) != away
@@ -131,6 +133,7 @@ def verify_structured_match_evidence(
             "away_goals": away_goals,
             "source_url": url,
             "source_domain": host,
+            "independent_source_group": trust_root,
             "source_record_id": record.get("source_record_id"),
             "published_at": record.get("published_at"),
             "retrieved_at_utc": record.get("retrieved_at_utc"),
@@ -147,7 +150,7 @@ def verify_structured_match_evidence(
             conflicts += len(evidence)
             continue
         (home_score, away_score), agreeing = next(iter(score_groups.items()))
-        independent_domains = {item["source_domain"] for item in agreeing}
+        independent_domains = {item["independent_source_group"] for item in agreeing}
         if len(independent_domains) < 2:
             insufficient += len(agreeing)
             continue
