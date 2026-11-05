@@ -350,7 +350,7 @@ def _invalid_fixture_visibility(item: dict[str, Any], delivery_order: int) -> di
         "model_validated": False,
         "betting_recommendation": False,
         "historical_matches": {"home": 0, "away": 0},
-        "status": "AMBIGUOUS_FIXTURE_IDENTITY",
+        "status": "KICKOFF_UNVERIFIED" if not fixture.get("date") else "AMBIGUOUS_FIXTURE_IDENTITY",
         "reason": "Provider fixture retained for visibility, but its kickoff or identity data is invalid. No forecast is issued.",
         "team_name_match_suggestions": {},
     }
@@ -988,6 +988,12 @@ def build_daily_report(
     # the command centre never silently loses a fixture solely due to bad time
     # metadata. Such rows receive no forecast until kickoff can be verified.
     kickoff_unverified: list[dict[str, Any]] = []
+    kickoff_unverified_count = 0
+    already_visible_by_id = {
+        row.get("fixture_id"): row
+        for row in predictions
+        if isinstance(row, dict) and row.get("fixture_id") is not None
+    }
     for item in fixtures:
         if not isinstance(item, dict) or _fixture_parts(item, timezone_name) is not None:
             continue
@@ -998,6 +1004,13 @@ def build_daily_report(
         away = (teams.get("away") or {}).get("name") if isinstance(teams.get("away"), dict) else None
         league = item.get("league") if isinstance(item.get("league"), dict) else {}
         if status not in {"NS", "TBD"} or not home or not away:
+            continue
+        kickoff_unverified_count += 1
+        existing = already_visible_by_id.get(fixture.get("id"))
+        if existing is not None:
+            existing["status"] = "KICKOFF_UNVERIFIED"
+            existing["kickoff_verification"] = "MISSING_OR_INVALID"
+            existing["reason"] = "Fixture retained because the provider returned it for the requested local day, but its kickoff timestamp is missing or invalid."
             continue
         kickoff_unverified.append({
             "fixture_id": fixture.get("id"),
@@ -1040,24 +1053,24 @@ def build_daily_report(
             default=None,
         ),
         "fixtures_received": len(fixtures),
-        "same_day_pre_match_fixtures": future_kickoffs + len(kickoff_unverified),
+        "same_day_pre_match_fixtures": future_kickoffs + kickoff_unverified_count,
         # Counted as excluded from pre-match forecasting even though their
         # fixture rows remain visible in the report.
         "past_kickoffs_excluded": past_kickoffs,
         "past_kickoffs_retained": past_kickoffs,
-        "future_fixtures_considered": future_kickoffs + len(kickoff_unverified),
+        "future_fixtures_considered": future_kickoffs + kickoff_unverified_count,
         "same_day_fixtures_retained": len(predictions),
-        "kickoff_unverified_fixtures": len(kickoff_unverified),
+        "kickoff_unverified_fixtures": kickoff_unverified_count,
         "fixture_status_counts": {
             "EXPERIMENTAL_ONLY": sum(p.get("status") == "EXPERIMENTAL_ONLY" for p in predictions),
             "EXPERIMENTAL_LOW_DATA": sum(p.get("status") == "EXPERIMENTAL_LOW_DATA" for p in predictions),
             "INSUFFICIENT_HISTORY": sum(p.get("status") == "INSUFFICIENT_HISTORY" for p in predictions),
             "UNSUPPORTED_COMPETITION": sum(p.get("status") == "UNSUPPORTED_COMPETITION" for p in predictions),
-            "KICKOFF_UNVERIFIED": len(kickoff_unverified),
+            "KICKOFF_UNVERIFIED": kickoff_unverified_count,
             "KICKOFF_PASSED": sum(p.get("status") == "KICKOFF_PASSED" for p in predictions),
             "FIXTURE_NOT_PREMATCH": sum(p.get("status") == "FIXTURE_NOT_PREMATCH" for p in predictions),
         },
-        "fixtures_excluded_other_date_or_status": len(fixtures) - len(parsed_for_date) - len(kickoff_unverified),
+        "fixtures_excluded_other_date_or_status": len(fixtures) - len(parsed_for_date) - kickoff_unverified_count,
         "predictions_created": sum(
             p.get("status") in {"EXPERIMENTAL_ONLY", "EXPERIMENTAL_LOW_DATA"}
             and isinstance(p.get("probabilities"), dict)
