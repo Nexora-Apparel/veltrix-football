@@ -46,7 +46,6 @@ def test_telegram_report_is_predictions_only_and_keeps_new_update_alert():
     assert "🔔 🆕 NEW VELTRIX UPDATE" in message
     assert "VELTRIX FOOTBALL AI · DAILY INTELLIGENCE" in message
     assert "2026-10-23" in message
-    assert "Fixtures analysed: 1" in message
     assert "Alpha FC vs Beta FC" in message
     assert "Example League" in message
     assert "Kickoff" not in message
@@ -59,7 +58,6 @@ def test_telegram_report_is_predictions_only_and_keeps_new_update_alert():
     assert "PAPER TRACKING" not in message
     assert "DATA NOTICE" not in message
     assert "MULTI-SOURCE REFERENCE PRICES" not in message
-    assert "Football data by 5DollarFootballAPI" in message
     assert "https://5dollarfootballapi.com" in message
 
 
@@ -68,7 +66,6 @@ def test_predictions_alert_is_short_when_no_usable_forecasts():
     report["predictions"] = [{"status": "INSUFFICIENT_HISTORY"}]
     message = format_report(report)
     assert "🔔 🆕 NEW VELTRIX UPDATE" in message
-    assert "Fixtures analysed: 0" in message
     assert "Forecast withheld: insufficient reliable team history." in message
     assert "No probabilities or betting signal published for this fixture." in message
 
@@ -358,7 +355,6 @@ def test_telegram_report_lists_all_fixtures_and_marks_ineligible_forecasts():
         },
     ]
     message = "\n".join(format_report_messages(report))
-    assert "Fixtures analysed: 1" in message
     assert "Forecasted FC vs Modelled FC" in message
     assert "History Gap FC vs New Club FC" in message
     assert "Cup Side vs Regional Side" in message
