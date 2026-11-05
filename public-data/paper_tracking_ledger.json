@@ -844,7 +844,7 @@
       "report_date": "2026-11-02"
     }
   ],
-  "updated_at_utc": "2026-11-05T11:50:26.594109+00:00",
+  "updated_at_utc": "2026-11-05T13:22:28.584787+00:00",
   "last_attempt": {
     "report_date": "2026-11-04",
     "status": "EVALUATED",
@@ -852,7 +852,7 @@
       {
         "report_date": "2026-10-24",
         "status": "EVALUATED",
-        "detail": "Scored from 5622 cached completed matches; no live football-provider request was made.",
+        "detail": "Scored from 5678 cached completed matches; no live football-provider request was made.",
         "fixtures_scored": 4,
         "completed_forecasts_scored": 4,
         "metrics": {
@@ -874,7 +874,7 @@
       {
         "report_date": "2026-10-27",
         "status": "EVALUATED",
-        "detail": "Scored from 5622 cached completed matches; no live football-provider request was made.",
+        "detail": "Scored from 5678 cached completed matches; no live football-provider request was made.",
         "fixtures_scored": 0,
         "completed_forecasts_scored": 0,
         "metrics": {
@@ -889,7 +889,7 @@
       {
         "report_date": "2026-10-30",
         "status": "EVALUATED",
-        "detail": "Scored from 5622 cached completed matches; no live football-provider request was made.",
+        "detail": "Scored from 5678 cached completed matches; no live football-provider request was made.",
         "fixtures_scored": 0,
         "completed_forecasts_scored": 0,
         "metrics": {
