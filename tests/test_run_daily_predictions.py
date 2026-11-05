@@ -422,7 +422,7 @@ def test_fixture_reconciliation_merges_verified_aliases_and_preserves_all_source
     now = datetime(2026, 11, 2, 8, 0, tzinfo=ZoneInfo("Africa/Lagos"))
     def row(tag, home, away, league, kickoff="2026-11-02T18:00:00+01:00"):
         return {
-            "fixture": {"date": kickoff, "status": {"short": "NS"}},
+            "fixture": {"id": tag, "date": kickoff, "status": {"short": "NS"}},
             "teams": {"home": {"name": home}, "away": {"name": away}},
             "league": {"name": league, "code": "PL" if "Premier" in league else "PD"},
             "tag": tag,
