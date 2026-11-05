@@ -506,6 +506,7 @@ def main() -> None:
             additional_historical_matches=model_recent_rows,
             base_historical_matches=base_history,
             market_odds_by_fixture=market_odds_by_fixture,
+            strict_publication=True,
         )
         report["recent_results_sync"] = recent_sync
         history_coverage = report.setdefault("historical_data_coverage", {})
