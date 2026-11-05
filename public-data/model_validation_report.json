@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "product": "VELTRIX FOOTBALL AI",
-  "generated_at_utc": "2026-11-05T09:14:40.085058+00:00",
+  "generated_at_utc": "2026-11-05T09:21:53.964847+00:00",
   "status": "RESEARCH_DIAGNOSTIC_ONLY",
   "dataset": {
     "input_file": "open_historical_matches.csv",
