@@ -808,9 +808,11 @@ def enrich_report_with_multi_source_odds(
             }]
         candidates: dict[int, dict[str, Any]] = {}
         ambiguous_source_id = False
+        usable_source_id = False
         for source_id in source_ids:
             if not isinstance(source_id, dict) or source_id.get("fixture_id") is None:
                 continue
+            usable_source_id = True
             key = (str(source_id.get("provider") or "UNKNOWN"), str(source_id["fixture_id"]))
             item = source_by_id.get(key)
             if item is None:
@@ -819,7 +821,21 @@ def enrich_report_with_multi_source_odds(
                 continue
             candidates[id(item)] = item
         if len(candidates) == 1 and not ambiguous_source_id:
-            matched_pairs.append((next(iter(candidates.values())), prediction))
+            matched_pairs.append((next(iter(candidates.values()), None), prediction))
+        elif not usable_source_id:
+            # Compatibility for legacy in-memory reports without source IDs:
+            # require the same strict competition/team/category/kickoff join.
+            item = unique_prediction_match({
+                "fixture": {"date": prediction.get("kickoff_local") or prediction.get("kickoff")},
+                "teams": {
+                    "home": {"name": prediction.get("home_team")},
+                    "away": {"name": prediction.get("away_team")},
+                },
+                "league": {"name": prediction.get("league")},
+                "_veltrix_source": "PREDICTION",
+            }, [item for item in source_fixtures if isinstance(item, dict)], timezone_name=timezone_name)
+            if item is not None:
+                matched_pairs.append((item, prediction))
 
     for item, prediction in matched_pairs:
         fixture = item.get("fixture") or {}
