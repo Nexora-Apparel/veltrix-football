@@ -293,6 +293,7 @@ def _fixture_parts(item: dict[str, Any], timezone_name: str = "Africa/Lagos", *,
         "home_team": home,
         "away_team": away,
         "league": league.get("name"),
+        "league_country": league.get("country"),
         "league_id": league.get("id"),
         # League IDs are provider-local. The ID map above contains API-Football
         # IDs only; never apply it to 5Dollar/other-provider IDs, which can collide
