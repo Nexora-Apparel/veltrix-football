@@ -23,6 +23,11 @@ TEAM_ALIASES = {
     "manchesterutd": "manchesterunited",
     "manunited": "manchesterunited",
     "barca": "barcelona",
+    "newcastle": "newcastleunited",
+    "newcastleutd": "newcastleunited",
+    "deportivolacoruna": "deportivocoruna",
+    "deportivoacoruna": "deportivocoruna",
+    "caosasuna": "osasuna",
 }
 # Observed provider abbreviations without a verified team-ID crosswalk.
 # They may trigger quarantine but are deliberately NOT merge aliases.
@@ -319,7 +324,7 @@ def reconcile_fixture_rows(
             key=lambda idx: (
                 0 if identities[idx]["source"].casefold() == "5dollarfootballapi" else 1,
                 identities[idx]["source"].casefold(),
-                str(identities[idx]["fixture_id"] or ""),
+                idx,
             ),
         )
         chosen_index = ordered[0]
