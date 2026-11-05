@@ -238,9 +238,14 @@ def reconcile_fixture_rows(
             b = identities[j]
             if a["fixture_id"] is not None and a["source"] == b["source"] and a["fixture_id"] == b["fixture_id"]:
                 same_core = (
-                    a["home_key"] == b["home_key"] and a["away_key"] == b["away_key"]
+                    bool(a["home_key"] and a["away_key"])
+                    and a["home_key"] == b["home_key"] and a["away_key"] == b["away_key"]
                     and a["home_category"] == b["home_category"] and a["away_category"] == b["away_category"]
                     and a["competition"] == b["competition"]
+                    and (
+                        not a["kickoff"] or not b["kickoff"]
+                        or abs((a["kickoff"] - b["kickoff"]).total_seconds()) <= kickoff_tolerance_seconds
+                    )
                 )
                 if same_core:
                     union(i, j)
@@ -256,12 +261,13 @@ def reconcile_fixture_rows(
                 and a["away_category"] == b["away_category"]
             )
             same_teams = (
-                a["home_key"] == b["home_key"] and a["away_key"] == b["away_key"]
+                bool(a["home_key"] and a["away_key"])
+                and a["home_key"] == b["home_key"] and a["away_key"] == b["away_key"]
                 and same_categories
             )
             if seconds > kickoff_tolerance_seconds or not same_categories:
                 continue
-            possible_unverified_alias = (
+            possible_unverified_alias = bool(a["home_key"] and a["away_key"] and b["home_key"] and b["away_key"]) and (
                 UNVERIFIED_TEAM_ALIAS_CANDIDATES.get(a["home_key"], a["home_key"])
                 == UNVERIFIED_TEAM_ALIAS_CANDIDATES.get(b["home_key"], b["home_key"])
                 and UNVERIFIED_TEAM_ALIAS_CANDIDATES.get(a["away_key"], a["away_key"])
