@@ -812,7 +812,7 @@ def _compact_score(rows: list[dict[str, Any]], model_name: str) -> dict[str, Any
 
 def chronological_backtest(matches: Iterable[dict[str, Any]], *, min_training_matches: int = 100,
                            form_window: int = 10, elo_k: float = 20.0,
-                           home_elo_advantage: float = 55.0) -> dict[str, Any]:
+                           home_elo_advantage: float = 0.0) -> dict[str, Any]:
     """Walk forward by date; never use results from the prediction date as inputs."""
     if min_training_matches < 1 or form_window < 1 or elo_k <= 0:
         raise ValueError("Training minimum, form window and Elo K must be positive")
@@ -864,7 +864,7 @@ def chronological_backtest(matches: Iterable[dict[str, Any]], *, min_training_ma
                     home_rating = live_elo_ratings[(division, home_key)]
                     away_rating = live_elo_ratings[(division, away_key)]
                     expected_home = 1.0 / (
-                        1.0 + 10.0 ** (-(home_rating + HOME_ELO_ADVANTAGE - away_rating) / 400.0)
+                        1.0 + 10.0 ** (-(home_rating + home_elo_advantage - away_rating) / 400.0)
                     )
                     draw_rate = (competition_totals[1] + 3.0) / (competition_totals[0] + 10.0)
                     non_draw = 1.0 - draw_rate
@@ -874,16 +874,15 @@ def chronological_backtest(matches: Iterable[dict[str, Any]], *, min_training_ma
                         "A": non_draw * (1.0 - expected_home),
                     }
                 if len(home_hist) >= 5 and len(away_hist) >= 5 and live_totals[0] > 0:
-                    live_home_baseline = max(0.05, live_totals[1] / live_totals[0])
-                    live_away_baseline = max(0.05, live_totals[2] / live_totals[0])
+                    neutral_team_rate = max(0.05, (live_totals[1] + live_totals[2]) / (2 * live_totals[0]))
+                    live_home_baseline = live_away_baseline = neutral_team_rate
     
                     def live_rate(
                         history: list[tuple[int, int, str]],
-                        venue: str,
                         scored_prior: float,
                         conceded_prior: float,
                     ) -> tuple[float, float]:
-                        relevant = [row for row in history if row[2] == venue] or history
+                        relevant = history
                         weight = len(relevant) / (len(relevant) + 4.0)
                         scored = sum(row[0] for row in relevant) / len(relevant)
                         conceded = sum(row[1] for row in relevant) / len(relevant)
@@ -893,10 +892,10 @@ def chronological_backtest(matches: Iterable[dict[str, Any]], *, min_training_ma
                         )
     
                     home_scored, home_conceded = live_rate(
-                        home_hist, "home", live_home_baseline, live_away_baseline
+                        home_hist, neutral_team_rate, neutral_team_rate
                     )
                     away_scored, away_conceded = live_rate(
-                        away_hist, "away", live_away_baseline, live_home_baseline
+                        away_hist, neutral_team_rate, neutral_team_rate
                     )
                     home_xg = min(5.0, max(0.05,
                         live_home_baseline * (home_scored / live_home_baseline)
@@ -1038,7 +1037,7 @@ def chronological_backtest(matches: Iterable[dict[str, Any]], *, min_training_ma
                 home_rating = live_elo_ratings[(division, home_key)]
                 away_rating = live_elo_ratings[(division, away_key)]
                 expected_home = 1.0 / (
-                    1.0 + 10.0 ** (-(home_rating + HOME_ELO_ADVANTAGE - away_rating) / 400.0)
+                    1.0 + 10.0 ** (-(home_rating + home_elo_advantage - away_rating) / 400.0)
                 )
                 actual_score = 1.0 if hg > ag else 0.5 if hg == ag else 0.0
                 goal_weight = min(2.0, 1.0 + abs(hg - ag) * 0.1)
