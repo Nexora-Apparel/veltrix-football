@@ -121,7 +121,7 @@ def filter_report_for_delivery(report: dict, now: datetime | None = None) -> dic
                     "team history did not meet the minimum evidence requirement."
                 )
                 delivered_row["legacy_forecast_withheld"] = True
-            elif row.get("status") == "EXPERIMENTAL_ONLY" and _has_unsafe_auto_team_match(row):
+            elif row.get("status") in {"EXPERIMENTAL_ONLY", "LOW_HISTORY_FORECAST"} and _has_unsafe_auto_team_match(row):
                 delivered_row = _withhold_forecast(row)
                 delivered_row["status"] = "INSUFFICIENT_HISTORY"
                 delivered_row["reason"] = (
