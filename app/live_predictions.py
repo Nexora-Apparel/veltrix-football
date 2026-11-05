@@ -59,8 +59,8 @@ def _name_key(name: Any) -> str:
     """
     raw_name = str(name or "").strip().casefold()
     # Preserve only explicit squad suffix markers before punctuation is removed.
-    explicit_reserve = bool(re.search(r"(?:\\(\\s*r\\s*\\)|\\s+r)$", raw_name))
-    explicit_women = bool(re.search(r"(?:\\(\\s*w\\s*\\)|\\s+w)$", raw_name))
+    explicit_reserve = bool(re.search(r"(?:\(\s*r\s*\)|\s+r)$", raw_name))
+    explicit_women = bool(re.search(r"(?:\(\s*w\s*\)|\s+w)$", raw_name))
     normalized = unicodedata.normalize("NFKD", raw_name)
     normalized = "".join(char for char in normalized if not unicodedata.combining(char))
     # Preserve a small set of letters that NFKD does not decompose consistently.
