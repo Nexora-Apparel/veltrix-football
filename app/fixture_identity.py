@@ -26,6 +26,27 @@ COMPETITION_ALIASES = {
     "brazilseriea": "brazilianseriea",
     "brazilianseriea": "brazilianseriea",
     "brasileirao": "brazilianseriea",
+    "premierleague": "premierleague",
+    "englishpremierleague": "premierleague",
+    "epl": "premierleague",
+    "laliga": "laliga",
+    "spanishprimera": "laliga",
+    "spainlaliga": "laliga",
+    "bundesliga": "bundesliga",
+    "germanbundesliga": "bundesliga",
+    "seriea": "seriea",
+    "italyseriea": "seriea",
+    "italianseriea": "seriea",
+    "ligue1": "ligue1",
+    "franceligue1": "ligue1",
+    "frenchligue1": "ligue1",
+    "eredivisie": "eredivisie",
+    "dutcheredivisie": "eredivisie",
+    "primeiraliga": "primeiraliga",
+    "portugalprimeiraliga": "primeiraliga",
+    "argentineprimera": "argentineprimera",
+    "argentinaprimera": "argentineprimera",
+    "ligaprofesional": "argentineprimera",
 }
 
 
@@ -124,6 +145,58 @@ def _provenance(row: dict[str, Any], identity: dict[str, Any]) -> dict[str, Any]
         "away_team_name": away.get("name"),
         "kickoff": fixture.get("date"),
     }
+
+
+
+
+def fixtures_match(
+    left: dict[str, Any],
+    right: dict[str, Any],
+    *,
+    timezone_name: str = "Africa/Lagos",
+    kickoff_tolerance_seconds: int = KICKOFF_TOLERANCE_SECONDS,
+) -> bool:
+    """Strict cross-feed event match; requires teams, squad and competition."""
+    a = _identity(left, timezone_name)
+    b = _identity(right, timezone_name)
+    if not a["kickoff"] or not b["kickoff"]:
+        return False
+    if abs((a["kickoff"] - b["kickoff"]).total_seconds()) > kickoff_tolerance_seconds:
+        return False
+    return bool(
+        a["home_key"] and a["away_key"]
+        and a["home_key"] == b["home_key"]
+        and a["away_key"] == b["away_key"]
+        and a["home_category"] == b["home_category"]
+        and a["away_category"] == b["away_category"]
+        and a["competition"] is not None
+        and a["competition"] == b["competition"]
+    )
+
+
+def unique_prediction_match(
+    event_row: dict[str, Any],
+    predictions: list[dict[str, Any]],
+    *,
+    timezone_name: str = "Africa/Lagos",
+) -> dict[str, Any] | None:
+    """Return exactly one strict match; ambiguous or missing joins return None."""
+    matches = []
+    for prediction in predictions:
+        if not isinstance(prediction, dict):
+            continue
+        prediction_row = {
+            "fixture": {"date": prediction.get("kickoff_local") or prediction.get("kickoff")},
+            "teams": {
+                "home": {"name": prediction.get("home_team")},
+                "away": {"name": prediction.get("away_team")},
+            },
+            "league": {"name": prediction.get("league")},
+            "_veltrix_source": prediction.get("fixture_source") or "PREDICTION",
+        }
+        if fixtures_match(event_row, prediction_row, timezone_name=timezone_name):
+            matches.append(prediction)
+    return matches[0] if len(matches) == 1 else None
 
 
 def reconcile_fixture_rows(
