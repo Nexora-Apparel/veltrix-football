@@ -85,7 +85,10 @@ def test_research_batch_only_queries_low_history_fixtures():
 
     result = research.research_missing_fixtures(fixtures, api_key="test-key", max_fixtures=1, session=session)
 
+    assert result["fixtures_queued"] == 1
+    assert result["fixtures_attempted"] == 1
     assert result["fixtures_searched"] == 1
+    assert result["fixtures_with_sources"] == 0
     assert result["model_eligible_facts"] == 0
     assert result["results"][0]["fixture_identity"]["provider_fixture_id"] == "provider-123"
     assert result["safety"].startswith("No search result")
@@ -118,6 +121,8 @@ def test_report_annotation_records_disabled_research_without_changing_prediction
 
     saved = json.loads(source.read_text(encoding="utf-8"))
     assert result["status"] == "DISABLED_MISSING_CREDENTIAL"
-    assert result["fixtures_searched"] == 1
+    assert result["fixtures_queued"] == 1
+    assert result["fixtures_attempted"] == 0
+    assert result["fixtures_searched"] == 0
     assert saved["predictions"] == original["predictions"]
     assert saved["research_evidence"]["model_eligible_facts"] == 0

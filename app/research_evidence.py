@@ -168,9 +168,22 @@ def research_missing_fixtures(
         if status not in RESEARCHABLE_STATUSES:
             continue
         results.append(search_fixture_evidence(fixture, api_key=api_key, session=session))
+    credential_available = bool(api_key or os.getenv("TAVILY_API_KEY"))
+    attempted = sum(
+        item.get("status") in {"SOURCES_FOUND", "NO_SOURCES_FOUND", "PROVIDER_UNAVAILABLE"}
+        for item in results
+    )
+    searched = sum(
+        item.get("status") in {"SOURCES_FOUND", "NO_SOURCES_FOUND"}
+        for item in results
+    )
     return {
-        "status": "DISABLED_MISSING_CREDENTIAL" if not api_key and not os.getenv("TAVILY_API_KEY") else "RESEARCH_COMPLETE",
-        "fixtures_searched": len(results),
+        "status": "RESEARCH_COMPLETE" if credential_available else "DISABLED_MISSING_CREDENTIAL",
+        "fixtures_queued": len(results),
+        "fixtures_attempted": attempted,
+        "fixtures_searched": searched,
+        "fixtures_with_sources": sum(item.get("status") == "SOURCES_FOUND" for item in results),
+        "source_count": sum(int(item.get("source_count") or 0) for item in results),
         "model_eligible_facts": 0,
         "results": results,
         "safety": "No search result is automatically imported into historical data or prediction features.",
@@ -197,6 +210,8 @@ def main() -> int:
     result = annotate_report_file(args.report, args.output)
     print(json.dumps({
         "status": result.get("status"),
+        "fixtures_queued": result.get("fixtures_queued", 0),
+        "fixtures_attempted": result.get("fixtures_attempted", 0),
         "fixtures_searched": result.get("fixtures_searched", 0),
         "model_eligible_facts": result.get("model_eligible_facts", 0),
     }))
