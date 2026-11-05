@@ -300,6 +300,8 @@ def reconcile_fixture_rows(
     for i, j, reason in ambiguous_pairs:
         ambiguous_indices[i].add(reason)
         ambiguous_indices[j].add(reason)
+        # One visible quarantine row retains every ambiguous source record.
+        union(i, j)
 
     output: list[dict[str, Any]] = []
     merged_groups = 0
@@ -324,10 +326,10 @@ def reconcile_fixture_rows(
         ]
         chosen["_veltrix_provenance"] = provenance
         chosen["_veltrix_source_fixture_ids"] = source_ids
-        chosen["_veltrix_canonical_fixture"] = len(members) > 1
-        if len(members) > 1:
-            merged_groups += 1
         reasons = sorted({reason for idx in members for reason in ambiguous_indices.get(idx, set())})
+        chosen["_veltrix_canonical_fixture"] = len(members) > 1 and not reasons
+        if len(members) > 1 and not reasons:
+            merged_groups += 1
         if reasons:
             chosen["_veltrix_reconciliation_status"] = "AMBIGUOUS"
             chosen["_veltrix_quarantine_reasons"] = reasons
