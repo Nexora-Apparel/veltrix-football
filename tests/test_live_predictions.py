@@ -717,3 +717,20 @@ def test_unmapped_senior_fixture_with_global_history_is_withheld_without_team_ev
     assert "probabilities" not in prediction
     assert "btts_yes" not in prediction
     assert "over_2_5" not in prediction
+
+
+
+def test_invalid_kickoff_fixture_remains_visible_and_never_receives_a_forecast():
+    fixture = _fixture()
+    fixture["fixture"]["id"] = "invalid-kickoff-123"
+    fixture["fixture"]["date"] = "not-a-valid-kickoff"
+    result = predict_fixtures(
+        [fixture], _history(), as_of=date(2026, 10, 23),
+        now=datetime(2026, 10, 23, 12, 0, tzinfo=ZoneInfo("Africa/Lagos")),
+    )
+
+    assert len(result) == 1
+    assert result[0]["fixture_id"] == "invalid-kickoff-123"
+    assert result[0]["status"] == "AMBIGUOUS_FIXTURE_IDENTITY"
+    assert result[0]["betting_recommendation"] is False
+    assert "probabilities" not in result[0]
