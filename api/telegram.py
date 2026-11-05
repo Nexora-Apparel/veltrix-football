@@ -148,9 +148,21 @@ function findValueBets(m){
 function renderValueBet(m,box){
  const card=document.createElement('article');card.className='insightcard';
  const i=document.createElement('div');i.className='insighticon';i.textContent='◇';
- const t=document.createElement('div');t.className='insighttitle';t.textContent='Value Betting · RELEASE LOCKED';
- const v=document.createElement('div');v.className='insightbody insightvalue';v.textContent='No value bets or staking recommendations are released.';
- const d=document.createElement('div');d.className='insightbody';d.textContent='The 1X2, BTTS and Over/Under value markets remain disabled until each market independently passes chronological out-of-sample, prospective settlement, odds-coverage and confidence-bound certification. Displayed prices are reference-only.';
+ const t=document.createElement('div');t.className='insighttitle';t.textContent='Value Bet Verdict';
+ const screen=m&&m.value_bet_screen&&typeof m.value_bet_screen==='object'?m.value_bet_screen:{};
+ const markets=screen.markets&&typeof screen.markets==='object'?screen.markets:{};
+ const candidates=Object.entries(markets).flatMap(([market,result])=>(result&&Array.isArray(result.candidates)?result.candidates:[]).map(candidate=>({market,candidate})));
+ const v=document.createElement('div');v.className='insightbody insightvalue';
+ const d=document.createElement('div');d.className='insightbody';
+ if(candidates.length){
+  const best=candidates.sort((a,b)=>Number(b.candidate.edge_percentage_points||0)-Number(a.candidate.edge_percentage_points||0))[0];
+  const c=best.candidate;
+  v.textContent=best.market+' · '+String(c.selection||'Selection')+' @ '+Number(c.decimal_odds||0).toFixed(2);
+  d.textContent='Estimated edge '+Number(c.edge_percentage_points||0).toFixed(1)+' percentage points. This is a research candidate, not a released betting recommendation.';
+ }else{
+  v.textContent='NO QUALIFYING VALUE BET';
+  d.textContent='Available bookmaker prices do not currently show a sufficiently supported edge.';
+ }
  card.append(i,t,v,d);box.append(card);
 }
 function renderInsights(m,targetId='insights'){
@@ -160,7 +172,7 @@ function renderInsights(m,targetId='insights'){
  rows.push(['◎','BTTS outlook',Number.isFinite(btts)?(btts>=.55?'Higher estimated chance both teams score':btts<=.45?'Model leans toward at least one team not scoring':'No strong BTTS lean'):'BTTS probability unavailable',Number.isFinite(btts)?'Model estimate: '+fmt(btts):'No value supplied.']);
  rows.push(['↗','Goal total',Number.isFinite(over)?(over>=.55?'Model leans Over 2.5':over<=.45?'Model leans Under 2.5':'No strong 2.5-goal lean'):'Totals estimate unavailable',Number.isFinite(over)?'Over 2.5 estimate: '+fmt(over):'No value supplied.']);
  rows.push(['⌁','Expected goals',Number.isFinite(homeX)&&Number.isFinite(awayX)?m.home_team+' '+homeX.toFixed(2)+' · '+m.away_team+' '+awayX.toFixed(2):'Expected-goals data unavailable','Goal estimates from the published model; not live xG statistics.']);
- if(m.prediction_basis)rows.push(['⚑','Prediction basis',m.prediction_basis,'This fallback is explicitly low-confidence and is not eligible for betting recommendations.']);
+ if(m.prediction_basis)rows.push(['⚑','Why this verdict',m.prediction_basis,m.evidence_grade==='VERY_LOW'?'Very limited verified match history is available.':'Based on the verified results and scoring rates available before kick-off.']);
  for(const [icon,title,value,desc] of rows){const card=document.createElement('article');card.className='insightcard';const a=document.createElement('div');a.className='insighticon';a.textContent=icon;const b=document.createElement('div');b.className='insighttitle';b.textContent=title;const c=document.createElement('div');c.className='insightbody insightvalue';c.textContent=value;const d=document.createElement('div');d.className='insightbody';d.textContent=desc;card.append(a,b,c,d);box.append(card)}
  renderValueBet(m,box);
 }
