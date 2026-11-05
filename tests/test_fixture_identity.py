@@ -309,3 +309,43 @@ def test_u19_competition_supplies_squad_identity_when_team_names_omit_suffix():
     assert {item["fixture_id"] for item in canonical[0]["_veltrix_source_fixture_ids"]} == {
         "youth-a", "youth-b",
     }
+
+
+def test_observed_u19_name_variants_are_quarantined_until_team_ids_verify_alias():
+    rows = [
+        fixture("sheriff-short", "InferSports", "Sheriff", "Farul",
+                "lg-youth", "UEFA U19", "2026-11-04T17:00:00Z"),
+        fixture("sheriff-full", "InferSports", "Sheriff Tiraspol U19", "Farul Constanta U19",
+                "lg-youth", "UEFA U19", "2026-11-04T17:00:00Z"),
+    ]
+
+    canonical, meta = reconcile_fixture_rows(rows)
+
+    assert len(canonical) == 1
+    assert meta["confirmed_duplicate_groups"] == 0
+    assert meta["quarantined_rows"] == 2
+    assert canonical[0]["_veltrix_reconciliation_status"] == "AMBIGUOUS"
+    assert "team_alias_not_verified" in canonical[0]["_veltrix_quarantine_reasons"]
+    assert {item["fixture_id"] for item in canonical[0]["_veltrix_source_fixture_ids"]} == {
+        "sheriff-short", "sheriff-full",
+    }
+
+
+def test_observed_reserve_name_variants_are_quarantined_not_auto_aliased():
+    rows = [
+        fixture("reserve-short", "InferSports", "Almirante", "DD.Belgrano",
+                "lg-reserve", "Argentina Reserve League", "2026-11-04T17:00:00Z"),
+        fixture("reserve-full", "InferSports", "Almirante Brown(R)", "DD.Belgrano(R)",
+                "lg-reserve", "Argentina Reserve League", "2026-11-04T17:00:00Z"),
+    ]
+
+    canonical, meta = reconcile_fixture_rows(rows)
+
+    assert len(canonical) == 1
+    assert meta["confirmed_duplicate_groups"] == 0
+    assert meta["quarantined_rows"] == 2
+    assert canonical[0]["_veltrix_reconciliation_status"] == "AMBIGUOUS"
+    assert "team_alias_not_verified" in canonical[0]["_veltrix_quarantine_reasons"]
+    assert {item["fixture_id"] for item in canonical[0]["_veltrix_source_fixture_ids"]} == {
+        "reserve-short", "reserve-full",
+    }
