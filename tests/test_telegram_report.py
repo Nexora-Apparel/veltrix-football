@@ -58,7 +58,7 @@ def test_telegram_report_is_predictions_only_and_keeps_new_update_alert():
     assert "PAPER TRACKING" not in message
     assert "DATA NOTICE" not in message
     assert "MULTI-SOURCE REFERENCE PRICES" not in message
-    assert "https://5dollarfootballapi.com" in message
+    assert "Football data by 5DollarFootballAPI" not in message
 
 
 def test_predictions_alert_is_short_when_no_usable_forecasts():
@@ -119,7 +119,7 @@ def test_report_handles_no_usable_predictions_without_long_notes():
         {"status": "UNSUPPORTED_COMPETITION"},
     ]
     message = format_report(report)
-    assert "Fixtures analysed: 0" in message
+    assert "History Gap" not in message
     assert "No probabilities or betting signal published for this fixture." in message
 
 
@@ -136,7 +136,7 @@ def test_report_splits_without_dropping_fixtures_or_exceeding_limit():
     messages = format_report_messages(report)
     assert len(messages) > 1
     assert all(len(message) <= MAX_MESSAGE_LENGTH for message in messages)
-    assert all("Football data by 5DollarFootballAPI" in message for message in messages)
+    assert all("Football data by 5DollarFootballAPI" not in message for message in messages)
     combined = "\n".join(messages)
     for index in range(30):
         assert f"Home Team {index:02d} vs Away Team {index:02d}" in combined
@@ -394,7 +394,6 @@ def test_telegram_retains_fixture_with_unverified_kickoff():
         "reason": "Kickoff timestamp missing",
     }]
     message = format_report(report)
-    assert "Fixtures analysed: 0" in message
     assert "Retained FC vs Visible United" in message
     assert "Fixture retained; forecast withheld because its kickoff time could not be verified." in message
 
@@ -433,7 +432,6 @@ def test_telegram_withholds_legacy_low_data_forecast_probabilities():
     report["predictions"][0]["prediction_basis"] = "licensed global goal-rate prior only"
     report["predictions"][0]["betting_recommendation"] = False
     message = format_report(report)
-    assert "Fixtures analysed: 0" in message
     assert "Alpha FC vs Beta FC" in message
     assert "FORECAST STATUS: INSUFFICIENT_HISTORY" in message
     assert "Historical evidence is not yet sufficient for a reliable forecast." in message
