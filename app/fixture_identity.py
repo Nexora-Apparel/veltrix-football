@@ -23,9 +23,16 @@ TEAM_ALIASES: dict[str, str] = {}
 # Observed provider abbreviations without a verified team-ID crosswalk.
 # They may trigger quarantine but are deliberately NOT merge aliases.
 UNVERIFIED_TEAM_ALIAS_CANDIDATES = {
+    # Observed on the 2026-11-04 multi-provider report. These are quarantine
+    # candidates only; no alias is used to merge without a verified crosswalk.
     "atleticopr": "atleticoparanaense",
     "vascodg": "vascodagama",
     "gremiopa": "gremio",
+    "sheriff": "sherifftiraspol",
+    "farul": "farulconstanta",
+    "almirante": "almirantebrown",
+    "agropecuario": "agropecuarioargentino",
+    "cafmidland": "ferrocarrilmidland",
 }
 COMPETITION_ALIASES = {
     "braa": "brazilianseriea",
