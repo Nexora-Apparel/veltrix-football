@@ -731,8 +731,7 @@ def predict_fixtures(
                     weight * conceded + (1 - weight) * conceded_prior,
                 )
 
-            # Home-team home performance and away-team away performance are
-            # estimated separately, with venue-appropriate league priors.
+            # Both teams are evaluated from the same all-venue history and neutral league prior.
             neutral_baseline = (home_baseline + away_baseline) / 2.0
             home_scored, home_conceded = shrunk_team_rates(home_hist, neutral_baseline, neutral_baseline)
             away_scored, away_conceded = shrunk_team_rates(away_hist, neutral_baseline, neutral_baseline)
@@ -742,7 +741,7 @@ def predict_fixtures(
             away_xg = min(5.0, max(0.05, away_xg))
             probabilities = match_probabilities(home_xg, away_xg)
 
-            # Research-only alternative: exponentially weighted recent venue form
+            # Research-only alternative: exponentially weighted all-venue team form
             # plus the Dixon-Coles low-score correction. Keep it separate from the
             # production primary until walk-forward metrics justify promotion.
             def weighted_team_rates(history: list[tuple[int, int, str]], scored_prior: float, conceded_prior: float) -> tuple[float, float]:
