@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "product": "VELTRIX FOOTBALL AI",
-  "generated_at_utc": "2026-11-05T12:05:45.570800+00:00",
+  "generated_at_utc": "2026-11-05T17:40:19.660082+00:00",
   "status": "RESEARCH_DIAGNOSTIC_ONLY",
   "dataset": {
     "input_file": "open_historical_matches.csv",
@@ -135,29 +135,29 @@
     "full_sample_models": {
       "poisson": {
         "matches": 238389,
-        "result_accuracy": 0.4673495840831582,
-        "brier_score": 0.6299739061411241,
-        "log_loss": 1.04707469329979
+        "result_accuracy": 0.44580077100872945,
+        "brier_score": 0.643070668543017,
+        "log_loss": 1.065853136665347
       },
       "elo": {
         "matches": 238389,
-        "result_accuracy": 0.48358355461032176,
-        "brier_score": 0.6179955635267618,
-        "log_loss": 1.0293549352762967
+        "result_accuracy": 0.46069239771969345,
+        "brier_score": 0.6293385148948614,
+        "log_loss": 1.0458078564271858
       }
     },
     "market_comparison_same_fixtures": {
       "poisson": {
         "matches": 235464,
-        "result_accuracy": 0.46732409200557196,
-        "brier_score": 0.6299750440905212,
-        "log_loss": 1.0470704710468557
+        "result_accuracy": 0.446029966364285,
+        "brier_score": 0.6430030067701552,
+        "log_loss": 1.0657623523092667
       },
       "elo": {
         "matches": 235464,
-        "result_accuracy": 0.48360258893079194,
-        "brier_score": 0.6178905202775566,
-        "log_loss": 1.029201198090128
+        "result_accuracy": 0.46109808718105527,
+        "brier_score": 0.6291756888619081,
+        "log_loss": 1.0455786349657088
       },
       "market": {
         "matches": 235464,
@@ -176,15 +176,15 @@
       "folds_evaluated": 4,
       "raw": {
         "matches": 32541,
-        "brier_score": 0.6425383409991549,
-        "log_loss": 1.0657855131758238,
-        "accuracy": 0.45133831166835686
+        "brier_score": 0.6427013772954088,
+        "log_loss": 1.066206146637452,
+        "accuracy": 0.45001690175470943
       },
       "calibrated": {
         "matches": 32541,
-        "brier_score": 0.636100575470583,
-        "log_loss": 1.0554010965744827,
-        "accuracy": 0.45133831166835686
+        "brier_score": 0.636563792810927,
+        "log_loss": 1.0562322365254677,
+        "accuracy": 0.45029347592268215
       },
       "market_on_same_odds_covered_fixtures": {
         "matches": 32503,
@@ -204,15 +204,15 @@
       "folds_evaluated": 4,
       "raw": {
         "matches": 32161,
-        "brier_score": 0.6147778341500751,
-        "log_loss": 1.024825510412327,
-        "accuracy": 0.48826218090233514
+        "brier_score": 0.624008155433103,
+        "log_loss": 1.038241439471228,
+        "accuracy": 0.47069431920649235
       },
       "calibrated": {
         "matches": 32161,
-        "brier_score": 0.6139882361097818,
-        "log_loss": 1.024040714895058,
-        "accuracy": 0.48826218090233514
+        "brier_score": 0.623729330085676,
+        "log_loss": 1.0381761566321042,
+        "accuracy": 0.47069431920649235
       },
       "market_on_same_odds_covered_fixtures": {
         "matches": 32125,
@@ -222,7 +222,7 @@
       },
       "beats_market_on_same_fixtures": false,
       "market_anchor_blend_beats_market": false,
-      "calibration_diagnostic_pass": true,
+      "calibration_diagnostic_pass": false,
       "diagnostic_only": true,
       "applied_to_production": false
     },
@@ -232,15 +232,15 @@
       "folds_evaluated": 4,
       "raw": {
         "matches": 32541,
-        "brier_score": 0.6436364972125078,
-        "log_loss": 1.0680048511289548,
-        "accuracy": 0.45026274545957407
+        "brier_score": 0.6479468639428111,
+        "log_loss": 1.0748687696657198,
+        "accuracy": 0.4426108601456624
       },
       "calibrated": {
         "matches": 32541,
-        "brier_score": 0.6371594248202624,
-        "log_loss": 1.0570326896347442,
-        "accuracy": 0.45026274545957407
+        "brier_score": 0.6396800658454385,
+        "log_loss": 1.0607232822099966,
+        "accuracy": 0.4426108601456624
       },
       "market_on_same_odds_covered_fixtures": {
         "matches": 32503,
@@ -260,13 +260,13 @@
       "folds_evaluated": 4,
       "raw": {
         "matches": 32541,
-        "brier_score": 0.6425383409991549,
-        "log_loss": 1.0657855131758238,
-        "accuracy": 0.45133831166835686,
+        "brier_score": 0.6427013772954088,
+        "log_loss": 1.066206146637452,
+        "accuracy": 0.45001690175470943,
         "predicted_class_counts": {
-          "H": 21662,
-          "D": 400,
-          "A": 10479
+          "H": 15745,
+          "D": 465,
+          "A": 16331
         },
         "actual_class_counts": {
           "H": 14240,
@@ -276,33 +276,33 @@
         "class_precision_recall": {
           "H": {
             "actual_share": 0.43760179465904553,
-            "predicted_share": 0.6656832918472081,
-            "precision": 0.48471978580001845,
-            "recall": 0.7373595505617978
+            "predicted_share": 0.48385114163670445,
+            "precision": 0.5289298189901556,
+            "recall": 0.5848314606741573
           },
           "D": {
             "actual_share": 0.2627454595740758,
-            "predicted_share": 0.012292185243231616,
-            "precision": 0.235,
-            "recall": 0.010994152046783626
+            "predicted_share": 0.014289665345256754,
+            "precision": 0.2903225806451613,
+            "recall": 0.015789473684210527
           },
           "A": {
             "actual_share": 0.2996527457668787,
-            "predicted_share": 0.32202452290956024,
-            "precision": 0.39059070521996375,
-            "recall": 0.4197518203261204
+            "predicted_share": 0.5018591930180388,
+            "precision": 0.37848264037719676,
+            "recall": 0.633883704235463
           }
         }
       },
       "calibrated": {
         "matches": 32541,
-        "brier_score": 0.6418622808812524,
-        "log_loss": 1.0651094708143451,
-        "accuracy": 0.4516763467625457,
+        "brier_score": 0.6313688829998939,
+        "log_loss": 1.0499364458016978,
+        "accuracy": 0.466181125349559,
         "predicted_class_counts": {
-          "H": 21781,
-          "D": 695,
-          "A": 10065
+          "H": 20768,
+          "D": 681,
+          "A": 11092
         },
         "actual_class_counts": {
           "H": 14240,
@@ -312,21 +312,21 @@
         "class_precision_recall": {
           "H": {
             "actual_share": 0.43760179465904553,
-            "predicted_share": 0.6693402169570696,
-            "precision": 0.48478031311693676,
-            "recall": 0.7415028089887641
+            "predicted_share": 0.6382102578285854,
+            "precision": 0.50231124807396,
+            "recall": 0.7325842696629213
           },
           "D": {
             "actual_share": 0.2627454595740758,
-            "predicted_share": 0.021357671860114932,
-            "precision": 0.25467625899280577,
-            "recall": 0.020701754385964912
+            "predicted_share": 0.020927445376601825,
+            "precision": 0.28928046989721,
+            "recall": 0.02304093567251462
           },
           "A": {
             "actual_share": 0.2996527457668787,
-            "predicted_share": 0.30930211118281553,
-            "precision": 0.3936413313462494,
-            "recall": 0.4063173007896626
+            "predicted_share": 0.3408622967948127,
+            "precision": 0.4093941579516769,
+            "recall": 0.46569582606912113
           }
         }
       },
@@ -378,13 +378,13 @@
       "folds_evaluated": 4,
       "raw": {
         "matches": 32161,
-        "brier_score": 0.6147778341500751,
-        "log_loss": 1.024825510412327,
-        "accuracy": 0.48826218090233514,
+        "brier_score": 0.624008155433103,
+        "log_loss": 1.038241439471228,
+        "accuracy": 0.47069431920649235,
         "predicted_class_counts": {
-          "H": 22287,
+          "H": 15892,
           "D": 0,
-          "A": 9874
+          "A": 16269
         },
         "actual_class_counts": {
           "H": 14069,
@@ -394,9 +394,9 @@
         "class_precision_recall": {
           "H": {
             "actual_share": 0.4374553030067473,
-            "predicted_share": 0.69298218338982,
-            "precision": 0.5060349082424732,
-            "recall": 0.8016205842632739
+            "predicted_share": 0.49413886384129846,
+            "precision": 0.5490812987666751,
+            "recall": 0.6202288719880589
           },
           "D": {
             "actual_share": 0.26283386710612233,
@@ -406,21 +406,21 @@
           },
           "A": {
             "actual_share": 0.2997108298871304,
-            "predicted_share": 0.30701781661018,
-            "precision": 0.4481466477617987,
-            "recall": 0.4590725178960473
+            "predicted_share": 0.5058611361587015,
+            "precision": 0.3941237937181142,
+            "recall": 0.6652142338416849
           }
         }
       },
       "calibrated": {
         "matches": 32161,
-        "brier_score": 0.6144373060254484,
-        "log_loss": 1.024369570320948,
-        "accuracy": 0.4890084263549019,
+        "brier_score": 0.614430105273137,
+        "log_loss": 1.0244716085182788,
+        "accuracy": 0.4877957774944809,
         "predicted_class_counts": {
-          "H": 22955,
+          "H": 22330,
           "D": 0,
-          "A": 9206
+          "A": 9831
         },
         "actual_class_counts": {
           "H": 14069,
@@ -430,9 +430,9 @@
         "class_precision_recall": {
           "H": {
             "actual_share": 0.4374553030067473,
-            "predicted_share": 0.7137526818195952,
-            "precision": 0.5022870834240906,
-            "recall": 0.8195323050678798
+            "predicted_share": 0.6943192064923355,
+            "precision": 0.5056874160322437,
+            "recall": 0.8026156798635298
           },
           "D": {
             "actual_share": 0.26283386710612233,
@@ -442,9 +442,9 @@
           },
           "A": {
             "actual_share": 0.2997108298871304,
-            "predicted_share": 0.28624731818040483,
-            "precision": 0.45589832717792744,
-            "recall": 0.4354186118892001
+            "predicted_share": 0.3056807935076646,
+            "precision": 0.4471569524972027,
+            "recall": 0.4560639070442992
           }
         }
       },
@@ -498,88 +498,88 @@
     "matches": 11612,
     "metrics": {
       "matches": 11612,
-      "result_accuracy": 0.44962108163968306,
-      "brier_score": 0.6428515826484734,
-      "log_loss": 1.0663583298688504
+      "result_accuracy": 0.45401308990699274,
+      "brier_score": 0.6393776412539675,
+      "log_loss": 1.0609288068709284
     },
     "dixon_coles_alternative": {
       "matches": 11612,
-      "result_accuracy": 0.45237685153289703,
-      "brier_score": 0.6441138935604088,
-      "log_loss": 1.0687434185128382
+      "result_accuracy": 0.44867378573889083,
+      "brier_score": 0.6451463505367788,
+      "log_loss": 1.0701894732553159
     },
     "dixon_coles_goal_markets": {
       "btts_yes": {
         "matches": 11612,
-        "brier_score": 0.2568894539045951,
-        "log_loss": 0.7081744199119083,
-        "accuracy": 0.5188598002066828,
+        "brier_score": 0.25729165594100656,
+        "log_loss": 0.7092542575171682,
+        "accuracy": 0.5194626248708233,
         "observed_frequency": 0.5409920771615571,
-        "mean_predicted_probability": 0.509720073853805
+        "mean_predicted_probability": 0.510842618579778
       },
       "btts_no": {
         "matches": 11612,
-        "brier_score": 0.2568894539045951,
-        "log_loss": 0.7081744199119083,
-        "accuracy": 0.5188598002066828,
+        "brier_score": 0.25729165594100656,
+        "log_loss": 0.7092542575171682,
+        "accuracy": 0.5194626248708233,
         "observed_frequency": 0.459007922838443,
-        "mean_predicted_probability": 0.490279926146195
+        "mean_predicted_probability": 0.48915738142022197
       },
       "over_1_5": {
         "matches": 11612,
-        "brier_score": 0.19073540900953725,
-        "log_loss": 0.5714621052851653,
-        "accuracy": 0.7450051670685498,
+        "brier_score": 0.19016855114255987,
+        "log_loss": 0.5701930373955145,
+        "accuracy": 0.7455218739235274,
         "observed_frequency": 0.75792283844299,
-        "mean_predicted_probability": 0.735520879065883
+        "mean_predicted_probability": 0.7372275959633414
       },
       "under_1_5": {
         "matches": 11612,
-        "brier_score": 0.19073540900953725,
-        "log_loss": 0.5714621052851653,
-        "accuracy": 0.7450051670685498,
+        "brier_score": 0.19016855114255987,
+        "log_loss": 0.5701930373955145,
+        "accuracy": 0.7455218739235274,
         "observed_frequency": 0.24207716155700998,
-        "mean_predicted_probability": 0.2644791209341169
+        "mean_predicted_probability": 0.2627724040366585
       },
       "over_2_5": {
         "matches": 11612,
-        "brier_score": 0.2618991048384783,
-        "log_loss": 0.7208474932983553,
-        "accuracy": 0.5230795728556665,
+        "brier_score": 0.2608532041602213,
+        "log_loss": 0.7191584768039886,
+        "accuracy": 0.526438167413021,
         "observed_frequency": 0.5204960385807785,
-        "mean_predicted_probability": 0.4951002317845223
+        "mean_predicted_probability": 0.49832273175976727
       },
       "under_2_5": {
         "matches": 11612,
-        "brier_score": 0.2618991048384783,
-        "log_loss": 0.7208474932983553,
-        "accuracy": 0.5230795728556665,
+        "brier_score": 0.2608532041602213,
+        "log_loss": 0.7191584768039886,
+        "accuracy": 0.526438167413021,
         "observed_frequency": 0.47950396141922147,
-        "mean_predicted_probability": 0.5048997682154777
+        "mean_predicted_probability": 0.5016772682402327
       },
       "over_3_5": {
         "matches": 11612,
-        "brier_score": 0.21347085985106742,
-        "log_loss": 0.6241340153802498,
-        "accuracy": 0.691784361005856,
+        "brier_score": 0.2142272580587314,
+        "log_loss": 0.6263204987664913,
+        "accuracy": 0.689286944540131,
         "observed_frequency": 0.28909748535997243,
-        "mean_predicted_probability": 0.2910054645327237
+        "mean_predicted_probability": 0.2947994829344247
       },
       "under_3_5": {
         "matches": 11612,
-        "brier_score": 0.21347085985106742,
-        "log_loss": 0.6241340153802498,
-        "accuracy": 0.691784361005856,
+        "brier_score": 0.2142272580587314,
+        "log_loss": 0.6263204987664913,
+        "accuracy": 0.689286944540131,
         "observed_frequency": 0.7109025146400275,
-        "mean_predicted_probability": 0.7089945354672764
+        "mean_predicted_probability": 0.7052005170655753
       }
     },
     "dixon_coles_market_comparison": {
       "model": {
         "matches": 11602,
-        "result_accuracy": 0.4524219962075504,
-        "brier_score": 0.6441862713845319,
-        "log_loss": 1.0688528409881266
+        "result_accuracy": 0.4485433545940355,
+        "brier_score": 0.6451799533800908,
+        "log_loss": 1.0702479555358941
       },
       "market": {
         "matches": 11602,
@@ -590,9 +590,9 @@
     },
     "elo_alternative": {
       "matches": 11458,
-      "result_accuracy": 0.4901378949205795,
-      "brier_score": 0.6136869189301571,
-      "log_loss": 1.0231126763959049
+      "result_accuracy": 0.47407924594170014,
+      "brier_score": 0.6212143946506838,
+      "log_loss": 1.0341168667771063
     }
   },
   "alternative_models": {
@@ -601,74 +601,74 @@
       "rho": -0.05,
       "metrics": {
         "matches": 67549,
-        "result_accuracy": 0.4482227716176405,
-        "brier_score": 0.644973613584374,
-        "log_loss": 1.069980557891417
+        "result_accuracy": 0.44539519459947596,
+        "brier_score": 0.6472657818654598,
+        "log_loss": 1.0738973219650054
       },
       "goal_markets_metrics": {
         "btts_yes": {
           "matches": 67549,
-          "brier_score": 0.257318969328556,
-          "log_loss": 0.709422410719052,
-          "accuracy": 0.5207330974551807,
+          "brier_score": 0.2574608802697117,
+          "log_loss": 0.709966654848043,
+          "accuracy": 0.524685783653348,
           "observed_frequency": 0.5255592236746658,
-          "mean_predicted_probability": 0.5018182405143449
+          "mean_predicted_probability": 0.5019346191815495
         },
         "btts_no": {
           "matches": 67549,
-          "brier_score": 0.257318969328556,
-          "log_loss": 0.709422410719052,
-          "accuracy": 0.5207330974551807,
+          "brier_score": 0.2574608802697117,
+          "log_loss": 0.709966654848043,
+          "accuracy": 0.524685783653348,
           "observed_frequency": 0.4744407763253342,
-          "mean_predicted_probability": 0.49818175948565513
+          "mean_predicted_probability": 0.49806538081845053
         },
         "over_1_5": {
           "matches": 67549,
-          "brier_score": 0.19673116959202583,
-          "log_loss": 0.5858010140445654,
-          "accuracy": 0.7306103717301514,
+          "brier_score": 0.1966601635688828,
+          "log_loss": 0.5855970239838675,
+          "accuracy": 0.7283305452338302,
           "observed_frequency": 0.7454440480243971,
-          "mean_predicted_probability": 0.7280568890437087
+          "mean_predicted_probability": 0.7277823330282657
         },
         "under_1_5": {
           "matches": 67549,
-          "brier_score": 0.19673116959202583,
-          "log_loss": 0.5858010140445654,
-          "accuracy": 0.7306103717301514,
+          "brier_score": 0.1966601635688828,
+          "log_loss": 0.5855970239838675,
+          "accuracy": 0.7283305452338302,
           "observed_frequency": 0.2545559519756029,
-          "mean_predicted_probability": 0.2719431109562913
+          "mean_predicted_probability": 0.27221766697173444
         },
         "over_2_5": {
           "matches": 67549,
-          "brier_score": 0.2603101380130118,
-          "log_loss": 0.7183654397532931,
-          "accuracy": 0.5335830286162637,
+          "brier_score": 0.26008165367106945,
+          "log_loss": 0.7187370195905896,
+          "accuracy": 0.5398155413107522,
           "observed_frequency": 0.5032642970288235,
-          "mean_predicted_probability": 0.48717877919547553
+          "mean_predicted_probability": 0.48914009730503033
         },
         "under_2_5": {
           "matches": 67549,
-          "brier_score": 0.2603101380130118,
-          "log_loss": 0.7183654397532931,
-          "accuracy": 0.5335830286162637,
+          "brier_score": 0.26008165367106945,
+          "log_loss": 0.7187370195905896,
+          "accuracy": 0.5398155413107522,
           "observed_frequency": 0.4967357029711765,
-          "mean_predicted_probability": 0.5128212208045245
+          "mean_predicted_probability": 0.5108599026949697
         },
         "over_3_5": {
           "matches": 67549,
-          "brier_score": 0.2104618026741042,
-          "log_loss": 0.6175777440493988,
-          "accuracy": 0.6959688522405957,
+          "brier_score": 0.2107372267623448,
+          "log_loss": 0.6184616346772481,
+          "accuracy": 0.6931560792905891,
           "observed_frequency": 0.2822839716354054,
-          "mean_predicted_probability": 0.28522608724988296
+          "mean_predicted_probability": 0.288875247764723
         },
         "under_3_5": {
           "matches": 67549,
-          "brier_score": 0.2104618026741042,
-          "log_loss": 0.6175777440493988,
-          "accuracy": 0.6959688522405957,
+          "brier_score": 0.2107372267623448,
+          "log_loss": 0.6184616346772481,
+          "accuracy": 0.6931560792905891,
           "observed_frequency": 0.7177160283645946,
-          "mean_predicted_probability": 0.7147739127501171
+          "mean_predicted_probability": 0.711124752235277
         }
       },
       "same_match_goal_market_comparison": {
@@ -680,72 +680,72 @@
             "matches": 67549,
             "baseline_model": "live_goal_markets",
             "dixon_coles_model": "live_dc_goal_markets",
-            "brier_delta_dixon_coles_minus_baseline": 5.444967333545492e-05,
-            "log_loss_delta_dixon_coles_minus_baseline": 0.00017600016162000465,
-            "accuracy_delta_dixon_coles_minus_baseline": 0.0007994196805282128,
+            "brier_delta_dixon_coles_minus_baseline": 0.0016068661922284955,
+            "log_loss_delta_dixon_coles_minus_baseline": 0.003619137737809197,
+            "accuracy_delta_dixon_coles_minus_baseline": -0.0023390427689529147,
             "dixon_coles_beats_baseline_on_brier_and_log_loss": false
           },
           "btts_yes": {
             "matches": 67549,
             "baseline_model": "live_goal_markets",
             "dixon_coles_model": "live_dc_goal_markets",
-            "brier_delta_dixon_coles_minus_baseline": 5.444967333545492e-05,
-            "log_loss_delta_dixon_coles_minus_baseline": 0.00017600016162000465,
-            "accuracy_delta_dixon_coles_minus_baseline": 0.0007994196805282128,
+            "brier_delta_dixon_coles_minus_baseline": 0.0016068661922284955,
+            "log_loss_delta_dixon_coles_minus_baseline": 0.003619137737809197,
+            "accuracy_delta_dixon_coles_minus_baseline": -0.0023390427689529147,
             "dixon_coles_beats_baseline_on_brier_and_log_loss": false
           },
           "over_1_5": {
             "matches": 67549,
             "baseline_model": "live_goal_markets",
             "dixon_coles_model": "live_dc_goal_markets",
-            "brier_delta_dixon_coles_minus_baseline": 0.0002639708117695705,
-            "log_loss_delta_dixon_coles_minus_baseline": 0.0013559190713454683,
-            "accuracy_delta_dixon_coles_minus_baseline": -0.0001628447497372676,
+            "brier_delta_dixon_coles_minus_baseline": 0.0017607630681743536,
+            "log_loss_delta_dixon_coles_minus_baseline": 0.0052789228062029014,
+            "accuracy_delta_dixon_coles_minus_baseline": -0.0030348339723755835,
             "dixon_coles_beats_baseline_on_brier_and_log_loss": false
           },
           "over_2_5": {
             "matches": 67549,
             "baseline_model": "live_goal_markets",
             "dixon_coles_model": "live_dc_goal_markets",
-            "brier_delta_dixon_coles_minus_baseline": 0.0005810181406243897,
-            "log_loss_delta_dixon_coles_minus_baseline": 0.0014662867230798016,
-            "accuracy_delta_dixon_coles_minus_baseline": -0.00028127729500071474,
+            "brier_delta_dixon_coles_minus_baseline": 0.0029150941739270464,
+            "log_loss_delta_dixon_coles_minus_baseline": 0.007185329551731345,
+            "accuracy_delta_dixon_coles_minus_baseline": -0.0057143703089609366,
             "dixon_coles_beats_baseline_on_brier_and_log_loss": false
           },
           "over_3_5": {
             "matches": 67549,
             "baseline_model": "live_goal_markets",
             "dixon_coles_model": "live_dc_goal_markets",
-            "brier_delta_dixon_coles_minus_baseline": 0.00047766058221157537,
-            "log_loss_delta_dixon_coles_minus_baseline": 0.0014816645659136984,
-            "accuracy_delta_dixon_coles_minus_baseline": -0.001954136996846767,
+            "brier_delta_dixon_coles_minus_baseline": 0.002484592081404974,
+            "log_loss_delta_dixon_coles_minus_baseline": 0.007017325505185967,
+            "accuracy_delta_dixon_coles_minus_baseline": -0.004011902470798967,
             "dixon_coles_beats_baseline_on_brier_and_log_loss": false
           },
           "under_1_5": {
             "matches": 67549,
             "baseline_model": "live_goal_markets",
             "dixon_coles_model": "live_dc_goal_markets",
-            "brier_delta_dixon_coles_minus_baseline": 0.0002639708117695705,
-            "log_loss_delta_dixon_coles_minus_baseline": 0.0013559190713454683,
-            "accuracy_delta_dixon_coles_minus_baseline": -0.0001628447497372676,
+            "brier_delta_dixon_coles_minus_baseline": 0.0017607630681743536,
+            "log_loss_delta_dixon_coles_minus_baseline": 0.0052789228062029014,
+            "accuracy_delta_dixon_coles_minus_baseline": -0.0030348339723755835,
             "dixon_coles_beats_baseline_on_brier_and_log_loss": false
           },
           "under_2_5": {
             "matches": 67549,
             "baseline_model": "live_goal_markets",
             "dixon_coles_model": "live_dc_goal_markets",
-            "brier_delta_dixon_coles_minus_baseline": 0.0005810181406243897,
-            "log_loss_delta_dixon_coles_minus_baseline": 0.0014662867230798016,
-            "accuracy_delta_dixon_coles_minus_baseline": -0.00028127729500071474,
+            "brier_delta_dixon_coles_minus_baseline": 0.0029150941739270464,
+            "log_loss_delta_dixon_coles_minus_baseline": 0.007185329551731345,
+            "accuracy_delta_dixon_coles_minus_baseline": -0.0057143703089609366,
             "dixon_coles_beats_baseline_on_brier_and_log_loss": false
           },
           "under_3_5": {
             "matches": 67549,
             "baseline_model": "live_goal_markets",
             "dixon_coles_model": "live_dc_goal_markets",
-            "brier_delta_dixon_coles_minus_baseline": 0.00047766058221157537,
-            "log_loss_delta_dixon_coles_minus_baseline": 0.0014816645659136984,
-            "accuracy_delta_dixon_coles_minus_baseline": -0.001954136996846767,
+            "brier_delta_dixon_coles_minus_baseline": 0.002484592081404974,
+            "log_loss_delta_dixon_coles_minus_baseline": 0.007017325505185967,
+            "accuracy_delta_dixon_coles_minus_baseline": -0.004011902470798967,
             "dixon_coles_beats_baseline_on_brier_and_log_loss": false
           }
         }
@@ -753,9 +753,9 @@
       "historical_odds_same_fixture_comparison": {
         "model": {
           "matches": 67491,
-          "result_accuracy": 0.4479560237661318,
-          "brier_score": 0.6452208019633435,
-          "log_loss": 1.0703367476523842
+          "result_accuracy": 0.44511120001185345,
+          "brier_score": 0.6475373518114871,
+          "log_loss": 1.074296930495892
         },
         "market": {
           "matches": 67491,
@@ -772,9 +772,9 @@
       "matches": 66625,
       "metrics": {
         "matches": 66625,
-        "result_accuracy": 0.482281425891182,
-        "brier_score": 0.6190769901308671,
-        "log_loss": 1.0311167130362813
+        "result_accuracy": 0.4680675422138837,
+        "brier_score": 0.6270114848608285,
+        "log_loss": 1.0426295617356556
       },
       "production_applied": false
     }
@@ -784,91 +784,91 @@
       "status": "CHRONOLOGICAL_CLASS_BALANCE_DIAGNOSTIC",
       "matches": 67549,
       "home_bias_flag": "HOME_ARGMAX_SELECTION_OVERFREQUENT",
-      "probability_mass_status": "WITHIN_5PP_OF_OBSERVED_CLASS_FREQUENCY",
-      "maximum_probability_mass_gap_percentage_points": 1.3298510123239793,
+      "probability_mass_status": "PROBABILITY_MASS_MISALIGNMENT",
+      "maximum_probability_mass_gap_percentage_points": 7.352232808315145,
       "note": "predicted_share is the frequency with which a class is the single argmax, not the mean probability assigned to that outcome. Mean predicted probability and its gap from observed frequency are reported separately.",
       "classes": {
         "H": {
           "actual_matches": 29185,
-          "predicted_matches": 44247,
+          "predicted_matches": 32668,
           "actual_share": 0.4320567291891812,
-          "predicted_share": 0.6550356037839198,
-          "prediction_share_gap_percentage_points": 22.29788745947386,
-          "precision": 0.48150157072795896,
-          "recall": 0.7299982867911599,
-          "mean_predicted_probability": 0.434877598001712,
+          "predicted_share": 0.4836192985832507,
+          "prediction_share_gap_percentage_points": 5.15625693940695,
+          "precision": 0.5239684094526754,
+          "recall": 0.586499914339558,
+          "mean_predicted_probability": 0.37171690025621745,
           "observed_frequency": 0.4320567291891812,
-          "probability_minus_observed_percentage_points": 0.2820868812530797
+          "probability_minus_observed_percentage_points": -6.033982893296375
         },
         "D": {
           "actual_matches": 17760,
-          "predicted_matches": 983,
+          "predicted_matches": 1160,
           "actual_share": 0.26292025048483325,
-          "predicted_share": 0.014552398999244992,
-          "prediction_share_gap_percentage_points": -24.836785148558825,
-          "precision": 0.28687690742624616,
-          "recall": 0.01587837837837838,
-          "mean_predicted_probability": 0.24962174036159346,
+          "predicted_share": 0.017172719063198567,
+          "prediction_share_gap_percentage_points": -24.57475314216347,
+          "precision": 0.30344827586206896,
+          "recall": 0.01981981981981982,
+          "mean_predicted_probability": 0.24973775133464376,
           "observed_frequency": 0.26292025048483325,
-          "probability_minus_observed_percentage_points": -1.3298510123239793
+          "probability_minus_observed_percentage_points": -1.3182499150189486
         },
         "A": {
           "actual_matches": 20604,
-          "predicted_matches": 22319,
+          "predicted_matches": 33721,
           "actual_share": 0.3050230203259856,
-          "predicted_share": 0.3304119972168352,
-          "prediction_share_gap_percentage_points": 2.5388976890849566,
-          "precision": 0.395223800349478,
-          "recall": 0.42812075325179577,
-          "mean_predicted_probability": 0.3155006616366929,
+          "predicted_share": 0.49920798235355074,
+          "prediction_share_gap_percentage_points": 19.418496202756515,
+          "precision": 0.3851012722042644,
+          "recall": 0.630265967773248,
+          "mean_predicted_probability": 0.37854534840913706,
           "observed_frequency": 0.3050230203259856,
-          "probability_minus_observed_percentage_points": 1.0477641310707275
+          "probability_minus_observed_percentage_points": 7.352232808315145
         }
       }
     },
     "dixon_coles": {
       "status": "CHRONOLOGICAL_CLASS_BALANCE_DIAGNOSTIC",
       "matches": 67549,
-      "home_bias_flag": "HOME_ARGMAX_SELECTION_OVERFREQUENT",
-      "probability_mass_status": "WITHIN_5PP_OF_OBSERVED_CLASS_FREQUENCY",
-      "maximum_probability_mass_gap_percentage_points": 0.508398866343629,
+      "home_bias_flag": "HOME_ARGMAX_SELECTION_NOT_OVERFREQUENT",
+      "probability_mass_status": "PROBABILITY_MASS_MISALIGNMENT",
+      "maximum_probability_mass_gap_percentage_points": 7.104064863215359,
       "note": "predicted_share is the frequency with which a class is the single argmax, not the mean probability assigned to that outcome. Mean predicted probability and its gap from observed frequency are reported separately.",
       "classes": {
         "H": {
           "actual_matches": 29185,
-          "predicted_matches": 43705,
+          "predicted_matches": 31729,
           "actual_share": 0.4320567291891812,
-          "predicted_share": 0.6470117988423219,
-          "prediction_share_gap_percentage_points": 21.495506965314064,
-          "precision": 0.48182130191053657,
-          "recall": 0.7215350351207812,
-          "mean_predicted_probability": 0.4294134345941875,
+          "predicted_share": 0.4697182785829546,
+          "prediction_share_gap_percentage_points": 3.766154939377342,
+          "precision": 0.5229600680765231,
+          "recall": 0.5685454856947062,
+          "mean_predicted_probability": 0.3638010146066061,
           "observed_frequency": 0.4320567291891812,
-          "probability_minus_observed_percentage_points": -0.26432945949936837
+          "probability_minus_observed_percentage_points": -6.825571458257512
         },
         "D": {
           "actual_matches": 17760,
-          "predicted_matches": 1739,
+          "predicted_matches": 2208,
           "actual_share": 0.26292025048483325,
-          "predicted_share": 0.02574427452663992,
-          "prediction_share_gap_percentage_points": -23.717597595819335,
-          "precision": 0.28637147786083955,
-          "recall": 0.028040540540540542,
-          "mean_predicted_probability": 0.260479556416392,
+          "predicted_share": 0.032687382492709,
+          "prediction_share_gap_percentage_points": -23.023286799212425,
+          "precision": 0.29528985507246375,
+          "recall": 0.03671171171171171,
+          "mean_predicted_probability": 0.26013531643525933,
           "observed_frequency": 0.26292025048483325,
-          "probability_minus_observed_percentage_points": -0.24406940684412737
+          "probability_minus_observed_percentage_points": -0.2784934049573917
         },
         "A": {
           "actual_matches": 20604,
-          "predicted_matches": 22105,
+          "predicted_matches": 33612,
           "actual_share": 0.3050230203259856,
-          "predicted_share": 0.3272439266310382,
-          "prediction_share_gap_percentage_points": 2.222090630505258,
-          "precision": 0.3945261253110156,
-          "recall": 0.42326732673267325,
-          "mean_predicted_probability": 0.3101070089894219,
+          "predicted_share": 0.4975943389243364,
+          "prediction_share_gap_percentage_points": 19.25713185983508,
+          "precision": 0.3820361775556349,
+          "recall": 0.6232284993205203,
+          "mean_predicted_probability": 0.3760636689581392,
           "observed_frequency": 0.3050230203259856,
-          "probability_minus_observed_percentage_points": 0.508398866343629
+          "probability_minus_observed_percentage_points": 7.104064863215359
         }
       }
     },
@@ -876,45 +876,45 @@
       "status": "CHRONOLOGICAL_CLASS_BALANCE_DIAGNOSTIC",
       "matches": 66625,
       "home_bias_flag": "HOME_ARGMAX_SELECTION_OVERFREQUENT",
-      "probability_mass_status": "WITHIN_5PP_OF_OBSERVED_CLASS_FREQUENCY",
-      "maximum_probability_mass_gap_percentage_points": 1.1074596201387676,
+      "probability_mass_status": "PROBABILITY_MASS_MISALIGNMENT",
+      "maximum_probability_mass_gap_percentage_points": 6.547587256859655,
       "note": "predicted_share is the frequency with which a class is the single argmax, not the mean probability assigned to that outcome. Mean predicted probability and its gap from observed frequency are reported separately.",
       "classes": {
         "H": {
           "actual_matches": 28780,
-          "predicted_matches": 47644,
+          "predicted_matches": 32778,
           "actual_share": 0.4319699812382739,
-          "predicted_share": 0.7151069418386492,
-          "prediction_share_gap_percentage_points": 28.31369606003753,
-          "precision": 0.4929896734111326,
-          "recall": 0.8161223071577485,
-          "mean_predicted_probability": 0.4208953850368862,
+          "predicted_share": 0.49197748592870544,
+          "prediction_share_gap_percentage_points": 6.000750469043154,
+          "precision": 0.541521752394899,
+          "recall": 0.6167477414871438,
+          "mean_predicted_probability": 0.36649410866967735,
           "observed_frequency": 0.4319699812382739,
-          "probability_minus_observed_percentage_points": -1.1074596201387676
+          "probability_minus_observed_percentage_points": -6.547587256859655
         },
         "D": {
           "actual_matches": 17514,
-          "predicted_matches": 153,
+          "predicted_matches": 198,
           "actual_share": 0.26287429643527205,
-          "predicted_share": 0.0022964352720450283,
-          "prediction_share_gap_percentage_points": -26.057786116322703,
-          "precision": 0.3202614379084967,
-          "recall": 0.002797761790567546,
+          "predicted_share": 0.0029718574108818013,
+          "prediction_share_gap_percentage_points": -25.990243902439026,
+          "precision": 0.29797979797979796,
+          "recall": 0.0033687335845609227,
           "mean_predicted_probability": 0.2646293490507734,
           "observed_frequency": 0.26287429643527205,
           "probability_minus_observed_percentage_points": 0.17550526155013513
         },
         "A": {
           "actual_matches": 20331,
-          "predicted_matches": 18828,
+          "predicted_matches": 33649,
           "actual_share": 0.30515572232645405,
-          "predicted_share": 0.2825966228893058,
-          "prediction_share_gap_percentage_points": -2.2559099437148236,
-          "precision": 0.45650095602294455,
-          "recall": 0.4227534307215582,
-          "mean_predicted_probability": 0.3144752659123372,
+          "predicted_share": 0.5050506566604127,
+          "prediction_share_gap_percentage_points": 19.989493433395864,
+          "precision": 0.39751552795031053,
+          "recall": 0.6579115636220549,
+          "mean_predicted_probability": 0.3688765422795427,
           "observed_frequency": 0.30515572232645405,
-          "probability_minus_observed_percentage_points": 0.9319543585883161
+          "probability_minus_observed_percentage_points": 6.372081995308864
         }
       }
     }
@@ -926,86 +926,86 @@
       "thresholds": [
         {
           "minimum_top_probability": 0.5,
-          "selected_matches": 29653,
-          "coverage": 0.43898503308709236,
-          "accuracy": 0.5151923920008094,
-          "mean_top_probability": 0.6052194163021536,
+          "selected_matches": 28555,
+          "coverage": 0.4227301662496854,
+          "accuracy": 0.5232358606198564,
+          "mean_top_probability": 0.6056229182249784,
           "predicted_class_counts": {
-            "H": 22207,
-            "D": 1,
-            "A": 7445
+            "H": 13822,
+            "D": 0,
+            "A": 14733
           }
         },
         {
           "minimum_top_probability": 0.55,
-          "selected_matches": 20073,
-          "coverage": 0.2971620601341249,
-          "accuracy": 0.5457081651970308,
-          "mean_top_probability": 0.6440120690784807,
+          "selected_matches": 19246,
+          "coverage": 0.2849190957675169,
+          "accuracy": 0.5525823547750182,
+          "mean_top_probability": 0.6452659713332551,
           "predicted_class_counts": {
-            "H": 15579,
+            "H": 9267,
             "D": 0,
-            "A": 4494
+            "A": 9979
           }
         },
         {
           "minimum_top_probability": 0.6,
-          "selected_matches": 12972,
-          "coverage": 0.19203837214466535,
-          "accuracy": 0.5722325007708912,
-          "mean_top_probability": 0.6824729385092008,
+          "selected_matches": 12323,
+          "coverage": 0.18243053191016892,
+          "accuracy": 0.583299521220482,
+          "mean_top_probability": 0.6855989610459658,
           "predicted_class_counts": {
-            "H": 10307,
+            "H": 5910,
             "D": 0,
-            "A": 2665
+            "A": 6413
           }
         },
         {
           "minimum_top_probability": 0.65,
-          "selected_matches": 7747,
-          "coverage": 0.11468711601948216,
-          "accuracy": 0.607848199302956,
-          "mean_top_probability": 0.7221831901730935,
+          "selected_matches": 7450,
+          "coverage": 0.110290307776577,
+          "accuracy": 0.6241610738255033,
+          "mean_top_probability": 0.7262869012476005,
           "predicted_class_counts": {
-            "H": 6294,
+            "H": 3546,
             "D": 0,
-            "A": 1453
+            "A": 3904
           }
         },
         {
           "minimum_top_probability": 0.7,
-          "selected_matches": 4250,
-          "coverage": 0.06291728967120165,
-          "accuracy": 0.6463529411764706,
-          "mean_top_probability": 0.7625018376429519,
+          "selected_matches": 4236,
+          "coverage": 0.06271003271699063,
+          "accuracy": 0.6735127478753541,
+          "mean_top_probability": 0.7668243416556374,
           "predicted_class_counts": {
-            "H": 3521,
+            "H": 2071,
             "D": 0,
-            "A": 729
+            "A": 2165
           }
         },
         {
           "minimum_top_probability": 0.75,
-          "selected_matches": 2109,
-          "coverage": 0.031221779745073945,
-          "accuracy": 0.6823138928402086,
-          "mean_top_probability": 0.803572852255954,
+          "selected_matches": 2237,
+          "coverage": 0.03311670046928896,
+          "accuracy": 0.707644166294144,
+          "mean_top_probability": 0.8058405989764768,
           "predicted_class_counts": {
-            "H": 1799,
+            "H": 1079,
             "D": 0,
-            "A": 310
+            "A": 1158
           }
         },
         {
           "minimum_top_probability": 0.8,
-          "selected_matches": 918,
-          "coverage": 0.013590134568979556,
-          "accuracy": 0.7178649237472767,
-          "mean_top_probability": 0.8444225213347066,
+          "selected_matches": 1005,
+          "coverage": 0.014878088498719449,
+          "accuracy": 0.7323383084577114,
+          "mean_top_probability": 0.8458367395471786,
           "predicted_class_counts": {
-            "H": 779,
+            "H": 481,
             "D": 0,
-            "A": 139
+            "A": 524
           }
         }
       ],
@@ -1017,86 +1017,86 @@
       "thresholds": [
         {
           "minimum_top_probability": 0.5,
-          "selected_matches": 28824,
-          "coverage": 0.4267124605841685,
-          "accuracy": 0.5177282819872329,
-          "mean_top_probability": 0.6061085737285798,
+          "selected_matches": 28798,
+          "coverage": 0.42632755481206236,
+          "accuracy": 0.5126397666504618,
+          "mean_top_probability": 0.6104780165019834,
           "predicted_class_counts": {
-            "H": 21594,
-            "D": 2,
-            "A": 7228
+            "H": 13599,
+            "D": 5,
+            "A": 15194
           }
         },
         {
           "minimum_top_probability": 0.55,
-          "selected_matches": 19539,
-          "coverage": 0.28925668773779034,
-          "accuracy": 0.5450125390245151,
-          "mean_top_probability": 0.6451494719947359,
+          "selected_matches": 19745,
+          "coverage": 0.2923063257783239,
+          "accuracy": 0.5426183844011142,
+          "mean_top_probability": 0.650204474956927,
           "predicted_class_counts": {
-            "H": 15068,
+            "H": 9244,
             "D": 0,
-            "A": 4471
+            "A": 10501
           }
         },
         {
           "minimum_top_probability": 0.6,
-          "selected_matches": 12724,
-          "coverage": 0.18836696324149876,
-          "accuracy": 0.5743476894058472,
-          "mean_top_probability": 0.6833656794266068,
+          "selected_matches": 13010,
+          "coverage": 0.1926009267346667,
+          "accuracy": 0.5698693312836279,
+          "mean_top_probability": 0.6897806123126127,
           "predicted_class_counts": {
-            "H": 10079,
+            "H": 6049,
             "D": 0,
-            "A": 2645
+            "A": 6961
           }
         },
         {
           "minimum_top_probability": 0.65,
-          "selected_matches": 7613,
-          "coverage": 0.11270337088631956,
-          "accuracy": 0.603704190200972,
-          "mean_top_probability": 0.7235765558313737,
+          "selected_matches": 8120,
+          "coverage": 0.12020903344238996,
+          "accuracy": 0.596551724137931,
+          "mean_top_probability": 0.7295247763526483,
           "predicted_class_counts": {
-            "H": 6172,
+            "H": 3787,
             "D": 0,
-            "A": 1441
+            "A": 4333
           }
         },
         {
           "minimum_top_probability": 0.7,
-          "selected_matches": 4209,
-          "coverage": 0.062310322876726526,
-          "accuracy": 0.6483725350439534,
-          "mean_top_probability": 0.7641128364916372,
+          "selected_matches": 4757,
+          "coverage": 0.07042295222727206,
+          "accuracy": 0.6352743325625394,
+          "mean_top_probability": 0.7694259823715113,
           "predicted_class_counts": {
-            "H": 3486,
+            "H": 2219,
             "D": 0,
-            "A": 723
+            "A": 2538
           }
         },
         {
           "minimum_top_probability": 0.75,
-          "selected_matches": 2107,
-          "coverage": 0.031192171608758087,
-          "accuracy": 0.6668248694826768,
-          "mean_top_probability": 0.8047300537989802,
+          "selected_matches": 2602,
+          "coverage": 0.038520185346933335,
+          "accuracy": 0.669869331283628,
+          "mean_top_probability": 0.8073573218089931,
           "predicted_class_counts": {
-            "H": 1771,
+            "H": 1210,
             "D": 0,
-            "A": 336
+            "A": 1392
           }
         },
         {
           "minimum_top_probability": 0.8,
-          "selected_matches": 924,
-          "coverage": 0.013678958977927135,
-          "accuracy": 0.7261904761904762,
-          "mean_top_probability": 0.8460302779376467,
+          "selected_matches": 1206,
+          "coverage": 0.017853706198463336,
+          "accuracy": 0.7048092868988391,
+          "mean_top_probability": 0.8478522337675904,
           "predicted_class_counts": {
-            "H": 799,
+            "H": 556,
             "D": 0,
-            "A": 125
+            "A": 650
           }
         }
       ],
@@ -1108,62 +1108,62 @@
       "thresholds": [
         {
           "minimum_top_probability": 0.5,
-          "selected_matches": 18376,
-          "coverage": 0.275812382739212,
-          "accuracy": 0.6226599912929909,
-          "mean_top_probability": 0.5606228220370026,
+          "selected_matches": 14573,
+          "coverage": 0.21873170731707317,
+          "accuracy": 0.616002195841625,
+          "mean_top_probability": 0.5589368465606214,
           "predicted_class_counts": {
-            "H": 14823,
+            "H": 7154,
             "D": 0,
-            "A": 3553
+            "A": 7419
           }
         },
         {
           "minimum_top_probability": 0.55,
-          "selected_matches": 8965,
-          "coverage": 0.13455909943714822,
-          "accuracy": 0.6862242052426102,
-          "mean_top_probability": 0.6004287808684313,
+          "selected_matches": 6933,
+          "coverage": 0.10406003752345215,
+          "accuracy": 0.6884465599307659,
+          "mean_top_probability": 0.5992881260131274,
           "predicted_class_counts": {
-            "H": 7238,
+            "H": 3428,
             "D": 0,
-            "A": 1727
+            "A": 3505
           }
         },
         {
           "minimum_top_probability": 0.6,
-          "selected_matches": 3766,
-          "coverage": 0.056525328330206376,
-          "accuracy": 0.7575677110993096,
-          "mean_top_probability": 0.6388848850787628,
+          "selected_matches": 2931,
+          "coverage": 0.04399249530956848,
+          "accuracy": 0.7458205390651654,
+          "mean_top_probability": 0.6367659512884611,
           "predicted_class_counts": {
-            "H": 3070,
+            "H": 1427,
             "D": 0,
-            "A": 696
+            "A": 1504
           }
         },
         {
           "minimum_top_probability": 0.65,
-          "selected_matches": 1202,
-          "coverage": 0.018041275797373357,
-          "accuracy": 0.8178036605657238,
-          "mean_top_probability": 0.6750665580214683,
+          "selected_matches": 855,
+          "coverage": 0.012833020637898688,
+          "accuracy": 0.8105263157894737,
+          "mean_top_probability": 0.6719272218586206,
           "predicted_class_counts": {
-            "H": 1038,
+            "H": 422,
             "D": 0,
-            "A": 164
+            "A": 433
           }
         },
         {
           "minimum_top_probability": 0.7,
-          "selected_matches": 129,
-          "coverage": 0.0019362101313320826,
-          "accuracy": 0.8604651162790697,
-          "mean_top_probability": 0.710782345853561,
+          "selected_matches": 53,
+          "coverage": 0.0007954971857410881,
+          "accuracy": 0.7547169811320755,
+          "mean_top_probability": 0.7073488127718589,
           "predicted_class_counts": {
-            "H": 126,
+            "H": 21,
             "D": 0,
-            "A": 3
+            "A": 32
           }
         },
         {
@@ -1199,75 +1199,75 @@
       "status": "diagnostic_only",
       "overall": {
         "matches": 67491,
-        "accuracy": 0.44991184009719815,
-        "brier_score": 0.6443011160455301,
-        "log_loss": 1.0683593259630721
+        "accuracy": 0.4505785956646071,
+        "brier_score": 0.6424468652662192,
+        "log_loss": 1.0657884057886409
       },
       "favourite_wins": {
         "matches": 33797,
-        "accuracy": 0.7431724709293724,
-        "brier_score": 0.45979806895179925,
-        "log_loss": 0.8073519893198935
+        "accuracy": 0.7345918276770127,
+        "brier_score": 0.4649740899290375,
+        "log_loss": 0.8143603259155225
       },
       "underdog_wins": {
         "matches": 15774,
-        "accuracy": 0.30981361734499807,
-        "brier_score": 0.7668391735621215,
-        "log_loss": 1.2593716359611444
+        "accuracy": 0.32629643717509826,
+        "brier_score": 0.7539108570646595,
+        "log_loss": 1.2384424821624538
       },
       "matches_with_market_classification": 67250,
-      "mean_model_probability_assigned_to_market_favourite": 0.4571498319434418,
-      "mean_model_probability_assigned_to_market_underdog": 0.293222478669032,
+      "mean_model_probability_assigned_to_market_favourite": 0.4524688285767018,
+      "mean_model_probability_assigned_to_market_underdog": 0.29777176937739913,
       "important_note": "This measures performance on market-defined favourites and underdogs; it does not directly measure club fame or prove causal popularity bias. Use chronological out-of-sample forecasts and de-vigged pre-match odds."
     },
     "dixon_coles": {
       "status": "diagnostic_only",
       "overall": {
         "matches": 67491,
-        "accuracy": 0.4479560237661318,
-        "brier_score": 0.6452208019633527,
-        "log_loss": 1.0703367476523897
+        "accuracy": 0.44511120001185345,
+        "brier_score": 0.6475373518114886,
+        "log_loss": 1.0742969304958965
       },
       "favourite_wins": {
         "matches": 33797,
-        "accuracy": 0.7346214161020209,
-        "brier_score": 0.46875222816975176,
-        "log_loss": 0.821585055634872
+        "accuracy": 0.7145604639465041,
+        "brier_score": 0.47882323634978063,
+        "log_loss": 0.8362545987812456
       },
       "underdog_wins": {
         "matches": 15774,
-        "accuracy": 0.30632686699632306,
-        "brier_score": 0.7774677642316447,
-        "log_loss": 1.2844900291865633
+        "accuracy": 0.32718397362748824,
+        "brier_score": 0.7658994300303141,
+        "log_loss": 1.2688976974729544
       },
       "matches_with_market_classification": 67250,
-      "mean_model_probability_assigned_to_market_favourite": 0.4521104351640899,
-      "mean_model_probability_assigned_to_market_underdog": 0.2873987572536367,
+      "mean_model_probability_assigned_to_market_favourite": 0.4466599948595173,
+      "mean_model_probability_assigned_to_market_underdog": 0.2931700928555995,
       "important_note": "This measures performance on market-defined favourites and underdogs; it does not directly measure club fame or prove causal popularity bias. Use chronological out-of-sample forecasts and de-vigged pre-match odds."
     },
     "elo": {
       "status": "diagnostic_only",
       "overall": {
         "matches": 66569,
-        "accuracy": 0.48204119034385373,
-        "brier_score": 0.6192020727037186,
-        "log_loss": 1.0312931354615573
+        "accuracy": 0.4678453935014797,
+        "brier_score": 0.6271382974476083,
+        "log_loss": 1.0428084260865575
       },
       "favourite_wins": {
         "matches": 33339,
-        "accuracy": 0.8655628543147665,
-        "brier_score": 0.44450224733865323,
-        "log_loss": 0.7835555277077288
+        "accuracy": 0.795644740394133,
+        "brier_score": 0.48095249294161596,
+        "log_loss": 0.8341126319006283
       },
       "underdog_wins": {
         "matches": 15559,
-        "accuracy": 0.1999485828138055,
-        "brier_score": 0.7534120660752017,
-        "log_loss": 1.226582033574142
+        "accuracy": 0.2877434282408895,
+        "brier_score": 0.7140340697953886,
+        "log_loss": 1.1674108896004585
       },
       "matches_with_market_classification": 66335,
-      "mean_model_probability_assigned_to_market_favourite": 0.45106569987340506,
-      "mean_model_probability_assigned_to_market_underdog": 0.2842958728890192,
+      "mean_model_probability_assigned_to_market_favourite": 0.4306239097655101,
+      "mean_model_probability_assigned_to_market_underdog": 0.30473766299691407,
       "important_note": "This measures performance on market-defined favourites and underdogs; it does not directly measure club fame or prove causal popularity bias. Use chronological out-of-sample forecasts and de-vigged pre-match odds."
     }
   },
@@ -1281,20 +1281,20 @@
         "selected_draw_margin": 0.0,
         "raw_argmax_holdout": {
           "matches": 11612,
-          "accuracy": 0.44962108163968306,
+          "accuracy": 0.45401308990699274,
           "predicted_class_counts": {
-            "H": 7561,
-            "D": 110,
-            "A": 3941
+            "H": 5637,
+            "D": 87,
+            "A": 5888
           }
         },
         "draw_margin_holdout": {
           "matches": 11612,
-          "accuracy": 0.44962108163968306,
+          "accuracy": 0.45401308990699274,
           "predicted_class_counts": {
-            "H": 7561,
-            "D": 110,
-            "A": 3941
+            "H": 5637,
+            "D": 87,
+            "A": 5888
           }
         },
         "holdout_accuracy_delta": 0.0,
@@ -1309,20 +1309,20 @@
         "selected_draw_margin": 0.0,
         "raw_argmax_holdout": {
           "matches": 11508,
-          "accuracy": 0.49018074383037885,
+          "accuracy": 0.47419186652763295,
           "predicted_class_counts": {
-            "H": 7955,
+            "H": 5704,
             "D": 0,
-            "A": 3553
+            "A": 5804
           }
         },
         "draw_margin_holdout": {
           "matches": 11508,
-          "accuracy": 0.49018074383037885,
+          "accuracy": 0.47419186652763295,
           "predicted_class_counts": {
-            "H": 7955,
+            "H": 5704,
             "D": 0,
-            "A": 3553
+            "A": 5804
           }
         },
         "holdout_accuracy_delta": 0.0,
@@ -1337,29 +1337,29 @@
       "live_eligible_matches": 2219,
       "poisson": {
         "matches": 2219,
-        "result_accuracy": 0.39296980621901756,
-        "brier_score": 0.6766628486760565,
-        "log_loss": 1.1134611299150203
+        "result_accuracy": 0.38170347003154576,
+        "brier_score": 0.6802041166171022,
+        "log_loss": 1.120910674676831
       },
       "dixon_coles": {
         "matches": 2219,
-        "result_accuracy": 0.3956737269040108,
-        "brier_score": 0.6773177885250838,
-        "log_loss": 1.115098944707325
+        "result_accuracy": 0.36773321315908064,
+        "brier_score": 0.6876039703062419,
+        "log_loss": 1.1331740717006202
       },
       "elo": {
         "matches": 2219,
-        "result_accuracy": 0.42541685443893645,
-        "brier_score": 0.648151663679621,
-        "log_loss": 1.0718188028954174
+        "result_accuracy": 0.38936457863902657,
+        "brier_score": 0.6609668385941088,
+        "log_loss": 1.0909731557671676
       },
       "historical_odds_matches": 2219,
       "poisson_market_comparison": {
         "model": {
           "matches": 2219,
-          "result_accuracy": 0.39296980621901756,
-          "brier_score": 0.6766628486760565,
-          "log_loss": 1.1134611299150203
+          "result_accuracy": 0.38170347003154576,
+          "brier_score": 0.6802041166171022,
+          "log_loss": 1.120910674676831
         },
         "market": {
           "matches": 2219,
@@ -1371,9 +1371,9 @@
       "elo_market_comparison": {
         "model": {
           "matches": 2219,
-          "result_accuracy": 0.42541685443893645,
-          "brier_score": 0.648151663679621,
-          "log_loss": 1.0718188028954174
+          "result_accuracy": 0.38936457863902657,
+          "brier_score": 0.6609668385941088,
+          "log_loss": 1.0909731557671676
         },
         "market": {
           "matches": 2219,
@@ -1385,9 +1385,9 @@
       "dixon_coles_market_comparison": {
         "model": {
           "matches": 2219,
-          "result_accuracy": 0.3956737269040108,
-          "brier_score": 0.6773177885250838,
-          "log_loss": 1.115098944707325
+          "result_accuracy": 0.36773321315908064,
+          "brier_score": 0.6876039703062419,
+          "log_loss": 1.1331740717006202
         },
         "market": {
           "matches": 2219,
@@ -1401,29 +1401,29 @@
       "live_eligible_matches": 864,
       "poisson": {
         "matches": 864,
-        "result_accuracy": 0.44907407407407407,
-        "brier_score": 0.6501461363966888,
-        "log_loss": 1.07677263020388
+        "result_accuracy": 0.46412037037037035,
+        "brier_score": 0.6377482056032913,
+        "log_loss": 1.0593982447634418
       },
       "dixon_coles": {
         "matches": 864,
-        "result_accuracy": 0.4363425925925926,
-        "brier_score": 0.6523346234315568,
-        "log_loss": 1.0804866610393649
+        "result_accuracy": 0.4479166666666667,
+        "brier_score": 0.6486716756162344,
+        "log_loss": 1.0756492256164296
       },
       "elo": {
         "matches": 864,
-        "result_accuracy": 0.47685185185185186,
-        "brier_score": 0.6191724360597364,
-        "log_loss": 1.0310147966240424
+        "result_accuracy": 0.4976851851851852,
+        "brier_score": 0.6166485479615674,
+        "log_loss": 1.0274991060692478
       },
       "historical_odds_matches": 864,
       "poisson_market_comparison": {
         "model": {
           "matches": 864,
-          "result_accuracy": 0.44907407407407407,
-          "brier_score": 0.6501461363966888,
-          "log_loss": 1.07677263020388
+          "result_accuracy": 0.46412037037037035,
+          "brier_score": 0.6377482056032913,
+          "log_loss": 1.0593982447634418
         },
         "market": {
           "matches": 864,
@@ -1435,9 +1435,9 @@
       "elo_market_comparison": {
         "model": {
           "matches": 864,
-          "result_accuracy": 0.47685185185185186,
-          "brier_score": 0.6191724360597364,
-          "log_loss": 1.0310147966240424
+          "result_accuracy": 0.4976851851851852,
+          "brier_score": 0.6166485479615674,
+          "log_loss": 1.0274991060692478
         },
         "market": {
           "matches": 864,
@@ -1449,9 +1449,9 @@
       "dixon_coles_market_comparison": {
         "model": {
           "matches": 864,
-          "result_accuracy": 0.4363425925925926,
-          "brier_score": 0.6523346234315568,
-          "log_loss": 1.0804866610393649
+          "result_accuracy": 0.4479166666666667,
+          "brier_score": 0.6486716756162344,
+          "log_loss": 1.0756492256164296
         },
         "market": {
           "matches": 864,
@@ -1465,29 +1465,29 @@
       "live_eligible_matches": 1865,
       "poisson": {
         "matches": 1865,
-        "result_accuracy": 0.4525469168900804,
-        "brier_score": 0.64640779500329,
-        "log_loss": 1.07220126897655
+        "result_accuracy": 0.48203753351206435,
+        "brier_score": 0.6315101158551661,
+        "log_loss": 1.0521859964978635
       },
       "dixon_coles": {
         "matches": 1865,
-        "result_accuracy": 0.44450402144772116,
-        "brier_score": 0.6484412325250243,
-        "log_loss": 1.075977491485852
+        "result_accuracy": 0.47774798927613943,
+        "brier_score": 0.6366971198228826,
+        "log_loss": 1.061163471108162
       },
       "elo": {
         "matches": 1865,
-        "result_accuracy": 0.5072386058981233,
-        "brier_score": 0.6078721836665744,
-        "log_loss": 1.0168178037424398
+        "result_accuracy": 0.5013404825737265,
+        "brier_score": 0.6122361608032059,
+        "log_loss": 1.0234830038774623
       },
       "historical_odds_matches": 1865,
       "poisson_market_comparison": {
         "model": {
           "matches": 1865,
-          "result_accuracy": 0.4525469168900804,
-          "brier_score": 0.64640779500329,
-          "log_loss": 1.07220126897655
+          "result_accuracy": 0.48203753351206435,
+          "brier_score": 0.6315101158551661,
+          "log_loss": 1.0521859964978635
         },
         "market": {
           "matches": 1865,
@@ -1499,9 +1499,9 @@
       "elo_market_comparison": {
         "model": {
           "matches": 1865,
-          "result_accuracy": 0.5072386058981233,
-          "brier_score": 0.6078721836665744,
-          "log_loss": 1.0168178037424398
+          "result_accuracy": 0.5013404825737265,
+          "brier_score": 0.6122361608032059,
+          "log_loss": 1.0234830038774623
         },
         "market": {
           "matches": 1865,
@@ -1513,9 +1513,9 @@
       "dixon_coles_market_comparison": {
         "model": {
           "matches": 1865,
-          "result_accuracy": 0.44450402144772116,
-          "brier_score": 0.6484412325250243,
-          "log_loss": 1.075977491485852
+          "result_accuracy": 0.47774798927613943,
+          "brier_score": 0.6366971198228826,
+          "log_loss": 1.061163471108162
         },
         "market": {
           "matches": 1865,
@@ -1529,29 +1529,29 @@
       "live_eligible_matches": 1719,
       "poisson": {
         "matches": 1719,
-        "result_accuracy": 0.4549156486329261,
-        "brier_score": 0.640158497639915,
-        "log_loss": 1.062862572921922
+        "result_accuracy": 0.43222803955788247,
+        "brier_score": 0.6555283731287552,
+        "log_loss": 1.0849392354908478
       },
       "dixon_coles": {
         "matches": 1719,
-        "result_accuracy": 0.4537521815008726,
-        "brier_score": 0.6420115135634455,
-        "log_loss": 1.0664005521915194
+        "result_accuracy": 0.43571844095404305,
+        "brier_score": 0.6584606578916756,
+        "log_loss": 1.091969883659214
       },
       "elo": {
         "matches": 1719,
-        "result_accuracy": 0.4741128563118092,
-        "brier_score": 0.628014185433405,
-        "log_loss": 1.0443282324948633
+        "result_accuracy": 0.4397905759162304,
+        "brier_score": 0.6451036362887954,
+        "log_loss": 1.0684860330462371
       },
       "historical_odds_matches": 1719,
       "poisson_market_comparison": {
         "model": {
           "matches": 1719,
-          "result_accuracy": 0.4549156486329261,
-          "brier_score": 0.640158497639915,
-          "log_loss": 1.062862572921922
+          "result_accuracy": 0.43222803955788247,
+          "brier_score": 0.6555283731287552,
+          "log_loss": 1.0849392354908478
         },
         "market": {
           "matches": 1719,
@@ -1563,9 +1563,9 @@
       "elo_market_comparison": {
         "model": {
           "matches": 1719,
-          "result_accuracy": 0.4741128563118092,
-          "brier_score": 0.628014185433405,
-          "log_loss": 1.0443282324948633
+          "result_accuracy": 0.4397905759162304,
+          "brier_score": 0.6451036362887954,
+          "log_loss": 1.0684860330462371
         },
         "market": {
           "matches": 1719,
@@ -1577,9 +1577,9 @@
       "dixon_coles_market_comparison": {
         "model": {
           "matches": 1719,
-          "result_accuracy": 0.4537521815008726,
-          "brier_score": 0.6420115135634455,
-          "log_loss": 1.0664005521915194
+          "result_accuracy": 0.43571844095404305,
+          "brier_score": 0.6584606578916756,
+          "log_loss": 1.091969883659214
         },
         "market": {
           "matches": 1719,
@@ -1593,29 +1593,29 @@
       "live_eligible_matches": 995,
       "poisson": {
         "matches": 995,
-        "result_accuracy": 0.521608040201005,
-        "brier_score": 0.5865888808675807,
-        "log_loss": 0.9853609051525561
+        "result_accuracy": 0.5477386934673367,
+        "brier_score": 0.5710689336218123,
+        "log_loss": 0.9607520907119629
       },
       "dixon_coles": {
         "matches": 995,
-        "result_accuracy": 0.5195979899497487,
-        "brier_score": 0.5893732708589537,
-        "log_loss": 0.9895542524472901
+        "result_accuracy": 0.5407035175879397,
+        "brier_score": 0.5764337824572103,
+        "log_loss": 0.968836202154685
       },
       "elo": {
         "matches": 995,
-        "result_accuracy": 0.5396984924623116,
-        "brier_score": 0.5836654911450524,
-        "log_loss": 0.9818837709900304
+        "result_accuracy": 0.5547738693467337,
+        "brier_score": 0.5896633462283049,
+        "log_loss": 0.9908686675421343
       },
       "historical_odds_matches": 991,
       "poisson_market_comparison": {
         "model": {
           "matches": 991,
-          "result_accuracy": 0.520686175580222,
-          "brier_score": 0.5873301192214438,
-          "log_loss": 0.9865006908876555
+          "result_accuracy": 0.5469223007063572,
+          "brier_score": 0.5719736873744968,
+          "log_loss": 0.9620350741881546
         },
         "market": {
           "matches": 991,
@@ -1627,9 +1627,9 @@
       "elo_market_comparison": {
         "model": {
           "matches": 991,
-          "result_accuracy": 0.5388496468213926,
-          "brier_score": 0.5843603951659039,
-          "log_loss": 0.9828541966433161
+          "result_accuracy": 0.5539858728557013,
+          "brier_score": 0.5903431055032694,
+          "log_loss": 0.9918287165763988
         },
         "market": {
           "matches": 991,
@@ -1641,9 +1641,9 @@
       "dixon_coles_market_comparison": {
         "model": {
           "matches": 991,
-          "result_accuracy": 0.5186680121089808,
-          "brier_score": 0.5900098342096184,
-          "log_loss": 0.9904732565127115
+          "result_accuracy": 0.5398587285570131,
+          "brier_score": 0.5771968143737517,
+          "log_loss": 0.9699102287643833
         },
         "market": {
           "matches": 991,
@@ -1657,29 +1657,29 @@
       "live_eligible_matches": 1952,
       "poisson": {
         "matches": 1952,
-        "result_accuracy": 0.47438524590163933,
-        "brier_score": 0.6393222680441096,
-        "log_loss": 1.0626336966581393
+        "result_accuracy": 0.48411885245901637,
+        "brier_score": 0.6296752386673721,
+        "log_loss": 1.0493981114309905
       },
       "dixon_coles": {
         "matches": 1952,
-        "result_accuracy": 0.47950819672131145,
-        "brier_score": 0.6369353997363598,
-        "log_loss": 1.0605703832825915
+        "result_accuracy": 0.4774590163934426,
+        "brier_score": 0.6333609831442166,
+        "log_loss": 1.0553832420965583
       },
       "elo": {
         "matches": 1906,
-        "result_accuracy": 0.5057712486883525,
-        "brier_score": 0.6012914510304124,
-        "log_loss": 1.0058732773847472
+        "result_accuracy": 0.5052465897166841,
+        "brier_score": 0.608029848865661,
+        "log_loss": 1.0163474460753308
       },
       "historical_odds_matches": 1952,
       "poisson_market_comparison": {
         "model": {
           "matches": 1952,
-          "result_accuracy": 0.47438524590163933,
-          "brier_score": 0.6393222680441096,
-          "log_loss": 1.0626336966581393
+          "result_accuracy": 0.48411885245901637,
+          "brier_score": 0.6296752386673721,
+          "log_loss": 1.0493981114309905
         },
         "market": {
           "matches": 1952,
@@ -1691,9 +1691,9 @@
       "elo_market_comparison": {
         "model": {
           "matches": 1906,
-          "result_accuracy": 0.5057712486883525,
-          "brier_score": 0.6012914510304124,
-          "log_loss": 1.0058732773847472
+          "result_accuracy": 0.5052465897166841,
+          "brier_score": 0.608029848865661,
+          "log_loss": 1.0163474460753308
         },
         "market": {
           "matches": 1906,
@@ -1705,9 +1705,9 @@
       "dixon_coles_market_comparison": {
         "model": {
           "matches": 1952,
-          "result_accuracy": 0.47950819672131145,
-          "brier_score": 0.6369353997363598,
-          "log_loss": 1.0605703832825915
+          "result_accuracy": 0.4774590163934426,
+          "brier_score": 0.6333609831442166,
+          "log_loss": 1.0553832420965583
         },
         "market": {
           "matches": 1952,
@@ -1721,29 +1721,29 @@
       "live_eligible_matches": 1914,
       "poisson": {
         "matches": 1914,
-        "result_accuracy": 0.4425287356321839,
-        "brier_score": 0.6516007487565856,
-        "log_loss": 1.0775018343117093
+        "result_accuracy": 0.41849529780564265,
+        "brier_score": 0.6643378553386703,
+        "log_loss": 1.0963460594361965
       },
       "dixon_coles": {
         "matches": 1914,
-        "result_accuracy": 0.44618599791013586,
-        "brier_score": 0.6532948431732797,
-        "log_loss": 1.0808973150509635
+        "result_accuracy": 0.42998955067920586,
+        "brier_score": 0.6691777302449782,
+        "log_loss": 1.1055532090240332
       },
       "elo": {
         "matches": 1883,
-        "result_accuracy": 0.45671800318640465,
-        "brier_score": 0.6353711323926446,
-        "log_loss": 1.054504749090727
+        "result_accuracy": 0.4471587891662241,
+        "brier_score": 0.6444526186688513,
+        "log_loss": 1.0669988705134563
       },
       "historical_odds_matches": 1914,
       "poisson_market_comparison": {
         "model": {
           "matches": 1914,
-          "result_accuracy": 0.4425287356321839,
-          "brier_score": 0.6516007487565856,
-          "log_loss": 1.0775018343117093
+          "result_accuracy": 0.41849529780564265,
+          "brier_score": 0.6643378553386703,
+          "log_loss": 1.0963460594361965
         },
         "market": {
           "matches": 1914,
@@ -1755,9 +1755,9 @@
       "elo_market_comparison": {
         "model": {
           "matches": 1883,
-          "result_accuracy": 0.45671800318640465,
-          "brier_score": 0.6353711323926446,
-          "log_loss": 1.054504749090727
+          "result_accuracy": 0.4471587891662241,
+          "brier_score": 0.6444526186688513,
+          "log_loss": 1.0669988705134563
         },
         "market": {
           "matches": 1883,
@@ -1769,9 +1769,9 @@
       "dixon_coles_market_comparison": {
         "model": {
           "matches": 1914,
-          "result_accuracy": 0.44618599791013586,
-          "brier_score": 0.6532948431732797,
-          "log_loss": 1.0808973150509635
+          "result_accuracy": 0.42998955067920586,
+          "brier_score": 0.6691777302449782,
+          "log_loss": 1.1055532090240332
         },
         "market": {
           "matches": 1914,
@@ -1785,29 +1785,29 @@
       "live_eligible_matches": 887,
       "poisson": {
         "matches": 887,
-        "result_accuracy": 0.43855693348365277,
-        "brier_score": 0.6612777595997303,
-        "log_loss": 1.0922066709496947
+        "result_accuracy": 0.42728297632469,
+        "brier_score": 0.6595319816418894,
+        "log_loss": 1.0890093476678018
       },
       "dixon_coles": {
         "matches": 887,
-        "result_accuracy": 0.43291995490417134,
-        "brier_score": 0.6619265407970565,
-        "log_loss": 1.0939001565534676
+        "result_accuracy": 0.4205186020293123,
+        "brier_score": 0.6652877041144872,
+        "log_loss": 1.0982507995166295
       },
       "elo": {
         "matches": 887,
-        "result_accuracy": 0.4746335963923337,
-        "brier_score": 0.6307764825416025,
-        "log_loss": 1.049374140358672
+        "result_accuracy": 0.4599774520856821,
+        "brier_score": 0.6367295106621496,
+        "log_loss": 1.0566547897389136
       },
       "historical_odds_matches": 887,
       "poisson_market_comparison": {
         "model": {
           "matches": 887,
-          "result_accuracy": 0.43855693348365277,
-          "brier_score": 0.6612777595997303,
-          "log_loss": 1.0922066709496947
+          "result_accuracy": 0.42728297632469,
+          "brier_score": 0.6595319816418894,
+          "log_loss": 1.0890093476678018
         },
         "market": {
           "matches": 887,
@@ -1819,9 +1819,9 @@
       "elo_market_comparison": {
         "model": {
           "matches": 887,
-          "result_accuracy": 0.4746335963923337,
-          "brier_score": 0.6307764825416025,
-          "log_loss": 1.049374140358672
+          "result_accuracy": 0.4599774520856821,
+          "brier_score": 0.6367295106621496,
+          "log_loss": 1.0566547897389136
         },
         "market": {
           "matches": 887,
@@ -1833,9 +1833,9 @@
       "dixon_coles_market_comparison": {
         "model": {
           "matches": 887,
-          "result_accuracy": 0.43291995490417134,
-          "brier_score": 0.6619265407970565,
-          "log_loss": 1.0939001565534676
+          "result_accuracy": 0.4205186020293123,
+          "brier_score": 0.6652877041144872,
+          "log_loss": 1.0982507995166295
         },
         "market": {
           "matches": 887,
@@ -1849,29 +1849,29 @@
       "live_eligible_matches": 2430,
       "poisson": {
         "matches": 2430,
-        "result_accuracy": 0.4757201646090535,
-        "brier_score": 0.6292343611012535,
-        "log_loss": 1.0499392374183982
+        "result_accuracy": 0.48518518518518516,
+        "brier_score": 0.6199076894992959,
+        "log_loss": 1.034510496532004
       },
       "dixon_coles": {
         "matches": 2430,
-        "result_accuracy": 0.4757201646090535,
-        "brier_score": 0.629446638232039,
-        "log_loss": 1.0509952348516691
+        "result_accuracy": 0.4860082304526749,
+        "brier_score": 0.6237720471630556,
+        "log_loss": 1.0407355995185905
       },
       "elo": {
         "matches": 2388,
-        "result_accuracy": 0.533500837520938,
-        "brier_score": 0.5913493740798197,
-        "log_loss": 0.991819783579581
+        "result_accuracy": 0.516750418760469,
+        "brier_score": 0.596981073223418,
+        "log_loss": 0.9996858779584136
       },
       "historical_odds_matches": 2430,
       "poisson_market_comparison": {
         "model": {
           "matches": 2430,
-          "result_accuracy": 0.4757201646090535,
-          "brier_score": 0.6292343611012535,
-          "log_loss": 1.0499392374183982
+          "result_accuracy": 0.48518518518518516,
+          "brier_score": 0.6199076894992959,
+          "log_loss": 1.034510496532004
         },
         "market": {
           "matches": 2430,
@@ -1883,9 +1883,9 @@
       "elo_market_comparison": {
         "model": {
           "matches": 2388,
-          "result_accuracy": 0.533500837520938,
-          "brier_score": 0.5913493740798197,
-          "log_loss": 0.991819783579581
+          "result_accuracy": 0.516750418760469,
+          "brier_score": 0.596981073223418,
+          "log_loss": 0.9996858779584136
         },
         "market": {
           "matches": 2388,
@@ -1897,9 +1897,9 @@
       "dixon_coles_market_comparison": {
         "model": {
           "matches": 2430,
-          "result_accuracy": 0.4757201646090535,
-          "brier_score": 0.629446638232039,
-          "log_loss": 1.0509952348516691
+          "result_accuracy": 0.4860082304526749,
+          "brier_score": 0.6237720471630556,
+          "log_loss": 1.0407355995185905
         },
         "market": {
           "matches": 2430,
@@ -1913,29 +1913,29 @@
       "live_eligible_matches": 3550,
       "poisson": {
         "matches": 3550,
-        "result_accuracy": 0.42169014084507045,
-        "brier_score": 0.6646383620457639,
-        "log_loss": 1.0971176523744517
+        "result_accuracy": 0.4211267605633803,
+        "brier_score": 0.6657906373570591,
+        "log_loss": 1.0992803106909768
       },
       "dixon_coles": {
         "matches": 3550,
-        "result_accuracy": 0.4208450704225352,
-        "brier_score": 0.6642374086326354,
-        "log_loss": 1.0976928507244756
+        "result_accuracy": 0.4126760563380282,
+        "brier_score": 0.6690154213937654,
+        "log_loss": 1.1056636872756063
       },
       "elo": {
         "matches": 3451,
-        "result_accuracy": 0.453781512605042,
-        "brier_score": 0.6359368748927857,
-        "log_loss": 1.0546047033389854
+        "result_accuracy": 0.4462474645030426,
+        "brier_score": 0.6428814092602368,
+        "log_loss": 1.0643821282089927
       },
       "historical_odds_matches": 3550,
       "poisson_market_comparison": {
         "model": {
           "matches": 3550,
-          "result_accuracy": 0.42169014084507045,
-          "brier_score": 0.6646383620457639,
-          "log_loss": 1.0971176523744517
+          "result_accuracy": 0.4211267605633803,
+          "brier_score": 0.6657906373570591,
+          "log_loss": 1.0992803106909768
         },
         "market": {
           "matches": 3550,
@@ -1947,9 +1947,9 @@
       "elo_market_comparison": {
         "model": {
           "matches": 3451,
-          "result_accuracy": 0.453781512605042,
-          "brier_score": 0.6359368748927857,
-          "log_loss": 1.0546047033389854
+          "result_accuracy": 0.4462474645030426,
+          "brier_score": 0.6428814092602368,
+          "log_loss": 1.0643821282089927
         },
         "market": {
           "matches": 3451,
@@ -1961,9 +1961,9 @@
       "dixon_coles_market_comparison": {
         "model": {
           "matches": 3550,
-          "result_accuracy": 0.4208450704225352,
-          "brier_score": 0.6642374086326354,
-          "log_loss": 1.0976928507244756
+          "result_accuracy": 0.4126760563380282,
+          "brier_score": 0.6690154213937654,
+          "log_loss": 1.1056636872756063
         },
         "market": {
           "matches": 3550,
@@ -1977,29 +1977,29 @@
       "live_eligible_matches": 3437,
       "poisson": {
         "matches": 3437,
-        "result_accuracy": 0.4393366307826593,
-        "brier_score": 0.6513770245652646,
-        "log_loss": 1.078555545541254
+        "result_accuracy": 0.4524294442828048,
+        "brier_score": 0.6464126240447303,
+        "log_loss": 1.0713472793785372
       },
       "dixon_coles": {
         "matches": 3437,
-        "result_accuracy": 0.44224614489380276,
-        "brier_score": 0.6525997982896924,
-        "log_loss": 1.0815827047851148
+        "result_accuracy": 0.45097468722723305,
+        "brier_score": 0.6503801249849416,
+        "log_loss": 1.0779657208187934
       },
       "elo": {
         "matches": 3294,
-        "result_accuracy": 0.47996357012750457,
-        "brier_score": 0.6248604086425477,
-        "log_loss": 1.0395662577159044
+        "result_accuracy": 0.46569520340012144,
+        "brier_score": 0.6311535782960034,
+        "log_loss": 1.048393798504491
       },
       "historical_odds_matches": 3437,
       "poisson_market_comparison": {
         "model": {
           "matches": 3437,
-          "result_accuracy": 0.4393366307826593,
-          "brier_score": 0.6513770245652646,
-          "log_loss": 1.078555545541254
+          "result_accuracy": 0.4524294442828048,
+          "brier_score": 0.6464126240447303,
+          "log_loss": 1.0713472793785372
         },
         "market": {
           "matches": 3437,
@@ -2011,9 +2011,9 @@
       "elo_market_comparison": {
         "model": {
           "matches": 3294,
-          "result_accuracy": 0.47996357012750457,
-          "brier_score": 0.6248604086425477,
-          "log_loss": 1.0395662577159044
+          "result_accuracy": 0.46569520340012144,
+          "brier_score": 0.6311535782960034,
+          "log_loss": 1.048393798504491
         },
         "market": {
           "matches": 3294,
@@ -2025,9 +2025,9 @@
       "dixon_coles_market_comparison": {
         "model": {
           "matches": 3437,
-          "result_accuracy": 0.44224614489380276,
-          "brier_score": 0.6525997982896924,
-          "log_loss": 1.0815827047851148
+          "result_accuracy": 0.45097468722723305,
+          "brier_score": 0.6503801249849416,
+          "log_loss": 1.0779657208187934
         },
         "market": {
           "matches": 3437,
@@ -2041,29 +2041,29 @@
       "live_eligible_matches": 3450,
       "poisson": {
         "matches": 3450,
-        "result_accuracy": 0.4156521739130435,
-        "brier_score": 0.6668093833975376,
-        "log_loss": 1.1012508697622219
+        "result_accuracy": 0.41681159420289854,
+        "brier_score": 0.6632589176143183,
+        "log_loss": 1.0957088785234896
       },
       "dixon_coles": {
         "matches": 3450,
-        "result_accuracy": 0.4121739130434783,
-        "brier_score": 0.667685395501743,
-        "log_loss": 1.1033903335832933
+        "result_accuracy": 0.41130434782608694,
+        "brier_score": 0.6669247649942364,
+        "log_loss": 1.1024278161769496
       },
       "elo": {
         "matches": 3339,
-        "result_accuracy": 0.44324648098233005,
-        "brier_score": 0.6424978049108674,
-        "log_loss": 1.0636666763433638
+        "result_accuracy": 0.4246780473195568,
+        "brier_score": 0.6492743316282655,
+        "log_loss": 1.0734251901912923
       },
       "historical_odds_matches": 3449,
       "poisson_market_comparison": {
         "model": {
           "matches": 3449,
-          "result_accuracy": 0.4154827486227892,
-          "brier_score": 0.666895944908975,
-          "log_loss": 1.1013720873288912
+          "result_accuracy": 0.41664250507393447,
+          "brier_score": 0.6633096569318976,
+          "log_loss": 1.0957816929929485
         },
         "market": {
           "matches": 3449,
@@ -2075,9 +2075,9 @@
       "elo_market_comparison": {
         "model": {
           "matches": 3338,
-          "result_accuracy": 0.4433792690233673,
-          "brier_score": 0.6424379852293036,
-          "log_loss": 1.0635809117110269
+          "result_accuracy": 0.42480527261833434,
+          "brier_score": 0.6492574573727398,
+          "log_loss": 1.073404158774186
         },
         "market": {
           "matches": 3338,
@@ -2089,9 +2089,9 @@
       "dixon_coles_market_comparison": {
         "model": {
           "matches": 3449,
-          "result_accuracy": 0.41200347926935343,
-          "brier_score": 0.667777694064947,
-          "log_loss": 1.103519965565957
+          "result_accuracy": 0.4111336619309945,
+          "brier_score": 0.6669930612364102,
+          "log_loss": 1.102524704394452
         },
         "market": {
           "matches": 3449,
@@ -2105,29 +2105,29 @@
       "live_eligible_matches": 2859,
       "poisson": {
         "matches": 2859,
-        "result_accuracy": 0.459601259181532,
-        "brier_score": 0.6399165883091549,
-        "log_loss": 1.0615937860597355
+        "result_accuracy": 0.47114375655823715,
+        "brier_score": 0.6320436868136614,
+        "log_loss": 1.0504330808725517
       },
       "dixon_coles": {
         "matches": 2859,
-        "result_accuracy": 0.45190626093039526,
-        "brier_score": 0.6417872491447822,
-        "log_loss": 1.065082449149451
+        "result_accuracy": 0.4613501224204267,
+        "brier_score": 0.6369757980783206,
+        "log_loss": 1.0591020342050108
       },
       "elo": {
         "matches": 2822,
-        "result_accuracy": 0.49043231750531535,
-        "brier_score": 0.6179495649129952,
-        "log_loss": 1.0295406598988954
+        "result_accuracy": 0.46987951807228917,
+        "brier_score": 0.6232267766262419,
+        "log_loss": 1.0370450206430915
       },
       "historical_odds_matches": 2847,
       "poisson_market_comparison": {
         "model": {
           "matches": 2847,
-          "result_accuracy": 0.45978222690551457,
-          "brier_score": 0.6403631027323465,
-          "log_loss": 1.0622542553431207
+          "result_accuracy": 0.47102212855637515,
+          "brier_score": 0.6321360307376033,
+          "log_loss": 1.0506270586030244
         },
         "market": {
           "matches": 2847,
@@ -2139,9 +2139,9 @@
       "elo_market_comparison": {
         "model": {
           "matches": 2812,
-          "result_accuracy": 0.490398293029872,
-          "brier_score": 0.6178814120201856,
-          "log_loss": 1.0294214823830876
+          "result_accuracy": 0.4704836415362731,
+          "brier_score": 0.623004462758632,
+          "log_loss": 1.0367280811687
         },
         "market": {
           "matches": 2812,
@@ -2153,9 +2153,9 @@
       "dixon_coles_market_comparison": {
         "model": {
           "matches": 2847,
-          "result_accuracy": 0.4520547945205479,
-          "brier_score": 0.6422441398797157,
-          "log_loss": 1.0657562937280751
+          "result_accuracy": 0.46083596768528273,
+          "brier_score": 0.6371270386336738,
+          "log_loss": 1.0593763860687544
         },
         "market": {
           "matches": 2847,
@@ -2169,29 +2169,29 @@
       "live_eligible_matches": 2116,
       "poisson": {
         "matches": 2116,
-        "result_accuracy": 0.473062381852552,
-        "brier_score": 0.6323606458425004,
-        "log_loss": 1.0512025762824453
+        "result_accuracy": 0.47967863894139884,
+        "brier_score": 0.6282990962883797,
+        "log_loss": 1.0459459051551345
       },
       "dixon_coles": {
         "matches": 2116,
-        "result_accuracy": 0.4669187145557656,
-        "brier_score": 0.6338113386091433,
-        "log_loss": 1.0535128485661627
+        "result_accuracy": 0.4716446124763705,
+        "brier_score": 0.6321436679916939,
+        "log_loss": 1.0522984767104775
       },
       "elo": {
         "matches": 2076,
-        "result_accuracy": 0.5139691714836223,
-        "brier_score": 0.6087120434711377,
-        "log_loss": 1.0166794509812636
+        "result_accuracy": 0.49421965317919075,
+        "brier_score": 0.6129990518650764,
+        "log_loss": 1.0223936657613348
       },
       "historical_odds_matches": 2116,
       "poisson_market_comparison": {
         "model": {
           "matches": 2116,
-          "result_accuracy": 0.473062381852552,
-          "brier_score": 0.6323606458425004,
-          "log_loss": 1.0512025762824453
+          "result_accuracy": 0.47967863894139884,
+          "brier_score": 0.6282990962883797,
+          "log_loss": 1.0459459051551345
         },
         "market": {
           "matches": 2116,
@@ -2203,9 +2203,9 @@
       "elo_market_comparison": {
         "model": {
           "matches": 2076,
-          "result_accuracy": 0.5139691714836223,
-          "brier_score": 0.6087120434711377,
-          "log_loss": 1.0166794509812636
+          "result_accuracy": 0.49421965317919075,
+          "brier_score": 0.6129990518650764,
+          "log_loss": 1.0223936657613348
         },
         "market": {
           "matches": 2076,
@@ -2217,9 +2217,9 @@
       "dixon_coles_market_comparison": {
         "model": {
           "matches": 2116,
-          "result_accuracy": 0.4669187145557656,
-          "brier_score": 0.6338113386091433,
-          "log_loss": 1.0535128485661627
+          "result_accuracy": 0.4716446124763705,
+          "brier_score": 0.6321436679916939,
+          "log_loss": 1.0522984767104775
         },
         "market": {
           "matches": 2116,
@@ -2233,29 +2233,29 @@
       "live_eligible_matches": 2157,
       "poisson": {
         "matches": 2157,
-        "result_accuracy": 0.42234585071859065,
-        "brier_score": 0.6621290570404365,
-        "log_loss": 1.0922706177967862
+        "result_accuracy": 0.40611961057023643,
+        "brier_score": 0.6658208322188024,
+        "log_loss": 1.0979010000156737
       },
       "dixon_coles": {
         "matches": 2157,
-        "result_accuracy": 0.4140009272137228,
-        "brier_score": 0.6632953093198841,
-        "log_loss": 1.0941414387993307
+        "result_accuracy": 0.38989337042188227,
+        "brier_score": 0.6743568813563342,
+        "log_loss": 1.110625855214816
       },
       "elo": {
         "matches": 2109,
-        "result_accuracy": 0.44523470839260315,
-        "brier_score": 0.6422599119405863,
-        "log_loss": 1.0634111368767627
+        "result_accuracy": 0.42579421526789946,
+        "brier_score": 0.6506042333927019,
+        "log_loss": 1.0757552952743719
       },
       "historical_odds_matches": 2157,
       "poisson_market_comparison": {
         "model": {
           "matches": 2157,
-          "result_accuracy": 0.42234585071859065,
-          "brier_score": 0.6621290570404365,
-          "log_loss": 1.0922706177967862
+          "result_accuracy": 0.40611961057023643,
+          "brier_score": 0.6658208322188024,
+          "log_loss": 1.0979010000156737
         },
         "market": {
           "matches": 2157,
@@ -2267,9 +2267,9 @@
       "elo_market_comparison": {
         "model": {
           "matches": 2109,
-          "result_accuracy": 0.44523470839260315,
-          "brier_score": 0.6422599119405863,
-          "log_loss": 1.0634111368767627
+          "result_accuracy": 0.42579421526789946,
+          "brier_score": 0.6506042333927019,
+          "log_loss": 1.0757552952743719
         },
         "market": {
           "matches": 2109,
@@ -2281,9 +2281,9 @@
       "dixon_coles_market_comparison": {
         "model": {
           "matches": 2157,
-          "result_accuracy": 0.4140009272137228,
-          "brier_score": 0.6632953093198841,
-          "log_loss": 1.0941414387993307
+          "result_accuracy": 0.38989337042188227,
+          "brier_score": 0.6743568813563342,
+          "log_loss": 1.110625855214816
         },
         "market": {
           "matches": 2157,
@@ -2297,29 +2297,29 @@
       "live_eligible_matches": 732,
       "poisson": {
         "matches": 732,
-        "result_accuracy": 0.4822404371584699,
-        "brier_score": 0.6253130384851602,
-        "log_loss": 1.0442030799183204
+        "result_accuracy": 0.5081967213114754,
+        "brier_score": 0.6234957931347678,
+        "log_loss": 1.0407659119579935
       },
       "dixon_coles": {
         "matches": 732,
-        "result_accuracy": 0.47950819672131145,
-        "brier_score": 0.6272843028392576,
-        "log_loss": 1.048041996109889
+        "result_accuracy": 0.49043715846994534,
+        "brier_score": 0.6243449479035041,
+        "log_loss": 1.043259205672161
       },
       "elo": {
         "matches": 732,
-        "result_accuracy": 0.5191256830601093,
-        "brier_score": 0.6043581257961191,
-        "log_loss": 1.0115322815008219
+        "result_accuracy": 0.5259562841530054,
+        "brier_score": 0.6083310646541952,
+        "log_loss": 1.0172665911086145
       },
       "historical_odds_matches": 732,
       "poisson_market_comparison": {
         "model": {
           "matches": 732,
-          "result_accuracy": 0.4822404371584699,
-          "brier_score": 0.6253130384851602,
-          "log_loss": 1.0442030799183204
+          "result_accuracy": 0.5081967213114754,
+          "brier_score": 0.6234957931347678,
+          "log_loss": 1.0407659119579935
         },
         "market": {
           "matches": 732,
@@ -2331,9 +2331,9 @@
       "elo_market_comparison": {
         "model": {
           "matches": 732,
-          "result_accuracy": 0.5191256830601093,
-          "brier_score": 0.6043581257961191,
-          "log_loss": 1.0115322815008219
+          "result_accuracy": 0.5259562841530054,
+          "brier_score": 0.6083310646541952,
+          "log_loss": 1.0172665911086145
         },
         "market": {
           "matches": 732,
@@ -2345,9 +2345,9 @@
       "dixon_coles_market_comparison": {
         "model": {
           "matches": 732,
-          "result_accuracy": 0.47950819672131145,
-          "brier_score": 0.6272843028392576,
-          "log_loss": 1.048041996109889
+          "result_accuracy": 0.49043715846994534,
+          "brier_score": 0.6243449479035041,
+          "log_loss": 1.043259205672161
         },
         "market": {
           "matches": 732,
@@ -2361,29 +2361,29 @@
       "live_eligible_matches": 942,
       "poisson": {
         "matches": 942,
-        "result_accuracy": 0.4394904458598726,
-        "brier_score": 0.6252717554318898,
-        "log_loss": 1.0416724023865327
+        "result_accuracy": 0.4872611464968153,
+        "brier_score": 0.6121794433207244,
+        "log_loss": 1.0223919871496991
       },
       "dixon_coles": {
         "matches": 942,
-        "result_accuracy": 0.4469214437367304,
-        "brier_score": 0.6252555325805593,
-        "log_loss": 1.0421845132288337
+        "result_accuracy": 0.4851380042462845,
+        "brier_score": 0.6165872871046124,
+        "log_loss": 1.0313635841845987
       },
       "elo": {
         "matches": 942,
-        "result_accuracy": 0.5106157112526539,
-        "brier_score": 0.5985209522720578,
-        "log_loss": 1.0007470354351802
+        "result_accuracy": 0.5148619957537155,
+        "brier_score": 0.6019316037135832,
+        "log_loss": 1.005974333262183
       },
       "historical_odds_matches": 941,
       "poisson_market_comparison": {
         "model": {
           "matches": 941,
-          "result_accuracy": 0.4399574920297556,
-          "brier_score": 0.6251361802062101,
-          "log_loss": 1.041472487011324
+          "result_accuracy": 0.487778958554729,
+          "brier_score": 0.612117802471303,
+          "log_loss": 1.0223057795925006
         },
         "market": {
           "matches": 941,
@@ -2395,9 +2395,9 @@
       "elo_market_comparison": {
         "model": {
           "matches": 941,
-          "result_accuracy": 0.5111583421891605,
-          "brier_score": 0.5984504655478825,
-          "log_loss": 1.0006492065676926
+          "result_accuracy": 0.5154091392136025,
+          "brier_score": 0.60172862861994,
+          "log_loss": 1.005676911273701
         },
         "market": {
           "matches": 941,
@@ -2409,9 +2409,9 @@
       "dixon_coles_market_comparison": {
         "model": {
           "matches": 941,
-          "result_accuracy": 0.44739638682252925,
-          "brier_score": 0.6250987492134442,
-          "log_loss": 1.041950030451157
+          "result_accuracy": 0.485653560042508,
+          "brier_score": 0.6164750984584194,
+          "log_loss": 1.031202179975793
         },
         "market": {
           "matches": 941,
@@ -2425,29 +2425,29 @@
       "live_eligible_matches": 2461,
       "poisson": {
         "matches": 2461,
-        "result_accuracy": 0.47947988622511173,
-        "brier_score": 0.6248558265308065,
-        "log_loss": 1.0404679392734792
+        "result_accuracy": 0.5099553027224706,
+        "brier_score": 0.6060810104398502,
+        "log_loss": 1.0137098283570596
       },
       "dixon_coles": {
         "matches": 2461,
-        "result_accuracy": 0.47866720845184885,
-        "brier_score": 0.6256780689453652,
-        "log_loss": 1.0414022839145305
+        "result_accuracy": 0.5034538805363673,
+        "brier_score": 0.6112287644715367,
+        "log_loss": 1.02049128154249
       },
       "elo": {
         "matches": 2407,
-        "result_accuracy": 0.5255504777731617,
-        "brier_score": 0.5949460726324762,
-        "log_loss": 0.9961365861277948
+        "result_accuracy": 0.5288741171582884,
+        "brier_score": 0.5977099054849646,
+        "log_loss": 1.0011649807164686
       },
       "historical_odds_matches": 2460,
       "poisson_market_comparison": {
         "model": {
           "matches": 2460,
-          "result_accuracy": 0.4792682926829268,
-          "brier_score": 0.6249977158740978,
-          "log_loss": 1.0406638082943906
+          "result_accuracy": 0.5101626016260162,
+          "brier_score": 0.6060218245991391,
+          "log_loss": 1.013632197610063
         },
         "market": {
           "matches": 2460,
@@ -2459,9 +2459,9 @@
       "elo_market_comparison": {
         "model": {
           "matches": 2406,
-          "result_accuracy": 0.5257689110556941,
-          "brier_score": 0.5949461946288651,
-          "log_loss": 0.9961439263485355
+          "result_accuracy": 0.529093931837074,
+          "brier_score": 0.5976642596080586,
+          "log_loss": 1.0011110118749542
         },
         "market": {
           "matches": 2406,
@@ -2473,9 +2473,9 @@
       "dixon_coles_market_comparison": {
         "model": {
           "matches": 2460,
-          "result_accuracy": 0.47845528455284553,
-          "brier_score": 0.6258017632828188,
-          "log_loss": 1.0415735615082813
+          "result_accuracy": 0.5036585365853659,
+          "brier_score": 0.6111504253210489,
+          "log_loss": 1.0203823115218955
         },
         "market": {
           "matches": 2460,
@@ -2489,29 +2489,29 @@
       "live_eligible_matches": 2346,
       "poisson": {
         "matches": 2346,
-        "result_accuracy": 0.38448422847399827,
-        "brier_score": 0.6702287401763707,
-        "log_loss": 1.1043289949975947
+        "result_accuracy": 0.4036658141517477,
+        "brier_score": 0.6656778447000004,
+        "log_loss": 1.0980523769101198
       },
       "dixon_coles": {
         "matches": 2346,
-        "result_accuracy": 0.38064791133844844,
-        "brier_score": 0.6696620832240151,
-        "log_loss": 1.1038282571521707
+        "result_accuracy": 0.39940323955669227,
+        "brier_score": 0.6692183350217762,
+        "log_loss": 1.104140525009544
       },
       "elo": {
         "matches": 2312,
-        "result_accuracy": 0.4282006920415225,
-        "brier_score": 0.6441971023654753,
-        "log_loss": 1.0654629509310656
+        "result_accuracy": 0.40743944636678203,
+        "brier_score": 0.6517506503301964,
+        "log_loss": 1.0767925905444309
       },
       "historical_odds_matches": 2339,
       "poisson_market_comparison": {
         "model": {
           "matches": 2339,
-          "result_accuracy": 0.3830696879008123,
-          "brier_score": 0.671186278826643,
-          "log_loss": 1.1056702436394021
+          "result_accuracy": 0.4023086789226165,
+          "brier_score": 0.6666300249423021,
+          "log_loss": 1.0993750851106407
         },
         "market": {
           "matches": 2339,
@@ -2523,9 +2523,9 @@
       "elo_market_comparison": {
         "model": {
           "matches": 2305,
-          "result_accuracy": 0.42689804772234274,
-          "brier_score": 0.6447644076807453,
-          "log_loss": 1.0662543763582328
+          "result_accuracy": 0.40607375271149676,
+          "brier_score": 0.6523378223901264,
+          "log_loss": 1.0776122226979754
         },
         "market": {
           "matches": 2305,
@@ -2537,9 +2537,9 @@
       "dixon_coles_market_comparison": {
         "model": {
           "matches": 2339,
-          "result_accuracy": 0.3792218896964515,
-          "brier_score": 0.6706486033936099,
-          "log_loss": 1.105218218145127
+          "result_accuracy": 0.3980333475844378,
+          "brier_score": 0.6702485105714039,
+          "log_loss": 1.1055805153865053
         },
         "market": {
           "matches": 2339,
@@ -2553,29 +2553,29 @@
       "live_eligible_matches": 762,
       "poisson": {
         "matches": 762,
-        "result_accuracy": 0.4435695538057743,
-        "brier_score": 0.6444856265594053,
-        "log_loss": 1.0670434289872832
+        "result_accuracy": 0.46981627296587924,
+        "brier_score": 0.6321930431173881,
+        "log_loss": 1.04943632815995
       },
       "dixon_coles": {
         "matches": 762,
-        "result_accuracy": 0.4330708661417323,
-        "brier_score": 0.6456038845354208,
-        "log_loss": 1.068659820965012
+        "result_accuracy": 0.47244094488188976,
+        "brier_score": 0.6358532624287296,
+        "log_loss": 1.0571288969229042
       },
       "elo": {
         "matches": 762,
-        "result_accuracy": 0.49868766404199477,
-        "brier_score": 0.6143136944655812,
-        "log_loss": 1.0254766945293232
+        "result_accuracy": 0.484251968503937,
+        "brier_score": 0.6235973272119194,
+        "log_loss": 1.03882323053632
       },
       "historical_odds_matches": 762,
       "poisson_market_comparison": {
         "model": {
           "matches": 762,
-          "result_accuracy": 0.4435695538057743,
-          "brier_score": 0.6444856265594053,
-          "log_loss": 1.0670434289872832
+          "result_accuracy": 0.46981627296587924,
+          "brier_score": 0.6321930431173881,
+          "log_loss": 1.04943632815995
         },
         "market": {
           "matches": 762,
@@ -2587,9 +2587,9 @@
       "elo_market_comparison": {
         "model": {
           "matches": 762,
-          "result_accuracy": 0.49868766404199477,
-          "brier_score": 0.6143136944655812,
-          "log_loss": 1.0254766945293232
+          "result_accuracy": 0.484251968503937,
+          "brier_score": 0.6235973272119194,
+          "log_loss": 1.03882323053632
         },
         "market": {
           "matches": 762,
@@ -2601,9 +2601,9 @@
       "dixon_coles_market_comparison": {
         "model": {
           "matches": 762,
-          "result_accuracy": 0.4330708661417323,
-          "brier_score": 0.6456038845354208,
-          "log_loss": 1.068659820965012
+          "result_accuracy": 0.47244094488188976,
+          "brier_score": 0.6358532624287296,
+          "log_loss": 1.0571288969229042
         },
         "market": {
           "matches": 762,
@@ -2617,29 +2617,29 @@
       "live_eligible_matches": 1543,
       "poisson": {
         "matches": 1543,
-        "result_accuracy": 0.4186649384316267,
-        "brier_score": 0.6663407710008477,
-        "log_loss": 1.1000414612026648
+        "result_accuracy": 0.4219053791315619,
+        "brier_score": 0.6554972360923995,
+        "log_loss": 1.0845120096913983
       },
       "dixon_coles": {
         "matches": 1543,
-        "result_accuracy": 0.40894361633182114,
-        "brier_score": 0.6664502633855394,
-        "log_loss": 1.1013793201539255
+        "result_accuracy": 0.43292287751134156,
+        "brier_score": 0.657199253421108,
+        "log_loss": 1.0890537500928412
       },
       "elo": {
         "matches": 1543,
-        "result_accuracy": 0.4497731691510045,
-        "brier_score": 0.6354179166503678,
-        "log_loss": 1.0550835588638376
+        "result_accuracy": 0.4672715489306546,
+        "brier_score": 0.6379787918275425,
+        "log_loss": 1.0590507613107634
       },
       "historical_odds_matches": 1543,
       "poisson_market_comparison": {
         "model": {
           "matches": 1543,
-          "result_accuracy": 0.4186649384316267,
-          "brier_score": 0.6663407710008477,
-          "log_loss": 1.1000414612026648
+          "result_accuracy": 0.4219053791315619,
+          "brier_score": 0.6554972360923995,
+          "log_loss": 1.0845120096913983
         },
         "market": {
           "matches": 1543,
@@ -2651,9 +2651,9 @@
       "elo_market_comparison": {
         "model": {
           "matches": 1543,
-          "result_accuracy": 0.4497731691510045,
-          "brier_score": 0.6354179166503678,
-          "log_loss": 1.0550835588638376
+          "result_accuracy": 0.4672715489306546,
+          "brier_score": 0.6379787918275425,
+          "log_loss": 1.0590507613107634
         },
         "market": {
           "matches": 1543,
@@ -2665,9 +2665,9 @@
       "dixon_coles_market_comparison": {
         "model": {
           "matches": 1543,
-          "result_accuracy": 0.40894361633182114,
-          "brier_score": 0.6664502633855394,
-          "log_loss": 1.1013793201539255
+          "result_accuracy": 0.43292287751134156,
+          "brier_score": 0.657199253421108,
+          "log_loss": 1.0890537500928412
         },
         "market": {
           "matches": 1543,
@@ -2681,29 +2681,29 @@
       "live_eligible_matches": 1503,
       "poisson": {
         "matches": 1503,
-        "result_accuracy": 0.4324683965402528,
-        "brier_score": 0.6532928204712365,
-        "log_loss": 1.0802523115335807
+        "result_accuracy": 0.43912175648702595,
+        "brier_score": 0.6570748928928666,
+        "log_loss": 1.0868648147291429
       },
       "dixon_coles": {
         "matches": 1503,
-        "result_accuracy": 0.4318030605455755,
-        "brier_score": 0.6553676899026577,
-        "log_loss": 1.083527177370503
+        "result_accuracy": 0.42980705256154356,
+        "brier_score": 0.6624509699148441,
+        "log_loss": 1.0943863184714273
       },
       "elo": {
         "matches": 1503,
-        "result_accuracy": 0.47837658017298734,
-        "brier_score": 0.6265474181306522,
-        "log_loss": 1.042355151752146
+        "result_accuracy": 0.4637391882900865,
+        "brier_score": 0.6376950845589877,
+        "log_loss": 1.0580285015905315
       },
       "historical_odds_matches": 1503,
       "poisson_market_comparison": {
         "model": {
           "matches": 1503,
-          "result_accuracy": 0.4324683965402528,
-          "brier_score": 0.6532928204712365,
-          "log_loss": 1.0802523115335807
+          "result_accuracy": 0.43912175648702595,
+          "brier_score": 0.6570748928928666,
+          "log_loss": 1.0868648147291429
         },
         "market": {
           "matches": 1503,
@@ -2715,9 +2715,9 @@
       "elo_market_comparison": {
         "model": {
           "matches": 1503,
-          "result_accuracy": 0.47837658017298734,
-          "brier_score": 0.6265474181306522,
-          "log_loss": 1.042355151752146
+          "result_accuracy": 0.4637391882900865,
+          "brier_score": 0.6376950845589877,
+          "log_loss": 1.0580285015905315
         },
         "market": {
           "matches": 1503,
@@ -2729,9 +2729,9 @@
       "dixon_coles_market_comparison": {
         "model": {
           "matches": 1503,
-          "result_accuracy": 0.4318030605455755,
-          "brier_score": 0.6553676899026577,
-          "log_loss": 1.083527177370503
+          "result_accuracy": 0.42980705256154356,
+          "brier_score": 0.6624509699148441,
+          "log_loss": 1.0943863184714273
         },
         "market": {
           "matches": 1503,
@@ -2745,29 +2745,29 @@
       "live_eligible_matches": 1853,
       "poisson": {
         "matches": 1853,
-        "result_accuracy": 0.514840798704803,
-        "brier_score": 0.6022718794577664,
-        "log_loss": 1.0097552088012796
+        "result_accuracy": 0.5121424716675661,
+        "brier_score": 0.5921188731798189,
+        "log_loss": 0.9951477867479033
       },
       "dixon_coles": {
         "matches": 1853,
-        "result_accuracy": 0.5132218024824609,
-        "brier_score": 0.6013529980806334,
-        "log_loss": 1.0086259071935626
+        "result_accuracy": 0.5143011332973556,
+        "brier_score": 0.596802170745817,
+        "log_loss": 1.0026360656006421
       },
       "elo": {
         "matches": 1853,
-        "result_accuracy": 0.5342687533729088,
-        "brier_score": 0.5783374259787093,
-        "log_loss": 0.97173696250683
+        "result_accuracy": 0.5407447382622774,
+        "brier_score": 0.5843405455678387,
+        "log_loss": 0.9812853118747629
       },
       "historical_odds_matches": 1853,
       "poisson_market_comparison": {
         "model": {
           "matches": 1853,
-          "result_accuracy": 0.514840798704803,
-          "brier_score": 0.6022718794577664,
-          "log_loss": 1.0097552088012796
+          "result_accuracy": 0.5121424716675661,
+          "brier_score": 0.5921188731798189,
+          "log_loss": 0.9951477867479033
         },
         "market": {
           "matches": 1853,
@@ -2779,9 +2779,9 @@
       "elo_market_comparison": {
         "model": {
           "matches": 1853,
-          "result_accuracy": 0.5342687533729088,
-          "brier_score": 0.5783374259787093,
-          "log_loss": 0.97173696250683
+          "result_accuracy": 0.5407447382622774,
+          "brier_score": 0.5843405455678387,
+          "log_loss": 0.9812853118747629
         },
         "market": {
           "matches": 1853,
@@ -2793,9 +2793,9 @@
       "dixon_coles_market_comparison": {
         "model": {
           "matches": 1853,
-          "result_accuracy": 0.5132218024824609,
-          "brier_score": 0.6013529980806334,
-          "log_loss": 1.0086259071935626
+          "result_accuracy": 0.5143011332973556,
+          "brier_score": 0.596802170745817,
+          "log_loss": 1.0026360656006421
         },
         "market": {
           "matches": 1853,
@@ -2810,28 +2810,28 @@
       "poisson": {
         "matches": 1083,
         "result_accuracy": 0.4801477377654663,
-        "brier_score": 0.6383827406032719,
-        "log_loss": 1.0606114313327009
+        "brier_score": 0.6302872032063747,
+        "log_loss": 1.0493033017301965
       },
       "dixon_coles": {
         "matches": 1083,
-        "result_accuracy": 0.481994459833795,
-        "brier_score": 0.6368655076100617,
-        "log_loss": 1.0594772934442531
+        "result_accuracy": 0.47183748845798706,
+        "brier_score": 0.6371090044558665,
+        "log_loss": 1.0601272418094425
       },
       "elo": {
         "matches": 1083,
-        "result_accuracy": 0.5235457063711911,
-        "brier_score": 0.6007602495340661,
-        "log_loss": 1.005934941435093
+        "result_accuracy": 0.4976915974145891,
+        "brier_score": 0.6111550864400342,
+        "log_loss": 1.02144858509587
       },
       "historical_odds_matches": 1083,
       "poisson_market_comparison": {
         "model": {
           "matches": 1083,
           "result_accuracy": 0.4801477377654663,
-          "brier_score": 0.6383827406032719,
-          "log_loss": 1.0606114313327009
+          "brier_score": 0.6302872032063747,
+          "log_loss": 1.0493033017301965
         },
         "market": {
           "matches": 1083,
@@ -2843,9 +2843,9 @@
       "elo_market_comparison": {
         "model": {
           "matches": 1083,
-          "result_accuracy": 0.5235457063711911,
-          "brier_score": 0.6007602495340661,
-          "log_loss": 1.005934941435093
+          "result_accuracy": 0.4976915974145891,
+          "brier_score": 0.6111550864400342,
+          "log_loss": 1.02144858509587
         },
         "market": {
           "matches": 1083,
@@ -2857,9 +2857,9 @@
       "dixon_coles_market_comparison": {
         "model": {
           "matches": 1083,
-          "result_accuracy": 0.481994459833795,
-          "brier_score": 0.6368655076100617,
-          "log_loss": 1.0594772934442531
+          "result_accuracy": 0.47183748845798706,
+          "brier_score": 0.6371090044558665,
+          "log_loss": 1.0601272418094425
         },
         "market": {
           "matches": 1083,
@@ -2873,29 +2873,29 @@
       "live_eligible_matches": 1952,
       "poisson": {
         "matches": 1952,
-        "result_accuracy": 0.5097336065573771,
-        "brier_score": 0.59524079071411,
-        "log_loss": 0.9984489391884229
+        "result_accuracy": 0.5251024590163934,
+        "brier_score": 0.5813694267347386,
+        "log_loss": 0.979686239147728
       },
       "dixon_coles": {
         "matches": 1952,
-        "result_accuracy": 0.5066598360655737,
-        "brier_score": 0.5970191022772413,
-        "log_loss": 1.0009718426794534
+        "result_accuracy": 0.5158811475409836,
+        "brier_score": 0.5894037705990595,
+        "log_loss": 0.9911514089905353
       },
       "elo": {
         "matches": 1952,
-        "result_accuracy": 0.538422131147541,
-        "brier_score": 0.5717128790890892,
-        "log_loss": 0.9640892699162089
+        "result_accuracy": 0.5235655737704918,
+        "brier_score": 0.5777079440437665,
+        "log_loss": 0.9736046173535703
       },
       "historical_odds_matches": 1952,
       "poisson_market_comparison": {
         "model": {
           "matches": 1952,
-          "result_accuracy": 0.5097336065573771,
-          "brier_score": 0.59524079071411,
-          "log_loss": 0.9984489391884229
+          "result_accuracy": 0.5251024590163934,
+          "brier_score": 0.5813694267347386,
+          "log_loss": 0.979686239147728
         },
         "market": {
           "matches": 1952,
@@ -2907,9 +2907,9 @@
       "elo_market_comparison": {
         "model": {
           "matches": 1952,
-          "result_accuracy": 0.538422131147541,
-          "brier_score": 0.5717128790890892,
-          "log_loss": 0.9640892699162089
+          "result_accuracy": 0.5235655737704918,
+          "brier_score": 0.5777079440437665,
+          "log_loss": 0.9736046173535703
         },
         "market": {
           "matches": 1952,
@@ -2921,9 +2921,9 @@
       "dixon_coles_market_comparison": {
         "model": {
           "matches": 1952,
-          "result_accuracy": 0.5066598360655737,
-          "brier_score": 0.5970191022772413,
-          "log_loss": 1.0009718426794534
+          "result_accuracy": 0.5158811475409836,
+          "brier_score": 0.5894037705990595,
+          "log_loss": 0.9911514089905353
         },
         "market": {
           "matches": 1952,
@@ -2937,29 +2937,29 @@
       "live_eligible_matches": 1287,
       "poisson": {
         "matches": 1287,
-        "result_accuracy": 0.4257964257964258,
-        "brier_score": 0.6610178368359991,
-        "log_loss": 1.0918553768018833
+        "result_accuracy": 0.43123543123543123,
+        "brier_score": 0.6581949931901813,
+        "log_loss": 1.0873484238357476
       },
       "dixon_coles": {
         "matches": 1287,
-        "result_accuracy": 0.4234654234654235,
-        "brier_score": 0.6620892518155945,
-        "log_loss": 1.0945637850484928
+        "result_accuracy": 0.4257964257964258,
+        "brier_score": 0.6653067112162871,
+        "log_loss": 1.0991265498378182
       },
       "elo": {
         "matches": 1287,
-        "result_accuracy": 0.44988344988344986,
-        "brier_score": 0.6371022474472863,
-        "log_loss": 1.0563562016855244
+        "result_accuracy": 0.43356643356643354,
+        "brier_score": 0.6463786395145449,
+        "log_loss": 1.0696283555302992
       },
       "historical_odds_matches": 1287,
       "poisson_market_comparison": {
         "model": {
           "matches": 1287,
-          "result_accuracy": 0.4257964257964258,
-          "brier_score": 0.6610178368359991,
-          "log_loss": 1.0918553768018833
+          "result_accuracy": 0.43123543123543123,
+          "brier_score": 0.6581949931901813,
+          "log_loss": 1.0873484238357476
         },
         "market": {
           "matches": 1287,
@@ -2971,9 +2971,9 @@
       "elo_market_comparison": {
         "model": {
           "matches": 1287,
-          "result_accuracy": 0.44988344988344986,
-          "brier_score": 0.6371022474472863,
-          "log_loss": 1.0563562016855244
+          "result_accuracy": 0.43356643356643354,
+          "brier_score": 0.6463786395145449,
+          "log_loss": 1.0696283555302992
         },
         "market": {
           "matches": 1287,
@@ -2985,9 +2985,9 @@
       "dixon_coles_market_comparison": {
         "model": {
           "matches": 1287,
-          "result_accuracy": 0.4234654234654235,
-          "brier_score": 0.6620892518155945,
-          "log_loss": 1.0945637850484928
+          "result_accuracy": 0.4257964257964258,
+          "brier_score": 0.6653067112162871,
+          "log_loss": 1.0991265498378182
         },
         "market": {
           "matches": 1287,
@@ -3001,29 +3001,29 @@
       "live_eligible_matches": 1389,
       "poisson": {
         "matches": 1389,
-        "result_accuracy": 0.4312455003599712,
-        "brier_score": 0.6500840373585454,
-        "log_loss": 1.0756660713180701
+        "result_accuracy": 0.4269258459323254,
+        "brier_score": 0.6504919173659525,
+        "log_loss": 1.0767124927600686
       },
       "dixon_coles": {
         "matches": 1389,
         "result_accuracy": 0.4247660187185025,
-        "brier_score": 0.6512324829544903,
-        "log_loss": 1.077572355919319
+        "brier_score": 0.6579781218954537,
+        "log_loss": 1.089897692414811
       },
       "elo": {
         "matches": 1389,
-        "result_accuracy": 0.47588192944564434,
-        "brier_score": 0.6233514654561754,
-        "log_loss": 1.038272324323279
+        "result_accuracy": 0.46652267818574517,
+        "brier_score": 0.6302261111155517,
+        "log_loss": 1.0478952253657312
       },
       "historical_odds_matches": 1389,
       "poisson_market_comparison": {
         "model": {
           "matches": 1389,
-          "result_accuracy": 0.4312455003599712,
-          "brier_score": 0.6500840373585454,
-          "log_loss": 1.0756660713180701
+          "result_accuracy": 0.4269258459323254,
+          "brier_score": 0.6504919173659525,
+          "log_loss": 1.0767124927600686
         },
         "market": {
           "matches": 1389,
@@ -3035,9 +3035,9 @@
       "elo_market_comparison": {
         "model": {
           "matches": 1389,
-          "result_accuracy": 0.47588192944564434,
-          "brier_score": 0.6233514654561754,
-          "log_loss": 1.038272324323279
+          "result_accuracy": 0.46652267818574517,
+          "brier_score": 0.6302261111155517,
+          "log_loss": 1.0478952253657312
         },
         "market": {
           "matches": 1389,
@@ -3050,8 +3050,8 @@
         "model": {
           "matches": 1389,
           "result_accuracy": 0.4247660187185025,
-          "brier_score": 0.6512324829544903,
-          "log_loss": 1.077572355919319
+          "brier_score": 0.6579781218954537,
+          "log_loss": 1.089897692414811
         },
         "market": {
           "matches": 1389,
@@ -3065,29 +3065,29 @@
       "live_eligible_matches": 1062,
       "poisson": {
         "matches": 1062,
-        "result_accuracy": 0.480225988700565,
-        "brier_score": 0.6205947619981975,
-        "log_loss": 1.0354429358126072
+        "result_accuracy": 0.4755178907721281,
+        "brier_score": 0.6288227460450124,
+        "log_loss": 1.0469860692574022
       },
       "dixon_coles": {
         "matches": 1062,
-        "result_accuracy": 0.4830508474576271,
-        "brier_score": 0.6228580049472743,
-        "log_loss": 1.0402110196690155
+        "result_accuracy": 0.467984934086629,
+        "brier_score": 0.6364263193975357,
+        "log_loss": 1.060214258048138
       },
       "elo": {
         "matches": 1062,
-        "result_accuracy": 0.5188323917137476,
-        "brier_score": 0.6042132409768292,
-        "log_loss": 1.0114773555080956
+        "result_accuracy": 0.4981167608286252,
+        "brier_score": 0.6165535658782025,
+        "log_loss": 1.0271427884174673
       },
       "historical_odds_matches": 1060,
       "poisson_market_comparison": {
         "model": {
           "matches": 1060,
-          "result_accuracy": 0.47924528301886793,
-          "brier_score": 0.6210696237916769,
-          "log_loss": 1.0361079232024093
+          "result_accuracy": 0.47547169811320755,
+          "brier_score": 0.6287424374214599,
+          "log_loss": 1.0468398925219968
         },
         "market": {
           "matches": 1060,
@@ -3099,9 +3099,9 @@
       "elo_market_comparison": {
         "model": {
           "matches": 1060,
-          "result_accuracy": 0.5179245283018868,
-          "brier_score": 0.6045941361952826,
-          "log_loss": 1.0120186392847312
+          "result_accuracy": 0.4981132075471698,
+          "brier_score": 0.6168061535374194,
+          "log_loss": 1.0274872877215278
         },
         "market": {
           "matches": 1060,
@@ -3113,9 +3113,9 @@
       "dixon_coles_market_comparison": {
         "model": {
           "matches": 1060,
-          "result_accuracy": 0.4820754716981132,
-          "brier_score": 0.6233390771192756,
-          "log_loss": 1.0408884859776164
+          "result_accuracy": 0.4679245283018868,
+          "brier_score": 0.6365248906644565,
+          "log_loss": 1.0603564104918544
         },
         "market": {
           "matches": 1060,
@@ -3129,29 +3129,29 @@
       "live_eligible_matches": 1389,
       "poisson": {
         "matches": 1389,
-        "result_accuracy": 0.49604031677465804,
-        "brier_score": 0.607381315316947,
-        "log_loss": 1.0155406356318464
+        "result_accuracy": 0.5010799136069114,
+        "brier_score": 0.6017236245845348,
+        "log_loss": 1.0081082120352616
       },
       "dixon_coles": {
         "matches": 1389,
-        "result_accuracy": 0.5025197984161267,
-        "brier_score": 0.6104222329566882,
-        "log_loss": 1.0203902645327683
+        "result_accuracy": 0.5017998560115191,
+        "brier_score": 0.6049666462931395,
+        "log_loss": 1.0136806046346893
       },
       "elo": {
         "matches": 1374,
-        "result_accuracy": 0.5262008733624454,
-        "brier_score": 0.5811435995567523,
-        "log_loss": 0.9782886275756415
+        "result_accuracy": 0.5101892285298398,
+        "brier_score": 0.5892957416201368,
+        "log_loss": 0.9900425969505002
       },
       "historical_odds_matches": 1389,
       "poisson_market_comparison": {
         "model": {
           "matches": 1389,
-          "result_accuracy": 0.49604031677465804,
-          "brier_score": 0.607381315316947,
-          "log_loss": 1.0155406356318464
+          "result_accuracy": 0.5010799136069114,
+          "brier_score": 0.6017236245845348,
+          "log_loss": 1.0081082120352616
         },
         "market": {
           "matches": 1389,
@@ -3163,9 +3163,9 @@
       "elo_market_comparison": {
         "model": {
           "matches": 1374,
-          "result_accuracy": 0.5262008733624454,
-          "brier_score": 0.5811435995567523,
-          "log_loss": 0.9782886275756415
+          "result_accuracy": 0.5101892285298398,
+          "brier_score": 0.5892957416201368,
+          "log_loss": 0.9900425969505002
         },
         "market": {
           "matches": 1374,
@@ -3177,9 +3177,9 @@
       "dixon_coles_market_comparison": {
         "model": {
           "matches": 1389,
-          "result_accuracy": 0.5025197984161267,
-          "brier_score": 0.6104222329566882,
-          "log_loss": 1.0203902645327683
+          "result_accuracy": 0.5017998560115191,
+          "brier_score": 0.6049666462931395,
+          "log_loss": 1.0136806046346893
         },
         "market": {
           "matches": 1389,
@@ -3193,29 +3193,29 @@
       "live_eligible_matches": 1050,
       "poisson": {
         "matches": 1050,
-        "result_accuracy": 0.4066666666666667,
-        "brier_score": 0.6703866739121542,
-        "log_loss": 1.10528132367055
+        "result_accuracy": 0.4076190476190476,
+        "brier_score": 0.6687804965502938,
+        "log_loss": 1.1002414542849501
       },
       "dixon_coles": {
         "matches": 1050,
-        "result_accuracy": 0.4142857142857143,
-        "brier_score": 0.6728578004162763,
-        "log_loss": 1.109106335184338
+        "result_accuracy": 0.4076190476190476,
+        "brier_score": 0.6731205604612637,
+        "log_loss": 1.1080992881035379
       },
       "elo": {
         "matches": 994,
-        "result_accuracy": 0.4255533199195171,
-        "brier_score": 0.6486821351153783,
-        "log_loss": 1.072814422479778
+        "result_accuracy": 0.40643863179074446,
+        "brier_score": 0.6535866923940712,
+        "log_loss": 1.0793116944248307
       },
       "historical_odds_matches": 1050,
       "poisson_market_comparison": {
         "model": {
           "matches": 1050,
-          "result_accuracy": 0.4066666666666667,
-          "brier_score": 0.6703866739121542,
-          "log_loss": 1.10528132367055
+          "result_accuracy": 0.4076190476190476,
+          "brier_score": 0.6687804965502938,
+          "log_loss": 1.1002414542849501
         },
         "market": {
           "matches": 1050,
@@ -3227,9 +3227,9 @@
       "elo_market_comparison": {
         "model": {
           "matches": 994,
-          "result_accuracy": 0.4255533199195171,
-          "brier_score": 0.6486821351153783,
-          "log_loss": 1.072814422479778
+          "result_accuracy": 0.40643863179074446,
+          "brier_score": 0.6535866923940712,
+          "log_loss": 1.0793116944248307
         },
         "market": {
           "matches": 994,
@@ -3241,9 +3241,9 @@
       "dixon_coles_market_comparison": {
         "model": {
           "matches": 1050,
-          "result_accuracy": 0.4142857142857143,
-          "brier_score": 0.6728578004162763,
-          "log_loss": 1.109106335184338
+          "result_accuracy": 0.4076190476190476,
+          "brier_score": 0.6731205604612637,
+          "log_loss": 1.1080992881035379
         },
         "market": {
           "matches": 1050,
@@ -3257,29 +3257,29 @@
       "live_eligible_matches": 1030,
       "poisson": {
         "matches": 1030,
-        "result_accuracy": 0.4640776699029126,
-        "brier_score": 0.6434021050023839,
-        "log_loss": 1.0686733763791807
+        "result_accuracy": 0.4728155339805825,
+        "brier_score": 0.6385584174533794,
+        "log_loss": 1.0591821975136835
       },
       "dixon_coles": {
         "matches": 1030,
-        "result_accuracy": 0.4650485436893204,
-        "brier_score": 0.6447363401851605,
-        "log_loss": 1.0713451321994898
+        "result_accuracy": 0.470873786407767,
+        "brier_score": 0.6441201139697433,
+        "log_loss": 1.0704097928978107
       },
       "elo": {
         "matches": 962,
-        "result_accuracy": 0.4812889812889813,
-        "brier_score": 0.6203391055041846,
-        "log_loss": 1.0308291096404327
+        "result_accuracy": 0.46673596673596673,
+        "brier_score": 0.6233084164659806,
+        "log_loss": 1.0357050621999422
       },
       "historical_odds_matches": 1030,
       "poisson_market_comparison": {
         "model": {
           "matches": 1030,
-          "result_accuracy": 0.4640776699029126,
-          "brier_score": 0.6434021050023839,
-          "log_loss": 1.0686733763791807
+          "result_accuracy": 0.4728155339805825,
+          "brier_score": 0.6385584174533794,
+          "log_loss": 1.0591821975136835
         },
         "market": {
           "matches": 1030,
@@ -3291,9 +3291,9 @@
       "elo_market_comparison": {
         "model": {
           "matches": 962,
-          "result_accuracy": 0.4812889812889813,
-          "brier_score": 0.6203391055041846,
-          "log_loss": 1.0308291096404327
+          "result_accuracy": 0.46673596673596673,
+          "brier_score": 0.6233084164659806,
+          "log_loss": 1.0357050621999422
         },
         "market": {
           "matches": 962,
@@ -3305,9 +3305,9 @@
       "dixon_coles_market_comparison": {
         "model": {
           "matches": 1030,
-          "result_accuracy": 0.4650485436893204,
-          "brier_score": 0.6447363401851605,
-          "log_loss": 1.0713451321994898
+          "result_accuracy": 0.470873786407767,
+          "brier_score": 0.6441201139697433,
+          "log_loss": 1.0704097928978107
         },
         "market": {
           "matches": 1030,
@@ -3321,29 +3321,29 @@
       "live_eligible_matches": 1025,
       "poisson": {
         "matches": 1025,
-        "result_accuracy": 0.42634146341463414,
-        "brier_score": 0.6587616612921442,
-        "log_loss": 1.0914711652050517
+        "result_accuracy": 0.41560975609756096,
+        "brier_score": 0.6655097545351412,
+        "log_loss": 1.0996227756593338
       },
       "dixon_coles": {
         "matches": 1025,
-        "result_accuracy": 0.4253658536585366,
-        "brier_score": 0.6590167374708182,
-        "log_loss": 1.0929426943315945
+        "result_accuracy": 0.4058536585365854,
+        "brier_score": 0.672719954963541,
+        "log_loss": 1.112082369393836
       },
       "elo": {
         "matches": 1000,
-        "result_accuracy": 0.438,
-        "brier_score": 0.6424782319741968,
-        "log_loss": 1.0656043108431628
+        "result_accuracy": 0.433,
+        "brier_score": 0.6483281154811451,
+        "log_loss": 1.0729021600674762
       },
       "historical_odds_matches": 1025,
       "poisson_market_comparison": {
         "model": {
           "matches": 1025,
-          "result_accuracy": 0.42634146341463414,
-          "brier_score": 0.6587616612921442,
-          "log_loss": 1.0914711652050517
+          "result_accuracy": 0.41560975609756096,
+          "brier_score": 0.6655097545351412,
+          "log_loss": 1.0996227756593338
         },
         "market": {
           "matches": 1025,
@@ -3355,9 +3355,9 @@
       "elo_market_comparison": {
         "model": {
           "matches": 1000,
-          "result_accuracy": 0.438,
-          "brier_score": 0.6424782319741968,
-          "log_loss": 1.0656043108431628
+          "result_accuracy": 0.433,
+          "brier_score": 0.6483281154811451,
+          "log_loss": 1.0729021600674762
         },
         "market": {
           "matches": 1000,
@@ -3369,9 +3369,9 @@
       "dixon_coles_market_comparison": {
         "model": {
           "matches": 1025,
-          "result_accuracy": 0.4253658536585366,
-          "brier_score": 0.6590167374708182,
-          "log_loss": 1.0929426943315945
+          "result_accuracy": 0.4058536585365854,
+          "brier_score": 0.672719954963541,
+          "log_loss": 1.112082369393836
         },
         "market": {
           "matches": 1025,
@@ -3385,29 +3385,29 @@
       "live_eligible_matches": 2461,
       "poisson": {
         "matches": 2461,
-        "result_accuracy": 0.4717594473791142,
-        "brier_score": 0.62576338182168,
-        "log_loss": 1.040122146193493
+        "result_accuracy": 0.4741974806989029,
+        "brier_score": 0.6291443479875185,
+        "log_loss": 1.045295815652051
       },
       "dixon_coles": {
         "matches": 2461,
-        "result_accuracy": 0.47257212515237706,
-        "brier_score": 0.6279866341253364,
-        "log_loss": 1.043641203377164
+        "result_accuracy": 0.44981714750101587,
+        "brier_score": 0.6367274192251149,
+        "log_loss": 1.057392099929696
       },
       "elo": {
         "matches": 2415,
-        "result_accuracy": 0.5233954451345756,
-        "brier_score": 0.599856132413165,
-        "log_loss": 1.0041417092485245
+        "result_accuracy": 0.494824016563147,
+        "brier_score": 0.6114152295904759,
+        "log_loss": 1.021423011785069
       },
       "historical_odds_matches": 2461,
       "poisson_market_comparison": {
         "model": {
           "matches": 2461,
-          "result_accuracy": 0.4717594473791142,
-          "brier_score": 0.62576338182168,
-          "log_loss": 1.040122146193493
+          "result_accuracy": 0.4741974806989029,
+          "brier_score": 0.6291443479875185,
+          "log_loss": 1.045295815652051
         },
         "market": {
           "matches": 2461,
@@ -3419,9 +3419,9 @@
       "elo_market_comparison": {
         "model": {
           "matches": 2415,
-          "result_accuracy": 0.5233954451345756,
-          "brier_score": 0.599856132413165,
-          "log_loss": 1.0041417092485245
+          "result_accuracy": 0.494824016563147,
+          "brier_score": 0.6114152295904759,
+          "log_loss": 1.021423011785069
         },
         "market": {
           "matches": 2415,
@@ -3433,9 +3433,9 @@
       "dixon_coles_market_comparison": {
         "model": {
           "matches": 2461,
-          "result_accuracy": 0.47257212515237706,
-          "brier_score": 0.6279866341253364,
-          "log_loss": 1.043641203377164
+          "result_accuracy": 0.44981714750101587,
+          "brier_score": 0.6367274192251149,
+          "log_loss": 1.057392099929696
         },
         "market": {
           "matches": 2461,
@@ -3449,29 +3449,29 @@
       "live_eligible_matches": 2906,
       "poisson": {
         "matches": 2906,
-        "result_accuracy": 0.42601514108740535,
-        "brier_score": 0.6551280955447827,
-        "log_loss": 1.082191854756652
+        "result_accuracy": 0.387130075705437,
+        "brier_score": 0.6706411106552296,
+        "log_loss": 1.1052469268182046
       },
       "dixon_coles": {
         "matches": 2906,
-        "result_accuracy": 0.428079834824501,
-        "brier_score": 0.6559699637572931,
-        "log_loss": 1.0840620045790157
+        "result_accuracy": 0.37715072264280797,
+        "brier_score": 0.676986436849814,
+        "log_loss": 1.1156659840221148
       },
       "elo": {
         "matches": 2877,
-        "result_accuracy": 0.43899895724713245,
-        "brier_score": 0.6405913155930969,
-        "log_loss": 1.060967854863735
+        "result_accuracy": 0.408063955509211,
+        "brier_score": 0.6550577893273305,
+        "log_loss": 1.0824572153504421
       },
       "historical_odds_matches": 2906,
       "poisson_market_comparison": {
         "model": {
           "matches": 2906,
-          "result_accuracy": 0.42601514108740535,
-          "brier_score": 0.6551280955447827,
-          "log_loss": 1.082191854756652
+          "result_accuracy": 0.387130075705437,
+          "brier_score": 0.6706411106552296,
+          "log_loss": 1.1052469268182046
         },
         "market": {
           "matches": 2906,
@@ -3483,9 +3483,9 @@
       "elo_market_comparison": {
         "model": {
           "matches": 2877,
-          "result_accuracy": 0.43899895724713245,
-          "brier_score": 0.6405913155930969,
-          "log_loss": 1.060967854863735
+          "result_accuracy": 0.408063955509211,
+          "brier_score": 0.6550577893273305,
+          "log_loss": 1.0824572153504421
         },
         "market": {
           "matches": 2877,
@@ -3497,9 +3497,9 @@
       "dixon_coles_market_comparison": {
         "model": {
           "matches": 2906,
-          "result_accuracy": 0.428079834824501,
-          "brier_score": 0.6559699637572931,
-          "log_loss": 1.0840620045790157
+          "result_accuracy": 0.37715072264280797,
+          "brier_score": 0.676986436849814,
+          "log_loss": 1.1156659840221148
         },
         "market": {
           "matches": 2906,
@@ -3513,29 +3513,29 @@
       "live_eligible_matches": 863,
       "poisson": {
         "matches": 863,
-        "result_accuracy": 0.4322132097334878,
-        "brier_score": 0.6635773521394802,
-        "log_loss": 1.0976790960369873
+        "result_accuracy": 0.41946697566628044,
+        "brier_score": 0.6720515659458516,
+        "log_loss": 1.1098491882309784
       },
       "dixon_coles": {
         "matches": 863,
-        "result_accuracy": 0.43105446118192353,
-        "brier_score": 0.6648362968152574,
-        "log_loss": 1.1001173067381331
+        "result_accuracy": 0.42294322132097334,
+        "brier_score": 0.6789741882408397,
+        "log_loss": 1.1210294053726766
       },
       "elo": {
         "matches": 863,
-        "result_accuracy": 0.4484356894553882,
-        "brier_score": 0.6352810770523988,
-        "log_loss": 1.0541365871902457
+        "result_accuracy": 0.43568945538818077,
+        "brier_score": 0.6459327711420321,
+        "log_loss": 1.069285465667939
       },
       "historical_odds_matches": 862,
       "poisson_market_comparison": {
         "model": {
           "matches": 862,
-          "result_accuracy": 0.43155452436194897,
-          "brier_score": 0.6639432588045704,
-          "log_loss": 1.0981899271319369
+          "result_accuracy": 0.419953596287703,
+          "brier_score": 0.6719873194315535,
+          "log_loss": 1.1097775468964033
         },
         "market": {
           "matches": 862,
@@ -3547,9 +3547,9 @@
       "elo_market_comparison": {
         "model": {
           "matches": 862,
-          "result_accuracy": 0.44779582366589327,
-          "brier_score": 0.6354436329854255,
-          "log_loss": 1.054376591797752
+          "result_accuracy": 0.4361948955916473,
+          "brier_score": 0.6459761888976403,
+          "log_loss": 1.06937257404722
         },
         "market": {
           "matches": 862,
@@ -3561,9 +3561,9 @@
       "dixon_coles_market_comparison": {
         "model": {
           "matches": 862,
-          "result_accuracy": 0.43039443155452434,
-          "brier_score": 0.6652130753981755,
-          "log_loss": 1.1006441143790335
+          "result_accuracy": 0.4234338747099768,
+          "brier_score": 0.678834859599987,
+          "log_loss": 1.1208317366066987
         },
         "market": {
           "matches": 862,
@@ -3577,29 +3577,29 @@
       "live_eligible_matches": 1094,
       "poisson": {
         "matches": 1094,
-        "result_accuracy": 0.45886654478976235,
-        "brier_score": 0.638759776695844,
-        "log_loss": 1.0605564197352726
+        "result_accuracy": 0.45978062157221206,
+        "brier_score": 0.6419010376018409,
+        "log_loss": 1.0659552529929652
       },
       "dixon_coles": {
         "matches": 1094,
-        "result_accuracy": 0.4424131627056673,
-        "brier_score": 0.6417033679432725,
-        "log_loss": 1.0664729066325507
+        "result_accuracy": 0.4616087751371115,
+        "brier_score": 0.6497539172854719,
+        "log_loss": 1.0801957567607408
       },
       "elo": {
         "matches": 1094,
-        "result_accuracy": 0.48811700182815354,
-        "brier_score": 0.6213971608224552,
-        "log_loss": 1.0338193880295938
+        "result_accuracy": 0.48720292504570384,
+        "brier_score": 0.6273157288346983,
+        "log_loss": 1.0429752942877992
       },
       "historical_odds_matches": 1094,
       "poisson_market_comparison": {
         "model": {
           "matches": 1094,
-          "result_accuracy": 0.45886654478976235,
-          "brier_score": 0.638759776695844,
-          "log_loss": 1.0605564197352726
+          "result_accuracy": 0.45978062157221206,
+          "brier_score": 0.6419010376018409,
+          "log_loss": 1.0659552529929652
         },
         "market": {
           "matches": 1094,
@@ -3611,9 +3611,9 @@
       "elo_market_comparison": {
         "model": {
           "matches": 1094,
-          "result_accuracy": 0.48811700182815354,
-          "brier_score": 0.6213971608224552,
-          "log_loss": 1.0338193880295938
+          "result_accuracy": 0.48720292504570384,
+          "brier_score": 0.6273157288346983,
+          "log_loss": 1.0429752942877992
         },
         "market": {
           "matches": 1094,
@@ -3625,9 +3625,9 @@
       "dixon_coles_market_comparison": {
         "model": {
           "matches": 1094,
-          "result_accuracy": 0.4424131627056673,
-          "brier_score": 0.6417033679432725,
-          "log_loss": 1.0664729066325507
+          "result_accuracy": 0.4616087751371115,
+          "brier_score": 0.6497539172854719,
+          "log_loss": 1.0801957567607408
         },
         "market": {
           "matches": 1094,
@@ -3641,29 +3641,29 @@
       "live_eligible_matches": 2203,
       "poisson": {
         "matches": 2203,
-        "result_accuracy": 0.4929641398093509,
-        "brier_score": 0.6201768612905347,
-        "log_loss": 1.0344608262487982
+        "result_accuracy": 0.4752610077167499,
+        "brier_score": 0.6216391082380014,
+        "log_loss": 1.0367061339435824
       },
       "dixon_coles": {
         "matches": 2203,
-        "result_accuracy": 0.48978665456196097,
-        "brier_score": 0.6206370809134875,
-        "log_loss": 1.0352764994742816
+        "result_accuracy": 0.46890603722197005,
+        "brier_score": 0.6252266929225665,
+        "log_loss": 1.0416023810798514
       },
       "elo": {
         "matches": 2203,
-        "result_accuracy": 0.5047662278710849,
-        "brier_score": 0.600936741101677,
-        "log_loss": 1.0054941410935856
+        "result_accuracy": 0.4979573309123922,
+        "brier_score": 0.6124102758794181,
+        "log_loss": 1.0227052164584303
       },
       "historical_odds_matches": 2174,
       "poisson_market_comparison": {
         "model": {
           "matches": 2174,
-          "result_accuracy": 0.48850045998160074,
-          "brier_score": 0.6247774782087676,
-          "log_loss": 1.0411831507797384
+          "result_accuracy": 0.468721251149954,
+          "brier_score": 0.6276659221773074,
+          "log_loss": 1.0455963431211057
         },
         "market": {
           "matches": 2174,
@@ -3675,9 +3675,9 @@
       "elo_market_comparison": {
         "model": {
           "matches": 2174,
-          "result_accuracy": 0.49954001839926404,
-          "brier_score": 0.6035613424308721,
-          "log_loss": 1.009224185357666
+          "result_accuracy": 0.4917203311867525,
+          "brier_score": 0.6154554588255272,
+          "log_loss": 1.027003223706522
         },
         "market": {
           "matches": 2174,
@@ -3689,9 +3689,9 @@
       "dixon_coles_market_comparison": {
         "model": {
           "matches": 2174,
-          "result_accuracy": 0.48482060717571296,
-          "brier_score": 0.6253748258153281,
-          "log_loss": 1.042147228492511
+          "result_accuracy": 0.46274149034038636,
+          "brier_score": 0.6316118104023009,
+          "log_loss": 1.0510281440282663
         },
         "market": {
           "matches": 2174,
@@ -3705,29 +3705,29 @@
       "live_eligible_matches": 2199,
       "poisson": {
         "matches": 2199,
-        "result_accuracy": 0.46293769895407005,
-        "brier_score": 0.6549436418749467,
-        "log_loss": 1.0827144999211522
+        "result_accuracy": 0.4092769440654843,
+        "brier_score": 0.673515113401405,
+        "log_loss": 1.1086750126652027
       },
       "dixon_coles": {
         "matches": 2199,
-        "result_accuracy": 0.45657116871305137,
-        "brier_score": 0.6544429485917375,
-        "log_loss": 1.0822646508715998
+        "result_accuracy": 0.4092769440654843,
+        "brier_score": 0.6767499198366593,
+        "log_loss": 1.1135454461565808
       },
       "elo": {
         "matches": 2199,
-        "result_accuracy": 0.4670304683947249,
-        "brier_score": 0.6342636401153829,
-        "log_loss": 1.0528165174701354
+        "result_accuracy": 0.42155525238744884,
+        "brier_score": 0.6522513562017201,
+        "log_loss": 1.0777769255759484
       },
       "historical_odds_matches": 2199,
       "poisson_market_comparison": {
         "model": {
           "matches": 2199,
-          "result_accuracy": 0.46293769895407005,
-          "brier_score": 0.6549436418749467,
-          "log_loss": 1.0827144999211522
+          "result_accuracy": 0.4092769440654843,
+          "brier_score": 0.673515113401405,
+          "log_loss": 1.1086750126652027
         },
         "market": {
           "matches": 2199,
@@ -3739,9 +3739,9 @@
       "elo_market_comparison": {
         "model": {
           "matches": 2199,
-          "result_accuracy": 0.4670304683947249,
-          "brier_score": 0.6342636401153829,
-          "log_loss": 1.0528165174701354
+          "result_accuracy": 0.42155525238744884,
+          "brier_score": 0.6522513562017201,
+          "log_loss": 1.0777769255759484
         },
         "market": {
           "matches": 2199,
@@ -3753,9 +3753,9 @@
       "dixon_coles_market_comparison": {
         "model": {
           "matches": 2199,
-          "result_accuracy": 0.45657116871305137,
-          "brier_score": 0.6544429485917375,
-          "log_loss": 1.0822646508715998
+          "result_accuracy": 0.4092769440654843,
+          "brier_score": 0.6767499198366593,
+          "log_loss": 1.1135454461565808
         },
         "market": {
           "matches": 2199,
@@ -3776,13 +3776,13 @@
         "folds_beating_raw_and_baseline": 4,
         "raw": {
           "matches": 32541,
-          "brier_score": 0.2571139670092586,
-          "log_loss": 0.7088417494867869
+          "brier_score": 0.2550381474111802,
+          "log_loss": 0.7045897849756508
         },
         "calibrated": {
           "matches": 32541,
-          "brier_score": 0.24816164824110432,
-          "log_loss": 0.6894556028464178
+          "brier_score": 0.24761847942661033,
+          "log_loss": 0.6883621798244556
         },
         "expanding_baseline": {
           "matches": 32541,
@@ -3799,13 +3799,13 @@
         "folds_beating_raw_and_baseline": 4,
         "raw": {
           "matches": 32541,
-          "brier_score": 0.19206878721486048,
-          "log_loss": 0.5741508257543657
+          "brier_score": 0.18995227925926,
+          "log_loss": 0.5693573510521044
         },
         "calibrated": {
           "matches": 32541,
-          "brier_score": 0.1843405694573146,
-          "log_loss": 0.5547882398633899
+          "brier_score": 0.1836784049529613,
+          "log_loss": 0.5530594950300594
         },
         "expanding_baseline": {
           "matches": 32541,
@@ -3822,13 +3822,13 @@
         "folds_beating_raw_and_baseline": 4,
         "raw": {
           "matches": 32541,
-          "brier_score": 0.25991073112428015,
-          "log_loss": 0.7170839808264058
+          "brier_score": 0.2567981584194627,
+          "log_loss": 0.7106241410286371
         },
         "calibrated": {
           "matches": 32541,
-          "brier_score": 0.248178342978145,
-          "log_loss": 0.689486746977226
+          "brier_score": 0.24708604654587693,
+          "log_loss": 0.6872875711167608
         },
         "expanding_baseline": {
           "matches": 32541,
@@ -3845,13 +3845,13 @@
         "folds_beating_raw_and_baseline": 4,
         "raw": {
           "matches": 32541,
-          "brier_score": 0.2145742593621879,
-          "log_loss": 0.6259894433077858
+          "brier_score": 0.21276945820291876,
+          "log_loss": 0.6209331358636384
         },
         "calibrated": {
           "matches": 32541,
-          "brier_score": 0.205369788004731,
-          "log_loss": 0.6005873575602135
+          "brier_score": 0.2045999887854153,
+          "log_loss": 0.5986959194112063
         },
         "expanding_baseline": {
           "matches": 32541,
@@ -3868,133 +3868,133 @@
       "metrics": {
         "btts_yes": {
           "matches": 67549,
-          "brier_score": 0.257318969328556,
-          "log_loss": 0.709422410719052,
-          "accuracy": 0.5207330974551807,
+          "brier_score": 0.2574608802697117,
+          "log_loss": 0.709966654848043,
+          "accuracy": 0.524685783653348,
           "observed_frequency": 0.5255592236746658,
-          "mean_predicted_probability": 0.5018182405143449
+          "mean_predicted_probability": 0.5019346191815495
         },
         "btts_no": {
           "matches": 67549,
-          "brier_score": 0.257318969328556,
-          "log_loss": 0.709422410719052,
-          "accuracy": 0.5207330974551807,
+          "brier_score": 0.2574608802697117,
+          "log_loss": 0.709966654848043,
+          "accuracy": 0.524685783653348,
           "observed_frequency": 0.4744407763253342,
-          "mean_predicted_probability": 0.49818175948565513
+          "mean_predicted_probability": 0.49806538081845053
         },
         "over_1_5": {
           "matches": 67549,
-          "brier_score": 0.19673116959202583,
-          "log_loss": 0.5858010140445654,
-          "accuracy": 0.7306103717301514,
+          "brier_score": 0.1966601635688828,
+          "log_loss": 0.5855970239838675,
+          "accuracy": 0.7283305452338302,
           "observed_frequency": 0.7454440480243971,
-          "mean_predicted_probability": 0.7280568890437087
+          "mean_predicted_probability": 0.7277823330282657
         },
         "under_1_5": {
           "matches": 67549,
-          "brier_score": 0.19673116959202583,
-          "log_loss": 0.5858010140445654,
-          "accuracy": 0.7306103717301514,
+          "brier_score": 0.1966601635688828,
+          "log_loss": 0.5855970239838675,
+          "accuracy": 0.7283305452338302,
           "observed_frequency": 0.2545559519756029,
-          "mean_predicted_probability": 0.2719431109562913
+          "mean_predicted_probability": 0.27221766697173444
         },
         "over_2_5": {
           "matches": 67549,
-          "brier_score": 0.2603101380130118,
-          "log_loss": 0.7183654397532931,
-          "accuracy": 0.5335830286162637,
+          "brier_score": 0.26008165367106945,
+          "log_loss": 0.7187370195905896,
+          "accuracy": 0.5398155413107522,
           "observed_frequency": 0.5032642970288235,
-          "mean_predicted_probability": 0.48717877919547553
+          "mean_predicted_probability": 0.48914009730503033
         },
         "under_2_5": {
           "matches": 67549,
-          "brier_score": 0.2603101380130118,
-          "log_loss": 0.7183654397532931,
-          "accuracy": 0.5335830286162637,
+          "brier_score": 0.26008165367106945,
+          "log_loss": 0.7187370195905896,
+          "accuracy": 0.5398155413107522,
           "observed_frequency": 0.4967357029711765,
-          "mean_predicted_probability": 0.5128212208045245
+          "mean_predicted_probability": 0.5108599026949697
         },
         "over_3_5": {
           "matches": 67549,
-          "brier_score": 0.2104618026741042,
-          "log_loss": 0.6175777440493988,
-          "accuracy": 0.6959688522405957,
+          "brier_score": 0.2107372267623448,
+          "log_loss": 0.6184616346772481,
+          "accuracy": 0.6931560792905891,
           "observed_frequency": 0.2822839716354054,
-          "mean_predicted_probability": 0.28522608724988296
+          "mean_predicted_probability": 0.288875247764723
         },
         "under_3_5": {
           "matches": 67549,
-          "brier_score": 0.2104618026741042,
-          "log_loss": 0.6175777440493988,
-          "accuracy": 0.6959688522405957,
+          "brier_score": 0.2107372267623448,
+          "log_loss": 0.6184616346772481,
+          "accuracy": 0.6931560792905891,
           "observed_frequency": 0.7177160283645946,
-          "mean_predicted_probability": 0.7147739127501171
+          "mean_predicted_probability": 0.711124752235277
         }
       },
       "recent_holdout": {
         "btts_yes": {
           "matches": 11612,
-          "brier_score": 0.2568894539045951,
-          "log_loss": 0.7081744199119083,
-          "accuracy": 0.5188598002066828,
+          "brier_score": 0.25729165594100656,
+          "log_loss": 0.7092542575171682,
+          "accuracy": 0.5194626248708233,
           "observed_frequency": 0.5409920771615571,
-          "mean_predicted_probability": 0.509720073853805
+          "mean_predicted_probability": 0.510842618579778
         },
         "btts_no": {
           "matches": 11612,
-          "brier_score": 0.2568894539045951,
-          "log_loss": 0.7081744199119083,
-          "accuracy": 0.5188598002066828,
+          "brier_score": 0.25729165594100656,
+          "log_loss": 0.7092542575171682,
+          "accuracy": 0.5194626248708233,
           "observed_frequency": 0.459007922838443,
-          "mean_predicted_probability": 0.490279926146195
+          "mean_predicted_probability": 0.48915738142022197
         },
         "over_1_5": {
           "matches": 11612,
-          "brier_score": 0.19073540900953725,
-          "log_loss": 0.5714621052851653,
-          "accuracy": 0.7450051670685498,
+          "brier_score": 0.19016855114255987,
+          "log_loss": 0.5701930373955145,
+          "accuracy": 0.7455218739235274,
           "observed_frequency": 0.75792283844299,
-          "mean_predicted_probability": 0.735520879065883
+          "mean_predicted_probability": 0.7372275959633414
         },
         "under_1_5": {
           "matches": 11612,
-          "brier_score": 0.19073540900953725,
-          "log_loss": 0.5714621052851653,
-          "accuracy": 0.7450051670685498,
+          "brier_score": 0.19016855114255987,
+          "log_loss": 0.5701930373955145,
+          "accuracy": 0.7455218739235274,
           "observed_frequency": 0.24207716155700998,
-          "mean_predicted_probability": 0.2644791209341169
+          "mean_predicted_probability": 0.2627724040366585
         },
         "over_2_5": {
           "matches": 11612,
-          "brier_score": 0.2618991048384783,
-          "log_loss": 0.7208474932983553,
-          "accuracy": 0.5230795728556665,
+          "brier_score": 0.2608532041602213,
+          "log_loss": 0.7191584768039886,
+          "accuracy": 0.526438167413021,
           "observed_frequency": 0.5204960385807785,
-          "mean_predicted_probability": 0.4951002317845223
+          "mean_predicted_probability": 0.49832273175976727
         },
         "under_2_5": {
           "matches": 11612,
-          "brier_score": 0.2618991048384783,
-          "log_loss": 0.7208474932983553,
-          "accuracy": 0.5230795728556665,
+          "brier_score": 0.2608532041602213,
+          "log_loss": 0.7191584768039886,
+          "accuracy": 0.526438167413021,
           "observed_frequency": 0.47950396141922147,
-          "mean_predicted_probability": 0.5048997682154777
+          "mean_predicted_probability": 0.5016772682402327
         },
         "over_3_5": {
           "matches": 11612,
-          "brier_score": 0.21347085985106742,
-          "log_loss": 0.6241340153802498,
-          "accuracy": 0.691784361005856,
+          "brier_score": 0.2142272580587314,
+          "log_loss": 0.6263204987664913,
+          "accuracy": 0.689286944540131,
           "observed_frequency": 0.28909748535997243,
-          "mean_predicted_probability": 0.2910054645327237
+          "mean_predicted_probability": 0.2947994829344247
         },
         "under_3_5": {
           "matches": 11612,
-          "brier_score": 0.21347085985106742,
-          "log_loss": 0.6241340153802498,
-          "accuracy": 0.691784361005856,
+          "brier_score": 0.2142272580587314,
+          "log_loss": 0.6263204987664913,
+          "accuracy": 0.689286944540131,
           "observed_frequency": 0.7109025146400275,
-          "mean_predicted_probability": 0.7089945354672764
+          "mean_predicted_probability": 0.7052005170655753
         }
       },
       "same_match_comparison": {
@@ -4006,72 +4006,72 @@
             "matches": 67549,
             "baseline_model": "live_goal_markets",
             "dixon_coles_model": "live_dc_goal_markets",
-            "brier_delta_dixon_coles_minus_baseline": 5.444967333545492e-05,
-            "log_loss_delta_dixon_coles_minus_baseline": 0.00017600016162000465,
-            "accuracy_delta_dixon_coles_minus_baseline": 0.0007994196805282128,
+            "brier_delta_dixon_coles_minus_baseline": 0.0016068661922284955,
+            "log_loss_delta_dixon_coles_minus_baseline": 0.003619137737809197,
+            "accuracy_delta_dixon_coles_minus_baseline": -0.0023390427689529147,
             "dixon_coles_beats_baseline_on_brier_and_log_loss": false
           },
           "btts_yes": {
             "matches": 67549,
             "baseline_model": "live_goal_markets",
             "dixon_coles_model": "live_dc_goal_markets",
-            "brier_delta_dixon_coles_minus_baseline": 5.444967333545492e-05,
-            "log_loss_delta_dixon_coles_minus_baseline": 0.00017600016162000465,
-            "accuracy_delta_dixon_coles_minus_baseline": 0.0007994196805282128,
+            "brier_delta_dixon_coles_minus_baseline": 0.0016068661922284955,
+            "log_loss_delta_dixon_coles_minus_baseline": 0.003619137737809197,
+            "accuracy_delta_dixon_coles_minus_baseline": -0.0023390427689529147,
             "dixon_coles_beats_baseline_on_brier_and_log_loss": false
           },
           "over_1_5": {
             "matches": 67549,
             "baseline_model": "live_goal_markets",
             "dixon_coles_model": "live_dc_goal_markets",
-            "brier_delta_dixon_coles_minus_baseline": 0.0002639708117695705,
-            "log_loss_delta_dixon_coles_minus_baseline": 0.0013559190713454683,
-            "accuracy_delta_dixon_coles_minus_baseline": -0.0001628447497372676,
+            "brier_delta_dixon_coles_minus_baseline": 0.0017607630681743536,
+            "log_loss_delta_dixon_coles_minus_baseline": 0.0052789228062029014,
+            "accuracy_delta_dixon_coles_minus_baseline": -0.0030348339723755835,
             "dixon_coles_beats_baseline_on_brier_and_log_loss": false
           },
           "over_2_5": {
             "matches": 67549,
             "baseline_model": "live_goal_markets",
             "dixon_coles_model": "live_dc_goal_markets",
-            "brier_delta_dixon_coles_minus_baseline": 0.0005810181406243897,
-            "log_loss_delta_dixon_coles_minus_baseline": 0.0014662867230798016,
-            "accuracy_delta_dixon_coles_minus_baseline": -0.00028127729500071474,
+            "brier_delta_dixon_coles_minus_baseline": 0.0029150941739270464,
+            "log_loss_delta_dixon_coles_minus_baseline": 0.007185329551731345,
+            "accuracy_delta_dixon_coles_minus_baseline": -0.0057143703089609366,
             "dixon_coles_beats_baseline_on_brier_and_log_loss": false
           },
           "over_3_5": {
             "matches": 67549,
             "baseline_model": "live_goal_markets",
             "dixon_coles_model": "live_dc_goal_markets",
-            "brier_delta_dixon_coles_minus_baseline": 0.00047766058221157537,
-            "log_loss_delta_dixon_coles_minus_baseline": 0.0014816645659136984,
-            "accuracy_delta_dixon_coles_minus_baseline": -0.001954136996846767,
+            "brier_delta_dixon_coles_minus_baseline": 0.002484592081404974,
+            "log_loss_delta_dixon_coles_minus_baseline": 0.007017325505185967,
+            "accuracy_delta_dixon_coles_minus_baseline": -0.004011902470798967,
             "dixon_coles_beats_baseline_on_brier_and_log_loss": false
           },
           "under_1_5": {
             "matches": 67549,
             "baseline_model": "live_goal_markets",
             "dixon_coles_model": "live_dc_goal_markets",
-            "brier_delta_dixon_coles_minus_baseline": 0.0002639708117695705,
-            "log_loss_delta_dixon_coles_minus_baseline": 0.0013559190713454683,
-            "accuracy_delta_dixon_coles_minus_baseline": -0.0001628447497372676,
+            "brier_delta_dixon_coles_minus_baseline": 0.0017607630681743536,
+            "log_loss_delta_dixon_coles_minus_baseline": 0.0052789228062029014,
+            "accuracy_delta_dixon_coles_minus_baseline": -0.0030348339723755835,
             "dixon_coles_beats_baseline_on_brier_and_log_loss": false
           },
           "under_2_5": {
             "matches": 67549,
             "baseline_model": "live_goal_markets",
             "dixon_coles_model": "live_dc_goal_markets",
-            "brier_delta_dixon_coles_minus_baseline": 0.0005810181406243897,
-            "log_loss_delta_dixon_coles_minus_baseline": 0.0014662867230798016,
-            "accuracy_delta_dixon_coles_minus_baseline": -0.00028127729500071474,
+            "brier_delta_dixon_coles_minus_baseline": 0.0029150941739270464,
+            "log_loss_delta_dixon_coles_minus_baseline": 0.007185329551731345,
+            "accuracy_delta_dixon_coles_minus_baseline": -0.0057143703089609366,
             "dixon_coles_beats_baseline_on_brier_and_log_loss": false
           },
           "under_3_5": {
             "matches": 67549,
             "baseline_model": "live_goal_markets",
             "dixon_coles_model": "live_dc_goal_markets",
-            "brier_delta_dixon_coles_minus_baseline": 0.00047766058221157537,
-            "log_loss_delta_dixon_coles_minus_baseline": 0.0014816645659136984,
-            "accuracy_delta_dixon_coles_minus_baseline": -0.001954136996846767,
+            "brier_delta_dixon_coles_minus_baseline": 0.002484592081404974,
+            "log_loss_delta_dixon_coles_minus_baseline": 0.007017325505185967,
+            "accuracy_delta_dixon_coles_minus_baseline": -0.004011902470798967,
             "dixon_coles_beats_baseline_on_brier_and_log_loss": false
           }
         }
@@ -4086,13 +4086,13 @@
             "folds_beating_raw_and_baseline": 4,
             "raw": {
               "matches": 32541,
-              "brier_score": 0.25712085854625216,
-              "log_loss": 0.7089317053334664
+              "brier_score": 0.2567071416852765,
+              "log_loss": 0.7083062155501122
             },
             "calibrated": {
               "matches": 32541,
-              "brier_score": 0.24817117931668764,
-              "log_loss": 0.6894751249479757
+              "brier_score": 0.2478173952697995,
+              "log_loss": 0.6887619749444707
             },
             "expanding_baseline": {
               "matches": 32541,
@@ -4109,13 +4109,13 @@
             "folds_beating_raw_and_baseline": 4,
             "raw": {
               "matches": 32541,
-              "brier_score": 0.19235982861333298,
-              "log_loss": 0.5756582963550445
+              "brier_score": 0.19169865162548566,
+              "log_loss": 0.574686099687326
             },
             "calibrated": {
               "matches": 32541,
-              "brier_score": 0.18442349138332653,
-              "log_loss": 0.5550194926537548
+              "brier_score": 0.18396023583790075,
+              "log_loss": 0.5538185964058971
             },
             "expanding_baseline": {
               "matches": 32541,
@@ -4132,13 +4132,13 @@
             "folds_beating_raw_and_baseline": 4,
             "raw": {
               "matches": 32541,
-              "brier_score": 0.26040967712668384,
-              "log_loss": 0.7183477171382519
+              "brier_score": 0.2597365426288652,
+              "log_loss": 0.7178262213618801
             },
             "calibrated": {
               "matches": 32541,
-              "brier_score": 0.2481691708821375,
-              "log_loss": 0.6894669646504753
+              "brier_score": 0.2475044003903561,
+              "log_loss": 0.6881306545740402
             },
             "expanding_baseline": {
               "matches": 32541,
@@ -4155,13 +4155,13 @@
             "folds_beating_raw_and_baseline": 4,
             "raw": {
               "matches": 32541,
-              "brier_score": 0.21515930206821737,
-              "log_loss": 0.6277833030217014
+              "brier_score": 0.21556289345997143,
+              "log_loss": 0.6288095445071674
             },
             "calibrated": {
               "matches": 32541,
-              "brier_score": 0.20542168432044922,
-              "log_loss": 0.6007318520275087
+              "brier_score": 0.20504575829390864,
+              "log_loss": 0.5997960107250208
             },
             "expanding_baseline": {
               "matches": 32541,
