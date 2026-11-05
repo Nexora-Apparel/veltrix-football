@@ -768,3 +768,55 @@ def test_one_match_history_is_used_with_strong_shrinkage():
     assert result["probabilities"]
     assert result["evidence_grade"] == "LOW"
     assert "One team has no matched history" in result["prediction_basis"]
+
+
+def test_swapping_fixture_sides_swaps_forecast_without_home_preference():
+    fixture = _fixture()
+    fixture["league"]["id"] = 39
+    reversed_fixture = _fixture()
+    reversed_fixture["league"]["id"] = 39
+    reversed_fixture["teams"] = {
+        "home": fixture["teams"]["away"],
+        "away": fixture["teams"]["home"],
+    }
+    now = datetime(2026, 10, 23, 12, 0, tzinfo=ZoneInfo("Africa/Lagos"))
+    forward = predict_fixtures(
+        [fixture], _history(), as_of=date(2026, 10, 23), now=now
+    )[0]
+    reverse = predict_fixtures(
+        [reversed_fixture], _history(), as_of=date(2026, 10, 23), now=now
+    )[0]
+
+    assert abs(forward["expected_goals"]["home"] - reverse["expected_goals"]["away"]) < 1e-9
+    assert abs(forward["expected_goals"]["away"] - reverse["expected_goals"]["home"]) < 1e-9
+    assert abs(forward["probabilities"]["home_win"] - reverse["probabilities"]["away_win"]) < 1e-4
+    assert abs(forward["probabilities"]["away_win"] - reverse["probabilities"]["home_win"]) < 1e-4
+    assert abs(forward["probabilities"]["draw"] - reverse["probabilities"]["draw"]) < 1e-4
+    assert forward["btts_yes"] == reverse["btts_yes"]
+    assert forward["over_2_5"] == reverse["over_2_5"]
+
+
+def test_sparse_history_is_also_symmetric_when_fixture_sides_are_swapped():
+    fixture = _fixture()
+    fixture["league"]["id"] = 39
+    fixture["teams"]["home"]["name"] = "Unknown Club"
+    reversed_fixture = _fixture()
+    reversed_fixture["league"]["id"] = 39
+    reversed_fixture["teams"] = {
+        "home": fixture["teams"]["away"],
+        "away": fixture["teams"]["home"],
+    }
+    now = datetime(2026, 10, 23, 12, 0, tzinfo=ZoneInfo("Africa/Lagos"))
+    forward = predict_fixtures(
+        [fixture], _history(), as_of=date(2026, 10, 23), now=now
+    )[0]
+    reverse = predict_fixtures(
+        [reversed_fixture], _history(), as_of=date(2026, 10, 23), now=now
+    )[0]
+
+    assert forward["status"] == reverse["status"] == "LOW_HISTORY_FORECAST"
+    assert abs(forward["expected_goals"]["home"] - reverse["expected_goals"]["away"]) < 1e-9
+    assert abs(forward["expected_goals"]["away"] - reverse["expected_goals"]["home"]) < 1e-9
+    assert abs(forward["probabilities"]["home_win"] - reverse["probabilities"]["away_win"]) < 1e-4
+    assert abs(forward["probabilities"]["away_win"] - reverse["probabilities"]["home_win"]) < 1e-4
+    assert abs(forward["probabilities"]["draw"] - reverse["probabilities"]["draw"]) < 1e-4
