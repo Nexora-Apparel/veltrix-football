@@ -112,7 +112,7 @@ def _paper_eligible_probabilities(prediction: Mapping[str, Any]) -> dict[str, di
     model_name = str(prediction.get("model") or "")
     if model_name == "experimental_elo_by_competition":
         raw = prediction.get("poisson_probabilities")
-    elif model_name == "experimental_recent_goals_poisson":
+    elif model_name in {"experimental_recent_goals_poisson", "adaptive_poisson_sparse_history"} and prediction.get("evidence_grade") != "VERY_LOW":
         raw = prediction.get("probabilities")
     else:
         raw = None
@@ -142,6 +142,23 @@ def _paper_eligible_probabilities(prediction: Mapping[str, Any]) -> dict[str, di
         ):
             value = prediction.get(field)
             if calibration_key in markets and core._valid_probability(value):
+                probability = float(value)
+                output[public_market] = (
+                    {"yes": probability, "no": 1.0 - probability}
+                    if public_market == "BTTS"
+                    else {"over": probability, "under": 1.0 - probability}
+                )
+    elif model_name == "adaptive_poisson_sparse_history" and prediction.get("evidence_grade") in {"LOW", "MODERATE"}:
+        # Sparse-history markets are retained only for prospective shadow
+        # evaluation. They cannot satisfy the released-probability certificate.
+        for public_market, field in (
+            ("BTTS", "btts_yes"),
+            ("OVER_UNDER_1_5", "over_1_5"),
+            ("OVER_UNDER_2_5", "over_2_5"),
+            ("OVER_UNDER_3_5", "over_3_5"),
+        ):
+            value = prediction.get(field)
+            if core._valid_probability(value):
                 probability = float(value)
                 output[public_market] = (
                     {"yes": probability, "no": 1.0 - probability}

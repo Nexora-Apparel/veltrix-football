@@ -145,7 +145,7 @@ def _report_forecast_count(report: dict[str, Any]) -> int:
         )
         and (
             (
-                row.get("status") == "EXPERIMENTAL_ONLY"
+                row.get("status") in {"EXPERIMENTAL_ONLY", "LOW_HISTORY_FORECAST"}
                 and isinstance(row.get("probabilities"), dict)
             )
             or isinstance(row.get("market_probabilities"), dict)

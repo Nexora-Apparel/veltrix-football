@@ -19,10 +19,10 @@ COMMANDS: dict[str, str] = {
     "/fixtures": "Show fixtures available in the current report.",
     "/match": "Inspect a named fixture: /match Arsenal vs Chelsea",
     "/live": "Show live matches only when live-status data is connected.",
-    "/1x2": "1X2: Home/Draw/Away outcome probabilities from the current experimental forecast.",
+    "/1x2": "1X2: Home/Draw/Away outcome probabilities from the current match forecast.",
     "/1x2value": "1X2 value screen; show paper-only candidates, while live alerts require validated probabilities and timestamped bookmaker prices.",
-    "/overunder": "PRIMARY MARKET: experimental Over/Under 0.5–4.5 goal probabilities from model expected goals.",
-    "/btts": "PRIMARY MARKET: experimental Both Teams To Score Yes/No probabilities from model expected goals.",
+    "/overunder": "PRIMARY MARKET: Over/Under 0.5–4.5 goal probabilities from model expected goals.",
+    "/btts": "PRIMARY MARKET: Both Teams To Score Yes/No probabilities from model expected goals.",
     "/goals": "Expected-goals summary for available forecasts.",
     "/cleansheet": "Clean-sheet estimates; unavailable until calibrated team-goal probabilities exist.",
     "/value": "Combined 1X2, BTTS and Over/Under value screen; show paper-only candidates while live alerts remain validation-gated.",
@@ -131,10 +131,10 @@ def _valid_probability_vector(probabilities: Any) -> bool:
 
 
 def _forecast_predictions(report: dict[str, Any] | None) -> list[dict[str, Any]]:
-    """Return only current-day, future, explicitly usable experimental forecasts."""
+    """Return only current-day, future, usable match forecasts."""
     return [
         row for row in _future_fixtures(report)
-        if row.get("status") in {"EXPERIMENTAL_ONLY", "EXPERIMENTAL_LOW_DATA"}
+        if row.get("status") in {"EXPERIMENTAL_ONLY", "EXPERIMENTAL_LOW_DATA", "LOW_HISTORY_FORECAST"}
         and _valid_probability_vector(row.get("probabilities"))
     ]
 
@@ -184,7 +184,7 @@ def _goal_market_probabilities(row: dict[str, Any]) -> dict[str, float] | None:
         return None
     home, away = means
     total = home + away
-    # Independent Poisson approximation; explicitly experimental, not calibrated.
+    # Independent Poisson approximation; not yet calibrated.
     markets = {
         "over_0_prob": _poisson_probability_at_least(1, total),
         "over_1_prob": _poisson_probability_at_least(2, total),
@@ -353,7 +353,7 @@ def _status(report: dict[str, Any] | None, ledger: dict[str, Any] | None) -> str
         "VELTRIX COMMAND CENTRE — STATUS\n"
         f"Current report: {'available' if report_is_current else 'not loaded or no longer current'}\n"
         f"Fixtures in report: {len(fixtures)}\n"
-        f"Usable experimental forecasts: {len(predictions)}\n"
+        f"Available match forecasts: {len(predictions)}\n"
         f"Recent-results refresh: {history_status}\n"
         f"Historical coverage: {history_coverage}\n"
         f"Report freshness / reuse: {freshness_status}\n"
@@ -415,7 +415,7 @@ def handle_command(
         lines.extend([
             "",
             "SAFETY",
-            "Forecasts are experimental. Odds/value screens need real odds and validated probabilities.",
+            "Predictions are evidence-weighted estimates. Value verdicts require current bookmaker prices and sufficient validation.",
             "No picks or odds are fabricated; no bets are placed.",
         ])
         return _reply("\n".join(lines))
@@ -517,7 +517,7 @@ def handle_command(
             return _reply("MULTI-SOURCE BOOKMAKER ODDS — NO MATCHED BTTS OR OVER/UNDER PRICES\\nThe current report contains fixtures, but no provider prices matched safely by teams and local kickoff date. No odds were fabricated.")
         lines.extend([
             "",
-            "Prices are provider-reported and may change. Forecast probabilities remain experimental; no value recommendations or bookmaker actions are generated.",
+            "Prices are provider-reported and may change. Probabilities are estimates; no bookmaker actions are generated.",
         ])
         return _reply("\n".join(lines))
 
@@ -594,16 +594,16 @@ def handle_command(
                 return _reply(body)
 
         titles = {
-            "/overunder": "🎯 PRIMARY MARKET — OVER / UNDER GOALS (EXPERIMENTAL)",
-            "/btts": "🎯 PRIMARY MARKET — BOTH TEAMS TO SCORE (EXPERIMENTAL)",
-            "/1x2": "⚽ 1X2 MARKET — HOME / DRAW / AWAY (EXPERIMENTAL)",
+            "/overunder": "🎯 PRIMARY MARKET — OVER / UNDER GOALS",
+            "/btts": "🎯 PRIMARY MARKET — BOTH TEAMS TO SCORE",
+            "/1x2": "⚽ 1X2 MARKET — HOME / DRAW / AWAY",
             "/fixtures": "FIXTURE LIST",
         }
-        lines = [titles.get(command, f"{command.upper()} — EXPERIMENTAL REPORT")]
+        lines = [titles.get(command, f"{command.upper()} — MATCH REPORT")]
         if command in {"/overunder", "/btts", "/1x2"}:
             lines.extend([
                 f"📅 {report.get('as_of_date', 'Today')}  ·  {len(selected)} matches  ·  Kick-off times: WAT",
-                "Model estimates only — not validated betting advice.",
+                "Probability estimates and evidence-based verdicts; value eligibility is assessed separately.",
                 "",
             ])
         else:
@@ -625,13 +625,18 @@ def handle_command(
                 continue
 
             probs = row.get("probabilities")
-            if row.get("status") not in {"EXPERIMENTAL_ONLY", "EXPERIMENTAL_LOW_DATA"} or not _valid_probability_vector(probs):
-                reason = row.get("reason") or row.get("status") or "forecast unavailable"
+            if row.get("status") not in {"EXPERIMENTAL_ONLY", "EXPERIMENTAL_LOW_DATA", "LOW_HISTORY_FORECAST"} or not _valid_probability_vector(probs):
+                reason = row.get("reason") or {
+                    "EXPERIMENTAL_ONLY": "The probability data is incomplete or invalid.",
+                    "EXPERIMENTAL_LOW_DATA": "Historical evidence is limited.",
+                    "INSUFFICIENT_HISTORY": "Historical evidence is limited.",
+                    "UNSUPPORTED_COMPETITION": "Competition-specific data is not available.",
+                }.get(str(row.get("status") or ""), "Forecast data is unavailable.")
                 lines.extend([
                     f"━━━━━━━━━━━━━━━━━━━━",
                     f"⚽ {home} vs {away}",
                     f"🏆 {league}  ·  🕒 {kickoff}",
-                    f"Forecast withheld: {reason}",
+                    f"Analysis unavailable: {reason}",
                     "",
                 ])
                 continue
@@ -643,9 +648,9 @@ def handle_command(
                 f"🏆 {league}  ·  🕒 {kickoff}",
             ])
             if row.get("status") == "EXPERIMENTAL_LOW_DATA":
-                lines.append("MODEL STATUS: LOW-DATA EXPERIMENTAL · NOT BETTING ELIGIBLE")
+                lines.append("LIMITED EVIDENCE · VALUE BET NOT RECOMMENDED")
             if row.get("prediction_basis"):
-                lines.append("Forecast basis: " + str(row.get("prediction_basis")))
+                lines.append("Why this verdict: " + str(row.get("prediction_basis")))
             if command not in {"/overunder", "/btts"}:
                 lines.append(
                     f"1X2: Home {float(probs['home_win']):.0%}  ·  Draw {float(probs['draw']):.0%}  ·  Away {float(probs['away_win']):.0%}"
@@ -689,11 +694,11 @@ def handle_command(
         if command in {"/overunder", "/btts"}:
             lines.extend([
                 "━━━━━━━━━━━━━━━━━━━━",
-                "Method: independent-Poisson estimates from experimental expected goals.",
-                "Not calibrated or validated for betting. Prices are reference data only.",
+                "Method: independent-Poisson estimates from expected goals.",
+                "Estimates are not guaranteed outcomes. Value recommendations require separate market validation.",
             ])
         else:
-            lines.append("Experimental estimates only — not validated betting advice.")
+            lines.append("Estimates are not guaranteed outcomes. Value recommendations require separate market validation.")
         return _reply("\n".join(lines))
 
     if command in {"/value", "/overvalue", "/bttsvalue", "/1x2value"}:
@@ -770,7 +775,7 @@ def handle_command(
             "BOOKMAKER PRICE COVERAGE (1X2 / BTTS / O-U): "
             + " / ".join(f"{k} {v}" for k, v in odds_coverage.items()),
             "No betting selections are released until market-specific validation passes.",
-            "EXPERIMENTAL MODEL — NOT VALIDATED FOR BETTING. No bookmaker actions.",
+            "Value-bet alerts remain locked pending market-specific validation. No bookmaker actions.",
         ]
         return _reply("\\n".join(lines))
 
