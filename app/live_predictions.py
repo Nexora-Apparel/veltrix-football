@@ -1,7 +1,7 @@
-"""Experimental fixture-to-prediction pipeline using completed historical scores.
+"""Adaptive fixture-to-prediction pipeline using completed historical scores.
 
-This is a research baseline, not a validated betting model. It never labels
-outputs as value bets and refuses teams with too little historical data.
+Uses verified team history when available and shrinks sparse samples toward
+competition/global scoring priors. Value-bet eligibility is evaluated separately.
 """
 from __future__ import annotations
 
@@ -449,7 +449,7 @@ def predict_fixtures(
     timezone_name: str = "Africa/Lagos",
     now: datetime | None = None,
 ) -> list[dict[str, Any]]:
-    """Estimate experimental 1X2 probabilities from prior venue-aware team goal averages.
+    """Estimate 1X2 probabilities from prior venue-aware team goal averages.
 
     Historical matches on or after the fixture's kickoff date are excluded.
     Team rates are shrunk toward historical home/away scoring baselines.
