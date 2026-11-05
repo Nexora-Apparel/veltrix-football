@@ -278,6 +278,7 @@ def _limit_fixture_payload(
                 "home_team_id": home.get("id"), "away_team_id": away.get("id"),
                 "reason": "MISSING_KICKOFF",
             })
+            eligible.append(row)
             continue
         try:
             kickoff = datetime.fromisoformat(str(raw).replace("Z", "+00:00"))
@@ -293,6 +294,7 @@ def _limit_fixture_payload(
                 "raw_kickoff": str(raw),
                 "reason": "INVALID_KICKOFF",
             })
+            eligible.append(row)
             continue
         if kickoff.date() == target_date:
             eligible.append(row)
