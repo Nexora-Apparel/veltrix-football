@@ -43,6 +43,7 @@ COMPETITION_ALIASES = {
     "brasileirao": "brazilianseriea",
     "premierleague": "premierleague",
     "englishpremierleague": "premierleague",
+    "englandpremierleague": "premierleague",
     "epl": "premierleague",
     "laliga": "laliga",
     "spanishprimera": "laliga",
