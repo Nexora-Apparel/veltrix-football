@@ -48,7 +48,7 @@ def _probabilities(prediction: Mapping[str, Any]) -> dict[str, dict[str, float]]
     model_name = str(prediction.get("model") or prediction.get("goal_markets_model") or "")
     if model_name == "experimental_elo_by_competition":
         raw = prediction.get("poisson_probabilities")
-    elif model_name in {"experimental_recent_goals_poisson", "adaptive_poisson_sparse_history", "adaptive_poisson_neutral_prior"}:
+    elif model_name == "experimental_recent_goals_poisson":
         raw = prediction.get("probabilities")
     else:
         raw = None
