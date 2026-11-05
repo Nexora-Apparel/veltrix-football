@@ -435,12 +435,14 @@ def test_fivedollar_1x2_only_odds_are_not_discarded():
     report = {"predictions": [{
         "home_team": "Arsenal", "away_team": "Chelsea",
         "kickoff_local": "2026-10-29T16:00:00+01:00",
+        "league": "Premier League",
         "status": "EXPERIMENTAL_ONLY",
         "probabilities": {"home_win": 0.55, "draw": 0.25, "away_win": 0.20},
     }]}
     fixtures = {"response": [{
         "fixture": {"id": 123, "date": "2026-10-29T15:00:00+00:00", "status": {"short": "NS"}},
         "teams": {"home": {"name": "Arsenal"}, "away": {"name": "Chelsea"}},
+        "league": {"name": "Premier League"},
     }]}
     result = enrich_report_with_multi_source_odds(
         report, fixtures, five_dollar_client=Only1X2(), odds_api_client=NoOddsAPI()
