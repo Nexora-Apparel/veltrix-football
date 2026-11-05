@@ -218,7 +218,6 @@ def format_report_messages(report: dict[str, Any], ledger: dict[str, Any] | None
         DIVIDER,
         f"⚽ VELTRIX FOOTBALL AI · DAILY INTELLIGENCE",
         f"📅 {day} · Kick-off times: WAT",
-        f"Fixtures analysed: {len(usable)}",
         "",
     ]
     blocks: list[list[str]] = []
@@ -329,7 +328,6 @@ def format_report_messages(report: dict[str, Any], ledger: dict[str, Any] | None
 
     def render(selected: list[list[str]]) -> str:
         body = header + [line for block in selected for line in block]
-        body.extend(["", "Football data by 5DollarFootballAPI — https://5dollarfootballapi.com"])
         return MESSAGE_PREFIX + "\n" + "\n".join(body)
 
     chunks: list[str] = []
