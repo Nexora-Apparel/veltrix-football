@@ -81,7 +81,7 @@ def team_identity(value: Any) -> tuple[str, tuple[str, ...]]:
         ("u19", r"(?:\s*\(u19\)|\s+u19)$"),
         ("u21", r"(?:\s*\(u21\)|\s+u21)$"),
         ("u23", r"(?:\s*\(u23\)|\s+u23)$"),
-        ("reserve", r"(?:\s*\((?:r|reserves?)\)|\s+(?:reserves?|b\s*team|ii|iii|iv))$"),
+        ("reserve", r"(?:\s*\((?:r|reserves?)\)|\s+(?:reserves?|b|b\s*team|ii|iii|iv))$"),
     )
     base = raw
     changed = True
