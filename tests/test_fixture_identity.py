@@ -50,7 +50,7 @@ def test_cross_provider_verified_aliases_merge_and_keep_all_source_ids():
         {"provider": "5DollarFootballAPI", "fixture_id": "5d-100"},
         {"provider": "InferSports", "fixture_id": "infer-200"},
     ]
-    assert {item["competition_id"] for item in merged["_veltrix_provenance"]} == {71, "lg-bra"}
+    assert {item["competition_id"] for item in merged["_veltrix_provenance"]} == {39, "lg-epl"}
     assert {item["provider"] for item in merged["_veltrix_provenance"]} == {
         "5DollarFootballAPI", "InferSports",
     }
