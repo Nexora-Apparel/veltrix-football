@@ -151,14 +151,17 @@ function renderValueBet(m,box){
  const t=document.createElement('div');t.className='insighttitle';t.textContent='Value Bet Verdict';
  const screen=m&&m.value_bet_screen&&typeof m.value_bet_screen==='object'?m.value_bet_screen:{};
  const markets=screen.markets&&typeof screen.markets==='object'?screen.markets:{};
- const candidates=Object.entries(markets).flatMap(([market,result])=>(result&&Array.isArray(result.candidates)?result.candidates:[]).map(candidate=>({market,candidate})));
+ const candidates=Object.entries(markets).flatMap(([market,result])=>[
+  ...(result&&Array.isArray(result.candidates)?result.candidates.map(candidate=>({market,candidate,paper:false})):[]),
+  ...(result&&Array.isArray(result.paper_candidates)?result.paper_candidates.map(candidate=>({market,candidate,paper:true})):[])
+ ]);
  const v=document.createElement('div');v.className='insightbody insightvalue';
  const d=document.createElement('div');d.className='insightbody';
  if(candidates.length){
   const best=candidates.sort((a,b)=>Number(b.candidate.edge_percentage_points||0)-Number(a.candidate.edge_percentage_points||0))[0];
   const c=best.candidate;
-  v.textContent=best.market+' · '+String(c.selection||'Selection')+' @ '+Number(c.decimal_odds||0).toFixed(2);
-  d.textContent='Estimated edge '+Number(c.edge_percentage_points||0).toFixed(1)+' percentage points. This is a research candidate, not a released betting recommendation.';
+  v.textContent=(best.paper?'POTENTIAL EDGE · UNDER REVIEW':'APPROVED VALUE BET')+' · '+best.market+' · '+String(c.selection||'Selection')+' @ '+Number(c.decimal_odds||0).toFixed(2);
+  d.textContent='Estimated edge '+Number(c.edge_percentage_points||0).toFixed(1)+' percentage points.'+(best.paper?' This is a research candidate, not an approved betting recommendation.':'');
  }else{
   v.textContent='NO QUALIFYING VALUE BET';
   d.textContent='Available bookmaker prices do not currently show a sufficiently supported edge.';
