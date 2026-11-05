@@ -636,6 +636,7 @@ def predict_fixtures(
                         "resolved_history_key": home_key,
                         "prior_matches": len(home_hist),
                         "history_match_found": bool(home_hist),
+                        "match_status": "MATCHED" if home_hist else "NO_HISTORY_MATCH",
                         "division_code": division_code or None,
                     },
                     "away": {
@@ -644,6 +645,7 @@ def predict_fixtures(
                         "resolved_history_key": away_key,
                         "prior_matches": len(away_hist),
                         "history_match_found": bool(away_hist),
+                        "match_status": "MATCHED" if away_hist else "NO_HISTORY_MATCH",
                         "division_code": division_code or None,
                     },
                 },
