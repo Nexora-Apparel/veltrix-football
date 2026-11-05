@@ -152,7 +152,7 @@ function renderValueBet(m,box){
  const screen=m&&m.value_bet_screen&&typeof m.value_bet_screen==='object'?m.value_bet_screen:{};
  const markets=screen.markets&&typeof screen.markets==='object'?screen.markets:{};
  const candidates=Object.entries(markets).flatMap(([market,result])=>[
-  ...(result&&Array.isArray(result.candidates)?result.candidates.map(candidate=>({market,candidate,paper:!(candidate.release_status==='CERTIFIED'&&candidate.status==='CANDIDATE_NOT_GUARANTEED')})):[]),
+  ...(result&&Array.isArray(result.candidates)?result.candidates.map(candidate=>({market,candidate,paper:true})):[]),
   ...(result&&Array.isArray(result.paper_candidates)?result.paper_candidates.map(candidate=>({market,candidate,paper:true})):[])
  ]);
  const v=document.createElement('div');v.className='insightbody insightvalue';
