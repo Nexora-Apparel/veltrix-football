@@ -30,12 +30,12 @@ def fixture(
 def test_cross_provider_verified_aliases_merge_and_keep_all_source_ids():
     rows = [
         fixture(
-            "5d-100", "5DollarFootballAPI", "Atletico Paranaense", "Vasco da Gama",
-            71, "Brazilian Serie A", "2026-11-04T22:30:00Z",
+            "5d-100", "5DollarFootballAPI", "Manchester United", "Chelsea",
+            39, "Premier League", "2026-11-04T22:30:00Z",
         ),
         fixture(
-            "infer-200", "InferSports", "Atletico PR", "Vasco DG",
-            "lg-bra", "Bra A", "2026-11-04T22:32:00Z",
+            "infer-200", "InferSports", "Man Utd", "Chelsea",
+            "lg-epl", "English Premier League", "2026-11-04T22:32:00Z",
         ),
     ]
 
@@ -171,3 +171,20 @@ def test_fixture_selection_does_not_truncate_provider_records_at_25():
         for record in row["_veltrix_source_fixture_ids"]
     }) == 30
     assert selected["_veltrix_meta"]["legacy_fixture_cap_ignored"] == 25
+
+
+def test_unverified_provider_team_abbreviations_are_quarantined_not_merged():
+    rows = [
+        fixture("primary-1", "5DollarFootballAPI", "Atletico Paranaense", "Vasco da Gama",
+                71, "Brazilian Serie A", "2026-11-04T22:30:00Z"),
+        fixture("infer-1", "InferSports", "Atletico PR", "Vasco DG",
+                "lg-bra", "Bra A", "2026-11-04T22:32:00Z"),
+    ]
+
+    canonical, meta = reconcile_fixture_rows(rows)
+
+    assert len(canonical) == 2
+    assert meta["confirmed_duplicate_groups"] == 0
+    assert meta["quarantined_rows"] == 2
+    assert all(row["_veltrix_reconciliation_status"] == "AMBIGUOUS" for row in canonical)
+    assert all("team_alias_not_verified" in row["_veltrix_quarantine_reasons"] for row in canonical)
