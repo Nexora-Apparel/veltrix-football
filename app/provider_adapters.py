@@ -22,6 +22,7 @@ from zoneinfo import ZoneInfo
 
 from app.api_football_odds import APIFootballError
 from app.live_predictions import _name_key as _canonical_name_key
+from app.fixture_identity import unique_prediction_match
 
 
 FIVEDOLLAR_BASE_URL = "https://api.5dollarfootballapi.com/v1"
@@ -772,61 +773,60 @@ def enrich_report_with_multi_source_odds(
         }
         return report
     zone = ZoneInfo(timezone_name)
-    by_key: dict[tuple[str, str, str], dict[str, Any] | None] = {}
+    # Resolve prediction rows back to source records using provider-scoped IDs.
+    # Provider fixture IDs are never compared across providers.
+    source_by_id: dict[tuple[str, str], dict[str, Any] | None] = {}
     for item in source_fixtures:
         if not isinstance(item, dict):
             continue
-        fixture = item.get("fixture") or {}
-        teams = item.get("teams") or {}
-        home = (teams.get("home") or {}).get("name")
-        away = (teams.get("away") or {}).get("name")
-        raw_date = fixture.get("date")
-        if not isinstance(raw_date, str) or not home or not away:
-            continue
-        try:
-            kickoff = datetime.fromisoformat(raw_date.replace("Z", "+00:00"))
-            if kickoff.tzinfo is None:
-                kickoff = kickoff.replace(tzinfo=zone)
-            day = kickoff.astimezone(zone).date().isoformat()
-        except (ValueError, OverflowError):
-            continue
-        key = (day, _name_key(home), _name_key(away))
-        # Duplicate same-team fixtures on one local date are ambiguous without a
-        # stronger competition/kickoff match; quarantine instead of overwriting.
-        if key in by_key:
-            by_key[key] = None
-        else:
-            by_key[key] = item
+        fixture = item.get("fixture") if isinstance(item.get("fixture"), dict) else {}
+        source = str(item.get("_veltrix_source") or item.get("provider") or "UNKNOWN")
+        provenance = item.get("_veltrix_provenance")
+        if not isinstance(provenance, list) or not provenance:
+            provenance = [{
+                "provider": source,
+                "fixture_id": fixture.get("id"),
+            }]
+        for record in provenance:
+            if not isinstance(record, dict) or record.get("fixture_id") is None:
+                continue
+            key = (str(record.get("provider") or source), str(record["fixture_id"]))
+            if key in source_by_id and source_by_id[key] is not item:
+                source_by_id[key] = None
+            else:
+                source_by_id[key] = item
 
-    pred_by_key: dict[tuple[str, str, str], dict[str, Any] | None] = {}
+    matched_pairs: list[tuple[dict[str, Any], dict[str, Any]]] = []
     for prediction in predictions:
         if not isinstance(prediction, dict):
             continue
-        raw = prediction.get("kickoff_local") or prediction.get("kickoff")
-        if not isinstance(raw, str):
-            continue
-        try:
-            dt = datetime.fromisoformat(raw.replace("Z", "+00:00"))
-            if dt.tzinfo is None:
-                dt = dt.replace(tzinfo=zone)
-            day = dt.astimezone(zone).date().isoformat()
-        except (ValueError, OverflowError):
-            continue
-        key = (day, _name_key(prediction.get("home_team")), _name_key(prediction.get("away_team")))
-        if key[1] and key[2]:
-            if key in pred_by_key:
-                pred_by_key[key] = None
-            else:
-                pred_by_key[key] = prediction
+        source_ids = prediction.get("source_fixture_ids")
+        if not isinstance(source_ids, list) or not source_ids:
+            source_ids = [{
+                "provider": prediction.get("fixture_source"),
+                "fixture_id": prediction.get("source_fixture_id", prediction.get("fixture_id")),
+            }]
+        candidates: dict[int, dict[str, Any]] = {}
+        ambiguous_source_id = False
+        for source_id in source_ids:
+            if not isinstance(source_id, dict) or source_id.get("fixture_id") is None:
+                continue
+            key = (str(source_id.get("provider") or "UNKNOWN"), str(source_id["fixture_id"]))
+            item = source_by_id.get(key)
+            if item is None:
+                if key in source_by_id:
+                    ambiguous_source_id = True
+                continue
+            candidates[id(item)] = item
+        if len(candidates) == 1 and not ambiguous_source_id:
+            matched_pairs.append((next(iter(candidates.values())), prediction))
 
-    # Attach source-local fixture identity only after a strict team/date join.
-    # Never assume that fixture IDs are interchangeable across providers.
-    for key, item in by_key.items():
-        prediction = pred_by_key.get(key)
-        if item is not None and prediction is not None:
-            fixture = item.get("fixture") or {}
-            prediction["fixture_source"] = str(item.get("_veltrix_source") or "5DollarFootballAPI")
-            prediction["source_fixture_id"] = fixture.get("id")
+    for item, prediction in matched_pairs:
+        fixture = item.get("fixture") or {}
+        prediction["fixture_source"] = str(item.get("_veltrix_source") or "5DollarFootballAPI")
+        prediction["source_fixture_id"] = fixture.get("id")
+        prediction["source_fixture_ids"] = item.get("_veltrix_source_fixture_ids") or prediction.get("source_fixture_ids", [])
+        prediction["provider_provenance"] = item.get("_veltrix_provenance") or prediction.get("provider_provenance", [])
 
     fivedollar_status = "NOT_CONFIGURED"
     fivedollar_attached = 0
@@ -835,17 +835,14 @@ def enrich_report_with_multi_source_odds(
     if fivedollar.api_key:
         fivedollar_status = "NO_MATCHED_MARKET_ODDS"
         upcoming = []
-        for key, item in by_key.items():
-            prediction = pred_by_key.get(key)
-            if item is None or prediction is None:
-                continue
+        for item, prediction in matched_pairs:
             if str(item.get("_veltrix_source") or "5DollarFootballAPI") != "5DollarFootballAPI":
                 continue
             short = str(((item.get("fixture") or {}).get("status") or {}).get("short") or "")
             if short != "NS":
                 continue
-            upcoming.append((key, item, prediction))
-        for key, item, prediction in upcoming[:max_fivedollar_fixtures]:
+            upcoming.append((item, prediction))
+        for item, prediction in upcoming[:max_fivedollar_fixtures]:
             fixture_id = (item.get("fixture") or {}).get("id")
             if fixture_id is None:
                 continue
@@ -926,11 +923,30 @@ def enrich_report_with_multi_source_odds(
                     odds_events.append((sport_key, event))
             except ProviderAPIError:
                 continue
-        attached_keys: set[tuple[str, str, str]] = set()
+        attached_prediction_ids: set[int] = set()
+        sport_competition_names = {
+            "soccer_epl": "Premier League",
+            "soccer_spain_la_liga": "La Liga",
+            "soccer_germany_bundesliga": "Bundesliga",
+            "soccer_italy_serie_a": "Serie A",
+            "soccer_france_ligue_one": "Ligue 1",
+            "soccer_netherlands_eredivisie": "Eredivisie",
+            "soccer_portugal_primeira_liga": "Primeira Liga",
+            "soccer_argentina_primera_division": "Argentine Primera Division",
+            "soccer_brazil_campeonato": "Brazilian Serie A",
+        }
         for sport_key, event in odds_events:
-            key = (_event_local_date(event, timezone_name) or "", _name_key(event.get("home_team")), _name_key(event.get("away_team")))
-            prediction = pred_by_key.get(key)
-            if prediction is None or not key[0] or not key[1] or not key[2]:
+            event_row = {
+                "fixture": {"id": event.get("id"), "date": event.get("commence_time")},
+                "teams": {
+                    "home": {"name": event.get("home_team")},
+                    "away": {"name": event.get("away_team")},
+                },
+                "league": {"id": sport_key, "name": sport_competition_names.get(sport_key)},
+                "_veltrix_source": "The Odds API",
+            }
+            prediction = unique_prediction_match(event_row, predictions, timezone_name=timezone_name)
+            if prediction is None:
                 continue
             summary = _event_market_summary(event)
             if not any(summary.values()):
@@ -940,7 +956,7 @@ def enrich_report_with_multi_source_odds(
                 "commence_time": event.get("commence_time"), "markets": summary,
                 "fetched_at": datetime.now(timezone.utc).isoformat(),
             }
-            attached_keys.add(key)
+            attached_prediction_ids.add(id(prediction))
             odds_api_attached += 1
 
         # BTTS is an event-specific additional market in The Odds API. Cap requests
@@ -949,9 +965,17 @@ def enrich_report_with_multi_source_odds(
         for sport_key, event in odds_events:
             if btts_attempts >= max_btts_events:
                 break
-            key = (_event_local_date(event, timezone_name) or "", _name_key(event.get("home_team")), _name_key(event.get("away_team")))
-            prediction = pred_by_key.get(key)
-            if prediction is None or not key[0] or not key[1] or not key[2]:
+            event_row = {
+                "fixture": {"id": event.get("id"), "date": event.get("commence_time")},
+                "teams": {
+                    "home": {"name": event.get("home_team")},
+                    "away": {"name": event.get("away_team")},
+                },
+                "league": {"id": sport_key, "name": sport_competition_names.get(sport_key)},
+                "_veltrix_source": "The Odds API",
+            }
+            prediction = unique_prediction_match(event_row, predictions, timezone_name=timezone_name)
+            if prediction is None:
                 continue
             current = prediction.get("the_odds_api_market_odds")
             if isinstance(current, dict) and current.get("markets", {}).get("btts"):
@@ -985,8 +1009,8 @@ def enrich_report_with_multi_source_odds(
                 # Capture time must be at or after the BTTS request so the
                 # prospective tracker can verify quote_time <= fetched_at.
                 current["fetched_at"] = datetime.now(timezone.utc).isoformat()
-                if key not in attached_keys:
-                    attached_keys.add(key)
+                if id(prediction) not in attached_prediction_ids:
+                    attached_prediction_ids.add(id(prediction))
                     odds_api_attached += 1
                 break
         odds_api_status = "AVAILABLE" if odds_api_attached else "NO_MATCHED_MARKET_ODDS"
@@ -1005,23 +1029,35 @@ def enrich_report_with_multi_source_odds(
         try:
             infer_events = infer_client.events_for_date(str(report.get("as_of_date") or ""), timezone_name)
             infer_events_checked = len(infer_events)
-            seen_event_keys: set[tuple[str, str, str]] = set()
             matched_events = []
             for event in infer_events:
                 home_obj = event.get("home_team") or {}
                 away_obj = event.get("away_team") or {}
                 home_name = home_obj.get("name") if isinstance(home_obj, dict) else str(home_obj)
                 away_name = away_obj.get("name") if isinstance(away_obj, dict) else str(away_obj)
-                scheduled = event.get("scheduled_at")
-                event_day = _event_local_date({"commence_time": scheduled}, timezone_name) if scheduled else str(report.get("as_of_date") or "")
-                key = (event_day or "", _name_key(home_name), _name_key(away_name))
-                if not key[0] or not key[1] or not key[2] or key in seen_event_keys:
-                    continue
-                seen_event_keys.add(key)
-                prediction = pred_by_key.get(key)
+                scheduled = event.get("scheduled_at") or event.get("kickoff") or event.get("commence_time")
+                competition = event.get("competition") or event.get("league") or {}
+                competition_name = (
+                    competition.get("name") or competition.get("display_name")
+                    if isinstance(competition, dict) else str(competition or "")
+                )
+                competition_id = (
+                    competition.get("id") if isinstance(competition, dict)
+                    else event.get("competition_id") or event.get("league_id")
+                )
+                event_row = {
+                    "fixture": {"id": event.get("id"), "date": scheduled},
+                    "teams": {
+                        "home": {"name": home_name, "id": (home_obj.get("id") if isinstance(home_obj, dict) else None)},
+                        "away": {"name": away_name, "id": (away_obj.get("id") if isinstance(away_obj, dict) else None)},
+                    },
+                    "league": {"id": competition_id, "name": competition_name},
+                    "_veltrix_source": "InferSports",
+                }
+                prediction = unique_prediction_match(event_row, predictions, timezone_name=timezone_name)
                 if prediction is not None:
-                    matched_events.append((key, event, prediction, str(home_name), str(away_name)))
-            for key, event, prediction, home_name, away_name in matched_events[:3]:
+                    matched_events.append((event, prediction, str(home_name), str(away_name)))
+            for event, prediction, home_name, away_name in matched_events[:3]:
                 event_id = str(event.get("id") or "")
                 if not event_id:
                     continue
