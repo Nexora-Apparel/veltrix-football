@@ -323,8 +323,9 @@ def test_fixture_delivery_cap_uses_requested_date_and_sorts_without_mutating_inp
     limited = daily_runner._limit_fixture_payload(
         payload, 1, as_of_date=date(2026, 10, 23), now=now
     )
-    assert [row["tag"] for row in limited["response"]] == ["early"]
+    assert [row["tag"] for row in limited["response"]] == ["finished", "early", "late"]
     assert len(payload["response"]) == 4
+    assert limited["_veltrix_meta"]["legacy_fixture_cap_ignored"] == 1
 
 
 def test_fixture_delivery_cap_retains_started_fixtures_after_future_fixtures():
@@ -340,8 +341,8 @@ def test_fixture_delivery_cap_retains_started_fixtures_after_future_fixtures():
         payload, 25, as_of_date=date(2026, 10, 30), now=now
     )
     assert len(limited["response"]) == 2
-    assert limited["response"][0]["fixture"]["date"].startswith("2026-10-30T13:00")
-    assert limited["response"][1]["fixture"]["date"].startswith("2026-10-30T11:00")
+    assert limited["response"][0]["fixture"]["date"].startswith("2026-10-30T11:00")
+    assert limited["response"][1]["fixture"]["date"].startswith("2026-10-30T13:00")
 
 
 def test_fixture_delivery_cap_prioritizes_historically_mapped_competitions():
@@ -359,7 +360,7 @@ def test_fixture_delivery_cap_prioritizes_historically_mapped_competitions():
     limited = daily_runner._limit_fixture_payload(
         payload, 1, as_of_date=date(2026, 10, 30), now=now
     )
-    assert [row["tag"] for row in limited["response"]] == ["mapped"]
+    assert {row["tag"] for row in limited["response"]} == {"unmapped", "mapped"}
 
 
 def test_fixture_delivery_cap_prefers_primary_provider_over_unmapped_supplements():
@@ -387,16 +388,14 @@ def test_fixture_delivery_cap_prefers_primary_provider_over_unmapped_supplements
     limited = daily_runner._limit_fixture_payload(
         payload, 1, as_of_date=date(2026, 10, 30), now=now
     )
-    assert [row["tag"] for row in limited["response"]] == ["primary"]
-    assert limited["_veltrix_meta"]["fixtures_by_source_before_cap"] == {
+    assert {row["tag"] for row in limited["response"]} == {"primary", "supplement"}
+    assert limited["_veltrix_meta"]["fixtures_by_source_before_reconciliation"] == {
         "5DollarFootballAPI": 1, "InferSports": 1
     }
-    assert limited["_veltrix_meta"]["fixtures_by_source_after_cap"] == {
-        "5DollarFootballAPI": 1
+    assert limited["_veltrix_meta"]["fixtures_by_source_after_reconciliation"] == {
+        "5DollarFootballAPI": 1, "InferSports": 1
     }
-    assert limited["_veltrix_meta"]["fixture_selection_policy"] == (
-        "mapped_competition_then_pre_match_then_future_then_primary_provider_then_kickoff; canonical team aliases and five-minute cross-source deduplication"
-    )
+    assert "no fixed fixture cap" in limited["_veltrix_meta"]["fixture_selection_policy"]
 
 
 def test_fixture_cap_does_not_trust_provider_local_numeric_league_ids():
@@ -414,10 +413,10 @@ def test_fixture_cap_does_not_trust_provider_local_numeric_league_ids():
     limited = daily_runner._limit_fixture_payload(
         payload, 1, as_of_date=date(2026, 10, 30), now=now
     )
-    assert [row["tag"] for row in limited["response"]] == ["mapped"]
+    assert {row["tag"] for row in limited["response"]} == {"unmapped", "mapped"}
 
 
-def test_fixture_delivery_cap_deduplicates_common_provider_aliases_before_refilling_cap():
+def test_fixture_reconciliation_merges_verified_aliases_and_preserves_all_source_ids():
     from datetime import datetime
     from zoneinfo import ZoneInfo
     now = datetime(2026, 11, 2, 8, 0, tzinfo=ZoneInfo("Africa/Lagos"))
@@ -438,8 +437,10 @@ def test_fixture_delivery_cap_deduplicates_common_provider_aliases_before_refill
     limited = daily_runner._limit_fixture_payload(payload, 3, as_of_date=date(2026, 11, 2), now=now)
     tags = [item["tag"] for item in limited["response"]]
     assert set(tags) == {"newcastle-primary", "deportivo-primary", "unique"}
-    assert limited["_veltrix_meta"]["duplicate_fixture_rows_removed"] == 2
-    assert limited["_veltrix_meta"]["fixtures_after_deduplication"] == 3
+    assert limited["_veltrix_meta"]["fixture_reconciliation"]["confirmed_duplicate_groups"] == 2
+    assert limited["_veltrix_meta"]["fixture_reconciliation"]["input_rows"] == 5
+    assert limited["_veltrix_meta"]["fixture_reconciliation"]["canonical_rows"] == 3
+    assert all(len(item["_veltrix_source_fixture_ids"]) == 2 for item in limited["response"] if item["tag"] != "unique")
 
 
 def test_daily_runner_uses_odds_api_fixtures_and_cached_history_after_primary_429(tmp_path, monkeypatch):
