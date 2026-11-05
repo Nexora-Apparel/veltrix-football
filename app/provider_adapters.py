@@ -843,6 +843,11 @@ def enrich_report_with_multi_source_odds(
                 matched_pairs.append((matches[0], prediction))
 
     for item, prediction in matched_pairs:
+        if (
+            prediction.get("reconciliation_status") == "AMBIGUOUS"
+            or prediction.get("status") == "AMBIGUOUS_FIXTURE_IDENTITY"
+        ):
+            continue
         fixture = item.get("fixture") or {}
         prediction["fixture_source"] = str(item.get("_veltrix_source") or "5DollarFootballAPI")
         prediction["source_fixture_id"] = fixture.get("id")
