@@ -164,14 +164,16 @@ def test_odds_api_supplements_only_future_same_day_fixtures_and_keeps_primary_ro
         payload, "2026-10-29", client=client, now=now,
     )
     rows = result["response"]
-    assert len(rows) == 2
+    assert len(rows) == 3
     assert rows[0]["teams"]["home"]["name"] == "Frosinone"
-    added = rows[1]
+    added = next(row for row in rows if row["fixture"]["id"] == "epl-1")
+    retained_same_team_event = next(row for row in rows if row["fixture"]["id"] == "duplicate-primary")
     assert added["_veltrix_source"] == "The Odds API"
-    assert added["fixture"]["id"] == "epl-1"
     assert added["fixture"]["status"]["short"] == "NS"
     assert added["league"]["code"] == "PL"
-    assert result["_veltrix_meta"]["supplemental_fixtures_added"] == 1
+    assert added["league"]["id"] == "soccer_epl"
+    assert retained_same_team_event["teams"]["home"]["name"] == "Frosinone"
+    assert result["_veltrix_meta"]["supplemental_fixtures_added"] == 2
     assert "soccer_epl" in client.calls
     assert "soccer_netherlands_eredivisie" in client.calls
     assert "soccer_portugal_primeira_liga" in client.calls
@@ -390,14 +392,16 @@ def test_infersports_fixture_supplement_adds_only_future_same_day_and_deduplicat
         payload, "2026-10-29", client=client,
         now=datetime.fromisoformat("2026-10-29T10:00:00+01:00"),
     )
-    assert len(result["response"]) == 2
-    added = result["response"][1]
+    assert len(result["response"]) == 3
+    added = next(row for row in result["response"] if row["fixture"]["id"] == "new-1")
+    retained_same_team_event = next(row for row in result["response"] if row["fixture"]["id"] == "dup")
     assert added["_veltrix_source"] == "InferSports"
     assert added["teams"]["home"]["name"] == "Arsenal"
     assert added["league"]["code"] == "PL"
+    assert retained_same_team_event["teams"]["home"]["name"] == "Frosinone"
     assert result["_veltrix_meta"]["infersports_fixture_discovery"] == {
         "status": "AVAILABLE", "events_received": 4, "future_same_day_events": 2,
-        "duplicates_skipped": 1, "fixtures_added": 1, "error_type": None,
+        "duplicates_skipped": 0, "fixtures_added": 2, "error_type": None,
     }
     assert client.calls == [("2026-10-29", "Africa/Lagos")]
 
