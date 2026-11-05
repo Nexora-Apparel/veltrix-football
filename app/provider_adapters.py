@@ -22,7 +22,7 @@ from zoneinfo import ZoneInfo
 
 from app.api_football_odds import APIFootballError
 from app.live_predictions import _name_key as _canonical_name_key
-from app.fixture_identity import unique_prediction_match
+from app.fixture_identity import fixtures_match, unique_prediction_match
 
 
 FIVEDOLLAR_BASE_URL = "https://api.5dollarfootballapi.com/v1"
@@ -825,7 +825,7 @@ def enrich_report_with_multi_source_odds(
         elif not usable_source_id:
             # Compatibility for legacy in-memory reports without source IDs:
             # require the same strict competition/team/category/kickoff join.
-            item = unique_prediction_match({
+            prediction_row = {
                 "fixture": {"date": prediction.get("kickoff_local") or prediction.get("kickoff")},
                 "teams": {
                     "home": {"name": prediction.get("home_team")},
@@ -833,9 +833,14 @@ def enrich_report_with_multi_source_odds(
                 },
                 "league": {"name": prediction.get("league")},
                 "_veltrix_source": "PREDICTION",
-            }, [item for item in source_fixtures if isinstance(item, dict)], timezone_name=timezone_name)
-            if item is not None:
-                matched_pairs.append((item, prediction))
+            }
+            matches = [
+                item for item in source_fixtures
+                if isinstance(item, dict)
+                and fixtures_match(item, prediction_row, timezone_name=timezone_name)
+            ]
+            if len(matches) == 1:
+                matched_pairs.append((matches[0], prediction))
 
     for item, prediction in matched_pairs:
         fixture = item.get("fixture") or {}
