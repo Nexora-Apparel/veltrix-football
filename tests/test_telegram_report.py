@@ -440,7 +440,7 @@ def test_telegram_withholds_legacy_low_data_forecast_probabilities():
     assert "Fixtures analysed: 0" in message
     assert "Alpha FC vs Beta FC" in message
     assert "FORECAST STATUS: INSUFFICIENT_HISTORY" in message
-    assert "Legacy low-data forecast withheld" in message
+    assert "Historical evidence is not yet sufficient for a reliable forecast." in message
     assert "1X2: Home 50%" not in message
     assert "BTTS Yes: 58%" not in message
     assert "xG: 1.40 - 0.80" not in message
