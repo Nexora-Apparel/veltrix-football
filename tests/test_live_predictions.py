@@ -53,14 +53,16 @@ def test_prediction_uses_minimum_history_and_never_claims_validated():
     assert prediction["data_availability"]["live_bookmaker_odds"] == "NOT_FETCHED_IN_THIS_RUN_API_FOOTBALL_ODDS_ENRICHMENT_NOT_CONFIRMED"
 
 
-def test_insufficient_team_history_suppresses_probabilities():
+def test_sparse_team_history_uses_adaptive_forecast_with_low_evidence():
     fixture = _fixture()
     fixture["league"]["id"] = 39
     fixture["teams"]["home"]["name"] = "Unknown Club"
     result = predict_fixtures([fixture], _history(), as_of=date(2026, 10, 23), now=datetime(2026, 10, 23, 12, 0, tzinfo=ZoneInfo("Africa/Lagos")))
-    assert result[0]["status"] == "INSUFFICIENT_HISTORY"
-    assert "probabilities" not in result[0]
+    assert result[0]["status"] == "LOW_HISTORY_FORECAST"
+    assert result[0]["probabilities"]
     assert result[0]["historical_matches"] == {"home": 0, "away": 6}
+    assert result[0]["evidence_grade"] in {"LOW", "MODERATE"}
+    assert result[0]["value_bet_screen"]["status"] == "NOT_ELIGIBLE_LOW_EVIDENCE"
     diagnostics = result[0]["team_history_diagnostics"]
     assert diagnostics["home"]["fixture_name"] == "Unknown Club"
     assert diagnostics["home"]["history_match_found"] is False
@@ -68,7 +70,7 @@ def test_insufficient_team_history_suppresses_probabilities():
     assert diagnostics["away"]["prior_matches"] == 6
 
 
-def test_unmapped_competition_with_insufficient_history_is_withheld():
+def test_unmapped_competition_uses_global_prior_without_cross_competition_team_matching():
     fixture = _fixture()
     fixture["league"].pop("id", None)
     fixture["league"].pop("code", None)
@@ -77,9 +79,10 @@ def test_unmapped_competition_with_insufficient_history_is_withheld():
         [fixture], _history(), as_of=date(2026, 10, 23),
         now=datetime(2026, 10, 23, 12, 0, tzinfo=ZoneInfo("Africa/Lagos")),
     )
-    assert result[0]["status"] == "INSUFFICIENT_HISTORY"
-    assert "not mapped to a historical division" in result[0]["reason"]
-    assert "probabilities" not in result[0]
+    assert result[0]["status"] == "LOW_HISTORY_FORECAST"
+    assert result[0]["probabilities"]
+    assert result[0]["historical_matches"] == {"home": 0, "away": 0}
+    assert result[0]["data_availability"]["fallback_prior"] == "GLOBAL"
 
 
 
@@ -109,16 +112,17 @@ def test_team_history_and_baselines_are_isolated_by_competition():
     assert with_other_league["expected_goals"] == baseline["expected_goals"]
 
 
-def test_unmapped_competition_cannot_borrow_another_leagues_team_history():
+def test_unmapped_competition_uses_global_rates_but_never_borrows_team_history():
     fixture = _fixture()
     fixture["league"].pop("code", None)
     result = predict_fixtures(
         [fixture], _history(), as_of=date(2026, 10, 23),
         now=datetime(2026, 10, 23, 12, 0, tzinfo=ZoneInfo("Africa/Lagos")),
     )[0]
-    assert result["status"] == "INSUFFICIENT_HISTORY"
+    assert result["status"] == "LOW_HISTORY_FORECAST"
     assert result["historical_matches"] == {"home": 0, "away": 0}
-    assert "probabilities" not in result
+    assert result["probabilities"]
+    assert result["data_availability"]["fallback_prior"] == "GLOBAL"
 
 def test_history_from_prediction_date_is_not_used():
     rows = _history()
@@ -386,17 +390,18 @@ def test_daily_report_explains_fixture_filtering(tmp_path):
 
 
 
-def test_empty_history_withholds_eligible_fixtures_explicitly():
+def test_empty_history_generates_conservative_neutral_prior_forecast():
     fixture = _fixture("2026-10-23T15:00:00+01:00")
     result = predict_fixtures(
         [fixture], [], as_of=date(2026, 10, 23),
         now=datetime(2026, 10, 23, 12, 0, tzinfo=ZoneInfo("Africa/Lagos")),
     )
     assert len(result) == 1
-    assert result[0]["status"] == "INSUFFICIENT_HISTORY"
+    assert result[0]["status"] == "LOW_HISTORY_FORECAST"
     assert result[0]["historical_matches"] == {"home": 0, "away": 0}
-    assert "No historical matches" in result[0]["reason"]
-    assert "probabilities" not in result[0]
+    assert result[0]["probabilities"]
+    assert result[0]["evidence_grade"] == "VERY_LOW"
+    assert result[0]["value_bet_screen"]["status"] == "NOT_ELIGIBLE_LOW_EVIDENCE"
 
 
 def test_empty_history_retains_past_fixture_and_excludes_other_day_fixture():
@@ -717,3 +722,23 @@ def test_unmapped_senior_fixture_with_global_history_is_withheld_without_team_ev
     assert "probabilities" not in prediction
     assert "btts_yes" not in prediction
     assert "over_2_5" not in prediction
+
+
+def test_one_match_history_is_used_with_strong_shrinkage():
+    rows = [{
+        "date": date(2026, 10, 1), "division": "E0",
+        "home": "Alpha FC", "away": "Opponent",
+        "home_key": _name_key("Alpha FC"), "away_key": _name_key("Opponent"),
+        "home_goals": 4, "away_goals": 0,
+    }]
+    fixture = _fixture()
+    fixture["teams"]["away"]["name"] = "New Club"
+    result = predict_fixtures(
+        [fixture], rows, as_of=date(2026, 10, 23),
+        now=datetime(2026, 10, 23, 12, 0, tzinfo=ZoneInfo("Africa/Lagos")),
+    )[0]
+    assert result["status"] == "LOW_HISTORY_FORECAST"
+    assert result["historical_matches"] == {"home": 1, "away": 0}
+    assert result["probabilities"]
+    assert result["evidence_grade"] == "LOW"
+    assert "One team has no matched history" in result["prediction_basis"]
