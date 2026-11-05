@@ -57,7 +57,11 @@ def _name_key(name: Any) -> str:
     fuzzy matches remain suggestions only; a wrong team merge is worse than
     withholding a forecast.
     """
-    normalized = unicodedata.normalize("NFKD", str(name or "").casefold())
+    raw_name = str(name or "").strip().casefold()
+    # Preserve only explicit squad suffix markers before punctuation is removed.
+    explicit_reserve = bool(re.search(r"(?:\\(\\s*r\\s*\\)|\\s+r)$", raw_name))
+    explicit_women = bool(re.search(r"(?:\\(\\s*w\\s*\\)|\\s+w)$", raw_name))
+    normalized = unicodedata.normalize("NFKD", raw_name)
     normalized = "".join(char for char in normalized if not unicodedata.combining(char))
     # Preserve a small set of letters that NFKD does not decompose consistently.
     normalized = normalized.replace("ø", "o").replace("ł", "l").replace("đ", "d").replace("ð", "d").replace("þ", "th")
@@ -68,6 +72,10 @@ def _name_key(name: Any) -> str:
     while tokens and tokens[-1] in edge_markers:
         tokens.pop()
     key = "".join(tokens)
+    if explicit_reserve:
+        key += "reservemarker"
+    if explicit_women:
+        key += "womenmarker"
     aliases = {
         "manutd": "manchesterunited",
         "manunited": "manchesterunited",
@@ -120,10 +128,10 @@ def _team_variant_signature(key: str) -> tuple[str, ...]:
     # "(W)" for women's sides and "(R)" for reserve sides. Those markers must
     # survive normalization so fuzzy matching cannot merge them with senior men.
     for label, pattern in (
-        ("women", r"(?:women|womens|ladies|feminin|femenino|feminino|w)$"),
+        ("women", r"(?:women|womens|ladies|feminin|femenino|feminino|womenmarker)$"),
         ("youth", r"(?:youth|academy|junior|juniors)$"),
         ("age_group", r"u(?:1[0-9]|2[0-3])$"),
-        ("reserve", r"(?:reserves|reserve|bteam|ii|iii|iv|b|2|3|r)$"),
+        ("reserve", r"(?:reserves|reserve|bteam|ii|iii|iv|2|3|reservemarker)$"),
     ):
         if re.search(pattern, key):
             markers.append(label)
@@ -131,7 +139,7 @@ def _team_variant_signature(key: str) -> tuple[str, ...]:
     age = re.search(r"u(1[0-9]|2[0-3])$", key)
     if age:
         markers.append("u" + age.group(1))
-    reserve = re.search(r"(?:reserves|reserve|bteam|ii|iii|iv|b|2|3|r)$", key)
+    reserve = re.search(r"(?:reserves|reserve|bteam|ii|iii|iv|2|3|reservemarker)$", key)
     if reserve:
         markers.append(reserve.group(0))
     return tuple(markers)
@@ -256,6 +264,25 @@ def _fixture_parts(item: dict[str, Any], timezone_name: str = "Africa/Lagos", *,
         return None
     return {
         "fixture_id": fixture.get("id"),
+        "source_fixture_id": fixture.get("id"),
+        "fixture_source": str(item.get("_veltrix_source") or item.get("provider") or "UNKNOWN"),
+        "source_competition_id": league.get("id"),
+        "home_team_id": (teams.get("home") or {}).get("id"),
+        "away_team_id": (teams.get("away") or {}).get("id"),
+        "provider_provenance": item.get("_veltrix_provenance") or [{
+            "provider": str(item.get("_veltrix_source") or item.get("provider") or "UNKNOWN"),
+            "fixture_id": fixture.get("id"),
+            "competition_id": league.get("id"),
+            "competition_name": league.get("name"),
+            "home_team_id": (teams.get("home") or {}).get("id"),
+            "away_team_id": (teams.get("away") or {}).get("id"),
+        }],
+        "source_fixture_ids": item.get("_veltrix_source_fixture_ids") or [{
+            "provider": str(item.get("_veltrix_source") or item.get("provider") or "UNKNOWN"),
+            "fixture_id": fixture.get("id"),
+        }],
+        "reconciliation_status": item.get("_veltrix_reconciliation_status") or "UNIQUE",
+        "quarantine_reasons": item.get("_veltrix_quarantine_reasons") or [],
         "kickoff": parsed.isoformat(),
         "kickoff_local": local_kickoff.isoformat(),
         "kickoff_date": local_kickoff.date(),
@@ -406,7 +433,9 @@ def predict_fixtures(
                 parsed.append(fixture)
         visibility_rows, candidates = [], []
         for fixture in parsed:
-            if fixture["kickoff_datetime"] <= current_time:
+            if fixture.get("reconciliation_status") == "AMBIGUOUS":
+                status, reason = "AMBIGUOUS_FIXTURE_IDENTITY", "Fixture retained but quarantined: provider records could not be reconciled safely. No prediction is issued."
+            elif fixture["kickoff_datetime"] <= current_time:
                 status, reason = "KICKOFF_PASSED", "Fixture retained for visibility; kickoff has passed, so no pre-match forecast is issued."
             elif fixture.get("fixture_status") not in {"NS", "TBD"}:
                 status, reason = "FIXTURE_NOT_PREMATCH", f"Fixture retained without a forecast because provider status is {fixture.get('fixture_status')}."
@@ -470,7 +499,9 @@ def predict_fixtures(
             parsed_all.append(parsed)
     visibility_rows, parsed_fixtures = [], []
     for fixture in parsed_all:
-        if fixture["kickoff_datetime"] <= current_time:
+        if fixture.get("reconciliation_status") == "AMBIGUOUS":
+            status, reason = "AMBIGUOUS_FIXTURE_IDENTITY", "Fixture retained but quarantined: provider records could not be reconciled safely. No prediction is issued."
+        elif fixture["kickoff_datetime"] <= current_time:
             status, reason = "KICKOFF_PASSED", "Fixture retained for visibility; kickoff has passed, so no pre-match forecast is issued."
         elif fixture.get("fixture_status") not in {"NS", "TBD"}:
             status, reason = "FIXTURE_NOT_PREMATCH", f"Fixture retained without a forecast because provider status is {fixture.get('fixture_status')}."
