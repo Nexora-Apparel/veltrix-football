@@ -96,6 +96,32 @@ def test_api_sports_odds_attach_by_local_date_and_team_names_not_provider_ids():
     assert report["predictions"][0]["market_model"] == "api_sports_bookmaker_consensus"
 
 
+
+def test_api_sports_odds_attach_to_adaptive_low_history_forecast():
+    report = {
+        "predictions": [{
+            "fixture_id": "provider-123",
+            "home_team": "Alpha FC",
+            "away_team": "Beta FC",
+            "kickoff_local": "2026-10-27T19:00:00+01:00",
+            "status": "LOW_HISTORY_FORECAST",
+            "evidence_grade": "LOW",
+        }]
+    }
+    payload = {"response": [{
+        "match_id": "market-1",
+        "home_team": "Alpha FC",
+        "away_team": "Beta FC",
+        "date": "2026-10-27",
+        "odds": {"home": 2.0, "draw": 3.0, "away": 4.0},
+    }]}
+
+    assert daily_runner._merge_api_sports_market_odds(report, payload) == 1
+    assert report["predictions"][0]["market_model"] == "api_sports_bookmaker_consensus"
+    assert report["predictions"][0]["market_probabilities"]
+
+
+
 def test_api_sports_odds_match_known_argentine_name_variants():
     report = {
         "predictions": [{
