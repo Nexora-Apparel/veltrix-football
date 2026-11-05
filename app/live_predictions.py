@@ -930,6 +930,7 @@ def build_daily_report(
     additional_historical_matches: list[dict[str, Any]] | None = None,
     base_historical_matches: list[dict[str, Any]] | None = None,
     market_odds_by_fixture: dict[int, dict[str, Any]] | None = None,
+    strict_publication: bool = False,
 ) -> dict[str, Any]:
     """Build a daily report with explicit fixture-filter and history-freshness diagnostics."""
     fixtures = fixtures_payload.get("response")
@@ -979,6 +980,59 @@ def build_daily_report(
         timezone_name=timezone_name,
         now=current_time,
     )
+    if strict_publication:
+        # Generic priors with zero team-specific history are diagnostics, not
+        # fixture forecasts. Keep the fixture visible but strip every model
+        # market and xG field before this report can be published or sent.
+        for prediction in predictions:
+            history_counts = prediction.get("historical_matches") or {}
+            no_team_history = (
+                prediction.get("status") == "LOW_HISTORY_FORECAST"
+                and int(history_counts.get("home") or 0) == 0
+                and int(history_counts.get("away") or 0) == 0
+            )
+            if not no_team_history:
+                continue
+            prior = prediction.get("expected_goals") or {"home": 1.35, "away": 1.10}
+            non_senior = _is_non_senior_competition(prediction.get("league"))
+            prediction["model"] = "not_evaluated"
+            prediction["model_validated"] = False
+            prediction["betting_recommendation"] = False
+            prediction["evidence_grade"] = "VERY_LOW"
+            if non_senior:
+                prediction["status"] = "UNSUPPORTED_COMPETITION"
+                prediction["evidence_scope"] = "CATEGORY_HISTORY_REQUIRED"
+                prediction["reason"] = (
+                    "No category-matched historical results are available. "
+                    "Senior-team data and neutral priors are not substituted."
+                )
+                prediction["value_bet_screen"] = {
+                    "status": "NOT_ELIGIBLE_NO_CATEGORY_HISTORY", "markets": {}
+                }
+            else:
+                prediction["status"] = "INSUFFICIENT_HISTORY"
+                prediction["evidence_scope"] = "NO_TEAM_HISTORY"
+                prediction["reason"] = (
+                    "No verified prior results were found for either team. "
+                    "A shared competition/global prior is diagnostic only, not a match forecast."
+                )
+                prediction["diagnostic_scoring_prior"] = {
+                    "home": round(float(prior.get("home", 1.35)), 3),
+                    "away": round(float(prior.get("away", 1.10)), 3),
+                }
+                prediction["value_bet_screen"] = {
+                    "status": "NOT_ELIGIBLE_NO_TEAM_HISTORY", "markets": {}
+                }
+            for field in (
+                "probabilities", "market_probabilities", "expected_goals",
+                "btts_yes", "over_1_5", "over_2_5", "over_3_5",
+                "most_likely_scorelines", "poisson_probabilities",
+                "elo_probabilities", "advanced_model_alternative",
+                "poisson_dc_shadow", "goal_markets_model", "scoreline_model",
+                "market_model", "market_bookmakers_count", "market_updated_at",
+                "market_method",
+            ):
+                prediction.pop(field, None)
     # predict_fixtures already retains malformed kickoff rows as quarantined
     # visibility records in both sparse-history and normal-history paths.
     kickoff_unverified_count = sum(
