@@ -517,7 +517,7 @@ def handle_command(
             return _reply("MULTI-SOURCE BOOKMAKER ODDS — NO MATCHED BTTS OR OVER/UNDER PRICES\\nThe current report contains fixtures, but no provider prices matched safely by teams and local kickoff date. No odds were fabricated.")
         lines.extend([
             "",
-            "Prices are provider-reported and may change. Forecast probabilities remain experimental; no value recommendations or bookmaker actions are generated.",
+            "Prices are provider-reported and may change. Probabilities are estimates; no bookmaker actions are generated.",
         ])
         return _reply("\n".join(lines))
 
