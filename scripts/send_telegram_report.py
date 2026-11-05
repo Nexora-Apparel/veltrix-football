@@ -1,5 +1,5 @@
 # Same-day attribution replay is intentionally driven by the [reuse-report-40175707059] workflow marker.
-"""Send a clearly labelled experimental daily report to Telegram."""
+"""Send the daily VELTRIX football verdict report to Telegram."""
 from __future__ import annotations
 
 import argparse
@@ -207,26 +207,18 @@ def _format_recent_form(team_form: Any) -> str:
 
 
 def format_report_messages(report: dict[str, Any], ledger: dict[str, Any] | None = None) -> list[str]:
-    """Send only concise match predictions to Telegram; diagnostics stay on the website."""
+    """Send concise match verdicts and evidence-based explanations to Telegram."""
     day = str(report.get("as_of_date", "unknown date"))
     timezone_name = str(report.get("timezone", "Africa/Lagos"))
     predictions = report.get("predictions", [])
     fixtures = [item for item in predictions if isinstance(item, dict)]
-    usable = [item for item in fixtures if item.get("status") == "EXPERIMENTAL_ONLY"]
+    usable = [item for item in fixtures if item.get("status") in {"EXPERIMENTAL_ONLY", "LOW_HISTORY_FORECAST"} and isinstance(item.get("probabilities"), dict)]
 
     header = [
         DIVIDER,
         f"⚽ VELTRIX FOOTBALL AI · DAILY INTELLIGENCE",
         f"📅 {day} · Kick-off times: WAT",
-        f"Fixtures retrieved: {len(fixtures)} · Research forecasts: {len(usable)}",
-        "Value screen: 1X2 / BTTS / Over-Under · " + str((report.get("value_bet_screen") or {}).get("status") or "NOT_REPORTED"),
-        "Paper-only candidates (not approved): " + str((report.get("value_bet_screen") or {}).get("paper_candidate_count", 0)),
-        "Value intelligence: SHADOW MODE · fixtures evaluated: " + str((report.get("value_intelligence") or {}).get("fixtures_evaluated", 0)) + " · candidates: " + str((report.get("value_intelligence") or {}).get("shadow_candidate_count", 0)) + " · alerts OFF",
-        "Goal calibration: " + str((report.get("goal_market_calibration") or {}).get("status") or "NOT_REPORTED")
-        + " · applied: " + str((report.get("goal_market_calibration") or {}).get("applied_forecasts", 0))
-        + "/" + str((report.get("goal_market_calibration") or {}).get("compatible_forecasts", 0)),
-        "Validation: " + str((report.get("value_validation_certificate") or {}).get("status") or "LOCKED_INSUFFICIENT_EVIDENCE")
-        + " · approved: " + (", ".join((report.get("value_validation_certificate") or {}).get("approved_markets") or []) or "none"),
+        f"Fixtures analysed: {len(usable)}",
         "",
     ]
     blocks: list[list[str]] = []
@@ -253,8 +245,6 @@ def format_report_messages(report: dict[str, Any], ledger: dict[str, Any] | None
             f"Over 3.5: {_format_percent(item.get('over_3_5'))} | Under 3.5: {_format_percent(1 - float(item.get('over_3_5'))) if isinstance(item.get('over_3_5'), (int, float)) and 0 <= item.get('over_3_5') <= 1 else '—'}",
             f"xG: {_format_goals(expected.get('home'))} - {_format_goals(expected.get('away'))}",
         ]
-        if item.get("status") == "EXPERIMENTAL_LOW_DATA":
-            block.append("MODEL STATUS: LOW-DATA EXPERIMENTAL · NOT BETTING ELIGIBLE")
         recent_form = item.get("recent_form") if isinstance(item.get("recent_form"), dict) else {}
         home_form = _format_recent_form((recent_form.get("home_team") or {}).get("overall") if isinstance(recent_form.get("home_team"), dict) else None)
         away_form = _format_recent_form((recent_form.get("away_team") or {}).get("overall") if isinstance(recent_form.get("away_team"), dict) else None)
@@ -262,12 +252,12 @@ def format_report_messages(report: dict[str, Any], ledger: dict[str, Any] | None
             block.append(f"Recent form · last 5: Home {home_form} | Away {away_form}")
         prediction_basis = str(item.get("prediction_basis") or "").strip()
         if prediction_basis:
-            block.append("FORECAST BASIS: " + prediction_basis)
+            block.append("WHY THIS VERDICT: " + prediction_basis)
         value_screen = item.get("value_bet_screen") if isinstance(item.get("value_bet_screen"), dict) else {}
         for market, result in (value_screen.get("markets") or {}).items():
             for candidate in (result.get("candidates") or [])[:2]:
                 block.append(
-                    "VALUE CANDIDATE: {} {} @ {:.2f} · edge {:.1f}pp · expected return {:.1f}%".format(
+                     "VALUE BET VERDICT: {} {} @ {:.2f} · estimated edge {:.1f}pp · expected return {:.1f}%".format(
                         market, candidate.get("selection"), float(candidate.get("decimal_odds")),
                         float(candidate.get("edge_percentage_points")),
                         float(candidate.get("expected_return_per_unit")) * 100.0,
@@ -283,12 +273,14 @@ def format_report_messages(report: dict[str, Any], ledger: dict[str, Any] | None
     # Do not silently hide discovered fixtures just because the model cannot
     # produce an eligible forecast. Publish the fixture and the explicit gate.
     for item in fixtures:
-        if item.get("status") == "EXPERIMENTAL_ONLY":
+        if item.get("status") in {"EXPERIMENTAL_ONLY", "LOW_HISTORY_FORECAST"}:
             continue
         status = str(item.get("status") or "FORECAST_UNAVAILABLE").upper()
-        if status == "EXPERIMENTAL_LOW_DATA":
+        if status == "LOW_HISTORY_FORECAST":
+            continue
+        elif status == "EXPERIMENTAL_LOW_DATA":
             status = "INSUFFICIENT_HISTORY"
-            reason = "Legacy low-data forecast withheld: fixture-specific team history did not meet the minimum evidence requirement."
+            reason = "Historical evidence is not yet sufficient for a reliable forecast."
         elif status == "INSUFFICIENT_HISTORY":
             reason = "Forecast withheld: insufficient reliable team history."
         elif status == "UNSUPPORTED_COMPETITION":
