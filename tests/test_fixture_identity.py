@@ -290,3 +290,22 @@ def test_same_teams_same_competition_with_small_kickoff_drift_is_quarantined():
     assert {record["fixture_id"] for record in canonical[0]["_veltrix_source_fixture_ids"]} == {
         "feed-a", "feed-b",
     }
+
+
+def test_u19_competition_supplies_squad_identity_when_team_names_omit_suffix():
+    rows = [
+        fixture("youth-a", "ProviderA", "Zilina", "Helsinki", 700,
+                "UEFA U19", "2026-11-04T15:30:00Z"),
+        fixture("youth-b", "ProviderB", "Zilina U19", "Helsinki U19", "youth-700",
+                "UEFA U19", "2026-11-04T15:31:00Z"),
+    ]
+
+    canonical, meta = reconcile_fixture_rows(rows)
+
+    assert len(canonical) == 1
+    assert meta["confirmed_duplicate_groups"] == 1
+    assert meta["quarantined_rows"] == 0
+    assert canonical[0]["_veltrix_reconciliation_status"] == "MATCHED"
+    assert {item["fixture_id"] for item in canonical[0]["_veltrix_source_fixture_ids"]} == {
+        "youth-a", "youth-b",
+    }
