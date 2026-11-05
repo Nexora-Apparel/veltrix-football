@@ -168,7 +168,7 @@ on:
         required: false
         type: string
   schedule:
-    # Primary report starts at 06:00 Africa/Lagos (WAT, UTC+1) = 05:00 UTC.
+    # Pipeline starts at 05:00 Africa/Lagos (WAT, UTC+1) = 04:00 UTC; Telegram send is gated to 06:00 WAT.
     - cron: "0 4 * * *"
 
 # Controlled same-day snapshot replay for the current 2026-11-02 report; no provider refetch.
