@@ -983,37 +983,8 @@ def build_daily_report(
         timezone_name=timezone_name,
         now=current_time,
     )
-    # The provider request is already scoped to the target local-day window.
-    # Retain scheduled fixtures whose kickoff timestamp is absent/malformed so
-    # the command centre never silently loses a fixture solely due to bad time
-    # metadata. Such rows receive no forecast until kickoff can be verified.
-    kickoff_unverified: list[dict[str, Any]] = []
-    for item in fixtures:
-        if not isinstance(item, dict) or _fixture_parts(item, timezone_name) is not None:
-            continue
-        fixture = item.get("fixture") if isinstance(item.get("fixture"), dict) else {}
-        status = str((fixture.get("status") or {}).get("short") or "").upper()
-        teams = item.get("teams") if isinstance(item.get("teams"), dict) else {}
-        home = (teams.get("home") or {}).get("name") if isinstance(teams.get("home"), dict) else None
-        away = (teams.get("away") or {}).get("name") if isinstance(teams.get("away"), dict) else None
-        league = item.get("league") if isinstance(item.get("league"), dict) else {}
-        if status not in {"NS", "TBD"} or not home or not away:
-            continue
-        kickoff_unverified.append({
-            "fixture_id": fixture.get("id"),
-            "kickoff": fixture.get("date"),
-            "kickoff_local": None,
-            "home_team": str(home),
-            "away_team": str(away),
-            "league": str(league.get("name") or "Competition unavailable"),
-            "status": "KICKOFF_UNVERIFIED",
-            "model": "not_evaluated",
-            "model_validated": False,
-            "betting_recommendation": False,
-            "reason": "Fixture retained because the provider returned it for the requested local day, but its kickoff timestamp is missing or invalid.",
-            "kickoff_verification": "MISSING_OR_INVALID",
-        })
-    predictions.extend(kickoff_unverified)
+    # predict_fixtures already retains malformed kickoff rows as quarantined
+    # visibility records in both sparse-history and normal-history paths.
     if market_odds_by_fixture:
         eligible_statuses = {"EXPERIMENTAL_ONLY", "EXPERIMENTAL_LOW_DATA", "INSUFFICIENT_HISTORY", "UNSUPPORTED_COMPETITION"}
         for prediction in predictions:
