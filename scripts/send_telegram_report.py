@@ -245,6 +245,15 @@ def format_report_messages(report: dict[str, Any], ledger: dict[str, Any] | None
             f"Over 3.5: {_format_percent(item.get('over_3_5'))} | Under 3.5: {_format_percent(1 - float(item.get('over_3_5'))) if isinstance(item.get('over_3_5'), (int, float)) and 0 <= item.get('over_3_5') <= 1 else '—'}",
             f"xG: {_format_goals(expected.get('home'))} - {_format_goals(expected.get('away'))}",
         ]
+        one_x_two = {"Home": home, "Draw": draw, "Away": away}
+        ranked = [(label, value) for label, value in one_x_two.items() if isinstance(value, (int, float))]
+        if ranked:
+            verdict, probability = max(ranked, key=lambda pair: pair[1])
+            block.append(f"1X2 VERDICT: {verdict} lean ({_format_percent(probability)})")
+        if isinstance(btts, (int, float)):
+            block.append("BTTS VERDICT: {} ({})".format("Yes" if btts >= 0.5 else "No", _format_percent(btts if btts >= 0.5 else 1-btts)))
+        if isinstance(over25, (int, float)):
+            block.append("GOALS VERDICT: {} 2.5 ({})".format("Over" if over25 >= 0.5 else "Under", _format_percent(over25 if over25 >= 0.5 else 1-over25)))
         recent_form = item.get("recent_form") if isinstance(item.get("recent_form"), dict) else {}
         home_form = _format_recent_form((recent_form.get("home_team") or {}).get("overall") if isinstance(recent_form.get("home_team"), dict) else None)
         away_form = _format_recent_form((recent_form.get("away_team") or {}).get("overall") if isinstance(recent_form.get("away_team"), dict) else None)
