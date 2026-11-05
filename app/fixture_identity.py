@@ -304,6 +304,13 @@ def reconcile_fixture_rows(
             # A different squad category is a distinct event.
 
     ambiguous_indices: dict[int, set[str]] = defaultdict(set)
+    for index, identity in enumerate(identities):
+        if not identity["kickoff"]:
+            ambiguous_indices[index].add("missing_or_invalid_kickoff")
+        if not identity["home_key"] or not identity["away_key"]:
+            ambiguous_indices[index].add("missing_team_identity")
+        if identity["competition"] is None:
+            ambiguous_indices[index].add("missing_competition_identity")
     for i, j, reason in ambiguous_pairs:
         ambiguous_indices[i].add(reason)
         ambiguous_indices[j].add(reason)
