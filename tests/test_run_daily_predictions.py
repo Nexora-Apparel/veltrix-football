@@ -326,6 +326,7 @@ def test_fixture_delivery_cap_uses_requested_date_and_sorts_without_mutating_inp
     assert [row["tag"] for row in limited["response"]] == ["finished", "early", "late"]
     assert len(payload["response"]) == 4
     assert limited["_veltrix_meta"]["legacy_fixture_cap_ignored"] == 1
+    assert limited["_veltrix_meta"]["fixtures_after_reconciliation"] == 3
 
 
 def test_fixture_delivery_cap_retains_started_fixtures_after_future_fixtures():
@@ -416,7 +417,7 @@ def test_fixture_cap_does_not_trust_provider_local_numeric_league_ids():
     assert {row["tag"] for row in limited["response"]} == {"unmapped", "mapped"}
 
 
-def test_fixture_reconciliation_merges_verified_aliases_and_preserves_all_source_ids():
+def test_fixture_reconciliation_does_not_guess_unverified_team_aliases():
     from datetime import datetime
     from zoneinfo import ZoneInfo
     now = datetime(2026, 11, 2, 8, 0, tzinfo=ZoneInfo("Africa/Lagos"))
@@ -436,11 +437,14 @@ def test_fixture_reconciliation_merges_verified_aliases_and_preserves_all_source
     ]}
     limited = daily_runner._limit_fixture_payload(payload, 3, as_of_date=date(2026, 11, 2), now=now)
     tags = [item["tag"] for item in limited["response"]]
-    assert set(tags) == {"newcastle-primary", "deportivo-primary", "unique"}
-    assert limited["_veltrix_meta"]["fixture_reconciliation"]["confirmed_duplicate_groups"] == 2
+    assert set(tags) == {
+        "newcastle-primary", "newcastle-alias",
+        "deportivo-primary", "deportivo-alias", "unique",
+    }
+    assert limited["_veltrix_meta"]["fixture_reconciliation"]["confirmed_duplicate_groups"] == 0
     assert limited["_veltrix_meta"]["fixture_reconciliation"]["input_rows"] == 5
-    assert limited["_veltrix_meta"]["fixture_reconciliation"]["canonical_rows"] == 3
-    assert all(len(item["_veltrix_source_fixture_ids"]) == 2 for item in limited["response"] if item["tag"] != "unique")
+    assert limited["_veltrix_meta"]["fixture_reconciliation"]["canonical_rows"] == 5
+    assert all(len(item["_veltrix_source_fixture_ids"]) == 1 for item in limited["response"])
 
 
 def test_daily_runner_uses_odds_api_fixtures_and_cached_history_after_primary_429(tmp_path, monkeypatch):
