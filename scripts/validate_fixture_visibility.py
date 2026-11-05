@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Any
 
 
-FORECAST_STATUSES = {"EXPERIMENTAL_ONLY"}
+FORECAST_STATUSES = {"EXPERIMENTAL_ONLY", "LOW_HISTORY_FORECAST"}
 NON_FORECAST_STATUSES = {
     "INSUFFICIENT_HISTORY", "EXPERIMENTAL_LOW_DATA", "UNSUPPORTED_COMPETITION", "KICKOFF_UNVERIFIED",
     "KICKOFF_PASSED", "FIXTURE_NOT_PREMATCH",
@@ -40,10 +40,8 @@ def validate_fixture_visibility(report: dict[str, Any]) -> dict[str, Any]:
         status = str(row.get("status") or "UNKNOWN").upper()
         counts[status] = counts.get(status, 0) + 1
 
-    # Sparse history is a visibility condition, not permission to synthesize
-    # fixture probabilities from a shared global/competition scoring prior.
-    # INSUFFICIENT_HISTORY rows remain visible and are checked above to ensure
-    # they carry no probability distribution.
+    # Adaptive low-history forecasts are explicitly counted and carry an evidence grade.
+    # They remain separate from full-history forecasts in coverage reporting.
     coverage = report.get("historical_data_coverage") or {}
     source_counts = coverage.get("recent_cache_source_counts") or {}
     try:
@@ -55,6 +53,7 @@ def validate_fixture_visibility(report: dict[str, Any]) -> dict[str, Any]:
         if str(row.get("status") or "").upper() not in {
             "KICKOFF_UNVERIFIED", "KICKOFF_PASSED", "FIXTURE_NOT_PREMATCH"
         }
+        and row.get("evidence_scope") != "CATEGORY_NEUTRAL_PRIOR"
         and "women's, youth and reserve competitions require category-matched historical results"
         not in str(row.get("reason") or "").casefold()
     ]
@@ -63,7 +62,7 @@ def validate_fixture_visibility(report: dict[str, Any]) -> dict[str, Any]:
         and isinstance(row.get("probabilities"), dict)
         for row in rows
     )
-    low_data_forecasts = counts.get("EXPERIMENTAL_LOW_DATA", 0)
+    low_data_forecasts = counts.get("LOW_HISTORY_FORECAST", 0)
     insufficient_history_rows = counts.get("INSUFFICIENT_HISTORY", 0)
     forecast_coverage = forecast_rows / len(senior_candidates) if senior_candidates else 1.0
     result = {

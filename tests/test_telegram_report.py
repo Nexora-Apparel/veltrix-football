@@ -46,8 +46,6 @@ def test_telegram_report_is_predictions_only_and_keeps_new_update_alert():
     assert "🔔 🆕 NEW VELTRIX UPDATE" in message
     assert "VELTRIX FOOTBALL AI · DAILY INTELLIGENCE" in message
     assert "2026-10-23" in message
-    assert "Fixtures retrieved: 1 · Research forecasts: 1" in message
-    assert "Paper-only candidates (not approved): 0" in message
     assert "Alpha FC vs Beta FC" in message
     assert "Example League" in message
     assert "Kickoff" not in message
@@ -60,8 +58,7 @@ def test_telegram_report_is_predictions_only_and_keeps_new_update_alert():
     assert "PAPER TRACKING" not in message
     assert "DATA NOTICE" not in message
     assert "MULTI-SOURCE REFERENCE PRICES" not in message
-    assert "Football data by 5DollarFootballAPI" in message
-    assert "https://5dollarfootballapi.com" in message
+    assert "Football data by 5DollarFootballAPI" not in message
 
 
 def test_predictions_alert_is_short_when_no_usable_forecasts():
@@ -69,7 +66,6 @@ def test_predictions_alert_is_short_when_no_usable_forecasts():
     report["predictions"] = [{"status": "INSUFFICIENT_HISTORY"}]
     message = format_report(report)
     assert "🔔 🆕 NEW VELTRIX UPDATE" in message
-    assert "Fixtures retrieved: 1 · Research forecasts: 0" in message
     assert "Forecast withheld: insufficient reliable team history." in message
     assert "No probabilities or betting signal published for this fixture." in message
 
@@ -123,7 +119,7 @@ def test_report_handles_no_usable_predictions_without_long_notes():
         {"status": "UNSUPPORTED_COMPETITION"},
     ]
     message = format_report(report)
-    assert "Fixtures retrieved: 2 · Research forecasts: 0" in message
+    assert "History Gap" not in message
     assert "No probabilities or betting signal published for this fixture." in message
 
 
@@ -140,7 +136,7 @@ def test_report_splits_without_dropping_fixtures_or_exceeding_limit():
     messages = format_report_messages(report)
     assert len(messages) > 1
     assert all(len(message) <= MAX_MESSAGE_LENGTH for message in messages)
-    assert all("Football data by 5DollarFootballAPI" in message for message in messages)
+    assert all("Football data by 5DollarFootballAPI" not in message for message in messages)
     combined = "\n".join(messages)
     for index in range(30):
         assert f"Home Team {index:02d} vs Away Team {index:02d}" in combined
@@ -299,9 +295,11 @@ def test_telegram_report_includes_value_screen_status_and_only_supplied_candidat
         },
     }
     message = format_report(report)
-    assert "Value screen: 1X2 / BTTS / Over-Under · DISABLED_UNVALIDATED" in message
-    assert "Validation: LOCKED_INSUFFICIENT_EVIDENCE · approved: none" in message
-    assert "VALUE CANDIDATE: 1X2 home_win @ 2.10 · edge 5.5pp · expected return 12.0%" in message
+    assert "Value screen: 1X2 / BTTS / Over-Under · DISABLED_UNVALIDATED" not in message
+    assert "LOCKED_INSUFFICIENT_EVIDENCE" not in message
+    assert "VALUE BET VERDICT: Potential edge under review · 1X2 home_win @ 2.10" in message
+    assert "· not approved" in message
+    assert "· approved" not in message
 
 
 def test_telegram_report_labels_competition_prior_forecast_basis():
@@ -310,7 +308,7 @@ def test_telegram_report_labels_competition_prior_forecast_basis():
         "competition-level historical goal-rate prior; team-specific history below minimum"
     )
     message = format_report(report)
-    assert "FORECAST BASIS: competition-level historical goal-rate prior; team-specific history below minimum" in message
+    assert "WHY THIS VERDICT: competition-level historical goal-rate prior; team-specific history below minimum" in message
 
 
 def test_telegram_report_discloses_reference_prices_for_all_three_markets():
@@ -332,7 +330,7 @@ def test_telegram_report_discloses_reference_prices_for_all_three_markets():
         ]}],
     }}
     message = format_report(report)
-    assert "FORECAST BASIS: competition-level historical goal-rate prior" in message
+    assert "WHY THIS VERDICT: competition-level historical goal-rate prior" in message
     assert "REFERENCE BOOKMAKER PRICES — NOT VALUE PICKS" in message
     assert "1X2 · Book A: Alpha FC 2.10 / Draw 3.20 / Beta FC 3.60" in message
     assert "BTTS · Book B: Yes 1.85 / No 1.95" in message
@@ -359,7 +357,6 @@ def test_telegram_report_lists_all_fixtures_and_marks_ineligible_forecasts():
         },
     ]
     message = "\n".join(format_report_messages(report))
-    assert "Fixtures retrieved: 3 · Research forecasts: 1" in message
     assert "Forecasted FC vs Modelled FC" in message
     assert "History Gap FC vs New Club FC" in message
     assert "Cup Side vs Regional Side" in message
@@ -384,8 +381,8 @@ def test_report_header_shows_goal_calibration_and_market_release_state():
         "approved_markets": [],
     }
     message = format_report(report)
-    assert "Goal calibration: NO_COMPATIBLE_FORECASTS · applied: 0/0" in message
-    assert "Validation: LOCKED_INSUFFICIENT_EVIDENCE · approved: none" in message
+    assert "Goal calibration:" not in message
+    assert "Validation:" not in message
 
 
 def test_telegram_retains_fixture_with_unverified_kickoff():
@@ -399,7 +396,6 @@ def test_telegram_retains_fixture_with_unverified_kickoff():
         "reason": "Kickoff timestamp missing",
     }]
     message = format_report(report)
-    assert "Fixtures retrieved: 1 · Research forecasts: 0" in message
     assert "Retained FC vs Visible United" in message
     assert "Fixture retained; forecast withheld because its kickoff time could not be verified." in message
 
@@ -438,10 +434,9 @@ def test_telegram_withholds_legacy_low_data_forecast_probabilities():
     report["predictions"][0]["prediction_basis"] = "licensed global goal-rate prior only"
     report["predictions"][0]["betting_recommendation"] = False
     message = format_report(report)
-    assert "Fixtures retrieved: 1 · Research forecasts: 0" in message
     assert "Alpha FC vs Beta FC" in message
     assert "FORECAST STATUS: INSUFFICIENT_HISTORY" in message
-    assert "Legacy low-data forecast withheld" in message
+    assert "Historical evidence is not yet sufficient for a reliable forecast." in message
     assert "1X2: Home 50%" not in message
     assert "BTTS Yes: 58%" not in message
     assert "xG: 1.40 - 0.80" not in message

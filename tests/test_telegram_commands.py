@@ -202,10 +202,10 @@ def test_today_excludes_withheld_fixtures_and_only_shows_real_forecasts():
 
     assert "Forecast FC vs Model FC" in today
     assert "Low Data FC vs Unknown United" in today
-    assert "MODEL STATUS: LOW-DATA EXPERIMENTAL · NOT BETTING ELIGIBLE" in today
+    assert "LIMITED EVIDENCE · VALUE BET NOT RECOMMENDED" in today
     assert "Withheld FC" not in today
     assert "Withheld FC vs Unknown FC" in fixtures
-    assert "Usable experimental forecasts: 2" in status
+    assert "Available match forecasts: 2" in status
     assert "Fixtures in report: 3" in status
 
 
@@ -238,7 +238,7 @@ def test_match_does_not_publish_invalid_probability_vectors():
         "reason": "Unsupported competition",
     }]}
     reply = handle_command("/match Unsafe FC vs Example FC", report=report)
-    assert "Forecast withheld: Unsupported competition" in reply
+    assert "Analysis unavailable: Unsupported competition" in reply
     assert "H 80%" not in reply
 
 
@@ -251,7 +251,7 @@ def test_match_with_nan_probabilities_is_withheld():
         "probabilities": {"home_win": float("nan"), "draw": 0.3, "away_win": 0.7},
     }]}
     reply = handle_command("/match NaN FC vs Example FC", report=report)
-    assert "Forecast withheld: EXPERIMENTAL_ONLY" in reply
+    assert "Analysis unavailable:" in reply
 
 
 def test_paper_tracking_is_on_website_not_in_telegram_keyboard():
@@ -286,7 +286,7 @@ def test_overunder_command_returns_experimental_goal_line_probabilities():
     reply = handle_command("/overunder", report=report)
     assert "PRIMARY MARKET — OVER / UNDER GOALS" in reply
     assert "O/U 0.5" in reply and "O/U 2.5" in reply and "O/U 4.5" in reply
-    assert "Not calibrated or validated for betting" in reply
+    assert "Estimates are not guaranteed outcomes" in reply
     assert "Prices are reference data only" in reply
 
 
@@ -407,7 +407,7 @@ def test_1x2_command_displays_home_draw_away_and_real_h2h_prices():
     reply = handle_command("/1x2", report=report)
     assert "1X2 probabilities: Home 55% · Draw 25% · Away 20%" in reply
     assert "Bookmaker A" in reply
-    assert "Forecast basis: competition-level historical goal-rate prior; team-specific history below minimum" in reply
+    assert "Why this verdict: competition-level historical goal-rate prior; team-specific history below minimum" in reply
     assert "Arsenal 1.90" in reply
     assert "Draw 3.50" in reply
 

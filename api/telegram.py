@@ -80,7 +80,7 @@ main{padding:20px clamp(12px,3vw,30px)}.eyebrow{color:var(--green);font-weight:8
 <div class="sectionhead"><div><div class="eyebrow">Data quality & providers</div><h2>System status</h2></div></div>
 <div class="panel statusgrid" id="systemStatus"><div class="statusitem"><div class="stitle">Published report</div><div class="svalue">Checking…</div></div></div>
 <div class="panel status-detail" id="statusDetails" style="margin-top:12px">Loading provider and historical coverage details…</div>
-<div class="footer">Football data by <a href="https://5dollarfootballapi.com" target="_blank" rel="noopener noreferrer">5DollarFootballAPI</a>. Forecasts are experimental and have not been validated for betting. Market prices are displayed only when matched to a fixture. Missing statistics are not invented; their coverage is not assumed complete. <span id="reporttime"></span></div>
+<div class="footer">Football data by <a href="https://5dollarfootballapi.com" target="_blank" rel="noopener noreferrer">5DollarFootballAPI</a>. Predictions include evidence-weighted estimates; value-bet verdicts are shown only when supported by the available evidence. Market prices are displayed only when matched to a fixture. Missing statistics are not invented; their coverage is not assumed complete. <span id="reporttime"></span></div>
 </section>
 </main></div>
 <nav class="bottomnav"><a class="navitem active" href="#dashboardView" data-view="dashboardView"><span>⌂</span>Dashboard</a><a class="navitem" href="#predictionsView" data-view="predictionsView"><span>◎</span>Predictions</a><a class="navitem" href="#marketView" data-view="marketView"><span>▤</span>Market odds</a><a class="navitem" href="#trackingView" data-view="trackingView"><span>◷</span>Tracking</a><a class="navitem" href="#statusView" data-view="statusView"><span>▥</span>Status</a></nav>
@@ -112,7 +112,7 @@ function teamVisual(name){
 function loadBadge(visual,name){fetchTeamBadge(name).then(url=>{if(!url)return;visual.img.onload=()=>{visual.img.style.display='block';visual.fallback.style.display='none'};visual.img.onerror=()=>{visual.img.style.display='none';visual.fallback.style.display='grid'};visual.img.src=url})}
 function renderFeatured(m,targetId='featured',insightTarget='insights'){
  const box=document.getElementById(targetId);box.replaceChildren();if(!m){box.className='empty';box.textContent='No upcoming eligible fixture is available in the published report.';if(insightTarget)renderInsights(null,insightTarget);return}box.className='feature';
- const top=document.createElement('div');top.className='featuretop';const left=document.createElement('div');const league=document.createElement('div');league.className='league';league.textContent=m.league||'Competition unavailable';const kickoff=document.createElement('div');kickoff.className='kickoff';kickoff.textContent=m.kickoff_local||m.kickoff||'Kickoff not supplied';left.append(league,kickoff);const badge=document.createElement('div');badge.className='forecastbadge';const hasForecast=hasModelForecast(m);badge.textContent=hasForecast?(m.status==='EXPERIMENTAL_LOW_DATA'?'LOW-DATA EXPERIMENTAL':'EXPERIMENTAL MODEL'):(m.status||'FORECAST UNAVAILABLE').replaceAll('_',' ');top.append(left,badge);
+ const top=document.createElement('div');top.className='featuretop';const left=document.createElement('div');const league=document.createElement('div');league.className='league';league.textContent=m.league||'Competition unavailable';const kickoff=document.createElement('div');kickoff.className='kickoff';kickoff.textContent=m.kickoff_local||m.kickoff||'Kickoff not supplied';left.append(league,kickoff);const badge=document.createElement('div');badge.className='forecastbadge';const hasForecast=hasModelForecast(m);badge.textContent=hasForecast?(m.status==='LOW_HISTORY_FORECAST'?'LIMITED EVIDENCE':'MATCH ANALYSIS'):(m.status||'FORECAST UNAVAILABLE').replaceAll('_',' ');top.append(left,badge);
  const hero=document.createElement('div');hero.className='matchhero';const home=document.createElement('div');const hv=teamVisual(m.home_team);const hn=document.createElement('div');hn.className='teamname';hn.textContent=m.home_team||'Home team';const hc=document.createElement('div');hc.className='teamcaption';hc.textContent='HOME';home.append(hv.wrap,hn,hc);const vs=document.createElement('div');vs.className='versus';vs.textContent='VS';const away=document.createElement('div');const av=teamVisual(m.away_team);const an=document.createElement('div');an.className='teamname';an.textContent=m.away_team||'Away team';const ac=document.createElement('div');ac.className='teamcaption';ac.textContent='AWAY';away.append(av.wrap,an,ac);hero.append(home,vs,away);loadBadge(hv,m.home_team);loadBadge(av,m.away_team);
  const wrap=document.createElement('div');wrap.className='probwrap';
  if(hasForecast){
@@ -148,9 +148,24 @@ function findValueBets(m){
 function renderValueBet(m,box){
  const card=document.createElement('article');card.className='insightcard';
  const i=document.createElement('div');i.className='insighticon';i.textContent='◇';
- const t=document.createElement('div');t.className='insighttitle';t.textContent='Value Betting · RELEASE LOCKED';
- const v=document.createElement('div');v.className='insightbody insightvalue';v.textContent='No value bets or staking recommendations are released.';
- const d=document.createElement('div');d.className='insightbody';d.textContent='The 1X2, BTTS and Over/Under value markets remain disabled until each market independently passes chronological out-of-sample, prospective settlement, odds-coverage and confidence-bound certification. Displayed prices are reference-only.';
+ const t=document.createElement('div');t.className='insighttitle';t.textContent='Value Bet Verdict';
+ const screen=m&&m.value_bet_screen&&typeof m.value_bet_screen==='object'?m.value_bet_screen:{};
+ const markets=screen.markets&&typeof screen.markets==='object'?screen.markets:{};
+ const candidates=Object.entries(markets).flatMap(([market,result])=>[
+  ...(result&&Array.isArray(result.candidates)?result.candidates.map(candidate=>({market,candidate,paper:true})):[]),
+  ...(result&&Array.isArray(result.paper_candidates)?result.paper_candidates.map(candidate=>({market,candidate,paper:true})):[])
+ ]);
+ const v=document.createElement('div');v.className='insightbody insightvalue';
+ const d=document.createElement('div');d.className='insightbody';
+ if(candidates.length){
+  const best=candidates.sort((a,b)=>Number(b.candidate.edge_percentage_points||0)-Number(a.candidate.edge_percentage_points||0))[0];
+  const c=best.candidate;
+  v.textContent=(best.paper?'POTENTIAL EDGE · UNDER REVIEW':'APPROVED VALUE BET')+' · '+best.market+' · '+String(c.selection||'Selection')+' @ '+Number(c.decimal_odds||0).toFixed(2);
+  d.textContent='Estimated edge '+Number(c.edge_percentage_points||0).toFixed(1)+' percentage points.'+(best.paper?' This is a research candidate, not an approved betting recommendation.':'');
+ }else{
+  v.textContent='NO QUALIFYING VALUE BET';
+  d.textContent='Available bookmaker prices do not currently show a sufficiently supported edge.';
+ }
  card.append(i,t,v,d);box.append(card);
 }
 function renderInsights(m,targetId='insights'){
@@ -160,7 +175,7 @@ function renderInsights(m,targetId='insights'){
  rows.push(['◎','BTTS outlook',Number.isFinite(btts)?(btts>=.55?'Higher estimated chance both teams score':btts<=.45?'Model leans toward at least one team not scoring':'No strong BTTS lean'):'BTTS probability unavailable',Number.isFinite(btts)?'Model estimate: '+fmt(btts):'No value supplied.']);
  rows.push(['↗','Goal total',Number.isFinite(over)?(over>=.55?'Model leans Over 2.5':over<=.45?'Model leans Under 2.5':'No strong 2.5-goal lean'):'Totals estimate unavailable',Number.isFinite(over)?'Over 2.5 estimate: '+fmt(over):'No value supplied.']);
  rows.push(['⌁','Expected goals',Number.isFinite(homeX)&&Number.isFinite(awayX)?m.home_team+' '+homeX.toFixed(2)+' · '+m.away_team+' '+awayX.toFixed(2):'Expected-goals data unavailable','Goal estimates from the published model; not live xG statistics.']);
- if(m.prediction_basis)rows.push(['⚑','Prediction basis',m.prediction_basis,'This fallback is explicitly low-confidence and is not eligible for betting recommendations.']);
+ if(m.prediction_basis)rows.push(['⚑','Why this verdict',m.prediction_basis,m.evidence_grade==='VERY_LOW'?'Very limited verified match history is available.':'Based on the verified results and scoring rates available before kick-off.']);
  for(const [icon,title,value,desc] of rows){const card=document.createElement('article');card.className='insightcard';const a=document.createElement('div');a.className='insighticon';a.textContent=icon;const b=document.createElement('div');b.className='insighttitle';b.textContent=title;const c=document.createElement('div');c.className='insightbody insightvalue';c.textContent=value;const d=document.createElement('div');d.className='insightbody';d.textContent=desc;card.append(a,b,c,d);box.append(card)}
  renderValueBet(m,box);
 }
@@ -229,7 +244,7 @@ function renderPaperTracking(d){
  for(const [title,value] of values){const el=document.createElement('div');el.className='statusitem';const t=document.createElement('div');t.className='stitle';t.textContent=title;const v=document.createElement('div');v.className='svalue';v.textContent=value;el.append(t,v);metrics.append(el)}
  const modelBox=document.getElementById('trackingModels');modelBox.replaceChildren();const models=data.cumulative_metrics_by_model||{};const entries=Object.entries(models);
  if(!entries.length){const empty=document.createElement('div');empty.className='empty';empty.textContent='No completed forecasts scored yet.';modelBox.append(empty)}
- for(const [name,m] of entries){const card=document.createElement('article');card.className='market-fixture';const title=document.createElement('h3');title.textContent=name.replaceAll('_',' ');const line=document.createElement('div');line.className='market-line';const acc=Number(m.result_accuracy);line.textContent=String(m.matches??0)+' scored · accuracy '+(Number.isFinite(acc)?(acc*100).toFixed(1)+'%':'—')+' · Brier '+(Number.isFinite(Number(m.brier_score))?Number(m.brier_score).toFixed(3):'—')+' · Log loss '+(Number.isFinite(Number(m.log_loss))?Number(m.log_loss).toFixed(3):'—');card.append(title,line);modelBox.append(card)}
+ for(const [name,m] of entries){const card=document.createElement('article');card.className='market-fixture';const title=document.createElement('h3');const friendlyModelName=name.replace(/^experimental_/,'').replaceAll('_',' ');title.textContent=friendlyModelName;const line=document.createElement('div');line.className='market-line';const acc=Number(m.result_accuracy);line.textContent=String(m.matches??0)+' scored · accuracy '+(Number.isFinite(acc)?(acc*100).toFixed(1)+'%':'—')+' · Brier '+(Number.isFinite(Number(m.brier_score))?Number(m.brier_score).toFixed(3):'—')+' · Log loss '+(Number.isFinite(Number(m.log_loss))?Number(m.log_loss).toFixed(3):'—');card.append(title,line);modelBox.append(card)}
  const results=document.getElementById('trackingResults');results.replaceChildren();
  const rawRows=Array.isArray(data.scored_matches)?data.scored_matches.slice():[];
  const dayOf=row=>String(row.match_date||row.fixture_date||row.report_date||'').slice(0,10);
@@ -253,7 +268,7 @@ function renderStatus(d){
  const validation=d.model_validation||{};const connection=d.data_connection||{};const discovery=d.fixture_discovery||{};const selectedSources=discovery.fixture_selection?.by_source_after_cap||{};const selectedSummary=Object.entries(selectedSources).map(([name,count])=>name+' '+count).join(' · ')||'not reported';const vals=[['Dashboard data',connection.status||'UNKNOWN'],['Report freshness',connection.freshness||'UNKNOWN'],['Report publication',d.publication_status||d.status||'UNKNOWN'],['Fixture source',(primary.provider||'Unknown')+' · '+(primary.status||'unknown')+' · '+(primary.fixtures_received??0)+' fixtures'],['Selected fixture sources',selectedSummary],['5DollarFootballAPI odds',(d.multi_source_odds_sync?.five_dollar?.status||'unknown')],['The Odds API',(d.multi_source_odds_sync?.the_odds_api?.status||odds.the_odds_api_status||'unknown')],['Historical coverage',hist.status||'not reported'],['Model validation',validation.status||'NOT_REPORTED']];
  for(const [title,value] of vals){const el=document.createElement('div');el.className='statusitem reveal';const t=document.createElement('div');t.className='stitle';t.textContent=title;const v=document.createElement('div');v.className='svalue';v.textContent=value;el.append(t,v);box.append(el)}
  const details=document.getElementById('statusDetails');const lines=[];
- lines.push('Forecast validation: '+(d.warning||'Experimental model; not validated for betting.'));
+ lines.push('Forecast validation: '+(d.warning||'Predictions are evidence-weighted; value-bet eligibility is assessed separately.'));
  lines.push('Report freshness: '+(d.as_of_date||'date unavailable')+' · generated '+(d.generated_at_utc||'unknown')+' UTC · published '+(d.published_at_utc||'unknown')+' UTC.');
  lines.push('Dashboard data connection: '+(connection.status||'unknown')+' · freshness '+(connection.freshness||'unknown')+' · report age '+(connection.report_age_days??'unknown')+' days.');
  lines.push('Fixture provider: '+(primary.provider||'unknown')+' · '+(primary.status||'unknown')+' · fixtures received from primary provider '+(primary.fixtures_received??'unknown')+'.');
@@ -348,9 +363,9 @@ async function normalizeStaticReport(report){
   as_of_date:report.as_of_date,generated_at_utc:report.generated_at_utc,
   published_at_utc:report.command_data_published_at_utc,
   fixtures_received:report.fixtures_received??report.predictions.length,
-  experimental_forecasts:report.predictions.filter(x=>hasModelForecast(x)).length,
+  available_forecasts:report.predictions.filter(x=>hasModelForecast(x)).length,
   fixtures_visible:visibleRows.length,
-  unsupported_fixtures:report.predictions.filter(x=>!x||!['EXPERIMENTAL_ONLY','EXPERIMENTAL_LOW_DATA'].includes(x.status)).length,
+  unsupported_fixtures:report.predictions.filter(x=>!x||!['EXPERIMENTAL_ONLY','EXPERIMENTAL_LOW_DATA','LOW_HISTORY_FORECAST'].includes(x.status)).length,
   fixtures_with_market_odds:report.fixtures_with_market_odds??0,
   data_connection:{status:'CONNECTED',freshness:report.as_of_date===new Intl.DateTimeFormat('en-CA',{timeZone:'Africa/Lagos',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date())?'CURRENT':'STALE',report_date:report.as_of_date,provider:(report.primary_provider_request||{}).provider,provider_status:(report.primary_provider_request||{}).status},
   model_validation:{status:'NOT_LOADED_FROM_STATIC_FALLBACK',dataset:{},historical_1x2:{},release_controls:{}},
@@ -386,9 +401,9 @@ async function loadDashboard(){
   const liveLabel=document.getElementById('liveLabel');if(liveLabel)liveLabel.textContent=connection.status==='CONNECTED'?(stale?'CONNECTED · STALE DATA':'DATA CONNECTED'):'DATA OFFLINE';
   const dateParts=new Intl.DateTimeFormat('en-CA',{timeZone:'Africa/Lagos',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date());const today=dateParts.filter(p=>['year','month','day'].includes(p.type)).reduce((o,p)=>(o[p.type]=p.value,o),{});const todayKey=today.year+'-'+today.month+'-'+today.day;
   document.getElementById('overviewTitle').textContent=reportDate?(reportDate===todayKey?"Today's overview":'Report overview · '+reportDate):'Report overview';
-  const localHour=Number(new Intl.DateTimeFormat('en-GB',{timeZone:'Africa/Lagos',hour:'2-digit',hourCycle:'h23'}).format(new Date()));const offline=connection.status!=='CONNECTED'||d.status!=='OK';const reportNotice=document.getElementById('reportFreshness');if(reportNotice){reportNotice.textContent=offline?(d.warning||'Dashboard data source is not connected. Published predictions could not be loaded.') :stale?'Published-data connection is working, but the latest report is '+reportDate+'. Today’s automated report is '+(localHour<6?'scheduled for 06:00 WAT':'overdue after 06:00 WAT')+'. Older fixtures remain visible in Predictions and are not treated as today’s featured picks.':reused?'The dashboard is connected, but this is a reused snapshot; no fresh fixture retrieval completed. '+(d.report_freshness_note||'Wait for the next successful live report.'):(dashboardRows.length?'Connected to the latest current-day published report.':'Connected, but no fixtures are present in the current report.');if(!offline&&!stale&&!reused&&dashboardRows.length){reportNotice.textContent+=' Forecasts: '+(d.experimental_forecasts??0)+'; fixtures retained without forecasts: '+(d.unsupported_fixtures??0)+'. Unsupported fixtures remain visible; no predictions are fabricated.';}reportNotice.classList.toggle('warn',offline||stale||reused||!dashboardRows.length);}
-  text(document.getElementById('fixtures'),d.fixtures_received);text(document.getElementById('forecasts'),d.experimental_forecasts);text(document.getElementById('odds'),d.fixtures_with_market_odds);
-  const currentFixtures=stale?[]:dashboardRows.filter(m=>m&&m.fixture_phase==='UPCOMING');renderFeatured(currentFixtures.find(m=>m.status==='EXPERIMENTAL_ONLY')||currentFixtures[0]||null);renderRows();renderMarketOdds();renderPaperTracking(d);renderStatus(d);observeReveals(document);
+  const localHour=Number(new Intl.DateTimeFormat('en-GB',{timeZone:'Africa/Lagos',hour:'2-digit',hourCycle:'h23'}).format(new Date()));const offline=connection.status!=='CONNECTED'||d.status!=='OK';const reportNotice=document.getElementById('reportFreshness');if(reportNotice){reportNotice.textContent=offline?(d.warning||'Dashboard data source is not connected. Published predictions could not be loaded.') :stale?'Published-data connection is working, but the latest report is '+reportDate+'. Today’s automated report is '+(localHour<6?'scheduled for 06:00 WAT':'overdue after 06:00 WAT')+'. Older fixtures remain visible in Predictions and are not treated as today’s featured picks.':reused?'The dashboard is connected, but this is a reused snapshot; no fresh fixture retrieval completed. '+(d.report_freshness_note||'Wait for the next successful live report.'):(dashboardRows.length?'Connected to the latest current-day published report.':'Connected, but no fixtures are present in the current report.');if(!offline&&!stale&&!reused&&dashboardRows.length){reportNotice.textContent+=' Predictions: '+(d.available_forecasts??0)+'; fixtures retained without forecasts: '+(d.unsupported_fixtures??0)+'. Unsupported fixtures remain visible; no predictions are fabricated.';}reportNotice.classList.toggle('warn',offline||stale||reused||!dashboardRows.length);}
+  text(document.getElementById('fixtures'),d.fixtures_received);text(document.getElementById('forecasts'),d.available_forecasts);text(document.getElementById('odds'),d.fixtures_with_market_odds);
+  const currentFixtures=stale?[]:dashboardRows.filter(m=>m&&m.fixture_phase==='UPCOMING');renderFeatured(currentFixtures.find(m=>['EXPERIMENTAL_ONLY','LOW_HISTORY_FORECAST'].includes(m.status))||currentFixtures[0]||null);renderRows();renderMarketOdds();renderPaperTracking(d);renderStatus(d);observeReveals(document);
   document.getElementById('reporttime').textContent='Report date '+(d.as_of_date||'unknown')+' · published '+(d.published_at_utc||'unknown')+' UTC';
  }catch(e){
   const liveLabel=document.getElementById('liveLabel');if(liveLabel)liveLabel.textContent='DATA OFFLINE';
@@ -581,9 +596,9 @@ def dashboard_data() -> dict:
         "live_odds_sync": report.get("live_odds_sync"),
         "historical_data_coverage": report.get("historical_data_coverage"),
         "fixtures_received": report.get("fixtures_received", 0),
-        "experimental_forecasts": sum(1 for row in rows if isinstance(row, dict) and isinstance(row.get("probabilities"), dict) and row.get("status") in {"EXPERIMENTAL_ONLY", "EXPERIMENTAL_LOW_DATA"}),
+        "available_forecasts": sum(1 for row in rows if isinstance(row, dict) and isinstance(row.get("probabilities"), dict) and row.get("status") in {"EXPERIMENTAL_ONLY", "EXPERIMENTAL_LOW_DATA", "LOW_HISTORY_FORECAST"}),
         "fixtures_visible": len(upcoming),
-        "unsupported_fixtures": sum(1 for row in upcoming if isinstance(row, dict) and row.get("status") not in {"EXPERIMENTAL_ONLY", "EXPERIMENTAL_LOW_DATA"}),
+        "unsupported_fixtures": sum(1 for row in upcoming if isinstance(row, dict) and row.get("status") not in {"EXPERIMENTAL_ONLY", "EXPERIMENTAL_LOW_DATA", "LOW_HISTORY_FORECAST"}),
         "fixtures_with_market_odds": odds_count,
         "model_validation": model_validation or {"status": "NOT_REPORTED", "dataset": {}, "historical_1x2": {}, "rolling_origin_1x2_calibration": {}, "rolling_origin_goal_market_calibration": {}, "release_controls": {}},
         "goal_market_calibration": report.get("goal_market_calibration") or {
@@ -603,7 +618,7 @@ def dashboard_data() -> dict:
             "note": "No current evidence-backed certificate is published; value alerts remain disabled.",
         },
         "paper_tracking": paper_tracking,
-        "warning": "Published forecasts are experimental and not validated for betting. The report may not be the latest live run.",
+        "warning": "Predictions are evidence-weighted estimates. Value-bet verdicts are shown only when supported by the available evidence. The report may not be the latest live run.",
         "predictions": upcoming[:60],
     }
 
@@ -745,7 +760,7 @@ async def telegram_webhook(
                 f"Fixtures with InferSports prices: {infer_rows}",
                 f"Combined odds status: {live_odds.get('status', 'not reported')}",
                 f"Fixtures with matched market odds: {report.get('fixtures_with_market_odds', 0)}",
-                "Odds markets are reference data only; model probabilities remain experimental.",
+                "Odds markets are reference data only; model probabilities remain estimates.",
                 "API-Football/API-Sports is suspended and is not called by this diagnostic.",
                 "No API keys are shown and no provider request is made by this command.",
             ])
