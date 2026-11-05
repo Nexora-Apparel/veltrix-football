@@ -170,6 +170,7 @@ on:
   schedule:
     # Pipeline starts at 05:00 Africa/Lagos (WAT, UTC+1) = 04:00 UTC; Telegram send is gated to 06:00 WAT.
     - cron: "0 4 * * *"
+    # Post-fix verification uses the [run-live-verification] push marker for controlled end-to-end checks.
 
 # Controlled same-day snapshot replay for the current 2026-11-02 report; no provider refetch.
 # Ordinary pushes run tests only. A push commit containing [run-live-verification] intentionally runs the full live pipeline for controlled end-to-end verification.
