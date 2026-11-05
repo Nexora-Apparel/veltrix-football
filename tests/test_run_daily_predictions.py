@@ -157,7 +157,7 @@ def test_api_sports_odds_reject_incomplete_or_invalid_1x2_prices():
 def _report(future_fixtures: int) -> dict:
     return {
         "as_of_date": "2026-10-23",
-        "model_status": "EXPERIMENTAL_NOT_VALIDATED",
+        "model_status": "EVIDENCE_WEIGHTED_NOT_CERTIFIED",
         "fixtures_received": 1,
         "same_day_pre_match_fixtures": future_fixtures,
         "future_fixtures_considered": future_fixtures,
