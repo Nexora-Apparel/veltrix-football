@@ -262,9 +262,18 @@ def format_report_messages(report: dict[str, Any], ledger: dict[str, Any] | None
         if prediction_basis:
             block.append("WHY THIS VERDICT: " + prediction_basis)
         value_screen = item.get("value_bet_screen") if isinstance(item.get("value_bet_screen"), dict) else {}
+        certificate = report.get("value_validation_certificate")
+        certificate = certificate if isinstance(certificate, dict) else {}
+        certificate_status = str(certificate.get("status") or "").upper()
+        approved_markets = certificate.get("approved_markets") or []
+        if not isinstance(approved_markets, list):
+            approved_markets = []
+        certificate_releases = certificate_status in {"PASSED", "CERTIFIED", "APPROVED"}
         for market, result in (value_screen.get("markets") or {}).items():
-            released = (result.get("candidates") or [])[:2]
-            shadow = (result.get("paper_candidates") or [])[:2]
+            raw_candidates = (result.get("candidates") or [])[:2]
+            market_approved = certificate_releases and market in approved_markets
+            released = raw_candidates if market_approved else []
+            shadow = ((result.get("paper_candidates") or []) + ([] if market_approved else raw_candidates))[:2]
             for candidate in released:
                 block.append(
                     "VALUE BET VERDICT: {} {} @ {:.2f} · estimated edge {:.1f}pp · expected return {:.1f}% · approved".format(
