@@ -22,7 +22,8 @@ from app.team_form import summarize_team_form
 
 MIN_TEAM_MATCHES = 5
 TEAM_WINDOW = 10
-HOME_ELO_ADVANTAGE = 55.0
+HOME_ELO_ADVANTAGE = 0.0  # Neutral venue baseline; no automatic home-team rating bonus.
+NEUTRAL_GOALS_PER_TEAM = 1.225
 ELO_K = 20.0
 
 # Provider league codes and API-Football league IDs mapped to compatible divisions in the open historical CSV.
@@ -498,7 +499,7 @@ def predict_fixtures(
                 visibility.append(_invalid_fixture_visibility(item, delivery_order))
         forecasts = []
         for fixture in parsed:
-            home_xg, away_xg = 1.35, 1.10
+            home_xg = away_xg = NEUTRAL_GOALS_PER_TEAM
             estimate = match_probabilities(home_xg, away_xg)
             forecasts.append({
                 **{k:v for k,v in fixture.items() if k not in {"kickoff_date","kickoff_datetime"}},
@@ -575,10 +576,8 @@ def predict_fixtures(
         for division in team_history_by_division:
             division_rows = [match for match in prior_rows if str(match.get("division") or "").strip() == division]
             if division_rows:
-                division_baselines[division] = {
-                    "home": max(0.05, sum(row["home_goals"] for row in division_rows) / len(division_rows)),
-                    "away": max(0.05, sum(row["away_goals"] for row in division_rows) / len(division_rows)),
-                }
+                neutral_team_rate = max(0.05, sum(row["home_goals"] + row["away_goals"] for row in division_rows) / (2 * len(division_rows)))
+                division_baselines[division] = {"home": neutral_team_rate, "away": neutral_team_rate, "team": neutral_team_rate}
 
         for fixture in (p for p in parsed_fixtures if p["kickoff_date"] == target_date):
             if _is_non_senior_competition(fixture.get("league")):
@@ -669,12 +668,11 @@ def predict_fixtures(
             if not division_code or not baseline or len(home_hist) < min_team_matches or len(away_hist) < min_team_matches:
                 # Use available team evidence, strongly shrunk toward competition or
                 # global rates. No arbitrary five-match minimum blocks a forecast.
-                global_home = sum(row["home_goals"] for row in prior_rows) / len(prior_rows) if prior_rows else 1.35
-                global_away = sum(row["away_goals"] for row in prior_rows) / len(prior_rows) if prior_rows else 1.10
-                prior_home = baseline["home"] if baseline else max(0.65, global_home)
-                prior_away = baseline["away"] if baseline else max(0.55, global_away)
-                def adaptive_rate(history, venue, scored_prior, conceded_prior):
-                    relevant = [row for row in history if row[2] == venue] or history
+                global_team_rate = (sum(row["home_goals"] + row["away_goals"] for row in prior_rows) / (2 * len(prior_rows))) if prior_rows else NEUTRAL_GOALS_PER_TEAM
+                neutral_prior = baseline["team"] if baseline else max(0.60, global_team_rate)
+                prior_home = prior_away = neutral_prior
+                def adaptive_rate(history, scored_prior, conceded_prior):
+                    relevant = history
                     if not relevant:
                         return scored_prior, conceded_prior
                     n=len(relevant)
@@ -683,10 +681,10 @@ def predict_fixtures(
                     conceded=sum(row[1] for row in relevant)/n
                     return (weight*scored+(1-weight)*scored_prior,
                             weight*conceded+(1-weight)*conceded_prior)
-                hs,hc=adaptive_rate(home_hist,"home",prior_home,prior_away)
-                aw,ac=adaptive_rate(away_hist,"away",prior_away,prior_home)
-                home_xg=min(5.0,max(0.05,prior_home*(hs/prior_home)*(ac/prior_home)))
-                away_xg=min(5.0,max(0.05,prior_away*(aw/prior_away)*(hc/prior_away)))
+                hs,hc=adaptive_rate(home_hist,neutral_prior,neutral_prior)
+                aw,ac=adaptive_rate(away_hist,neutral_prior,neutral_prior)
+                home_xg=min(5.0,max(0.05,neutral_prior*(hs/neutral_prior)*(ac/neutral_prior)))
+                away_xg=min(5.0,max(0.05,neutral_prior*(aw/neutral_prior)*(hc/neutral_prior)))
                 estimate=match_probabilities(home_xg,away_xg)
                 evidence_counts={"home":len(home_hist),"away":len(away_hist)}
                 total_evidence=len(home_hist)+len(away_hist)
@@ -722,15 +720,9 @@ def predict_fixtures(
                 output.append(record)
                 continue
 
-            def shrunk_venue_rates(
-                history: list[tuple[int, int, str]],
-                venue: str,
-                scored_prior: float,
-                conceded_prior: float,
-            ) -> tuple[float, float]:
-                # Prefer the team's relevant venue split; fall back to all recent
-                # matches only when no venue-specific sample exists.
-                relevant = [row for row in history if row[2] == venue] or history
+            def shrunk_team_rates(history: list[tuple[int, int, str]], scored_prior: float, conceded_prior: float) -> tuple[float, float]:
+                # Same all-venue evidence and shrinkage rule for either team.
+                relevant = history
                 weight = len(relevant) / (len(relevant) + 4.0)
                 scored = sum(row[0] for row in relevant) / len(relevant)
                 conceded = sum(row[1] for row in relevant) / len(relevant)
@@ -741,14 +733,11 @@ def predict_fixtures(
 
             # Home-team home performance and away-team away performance are
             # estimated separately, with venue-appropriate league priors.
-            home_scored, home_conceded = shrunk_venue_rates(
-                home_hist, "home", home_baseline, away_baseline
-            )
-            away_scored, away_conceded = shrunk_venue_rates(
-                away_hist, "away", away_baseline, home_baseline
-            )
-            home_xg = home_baseline * (home_scored / home_baseline) * (away_conceded / home_baseline)
-            away_xg = away_baseline * (away_scored / away_baseline) * (home_conceded / away_baseline)
+            neutral_baseline = (home_baseline + away_baseline) / 2.0
+            home_scored, home_conceded = shrunk_team_rates(home_hist, neutral_baseline, neutral_baseline)
+            away_scored, away_conceded = shrunk_team_rates(away_hist, neutral_baseline, neutral_baseline)
+            home_xg = neutral_baseline * (home_scored / neutral_baseline) * (away_conceded / neutral_baseline)
+            away_xg = neutral_baseline * (away_scored / neutral_baseline) * (home_conceded / neutral_baseline)
             home_xg = min(5.0, max(0.05, home_xg))
             away_xg = min(5.0, max(0.05, away_xg))
             probabilities = match_probabilities(home_xg, away_xg)
@@ -756,13 +745,8 @@ def predict_fixtures(
             # Research-only alternative: exponentially weighted recent venue form
             # plus the Dixon-Coles low-score correction. Keep it separate from the
             # production primary until walk-forward metrics justify promotion.
-            def weighted_venue_rates(
-                history: list[tuple[int, int, str]],
-                venue: str,
-                scored_prior: float,
-                conceded_prior: float,
-            ) -> tuple[float, float]:
-                relevant = [row for row in history if row[2] == venue] or history
+            def weighted_team_rates(history: list[tuple[int, int, str]], scored_prior: float, conceded_prior: float) -> tuple[float, float]:
+                relevant = history
                 weight = len(relevant) / (len(relevant) + 4.0)
                 scored = recency_weighted_mean([row[0] for row in relevant], decay=0.85)
                 conceded = recency_weighted_mean([row[1] for row in relevant], decay=0.85)
@@ -771,20 +755,11 @@ def predict_fixtures(
                     weight * conceded + (1 - weight) * conceded_prior,
                 )
 
-            weighted_home_scored, weighted_home_conceded = weighted_venue_rates(
-                home_hist, "home", home_baseline, away_baseline
-            )
-            weighted_away_scored, weighted_away_conceded = weighted_venue_rates(
-                away_hist, "away", away_baseline, home_baseline
-            )
-            weighted_home_xg = min(5.0, max(0.05,
-                home_baseline * (weighted_home_scored / home_baseline)
-                * (weighted_away_conceded / home_baseline)
-            ))
-            weighted_away_xg = min(5.0, max(0.05,
-                away_baseline * (weighted_away_scored / away_baseline)
-                * (weighted_home_conceded / away_baseline)
-            ))
+            neutral_baseline = (home_baseline + away_baseline) / 2.0
+            weighted_home_scored, weighted_home_conceded = weighted_team_rates(home_hist, neutral_baseline, neutral_baseline)
+            weighted_away_scored, weighted_away_conceded = weighted_team_rates(away_hist, neutral_baseline, neutral_baseline)
+            weighted_home_xg = min(5.0, max(0.05, neutral_baseline * (weighted_home_scored / neutral_baseline) * (weighted_away_conceded / neutral_baseline)))
+            weighted_away_xg = min(5.0, max(0.05, neutral_baseline * (weighted_away_scored / neutral_baseline) * (weighted_home_conceded / neutral_baseline)))
             dixon_coles_probabilities = {
                 key: round(value, 4)
                 for key, value in dixon_coles_1x2(
