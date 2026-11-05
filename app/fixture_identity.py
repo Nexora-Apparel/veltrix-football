@@ -40,11 +40,11 @@ def team_identity(value: Any) -> tuple[str, tuple[str, ...]]:
     raw = str(value or "").strip().casefold()
     category: list[str] = []
     patterns = (
-        ("women", r"(?:\\s*\\((?:w|women)\\)|\\s+(?:women|womens|ladies|feminine|femenino|feminino))$"),
-        ("u19", r"(?:\\s*\\(u19\\)|\\s+u19)$"),
-        ("u21", r"(?:\\s*\\(u21\\)|\\s+u21)$"),
-        ("u23", r"(?:\\s*\\(u23\\)|\\s+u23)$"),
-        ("reserve", r"(?:\\s*\\((?:r|reserves?)\\)|\\s+(?:reserves?|b\\s*team|ii|iii|iv))$"),
+        ("women", r"(?:\s*\((?:w|women)\)|\s+(?:women|womens|ladies|feminine|femenino|feminino))$"),
+        ("u19", r"(?:\s*\(u19\)|\s+u19)$"),
+        ("u21", r"(?:\s*\(u21\)|\s+u21)$"),
+        ("u23", r"(?:\s*\(u23\)|\s+u23)$"),
+        ("reserve", r"(?:\s*\((?:r|reserves?)\)|\s+(?:reserves?|b\s*team|ii|iii|iv))$"),
     )
     base = raw
     changed = True
