@@ -268,16 +268,18 @@ def format_report_messages(report: dict[str, Any], ledger: dict[str, Any] | None
             shadow = (result.get("paper_candidates") or [])[:2]
             for candidate in released:
                 block.append(
-                    "VALUE BET VERDICT: {} {} @ {:.2f} · estimated edge {:.1f}pp · approved".format(
+                    "VALUE BET VERDICT: {} {} @ {:.2f} · estimated edge {:.1f}pp · expected return {:.1f}% · approved".format(
                         market, candidate.get("selection"), float(candidate.get("decimal_odds")),
                         float(candidate.get("edge_percentage_points")),
+                        float(candidate.get("expected_return_per_unit")) * 100.0,
                     )
                 )
             for candidate in shadow:
                 block.append(
-                    "VALUE BET VERDICT: Potential edge under review · {} {} @ {:.2f} · edge {:.1f}pp · not approved".format(
+                    "VALUE BET VERDICT: Potential edge under review · {} {} @ {:.2f} · edge {:.1f}pp · expected return {:.1f}% · not approved".format(
                         market, candidate.get("selection"), float(candidate.get("decimal_odds")),
                         float(candidate.get("edge_percentage_points")),
+                        float(candidate.get("expected_return_per_unit")) * 100.0,
                     )
                 )
         if not any(
