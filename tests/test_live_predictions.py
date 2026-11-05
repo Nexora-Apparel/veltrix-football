@@ -411,9 +411,15 @@ def test_daily_report_counts_adaptive_low_history_forecasts_correctly(tmp_path):
         tmp_path / "missing-history.csv",
         as_of=date(2026, 10, 23),
         now=datetime(2026, 10, 23, 12, 0, tzinfo=ZoneInfo("Africa/Lagos")),
+        market_odds_by_fixture={123: {
+            "model": "market_consensus",
+            "probabilities": {"home": 0.4, "draw": 0.3, "away": 0.3},
+            "bookmakers_count": 3,
+        }},
     )
 
     assert report["fixture_status_counts"]["LOW_HISTORY_FORECAST"] == 1
+    assert report["predictions"][0]["market_probabilities"] == {"home": 0.4, "draw": 0.3, "away": 0.3}
     assert report["predictions_created"] == 1
     assert report["low_history_forecasts"] == 1
     assert report["forecast_coverage"]["forecast_rows"] == 1
