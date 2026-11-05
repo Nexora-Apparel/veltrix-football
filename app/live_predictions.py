@@ -680,6 +680,7 @@ def predict_fixtures(
                 prior_home = prior_away = neutral_prior
                 def adaptive_rate(history, scored_prior, conceded_prior):
                     # Same all-venue sample and shrinkage rule for either team.
+                    relevant = history
                     if not relevant:
                         return scored_prior, conceded_prior
                     n=len(relevant)
