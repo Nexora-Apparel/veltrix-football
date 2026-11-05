@@ -572,8 +572,9 @@ def supplement_fixtures_from_odds_api(
             if local.date() != target_day or local <= current:
                 continue
             key = event_key(home, away)
-            if key in existing:
-                continue
+            # Keep every source event. Cross-provider duplicate decisions happen
+            # later in reconcile_fixture_rows, where competition/category/kickoff
+            # and provenance are available.
             event_id = event.get("id")
             rows.append({
                 "fixture": {
@@ -583,8 +584,9 @@ def supplement_fixtures_from_odds_api(
                     "status": {"short": "NS", "long": "scheduled"},
                 },
                 "teams": {"home": {"id": None, "name": home}, "away": {"id": None, "name": away}},
-                "league": {"id": None, "name": league_name, "code": division_code, "season": None},
+                "league": {"id": sport_key, "name": league_name, "code": division_code, "season": None},
                 "_veltrix_source": "The Odds API",
+                "_veltrix_source_competition_id": sport_key,
                 "_supplemental_event_id": str(event_id or ""),
             })
             existing.add(key)
@@ -686,9 +688,9 @@ def supplement_fixtures_from_infersports(
             continue
         future_same_day += 1
         key = local_key(home, away)
-        if key in existing:
-            duplicates += 1
-            continue
+        # Do not discard same-name events here. This discovery adapter lacks
+        # enough context to prove identity; the canonical reconciliation layer
+        # performs the strict competition/category/kickoff comparison.
 
         competition = event.get("competition") or event.get("league") or {}
         if isinstance(competition, dict):
@@ -715,6 +717,7 @@ def supplement_fixtures_from_infersports(
                 "code": LEAGUE_CODES.get(league_name.casefold()), "season": None,
             },
             "_veltrix_source": "InferSports",
+            "_veltrix_source_competition_id": league_id,
             "_supplemental_event_id": str(event_id or ""),
         })
         existing.add(key)
