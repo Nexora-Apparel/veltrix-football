@@ -209,3 +209,22 @@ def test_missing_kickoff_fixture_is_retained_and_quarantined():
     assert selected["response"][0]["fixture"]["id"] == "missing-kickoff"
     assert selected["response"][0]["_veltrix_reconciliation_status"] == "AMBIGUOUS"
     assert "MISSING_KICKOFF" in selected["_veltrix_meta"]["invalid_fixture_source_records"][0]["reason"]
+
+
+
+def test_b_team_is_not_merged_with_senior_club():
+    senior = team_identity("FC Porto")
+    reserve = team_identity("FC Porto B")
+
+    assert senior[0] == reserve[0]
+    assert senior[1] == ()
+    assert reserve[1] == ("reserve",)
+
+    rows = [
+        fixture("porto-senior", "ProviderA", "FC Porto", "Sporting",
+                "pt-senior", "Portugal Primeira Liga", "2026-11-04T20:00:00Z"),
+        fixture("porto-b", "ProviderB", "FC Porto B", "Sporting B",
+                "pt-reserve", "Portugal Reserve League", "2026-11-04T20:00:00Z"),
+    ]
+    canonical, _ = reconcile_fixture_rows(rows)
+    assert len(canonical) == 2
