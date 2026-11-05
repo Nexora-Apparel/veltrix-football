@@ -431,15 +431,18 @@ def test_different_same_day_report_hash_is_not_suppressed():
 
 
 
-def test_telegram_includes_low_data_forecast_with_explicit_non_betting_label():
+def test_telegram_withholds_legacy_low_data_forecast_probabilities():
     report = sample_report()
     report["predictions"][0]["status"] = "EXPERIMENTAL_LOW_DATA"
     report["predictions"][0]["model"] = "experimental_global_licensed_prior_poisson"
     report["predictions"][0]["prediction_basis"] = "licensed global goal-rate prior only"
     report["predictions"][0]["betting_recommendation"] = False
     message = format_report(report)
-    assert "Fixtures retrieved: 1 · Research forecasts: 1" in message
+    assert "Fixtures retrieved: 1 · Research forecasts: 0" in message
     assert "Alpha FC vs Beta FC" in message
-    assert "1X2: Home 50% | Draw 25% | Away 25%" in message
-    assert "MODEL STATUS: LOW-DATA EXPERIMENTAL · NOT BETTING ELIGIBLE" in message
-    assert "Forecast withheld" not in message
+    assert "FORECAST STATUS: INSUFFICIENT_HISTORY" in message
+    assert "Legacy low-data forecast withheld" in message
+    assert "1X2: Home 50%" not in message
+    assert "BTTS Yes: 58%" not in message
+    assert "xG: 1.40 - 0.80" not in message
+    assert "LOW-DATA EXPERIMENTAL" not in message

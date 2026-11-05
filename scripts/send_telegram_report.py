@@ -212,7 +212,7 @@ def format_report_messages(report: dict[str, Any], ledger: dict[str, Any] | None
     timezone_name = str(report.get("timezone", "Africa/Lagos"))
     predictions = report.get("predictions", [])
     fixtures = [item for item in predictions if isinstance(item, dict)]
-    usable = [item for item in fixtures if item.get("status") in {"EXPERIMENTAL_ONLY", "EXPERIMENTAL_LOW_DATA"}]
+    usable = [item for item in fixtures if item.get("status") == "EXPERIMENTAL_ONLY"]
 
     header = [
         DIVIDER,
@@ -283,10 +283,13 @@ def format_report_messages(report: dict[str, Any], ledger: dict[str, Any] | None
     # Do not silently hide discovered fixtures just because the model cannot
     # produce an eligible forecast. Publish the fixture and the explicit gate.
     for item in fixtures:
-        if item.get("status") in {"EXPERIMENTAL_ONLY", "EXPERIMENTAL_LOW_DATA"}:
+        if item.get("status") == "EXPERIMENTAL_ONLY":
             continue
         status = str(item.get("status") or "FORECAST_UNAVAILABLE").upper()
-        if status == "INSUFFICIENT_HISTORY":
+        if status == "EXPERIMENTAL_LOW_DATA":
+            status = "INSUFFICIENT_HISTORY"
+            reason = "Legacy low-data forecast withheld: fixture-specific team history did not meet the minimum evidence requirement."
+        elif status == "INSUFFICIENT_HISTORY":
             reason = "Forecast withheld: insufficient reliable team history."
         elif status == "UNSUPPORTED_COMPETITION":
             reason = "Forecast withheld: competition is not mapped to a supported model."
