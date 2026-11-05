@@ -1020,6 +1020,7 @@ def build_daily_report(
         "kickoff_unverified_fixtures": kickoff_unverified_count,
         "fixture_status_counts": {
             "EXPERIMENTAL_ONLY": sum(p.get("status") == "EXPERIMENTAL_ONLY" for p in predictions),
+            "LOW_HISTORY_FORECAST": sum(p.get("status") == "LOW_HISTORY_FORECAST" for p in predictions),
             "EXPERIMENTAL_LOW_DATA": sum(p.get("status") == "EXPERIMENTAL_LOW_DATA" for p in predictions),
             "INSUFFICIENT_HISTORY": sum(p.get("status") == "INSUFFICIENT_HISTORY" for p in predictions),
             "UNSUPPORTED_COMPETITION": sum(p.get("status") == "UNSUPPORTED_COMPETITION" for p in predictions),
@@ -1029,7 +1030,7 @@ def build_daily_report(
         },
         "fixtures_excluded_other_date_or_status": len(fixtures) - len(parsed_for_date) - kickoff_unverified_count,
         "predictions_created": sum(
-            p.get("status") in {"EXPERIMENTAL_ONLY", "EXPERIMENTAL_LOW_DATA"}
+            p.get("status") in {"EXPERIMENTAL_ONLY", "EXPERIMENTAL_LOW_DATA", "LOW_HISTORY_FORECAST"}
             and isinstance(p.get("probabilities"), dict)
             for p in predictions
         ),
