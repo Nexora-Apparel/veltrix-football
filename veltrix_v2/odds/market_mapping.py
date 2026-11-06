@@ -75,6 +75,36 @@ class NormalizedOddsQuote:
     raw_response_sha256: str
     mapping_evidence_ref: str
 
+    def __post_init__(self) -> None:
+        required = (
+            self.canonical_fixture_id, self.bookmaker_key, self.bookmaker_title,
+            self.provider, self.source_id, self.provider_event_id,
+            self.source_record_id, self.provider_market_key,
+            self.mapping_evidence_ref,
+        )
+        if any(not value or not value.strip() for value in required):
+            raise ValueError("normalized odds quote identity fields are required")
+        if not self.decimal_odds.is_finite() or self.decimal_odds <= Decimal("1"):
+            raise ValueError("normalized decimal odds must be finite and greater than 1.0")
+        if self.line is not None and (not self.line.is_finite() or self.line <= 0):
+            raise ValueError("normalized line must be positive and finite")
+        if self.canonical_market is CanonicalMarket.TOTALS and self.line is None:
+            raise ValueError("normalized totals quote requires a line")
+        if self.canonical_market is not CanonicalMarket.TOTALS and self.line is not None:
+            raise ValueError("only totals quotes may carry a line")
+        for value, field in (
+            (self.quote_updated_at_utc, "quote_updated_at_utc"),
+            (self.fetched_at_utc, "fetched_at_utc"),
+        ):
+            if value.tzinfo is None or value.utcoffset() is None:
+                raise ValueError(f"{field} must be timezone-aware")
+        if self.quote_updated_at_utc > self.fetched_at_utc:
+            raise ValueError("quote update cannot be later than fetch time")
+        if len(self.raw_response_sha256) != 64 or any(
+            ch not in "0123456789abcdef" for ch in self.raw_response_sha256.lower()
+        ):
+            raise ValueError("raw_response_sha256 must be a SHA-256 hex digest")
+
 
 @dataclass(frozen=True, slots=True)
 class MarketMappingDecision:

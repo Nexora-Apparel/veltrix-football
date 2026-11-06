@@ -44,6 +44,15 @@ class OddsCoverageTarget:
             raise ValueError("required_selections cannot be empty")
         if len(set(self.required_selections)) != len(self.required_selections):
             raise ValueError("required_selections must be unique")
+        allowed = {
+            CanonicalMarket.ONE_X_TWO: {
+                CanonicalSelection.HOME, CanonicalSelection.DRAW, CanonicalSelection.AWAY,
+            },
+            CanonicalMarket.BTTS: {CanonicalSelection.YES, CanonicalSelection.NO},
+            CanonicalMarket.TOTALS: {CanonicalSelection.OVER, CanonicalSelection.UNDER},
+        }[self.market]
+        if not set(self.required_selections).issubset(allowed):
+            raise ValueError("required selections do not belong to the target market")
         if self.market is CanonicalMarket.TOTALS:
             if self.required_line is None or not self.required_line.is_finite() or self.required_line <= 0:
                 raise ValueError("totals coverage requires a positive finite line")
