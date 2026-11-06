@@ -445,3 +445,9 @@ At the start of any new conversation in this project:
 - Hosted CI run `42191456747` passed **88 tests** for the history-contract commit. Hosted CI run `42191542832` passed **95 tests** for the combined preflight commit.
 - All new components are offline contracts and pure gates. No provider request, secret access, database write or production deployment occurred.
 - Next: continue the V1 function-level retirement/data-source audit, then implement a storage-neutral ingestion execution coordinator only after its rights, quota reservation and idempotency semantics are fully specified.
+
+
+### 2026-11-06 provider schema research milestone
+- Reviewed official 5DollarFootballAPI and The Odds API documentation and recorded endpoint, pagination, plan/history, quota, rate-limit, market-discovery and error-handling constraints in `docs/v2/PROVIDER_ADAPTER_RESEARCH.md`.
+- Important constraints: 5Dollar history depth is plan-dependent and its per-fixture odds tick-history endpoint is Ultra-only; The Odds API historical snapshots are paid-only and cost 10 credits per region per market. User account plans and remaining quotas are not verified.
+- No provider API call, credential read or quota spend occurred. Both provider runtimes remain disabled.
