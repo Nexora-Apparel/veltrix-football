@@ -50,6 +50,22 @@ class ProviderCompetitionMapping:
     valid_to_utc: datetime | None = None
     verified_at_utc: datetime | None = None
 
+    def __post_init__(self) -> None:
+        required = (
+            self.provider, self.source_id, self.provider_competition_id,
+            self.canonical_competition_id, self.mapping_version, self.evidence_ref,
+        )
+        if any(not value or not value.strip() for value in required):
+            raise ValueError("competition mapping identity and evidence fields are required")
+        start = _utc(self.valid_from_utc, "valid_from_utc")
+        end = _utc(self.valid_to_utc, "valid_to_utc") if self.valid_to_utc else None
+        if end is not None and end <= start:
+            raise ValueError("valid_to_utc must be after valid_from_utc")
+        if self.state is MappingVerificationState.VERIFIED:
+            if self.verified_at_utc is None:
+                raise ValueError("verified mappings require verified_at_utc")
+            _utc(self.verified_at_utc, "verified_at_utc")
+
 
 @dataclass(frozen=True, slots=True)
 class ProviderTeamMapping:
@@ -64,6 +80,22 @@ class ProviderTeamMapping:
     valid_from_utc: datetime
     valid_to_utc: datetime | None = None
     verified_at_utc: datetime | None = None
+
+    def __post_init__(self) -> None:
+        required = (
+            self.provider, self.source_id, self.provider_team_id,
+            self.canonical_team_id, self.mapping_version, self.evidence_ref,
+        )
+        if any(not value or not value.strip() for value in required):
+            raise ValueError("team mapping identity and evidence fields are required")
+        start = _utc(self.valid_from_utc, "valid_from_utc")
+        end = _utc(self.valid_to_utc, "valid_to_utc") if self.valid_to_utc else None
+        if end is not None and end <= start:
+            raise ValueError("valid_to_utc must be after valid_from_utc")
+        if self.state is MappingVerificationState.VERIFIED:
+            if self.verified_at_utc is None:
+                raise ValueError("verified mappings require verified_at_utc")
+            _utc(self.verified_at_utc, "verified_at_utc")
 
 
 @dataclass(frozen=True, slots=True)

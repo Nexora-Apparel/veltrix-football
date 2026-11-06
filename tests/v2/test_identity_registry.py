@@ -177,3 +177,34 @@ def test_squad_category_can_be_derived_from_verified_competition_mapping():
     result = resolve(source_record=source(squad_category=None))
     assert result.status is MappingResolutionStatus.VERIFIED
     assert result.canonical_identity.squad_category is SquadCategory.SENIOR_MEN
+
+
+
+def test_verified_mapping_requires_verification_timestamp():
+    try:
+        comp(verified_at_utc=None)
+    except ValueError as exc:
+        assert "verified_at_utc" in str(exc)
+    else:
+        raise AssertionError("verified mapping without timestamp must be rejected")
+
+
+def test_mapping_validity_window_must_be_positive():
+    try:
+        team(
+            "home-1", "canonical-home",
+            valid_to_utc=NOW - timedelta(days=30),
+        )
+    except ValueError as exc:
+        assert "after valid_from_utc" in str(exc)
+    else:
+        raise AssertionError("invalid validity window must be rejected")
+
+
+def test_mapping_validity_timestamps_must_be_timezone_aware():
+    try:
+        comp(valid_from_utc=datetime(2026, 1, 1))
+    except ValueError as exc:
+        assert "timezone-aware" in str(exc)
+    else:
+        raise AssertionError("naive mapping timestamp must be rejected")
