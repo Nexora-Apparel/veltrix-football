@@ -102,3 +102,33 @@ def test_adapter_classifies_provider_403_without_retry():
     with pytest.raises(ProviderResponseError) as caught:
         adapter.fetch(request())
     assert caught.value.retryable is False
+
+
+
+def test_adapter_rejects_path_injection_in_provider_ids():
+    adapter = FiveDollarFixtureAdapter(api_key="k", transport=FakeTransport(), enabled=True)
+    req = request(
+        endpoint="league_fixtures",
+        parameters={"league_id": "../private", "page": 1, "per_page": 100},
+        competitions=(),
+    )
+    with pytest.raises(ProviderResponseError, match="LEAGUE_ID_REQUIRED"):
+        adapter.fetch(req)
+
+
+def test_adapter_rejects_non_numeric_pagination_values():
+    adapter = FiveDollarFixtureAdapter(api_key="k", transport=FakeTransport(), enabled=True)
+    req = request(parameters={"start_time": 100, "end_time": 200, "page": "not-a-page"})
+    with pytest.raises(ProviderResponseError, match="PAGE_INVALID"):
+        adapter.fetch(req)
+
+
+def test_adapter_rejects_reversed_league_history_window():
+    adapter = FiveDollarFixtureAdapter(api_key="k", transport=FakeTransport(), enabled=True)
+    req = request(
+        endpoint="league_fixtures",
+        parameters={"league_id": 55, "start_time": 200, "end_time": 100},
+        competitions=("55",),
+    )
+    with pytest.raises(ProviderResponseError, match="WINDOW_INVALID"):
+        adapter.fetch(req)

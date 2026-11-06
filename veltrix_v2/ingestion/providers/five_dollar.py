@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Mapping
 from urllib.parse import urlencode
 
@@ -214,7 +214,7 @@ class FiveDollarFixtureAdapter:
         elif request.endpoint == "league_fixtures":
             allowed = {"league_id", "start_time", "end_time", "season", "status", "page", "per_page", "order", "lang"}
             league_id = params.pop("league_id", None)
-            if league_id is None or not str(league_id).strip():
+            if league_id is None or not str(league_id).isdigit():
                 raise ProviderResponseError("LEAGUE_ID_REQUIRED")
             if request.competition_ids and str(league_id) not in request.competition_ids:
                 raise ProviderResponseError("LEAGUE_ID_OUTSIDE_REQUEST_SCOPE")
@@ -222,7 +222,7 @@ class FiveDollarFixtureAdapter:
         elif request.endpoint == "team_fixtures":
             allowed = {"team_id", "start_time", "end_time", "status", "page", "per_page", "order", "lang"}
             team_id = params.pop("team_id", None)
-            if team_id is None or not str(team_id).strip():
+            if team_id is None or not str(team_id).isdigit():
                 raise ProviderResponseError("TEAM_ID_REQUIRED")
             path = f"/teams/{team_id}/fixtures"
         else:
@@ -231,11 +231,26 @@ class FiveDollarFixtureAdapter:
         unknown = set(params) - allowed
         if unknown:
             raise ProviderResponseError("UNSUPPORTED_QUERY_PARAMETER")
-        if "page" in params and int(params["page"]) < 1:
-            raise ProviderResponseError("PAGE_MUST_BE_POSITIVE")
-        per_page = int(params.get("per_page", 100))
+        if "page" in params:
+            try:
+                page = int(params["page"])
+            except (TypeError, ValueError) as exc:
+                raise ProviderResponseError("PAGE_INVALID") from exc
+            if page < 1:
+                raise ProviderResponseError("PAGE_MUST_BE_POSITIVE")
+        try:
+            per_page = int(params.get("per_page", 100))
+        except (TypeError, ValueError) as exc:
+            raise ProviderResponseError("PER_PAGE_INVALID") from exc
         if not 1 <= per_page <= 100:
             raise ProviderResponseError("PER_PAGE_OUT_OF_RANGE")
+        if "start_time" in params or "end_time" in params:
+            try:
+                start, end = int(params["start_time"]), int(params["end_time"])
+            except (KeyError, TypeError, ValueError) as exc:
+                raise ProviderResponseError("FIXTURE_WINDOW_INVALID") from exc
+            if end <= start:
+                raise ProviderResponseError("FIXTURE_WINDOW_INVALID")
         if "status" in params and params["status"] not in {"all", "scheduled", "live", "finished", "unknown"}:
             raise ProviderResponseError("INVALID_FIXTURE_STATUS")
         if "order" in params and params["order"] not in {"asc", "desc"}:
@@ -265,6 +280,6 @@ class FiveDollarFixtureAdapter:
             http_status=response.status_code,
             headers=response.headers,
             raw_body=response.body,
-            fetched_at_utc=__import__("datetime").datetime.now(__import__("datetime").timezone.utc),
+            fetched_at_utc=datetime.now(timezone.utc),
         )
         return parsed.response
