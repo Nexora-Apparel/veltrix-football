@@ -372,10 +372,10 @@ Update this section whenever a phase materially changes. Use only evidence-backe
 
 | Phase | Status at roadmap creation | Evidence / next action |
 |---|---|---|
-| 0. Isolation and baseline | PASSED | 2026-11-06: branch isolation, 23 hosted tests, V2 preview and production deployment checked |
+| 0. Isolation and baseline | PASSED | 2026-11-06: branch isolation verified; hosted V2 CI run 42190330172 passed 65 tests; production branches unchanged |
 | 1. V1 forensic audit | IN PROGRESS | 2026-11-06: report/delivery path and 108-file command-data tree audited; 39 report archives inventoried (57.75 MiB) with Git blob SHAs. Backup/restore proof, exhaustive Actions-artifact inventory, raw historical-source reconciliation and full API call-site audit remain |
-| 2. Data architecture and quota | PARTIAL | Logical contracts, quota policy, V1 persistence map and fail-closed source-rights gate implemented; V2 storage target, provider account tier and measured quota budgets unverified |
-| 3. Ingestion and history | IN PROGRESS | 2026-11-06: implemented offline provider-record acceptance boundary with mandatory rights checks for requested use and caching, provenance/hash/timestamp validation; repository persistence, provider adapters, plan verification and storage target remain unbuilt |
+| 2. Data architecture and quota | IN PROGRESS | Logical contracts, quota policy, source-rights/account-capability gates and provider-neutral ports implemented; storage target, account tiers and measured quota budgets unverified |
+| 3. Ingestion and history | IN PROGRESS | 2026-11-06: offline acceptance, quota and account gates plus provider-neutral transport/persistence protocols implemented; concrete adapters, atomic storage, watermarks and history remain unbuilt |
 | 4. Features and datasets | NOT STARTED | Await Phase 3 |
 | 5. Independent models | NOT STARTED | Await verified datasets |
 | 6. Calibration and eligibility | FOUNDATION ONLY | Preliminary eligibility code exists; tests not yet confirmed |
@@ -408,7 +408,7 @@ Do not skip ahead to model training while source data, identity and point-in-tim
 - Added a verified account-plan capability gate: requests are blocked unless the actual account evidence covers the requested competitions, data class, history start and quota snapshot. Published plan descriptions cannot substitute for account verification.
 - Hosted CI run `42190061519` for ingestion acceptance commit `9deef706` passed. Hosted CI run `42190126086` for quota-guard commit `2dc12662` also passed.
 - This is an offline boundary only. No provider calls, database writes, credentials access, historical imports or production changes occurred.
-- Hosted CI result for this change is pending; do not report it as passed until the run completes.
+- Hosted CI run `42190330172` for provider-access commit `77841128` completed successfully: **65 tests passed in 0.11 seconds**. The current `8ccb777` head is a documentation-only descendant.
 
 ---
 
@@ -428,3 +428,10 @@ At the start of any new conversation in this project:
 10. Update this roadmap after meaningful milestones with exact commit SHA, tests and evidence.
 
 **Authority rule:** If an older chat summary conflicts with this roadmap, use the newest committed roadmap and architecture decisions unless the project owner explicitly changes them. Never silently weaken the rebuild boundary, validation thresholds or quota safeguards.
+
+
+### 2026-11-06 provider-neutral port milestone
+- Added `veltrix_v2/ingestion/ports.py`: bounded request specifications with mandatory quota cost/idempotency, immutable scalar parameters, exact-byte raw payload hashing, provider batch provenance, atomic quota-ledger protocol, source-rights/capability repositories, atomic accepted-record persistence protocol and ingestion-run lifecycle.
+- Added `tests/v2/test_ingestion_ports.py` for request bounds, duplicate competition rejection, parameter immutability, raw-byte hashing, provider consistency, timezone validation, quota reservation and stored-record references.
+- These are offline contracts only. No provider implementation, API request, database adapter, database write or credential access is included.
+- Next: define storage-neutral history and watermark contracts; continue V1 source reconciliation and provider schema verification. Storage selection remains blocked until Phase 1 and quota evidence are complete.
