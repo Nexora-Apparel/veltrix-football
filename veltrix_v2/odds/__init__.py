@@ -1,1 +1,1 @@
-"""Odds feed normalization, identity linkage and canonical market mapping."""
+"""Odds quality and timestamped market coverage evaluation."""
