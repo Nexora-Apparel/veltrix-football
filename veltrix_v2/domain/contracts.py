@@ -108,6 +108,9 @@ class SourceRights:
     attribution_required: bool = False
     attribution_text: str | None = None
     attribution_url: str | None = None
+    terms_url: str | None = None
+    terms_version: str | None = None
+    evidence_sha256: str | None = None
 
 
 @dataclass(frozen=True, slots=True)

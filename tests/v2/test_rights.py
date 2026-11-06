@@ -30,6 +30,7 @@ def source_rights(**overrides):
         terms_url="https://example.invalid/terms",
         terms_version="2026-11",
         verified_at_utc=VERIFIED_AT,
+        evidence_sha256="a" * 64,
     )
     values.update(overrides)
     return SourceRights(**values)
@@ -98,3 +99,28 @@ def test_require_source_use_raises_for_blocked_source():
     rights = source_rights(rights_status=RightsStatus.UNVERIFIED)
     with pytest.raises(ValueError, match="RIGHTS_UNVERIFIED"):
         require_source_use(rights, DataUsePurpose.CACHE)
+
+
+
+def test_verified_label_without_terms_evidence_is_rejected():
+    rights = source_rights(evidence_sha256=None)
+    decision = evaluate_source_use(rights, DataUsePurpose.MODEL_TRAINING)
+    assert not decision.allowed
+    assert decision.reason_code == "RIGHTS_EVIDENCE_INCOMPLETE"
+
+
+def test_rights_decision_carries_the_exact_terms_evidence_reference():
+    rights = source_rights()
+    decision = require_source_use(rights, DataUsePurpose.MODEL_TRAINING)
+    assert decision.terms_url == rights.terms_url
+    assert decision.terms_version == rights.terms_version
+    assert decision.evidence_sha256 == rights.evidence_sha256
+
+
+def test_naive_rights_verification_timestamp_is_rejected():
+    rights = source_rights(
+        verified_at_utc=datetime(2026, 11, 6, 9, 0)
+    )
+    decision = evaluate_source_use(rights, DataUsePurpose.MODEL_TRAINING)
+    assert not decision.allowed
+    assert decision.reason_code == "RIGHTS_EVIDENCE_INCOMPLETE"
