@@ -10,6 +10,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Mapping
 
+from veltrix_v2.ingestion.providers.errors import ProviderResponseError
 from veltrix_v2.ingestion.ports import (
     ProviderBatchResponse,
     ProviderRequestSpec,
