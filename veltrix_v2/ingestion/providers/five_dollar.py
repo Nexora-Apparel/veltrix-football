@@ -9,8 +9,10 @@ import json
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Mapping
+from urllib.parse import urlencode
 
 from veltrix_v2.ingestion.providers.errors import ProviderResponseError
+from veltrix_v2.ingestion.providers.transport import HttpGetTransport
 from veltrix_v2.ingestion.ports import (
     ProviderBatchResponse,
     ProviderRequestSpec,
@@ -173,3 +175,96 @@ def parse_fixture_batch(
         has_more=bool(pagination.get("has_more", False)),
         quota_headers=quota_headers,
     )
+
+
+class FiveDollarFixtureAdapter:
+    """Disabled-by-default 5Dollar fixture transport with strict endpoint allowlisting."""
+
+    provider_name = PROVIDER_NAME
+    base_url = "https://api.5dollarfootballapi.com/v1"
+
+    def __init__(
+        self,
+        *,
+        api_key: str | None = None,
+        transport: HttpGetTransport | None = None,
+        enabled: bool = False,
+        timeout_seconds: float = 15,
+    ):
+        self._api_key = api_key
+        self._transport = transport
+        self._enabled = enabled
+        self._timeout_seconds = timeout_seconds
+
+    def _build_url(self, request: ProviderRequestSpec) -> str:
+        if request.data_class != "fixtures":
+            raise ProviderResponseError("UNSUPPORTED_DATA_CLASS")
+        params = dict(request.parameters)
+        if request.endpoint == "fixtures":
+            allowed = {"start_time", "end_time", "status", "page", "per_page", "lang"}
+            if "start_time" not in params or "end_time" not in params:
+                raise ProviderResponseError("FIXTURE_WINDOW_REQUIRED")
+            try:
+                start, end = int(params["start_time"]), int(params["end_time"])
+            except (TypeError, ValueError) as exc:
+                raise ProviderResponseError("FIXTURE_WINDOW_INVALID") from exc
+            if end <= start or end - start > 86400:
+                raise ProviderResponseError("FIXTURE_WINDOW_EXCEEDS_24_HOURS")
+            path = "/fixtures"
+        elif request.endpoint == "league_fixtures":
+            allowed = {"league_id", "start_time", "end_time", "season", "status", "page", "per_page", "order", "lang"}
+            league_id = params.pop("league_id", None)
+            if league_id is None or not str(league_id).strip():
+                raise ProviderResponseError("LEAGUE_ID_REQUIRED")
+            if request.competition_ids and str(league_id) not in request.competition_ids:
+                raise ProviderResponseError("LEAGUE_ID_OUTSIDE_REQUEST_SCOPE")
+            path = f"/leagues/{league_id}/fixtures"
+        elif request.endpoint == "team_fixtures":
+            allowed = {"team_id", "start_time", "end_time", "status", "page", "per_page", "order", "lang"}
+            team_id = params.pop("team_id", None)
+            if team_id is None or not str(team_id).strip():
+                raise ProviderResponseError("TEAM_ID_REQUIRED")
+            path = f"/teams/{team_id}/fixtures"
+        else:
+            raise ProviderResponseError("ENDPOINT_NOT_ALLOWLISTED")
+
+        unknown = set(params) - allowed
+        if unknown:
+            raise ProviderResponseError("UNSUPPORTED_QUERY_PARAMETER")
+        if "page" in params and int(params["page"]) < 1:
+            raise ProviderResponseError("PAGE_MUST_BE_POSITIVE")
+        per_page = int(params.get("per_page", 100))
+        if not 1 <= per_page <= 100:
+            raise ProviderResponseError("PER_PAGE_OUT_OF_RANGE")
+        if "status" in params and params["status"] not in {"all", "scheduled", "live", "finished", "unknown"}:
+            raise ProviderResponseError("INVALID_FIXTURE_STATUS")
+        if "order" in params and params["order"] not in {"asc", "desc"}:
+            raise ProviderResponseError("INVALID_FIXTURE_ORDER")
+        return f"{self.base_url}{path}?{urlencode(params)}"
+
+    def fetch(self, request: ProviderRequestSpec) -> ProviderBatchResponse:
+        if not self._enabled:
+            raise ProviderResponseError("PROVIDER_TRANSPORT_DISABLED")
+        if not self._api_key:
+            raise ProviderResponseError("PROVIDER_CREDENTIAL_MISSING")
+        if self._transport is None:
+            raise ProviderResponseError("PROVIDER_TRANSPORT_NOT_CONFIGURED")
+        if request.provider != self.provider_name:
+            raise ProviderResponseError("REQUEST_PROVIDER_MISMATCH")
+        url = self._build_url(request)
+        try:
+            response = self._transport.get(
+                url,
+                headers={"Authorization": f"Bearer {self._api_key}", "Accept": "application/json"},
+                timeout_seconds=self._timeout_seconds,
+            )
+        except ConnectionError as exc:
+            raise ProviderResponseError("PROVIDER_NETWORK_ERROR", retryable=True) from exc
+        parsed = parse_fixture_batch(
+            request,
+            http_status=response.status_code,
+            headers=response.headers,
+            raw_body=response.body,
+            fetched_at_utc=__import__("datetime").datetime.now(__import__("datetime").timezone.utc),
+        )
+        return parsed.response
