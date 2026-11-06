@@ -12,7 +12,7 @@ from veltrix_v2.identity.registry import (
     MappingResolutionStatus,
     MappingVerificationState,
     ProviderCompetitionMapping,
-    _choose_mapping,
+    choose_verified_mapping,
 )
 
 
@@ -166,7 +166,7 @@ def resolve_odds_event(
     kickoff = event.kickoff_at_utc.astimezone(timezone.utc)
     evaluated = evaluated_at_utc.astimezone(timezone.utc)
 
-    status, competition, reason = _choose_mapping(
+    status, competition, reason = choose_verified_mapping(
         competition_mappings, kickoff, evaluated,
         {
             "provider": event.provider,

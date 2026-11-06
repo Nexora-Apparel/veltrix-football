@@ -131,7 +131,7 @@ def _active(mapping, fixture_kickoff_utc: datetime) -> bool:
     )
 
 
-def _choose_mapping(
+def choose_verified_mapping(
     mappings,
     fixture_kickoff_utc: datetime,
     evaluated_at_utc: datetime,
@@ -201,7 +201,7 @@ def resolve_provider_fixture(
         provider=source.provider, source_id=source.source_id,
         provider_competition_id=source.provider_competition_id,
     )
-    status, competition, reason = _choose_mapping(
+    status, competition, reason = choose_verified_mapping(
         competition_rows, kickoff, evaluated,
         {
             "provider": source.provider,
