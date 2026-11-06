@@ -1,0 +1,29 @@
+name: VELTRIX FOOTBALL V2 CI
+
+on:
+  push:
+    branches:
+      - "v2/**"
+  pull_request:
+    branches:
+      - main
+      - "v2/**"
+
+permissions:
+  contents: read
+
+jobs:
+  domain-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+      - name: Install test dependencies
+        run: python -m pip install --upgrade pip pytest
+      - name: Run V2 domain tests
+        run: python -m pytest -q tests/v2
