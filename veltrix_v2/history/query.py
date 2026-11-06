@@ -49,7 +49,7 @@ def select_team_history(
     candidates = [
         match for match in team_rows
         if match.kickoff_at_utc.astimezone(timezone.utc) < cutoff
-        and match.kickoff_at_utc.date() >= lower_date
+        and match.kickoff_at_utc.astimezone(timezone.utc).date() >= lower_date
         and (
             not query.competition_ids
             or match.canonical_competition_id in query.competition_ids

@@ -92,3 +92,19 @@ def test_matches_after_cutoff_never_enter_features():
     future = match(1, day="2026-11-06T10:00:00")
     result = select_team_history([future], query())
     assert result.state is HistoryState.NOT_FOUND
+
+
+def test_history_window_date_is_interpreted_in_utc():
+    local_offset_match = HistoricalMatch(
+        historical_match_id="hm-offset", canonical_fixture_id="fx-offset",
+        canonical_competition_id="comp-1", squad_category="senior_men",
+        home_team_id="team-1", away_team_id="team-2",
+        kickoff_at_utc=datetime.fromisoformat("2026-01-01T00:30:00+02:00"),
+        home_goals=1, away_goals=0, source_record_ids=("src-offset",),
+        provider_fixture_refs=(("provider-a", "source-a", "fixture-offset"),),
+    )
+    result = select_team_history(
+        [local_offset_match],
+        query(window_start_date=date(2026, 1, 1)),
+    )
+    assert result.state is HistoryState.NOT_FOUND

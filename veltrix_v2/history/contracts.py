@@ -68,6 +68,8 @@ class TeamHistoryQuery:
             raise ValueError("max_matches must be positive")
         if self.minimum_matches < 1 or self.minimum_matches > self.max_matches:
             raise ValueError("minimum_matches must be positive and no greater than max_matches")
+        if any(not value or not value.strip() for value in self.competition_ids):
+            raise ValueError("competition_ids cannot contain blank values")
         if len(set(self.competition_ids)) != len(self.competition_ids):
             raise ValueError("competition_ids must be unique")
 
