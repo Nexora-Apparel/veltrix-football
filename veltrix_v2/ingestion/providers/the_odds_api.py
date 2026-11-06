@@ -3,8 +3,10 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timezone
+import re
 from typing import Mapping
+from urllib.parse import urlencode
 
 from veltrix_v2.ingestion.ports import (
     ProviderBatchResponse,
@@ -12,6 +14,7 @@ from veltrix_v2.ingestion.ports import (
     RawProviderRecord,
 )
 from veltrix_v2.ingestion.providers.errors import ProviderResponseError
+from veltrix_v2.ingestion.providers.transport import HttpGetTransport
 
 
 PROVIDER_NAME = "The Odds API"
@@ -85,6 +88,8 @@ def parse_event_odds_batch(
         body = json.loads(raw_body.decode("utf-8"))
     except (UnicodeDecodeError, json.JSONDecodeError) as exc:
         raise ProviderResponseError("PROVIDER_RESPONSE_INVALID_JSON") from exc
+    if isinstance(body, dict):
+        body = [body]
     if not isinstance(body, list):
         raise ProviderResponseError("ODDS_RESPONSE_NOT_LIST")
 
@@ -134,3 +139,130 @@ def parse_event_odds_batch(
         quota_headers=quota,
         market_keys_seen=tuple(sorted(market_keys)),
     )
+
+
+class TheOddsApiAdapter:
+    """Disabled-by-default The Odds API v4 adapter with credit preflight."""
+
+    provider_name = PROVIDER_NAME
+    base_url = "https://api.the-odds-api.com/v4"
+    allowed_regions = frozenset({"us", "us2", "uk", "au", "eu"})
+
+    def __init__(
+        self,
+        *,
+        api_key: str | None = None,
+        transport: HttpGetTransport | None = None,
+        enabled: bool = False,
+        timeout_seconds: float = 15,
+    ):
+        self._api_key = api_key
+        self._transport = transport
+        self._enabled = enabled
+        self._timeout_seconds = timeout_seconds
+
+    @staticmethod
+    def _csv_values(value: object, field: str) -> tuple[str, ...]:
+        values = tuple(part.strip() for part in str(value or "").split(",") if part.strip())
+        if not values:
+            raise ProviderResponseError(f"{field.upper()}_REQUIRED")
+        if len(set(values)) != len(values):
+            raise ProviderResponseError(f"{field.upper()}_DUPLICATES")
+        return values
+
+    def _build_url(self, request: ProviderRequestSpec) -> tuple[str, bool]:
+        params = dict(request.parameters)
+        sport_key = str(params.pop("sport_key", ""))
+        if not re.fullmatch(r"[a-z0-9_]+", sport_key):
+            raise ProviderResponseError("SPORT_KEY_INVALID")
+
+        if request.endpoint == "sport_events":
+            path = f"/sports/{sport_key}/events"
+            allowed = {"dateFormat", "commenceTimeFrom", "commenceTimeTo", "eventIds"}
+            historical = False
+        elif request.endpoint == "sport_odds":
+            path = f"/sports/{sport_key}/odds"
+            allowed = {"regions", "markets", "oddsFormat", "dateFormat"}
+            historical = False
+        elif request.endpoint == "historical_sport_odds":
+            path = f"/historical/sports/{sport_key}/odds"
+            allowed = {"regions", "markets", "date", "oddsFormat", "dateFormat"}
+            historical = True
+        elif request.endpoint == "event_odds":
+            event_id = str(params.pop("event_id", ""))
+            if not re.fullmatch(r"[A-Za-z0-9_-]+", event_id):
+                raise ProviderResponseError("EVENT_ID_INVALID")
+            path = f"/sports/{sport_key}/events/{event_id}/odds"
+            allowed = {"regions", "markets", "oddsFormat", "dateFormat"}
+            historical = False
+        else:
+            raise ProviderResponseError("ENDPOINT_NOT_ALLOWLISTED")
+
+        unknown = set(params) - allowed
+        if unknown:
+            raise ProviderResponseError("UNSUPPORTED_QUERY_PARAMETER")
+
+        if request.endpoint != "sport_events":
+            regions = self._csv_values(params.get("regions"), "regions")
+            if any(region not in self.allowed_regions for region in regions):
+                raise ProviderResponseError("REGION_NOT_ALLOWLISTED")
+            markets = self._csv_values(params.get("markets"), "markets")
+            if any(not re.fullmatch(r"[a-z0-9_]+", market) for market in markets):
+                raise ProviderResponseError("MARKET_KEY_INVALID")
+            params["regions"] = ",".join(regions)
+            params["markets"] = ",".join(markets)
+        else:
+            params.setdefault("dateFormat", "iso")
+
+        if historical:
+            snapshot_date = params.get("date")
+            if not isinstance(snapshot_date, str) or not snapshot_date.strip():
+                raise ProviderResponseError("HISTORICAL_SNAPSHOT_DATE_REQUIRED")
+            try:
+                parsed_date = datetime.fromisoformat(snapshot_date.replace("Z", "+00:00"))
+            except ValueError as exc:
+                raise ProviderResponseError("HISTORICAL_SNAPSHOT_DATE_INVALID") from exc
+            if parsed_date.tzinfo is None:
+                raise ProviderResponseError("HISTORICAL_SNAPSHOT_DATE_NOT_TIMEZONE_AWARE")
+            regions = self._csv_values(params["regions"], "regions")
+            markets = self._csv_values(params["markets"], "markets")
+            required_credits = 10 * len(regions) * len(markets)
+            if request.quota_units != required_credits:
+                raise ProviderResponseError("HISTORICAL_ODDS_CREDIT_RESERVATION_MISMATCH")
+        params.setdefault("oddsFormat", "decimal")
+        params.setdefault("dateFormat", "iso")
+        params["apiKey"] = self._api_key or ""
+        return f"{self.base_url}{path}?{urlencode(params)}", historical
+
+    def fetch(self, request: ProviderRequestSpec) -> ProviderBatchResponse:
+        if not self._enabled:
+            raise ProviderResponseError("PROVIDER_TRANSPORT_DISABLED")
+        if not self._api_key:
+            raise ProviderResponseError("PROVIDER_CREDENTIAL_MISSING")
+        if self._transport is None:
+            raise ProviderResponseError("PROVIDER_TRANSPORT_NOT_CONFIGURED")
+        if request.provider != self.provider_name:
+            raise ProviderResponseError("REQUEST_PROVIDER_MISMATCH")
+        url, historical = self._build_url(request)
+        try:
+            response = self._transport.get(
+                url, headers={"Accept": "application/json"},
+                timeout_seconds=self._timeout_seconds,
+            )
+        except ConnectionError as exc:
+            raise ProviderResponseError("PROVIDER_NETWORK_ERROR", retryable=True) from exc
+        parsed = parse_event_odds_batch(
+            request,
+            http_status=response.status_code,
+            headers=response.headers,
+            raw_body=response.body,
+            fetched_at_utc=datetime.now(timezone.utc),
+        )
+        if request.endpoint in {"sport_odds", "historical_sport_odds", "event_odds"}:
+            if not parsed.quota_headers.cost_observed:
+                raise ProviderResponseError("ODDS_QUOTA_COST_UNOBSERVED")
+            if historical and parsed.response.quota_units_consumed != request.quota_units:
+                raise ProviderResponseError("HISTORICAL_ODDS_CREDIT_COST_MISMATCH")
+            if parsed.response.quota_units_consumed > request.quota_units:
+                raise ProviderResponseError("ODDS_QUOTA_COST_EXCEEDED_RESERVATION")
+        return parsed.response
