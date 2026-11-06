@@ -404,6 +404,7 @@ Do not skip ahead to model training while source data, identity and point-in-tim
 - Branch HEAD before this work: `cb727038e43d02d20eb006a0475e39255b6ea062`.
 - Implemented `veltrix_v2/ingestion/acceptance.py` and its typed provider-record envelope.
 - Acceptance requires a verified rights decision for the requested purpose and for caching, validates source identity, immutable payload SHA-256 and timezone-aware fetch/ingest/source timestamps, and preserves provider fixture/competition IDs.
+- Added an offline quota preflight guard: unknown, stale, expired, malformed or overdrawn snapshots fail closed; configured reserve units cannot be spent. Atomic reservation is explicitly delegated to the future persistence adapter.
 - This is an offline boundary only. No provider calls, database writes, credentials access, historical imports or production changes occurred.
 - Hosted CI result for this change is pending; do not report it as passed until the run completes.
 
