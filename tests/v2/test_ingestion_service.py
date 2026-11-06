@@ -136,13 +136,17 @@ def rights(uses=None):
     )
 
 
-def execute(*, enabled=False, adapter=None, right=None, ledger=None, profile_value=None, response=None):
+_UNSET = object()
+
+
+def execute(*, enabled=False, adapter=None, right=_UNSET, ledger=None, profile_value=None, response=None):
     adapter = adapter or Adapter(response=response)
     ledger = ledger or Ledger()
     run_repo, record_repo = RunRepo(), RecordRepo()
+    rights_value = rights() if right is _UNSET else right
     result = execute_ingestion(
         request(), adapter, CapabilityRepo(profile_value or profile()), snapshot(),
-        RightsRepo(right if right is not None else rights()), ledger,
+        RightsRepo(rights_value), ledger,
         run_repo, record_repo, source_id="five-dollar",
         purpose=DataUsePurpose.INFERENCE, now_utc=NOW,
         transport_enabled=enabled, clock=lambda: NOW,
@@ -172,8 +176,10 @@ def test_successful_execution_reserves_settles_and_persists():
 
 def test_missing_source_rights_blocks_before_quota_or_transport():
     result, adapter, ledger, runs, records = execute(enabled=True, right=None)
-    assert result.status == "DISABLED"  # helper defaults to rights; explicit missing case below
+    assert result.status == "WITHHELD"
+    assert result.reason_code == "SOURCE_RIGHTS_MISSING"
     assert adapter.calls == 0
+    assert ledger.calls == []
 
 
 def test_unpermitted_cache_use_blocks_before_reservation():

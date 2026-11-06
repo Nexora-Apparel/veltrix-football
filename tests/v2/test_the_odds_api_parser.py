@@ -114,3 +114,15 @@ def test_parser_rejects_naive_timestamp():
             raw_body=json.dumps(payload()).encode(),
             fetched_at_utc=datetime(2026, 11, 6),
         )
+
+
+
+def test_parser_accepts_single_event_object_for_event_odds_endpoint():
+    single = payload()[0]
+    parsed = parse_event_odds_batch(
+        request(), http_status=200,
+        headers={"x-requests-last": "2"},
+        raw_body=json.dumps(single).encode(), fetched_at_utc=NOW,
+    )
+    assert len(parsed.response.records) == 1
+    assert parsed.response.records[0].provider_fixture_id == "event-1"

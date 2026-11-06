@@ -137,12 +137,19 @@ def execute_ingestion(
         quota_ledger.release(reservation.reservation_id, released_at_utc=current_time())
         return result("WITHHELD", "QUOTA_RESERVATION_MISMATCH", rights_decisions=rights_decisions)
 
-    run_id = run_repository.start_run(
-        provider=request.provider,
-        data_class=request.data_class,
-        started_at_utc=current_time(),
-        request_id=request.request_id,
-    )
+    try:
+        run_id = run_repository.start_run(
+            provider=request.provider,
+            data_class=request.data_class,
+            started_at_utc=current_time(),
+            request_id=request.request_id,
+        )
+    except Exception:
+        quota_ledger.release(
+            reservation.reservation_id, released_at_utc=current_time()
+        )
+        raise
+
     try:
         response = adapter.fetch(request)
     except ProviderResponseError as exc:
