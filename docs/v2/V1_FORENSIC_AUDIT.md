@@ -162,12 +162,12 @@ The complete component-to-replacement map is maintained separately in `docs/v2/V
 
 The read-only Git tree inventory found 39 timestamped report archives under `public-data/archive/`, totaling 57,751,497 bytes (55.08 MiB), across 6 report-date folders. The inventory records each path, byte size and Git blob SHA in `docs/v2/V1_ARTIFACT_INVENTORY.md`. These Git blob SHAs are not SHA-256 export checksums. No archive payload was downloaded or changed.
 
-The inspected daily workflow explicitly configures 90-day retention for its uploaded report/value/paper artifacts. This is a configured expiry policy, not a verified inventory of all still-available Actions artifacts.
+The inspected daily workflow explicitly configures 90-day retention for its uploaded report/value/paper artifacts. A successful 2026-11-05 Daily Fixture Predictions run had three unexpired artifacts (daily report 34,388 bytes; paper ledger 6,819 bytes; value evidence ledger 190,830 bytes), with expiry 2027-02-03 17:33:48 UTC. A sampled failed prediction run and Telegram recovery run had no artifacts. This is a sample, not an exhaustive inventory; artifact metadata only was read, not ZIP contents.
 
 ## 10. Remaining Phase 1 work
 
 1. Finish the function-level V1 call graph for all research verification, report filtering, value gates and Telegram command endpoints; neutral-prior, sparse-history, Elo/Poisson, odds matching and Telegram recalculation paths are now confirmed.
-2. Archive path/count/size/Git-blob inventory is complete. Remaining: obtain independent SHA-256 export checksums and prove byte-for-byte backup/restore; enumerate still-available Actions artifacts if the supported GitHub connection exposes them.
+2. Archive path/count/size/Git-blob inventory and one successful Actions-artifact sample are complete. Remaining: obtain independent SHA-256 export checksums and prove byte-for-byte backup/restore; enumerate all retained Actions artifacts across the required date window.
 3. Reconcile the upstream open CSV snapshot against the historical coverage audit and recent-results cache, including duplicate and missing-date analysis.
 4. Obtain documented commercial rights for any historical source proposed for V2; reconcile the 238,854 versus 238,858 row count and review ClubElo-derived fields separately.
 5. Validate the component retirement map against every live workflow/API call site.

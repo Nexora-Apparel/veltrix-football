@@ -85,6 +85,19 @@
 | `public-data/value_evidence_ledger.json` | 7,044,520 | `14f4164b3abdcf0b6458a25de37f834c8289b81d` |
 | `public-data/verification_status.json` | 4,531 | `a22cedc202a91730adc478f067ac422ea844ec5e` |
 
+## Verified GitHub Actions artifact sample
+
+A read-only artifact metadata query was performed for V1 Daily Fixture Predictions run `42075832565` (2026-11-05 17:33:48 UTC, successful). Three artifacts were present and unexpired at query time:
+
+| Artifact | Bytes | Created UTC | Configured expiry UTC |
+|---|---:|---|---|
+| `veltrix-daily-predictions` | 34,388 | 2026-11-05 17:35:21 | 2027-02-03 17:33:48 |
+| `veltrix-paper-ledger` | 6,819 | 2026-11-05 17:35:23 | 2027-02-03 17:33:48 |
+| `veltrix-value-evidence-ledger` | 190,830 | 2026-11-05 17:35:12 | 2027-02-03 17:33:48 |
+| **Total** | **232,037** | | |
+
+A failed Daily Fixture Predictions run `42115659430` and a Telegram Delivery Recovery run `42152659843` returned no artifacts. This is a sample of queried runs, not an exhaustive inventory of all retained artifacts. Artifact metadata only was read; no ZIP payload was downloaded.
+
 ## Preservation and migration rules
 
 1. Treat every listed object as read-only V1 provenance and rollback evidence.

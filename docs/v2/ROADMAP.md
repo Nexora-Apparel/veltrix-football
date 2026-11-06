@@ -373,7 +373,7 @@ Update this section whenever a phase materially changes. Use only evidence-backe
 | Phase | Status at roadmap creation | Evidence / next action |
 |---|---|---|
 | 0. Isolation and baseline | PASSED | 2026-11-06: branch isolation, 23 hosted tests, V2 preview and production deployment checked |
-| 1. V1 forensic audit | IN PROGRESS | 2026-11-06: report/delivery path and 108-file command-data tree audited; 39 report archives inventoried (57.75 MiB) with Git blob SHAs. Backup/restore proof, raw historical-source reconciliation and full API call-site audit remain |
+| 1. V1 forensic audit | IN PROGRESS | 2026-11-06: report/delivery path and 108-file command-data tree audited; 39 report archives inventoried (57.75 MiB) with Git blob SHAs. Backup/restore proof, exhaustive Actions-artifact inventory, raw historical-source reconciliation and full API call-site audit remain |
 | 2. Data architecture and quota | PARTIAL | Logical contracts, quota policy, V1 persistence map and fail-closed source-rights gate implemented; V2 storage target, provider account tier and measured quota budgets unverified |
 | 3. Ingestion and history | IN PROGRESS | 2026-11-06: implemented offline provider-record acceptance boundary with mandatory rights checks for requested use and caching, provenance/hash/timestamp validation; repository persistence, provider adapters, plan verification and storage target remain unbuilt |
 | 4. Features and datasets | NOT STARTED | Await Phase 3 |
@@ -391,7 +391,7 @@ Allowed status values: NOT STARTED, IN PROGRESS, BLOCKED, PARTIAL, PASSED, FAILE
 ## G. Next action queue — execute in this order
 
 1. Complete the V1 workflow call graph through every research, enrichment, filtering, validation and delivery step; identify all active and legacy model paths. Neutral-prior, sparse-history, Elo/Poisson and Telegram's independent BTTS/O-U recalculation paths are now confirmed.
-2. Reconcile historical CSV, recent-results cache, report archives, paper ledger and value-evidence ledger counts, dates, IDs, provenance and backup/retention guarantees. The command-data archive inventory is committed at `docs/v2/V1_ARTIFACT_INVENTORY.md`.
+2. Reconcile historical CSV, recent-results cache, report archives, paper ledger and value-evidence ledger counts, dates, IDs, provenance and backup/retention guarantees. The command-data archive inventory and a verified sample of three GitHub Actions artifacts are committed at `docs/v2/V1_ARTIFACT_INVENTORY.md`.
 3. Inspect workflow artifact inventory and command-data archive policy without downloading or rewriting production data. The inspected workflow sets 90-day retention; Actions artifact inventory is not exposed through the current supported connector.
 4. Football-Data.co.uk-derived history remains excluded from V2 commercial training. 5DollarFootballAPI and The Odds API published terms permit commercial model/app use, but active account plans, history depth, competition coverage, quota and required attribution are unverified. The rights gate, account-capability gate and quota guard are implemented as offline boundaries; provider adapters and persistence remain pending.
 5. Verify provider secret *names* and measured quotas only where permitted; never access API-Football credentials.
