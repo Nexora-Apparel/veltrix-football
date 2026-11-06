@@ -142,8 +142,8 @@ def test_invalid_probability_vectors_are_rejected(probabilities):
 
 
 def test_identical_global_prior_vectors_are_never_public_forecasts():
-    first = evaluate_fixture(fixture(fixture_id="fixture-home-a"))
-    second = evaluate_fixture(fixture(fixture_id="fixture-home-b"))
+    first = evaluate_fixture_eligibility(fixture(fixture_id="fixture-home-a"))
+    second = evaluate_fixture_eligibility(fixture(fixture_id="fixture-home-b"))
     # The same neutral-prior vector must not be published for unrelated fixtures.
     first_candidate = candidate(first, origin="global_prior")
     second_candidate = candidate(second, origin="global_prior")
