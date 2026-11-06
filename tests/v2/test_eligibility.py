@@ -139,3 +139,16 @@ def test_invalid_probability_vectors_are_rejected(probabilities):
     decision = evaluate_fixture_eligibility(fixture())
     with pytest.raises(ValueError):
         validate_public_forecast(decision, candidate(decision, probs=probabilities))
+
+
+def test_identical_global_prior_vectors_are_never_public_forecasts():
+    first = evaluate_fixture(fixture(fixture_id="fixture-home-a"))
+    second = evaluate_fixture(fixture(fixture_id="fixture-home-b"))
+    # The same neutral-prior vector must not be published for unrelated fixtures.
+    first_candidate = candidate(first, origin="global_prior")
+    second_candidate = candidate(second, origin="global_prior")
+    assert first_candidate.probabilities == second_candidate.probabilities
+    with pytest.raises(ValueError, match="non-fixture-specific"):
+        validate_public_forecast(first, first_candidate)
+    with pytest.raises(ValueError, match="non-fixture-specific"):
+        validate_public_forecast(second, second_candidate)
