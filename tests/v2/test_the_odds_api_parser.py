@@ -84,7 +84,7 @@ def test_parser_rejects_non_list_response():
     with pytest.raises(ProviderResponseError, match="NOT_LIST"):
         parse_event_odds_batch(
             request(), http_status=200, headers={},
-            raw_body=b"{}", fetched_at_utc=NOW,
+            raw_body=b'"not-an-event"', fetched_at_utc=NOW,
         )
 
 
