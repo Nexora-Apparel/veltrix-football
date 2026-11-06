@@ -130,7 +130,17 @@ def _choose_mapping(
     if len(verified) > 1:
         return MappingResolutionStatus.AMBIGUOUS, None, "MULTIPLE_ACTIVE_VERIFIED_MAPPINGS"
     if len(verified) == 0:
-        if any(mapping.state is MappingVerificationState.UNVERIFIED for mapping in active):
+        if any(
+            mapping.state is MappingVerificationState.UNVERIFIED
+            or (
+                mapping.state is MappingVerificationState.VERIFIED
+                and (
+                    mapping.verified_at_utc is None
+                    or _utc(mapping.verified_at_utc, "verified_at_utc") > evaluated_at_utc
+                )
+            )
+            for mapping in active
+        ):
             return MappingResolutionStatus.UNVERIFIED, None, "MAPPING_NOT_VERIFIED"
         return MappingResolutionStatus.UNRESOLVED, None, "NO_ACTIVE_VERIFIED_MAPPING"
     return MappingResolutionStatus.VERIFIED, verified[0], "MAPPING_VERIFIED"
