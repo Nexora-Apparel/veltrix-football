@@ -80,7 +80,7 @@ def test_competition_filter_prevents_cross_competition_history():
 
 
 def test_max_matches_keeps_most_recent_but_returns_them_chronologically():
-    rows = [match(i, day=f"2026-11-{i:02d}T10:00:00") for i in range(1, 9)]
+    rows = [match(i, day=f"2026-10-{i + 20:02d}T10:00:00") for i in range(1, 9)]
     result = select_team_history(rows, query(max_matches=5, minimum_matches=5))
     assert [item.historical_match_id for item in result.matches] == [
         "hm-4", "hm-5", "hm-6", "hm-7", "hm-8"

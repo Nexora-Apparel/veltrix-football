@@ -44,7 +44,7 @@ def test_historical_match_rejects_naive_kickoff():
     with pytest.raises(ValueError, match="timezone-aware"):
         HistoricalMatch(
             historical_match_id="hm-1", canonical_fixture_id="fx-1",
-            canonical_competition_id="comp-1", home_team_id="t1", away_team_id="t2",
+            canonical_competition_id="comp-1", squad_category="senior_men", home_team_id="t1", away_team_id="t2",
             kickoff_at_utc=datetime(2026, 11, 1), home_goals=0, away_goals=0,
             source_record_ids=("src-1",), provider_fixture_refs=(("p", "s", "f"),),
         )
