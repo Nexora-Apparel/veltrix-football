@@ -7,7 +7,7 @@
   "commit_sha": "05e517af4dcac27507a3c32ebaceee117828df22",
   "branch": "main",
   "recorded_at_utc": "2026-11-06T15:07:04.317798+00:00",
-  "overall_status": "PASSED",
+  "overall_status": "NEEDS_REVIEW",
   "validation_scope": "LIVE_PIPELINE",
   "telegram_configured": true,
   "steps": {
@@ -130,5 +130,18 @@
     }
   },
   "release_status": "LOCKED_SHADOW_MODE",
-  "betting_alerts_enabled": false
+  "betting_alerts_enabled": false,
+  "latest_test_run": {
+    "run_id": "42295384085",
+    "commit_sha": "05e517af4dcac27507a3c32ebaceee117828df22",
+    "recorded_at_utc": "2026-11-06T21:17:33.488590+00:00",
+    "overall_status": "NEEDS_REVIEW",
+    "steps": {
+      "unit_tests": "failure",
+      "dashboard_js": "skipped"
+    }
+  },
+  "latest_test_status": "NEEDS_REVIEW",
+  "last_test_run_id": "42295384085",
+  "last_full_pipeline_status": "PASSED"
 }
