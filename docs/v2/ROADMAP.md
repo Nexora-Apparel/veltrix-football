@@ -485,3 +485,12 @@ At the start of any new conversation in this project:
 - Added `ingestion/service.py` to orchestrate account capability, quota snapshot, source rights and CACHE rights before transport; reserve quota atomically; conservatively settle unknown transport costs; persist accepted records idempotently; and complete/fail ingestion runs.
 - Both provider adapters default to disabled. The service also defaults to transport disabled. No API key was read or passed, no provider request occurred and no external quota was consumed.
 - Latest fully green hosted CI at this checkpoint: run `42193057875`, **162 tests passed**. Newer coordinator changes are pending their own CI confirmation.
+
+
+### 2026-11-06 provider identity registry milestone
+- Added explicit, versioned provider competition/team mapping records with verification state, evidence reference and effective validity window.
+- Added exact-ID resolver that rejects missing, ambiguous, revoked/unverified, wrong-source and squad-category-conflicting mappings. It never fuzzy-matches names.
+- Historical mappings can be verified retrospectively: validity is evaluated at fixture kickoff, while verification timestamp is checked against decision time.
+- Added the identity pipeline joining verified provider mappings to deterministic canonical fixture reconciliation; ambiguous canonical candidates are quarantined and provider home/away orientation is preserved.
+- Hosted CI run `42193498440` passed **181 tests in 0.33 seconds**.
+- Mapping rows themselves are not populated; real provider IDs and canonical mappings remain blocked on verified provider access and source data.

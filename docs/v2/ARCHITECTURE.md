@@ -167,3 +167,14 @@ Until then, V2 is development/research only. V1 prediction code is legacy and ex
 Every source must have a versioned `SourceRights` record before V2 ingestion, training, calibration, caching or public display. `veltrix_v2/domain/rights.py` provides `evaluate_source_use` and `require_source_use`; unknown or incomplete terms evidence, an ungranted purpose, prohibited commercial use or missing required attribution fails closed. Each decision carries the terms URL/version and evidence SHA-256 for traceability.
 
 The rights gate is currently a tested domain primitive (34 hosted V2 tests pass), not yet integrated into provider ingestion. Integration is a prerequisite to the first V2 data import. The active 5DollarFootballAPI and The Odds API terms permit commercial model/app use within their stated restrictions; their actual account plans and data depth remain unverified. Football-Data.co.uk-derived history remains excluded from V2 commercial training unless a commercial licence or written permission is obtained.
+
+
+## 8. Ingestion, identity and persistence implementation boundaries
+
+- Provider-neutral contracts and orchestration live under `veltrix_v2/ingestion/`; provider-specific offline parsers and disabled-by-default adapters live under `veltrix_v2/ingestion/providers/`.
+- The ingestion service checks verified account capability, matching quota snapshot and source rights before atomic quota reservation and transport. Unknown transport consumption is settled conservatively. Raw records are persisted with deterministic idempotency keys.
+- Provider fixture/team/competition IDs are preserved separately from canonical IDs. Explicit mapping registry records carry verification evidence, effective validity and mapping version. No fuzzy name matching is allowed in V2.
+- Canonical fixture reconciliation occurs only after exact provider-ID mappings resolve. Ambiguous identity results are quarantined.
+- Historical team queries enforce squad category, competition scope, UTC date window and strict point-in-time cutoff; future kickoff rows are excluded.
+- Logical storage entities and atomic transaction protocols are specified in `LOGICAL_DATA_SCHEMA.md`. Provider endpoint, account-plan, quota and market constraints are recorded in `PROVIDER_ADAPTER_RESEARCH.md`.
+- No production storage engine has been selected. The inspected Neon projects remain excluded until Phase 1 source reconciliation and storage gates are complete.
