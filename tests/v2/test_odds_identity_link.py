@@ -71,8 +71,8 @@ def resolve(event_value=None, candidates=None, home_aliases=None, away_aliases=N
     return resolve_odds_event(
         event_value or event(),
         (competition(),),
-        home_aliases or (alias("Manchester City", "man-city"),),
-        away_aliases or (alias("Arsenal", "arsenal"),),
+        (alias(event_value.home_team_name, "man-city"),) if home_aliases is None else home_aliases,
+        (alias(event_value.away_team_name, "arsenal"),) if away_aliases is None else away_aliases,
         candidates if candidates is not None else (fixture(),),
         evaluated_at_utc=NOW,
     )
@@ -135,7 +135,7 @@ def test_multiple_canonical_candidates_are_ambiguous():
 
 def test_name_normalization_is_deterministic_but_not_fuzzy():
     assert normalize_team_name_alias_key("  MANCHESTER-CITY ") == "manchester city"
-    result = resolve(event_value=event(home_team_name="Man City"))
+    result = resolve(event_value=event(home_team_name="Man City"), home_aliases=())
     assert result.status is OddsFixtureLinkStatus.TEAM_ALIAS_UNRESOLVED
 
 
