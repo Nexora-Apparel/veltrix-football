@@ -15,6 +15,7 @@ class ProviderOddsQuote:
     source_record_id: str
     home_team_name: str
     away_team_name: str
+    kickoff_at_utc: datetime
     bookmaker_key: str
     bookmaker_title: str
     provider_market_key: str
@@ -40,6 +41,7 @@ class ProviderOddsQuote:
         if self.point is not None and not self.point.is_finite():
             raise ValueError("odds point must be finite")
         for value, field in (
+            (self.kickoff_at_utc, "kickoff_at_utc"),
             (self.quote_updated_at_utc, "quote_updated_at_utc"),
             (self.fetched_at_utc, "fetched_at_utc"),
         ):
@@ -47,8 +49,8 @@ class ProviderOddsQuote:
                 raise ValueError(f"{field} must be timezone-aware")
         if self.quote_updated_at_utc > self.fetched_at_utc:
             raise ValueError("quote timestamp cannot be later than fetch timestamp")
-        if len(self.raw_response_sha256) != 64:
-            raise ValueError("raw_response_sha256 must be a SHA-256 digest")
+        if len(self.raw_response_sha256) != 64 or any(ch not in "0123456789abcdef" for ch in self.raw_response_sha256.lower()):
+            raise ValueError("raw_response_sha256 must be a SHA-256 hex digest")
 
 
 @dataclass(frozen=True, slots=True)

@@ -126,3 +126,15 @@ def test_naive_fetch_timestamp_is_rejected():
             source_record_id="source-record-1",
             fetched_at_utc=datetime(2026, 11, 6),
         )
+
+
+def test_quote_retains_provider_event_kickoff_timestamp():
+    result = normalize()
+    assert result.quotes[0].kickoff_at_utc == datetime(2026, 11, 6, 15, 0, tzinfo=timezone.utc)
+
+
+def test_missing_event_kickoff_is_rejected():
+    payload = event_payload()
+    payload[0].pop("commence_time")
+    with pytest.raises(ValueError, match="QUOTE_TIMESTAMP_MISSING"):
+        normalize(payload)

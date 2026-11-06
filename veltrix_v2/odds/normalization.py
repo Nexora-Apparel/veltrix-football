@@ -80,6 +80,7 @@ def normalize_event_odds(
         raise ValueError("HOME_TEAM_NAME_MISSING")
     if not isinstance(away_name, str) or not away_name.strip():
         raise ValueError("AWAY_TEAM_NAME_MISSING")
+    kickoff = _parse_timestamp(event.get("commence_time"))
 
     bookmakers = event.get("bookmakers")
     if not isinstance(bookmakers, list):
@@ -146,6 +147,7 @@ def normalize_event_odds(
                         source_record_id=source_record_id,
                         home_team_name=home_name,
                         away_team_name=away_name,
+                        kickoff_at_utc=kickoff,
                         bookmaker_key=bookmaker_key,
                         bookmaker_title=bookmaker_title,
                         provider_market_key=market_key,
