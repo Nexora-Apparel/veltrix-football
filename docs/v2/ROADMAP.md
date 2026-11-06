@@ -144,7 +144,7 @@ Tasks:
 - Telegram delivery uses the local generated report through `scripts/send_telegram_report.py`, then the workflow publishes command-data snapshots afterwards. This creates a report-parity race: Telegram can deliver the new report while the website still serves the previous snapshot. The V1 report has neither `report_id` nor `content_sha256`; V2 must generate one immutable report and deliver that exact ID/hash to both channels.
 - No football database was identified in the inspected Neon projects. The audited V1 report path's durable persistence is GitHub `command-data` plus expiring Actions artifacts; the original open historical CSV is external and re-downloaded. Full source inventory, backup proof, provider-ID coverage and exact data counts remain open.
 - Production deployment record: READY deployment from `main` commit `942596f6124d3585298c2b9f81239b3a01edac8a`. Latest V2 preview for `fc35c1be99580ada72b1d755afbc7e4c8923bdc6` was reported READY. Neither was promoted or changed by this audit.
-- Full evidence and remaining questions: `docs/v2/V1_FORENSIC_AUDIT.md`.
+- Additional V1 defects confirmed: sparse-history forecasts can remain publishable when one side is below minimum history; Telegram recalculates BTTS/O-U from xG rather than rendering the stored report market values; the delivery filter still imports V1 identity helpers. Full evidence and remaining questions: `docs/v2/V1_FORENSIC_AUDIT.md`.
 
 Constraints:
 - Read-only. No production edits, writes, deployments, backfills or secret changes.
@@ -390,7 +390,7 @@ Allowed status values: NOT STARTED, IN PROGRESS, BLOCKED, PARTIAL, PASSED, FAILE
 
 ## G. Next action queue — execute in this order
 
-1. Complete the V1 workflow call graph through every research, enrichment, filtering, validation and delivery step; identify all active and legacy model paths.
+1. Complete the V1 workflow call graph through every research, enrichment, filtering, validation and delivery step; identify all active and legacy model paths. Neutral-prior, sparse-history, Elo/Poisson and Telegram's independent BTTS/O-U recalculation paths are now confirmed.
 2. Reconcile historical CSV, recent-results cache, report archives, paper ledger and value-evidence ledger counts, dates, IDs, provenance and backup/retention guarantees.
 3. Inspect workflow artifact inventory and command-data archive policy without downloading or rewriting production data.
 4. Verify provider secret *names* and measured quotas only where permitted; never access API-Football credentials.

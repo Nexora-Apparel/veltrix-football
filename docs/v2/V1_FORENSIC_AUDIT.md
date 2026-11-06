@@ -26,6 +26,18 @@ Workflow: `.github/workflows/daily-fixture-predictions.yml`.
 - Primary fixture/results integration is 5DollarFootballAPI. The Odds API supplements fixtures/prices; OddsPapi is optional enrichment. The workflow passes 5Dollar and The Odds API credentials as Actions secrets. No secret values were inspected.
 - Research-source discovery, odds enrichment, value-evidence updates, fixture visibility validation and value-certificate generation are additional workflow stages.
 
+### V1 prediction and market-output defects confirmed
+
+- `app/live_predictions.py::predict_fixtures` has a no-history branch that sets both teams to the same neutral expected-goals rate (1.225) and still calculates 1X2, BTTS and totals probabilities with the legacy Poisson helper.
+- A separate non-senior branch also uses neutral scoring rates rather than category-matched team evidence.
+- The sparse-history path activates when either team has fewer than the configured minimum of five prior matches, then shrinks available team rates toward competition or global rates and still emits public probabilities with status `LOW_HISTORY_FORECAST`. This includes a fixture where one team has zero matched history.
+- `build_daily_report(..., strict_publication=True)` strips probability fields for the zero-history case only when **both** home and away history counts are zero. A sparse fixture with one side missing or either side below the five-match threshold can retain its probabilities. This is narrower than a strict minimum-history publication gate.
+- When competition Elo is selected for 1X2, the report still uses the recent-goals Poisson path for xG, BTTS and totals. Market heads therefore have distinct model provenance and must be validated independently.
+- `app/telegram_commands.py::_goal_market_probabilities` independently recalculates BTTS and Over/Under probabilities from expected goals using its own independent-Poisson helper. Telegram's `/btts` and `/overunder` commands therefore do not simply render the saved report market probabilities; they can diverge from report values and do not apply the report's calibration metadata.
+- `scripts/filter_report_for_delivery.py` imports V1 team-name normalization and fuzzy-match helpers from `app.live_predictions`. The delivery filter is therefore coupled to the legacy identity implementation, even though it can withhold some unsafe matches.
+
+These findings reinforce the V2 requirement for one authoritative identity service, one market-specific forecast record per market, a single eligibility decision, and delivery clients that render stored probabilities without recalculating them.
+
 This confirms the scheduler and principal report path. A complete function-by-function call graph of every imported V1 model and helper is still outstanding.
 
 ## 3. Historical data: what is actually persisted
@@ -95,6 +107,8 @@ The website is a reader of published snapshots; it does not run the prediction m
 
 This ordering creates a race: Telegram may receive the new report while the website still serves the previous published snapshot. The V1 report has no immutable report ID or content hash shared with Telegram. The existing fingerprint is a Telegram duplicate-suppression mechanism, not a cross-channel report identity.
 
+**Additional market-output defect:** the Telegram `/btts` and `/overunder` handlers recalculate probabilities from expected goals instead of rendering the exact saved market outputs. V2 delivery must be presentation-only: no probability model or calibration code may run in the Telegram or website adapter.
+
 **V2 requirement:** create and validate one immutable report, compute its content hash, publish it successfully, then have both website and Telegram consume that exact report ID/hash. Delivery must be idempotent and must not send a report whose publication failed.
 
 ## 6. Publication mechanics and failure surface
@@ -116,7 +130,7 @@ The previously inspected Neon projects were not football databases. No V1 footba
 
 ## 8. Remaining Phase 1 work
 
-1. Finish the function-level V1 call graph for identity reconciliation, all prediction/model branches, odds matching, research verification, report filtering, value gates and Telegram command endpoints.
+1. Finish the function-level V1 call graph for all prediction/model branches, odds matching, research verification, report filtering, value gates and Telegram command endpoints; the key neutral-prior, sparse-history, Elo/Poisson and Telegram recalculation paths are now confirmed.
 2. Inventory all workflow artifacts and archive files; record retention, sizes, checksums, report dates and model/version provenance.
 3. Reconcile the upstream open CSV snapshot against the historical coverage audit and recent-results cache, including duplicate and missing-date analysis.
 4. Verify the source dataset's license/redistribution conditions and whether the current import workflow's full re-download is necessary.
