@@ -88,3 +88,14 @@ Official documentation:
 | API-Football/API-Sports | Legacy only | Not required | Suspended | Not applicable | EXCLUDED; never access its key |
 
 No API credentials or account values were accessed in this research milestone.
+
+
+## 5. V2 implementation checkpoint
+
+Offline response parsers now exist at:
+- `veltrix_v2/ingestion/providers/five_dollar.py`
+- `veltrix_v2/ingestion/providers/the_odds_api.py`
+
+They parse response bodies supplied by a future transport adapter. They do not issue HTTP requests, load credentials, reserve quota or persist data. Their output uses the provider-neutral `RawProviderRecord` envelope and retains the exact raw response bytes. The 5Dollar parser also preserves source team IDs and league redirect events; The Odds API parser captures quota headers and only records market keys actually present in the response.
+
+The account and runtime status table above remains unchanged: both providers are DISABLED pending account-specific verification and measured budgets.

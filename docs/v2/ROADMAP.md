@@ -467,3 +467,13 @@ At the start of any new conversation in this project:
 - Expanded `V1_RETIREMENT_MAP.md` with explicit V2 boundary replacements and cutover requirements.
 - Confirmed V1 report/Telegram parity race, independent Telegram Poisson goal-market calculation, non-atomic command-data publication and repeated full historical CSV import.
 - Phase 1 remains IN PROGRESS: full helper-level call graph, source count/date/ID reconciliation, independent SHA-256 export and restore proof, exhaustive Actions artifact inventory, and rights/source approval remain open.
+
+
+### 2026-11-06 provider parser and point-in-time history milestone
+- Added an offline 5DollarFootballAPI fixture-response parser. It preserves provider fixture, competition, home-team and away-team IDs; exact response bytes; pagination; rate-limit headers; and explicit 301 league-merge redirects. It classifies 401/403/429/5xx without retrying auth/plan failures.
+- Added an offline The Odds API v4 event-odds parser. It preserves event/sport IDs and exact response bytes, captures observed quota cost headers and discovers actual market keys rather than assuming BTTS exists.
+- Added shared provider error classifications. These are response parsers only: no HTTP transport, API key access or provider call is implemented.
+- Extended source envelopes with provider home/away team IDs.
+- Added `history/query.py`: point-in-time team-history selection excludes kickoff at or after cutoff, normalizes date windows to UTC, filters canonical competition and squad category, selects the most recent bounded sample and returns explicit NOT_FOUND / INSUFFICIENT_COVERAGE / IDENTITY_MISMATCH states.
+- Hosted CI run `42192586750` passed **132 tests in 0.25 seconds**.
+- Next: build the transport executor and atomic storage adapter only after account capabilities, measured quota and storage target are established. Continue Phase 1 source reconciliation and backup/restore proof.
