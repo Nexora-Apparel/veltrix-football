@@ -27,6 +27,13 @@
 
 The published terms provide a viable commercial-use path through 5DollarFootballAPI and The Odds API. This does not prove that the user's current account plan has the required historical depth, league coverage, odds markets or quota. The actual 5Dollar plan is not known from the saved report, and no provider status/API call was made during this audit.
 
+### Plan-dependent history and quota constraints
+
+- 5DollarFootballAPI's published documentation lists historical depth as 3 months on Free, 12 months on Community and Pro, and back to 2014 on Ultra. Coverage also varies by competition and plan. The current account tier has not been verified; do not assume the V1 integration has the Ultra history window.
+- The 5Dollar Free and Community plans require visible attribution in public-facing websites, apps, bots and published datasets. The V2 delivery layer must carry the attribution requirement from the rights decision into both the website and Telegram presentation when applicable.
+- The Odds API's public pricing page lists 500 credits/month on Free; historical odds are offered on paid plans. Its terms permit commercial model training and indefinite storage but prohibit raw-feed resale. Current account tier and available historical endpoints remain unverified.
+- Provider terms permission does not guarantee sufficient history, league coverage, timestamp density or request quota. These are separate access/quality gates.
+
 ## Mandatory gates
 
 1. Record the exact legal entity/provider, product/plan, permitted fields, intended purpose, display/redistribution rights, derived-data rights, model-training rights, retention period, attribution requirements and termination/erasure terms.

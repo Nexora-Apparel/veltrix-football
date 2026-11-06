@@ -71,7 +71,7 @@ External source evidence checked 2026-11-06:
 
 **Commercial-use gate:** Do not import this dataset, its odds fields or its derived features into V2 commercial training, calibration, inference or product outputs unless an applicable commercial licence or written permission is obtained. Preserve the existing V1 copy only as an isolated audit/rollback artifact; it is not an approved V2 training source. ClubElo-derived fields require a separate rights review.
 
-The stored V1 audit reports 238,854 normalized rows across 38 competitions, while the current upstream repository README reports 238,858 match records. The four-row difference is unexplained and must be reconciled against a pinned raw-source snapshot before any permitted research migration.
+The stored V1 audit reports 238,854 normalized rows across 38 competitions, while the current upstream repository README reports 238,858 match records. The four-row difference is unexplained and must be reconciled against a pinned raw-source snapshot before any permitted research migration. The V1 coverage audit reports 37.24% missing home Elo, 37.27% missing away Elo, 34.40% missing Over 2.5 odds, 48.72% missing home shots and 49.06% missing home shots-on-target. Team names, dates and full-time scores are complete in that normalized snapshot; optional fields must retain explicit missingness and cannot be assumed present.
 
 ### 3.2 Incremental recent-results cache
 

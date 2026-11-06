@@ -160,3 +160,10 @@ V2 is not production-ready until:
 9. No production secrets or live writes are exposed in preview environments.
 
 Until then, V2 is development/research only. V1 prediction code is legacy and excluded from V2; its production artifacts remain preserved for audit and rollback until the controlled cutover is complete.
+
+
+## Source-rights enforcement
+
+Every source must have a versioned `SourceRights` record before V2 ingestion, training, calibration, caching or public display. `veltrix_v2/domain/rights.py` provides `evaluate_source_use` and `require_source_use`; unknown or incomplete terms evidence, an ungranted purpose, prohibited commercial use or missing required attribution fails closed. Each decision carries the terms URL/version and evidence SHA-256 for traceability.
+
+The rights gate is currently a tested domain primitive (34 hosted V2 tests pass), not yet integrated into provider ingestion. Integration is a prerequisite to the first V2 data import. The active 5DollarFootballAPI and The Odds API terms permit commercial model/app use within their stated restrictions; their actual account plans and data depth remain unverified. Football-Data.co.uk-derived history remains excluded from V2 commercial training unless a commercial licence or written permission is obtained.

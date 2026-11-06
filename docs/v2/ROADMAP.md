@@ -77,10 +77,10 @@ As of 2026-11-06:
 - Isolated branch: `v2/foundation`, created from `main`.
 - Production `main` and `command-data` have not been changed by the V2 work recorded here.
 - V2 foundation documents, domain contracts, eligibility gate, identity resolver, tests and CI workflow have been created on the isolated branch.
-- Latest verified V2 branch HEAD: `fc35c1be99580ada72b1d755afbc7e4c8923bdc6` (2026-11-06). The branch is 20 commits ahead of `main`; verify again before editing.
+- Latest verified V2 branch HEAD: `9c6d638596fb9ae7c24e4f988b005b9ef02700b9` (2026-11-06). The branch is 28 commits ahead of `main`; verify again before editing.
 - `main` HEAD remains `05e517af4dcac27507a3c32ebaceee117828df22`; `command-data` HEAD remains `1b735d9f515241583ecd0eb1195d3e2585b8540a`. V2 work remains isolated.
-- Hosted V2 CI run `42188667633` passed: 23 tests passed in 0.04 seconds after correcting a test-helper typo. The prior run `42188058167` failed with a `NameError` in the global-prior regression test; the correction is committed on V2 only.
-- Latest V2 preview deployment for `fc35c1be99580ada72b1d755afbc7e4c8923bdc6` was reported READY by the Vercel project metadata. The current production-target deployment remains on `main` commit `942596f6124d3585298c2b9f81239b3a01edac8a` and was READY at audit time.
+- Hosted V2 CI run `42189655107` passed: **34 tests passed in 0.07 seconds**. The suite now includes a fail-closed source-rights gate that requires verified, hashed terms evidence and checks purpose, commercial-use and public-attribution permissions. Earlier test-only failures were corrected on V2 only.
+- Latest V2 preview deployment for `9c6d638596fb9ae7c24e4f988b005b9ef02700b9` was reported READY by Vercel. The current production-target deployment remains on `main` commit `942596f6124d3585298c2b9f81239b3a01edac8a` and was READY at audit time.
 - Read-only V1 report/delivery/storage trace is documented in `docs/v2/V1_FORENSIC_AUDIT.md`. It confirms `command-data/public-data` as the website's published snapshot store, GitHub Actions artifacts as 90-day report/ledger retention, and the open historical CSV as a freshly downloaded ephemeral workflow input rather than a committed dataset.
 - Rebuild boundary is recorded in `docs/v2/REBUILD_BOUNDARY_DECISION.md`.
 - Architecture baseline is recorded in `docs/v2/ARCHITECTURE.md`.
@@ -143,7 +143,7 @@ Tasks:
 - Website reads published snapshots from `command-data` through `app/report_artifacts.py` and `api/telegram.py`; dashboard client code also has raw GitHub, jsDelivr and Contents API fallbacks.
 - Telegram delivery uses the local generated report through `scripts/send_telegram_report.py`, then the workflow publishes command-data snapshots afterwards. This creates a report-parity race: Telegram can deliver the new report while the website still serves the previous snapshot. The V1 report has neither `report_id` nor `content_sha256`; V2 must generate one immutable report and deliver that exact ID/hash to both channels.
 - No football database was identified in the inspected Neon projects. The audited V1 report path's durable persistence is GitHub `command-data` plus expiring Actions artifacts; the original open historical CSV is external and re-downloaded. Full source inventory, backup proof, provider-ID coverage and exact data counts remain open.
-- Production deployment record: READY deployment from `main` commit `942596f6124d3585298c2b9f81239b3a01edac8a`. Latest V2 preview for `fc35c1be99580ada72b1d755afbc7e4c8923bdc6` was reported READY. Neither was promoted or changed by this audit.
+- Production deployment record: READY deployment from `main` commit `942596f6124d3585298c2b9f81239b3a01edac8a`. Latest V2 preview for `9c6d638596fb9ae7c24e4f988b005b9ef02700b9` was reported READY. Neither was promoted or changed by this audit.
 - Additional V1 defects confirmed: sparse-history forecasts can remain publishable when one side is below minimum history; Telegram recalculates BTTS/O-U from xG rather than rendering the stored report market values; the delivery filter still imports V1 identity helpers. Full evidence and remaining questions: `docs/v2/V1_FORENSIC_AUDIT.md`.
 
 Constraints:
@@ -374,7 +374,7 @@ Update this section whenever a phase materially changes. Use only evidence-backe
 |---|---|---|
 | 0. Isolation and baseline | PASSED | 2026-11-06: branch isolation, 23 hosted tests, V2 preview and production deployment checked |
 | 1. V1 forensic audit | IN PROGRESS | Entry point, report/delivery paths and primary persistence traced; full source inventory, backups and provenance reconciliation remain |
-| 2. Data architecture and quota | PARTIAL | Logical contracts, quota policy and V1 persistence map drafted; V2 storage target and measured provider caps unverified |
+| 2. Data architecture and quota | PARTIAL | Logical contracts, quota policy, V1 persistence map and fail-closed source-rights gate implemented; V2 storage target, provider account tier and measured quota budgets unverified |
 | 3. Ingestion and history | NOT STARTED | Blocked on source inventory and storage proof |
 | 4. Features and datasets | NOT STARTED | Await Phase 3 |
 | 5. Independent models | NOT STARTED | Await verified datasets |
@@ -393,7 +393,7 @@ Allowed status values: NOT STARTED, IN PROGRESS, BLOCKED, PARTIAL, PASSED, FAILE
 1. Complete the V1 workflow call graph through every research, enrichment, filtering, validation and delivery step; identify all active and legacy model paths. Neutral-prior, sparse-history, Elo/Poisson and Telegram's independent BTTS/O-U recalculation paths are now confirmed.
 2. Reconcile historical CSV, recent-results cache, report archives, paper ledger and value-evidence ledger counts, dates, IDs, provenance and backup/retention guarantees.
 3. Inspect workflow artifact inventory and command-data archive policy without downloading or rewriting production data.
-4. Exclude Football-Data.co.uk-derived history from V2 commercial training. Use 5DollarFootballAPI/The Odds API only within their published commercial terms; verify the current plan's history depth, league coverage, quota and required attribution before migration.
+4. Exclude Football-Data.co.uk-derived history from V2 commercial training. 5DollarFootballAPI and The Odds API published terms permit commercial model/app use, but verify the active account plans, history depth, competition coverage, quota and required attribution before migration. The V2 rights gate is implemented but is not yet wired into ingestion.
 5. Verify provider secret *names* and measured quotas only where permitted; never access API-Football credentials.
 6. Finalize V1 retirement map and preservation plan.
 7. Only after source inventory and data-rights gates are complete, choose a dedicated isolated V2 storage target and design additive migration.
@@ -407,7 +407,7 @@ Do not skip ahead to model training while source data, identity and point-in-tim
 At the start of any new conversation in this project:
 
 1. Locate and read this file: `docs/v2/ROADMAP.md`.
-2. Read `docs/v2/REBUILD_BOUNDARY_DECISION.md`, `docs/v2/ARCHITECTURE.md`, `docs/v2/QUOTA_AND_DEPLOYMENT_BUDGET.md` and `docs/v2/V1_FORENSIC_AUDIT.md`.
+2. Read `docs/v2/REBUILD_BOUNDARY_DECISION.md`, `docs/v2/ARCHITECTURE.md`, `docs/v2/QUOTA_AND_DEPLOYMENT_BUDGET.md`, `docs/v2/V1_FORENSIC_AUDIT.md` and `docs/v2/DATA_RIGHTS_REGISTER.md`.
 3. Read the latest V1 audit, `docs/v2/V1_FORENSIC_AUDIT.md`, `docs/v2/V1_RETIREMENT_MAP.md`, infrastructure audit and migration inventory.
 4. Verify current GitHub branch/commit and check for later roadmap updates.
 5. Check the project status board and resume the earliest incomplete phase.
