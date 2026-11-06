@@ -22,6 +22,7 @@ class OddsFixtureLinkStatus(StrEnum):
     COMPETITION_AMBIGUOUS = "COMPETITION_AMBIGUOUS"
     TEAM_ALIAS_UNRESOLVED = "TEAM_ALIAS_UNRESOLVED"
     TEAM_ALIAS_AMBIGUOUS = "TEAM_ALIAS_AMBIGUOUS"
+    INVALID_ALIAS_MAPPING = "INVALID_ALIAS_MAPPING"
     SQUAD_CATEGORY_MISMATCH = "SQUAD_CATEGORY_MISMATCH"
     FIXTURE_UNRESOLVED = "FIXTURE_UNRESOLVED"
     FIXTURE_AMBIGUOUS = "FIXTURE_AMBIGUOUS"
@@ -51,6 +52,26 @@ class VerifiedTeamNameAlias:
     valid_from_utc: datetime
     valid_to_utc: datetime | None
     verified_at_utc: datetime | None
+
+    def __post_init__(self) -> None:
+        required = (
+            self.provider, self.source_id, self.normalized_name,
+            self.canonical_team_id, self.mapping_version, self.evidence_ref,
+        )
+        if any(not value or not value.strip() for value in required):
+            raise ValueError("team-name alias identity and evidence fields are required")
+        if self.valid_from_utc.tzinfo is None or self.valid_from_utc.utcoffset() is None:
+            raise ValueError("alias valid_from_utc must be timezone-aware")
+        if self.valid_to_utc is not None:
+            if self.valid_to_utc.tzinfo is None or self.valid_to_utc.utcoffset() is None:
+                raise ValueError("alias valid_to_utc must be timezone-aware")
+            if self.valid_to_utc <= self.valid_from_utc:
+                raise ValueError("alias valid_to_utc must be after valid_from_utc")
+        if self.state is MappingVerificationState.VERIFIED:
+            if self.verified_at_utc is None:
+                raise ValueError("verified aliases require verified_at_utc")
+            if self.verified_at_utc.tzinfo is None or self.verified_at_utc.utcoffset() is None:
+                raise ValueError("alias verified_at_utc must be timezone-aware")
 
 
 @dataclass(frozen=True, slots=True)
@@ -181,6 +202,8 @@ def resolve_odds_event(
         link_status = (
             OddsFixtureLinkStatus.TEAM_ALIAS_AMBIGUOUS
             if "AMBIGUOUS" in statuses
+            else OddsFixtureLinkStatus.INVALID_ALIAS_MAPPING
+            if "INVALID" in statuses
             else OddsFixtureLinkStatus.TEAM_ALIAS_UNRESOLVED
         )
         return OddsFixtureLinkDecision(

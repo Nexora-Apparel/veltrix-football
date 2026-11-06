@@ -143,3 +143,25 @@ def test_odds_event_identity_is_never_used_to_create_a_new_fixture():
     result = resolve(candidates=())
     assert result.status is OddsFixtureLinkStatus.FIXTURE_UNRESOLVED
     assert result.provider_event_id == "event-55"
+
+
+
+def test_alias_with_future_verification_timestamp_is_unusable():
+    future = alias(
+        "Manchester City", "man-city",
+        verified_at_utc=NOW + timedelta(hours=1),
+    )
+    result = resolve(home_aliases=(future,))
+    assert result.status is OddsFixtureLinkStatus.TEAM_ALIAS_UNRESOLVED
+
+
+def test_alias_validity_window_must_be_positive():
+    try:
+        alias(
+            "Manchester City", "man-city",
+            valid_to_utc=NOW - timedelta(days=1),
+        )
+    except ValueError as exc:
+        assert "after valid_from_utc" in str(exc)
+    else:
+        raise AssertionError("invalid alias validity window must be rejected")
