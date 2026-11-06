@@ -393,7 +393,7 @@ Allowed status values: NOT STARTED, IN PROGRESS, BLOCKED, PARTIAL, PASSED, FAILE
 1. Complete the V1 workflow call graph through every research, enrichment, filtering, validation and delivery step; identify all active and legacy model paths. Neutral-prior, sparse-history, Elo/Poisson and Telegram's independent BTTS/O-U recalculation paths are now confirmed.
 2. Reconcile historical CSV, recent-results cache, report archives, paper ledger and value-evidence ledger counts, dates, IDs, provenance and backup/retention guarantees. The command-data archive inventory is committed at `docs/v2/V1_ARTIFACT_INVENTORY.md`.
 3. Inspect workflow artifact inventory and command-data archive policy without downloading or rewriting production data. The inspected workflow sets 90-day retention; Actions artifact inventory is not exposed through the current supported connector.
-4. Football-Data.co.uk-derived history remains excluded from V2 commercial training. 5DollarFootballAPI and The Odds API published terms permit commercial model/app use, but verify active account plans, history depth, competition coverage, quota and required attribution before migration. The rights gate is now wired into the offline ingestion-acceptance boundary; provider adapters and persistence are still pending.
+4. Football-Data.co.uk-derived history remains excluded from V2 commercial training. 5DollarFootballAPI and The Odds API published terms permit commercial model/app use, but active account plans, history depth, competition coverage, quota and required attribution are unverified. The rights gate, account-capability gate and quota guard are implemented as offline boundaries; provider adapters and persistence remain pending.
 5. Verify provider secret *names* and measured quotas only where permitted; never access API-Football credentials.
 6. Finalize V1 retirement map and preservation plan.
 7. Only after source inventory and data-rights gates are complete, choose a dedicated isolated V2 storage target and design additive migration.
@@ -405,6 +405,7 @@ Do not skip ahead to model training while source data, identity and point-in-tim
 - Implemented `veltrix_v2/ingestion/acceptance.py` and its typed provider-record envelope.
 - Acceptance requires a verified rights decision for the requested purpose and for caching, validates source identity, immutable payload SHA-256 and timezone-aware fetch/ingest/source timestamps, and preserves provider fixture/competition IDs.
 - Added an offline quota preflight guard: unknown, stale, expired, malformed or overdrawn snapshots fail closed; configured reserve units cannot be spent. Atomic reservation is explicitly delegated to the future persistence adapter.
+- Added a verified account-plan capability gate: requests are blocked unless the actual account evidence covers the requested competitions, data class, history start and quota snapshot. Published plan descriptions cannot substitute for account verification.
 - Hosted CI run `42190061519` for ingestion acceptance commit `9deef706` passed. Hosted CI run `42190126086` for quota-guard commit `2dc12662` also passed.
 - This is an offline boundary only. No provider calls, database writes, credentials access, historical imports or production changes occurred.
 - Hosted CI result for this change is pending; do not report it as passed until the run completes.
