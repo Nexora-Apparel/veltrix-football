@@ -35,6 +35,26 @@ class VerifiedMarketKeyMapping:
     verified_at_utc: datetime
     valid_to_utc: datetime | None = None
 
+    def __post_init__(self) -> None:
+        required = (
+            self.provider, self.source_id, self.provider_market_key,
+            self.mapping_version, self.evidence_ref,
+        )
+        if any(not value or not value.strip() for value in required):
+            raise ValueError("market mapping identity and evidence fields are required")
+        timestamps = (
+            (self.valid_from_utc, "valid_from_utc"),
+            (self.verified_at_utc, "verified_at_utc"),
+        )
+        for value, field in timestamps:
+            if value.tzinfo is None or value.utcoffset() is None:
+                raise ValueError(f"{field} must be timezone-aware")
+        if self.valid_to_utc is not None:
+            if self.valid_to_utc.tzinfo is None or self.valid_to_utc.utcoffset() is None:
+                raise ValueError("valid_to_utc must be timezone-aware")
+            if self.valid_to_utc <= self.valid_from_utc:
+                raise ValueError("valid_to_utc must be after valid_from_utc")
+
 
 @dataclass(frozen=True, slots=True)
 class NormalizedOddsQuote:
