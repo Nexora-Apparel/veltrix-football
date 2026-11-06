@@ -15,6 +15,7 @@ class HistoricalMatch:
     historical_match_id: str
     canonical_fixture_id: str
     canonical_competition_id: str
+    squad_category: str
     home_team_id: str
     away_team_id: str
     kickoff_at_utc: datetime
@@ -26,7 +27,7 @@ class HistoricalMatch:
     def __post_init__(self) -> None:
         required = (
             self.historical_match_id, self.canonical_fixture_id,
-            self.canonical_competition_id, self.home_team_id, self.away_team_id,
+            self.canonical_competition_id, self.squad_category, self.home_team_id, self.away_team_id,
         )
         if any(not value or not value.strip() for value in required):
             raise ValueError("canonical match identity fields are required")
@@ -53,6 +54,7 @@ class TeamHistoryQuery:
     window_start_date: date
     competition_ids: tuple[str, ...]
     max_matches: int
+    minimum_matches: int = 5
 
     def __post_init__(self) -> None:
         if not self.canonical_team_id or not self.canonical_team_id.strip():
@@ -64,6 +66,8 @@ class TeamHistoryQuery:
             raise ValueError("history window must begin before the cutoff date")
         if self.max_matches < 1:
             raise ValueError("max_matches must be positive")
+        if self.minimum_matches < 1 or self.minimum_matches > self.max_matches:
+            raise ValueError("minimum_matches must be positive and no greater than max_matches")
         if len(set(self.competition_ids)) != len(self.competition_ids):
             raise ValueError("competition_ids must be unique")
 

@@ -18,7 +18,7 @@ NOW = datetime(2026, 11, 6, 9, 0, tzinfo=timezone.utc)
 def match():
     return HistoricalMatch(
         historical_match_id="hm-1", canonical_fixture_id="fx-1",
-        canonical_competition_id="comp-1", home_team_id="team-1",
+        canonical_competition_id="comp-1", squad_category="senior_men", home_team_id="team-1",
         away_team_id="team-2", kickoff_at_utc=datetime(2026, 11, 1, 15, 0, tzinfo=timezone.utc),
         home_goals=2, away_goals=1, source_record_ids=("src-1",),
         provider_fixture_refs=(("provider-a", "source-a", "fixture-a"),),
@@ -29,7 +29,7 @@ def test_historical_match_requires_provenance():
     with pytest.raises(ValueError, match="source-record provenance"):
         HistoricalMatch(
             historical_match_id="hm-1", canonical_fixture_id="fx-1",
-            canonical_competition_id="comp-1", home_team_id="t1", away_team_id="t2",
+            canonical_competition_id="comp-1", squad_category="senior_men", home_team_id="t1", away_team_id="t2",
             kickoff_at_utc=NOW, home_goals=0, away_goals=0,
             source_record_ids=(), provider_fixture_refs=(("p", "s", "f"),),
         )
