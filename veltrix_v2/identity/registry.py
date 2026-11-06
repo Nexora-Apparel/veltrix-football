@@ -220,7 +220,7 @@ def resolve_provider_fixture(
             provider=source.provider, source_id=source.source_id,
             provider_team_id=provider_team_id,
         )
-        team_results.append(_choose_mapping(
+        team_results.append(choose_verified_mapping(
             rows, kickoff, evaluated,
             {
                 "provider": source.provider,
