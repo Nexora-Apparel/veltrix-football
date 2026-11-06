@@ -32,7 +32,7 @@ class ProviderFixtureSourceIdentity:
     provider_competition_id: str
     provider_home_team_id: str
     provider_away_team_id: str
-    squad_category: SquadCategory
+    squad_category: SquadCategory | None
     kickoff_at_utc: datetime
 
 
@@ -91,27 +91,41 @@ def _utc(value: datetime, field: str) -> datetime:
     return value.astimezone(timezone.utc)
 
 
-def _active(mapping, at_utc: datetime) -> bool:
+def _active(mapping, fixture_kickoff_utc: datetime) -> bool:
     start = _utc(mapping.valid_from_utc, "valid_from_utc")
     end = _utc(mapping.valid_to_utc, "valid_to_utc") if mapping.valid_to_utc else None
-    return start <= at_utc and (end is None or at_utc < end)
+    return start <= fixture_kickoff_utc and (
+        end is None or fixture_kickoff_utc < end
+    )
 
 
-def _choose_mapping(mappings, at_utc: datetime, expected_fields: dict[str, str]):
+def _choose_mapping(
+    mappings,
+    fixture_kickoff_utc: datetime,
+    evaluated_at_utc: datetime,
+    expected_fields: dict[str, str],
+):
     for mapping in mappings:
         for field, expected in expected_fields.items():
             if getattr(mapping, field) != expected:
-                return MappingResolutionStatus.INVALID_MAPPING, None, "MAPPING_SOURCE_IDENTITY_MISMATCH"
-    active = [mapping for mapping in mappings if _active(mapping, at_utc)]
+                return (
+                    MappingResolutionStatus.INVALID_MAPPING,
+                    None,
+                    "MAPPING_SOURCE_IDENTITY_MISMATCH",
+                )
+    active = [
+        mapping for mapping in mappings
+        if _active(mapping, fixture_kickoff_utc)
+    ]
     if not active:
         return MappingResolutionStatus.UNRESOLVED, None, "VERIFIED_MAPPING_NOT_FOUND"
     verified = [
         mapping for mapping in active
         if mapping.state is MappingVerificationState.VERIFIED
-        and mapping.evidence_ref.strip()
-        and mapping.mapping_version.strip()
+        and bool(mapping.evidence_ref.strip())
+        and bool(mapping.mapping_version.strip())
         and mapping.verified_at_utc is not None
-        and _utc(mapping.verified_at_utc, "verified_at_utc") <= at_utc
+        and _utc(mapping.verified_at_utc, "verified_at_utc") <= evaluated_at_utc
     ]
     if len(verified) > 1:
         return MappingResolutionStatus.AMBIGUOUS, None, "MULTIPLE_ACTIVE_VERIFIED_MAPPINGS"
@@ -125,6 +139,8 @@ def _choose_mapping(mappings, at_utc: datetime, expected_fields: dict[str, str])
 def resolve_provider_fixture(
     source: ProviderFixtureSourceIdentity,
     repository: IdentityMappingRepository,
+    *,
+    evaluated_at_utc: datetime,
 ) -> ResolvedProviderFixture:
     """Resolve exact provider IDs through verified mappings; never fuzzy-match names."""
     required = (
@@ -137,13 +153,14 @@ def resolve_provider_fixture(
     if source.provider_home_team_id == source.provider_away_team_id:
         raise ValueError("provider home and away team IDs must differ")
     kickoff = _utc(source.kickoff_at_utc, "kickoff_at_utc")
+    evaluated = _utc(evaluated_at_utc, "evaluated_at_utc")
 
     competition_rows = repository.get_competition_mappings(
         provider=source.provider, source_id=source.source_id,
         provider_competition_id=source.provider_competition_id,
     )
     status, competition, reason = _choose_mapping(
-        competition_rows, kickoff,
+        competition_rows, kickoff, evaluated,
         {
             "provider": source.provider,
             "source_id": source.source_id,
@@ -151,7 +168,9 @@ def resolve_provider_fixture(
         },
     )
     if status is not MappingResolutionStatus.VERIFIED:
-        return ResolvedProviderFixture(status, source, None, f"COMPETITION_{reason}", ())
+        return ResolvedProviderFixture(
+            status, source, None, f"COMPETITION_{reason}", ()
+        )
 
     team_results = []
     for provider_team_id in (source.provider_home_team_id, source.provider_away_team_id):
@@ -160,7 +179,7 @@ def resolve_provider_fixture(
             provider_team_id=provider_team_id,
         )
         team_results.append(_choose_mapping(
-            rows, kickoff,
+            rows, kickoff, evaluated,
             {
                 "provider": source.provider,
                 "source_id": source.source_id,
@@ -176,7 +195,13 @@ def resolve_provider_fixture(
 
     home, away = team_results[0][1], team_results[1][1]
     mappings = (competition, home, away)
-    if any(mapping.squad_category is not source.squad_category for mapping in mappings):
+    if (
+        source.squad_category is not None
+        and competition.squad_category is not source.squad_category
+    ) or any(
+        mapping.squad_category is not competition.squad_category
+        for mapping in (home, away)
+    ):
         return ResolvedProviderFixture(
             MappingResolutionStatus.SQUAD_CATEGORY_MISMATCH,
             source, None, "SQUAD_CATEGORY_MAPPING_CONFLICT",
@@ -194,7 +219,7 @@ def resolve_provider_fixture(
         provider_fixture_id=source.provider_fixture_id,
         provider_competition_id=source.provider_competition_id,
         canonical_competition_id=competition.canonical_competition_id,
-        squad_category=source.squad_category,
+        squad_category=competition.squad_category,
         canonical_home_team_id=home.canonical_team_id,
         canonical_away_team_id=away.canonical_team_id,
         kickoff_at_utc=kickoff,
