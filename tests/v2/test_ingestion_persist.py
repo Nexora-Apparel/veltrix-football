@@ -178,4 +178,4 @@ def test_batch_continues_after_a_record_level_scope_rejection():
     )
     assert len(result.accepted) == 1
     assert len(result.rejected) == 1
-    assert result.accepted[0].source_record_id == "record-1"
+    assert result.accepted[0].source_record_id == "good"
