@@ -95,3 +95,19 @@ def test_preflight_blocks_stale_quota_snapshot():
     result = evaluate_ingestion_preflight(profile(), stale, request(), now_utc=NOW)
     assert result.allowed is False
     assert result.reason_code == "QUOTA_SNAPSHOT_STALE"
+
+
+
+def test_preflight_blocks_account_profile_for_different_provider():
+    wrong_provider = ProviderAccessProfile(
+        provider="different-provider", account_plan="verified-test-plan",
+        verified_at_utc=NOW, verification_evidence_ref="account-audit-1",
+        supported_competition_ids=frozenset({"league-1"}),
+        available_data_classes=frozenset({"fixtures"}),
+        history_start_date=date(2026, 1, 1), quota_snapshot_id="quota-1",
+    )
+    result = evaluate_ingestion_preflight(
+        wrong_provider, quota(), request(), rights(), now_utc=NOW
+    )
+    assert result.allowed is False
+    assert result.reason_code == "ACCOUNT_PROVIDER_MISMATCH"

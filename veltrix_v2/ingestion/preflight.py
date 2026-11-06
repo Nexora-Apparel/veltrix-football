@@ -47,6 +47,12 @@ def evaluate_ingestion_preflight(
         now_utc=now_utc,
     )
 
+    if profile is not None and profile.provider != request.provider:
+        access = ProviderAccessDecision(
+            profile.provider, ProviderAccessStatus.PROFILE_INVALID,
+            "ACCOUNT_PROVIDER_MISMATCH",
+        )
+
     if quota_snapshot is None:
         quota = evaluate_quota_request(
             None, requested_units=request.quota_units, now_utc=now_utc
