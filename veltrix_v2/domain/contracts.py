@@ -75,3 +75,46 @@ class ForecastCandidate:
     generated_at_utc: datetime
     evidence_ids: tuple[str, ...]
     origin: str
+
+
+class RightsStatus(StrEnum):
+    VERIFIED = "VERIFIED"
+    UNVERIFIED = "UNVERIFIED"
+
+
+class DataUsePurpose(StrEnum):
+    HISTORICAL_IMPORT = "HISTORICAL_IMPORT"
+    MODEL_TRAINING = "MODEL_TRAINING"
+    CALIBRATION = "CALIBRATION"
+    INFERENCE = "INFERENCE"
+    PUBLIC_DISPLAY = "PUBLIC_DISPLAY"
+    CACHE = "CACHE"
+    PAPER_EVALUATION = "PAPER_EVALUATION"
+    RAW_REDISTRIBUTION = "RAW_REDISTRIBUTION"
+
+
+@dataclass(frozen=True, slots=True)
+class SourceRights:
+    """Versioned permission evidence for one provider/source and intended use."""
+
+    source_id: str
+    rights_status: RightsStatus
+    commercial_use_allowed: bool
+    permitted_uses: frozenset[DataUsePurpose]
+    terms_url: str | None = None
+    terms_version: str | None = None
+    verified_at_utc: datetime | None = None
+    evidence_sha256: str | None = None
+    attribution_required: bool = False
+    attribution_text: str | None = None
+    attribution_url: str | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class RightsDecision:
+    source_id: str
+    purpose: DataUsePurpose
+    allowed: bool
+    reason_code: str
+    attribution_text: str | None = None
+    attribution_url: str | None = None
