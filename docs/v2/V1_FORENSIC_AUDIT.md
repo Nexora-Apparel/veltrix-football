@@ -61,7 +61,17 @@ The daily workflow invokes it from `2020-01-01` through the current UTC date on 
 
 The `main` repository root has no committed `data/` directory. The inspected daily workflow uploads report, paper-ledger and value-evidence artifacts, but does not upload `data/open_historical_matches.csv`. Therefore the normalized CSV is an ephemeral workflow-run input, not a durable V1 snapshot in the repository or the listed workflow artifacts.
 
-The importer records the upstream repository/source in its normalized rows and import summary, but the inspected schema has no stable provider fixture ID for each open-dataset row. Exact row counts, duplicate reconciliation, license terms and a checksum for the currently imported upstream snapshot still need to be verified.
+The importer records the upstream repository/source in its normalized rows and import summary, but the inspected schema has no stable provider fixture ID for each open-dataset row.
+
+The published V1 validation metadata records the historical dataset as **not eligible for commercial use** and marks its rights status `RESEARCH_ONLY_UPSTREAM_SOURCE_RESTRICTS_COMMERCIAL_AI_MODEL_TRAINING`. It identifies Football-Data.co.uk as the underlying match-data source and ClubElo as the Elo source. The official Football-Data.co.uk policy page states that its free data is intended for private personal/academic use, is not intended for commercial or data-training projects, and that users should assume no permission is granted for those uses unless they obtain the appropriate commercial subscription. The xgabora repository README itself says the match data is taken from Football-Data.co.uk; the repository's MIT code license does not override the upstream data provider's restrictions.
+
+External source evidence checked 2026-11-06:
+- Football-Data.co.uk fair data usage policy: https://football-data.co.uk/contact.php
+- Dataset repository provenance and README: https://github.com/xgabora/Club-Football-Match-Data/blob/main/README.md
+
+**Commercial-use gate:** Do not import this dataset, its odds fields or its derived features into V2 commercial training, calibration, inference or product outputs unless an applicable commercial licence or written permission is obtained. Preserve the existing V1 copy only as an isolated audit/rollback artifact; it is not an approved V2 training source. ClubElo-derived fields require a separate rights review.
+
+The stored V1 audit reports 238,854 normalized rows across 38 competitions, while the current upstream repository README reports 238,858 match records. The four-row difference is unexplained and must be reconciled against a pinned raw-source snapshot before any permitted research migration.
 
 ### 3.2 Incremental recent-results cache
 
@@ -135,7 +145,11 @@ The audited V1 reporting path is primarily GitHub-backed:
 
 The previously inspected Neon projects were not football databases. No V1 football database was established from this audit. This is not a claim that no database exists anywhere; it means no database dependency was found in the traced report path and no safe football database target has been proven.
 
-## 8. V1 component retirement mapping
+## 8. Data-rights gate
+
+The data-rights register is maintained in `docs/v2/DATA_RIGHTS_REGISTER.md`. The historical Football-Data.co.uk-derived dataset is currently BLOCKED for commercial model training; a repository-level MIT label is not sufficient evidence of downstream data rights. V2 training must use only sources with documented rights appropriate to the intended use. This restriction is independent of data quality, row count or technical availability.
+
+## 9. V1 component retirement mapping
 
 The complete component-to-replacement map is maintained separately in `docs/v2/V1_RETIREMENT_MAP.md`. Key dependency rules:
 - V1 provider adapters and identity functions are not reusable V2 implementation dependencies; rebuild them behind V2 ports/adapters and canonical identity contracts.
@@ -144,12 +158,12 @@ The complete component-to-replacement map is maintained separately in `docs/v2/V
 - Existing website routes, dashboard shell, Telegram webhook/bot credentials and transport are retained only as delivery infrastructure; their data adapters are replaced with immutable V2 report readers.
 - `command-data` and all V1 snapshots remain read-only audit/rollback sources until a controlled cutover.
 
-## 9. Remaining Phase 1 work
+## 10. Remaining Phase 1 work
 
 1. Finish the function-level V1 call graph for all research verification, report filtering, value gates and Telegram command endpoints; neutral-prior, sparse-history, Elo/Poisson, odds matching and Telegram recalculation paths are now confirmed.
 2. Inventory all workflow artifacts and archive files; record retention, sizes, checksums, report dates and model/version provenance.
 3. Reconcile the upstream open CSV snapshot against the historical coverage audit and recent-results cache, including duplicate and missing-date analysis.
-4. Verify the source dataset's license/redistribution conditions and whether the current import workflow's full re-download is necessary.
+4. Obtain documented commercial rights for any historical source proposed for V2; reconcile the 238,854 versus 238,858 row count and review ClubElo-derived fields separately.
 5. Validate the component retirement map against every live workflow/API call site.
 6. Prove backups and a restore path before selecting any V2 migration target.
 

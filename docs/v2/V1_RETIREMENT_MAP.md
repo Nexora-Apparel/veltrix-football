@@ -19,7 +19,7 @@
 | V1 component / call site | V1 responsibility | V2 replacement |
 |---|---|---|
 | `.github/workflows/daily-fixture-predictions.yml` | Scheduled/manual run, historical import, provider calls, model/report build, Telegram send, command-data publication | New bounded V2 scheduler/orchestrator with separate ingestion, report build, immutable publication and delivery stages. Never use a V1 workflow as a V2 runtime dependency. |
-| `scripts/import_open_dataset.py` | Downloads and normalizes the external historical CSV into an ephemeral file | V2 one-time/versioned historical import pipeline with raw-source hash, license provenance, resumable batches, source IDs where available and reconciliation report. |
+| `scripts/import_open_dataset.py` | Downloads and normalizes the external historical CSV into an ephemeral file | V2 one-time/versioned historical import pipeline with raw-source hash, license provenance, resumable batches, source IDs where available and reconciliation report. The current Football-Data.co.uk-derived source is BLOCKED for commercial training until a commercial licence/written permission is verified. |
 | `app/provider_adapters.py` | 5Dollar, The Odds API, InferSports normalization and market enrichment | New `veltrix_v2/ingestion` adapters, provider request budget, raw payload archive, typed normalized records and bounded sync. Transport may be reused only via independently implemented V2 clients. |
 | `app/recent_results.py` | Incremental result refresh, cache cursor, gap retry | V2 `ingestion` + `history` watermarks, provider-specific result states, idempotent persistence and explicit gap/coverage evidence. |
 | `app/fixture_identity.py` | V1 normalized-name, squad/competition and kickoff matching; source provenance | New `veltrix_v2/identity` canonical registry, verified aliases, provider-local ID links, deterministic match decisions and quarantine. No V1 helper reuse. |
@@ -50,7 +50,7 @@
 
 ## 4. Cutover dependencies and retirement order
 
-1. Complete source inventory, provenance reconciliation, backup/export and restore proof.
+1. Complete source inventory, provenance reconciliation, backup/export and restore proof; establish documented commercial rights for every historical source before V2 training.
 2. Build isolated V2 storage and additive migration tooling only after the source inventory is accepted.
 3. Implement V2 ingestion, identity and point-in-time history; prove no source-record loss.
 4. Implement V2 features, market models, calibration and independent release certificates.
@@ -60,4 +60,4 @@
 8. Disable V1 scheduled prediction/publication paths only after cutover and rollback checks.
 9. Keep V1 source, artifacts, command-data and production deployment read-only until retention policy and explicit owner approval permit retirement.
 
-**No V1 component is marked safe to reuse as prediction logic.** The retained items are infrastructure and delivery surfaces only.
+**No V1 component is marked safe to reuse as prediction logic.** The retained items are infrastructure and delivery surfaces only. The historical Football-Data.co.uk-derived dataset is not approved for V2 commercial model training unless rights are cleared.

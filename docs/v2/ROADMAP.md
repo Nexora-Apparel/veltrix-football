@@ -393,9 +393,10 @@ Allowed status values: NOT STARTED, IN PROGRESS, BLOCKED, PARTIAL, PASSED, FAILE
 1. Complete the V1 workflow call graph through every research, enrichment, filtering, validation and delivery step; identify all active and legacy model paths. Neutral-prior, sparse-history, Elo/Poisson and Telegram's independent BTTS/O-U recalculation paths are now confirmed.
 2. Reconcile historical CSV, recent-results cache, report archives, paper ledger and value-evidence ledger counts, dates, IDs, provenance and backup/retention guarantees.
 3. Inspect workflow artifact inventory and command-data archive policy without downloading or rewriting production data.
-4. Verify provider secret *names* and measured quotas only where permitted; never access API-Football credentials.
-5. Finalize V1 retirement map and preservation plan.
-6. Only after source inventory is complete, choose a dedicated isolated V2 storage target and design additive migration.
+4. Obtain commercial-use permission or select independently licensed historical datasets; keep the Football-Data.co.uk-derived dataset excluded from V2 training unless cleared.
+5. Verify provider secret *names* and measured quotas only where permitted; never access API-Football credentials.
+6. Finalize V1 retirement map and preservation plan.
+7. Only after source inventory and data-rights gates are complete, choose a dedicated isolated V2 storage target and design additive migration.
 
 Do not skip ahead to model training while source data, identity and point-in-time history are unverified.
 
