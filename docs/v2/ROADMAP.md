@@ -375,7 +375,7 @@ Update this section whenever a phase materially changes. Use only evidence-backe
 | 0. Isolation and baseline | PASSED | 2026-11-06: branch isolation, 23 hosted tests, V2 preview and production deployment checked |
 | 1. V1 forensic audit | IN PROGRESS | Entry point, report/delivery paths and primary persistence traced; full source inventory, backups and provenance reconciliation remain |
 | 2. Data architecture and quota | PARTIAL | Logical contracts, quota policy, V1 persistence map and fail-closed source-rights gate implemented; V2 storage target, provider account tier and measured quota budgets unverified |
-| 3. Ingestion and history | NOT STARTED | Blocked on source inventory and storage proof |
+| 3. Ingestion and history | IN PROGRESS | 2026-11-06: implemented offline provider-record acceptance boundary with mandatory rights checks for requested use and caching, provenance/hash/timestamp validation; repository persistence, provider adapters, plan verification and storage target remain unbuilt |
 | 4. Features and datasets | NOT STARTED | Await Phase 3 |
 | 5. Independent models | NOT STARTED | Await verified datasets |
 | 6. Calibration and eligibility | FOUNDATION ONLY | Preliminary eligibility code exists; tests not yet confirmed |
@@ -393,12 +393,19 @@ Allowed status values: NOT STARTED, IN PROGRESS, BLOCKED, PARTIAL, PASSED, FAILE
 1. Complete the V1 workflow call graph through every research, enrichment, filtering, validation and delivery step; identify all active and legacy model paths. Neutral-prior, sparse-history, Elo/Poisson and Telegram's independent BTTS/O-U recalculation paths are now confirmed.
 2. Reconcile historical CSV, recent-results cache, report archives, paper ledger and value-evidence ledger counts, dates, IDs, provenance and backup/retention guarantees.
 3. Inspect workflow artifact inventory and command-data archive policy without downloading or rewriting production data.
-4. Exclude Football-Data.co.uk-derived history from V2 commercial training. 5DollarFootballAPI and The Odds API published terms permit commercial model/app use, but verify the active account plans, history depth, competition coverage, quota and required attribution before migration. The V2 rights gate is implemented but is not yet wired into ingestion.
+4. Football-Data.co.uk-derived history remains excluded from V2 commercial training. 5DollarFootballAPI and The Odds API published terms permit commercial model/app use, but verify active account plans, history depth, competition coverage, quota and required attribution before migration. The rights gate is now wired into the offline ingestion-acceptance boundary; provider adapters and persistence are still pending.
 5. Verify provider secret *names* and measured quotas only where permitted; never access API-Football credentials.
 6. Finalize V1 retirement map and preservation plan.
 7. Only after source inventory and data-rights gates are complete, choose a dedicated isolated V2 storage target and design additive migration.
 
 Do not skip ahead to model training while source data, identity and point-in-time history are unverified.
+
+### 2026-11-06 execution checkpoint
+- Branch HEAD before this work: `cb727038e43d02d20eb006a0475e39255b6ea062`.
+- Implemented `veltrix_v2/ingestion/acceptance.py` and its typed provider-record envelope.
+- Acceptance requires a verified rights decision for the requested purpose and for caching, validates source identity, immutable payload SHA-256 and timezone-aware fetch/ingest/source timestamps, and preserves provider fixture/competition IDs.
+- This is an offline boundary only. No provider calls, database writes, credentials access, historical imports or production changes occurred.
+- Hosted CI result for this change is pending; do not report it as passed until the run completes.
 
 ---
 
