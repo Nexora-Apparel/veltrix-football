@@ -325,18 +325,27 @@
     },
     {
       "report_date": "2026-11-05",
-      "fixtures_scored": 0,
-      "completed_forecasts_scored": 0,
-      "awaiting_result_or_match": 111,
+      "fixtures_scored": 1,
+      "completed_forecasts_scored": 1,
+      "awaiting_result_or_match": 110,
       "withheld_or_invalid_forecasts": 0,
       "metrics": {
-        "matches": 0,
-        "result_accuracy": null,
-        "brier_score": null,
-        "log_loss": null
+        "matches": 1,
+        "result_accuracy": 0.0,
+        "brier_score": 0.77645474,
+        "log_loss": 1.221797389238488
       },
-      "metrics_by_model": {},
-      "model_versions": [],
+      "metrics_by_model": {
+        "adaptive_poisson_sparse_history": {
+          "matches": 1,
+          "result_accuracy": 0.0,
+          "brier_score": 0.77645474,
+          "log_loss": 1.221797389238488
+        }
+      },
+      "model_versions": [
+        "adaptive_poisson_sparse_history"
+      ],
       "goal_market_selections_settled": 0,
       "goal_market_metrics": {
         "settled_selections": 0,
@@ -348,8 +357,35 @@
         "paper_roi": null,
         "notice": "Best quoted price in a pre-kickoff snapshot; flat 1-unit paper stakes; not proof of executable profit or bookmaker closing-line value."
       },
-      "goal_market_probability_metrics": {},
-      "goal_market_probability_matches": 0
+      "goal_market_probability_metrics": {
+        "experimental_recent_goals_poisson": {
+          "BTTS": {
+            "matches": 1,
+            "accuracy": 1.0,
+            "brier_score": 0.14077504,
+            "log_loss": 0.4703236804566608
+          },
+          "OVER_UNDER_1_5": {
+            "matches": 1,
+            "accuracy": 1.0,
+            "brier_score": 0.03013695999999999,
+            "log_loss": 0.19067636117670822
+          },
+          "OVER_UNDER_2_5": {
+            "matches": 1,
+            "accuracy": 1.0,
+            "brier_score": 0.14722569000000002,
+            "log_loss": 0.48402142101393963
+          },
+          "OVER_UNDER_3_5": {
+            "matches": 1,
+            "accuracy": 0.0,
+            "brier_score": 0.36784225000000004,
+            "log_loss": 0.9326742111246791
+          }
+        }
+      },
+      "goal_market_probability_matches": 4
     }
   ],
   "scored_matches": [
@@ -870,9 +906,27 @@
       "home_goals": 0,
       "away_goals": 1,
       "report_date": "2026-11-02"
+    },
+    {
+      "fixture_id": "evt_B605MPVP",
+      "match_date": "2026-11-05",
+      "model": "adaptive_poisson_sparse_history",
+      "home_team": "Sturm Graz",
+      "away_team": "NK Celje",
+      "actual": "A",
+      "predicted": "H",
+      "probabilities": {
+        "H": 0.4757,
+        "D": 0.2296,
+        "A": 0.2947
+      },
+      "correct": false,
+      "home_goals": 2,
+      "away_goals": 3,
+      "report_date": "2026-11-05"
     }
   ],
-  "updated_at_utc": "2026-11-06T11:41:22.663545+00:00",
+  "updated_at_utc": "2026-11-06T15:05:43.621150+00:00",
   "last_attempt": {
     "report_date": "2026-11-05",
     "status": "EVALUATED",
@@ -880,7 +934,7 @@
       {
         "report_date": "2026-10-24",
         "status": "EVALUATED",
-        "detail": "Scored from 5745 cached completed matches; no live football-provider request was made.",
+        "detail": "Scored from 5816 cached completed matches; no live football-provider request was made.",
         "fixtures_scored": 4,
         "completed_forecasts_scored": 4,
         "metrics": {
@@ -902,7 +956,7 @@
       {
         "report_date": "2026-10-27",
         "status": "EVALUATED",
-        "detail": "Scored from 5745 cached completed matches; no live football-provider request was made.",
+        "detail": "Scored from 5816 cached completed matches; no live football-provider request was made.",
         "fixtures_scored": 0,
         "completed_forecasts_scored": 0,
         "metrics": {
@@ -917,7 +971,7 @@
       {
         "report_date": "2026-10-30",
         "status": "EVALUATED",
-        "detail": "Scored from 5745 cached completed matches; no live football-provider request was made.",
+        "detail": "Scored from 5816 cached completed matches; no live football-provider request was made.",
         "fixtures_scored": 0,
         "completed_forecasts_scored": 0,
         "metrics": {
@@ -932,21 +986,34 @@
       {
         "report_date": "2026-11-05",
         "status": "EVALUATED",
-        "detail": "Scored from 5745 cached completed matches; no live football-provider request was made.",
-        "fixtures_scored": 0,
-        "completed_forecasts_scored": 0,
+        "detail": "Scored from 5816 cached completed matches; no live football-provider request was made.",
+        "fixtures_scored": 1,
+        "completed_forecasts_scored": 1,
         "metrics": {
-          "matches": 0,
-          "result_accuracy": null,
-          "brier_score": null,
-          "log_loss": null
+          "matches": 1,
+          "result_accuracy": 0.0,
+          "brier_score": 0.77645474,
+          "log_loss": 1.221797389238488
         },
-        "metrics_by_model": {},
-        "awaiting_result_or_match": 111
+        "metrics_by_model": {
+          "adaptive_poisson_sparse_history": {
+            "matches": 1,
+            "result_accuracy": 0.0,
+            "brier_score": 0.77645474,
+            "log_loss": 1.221797389238488
+          }
+        },
+        "awaiting_result_or_match": 110
       }
     ],
     "detail": null,
     "metrics_by_model": {
+      "adaptive_poisson_sparse_history": {
+        "matches": 1,
+        "result_accuracy": 0.0,
+        "brier_score": 0.77645474,
+        "log_loss": 1.221797389238488
+      },
       "experimental_elo_by_competition": {
         "matches": 2,
         "result_accuracy": 1.0,
@@ -968,6 +1035,12 @@
     }
   },
   "cumulative_metrics_by_model": {
+    "adaptive_poisson_sparse_history": {
+      "matches": 1,
+      "result_accuracy": 0.0,
+      "brier_score": 0.77645474,
+      "log_loss": 1.221797389238488
+    },
     "experimental_elo_by_competition": {
       "matches": 2,
       "result_accuracy": 1.0,
@@ -989,6 +1062,7 @@
   },
   "cumulative_metrics": null,
   "model_versions": [
+    "adaptive_poisson_sparse_history",
     "experimental_elo_by_competition",
     "experimental_elo_global_fallback",
     "experimental_recent_goals_poisson"
@@ -2110,33 +2184,89 @@
       "log_loss": 0.3120253127464278,
       "correct": true,
       "report_date": "2026-11-02"
+    },
+    {
+      "fixture_id": "evt_B605MPVP",
+      "match_date": "2026-11-05",
+      "model": "experimental_recent_goals_poisson",
+      "market": "BTTS",
+      "selection": "YES",
+      "line": null,
+      "probability": 0.6248,
+      "actual_outcome": true,
+      "brier_score": 0.14077504,
+      "log_loss": 0.4703236804566608,
+      "correct": true,
+      "report_date": "2026-11-05"
+    },
+    {
+      "fixture_id": "evt_B605MPVP",
+      "match_date": "2026-11-05",
+      "model": "experimental_recent_goals_poisson",
+      "market": "OVER_UNDER_1_5",
+      "selection": "OVER",
+      "line": 1.5,
+      "probability": 0.8264,
+      "actual_outcome": true,
+      "brier_score": 0.03013695999999999,
+      "log_loss": 0.19067636117670822,
+      "correct": true,
+      "report_date": "2026-11-05"
+    },
+    {
+      "fixture_id": "evt_B605MPVP",
+      "match_date": "2026-11-05",
+      "model": "experimental_recent_goals_poisson",
+      "market": "OVER_UNDER_2_5",
+      "selection": "OVER",
+      "line": 2.5,
+      "probability": 0.6163,
+      "actual_outcome": true,
+      "brier_score": 0.14722569000000002,
+      "log_loss": 0.48402142101393963,
+      "correct": true,
+      "report_date": "2026-11-05"
+    },
+    {
+      "fixture_id": "evt_B605MPVP",
+      "match_date": "2026-11-05",
+      "model": "experimental_recent_goals_poisson",
+      "market": "OVER_UNDER_3_5",
+      "selection": "OVER",
+      "line": 3.5,
+      "probability": 0.3935,
+      "actual_outcome": true,
+      "brier_score": 0.36784225000000004,
+      "log_loss": 0.9326742111246791,
+      "correct": false,
+      "report_date": "2026-11-05"
     }
   ],
   "goal_market_probability_metrics": {
     "experimental_recent_goals_poisson": {
       "BTTS": {
-        "matches": 17,
-        "accuracy": 0.4117647058823529,
-        "brier_score": 0.26932072137941176,
-        "log_loss": 0.7357220786206485
+        "matches": 18,
+        "accuracy": 0.4444444444444444,
+        "brier_score": 0.2621792946361111,
+        "log_loss": 0.7209777231670936
       },
       "OVER_UNDER_1_5": {
-        "matches": 11,
-        "accuracy": 0.7272727272727273,
-        "brier_score": 0.19072260116736361,
-        "log_loss": 0.5637029515214828
+        "matches": 12,
+        "accuracy": 0.75,
+        "brier_score": 0.17734046440341666,
+        "log_loss": 0.5326174023260849
       },
       "OVER_UNDER_2_5": {
-        "matches": 17,
-        "accuracy": 0.4117647058823529,
-        "brier_score": 0.2674809260234706,
-        "log_loss": 0.7345061131812854
+        "matches": 18,
+        "accuracy": 0.4444444444444444,
+        "brier_score": 0.2608000795777222,
+        "log_loss": 0.7205902969497662
       },
       "OVER_UNDER_3_5": {
-        "matches": 11,
-        "accuracy": 0.8181818181818182,
-        "brier_score": 0.15567014506936364,
-        "log_loss": 0.49561045681651944
+        "matches": 12,
+        "accuracy": 0.75,
+        "brier_score": 0.17335115381358335,
+        "log_loss": 0.5320324363421994
       }
     }
   }
