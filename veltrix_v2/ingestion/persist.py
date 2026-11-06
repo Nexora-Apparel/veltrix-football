@@ -110,6 +110,8 @@ def persist_provider_batch(
             fetched_at_utc=response.fetched_at_utc,
             ingested_at_utc=ingested_at_utc,
             source_updated_at_utc=raw.source_updated_at_utc,
+            provider_home_team_id=raw.provider_home_team_id,
+            provider_away_team_id=raw.provider_away_team_id,
         )
         try:
             accepted_record = accept_provider_record(

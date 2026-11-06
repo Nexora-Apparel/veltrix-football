@@ -66,6 +66,8 @@ class RawProviderRecord:
     data_class: str
     raw_payload: bytes
     source_updated_at_utc: datetime | None = None
+    provider_home_team_id: str | None = None
+    provider_away_team_id: str | None = None
 
     def __post_init__(self) -> None:
         required = (self.provider, self.source_id, self.provider_record_id, self.data_class)

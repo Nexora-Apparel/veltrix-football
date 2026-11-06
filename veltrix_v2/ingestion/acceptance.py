@@ -28,6 +28,8 @@ class ProviderSourceRecord:
     fetched_at_utc: datetime
     ingested_at_utc: datetime
     source_updated_at_utc: datetime | None = None
+    provider_home_team_id: str | None = None
+    provider_away_team_id: str | None = None
 
 
 @dataclass(frozen=True, slots=True)
