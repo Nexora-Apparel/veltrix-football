@@ -407,7 +407,7 @@ At the start of any new conversation in this project:
 
 1. Locate and read this file: `docs/v2/ROADMAP.md`.
 2. Read `docs/v2/REBUILD_BOUNDARY_DECISION.md`, `docs/v2/ARCHITECTURE.md`, `docs/v2/QUOTA_AND_DEPLOYMENT_BUDGET.md` and `docs/v2/V1_FORENSIC_AUDIT.md`.
-3. Read the latest V1 audit, infrastructure audit and migration inventory.
+3. Read the latest V1 audit, `docs/v2/V1_FORENSIC_AUDIT.md`, `docs/v2/V1_RETIREMENT_MAP.md`, infrastructure audit and migration inventory.
 4. Verify current GitHub branch/commit and check for later roadmap updates.
 5. Check the project status board and resume the earliest incomplete phase.
 6. Do not ask the owner to repeat decisions already documented here.

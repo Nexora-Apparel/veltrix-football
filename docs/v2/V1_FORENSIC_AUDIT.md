@@ -40,6 +40,13 @@ These findings reinforce the V2 requirement for one authoritative identity servi
 
 This confirms the scheduler and principal report path. A complete function-by-function call graph of every imported V1 model and helper is still outstanding.
 
+### V1 identity and odds integration
+
+- `app/fixture_identity.py` reconciles cross-provider fixture rows using normalized team names, inferred squad category, normalized competition name/country and kickoff proximity. Its default strict match tolerance is five minutes; nearby same-team/category records with competition or kickoff conflicts are quarantined.
+- The V1 identity module retains provider name, provider fixture ID, competition ID, team IDs/names and source kickoff in per-row provenance. It does not create a durable canonical identity registry or verified provider team-ID crosswalk. `TEAM_ALIASES` is empty; a separate unverified-alias list is used to trigger quarantine rather than merge.
+- The report's odds enrichment joins provider events back to report predictions using normalized home/away names, competition identity and kickoff time. The Odds API queries only mapped competitions represented in the report and applies a bounded per-event BTTS request cap. InferSports is disabled by default and, when enabled, event odds calls are capped.
+- `app/recent_results.py` performs incremental catch-up using bounded date ranges and records transient gaps/plan-limited dates in the cache state. Retryable gaps are retried no more than weekly. This cache strategy is distinct from the separate full open-CSV download that still occurs each scheduled workflow run.
+
 ## 3. Historical data: what is actually persisted
 
 ### 3.1 Open historical dataset
@@ -128,13 +135,22 @@ The audited V1 reporting path is primarily GitHub-backed:
 
 The previously inspected Neon projects were not football databases. No V1 football database was established from this audit. This is not a claim that no database exists anywhere; it means no database dependency was found in the traced report path and no safe football database target has been proven.
 
-## 8. Remaining Phase 1 work
+## 8. V1 component retirement mapping
 
-1. Finish the function-level V1 call graph for all prediction/model branches, odds matching, research verification, report filtering, value gates and Telegram command endpoints; the key neutral-prior, sparse-history, Elo/Poisson and Telegram recalculation paths are now confirmed.
+The complete component-to-replacement map is maintained separately in `docs/v2/V1_RETIREMENT_MAP.md`. Key dependency rules:
+- V1 provider adapters and identity functions are not reusable V2 implementation dependencies; rebuild them behind V2 ports/adapters and canonical identity contracts.
+- V1 model and prediction functions are excluded entirely from V2. The V2 model layer must consume only V2 point-in-time feature snapshots.
+- V1 report filtering and Telegram commands must not be reused as V2 publication gates or market calculators.
+- Existing website routes, dashboard shell, Telegram webhook/bot credentials and transport are retained only as delivery infrastructure; their data adapters are replaced with immutable V2 report readers.
+- `command-data` and all V1 snapshots remain read-only audit/rollback sources until a controlled cutover.
+
+## 9. Remaining Phase 1 work
+
+1. Finish the function-level V1 call graph for all research verification, report filtering, value gates and Telegram command endpoints; neutral-prior, sparse-history, Elo/Poisson, odds matching and Telegram recalculation paths are now confirmed.
 2. Inventory all workflow artifacts and archive files; record retention, sizes, checksums, report dates and model/version provenance.
 3. Reconcile the upstream open CSV snapshot against the historical coverage audit and recent-results cache, including duplicate and missing-date analysis.
 4. Verify the source dataset's license/redistribution conditions and whether the current import workflow's full re-download is necessary.
-5. Identify every legacy prediction/report call site and map it to its V2 replacement.
+5. Validate the component retirement map against every live workflow/API call site.
 6. Prove backups and a restore path before selecting any V2 migration target.
 
 **No migration, data download/backfill, production write, secret read/change, Vercel setting change or deployment promotion was performed as part of this audit.**
