@@ -95,3 +95,9 @@ def test_raw_source_ids_are_preserved_and_squad_is_not_guessed():
     assert record.source_identity.provider_home_team_id == "11"
     assert record.source_identity.provider_away_team_id == "22"
     assert record.source_identity.squad_category is None
+
+
+
+def test_provider_record_id_must_match_fixture_id():
+    with pytest.raises(ValueError, match="RECORD_FIXTURE_ID_MISMATCH"):
+        parse_fixture_record(raw(provider_record_id="other"))

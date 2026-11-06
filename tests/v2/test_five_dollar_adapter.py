@@ -132,3 +132,43 @@ def test_adapter_rejects_reversed_league_history_window():
     )
     with pytest.raises(ProviderResponseError, match="WINDOW_INVALID"):
         adapter.fetch(req)
+
+
+
+def test_fixture_endpoint_accepts_only_in_scope_league_filter():
+    transport = FakeTransport()
+    adapter = FiveDollarFixtureAdapter(api_key="k", transport=transport, enabled=True)
+    req = request(parameters={
+        "start_time": 100, "end_time": 200, "league": 55, "page": 1,
+        "per_page": 100,
+    }, competitions=("55",))
+    adapter.fetch(req)
+    assert "league=55" in transport.calls[0][0]
+    assert "esports=false" in transport.calls[0][0]
+
+
+def test_fixture_endpoint_rejects_esports_for_real_football_source():
+    adapter = FiveDollarFixtureAdapter(api_key="k", transport=FakeTransport(), enabled=True)
+    req = request(parameters={
+        "start_time": 100, "end_time": 200, "esports": "true",
+    })
+    with pytest.raises(ProviderResponseError, match="ESPORTS_DISABLED"):
+        adapter.fetch(req)
+
+
+def test_league_endpoint_requires_season_or_bounded_window():
+    adapter = FiveDollarFixtureAdapter(api_key="k", transport=FakeTransport(), enabled=True)
+    req = request(
+        endpoint="league_fixtures",
+        parameters={"league_id": 55, "page": 1, "per_page": 100},
+        competitions=("55",),
+    )
+    with pytest.raises(ProviderResponseError, match="SEASON_OR_WINDOW"):
+        adapter.fetch(req)
+
+
+def test_team_endpoint_requires_explicit_bounded_window():
+    adapter = FiveDollarFixtureAdapter(api_key="k", transport=FakeTransport(), enabled=True)
+    req = request(endpoint="team_fixtures", parameters={"team_id": 11, "page": 1})
+    with pytest.raises(ProviderResponseError, match="WINDOW_REQUIRED"):
+        adapter.fetch(req)

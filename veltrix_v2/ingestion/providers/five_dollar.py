@@ -201,7 +201,16 @@ class FiveDollarFixtureAdapter:
             raise ProviderResponseError("UNSUPPORTED_DATA_CLASS")
         params = dict(request.parameters)
         if request.endpoint == "fixtures":
-            allowed = {"start_time", "end_time", "status", "page", "per_page", "lang"}
+            allowed = {"start_time", "end_time", "status", "page", "per_page", "lang", "league", "esports"}
+            params.setdefault("esports", "false")
+            if params["esports"] not in {"false", False}:
+                raise ProviderResponseError("ESPORTS_DISABLED_FOR_FOOTBALL_SOURCE")
+            if "league" in params:
+                league_filter = str(params["league"])
+                if not league_filter.isdigit():
+                    raise ProviderResponseError("LEAGUE_ID_INVALID")
+                if request.competition_ids and league_filter not in request.competition_ids:
+                    raise ProviderResponseError("LEAGUE_ID_OUTSIDE_REQUEST_SCOPE")
             if "start_time" not in params or "end_time" not in params:
                 raise ProviderResponseError("FIXTURE_WINDOW_REQUIRED")
             try:
@@ -218,12 +227,16 @@ class FiveDollarFixtureAdapter:
                 raise ProviderResponseError("LEAGUE_ID_REQUIRED")
             if request.competition_ids and str(league_id) not in request.competition_ids:
                 raise ProviderResponseError("LEAGUE_ID_OUTSIDE_REQUEST_SCOPE")
+            if "season" not in params and not {"start_time", "end_time"}.issubset(params):
+                raise ProviderResponseError("LEAGUE_SEASON_OR_WINDOW_REQUIRED")
             path = f"/leagues/{league_id}/fixtures"
         elif request.endpoint == "team_fixtures":
             allowed = {"team_id", "start_time", "end_time", "status", "page", "per_page", "order", "lang"}
             team_id = params.pop("team_id", None)
             if team_id is None or not str(team_id).isdigit():
                 raise ProviderResponseError("TEAM_ID_REQUIRED")
+            if not {"start_time", "end_time"}.issubset(params):
+                raise ProviderResponseError("TEAM_FIXTURE_WINDOW_REQUIRED")
             path = f"/teams/{team_id}/fixtures"
         else:
             raise ProviderResponseError("ENDPOINT_NOT_ALLOWLISTED")

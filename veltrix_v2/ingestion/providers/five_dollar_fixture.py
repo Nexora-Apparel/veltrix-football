@@ -74,6 +74,8 @@ def parse_fixture_record(raw: RawProviderRecord) -> FiveDollarFixtureRecord:
     """
     if raw.provider != "5DollarFootballAPI" or raw.data_class != "fixtures":
         raise ValueError("FIVEDOLLAR_FIXTURE_RECORD_PROVIDER_OR_CLASS_MISMATCH")
+    if raw.provider_record_id != raw.provider_fixture_id:
+        raise ValueError("PROVIDER_RECORD_FIXTURE_ID_MISMATCH")
     if not all((
         raw.provider_fixture_id,
         raw.provider_competition_id,

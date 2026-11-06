@@ -99,3 +99,24 @@ Offline response parsers now exist at:
 They parse response bodies supplied by a future transport adapter. They do not issue HTTP requests, load credentials, reserve quota or persist data. Their output uses the provider-neutral `RawProviderRecord` envelope and retains the exact raw response bytes. The 5Dollar parser also preserves source team IDs and league redirect events; The Odds API parser captures quota headers and only records market keys actually present in the response.
 
 The account and runtime status table above remains unchanged: both providers are DISABLED pending account-specific verification and measured budgets.
+
+
+## 6. Verified 5Dollar fixture schema details (official documentation, 2026-11-06)
+
+The V2 fixture parser and request builder are aligned to the current official endpoint descriptions:
+
+- `GET /v1/fixtures` is a UTC window endpoint with a **maximum 24-hour span**; `start_time` is inclusive and `end_time` exclusive. It supports a league filter, and defaults `esports=false` for real football. The adapter always sends explicit window bounds and blocks esoccer.
+- `GET /v1/leagues/{id}/fixtures` is the historical league/season entry point. It accepts a season or an explicit kickoff window without the 24-hour cap. V2 requires one of those bounds; it never requests an unbounded provider default.
+- `GET /v1/teams/{id}/fixtures` returns home/away fixtures and supports an explicit time window without the 24-hour cap. V2 requires the window to be supplied.
+- Fixture response identity fields are `id`, `league.id`, `teams.home.id`, `teams.away.id`; kickoff is `kickoff_utc` with optional `kickoff_ts`. The typed parser checks the timestamp pair and preserves all original IDs.
+- Fixture statuses are `scheduled`, `in_play`, `finished` and `unknown`. The feed does not expose explicit postponed/cancelled statuses; unknown or incomplete result rows are never treated as settled.
+- Published history depth is 3 months on Free, 12 months on Pro and back to 2014 on Ultra. This is a published plan description only; the connected account plan remains unverified.
+
+Official references:
+- [List fixtures](https://5dollarfootballapi.com/docs/fixtures)
+- [League fixtures](https://5dollarfootballapi.com/docs/league-fixtures)
+- [Team fixtures](https://5dollarfootballapi.com/docs/team-fixtures)
+- [Fixture response](https://5dollarfootballapi.com/docs/fixture)
+- [API overview and fixture status](https://5dollarfootballapi.com/docs)
+
+The request adapter still has no enabled account instance. No credential or provider request was used to produce this schema alignment.
