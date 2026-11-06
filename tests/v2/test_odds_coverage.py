@@ -36,7 +36,7 @@ def quote(selection, *, fixture="fx-1", market=CanonicalMarket.ONE_X_TWO,
         bookmaker_title=bookmaker, provider="The Odds API",
         source_id="the-odds-api", provider_event_id="event-1",
         source_record_id="source-1", provider_market_key="market",
-        quote_updated_at_utc=updated, fetched_at_utc=CUTOFF,
+        quote_updated_at_utc=updated, fetched_at_utc=max(CUTOFF, updated),
         raw_response_sha256="a" * 64, mapping_evidence_ref="mapping-1",
     )
 
