@@ -158,10 +158,16 @@ The complete component-to-replacement map is maintained separately in `docs/v2/V
 - Existing website routes, dashboard shell, Telegram webhook/bot credentials and transport are retained only as delivery infrastructure; their data adapters are replaced with immutable V2 report readers.
 - `command-data` and all V1 snapshots remain read-only audit/rollback sources until a controlled cutover.
 
+### Command-data archive inventory (2026-11-06)
+
+The read-only Git tree inventory found 39 timestamped report archives under `public-data/archive/`, totaling 57,751,497 bytes (55.08 MiB), across 6 report-date folders. The inventory records each path, byte size and Git blob SHA in `docs/v2/V1_ARTIFACT_INVENTORY.md`. These Git blob SHAs are not SHA-256 export checksums. No archive payload was downloaded or changed.
+
+The inspected daily workflow explicitly configures 90-day retention for its uploaded report/value/paper artifacts. This is a configured expiry policy, not a verified inventory of all still-available Actions artifacts.
+
 ## 10. Remaining Phase 1 work
 
 1. Finish the function-level V1 call graph for all research verification, report filtering, value gates and Telegram command endpoints; neutral-prior, sparse-history, Elo/Poisson, odds matching and Telegram recalculation paths are now confirmed.
-2. Inventory all workflow artifacts and archive files; record retention, sizes, checksums, report dates and model/version provenance.
+2. Archive path/count/size/Git-blob inventory is complete. Remaining: obtain independent SHA-256 export checksums and prove byte-for-byte backup/restore; enumerate still-available Actions artifacts if the supported GitHub connection exposes them.
 3. Reconcile the upstream open CSV snapshot against the historical coverage audit and recent-results cache, including duplicate and missing-date analysis.
 4. Obtain documented commercial rights for any historical source proposed for V2; reconcile the 238,854 versus 238,858 row count and review ClubElo-derived fields separately.
 5. Validate the component retirement map against every live workflow/API call site.
