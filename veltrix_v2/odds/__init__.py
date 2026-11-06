@@ -1,1 +1,1 @@
-"""Provider-native odds quote contracts and normalization."""
+"""Odds feed normalization, identity linkage and canonical market mapping."""
