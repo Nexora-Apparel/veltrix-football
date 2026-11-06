@@ -77,7 +77,11 @@ As of 2026-11-06:
 - Isolated branch: `v2/foundation`, created from `main`.
 - Production `main` and `command-data` have not been changed by the V2 work recorded here.
 - V2 foundation documents, domain contracts, eligibility gate, identity resolver, tests and CI workflow have been created on the isolated branch.
-- Latest known commit when this roadmap was authored: `a255573ffee3c21a8fb1ee0b0d489dabda5df1e8`. Always verify the branch head before editing; this SHA is a checkpoint, not a guarantee of current HEAD.
+- Latest verified V2 branch HEAD: `fc35c1be99580ada72b1d755afbc7e4c8923bdc6` (2026-11-06). The branch is 20 commits ahead of `main`; verify again before editing.
+- `main` HEAD remains `05e517af4dcac27507a3c32ebaceee117828df22`; `command-data` HEAD remains `1b735d9f515241583ecd0eb1195d3e2585b8540a`. V2 work remains isolated.
+- Hosted V2 CI run `42188667633` passed: 23 tests passed in 0.04 seconds after correcting a test-helper typo. The prior run `42188058167` failed with a `NameError` in the global-prior regression test; the correction is committed on V2 only.
+- Latest V2 preview deployment for `fc35c1be99580ada72b1d755afbc7e4c8923bdc6` was reported READY by the Vercel project metadata. The current production-target deployment remains on `main` commit `942596f6124d3585298c2b9f81239b3a01edac8a` and was READY at audit time.
+- Read-only V1 report/delivery/storage trace is documented in `docs/v2/V1_FORENSIC_AUDIT.md`. It confirms `command-data/public-data` as the website's published snapshot store, GitHub Actions artifacts as 90-day report/ledger retention, and the open historical CSV as a freshly downloaded ephemeral workflow input rather than a committed dataset.
 - Rebuild boundary is recorded in `docs/v2/REBUILD_BOUNDARY_DECISION.md`.
 - Architecture baseline is recorded in `docs/v2/ARCHITECTURE.md`.
 - Quota policy is recorded in `docs/v2/QUOTA_AND_DEPLOYMENT_BUDGET.md`.
@@ -130,6 +134,17 @@ Tasks:
 8. Confirm whether the previously reported historical dataset of 70,444 matches across 38 competition codes (2020-01-01 through 2026-10-24) is still available and reconcile it against the actual source. Treat that figure as unverified until reconciled.
 9. Inspect workflow schedules and provider request patterns without triggering expensive endpoints.
 10. Record a V1 retirement map: component, call sites, data dependencies, replacement module and decommission condition.
+
+**Verified forensic findings (2026-11-06; Phase 1 remains IN PROGRESS):**
+- Scheduled entrypoint: `.github/workflows/daily-fixture-predictions.yml`, cron `0 4 * * *` UTC (05:00 WAT start); the workflow holds Telegram delivery until 05:00 UTC (06:00 WAT).
+- Main report path: workflow -> `scripts/run_daily_predictions.py` -> `app.live_predictions.build_daily_report(...)`, with provider adapters, recent-results cache, odds enrichment and value diagnostics. The report is written locally to `reports/daily_predictions.json`.
+- Historical CSV: `scripts/import_open_dataset.py` downloads `xgabora/Club-Football-Match-Data` `data/Matches.csv` and writes `data/open_historical_matches.csv`. The scheduled workflow repeats the full import from 2020-01-01 on each run. The `main` tree has no committed `data/` directory and the workflow does not upload this CSV as an artifact; it is an ephemeral run input, not a durable V1 snapshot.
+- Durable V1 report state: `command-data/public-data/` contains current report, dashboard snapshot, recent-results cache, paper ledger, model-validation report, value evidence ledger, verification status and Telegram delivery state. `scripts/publish_command_data.py` also writes timestamped report archives. The 2026-11-05 successful run `42075832565` retained report, paper-ledger and value-evidence workflow artifacts for 90 days.
+- Website reads published snapshots from `command-data` through `app/report_artifacts.py` and `api/telegram.py`; dashboard client code also has raw GitHub, jsDelivr and Contents API fallbacks.
+- Telegram delivery uses the local generated report through `scripts/send_telegram_report.py`, then the workflow publishes command-data snapshots afterwards. This creates a report-parity race: Telegram can deliver the new report while the website still serves the previous snapshot. The V1 report has neither `report_id` nor `content_sha256`; V2 must generate one immutable report and deliver that exact ID/hash to both channels.
+- No football database was identified in the inspected Neon projects. The audited V1 report path's durable persistence is GitHub `command-data` plus expiring Actions artifacts; the original open historical CSV is external and re-downloaded. Full source inventory, backup proof, provider-ID coverage and exact data counts remain open.
+- Production deployment record: READY deployment from `main` commit `942596f6124d3585298c2b9f81239b3a01edac8a`. Latest V2 preview for `fc35c1be99580ada72b1d755afbc7e4c8923bdc6` was reported READY. Neither was promoted or changed by this audit.
+- Full evidence and remaining questions: `docs/v2/V1_FORENSIC_AUDIT.md`.
 
 Constraints:
 - Read-only. No production edits, writes, deployments, backfills or secret changes.
@@ -357,9 +372,9 @@ Update this section whenever a phase materially changes. Use only evidence-backe
 
 | Phase | Status at roadmap creation | Evidence / next action |
 |---|---|---|
-| 0. Isolation and baseline | IN PROGRESS | Verify latest branch, CI result and Vercel preview |
-| 1. V1 forensic audit | NOT COMPLETE | Trace scheduler, report call graph and true storage |
-| 2. Data architecture and quota | PARTIAL | Contracts and quota policy drafted; actual limits/storage target unverified |
+| 0. Isolation and baseline | PASSED | 2026-11-06: branch isolation, 23 hosted tests, V2 preview and production deployment checked |
+| 1. V1 forensic audit | IN PROGRESS | Entry point, report/delivery paths and primary persistence traced; full source inventory, backups and provenance reconciliation remain |
+| 2. Data architecture and quota | PARTIAL | Logical contracts, quota policy and V1 persistence map drafted; V2 storage target and measured provider caps unverified |
 | 3. Ingestion and history | NOT STARTED | Blocked on source inventory and storage proof |
 | 4. Features and datasets | NOT STARTED | Await Phase 3 |
 | 5. Independent models | NOT STARTED | Await verified datasets |
@@ -375,13 +390,12 @@ Allowed status values: NOT STARTED, IN PROGRESS, BLOCKED, PARTIAL, PASSED, FAILE
 
 ## G. Next action queue — execute in this order
 
-1. Verify current `v2/foundation` branch HEAD and confirm `main`/`command-data` unchanged.
-2. Check the actual GitHub Actions run for the V2 test workflow; fix test failures on the V2 branch only.
-3. Verify the latest Vercel preview state once; do not force a redeploy.
-4. Continue the read-only V1 report-generation and Telegram call-graph audit.
-5. Identify the real historical-data and report-artifact storage locations.
-6. Complete source inventory and data preservation evidence.
-7. Only then select an isolated V2 storage target and begin the migration design.
+1. Complete the V1 workflow call graph through every research, enrichment, filtering, validation and delivery step; identify all active and legacy model paths.
+2. Reconcile historical CSV, recent-results cache, report archives, paper ledger and value-evidence ledger counts, dates, IDs, provenance and backup/retention guarantees.
+3. Inspect workflow artifact inventory and command-data archive policy without downloading or rewriting production data.
+4. Verify provider secret *names* and measured quotas only where permitted; never access API-Football credentials.
+5. Finalize V1 retirement map and preservation plan.
+6. Only after source inventory is complete, choose a dedicated isolated V2 storage target and design additive migration.
 
 Do not skip ahead to model training while source data, identity and point-in-time history are unverified.
 
@@ -392,7 +406,7 @@ Do not skip ahead to model training while source data, identity and point-in-tim
 At the start of any new conversation in this project:
 
 1. Locate and read this file: `docs/v2/ROADMAP.md`.
-2. Read `docs/v2/REBUILD_BOUNDARY_DECISION.md`, `docs/v2/ARCHITECTURE.md` and `docs/v2/QUOTA_AND_DEPLOYMENT_BUDGET.md`.
+2. Read `docs/v2/REBUILD_BOUNDARY_DECISION.md`, `docs/v2/ARCHITECTURE.md`, `docs/v2/QUOTA_AND_DEPLOYMENT_BUDGET.md` and `docs/v2/V1_FORENSIC_AUDIT.md`.
 3. Read the latest V1 audit, infrastructure audit and migration inventory.
 4. Verify current GitHub branch/commit and check for later roadmap updates.
 5. Check the project status board and resume the earliest incomplete phase.
