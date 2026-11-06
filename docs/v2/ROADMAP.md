@@ -451,3 +451,12 @@ At the start of any new conversation in this project:
 - Reviewed official 5DollarFootballAPI and The Odds API documentation and recorded endpoint, pagination, plan/history, quota, rate-limit, market-discovery and error-handling constraints in `docs/v2/PROVIDER_ADAPTER_RESEARCH.md`.
 - Important constraints: 5Dollar history depth is plan-dependent and its per-fixture odds tick-history endpoint is Ultra-only; The Odds API historical snapshots are paid-only and cost 10 credits per region per market. User account plans and remaining quotas are not verified.
 - No provider API call, credential read or quota spend occurred. Both provider runtimes remain disabled.
+
+
+### 2026-11-06 rights-aware batch persistence milestone
+- Added `veltrix_v2/ingestion/persist.py`: checks request/response identity, provider quota cost, data class and competition scope; evaluates commercial rights for the requested purpose and caching; preserves provider fixture/competition IDs and exact raw bytes; uses deterministic per-record idempotency keys; delegates atomic raw-payload + source-envelope + rights-decision persistence to a repository adapter.
+- Added `tests/v2/test_ingestion_persist.py`.
+- Hosted CI run `42192009839` for commit `0c590565` passed **105 tests in 0.14 seconds**.
+- CI found and corrected two test-fixture mistakes in intermediate commits. No production code or policy gate was relaxed; the succeeding run is green.
+- Provider adapter research is documented in `PROVIDER_ADAPTER_RESEARCH.md`. Both external provider runtimes remain disabled because actual account plans, rights evidence, quota and data depth have not been verified.
+- No provider API calls, secrets access, database writes, production writes or production deployments occurred.
