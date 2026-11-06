@@ -477,3 +477,11 @@ At the start of any new conversation in this project:
 - Added `history/query.py`: point-in-time team-history selection excludes kickoff at or after cutoff, normalizes date windows to UTC, filters canonical competition and squad category, selects the most recent bounded sample and returns explicit NOT_FOUND / INSUFFICIENT_COVERAGE / IDENTITY_MISMATCH states.
 - Hosted CI run `42192586750` passed **132 tests in 0.25 seconds**.
 - Next: build the transport executor and atomic storage adapter only after account capabilities, measured quota and storage target are established. Continue Phase 1 source reconciliation and backup/restore proof.
+
+
+### 2026-11-06 transport and orchestration milestone
+- Added injectable stdlib HTTP GET transport and a disabled-by-default 5Dollar fixture adapter with strict endpoint/query allowlisting, 24-hour window cap, provider ID validation, and no credential logging.
+- Added disabled-by-default The Odds API v4 adapter with explicit sport/region/market validation, historical snapshot timestamp validation and exact 10-credits-per-region-per-market reservation check.
+- Added `ingestion/service.py` to orchestrate account capability, quota snapshot, source rights and CACHE rights before transport; reserve quota atomically; conservatively settle unknown transport costs; persist accepted records idempotently; and complete/fail ingestion runs.
+- Both provider adapters default to disabled. The service also defaults to transport disabled. No API key was read or passed, no provider request occurred and no external quota was consumed.
+- Latest fully green hosted CI at this checkpoint: run `42193057875`, **162 tests passed**. Newer coordinator changes are pending their own CI confirmation.
