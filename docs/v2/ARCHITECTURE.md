@@ -11,7 +11,7 @@ The primary objective is forecast integrity. Fixture volume is secondary. No sys
 
 ## 2. Non-negotiable invariants
 
-1. Preserve V1, its production deployment, existing database and `command-data` branch during development.
+1. Preserve the website/API/Telegram delivery infrastructure, original data, V1 source and production artifacts for audit/rollback. Do not reuse V1 prediction logic in V2. Keep `main`, production storage and `command-data` unchanged during development.
 2. Never delete, rewrite or migrate production records in place. All migration work begins with read-only inventory, backup/export verification and a versioned migration plan.
 3. Every provider record retains provider name, provider fixture ID, provider competition ID, raw payload reference/hash, ingestion timestamp and source timestamps.
 4. A canonical fixture is created only when identity is sufficiently certain. Ambiguous candidates are quarantined with explainable match evidence; they are not silently merged or dropped.
@@ -27,7 +27,7 @@ The primary objective is forecast integrity. Fixture volume is secondary. No sys
 14. All times are stored in UTC and rendered in Africa/Lagos (WAT).
 15. No bookmaker execution or automated betting is in scope.
 
-## 3. Target architecture
+## 3. Rebuild boundary\n\nV2 is a clean replacement of the complete prediction stack, not an incremental edit of V1. No V1 model, feature pipeline, identity matcher, probability generator, calibration routine, value calculator, eligibility implementation or report-generation prediction logic may be imported or called by V2. Existing website, API transport/provider credentials and Telegram delivery infrastructure are retained as integration surfaces only. Their prediction-facing adapters and data contracts are replaced with V2 contracts. Legacy models and reports remain read-only audit material and are not inputs, priors, labels, calibration data or fallback paths for V2. See `docs/v2/REBUILD_BOUNDARY_DECISION.md` for the binding decision.\n\n## 4. Target architecture
 
 Use a modular monolith first, with strict domain boundaries and ports/adapters. Avoid premature microservices. Each module has explicit input/output contracts and can be tested without network access.
 
@@ -44,7 +44,7 @@ Use a modular monolith first, with strict domain boundaries and ports/adapters. 
 - `delivery/`: website data adapter and Telegram sender consuming the exact same report artifact; transactional/outbox-style retry and idempotency.
 - `operations/`: health checks, provider diagnostics, run manifests, audit logs and alerting.
 
-## 4. Prediction lifecycle
+## 5. Prediction lifecycle
 
 `provider payload -> normalized source record -> canonical identity decision -> historical evidence result -> point-in-time feature snapshot -> market model -> calibration -> market eligibility -> forecast record -> immutable report`
 
@@ -65,7 +65,7 @@ Recommended explicit forecast states:
 
 No probability fields are emitted for withheld states. The API/report schema must make invalid combinations impossible or reject them during validation.
 
-## 5. Data and provider strategy
+## 6. Data and provider strategy
 
 Retain existing provider credentials as secret references, not source-code values:
 - `FIVEDOLLARFOOTBALL_API_KEY`: intended primary fixture and recent-results provider.
@@ -77,7 +77,7 @@ Retain existing provider credentials as secret references, not source-code value
 
 Provider adapters must not share provider-specific IDs as canonical IDs. Provider-specific mappings live in explicit source-link tables.
 
-## 6. Storage model (logical)
+## 7. Storage model (logical)
 
 Core entities:
 - `provider_sources`
@@ -104,7 +104,7 @@ Core entities:
 
 All source IDs and original payload references are retained. Database migrations are additive and reversible where practical. V1 tables are not repurposed in place.
 
-## 7. Validation and release controls
+## 8. Validation and release controls
 
 A market is released independently. Preserve the established minimum evidence requirements:
 - At least 1,000 chronological walk-forward matches per market.
@@ -116,7 +116,7 @@ A market is released independently. Preserve the established minimum evidence re
 
 Existing value-screen thresholds (minimum 4 percentage-point edge, 5% theoretical expected return, probability at least 45%, decimal odds 1.50–4.00) are retained as research-screen settings, not a release guarantee. They do not override release certificates.
 
-## 8. Report and delivery contract
+## 9. Report and delivery contract
 
 A report is immutable and has:
 - `report_id`
@@ -133,7 +133,7 @@ A report is immutable and has:
 
 Website and Telegram read the same published report ID. Telegram delivery is idempotent per report/channel/recipient. Retries may resend a failed delivery but may not create a different report or duplicate a successful delivery.
 
-## 9. Deployment strategy
+## 10. Deployment strategy
 
 - Develop only on `v2/foundation` and subsequent `v2/*` branches.
 - Keep `main` and `command-data` unchanged until V2 is accepted.
@@ -142,11 +142,11 @@ Website and Telegram read the same published report ID. Telegram delivery is ide
 - Promote only through reviewed pull requests and explicit release checks.
 - Preserve the current V1 deployment as rollback target.
 
-## 10. Delivery schedule and timezone
+## 11. Delivery schedule and timezone
 
 Target Telegram report delivery remains approximately 06:00 Africa/Lagos. Schedulers use UTC (05:00 UTC corresponds to 06:00 WAT). A run manifest records scheduled time, actual start, completion and delivery timestamps.
 
-## 11. Definition of done
+## 12. Definition of done
 
 V2 is not production-ready until:
 1. Data migration is reconciled with zero unexplained source-record loss.
@@ -159,4 +159,4 @@ V2 is not production-ready until:
 8. Scheduled delivery, retries, idempotency and rollback are tested.
 9. No production secrets or live writes are exposed in preview environments.
 
-Until then, V2 is development/research only and V1 remains untouched.
+Until then, V2 is development/research only. V1 prediction code is legacy and excluded from V2; its production artifacts remain preserved for audit and rollback until the controlled cutover is complete.
