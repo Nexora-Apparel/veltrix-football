@@ -77,7 +77,7 @@ As of 2026-11-06:
 - Isolated branch: `v2/foundation`, created from `main`.
 - Production `main` and `command-data` have not been changed by the V2 work recorded here.
 - V2 foundation documents, domain contracts, eligibility gate, identity resolver, tests and CI workflow have been created on the isolated branch.
-- Latest verified V2 branch HEAD: `9c6d638596fb9ae7c24e4f988b005b9ef02700b9` (2026-11-06). The branch is 28 commits ahead of `main`; verify again before editing.
+- Verified V2 branch HEAD at the 2026-11-06 execution checkpoint: `966f6479021f9b0f196521146db4573cc2ba56ff`. Earlier `9c6d638` was superseded by subsequent ingestion and audit commits; verify again before editing.
 - `main` HEAD remains `05e517af4dcac27507a3c32ebaceee117828df22`; `command-data` HEAD remains `1b735d9f515241583ecd0eb1195d3e2585b8540a`. V2 work remains isolated.
 - Hosted V2 CI run `42189655107` passed: **34 tests passed in 0.07 seconds**. The suite now includes a fail-closed source-rights gate that requires verified, hashed terms evidence and checks purpose, commercial-use and public-attribution permissions. Earlier test-only failures were corrected on V2 only.
 - Latest V2 preview deployment for `9c6d638596fb9ae7c24e4f988b005b9ef02700b9` was reported READY by Vercel. The current production-target deployment remains on `main` commit `942596f6124d3585298c2b9f81239b3a01edac8a` and was READY at audit time.
@@ -88,7 +88,7 @@ As of 2026-11-06:
 - V1 investigation is recorded in `docs/v2/V1_PREDICTION_FINDINGS.md`.
 - Infrastructure audit is recorded in `docs/v2/INFRASTRUCTURE_AUDIT_2026-11-06.md`.
 - Migration inventory is recorded in `docs/v2/LEGACY_MIGRATION_INVENTORY.md`.
-- Preliminary V2 tests have **not** been confirmed passing. A local clone/test attempt was blocked by DNS/network failure. The GitHub Actions workflow must be checked for a real run and result.
+- Hosted V2 CI run `42191542832` for commit `966f6479021f9b0f196521146db4573cc2ba56ff` completed successfully: **95 tests passed in 0.19 seconds**. Local test execution remains unnecessary while hosted CI is available.
 - Vercel preview builds have been triggered by branch commits; a previous status was pending/initializing. Do not claim a preview is ready without checking.
 - No V2 production deployment, production database migration, secret change or V1 deletion has been performed.
 - Neon projects inspected in the prior audit were not established as the football database. Do not use either inspected Neon project as V2 storage without evidence. One is Gold Scalper; the other contains Nexora/Cardinal-related schema.
@@ -373,7 +373,7 @@ Update this section whenever a phase materially changes. Use only evidence-backe
 | Phase | Status at roadmap creation | Evidence / next action |
 |---|---|---|
 | 0. Isolation and baseline | PASSED | 2026-11-06: branch isolation verified; hosted V2 CI run 42190330172 passed 65 tests; production branches unchanged |
-| 1. V1 forensic audit | IN PROGRESS | 2026-11-06: report/delivery path and 108-file command-data tree audited; 39 report archives inventoried (57.75 MiB) with Git blob SHAs. Backup/restore proof, exhaustive Actions-artifact inventory, raw historical-source reconciliation and full API call-site audit remain |
+| 1. V1 forensic audit | IN PROGRESS | 2026-11-06: report/delivery path and 108-file command-data tree audited; 39 report archives inventoried (55.08 MiB) with Git blob SHAs. Backup/restore proof, exhaustive Actions-artifact inventory, raw historical-source reconciliation and full API call-site audit remain |
 | 2. Data architecture and quota | IN PROGRESS | Logical contracts, quota policy, source-rights/account-capability gates and provider-neutral ports implemented; storage target, account tiers and measured quota budgets unverified |
 | 3. Ingestion and history | IN PROGRESS | 2026-11-06: offline acceptance, quota and account gates plus provider-neutral transport/persistence protocols implemented; concrete adapters, atomic storage, watermarks and history remain unbuilt |
 | 4. Features and datasets | NOT STARTED | Await Phase 3 |
@@ -435,3 +435,13 @@ At the start of any new conversation in this project:
 - Added `tests/v2/test_ingestion_ports.py` for request bounds, duplicate competition rejection, parameter immutability, raw-byte hashing, provider consistency, timezone validation, quota reservation and stored-record references.
 - These are offline contracts only. No provider implementation, API request, database adapter, database write or credential access is included.
 - Next: define storage-neutral history and watermark contracts; continue V1 source reconciliation and provider schema verification. Storage selection remains blocked until Phase 1 and quota evidence are complete.
+
+
+### 2026-11-06 history and preflight milestone
+- Added `veltrix_v2/history/contracts.py` with provenance-backed canonical historical matches, point-in-time team-history query contracts, explicit history evidence states, bounded incremental sync plans and compare-and-set watermark repository semantics.
+- Added `tests/v2/test_history_contracts.py`.
+- Added `veltrix_v2/ingestion/preflight.py`, combining verified account capability and quota snapshot checks. It rejects provider/scope mismatch and quota snapshots not linked to the verified account profile.
+- Added `tests/v2/test_ingestion_preflight.py`.
+- Hosted CI run `42191456747` passed **88 tests** for the history-contract commit. Hosted CI run `42191542832` passed **95 tests** for the combined preflight commit.
+- All new components are offline contracts and pure gates. No provider request, secret access, database write or production deployment occurred.
+- Next: continue the V1 function-level retirement/data-source audit, then implement a storage-neutral ingestion execution coordinator only after its rights, quota reservation and idempotency semantics are fully specified.
