@@ -68,8 +68,9 @@ def fixture(**changes):
 
 
 def resolve(event_value=None, candidates=None, home_aliases=None, away_aliases=None):
+    event_value = event_value or event()
     return resolve_odds_event(
-        event_value or event(),
+        event_value,
         (competition(),),
         (alias(event_value.home_team_name, "man-city"),) if home_aliases is None else home_aliases,
         (alias(event_value.away_team_name, "arsenal"),) if away_aliases is None else away_aliases,
