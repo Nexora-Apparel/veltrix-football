@@ -5,7 +5,7 @@ import pytest
 
 from veltrix_v2.ingestion.ports import ProviderRequestSpec
 from veltrix_v2.ingestion.providers.the_odds_api import parse_event_odds_batch
-from veltrix_v2.ingestion.providers.five_dollar import ProviderResponseError
+from veltrix_v2.ingestion.providers.errors import ProviderResponseError
 
 
 NOW = datetime(2026, 11, 6, 9, 0, tzinfo=timezone.utc)

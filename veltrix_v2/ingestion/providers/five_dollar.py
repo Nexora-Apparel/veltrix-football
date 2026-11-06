@@ -21,14 +21,6 @@ PROVIDER_NAME = "5DollarFootballAPI"
 SOURCE_ID = "5dollarfootballapi"
 
 
-class ProviderResponseError(ValueError):
-    def __init__(self, reason_code: str, *, retryable: bool = False, retry_after_seconds: int | None = None):
-        super().__init__(reason_code)
-        self.reason_code = reason_code
-        self.retryable = retryable
-        self.retry_after_seconds = retry_after_seconds
-
-
 class ProviderLeagueRedirect(ProviderResponseError):
     def __init__(self, old_provider_competition_id: str, canonical_provider_competition_id: str):
         super().__init__("PROVIDER_LEAGUE_ID_REDIRECT", retryable=False)
@@ -98,14 +90,6 @@ def parse_fixture_batch(
         reset=_header(headers, "X-RateLimit-Reset"),
         retry_after_seconds=_integer_header(headers, "Retry-After"),
     )
-    body = _parse_body(raw_body) if raw_body else {}
-
-    if http_status == 301 and (body.get("error") or {}).get("code") == "league_moved":
-        old_id = request.parameters.get("league_id")
-        new_id = (body.get("error") or {}).get("canonical_id")
-        if old_id is None or new_id is None:
-            raise ProviderResponseError("LEAGUE_REDIRECT_MISSING_IDENTITY")
-        raise ProviderLeagueRedirect(str(old_id), str(new_id))
     if http_status == 429:
         raise ProviderResponseError(
             "PROVIDER_RATE_LIMITED",
@@ -116,6 +100,15 @@ def parse_fixture_batch(
         raise ProviderResponseError("PROVIDER_AUTH_OR_PLAN_DENIED")
     if http_status >= 500:
         raise ProviderResponseError("PROVIDER_SERVER_ERROR", retryable=True)
+
+    body = _parse_body(raw_body) if raw_body else {}
+
+    if http_status == 301 and (body.get("error") or {}).get("code") == "league_moved":
+        old_id = request.parameters.get("league_id")
+        new_id = (body.get("error") or {}).get("canonical_id")
+        if old_id is None or new_id is None:
+            raise ProviderResponseError("LEAGUE_REDIRECT_MISSING_IDENTITY")
+        raise ProviderLeagueRedirect(str(old_id), str(new_id))
     if http_status != 200:
         error = body.get("error") if isinstance(body.get("error"), dict) else {}
         code = str(error.get("code") or f"HTTP_{http_status}").upper()

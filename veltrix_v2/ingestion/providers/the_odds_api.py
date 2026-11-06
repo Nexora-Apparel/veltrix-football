@@ -11,7 +11,7 @@ from veltrix_v2.ingestion.ports import (
     ProviderRequestSpec,
     RawProviderRecord,
 )
-from veltrix_v2.ingestion.providers.five_dollar import ProviderResponseError
+from veltrix_v2.ingestion.providers.errors import ProviderResponseError
 
 
 PROVIDER_NAME = "The Odds API"

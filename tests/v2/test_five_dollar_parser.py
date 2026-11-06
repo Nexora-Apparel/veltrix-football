@@ -3,9 +3,9 @@ from datetime import datetime, timezone
 
 import pytest
 
+from veltrix_v2.ingestion.providers.errors import ProviderResponseError
 from veltrix_v2.ingestion.providers.five_dollar import (
     ProviderLeagueRedirect,
-    ProviderResponseError,
     parse_fixture_batch,
 )
 from veltrix_v2.ingestion.ports import ProviderRequestSpec
