@@ -86,11 +86,14 @@ def process_odds_event_record(
     market_mappings: tuple[VerifiedMarketKeyMapping, ...],
     *,
     evaluated_at_utc: datetime,
+    fetched_at_utc: datetime,
     kickoff_tolerance_minutes: int = 15,
 ) -> OddsEventProcessingResult:
     """Only emit canonical odds after exact event, team, competition and market links."""
     if raw.raw_payload_sha256 != stored.raw_payload_sha256:
         raise ValueError("STORED_RAW_PAYLOAD_DIGEST_MISMATCH")
+    if fetched_at_utc.tzinfo is None or fetched_at_utc.utcoffset() is None:
+        raise ValueError("FETCH_TIMESTAMP_NOT_TIMEZONE_AWARE")
     if raw.provider_fixture_id is None or raw.provider_competition_id is None:
         raise ValueError("PROVIDER_ODDS_EVENT_IDS_MISSING")
 
@@ -118,10 +121,7 @@ def process_odds_event_record(
         provider_event_id=event.provider_event_id,
         provider_competition_id=event.provider_competition_id,
         source_record_id=stored.source_record_id,
-        fetched_at_utc=datetime.fromisoformat(
-            # Fetch time is supplied by the immutable source record.
-            raw_fetched_at := raw_fetched_at_iso(raw)
-        ),
+        fetched_at_utc=fetched_at_utc,
     )
     accepted: list[NormalizedOddsQuote] = []
     rejected: list[RejectedCanonicalOddsQuote] = []
@@ -147,11 +147,3 @@ def process_odds_event_record(
     )
 
 
-def raw_fetched_at_iso(raw: RawProviderRecord) -> str:
-    """The source envelope stores fetch time outside the provider payload."""
-    fetched = getattr(raw, "fetched_at_utc", None)
-    if fetched is None:
-        raise ValueError("RAW_PROVIDER_RECORD_FETCH_TIMESTAMP_REQUIRED")
-    if fetched.tzinfo is None or fetched.utcoffset() is None:
-        raise ValueError("RAW_PROVIDER_RECORD_FETCH_TIMESTAMP_NOT_TIMEZONE_AWARE")
-    return fetched.isoformat()

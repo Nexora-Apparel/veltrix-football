@@ -48,7 +48,6 @@ def records(body=None):
         raw_payload_sha256=sha256(raw_bytes).hexdigest(), duplicate=False,
     )
     # The ingestion envelope's fetch timestamp is immutable and separate from provider quote times.
-    object.__setattr__(raw, "fetched_at_utc", FETCHED)
     return raw, stored
 
 
@@ -99,14 +98,14 @@ def mappings():
     return competition, home, away, markets, fixture
 
 
-def process(raw, stored, home_alias=None, market_maps=None):
+def process(raw, stored, home_aliases=None, market_maps=None):
     competition, home, away, markets, fixture = mappings()
     return process_odds_event_record(
         raw, stored, (competition,),
-        (home_alias,) if home_alias is not None else (home,),
+        (home,) if home_aliases is None else home_aliases,
         (away,), (fixture,),
         market_maps if market_maps is not None else markets,
-        evaluated_at_utc=NOW,
+        evaluated_at_utc=NOW, fetched_at_utc=FETCHED,
     )
 
 
@@ -123,14 +122,7 @@ def test_full_odds_event_pipeline_links_and_maps_all_verified_markets():
 
 def test_unresolved_team_alias_withholds_all_event_quotes():
     raw, stored = records()
-    result = process(raw, stored, home_alias=VerifiedTeamNameAlias(
-        provider="The Odds API", source_id="the-odds-api",
-        normalized_name="different name", canonical_team_id="home",
-        squad_category=SquadCategory.SENIOR_MEN,
-        state=MappingVerificationState.VERIFIED, mapping_version="v1",
-        evidence_ref="other-evidence", valid_from_utc=NOW - timedelta(days=1),
-        valid_to_utc=None, verified_at_utc=NOW,
-    ))
+    result = process(raw, stored, home_aliases=())
     assert result.normalized_quotes == ()
     assert result.fixture_link.canonical_fixture_id is None
 
@@ -152,6 +144,7 @@ def test_raw_payload_digest_mismatch_blocks_processing():
     )
     with pytest.raises(ValueError, match="DIGEST_MISMATCH"):
         process_odds_event_record(
-            raw, wrong, *mappings()[:3], (mappings()[4],), mappings()[3],
-            evaluated_at_utc=NOW,
+            raw, wrong, (mappings()[0],), (mappings()[1],), (mappings()[2],),
+            (mappings()[4],), mappings()[3],
+            evaluated_at_utc=NOW, fetched_at_utc=FETCHED,
         )
