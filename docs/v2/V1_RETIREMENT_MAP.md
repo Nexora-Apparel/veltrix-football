@@ -61,3 +61,17 @@
 9. Keep V1 source, artifacts, command-data and production deployment read-only until retention policy and explicit owner approval permit retirement.
 
 **No V1 component is marked safe to reuse as prediction logic.** The retained items are infrastructure and delivery surfaces only. The historical Football-Data.co.uk-derived dataset is not approved for V2 commercial model training unless rights are cleared.
+
+
+## 5. Expanded runtime call graph evidence (2026-11-06)
+
+The workflow order and function-level entrypoints are now documented in `V1_FORENSIC_AUDIT.md`. The important V2 replacement boundaries are:
+- Workflow scheduler -> V2 bounded ingestion run -> V2 report builder -> immutable report/manifest publisher -> Telegram and website readers. Delivery occurs only after publication is confirmed.
+- Provider fixture discovery, result history, odds enrichment and research evidence are independent source adapters; no adapter normalizes canonical identity or computes forecasts.
+- One canonical identity service handles provider competition/team/squad/fixture links; unresolved identities are quarantined and cannot enter team history.
+- A single history repository returns explicit evidence states and point-in-time snapshots; no V1 CSV or cache loader is reused.
+- Market models and calibration produce stored per-market outputs. Telegram command handlers are read-only renderers and may not derive probabilities from xG.
+- The publisher exposes a report only when the immutable report bytes and manifest/hash are durable. Partial object writes must never be labelled published.
+- The V1 delivery filter, V1 team-name helpers and Telegram Poisson helper are explicitly retired; they have no V2 dependency.
+
+This remains a forensic/retirement map only. It does not authorize changing V1 workflows, production deployment, `main`, `command-data` or Telegram delivery.

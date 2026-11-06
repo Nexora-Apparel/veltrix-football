@@ -174,3 +174,67 @@ The inspected daily workflow explicitly configures 90-day retention for its uplo
 6. Prove backups and a restore path before selecting any V2 migration target.
 
 **No migration, data download/backfill, production write, secret read/change, Vercel setting change or deployment promotion was performed as part of this audit.**
+
+
+## 11. Expanded function-level workflow call graph (2026-11-06)
+
+The read-only inspection of `main` and the scheduled workflow establishes the following ordered path. This is the exact orchestration path through the principal stages; it does not imply that every helper called inside the large V1 modules has been fully audited.
+
+### Scheduler and workflow stages
+
+`daily-fixture-predictions.yml` schedules at 04:00 UTC (05:00 WAT) and includes:
+1. Unit tests and embedded dashboard JavaScript syntax validation.
+2. Previous-day paper settlement through `scripts/run_paper_tracking.py` (non-blocking failure).
+3. Full historical CSV download/import via `scripts/import_open_dataset.py --from 2020-01-01` through current UTC date. The generated CSV is not retained by the workflow artifact upload.
+4. Restore the resumable `recent_results_cache.json` from `command-data`.
+5. Optional same-day saved-report replay path: download current V1 report and paper ledger, then run `scripts/filter_report_for_delivery.py`.
+6. Live generation via `scripts/run_daily_predictions.py`; on failure, a saved-report recovery path can run.
+7. Optional research-source discovery, OddsPapi enrichment, value-evidence ledger update and value-certificate generation.
+8. Fixture-visibility validation.
+9. Telegram configuration/webhook checks; scheduled run waits until 05:00 UTC (06:00 WAT).
+10. Telegram send from the workflow-local report.
+11. Upload report and paper/value artifacts with 90-day retention.
+12. Publish current report/dashboard/cache/ledger snapshots and timestamped report archive to `command-data`.
+13. Publish a machine-readable verification receipt.
+
+### Daily runner stages
+
+`scripts/run_daily_predictions.py::main`:
+1. Creates `FiveDollarFootballClient` and requests same-local-day fixtures.
+2. Supplements fixture discovery with The Odds API and InferSports.
+3. Applies a fixture payload workload/visibility limit.
+4. Loads `data/open_historical_matches.csv`; an environment switch can exclude that research dataset and use only provider-attributed recent cache rows.
+5. Loads `reports/recent_results_cache.json` and calls `fetch_recent_results_incremental` when the primary provider is healthy.
+6. Merges cached/new result rows, applies the optional licensed-source filter, and writes the resumable cache.
+7. Calls `app.live_predictions.build_daily_report(..., strict_publication=True)`, which calls `predict_fixtures`.
+8. Attaches report diagnostics and history coverage.
+9. Calls `enrich_report_with_multi_source_odds`, then `attach_value_bet_screens` and `attach_value_intelligence`.
+10. Writes `reports/daily_predictions.json` with a pending-publication status.
+
+### Provider adapters
+
+`app/provider_adapters.py` contains:
+- `FiveDollarFootballClient`: same-day `fixtures`, bounded date-window fixtures, league fixtures, status, leagues and per-fixture odds.
+- `TheOddsAPIClient`: soccer sport discovery, events, bulk h2h/totals prices and per-event BTTS prices.
+- `InferSportsClient`: optional fixture/odds calls.
+- Cross-source supplement and report odds-enrichment helpers.
+
+These are V1 adapters and must not be imported into V2. The V2 provider schema research is independently recorded in `PROVIDER_ADAPTER_RESEARCH.md`.
+
+### Prediction, filtering and delivery call sites
+
+- `app.live_predictions.py`: `load_historical_matches`, fixture parsing, team-name normalization/fuzzy helpers, Elo probability calculation, `predict_fixtures`, adaptive/shrunk/weighted goal-rate calculations and `build_daily_report`.
+- `scripts/filter_report_for_delivery.py`: `filter_report_for_delivery` removes forecasts for started/past fixtures and some unsafe fuzzy matches, but imports `_name_key`, `_one_edit_apart` and `_team_variant_signature` from V1 `app.live_predictions`.
+- `scripts/send_telegram_report.py`: `format_report_messages` formats stored report values, computes a message-content fingerprint, checks Telegram delivery state and calls Telegram `sendMessage`; then persists the delivery date/hash to `command-data`.
+- `app/telegram_commands.py`: `_forecast_predictions` filters rows by V1 statuses and valid 1X2 vector; `_goal_market_probabilities` computes independent-Poisson BTTS/Over/Under estimates from expected goals; `handle_command` invokes this for `/btts` and `/overunder`. This remains a separate probability calculation from the stored report market values.
+- `scripts/publish_command_data.py`: updates mutable report/dashboard/cache/ledger objects and timestamped archive through separate GitHub operations; it is not an atomic multi-object publication transaction.
+
+### Confirmed ordering and consistency risks
+
+- Telegram send occurs before the `Publish validated command data snapshots` workflow step. Website and Telegram can therefore temporarily see different daily report versions.
+- Telegram commands recalculate goal-market probabilities from xG rather than rendering the exact stored report market probabilities.
+- Publication attempts write snapshots separately. The report payload may already say `PUBLISHED` before all separate writes have succeeded.
+- The workflow performs a full historical CSV import each scheduled run despite the separate incremental recent-results cache.
+- Same-day report replay uses the V1 delivery filter and legacy fuzzy identity helpers; it is not a V2 publication gate.
+
+**V2 replacements:** a single immutable report artifact and manifest, V2 identity/evidence/model/eligibility services, a storage-backed incremental history repository, presentation-only Telegram/website clients, and commit-level or manifest-atomic publication. V1 paths remain production/rollback references until controlled cutover.

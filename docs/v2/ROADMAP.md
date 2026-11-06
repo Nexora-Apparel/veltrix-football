@@ -124,9 +124,9 @@ Exit criteria:
 **Objective:** understand what must be replaced and where source data actually lives.
 
 Tasks:
-1. Trace the exact daily report-generation entrypoint and scheduler.
-2. Trace the full call graph from provider ingestion through normalization, identity, history, feature construction, model selection, probability generation, calibration, value calculation and publication.
-3. Trace website data reads and Telegram report delivery. Prove whether both currently consume the same artifact/report ID.
+1. Trace the exact daily report-generation entrypoint and scheduler. The principal workflow and function-level stages are now recorded in `V1_FORENSIC_AUDIT.md` section 11.
+2. Trace the full call graph from provider ingestion through normalization, identity, history, feature construction, model selection, probability generation, calibration, value calculation and publication. Principal entrypoints are mapped; helper-level audit of all branches remains.
+3. Trace website data reads and Telegram report delivery. The V1 parity race is confirmed: Telegram sends before command-data publication and no immutable shared report ID/hash exists.
 4. Identify every legacy model and prediction-related module, including hidden fallbacks and duplicate paths.
 5. Locate the actual historical match dataset, odds history, results, paper ledger, report artifacts and their backups.
 6. Identify whether records live in repository files, GitHub Actions artifacts, a database, object storage or another service.
@@ -460,3 +460,10 @@ At the start of any new conversation in this project:
 - CI found and corrected two test-fixture mistakes in intermediate commits. No production code or policy gate was relaxed; the succeeding run is green.
 - Provider adapter research is documented in `PROVIDER_ADAPTER_RESEARCH.md`. Both external provider runtimes remain disabled because actual account plans, rights evidence, quota and data depth have not been verified.
 - No provider API calls, secrets access, database writes, production writes or production deployments occurred.
+
+
+### 2026-11-06 V1 runtime call-graph milestone
+- Expanded `V1_FORENSIC_AUDIT.md` with the ordered workflow stages, daily runner sequence, provider client entrypoints, prediction module functions, delivery filter coupling, Telegram command recalculation and publication ordering.
+- Expanded `V1_RETIREMENT_MAP.md` with explicit V2 boundary replacements and cutover requirements.
+- Confirmed V1 report/Telegram parity race, independent Telegram Poisson goal-market calculation, non-atomic command-data publication and repeated full historical CSV import.
+- Phase 1 remains IN PROGRESS: full helper-level call graph, source count/date/ID reconciliation, independent SHA-256 export and restore proof, exhaustive Actions artifact inventory, and rights/source approval remain open.
