@@ -107,7 +107,7 @@ def test_preflight_blocks_account_profile_for_different_provider():
         history_start_date=date(2026, 1, 1), quota_snapshot_id="quota-1",
     )
     result = evaluate_ingestion_preflight(
-        wrong_provider, quota(), request(), rights(), now_utc=NOW
+        wrong_provider, quota(), request(), now_utc=NOW
     )
     assert result.allowed is False
     assert result.reason_code == "ACCOUNT_PROVIDER_MISMATCH"
