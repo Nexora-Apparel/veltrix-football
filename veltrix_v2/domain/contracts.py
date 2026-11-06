@@ -74,4 +74,4 @@ class ForecastCandidate:
     feature_snapshot_id: str
     generated_at_utc: datetime
     evidence_ids: tuple[str, ...]
-    origin: str = "fixture_specific"
+    origin: str
