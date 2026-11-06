@@ -75,7 +75,7 @@ def test_unknown_or_unrecognized_status_is_not_guessed():
 
 def test_provider_fixture_id_mismatch_is_rejected():
     with pytest.raises(ValueError, match="NOT_FOUND"):
-        parse_fixture_record(raw(provider_fixture_id="other"))
+        parse_fixture_record(raw(provider_fixture_id="other", provider_record_id="other"))
 
 
 def test_provider_team_or_competition_id_mismatch_is_rejected():

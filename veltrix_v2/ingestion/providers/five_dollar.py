@@ -205,6 +205,7 @@ class FiveDollarFixtureAdapter:
             params.setdefault("esports", "false")
             if params["esports"] not in {"false", False}:
                 raise ProviderResponseError("ESPORTS_DISABLED_FOR_FOOTBALL_SOURCE")
+            params["esports"] = "false"
             if "league" in params:
                 league_filter = str(params["league"])
                 if not league_filter.isdigit():
