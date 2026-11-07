@@ -1138,32 +1138,15 @@
       "report_date": "2026-11-06"
     }
   ],
-  "updated_at_utc": "2026-11-07T14:03:20.892059+00:00",
+  "updated_at_utc": "2026-11-07T19:54:39.533463+00:00",
   "last_attempt": {
     "report_date": "2026-11-06",
     "status": "EVALUATED",
     "attempts": [
       {
         "report_date": "2026-10-24",
-        "status": "EVALUATED",
-        "detail": "Scored from 5821 cached completed matches; no live football-provider request was made.",
-        "fixtures_scored": 4,
-        "completed_forecasts_scored": 4,
-        "metrics": {
-          "matches": 4,
-          "result_accuracy": 0.75,
-          "brier_score": 0.47981128640808113,
-          "log_loss": 0.8226479998250742
-        },
-        "metrics_by_model": {
-          "experimental_recent_goals_poisson": {
-            "matches": 4,
-            "result_accuracy": 0.75,
-            "brier_score": 0.47981128640808113,
-            "log_loss": 0.8226479998250742
-          }
-        },
-        "awaiting_result_or_match": 4
+        "status": "NO_FORECASTS_TO_SCORE",
+        "detail": "The best saved report for this date contains no scoreable forecasts; provider quota was preserved."
       },
       {
         "report_date": "2026-10-27",
