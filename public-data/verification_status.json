@@ -1,12 +1,12 @@
 {
   "schema_version": 1,
   "workflow": "Daily Fixture Predictions",
-  "run_id": "42408399757",
+  "run_id": "42473141832",
   "run_attempt": "1",
-  "event": "workflow_dispatch",
+  "event": "schedule",
   "commit_sha": "05e517af4dcac27507a3c32ebaceee117828df22",
   "branch": "main",
-  "recorded_at_utc": "2026-11-07T19:55:18.746389+00:00",
+  "recorded_at_utc": "2026-11-08T10:52:41.363287+00:00",
   "overall_status": "PASSED",
   "validation_scope": "LIVE_PIPELINE",
   "telegram_configured": true,
@@ -30,55 +30,55 @@
     "paper_tracking": "success"
   },
   "report_summary": {
-    "as_of_date": "2026-11-07",
+    "as_of_date": "2026-11-08",
     "publication_status": "PUBLISHED",
-    "fixtures_received": 77,
-    "same_day_pre_match_fixtures": 58,
-    "same_day_fixtures_retained": 77,
-    "past_kickoffs_retained": 17,
+    "fixtures_received": 219,
+    "same_day_pre_match_fixtures": 219,
+    "same_day_fixtures_retained": 219,
+    "past_kickoffs_retained": 0,
     "duplicate_fixture_rows_removed": null,
-    "future_fixtures_considered": 58,
-    "fixture_rows": 77,
+    "future_fixtures_considered": 219,
+    "fixture_rows": 219,
     "fixture_status_counts": {
-      "KICKOFF_PASSED": 17,
-      "AMBIGUOUS_FIXTURE_IDENTITY": 3,
-      "INSUFFICIENT_HISTORY": 51,
-      "UNSUPPORTED_COMPETITION": 5,
-      "FIXTURE_NOT_PREMATCH": 1
+      "INSUFFICIENT_HISTORY": 157,
+      "UNSUPPORTED_COMPETITION": 28,
+      "AMBIGUOUS_FIXTURE_IDENTITY": 16,
+      "EXPERIMENTAL_ONLY": 14,
+      "LOW_HISTORY_FORECAST": 4
     },
     "fixture_visibility_validation": {
       "status": "PASSED",
-      "fixture_rows": 77,
-      "expected_fixture_rows": 77,
+      "fixture_rows": 219,
+      "expected_fixture_rows": 219,
       "fixture_status_counts": {
-        "KICKOFF_PASSED": 17,
-        "AMBIGUOUS_FIXTURE_IDENTITY": 3,
-        "INSUFFICIENT_HISTORY": 51,
-        "UNSUPPORTED_COMPETITION": 5,
-        "FIXTURE_NOT_PREMATCH": 1
+        "INSUFFICIENT_HISTORY": 157,
+        "UNSUPPORTED_COMPETITION": 28,
+        "AMBIGUOUS_FIXTURE_IDENTITY": 16,
+        "EXPERIMENTAL_ONLY": 14,
+        "LOW_HISTORY_FORECAST": 4
       },
       "kickoff_unverified_rows": 0,
-      "forecast_rows": 0,
-      "low_data_forecast_rows": 0,
-      "insufficient_history_rows": 51,
-      "senior_forecast_coverage": 0.0,
-      "licensed_global_history_rows_diagnostic_only": 402,
+      "forecast_rows": 18,
+      "low_data_forecast_rows": 4,
+      "insufficient_history_rows": 157,
+      "senior_forecast_coverage": 0.0822,
+      "licensed_global_history_rows_diagnostic_only": 421,
       "alerts_enabled": false
     },
     "historical_data_coverage": "GAPPED_OR_STALE",
-    "live_odds_sync": "NO_MATCHED_MARKET_ODDS",
+    "live_odds_sync": "AVAILABLE",
     "value_intelligence": {
       "engine": "VELTRIX_VALUE_INTELLIGENCE_V1",
       "status": "SHADOW_MODE",
-      "fixtures_evaluated": 0,
+      "fixtures_evaluated": 9,
       "bookmaker_price_sets_by_market": {
-        "1X2": 0,
-        "BTTS": 0,
+        "1X2": 168,
+        "BTTS": 20,
         "OVER_UNDER_1_5": 0,
-        "OVER_UNDER_2_5": 0,
-        "OVER_UNDER_3_5": 0
+        "OVER_UNDER_2_5": 23,
+        "OVER_UNDER_3_5": 17
       },
-      "shadow_candidate_count": 0,
+      "shadow_candidate_count": 28,
       "alerts_enabled": false,
       "release_status": "LOCKED_SHADOW_MODE",
       "note": "Market consensus, model shrinkage and quote-level screening are research-only. Existing value certificate remains authoritative."
@@ -86,12 +86,12 @@
     "value_validation_certificate": "LOCKED_INSUFFICIENT_EVIDENCE"
   },
   "value_evidence_summary": {
-    "observations_total": 7037,
-    "observations_added": 0,
-    "price_series": 2842,
+    "observations_total": 7661,
+    "observations_added": 624,
+    "price_series": 3466,
     "series_with_multiple_snapshots": 1659,
     "settled_observations": 2443,
-    "shadow_candidate_observations": 271,
+    "shadow_candidate_observations": 299,
     "legacy_candidate_observations_unannotated": 0,
     "settled_shadow_candidates": 63,
     "shadow_candidate_wins": 10,
@@ -101,7 +101,7 @@
     "alerts_enabled": false
   },
   "paper_tracking_summary": {
-    "evaluated_report_dates": 10,
+    "evaluated_report_dates": 11,
     "cumulative_metrics_by_model": {
       "adaptive_poisson_sparse_history": {
         "matches": 1,
