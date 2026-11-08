@@ -334,6 +334,7 @@ def test_postgres_database_acceptance_gate_checks_schema_and_migration_checksums
         report = inspect_database(conn)
     assert report["accepted"], report
     assert report["missing_tables"] == []
+    assert report["missing_columns"] == {}
     assert report["missing_indexes"] == []
     assert report["missing_constraints"] == []
     assert report["migration_checksum_errors"] == []
