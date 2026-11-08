@@ -1,8 +1,6 @@
 name: Telegram Delivery Recovery
 
 on:
-  schedule:
-    - cron: "15,45 * * * *"
   workflow_dispatch:
 
 permissions:
@@ -14,6 +12,8 @@ concurrency:
 
 jobs:
   deliver-published-report:
+    # PAUSED by user request until VELTRIX FOOTBALL Phase 3 is complete.
+    if: false
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
