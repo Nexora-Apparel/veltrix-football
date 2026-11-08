@@ -90,3 +90,12 @@ New safeguards: source-manifest reconciliation detects missing, unexpected and d
 - Follow-up hardening now treats zero or multiple distinct active verified canonical targets as unresolved mapping evidence (not merely missing mapping rows).
 - Added a PostgreSQL regression case with two overlapping verified home-team mappings that resolve to different canonical teams.
 - Current CI run `42468038418` targets commit `893e5bc054479d01f82fb7e3c76e1dbf2e343d5e`; it was queued at this update. The 293-test final version is not yet certified.
+
+
+### Final diagnostics verification — 2026-11-08 09:39 UTC
+
+- Hardened diagnostics commit: `893e5bc054479d01f82fb7e3c76e1dbf2e343d5e`.
+- Hosted CI run `42468038418`: **SUCCESS — 293 passed in 1.40 seconds**.
+- CI used an ephemeral PostgreSQL 16 service database and executed the complete `tests/v2` suite.
+- The passing cases verify read-only transaction enforcement, orphan detection, missing/unverified/ambiguous active mappings, provenance gaps and provider-identity mismatches, exact duplicate canonical fixture identity detection, bounded samples and no row-count mutation.
+- This validates diagnostics against PostgreSQL integration fixtures. It does not validate real V2 source data or the unprovisioned Neon database.
