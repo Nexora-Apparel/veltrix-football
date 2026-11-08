@@ -337,6 +337,8 @@ def test_postgres_database_acceptance_gate_checks_schema_and_migration_checksums
     assert report["missing_columns"] == {}
     assert report["missing_indexes"] == []
     assert report["missing_constraints"] == []
+    assert "v2_source_records_provider_source_id_provider_record_id_dat_key" in report["constraints_found"]
+    assert "v2_historical_match_sources_provider_source_id_provider_fi_fkey" in report["constraints_found"]
     assert report["migration_checksum_errors"] == []
     # Prove that dropping a required constraint or index fails closed.
     with connect() as conn:
