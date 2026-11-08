@@ -45,9 +45,29 @@ def get(path: str, params: dict[str, object] | None = None):
             ("X-RateLimit-Remaining", "remaining"),
             ("X-RateLimit-Reset", "reset"),
             ("X-RateLimit-Type", "window"),
+            ("WWW-Authenticate", "www_authenticate"),
+            ("CF-Ray", "cf_ray"),
+            ("X-Request-Id", "request_id"),
+            ("Content-Type", "content_type"),
+            ("Server", "server"),
         ):
             if headers.get(key):
-                safe.append(f"{label}={str(headers[key])[:40]}")
+                safe.append(f"{label}={re.sub(r'[^A-Za-z0-9 _./:+-]', '', str(headers[key]))[:100]}")
+        # Capture only a bounded, sanitized error description. Never print request
+        # headers, credentials, or an arbitrary upstream response payload.
+        try:
+            raw = exc.read(2048).decode("utf-8", errors="replace")
+            parsed = json.loads(raw) if raw else {}
+            if isinstance(parsed, dict):
+                detail = parsed.get("message") or parsed.get("error") or parsed.get("detail") or parsed.get("code")
+            else:
+                detail = raw
+            if isinstance(detail, (str, int, float)):
+                detail = re.sub(r"[^A-Za-z0-9 _.,:;()/-]", "", str(detail))[:240]
+                if detail:
+                    safe.append(f"detail={detail}")
+        except (OSError, UnicodeDecodeError, json.JSONDecodeError):
+            pass
         raise ProbeError("; ".join(safe)) from None
     except (URLError, TimeoutError, OSError):
         raise ProbeError("network request failed") from None
