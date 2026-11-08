@@ -187,7 +187,6 @@ def test_postgres_reconciliation_audit_reports_clean_empty_schema(connect):
 
 def test_postgres_reconciliation_audit_detects_integrity_gaps_without_mutation(connect):
     from veltrix_v2.audit.reconciliation import audit_postgres_reconciliation
-    from veltrix_v2.audit.reconciliation import audit_postgres_reconciliation
     orphan = save_source(connect, "orphan-fixture")
     linked = save_source(connect, "linked-but-unverified")
     mismatched = save_source(connect, "mismatched-provider-provenance")
