@@ -100,7 +100,8 @@ def main() -> int:
             if status != 200 or data is None:
                 print(f"5DollarFootballAPI {label}: UNEXPECTED_RESPONSE")
                 return 1
-            results[path] = (data, headers)
+            pagination = payload.get("pagination") if isinstance(payload, dict) else None
+            results[path] = (data, headers, pagination)
             print(f"5DollarFootballAPI {label}: HTTP {status}; {rate_summary(headers)}")
         except ProviderCheckError as exc:
             print(f"5DollarFootballAPI {label}: FAILED ({exc})")
@@ -135,8 +136,7 @@ def main() -> int:
         ("/leagues", leagues, "competition"),
     ):
         # Pagination metadata is safe to print; no raw provider payload is emitted.
-        pagination = results[endpoint][0]
-        meta = pagination if isinstance(pagination, dict) else {}
+        meta = results[endpoint][2] if isinstance(results[endpoint][2], dict) else {}
         names = []
         for row in rows[:20]:
             if isinstance(row, dict):
@@ -145,6 +145,8 @@ def main() -> int:
                     names.append(safe_scalar(label))
         print(
             f"5DollarFootballAPI {name} page: records={len(rows)}; "
+            f"page={safe_scalar(meta.get('page'))}; per_page={safe_scalar(meta.get('per_page'))}; "
+            f"has_more={safe_scalar(meta.get('has_more'))}; "
             f"names={'; '.join(names) if names else 'not reported'}"
         )
     print(f"5DollarFootballAPI fixture sample: scheduled_fixtures={len(fixtures)} (maximum requested: 1)")
