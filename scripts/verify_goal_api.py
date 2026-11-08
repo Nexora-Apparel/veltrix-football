@@ -1,8 +1,8 @@
 """Bounded, read-only GOAL API coverage probe.
 
-Requires GOAL_API_KEY in the GitHub Actions environment. Makes at most eight GET
-requests: countries, Argentina leagues, Brazil leagues, one global league page,
-and fixtures/results samples for at most one top-flight league per country.
+Requires GOAL_API_KEY in the GitHub Actions environment. Makes at most nineteen GET requests: countries, Argentina/Brazil league lists,
+fixtures/results samples for one top-flight league per country, and up to twelve
+pages of the global league catalogue so women's competitions are not missed.
 Never prints the credential or raw response payloads.
 """
 from __future__ import annotations
@@ -154,7 +154,7 @@ def main() -> int:
 
         wanted = {
             "Argentina": ("liga profesional", "primera división", "primera division"),
-            "Brazil": ("brasileirão série a", "brasileirao serie a", "brasileiro série a", "brasileiro serie a"),
+            "Brazil": ("brasileirão série a", "brasileirao serie a", "brasileiro série a", "brasileiro serie a", "serie a"),
         }
         tested = 0
         for country_name, patterns in wanted.items():
@@ -189,23 +189,33 @@ def main() -> int:
                 )
             tested += 1
 
-        # A single global catalogue page gives a low-cost indication of women's
-        # league naming, but absence on page one is not proof of no coverage.
-        global_data, pagination, _ = call("/leagues", {"limit": 100, "offset": 0})
-        global_rows = rows_of(global_data)
+        # Walk the public catalogue in bounded 100-row pages. A first-page-only
+        # probe can falsely report no women's coverage because the catalogue is
+        # popularity-sorted rather than grouped by competition type.
         women_terms = ("women", "women's", "feminine", "femenina", "feminino", "ladies")
-        women = []
-        for item in global_rows:
-            if isinstance(item, dict):
-                name = str(item.get("name") or item.get("leagueName") or "")
-                if any(term in name.casefold() for term in women_terms):
-                    women.append(safe(name))
-        has_more = pagination.get("hasMore") if isinstance(pagination, dict) else "not reported"
+        women = set()
+        offset = 0
+        catalogue_complete = False
+        for _ in range(12):
+            global_data, pagination, _ = call("/leagues", {"limit": 100, "offset": offset})
+            global_rows = rows_of(global_data)
+            for item in global_rows:
+                if isinstance(item, dict):
+                    name = str(item.get("name") or item.get("leagueName") or "")
+                    if any(term in name.casefold() for term in women_terms):
+                        women.add(safe(name))
+            has_more = pagination.get("hasMore") if isinstance(pagination, dict) else None
+            if has_more is False:
+                catalogue_complete = True
+                break
+            if has_more is not True or not global_rows:
+                break
+            offset += 100
         print(
-            f"GOAL_API women's catalogue page: matches={'; '.join(women[:20]) if women else 'none on first page'}; "
-            f"catalogue_has_more={safe(has_more)}"
+            f"GOAL_API women's catalogue: matches={'; '.join(sorted(women)[:40]) if women else 'none found'}; "
+            f"catalogue_complete={'yes' if catalogue_complete else 'no (bounded scan)'}"
         )
-        print(f"GOAL_API_REQUESTS_MADE: {requests} (maximum 8)")
+        print(f"GOAL_API_REQUESTS_MADE: {requests} (maximum 19)")
         print("DATABASE_WRITES: 0; IMPORTS: 0")
         print(
             "GOAL_API_PROBE_RESULT: "
