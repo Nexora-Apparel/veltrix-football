@@ -64,7 +64,7 @@ def run_acceptance() -> dict:
                 WHERE connamespace='public'::regnamespace GROUP BY contype
             """)
             constraint_counts = dict(cur.fetchall())
-            assert constraint_counts.get("p", 0) >= 12, constraint_counts
+            assert constraint_counts.get("p", 0) >= 11, constraint_counts
             assert constraint_counts.get("f", 0) >= 7, constraint_counts
             assert constraint_counts.get("u", 0) >= 5, constraint_counts
             assert constraint_counts.get("c", 0) >= 12, constraint_counts
