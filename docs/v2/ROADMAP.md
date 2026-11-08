@@ -1,4 +1,7 @@
 
+> **Final hardened diagnostics result — 2026-11-08 09:39 UTC:** commit `893e5bc054479d01f82fb7e3c76e1dbf2e343d5e` passed hosted run `42468038418`: **293 passed in 1.40 seconds** with PostgreSQL 16. The reconciliation audit is read-only and covers orphaned fixture source records, missing/unverified/ambiguous active competition and team mappings, missing or mismatched provenance, and duplicate canonical fixture identities. This is CI-fixture acceptance only; no actual V2 source database exists yet. Phase 3 remains open pending dedicated Neon provisioning, provider entitlements/rights, real source import, mapping population, historical reconciliation and backup/restore proof.
+
+
 > **Diagnostics CI update — 2026-11-08:** the first PostgreSQL-backed reconciliation audit implementation passed run `42467966378` with **292 tests passed**. A subsequent hardening change now detects ambiguous overlapping verified mappings (multiple distinct canonical targets), with an additional PostgreSQL regression test. Latest run `42468038418` for commit `893e5bc054479d01f82fb7e3c76e1dbf2e343d5e` was queued at this update; do not mark the hardened final version green until that run completes.
 
 
