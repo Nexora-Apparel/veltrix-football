@@ -45,13 +45,16 @@ CREATE TABLE IF NOT EXISTS v2_fixture_sources (
 CREATE TABLE IF NOT EXISTS v2_historical_matches (
  historical_match_id TEXT PRIMARY KEY,canonical_fixture_id TEXT NOT NULL REFERENCES v2_canonical_fixtures(canonical_fixture_id),
  home_goals INTEGER NOT NULL CHECK(home_goals>=0),away_goals INTEGER NOT NULL CHECK(away_goals>=0),
- imported_at_utc TIMESTAMPTZ NOT NULL
+ imported_at_utc TIMESTAMPTZ NOT NULL,
+  UNIQUE(canonical_fixture_id)
 );
 CREATE TABLE IF NOT EXISTS v2_historical_match_sources (
  historical_match_id TEXT NOT NULL REFERENCES v2_historical_matches(historical_match_id),
  source_record_id TEXT NOT NULL REFERENCES v2_source_records(source_record_id),
  provider TEXT NOT NULL,source_id TEXT NOT NULL,provider_fixture_id TEXT NOT NULL,
- PRIMARY KEY(historical_match_id,source_record_id)
+ PRIMARY KEY(historical_match_id,source_record_id),
+  FOREIGN KEY(provider,source_id,provider_fixture_id,source_record_id)
+    REFERENCES v2_fixture_sources(provider,source_id,provider_fixture_id,source_record_id)
 );
 CREATE INDEX IF NOT EXISTS ix_v2_history_provider_fixture ON v2_historical_match_sources(provider,source_id,provider_fixture_id);
 

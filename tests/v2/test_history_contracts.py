@@ -120,3 +120,30 @@ def test_incremental_sync_plan_rejects_reversed_window():
             lower_bound_utc=NOW, upper_bound_utc=NOW,
             max_pages=1, page_size=100, expected_watermark_version=0,
         )
+
+
+def test_multi_source_history_requires_exact_provider_record_pairings():
+    with pytest.raises(ValueError, match="every source record"):
+        HistoricalMatch(
+            historical_match_id="hm-2", canonical_fixture_id="fx-2",
+            canonical_competition_id="comp-1", squad_category="senior_men",
+            home_team_id="team-1", away_team_id="team-2", kickoff_at_utc=NOW,
+            home_goals=1, away_goals=0, source_record_ids=("src-1","src-2"),
+            provider_fixture_refs=(("provider-a","source-a","fixture-a"),),
+            provider_source_record_refs=(("src-1","provider-a","source-a","fixture-a"),),
+        )
+
+
+def test_multiple_source_versions_preserve_provider_fixture_provenance():
+    item=HistoricalMatch(
+        historical_match_id="hm-3", canonical_fixture_id="fx-3",
+        canonical_competition_id="comp-1", squad_category="senior_men",
+        home_team_id="team-1", away_team_id="team-2", kickoff_at_utc=NOW,
+        home_goals=1, away_goals=0, source_record_ids=("src-1","src-2"),
+        provider_fixture_refs=(("provider-a","source-a","fixture-a"),),
+        provider_source_record_refs=(
+            ("src-1","provider-a","source-a","fixture-a"),
+            ("src-2","provider-a","source-a","fixture-a"),
+        ),
+    )
+    assert len(item.provider_source_record_refs)==2
