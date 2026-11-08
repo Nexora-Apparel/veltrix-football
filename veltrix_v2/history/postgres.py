@@ -144,6 +144,10 @@ class PostgresHistoryStore:
             conn.close()
 
     def advance(self, watermark: SyncWatermark, *, expected_version: int) -> bool:
+        if expected_version < 0 or watermark.version != expected_version + 1:
+            raise ValueError("WATERMARK_VERSION_MUST_ADVANCE_EXACTLY_ONCE")
+        if watermark.updated_at_utc.tzinfo is None or watermark.updated_at_utc.utcoffset() is None:
+            raise ValueError("WATERMARK_TIMESTAMP_MUST_BE_TIMEZONE_AWARE")
         conn=self._connect()
         try:
             cur=conn.cursor()
@@ -154,9 +158,10 @@ class PostgresHistoryStore:
                      watermark.updated_at_utc,watermark.version))
             else:
                 cur.execute("""UPDATE v2_sync_watermarks SET cursor=%s,updated_at_utc=%s,version=%s
-                    WHERE provider=%s AND data_class=%s AND scope=%s AND version=%s""",
+                    WHERE provider=%s AND data_class=%s AND scope=%s AND version=%s
+                    AND updated_at_utc<=%s""",
                     (watermark.cursor,watermark.updated_at_utc,watermark.version,watermark.provider,
-                     watermark.data_class,watermark.scope,expected_version))
+                     watermark.data_class,watermark.scope,expected_version,watermark.updated_at_utc))
             changed=cur.rowcount==1
             conn.commit()
             return changed

@@ -142,3 +142,15 @@ def test_postgres_reconciliation_quarantine_history_and_watermark(connect):
     assert store.read(provider="5DollarFootballAPI",data_class="fixtures",scope="league-1")==watermark
     assert not store.advance(SyncWatermark("5DollarFootballAPI","fixtures","league-1","stale",NOW,1),
                              expected_version=0)
+
+
+def test_watermark_version_and_timestamp_cannot_regress(connect):
+    store=PostgresHistoryStore(connect)
+    initial=SyncWatermark("5DollarFootballAPI","fixtures","scope","c1",NOW,1)
+    assert store.advance(initial,expected_version=0)
+    with pytest.raises(ValueError,match="WATERMARK_VERSION_MUST_ADVANCE_EXACTLY_ONCE"):
+        store.advance(SyncWatermark("5DollarFootballAPI","fixtures","scope","c2",NOW,3),
+                      expected_version=1)
+    assert not store.advance(SyncWatermark("5DollarFootballAPI","fixtures","scope","c2",
+        NOW-timedelta(seconds=1),2),expected_version=1)
+    assert store.read(provider="5DollarFootballAPI",data_class="fixtures",scope="scope")==initial
