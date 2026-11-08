@@ -31,7 +31,7 @@ The only visible projects at this checkpoint are:
 
 Neither is the V2 database. Do not connect, migrate, inspect data in, or repurpose either project for V2.
 
-No dedicated `veltrix_football_v2` database, verified V2 connection string, or exact V2 Neon hostname is available. The Neon organization is Vercel-managed; direct Neon project provisioning was rejected previously. Provision the V2 database through the Vercel Neon Marketplace integration on its Free plan. Until it exists, do not connect, migrate, run acceptance against another database, or import provider data.
+No dedicated `veltrix_football_v2` database, verified V2 connection string, or exact V2 Neon hostname is available. The Vercel `v2/foundation` Preview environment currently has no environment variables. The project's Production environment has no V2 database or 5DollarFootballAPI/The Odds API credential names; no values were decrypted. Therefore neither V2 storage nor provider access can be configured from the existing project environment at this checkpoint. The Neon organization is Vercel-managed; direct Neon project provisioning was rejected previously. Provision the V2 database through the Vercel Neon Marketplace integration on its Free plan. Until it exists, do not connect, migrate, run acceptance against another database, or import provider data.
 
 ## Provider entitlement verification — public baseline only
 
