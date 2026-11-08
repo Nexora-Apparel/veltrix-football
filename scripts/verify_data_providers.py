@@ -109,11 +109,15 @@ def main() -> int:
     status_data = results["/status"][0]
     if isinstance(status_data, dict):
         plan = status_data.get("plan") or status_data.get("subscription") or status_data.get("tier")
-        usage = status_data.get("requests_used") or status_data.get("used")
-        limit = status_data.get("requests_limit") or status_data.get("limit")
+        limits = status_data.get("limits") if isinstance(status_data.get("limits"), dict) else {}
+        usage_data = status_data.get("usage") if isinstance(status_data.get("usage"), dict) else {}
+        usage = usage_data.get("today")
+        limit = limits.get("rate_limit")
+        window = limits.get("rate_window_seconds")
         print(
             "5DollarFootballAPI entitlement: "
-            f"plan={safe_scalar(plan)}; usage={safe_scalar(usage)}; limit={safe_scalar(limit)}"
+            f"plan={safe_scalar(plan)}; daily_usage={safe_scalar(usage)}; "
+            f"rate_limit={safe_scalar(limit)} per {safe_scalar(window)} seconds"
         )
     else:
         print("5DollarFootballAPI entitlement: status endpoint returned an unexpected data shape")
@@ -126,7 +130,23 @@ def main() -> int:
         print("5DollarFootballAPI coverage: UNEXPECTED_DATA_SHAPE")
         return 1
 
-    print(f"5DollarFootballAPI coverage: countries_on_page={len(countries)}; competitions_on_page={len(leagues)}")
+    for endpoint, rows, name in (
+        ("/countries", countries, "country"),
+        ("/leagues", leagues, "competition"),
+    ):
+        # Pagination metadata is safe to print; no raw provider payload is emitted.
+        pagination = results[endpoint][0]
+        meta = pagination if isinstance(pagination, dict) else {}
+        names = []
+        for row in rows[:20]:
+            if isinstance(row, dict):
+                label = row.get("name") or row.get("short_name")
+                if label:
+                    names.append(safe_scalar(label))
+        print(
+            f"5DollarFootballAPI {name} page: records={len(rows)}; "
+            f"names={'; '.join(names) if names else 'not reported'}"
+        )
     print(f"5DollarFootballAPI fixture sample: scheduled_fixtures={len(fixtures)} (maximum requested: 1)")
     print("PROVIDER_READONLY_SUMMARY: PASS (four read-only requests; no database writes)")
     return 0
