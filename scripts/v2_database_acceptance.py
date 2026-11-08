@@ -37,6 +37,7 @@ REQUIRED_INDEXES = frozenset({
 REQUIRED_CONSTRAINTS = frozenset({
     "v2_source_records_pkey",
     "v2_source_records_idempotency_key_key",
+    "v2_source_records_provider_source_id_provider_record_id_data_class_raw_payload_sha256_key"[:63],
     "v2_competition_mappings_pkey",
     "v2_team_mappings_pkey",
     "v2_canonical_fixtures_pkey",
@@ -59,6 +60,20 @@ REQUIRED_CONSTRAINTS = frozenset({
     "v2_sync_watermarks_version_check",
     "v2_ingestion_runs_pkey",
 })
+
+
+REQUIRED_COLUMNS = {
+    "v2_source_records": {"source_record_id", "provider", "source_id", "provider_record_id", "provider_fixture_id", "raw_payload", "raw_payload_sha256", "fetched_at_utc", "ingested_at_utc", "rights_evidence"},
+    "v2_competition_mappings": {"provider", "source_id", "provider_competition_id", "canonical_competition_id", "verification_state", "mapping_version", "evidence_ref", "valid_from_utc"},
+    "v2_team_mappings": {"provider", "source_id", "provider_team_id", "canonical_team_id", "verification_state", "mapping_version", "evidence_ref", "valid_from_utc"},
+    "v2_canonical_fixtures": {"canonical_fixture_id", "canonical_competition_id", "squad_category", "canonical_home_team_id", "canonical_away_team_id", "kickoff_at_utc"},
+    "v2_fixture_sources": {"provider", "source_id", "provider_fixture_id", "source_record_id", "canonical_fixture_id", "identity_status", "evidence_refs"},
+    "v2_historical_matches": {"historical_match_id", "canonical_fixture_id", "home_goals", "away_goals", "imported_at_utc"},
+    "v2_historical_match_sources": {"historical_match_id", "source_record_id", "provider", "source_id", "provider_fixture_id"},
+    "v2_identity_quarantine": {"quarantine_id", "source_record_id", "status", "reason_code", "candidate_ids", "created_at_utc"},
+    "v2_sync_watermarks": {"provider", "data_class", "scope", "cursor", "version", "updated_at_utc"},
+    "v2_ingestion_runs": {"ingestion_run_id", "provider", "data_class", "request_id", "status", "quota_units_consumed"},
+}
 
 
 def expected_migrations() -> dict[str, str]:
@@ -109,6 +124,20 @@ def inspect_database(connection, *, expected_db: str = EXPECTED_DATABASE) -> dic
         constraints = {row[0] for row in cur.fetchall()}
 
         missing_tables = sorted(REQUIRED_TABLES - tables)
+        cur.execute("""
+            SELECT table_name, column_name
+            FROM information_schema.columns
+            WHERE table_schema='public'
+        """)
+        actual_columns = {}
+        for table_name, column_name in cur.fetchall():
+            actual_columns.setdefault(table_name, set()).add(column_name)
+        missing_columns = {
+            table: sorted(required - actual_columns.get(table, set()))
+            for table, required in REQUIRED_COLUMNS.items()
+            if required - actual_columns.get(table, set())
+        }
+
         missing_indexes = sorted(REQUIRED_INDEXES - indexes)
         missing_constraints = sorted(REQUIRED_CONSTRAINTS - constraints)
 
@@ -141,6 +170,7 @@ def inspect_database(connection, *, expected_db: str = EXPECTED_DATABASE) -> dic
         "tables_found": len(tables),
         "tables_required": len(REQUIRED_TABLES),
         "missing_tables": missing_tables,
+        "missing_columns": missing_columns,
         "missing_indexes": missing_indexes,
         "missing_constraints": missing_constraints,
         "migration_count_expected": len(expected),
@@ -148,7 +178,7 @@ def inspect_database(connection, *, expected_db: str = EXPECTED_DATABASE) -> dic
         "migration_checksum_errors": checksum_errors,
     }
     report["accepted"] = not any((
-        missing_tables, missing_indexes, missing_constraints, checksum_errors
+        missing_tables, missing_columns, missing_indexes, missing_constraints, checksum_errors
     ))
     return report
 
