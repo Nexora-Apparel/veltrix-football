@@ -332,12 +332,20 @@ def test_postgres_database_acceptance_gate_checks_schema_and_migration_checksums
         apply_all_migrations(conn)
     with connect() as conn:
         report = inspect_database(conn, expected_db="veltrix_v2_test")
-    print("V2_ACCEPTANCE_DIAGNOSTIC", report)
-    assert report["accepted"], __import__("json").dumps(report, indent=2)
+    assert report["accepted"], report
     assert report["missing_tables"] == []
     assert report["missing_columns"] == {}
     assert report["missing_indexes"] == []
     assert report["missing_constraints"] == []
     assert report["migration_checksum_errors"] == []
+    # Prove that dropping a required constraint or index fails closed.
+    with connect() as conn:
+        conn.execute('ALTER TABLE v2_historical_matches DROP CONSTRAINT v2_historical_matches_home_goals_check')
+        conn.execute('DROP INDEX ix_v2_history_provider_fixture')
+    with connect() as conn:
+        rejected = inspect_database(conn, expected_db="veltrix_v2_test")
+    assert not rejected["accepted"]
+    assert "v2_historical_matches_home_goals_check" in rejected["missing_constraints"]
+    assert "ix_v2_history_provider_fixture" in rejected["missing_indexes"]
     assert report["tables_found"] >= report["tables_required"]
 
