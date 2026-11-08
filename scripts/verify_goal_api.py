@@ -219,7 +219,7 @@ def main() -> int:
         print("DATABASE_WRITES: 0; IMPORTS: 0")
         print(
             "GOAL_API_PROBE_RESULT: "
-            + ("PARTIAL_PASS (Argentina/Brazil targeted samples tested; women's catalogue requires further pagination)"
+            + ("PARTIAL_PASS (Argentina/Brazil targeted samples tested; women's catalogue scan completed or bounded)"
                if tested else "PARTIAL (no target top-flight sample verified)")
         )
         return 0
