@@ -26,7 +26,8 @@ class Cursor:
             self.db.sources.setdefault((params[0],params[1],params[2],params[7]),params)
             self.rowcount=1
         elif "SELECT canonical_fixture_id,identity_status,reason_code" in sql:
-            self.one=self.db.sources.get((params[0],params[1],params[2],params[3]))
+            stored=self.db.sources.get((params[0],params[1],params[2],params[3]))
+            self.one=(stored[6],stored[8],stored[9]) if stored else None
     def fetchone(self): return self.one
 
 
