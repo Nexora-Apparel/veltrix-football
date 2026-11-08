@@ -1,6 +1,7 @@
-"""Credential-safe smoke checks for the 5DollarFootballAPI and The Odds API.
+"""Low-quota, credential-safe read-only verification for 5DollarFootballAPI.
 
-Only prints provider status, market availability, and quota headers; never prints keys or request URLs.
+Makes at most four GET requests: status, countries (one page), leagues (one page),
+and one scheduled fixture. Never prints credentials, request URLs, or raw payloads.
 """
 from __future__ import annotations
 
@@ -12,6 +13,7 @@ from urllib.error import HTTPError, URLError
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 
+BASE = "https://api.5dollarfootballapi.com/v1"
 TIMEOUT = 20
 
 
@@ -19,109 +21,115 @@ class ProviderCheckError(RuntimeError):
     pass
 
 
-def request_json(url: str, headers: dict[str, str] | None = None):
-    req = Request(url, headers={"Accept": "application/json", **(headers or {})})
+def request_json(path: str, params: dict[str, object] | None = None):
+    query = "?" + urlencode(params or {}) if params else ""
+    req = Request(
+        BASE + path + query,
+        headers={
+            "Accept": "application/json",
+            "Authorization": f"Bearer {os.environ['FIVEDOLLARFOOTBALL_API_KEY'].strip()}",
+        },
+        method="GET",
+    )
     try:
         with urlopen(req, timeout=TIMEOUT) as response:
-            body = response.read().decode("utf-8")
-            return response.status, response.headers, json.loads(body)
+            payload = json.loads(response.read().decode("utf-8"))
+            return response.status, response.headers, payload
     except HTTPError as exc:
-        # Do not print the URL or raw body; expose only safe quota metadata.
-        headers = exc.headers or {}
-        details = [f"HTTP {exc.code}"]
-        for source, label in (
-            ("Retry-After", "retry_after"),
+        safe = [f"HTTP {exc.code}"]
+        for header, label in (
+            ("X-RateLimit-Limit", "limit"),
             ("X-RateLimit-Remaining", "remaining"),
             ("X-RateLimit-Reset", "reset"),
+            ("Retry-After", "retry_after"),
         ):
-            value = headers.get(source)
-            if value is not None and str(value).strip():
-                details.append(f"{label}={str(value).strip()[:40]}")
-        try:
-            body = exc.read(1024).decode("utf-8", errors="replace")
-            parsed = json.loads(body) if body else {}
-            reason = (parsed.get("error") or parsed.get("message")) if isinstance(parsed, dict) else None
-            if reason:
-                safe_reason = re.sub(r"[^A-Za-z0-9 _-]", "", str(reason))[:80]
-                if safe_reason:
-                    details.append(f"reason={safe_reason}")
-        except (OSError, UnicodeDecodeError, json.JSONDecodeError):
-            pass
-        raise ProviderCheckError("; ".join(details)) from None
+            value = (exc.headers or {}).get(header)
+            if value:
+                safe.append(f"{label}={str(value)[:40]}")
+        raise ProviderCheckError("; ".join(safe)) from None
     except (URLError, TimeoutError, OSError):
         raise ProviderCheckError("network request failed") from None
     except (UnicodeDecodeError, json.JSONDecodeError):
         raise ProviderCheckError("invalid JSON response") from None
 
 
-def check_fivedollar() -> str:
-    key = os.getenv("FIVEDOLLARFOOTBALL_API_KEY", "").strip()
-    if not key:
-        print("5DollarFootballAPI: MISSING_SECRET (FIVEDOLLARFOOTBALL_API_KEY)")
-        return "MISSING_SECRET"
-    url = "https://api.5dollarfootballapi.com/v1/fixtures?" + urlencode(
-        {"status": "scheduled", "per_page": 1}
-    )
-    try:
-        status, headers, payload = request_json(url, {"Authorization": f"Bearer {key}"})
-        if status != 200 or not isinstance(payload, dict) or payload.get("success") != 1:
-            print("5DollarFootballAPI: UNEXPECTED_RESPONSE")
-            return "FAILED"
-        data = payload.get("data")
-        if not isinstance(data, list):
-            print("5DollarFootballAPI: AUTH_OK_BUT_SCHEMA_UNEXPECTED")
-            return "FAILED"
-        remaining = headers.get("X-RateLimit-Remaining", "not supplied")
-        print(f"5DollarFootballAPI: AUTH_OK; scheduled fixture sample={len(data)}; requests_remaining={remaining}")
-        return "AUTH_OK"
-    except ProviderCheckError as exc:
-        if str(exc) == "HTTP 429":
-            print("5DollarFootballAPI: RATE_LIMITED_RETRYABLE (HTTP 429)")
-            return "RATE_LIMITED"
-        print(f"5DollarFootballAPI: FAILED ({exc})")
-        return "FAILED"
+def envelope(payload):
+    if not isinstance(payload, dict):
+        return None
+    if payload.get("success") not in (1, True, "1", "true"):
+        return None
+    return payload.get("data")
 
 
-def check_odds_api() -> str:
-    key = os.getenv("THE_ODDS_API_KEY", "").strip()
-    if not key:
-        print("The Odds API: MISSING_SECRET (THE_ODDS_API_KEY)")
-        return "MISSING_SECRET"
-    # /v4/sports does not consume odds quota. The key is required by this provider's API in the query string.
-    url = "https://api.the-odds-api.com/v4/sports/?" + urlencode({"apiKey": key})
-    try:
-        status, headers, payload = request_json(url)
-        if status != 200 or not isinstance(payload, list):
-            print("The Odds API: AUTH_OR_SCHEMA_FAILED")
-            return "FAILED"
-        soccer = [
-            str(item.get("key")) for item in payload
-            if isinstance(item, dict)
-            and str(item.get("key", "")).startswith("soccer_")
-            and item.get("active", True)
-        ]
-        remaining = headers.get("x-requests-remaining", "not supplied")
-        if not soccer:
-            print(f"The Odds API: KEY_ACCEPTED; NO_SOCCER_SPORTS_IN_PLAN; requests_remaining={remaining}")
-            return "NO_SOCCER_SPORTS"
-        print(f"The Odds API: KEY_ACCEPTED; soccer_sports={len(soccer)}; examples={','.join(soccer[:8])}; requests_remaining={remaining}")
-        return "KEY_ACCEPTED"
-    except ProviderCheckError as exc:
-        print(f"The Odds API: FAILED ({exc})")
-        return "FAILED"
+def rate_summary(headers) -> str:
+    values = []
+    for name, label in (
+        ("X-RateLimit-Limit", "limit"),
+        ("X-RateLimit-Remaining", "remaining"),
+        ("X-RateLimit-Reset", "reset"),
+    ):
+        value = headers.get(name)
+        if value is not None:
+            values.append(f"{label}={str(value)[:40]}")
+    return ", ".join(values) if values else "rate-limit headers not supplied"
+
+
+def safe_scalar(value) -> str:
+    if isinstance(value, (str, int, float)) and not isinstance(value, bool):
+        return re.sub(r"[^A-Za-z0-9 _./+-]", "", str(value))[:60] or "not reported"
+    return "not reported"
 
 
 def main() -> int:
-    primary = check_fivedollar()
-    secondary = check_odds_api()
-    if primary == "AUTH_OK" and secondary == "KEY_ACCEPTED":
-        print("PROVIDER_SMOKE_SUMMARY: HEALTHY (primary and supplemental providers authenticated)")
-        return 0
-    if primary == "RATE_LIMITED" and secondary == "KEY_ACCEPTED":
-        print("PROVIDER_SMOKE_SUMMARY: DEGRADED_FALLBACK_READY (primary HTTP 429; The Odds API authenticated)")
-        return 0
-    print(f"PROVIDER_SMOKE_SUMMARY: FAILED (primary={primary}; supplemental={secondary})")
-    return 1
+    key = os.getenv("FIVEDOLLARFOOTBALL_API_KEY", "").strip()
+    if not key:
+        print("5DollarFootballAPI: MISSING_SECRET (FIVEDOLLARFOOTBALL_API_KEY)")
+        return 2
+
+    checks = (
+        ("/status", None, "account status"),
+        ("/countries", {"per_page": 100}, "country coverage"),
+        ("/leagues", {"per_page": 100}, "competition coverage"),
+        ("/fixtures", {"status": "scheduled", "per_page": 1}, "single scheduled fixture"),
+    )
+    results = {}
+    for path, params, label in checks:
+        try:
+            status, headers, payload = request_json(path, params)
+            data = envelope(payload)
+            if status != 200 or data is None:
+                print(f"5DollarFootballAPI {label}: UNEXPECTED_RESPONSE")
+                return 1
+            results[path] = (data, headers)
+            print(f"5DollarFootballAPI {label}: HTTP {status}; {rate_summary(headers)}")
+        except ProviderCheckError as exc:
+            print(f"5DollarFootballAPI {label}: FAILED ({exc})")
+            return 1
+
+    status_data = results["/status"][0]
+    if isinstance(status_data, dict):
+        plan = status_data.get("plan") or status_data.get("subscription") or status_data.get("tier")
+        usage = status_data.get("requests_used") or status_data.get("used")
+        limit = status_data.get("requests_limit") or status_data.get("limit")
+        print(
+            "5DollarFootballAPI entitlement: "
+            f"plan={safe_scalar(plan)}; usage={safe_scalar(usage)}; limit={safe_scalar(limit)}"
+        )
+    else:
+        print("5DollarFootballAPI entitlement: status endpoint returned an unexpected data shape")
+        return 1
+
+    countries = results["/countries"][0]
+    leagues = results["/leagues"][0]
+    fixtures = results["/fixtures"][0]
+    if not isinstance(countries, list) or not isinstance(leagues, list) or not isinstance(fixtures, list):
+        print("5DollarFootballAPI coverage: UNEXPECTED_DATA_SHAPE")
+        return 1
+
+    print(f"5DollarFootballAPI coverage: countries_on_page={len(countries)}; competitions_on_page={len(leagues)}")
+    print(f"5DollarFootballAPI fixture sample: scheduled_fixtures={len(fixtures)} (maximum requested: 1)")
+    print("PROVIDER_READONLY_SUMMARY: PASS (four read-only requests; no database writes)")
+    return 0
 
 
 if __name__ == "__main__":
