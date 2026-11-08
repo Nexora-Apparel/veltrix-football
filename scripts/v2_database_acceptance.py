@@ -173,6 +173,7 @@ def inspect_database(connection, *, expected_db: str = EXPECTED_DATABASE) -> dic
         "missing_columns": missing_columns,
         "missing_indexes": missing_indexes,
         "missing_constraints": missing_constraints,
+        "constraints_found": sorted(constraints),
         "migration_count_expected": len(expected),
         "migration_count_applied": len(applied),
         "migration_checksum_errors": checksum_errors,
