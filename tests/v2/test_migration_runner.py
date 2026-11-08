@@ -1,4 +1,3 @@
-from hashlib import sha256
 import pytest
 
 from scripts.v2_apply_migrations import (
