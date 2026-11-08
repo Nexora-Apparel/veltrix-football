@@ -253,3 +253,44 @@ def test_postgres_reconciliation_audit_rejects_unbounded_sample_limit(connect):
     from veltrix_v2.audit.reconciliation import audit_postgres_reconciliation
     with pytest.raises(ValueError, match="SAMPLE_LIMIT_MUST_BE_BETWEEN_1_AND_100"):
         audit_postgres_reconciliation(connect, sample_limit=101)
+
+
+def test_postgres_reconciliation_audit_flags_multiple_active_verified_mappings(connect):
+    from veltrix_v2.audit.reconciliation import audit_postgres_reconciliation
+    source = save_source(connect, "ambiguous-team-map")
+    valid_from = KICKOFF - timedelta(days=30)
+    with connect() as conn:
+        conn.execute("""INSERT INTO v2_competition_mappings
+            (provider,source_id,provider_competition_id,canonical_competition_id,
+             squad_category,verification_state,mapping_version,evidence_ref,
+             valid_from_utc,valid_to_utc,verified_at_utc)
+            VALUES ('5DollarFootballAPI','five-dollar','provider-comp-1','canonical-comp-1',
+                    'SENIOR_MEN','VERIFIED','v1','evidence:competition',%s,NULL,%s)""",
+            (valid_from, NOW))
+        for canonical_id, version in (("canonical-home-a", "v1"), ("canonical-home-b", "v2")):
+            conn.execute("""INSERT INTO v2_team_mappings
+                (provider,source_id,provider_team_id,canonical_team_id,squad_category,
+                 verification_state,mapping_version,evidence_ref,valid_from_utc,valid_to_utc,verified_at_utc)
+                VALUES ('5DollarFootballAPI','five-dollar','provider-home',%s,'SENIOR_MEN',
+                        'VERIFIED',%s,'evidence:home',%s,NULL,%s)""",
+                (canonical_id, version, valid_from, NOW))
+        conn.execute("""INSERT INTO v2_team_mappings
+            (provider,source_id,provider_team_id,canonical_team_id,squad_category,
+             verification_state,mapping_version,evidence_ref,valid_from_utc,valid_to_utc,verified_at_utc)
+            VALUES ('5DollarFootballAPI','five-dollar','provider-away','canonical-away','SENIOR_MEN',
+                    'VERIFIED','v1','evidence:away',%s,NULL,%s)""", (valid_from, NOW))
+        conn.execute("""INSERT INTO v2_fixture_sources
+            (provider,source_id,provider_fixture_id,provider_competition_id,
+             provider_home_team_id,provider_away_team_id,canonical_fixture_id,
+             source_record_id,identity_status,reason_code,evidence_refs)
+            VALUES ('5DollarFootballAPI','five-dollar','ambiguous-team-map','provider-comp-1',
+                    'provider-home','provider-away',NULL,%s,'UNRESOLVED','AMBIGUOUS_TEAM','[]'::jsonb)""",
+            (source.source_record_id,))
+
+    report = audit_postgres_reconciliation(connect)
+    by_category = {item.category: item for item in report.findings}
+    assert by_category["unresolved_competition_mappings"].count == 0
+    assert by_category["unresolved_home_team_mappings"].count == 1
+    assert source.source_record_id in by_category["unresolved_home_team_mappings"].sample_ids
+    assert by_category["unresolved_away_team_mappings"].count == 0
+    assert by_category["orphaned_source_records"].count == 0
