@@ -324,3 +324,18 @@ def test_postgres_reconciliation_audit_flags_multiple_active_verified_mappings(c
     assert source.source_record_id in by_category["unresolved_home_team_mappings"].sample_ids
     assert by_category["unresolved_away_team_mappings"].count == 0
     assert by_category["orphaned_source_records"].count == 0
+
+def test_postgres_database_acceptance_gate_checks_schema_and_migration_checksums(connect):
+    from scripts.v2_apply_migrations import apply_all_migrations
+    from scripts.v2_database_acceptance import inspect_database
+    with connect() as conn:
+        apply_all_migrations(conn)
+    with connect() as conn:
+        report = inspect_database(conn)
+    assert report["accepted"], report
+    assert report["missing_tables"] == []
+    assert report["missing_indexes"] == []
+    assert report["missing_constraints"] == []
+    assert report["migration_checksum_errors"] == []
+    assert report["tables_found"] >= report["tables_required"]
+
