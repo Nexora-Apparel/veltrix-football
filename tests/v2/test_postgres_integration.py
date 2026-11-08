@@ -165,6 +165,8 @@ def test_migration_runner_is_idempotent_and_detects_checksum_drift(connect):
                                    sql=sql,checksum_sha256=digest)
         assert not apply_sql_migration(conn,migration_version="001_historical_store",
                                       sql=sql,checksum_sha256=digest)
+        changed_sql=sql+"\\n-- checksum drift regression"
+        changed_digest=sha256(changed_sql.encode("utf-8")).hexdigest()
         with pytest.raises(ValueError,match="APPLIED_MIGRATION_CHECKSUM_MISMATCH"):
             apply_sql_migration(conn,migration_version="001_historical_store",
-                                sql=sql,checksum_sha256="0"*64)
+                                sql=changed_sql,checksum_sha256=changed_digest)
