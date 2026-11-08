@@ -537,3 +537,34 @@ Until those criteria pass, provider adapters remain disabled, no watermark may a
 ### Quota and deployment note
 
 Several V2 commits triggered automatic Vercel preview builds. The latest preview is READY. Avoid additional commits, preview builds, provider calls or redeploys until a necessary code change or the storage/provider blockers are resolved. No V2 production deployment has occurred.
+
+
+## Continuity update — 2026-11-08 09:29 UTC
+
+Supersedes earlier 2026-11-08 checkpoint details above.
+
+- V2 branch HEAD: `c4c62d89b1b385f2bc491ee021e19a4b5661d93c`.
+- Hosted CI run `42467301711`: **280 passed in 0.70 seconds**, successful. This run includes PostgreSQL 16 integration tests using an ephemeral CI service database.
+- Previous hosted PostgreSQL integration run `42467197463`: **276 passed in 1.02 seconds**.
+- Latest Vercel preview for current HEAD: **READY**, deployment `dpl_3aRGZxvbWY7n6k9MdZCfmdjE2szT`. It is a preview, not production.
+- Production `main` remains `05e517af4dcac27507a3c32ebaceee117828df22`.
+- `command-data` remains `f759046a44edcc5a0c69198b4b7183176c2562b5`.
+- Vercel V2 preview environment variable listing (decryption disabled) returned zero variables.
+- Neon account project listing returned only the two already-audited unrelated projects. No approved V2 football database exists.
+- No provider API request, external quota use, migration to persistent storage, historical import or production write occurred.
+
+### New Phase 3 integrity additions
+- Added exact source-manifest reconciliation. Every expected source record must have exactly one explicit IMPORTED, REJECTED or QUARANTINED terminal outcome; missing, unexpected, duplicate and count-tampered outcomes fail closed.
+- PostgreSQL integration tests now exercise immutable raw payload versions, verified mapping persistence, fixture/source identity consistency, canonical fixture reconciliation, quarantine, historical result retrieval and watermark persistence.
+- Sync watermark advancement now requires exactly one version increment and disallows timestamp regression.
+- A fixture repository mock regression was corrected; current hosted CI run above is green.
+
+### Remaining Phase 3 acceptance blockers
+- No dedicated persistent V2 database or V2-only connection secret is provisioned.
+- No provider credentials are confirmed in V2 preview or available through the inspected Vercel project environment. GitHub Actions secret metadata cannot be inspected through available connector access.
+- Actual 5DollarFootballAPI and The Odds API account entitlements, rights, quotas/reset, supported competitions and historical depth remain unverified.
+- Real provider team/competition mappings are not populated.
+- No provider sample or historical backfill has run; production source counts, completeness and zero-loss reconciliation remain unproven.
+- CI integration tests use a temporary PostgreSQL service and do not substitute for persistent V2 database provisioning, migration deployment or backup/restore proof.
+
+**Decision:** Phase 3 remains IN PROGRESS. Keep provider transport disabled. Do not mark Phase 3 complete or begin Phase 4 model research until the real provider and persistent-storage acceptance criteria pass.

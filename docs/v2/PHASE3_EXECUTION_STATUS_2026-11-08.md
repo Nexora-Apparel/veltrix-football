@@ -34,3 +34,18 @@ Commit: 8d47aeaa26c053a13e9c2a95c19dd1d54844842a
 ## Release decision
 
 Phase 3 is **not complete**. The offline architecture and tests are in place; operational acceptance is blocked. Keep provider adapters disabled and do not start Phase 4 until actual source records, rights, identity mappings and point-in-time history are verified. Do not deploy V2 to production.
+
+
+## Latest verification update — 2026-11-08 09:29 UTC
+
+- Current V2 branch HEAD: `c4c62d89b1b385f2bc491ee021e19a4b5661d93c`.
+- Hosted CI run `42467301711`: **280 passed in 0.70 seconds**, including PostgreSQL 16 integration tests on an ephemeral CI database.
+- Latest Vercel preview: READY, deployment `dpl_3aRGZxvbWY7n6k9MdZCfmdjE2szT`.
+- `main`: `05e517af4dcac27507a3c32ebaceee117828df22` (unchanged).
+- `command-data`: `f759046a44edcc5a0c69198b4b7183176c2562b5` (unchanged).
+- V2 preview env list (decrypt=false): empty.
+- Neon project inventory: only the two previously identified non-football projects; neither approved for V2.
+
+New safeguards: source-manifest reconciliation detects missing, unexpected and duplicate import outcomes; watermark versions must advance exactly once and timestamps cannot regress; fixture persistence verifies raw source/provider/fixture identity and exact canonical identity.
+
+**Phase 3 remains IN PROGRESS.** No persistent V2 database, live provider credentials/entitlements, real identity mappings, provider sample, historical import, or restore proof exists yet. No external provider API calls or production writes have been made. Keep provider adapters disabled.
