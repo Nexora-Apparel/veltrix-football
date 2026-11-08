@@ -1,16 +1,11 @@
-"""Durable fixture-source decisions; ambiguous identities are quarantined, never dropped."""
+"""Durable fixture-source decisions; ambiguous identities are quarantined."""
 from __future__ import annotations
 import json
 from hashlib import sha256
 from datetime import datetime, timezone
 from typing import Callable
-
-from veltrix_v2.domain.identity import (
-    CanonicalFixtureIdentity, ReconciliationDecision, ReconciliationStatus,
-)
-from veltrix_v2.identity.registry import (
-    MappingResolutionStatus, ProviderFixtureSourceIdentity, ResolvedProviderFixture,
-)
+from veltrix_v2.domain.identity import ReconciliationDecision, ReconciliationStatus
+from veltrix_v2.identity.registry import MappingResolutionStatus, ProviderFixtureSourceIdentity, ResolvedProviderFixture
 
 
 class PostgresFixtureDecisionRepository:
@@ -57,17 +52,13 @@ class PostgresFixtureDecisionRepository:
         elif reconciliation is not None or new_canonical_fixture_id is not None:
             raise ValueError("UNVERIFIED_PROVIDER_IDENTITY_CANNOT_BE_RECONCILED")
 
-        if reconciliation and reconciliation.status is ReconciliationStatus.MATCHED_EXISTING:
-            if not canonical_id:
-                raise ValueError("MATCHED_FIXTURE_ID_MISSING")
+        if reconciliation and reconciliation.status is ReconciliationStatus.MATCHED_EXISTING and not canonical_id:
+            raise ValueError("MATCHED_FIXTURE_ID_MISSING")
         if reconciliation and reconciliation.status in {ReconciliationStatus.AMBIGUOUS,
-                                                          ReconciliationStatus.UNRESOLVED_IDENTITY}:
-            if new_canonical_fixture_id:
-                raise ValueError("AMBIGUOUS_FIXTURE_CANNOT_RECEIVE_CANONICAL_ID")
+                                                          ReconciliationStatus.UNRESOLVED_IDENTITY} and new_canonical_fixture_id:
+            raise ValueError("AMBIGUOUS_FIXTURE_CANNOT_RECEIVE_CANONICAL_ID")
 
         evidence=tuple(dict.fromkeys(mapping.evidence_refs))
-        if reconciliation is not None:
-            evidence=tuple(dict.fromkeys((*evidence,*reconciliation.candidate_fixture_ids)))
         conn=self._connect()
         try:
             cur=conn.cursor()
@@ -77,14 +68,12 @@ class PostgresFixtureDecisionRepository:
                      canonical_home_team_id,canonical_away_team_id,kickoff_at_utc)
                     VALUES (%s,%s,%s,%s,%s,%s) ON CONFLICT(canonical_fixture_id) DO NOTHING""",
                     (canonical_id,mapped.canonical_competition_id,mapped.squad_category.value,
-                     mapped.canonical_home_team_id,mapped.canonical_away_team_id,
-                     mapped.kickoff_at_utc))
+                     mapped.canonical_home_team_id,mapped.canonical_away_team_id,mapped.kickoff_at_utc))
                 cur.execute("""SELECT canonical_competition_id,squad_category,canonical_home_team_id,
                     canonical_away_team_id,kickoff_at_utc FROM v2_canonical_fixtures
                     WHERE canonical_fixture_id=%s""",(canonical_id,))
                 expected=(mapped.canonical_competition_id,mapped.squad_category.value,
-                          mapped.canonical_home_team_id,mapped.canonical_away_team_id,
-                          mapped.kickoff_at_utc)
+                          mapped.canonical_home_team_id,mapped.canonical_away_team_id,mapped.kickoff_at_utc)
                 if cur.fetchone()!=expected:
                     raise ValueError("CANONICAL_FIXTURE_IDENTITY_CONFLICT")
             cur.execute("""INSERT INTO v2_fixture_sources
@@ -94,9 +83,8 @@ class PostgresFixtureDecisionRepository:
                 VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s::jsonb)
                 ON CONFLICT DO NOTHING""",
                 (source.provider,source.source_id,source.provider_fixture_id,
-                 source.provider_competition_id,source.provider_home_team_id,
-                 source.provider_away_team_id,canonical_id,source_record_id,status,
-                 reason,json.dumps(evidence)))
+                 source.provider_competition_id,source.provider_home_team_id,source.provider_away_team_id,
+                 canonical_id,source_record_id,status,reason,json.dumps(evidence)))
             cur.execute("""SELECT canonical_fixture_id,identity_status,reason_code
                 FROM v2_fixture_sources WHERE provider=%s AND source_id=%s
                 AND provider_fixture_id=%s AND source_record_id=%s""",
@@ -104,29 +92,20 @@ class PostgresFixtureDecisionRepository:
             stored=cur.fetchone()
             if not stored or tuple(stored)!=(canonical_id,status,reason):
                 raise ValueError("FIXTURE_SOURCE_IDEMPOTENCY_CONFLICT")
-
-            quarantine_status = status in {
-                ReconciliationStatus.AMBIGUOUS.value,
-                ReconciliationStatus.UNRESOLVED_IDENTITY.value,
-                MappingResolutionStatus.AMBIGUOUS.value,
-                MappingResolutionStatus.UNRESOLVED.value,
-                MappingResolutionStatus.UNVERIFIED.value,
-                MappingResolutionStatus.INVALID_MAPPING.value,
-                MappingResolutionStatus.SQUAD_CATEGORY_MISMATCH.value,
-            }
-            if quarantine_status:
-                quarantine_id=sha256(
-                    "|".join((source.provider,source.source_id,source.provider_fixture_id,
-                              source_record_id,status)).encode("utf-8")
-                ).hexdigest()
+            quarantine=status in {ReconciliationStatus.AMBIGUOUS.value,
+                ReconciliationStatus.UNRESOLVED_IDENTITY.value,MappingResolutionStatus.AMBIGUOUS.value,
+                MappingResolutionStatus.UNRESOLVED.value,MappingResolutionStatus.UNVERIFIED.value,
+                MappingResolutionStatus.INVALID_MAPPING.value,MappingResolutionStatus.SQUAD_CATEGORY_MISMATCH.value}
+            if quarantine:
+                quarantine_id=sha256("|".join((source.provider,source.source_id,
+                    source.provider_fixture_id,source_record_id,status)).encode()).hexdigest()
                 cur.execute("""INSERT INTO v2_identity_quarantine
                     (quarantine_id,provider,source_id,provider_fixture_id,source_record_id,
                      status,reason_code,candidate_ids,created_at_utc)
                     VALUES (%s,%s,%s,%s,%s,%s,%s,%s::jsonb,%s)
                     ON CONFLICT(quarantine_id) DO NOTHING""",
                     (quarantine_id,source.provider,source.source_id,source.provider_fixture_id,
-                     source_record_id,status,reason,json.dumps(candidates),
-                     decided_at_utc.astimezone(timezone.utc)))
+                     source_record_id,status,reason,json.dumps(candidates),decided_at_utc.astimezone(timezone.utc)))
             conn.commit()
             return status
         except Exception:

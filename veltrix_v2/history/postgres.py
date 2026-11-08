@@ -15,10 +15,9 @@ class PostgresHistoryStore:
             raise ValueError("imported_at_utc must be timezone-aware")
         refs=match.provider_source_record_refs
         if not refs:
-            if len(match.source_record_ids)!=len(match.provider_fixture_refs):
+            if len(match.source_record_ids)!=1 or len(match.provider_fixture_refs)!=1:
                 raise ValueError("PROVIDER_SOURCE_PROVENANCE_LINKS_REQUIRED")
-            refs=tuple((record_id,*provider_ref)
-                       for record_id,provider_ref in zip(match.source_record_ids,match.provider_fixture_refs))
+            refs=((match.source_record_ids[0],*match.provider_fixture_refs[0]),)
         conn=self._connect()
         try:
             cur=conn.cursor()
@@ -62,8 +61,7 @@ class PostgresHistoryStore:
             conn.commit()
             return True
         except Exception:
-            conn.rollback()
-            raise
+            conn.rollback(); raise
         finally:
             conn.close()
 
@@ -72,8 +70,6 @@ class PostgresHistoryStore:
         try:
             cur=conn.cursor()
             lower=datetime.combine(query.window_start_date,datetime.min.time(),tzinfo=timezone.utc)
-            base_params=(query.canonical_team_id,query.canonical_team_id,query.cutoff_at_utc,lower,
-                         len(query.competition_ids),list(query.competition_ids))
             cur.execute("""SELECT COUNT(*) FROM v2_historical_matches h
                 JOIN v2_canonical_fixtures f USING(canonical_fixture_id)
                 WHERE (f.canonical_home_team_id=%s OR f.canonical_away_team_id=%s)
@@ -112,8 +108,7 @@ class PostgresHistoryStore:
                 ORDER BY f.kickoff_at_utc DESC LIMIT %s""",
                 (query.canonical_team_id,query.canonical_team_id,query.squad_category,
                  query.cutoff_at_utc,lower,len(query.competition_ids),list(query.competition_ids),query.max_matches))
-            rows=cur.fetchall()
-            matches=[]; evidence=[]
+            rows=cur.fetchall(); matches=[]; evidence=[]
             for row in rows:
                 cur.execute("""SELECT source_record_id,provider,source_id,provider_fixture_id
                     FROM v2_historical_match_sources WHERE historical_match_id=%s""",(row[0],))
@@ -166,7 +161,6 @@ class PostgresHistoryStore:
             conn.commit()
             return changed
         except Exception:
-            conn.rollback()
-            raise
+            conn.rollback(); raise
         finally:
             conn.close()

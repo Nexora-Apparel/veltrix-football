@@ -24,8 +24,7 @@ class PostgresProviderRecordRepository:
         conn=self._connect()
         try:
             cur=conn.cursor()
-            cur.execute(
-                """INSERT INTO v2_source_records
+            cur.execute("""INSERT INTO v2_source_records
                 (source_record_id,provider,source_id,provider_record_id,provider_fixture_id,
                  provider_competition_id,provider_home_team_id,provider_away_team_id,data_class,
                  raw_payload,raw_payload_sha256,payload_reference,fetched_at_utc,ingested_at_utc,
@@ -38,16 +37,19 @@ class PostgresProviderRecordRepository:
                  record.fetched_at_utc,record.ingested_at_utc,record.source_updated_at_utc,
                  ingestion_run_id,idempotency_key,rights))
             inserted=cur.rowcount==1
-            cur.execute("""SELECT source_record_id,raw_payload_sha256,payload_reference
+            cur.execute("""SELECT source_record_id,raw_payload_sha256,payload_reference,
+                provider,source_id,provider_record_id,data_class
                 FROM v2_source_records WHERE idempotency_key=%s""",(idempotency_key,))
             stored=cur.fetchone()
             if stored is None:
-                cur.execute("""SELECT source_record_id,raw_payload_sha256,payload_reference
+                cur.execute("""SELECT source_record_id,raw_payload_sha256,payload_reference,
+                    provider,source_id,provider_record_id,data_class
                     FROM v2_source_records WHERE provider=%s AND source_id=%s
                     AND provider_record_id=%s AND data_class=%s AND raw_payload_sha256=%s""",
                     (record.provider,record.source_id,record.provider_record_id,record.data_class,digest))
                 stored=cur.fetchone()
-            if not stored or stored[1]!=digest:
+            expected_identity=(record.provider,record.source_id,record.provider_record_id,record.data_class)
+            if not stored or stored[1]!=digest or tuple(stored[3:])!=expected_identity:
                 raise ValueError("SOURCE_RECORD_IDEMPOTENCY_OR_CONTENT_CONFLICT")
             if inserted and stored[0]!=proposed_id:
                 raise ValueError("SOURCE_RECORD_IDEMPOTENCY_KEY_COLLISION")

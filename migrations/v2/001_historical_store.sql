@@ -57,7 +57,7 @@ CREATE INDEX IF NOT EXISTS ix_v2_history_provider_fixture ON v2_historical_match
 
 CREATE TABLE IF NOT EXISTS v2_identity_quarantine (
  quarantine_id TEXT PRIMARY KEY,provider TEXT NOT NULL,source_id TEXT NOT NULL,provider_fixture_id TEXT NOT NULL,
- source_record_id TEXT NOT NULL,status TEXT NOT NULL,reason_code TEXT NOT NULL,candidate_ids JSONB NOT NULL,
+ source_record_id TEXT NOT NULL REFERENCES v2_source_records(source_record_id),status TEXT NOT NULL,reason_code TEXT NOT NULL,candidate_ids JSONB NOT NULL,
  created_at_utc TIMESTAMPTZ NOT NULL,resolved_at_utc TIMESTAMPTZ,resolution_evidence_ref TEXT
 );
 CREATE TABLE IF NOT EXISTS v2_sync_watermarks (
