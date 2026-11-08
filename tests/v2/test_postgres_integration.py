@@ -348,4 +348,5 @@ def test_postgres_database_acceptance_gate_checks_schema_and_migration_checksums
     assert "v2_historical_matches_home_goals_check" in rejected["missing_constraints"]
     assert "ix_v2_history_provider_fixture" in rejected["missing_indexes"]
     assert report["tables_found"] >= report["tables_required"]
+    assert report["migration_count_expected"] == report["migration_count_applied"]
 
