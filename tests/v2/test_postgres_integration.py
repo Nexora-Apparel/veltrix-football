@@ -1,0 +1,144 @@
+from datetime import date, datetime, timedelta, timezone
+from hashlib import sha256
+from pathlib import Path
+import os
+import pytest
+
+psycopg=pytest.importorskip("psycopg")
+DB_URL=os.getenv("V2_TEST_DATABASE_URL")
+pytestmark=pytest.mark.skipif(not DB_URL,reason="V2_TEST_DATABASE_URL not configured")
+
+from veltrix_v2.domain.contracts import DataUsePurpose, RightsDecision, RightsStatus, SourceRights
+from veltrix_v2.domain.identity import ReconciliationDecision, ReconciliationStatus, SquadCategory, reconcile_provider_fixture
+from veltrix_v2.history.contracts import TeamHistoryQuery, SyncWatermark
+from veltrix_v2.history.importer import build_training_history_match
+from veltrix_v2.history.postgres import PostgresHistoryStore
+from veltrix_v2.identity.postgres_fixtures import PostgresFixtureDecisionRepository
+from veltrix_v2.identity.postgres_registry import PostgresIdentityMappingRepository
+from veltrix_v2.identity.registry import (
+    MappingResolutionStatus, MappingVerificationState, ProviderCompetitionMapping,
+    ProviderFixtureSourceIdentity, ProviderTeamMapping, resolve_provider_fixture,
+)
+from veltrix_v2.ingestion.acceptance import AcceptedSourceRecord, ProviderSourceRecord
+from veltrix_v2.ingestion.postgres_records import PostgresProviderRecordRepository
+from veltrix_v2.ingestion.providers.five_dollar_fixture import FiveDollarFixtureRecord, FiveDollarFixtureStatus
+
+NOW=datetime(2026,11,8,9,tzinfo=timezone.utc)
+KICKOFF=NOW-timedelta(days=2)
+
+
+@pytest.fixture
+def connect():
+    with psycopg.connect(DB_URL) as conn:
+        conn.execute("DROP SCHEMA public CASCADE")
+        conn.execute("CREATE SCHEMA public")
+        conn.execute((Path(__file__).resolve().parents[2]/"migrations/v2/001_historical_store.sql").read_text())
+    return lambda: psycopg.connect(DB_URL)
+
+
+def save_source(connect,fixture_id="provider-fx-1",payload=b'{"fixture":"v1"}',key=None):
+    digest=sha256(payload).hexdigest()
+    record=ProviderSourceRecord(
+        provider="5DollarFootballAPI",source_id="five-dollar",provider_record_id=fixture_id,
+        provider_fixture_id=fixture_id,provider_competition_id="provider-comp-1",
+        data_class="fixtures",raw_payload_sha256=digest,
+        payload_reference=f"provider-response://{fixture_id}/{digest}",
+        fetched_at_utc=NOW,ingested_at_utc=NOW,
+        provider_home_team_id="provider-home",provider_away_team_id="provider-away")
+    accepted=AcceptedSourceRecord(record,(RightsDecision(
+        "five-dollar",DataUsePurpose.CACHE,True,"RIGHTS_VERIFIED"),))
+    return PostgresProviderRecordRepository(connect).persist_accepted_record(
+        accepted,raw_payload=payload,ingestion_run_id="run-1",
+        idempotency_key=key or f"{fixture_id}:{digest}")
+
+
+def rights():
+    return SourceRights("five-dollar",RightsStatus.VERIFIED,True,
+        frozenset({DataUsePurpose.HISTORICAL_IMPORT,DataUsePurpose.CACHE,DataUsePurpose.MODEL_TRAINING}),
+        "https://provider.example/terms","2026-11",NOW,"b"*64)
+
+
+def mappings(connect):
+    repo=PostgresIdentityMappingRepository(connect)
+    start=KICKOFF-timedelta(days=30)
+    repo.add_competition_mapping(ProviderCompetitionMapping(
+        "5DollarFootballAPI","five-dollar","provider-comp-1","canonical-comp-1",
+        SquadCategory.SENIOR_MEN,MappingVerificationState.VERIFIED,"v1","evidence:comp",
+        start,verified_at_utc=NOW-timedelta(days=1)))
+    for pid,cid in (("provider-home","canonical-home"),("provider-away","canonical-away")):
+        repo.add_team_mapping(ProviderTeamMapping(
+            "5DollarFootballAPI","five-dollar",pid,cid,SquadCategory.SENIOR_MEN,
+            MappingVerificationState.VERIFIED,"v1",f"evidence:{pid}",start,
+            verified_at_utc=NOW-timedelta(days=1)))
+    return repo
+
+
+def fixture_source(fixture_id="provider-fx-1",kickoff=KICKOFF):
+    return ProviderFixtureSourceIdentity("5DollarFootballAPI","five-dollar",fixture_id,
+        "provider-comp-1","provider-home","provider-away",None,kickoff)
+
+
+def test_postgres_schema_raw_versions_and_mapping_immutability(connect):
+    first=save_source(connect)
+    replay=save_source(connect,key="same-content-new-key")
+    revised=save_source(connect,payload=b'{"fixture":"v2"}',key="fixture-v2")
+    assert replay.source_record_id==first.source_record_id and replay.duplicate
+    assert revised.source_record_id!=first.source_record_id
+    with connect() as conn:
+        assert conn.execute("SELECT COUNT(*) FROM v2_source_records").fetchone()[0]==2
+    repo=mappings(connect)
+    assert len(repo.get_competition_mappings(provider="5DollarFootballAPI",
+        source_id="five-dollar",provider_competition_id="provider-comp-1"))==1
+    conflict=ProviderCompetitionMapping("5DollarFootballAPI","five-dollar","provider-comp-1",
+        "wrong-comp",SquadCategory.SENIOR_MEN,MappingVerificationState.VERIFIED,
+        "v1","evidence:wrong",KICKOFF-timedelta(days=30),verified_at_utc=NOW-timedelta(days=1))
+    with pytest.raises(ValueError,match="IDENTITY_MAPPING_VERSION_CONFLICT"):
+        repo.add_competition_mapping(conflict)
+
+
+def test_postgres_reconciliation_quarantine_history_and_watermark(connect):
+    raw=save_source(connect)
+    repo=mappings(connect)
+    source=fixture_source()
+    resolved=resolve_provider_fixture(source,repo,evaluated_at_utc=NOW)
+    assert resolved.status is MappingResolutionStatus.VERIFIED
+    reconciliation=reconcile_provider_fixture(resolved.canonical_identity,())
+    assert reconciliation.status is ReconciliationStatus.NEW_CANONICAL_FIXTURE
+    decisions=PostgresFixtureDecisionRepository(connect)
+    decisions.persist_decision(source,raw.source_record_id,resolved,decided_at_utc=NOW,
+        reconciliation=reconciliation,new_canonical_fixture_id="canonical-fixture-1")
+
+    parsed=FiveDollarFixtureRecord(
+        source_identity=source,status=FiveDollarFixtureStatus.FINISHED,raw_status="finished",
+        home_team_name="Home",away_team_name="Away",competition_name="League",
+        completed_home_goals=2,completed_away_goals=1,status_reason=None,status_code="full",
+        raw_payload_sha256=sha256(b'{"fixture":"v1"}').hexdigest())
+    imported=build_training_history_match(parsed,resolved,raw.source_record_id,rights(),
+        "canonical-fixture-1",evaluated_at_utc=NOW)
+    assert imported.allowed
+    store=PostgresHistoryStore(connect)
+    store.persist_historical_match(imported.historical_match,imported_at_utc=NOW)
+    history=store.get_team_history(TeamHistoryQuery(
+        "canonical-home",SquadCategory.SENIOR_MEN.value,NOW,date(2026,1,1),
+        ("canonical-comp-1",),10,1))
+    assert history.total_match_count==1
+    assert history.matches[0].provider_fixture_refs==(
+        ("5DollarFootballAPI","five-dollar","provider-fx-1"),)
+
+    raw2=save_source(connect,"provider-fx-2",b'{"fixture":"ambiguous"}')
+    source2=fixture_source("provider-fx-2",KICKOFF+timedelta(days=1))
+    resolved2=resolve_provider_fixture(source2,repo,evaluated_at_utc=NOW)
+    ambiguous=ReconciliationDecision(ReconciliationStatus.AMBIGUOUS,None,
+        ("candidate-a","candidate-b"),resolved2.canonical_identity)
+    decisions.persist_decision(source2,raw2.source_record_id,resolved2,
+        decided_at_utc=NOW,reconciliation=ambiguous)
+    with connect() as conn:
+        assert conn.execute("SELECT COUNT(*) FROM v2_identity_quarantine").fetchone()[0]==1
+        ids=conn.execute("SELECT provider_fixture_id,provider_competition_id FROM v2_fixture_sources WHERE provider_fixture_id='provider-fx-2'").fetchone()
+        assert ids==("provider-fx-2","provider-comp-1")
+
+    watermark=SyncWatermark("5DollarFootballAPI","fixtures","league-1","cursor-1",NOW,1)
+    assert store.advance(watermark,expected_version=0)
+    assert store.read(provider="5DollarFootballAPI",data_class="fixtures",scope="league-1")==watermark
+    assert not store.advance(SyncWatermark("5DollarFootballAPI","fixtures","league-1","stale",NOW,1),
+                             expected_version=0)

@@ -7,6 +7,7 @@ on:
     paths:
       - "veltrix_v2/**"
       - "tests/v2/**"
+      - "migrations/v2/**"
       - ".github/workflows/v2-ci.yml"
       - "pyproject.toml"
       - "requirements*.txt"
@@ -17,11 +18,11 @@ on:
     paths:
       - "veltrix_v2/**"
       - "tests/v2/**"
+      - "migrations/v2/**"
       - ".github/workflows/v2-ci.yml"
       - "pyproject.toml"
       - "requirements*.txt"
 
-# Superseded runs are cancelled so repeated pushes do not consume runner minutes.
 concurrency:
   group: v2-ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -32,7 +33,23 @@ permissions:
 jobs:
   domain-tests:
     runs-on: ubuntu-latest
-    timeout-minutes: 8
+    timeout-minutes: 10
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: veltrix
+          POSTGRES_PASSWORD: v2_ci_test_password
+          POSTGRES_DB: veltrix_v2_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U veltrix -d veltrix_v2_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      V2_TEST_DATABASE_URL: postgresql://veltrix:v2_ci_test_password@localhost:5432/veltrix_v2_test
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -40,7 +57,7 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-      - name: Install test dependency
-        run: python -m pip install pytest
-      - name: Run V2 domain tests
+      - name: Install test dependencies
+        run: python -m pip install pytest "psycopg[binary]"
+      - name: Run V2 domain and PostgreSQL integration tests
         run: python -m pytest -q tests/v2
