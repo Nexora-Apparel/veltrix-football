@@ -45,8 +45,9 @@ def migrate(database_url: str, directory: Path = MIGRATION_DIR, dry_run: bool = 
             db_name, db_user, server_version = cur.fetchone()
             if int(server_version) < 160000:
                 raise RuntimeError(f"PostgreSQL 16+ required; server_version_num={server_version}")
-            if not db_name or "veltrix" not in db_name.lower():
-                raise RuntimeError(f"Refusing unexpected database target: {db_name!r}")
+            expected_db = os.environ.get("VELTRIX_EXPECTED_DATABASE")
+            if not expected_db or db_name != expected_db:
+                raise RuntimeError("Set VELTRIX_EXPECTED_DATABASE to the exact approved database name; refusing target")
             cur.execute("SELECT pg_advisory_xact_lock(hashtext('veltrix-football-migrations'))")
             cur.execute("""
                 CREATE TABLE IF NOT EXISTS schema_migrations (
