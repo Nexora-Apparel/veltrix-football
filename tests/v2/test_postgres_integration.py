@@ -333,7 +333,7 @@ def test_postgres_database_acceptance_gate_checks_schema_and_migration_checksums
     with connect() as conn:
         report = inspect_database(conn, expected_db="veltrix_v2_test")
     print("V2_ACCEPTANCE_DIAGNOSTIC", report)
-    assert report["accepted"], report
+    assert report["accepted"], __import__("json").dumps(report, indent=2)
     assert report["missing_tables"] == []
     assert report["missing_columns"] == {}
     assert report["missing_indexes"] == []
