@@ -30,6 +30,7 @@ jobs:
           --health-retries 10
     env:
       DATABASE_URL: postgresql://veltrix_test:acceptance_only@localhost:5432/veltrix_football_test
+      VELTRIX_EXPECTED_DATABASE: veltrix_football_test
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
