@@ -154,3 +154,17 @@ def test_watermark_version_and_timestamp_cannot_regress(connect):
     assert not store.advance(SyncWatermark("5DollarFootballAPI","fixtures","scope","c2",
         NOW-timedelta(seconds=1),2),expected_version=1)
     assert store.read(provider="5DollarFootballAPI",data_class="fixtures",scope="scope")==initial
+
+
+def test_migration_runner_is_idempotent_and_detects_checksum_drift(connect):
+    from scripts.v2_apply_migrations import apply_sql_migration
+    sql=(Path(__file__).resolve().parents[2]/"migrations/v2/001_historical_store.sql").read_text()
+    digest=sha256(sql.encode("utf-8")).hexdigest()
+    with connect() as conn:
+        assert apply_sql_migration(conn,migration_version="001_historical_store",
+                                   sql=sql,checksum_sha256=digest)
+        assert not apply_sql_migration(conn,migration_version="001_historical_store",
+                                      sql=sql,checksum_sha256=digest)
+        with pytest.raises(ValueError,match="APPLIED_MIGRATION_CHECKSUM_MISMATCH"):
+            apply_sql_migration(conn,migration_version="001_historical_store",
+                                sql=sql,checksum_sha256="0"*64)
