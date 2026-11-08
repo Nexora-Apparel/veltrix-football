@@ -1,4 +1,4 @@
-name: PostgreSQL 16 Persistent Foundation Acceptance
+name: PostgreSQL 16 and 18 Persistent Foundation Acceptance
 
 on:
   pull_request:
@@ -6,17 +6,23 @@ on:
     paths:
       - "db/**"
       - "scripts/db_migrate.py"
+      - "scripts/db_acceptance.py"
       - "tests/test_db_migrations.py"
       - ".github/workflows/postgres16-acceptance.yml"
       - "requirements.txt"
   workflow_dispatch:
 
 jobs:
-  postgres16-acceptance:
+  postgres-acceptance:
+    name: PostgreSQL ${{ matrix.postgres-version }} acceptance
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        postgres-version: ["16", "18"]
     services:
       postgres:
-        image: postgres:16
+        image: postgres:${{ matrix.postgres-version }}
         env:
           POSTGRES_DB: veltrix_football_test
           POSTGRES_USER: veltrix_test
@@ -52,13 +58,15 @@ jobs:
           import os, psycopg
           with psycopg.connect(os.environ["DATABASE_URL"]) as c:
               with c.cursor() as q:
+                  q.execute("SELECT current_setting('server_version_num')")
+                  version_num = int(q.fetchone()[0])
+                  assert version_num >= 160000
                   q.execute("SELECT count(*) FROM information_schema.tables WHERE table_schema='public'")
                   assert q.fetchone()[0] >= 11
                   q.execute("SELECT count(*) FROM pg_indexes WHERE schemaname='public'")
                   assert q.fetchone()[0] >= 6
                   q.execute("SELECT count(*) FROM schema_migrations")
                   assert q.fetchone()[0] == 1
-                  q.execute("BEGIN")
                   q.execute("SAVEPOINT rollback_probe")
                   q.execute("INSERT INTO provider_accounts(provider) VALUES ('rollback-probe')")
                   q.execute("ROLLBACK TO SAVEPOINT rollback_probe")
