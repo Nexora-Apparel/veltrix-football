@@ -2,6 +2,12 @@ name: Verify GOAL API Free-Tier Coverage
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - scripts/verify_goal_api.py
+      - .github/workflows/verify-goal-api.yml
 
 permissions:
   contents: read
