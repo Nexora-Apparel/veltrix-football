@@ -170,3 +170,86 @@ def test_migration_runner_is_idempotent_and_detects_checksum_drift(connect):
         with pytest.raises(ValueError,match="APPLIED_MIGRATION_CHECKSUM_MISMATCH"):
             apply_sql_migration(conn,migration_version="001_historical_store",
                                 sql=changed_sql,checksum_sha256=changed_digest)
+
+
+
+def test_postgres_reconciliation_audit_reports_clean_empty_schema(connect):
+    from veltrix_v2.audit.reconciliation import audit_postgres_reconciliation
+    report = audit_postgres_reconciliation(connect)
+    assert report.is_clean
+    assert report.total_issues == 0
+    assert {item.category for item in report.findings} == {
+        "orphaned_source_records", "unresolved_competition_mappings",
+        "unresolved_home_team_mappings", "unresolved_away_team_mappings",
+        "provenance_gaps", "duplicate_canonical_fixtures",
+    }
+
+
+def test_postgres_reconciliation_audit_detects_integrity_gaps_without_mutation(connect):
+    from veltrix_v2.audit.reconciliation import audit_postgres_reconciliation
+    orphan = save_source(connect, "orphan-fixture")
+    linked = save_source(connect, "linked-but-unverified")
+    mismatched = save_source(connect, "mismatched-provider-provenance")
+
+    with connect() as conn:
+        conn.execute("""INSERT INTO v2_fixture_sources
+            (provider,source_id,provider_fixture_id,provider_competition_id,
+             provider_home_team_id,provider_away_team_id,canonical_fixture_id,
+             source_record_id,identity_status,reason_code,evidence_refs)
+            VALUES (%s,%s,%s,%s,%s,%s,NULL,%s,%s,%s,'[]'::jsonb)""",
+            ("wrong-provider", "wrong-source", "wrong-fixture", "wrong-comp",
+             "wrong-home", "wrong-away", mismatched.source_record_id,
+             "UNRESOLVED", "TEST_IDENTITY_MISMATCH"))
+        conn.execute("""INSERT INTO v2_fixture_sources
+            (provider,source_id,provider_fixture_id,provider_competition_id,
+             provider_home_team_id,provider_away_team_id,canonical_fixture_id,
+             source_record_id,identity_status,reason_code,evidence_refs)
+            VALUES (%s,%s,%s,%s,%s,%s,NULL,%s,%s,%s,'[]'::jsonb)""",
+            ("5DollarFootballAPI", "five-dollar", "linked-but-unverified",
+             "provider-comp-1", "provider-home", "provider-away",
+             linked.source_record_id, "UNRESOLVED", "TEST_MAPPING_PENDING"))
+        conn.execute("""INSERT INTO v2_canonical_fixtures
+            (canonical_fixture_id,canonical_competition_id,squad_category,
+             canonical_home_team_id,canonical_away_team_id,kickoff_at_utc)
+            VALUES ('audit-canonical-a','audit-comp','SENIOR_MEN',
+                    'audit-home','audit-away',%s)""", (KICKOFF,))
+        conn.execute("""INSERT INTO v2_historical_matches
+            (historical_match_id,canonical_fixture_id,home_goals,away_goals,imported_at_utc)
+            VALUES ('audit-history-a','audit-canonical-a',1,0,%s)""", (NOW,))
+        conn.execute("""INSERT INTO v2_canonical_fixtures
+            (canonical_fixture_id,canonical_competition_id,squad_category,
+             canonical_home_team_id,canonical_away_team_id,kickoff_at_utc)
+            VALUES ('audit-canonical-b','audit-comp','SENIOR_MEN',
+                    'audit-home','audit-away',%s)""", (KICKOFF,))
+
+    with connect() as conn:
+        before = tuple(conn.execute(
+            f"SELECT COUNT(*) FROM {table}").fetchone()[0] for table in
+            ("v2_source_records", "v2_fixture_sources",
+             "v2_historical_matches", "v2_canonical_fixtures"))
+
+    report = audit_postgres_reconciliation(connect)
+    by_category = {item.category: item for item in report.findings}
+    assert by_category["orphaned_source_records"].count == 1
+    assert orphan.source_record_id in by_category["orphaned_source_records"].sample_ids
+    assert by_category["unresolved_competition_mappings"].count >= 3
+    assert by_category["unresolved_home_team_mappings"].count >= 3
+    assert by_category["unresolved_away_team_mappings"].count >= 3
+    assert by_category["provenance_gaps"].count == 2
+    assert mismatched.source_record_id in by_category["provenance_gaps"].sample_ids
+    assert by_category["duplicate_canonical_fixtures"].count == 1
+    assert "audit-canonical-a,audit-canonical-b" in by_category["duplicate_canonical_fixtures"].sample_ids
+    assert not report.is_clean
+
+    with connect() as conn:
+        after = tuple(conn.execute(
+            f"SELECT COUNT(*) FROM {table}").fetchone()[0] for table in
+            ("v2_source_records", "v2_fixture_sources",
+             "v2_historical_matches", "v2_canonical_fixtures"))
+    assert after == before
+
+
+def test_postgres_reconciliation_audit_rejects_unbounded_sample_limit(connect):
+    from veltrix_v2.audit.reconciliation import audit_postgres_reconciliation
+    with pytest.raises(ValueError, match="SAMPLE_LIMIT_MUST_BE_BETWEEN_1_AND_100"):
+        audit_postgres_reconciliation(connect, sample_limit=101)
