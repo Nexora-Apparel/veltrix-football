@@ -494,3 +494,46 @@ At the start of any new conversation in this project:
 - Added the identity pipeline joining verified provider mappings to deterministic canonical fixture reconciliation; ambiguous canonical candidates are quarantined and provider home/away orientation is preserved.
 - Hosted CI run `42193498440` passed **181 tests in 0.33 seconds**.
 - Mapping rows themselves are not populated; real provider IDs and canonical mappings remain blocked on verified provider access and source data.
+
+
+## Current verified continuity update — 2026-11-08
+
+This section supersedes earlier checkpoint and test-count statements above. Always verify the branch again before editing.
+
+- Current V2 branch HEAD: `8d47aeaa26c053a13e9c2a95c19dd1d54844842a`.
+- Latest hosted V2 CI: run `42466905692`, **268 tests passed**; completed successfully.
+- Latest Vercel preview for that V2 commit: **READY** (deployment `dpl_4iS1Xs937V8TtQPzfVT9kfqg7Ua6`). This is a preview, not a production promotion.
+- Production `main` remains `05e517af4dcac27507a3c32ebaceee117828df22`.
+- `command-data` currently points to `f759046a44edcc5a0c69198b4b7183176c2562b5`, written by the scheduled V1 verification workflow; no V2 commit was made to that branch.
+- No V2 database was provisioned, no migration was applied, no provider API call was made, and no historical records were imported.
+- V2 preview environment variables are empty. The Vercel production environment-variable names inspected (without decrypting values) include only the legacy API-Football names and Telegram settings; no 5DollarFootballAPI key, The Odds API key or V2 database URL is configured there. The API-Football credentials remain untouched and must not be used.
+- GitHub Actions secret metadata is not exposed by the available connector, so provider secrets potentially stored there cannot be confirmed. Do not infer that they exist.
+- The Neon projects previously inspected are unrelated to football. Neither is approved as V2 storage.
+
+### Phase 3 — implementation status
+
+**Status: IN PROGRESS — offline architecture implemented; live data verification blocked.**
+
+Added on `v2/foundation`:
+- PostgreSQL schema for immutable raw source records, versioned team/competition mappings, canonical fixtures, provider fixture provenance, historical results, quarantine, sync watermarks and ingestion runs.
+- DB-API repositories for raw source records, identity mappings, fixture reconciliation/quarantine, historical results and atomic watermarks.
+- Exact source-record-to-provider-fixture provenance links; distinct provider payload versions are retained by payload hash.
+- Bounded incremental synchronization with starting-watermark checks, cursor-progress checks, page limits and compare-and-set advancement only after all pages succeed.
+- Rights-gated historical result import in bounded, resumable chunks with explicit imported/rejected/quarantined outcomes and a source-manifest SHA-256.
+- Historical coverage diagnostics and strict point-in-time team-history retrieval.
+
+### Phase 3 exit criteria still outstanding
+
+1. Provision a dedicated V2 PostgreSQL database under an approved plan and configure a V2-only connection secret. Do not use either previously inspected Neon project.
+2. Make provider credentials available to the V2 ingestion worker through secret storage (never commit or paste secret values into chat).
+3. Verify actual 5DollarFootballAPI account plan, supported competitions/data classes, historical depth, quota/reset and commercial-use permissions. Verify The Odds API account/credit limits if used. Public plan descriptions are not account verification.
+4. Populate team and competition mappings from actual provider IDs with auditable evidence; do not seed guessed aliases.
+5. Run a small, bounded provider sample, persist raw records and verify exact hashes, IDs, timestamps, rights evidence and idempotency.
+6. Execute resumable historical import and reconcile source counts, date ranges, provider fixture IDs, canonical duplicates, quarantines and coverage. Zero unexplained source-record loss is mandatory.
+7. Run the repository adapters against the actual isolated PostgreSQL target and perform restore/replay checks. Current CI uses offline tests and does not prove a live database migration.
+
+Until those criteria pass, provider adapters remain disabled, no watermark may advance for an unverified import, Phase 3 must not be marked complete, and Phase 4 model research must not consume unverified history.
+
+### Quota and deployment note
+
+Several V2 commits triggered automatic Vercel preview builds. The latest preview is READY. Avoid additional commits, preview builds, provider calls or redeploys until a necessary code change or the storage/provider blockers are resolved. No V2 production deployment has occurred.
