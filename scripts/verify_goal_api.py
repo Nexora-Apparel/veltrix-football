@@ -139,8 +139,9 @@ def main() -> int:
 
     def call(path, params=None):
         nonlocal requests
-        status, headers, body = get(path, params)
+        # Count attempted requests, including HTTP/network failures.
         requests += 1
+        status, headers, body = get(path, params)
         data = data_of(body)
         if status != 200 or data is None:
             raise ProbeError(f"{path}: unexpected response")
