@@ -82,3 +82,11 @@ New safeguards: source-manifest reconciliation detects missing, unexpected and d
 - Provider access and rights verification: still blocked; keep all live provider calls disabled.
 - Historical source import, real mapping population, count reconciliation, backup/restore and point-in-time data acceptance: not started.
 - Phase 3: **IN PROGRESS — NOT EXITED**.
+
+
+### PostgreSQL audit CI result — 2026-11-08
+
+- Diagnostics implementation at `30c3345b19c4bab6580e60be462e7f329cb0f5a8` passed hosted CI run `42467966378`: **292 passed in 1.21 seconds** on PostgreSQL 16.
+- Follow-up hardening now treats zero or multiple distinct active verified canonical targets as unresolved mapping evidence (not merely missing mapping rows).
+- Added a PostgreSQL regression case with two overlapping verified home-team mappings that resolve to different canonical teams.
+- Current CI run `42468038418` targets commit `893e5bc054479d01f82fb7e3c76e1dbf2e343d5e`; it was queued at this update. The 293-test final version is not yet certified.
