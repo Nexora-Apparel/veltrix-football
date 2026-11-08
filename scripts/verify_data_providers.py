@@ -18,6 +18,7 @@ from urllib.request import Request, urlopen
 BASE = "https://api.5dollarfootballapi.com/v1"
 TIMEOUT = 20
 PAGE_SIZE = 100
+MAX_PAGES_PER_COMPETITION = 3
 
 
 class ProviderCheckError(RuntimeError):
@@ -155,6 +156,7 @@ def main() -> int:
     has_more_competitions = []
     earliest = latest = None
     final_remaining = None
+    request_count = len(checks)
 
     for league in leagues:
         if not isinstance(league, dict) or not isinstance(league.get("id"), int):
@@ -171,65 +173,73 @@ def main() -> int:
             "per_page": PAGE_SIZE,
             "order": "asc",
         }
-        try:
-            status, headers, payload = request_json(path, params)
-        except ProviderCheckError as exc:
-            print(f"HISTORICAL_PREFLIGHT {league_name}: FAILED ({exc})")
-            return 1
-        rows = envelope(payload)
-        if status != 200 or not isinstance(rows, list):
-            print(f"HISTORICAL_PREFLIGHT {league_name}: UNEXPECTED_RESPONSE")
-            return 1
-        final_remaining = headers.get("X-RateLimit-Remaining", final_remaining)
-        pagination = payload.get("pagination") if isinstance(payload, dict) else {}
-        more = bool(pagination.get("has_more")) if isinstance(pagination, dict) else False
+        comp_rows = comp_valid = comp_invalid = 0
+        page = 1
+        more = True
+        while more and page <= MAX_PAGES_PER_COMPETITION:
+            params["page"] = page
+            try:
+                status, headers, payload = request_json(path, params)
+            except ProviderCheckError as exc:
+                print(f"HISTORICAL_PREFLIGHT {league_name} page={page}: FAILED ({exc})")
+                return 1
+            request_count += 1
+            rows = envelope(payload)
+            if status != 200 or not isinstance(rows, list):
+                print(f"HISTORICAL_PREFLIGHT {league_name} page={page}: UNEXPECTED_RESPONSE")
+                return 1
+            final_remaining = headers.get("X-RateLimit-Remaining", final_remaining)
+            pagination = payload.get("pagination") if isinstance(payload, dict) else {}
+            more = bool(pagination.get("has_more")) if isinstance(pagination, dict) else False
+
+            for fixture in rows:
+                source_rows += 1
+                comp_rows += 1
+                if not isinstance(fixture, dict):
+                    invalid_finished += 1
+                    comp_invalid += 1
+                    continue
+                fixture_id = fixture.get("id")
+                if fixture_id is None:
+                    invalid_finished += 1
+                    comp_invalid += 1
+                elif fixture_id in all_ids:
+                    duplicate_ids.add(fixture_id)
+                else:
+                    all_ids.add(fixture_id)
+
+                goals = fixture.get("goals") if isinstance(fixture.get("goals"), dict) else {}
+                score_ok = is_nonnegative_integer(goals.get("home")) and is_nonnegative_integer(goals.get("away"))
+                if fixture.get("status") == "finished" and score_ok:
+                    valid_results += 1
+                    comp_valid += 1
+                else:
+                    invalid_finished += 1
+                    comp_invalid += 1
+
+                teams = fixture.get("teams") if isinstance(fixture.get("teams"), dict) else {}
+                home = teams.get("home") if isinstance(teams.get("home"), dict) else {}
+                away = teams.get("away") if isinstance(teams.get("away"), dict) else {}
+                if home.get("id") is None or away.get("id") is None:
+                    unresolved_team_ids += 1
+
+                kickoff = fixture.get("kickoff_utc")
+                if isinstance(kickoff, str):
+                    try:
+                        parsed = datetime.fromisoformat(kickoff.replace("Z", "+00:00"))
+                        earliest = parsed if earliest is None or parsed < earliest else earliest
+                        latest = parsed if latest is None or parsed > latest else latest
+                    except ValueError:
+                        pass
+            page += 1
+
         if more:
             has_more_competitions.append(league_name)
-
-        comp_valid = comp_invalid = 0
-        for fixture in rows:
-            source_rows += 1
-            if not isinstance(fixture, dict):
-                invalid_finished += 1
-                comp_invalid += 1
-                continue
-            fixture_id = fixture.get("id")
-            if fixture_id is None:
-                invalid_finished += 1
-                comp_invalid += 1
-            elif fixture_id in all_ids:
-                duplicate_ids.add(fixture_id)
-            else:
-                all_ids.add(fixture_id)
-
-            goals = fixture.get("goals") if isinstance(fixture.get("goals"), dict) else {}
-            score_ok = is_nonnegative_integer(goals.get("home")) and is_nonnegative_integer(goals.get("away"))
-            if fixture.get("status") == "finished" and score_ok:
-                valid_results += 1
-                comp_valid += 1
-            else:
-                invalid_finished += 1
-                comp_invalid += 1
-
-            teams = fixture.get("teams") if isinstance(fixture.get("teams"), dict) else {}
-            home = teams.get("home") if isinstance(teams.get("home"), dict) else {}
-            away = teams.get("away") if isinstance(teams.get("away"), dict) else {}
-            if home.get("id") is None or away.get("id") is None:
-                unresolved_team_ids += 1
-
-            kickoff = fixture.get("kickoff_utc")
-            if isinstance(kickoff, str):
-                try:
-                    parsed = datetime.fromisoformat(kickoff.replace("Z", "+00:00"))
-                    earliest = parsed if earliest is None or parsed < earliest else earliest
-                    latest = parsed if latest is None or parsed > latest else latest
-                except ValueError:
-                    pass
-
         print(
             f"HISTORICAL_PREFLIGHT {league_name} (id={league_id}): "
-            f"source_rows={len(rows)}; valid_finished_results={comp_valid}; "
-            f"invalid_or_unsettled={comp_invalid}; has_more={str(more)}"
+            f"source_rows={comp_rows}; valid_finished_results={comp_valid}; "
+            f"invalid_or_unsettled={comp_invalid}; pages_read={page - 1}; "
+            f"has_more_after_cap={str(more)}"
         )
 
     complete = not has_more_competitions
@@ -241,7 +251,8 @@ def main() -> int:
         f"missing_team_ids={unresolved_team_ids}; "
         f"kickoff_range={earliest.isoformat() if earliest else 'none'}..{latest.isoformat() if latest else 'none'}; "
         f"all_pages_complete={str(complete)}; "
-        f"additional_pages_required_at_least={len(has_more_competitions)}; "
+        f"additional_pages_required_for={';'.join(has_more_competitions) if has_more_competitions else 'none'}; "
+        f"api_requests_made={request_count}; "
         f"rate_limit_remaining_after_run={safe_scalar(final_remaining)}"
     )
     print("DATABASE_WRITES: 0; IMPORTED_RECORDS: 0; IMPORT_RUNS_CREATED: 0; CHECKPOINTS_CREATED: 0")
