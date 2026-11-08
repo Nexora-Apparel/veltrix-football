@@ -1,3 +1,6 @@
+
+> **Continuation checkpoint — 2026-11-08 (supersedes older checkpoint values below where they conflict):** V2 branch HEAD at documentation update: `30c3345b19c4bab6580e60be462e7f329cb0f5a8`. Latest completed hosted CI before the new diagnostics: run `42467645029`, commit `254c6d8e3fcc4773ce29f016183662a30157296b`, **289 passed** using a PostgreSQL 16 service container. Read-only PostgreSQL reconciliation diagnostics have now been added for orphaned fixture source records, unverified/missing competition and home/away team mappings, provenance inconsistencies/gaps and duplicate canonical fixture identities. New PostgreSQL integration cases cover clean and deliberately corrupted fixtures and verify the audit does not mutate row counts. CI for the diagnostics commit is pending; do not claim those tests pass until the run completes. `main` remains `05e517af4dcac27507a3c32ebaceee117828df22`; `command-data` remains `f759046a44edcc5a0c69198b4b7183176c2562b5`. No production deployment, provider API call, Neon database creation or migration occurred. Phase 3 remains IN PROGRESS.
+
 # VELTRIX FOOTBALL 2.0 — Master Roadmap and Continuity Contract
 
 **Document type:** Binding project execution roadmap  
