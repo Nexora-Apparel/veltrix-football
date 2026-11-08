@@ -62,19 +62,30 @@ class PostgresFixtureDecisionRepository:
         conn=self._connect()
         try:
             cur=conn.cursor()
-            if status==ReconciliationStatus.NEW_CANONICAL_FIXTURE.value:
-                cur.execute("""INSERT INTO v2_canonical_fixtures
-                    (canonical_fixture_id,canonical_competition_id,squad_category,
-                     canonical_home_team_id,canonical_away_team_id,kickoff_at_utc)
-                    VALUES (%s,%s,%s,%s,%s,%s) ON CONFLICT(canonical_fixture_id) DO NOTHING""",
-                    (canonical_id,mapped.canonical_competition_id,mapped.squad_category.value,
-                     mapped.canonical_home_team_id,mapped.canonical_away_team_id,mapped.kickoff_at_utc))
+            # Confirm the source record belongs to this exact provider fixture.
+            cur.execute("""SELECT provider,source_id,provider_fixture_id
+                FROM v2_source_records WHERE source_record_id=%s""",(source_record_id,))
+            stored_source=cur.fetchone()
+            expected_source=(source.provider,source.source_id,source.provider_fixture_id)
+            if not stored_source or tuple(stored_source)!=expected_source:
+                raise ValueError("SOURCE_RECORD_PROVIDER_FIXTURE_MISMATCH")
+
+            if status in {ReconciliationStatus.NEW_CANONICAL_FIXTURE.value,
+                          ReconciliationStatus.MATCHED_EXISTING.value}:
+                if status==ReconciliationStatus.NEW_CANONICAL_FIXTURE.value:
+                    cur.execute("""INSERT INTO v2_canonical_fixtures
+                        (canonical_fixture_id,canonical_competition_id,squad_category,
+                         canonical_home_team_id,canonical_away_team_id,kickoff_at_utc)
+                        VALUES (%s,%s,%s,%s,%s,%s) ON CONFLICT(canonical_fixture_id) DO NOTHING""",
+                        (canonical_id,mapped.canonical_competition_id,mapped.squad_category.value,
+                         mapped.canonical_home_team_id,mapped.canonical_away_team_id,mapped.kickoff_at_utc))
                 cur.execute("""SELECT canonical_competition_id,squad_category,canonical_home_team_id,
                     canonical_away_team_id,kickoff_at_utc FROM v2_canonical_fixtures
                     WHERE canonical_fixture_id=%s""",(canonical_id,))
                 expected=(mapped.canonical_competition_id,mapped.squad_category.value,
                           mapped.canonical_home_team_id,mapped.canonical_away_team_id,mapped.kickoff_at_utc)
-                if cur.fetchone()!=expected:
+                stored_fixture=cur.fetchone()
+                if stored_fixture is None or tuple(stored_fixture)!=expected:
                     raise ValueError("CANONICAL_FIXTURE_IDENTITY_CONFLICT")
             cur.execute("""INSERT INTO v2_fixture_sources
                 (provider,source_id,provider_fixture_id,provider_competition_id,
