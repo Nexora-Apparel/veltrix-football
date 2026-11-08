@@ -1,0 +1,26 @@
+name: Verify GOAL API Free-Tier Coverage
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  goal-api-readonly-probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    concurrency:
+      group: veltrix-goal-api-readonly-probe
+      cancel-in-progress: false
+    env:
+      GOAL_API_KEY: ${{ secrets.GOAL_API_KEY }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Verify GOAL API free-tier coverage
+        run: python scripts/verify_goal_api.py
