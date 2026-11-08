@@ -57,3 +57,28 @@ New safeguards: source-manifest reconciliation detects missing, unexpected and d
 - Vercel integration configuration confirms Neon provisioning capability, but no resource-provisioning action is exposed by the available connector; no project was created.
 - Manual Vercel Marketplace provisioning is required: attach a Neon Free database to the Vercel football project, then use generated env vars without exposing values.
 - No paid resource or billing change was created.
+
+
+### Reconciliation diagnostics implementation — 2026-11-08
+
+- Added `veltrix_v2.audit.reconciliation.audit_postgres_reconciliation`.
+- The audit opens a PostgreSQL read-only transaction and checks:
+  - fixture-class source records with no fixture-source decision (orphaned source records);
+  - competition mappings that are missing, unverified or outside their effective validity interval;
+  - home-team and away-team mappings under the same verification and validity rules;
+  - historical matches without source-record provenance;
+  - fixture-source rows whose provider/source/fixture tuple conflicts with the referenced immutable source record;
+  - duplicate canonical fixture identities sharing competition, squad, home team, away team and exact kickoff.
+- Results are grouped by category with total counts and bounded sample identifiers (1–100). The audit performs no repairs, merges, quarantine writes or deletes.
+- PostgreSQL integration cases cover a clean empty schema, deliberately seeded orphan/mapping/provenance/duplicate defects, sample-limit rejection and before/after row-count equality.
+- Latest code/test commit before documentation: `30c3345b19c4bab6580e60be462e7f329cb0f5a8`.
+- Latest diagnostics CI run: `42467966378`, pending at documentation time. The last completed CI run remains `42467645029`: **289 passed**. The diagnostics suite has not yet been claimed as passing.
+- Production `main` and `command-data` remain unchanged. No real Neon database has been provisioned, no migration applied to Neon, and no provider API calls or imports have occurred.
+
+### Acceptance state
+
+- Offline implementation and PostgreSQL CI coverage: ongoing validation.
+- Real database acceptance: blocked until a dedicated V2 Neon Free database is provisioned and its V2-only connection secret is configured.
+- Provider access and rights verification: still blocked; keep all live provider calls disabled.
+- Historical source import, real mapping population, count reconciliation, backup/restore and point-in-time data acceptance: not started.
+- Phase 3: **IN PROGRESS — NOT EXITED**.
