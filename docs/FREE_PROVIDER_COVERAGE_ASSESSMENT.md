@@ -16,7 +16,7 @@ The target remains broad: upcoming fixtures and settled results across the compe
 | 5DollarFootballAPI (existing) | Verified account exposes five competitions: England Premier League, France Ligue 1, Germany Bundesliga I, Italy Serie A, Spain La Liga | Fixtures and finished results; current account tested | Primary for its verified five competitions only. Free plan and three-month history confirmed in the 2026-11-08 provider run. |
 | football-data.org | Free tier explicitly lists 12 competitions, including Brazil Série A, England/European major competitions | Fixtures, results, standings; current season and selected historical seasons via API | Candidate for Brazil and overlap reconciliation. Argentina Liga Profesional is listed in the all-competitions catalogue but is not in the free-tier list; do not assume it is accessible. Free plan limits and delayed score behaviour must be respected. |
 | OpenFootball / football.db | Public-domain datasets include Argentina Primera División and Brazil Brasileiro Série A | Historical schedules/results as Football.TXT datasets | Historical/static supplement only. Not a live feed or guaranteed future fixture source. Verify season completeness and last update before importing. |
-| GOAL API | Official site advertises a free key with 1,000 requests/day and a broad 1,019-league coverage catalogue; Argentine Liga Profesional is listed with historical matches | Fixtures, results, standings, lineups and match statistics | High-priority candidate for an authenticated free-tier test. Public coverage catalogue does not establish free-tier entitlement per competition. Brazil and women's competition availability remain unverified. Odds/predictions are paid features. |
+| GOAL API | Official site advertises a free key with 1,000 requests/day and a 1,019-league coverage catalogue; Argentine Liga Profesional and Primera Nacional are listed in the public catalogue | REST fixtures, results, standings, lineups and match statistics | High-priority candidate for authenticated free-tier tests. Public catalogue does not establish free-tier entitlement per competition. Brazil and women's availability remain unverified. Odds/predictions are paid. Free plan allows zero concurrent WebSocket match subscriptions, so do not treat it as a free live-push feed. |
 | StrikerAPI | Published coverage report lists 17 competitions, including Argentine Primera, Brasileirão Série A and NWSL; free tier reported as 500 credits/month across endpoints | Fixtures/results, lineups, player stats, shot locations and modelled xG; odds coverage is separately listed | High-priority candidate for coverage and terms review. It is updated daily, not a live feed. NWSL is one women's competition, not comprehensive women's coverage. Confirm first-party pricing/terms and actual API entitlement before use. No feed redistribution. |
 | API Ninjas Football | Its free tier explicitly covers only eight competitions: EPL, La Liga, Bundesliga, Serie A, Ligue 1, Champions League, Europa League and MLS | Current-season fixtures/results, standings, clubs and squads | Not a free-tier solution for Argentina, Brazil or women's competitions. The endpoint catalogue lists more leagues, but the FAQ explicitly limits free-tier competition coverage to eight. Free tier prohibits commercial use. Do not treat its full catalogue as free access. |
 | StatsBomb Open Data | Selected historical competitions, including Argentina (specific seasons) and multiple women's competitions | Event-level data, lineups, shots and xG for selected historical matches | Research/training dataset only; selected seasons, not a complete live fixture/result provider. Review repository licence/attribution requirements before use. |
@@ -29,6 +29,18 @@ The target remains broad: upcoming fixtures and settled results across the compe
 4. Use football-data.org as a focused Brazil and overlapping European source after its free key is available.
 5. Use OpenFootball and StatsBomb only as historical/research sources, never as substitutes for current fixtures.
 6. Do not use API Ninjas Free as a solution to the missing competition gap; its documented free coverage is only eight competitions.
+
+## Prepared GOAL API verification
+
+A manual-only GitHub Actions workflow and bounded read-only probe are prepared:
+
+- Workflow: `.github/workflows/verify-goal-api.yml` (`workflow_dispatch` only; it does not run automatically on pushes).
+- Script: `scripts/verify_goal_api.py`.
+- Expected repository Actions secret: `GOAL_API_KEY`.
+- Probe makes at most eight GET requests: countries, Argentina leagues, Brazil leagues, one global league page, and one fixture/result sample for at most one top-flight competition per country.
+- It prints only safe metadata, never the key or raw provider payload. It creates no database writes/imports.
+
+The probe is not run until a key is configured. GOAL API documents Bearer authentication, `/countries`, `/countries/:id/leagues`, `/leagues`, and per-league fixture/results endpoints. Its published free key is 1,000 requests/day, but the actual plan and per-competition entitlements still need verification. Free plan has zero concurrent WebSocket match subscriptions.
 
 ## Mandatory verification before enabling any candidate
 
