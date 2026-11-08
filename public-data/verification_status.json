@@ -1,12 +1,12 @@
 {
   "schema_version": 1,
   "workflow": "Daily Fixture Predictions",
-  "run_id": "42473141832",
+  "run_id": "42489076711",
   "run_attempt": "1",
-  "event": "schedule",
+  "event": "workflow_dispatch",
   "commit_sha": "05e517af4dcac27507a3c32ebaceee117828df22",
   "branch": "main",
-  "recorded_at_utc": "2026-11-08T10:52:41.363287+00:00",
+  "recorded_at_utc": "2026-11-08T14:19:30.805727+00:00",
   "overall_status": "PASSED",
   "validation_scope": "LIVE_PIPELINE",
   "telegram_configured": true,
@@ -32,36 +32,40 @@
   "report_summary": {
     "as_of_date": "2026-11-08",
     "publication_status": "PUBLISHED",
-    "fixtures_received": 219,
-    "same_day_pre_match_fixtures": 219,
-    "same_day_fixtures_retained": 219,
-    "past_kickoffs_retained": 0,
+    "fixtures_received": 117,
+    "same_day_pre_match_fixtures": 107,
+    "same_day_fixtures_retained": 117,
+    "past_kickoffs_retained": 9,
     "duplicate_fixture_rows_removed": null,
-    "future_fixtures_considered": 219,
-    "fixture_rows": 219,
+    "future_fixtures_considered": 107,
+    "fixture_rows": 117,
     "fixture_status_counts": {
-      "INSUFFICIENT_HISTORY": 157,
-      "UNSUPPORTED_COMPETITION": 28,
-      "AMBIGUOUS_FIXTURE_IDENTITY": 16,
-      "EXPERIMENTAL_ONLY": 14,
-      "LOW_HISTORY_FORECAST": 4
+      "KICKOFF_PASSED": 9,
+      "UNSUPPORTED_COMPETITION": 7,
+      "FIXTURE_NOT_PREMATCH": 1,
+      "LOW_HISTORY_FORECAST": 2,
+      "INSUFFICIENT_HISTORY": 81,
+      "AMBIGUOUS_FIXTURE_IDENTITY": 10,
+      "EXPERIMENTAL_ONLY": 7
     },
     "fixture_visibility_validation": {
       "status": "PASSED",
-      "fixture_rows": 219,
-      "expected_fixture_rows": 219,
+      "fixture_rows": 117,
+      "expected_fixture_rows": 117,
       "fixture_status_counts": {
-        "INSUFFICIENT_HISTORY": 157,
-        "UNSUPPORTED_COMPETITION": 28,
-        "AMBIGUOUS_FIXTURE_IDENTITY": 16,
-        "EXPERIMENTAL_ONLY": 14,
-        "LOW_HISTORY_FORECAST": 4
+        "KICKOFF_PASSED": 9,
+        "UNSUPPORTED_COMPETITION": 7,
+        "FIXTURE_NOT_PREMATCH": 1,
+        "LOW_HISTORY_FORECAST": 2,
+        "INSUFFICIENT_HISTORY": 81,
+        "AMBIGUOUS_FIXTURE_IDENTITY": 10,
+        "EXPERIMENTAL_ONLY": 7
       },
       "kickoff_unverified_rows": 0,
-      "forecast_rows": 18,
-      "low_data_forecast_rows": 4,
-      "insufficient_history_rows": 157,
-      "senior_forecast_coverage": 0.0822,
+      "forecast_rows": 9,
+      "low_data_forecast_rows": 2,
+      "insufficient_history_rows": 81,
+      "senior_forecast_coverage": 0.0841,
       "licensed_global_history_rows_diagnostic_only": 421,
       "alerts_enabled": false
     },
@@ -70,15 +74,15 @@
     "value_intelligence": {
       "engine": "VELTRIX_VALUE_INTELLIGENCE_V1",
       "status": "SHADOW_MODE",
-      "fixtures_evaluated": 9,
+      "fixtures_evaluated": 5,
       "bookmaker_price_sets_by_market": {
-        "1X2": 168,
+        "1X2": 93,
         "BTTS": 20,
         "OVER_UNDER_1_5": 0,
-        "OVER_UNDER_2_5": 23,
-        "OVER_UNDER_3_5": 17
+        "OVER_UNDER_2_5": 11,
+        "OVER_UNDER_3_5": 11
       },
-      "shadow_candidate_count": 28,
+      "shadow_candidate_count": 18,
       "alerts_enabled": false,
       "release_status": "LOCKED_SHADOW_MODE",
       "note": "Market consensus, model shrinkage and quote-level screening are research-only. Existing value certificate remains authoritative."
@@ -86,12 +90,12 @@
     "value_validation_certificate": "LOCKED_INSUFFICIENT_EVIDENCE"
   },
   "value_evidence_summary": {
-    "observations_total": 7661,
-    "observations_added": 624,
-    "price_series": 3466,
-    "series_with_multiple_snapshots": 1659,
+    "observations_total": 8024,
+    "observations_added": 363,
+    "price_series": 3506,
+    "series_with_multiple_snapshots": 1982,
     "settled_observations": 2443,
-    "shadow_candidate_observations": 299,
+    "shadow_candidate_observations": 317,
     "legacy_candidate_observations_unannotated": 0,
     "settled_shadow_candidates": 63,
     "shadow_candidate_wins": 10,
@@ -110,10 +114,10 @@
         "log_loss": 1.221797389238488
       },
       "experimental_elo_by_competition": {
-        "matches": 5,
-        "result_accuracy": 0.8,
-        "brier_score": 0.5621178656955946,
-        "log_loss": 0.9552878436564999
+        "matches": 16,
+        "result_accuracy": 0.5625,
+        "brier_score": 0.6133140276106094,
+        "log_loss": 1.0296436248915422
       },
       "experimental_elo_global_fallback": {
         "matches": 11,
@@ -122,10 +126,10 @@
         "log_loss": 1.0706515812482393
       },
       "experimental_recent_goals_poisson": {
-        "matches": 20,
-        "result_accuracy": 0.55,
-        "brier_score": 0.5913180484632858,
-        "log_loss": 0.987233961807321
+        "matches": 31,
+        "result_accuracy": 0.4838709677419355,
+        "brier_score": 0.5977257543243065,
+        "log_loss": 0.9952671014523259
       }
     }
   },
