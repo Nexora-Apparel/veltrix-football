@@ -1,12 +1,41 @@
 from datetime import date, datetime, timedelta, timezone
 from hashlib import sha256
 from pathlib import Path
+from urllib.parse import unquote, urlparse
 import os
 import pytest
 
 psycopg=pytest.importorskip("psycopg")
 DB_URL=os.getenv("V2_TEST_DATABASE_URL")
 pytestmark=pytest.mark.skipif(not DB_URL,reason="V2_TEST_DATABASE_URL not configured")
+
+
+def _validate_disposable_test_database(dsn: str) -> None:
+    """Only allow destructive schema reset against the dedicated local CI database."""
+    parsed = urlparse(dsn)
+    host = (parsed.hostname or "").lower()
+    database = unquote(parsed.path.lstrip("/").split("/", 1)[0])
+    if parsed.scheme not in {"postgres", "postgresql"}:
+        raise RuntimeError("V2_TEST_DATABASE_SCHEME_INVALID")
+    if host not in {"localhost", "127.0.0.1", "::1"}:
+        raise RuntimeError("V2_TEST_DATABASE_HOST_MUST_BE_LOCAL")
+    if database != "veltrix_v2_test":
+        raise RuntimeError("V2_TEST_DATABASE_NAME_MUST_BE_DISPOSABLE")
+    if parsed.port != 5432:
+        raise RuntimeError("V2_TEST_DATABASE_PORT_MUST_BE_5432")
+
+
+def test_destructive_test_database_guard_rejects_non_local_targets():
+    valid = "postgresql://user:password@localhost:5432/veltrix_v2_test"
+    _validate_disposable_test_database(valid)
+    for unsafe in (
+        "postgresql://user:password@db.neon.tech:5432/veltrix_v2_test",
+        "postgresql://user:password@localhost:5432/veltrix_football_v2",
+        "postgresql://user:password@localhost:5433/veltrix_v2_test",
+        "https://localhost/veltrix_v2_test",
+    ):
+        with pytest.raises(RuntimeError):
+            _validate_disposable_test_database(unsafe)
 
 from veltrix_v2.domain.contracts import DataUsePurpose, RightsDecision, RightsStatus, SourceRights
 from veltrix_v2.domain.identity import ReconciliationDecision, ReconciliationStatus, SquadCategory, reconcile_provider_fixture
@@ -29,6 +58,7 @@ KICKOFF=NOW-timedelta(days=2)
 
 @pytest.fixture
 def connect():
+    _validate_disposable_test_database(DB_URL)
     with psycopg.connect(DB_URL) as conn:
         conn.execute("DROP SCHEMA public CASCADE")
         conn.execute("CREATE SCHEMA public")
