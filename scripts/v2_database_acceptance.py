@@ -52,7 +52,7 @@ REQUIRED_CONSTRAINTS = frozenset({
     "v2_historical_match_sources_pkey",
     "v2_historical_match_sources_historical_match_id_fkey",
     "v2_historical_match_sources_source_record_id_fkey",
-    "v2_historical_match_sources_provider_source_id_provider_fixture_id_source_record_id_fkey",
+    "v2_historical_match_sources_provider_source_id_provider_fixture_id_source_record_id_fkey"[:63],
     "v2_identity_quarantine_pkey",
     "v2_identity_quarantine_source_record_id_fkey",
     "v2_sync_watermarks_pkey",
