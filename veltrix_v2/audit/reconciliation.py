@@ -52,42 +52,45 @@ findings(category, record_id) AS (
     SELECT 'unresolved_competition_mappings', s.source_record_id
     FROM v2_source_records s
     WHERE s.provider_competition_id IS NOT NULL
-      AND NOT EXISTS (
-        SELECT 1 FROM v2_competition_mappings m
+      AND (
+        SELECT COUNT(DISTINCT m.canonical_competition_id)
+        FROM v2_competition_mappings m
         WHERE m.provider=s.provider AND m.source_id=s.source_id
           AND m.provider_competition_id=s.provider_competition_id
           AND m.verification_state='VERIFIED'
           AND m.valid_from_utc <= s.fetched_at_utc
           AND (m.valid_to_utc IS NULL OR m.valid_to_utc > s.fetched_at_utc)
-      )
+      ) <> 1
 
     UNION ALL
 
     SELECT 'unresolved_home_team_mappings', s.source_record_id
     FROM v2_source_records s
     WHERE s.provider_home_team_id IS NOT NULL
-      AND NOT EXISTS (
-        SELECT 1 FROM v2_team_mappings m
+      AND (
+        SELECT COUNT(DISTINCT m.canonical_team_id)
+        FROM v2_team_mappings m
         WHERE m.provider=s.provider AND m.source_id=s.source_id
           AND m.provider_team_id=s.provider_home_team_id
           AND m.verification_state='VERIFIED'
           AND m.valid_from_utc <= s.fetched_at_utc
           AND (m.valid_to_utc IS NULL OR m.valid_to_utc > s.fetched_at_utc)
-      )
+      ) <> 1
 
     UNION ALL
 
     SELECT 'unresolved_away_team_mappings', s.source_record_id
     FROM v2_source_records s
     WHERE s.provider_away_team_id IS NOT NULL
-      AND NOT EXISTS (
-        SELECT 1 FROM v2_team_mappings m
+      AND (
+        SELECT COUNT(DISTINCT m.canonical_team_id)
+        FROM v2_team_mappings m
         WHERE m.provider=s.provider AND m.source_id=s.source_id
           AND m.provider_team_id=s.provider_away_team_id
           AND m.verification_state='VERIFIED'
           AND m.valid_from_utc <= s.fetched_at_utc
           AND (m.valid_to_utc IS NULL OR m.valid_to_utc > s.fetched_at_utc)
-      )
+      ) <> 1
 
     UNION ALL
 
