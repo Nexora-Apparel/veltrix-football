@@ -11,8 +11,7 @@ MIGRATIONS_DIR = Path(__file__).resolve().parents[1] / "migrations" / "v2"
 LOCK_NAME = "veltrix-football-v2-schema"
 
 
-def validate_database_dsn(dsn: str, *, expected_database: str = EXPECTED_DATABASE,
-                          expected_host: str | None = None) -> None:
+def validate_database_dsn(dsn: str, *, expected_host: str | None = None) -> None:
     """Reject non-Neon, non-V2 or non-TLS connection targets before connecting."""
     if not dsn or not dsn.strip():
         raise ValueError("VELTRIX_V2_DATABASE_URL_REQUIRED")
@@ -24,7 +23,7 @@ def validate_database_dsn(dsn: str, *, expected_database: str = EXPECTED_DATABAS
     if not expected_host or parsed.hostname.lower() != expected_host.lower():
         raise ValueError("V2_DATABASE_HOST_MUST_MATCH_EXPLICIT_ALLOWLIST")
     database = unquote(parsed.path.lstrip("/").split("/", 1)[0])
-    if not expected_database or database != expected_database:
+    if database != EXPECTED_DATABASE:
         raise ValueError("V2_DATABASE_NAME_MUST_MATCH_APPROVED_TARGET")
     sslmode = parse_qs(parsed.query).get("sslmode", [])
     if not sslmode or sslmode[0] not in {"require", "verify-ca", "verify-full"}:
@@ -81,19 +80,18 @@ def main() -> int:
     dsn = os.environ.get("VELTRIX_V2_DATABASE_URL", "")
     if os.environ.get("VELTRIX_V2_STORAGE_APPROVED") != "true":
         raise SystemExit("BLOCKED: set VELTRIX_V2_STORAGE_APPROVED=true after verifying the V2-only target")
-    expected_database = os.environ.get("VELTRIX_V2_EXPECTED_DATABASE", EXPECTED_DATABASE)
     expected_host = os.environ.get("VELTRIX_V2_EXPECTED_HOST", "")
     if not expected_host:
         raise SystemExit("BLOCKED: set VELTRIX_V2_EXPECTED_HOST to the exact Neon hostname verified in Vercel")
-    validate_database_dsn(dsn, expected_database=expected_database, expected_host=expected_host)
+    validate_database_dsn(dsn, expected_host=expected_host)
     import psycopg
 
     with psycopg.connect(dsn, connect_timeout=10) as connection:
         with connection.cursor() as cur:
             cur.execute("SELECT current_database()")
             actual_database = cur.fetchone()[0]
-        if actual_database != expected_database:
-            raise SystemExit("BLOCKED: connected database does not match the approved V2 database name")
+        if actual_database != EXPECTED_DATABASE:
+            raise SystemExit("BLOCKED: connected database does not match the fixed V2 database name")
         applied = apply_all_migrations(connection)
     print("V2_SCHEMA_MIGRATIONS_APPLIED=" + (",".join(applied) if applied else "NONE_ALREADY_CURRENT"))
     return 0
