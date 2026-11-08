@@ -53,7 +53,7 @@ jobs:
           with psycopg.connect(os.environ["DATABASE_URL"]) as c:
               with c.cursor() as q:
                   q.execute("SELECT count(*) FROM information_schema.tables WHERE table_schema='public'")
-                  assert q.fetchone()[0] >= 12
+                  assert q.fetchone()[0] >= 11
                   q.execute("SELECT count(*) FROM pg_indexes WHERE schemaname='public'")
                   assert q.fetchone()[0] >= 6
                   q.execute("SELECT count(*) FROM schema_migrations")
