@@ -586,3 +586,18 @@ Supersedes earlier 2026-11-08 checkpoint details above.
 - The Vercel integration configuration exposes Neon provisioning capability, but the available Vercel connector has no create/provision integration-resource action. Existing integration reports no provisioned projects.
 - No project was created and no paid plan or billing change was initiated. The correct path is provisioning Neon through the Vercel Marketplace integration UI, selecting the Free plan and a region compatible with the Vercel project. Once the integration is attached, use its generated project environment variables; do not paste database credentials into chat or commit them.
 - This is now the single infrastructure blocker for persistent storage. CI PostgreSQL 16 integration tests continue to validate the migration and repositories independently.
+
+
+### Phase 3 checkpoint — database acceptance and provider entitlement gates (2026-11-08)
+
+- Added `scripts/v2_database_acceptance.py`, a read-only database gate for the fixed V2 database target. It checks required tables/columns, indexes, constraints, applied migration versions and SHA-256 checksums.
+- Added a PostgreSQL integration test that applies the migration in disposable CI PostgreSQL and asserts the acceptance gate is clean.
+- Hardened the destructive PostgreSQL test fixture to reject non-local hosts, unexpected database names and ports.
+- Added `docs/v2/DATABASE_ACCEPTANCE_AND_PROVIDER_ENTITLEMENTS.md` with current database inventory, provider public-plan baselines, account evidence requirements and a bounded ingestion sequence.
+- Neon inventory confirms only two unrelated projects are visible: Gold Scalper and Nexora/CARDINAL. Neither may be used for V2. The connected Neon organization is Vercel-managed; no dedicated V2 database or connection string exists.
+- Public 5DollarFootballAPI documentation lists Community Access as a $0 option with top-five leagues plus one country pack and 12 months of history. This is not proof that the user's account has that plan or country pack. Public-facing use on $0 plans requires attribution.
+- The Odds API terms permit storage/display/derived analytics/model training but historical odds require paid access. No paid historical odds calls are permitted under the current budget.
+- No dedicated database connection, migration, live provider request, bounded import or production write was performed. Phase 3 remains IN PROGRESS.
+- The GitHub Actions run associated with the latest commits is not exposed by the currently connected workflow-run listing (it returns no PR-triggered runs); the visible Vercel status is not a PostgreSQL CI result. Do not mark the new tests passed until a completed GitHub Actions run is inspected.
+
+**Next:** provision only a dedicated V2 Neon Free database through the Vercel Marketplace integration; then set V2-only secrets, apply the guarded migration, run the acceptance script and real-database tests. Verify account-level provider entitlements before a bounded one-competition sample.
