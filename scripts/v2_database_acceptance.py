@@ -37,7 +37,7 @@ REQUIRED_INDEXES = frozenset({
 REQUIRED_CONSTRAINTS = frozenset({
     "v2_source_records_pkey",
     "v2_source_records_idempotency_key_key",
-    "v2_source_records_provider_source_id_provider_record_id_data_cl",
+    "v2_source_records_provider_source_id_provider_record_id_dat_key",
     "v2_competition_mappings_pkey",
     "v2_team_mappings_pkey",
     "v2_canonical_fixtures_pkey",
@@ -53,7 +53,7 @@ REQUIRED_CONSTRAINTS = frozenset({
     "v2_historical_match_sources_pkey",
     "v2_historical_match_sources_historical_match_id_fkey",
     "v2_historical_match_sources_source_record_id_fkey",
-    "v2_historical_match_sources_provider_source_id_provider_fixture",
+    "v2_historical_match_sources_provider_source_id_provider_fi_fkey",
     "v2_identity_quarantine_pkey",
     "v2_identity_quarantine_source_record_id_fkey",
     "v2_sync_watermarks_pkey",
