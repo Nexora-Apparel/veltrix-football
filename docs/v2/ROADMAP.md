@@ -568,3 +568,12 @@ Supersedes earlier 2026-11-08 checkpoint details above.
 - CI integration tests use a temporary PostgreSQL service and do not substitute for persistent V2 database provisioning, migration deployment or backup/restore proof.
 
 **Decision:** Phase 3 remains IN PROGRESS. Keep provider transport disabled. Do not mark Phase 3 complete or begin Phase 4 model research until the real provider and persistent-storage acceptance criteria pass.
+
+
+### Storage provisioning discovery — 2026-11-08
+- Neon organization `org-muddy-sunset-38353006` is confirmed on the **Free** plan.
+- The installed Vercel Marketplace Neon integration is also confirmed on its **Free** billing plan: $0, no payment method required, 1 GB/project and 100 CU-hours/project.
+- The organization is Vercel-managed. Direct Neon `create_project` was rejected by the provider with `organization is managed by Vercel`. This is a provider-side policy restriction, not a database/schema failure.
+- The Vercel integration configuration exposes Neon provisioning capability, but the available Vercel connector has no create/provision integration-resource action. Existing integration reports no provisioned projects.
+- No project was created and no paid plan or billing change was initiated. The correct path is provisioning Neon through the Vercel Marketplace integration UI, selecting the Free plan and a region compatible with the Vercel project. Once the integration is attached, use its generated project environment variables; do not paste database credentials into chat or commit them.
+- This is now the single infrastructure blocker for persistent storage. CI PostgreSQL 16 integration tests continue to validate the migration and repositories independently.

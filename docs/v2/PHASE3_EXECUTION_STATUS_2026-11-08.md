@@ -49,3 +49,11 @@ Phase 3 is **not complete**. The offline architecture and tests are in place; op
 New safeguards: source-manifest reconciliation detects missing, unexpected and duplicate import outcomes; watermark versions must advance exactly once and timestamps cannot regress; fixture persistence verifies raw source/provider/fixture identity and exact canonical identity.
 
 **Phase 3 remains IN PROGRESS.** No persistent V2 database, live provider credentials/entitlements, real identity mappings, provider sample, historical import, or restore proof exists yet. No external provider API calls or production writes have been made. Keep provider adapters disabled.
+
+
+### Storage provisioning blocker — 2026-11-08
+- Neon org plan verified: Free. Vercel-installed Neon Marketplace integration plan verified: Free, $0, no payment method required.
+- Direct Neon project creation was rejected because the organization is managed by Vercel.
+- Vercel integration configuration confirms Neon provisioning capability, but no resource-provisioning action is exposed by the available connector; no project was created.
+- Manual Vercel Marketplace provisioning is required: attach a Neon Free database to the Vercel football project, then use generated env vars without exposing values.
+- No paid resource or billing change was created.
