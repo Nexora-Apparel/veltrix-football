@@ -39,13 +39,13 @@ jobs:
       - run: python -m pip install --disable-pip-version-check -r requirements.txt
       - run: python -m pip install --disable-pip-version-check "psycopg[binary]>=3.2,<4"
       - run: python -m pytest -q tests/test_db_migrations.py
-      - name: Run schema and reconciliation acceptance
-        run: python -m scripts.db_acceptance
       - name: Apply migrations and verify idempotency
         run: |
           python scripts/db_migrate.py
           python scripts/db_migrate.py
           python scripts/db_migrate.py --dry-run
+      - name: Run schema and reconciliation acceptance
+        run: python -m scripts.db_acceptance
       - name: Verify PostgreSQL catalog invariants
         run: |
           python - <<'PY'
