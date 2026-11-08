@@ -1,4 +1,4 @@
-CREATE TABLE schema_migrations (
+CREATE TABLE IF NOT EXISTS schema_migrations (
     version TEXT PRIMARY KEY,
     checksum CHAR(64) NOT NULL CHECK (checksum ~ '^[0-9a-f]{64}$'),
     applied_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
