@@ -6,12 +6,6 @@ on:
   # Recovery starts only AFTER the 06:00 WAT primary schedule: 06:10, 06:25,
   # 06:40 WAT, then 08:15 and 17:00 WAT. Never dispatch an early report.
   # Each check dispatches only when today's report is missing and no live run is active.
-  schedule:
-    - cron: "10 5 * * *"
-    - cron: "25 5 * * *"
-    - cron: "40 5 * * *"
-    - cron: "15 7 * * *"
-    - cron: "0 16 * * *"
   workflow_dispatch:
 
 permissions:
@@ -24,6 +18,8 @@ concurrency:
 
 jobs:
   ensure-daily-report:
+    # PAUSED by user request until VELTRIX FOOTBALL Phase 3 is complete.
+    if: false
     runs-on: ubuntu-latest
     timeout-minutes: 3
     steps:
