@@ -167,9 +167,6 @@ on:
         description: "Nigeria-local fixture date (YYYY-MM-DD); blank means today in Africa/Lagos"
         required: false
         type: string
-  schedule:
-    # Pipeline starts at 05:00 Africa/Lagos (WAT, UTC+1) = 04:00 UTC; Telegram send is gated to 06:00 WAT.
-    - cron: "0 4 * * *"
     # Post-fix verification uses the [run-live-verification] push marker for controlled end-to-end checks.
     # Research counters distinguish queued fixtures from searches actually executed.
     # Verified history requires exact squad identity and two independent trusted sources.
@@ -193,6 +190,8 @@ permissions:
 
 jobs:
   daily-predictions:
+    # PAUSED by user request until VELTRIX FOOTBALL Phase 3 is complete.
+    if: false
     runs-on: ubuntu-latest
     concurrency:
       group: ${{ (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && contains(github.event.head_commit.message, '[run-live-verification]'))) && 'veltrix-5dollar-provider' || format('veltrix-daily-tests-{0}', github.run_id) }}
