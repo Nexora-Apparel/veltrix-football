@@ -1,3 +1,26 @@
+## Latest verification update — 2026-11-08
+
+- PostgreSQL 16.15 GitHub Actions run [42470307112](https://github.com/Nexora-Apparel/veltrix-football/actions/runs/42470307112) passed: **295 tests passed in 1.59 seconds**.
+- The acceptance gate confirmed all 11 required tables, required columns, indexes, required constraints, migration checksums, database-name guard and read-only transaction.
+- The integration test additionally drops a required constraint and index after a clean acceptance, then verifies the acceptance gate rejects the damaged schema.
+- The expected constraint names were corrected to match PostgreSQL's actual 63-byte identifier truncation:
+  - `v2_source_records_provider_source_id_provider_record_id_dat_key`
+  - `v2_historical_match_sources_provider_source_id_provider_fi_fkey`
+- This is disposable PostgreSQL CI evidence only. No persistent V2 database exists and no persistent migration/acceptance/reconciliation has run.
+
+### Neon Marketplace provisioning state
+
+The installed Vercel Marketplace Neon configuration is confirmed as the **Free** plan (`free_v3`): no payment method required, 1 GB storage per project, maximum 2 CU / 8 GB RAM, and 100 CU-hours per project. Its integration configuration currently has no associated projects. The two existing Neon projects are unrelated applications and are prohibited V2 targets. The available Neon MCP actions cannot provision a project under the Vercel-managed organization; provision the dedicated V2 database through the Vercel dashboard Marketplace UI, selecting the Free plan. Do not connect it to Production. After provisioning, configure the V2 connection only in the Vercel Preview environment using `VELTRIX_V2_DATABASE_URL`, `VELTRIX_V2_EXPECTED_HOST`, and `VELTRIX_V2_STORAGE_APPROVED=true`. Do not place the connection string in chat or repository files.
+
+### Provider entitlement status
+
+Public 5DollarFootballAPI documentation lists:
+- Free: 60 requests/hour, 20 requests/minute burst ceiling, top-five leagues, three months of results/odds history.
+- Community Access: $0, 300 requests/hour, 20 requests/minute burst ceiling, top-five leagues plus one country pack, 12 months of history.
+- Public products on $0 plans require visible linked attribution. Raw feed resale/redistribution is prohibited.
+
+The actual account's activated plan, selected country pack, enabled competitions and current rate-limit state have not been verified. No provider credential was read or used and no `/v1/status` request was made. Verify the account dashboard and authenticated status endpoint before bounded ingestion. The Odds API historical odds remain excluded from the no-paid-resource path because its historical endpoint is available only on paid plans.
+
 # V2 Database Acceptance and Provider Entitlements
 
 Status date: 2026-11-08  
