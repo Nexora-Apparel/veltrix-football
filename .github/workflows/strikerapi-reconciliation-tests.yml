@@ -1,6 +1,7 @@
 name: StrikerAPI Reconciliation Unit Tests
 
 on:
+  workflow_dispatch:
   push:
     branches:
       - phase-3/strikerapi-readonly-qualification
