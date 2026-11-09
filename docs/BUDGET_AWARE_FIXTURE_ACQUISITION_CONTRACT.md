@@ -196,3 +196,17 @@ The deterministic selector is implemented in `app/daily_fixture_selection.py`.
 - No cross-provider fuzzy matching is attempted. Independent provider observations must pass the separate reconciliation stage before they can be treated as one canonical fixture.
 - Empty eligible sets remain empty; no fixtures are fabricated to meet the 25-fixture maximum.
 - Selection output is an in-memory read-only result and is not connected to production import or prediction publication.
+
+
+## 13. Qualification evidence registry
+
+Daily selection artifacts are built by `app/daily_fixture_selection_artifact.py`. A plain provider/competition allowlist is not sufficient for the production path. The registry must contain, for every qualified provider/competition pair:
+
+- provider identifier and provider-scoped competition key;
+- `qualification_status=qualified`;
+- qualification run ID and evidence reference;
+- SHA-256 of the qualification artifact;
+- explicit pagination completeness;
+- zero invalid rows and zero duplicate rows.
+
+Duplicate registry entries, incomplete pagination, nonzero invalid/duplicate counts, missing evidence references, or malformed hashes fail closed. The selection artifact binds the source acquisition report hash and qualification registry hash to its own SHA-256. No default qualification entries are manufactured; the registry must be populated from actual inspected qualification evidence before a daily selection can run.
