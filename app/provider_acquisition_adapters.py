@@ -18,6 +18,11 @@ class AcquisitionAdapterError(RuntimeError):
     pass
 
 
+FIVEDOLLAR_QUALIFIED_COMPETITION_IDS = frozenset({
+    "3405541143", "3614399544", "4160026622", "4212821298", "686337048",
+})
+
+
 def acquire_fivedollar_day(*, client, day: str, run_id: str,
                            retrieved_at: str | None = None,
                            max_pages: int = 5) -> dict:
@@ -201,6 +206,8 @@ def acquire_fivedollar_history_batch(*, client, competition_ids: list[str],
         canonical_ids.append(str(int(text)))
     if len(canonical_ids) != len(set(canonical_ids)):
         raise ValueError("duplicate_competition_ids")
+    if set(canonical_ids) != FIVEDOLLAR_QUALIFIED_COMPETITION_IDS:
+        raise ValueError("competition_ids_must_match_signed_qualified_allowlist")
     if isinstance(max_requests, bool) or not isinstance(max_requests, int) or not 1 <= max_requests <= 20:
         raise ValueError("max_requests_must_be_between_1_and_20")
     if (isinstance(max_pages_per_competition, bool)
