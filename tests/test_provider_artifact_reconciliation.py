@@ -139,6 +139,30 @@ class ArtifactReconciliationTests(unittest.TestCase):
         self.assertEqual(first["side_effects"]["database_writes"], 0)
         self.assertEqual(first["side_effects"]["network_requests"], 0)
 
+    def test_source_ids_are_unique_within_competition_not_globally(self):
+        s1 = row("strikerapi", "same-id", "soccer")
+        s2 = row("strikerapi", "same-id", "laliga")
+        d1 = row("fivedollar", "d1", "39")
+        d2 = row("fivedollar", "d2", "140")
+        result = reconcile_artifact_records([s1, s2], [d1, d2],
+                                            {"soccer": "39", "laliga": "140"})
+        self.assertEqual(result["counts"]["striker"]["matched"], 2)
+        self.assertEqual(result["counts"]["striker"]["quarantined"], 0)
+
+    def test_unsupported_normalized_status_is_quarantined(self):
+        s = row("strikerapi", "s1", "soccer", status="mystery")
+        d = row("fivedollar", "d1", "39", status="mystery")
+        result = reconcile_artifact_records([s], [d], {"soccer": "39"})
+        self.assertEqual(result["counts"]["striker"]["quarantined"], 1)
+        self.assertEqual(result["counts"]["fivedollar"]["quarantined"], 1)
+
+    def test_missing_season_is_quarantined(self):
+        s = row("strikerapi", "s1", "soccer", season=None)
+        d = row("fivedollar", "d1", "39", season=None)
+        result = reconcile_artifact_records([s], [d], {"soccer": "39"})
+        self.assertEqual(result["counts"]["striker"]["quarantined"], 1)
+        self.assertFalse(result["acceptance_pass"])
+
 
 if __name__ == "__main__":
     unittest.main()
