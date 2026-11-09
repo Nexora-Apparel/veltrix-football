@@ -231,7 +231,7 @@ The historical batch adapter and CLI enforce this exact allowlist in addition to
 - The end date must be before the current Lagos date.
 - The start date must fall within the documented 90-day results window.
 - Only finished fixtures are requested.
-- Maximum 20 HTTP attempts per run; default 15.
+- Maximum 20 HTTP attempts per run; default 15; minimum five calls to cover one page for each of the five competitions.
 - Maximum three pages per competition; a `has_more` response at the page ceiling fails closed.
 - Automatic HTTP retries are disabled for this adapter. Each HTTP attempt is reserved before dispatch and counted exactly.
 - Pagination must complete for all five competitions before an artifact is emitted.
