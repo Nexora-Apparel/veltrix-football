@@ -67,6 +67,19 @@ class FiveDollarRegistryReviewTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.build(report=report)
 
+    def test_archive_digest_must_match_github_metadata(self):
+        with self.assertRaisesRegex(ValueError, "archive_digest_mismatch"):
+            self.build(archive_sha256="c" * 64)
+
+    def test_only_manual_qualification_run_can_be_attested(self):
+        run = {"repository": "Nexora-Apparel/veltrix-football",
+               "workflow_run_id": "98765",
+               "workflow_path": ".github/workflows/qualify-fivedollar-competitions.yml",
+               "event": "push", "head_branch": "phase-3/budget-aware-acquisition-contract",
+               "head_sha": "a" * 40}
+        with self.assertRaisesRegex(ValueError, "run_event_invalid"):
+            self.build(run=run)
+
     def test_local_report_file_hash_must_be_sha256(self):
         with self.assertRaisesRegex(ValueError, "report_hash_invalid"):
             self.build(report_sha256="not-a-hash")
