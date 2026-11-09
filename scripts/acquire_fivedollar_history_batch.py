@@ -29,7 +29,7 @@ def main() -> int:
 
     from app.daily_fixture_selection_artifact import qualified_sources_from_registry
     from app.provider_acquisition_adapters import acquire_fivedollar_history_batch
-    from app.provider_acquisition_artifact import validate_acquisition_report
+    from app.provider_acquisition_artifact import validate_fivedollar_history_batch_report
     from app.provider_adapters import FiveDollarFootballClient
 
     try:
@@ -68,7 +68,7 @@ def main() -> int:
             max_pages_per_competition=args.max_pages_per_competition,
             retrieved_at=retrieved.isoformat().replace("+00:00", "Z"),
         )
-        integrity = validate_acquisition_report(result["report"])
+        integrity = validate_fivedollar_history_batch_report(result["report"])
         if not integrity["valid"] or not result["acceptance_pass"]:
             raise ValueError("historical_batch_quality_or_integrity_failed")
         if result["report"]["competition_scope"] != EXPECTED_COMPETITIONS:
