@@ -2,6 +2,8 @@
 from __future__ import annotations
 
 import hashlib
+import hmac
+import json
 import re
 from typing import Any
 
@@ -15,6 +17,36 @@ STRIKERAPI_COMPETITIONS = {
 
 class QualificationEvidenceError(ValueError):
     pass
+
+
+def _attestation_payload(attestation: dict) -> bytes:
+    unsigned = dict(attestation)
+    unsigned.pop("signature_hmac_sha256", None)
+    return json.dumps(unsigned, sort_keys=True, separators=(",", ":"),
+                      ensure_ascii=False, allow_nan=False).encode("utf-8")
+
+
+def sign_attestation(attestation: dict, signing_key: str) -> dict:
+    _require(isinstance(signing_key, str) and len(signing_key) >= 32,
+             "qualification_signing_key_missing_or_weak")
+    signed = dict(attestation)
+    signed.pop("signature_hmac_sha256", None)
+    signed["signature_hmac_sha256"] = hmac.new(
+        signing_key.encode("utf-8"), _attestation_payload(signed), hashlib.sha256
+    ).hexdigest()
+    return signed
+
+
+def verify_attestation_signature(attestation: Any, signing_key: str) -> bool:
+    if not isinstance(attestation, dict) or not isinstance(signing_key, str) or len(signing_key) < 32:
+        return False
+    supplied = attestation.get("signature_hmac_sha256")
+    if not isinstance(supplied, str) or not SHA256.fullmatch(supplied):
+        return False
+    expected = hmac.new(
+        signing_key.encode("utf-8"), _attestation_payload(attestation), hashlib.sha256
+    ).hexdigest()
+    return hmac.compare_digest(supplied, expected)
 
 
 def _require(condition: bool, code: str) -> None:
@@ -137,11 +169,12 @@ def validate_coverage_report(report: Any) -> dict:
 
 def build_review_attestation(*, run: dict, artifact: dict, archive_sha256: str,
                              report_sha256: str, coverage: dict,
-                             reviewer: str, reviewed_at: str) -> dict:
+                             reviewer: str, reviewed_at: str,
+                             signing_key: str) -> dict:
     _require(bool(SHA256.fullmatch(archive_sha256)), "local_archive_sha256_invalid")
     _require(bool(SHA256.fullmatch(report_sha256)), "local_report_sha256_invalid")
     _require(bool(reviewer.strip()) and bool(reviewed_at.strip()), "reviewer_identity_or_time_missing")
-    return {
+    unsigned = {
         "attestation_version": 1,
         "review_status": "qualified",
         "reviewer": reviewer,
@@ -159,3 +192,4 @@ def build_review_attestation(*, run: dict, artifact: dict, archive_sha256: str,
         "local_report_sha256": report_sha256,
         "coverage": coverage,
     }
+    return sign_attestation(unsigned, signing_key)
