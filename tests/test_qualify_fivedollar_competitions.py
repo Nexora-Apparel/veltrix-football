@@ -10,6 +10,8 @@ class FakeBudget(Budget):
         self.calls = []
 
     def get(self, endpoint, params, key):
+        if self.actual >= self.maximum:
+            raise RuntimeError("request_budget_exhausted")
         self.actual += 1
         self.by_endpoint[endpoint] = self.by_endpoint.get(endpoint, 0) + 1
         self.calls.append((endpoint, params))
