@@ -20,6 +20,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from app.fivedollar_qualification_report import validate_fivedollar_qualification_report
 from app.fivedollar_qualification_review import build_fivedollar_registry
+from app.daily_fixture_selection_artifact import qualified_sources_from_registry
 from app.provider_qualification_evidence import (
     QualificationEvidenceError,
     validate_artifact_metadata,
@@ -194,6 +195,12 @@ def main() -> int:
         for source in registry["sources"]:
             if not verify_attestation_signature(source.get("review_attestation"), signing_key):
                 raise QualificationEvidenceError("generated_registry_signature_invalid")
+        admitted = qualified_sources_from_registry(registry)
+        expected_competitions = sorted(
+            str(row["competition_id"]) for row in report["competitions"]
+        )
+        if admitted != {"fivedollar": expected_competitions}:
+            raise QualificationEvidenceError("daily_selector_registry_admission_mismatch")
         output = Path(args.output)
         output.parent.mkdir(parents=True, exist_ok=True)
         output.write_text(json.dumps(registry, indent=2, sort_keys=True) + "\n", encoding="utf-8")
@@ -206,6 +213,7 @@ def main() -> int:
         print(f"ARTIFACT_SHA256: {archive_sha}")
         print(f"REPORT_SHA256: {report_sha}")
         print(f"QUALIFIED_COMPETITIONS: {validation['competition_count']}")
+        print(f"ADMITTED_COMPETITION_IDS: {','.join(expected_competitions)}")
         print(f"REGISTRY_OUTPUT: {output}")
         print("PROVIDER_REQUESTS: 0; DATABASE_WRITES: 0; IMPORTS: 0")
         return 0
