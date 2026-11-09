@@ -39,7 +39,7 @@ def _utc(value: str) -> datetime:
 
 
 def _record_valid(row: dict, provider: str) -> bool:
-    required = ("source_id", "competition_key", "home_team_source_id",
+    required = ("source_id", "competition_key", "season", "home_team_source_id",
                 "away_team_source_id", "home_team_name", "away_team_name",
                 "kickoff_at", "normalized_status", "payload_sha256", "run_id")
     if not isinstance(row, dict) or row.get("provider") != provider:
@@ -117,7 +117,7 @@ def reconcile_artifact_records(
             same_away = _name(s["away_team_name"]) == _name(d["away_team_name"])
             home_alias = not same_home and alias_ok(
                 s["home_team_source_id"], d["home_team_source_id"],
-                s["competition_key"], s.get("season"), d.get("season"))
+                alias_competition_key, s.get("season"), d.get("season"))
             away_alias = not same_away and alias_ok(
                 s["away_team_source_id"], d["away_team_source_id"],
                 s["competition_key"], s.get("season"), d.get("season"))
