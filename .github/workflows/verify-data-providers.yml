@@ -1,11 +1,9 @@
 name: Verify Multi-Source Football Providers
 
+# Live provider requests are manual-only. Push/PR validation belongs in the
+# secret-free test workflow and must never consume provider quota.
 on:
   workflow_dispatch:
-  push:
-    paths:
-      - "scripts/verify_data_providers.py"
-      - ".github/workflows/verify-data-providers.yml"
 
 permissions:
   contents: read
