@@ -59,7 +59,8 @@ def qualified_sources_from_registry(registry: Any) -> dict[str, list[str]]:
         evidence_ref = entry.get("evidence_ref")
         if not isinstance(provider, str) or not provider.strip():
             raise SelectionArtifactError(f"qualification_provider_missing:{index}")
-        if not isinstance(competition, (str, int)) or not str(competition).strip():
+        if (not isinstance(competition, (str, int)) or isinstance(competition, bool)
+                or not str(competition).isdigit() or int(competition) <= 0):
             raise SelectionArtifactError(f"qualification_competition_missing:{index}")
         if entry.get("qualification_status") != "qualified":
             raise SelectionArtifactError(f"source_not_qualified:{index}")
@@ -104,8 +105,10 @@ def qualified_sources_from_registry(registry: Any) -> dict[str, list[str]]:
                 or coverage.get("competition_count") != len(coverage_keys)
                 or str(competition) not in coverage_keys
                 or coverage.get("pagination_complete") is not True
-                or coverage.get("source_rows", 0) <= 0
-                or coverage.get("accepted_rows", 0) <= 0
+                or isinstance(coverage.get("source_rows"), bool)
+                or not isinstance(coverage.get("source_rows"), int) or coverage["source_rows"] <= 0
+                or isinstance(coverage.get("accepted_rows"), bool)
+                or not isinstance(coverage.get("accepted_rows"), int) or coverage["accepted_rows"] <= 0
                 or coverage.get("invalid_rows") != 0 or coverage.get("duplicate_rows") != 0
                 or coverage.get("missing_team_ids", 0) != 0):
             raise SelectionArtifactError(f"qualification_attestation_scope_invalid:{index}")
