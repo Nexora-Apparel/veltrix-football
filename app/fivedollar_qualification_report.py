@@ -159,13 +159,31 @@ def validate_fivedollar_qualification_report(report: Any) -> dict:
     unhashed.pop("report_sha256", None)
     if _hash(unhashed) != supplied:
         raise ValueError("report_hash_mismatch")
+    expected_report_keys = {
+        "schema_version", "mode", "provider", "run_id", "retrieved_at",
+        "window_start_utc", "window_end_utc", "request_budget", "catalogue",
+        "competition_count", "competitions", "aggregates", "side_effects",
+        "acceptance_pass", "report_sha256",
+    }
+    if set(report) != expected_report_keys:
+        raise ValueError("report_shape_invalid")
     if report.get("schema_version") != 1 or report.get("mode") != "read_only_5dollar_competition_qualification":
         raise ValueError("report_schema_invalid")
     if report.get("provider") != "5DollarFootballAPI":
         raise ValueError("provider_scope_invalid")
+    if not isinstance(report.get("run_id"), str) or not report["run_id"].strip():
+        raise ValueError("report_run_id_invalid")
+    _utc(report.get("retrieved_at"), "retrieved_at")
+    start = _utc(report.get("window_start_utc"), "window_start_utc")
+    end = _utc(report.get("window_end_utc"), "window_end_utc")
+    if start >= end:
+        raise ValueError("report_window_invalid")
     catalogue = report.get("catalogue")
-    if not isinstance(catalogue, dict) or not isinstance(catalogue.get("pages_fetched"), int) or catalogue.get("pagination_complete") not in (True, False):
+    if (not isinstance(catalogue, dict) or set(catalogue) != {"pages_fetched", "pagination_complete"}
+            or not isinstance(catalogue.get("pagination_complete"), bool)):
         raise ValueError("catalogue_metadata_invalid")
+    if not 1 <= _nonnegative_int(catalogue.get("pages_fetched"), "catalogue_pages_fetched") <= 5:
+        raise ValueError("catalogue_page_count_invalid")
     competitions = report.get("competitions")
     if not isinstance(competitions, list) or report.get("competition_count") != len(competitions):
         raise ValueError("competition_count_mismatch")
@@ -186,22 +204,41 @@ def validate_fivedollar_qualification_report(report: Any) -> dict:
     aggregates = report.get("aggregates")
     if not isinstance(aggregates, dict):
         raise ValueError("aggregates_invalid")
-    for field in ("pages_fetched", "source_rows", "accepted_rows", "invalid_rows",
-                  "duplicate_ids", "missing_team_ids"):
-        expected = sum(item.get(field, -1) for item in competitions)
+    expected_aggregate_keys = {"pages_fetched", "source_rows", "accepted_rows", "invalid_rows", "duplicate_ids", "missing_team_ids"}
+    if set(aggregates) != expected_aggregate_keys:
+        raise ValueError("aggregate_shape_invalid")
+    for field in expected_aggregate_keys:
+        expected = sum(item[field] for item in competitions)
         if aggregates.get(field) != expected:
             raise ValueError(f"aggregate_mismatch:{field}")
     budget = report.get("request_budget")
-    if not isinstance(budget, dict):
+    if not isinstance(budget, dict) or set(budget) != {"maximum_requests", "actual_requests", "endpoint_accounting"}:
         raise ValueError("request_budget_invalid")
-    entries = budget.get("endpoint_accounting")
-    if not isinstance(entries, list) or sum(x.get("requests", -1) for x in entries) != budget.get("actual_requests"):
-        raise ValueError("request_accounting_mismatch")
-    if budget.get("actual_requests", -1) > budget.get("maximum_requests", -1):
+    maximum = _nonnegative_int(budget.get("maximum_requests"), "maximum_requests")
+    actual = _nonnegative_int(budget.get("actual_requests"), "actual_requests")
+    if not 1 <= maximum <= 60 or actual > maximum:
         raise ValueError("request_budget_exceeded")
+    entries = budget.get("endpoint_accounting")
+    if not isinstance(entries, list) or not entries:
+        raise ValueError("request_accounting_invalid")
+    endpoint_names = set()
+    endpoint_total = 0
+    for entry in entries:
+        if not isinstance(entry, dict) or set(entry) != _REQUIRED_ENDPOINT:
+            raise ValueError("endpoint_accounting_shape_invalid")
+        endpoint = entry.get("endpoint")
+        count = _nonnegative_int(entry.get("requests"), "endpoint_requests")
+        if not isinstance(endpoint, str) or not (endpoint == "leagues" or re.fullmatch(r"leagues/[0-9]+/fixtures", endpoint)):
+            raise ValueError("endpoint_name_invalid")
+        if endpoint in endpoint_names:
+            raise ValueError("duplicate_endpoint_accounting")
+        endpoint_names.add(endpoint)
+        endpoint_total += count
+    if endpoint_total != actual:
+        raise ValueError("request_accounting_mismatch")
     effects = report.get("side_effects")
     required = ("database_writes", "imports", "checkpoints", "canonical_merges", "prediction_publications")
-    if not isinstance(effects, dict) or any(effects.get(key) != 0 for key in required):
+    if not isinstance(effects, dict) or set(effects) != set(required) or any(effects.get(key) != 0 for key in required):
         raise ValueError("side_effect_boundary_invalid")
     recomputed = (
         catalogue.get("pagination_complete") is True
