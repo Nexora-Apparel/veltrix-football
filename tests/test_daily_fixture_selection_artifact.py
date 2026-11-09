@@ -1,0 +1,101 @@
+import copy
+import unittest
+
+from app.provider_acquisition_report import build_acquisition_report
+from app.daily_fixture_selection_artifact import (
+    SelectionArtifactError,
+    build_daily_selection_artifact,
+    qualified_sources_from_registry,
+)
+
+
+class DailySelectionArtifactTests(unittest.TestCase):
+    def setUp(self):
+        self.record = {
+            "schema_version": 1, "provider": "fivedollar", "source_id": "101",
+            "competition_key": "39", "season": "2026",
+            "home_team_source_id": "1", "away_team_source_id": "2",
+            "home_team_name": "Home", "away_team_name": "Away",
+            "kickoff_at": "2026-11-10T18:00:00Z",
+            "source_status": "scheduled", "normalized_status": "scheduled",
+            "home_score": None, "away_score": None, "endpoint": "fixtures",
+            "retrieved_at": "2026-11-09T12:00:00Z",
+            "payload_sha256": "a" * 64, "run_id": "acq-1",
+        }
+        self.report = build_acquisition_report(
+            run_id="acq-1", provider_scope=["fivedollar"],
+            competition_scope=["39"], window={"local_date": "2026-11-10"},
+            retrieved_at="2026-11-09T12:00:00Z",
+            batch_result={"input_count": 1, "accepted": [self.record],
+                          "quarantined": [], "acceptance_pass": True},
+        )
+        self.registry = {
+            "schema_version": 1,
+            "sources": [{
+                "provider": "fivedollar", "competition_key": "39",
+                "qualification_status": "qualified",
+                "qualification_run_id": "qualification-2026-11-09",
+                "artifact_sha256": "b" * 64,
+                "evidence_ref": "actions-run:42504992170",
+                "pagination_complete": True,
+                "invalid_rows": 0, "duplicate_rows": 0,
+            }],
+        }
+
+    def test_qualified_registry_builds_allowlist(self):
+        self.assertEqual(qualified_sources_from_registry(self.registry),
+                         {"fivedollar": ["39"]})
+
+    def test_selection_artifact_uses_only_qualified_sources(self):
+        artifact = build_daily_selection_artifact(
+            acquisition_report=self.report,
+            qualification_registry=self.registry,
+            target_date="2026-11-10", as_of="2026-11-09T20:00:00Z",
+        )
+        self.assertEqual(artifact["selection"]["selected_count"], 1)
+        self.assertEqual(artifact["source_acquisition_report_sha256"],
+                         self.report["report_sha256"])
+        self.assertEqual(len(artifact["selection_sha256"]), 64)
+
+    def test_unqualified_source_is_rejected(self):
+        registry = copy.deepcopy(self.registry)
+        registry["sources"][0]["qualification_status"] = "catalogued"
+        with self.assertRaisesRegex(SelectionArtifactError, "source_not_qualified"):
+            qualified_sources_from_registry(registry)
+
+    def test_incomplete_pagination_is_rejected(self):
+        registry = copy.deepcopy(self.registry)
+        registry["sources"][0]["pagination_complete"] = False
+        with self.assertRaisesRegex(SelectionArtifactError, "pagination_incomplete"):
+            qualified_sources_from_registry(registry)
+
+    def test_nonzero_invalid_rows_are_rejected(self):
+        registry = copy.deepcopy(self.registry)
+        registry["sources"][0]["invalid_rows"] = 1
+        with self.assertRaisesRegex(SelectionArtifactError, "invalid_rows_nonzero"):
+            qualified_sources_from_registry(registry)
+
+    def test_nonzero_duplicate_rows_are_rejected(self):
+        registry = copy.deepcopy(self.registry)
+        registry["sources"][0]["duplicate_rows"] = 1
+        with self.assertRaisesRegex(SelectionArtifactError, "duplicate_rows_nonzero"):
+            qualified_sources_from_registry(registry)
+
+    def test_duplicate_provider_competition_qualification_is_rejected(self):
+        registry = copy.deepcopy(self.registry)
+        registry["sources"].append(copy.deepcopy(registry["sources"][0]))
+        with self.assertRaisesRegex(SelectionArtifactError, "duplicate_qualification_entry"):
+            qualified_sources_from_registry(registry)
+
+    def test_invalid_acquisition_report_is_rejected_before_selection(self):
+        report = copy.deepcopy(self.report)
+        report["records"][0]["home_team_name"] = "changed"
+        with self.assertRaisesRegex(ValueError, "report_hash_mismatch"):
+            build_daily_selection_artifact(
+                acquisition_report=report, qualification_registry=self.registry,
+                target_date="2026-11-10", as_of="2026-11-09T20:00:00Z",
+            )
+
+
+if __name__ == "__main__":
+    unittest.main()
