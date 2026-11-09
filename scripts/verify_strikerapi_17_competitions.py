@@ -47,8 +47,6 @@ def collect_bounded(api_key, league, status, start, end, call, budget, pause_sec
     while pages < MAX_PAGES_PER_CHECK:
         if budget["calls"] >= MAX_CALLS:
             raise ProbeError("global 17-competition request budget exhausted")
-        if budget["calls"] >= MAX_CALLS:
-            raise ProbeError("global 17-competition request budget exhausted")
         if budget["calls"] and pause_seconds:
             sleep(pause_seconds)
         budget["calls"] += 1
