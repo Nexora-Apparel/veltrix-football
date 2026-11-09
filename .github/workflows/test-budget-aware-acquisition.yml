@@ -60,6 +60,9 @@ jobs:
       - name: Run strict historical batch artifact tests
         run: python -m unittest discover -s tests -p 'test_fivedollar_history_artifact.py' -v
 
+      - name: Run historical archive assembly tests
+        run: python -m unittest discover -s tests -p 'test_provider_historical_archive.py' -v
+
       - name: Run end-to-end read-only fixture pipeline tests
         run: python -m unittest discover -s tests -p 'test_provider_fixture_pipeline.py' -v
 
@@ -83,6 +86,9 @@ jobs:
 
       - name: Validate historical acquisition CLI without network access
         run: python scripts/acquire_fivedollar_history_batch.py --help
+
+      - name: Validate offline historical archive CLI without network access
+        run: python scripts/assemble_fivedollar_history_archive.py --help
 
       - name: Validate 5Dollar qualification CLI without network access
         run: python scripts/qualify_fivedollar_competitions.py --help
