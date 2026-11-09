@@ -27,7 +27,7 @@ class FakeBudget(Budget):
             }], "pagination": {"has_more": False}}
         if endpoint == "leagues/140/fixtures":
             return {"success": 1, "data": [{
-                "id": 2001, "status": "finished", "kickoff_utc": datetime.now(timezone.utc).isoformat(),
+                "id": 2001, "status": "finished", "kickoff_utc": (datetime.now(timezone.utc) - timedelta(seconds=2)).isoformat(),
                 "league": {"id": 140},
                 "teams": {"home": {"id": 3, "name": "Home B"}, "away": {"id": 4, "name": "Away B"}},
                 "goals": {"home": 1, "away": 1},
@@ -82,7 +82,11 @@ class QualificationRunnerTests(unittest.TestCase):
         def altered(endpoint, params, key):
             payload = original(endpoint, params, key)
             if endpoint == "leagues":
-                payload["pagination"]["has_more"] = True
+                if params["page"] == 1:
+                    payload["pagination"]["has_more"] = True
+                else:
+                    payload["data"] = []
+                    payload["pagination"]["has_more"] = params["page"] < 5
             return payload
 
         budget.get = altered
