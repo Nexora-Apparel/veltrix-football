@@ -1,7 +1,9 @@
 import copy
+import os
 import unittest
 
 from app.provider_acquisition_report import build_acquisition_report
+from app.provider_qualification_evidence import sign_attestation
 from app.daily_fixture_selection_artifact import (
     SelectionArtifactError,
     build_daily_selection_artifact,
@@ -12,6 +14,8 @@ from app.daily_fixture_selection_artifact import (
 
 class DailySelectionArtifactTests(unittest.TestCase):
     def setUp(self):
+        self.signing_key = "unit-test-qualification-key-32chars-minimum"
+        os.environ["VELTRIX_QUALIFICATION_ATTESTATION_KEY"] = self.signing_key
         self.record = {
             "schema_version": 1, "provider": "fivedollar", "source_id": "101",
             "competition_key": "39", "season": "2026",
@@ -57,7 +61,9 @@ class DailySelectionArtifactTests(unittest.TestCase):
                 },
             }],
         }
-
+        self.registry["sources"][0]["review_attestation"] = sign_attestation(
+            self.registry["sources"][0]["review_attestation"], self.signing_key
+        )
 
     def test_registry_rejects_self_declared_qualified_source_without_attestation(self):
         registry = copy.deepcopy(self.registry)
@@ -75,6 +81,12 @@ class DailySelectionArtifactTests(unittest.TestCase):
         registry = copy.deepcopy(self.registry)
         registry["sources"][0]["review_attestation"]["github_artifact_digest"] = "e" * 64
         with self.assertRaisesRegex(SelectionArtifactError, "artifact_hash_mismatch"):
+            qualified_sources_from_registry(registry)
+
+    def test_registry_rejects_forged_or_tampered_attestation_signature(self):
+        registry = copy.deepcopy(self.registry)
+        registry["sources"][0]["review_attestation"]["head_sha"] = "f" * 40
+        with self.assertRaisesRegex(SelectionArtifactError, "attestation_signature_invalid"):
             qualified_sources_from_registry(registry)
 
     def test_qualified_registry_builds_allowlist(self):
