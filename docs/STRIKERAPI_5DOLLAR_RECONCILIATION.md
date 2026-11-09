@@ -112,3 +112,12 @@ python scripts/reconcile_provider_fixtures.py \
 The implementation preserves both source IDs and hashes each original row, applies conservative Unicode-aware team-name normalization, requires same home/away orientation and a kickoff delta of at most 300 seconds, and checks result/status conflicts only after identity matching. Ambiguous, reversed, conflicting and invalid records are quarantined. It reports per-provider accounting balances and blocks acceptance when source IDs are duplicated. It never creates a canonical fixture or writes to a database.
 
 Unit coverage is in `tests/test_strikerapi_reconciliation.py`. This is implementation readiness only: no live provider exports have yet been compared, and the reconciliation gate remains pending until real, independently mapped samples are processed.
+
+
+## Reconciliation safety hardening
+
+The offline implementation quarantines every row whose source ID is duplicated, rejects non-string or timezone-naive kickoff values as invalid, and keeps duplicate/invalid rows out of candidate matching. Ambiguous candidate graphs, reversed home/away orientation, status disagreements and score disagreements are quarantined rather than accepted.
+
+The report's `acceptance_pass` is deliberately stricter than accounting balance: it requires at least one unique matched pair, balanced accounting for both sources, zero quarantined rows and zero duplicate source IDs. Unmatched rows may remain when a provider has additional fixtures, but they are never treated as matched. A report can be fully balanced while acceptance remains false.
+
+Regression coverage includes duplicate-ID quarantine, non-string kickoff rejection, status and result conflicts, reversed orientation, ambiguity, five-minute tolerance and a positive unique-match case. The latest tests must pass in CI before the implementation is considered validated.
