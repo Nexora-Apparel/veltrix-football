@@ -86,7 +86,7 @@ class QualificationRunnerTests(unittest.TestCase):
                     payload["pagination"]["has_more"] = True
                 else:
                     payload["data"] = []
-                    payload["pagination"]["has_more"] = params["page"] < 5
+                    payload["pagination"]["has_more"] = True
             return payload
 
         budget.get = altered
