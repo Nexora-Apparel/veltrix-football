@@ -7,6 +7,7 @@ output artifact.
 from __future__ import annotations
 
 from datetime import datetime, timezone
+import time
 from typing import Callable
 
 from app.provider_fixture_pipeline import run_fixture_acquisition_pipeline
@@ -184,7 +185,9 @@ def acquire_fivedollar_history_batch(*, client, competition_ids: list[str],
                                      run_id: str, max_requests: int = 20,
                                      max_pages_per_competition: int = 3,
                                      retrieved_at: str | None = None,
-                                     transport: Callable[..., tuple[dict, dict]] | None = None) -> dict:
+                                     transport: Callable[..., tuple[dict, dict]] | None = None,
+                                     min_request_interval_seconds: float = 3.1,
+                                     sleep: Callable[[float], None] = time.sleep) -> dict:
     """Acquire one bounded historical date batch across explicitly qualified competitions.
 
     The inclusive window is at most seven Lagos-local calendar days. Every HTTP
@@ -210,6 +213,12 @@ def acquire_fivedollar_history_batch(*, client, competition_ids: list[str],
         raise ValueError("competition_ids_must_match_signed_qualified_allowlist")
     if isinstance(max_requests, bool) or not isinstance(max_requests, int) or not 5 <= max_requests <= 20:
         raise ValueError("max_requests_must_be_between_5_and_20")
+    if (isinstance(min_request_interval_seconds, bool)
+            or not isinstance(min_request_interval_seconds, (int, float))
+            or min_request_interval_seconds < 0):
+        raise ValueError("min_request_interval_seconds_invalid")
+    if not callable(sleep):
+        raise ValueError("sleep_callback_invalid")
     if (isinstance(max_pages_per_competition, bool)
             or not isinstance(max_pages_per_competition, int)
             or not 1 <= max_pages_per_competition <= 3):
@@ -228,6 +237,8 @@ def acquire_fivedollar_history_batch(*, client, competition_ids: list[str],
         while True:
             if requests_made >= max_requests:
                 raise AcquisitionAdapterError("request_budget_exhausted_before_complete_batch")
+            if requests_made:
+                sleep(float(min_request_interval_seconds))
             requests_made += 1
             payload, headers = fetch(f"leagues/{competition_id}/fixtures", {
                 "start_time": start_ts,
@@ -284,6 +295,7 @@ def acquire_fivedollar_history_batch(*, client, competition_ids: list[str],
             "maximum_requests": max_requests,
             "actual_requests": requests_made,
             "automatic_retries": 0,
+            "minimum_request_interval_seconds": float(min_request_interval_seconds),
             "pages_by_competition": page_counts,
             "max_pages_per_competition": max_pages_per_competition,
             "request_accounting": "one_reserved_call_per_http_attempt",
