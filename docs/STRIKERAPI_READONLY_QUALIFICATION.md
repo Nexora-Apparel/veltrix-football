@@ -31,7 +31,12 @@ The verifier checks:
 - Argentina, Brazil, NWSL and the English Premier League;
 - response schema, stable game IDs, dates/timestamps, status, team IDs/names and final scores;
 - pagination via `next_offset`, with no more than three pages per competition/status check;
+- timezone-aware kickoff timestamps;
 - duplicate IDs within each competition across returned pages.
+
+### Pagination documentation discrepancy
+
+The endpoint-specific `list_games` page documents an `offset` parameter and returns `next_offset`. The general StrikerAPI documentation's conventions section says endpoints use `limit` and have no cursor or offset. The initial live sample returned `next_offset`, but did not test a second page. The expanded workflow will test the endpoint behavior directly. Until that run passes, multi-page pagination remains unverified.
 
 Hard budget: 24 calls maximum × 2 documented credits = 48 credits. The probe makes no database connection and performs no imports. If a page cap is reached while `next_offset` remains, the result is explicitly marked pagination-incomplete; it is never reported as a complete window.
 
