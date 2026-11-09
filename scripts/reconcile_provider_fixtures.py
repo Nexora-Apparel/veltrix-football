@@ -108,7 +108,11 @@ def reconcile(striker_rows: list[dict], dollar_rows: list[dict], competition_map
     matched_l,matched_r=len(used_l-ql),len(used_r-qr)
     unmatched_l=sum(x["outcome"]=="UNMATCHED_STRIKER_ONLY" for x in decisions)
     unmatched_r=sum(x["outcome"]=="UNMATCHED_5DOLLAR_ONLY" for x in decisions)
-    return {"schema_version":1,"mode":"read_only_no_merge","tolerance_seconds":tolerance_seconds,
+    acceptance_pass = (all(v["balanced"] for v in {
+        "striker":{"balanced":len(left)==matched_l+unmatched_l+len(ql)},
+        "fivedollar":{"balanced":len(right)==matched_r+unmatched_r+len(qr)}
+    }.items()) and not duplicate_left and not duplicate_right)
+    return {"schema_version":1,"mode":"read_only_no_merge","acceptance_pass":acceptance_pass,"tolerance_seconds":tolerance_seconds,
             "competition_map_striker_to_fivedollar":competition_map,
             "source_counts":{"striker":len(left),"fivedollar":len(right)},
             "duplicate_source_ids":{"striker":duplicate_left,"fivedollar":duplicate_right},
@@ -149,7 +153,7 @@ def main():
     print(f"STRIKER_BALANCED: {report['accounting']['striker']['balanced']}")
     print(f"FIVEDOLLAR_BALANCED: {report['accounting']['fivedollar']['balanced']}")
     print("DATABASE_WRITES: 0; CANONICAL_MERGES: 0")
-    return 0 if all(x["balanced"] for x in report["accounting"].values()) else 2
+    return 0 if report["acceptance_pass"] else 2
 
 
 if __name__=="__main__": raise SystemExit(main())
