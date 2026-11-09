@@ -15,9 +15,6 @@ STRIKER_URL = "https://mcp.strikerapi.com/v1/list_teams"
 DOLLAR_BASE = "https://api.5dollarfootballapi.com/v1/teams"
 TIMEOUT = 25
 STRIKER_SEASON = 2026
-MAX_PROVIDER_CALLS = 1 + len(CANDIDATES)
-
-
 def striker_request_body() -> dict:
     # list_teams documents season as its only request parameter.
     return {"season": STRIKER_SEASON}
@@ -34,6 +31,8 @@ CANDIDATES = [
     ("382", "3103334772"), ("384", "139660649"),
     ("388", "1193753576"), ("393", "2220360869"),
 ]
+
+MAX_PROVIDER_CALLS = 1 + len(CANDIDATES)
 
 
 class ProbeError(RuntimeError):
