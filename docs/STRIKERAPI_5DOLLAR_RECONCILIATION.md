@@ -135,3 +135,16 @@ The offline implementation quarantines every row whose source ID is duplicated, 
 The report's `acceptance_pass` is deliberately stricter than accounting balance: it requires at least one unique matched pair, balanced accounting for both sources, zero quarantined rows and zero duplicate source IDs. Unmatched rows may remain when a provider has additional fixtures, but they are never treated as matched. A report can be fully balanced while acceptance remains false.
 
 Regression coverage includes duplicate-ID quarantine, non-string kickoff rejection, status and result conflicts, reversed orientation, ambiguity, five-minute tolerance and a positive unique-match case. The latest tests must pass in CI before the implementation is considered validated.
+
+
+## Live Premier League reconciliation workflow
+
+The only current cross-provider overlap is StrikerAPI `soccer` ↔ authenticated 5Dollar Premier League ID `4160026622`. The workflow uses a fixed 90-day UTC window and read-only calls:
+- StrikerAPI `POST /v1/list_games`, `league=soccer`, `status=final`, paginated with `next_offset`;
+- 5DollarFootballAPI `GET /v1/leagues/4160026622/fixtures`, `status=finished`, fixed `start_time/end_time`, paginated with `page/per_page`.
+
+The new `scripts/run_readonly_epl_reconciliation.py` validates both provider exports, applies the deterministic matcher, and writes `strikerapi_5dollar_epl_reconciliation.json`. The report retains provider-specific source IDs, normalized identity fields and SHA-256 hashes of original payloads; it does not embed raw provider payloads or credentials. It records exact query windows, page counts, request/credit usage and the database-write invariant.
+
+The manual StrikerAPI workflow now also requires the existing GitHub Actions secret `FIVEDOLLARFOOTBALL_API_KEY`, runs the live reconciliation after the bounded provider probe, and uploads the sanitized report as a seven-day Actions artifact named `strikerapi-5dollar-epl-reconciliation`. It remains read-only: no Neon connection, SQL, imports, checkpoints, canonical merges or production writes. A completed audit with conflicts still produces an artifact and reports `FAIL_REVIEW_REQUIRED`; the report is diagnostic evidence, not automatic source approval.
+
+The updated workflow version is on the qualification branch. A manual dispatch must select `phase-3/strikerapi-readonly-qualification` so it runs the new cross-provider step. Until that run is completed and the report is inspected, the live reconciliation gate remains pending.
