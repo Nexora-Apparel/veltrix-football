@@ -82,10 +82,11 @@ def acquire_fivedollar_day(*, client, day: str, run_id: str,
         run_id=run_id,
         provider_scope=["fivedollar"],
         competition_scope=sorted({
-            str((item.get("row") or {}).get("league", {}).get("id"))
-            for item in pipeline_observations if isinstance(item, dict)
-            and isinstance(item.get("row"), dict)
-            and (item.get("row").get("league") or {}).get("id") is not None
+            str(row["league"]["id"])
+            for item in pipeline_observations
+            if isinstance(item, dict) and isinstance(item.get("row"), dict)
+            for row in [item["row"]]
+            if isinstance(row.get("league"), dict) and row["league"].get("id") is not None
         }),
         window={"local_date": day, "timezone": "Africa/Lagos"},
         retrieved_at=retrieved,
