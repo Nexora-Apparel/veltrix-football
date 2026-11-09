@@ -66,8 +66,6 @@ def qualified_sources_from_registry(registry: Any) -> dict[str, list[str]]:
             raise SelectionArtifactError(f"qualification_competition_invalid:{index}")
         if provider == "strikerapi" and str(competition) not in STRIKERAPI_COMPETITIONS:
             raise SelectionArtifactError(f"qualification_competition_invalid:{index}")
-        if False:
-            raise SelectionArtifactError(f"qualification_competition_missing:{index}")
         if entry.get("qualification_status") != "qualified":
             raise SelectionArtifactError(f"source_not_qualified:{index}")
         attestation = entry.get("review_attestation")
