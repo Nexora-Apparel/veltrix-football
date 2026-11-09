@@ -95,6 +95,11 @@ def main() -> int:
     if len(args.expected_head_sha) != 40 or any(c not in "0123456789abcdef" for c in args.expected_head_sha.lower()):
         print("QUALIFICATION_REVIEW: REJECTED (expected_head_sha_invalid)")
         return 2
+    signing_key = os.getenv("VELTRIX_QUALIFICATION_ATTESTATION_KEY", "")
+    if len(signing_key) < 32:
+        print("QUALIFICATION_REVIEW: REJECTED (VELTRIX_QUALIFICATION_ATTESTATION_KEY missing_or_weak)")
+        print("NO_REGISTRY_WRITTEN: true")
+        return 2
     try:
         run = gh_json(f"repos/{args.repository}/actions/runs/{args.run_id}")
         run_evidence = validate_run_metadata(
@@ -138,6 +143,7 @@ def main() -> int:
             archive_sha256=archive_sha, report_sha256=report_sha,
             coverage=coverage, reviewer=args.reviewer,
             reviewed_at=datetime.now(timezone.utc).replace(microsecond=0).isoformat(),
+            signing_key=signing_key,
         )
         run_url = f"https://github.com/{args.repository}/actions/runs/{args.run_id}"
         sources = []
