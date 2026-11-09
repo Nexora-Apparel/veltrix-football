@@ -9,7 +9,7 @@ from typing import Any
 
 from app.daily_fixture_selection import select_daily_fixtures
 from app.provider_acquisition_artifact import validate_acquisition_report
-from app.provider_qualification_evidence import verify_attestation_signature
+from app.provider_qualification_evidence import STRIKERAPI_COMPETITIONS, verify_attestation_signature
 
 
 _SHA256 = re.compile(r"^[0-9a-f]{64}$")
@@ -60,7 +60,13 @@ def qualified_sources_from_registry(registry: Any) -> dict[str, list[str]]:
         if not isinstance(provider, str) or not provider.strip():
             raise SelectionArtifactError(f"qualification_provider_missing:{index}")
         if (not isinstance(competition, (str, int)) or isinstance(competition, bool)
-                or not str(competition).isdigit() or int(competition) <= 0):
+                or not str(competition).strip()):
+            raise SelectionArtifactError(f"qualification_competition_missing:{index}")
+        if provider == "fivedollar" and (not str(competition).isdigit() or int(competition) <= 0):
+            raise SelectionArtifactError(f"qualification_competition_invalid:{index}")
+        if provider == "strikerapi" and str(competition) not in STRIKERAPI_COMPETITIONS:
+            raise SelectionArtifactError(f"qualification_competition_invalid:{index}")
+        if False:
             raise SelectionArtifactError(f"qualification_competition_missing:{index}")
         if entry.get("qualification_status") != "qualified":
             raise SelectionArtifactError(f"source_not_qualified:{index}")
@@ -100,18 +106,28 @@ def qualified_sources_from_registry(registry: Any) -> dict[str, list[str]]:
         coverage_keys = coverage.get("competition_keys")
         if (coverage.get("provider") != provider.lower()
                 or not isinstance(coverage_keys, list)
-                or any(not isinstance(key, str) or not key.isdigit() for key in coverage_keys)
+                or any(not isinstance(key, str) or (provider == "fivedollar" and not key.isdigit())
+                       or (provider == "strikerapi" and key not in STRIKERAPI_COMPETITIONS)
+                       for key in coverage_keys)
                 or len(coverage_keys) != len(set(coverage_keys))
                 or coverage.get("competition_count") != len(coverage_keys)
                 or str(competition) not in coverage_keys
                 or coverage.get("pagination_complete") is not True
-                or isinstance(coverage.get("source_rows"), bool)
-                or not isinstance(coverage.get("source_rows"), int) or coverage["source_rows"] <= 0
-                or isinstance(coverage.get("accepted_rows"), bool)
-                or not isinstance(coverage.get("accepted_rows"), int) or coverage["accepted_rows"] <= 0
                 or coverage.get("invalid_rows") != 0 or coverage.get("duplicate_rows") != 0
                 or coverage.get("missing_team_ids", 0) != 0):
             raise SelectionArtifactError(f"qualification_attestation_scope_invalid:{index}")
+        if provider == "fivedollar":
+            for field in ("source_rows", "accepted_rows"):
+                value = coverage.get(field)
+                if isinstance(value, bool) or not isinstance(value, int) or value <= 0:
+                    raise SelectionArtifactError(f"qualification_attestation_scope_invalid:{index}")
+        elif provider == "strikerapi":
+            final_rows = coverage.get("final_rows_by_competition")
+            if (not isinstance(final_rows, dict)
+                    or isinstance(final_rows.get(str(competition)), bool)
+                    or not isinstance(final_rows.get(str(competition)), int)
+                    or final_rows[str(competition)] <= 0):
+                raise SelectionArtifactError(f"qualification_attestation_scope_invalid:{index}")
         expected_evidence_ref = (
             f"https://github.com/{attestation.get('repository')}/actions/runs/"
             f"{attestation.get('workflow_run_id')}/artifacts/{attestation.get('artifact_id')}"
