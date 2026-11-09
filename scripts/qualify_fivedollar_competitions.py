@@ -207,7 +207,7 @@ def main() -> int:
         return 1
     output = Path(args.output)
     output.parent.mkdir(parents=True, exist_ok=True)
-    output.write_text(json.dumps(report, indent=2, sort_keys=True) + "\\n", encoding="utf-8")
+    output.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     print(
         f"QUALIFICATION: {'PASS' if result['acceptance_pass'] else 'REVIEW_REQUIRED'}; "
         f"competitions={result['competition_count']}; "
