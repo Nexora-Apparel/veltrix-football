@@ -50,6 +50,11 @@ class ProviderReconciliationTests(unittest.TestCase):
         self.assertTrue(report["accounting"]["striker"]["balanced"])
         self.assertTrue(report["accounting"]["fivedollar"]["balanced"])
 
+    def test_duplicate_provider_ids_block_acceptance(self):
+        report = reconcile([srow("duplicate"), srow("duplicate")], [drow()], {"soccer":"39"})
+        self.assertEqual(report["duplicate_source_ids"]["striker"], ["duplicate"])
+        self.assertFalse(report["acceptance_pass"])
+
     def test_missing_timezone_is_invalid_and_accounted(self):
         bad = srow(kickoff="2026-08-15T16:30:00")
         report = reconcile([bad], [drow()], {"soccer":"39"})
