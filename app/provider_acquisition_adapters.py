@@ -172,3 +172,108 @@ def acquire_strikerapi_competition(*, api_key: str, competition_key: str,
             "page_count_fields": page_counts,
         },
     )
+
+
+def acquire_fivedollar_history_batch(*, client, competition_ids: list[str],
+                                     start_date: str, end_date: str,
+                                     run_id: str, max_requests: int = 20,
+                                     max_pages_per_competition: int = 3,
+                                     retrieved_at: str | None = None,
+                                     transport: Callable[..., tuple[dict, dict]] | None = None) -> dict:
+    """Acquire one bounded historical date batch across explicitly qualified competitions.
+
+    The inclusive window is at most seven Lagos-local calendar days. Every HTTP
+    attempt is reserved before dispatch. The production transport must disable
+    automatic retries so request accounting is exact.
+    """
+    from datetime import date, timedelta
+
+    start, end = date.fromisoformat(start_date), date.fromisoformat(end_date)
+    if end < start or (end - start).days > 6:
+        raise ValueError("history_window_must_be_one_to_seven_days")
+    if not isinstance(competition_ids, list) or not competition_ids:
+        raise ValueError("qualified_competition_ids_required")
+    canonical_ids = []
+    for value in competition_ids:
+        text = str(value)
+        if not text.isdigit() or int(text) <= 0:
+            raise ValueError("competition_id_invalid")
+        canonical_ids.append(str(int(text)))
+    if len(canonical_ids) != len(set(canonical_ids)):
+        raise ValueError("duplicate_competition_ids")
+    if isinstance(max_requests, bool) or not isinstance(max_requests, int) or not 1 <= max_requests <= 20:
+        raise ValueError("max_requests_must_be_between_1_and_20")
+    if (isinstance(max_pages_per_competition, bool)
+            or not isinstance(max_pages_per_competition, int)
+            or not 1 <= max_pages_per_competition <= 3):
+        raise ValueError("max_pages_per_competition_must_be_between_1_and_3")
+
+    retrieved = retrieved_at or datetime.now(timezone.utc).isoformat()
+    start_ts, _ = client._local_day_window(start, "Africa/Lagos")
+    _, end_ts = client._local_day_window(end + timedelta(days=1), "Africa/Lagos")
+    observations = []
+    requests_made = 0
+    page_counts = {}
+    fetch = transport or (lambda path, params: client._get(path, params, retries=0))
+
+    for competition_id in sorted(canonical_ids):
+        page, pages = 1, 0
+        while True:
+            if requests_made >= max_requests:
+                raise AcquisitionAdapterError("request_budget_exhausted_before_complete_batch")
+            requests_made += 1
+            payload, headers = fetch(f"leagues/{competition_id}/fixtures", {
+                "start_time": start_ts,
+                "end_time": end_ts,
+                "status": "finished",
+                "page": page,
+                "per_page": 100,
+            })
+            if not isinstance(payload, dict) or not isinstance(payload.get("data"), list):
+                raise AcquisitionAdapterError("fivedollar_history_data_missing")
+            pages += 1
+            for row in payload["data"]:
+                observations.append({
+                    "provider": "fivedollar",
+                    "row": row,
+                    "options": {
+                        "endpoint": f"leagues/{competition_id}/fixtures",
+                        "retrieved_at": retrieved,
+                        "run_id": run_id,
+                    },
+                })
+            pagination = payload.get("pagination")
+            if not isinstance(pagination, dict) or not isinstance(pagination.get("has_more"), bool):
+                raise AcquisitionAdapterError("fivedollar_history_pagination_invalid")
+            if not pagination["has_more"]:
+                break
+            if pages >= max_pages_per_competition:
+                raise AcquisitionAdapterError("fivedollar_history_pagination_truncated")
+            page += 1
+        page_counts[competition_id] = pages
+
+    result = run_fixture_acquisition_pipeline(
+        observations=observations,
+        run_id=run_id,
+        provider_scope=["fivedollar"],
+        competition_scope=sorted(canonical_ids),
+        window={
+            "start_date": start.isoformat(),
+            "end_date": end.isoformat(),
+            "timezone": "Africa/Lagos",
+            "semantics": "inclusive_calendar_dates",
+            "status": "finished",
+        },
+        retrieved_at=retrieved,
+        request_budget={
+            "provider": "fivedollar",
+            "maximum_requests": max_requests,
+            "actual_requests": requests_made,
+            "automatic_retries": 0,
+            "pages_by_competition": page_counts,
+            "max_pages_per_competition": max_pages_per_competition,
+            "request_accounting": "one_reserved_call_per_http_attempt",
+        },
+    )
+    result["report"]["request_budget"]["rate_limit_remaining_headers"] = "not_persisted_per_row"
+    return result
