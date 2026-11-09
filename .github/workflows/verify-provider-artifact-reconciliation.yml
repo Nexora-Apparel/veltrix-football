@@ -1,0 +1,43 @@
+name: Verify Provider Artifact Reconciliation
+
+on:
+  push:
+    branches:
+      - phase-3/budget-aware-acquisition-contract
+  pull_request:
+    branches:
+      - phase-3/strikerapi-readonly-qualification
+      - phase-3/budget-aware-acquisition-contract
+
+permissions:
+  contents: read
+
+concurrency:
+  group: provider-artifact-reconciliation-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Run artifact reconciliation tests
+        run: python -m unittest discover -s tests -p 'test_provider_artifact_reconciliation.py' -v
+
+      - name: Run related acquisition integrity tests
+        run: |
+          python -m unittest discover -s tests -p 'test_provider_acquisition_artifact.py' -v
+          python -m unittest discover -s tests -p 'test_provider_fixture_normalizer.py' -v
+          python -m unittest discover -s tests -p 'test_provider_fixture_batch.py' -v
+          python -m unittest discover -s tests -p 'test_provider_acquisition_report.py' -v
+
+      - name: Compile reconciliation module
+        run: python -m py_compile app/provider_artifact_reconciliation.py
