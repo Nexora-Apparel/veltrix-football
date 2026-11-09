@@ -93,3 +93,16 @@ The atlas describes different coverage periods by league and dataset. Provider-c
 5. Approve only competition- and data-type-specific source authority after all evidence passes.
 
 No production imports, migrations, deployments, paid upgrades or prediction-delivery changes are part of this qualification.
+
+
+## NWSL zero-scheduled follow-up
+
+The provider's NWSL coverage page lists 224 matches for calendar season 2026 and describes NWSL seasons as calendar years. It also documents the `season` and `stage` filters for `list_games`. The 180-day date-window result of zero scheduled rows therefore does not establish that the NWSL dataset has no fixtures; the next diagnostic must query the season explicitly and separate league-stage from knockout-stage fixtures.
+
+Diagnostic plan (read-only, 2 credits per call):
+- `league=nwsl, season=2026, status=scheduled, stage=league`
+- `league=nwsl, season=2026, status=scheduled, stage=knockout`
+- If both are empty, query `season=2027` with the same stage split to distinguish an unpublished future schedule from a query/filter issue.
+- Compare season-level final counts with the provider's published season table; do not treat website totals as a substitute for API response evidence.
+
+Reference: https://strikerapi.com/nwsl and https://strikerapi.com/docs/list-games.
