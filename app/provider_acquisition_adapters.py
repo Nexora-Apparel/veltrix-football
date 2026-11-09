@@ -289,5 +289,4 @@ def acquire_fivedollar_history_batch(*, client, competition_ids: list[str],
             "request_accounting": "one_reserved_call_per_http_attempt",
         },
     )
-    result["report"]["request_budget"]["rate_limit_remaining_headers"] = "not_persisted_per_row"
     return result
