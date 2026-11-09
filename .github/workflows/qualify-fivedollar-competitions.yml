@@ -1,0 +1,82 @@
+name: Manual 5Dollar Competition Qualification
+
+on:
+  workflow_dispatch:
+    inputs:
+      max_requests:
+        description: "Hard maximum provider requests (1-60)"
+        required: true
+        default: "20"
+        type: string
+      days:
+        description: "Historical window in days (1-90)"
+        required: true
+        default: "90"
+        type: string
+      max_pages_per_competition:
+        description: "Maximum pages per competition (1-5)"
+        required: true
+        default: "3"
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: fivedollar-competition-qualification
+  cancel-in-progress: false
+
+jobs:
+  qualify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      FIVEDOLLARFOOTBALL_API_KEY: ${{ secrets.FIVEDOLLARFOOTBALL_API_KEY }}
+    steps:
+      - name: Check out selected branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Validate bounded inputs and run offline tests
+        env:
+          MAX_REQUESTS: ${{ inputs.max_requests }}
+          DAYS: ${{ inputs.days }}
+          MAX_PAGES: ${{ inputs.max_pages_per_competition }}
+        run: |
+          python -c "import os; assert 1 <= int(os.environ['MAX_REQUESTS']) <= 60"
+          python -c "import os; assert 1 <= int(os.environ['DAYS']) <= 90"
+          python -c "import os; assert 1 <= int(os.environ['MAX_PAGES']) <= 5"
+          python -m unittest discover -s tests -p 'test_fivedollar_qualification_report.py' -v
+          python -m unittest discover -s tests -p 'test_qualify_fivedollar_competitions.py' -v
+      - name: Run bounded read-only provider qualification
+        env:
+          MAX_REQUESTS: ${{ inputs.max_requests }}
+          DAYS: ${{ inputs.days }}
+          MAX_PAGES: ${{ inputs.max_pages_per_competition }}
+        run: |
+          python scripts/qualify_fivedollar_competitions.py \
+            --max-requests "$MAX_REQUESTS" \
+            --days "$DAYS" \
+            --max-pages-per-competition "$MAX_PAGES" \
+            --output fivedollar_competition_qualification.json
+      - name: Verify report integrity
+        if: always()
+        run: |
+          if [ -f fivedollar_competition_qualification.json ]; then
+            python -c "import json; from app.fivedollar_qualification_report import validate_fivedollar_qualification_report; validate_fivedollar_qualification_report(json.load(open('fivedollar_competition_qualification.json')))"
+          else
+            echo "No report was produced"
+            exit 1
+          fi
+      - name: Upload qualification report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fivedollar-competition-qualification
+          path: fivedollar_competition_qualification.json
+          if-no-files-found: error
+          retention-days: 7
