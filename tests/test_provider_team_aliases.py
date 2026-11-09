@@ -1,6 +1,4 @@
 import copy
-import json
-import tempfile
 import unittest
 from pathlib import Path
 
@@ -8,8 +6,20 @@ from app.provider_team_aliases import (
     AliasRegistryError, alias_pair_is_approved, load_registry, validate_registry,
 )
 
-
 REGISTRY_PATH = Path("data/provider_team_aliases.json")
+
+
+def fully_approved_copy(registry, timestamp="2026-11-09T12:00:00Z"):
+    approved = copy.deepcopy(registry)
+    approved["status"] = "approved"
+    for row in approved["candidates"]:
+        row.update({
+            "status": "approved",
+            "evidence_url": f"https://provider.example/team/{row['striker_team_id']}",
+            "evidence_retrieved_at": timestamp,
+            "reviewer": "independent-review",
+        })
+    return approved
 
 
 class ProviderTeamAliasRegistryTests(unittest.TestCase):
@@ -29,11 +39,12 @@ class ProviderTeamAliasRegistryTests(unittest.TestCase):
         ))
 
     def test_wrong_competition_or_season_never_matches(self):
+        approved = fully_approved_copy(self.registry)
         self.assertFalse(alias_pair_is_approved(
-            self.registry, "england_championship", "2026-27", "360", "762247077"
+            approved, "england_championship", "2026-27", "360", "762247077"
         ))
         self.assertFalse(alias_pair_is_approved(
-            self.registry, "england_premier_league", "2025-26", "360", "762247077"
+            approved, "england_premier_league", "2025-26", "360", "762247077"
         ))
 
     def test_duplicate_striker_id_in_scope_is_rejected(self):
@@ -51,32 +62,21 @@ class ProviderTeamAliasRegistryTests(unittest.TestCase):
         scoped["candidates"].append(extra)
         validate_registry(scoped)
 
-    def test_approved_row_requires_evidence_and_reviewer(self):
+    def test_activation_requires_every_candidate_to_be_evidenced(self):
         approved = copy.deepcopy(self.registry)
         approved["status"] = "approved"
-        row = approved["candidates"][0]
-        row["status"] = "approved"
         with self.assertRaises(AliasRegistryError):
             validate_registry(approved)
-        row["evidence_url"] = "https://provider.example/team/306"
-        row["evidence_retrieved_at"] = "2026-11-09T12:00:00Z"
-        row["reviewer"] = "independent-review"
+        approved = fully_approved_copy(self.registry)
         validate_registry(approved)
+        row = approved["candidates"][0]
         self.assertTrue(alias_pair_is_approved(
             approved, "england_premier_league", "2026-27",
             row["striker_team_id"], row["fivedollar_team_id"]
         ))
 
     def test_approved_evidence_must_have_timezone(self):
-        approved = copy.deepcopy(self.registry)
-        approved["status"] = "approved"
-        row = approved["candidates"][0]
-        row.update({
-            "status": "approved",
-            "evidence_url": "https://provider.example/team/306",
-            "evidence_retrieved_at": "2026-11-09T12:00:00",
-            "reviewer": "independent-review",
-        })
+        approved = fully_approved_copy(self.registry, timestamp="2026-11-09T12:00:00")
         with self.assertRaises(AliasRegistryError):
             validate_registry(approved)
 
