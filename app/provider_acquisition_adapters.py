@@ -73,10 +73,8 @@ def acquire_fivedollar_day(*, client, day: str, run_id: str,
             pipeline_observations.append(None)
             continue
         row = item["row"]
-        options = item["options"]
-        # Competition ID is retained as provider-scoped competition identity.
-        options["competition_key"] = (row.get("league") or {}).get("id")
-        options["season"] = row.get("season")
+        # The 5Dollar normalizer derives competition and season directly from
+        # the source row; do not pass StrikerAPI-only keyword arguments.
         pipeline_observations.append(item)
 
     return run_fixture_acquisition_pipeline(
