@@ -101,7 +101,8 @@ def build_fivedollar_qualification_report(
         if not isinstance(item["pagination_complete"], bool):
             raise ValueError(f"pagination_complete_invalid:{index}")
         row["pagination_complete"] = item["pagination_complete"]
-        if row["accepted_rows"] + row["invalid_rows"] > row["source_rows"]:
+        accounted = row["accepted_rows"] + row["invalid_rows"] + row["duplicate_ids"] + row["missing_team_ids"]
+        if accounted != row["source_rows"]:
             raise ValueError(f"competition_row_accounting_invalid:{index}")
         cleaned.append(row)
     cleaned.sort(key=lambda x: x["competition_id"])
