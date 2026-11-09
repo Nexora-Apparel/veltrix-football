@@ -9,6 +9,9 @@ on:
       - ".github/workflows/verify-strikerapi-team-aliases.yml"
       - "scripts/verify_strikerapi_team_aliases.py"
       - "tests/test_team_alias_verification.py"
+      - "app/provider_team_aliases.py"
+      - "data/provider_team_aliases.json"
+      - "tests/test_provider_team_aliases.py"
 
 permissions:
   contents: read
