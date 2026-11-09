@@ -26,17 +26,23 @@ class ProviderTeamAliasRegistryTests(unittest.TestCase):
     def setUp(self):
         self.registry = load_registry(REGISTRY_PATH)
 
-    def test_registry_contains_twenty_pending_candidates(self):
+    def test_registry_contains_twenty_approved_scoped_candidates(self):
         self.assertEqual(len(self.registry["candidates"]), 20)
-        self.assertTrue(all(
-            row["status"] == "pending_independent_verification"
-            for row in self.registry["candidates"]
-        ))
+        self.assertEqual(self.registry["status"], "approved")
+        self.assertTrue(all(row["status"] == "approved" for row in self.registry["candidates"]))
+        self.assertTrue(all(row["competition_key"] == "england_premier_league" and row["season"] == "2026-27" for row in self.registry["candidates"]))
+        self.assertTrue(all(row["catalogue_verified"] and row["crosswalk_fixture_support_count"] >= 3 for row in self.registry["candidates"]))
 
     def test_pending_candidate_never_matches(self):
+        review_only = copy.deepcopy(self.registry)
+        review_only["status"] = "review_only"
         self.assertFalse(alias_pair_is_approved(
-            self.registry, "england_premier_league", "2026-27", "360", "762247077"
+            review_only, "england_premier_league", "2026-27", "360", "762247077"
         ))
+        pending = copy.deepcopy(self.registry)
+        pending["candidates"][0]["status"] = "pending_independent_verification"
+        with self.assertRaises(AliasRegistryError):
+            validate_registry(pending)
 
     def test_wrong_competition_or_season_never_matches(self):
         approved = fully_approved_copy(self.registry)
@@ -64,7 +70,7 @@ class ProviderTeamAliasRegistryTests(unittest.TestCase):
 
     def test_activation_requires_every_candidate_to_be_evidenced(self):
         approved = copy.deepcopy(self.registry)
-        approved["status"] = "approved"
+        approved["candidates"][0]["status"] = "pending_independent_verification"
         with self.assertRaises(AliasRegistryError):
             validate_registry(approved)
         approved = fully_approved_copy(self.registry)
