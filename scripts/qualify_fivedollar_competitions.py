@@ -70,7 +70,7 @@ def _valid_score(value) -> bool:
 
 def _valid_identifier(value) -> bool:
     return ((isinstance(value, int) and not isinstance(value, bool) and value > 0)
-            or (isinstance(value, str) and bool(value.strip())))
+            or (isinstance(value, str) and value.strip().isdigit() and int(value.strip()) > 0))
 
 
 def _valid_final_row(item: dict, competition_id: str, start: datetime, end: datetime) -> bool:
