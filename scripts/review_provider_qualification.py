@@ -92,6 +92,20 @@ def download_artifact_zip(repo: str, artifact_id: int, destination: Path) -> Non
     destination.write_bytes(data)
 
 
+def extract_coverage_report(archive_path: Path) -> bytes:
+    with zipfile.ZipFile(archive_path) as bundle:
+        members = bundle.infolist()
+        if len(members) > MAX_ARCHIVE_ENTRIES:
+            raise QualificationEvidenceError("artifact_archive_entry_limit_exceeded")
+        files = [item for item in members
+                 if Path(item.filename).name == REPORT_NAME and not item.is_dir()]
+        if len(files) != 1:
+            raise QualificationEvidenceError("coverage_report_missing_or_ambiguous")
+        if files[0].file_size > MAX_REPORT_BYTES:
+            raise QualificationEvidenceError("coverage_report_size_limit_exceeded")
+        return bundle.read(files[0])
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--repository", required=True, help="owner/repository")
@@ -135,18 +149,7 @@ def main() -> int:
             archive_sha = hashlib.sha256(archive.read_bytes()).hexdigest()
             if archive_sha != artifact_evidence["github_artifact_digest"]:
                 raise QualificationEvidenceError("github_artifact_digest_mismatch")
-            with zipfile.ZipFile(archive) as bundle:
-                members = bundle.infolist()
-                if len(members) > MAX_ARCHIVE_ENTRIES:
-                    raise QualificationEvidenceError("artifact_archive_entry_limit_exceeded")
-                files = [item for item in members
-                         if Path(item.filename).name == REPORT_NAME
-                         and not item.is_dir()]
-                if len(files) != 1:
-                    raise QualificationEvidenceError("coverage_report_missing_or_ambiguous")
-                if files[0].file_size > MAX_REPORT_BYTES:
-                    raise QualificationEvidenceError("coverage_report_size_limit_exceeded")
-                report_bytes = bundle.read(files[0])
+            report_bytes = extract_coverage_report(archive)
             report_sha = hashlib.sha256(report_bytes).hexdigest()
             try:
                 report = json.loads(report_bytes.decode("utf-8"))
