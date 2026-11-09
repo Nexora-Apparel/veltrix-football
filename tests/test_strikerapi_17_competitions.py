@@ -72,6 +72,37 @@ class AllCompetitionCoverageTests(unittest.TestCase):
                 lambda *args, **kwargs: {}, budget,
             )
 
+    def test_http_429_uses_bounded_cooldown_retry(self):
+        calls = {"count": 0}
+        sleeps = []
+        def fake_call(api_key, league, status, start, end, offset):
+            calls["count"] += 1
+            if calls["count"] == 1:
+                raise ProbeError("HTTP 429")
+            return {"games": [game("retry-id", status)], "count": 1, "next_offset": None}
+        budget = {"calls": 0}
+        rows, pages, truncated, counts = collect_bounded(
+            "key", "soccer", "final", "2026-08-01", "2026-11-09",
+            fake_call, budget, pause_seconds=0, sleep=sleeps.append,
+        )
+        self.assertEqual(calls["count"], 2)
+        self.assertEqual(budget["calls"], 2)
+        self.assertEqual(sleeps, [65.0])
+        self.assertEqual(len(rows), 1)
+        self.assertFalse(truncated)
+
+    def test_inter_page_requests_are_paced(self):
+        sleeps = []
+        def fake_call(api_key, league, status, start, end, offset):
+            next_offset = None if offset >= 50 else offset + 50
+            return {"games": [game(f"id-{offset}", status)], "count": 50, "next_offset": next_offset}
+        rows, pages, truncated, counts = collect_bounded(
+            "key", "soccer", "final", "2026-08-01", "2026-11-09",
+            fake_call, {"calls": 0}, pause_seconds=7, sleep=sleeps.append,
+        )
+        self.assertEqual(pages, 2)
+        self.assertEqual(sleeps, [7])
+
 
 if __name__ == "__main__":
     unittest.main()
