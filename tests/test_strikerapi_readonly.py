@@ -63,6 +63,13 @@ class StrikerPaginationTests(unittest.TestCase):
         self.assertFalse(valid)
         self.assertEqual(reason, "invalid_final_score")
 
+    def test_rejects_timezone_naive_kickoff(self):
+        row = game()
+        row["starts_at"] = "2026-10-01T18:00:00"
+        valid, reason = validate_game(row, "final")
+        self.assertFalse(valid)
+        self.assertEqual(reason, "timezone_missing_from_kickoff_timestamp")
+
     def test_accepts_scheduled_fixture_without_scores(self):
         valid, reason = validate_game(game(status="scheduled"), "scheduled")
         self.assertTrue(valid)
