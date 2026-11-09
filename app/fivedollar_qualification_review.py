@@ -24,7 +24,19 @@ def build_fivedollar_registry(*, run: dict, artifact: dict, report: dict,
         raise ValueError("fivedollar_report_hash_invalid")
     if not reviewer.strip() or not reviewed_at.strip():
         raise ValueError("fivedollar_reviewer_identity_missing")
-    if not artifact_url.startswith("https://github.com/"):
+    if run.get("event") != "workflow_dispatch":
+        raise ValueError("fivedollar_run_event_invalid")
+    if run.get("workflow_path") != ".github/workflows/qualify-fivedollar-competitions.yml":
+        raise ValueError("fivedollar_workflow_path_invalid")
+    if run.get("head_branch") != "phase-3/budget-aware-acquisition-contract":
+        raise ValueError("fivedollar_run_branch_invalid")
+    if artifact.get("artifact_name") != "fivedollar-competition-qualification":
+        raise ValueError("fivedollar_artifact_name_invalid")
+    if artifact.get("github_artifact_digest") != archive_sha256:
+        raise ValueError("fivedollar_archive_digest_mismatch")
+    expected_url = (f"https://github.com/{run.get('repository')}/actions/runs/"
+                    f"{run.get('workflow_run_id')}/artifacts/{artifact.get('artifact_id')}")
+    if artifact_url != expected_url:
         raise ValueError("fivedollar_artifact_url_invalid")
 
     competition_keys = sorted(str(row["competition_id"]) for row in report["competitions"])
