@@ -1,12 +1,21 @@
 name: StrikerAPI Reconciliation Unit Tests
 
 on:
+  push:
+    branches:
+      - phase-3/strikerapi-readonly-qualification
+    paths:
+      - "scripts/reconcile_provider_fixtures.py"
+      - "scripts/run_readonly_epl_reconciliation.py"
+      - "tests/test_strikerapi*.py"
+      - ".github/workflows/strikerapi-reconciliation-tests.yml"
   pull_request:
     branches:
       - main
     paths:
       - "scripts/reconcile_provider_fixtures.py"
-      - "tests/test_strikerapi_reconciliation.py"
+      - "tests/test_strikerapi*.py"
+      - "scripts/run_readonly_epl_reconciliation.py"
       - ".github/workflows/strikerapi-reconciliation-tests.yml"
 
 permissions:
