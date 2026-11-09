@@ -94,3 +94,34 @@ The reviewer implementation must reject:
 - Evidence whose coverage scope is broader than the actual report.
 
 It must accept only a fully verified, narrowly scoped evidence bundle and must preserve the exact scope in the generated registry entry.
+
+## 8. Implemented offline reviewer
+
+Implementation entry point: `scripts/review_provider_qualification.py`.
+
+The reviewer uses the authenticated GitHub CLI session and GitHub Actions read-only API endpoints. It does not call football providers. It requires:
+
+- `--repository Nexora-Apparel/veltrix-football`
+- `--run-id <completed workflow run ID>`
+- `--expected-branch <exact qualification branch>`
+- `--expected-head-sha <exact 40-character reviewed commit SHA>`
+- `--reviewer <reviewer identifier>`
+- Optional `--output <registry JSON path>`
+
+Example (run only after a real, successful manual qualification workflow exists):
+
+```bash
+python scripts/review_provider_qualification.py \
+  --repository Nexora-Apparel/veltrix-football \
+  --run-id 123456789 \
+  --expected-branch phase-3/strikerapi-readonly-qualification \
+  --expected-head-sha <40-character-reviewed-commit-sha> \
+  --reviewer <reviewer-id> \
+  --output data/provider_qualification_registry.reviewed.json
+```
+
+The script fetches run and artifact metadata from GitHub, requires exactly one expected artifact, downloads the ZIP through the GitHub artifact endpoint, compares the local archive SHA-256 with GitHub's artifact digest, locates exactly one coverage report, and validates all 34 competition/status checks before emitting a reviewer-attested registry. A failed check emits no registry.
+
+The generated registry is a review record, not an assertion of complete season coverage. Its attestation is bound to the workflow run, branch, commit, artifact ID/digest, local report hash, and exact measured competition scope. It remains subject to normal repository review and must not be hand-edited to widen scope.
+
+The reviewer currently qualifies only the StrikerAPI 17-competition report schema. Other providers require their own provider-specific evidence validator and workflow contract; do not reuse this reviewer for 5Dollar qualification artifacts.
