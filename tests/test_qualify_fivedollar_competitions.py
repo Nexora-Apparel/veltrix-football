@@ -119,6 +119,14 @@ class QualificationRunnerTests(unittest.TestCase):
         self.assertFalse(report["acceptance_pass"])
         self.assertEqual(report["aggregates"]["invalid_rows"], 1)
 
+    def test_budget_exhaustion_emits_valid_incomplete_report(self):
+        budget = FakeBudget()
+        budget.maximum = 2
+        report = collect("test-key", budget, 90, 3, "test-run")
+        self.assertFalse(report["acceptance_pass"])
+        self.assertEqual(report["request_budget"]["actual_requests"], 2)
+        self.assertEqual(report["competitions"][1]["pages_fetched"], 0)
+
     def test_catalogue_truncation_blocks_acceptance(self):
         budget = FakeBudget()
         original = budget.get
