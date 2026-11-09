@@ -25,7 +25,7 @@ def _sha(value: Any) -> str:
 
 def _name(value: str) -> str:
     value = unicodedata.normalize("NFKC", value).casefold()
-    value = re.sub(r"[^\\w\\s]", " ", value, flags=re.UNICODE)
+    value = re.sub(r"[^\w\s]", " ", value, flags=re.UNICODE)
     return " ".join(value.split())
 
 
@@ -263,7 +263,7 @@ def main() -> int:
         alias_registry_path=args.alias_registry,
         alias_competition_key=args.alias_competition_key, season=args.season,
     )
-    Path(args.output).write_text(json.dumps(report, indent=2, ensure_ascii=False) + "\\n", encoding="utf-8")
+    Path(args.output).write_text(json.dumps(report, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
     print(f"RECONCILIATION_REPORT: {args.output}")
     print(f"ACCEPTANCE_PASS: {report['acceptance_pass']}")
     print("NETWORK_REQUESTS: 0; DATABASE_WRITES: 0; IMPORTS: 0; CANONICAL_MERGES: 0")
