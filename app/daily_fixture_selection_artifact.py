@@ -94,12 +94,27 @@ def qualified_sources_from_registry(registry: Any) -> dict[str, list[str]]:
         if not isinstance(attestation.get("local_report_sha256"), str) or not _SHA256.fullmatch(attestation["local_report_sha256"]):
             raise SelectionArtifactError(f"qualification_attestation_report_hash_invalid:{index}")
         coverage = attestation.get("coverage")
-        if (not isinstance(coverage, dict) or coverage.get("provider") != provider.lower()
-                or str(competition) not in coverage.get("competition_keys", [])
+        if not isinstance(coverage, dict):
+            raise SelectionArtifactError(f"qualification_attestation_scope_invalid:{index}")
+        coverage_keys = coverage.get("competition_keys")
+        if (coverage.get("provider") != provider.lower()
+                or not isinstance(coverage_keys, list)
+                or any(not isinstance(key, str) or not key.isdigit() for key in coverage_keys)
+                or len(coverage_keys) != len(set(coverage_keys))
+                or coverage.get("competition_count") != len(coverage_keys)
+                or str(competition) not in coverage_keys
                 or coverage.get("pagination_complete") is not True
+                or coverage.get("source_rows", 0) <= 0
+                or coverage.get("accepted_rows", 0) <= 0
                 or coverage.get("invalid_rows") != 0 or coverage.get("duplicate_rows") != 0
                 or coverage.get("missing_team_ids", 0) != 0):
             raise SelectionArtifactError(f"qualification_attestation_scope_invalid:{index}")
+        expected_evidence_ref = (
+            f"https://github.com/{attestation.get('repository')}/actions/runs/"
+            f"{attestation.get('workflow_run_id')}/artifacts/{attestation.get('artifact_id')}"
+        )
+        if evidence_ref != expected_evidence_ref:
+            raise SelectionArtifactError(f"qualification_evidence_ref_invalid:{index}")
         if not isinstance(run_id, str) or not run_id.strip():
             raise SelectionArtifactError(f"qualification_run_id_missing:{index}")
         if attestation.get("workflow_run_id") != run_id:
@@ -110,7 +125,7 @@ def qualified_sources_from_registry(registry: Any) -> dict[str, list[str]]:
             raise SelectionArtifactError(f"qualification_evidence_ref_missing:{index}")
         if entry.get("pagination_complete") is not True:
             raise SelectionArtifactError(f"qualification_pagination_incomplete:{index}")
-        for field in ("invalid_rows", "duplicate_rows"):
+        for field in ("invalid_rows", "duplicate_rows", "missing_team_ids"):
             value = entry.get(field)
             if isinstance(value, bool) or not isinstance(value, int) or value != 0:
                 raise SelectionArtifactError(f"qualification_{field}_nonzero:{index}")
