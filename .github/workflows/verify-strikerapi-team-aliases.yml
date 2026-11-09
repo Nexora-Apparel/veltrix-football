@@ -12,6 +12,8 @@ on:
       - "app/provider_team_aliases.py"
       - "data/provider_team_aliases.json"
       - "tests/test_provider_team_aliases.py"
+      - "scripts/audit_provider_team_crosswalk.py"
+      - "tests/test_provider_team_crosswalk.py"
 
 permissions:
   contents: read
@@ -42,6 +44,7 @@ jobs:
         run: |
           python -m unittest discover -s tests -p 'test_team_alias_verification.py' -v
           python -m unittest discover -s tests -p 'test_provider_team_aliases.py' -v
+          python -m unittest discover -s tests -p 'test_provider_team_crosswalk.py' -v
 
       - name: Verify provider team catalogues (read-only)
         run: python scripts/verify_strikerapi_team_aliases.py
