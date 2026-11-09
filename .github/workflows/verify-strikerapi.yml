@@ -1,0 +1,29 @@
+name: Verify StrikerAPI Read-Only Coverage
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: strikerapi-readonly-qualification
+  cancel-in-progress: false
+
+jobs:
+  qualify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      STRIKERAPI_API_KEY: ${{ secrets.STRIKERAPI_API_KEY }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Run bounded read-only qualification
+        run: python scripts/verify_strikerapi.py
