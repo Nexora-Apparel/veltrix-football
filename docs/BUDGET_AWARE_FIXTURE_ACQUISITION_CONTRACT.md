@@ -172,3 +172,12 @@ The adapter layer is implemented in `app/provider_acquisition_adapters.py`.
 ### Artifact and side-effect boundary
 
 Both adapters feed the same normalization, batch validation, quarantine, and audit-report pipeline. Emitted reports contain normalized observations and payload hashes, not raw source payloads or credentials. Invalid-row quarantine entries retain only provider/source/competition/team identity hints and a payload hash; they do not retain the raw provider row. A genuinely empty competition window is a valid report with zero accepted and zero quarantined records. The adapters perform no database writes, imports, checkpoints, canonical merges, or prediction publications. Unit tests use injected fake transports and do not consume provider requests or credits.
+
+
+## 12. Artifact integrity gate
+
+- `app/provider_acquisition_artifact.py` independently validates the report schema, canonical SHA-256 report hash, accepted/quarantined/input counts, normalized-record field allowlist, payload-hash format, sanitized quarantine field allowlist, and zero-side-effect declarations.
+- Duplicate quarantine entries contain only provider/source/competition/team identity hints and the source payload hash; they do not retain complete normalized rows.
+- `scripts/verify_acquisition_artifact.py` provides an offline verifier suitable for CI or pre-import review.
+- The manual 5Dollar workflow verifies the emitted JSON artifact before upload.
+- Artifact integrity passing proves structural integrity and consistency only. It does not certify provider completeness, source correctness, model quality, betting value, or permission to import into production.
