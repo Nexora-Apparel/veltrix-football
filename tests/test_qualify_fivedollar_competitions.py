@@ -1,6 +1,7 @@
 import unittest
 from datetime import datetime, timedelta, timezone
 
+from app.fivedollar_qualification_report import validate_fivedollar_qualification_report
 from scripts.qualify_fivedollar_competitions import Budget, collect
 
 
@@ -140,6 +141,9 @@ class QualificationRunnerTests(unittest.TestCase):
         budget.maximum = 2
         report = collect("test-key", budget, 90, 3, "test-run")
         self.assertFalse(report["acceptance_pass"])
+        validation = validate_fivedollar_qualification_report(report)
+        self.assertTrue(validation["valid"])
+        self.assertFalse(validation["acceptance_pass"])
         self.assertEqual(report["request_budget"]["actual_requests"], 2)
         by_id = {row["competition_id"]: row for row in report["competitions"]}
         self.assertEqual(by_id["140"]["pages_fetched"], 0)
