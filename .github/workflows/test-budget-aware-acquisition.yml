@@ -1,0 +1,34 @@
+name: Test Budget-Aware Provider Acquisition
+
+on:
+  push:
+    branches:
+      - phase-3/budget-aware-acquisition-contract
+  pull_request:
+    branches:
+      - phase-3/strikerapi-readonly-qualification
+
+permissions:
+  contents: read
+
+jobs:
+  unit-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Run request-budget unit tests
+        run: python -m unittest discover -s tests -p 'test_provider_request_budget.py' -v
+
+      - name: Run budgeted StrikerAPI wrapper tests
+        run: python -m unittest discover -s tests -p 'test_budgeted_strikerapi_17.py' -v
+
+      - name: Run existing 17-competition verifier tests
+        run: python -m unittest discover -s tests -p 'test_strikerapi_17_competitions.py' -v
