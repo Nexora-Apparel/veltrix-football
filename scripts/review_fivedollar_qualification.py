@@ -35,9 +35,9 @@ def extract_report(archive: Path) -> bytes:
         members = bundle.infolist()
         if len(members) > MAX_ARCHIVE_ENTRIES:
             raise QualificationEvidenceError("artifact_archive_entry_limit_exceeded")
-        matches = [item for item in members
-                   if Path(item.filename).name == REPORT_NAME and not item.is_dir()]
-        if len(matches) != 1:
+        files = [item for item in members if not item.is_dir()]
+        matches = [item for item in files if Path(item.filename).name == REPORT_NAME]
+        if len(files) != 1 or len(matches) != 1:
             raise QualificationEvidenceError("qualification_report_missing_or_ambiguous")
         if matches[0].file_size > MAX_REPORT_BYTES:
             raise QualificationEvidenceError("qualification_report_size_limit_exceeded")
