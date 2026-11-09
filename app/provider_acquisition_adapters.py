@@ -217,7 +217,7 @@ def acquire_fivedollar_history_batch(*, client, competition_ids: list[str],
 
     retrieved = retrieved_at or datetime.now(timezone.utc).isoformat()
     start_ts, _ = client._local_day_window(start, "Africa/Lagos")
-    _, end_ts = client._local_day_window(end + timedelta(days=1), "Africa/Lagos")
+    _, end_ts = client._local_day_window(end, "Africa/Lagos")
     observations = []
     requests_made = 0
     page_counts = {}
