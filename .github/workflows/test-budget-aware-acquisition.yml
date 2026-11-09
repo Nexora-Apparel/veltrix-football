@@ -48,6 +48,9 @@ jobs:
       - name: Run 5Dollar signed registry review tests
         run: python -m unittest discover -s tests -p 'test_fivedollar_qualification_review.py' -v
 
+      - name: Run 5Dollar daily registry admission tests
+        run: python -m unittest discover -s tests -p 'test_daily_fixture_selection_artifact.py' -v
+
       - name: Run acquisition artifact integrity tests
         run: python -m unittest discover -s tests -p 'test_provider_acquisition_artifact.py' -v
 
@@ -79,6 +82,9 @@ jobs:
         run: python scripts/qualify_fivedollar_competitions.py --help
 
       - name: Validate 5Dollar offline review CLI without network access
+        run: python scripts/review_fivedollar_qualification.py --help
+
+      - name: Validate 5Dollar registry reviewer CLI without network access
         run: python scripts/review_fivedollar_qualification.py --help
 
       - name: Validate offline artifact verifier CLI
