@@ -40,7 +40,7 @@ jobs:
       - name: Check out historical acquisition implementation
         uses: actions/checkout@v4
         with:
-          ref: phase-3/budget-aware-acquisition-contract
+          ref: 31e572b56309d5244a3f0c5ec8d1d9d3e874765e
 
       - name: Set up Python
         uses: actions/setup-python@v5
