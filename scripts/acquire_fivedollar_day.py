@@ -50,7 +50,7 @@ def main() -> int:
         f'{"PASS" if result["acceptance_pass"] else "REVIEW_REQUIRED"}; '
         f'accepted={result["batch"]["accepted_count"]}; '
         f'quarantined={result["batch"]["quarantined_count"]}; '
-        f'pages={result["report"]["request_budget"].get("calls_made", 0)}; '
+        f'pages={result["report"]["request_budget"].get("page_fetches", 0)}; '
         f"database_writes=0; imports=0"
     )
     print(f"REPORT_FILE: {output}")
