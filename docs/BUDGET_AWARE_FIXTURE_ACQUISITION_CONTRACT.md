@@ -146,3 +146,29 @@ Reports must not contain API keys, authorization headers, or other secrets.
 - Production imports: NOT AUTHORIZED.
 - Prediction delivery: PAUSED.
 - PR #42: remains open, draft, and unmerged.
+
+
+## 11. Adapter implementation boundary
+
+The adapter layer is implemented in `app/provider_acquisition_adapters.py`.
+
+### 5DollarFootballAPI
+
+- Uses the existing authenticated `FiveDollarFootballClient` transport through its `_get` method.
+- Retrieves one explicit Africa/Lagos calendar day using UTC epoch boundaries.
+- Reads original `data` rows and normalizes them immediately; raw provider rows are not copied into the emitted report.
+- Requires complete pagination within the configured page cap. A page cap hit with `has_more=true` fails the run rather than presenting partial coverage as complete.
+- Reports request-page count and the provider's remaining-request header when supplied.
+- No automatic retry is added by this adapter; the existing client transport retains its own HTTP behavior.
+
+### StrikerAPI
+
+- The adapter accepts the existing `list_games` transport as an injected callable.
+- A validated `RequestBudgetLedger` is mandatory. Each page request is charged before the transport is invoked.
+- The adapter does not retry. Any future retry must reserve and charge a separate attempt before transport.
+- Pagination must advance and must finish within the configured page cap; incomplete scans fail closed.
+- The 17-competition workflow remains manual-dispatch only. This adapter does not authorize or initiate it.
+
+### Artifact and side-effect boundary
+
+Both adapters feed the same normalization, batch validation, quarantine, and audit-report pipeline. Emitted reports contain normalized observations and payload hashes, not raw source payloads or credentials. The adapters perform no database writes, imports, checkpoints, canonical merges, or prediction publications. Unit tests use injected fake transports and do not consume provider requests or credits.
