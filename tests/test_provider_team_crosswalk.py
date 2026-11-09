@@ -12,39 +12,35 @@ def fixture(source_id, home_id, home, away_id, away, kickoff):
 
 class AnchoredCrosswalkTests(unittest.TestCase):
     def report(self):
-        # One strict exact-name match establishes the anchor club IDs.
-        strict_s = fixture("s0", 10, "Anchor FC", 20, "Known FC", "2026-08-01T12:00:00Z")
-        strict_d = fixture("d0", 110, "Anchor FC", 120, "Known FC", "2026-08-01T12:00:00+00:00")
-        # Two different opponents are mapped only because the anchor ID is
-        # already proven and kickoff/home-away position agrees.
+        strict_s1 = fixture("s0", 10, "Anchor FC", 20, "Known FC", "2026-08-01T12:00:00Z")
+        strict_d1 = fixture("d0", 110, "Anchor FC", 120, "Known FC", "2026-08-01T12:00:00+00:00")
+        strict_s2 = fixture("s9", 11, "Second Anchor", 21, "Known Two", "2026-08-02T12:00:00Z")
+        strict_d2 = fixture("d9", 111, "Second Anchor", 121, "Known Two", "2026-08-02T12:00:00+00:00")
+        # Candidate club appears twice, anchored by two already strict-matched clubs.
         s1 = fixture("s1", 10, "Anchor FC", 30, "Candidate FC", "2026-08-08T12:00:00Z")
         d1 = fixture("d1", 110, "Anchor FC", 130, "Candidate", "2026-08-08T12:00:00+00:00")
-        s2 = fixture("s2", 40, "Other Candidate", 10, "Anchor FC", "2026-08-15T12:00:00Z")
-        d2 = fixture("d2", 140, "Other Candidate", 110, "Anchor FC", "2026-08-15T12:00:00+00:00")
-        s3 = fixture("s3", 50, "Third Candidate", 10, "Anchor FC", "2026-08-22T12:00:00Z")
-        d3 = fixture("d3", 150, "Third Candidate", 110, "Anchor FC", "2026-08-22T12:00:00+00:00")
+        s2 = fixture("s2", 30, "Candidate FC", 11, "Second Anchor", "2026-08-15T12:00:00Z")
+        d2 = fixture("d2", 130, "Candidate", 111, "Second Anchor", "2026-08-15T12:00:00+00:00")
         return {
             "schema_version": 1, "mode": "read_only_no_merge",
             "decisions": [
-                {"outcome": "MATCHED_UNIQUE", "striker": strict_s, "fivedollar": strict_d},
-                *[
-                    {"outcome": "UNMATCHED_STRIKER_ONLY", "striker": x, "fivedollar": None}
-                    for x in (s1, s2, s3)
-                ],
-                *[
-                    {"outcome": "UNMATCHED_5DOLLAR_ONLY", "striker": None, "fivedollar": x}
-                    for x in (d1, d2, d3)
-                ],
+                {"outcome": "MATCHED_UNIQUE", "striker": strict_s1, "fivedollar": strict_d1},
+                {"outcome": "MATCHED_UNIQUE", "striker": strict_s2, "fivedollar": strict_d2},
+                {"outcome": "UNMATCHED_STRIKER_ONLY", "striker": s1, "fivedollar": None},
+                {"outcome": "UNMATCHED_STRIKER_ONLY", "striker": s2, "fivedollar": None},
+                {"outcome": "UNMATCHED_5DOLLAR_ONLY", "striker": None, "fivedollar": d1},
+                {"outcome": "UNMATCHED_5DOLLAR_ONLY", "striker": None, "fivedollar": d2},
             ],
         }
 
-    def test_infers_team_pairs_from_repeated_known_opponent_anchor(self):
+    def test_infers_pair_from_two_independent_strict_anchors(self):
         result = audit_crosswalk(self.report(), minimum_support=2)
-        pairs = {(x["striker_team_id"], x["fivedollar_team_id"]) for x in result["crosswalks"]}
+        pairs = {(x["striker_team_id"], x["fivedollar_team_id"]): x
+                 for x in result["crosswalks"]}
         self.assertIn(("30", "130"), pairs)
-        self.assertIn(("40", "140"), pairs)
-        self.assertIn(("50", "150"), pairs)
-        self.assertEqual(result["anchored_fixture_pairs_used"], 3)
+        self.assertEqual(pairs[("30", "130")]["anchored_crosswalk_fixture_count"], 2)
+        self.assertEqual(pairs[("30", "130")]["status"],
+                         "REPEATED_ANCHORED_CROSSWALK_SUPPORTED")
         self.assertTrue(result["all_crosswalks_repeatedly_supported"])
 
     def test_does_not_infer_from_unanchored_same_kickoff(self):
@@ -71,7 +67,13 @@ class AnchoredCrosswalkTests(unittest.TestCase):
 
     def test_timezone_offsets_are_normalized(self):
         result = audit_crosswalk(self.report(), minimum_support=2)
-        self.assertEqual(result["anchored_fixture_pairs_used"], 3)
+        self.assertEqual(result["anchored_fixture_pairs_used"], 2)
+
+    def test_strict_matches_remain_seed_evidence(self):
+        result = audit_crosswalk(self.report(), minimum_support=2)
+        seeds = [x for x in result["crosswalks"] if x["strict_seed"]]
+        self.assertEqual(len(seeds), 4)
+        self.assertTrue(all(x["status"] == "STRICT_NAME_MATCH_SEED" for x in seeds))
 
     def test_registry_and_production_are_never_modified(self):
         result = audit_crosswalk(self.report(), minimum_support=2)
