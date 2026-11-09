@@ -38,6 +38,31 @@ class AcquisitionArtifactTests(unittest.TestCase):
         self.assertTrue(result["valid"])
         self.assertEqual(result["accepted_count"], 1)
 
+    def test_duplicate_quarantine_summary_passes_sanitization(self):
+        report = self.make_report()
+        record = report["records"][0]
+        report["records"] = []
+        report["quarantine"] = [
+            {"input_index": 0, "reason": "duplicate_provider_competition_source_identity",
+             "source": {key: record[key] for key in (
+                 "provider", "source_id", "competition_key",
+                 "home_team_source_id", "away_team_source_id", "payload_sha256",
+             )}},
+            {"input_index": 1, "reason": "duplicate_provider_competition_source_identity",
+             "source": {key: record[key] for key in (
+                 "provider", "source_id", "competition_key",
+                 "home_team_source_id", "away_team_source_id", "payload_sha256",
+             )}},
+        ]
+        report["quality"]["accepted_count"] = 0
+        report["quality"]["quarantined_count"] = 2
+        report["quality"]["input_count"] = 2
+        report["quality"]["acceptance_pass"] = False
+        self.rehash(report)
+        result = validate_acquisition_report(report)
+        self.assertEqual(result["quarantined_count"], 2)
+        self.assertFalse(result["acceptance_pass"])
+
     def test_report_tampering_is_detected(self):
         report = self.make_report()
         report["records"][0]["home_team_name"] = "Tampered"
