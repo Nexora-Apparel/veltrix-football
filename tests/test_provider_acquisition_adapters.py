@@ -47,7 +47,7 @@ class AcquisitionAdapterTests(unittest.TestCase):
             retrieved_at="2026-11-09T13:00:00Z", max_pages=3,
         )
         self.assertEqual(result["batch"]["accepted_count"], 2)
-        self.assertEqual(result["report"]["request_budget"]["calls_made"], 2)
+        self.assertEqual(result["report"]["request_budget"]["page_fetches"], 2)
         self.assertEqual(result["report"]["records"][0]["provider"], "fivedollar")
         self.assertEqual(result["side_effects"]["database_writes"], 0)
         self.assertEqual(len(client.calls), 2)
