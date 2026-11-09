@@ -1,7 +1,7 @@
 """Bounded, read-only StrikerAPI coverage qualification for VELTRIX FOOTBALL.
 
-Eight competition/status checks, at most three pages each (24 calls / 48
-documented credits). No database access, imports, artifact uploads or secrets
+Eight competition/status checks, at most six pages each, with a 48-call hard
+cap (96 documented credits). No database access, imports, artifact uploads or secrets
 in logs. This is a coverage probe, not a complete historical export.
 """
 from __future__ import annotations
@@ -18,8 +18,8 @@ from urllib.request import Request, urlopen
 BASE = "https://mcp.strikerapi.com/v1/list_games"
 TIMEOUT = 25
 LIMIT = 50
-MAX_PAGES_PER_CHECK = 3
-MAX_CALLS = 24
+MAX_PAGES_PER_CHECK = 6
+MAX_CALLS = 48
 WINDOW_DAYS = 90
 FUTURE_DAYS = 180
 # StrikerAPI documents "soccer" as the Premier League default/key.
