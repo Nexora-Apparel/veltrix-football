@@ -75,11 +75,35 @@ def validate_run_metadata(run: Any, *, repository: str, workflow_path: str,
         "workflow_path": workflow_path,
         "event": run["event"],
         "conclusion": run["conclusion"],
+        # GitHub's workflow-run head fields identify the dispatch ref, not
+        # necessarily the ref checked out by actions/checkout inside the job.
+        "dispatch_ref": run["head_branch"],
+        "dispatch_sha": run["head_sha"],
         "head_branch": run["head_branch"],
         "head_sha": run["head_sha"],
         "created_at": run["created_at"],
         "updated_at": run["updated_at"],
     }
+
+
+def validate_checkout_metadata(log_content: Any, *, expected_ref: str,
+                               expected_sha: str) -> dict:
+    """Bind the job's actual checkout ref and resolved commit from its logs."""
+    _require(isinstance(log_content, str) and log_content, "checkout_logs_missing")
+    _require(isinstance(expected_ref, str) and expected_ref.strip(),
+             "checkout_expected_ref_invalid")
+    _require(isinstance(expected_sha, str) and re.fullmatch(r"[0-9a-f]{40}", expected_sha),
+             "checkout_expected_sha_invalid")
+    refs = re.findall(r"(?m)^\\s*ref:\\s*(.*?)\\s*$", log_content)
+    _require(len(refs) == 1, "checkout_ref_missing_or_ambiguous")
+    _require(refs[0] == expected_ref, "checkout_ref_mismatch")
+    commits = re.findall(
+        r"(?m)^\\[command\\].*git log -1 --format=%H\\s*\\r?\\n([0-9a-f]{40})\\s*$",
+        log_content,
+    )
+    _require(len(commits) == 1, "checkout_sha_missing_or_ambiguous")
+    _require(commits[0] == expected_sha, "checkout_sha_mismatch")
+    return {"checkout_ref": refs[0], "checkout_sha": commits[0]}
 
 
 def validate_artifact_metadata(artifact: Any, *, expected_name: str) -> dict:
