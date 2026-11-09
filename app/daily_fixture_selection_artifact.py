@@ -47,7 +47,8 @@ def qualified_sources_from_registry(registry: Any) -> dict[str, list[str]]:
             },
             "fivedollar": {
                 "workflow_path": ".github/workflows/qualify-fivedollar-competitions.yml",
-                "head_branch": "phase-3/budget-aware-acquisition-contract",
+                "dispatch_ref": "main",
+                "checkout_ref": "phase-3/budget-aware-acquisition-contract",
                 "artifact_name": "fivedollar-competition-qualification",
             },
         }
@@ -82,7 +83,17 @@ def qualified_sources_from_registry(registry: Any) -> dict[str, list[str]]:
             raise SelectionArtifactError(f"qualification_attestation_event_invalid:{index}")
         if attestation.get("workflow_path") != policy["workflow_path"]:
             raise SelectionArtifactError(f"qualification_attestation_workflow_invalid:{index}")
-        if attestation.get("head_branch") != policy["head_branch"]:
+        if provider == "fivedollar":
+            if (attestation.get("dispatch_ref") != policy["dispatch_ref"]
+                    or attestation.get("checkout_ref") != policy["checkout_ref"]):
+                raise SelectionArtifactError(f"qualification_attestation_ref_invalid:{index}")
+            for field in ("dispatch_sha", "checkout_sha"):
+                value = attestation.get(field)
+                if not isinstance(value, str) or not re.fullmatch(r"[0-9a-f]{40}", value):
+                    raise SelectionArtifactError(f"qualification_attestation_commit_invalid:{index}")
+            if attestation.get("dispatch_sha") != attestation.get("head_sha"):
+                raise SelectionArtifactError(f"qualification_attestation_dispatch_sha_mismatch:{index}")
+        elif attestation.get("head_branch") != policy["head_branch"]:
             raise SelectionArtifactError(f"qualification_attestation_branch_invalid:{index}")
         if attestation.get("artifact_name") != policy["artifact_name"]:
             raise SelectionArtifactError(f"qualification_attestation_artifact_name_invalid:{index}")
