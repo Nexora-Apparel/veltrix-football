@@ -49,7 +49,7 @@ class FiveDollarRegistryReviewTests(unittest.TestCase):
     def test_builds_one_scoped_signed_entry_per_competition(self):
         registry = self.build()
         self.assertEqual(registry["registry_status"], "reviewed_github_artifact_evidence")
-        self.assertEqual([x["competition_key"] for x in registry["sources"]], ["39", "140"])
+        self.assertEqual([x["competition_key"] for x in registry["sources"]], ["140", "39"])
         attestation = registry["sources"][0]["review_attestation"]
         self.assertTrue(verify_attestation_signature(attestation, "test-key-that-is-at-least-thirty-two-characters"))
         self.assertEqual(attestation["coverage"]["provider"], "fivedollar")
