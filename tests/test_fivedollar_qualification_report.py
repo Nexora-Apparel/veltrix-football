@@ -78,6 +78,13 @@ class FiveDollarQualificationReportTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "competition_request_accounting_mismatch"):
             validate_fivedollar_qualification_report(report)
 
+    def test_malformed_competition_id_is_rejected_after_rehash(self):
+        report = self.build()
+        report["competitions"][0]["competition_id"] = "../39"
+        self.rehash(report)
+        with self.assertRaisesRegex(ValueError, "competition_id_invalid"):
+            validate_fivedollar_qualification_report(report)
+
     def test_invalid_rows_prevent_acceptance(self):
         comps = self.build()["competitions"]
         comps[0]["invalid_rows"] = 1
