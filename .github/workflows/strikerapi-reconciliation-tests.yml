@@ -1,0 +1,33 @@
+name: StrikerAPI Reconciliation Unit Tests
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "scripts/reconcile_provider_fixtures.py"
+      - "tests/test_strikerapi_reconciliation.py"
+      - ".github/workflows/strikerapi-reconciliation-tests.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: strikerapi-reconciliation-tests-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  unit-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check out pull request
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Run reconciliation and provider verifier tests
+        run: python -m unittest discover -s tests -p 'test_strikerapi*.py' -v
