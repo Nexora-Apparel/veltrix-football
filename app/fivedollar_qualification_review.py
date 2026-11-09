@@ -28,8 +28,14 @@ def build_fivedollar_registry(*, run: dict, artifact: dict, report: dict,
         raise ValueError("fivedollar_run_event_invalid")
     if run.get("workflow_path") != ".github/workflows/qualify-fivedollar-competitions.yml":
         raise ValueError("fivedollar_workflow_path_invalid")
-    if run.get("head_branch") != "phase-3/budget-aware-acquisition-contract":
-        raise ValueError("fivedollar_run_branch_invalid")
+    if run.get("dispatch_ref") != "main" or run.get("head_branch") != "main":
+        raise ValueError("fivedollar_dispatch_ref_invalid")
+    if run.get("dispatch_sha") != "a30348ee19bb601ed0047d226ba7bc89b19a8f59":
+        raise ValueError("fivedollar_dispatch_sha_invalid")
+    if run.get("checkout_ref") != "phase-3/budget-aware-acquisition-contract":
+        raise ValueError("fivedollar_checkout_ref_invalid")
+    if run.get("checkout_sha") != "60cfbc3775b67e6a3227e6294c8fd458b1555bc0":
+        raise ValueError("fivedollar_checkout_sha_invalid")
     if artifact.get("artifact_name") != "fivedollar-competition-qualification":
         raise ValueError("fivedollar_artifact_name_invalid")
     if artifact.get("github_artifact_digest") != archive_sha256:
@@ -62,6 +68,10 @@ def build_fivedollar_registry(*, run: dict, artifact: dict, report: dict,
         "workflow_run_id": str(run["workflow_run_id"]),
         "workflow_path": run["workflow_path"],
         "event": run["event"],
+        "dispatch_ref": run["dispatch_ref"],
+        "dispatch_sha": run["dispatch_sha"],
+        "checkout_ref": run["checkout_ref"],
+        "checkout_sha": run["checkout_sha"],
         "head_branch": run["head_branch"],
         "head_sha": run["head_sha"],
         "artifact_id": artifact["artifact_id"],
