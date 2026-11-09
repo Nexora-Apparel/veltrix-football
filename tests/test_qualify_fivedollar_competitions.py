@@ -121,6 +121,52 @@ class QualificationRunnerTests(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError, "provider_catalogue_row_invalid"):
             collect("test-key", budget, 90, 3, "test-run")
 
+
+    def test_non_numeric_fixture_id_is_invalid(self):
+        budget = FakeBudget()
+        original = budget.get
+
+        def altered(endpoint, params, key):
+            payload = original(endpoint, params, key)
+            if endpoint == "leagues/39/fixtures":
+                payload["data"][0]["id"] = "../1001"
+            return payload
+
+        budget.get = altered
+        report = collect("test-key", budget, 90, 3, "test-run")
+        self.assertFalse(report["acceptance_pass"])
+        self.assertEqual(report["aggregates"]["invalid_rows"], 1)
+
+    def test_numeric_string_and_integer_fixture_ids_dedupe(self):
+        budget = FakeBudget()
+        original = budget.get
+
+        def altered(endpoint, params, key):
+            payload = original(endpoint, params, key)
+            if endpoint == "leagues/39/fixtures":
+                payload["data"].append(dict(payload["data"][0], id="1001"))
+            return payload
+
+        budget.get = altered
+        report = collect("test-key", budget, 90, 3, "test-run")
+        self.assertFalse(report["acceptance_pass"])
+        self.assertEqual(report["aggregates"]["duplicate_ids"], 1)
+
+    def test_numeric_equivalent_home_and_away_ids_are_invalid(self):
+        budget = FakeBudget()
+        original = budget.get
+
+        def altered(endpoint, params, key):
+            payload = original(endpoint, params, key)
+            if endpoint == "leagues/39/fixtures":
+                payload["data"][0]["teams"]["away"]["id"] = "01"
+            return payload
+
+        budget.get = altered
+        report = collect("test-key", budget, 90, 3, "test-run")
+        self.assertFalse(report["acceptance_pass"])
+        self.assertEqual(report["aggregates"]["invalid_rows"], 1)
+
     def test_out_of_window_result_is_invalid(self):
         budget = FakeBudget()
         original = budget.get
