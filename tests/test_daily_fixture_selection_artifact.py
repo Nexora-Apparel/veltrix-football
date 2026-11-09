@@ -69,6 +69,22 @@ class DailySelectionArtifactTests(unittest.TestCase):
         with self.assertRaisesRegex(SelectionArtifactError, "selection_artifact_hash_mismatch"):
             validate_daily_selection_artifact(artifact)
 
+    def test_empty_template_registry_selects_nothing(self):
+        artifact = build_daily_selection_artifact(
+            acquisition_report=self.report,
+            qualification_registry={
+                "schema_version": 1,
+                "registry_status": "unpopulated_template_not_qualification_evidence",
+                "sources": [],
+            },
+            target_date="2026-11-10", as_of="2026-11-09T20:00:00Z",
+        )
+        self.assertEqual(artifact["selection"]["selected_count"], 0)
+        self.assertEqual(
+            artifact["selection"]["excluded_reasons"]["source_or_competition_not_qualified"],
+            1,
+        )
+
     def test_unqualified_source_is_rejected(self):
         registry = copy.deepcopy(self.registry)
         registry["sources"][0]["qualification_status"] = "catalogued"
