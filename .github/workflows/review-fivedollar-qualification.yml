@@ -1,0 +1,44 @@
+name: Review Existing 5Dollar Qualification Artifact
+
+on:
+  push:
+    branches:
+      - phase-3/budget-aware-acquisition-contract
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  review-existing-artifact:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      GH_TOKEN: ${{ github.token }}
+      VELTRIX_QUALIFICATION_ATTESTATION_KEY: ${{ secrets.VELTRIX_QUALIFICATION_ATTESTATION_KEY }}
+    steps:
+      - name: Check out reviewer code
+        uses: actions/checkout@v4
+        with:
+          ref: phase-3/budget-aware-acquisition-contract
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Run offline review against the existing 5Dollar artifact
+        run: |
+          python scripts/review_fivedollar_qualification.py \
+            --repository Nexora-Apparel/veltrix-football \
+            --run-id 42717802779 \
+            --reviewer "VELTRIX qualification evidence reviewer" \
+            --output fivedollar_reviewed_registry.json
+
+      - name: Upload signed qualification registry
+        uses: actions/upload-artifact@v4
+        with:
+          name: fivedollar-reviewed-qualification-registry
+          path: fivedollar_reviewed_registry.json
+          if-no-files-found: error
+          retention-days: 7
