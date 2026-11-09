@@ -56,7 +56,7 @@ class FiveDollarQualificationReportTests(unittest.TestCase):
 
     def test_duplicate_ids_rejected(self):
         comps = self.build()["competitions"]
-        comps[1]["competition_id"] = "39"
+        comps[1]["competition_id"] = comps[0]["competition_id"]
         with self.assertRaisesRegex(ValueError, "duplicate_competition_id"):
             self.build(competitions=comps)
 
@@ -78,6 +78,7 @@ class FiveDollarQualificationReportTests(unittest.TestCase):
     def test_missing_team_ids_prevent_acceptance(self):
         comps = self.build()["competitions"]
         comps[0]["missing_team_ids"] = 1
+        comps[0]["accepted_rows"] -= 1
         report = self.build(competitions=comps)
         self.assertFalse(report["acceptance_pass"])
 
@@ -94,6 +95,7 @@ class FiveDollarQualificationReportTests(unittest.TestCase):
     def test_each_competition_requires_accepted_results(self):
         comps = self.build()["competitions"]
         comps[1]["accepted_rows"] = 0
+        comps[1]["invalid_rows"] = comps[1]["source_rows"]
         report = self.build(competitions=comps)
         self.assertFalse(report["acceptance_pass"])
 
