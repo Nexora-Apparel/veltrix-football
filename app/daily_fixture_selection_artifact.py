@@ -64,7 +64,7 @@ def qualified_sources_from_registry(registry: Any) -> dict[str, list[str]]:
         if not isinstance(attestation.get("local_report_sha256"), str) or not _SHA256.fullmatch(attestation["local_report_sha256"]):
             raise SelectionArtifactError(f"qualification_attestation_report_hash_invalid:{index}")
         coverage = attestation.get("coverage")
-        if (not isinstance(coverage, dict) or coverage.get("provider") != "strikerapi"
+        if (not isinstance(coverage, dict) or coverage.get("provider") != provider.lower()
                 or str(competition) not in coverage.get("competition_keys", [])
                 or coverage.get("pagination_complete") is not True
                 or coverage.get("invalid_rows") != 0 or coverage.get("duplicate_rows") != 0):
