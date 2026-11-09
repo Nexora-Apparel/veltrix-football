@@ -2,6 +2,14 @@ name: Verify StrikerAPI Read-Only Coverage
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - phase-3/strikerapi-readonly-qualification
+    paths:
+      - ".github/workflows/verify-strikerapi.yml"
+      - "scripts/run_readonly_epl_reconciliation.py"
+      - "scripts/reconcile_provider_fixtures.py"
+      - "data/provider_team_aliases.json"
 
 permissions:
   contents: read
