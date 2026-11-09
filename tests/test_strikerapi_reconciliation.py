@@ -1,4 +1,3 @@
-import copy
 import unittest
 from pathlib import Path
 
@@ -9,7 +8,7 @@ from scripts.reconcile_provider_fixtures import reconcile, normalize_name
 def srow(source_id="s1", home="Arsenal", away="Chelsea", kickoff="2026-08-15T16:30:00Z",
          status="final", home_score=2, away_score=0, home_id="s-home", away_id="s-away"):
     return {"provider":"strikerapi","source_id":source_id,"competition_key":"soccer",
-            "home_id":"s-home","away_id":"s-away","home":home,"away":away,"kickoff":kickoff,
+            "home_id":home_id,"away_id":away_id,"home":home,"away":away,"kickoff":kickoff,
             "status":status,"home_score":home_score,"away_score":away_score,
             "payload_sha256":"a"*64}
 
@@ -140,7 +139,7 @@ class ProviderReconciliationTests(unittest.TestCase):
             season="2026-27",
         )
         self.assertEqual(report["accounting"]["striker"]["matched"], 0)
-        self.assertFalse(report["acceptance_pass")
+        self.assertFalse(report["acceptance_pass"])
 
     def test_alias_registry_requires_explicit_scope(self):
         registry = load_registry(Path("data/provider_team_aliases.json"))
