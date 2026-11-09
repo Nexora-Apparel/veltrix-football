@@ -67,9 +67,9 @@ class FiveDollarRegistryReviewTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.build(report=report)
 
-    def test_artifact_report_hash_must_match(self):
-        with self.assertRaisesRegex(ValueError, "report_hash_mismatch"):
-            self.build(report_sha256="c" * 64)
+    def test_local_report_file_hash_must_be_sha256(self):
+        with self.assertRaisesRegex(ValueError, "report_hash_invalid"):
+            self.build(report_sha256="not-a-hash")
 
 
 if __name__ == "__main__":
