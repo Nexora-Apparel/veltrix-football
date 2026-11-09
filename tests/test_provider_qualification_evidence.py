@@ -47,6 +47,8 @@ def good_report():
         "truncated_checks": [], "database_writes": 0, "imports": 0,
         "checkpoints": 0, "canonical_merges": 0,
         "request_budget": {"maximum_calls": 102, "actual_calls": 34,
+                           "documented_credits_per_call": 2, "maximum_credits": 204,
+                           "max_pages_per_check": 3, "page_size": 50,
                            "actual_documented_credits": 68},
         "checks": checks,
     }
