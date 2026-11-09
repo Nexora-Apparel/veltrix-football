@@ -242,7 +242,7 @@ def validate_fivedollar_qualification_report(report: Any) -> dict:
         raise ValueError("request_accounting_mismatch")
     if endpoint_counts.get("leagues") != catalogue["pages_fetched"]:
         raise ValueError("catalogue_request_accounting_mismatch")
-    expected_fixture_endpoints = {f"leagues/{item['competition_id']}/fixtures" for item in competitions}
+    expected_fixture_endpoints = {f"leagues/{item['competition_id']}/fixtures" for item in competitions if item["pages_fetched"] > 0}
     if set(endpoint_counts) != expected_fixture_endpoints | {"leagues"}:
         raise ValueError("competition_endpoint_scope_mismatch")
     for item in competitions:
