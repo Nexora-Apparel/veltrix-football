@@ -34,30 +34,37 @@ The verifier checks:
 - timezone-aware kickoff timestamps;
 - duplicate IDs within each competition across returned pages.
 
-### Run #4 — expanded qualification evidence
+### Run #4 — expanded qualification evidence (attempt 3)
 
 - Workflow: [Verify StrikerAPI Read-Only Coverage #4](https://github.com/Nexora-Apparel/veltrix-football/actions/runs/42639816228)
-- Run ID: `42639816228`; job ID: `129237614823`
+- Run ID: `42639816228`; attempt: `3`; job ID: `129247142796`
 - Workflow commit on `main`: `5f882a356df9c213195f50333a8a58f2faffa6a7`
-- Qualification code checked out from `phase-3/strikerapi-readonly-qualification`, head `ae401eb149934941902c8873d6a9a53e626f5354`
-- Result: success; six unit tests passed.
-- Query windows: final results `2026-08-11..2026-11-09`; scheduled fixtures `2026-11-09..2027-05-08`.
-- All 802 returned rows were valid; zero invalid rows, zero duplicate IDs and zero truncated checks.
+- Qualification code checked out from `phase-3/strikerapi-readonly-qualification`, head `eccbabf21e8405f75fa4c562b3aa7569c71d00ef`
+- Result: success; **17/17 unit tests passed**.
+- Rolling query windows: final results `2026-08-11..2026-11-09`; scheduled fixtures `2026-11-09..2027-05-08`.
+- Rolling-window rows: 802 total, all valid, zero duplicate IDs, zero truncated checks.
 - Argentina Liga Profesional: 182 final, 8 scheduled.
 - Brazil Serie A: 124 final, 41 scheduled.
-- NWSL: 97 final, 0 scheduled.
+- NWSL: 97 final, 0 scheduled in the rolling window.
 - English Premier League: 100 final, 250 scheduled.
-- API use: 21 calls / 42 documented credits, below the 48-call / 96-credit hard cap.
+- Explicit NWSL season/stage diagnostics:
+  - 2026 league-stage finals: 240 valid rows, 5 pages.
+  - 2026 knockout-stage finals: 4 valid rows, 1 page.
+  - 2027 league-stage scheduled: 0 rows.
+  - 2027 knockout-stage scheduled: 0 rows.
+  - All four scoped checks completed without invalid rows or pagination truncation.
+- NWSL API therefore returned 244 final fixtures for 2026 and no 2027 scheduled fixtures at probe time. The provider's public NWSL page lists 224 matches for 2026, so the 20-match discrepancy is an explicit provider-data reconciliation issue; do not silently treat either count as authoritative until clarified.
+- API use: 29 calls / 58 documented credits, below the 48-call / 96-credit hard cap.
 - Database writes, imported records, import runs and checkpoints: all zero.
 - Verifier result: `BOUNDED_COVERAGE_PASS_PENDING_MANUAL_RECONCILIATION_AND_TERMS_REVIEW`.
 
-This is a bounded coverage pass, not a full-season export or production approval. The NWSL scheduled result remains an explicit coverage investigation. In particular, a zero-row response is not evidence that the competition has no future fixtures or that the endpoint is broken.
+This is a bounded coverage pass, not a full-season export or production approval. NWSL's zero scheduled rows are explained by the API returning completed 2026 games but no 2027 scheduled fixtures in the explicit stage queries. This does not establish when the provider will publish the next season's schedule.
 
 ### Pagination documentation discrepancy
 
 The endpoint-specific `list_games` page documents an `offset` parameter and returns `next_offset`. The general StrikerAPI documentation's conventions section says endpoints use `limit` and have no cursor or offset. Run #4 exercised multi-page requests and completed all eight bounded checks without truncation, establishing that the verifier's observed offset pagination works for these tested queries. The discrepancy in the provider's general documentation remains worth clarifying with the provider before relying on it as a long-term contract.
 
-The hard budget is 48 calls maximum × 2 documented credits = 96 credits. Run #4 used 21 calls / 42 credits. If a page cap is reached while `next_offset` remains, the result is explicitly marked pagination-incomplete; it is never reported as a complete window.
+The hard budget is 48 calls maximum × 2 documented credits = 96 credits. Run #4 attempt 3 used 29 calls / 58 credits, including pagination for the four explicit NWSL season/stage checks. If a page cap is reached while `next_offset` remains, the result is explicitly marked pagination-incomplete; it is never reported as a complete window.
 
 The workflow runs local unit tests for pagination, non-advancing offsets, scheduled fixtures, final-score validation and timezone-aware kickoff timestamps before making provider calls.
 
