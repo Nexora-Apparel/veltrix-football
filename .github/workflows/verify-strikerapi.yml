@@ -16,6 +16,7 @@ jobs:
     timeout-minutes: 15
     env:
       STRIKERAPI_API_KEY: ${{ secrets.STRIKERAPI_API_KEY }}
+      FIVEDOLLARFOOTBALL_API_KEY: ${{ secrets.FIVEDOLLARFOOTBALL_API_KEY }}
     steps:
       - name: Check out qualification branch
         uses: actions/checkout@v4
@@ -32,3 +33,14 @@ jobs:
 
       - name: Run bounded read-only qualification
         run: python scripts/verify_strikerapi.py
+
+      - name: Run read-only Premier League cross-provider reconciliation
+        run: python scripts/run_readonly_epl_reconciliation.py
+
+      - name: Upload sanitized reconciliation report
+        uses: actions/upload-artifact@v4
+        with:
+          name: strikerapi-5dollar-epl-reconciliation
+          path: strikerapi_5dollar_epl_reconciliation.json
+          if-no-files-found: error
+          retention-days: 7
