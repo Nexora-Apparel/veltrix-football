@@ -58,6 +58,9 @@ jobs:
             --max-pages "${{ inputs.max_pages }}" \
             --output fivedollar_fixture_acquisition.json
 
+      - name: Verify acquisition artifact integrity
+        run: python scripts/verify_acquisition_artifact.py fivedollar_fixture_acquisition.json
+
       - name: Upload sanitized acquisition report
         uses: actions/upload-artifact@v4
         with:
