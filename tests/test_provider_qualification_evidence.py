@@ -9,6 +9,7 @@ from app.provider_qualification_evidence import (
     validate_coverage_report,
     build_review_attestation,
     verify_attestation_signature,
+    validate_checkout_metadata,
 )
 
 
@@ -84,6 +85,36 @@ class QualificationEvidenceTests(unittest.TestCase):
                         expected_branch="phase-3/strikerapi-readonly-qualification",
                         expected_sha="a" * 40,
                     )
+
+
+    def test_checkout_log_binds_feature_ref_and_resolved_sha_separately_from_main_dispatch(self):
+        logs = """##[group]Run actions/checkout@v4
+with:
+  ref: phase-3/budget-aware-acquisition-contract
+##[endgroup]
+[command]/usr/bin/git log -1 --format=%H
+60cfbc3775b67e6a3227e6294c8fd458b1555bc0
+"""
+        result = validate_checkout_metadata(
+            logs,
+            expected_ref="phase-3/budget-aware-acquisition-contract",
+            expected_sha="60cfbc3775b67e6a3227e6294c8fd458b1555bc0",
+        )
+        self.assertEqual(result["checkout_ref"], "phase-3/budget-aware-acquisition-contract")
+        self.assertEqual(result["checkout_sha"], "60cfbc3775b67e6a3227e6294c8fd458b1555bc0")
+
+    def test_checkout_log_rejects_wrong_ref_or_resolved_sha(self):
+        logs = """with:
+  ref: phase-3/budget-aware-acquisition-contract
+[command]/usr/bin/git log -1 --format=%H
+60cfbc3775b67e6a3227e6294c8fd458b1555bc0
+"""
+        with self.assertRaisesRegex(QualificationEvidenceError, "checkout_ref_mismatch"):
+            validate_checkout_metadata(logs, expected_ref="main",
+                                        expected_sha="60cfbc3775b67e6a3227e6294c8fd458b1555bc0")
+        with self.assertRaisesRegex(QualificationEvidenceError, "checkout_sha_mismatch"):
+            validate_checkout_metadata(logs, expected_ref="phase-3/budget-aware-acquisition-contract",
+                                        expected_sha="a" * 40)
 
     def test_artifact_requires_matching_name_digest_and_not_expired(self):
         self.assertEqual(validate_artifact_metadata(
