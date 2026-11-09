@@ -1,5 +1,5 @@
 import unittest
-from datetime import date
+from datetime import date, datetime
 
 from app.provider_acquisition_adapters import acquire_fivedollar_history_batch
 from app.provider_historical_archive import (
@@ -23,7 +23,7 @@ class FakeClient:
 
     def _get(self, path, params, *, retries=0):
         competition_id = path.split("/")[1]
-        day = date.fromisoformat(str(params["start_time"]))
+        day = datetime.strptime(str(params["start_time"]), "%Y%m%d").date()
         row = {
             "id": int(competition_id) + int(params["start_time"]),
             "kickoff_utc": f"{day.isoformat()}T12:00:00Z",
