@@ -49,6 +49,15 @@ class ProviderFixtureBatchTests(unittest.TestCase):
         self.assertEqual(result["quarantined_count"], 1)
         self.assertEqual(result["quarantined"][0]["reason"], "observation_not_object")
 
+    def test_quarantine_does_not_retain_raw_provider_payload(self):
+        raw = striker("bad")
+        raw["row"]["private_provider_field"] = "raw-secret-like-value"
+        raw["row"]["starts_at"] = "not-a-timestamp"
+        result = process_observations([raw])
+        rendered = str(result["quarantined"])
+        self.assertNotIn("raw-secret-like-value", rendered)
+        self.assertIn("payload_sha256", rendered)
+
     def test_report_proves_no_side_effects(self):
         result = process_observations([striker()])
         self.assertEqual(result["database_writes"], 0)
