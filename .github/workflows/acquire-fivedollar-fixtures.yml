@@ -1,0 +1,64 @@
+name: Manual 5Dollar Fixture Acquisition
+
+on:
+  workflow_dispatch:
+    inputs:
+      fixture_date:
+        description: "Africa/Lagos fixture date (YYYY-MM-DD)"
+        required: true
+        type: string
+      max_pages:
+        description: "Maximum fixture pages to retrieve (1-5)"
+        required: true
+        default: "5"
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: fivedollar-manual-fixture-acquisition
+  cancel-in-progress: false
+
+jobs:
+  acquire:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      FIVEDOLLARFOOTBALL_API_KEY: ${{ secrets.FIVEDOLLARFOOTBALL_API_KEY }}
+    steps:
+      - name: Check out selected branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Validate inputs and run secret-free tests
+        env:
+          FIXTURE_DATE: ${{ inputs.fixture_date }}
+          MAX_PAGES: ${{ inputs.max_pages }}
+        run: |
+          python -c "from datetime import date; date.fromisoformat('$FIXTURE_DATE')"
+          python -c "value=int('$MAX_PAGES'); assert 1 <= value <= 5"
+          python -m unittest discover -s tests -p 'test_provider_acquisition_adapters.py' -v
+          python -m unittest discover -s tests -p 'test_provider_fixture_normalizer.py' -v
+          python scripts/acquire_fivedollar_day.py --help
+
+      - name: Acquire one read-only fixture date
+        run: |
+          python scripts/acquire_fivedollar_day.py \
+            --date "${{ inputs.fixture_date }}" \
+            --max-pages "${{ inputs.max_pages }}" \
+            --output fivedollar_fixture_acquisition.json
+
+      - name: Upload sanitized acquisition report
+        uses: actions/upload-artifact@v4
+        with:
+          name: fivedollar-fixture-acquisition
+          path: fivedollar_fixture_acquisition.json
+          if-no-files-found: error
+          retention-days: 7
