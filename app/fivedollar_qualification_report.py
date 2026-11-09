@@ -120,6 +120,7 @@ def build_fivedollar_qualification_report(
     acceptance = (
         complete and sums["source_rows"] > 0
         and sums["accepted_rows"] > 0
+        and all(row["accepted_rows"] > 0 for row in cleaned)
         and all(sums[key] == 0 for key in ("invalid_rows", "duplicate_ids", "missing_team_ids"))
         and all(value == 0 for value in side_effects.values())
     )
@@ -195,6 +196,7 @@ def validate_fivedollar_qualification_report(report: Any) -> dict:
         and all(item.get("pagination_complete") is True for item in competitions)
         and aggregates.get("source_rows", 0) > 0
         and aggregates.get("accepted_rows", 0) > 0
+        and all(item.get("accepted_rows", 0) > 0 for item in competitions)
         and all(aggregates.get(key) == 0 for key in ("invalid_rows", "duplicate_ids", "missing_team_ids"))
     )
     if report.get("acceptance_pass") is not recomputed:
