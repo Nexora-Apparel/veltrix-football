@@ -60,5 +60,8 @@ jobs:
       - name: Validate offline artifact verifier CLI
         run: python scripts/verify_acquisition_artifact.py --help
 
+      - name: Validate daily selection CLI without network access
+        run: python scripts/select_daily_fixtures.py --help
+
       - name: Run existing 17-competition verifier tests
         run: python -m unittest discover -s tests -p 'test_strikerapi_17_competitions.py' -v
