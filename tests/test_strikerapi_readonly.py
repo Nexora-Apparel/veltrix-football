@@ -1,6 +1,6 @@
 import unittest
 
-from scripts.verify_strikerapi import collect_pages, validate_game
+from scripts.verify_strikerapi import MAX_PAGES_PER_CHECK, collect_pages, validate_game
 
 
 def game(game_id="g-1", status="final"):
@@ -43,8 +43,8 @@ class StrikerPaginationTests(unittest.TestCase):
         rows, pages, truncated, _counts = collect_pages(
             "test", "soccer", "final", "2026-09-01", "2026-11-09", fake_call
         )
-        self.assertEqual(pages, 3)
-        self.assertEqual(len(rows), 3)
+        self.assertEqual(pages, MAX_PAGES_PER_CHECK)
+        self.assertEqual(len(rows), MAX_PAGES_PER_CHECK)
         self.assertTrue(truncated)
 
     def test_rejects_non_advancing_offset(self):
