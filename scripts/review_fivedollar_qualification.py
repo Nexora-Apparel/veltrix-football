@@ -74,13 +74,18 @@ def download_job_logs(repository: str, job_id: int) -> str:
             archive_bytes = response.read(MAX_JOB_LOG_BYTES + 1)
     if len(archive_bytes) > MAX_JOB_LOG_BYTES:
         raise RuntimeError("job_log_archive_size_limit_exceeded")
+    if not archive_bytes.startswith(b"PK"):
+        text_content = archive_bytes.decode("utf-8-sig", errors="replace")
+        if "git log -1 --format=%H" in text_content and "ref:" in text_content:
+            return text_content
+        raise RuntimeError("job_log_download_not_zip_or_text")
     try:
         with zipfile.ZipFile(io.BytesIO(archive_bytes)) as bundle:
             text_files = [item for item in bundle.infolist()
                           if not item.is_dir() and item.filename.endswith(".txt")]
             if not text_files:
                 raise RuntimeError("job_log_text_missing")
-            return "\n".join(bundle.read(item).decode("utf-8", errors="replace")
+            return "\\n".join(bundle.read(item).decode("utf-8", errors="replace")
                               for item in text_files)
     except zipfile.BadZipFile:
         raise RuntimeError("job_log_download_not_zip") from None
