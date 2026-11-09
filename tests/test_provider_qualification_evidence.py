@@ -115,6 +115,21 @@ class QualificationEvidenceTests(unittest.TestCase):
         self.assertEqual(result["competition_count"], 16)
         self.assertEqual(result["observed_competition_count"], 17)
 
+    def test_rejects_inconsistent_aggregate_accounting_and_no_final_history(self):
+        report = good_report()
+        report["totals"]["valid"] -= 1
+        with self.assertRaisesRegex(QualificationEvidenceError, "coverage_total_valid_mismatch"):
+            validate_coverage_report(report)
+        report = good_report()
+        for row in report["checks"]:
+            if row["status"] == "final":
+                row["rows"] = 0
+                row["valid"] = 0
+        report["totals"]["rows"] = 0
+        report["totals"]["valid"] = 0
+        with self.assertRaisesRegex(QualificationEvidenceError, "coverage_has_no_observations"):
+            validate_coverage_report(report)
+
     def test_rejects_bad_counts_truncation_and_side_effects(self):
         for mutate in (
             lambda x: x["totals"].update(invalid=1),
