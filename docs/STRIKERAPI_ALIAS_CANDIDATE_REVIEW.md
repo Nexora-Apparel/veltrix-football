@@ -52,3 +52,20 @@ Across the 82 candidate fixture pairs, the following 20 provider team-ID pairs r
 ## Current gate
 
 The live audit remains **18 strict matches + 82 unmatched per provider**. The 82 proposed pairs are a separate diagnostic candidate set and must not be added to the accepted match count. Phase 3 reconciliation sign-off remains pending.
+
+
+## Registry and provider-catalogue verification implementation
+
+The qualification branch now contains `data/provider_team_aliases.json`, a versioned registry with all 20 pairs marked `pending_independent_verification`, scoped to `england_premier_league` / `2026-27`. It is review-only and is not connected to the reconciliation matcher.
+
+`app/provider_team_aliases.py` validates scope, duplicate/colliding IDs and evidence requirements. An alias can only be used when the entire registry is explicitly promoted to `approved`, every non-rejected row has been resolved, and each approved row carries an evidence URL, timezone-aware retrieval timestamp and reviewer. A pending registry never authorizes a match.
+
+The manual/push-triggered workflow `.github/workflows/verify-strikerapi-team-aliases.yml` performs:
+- one StrikerAPI `POST /v1/list_teams` request with only the documented `season: 2026` parameter (1 credit);
+- 20 5DollarFootballAPI `GET /v1/teams/{id}` lookups;
+- offline verifier and registry safety tests;
+- sanitized JSON artifact upload, seven-day retention.
+
+The initial draft was corrected to remove an undocumented `league` parameter from StrikerAPI `list_teams`. Official references: https://strikerapi.com/docs/list-teams and https://5dollarfootballapi.com/docs.
+
+The live workflow result has not yet been independently retrieved. Until its test logs and catalogue artifact are inspected, all 20 registry entries remain pending and the strict reconciliation remains 18 matched / 82 unmatched per provider.
