@@ -3,11 +3,13 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import re
 from typing import Any
 
 from app.daily_fixture_selection import select_daily_fixtures
 from app.provider_acquisition_artifact import validate_acquisition_report
+from app.provider_qualification_evidence import verify_attestation_signature
 
 
 _SHA256 = re.compile(r"^[0-9a-f]{64}$")
@@ -51,6 +53,9 @@ def qualified_sources_from_registry(registry: Any) -> dict[str, list[str]]:
             raise SelectionArtifactError(f"qualification_reviewer_attestation_missing:{index}")
         if attestation.get("attestation_version") != 1 or attestation.get("review_status") != "qualified":
             raise SelectionArtifactError(f"qualification_reviewer_attestation_invalid:{index}")
+        signing_key = os.getenv("VELTRIX_QUALIFICATION_ATTESTATION_KEY", "")
+        if not verify_attestation_signature(attestation, signing_key):
+            raise SelectionArtifactError(f"qualification_reviewer_attestation_signature_invalid:{index}")
         if attestation.get("repository") != "Nexora-Apparel/veltrix-football":
             raise SelectionArtifactError(f"qualification_attestation_repository_invalid:{index}")
         if attestation.get("event") != "workflow_dispatch":
