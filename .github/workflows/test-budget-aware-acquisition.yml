@@ -54,6 +54,12 @@ jobs:
       - name: Run evidence-gated selection artifact tests
         run: python -m unittest discover -s tests -p 'test_daily_fixture_selection_artifact.py' -v
 
+      - name: Run provider qualification evidence review tests
+        run: python -m unittest discover -s tests -p 'test_provider_qualification_evidence.py' -v
+
+      - name: Validate offline qualification reviewer CLI without network access
+        run: python scripts/review_provider_qualification.py --help
+
       - name: Validate manual acquisition CLI without network access
         run: python scripts/acquire_fivedollar_day.py --help
 
