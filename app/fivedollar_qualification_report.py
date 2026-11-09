@@ -172,6 +172,17 @@ def validate_fivedollar_qualification_report(report: Any) -> dict:
     ids = [str(item.get("competition_id")) for item in competitions if isinstance(item, dict)]
     if len(ids) != len(competitions) or len(ids) != len(set(ids)):
         raise ValueError("competition_identity_invalid")
+    fields = ("pages_fetched", "source_rows", "accepted_rows", "invalid_rows",
+              "duplicate_ids", "missing_team_ids")
+    for index, item in enumerate(competitions):
+        if set(item) != _REQUIRED_COMPETITION or not isinstance(item.get("pagination_complete"), bool):
+            raise ValueError(f"competition_shape_invalid:{index}")
+        if not isinstance(item.get("competition_name"), str) or not item["competition_name"].strip():
+            raise ValueError(f"competition_name_invalid:{index}")
+        for field in fields:
+            _nonnegative_int(item.get(field), field)
+        if item["accepted_rows"] + item["invalid_rows"] + item["duplicate_ids"] + item["missing_team_ids"] != item["source_rows"]:
+            raise ValueError(f"competition_row_accounting_invalid:{index}")
     aggregates = report.get("aggregates")
     if not isinstance(aggregates, dict):
         raise ValueError("aggregates_invalid")
