@@ -136,6 +136,10 @@ def validate_fivedollar_history_batch_report(report: Any) -> dict:
         raise ArtifactIntegrityError("history_request_budget_invalid")
     if budget.get("automatic_retries") != 0:
         raise ArtifactIntegrityError("history_automatic_retries_not_disabled")
+    interval = budget.get("minimum_request_interval_seconds")
+    if (isinstance(interval, bool) or not isinstance(interval, (int, float))
+            or interval < 3.0):
+        raise ArtifactIntegrityError("history_request_pacing_invalid")
     if budget.get("request_accounting") != "one_reserved_call_per_http_attempt":
         raise ArtifactIntegrityError("history_request_accounting_contract_invalid")
     pages = budget.get("pages_by_competition")
