@@ -177,6 +177,7 @@ def main() -> int:
                 "pagination_complete": True,
                 "invalid_rows": 0,
                 "duplicate_rows": 0,
+                "missing_team_ids": 0,
                 "review_attestation": attestation,
             })
         output = {
