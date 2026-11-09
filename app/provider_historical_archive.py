@@ -211,7 +211,10 @@ def validate_fivedollar_history_archive(archive: Any) -> dict:
         raise HistoricalArchiveError("archive_page_accounting_scope_invalid")
     if any(isinstance(value, bool) or not isinstance(value, int) or value < 1 for value in pages.values()):
         raise HistoricalArchiveError("archive_page_count_invalid")
-    if sum(pages.values()) != budget.get("actual_requests"):
+    actual_requests = budget.get("actual_requests")
+    if isinstance(actual_requests, bool) or not isinstance(actual_requests, int) or actual_requests < 5:
+        raise HistoricalArchiveError("archive_actual_request_count_invalid")
+    if sum(pages.values()) != actual_requests:
         raise HistoricalArchiveError("archive_request_page_accounting_mismatch")
     side_effects = archive.get("side_effects")
     if not isinstance(side_effects, dict) or any(side_effects.get(key) != 0 for key in (
