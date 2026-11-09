@@ -38,7 +38,7 @@ def striker_record(row: dict, league_key: str) -> dict:
             "home":h.get("name") or "","away":a.get("name") or "",
             "kickoff":row.get("starts_at") or "","status":row.get("status") or "",
             "home_score":h.get("score"),"away_score":a.get("score"),
-            "payload_sha256":payload_hash(row),"raw":row}
+            "payload_sha256":payload_hash(row)}
 
 
 def fivedollar_record(row: dict) -> dict:
@@ -52,7 +52,7 @@ def fivedollar_record(row: dict) -> dict:
             "home":h.get("name") or "","away":a.get("name") or "",
             "kickoff":row.get("kickoff_utc") or "","status":row.get("status") or "",
             "home_score":g.get("home"),"away_score":g.get("away"),
-            "payload_sha256":payload_hash(row),"raw":row}
+            "payload_sha256":payload_hash(row)}
 
 
 def valid_identity(row: dict) -> bool:
