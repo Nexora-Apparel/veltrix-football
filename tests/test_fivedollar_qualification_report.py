@@ -17,8 +17,10 @@ class FiveDollarQualificationReportTests(unittest.TestCase):
             "window_start_utc": "2026-08-11T00:00:00Z",
             "window_end_utc": "2026-11-09T00:00:00Z",
             "max_requests": 20,
-            "actual_requests": 3,
-            "endpoint_requests": [{"endpoint": "leagues/39/fixtures", "requests": 3}],
+            "actual_requests": 4,
+            "endpoint_requests": [{"endpoint": "leagues", "requests": 1},
+                                  {"endpoint": "leagues/39/fixtures", "requests": 1},
+                                  {"endpoint": "leagues/140/fixtures", "requests": 2}],
             "competitions": [
                 {"competition_id": "39", "competition_name": "EPL",
                  "pages_fetched": 1, "source_rows": 10, "accepted_rows": 10,
@@ -66,7 +68,14 @@ class FiveDollarQualificationReportTests(unittest.TestCase):
 
     def test_endpoint_accounting_must_equal_actual_requests(self):
         with self.assertRaisesRegex(ValueError, "endpoint_request_accounting_mismatch"):
-            self.build(actual_requests=4)
+            self.build(actual_requests=5)
+
+    def test_endpoint_page_counts_must_match_competition_report(self):
+        report = self.build()
+        report["request_budget"]["endpoint_accounting"][2]["requests"] = 1
+        self.rehash(report)
+        with self.assertRaisesRegex(ValueError, "competition_request_accounting_mismatch"):
+            validate_fivedollar_qualification_report(report)
 
     def test_invalid_rows_prevent_acceptance(self):
         comps = self.build()["competitions"]
