@@ -242,3 +242,8 @@ The historical batch adapter and CLI enforce this exact allowlist in addition to
 Use the manual workflow `.github/workflows/acquire-fivedollar-history-batch.yml` after its dispatch entrypoint is available on the default branch. Each run produces one sanitized `fivedollar-historical-batch` artifact with a SHA-256-protected report. Run adjacent, non-overlapping seven-day batches to cover the available 90-day window; do not assume an empty historical response proves coverage.
 
 This workflow is manual-only. No provider request is made by CI tests or by pushing code. Historical artifacts must be reviewed and reconciled before any separate import authorization is considered.
+
+
+## 7. Offline historical archive assembly
+
+The CLI `scripts/assemble_fivedollar_history_archive.py` combines previously downloaded, individually validated batch reports. It performs no provider requests. It requires contiguous, non-overlapping inclusive date windows that exactly cover the requested one-to-90-day target period. Gaps, overlaps, duplicate provider/competition/source identities, invalid batch hashes, out-of-scope records, non-finished rows, and request/page accounting mismatches fail closed. The resulting archive records each source batch report hash, per-competition counts, aggregate request totals, and a canonical archive SHA-256. It remains an offline artifact; no Neon import is performed.
