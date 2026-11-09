@@ -1,11 +1,15 @@
 import unittest
 
 from scripts.verify_strikerapi_team_aliases import (
-    CANDIDATES, build_report, unwrap_dollar, unwrap_striker, ProbeError,
+    CANDIDATES, build_report, unwrap_dollar, unwrap_striker, ProbeError, striker_request_body, MAX_PROVIDER_CALLS,
 )
 
 
 class TeamAliasVerificationTests(unittest.TestCase):
+    def test_striker_request_uses_only_documented_season_parameter(self):
+        self.assertEqual(striker_request_body(), {"season": 2026})
+        self.assertEqual(MAX_PROVIDER_CALLS, 21)
+
     def test_striker_catalogue_unwraps_rest_envelope(self):
         rows = [{"team_id": "360", "name": "Manchester United"}]
         self.assertEqual(unwrap_striker({"data": {"teams": rows}}), rows)
