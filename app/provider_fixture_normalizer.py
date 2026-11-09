@@ -77,10 +77,14 @@ def _base_record(provider: str, source_id: Any, competition_key: Any,
     normalized_status = {
         "final": "finished", "ft": "finished", "full_time": "finished",
         "finished": "finished", "scheduled": "scheduled",
-        "not_started": "scheduled", "postponed": "postponed",
-        "cancelled": "cancelled", "canceled": "cancelled",
-        "in_progress": "in_progress", "live": "in_progress",
-    }.get(status, "unknown")
+        "not_started": "scheduled", "ns": "scheduled",
+        "postponed": "postponed", "pst": "postponed",
+        "cancelled": "cancelled", "canceled": "cancelled", "canc": "cancelled",
+        "in_play": "in_progress", "in_progress": "in_progress",
+        "live": "in_progress",
+    }.get(status)
+    if normalized_status is None:
+        raise ValueError("unsupported_source_status")
     hs, aws = _score(home_score), _score(away_score)
     if normalized_status == "finished" and (hs is None or aws is None):
         raise ValueError("finished_fixture_missing_score")
@@ -132,10 +136,16 @@ def normalize_fivedollar_fixture(row: dict, *, endpoint: str,
     home, away = teams.get("home") or {}, teams.get("away") or {}
     if not isinstance(home, dict) or not isinstance(away, dict):
         raise ValueError("team_object_invalid")
+    kickoff = row.get("kickoff_utc") or row.get("date")
+    if not kickoff and row.get("kickoff_ts") is not None:
+        try:
+            kickoff = datetime.fromtimestamp(int(row["kickoff_ts"]), timezone.utc).isoformat()
+        except (TypeError, ValueError, OverflowError, OSError):
+            raise ValueError("invalid_kickoff_timestamp") from None
     return _base_record(
         "fivedollar", row.get("id"), league.get("id"), row.get("season"),
         home.get("id"), away.get("id"), home.get("name"), away.get("name"),
-        row.get("kickoff_utc") or row.get("date"), row.get("status"),
+        kickoff, row.get("status"),
         goals.get("home"), goals.get("away"), endpoint, retrieved_at, run_id, row,
     )
 
