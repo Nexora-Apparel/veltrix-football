@@ -148,3 +148,19 @@ The new `scripts/run_readonly_epl_reconciliation.py` validates both provider exp
 The manual StrikerAPI workflow now also requires the existing GitHub Actions secret `FIVEDOLLARFOOTBALL_API_KEY`, runs the live reconciliation after the bounded provider probe, and uploads the sanitized report as a seven-day Actions artifact named `strikerapi-5dollar-epl-reconciliation`. It remains read-only: no Neon connection, SQL, imports, checkpoints, canonical merges or production writes. A completed audit with conflicts still produces an artifact and reports `FAIL_REVIEW_REQUIRED`; the report is diagnostic evidence, not automatic source approval.
 
 The updated workflow version is on the qualification branch. A manual dispatch must select `phase-3/strikerapi-readonly-qualification` so it runs the new cross-provider step. Until that run is completed and the report is inspected, the live reconciliation gate remains pending.
+
+
+## Alias-assisted live reconciliation result (2026-11-09)
+
+The approved, scope-limited alias registry was integrated into the read-only matcher and the live Premier League workflow. The latest 90-day run is [42680798028](https://github.com/Nexora-Apparel/veltrix-football/actions/runs/42680798028), with sanitized artifact [13701808156](https://github.com/Nexora-Apparel/veltrix-football/actions/runs/42680798028/artifacts/13701808156).
+
+- 100 StrikerAPI rows and 100 5DollarFootballAPI rows.
+- 100 unique matches; zero unmatched rows, quarantines, duplicates, ambiguity or conflicts.
+- All kickoff deltas: 0 seconds.
+- All statuses and final scores agreed.
+- Identity evidence: 18 strict-name, 54 one-side alias, 28 two-side alias matches.
+- Alias scope: Premier League 2026-27 only.
+- 3 StrikerAPI calls (6 credits), 1 5Dollar call.
+- No database writes, imports, checkpoints or canonical merges.
+
+The report was downloaded and inspected. It is a successful bounded reconciliation, not a production import authorization or general provider-quality certification. The 5Dollar Free-tier competition limitation remains unchanged: Argentina, Brazil and NWSL still have no verified 5Dollar counterpart.
