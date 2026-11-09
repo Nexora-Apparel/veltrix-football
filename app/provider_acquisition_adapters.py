@@ -208,8 +208,8 @@ def acquire_fivedollar_history_batch(*, client, competition_ids: list[str],
         raise ValueError("duplicate_competition_ids")
     if set(canonical_ids) != FIVEDOLLAR_QUALIFIED_COMPETITION_IDS:
         raise ValueError("competition_ids_must_match_signed_qualified_allowlist")
-    if isinstance(max_requests, bool) or not isinstance(max_requests, int) or not 1 <= max_requests <= 20:
-        raise ValueError("max_requests_must_be_between_1_and_20")
+    if isinstance(max_requests, bool) or not isinstance(max_requests, int) or not 5 <= max_requests <= 20:
+        raise ValueError("max_requests_must_be_between_5_and_20")
     if (isinstance(max_pages_per_competition, bool)
             or not isinstance(max_pages_per_competition, int)
             or not 1 <= max_pages_per_competition <= 3):
