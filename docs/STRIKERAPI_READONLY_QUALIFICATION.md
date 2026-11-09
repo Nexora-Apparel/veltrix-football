@@ -120,3 +120,8 @@ The diagnostic performs four read-only checks:
 - NWSL season 2027, `status=scheduled`, `stage=knockout`.
 
 These checks distinguish historical season coverage from publication of the next calendar-year schedule. They are separately accounted and do not inflate the original rolling-window row totals. Run #4 attempt 3 completed all four scoped checks using eight paginated calls, for 29 calls / 58 documented credits overall. The API returned 244 final NWSL fixtures for 2026 (240 league and 4 knockout) and no 2027 scheduled fixtures. The provider's public NWSL page lists 224 matches for 2026; that 20-match discrepancy remains unresolved.
+
+
+## Continuous integration for offline reconciliation
+
+A separate pull-request workflow, `.github/workflows/strikerapi-reconciliation-tests.yml`, runs the complete `test_strikerapi*.py` suite on PR changes to the reconciliation implementation/tests. It has no provider credential and makes no API calls. This keeps deterministic unit testing independent of the manual, credit-bounded provider qualification workflow.
