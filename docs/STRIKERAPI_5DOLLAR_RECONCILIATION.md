@@ -90,3 +90,25 @@ This reconciliation gate passes only when:
 - no database writes or production imports occurred.
 
 A reconciliation pass establishes identity confidence only. It does not certify statistical completeness, xG quality, odds coverage, model quality or value-betting performance.
+
+
+## Executable offline reconciliation
+
+`scripts/reconcile_provider_fixtures.py` implements the contract as a deterministic, offline JSON-to-JSON audit. It has no API client, database connection or persistence code. It accepts:
+- a StrikerAPI envelope containing `league_key`, retrieval metadata and `data.games`;
+- a 5DollarFootballAPI envelope containing retrieval metadata and a `data` fixture array;
+- an explicit JSON mapping from StrikerAPI competition key to the independently verified 5Dollar league ID.
+
+Example:
+
+```bash
+python scripts/reconcile_provider_fixtures.py \
+  --striker striker-export.json \
+  --fivedollar fivedollar-export.json \
+  --competition-map verified-competition-map.json \
+  --output reconciliation-report.json
+```
+
+The implementation preserves both source IDs and hashes each original row, applies conservative Unicode-aware team-name normalization, requires same home/away orientation and a kickoff delta of at most 300 seconds, and checks result/status conflicts only after identity matching. Ambiguous, reversed, conflicting and invalid records are quarantined. It reports per-provider accounting balances and blocks acceptance when source IDs are duplicated. It never creates a canonical fixture or writes to a database.
+
+Unit coverage is in `tests/test_strikerapi_reconciliation.py`. This is implementation readiness only: no live provider exports have yet been compared, and the reconciliation gate remains pending until real, independently mapped samples are processed.
