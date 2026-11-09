@@ -42,8 +42,8 @@ jobs:
           FIXTURE_DATE: ${{ inputs.fixture_date }}
           MAX_PAGES: ${{ inputs.max_pages }}
         run: |
-          python -c "from datetime import date; date.fromisoformat('$FIXTURE_DATE')"
-          python -c "value=int('$MAX_PAGES'); assert 1 <= value <= 5"
+          python -c "import os; from datetime import date; date.fromisoformat(os.environ['FIXTURE_DATE'])"
+          python -c "import os; value=int(os.environ['MAX_PAGES']); assert 1 <= value <= 5"
           python -m unittest discover -s tests -p 'test_provider_acquisition_adapters.py' -v
           python -m unittest discover -s tests -p 'test_provider_fixture_normalizer.py' -v
           python scripts/acquire_fivedollar_day.py --help
