@@ -87,7 +87,8 @@ def build_fivedollar_qualification_report(
         if not isinstance(item, dict) or set(item) != _REQUIRED_COMPETITION:
             raise ValueError(f"competition_shape_invalid:{index}")
         cid, name = item["competition_id"], item["competition_name"]
-        if not isinstance(cid, (str, int)) or isinstance(cid, bool) or not str(cid).strip():
+        if (not isinstance(cid, (str, int)) or isinstance(cid, bool)
+                or not str(cid).strip().isdigit() or int(cid) <= 0):
             raise ValueError(f"competition_id_invalid:{index}")
         if not isinstance(name, str) or not name.strip():
             raise ValueError(f"competition_name_invalid:{index}")
@@ -197,6 +198,9 @@ def validate_fivedollar_qualification_report(report: Any) -> dict:
     for index, item in enumerate(competitions):
         if set(item) != _REQUIRED_COMPETITION or not isinstance(item.get("pagination_complete"), bool):
             raise ValueError(f"competition_shape_invalid:{index}")
+        if (not isinstance(item.get("competition_id"), str)
+                or not item["competition_id"].isdigit() or int(item["competition_id"]) <= 0):
+            raise ValueError(f"competition_id_invalid:{index}")
         if not isinstance(item.get("competition_name"), str) or not item["competition_name"].strip():
             raise ValueError(f"competition_name_invalid:{index}")
         for field in fields:
