@@ -88,12 +88,10 @@ class QualificationEvidenceTests(unittest.TestCase):
 
 
     def test_checkout_log_binds_feature_ref_and_resolved_sha_separately_from_main_dispatch(self):
-        logs = """##[group]Run actions/checkout@v4
-with:
-  ref: phase-3/budget-aware-acquisition-contract
-##[endgroup]
-[command]/usr/bin/git log -1 --format=%H
-60cfbc3775b67e6a3227e6294c8fd458b1555bc0
+        logs = """2026-11-09T23:07:23.7789246Z ##[group]Run actions/checkout@v4
+2026-11-09T23:07:23.7790277Z   ref: phase-3/budget-aware-acquisition-contract
+2026-11-09T23:07:24.6965593Z [command]/usr/bin/git log -1 --format=%H
+2026-11-09T23:07:24.6981726Z 60cfbc3775b67e6a3227e6294c8fd458b1555bc0
 """
         result = validate_checkout_metadata(
             logs,
@@ -104,10 +102,9 @@ with:
         self.assertEqual(result["checkout_sha"], "60cfbc3775b67e6a3227e6294c8fd458b1555bc0")
 
     def test_checkout_log_rejects_wrong_ref_or_resolved_sha(self):
-        logs = """with:
-  ref: phase-3/budget-aware-acquisition-contract
-[command]/usr/bin/git log -1 --format=%H
-60cfbc3775b67e6a3227e6294c8fd458b1555bc0
+        logs = """2026-11-09T23:07:23.7790277Z   ref: phase-3/budget-aware-acquisition-contract
+2026-11-09T23:07:24.6965593Z [command]/usr/bin/git log -1 --format=%H
+2026-11-09T23:07:24.6981726Z 60cfbc3775b67e6a3227e6294c8fd458b1555bc0
 """
         with self.assertRaisesRegex(QualificationEvidenceError, "checkout_ref_mismatch"):
             validate_checkout_metadata(logs, expected_ref="main",
