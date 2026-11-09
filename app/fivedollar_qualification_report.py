@@ -48,6 +48,7 @@ def build_fivedollar_qualification_report(
     endpoint_requests: list[dict], competitions: list[dict],
     database_writes: int = 0, imports: int = 0, checkpoints: int = 0,
     canonical_merges: int = 0, prediction_publications: int = 0,
+    catalogue_pages_fetched: int = 1, catalogue_pagination_complete: bool = True,
 ) -> dict:
     if not isinstance(run_id, str) or not run_id.strip():
         raise ValueError("run_id_required")
@@ -76,6 +77,9 @@ def build_fivedollar_qualification_report(
     if not isinstance(competitions, list) or not competitions:
         raise ValueError("competitions_required")
 
+    catalogue_pages_fetched = _nonnegative_int(catalogue_pages_fetched, "catalogue_pages_fetched")
+    if not isinstance(catalogue_pagination_complete, bool):
+        raise ValueError("catalogue_pagination_complete_invalid")
     cleaned, seen = [], set()
     fields = ("pages_fetched", "source_rows", "accepted_rows", "invalid_rows",
               "duplicate_ids", "missing_team_ids")
@@ -112,7 +116,7 @@ def build_fivedollar_qualification_report(
     }
     if any(value != 0 for value in side_effects.values()):
         raise ValueError("side_effect_boundary_invalid")
-    complete = all(row["pagination_complete"] for row in cleaned)
+    complete = catalogue_pagination_complete and all(row["pagination_complete"] for row in cleaned)
     acceptance = (
         complete and sums["source_rows"] > 0
         and sums["accepted_rows"] > 0
@@ -132,6 +136,7 @@ def build_fivedollar_qualification_report(
             "actual_requests": actual_requests,
             "endpoint_accounting": sorted(endpoints, key=lambda x: x["endpoint"]),
         },
+        "catalogue": {"pages_fetched": catalogue_pages_fetched, "pagination_complete": catalogue_pagination_complete},
         "competition_count": len(cleaned),
         "competitions": cleaned,
         "aggregates": sums,
@@ -156,6 +161,9 @@ def validate_fivedollar_qualification_report(report: Any) -> dict:
         raise ValueError("report_schema_invalid")
     if report.get("provider") != "5DollarFootballAPI":
         raise ValueError("provider_scope_invalid")
+    catalogue = report.get("catalogue")
+    if not isinstance(catalogue, dict) or not isinstance(catalogue.get("pages_fetched"), int) or catalogue.get("pagination_complete") not in (True, False):
+        raise ValueError("catalogue_metadata_invalid")
     competitions = report.get("competitions")
     if not isinstance(competitions, list) or report.get("competition_count") != len(competitions):
         raise ValueError("competition_count_mismatch")
@@ -183,7 +191,8 @@ def validate_fivedollar_qualification_report(report: Any) -> dict:
     if not isinstance(effects, dict) or any(effects.get(key) != 0 for key in required):
         raise ValueError("side_effect_boundary_invalid")
     recomputed = (
-        all(item.get("pagination_complete") is True for item in competitions)
+        catalogue.get("pagination_complete") is True
+        and all(item.get("pagination_complete") is True for item in competitions)
         and aggregates.get("source_rows", 0) > 0
         and aggregates.get("accepted_rows", 0) > 0
         and all(aggregates.get(key) == 0 for key in ("invalid_rows", "duplicate_ids", "missing_team_ids"))
