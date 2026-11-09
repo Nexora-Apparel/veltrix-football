@@ -1,0 +1,73 @@
+import unittest
+
+from scripts.verify_strikerapi import collect_pages, validate_game
+
+
+def game(game_id="g-1", status="final"):
+    row = {
+        "game_id": game_id,
+        "date": "2026-10-01",
+        "starts_at": "2026-10-01T18:00:00.000Z",
+        "status": status,
+        "home": {"team_id": "h1", "name": "Home", "score": 1 if status == "final" else None},
+        "away": {"team_id": "a1", "name": "Away", "score": 0 if status == "final" else None},
+    }
+    return row
+
+
+class StrikerPaginationTests(unittest.TestCase):
+    def test_follows_next_offset_until_last_page(self):
+        calls = []
+
+        def fake_call(_key, _league, _status, _start, _end, offset):
+            calls.append(offset)
+            if offset == 0:
+                return {"games": [game("g-1")], "count": 2, "next_offset": 1}
+            return {"games": [game("g-2")], "count": 2}
+
+        rows, pages, truncated, _counts = collect_pages(
+            "test", "soccer", "final", "2026-09-01", "2026-11-09", fake_call
+        )
+        self.assertEqual(calls, [0, 1])
+        self.assertEqual([row["game_id"] for row in rows], ["g-1", "g-2"])
+        self.assertEqual(pages, 2)
+        self.assertFalse(truncated)
+
+    def test_reports_truncation_at_page_cap(self):
+        calls = []
+
+        def fake_call(_key, _league, _status, _start, _end, offset):
+            calls.append(offset)
+            return {"games": [game(f"g-{offset}")], "next_offset": offset + 1}
+
+        rows, pages, truncated, _counts = collect_pages(
+            "test", "soccer", "final", "2026-09-01", "2026-11-09", fake_call
+        )
+        self.assertEqual(pages, 3)
+        self.assertEqual(len(rows), 3)
+        self.assertTrue(truncated)
+
+    def test_rejects_non_advancing_offset(self):
+        def fake_call(_key, _league, _status, _start, _end, _offset):
+            return {"games": [game()], "next_offset": 0}
+
+        with self.assertRaisesRegex(Exception, "did not advance"):
+            collect_pages(
+                "test", "soccer", "final", "2026-09-01", "2026-11-09", fake_call
+            )
+
+    def test_rejects_invalid_final_score(self):
+        row = game()
+        row["home"]["score"] = "1"
+        valid, reason = validate_game(row, "final")
+        self.assertFalse(valid)
+        self.assertEqual(reason, "invalid_final_score")
+
+    def test_accepts_scheduled_fixture_without_scores(self):
+        valid, reason = validate_game(game(status="scheduled"), "scheduled")
+        self.assertTrue(valid)
+        self.assertEqual(reason, "valid")
+
+
+if __name__ == "__main__":
+    unittest.main()
