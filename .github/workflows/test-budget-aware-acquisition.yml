@@ -45,5 +45,8 @@ jobs:
       - name: Run end-to-end read-only fixture pipeline tests
         run: python -m unittest discover -s tests -p 'test_provider_fixture_pipeline.py' -v
 
+      - name: Validate manual acquisition CLI without network access
+        run: python scripts/acquire_fivedollar_day.py --help
+
       - name: Run existing 17-competition verifier tests
         run: python -m unittest discover -s tests -p 'test_strikerapi_17_competitions.py' -v
