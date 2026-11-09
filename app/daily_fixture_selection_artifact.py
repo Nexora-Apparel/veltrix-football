@@ -60,6 +60,16 @@ def qualified_sources_from_registry(registry: Any) -> dict[str, list[str]]:
             raise SelectionArtifactError(f"qualification_attestation_repository_invalid:{index}")
         if attestation.get("event") != "workflow_dispatch":
             raise SelectionArtifactError(f"qualification_attestation_event_invalid:{index}")
+        if attestation.get("workflow_path") != ".github/workflows/verify-strikerapi-17-competitions.yml":
+            raise SelectionArtifactError(f"qualification_attestation_workflow_invalid:{index}")
+        if attestation.get("head_branch") != "phase-3/strikerapi-readonly-qualification":
+            raise SelectionArtifactError(f"qualification_attestation_branch_invalid:{index}")
+        if attestation.get("artifact_name") != "strikerapi-17-competition-coverage":
+            raise SelectionArtifactError(f"qualification_attestation_artifact_name_invalid:{index}")
+        if not isinstance(attestation.get("reviewer"), str) or not attestation["reviewer"].strip():
+            raise SelectionArtifactError(f"qualification_attestation_reviewer_missing:{index}")
+        if not isinstance(attestation.get("reviewed_at"), str) or not attestation["reviewed_at"].strip():
+            raise SelectionArtifactError(f"qualification_attestation_review_time_missing:{index}")
         if not isinstance(attestation.get("head_sha"), str) or not re.fullmatch(r"[0-9a-f]{40}", attestation["head_sha"]):
             raise SelectionArtifactError(f"qualification_attestation_commit_invalid:{index}")
         if not isinstance(attestation.get("artifact_id"), int) or isinstance(attestation.get("artifact_id"), bool):
