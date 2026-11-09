@@ -43,7 +43,7 @@ def valid_report():
         client=FakeClient(), competition_ids=COMPETITIONS,
         start_date="2026-11-01", end_date="2026-11-07",
         run_id="artifact-test", retrieved_at="2026-11-08T00:00:00Z",
-        max_requests=15,
+        max_requests=15, sleep=lambda _: None,
     )
     return result["report"]
 
