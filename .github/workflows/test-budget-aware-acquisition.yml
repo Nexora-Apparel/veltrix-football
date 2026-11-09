@@ -57,6 +57,9 @@ jobs:
       - name: Run qualified 5Dollar historical batch tests
         run: python -m unittest discover -s tests -p 'test_fivedollar_history_batch.py' -v
 
+      - name: Run strict historical batch artifact tests
+        run: python -m unittest discover -s tests -p 'test_fivedollar_history_artifact.py' -v
+
       - name: Run end-to-end read-only fixture pipeline tests
         run: python -m unittest discover -s tests -p 'test_provider_fixture_pipeline.py' -v
 
