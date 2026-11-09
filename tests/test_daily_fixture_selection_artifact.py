@@ -68,6 +68,40 @@ class DailySelectionArtifactTests(unittest.TestCase):
             self.registry["sources"][0]["review_attestation"], self.signing_key
         )
 
+    def test_strikerapi_registry_policy_remains_supported(self):
+        attestation = {
+            "attestation_version": 1, "review_status": "qualified",
+            "repository": "Nexora-Apparel/veltrix-football",
+            "workflow_run_id": "777",
+            "workflow_path": ".github/workflows/verify-strikerapi-17-competitions.yml",
+            "event": "workflow_dispatch",
+            "head_branch": "phase-3/strikerapi-readonly-qualification",
+            "reviewer": "unit-test-reviewer", "reviewed_at": "2026-11-09T20:00:00Z",
+            "head_sha": "c" * 40, "artifact_id": 789,
+            "artifact_name": "strikerapi-17-competition-coverage",
+            "github_artifact_digest": "e" * 64,
+            "local_archive_sha256": "e" * 64,
+            "local_report_sha256": "d" * 64,
+            "coverage": {
+                "provider": "strikerapi", "competition_keys": ["soccer"],
+                "competition_count": 1, "final_rows_by_competition": {"soccer": 4},
+                "pagination_complete": True, "invalid_rows": 0, "duplicate_rows": 0,
+            },
+        }
+        registry = {
+            "schema_version": 1,
+            "sources": [{
+                "provider": "strikerapi", "competition_key": "soccer",
+                "qualification_status": "qualified", "qualification_run_id": "777",
+                "artifact_sha256": "e" * 64,
+                "evidence_ref": "https://github.com/Nexora-Apparel/veltrix-football/actions/runs/777/artifacts/789",
+                "pagination_complete": True, "invalid_rows": 0,
+                "duplicate_rows": 0, "missing_team_ids": 0,
+                "review_attestation": sign_attestation(attestation, self.signing_key),
+            }],
+        }
+        self.assertEqual(qualified_sources_from_registry(registry), {"strikerapi": ["soccer"]})
+
     def test_registry_rejects_self_declared_qualified_source_without_attestation(self):
         registry = copy.deepcopy(self.registry)
         del registry["sources"][0]["review_attestation"]
