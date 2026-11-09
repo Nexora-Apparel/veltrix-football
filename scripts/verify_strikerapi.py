@@ -46,16 +46,18 @@ def safe_text(value: object, max_len: int = 180) -> str:
 
 
 def call_api(
-    api_key: str, league: str, status: str, start: str, end: str, offset: int = 0
+    api_key: str, league: str, status: str, start: str | None, end: str | None,
+    offset: int = 0, season: int | None = None, stage: str | None = None
 ) -> dict:
-    body = {
-        "league": league,
-        "status": status,
-        "from": start,
-        "to": end,
-        "limit": LIMIT,
-        "offset": offset,
-    }
+    body = {"league": league, "status": status, "limit": LIMIT, "offset": offset}
+    if start is not None:
+        body["from"] = start
+    if end is not None:
+        body["to"] = end
+    if season is not None:
+        body["season"] = season
+    if stage is not None:
+        body["stage"] = stage
     request = Request(
         BASE,
         data=json.dumps(body).encode("utf-8"),
@@ -91,6 +93,7 @@ def collect_pages(
     start: str,
     end: str,
     call: Callable[..., dict] = call_api,
+    extra_params: dict | None = None,
 ) -> tuple[list, int, bool, list]:
     """Collect at most MAX_PAGES_PER_CHECK pages; reject broken pagination."""
     rows: list = []
@@ -98,7 +101,10 @@ def collect_pages(
     offset = 0
     page_counts: list = []
     while page_count < MAX_PAGES_PER_CHECK:
-        data = call(api_key, league, status, start, end, offset)
+        if extra_params:
+            data = call(api_key, league, status, start, end, offset, **extra_params)
+        else:
+            data = call(api_key, league, status, start, end, offset)
         games = data.get("games")
         if not isinstance(games, list):
             raise ProbeError("expected games array")
@@ -188,12 +194,15 @@ def main() -> int:
             print("STRIKERAPI_CHECK_FAILED: hard request budget exhausted")
             return 1
 
-        def bounded_call(api_key, selected_league, selected_status, from_date, to_date, offset):
+        def bounded_call(api_key, selected_league, selected_status, from_date, to_date, offset, **extra_params):
             nonlocal attempted_calls
             if attempted_calls >= MAX_CALLS:
                 raise ProbeError("hard request budget exhausted")
             attempted_calls += 1
-            return call_api(api_key, selected_league, selected_status, from_date, to_date, offset)
+            return call_api(
+                api_key, selected_league, selected_status, from_date, to_date, offset,
+                **extra_params
+            )
 
         try:
             games, pages, truncated, page_counts = collect_pages(
@@ -248,6 +257,49 @@ def main() -> int:
             f"pagination_truncated={str(truncated).lower()}; "
             f"page_count_fields={json.dumps(page_counts)}"
         )
+
+    # NWSL uses calendar-year seasons. Diagnose the empty rolling-window
+    # schedule by checking 2026 completed games and the next season's schedule,
+    # separately for league and knockout stages.
+    nwsl_diagnostics = (
+        (2026, "final", "league"),
+        (2026, "final", "knockout"),
+        (2027, "scheduled", "league"),
+        (2027, "scheduled", "knockout"),
+    )
+    for season, status, stage in nwsl_diagnostics:
+        try:
+            games, pages, truncated, page_counts = collect_pages(
+                key, "nwsl", status, None, None, bounded_call,
+                extra_params={"season": season, "stage": stage},
+            )
+        except ProbeError as exc:
+            print(
+                f"NWSL_SEASON_DIAGNOSTIC_FAILED: season={season}; "
+                f"status={status}; stage={stage}; reason={safe_text(str(exc))}"
+            )
+            print(
+                f"API_CALLS_ATTEMPTED: {attempted_calls}; "
+                "DATABASE_WRITES: 0; IMPORTS: 0"
+            )
+            return 1
+        valid = invalid = 0
+        for row in games:
+            ok, _reason = validate_game(row, status)
+            if ok:
+                valid += 1
+            else:
+                invalid += 1
+        print(
+            f"NWSL_SEASON_DIAGNOSTIC: season={season}; status={status}; "
+            f"stage={stage}; rows={len(games)}; valid={valid}; invalid={invalid}; "
+            f"pages={pages}; pagination_truncated={str(truncated).lower()}; "
+            f"page_count_fields={json.dumps(page_counts)}"
+        )
+        if truncated:
+            truncated_checks.append(f"nwsl:season={season}:stage={stage}:{status}")
+        if invalid:
+            total_invalid += invalid
 
     print(
         "STRIKERAPI_SUMMARY: "
