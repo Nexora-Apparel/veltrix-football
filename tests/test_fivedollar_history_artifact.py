@@ -72,7 +72,7 @@ class HistoricalArtifactTests(unittest.TestCase):
 
     def test_offline_validator_rejects_request_ledger_mismatch(self):
         report = valid_report()
-        report["request_budget"]["actual_requests"] = 4
+        report["request_budget"]["actual_requests"] = 6
         rehash(report)
         with self.assertRaisesRegex(ArtifactIntegrityError, "page_accounting_mismatch"):
             validate_fivedollar_history_batch_report(report)
