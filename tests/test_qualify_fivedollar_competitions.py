@@ -141,7 +141,8 @@ class QualificationRunnerTests(unittest.TestCase):
         report = collect("test-key", budget, 90, 3, "test-run")
         self.assertFalse(report["acceptance_pass"])
         self.assertEqual(report["request_budget"]["actual_requests"], 2)
-        self.assertEqual(report["competitions"][1]["pages_fetched"], 0)
+        by_id = {row["competition_id"]: row for row in report["competitions"]}
+        self.assertEqual(by_id["140"]["pages_fetched"], 0)
 
     def test_catalogue_truncation_blocks_acceptance(self):
         budget = FakeBudget()
