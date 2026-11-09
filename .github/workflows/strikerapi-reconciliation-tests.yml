@@ -1,0 +1,43 @@
+name: StrikerAPI Reconciliation Unit Tests
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - phase-3/strikerapi-readonly-qualification
+    paths:
+      - "scripts/reconcile_provider_fixtures.py"
+      - "scripts/run_readonly_epl_reconciliation.py"
+      - "tests/test_strikerapi*.py"
+      - ".github/workflows/strikerapi-reconciliation-tests.yml"
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "scripts/reconcile_provider_fixtures.py"
+      - "tests/test_strikerapi*.py"
+      - "scripts/run_readonly_epl_reconciliation.py"
+      - ".github/workflows/strikerapi-reconciliation-tests.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: strikerapi-reconciliation-tests-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  unit-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check out qualification branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Run reconciliation and provider verifier tests
+        run: python -m unittest discover -s tests -p 'test_strikerapi*.py' -v
