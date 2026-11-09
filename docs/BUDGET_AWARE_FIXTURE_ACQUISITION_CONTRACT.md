@@ -158,8 +158,8 @@ The adapter layer is implemented in `app/provider_acquisition_adapters.py`.
 - Retrieves one explicit Africa/Lagos calendar day using UTC epoch boundaries.
 - Reads original `data` rows and normalizes them immediately; raw provider rows are not copied into the emitted report.
 - Requires complete pagination within the configured page cap. A page cap hit with `has_more=true` fails the run rather than presenting partial coverage as complete.
-- Reports request-page count and the provider's remaining-request header when supplied.
-- No automatic retry is added by this adapter; the existing client transport retains its own HTTP behavior.
+- Reports page fetches and the provider's remaining-request header when supplied. It does not mislabel page fetches as exact HTTP attempts.
+- The existing client transport retains its bounded retry behavior internally; exact retry-attempt accounting is not exposed by that legacy transport and is explicitly marked as delegated in the report.
 
 ### StrikerAPI
 
