@@ -46,8 +46,33 @@ def qualified_sources_from_registry(registry: Any) -> dict[str, list[str]]:
             raise SelectionArtifactError(f"qualification_competition_missing:{index}")
         if entry.get("qualification_status") != "qualified":
             raise SelectionArtifactError(f"source_not_qualified:{index}")
+        attestation = entry.get("review_attestation")
+        if not isinstance(attestation, dict):
+            raise SelectionArtifactError(f"qualification_reviewer_attestation_missing:{index}")
+        if attestation.get("attestation_version") != 1 or attestation.get("review_status") != "qualified":
+            raise SelectionArtifactError(f"qualification_reviewer_attestation_invalid:{index}")
+        if attestation.get("repository") != "Nexora-Apparel/veltrix-football":
+            raise SelectionArtifactError(f"qualification_attestation_repository_invalid:{index}")
+        if attestation.get("event") != "workflow_dispatch":
+            raise SelectionArtifactError(f"qualification_attestation_event_invalid:{index}")
+        if not isinstance(attestation.get("head_sha"), str) or not re.fullmatch(r"[0-9a-f]{40}", attestation["head_sha"]):
+            raise SelectionArtifactError(f"qualification_attestation_commit_invalid:{index}")
+        if not isinstance(attestation.get("artifact_id"), int) or isinstance(attestation.get("artifact_id"), bool):
+            raise SelectionArtifactError(f"qualification_attestation_artifact_id_invalid:{index}")
+        if attestation.get("local_archive_sha256") != artifact_hash or attestation.get("github_artifact_digest") != artifact_hash:
+            raise SelectionArtifactError(f"qualification_attestation_artifact_hash_mismatch:{index}")
+        if not isinstance(attestation.get("local_report_sha256"), str) or not _SHA256.fullmatch(attestation["local_report_sha256"]):
+            raise SelectionArtifactError(f"qualification_attestation_report_hash_invalid:{index}")
+        coverage = attestation.get("coverage")
+        if (not isinstance(coverage, dict) or coverage.get("provider") != "strikerapi"
+                or str(competition) not in coverage.get("competition_keys", [])
+                or coverage.get("pagination_complete") is not True
+                or coverage.get("invalid_rows") != 0 or coverage.get("duplicate_rows") != 0):
+            raise SelectionArtifactError(f"qualification_attestation_scope_invalid:{index}")
         if not isinstance(run_id, str) or not run_id.strip():
             raise SelectionArtifactError(f"qualification_run_id_missing:{index}")
+        if attestation.get("workflow_run_id") != run_id:
+            raise SelectionArtifactError(f"qualification_attestation_run_mismatch:{index}")
         if not isinstance(artifact_hash, str) or not _SHA256.fullmatch(artifact_hash):
             raise SelectionArtifactError(f"qualification_artifact_hash_invalid:{index}")
         if not isinstance(evidence_ref, str) or not evidence_ref.strip():
