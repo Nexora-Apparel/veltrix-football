@@ -46,6 +46,13 @@ def _record_valid(row: dict, provider: str) -> bool:
         return False
     if any(not isinstance(row.get(key), str) or not row[key].strip() for key in required):
         return False
+    if row.get("normalized_status") not in {"finished", "scheduled", "postponed", "cancelled", "in_progress"}:
+        return False
+    if row.get("normalized_status") == "finished":
+        for key in ("home_score", "away_score"):
+            score = row.get(key)
+            if isinstance(score, bool) or not isinstance(score, int) or score < 0:
+                return False
     try:
         _utc(row["kickoff_at"])
     except (TypeError, ValueError, AttributeError):
@@ -54,12 +61,16 @@ def _record_valid(row: dict, provider: str) -> bool:
 
 
 def _duplicates(rows: list[dict]) -> set[int]:
-    counts: dict[str, int] = {}
+    counts: dict[tuple[str, str], int] = {}
     for row in rows:
-        source_id = row.get("source_id")
-        if isinstance(source_id, str) and source_id:
-            counts[source_id] = counts.get(source_id, 0) + 1
-    return {i for i, row in enumerate(rows) if counts.get(row.get("source_id"), 0) > 1}
+        source_id, competition = row.get("source_id"), row.get("competition_key")
+        if isinstance(source_id, str) and source_id and isinstance(competition, str) and competition:
+            key = (competition, source_id)
+            counts[key] = counts.get(key, 0) + 1
+    return {
+        i for i, row in enumerate(rows)
+        if counts.get((row.get("competition_key"), row.get("source_id")), 0) > 1
+    }
 
 
 def reconcile_artifact_records(
