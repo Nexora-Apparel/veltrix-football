@@ -94,11 +94,11 @@ def validate_checkout_metadata(log_content: Any, *, expected_ref: str,
              "checkout_expected_ref_invalid")
     _require(isinstance(expected_sha, str) and re.fullmatch(r"[0-9a-f]{40}", expected_sha),
              "checkout_expected_sha_invalid")
-    refs = re.findall(r"(?m)^\s*ref:\s*(.*?)\s*$", log_content)
+    refs = re.findall(r"(?m)^.*?\bref:\s*(.*?)\s*$", log_content)
     _require(len(refs) == 1, "checkout_ref_missing_or_ambiguous")
     _require(refs[0] == expected_ref, "checkout_ref_mismatch")
     commits = re.findall(
-        r"(?m)^\[command\].*git log -1 --format=%H\s*\r?\n([0-9a-f]{40})\s*$",
+        r"(?m)^.*git log -1 --format=%H[^\r\n]*\r?\n[^\r\n]*?([0-9a-f]{40})\s*$",
         log_content,
     )
     _require(len(commits) == 1, "checkout_sha_missing_or_ambiguous")
