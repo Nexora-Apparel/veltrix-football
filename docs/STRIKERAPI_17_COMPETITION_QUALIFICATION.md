@@ -1,6 +1,6 @@
 # StrikerAPI 17-Competition Coverage Qualification
 
-Status: rolling-window qualification pending live result. No data import is authorized.
+Status: BLOCKED — live qualification returned HTTP 402 (insufficient provider credits) on 2026-11-09. No complete 17-competition report was produced. No data import is authorized.
 
 ## Provider scope
 
@@ -43,6 +43,17 @@ Official endpoint reference: https://strikerapi.com/docs/list-games
 - No Neon connection, imports, checkpoints, canonical merges or production writes.
 
 The free account's documented allowance is 500 credits/month. The API rate limit is 60 requests/minute at balances of 100 credits or more and 10 requests/minute below 100 credits. The verifier therefore spaces requests by seven seconds and has a bounded 65-second HTTP 429 cooldown retry. A 429 is a rate-limit condition, not proof of invalid credentials. Official rate limits: https://strikerapi.com/docs
+
+## Live qualification attempts — 2026-11-09
+
+Two live Actions attempts were inspected:
+
+- Run `42681364817` (commit `3c2621e48dd9139d7aebe0cd8a0bb0966024b51f`): local verifier tests passed (6); live probe stopped with HTTP 402.
+- Run `42681395011` (commit `127af00eaa344dac38771e1d14be01ddac95325f`): local verifier tests passed (8); live probe stopped with HTTP 402.
+
+Both attempts ended before the 34 checks completed. Neither generated a coverage JSON report or uploaded an artifact. Consequently, no 17-competition live coverage conclusion can be drawn. HTTP 402 is treated as a credit/billing constraint, not an authentication failure. Do not repeat the live probe until the provider account's available credit balance and reset date are checked. The verifier's theoretical 204-credit ceiling is not a recommendation to spend the entire free allowance in one run.
+
+The workflow is manual-dispatch only. Pushes to the qualification branch must not automatically consume provider credits; secret-free unit tests are handled by the separate CI workflow.
 
 ## Dataset limitations that affect modelling
 
