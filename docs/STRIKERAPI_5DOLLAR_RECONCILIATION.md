@@ -30,12 +30,15 @@ Never copy a StrikerAPI identifier into a 5Dollar identity field or vice versa. 
 
 ## 3. Competition mapping gate
 
-A comparison is permitted only after the 5Dollar league ID has been read from the authenticated provider catalogue and mapped to an explicit canonical competition:
-- StrikerAPI `soccer` ↔ 5Dollar league whose verified catalogue record is Premier League.
-- StrikerAPI `brazil` ↔ verified 5Dollar Brazil Serie A league record.
-- StrikerAPI `argentina` ↔ verified 5Dollar Argentina Liga Profesional league record.
+The authenticated 5DollarFootballAPI Free-tier catalogue returned exactly five competitions in the qualification run: England Premier League, France Ligue 1, Germany Bundesliga I, Italy Serie A and Spain La Liga. The only confirmed overlap with the current StrikerAPI qualification set is the English Premier League:
+- StrikerAPI `soccer` ↔ 5Dollar competition ID `4160026622`, verified from the authenticated catalogue and historical preflight log.
 
-Do not match by a loose substring or country alone. Women's, reserve, youth, cup and men's senior competitions must remain distinct. The NWSL has no assumed 5Dollar counterpart; do not compare it unless a matching competition is independently established.
+The following mappings are **not available on the verified Free-tier account** and must not be fabricated:
+- StrikerAPI `brazil` has no Brazil Serie A counterpart in the returned 5Dollar catalogue.
+- StrikerAPI `argentina` has no Argentina Liga Profesional counterpart in the returned 5Dollar catalogue.
+- StrikerAPI `nwsl` has no NWSL counterpart in the returned 5Dollar catalogue.
+
+The reconciliation run must therefore compare the Premier League only. Argentina, Brazil and NWSL remain StrikerAPI-only until another source or a separately verified 5Dollar entitlement supplies a real counterpart. Never match by country or loose competition-name substring. Women's, reserve, youth, cup and men's senior competitions must remain distinct.
 
 ## 4. Candidate matching
 
@@ -90,6 +93,17 @@ This reconciliation gate passes only when:
 - no database writes or production imports occurred.
 
 A reconciliation pass establishes identity confidence only. It does not certify statistical completeness, xG quality, odds coverage, model quality or value-betting performance.
+
+## Verified account coverage correction
+
+The 5Dollar qualification run `42504992170` recorded these exact Free-tier catalogue entries:
+- England Premier League — ID `4160026622`
+- France Ligue 1 — ID `3614399544`
+- Germany Bundesliga I — ID `686337048`
+- Italy Serie A — ID `3405541143`
+- Spain La Liga — ID `4212821298`
+
+The same run returned 99 Premier League finished fixtures in the 90-day preflight. No Argentina or Brazil competition was returned. Therefore, the only currently valid cross-provider mapping is StrikerAPI `soccer` to 5Dollar ID `4160026622`. The live reconciliation sample must be Premier League-only; do not fabricate missing competition IDs or use the 5Dollar public documentation's illustrative IDs in place of the authenticated account catalogue.
 
 
 ## Executable offline reconciliation
