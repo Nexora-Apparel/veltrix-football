@@ -210,3 +210,6 @@ Daily selection artifacts are built by `app/daily_fixture_selection_artifact.py`
 - zero invalid rows and zero duplicate rows.
 
 Duplicate registry entries, incomplete pagination, nonzero invalid/duplicate counts, missing evidence references, or malformed hashes fail closed. The selection artifact binds the source acquisition report hash and qualification registry hash to its own SHA-256. No default qualification entries are manufactured; the registry must be populated from actual inspected qualification evidence before a daily selection can run.
+
+
+The repository includes `data/provider_qualification_registry.template.json` as an intentionally empty starter. It is explicitly marked as non-evidence and contains no qualified competitions. Until inspected provider artifacts are added as qualification entries, the daily selector returns zero eligible fixtures rather than assuming coverage.
