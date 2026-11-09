@@ -39,6 +39,9 @@ def main() -> int:
         print(f"ACQUISITION_RESULT: FAILED ({type(exc).__name__}: {str(exc)[:160]})")
         return 1
 
+    from app.provider_acquisition_artifact import validate_acquisition_report
+
+    integrity = validate_acquisition_report(result["report"])
     output = Path(args.output)
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(
@@ -53,6 +56,7 @@ def main() -> int:
         f'pages={result["report"]["request_budget"].get("page_fetches", 0)}; '
         f"database_writes=0; imports=0"
     )
+    print(f"ARTIFACT_INTEGRITY: {'PASS' if integrity['valid'] else 'FAIL'}")
     print(f"REPORT_FILE: {output}")
     print(f'REPORT_SHA256: {result["report"]["report_sha256"]}')
     return 0 if result["acceptance_pass"] else 3
