@@ -25,8 +25,8 @@ def load_registry(path: str | Path) -> dict:
 def validate_registry(registry: dict) -> None:
     if not isinstance(registry, dict) or registry.get("schema_version") != 1:
         raise AliasRegistryError("unsupported registry schema")
-    if registry.get("status") != "review_only":
-        raise AliasRegistryError("registry must remain review_only until separately approved")
+    if registry.get("status") not in ("review_only", "approved"):
+        raise AliasRegistryError("registry status must be review_only or approved")
     rows = registry.get("candidates")
     if not isinstance(rows, list):
         raise AliasRegistryError("candidates must be a list")
@@ -49,6 +49,8 @@ def validate_registry(registry: dict) -> None:
         seen_striker.add(sid_key)
         seen_dollar.add(did_key)
         seen_pairs.add(pair_key)
+        if registry["status"] == "approved" and row["status"] == "pending_independent_verification":
+            raise AliasRegistryError("approved registry cannot contain pending candidates")
         if row["status"] == "approved":
             evidence = row.get("evidence_url")
             retrieved = row.get("evidence_retrieved_at")
