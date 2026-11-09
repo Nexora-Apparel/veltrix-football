@@ -145,6 +145,7 @@ def validate_coverage_report(report: Any) -> dict:
              "coverage_total_invalid_mismatch")
     _require(sum(row["duplicate_ids"] for row in checks) == totals["duplicate_ids"],
              "coverage_total_duplicates_mismatch")
+    _require(bool(accepted_by_competition), "coverage_no_competition_with_final_history")
     budget = report.get("request_budget")
     _require(isinstance(budget, dict), "coverage_request_budget_missing")
     _require(budget.get("maximum_calls") == 102 and budget.get("actual_calls", 103) <= 102,
