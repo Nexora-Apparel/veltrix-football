@@ -92,9 +92,10 @@ def acquire_fivedollar_day(*, client, day: str, run_id: str,
         retrieved_at=retrieved,
         request_budget={
             "provider": "fivedollar",
-            "calls_made": pages,
+            "page_fetches": pages,
             "requests_remaining_header": str(rate_remaining) if rate_remaining is not None else None,
             "max_pages": max_pages,
+            "transport_retry_accounting": "delegated_to_existing_fivedollar_client",
         },
     )
 
