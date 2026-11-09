@@ -261,6 +261,7 @@ def main() -> int:
     # NWSL uses calendar-year seasons. Diagnose the empty rolling-window
     # schedule by checking 2026 completed games and the next season's schedule,
     # separately for league and knockout stages.
+    nwsl_diagnostic_invalid = False
     nwsl_diagnostics = (
         (2026, "final", "league"),
         (2026, "final", "knockout"),
@@ -299,8 +300,12 @@ def main() -> int:
         if truncated:
             truncated_checks.append(f"nwsl:season={season}:stage={stage}:{status}")
         if invalid:
-            total_invalid += invalid
+            nwsl_diagnostic_invalid = True
 
+    print(
+        f"NWSL_SEASON_DIAGNOSTIC_CHECKS: {len(nwsl_diagnostics)}; "
+        f"invalid_rows_present={str(nwsl_diagnostic_invalid).lower()}"
+    )
     print(
         "STRIKERAPI_SUMMARY: "
         f"calls={attempted_calls}; documented_credit_cost={attempted_calls * 2}; "
@@ -311,7 +316,7 @@ def main() -> int:
     )
     print("DATABASE_WRITES: 0; IMPORTED_RECORDS: 0; IMPORT_RUNS: 0; CHECKPOINTS: 0")
 
-    if total_invalid or total_duplicates:
+    if total_invalid or total_duplicates or nwsl_diagnostic_invalid:
         print("STRIKERAPI_RESULT: REVIEW_REQUIRED")
         return 3
     if truncated_checks:
