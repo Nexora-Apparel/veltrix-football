@@ -1,10 +1,13 @@
+import copy
 import unittest
+from pathlib import Path
 
+from app.provider_team_aliases import load_registry
 from scripts.reconcile_provider_fixtures import reconcile, normalize_name
 
 
 def srow(source_id="s1", home="Arsenal", away="Chelsea", kickoff="2026-08-15T16:30:00Z",
-         status="final", home_score=2, away_score=0):
+         status="final", home_score=2, away_score=0, home_id="s-home", away_id="s-away"):
     return {"provider":"strikerapi","source_id":source_id,"competition_key":"soccer",
             "home_id":"s-home","away_id":"s-away","home":home,"away":away,"kickoff":kickoff,
             "status":status,"home_score":home_score,"away_score":away_score,
@@ -12,9 +15,9 @@ def srow(source_id="s1", home="Arsenal", away="Chelsea", kickoff="2026-08-15T16:
 
 
 def drow(source_id="d1", home="Arsenal", away="Chelsea", kickoff="2026-08-15T16:32:00+00:00",
-         status="finished", home_score=2, away_score=0):
+         status="finished", home_score=2, away_score=0, home_id="d-home", away_id="d-away"):
     return {"provider":"fivedollar","source_id":source_id,"competition_key":"39",
-            "home_id":"d-home","away_id":"d-away","home":home,"away":away,"kickoff":kickoff,
+            "home_id":home_id,"away_id":away_id,"home":home,"away":away,"kickoff":kickoff,
             "status":status,"home_score":home_score,"away_score":away_score,
             "payload_sha256":"b"*64}
 
@@ -91,6 +94,58 @@ class ProviderReconciliationTests(unittest.TestCase):
         report = reconcile([bad], [drow()], {"soccer":"39"})
         self.assertEqual(report["decisions"][0]["outcome"], "INVALID_SOURCE_ROW")
         self.assertTrue(report["accounting"]["striker"]["balanced"])
+
+    def test_approved_aliases_match_only_exact_scoped_team_ids(self):
+        registry = load_registry(Path("data/provider_team_aliases.json"))
+        report = reconcile(
+            [srow(home="Manchester United", away="Hull City", home_id="360", away_id="306")],
+            [drow(home="Man Utd", away="Hull", home_id="762247077", away_id="2133281510")],
+            {"soccer":"39"},
+            alias_registry=registry,
+            alias_competition_key="england_premier_league",
+            season="2026-27",
+        )
+        self.assertTrue(report["acceptance_pass"])
+        self.assertEqual(report["decisions"][0]["outcome"], "MATCHED_UNIQUE")
+        self.assertEqual(report["decisions"][0]["identity_evidence"],
+                         {"home":"approved_alias", "away":"approved_alias"})
+        self.assertEqual(report["alias_usage"]["alias_matched_fixture_count"], 1)
+        self.assertEqual(len(report["alias_usage"]["team_pair_uses"]), 2)
+
+    def test_approved_aliases_do_not_cross_season_or_competition(self):
+        registry = load_registry(Path("data/provider_team_aliases.json"))
+        base = {
+            "alias_registry": registry,
+            "alias_competition_key": "england_premier_league",
+        }
+        s = [srow(home="Manchester United", away="Hull City", home_id="360", away_id="306")]
+        d = [drow(home="Man Utd", away="Hull", home_id="762247077", away_id="2133281510")]
+        wrong_season = reconcile(s, d, {"soccer":"39"}, season="2025-26", **base)
+        wrong_competition = reconcile(
+            s, d, {"soccer":"39"}, season="2026-27",
+            alias_competition_key="england_championship", alias_registry=registry,
+        )
+        self.assertEqual(wrong_season["accounting"]["striker"]["matched"], 0)
+        self.assertEqual(wrong_competition["accounting"]["striker"]["matched"], 0)
+
+    def test_review_only_registry_cannot_authorize_alias(self):
+        registry = load_registry(Path("data/provider_team_aliases.json"))
+        registry["status"] = "review_only"
+        report = reconcile(
+            [srow(home="Manchester United", away="Hull City", home_id="360", away_id="306")],
+            [drow(home="Man Utd", away="Hull", home_id="762247077", away_id="2133281510")],
+            {"soccer":"39"},
+            alias_registry=registry,
+            alias_competition_key="england_premier_league",
+            season="2026-27",
+        )
+        self.assertEqual(report["accounting"]["striker"]["matched"], 0)
+        self.assertFalse(report["acceptance_pass")
+
+    def test_alias_registry_requires_explicit_scope(self):
+        registry = load_registry(Path("data/provider_team_aliases.json"))
+        with self.assertRaises(ValueError):
+            reconcile([srow()], [drow()], {"soccer":"39"}, alias_registry=registry)
 
 
 if __name__ == "__main__":
