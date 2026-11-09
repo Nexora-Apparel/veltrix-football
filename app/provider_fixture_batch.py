@@ -46,6 +46,14 @@ def _safe_source_summary(provider, row, options) -> dict:
     return summary
 
 
+def _safe_normalized_summary(record: dict) -> dict:
+    keys = (
+        "provider", "source_id", "competition_key",
+        "home_team_source_id", "away_team_source_id", "payload_sha256",
+    )
+    return {key: record[key] for key in keys if key in record}
+
+
 def process_observations(observations: list[dict]) -> dict:
     if not isinstance(observations, list):
         raise ValueError("observations_must_be_a_list")
@@ -88,13 +96,13 @@ def process_observations(observations: list[dict]) -> dict:
                 quarantined.append({
                     "input_index": previous_index,
                     "reason": "duplicate_provider_competition_source_identity",
-                    "source": previous_record,
+                    "source": _safe_normalized_summary(previous_record),
                 })
                 duplicate_identities.add(identity)
             quarantined.append({
                 "input_index": index,
                 "reason": "duplicate_provider_competition_source_identity",
-                "source": record,
+                "source": _safe_normalized_summary(record),
             })
             continue
 
