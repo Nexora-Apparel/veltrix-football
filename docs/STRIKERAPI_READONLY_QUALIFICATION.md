@@ -87,7 +87,7 @@ The atlas describes different coverage periods by league and dataset. Provider-c
 ## Acceptance sequence
 
 1. Investigate the zero-row NWSL scheduled response using provider season, stage and schedule documentation; do not infer coverage from the empty response.
-2. Implement and run deterministic read-only comparisons for overlapping Premier League, Argentina and Brazil samples against 5DollarFootballAPI.
+2. Implement and run deterministic read-only comparisons for the verified Premier League overlap only. The 5Dollar Free-tier catalogue contains no Argentina or Brazil competition, so those StrikerAPI competitions cannot be cross-reconciled against the current 5Dollar account.
 3. Record all unmatched, ambiguous and conflicting source rows without merging or rewriting provider identities.
 4. Review the provider's current timing, storage, commercial-use and redistribution terms and retain a dated copy.
 5. Approve only competition- and data-type-specific source authority after all evidence passes.
@@ -97,13 +97,7 @@ No production imports, migrations, deployments, paid upgrades or prediction-deli
 
 ## NWSL zero-scheduled follow-up
 
-The provider's NWSL coverage page lists 224 matches for calendar season 2026 and describes NWSL seasons as calendar years. It also documents the `season` and `stage` filters for `list_games`. The 180-day date-window result of zero scheduled rows therefore does not establish that the NWSL dataset has no fixtures; the next diagnostic must query the season explicitly and separate league-stage from knockout-stage fixtures.
-
-Diagnostic plan (read-only, 2 credits per call):
-- `league=nwsl, season=2026, status=scheduled, stage=league`
-- `league=nwsl, season=2026, status=scheduled, stage=knockout`
-- If both are empty, query `season=2027` with the same stage split to distinguish an unpublished future schedule from a query/filter issue.
-- Compare season-level final counts with the provider's published season table; do not treat website totals as a substitute for API response evidence.
+The provider documents NWSL seasons as calendar years and exposes both `season` and `stage=league|knockout` filters. The verifier now checks 2026 final games split by stage and 2027 scheduled fixtures split by stage. This distinguishes completed 2026 season coverage from whether the next calendar-year schedule has been published. Each request costs two credits.
 
 Reference: https://strikerapi.com/nwsl and https://strikerapi.com/docs/list-games.
 
