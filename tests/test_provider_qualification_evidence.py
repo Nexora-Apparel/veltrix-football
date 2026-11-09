@@ -125,9 +125,9 @@ class QualificationEvidenceTests(unittest.TestCase):
             if row["status"] == "final":
                 row["rows"] = 0
                 row["valid"] = 0
-        report["totals"]["rows"] = 0
-        report["totals"]["valid"] = 0
-        with self.assertRaisesRegex(QualificationEvidenceError, "coverage_has_no_observations"):
+        report["totals"]["rows"] = 51
+        report["totals"]["valid"] = 51
+        with self.assertRaisesRegex(QualificationEvidenceError, "coverage_no_competition_with_final_history"):
             validate_coverage_report(report)
 
     def test_rejects_bad_counts_truncation_and_side_effects(self):
