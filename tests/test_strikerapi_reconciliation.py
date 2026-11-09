@@ -67,6 +67,12 @@ class ProviderReconciliationTests(unittest.TestCase):
         self.assertFalse(any(x["outcome"] == "MATCHED_UNIQUE" for x in report["decisions"]))
         self.assertFalse(report["acceptance_pass"])
 
+    def test_competition_mapping_is_required_for_candidate(self):
+        report = reconcile([srow()], [drow()], {})
+        outcomes = {item["outcome"] for item in report["decisions"]}
+        self.assertEqual(outcomes, {"UNMATCHED_STRIKER_ONLY", "UNMATCHED_5DOLLAR_ONLY"})
+        self.assertFalse(report["acceptance_pass"])
+
     def test_missing_timezone_is_invalid_and_accounted(self):
         bad = srow(kickoff="2026-08-15T16:30:00")
         report = reconcile([bad], [drow()], {"soccer":"39"})
