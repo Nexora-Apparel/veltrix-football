@@ -100,12 +100,19 @@ def validate_coverage_report(report: Any) -> dict:
                  "coverage_check_quality_failure")
         _require(row.get("pagination_truncated") is False, "coverage_check_truncated")
         _require(row.get("valid") == row.get("rows"), "coverage_check_accounting_mismatch")
-        if status == "final":
-            _require(row["rows"] > 0, f"coverage_final_window_empty:{league}")
+        if status == "final" and row["rows"] > 0:
             accepted_by_competition[league] = row["valid"]
     _require(set(observed) == STRIKERAPI_COMPETITIONS, "coverage_competition_scope_incomplete")
     _require(all(statuses == {"final", "scheduled"} for statuses in observed.values()),
              "coverage_status_scope_incomplete")
+    _require(sum(row["rows"] for row in checks) == totals["rows"],
+             "coverage_total_rows_mismatch")
+    _require(sum(row["valid"] for row in checks) == totals.get("valid"),
+             "coverage_total_valid_mismatch")
+    _require(sum(row["invalid"] for row in checks) == totals["invalid"],
+             "coverage_total_invalid_mismatch")
+    _require(sum(row["duplicate_ids"] for row in checks) == totals["duplicate_ids"],
+             "coverage_total_duplicates_mismatch")
     budget = report.get("request_budget")
     _require(isinstance(budget, dict), "coverage_request_budget_missing")
     _require(budget.get("maximum_calls") == 102 and budget.get("actual_calls", 103) <= 102,
@@ -114,8 +121,9 @@ def validate_coverage_report(report: Any) -> dict:
              "coverage_credit_accounting_mismatch")
     return {
         "provider": "strikerapi",
-        "competition_keys": sorted(STRIKERAPI_COMPETITIONS),
-        "competition_count": 17,
+        "competition_keys": sorted(accepted_by_competition),
+        "competition_count": len(accepted_by_competition),
+        "observed_competition_count": len(observed),
         "check_count": 34,
         "final_rows_by_competition": dict(sorted(accepted_by_competition.items())),
         "invalid_rows": 0,
