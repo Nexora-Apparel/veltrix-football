@@ -48,6 +48,9 @@ jobs:
           python -m unittest discover -s tests -p 'test_provider_fixture_normalizer.py' -v
           python scripts/acquire_fivedollar_day.py --help
 
+      - name: Install provider runtime dependency
+        run: python -m pip install "requests>=2.32.0,<3.0.0"
+
       - name: Acquire one read-only fixture date
         run: |
           python scripts/acquire_fivedollar_day.py \
