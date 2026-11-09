@@ -36,7 +36,9 @@ jobs:
           python-version: "3.12"
 
       - name: Run offline verifier tests
-        run: python -m unittest discover -s tests -p 'test_team_alias_verification.py' -v
+        run: |
+          python -m unittest discover -s tests -p 'test_team_alias_verification.py' -v
+          python -m unittest discover -s tests -p 'test_provider_team_aliases.py' -v
 
       - name: Verify provider team catalogues (read-only)
         run: python scripts/verify_strikerapi_team_aliases.py
