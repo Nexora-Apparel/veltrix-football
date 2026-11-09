@@ -1,10 +1,10 @@
 # StrikerAPI Read-Only Qualification
 
-Status: implementation prepared; provider credential and live qualification pending.
+Status: initial API sample passed; bounded pagination qualification implemented; full coverage and terms review pending.
 
 ## Why this provider
 
-StrikerAPI's published catalogue includes Argentina Liga Profesional, Brazil Série A and NWSL. It explicitly states that it has no live in-match feed and refreshes most non-odds data daily. This matches VELTRIX FOOTBALL's requirement for scheduled fixtures, settled results and historical analysis rather than live-game coverage.
+StrikerAPI publishes scheduled fixtures, settled results and historical match data for competitions relevant to VELTRIX FOOTBALL. Its REST API is suitable for this project without requiring a live in-match feed.
 
 Official references:
 - https://strikerapi.com/docs
@@ -13,44 +13,63 @@ Official references:
 - https://strikerapi.com/docs/timing-and-rights
 - https://strikerapi.com/pricing
 
+## Explicit competition mapping
+
+The official `list_games` documentation identifies these keys:
+- `soccer`: English Premier League (the Premier League default/key)
+- `nwsl`: National Women's Soccer League
+- `brazil`: Brazil Serie A
+- `argentina`: Argentina Liga Profesional
+
+The verifier now labels `soccer` as English Premier League; it is not an unidentified generic sample. League keys must remain explicit in provider provenance.
+
+## Bounded read-only probe
+
+The verifier checks:
+- final results over the preceding 90 days;
+- scheduled fixtures over the next 180 days;
+- Argentina, Brazil, NWSL and the English Premier League;
+- response schema, stable game IDs, dates/timestamps, status, team IDs/names and final scores;
+- pagination via `next_offset`, with no more than three pages per competition/status check;
+- duplicate IDs within each competition across returned pages.
+
+Hard budget: 24 calls maximum × 2 documented credits = 48 credits. The probe makes no database connection and performs no imports. If a page cap is reached while `next_offset` remains, the result is explicitly marked pagination-incomplete; it is never reported as a complete window.
+
+NWSL's previous scheduled query returned zero rows for a 30-day horizon. The revised 180-day horizon tests whether this was simply an offseason/window issue. A zero result remains a coverage question, not proof of provider failure or proof of no scheduled fixtures.
+
+The workflow runs local unit tests for pagination, non-advancing offsets, scheduled fixtures and final-score validation before making provider calls.
+
 ## Free-tier cost control
 
-The published free allowance is 500 credits/month. `list_games` costs 2 credits per call. The qualification workflow makes at most seven calls (14 credits):
-- Argentina: final and scheduled samples.
-- Brazil: final and scheduled samples.
-- NWSL: final and scheduled samples.
-- Generic soccer/EPL overlap: one final sample for manual reconciliation against the verified 5Dollar source.
-
-No events, odds, shot-map or lineups endpoints are called in this first probe. Those cost more credits and are deferred until basic coverage passes.
+The provider documents 500 free credits/month and 2 credits per `list_games` call. The verifier is capped at 48 documented credits per run. No event, odds, shot-map or lineup endpoints are called in this qualification step.
 
 ## Credential
 
-Create a free provider key and add it to GitHub Actions repository secrets under exactly:
+GitHub Actions repository secret:
 `STRIKERAPI_API_KEY`
 
 Never paste the key into chat, source code, workflow YAML or logs. The workflow is manual-dispatch only; no schedule, push or pull-request trigger is configured.
 
 ## Qualification boundaries
 
-The probe checks response shape, match IDs, dates/timestamps, status, home/away team IDs and names, and final scores. It makes no database connection and performs no imports.
-
-A passing sample does not certify:
-- complete season/history pagination;
+A passing bounded probe does not certify:
+- full-season or complete historical pagination beyond the selected windows/page cap;
+- full historical depth for each competition;
 - account-level entitlement to every listed competition;
 - completeness of lineups, team/player statistics, shot locations or xG;
 - timestamp/odds coverage for value betting;
-- legal permission to redistribute raw provider data.
+- legal permission to store, use commercially or redistribute raw provider data.
 
-Those require separate documented gates. Provider-computed xG must remain labelled as provider-modelled xG, not independently observed xG.
+The atlas describes different coverage periods by league and dataset. Provider-computed xG must be labelled provider-modelled xG, not independently observed xG. Odds coverage is partial and must not be presumed adequate for value-bet certification.
 
 ## Acceptance sequence
 
-1. Run the manual workflow once the secret is present.
-2. Inspect exact returned sample counts and schema.
-3. Verify full season pagination and historical depth for Argentina and Brazil.
-4. Inspect NWSL season completeness and its known partial-data periods.
-5. Reconcile overlapping fixtures against 5DollarFootballAPI using provider IDs and deterministic identity rules; never merge by names, score or kickoff alone.
-6. Review data timing, storage, commercial-use and redistribution terms.
-7. Only then consider adding StrikerAPI as an approved competition-specific source.
+1. Run this manual workflow and inspect unit-test results, request count and page counts.
+2. Resolve any truncated pagination windows with narrower date slices and a separately approved credit budget.
+3. Investigate NWSL scheduled coverage using the 180-day horizon and provider season/fixture documentation.
+4. Compare explicit Premier League, Argentina and Brazil fixture samples against 5DollarFootballAPI.
+5. Reconcile only with deterministic provider identity evidence; preserve both source observations and quarantine ambiguous/conflicting matches.
+6. Review the provider's timing, storage, commercial-use and redistribution terms.
+7. Approve only competition- and data-type-specific source authority after the evidence passes.
 
 No production imports, migrations, deployments, paid upgrades or prediction-delivery changes are part of this qualification.
