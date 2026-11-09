@@ -30,7 +30,7 @@ The verifier checks:
 - scheduled fixtures over the next 180 days;
 - Argentina, Brazil, NWSL and the English Premier League;
 - response schema, stable game IDs, dates/timestamps, status, team IDs/names and final scores;
-- pagination via `next_offset`, with no more than three pages per competition/status check;
+- pagination via `next_offset`, with no more than six pages per competition/status check;
 - timezone-aware kickoff timestamps;
 - duplicate IDs within each competition across returned pages.
 
@@ -38,7 +38,7 @@ The verifier checks:
 
 The endpoint-specific `list_games` page documents an `offset` parameter and returns `next_offset`. The general StrikerAPI documentation's conventions section says endpoints use `limit` and have no cursor or offset. The initial live sample returned `next_offset`, but did not test a second page. The expanded workflow will test the endpoint behavior directly. Until that run passes, multi-page pagination remains unverified.
 
-Hard budget: 24 calls maximum × 2 documented credits = 48 credits. The probe makes no database connection and performs no imports. If a page cap is reached while `next_offset` remains, the result is explicitly marked pagination-incomplete; it is never reported as a complete window.
+Hard budget: 48 calls maximum × 2 documented credits = 96 credits. The previous run used 17 calls / 34 credits and exposed two truncated windows; this revision raises the per-check page cap from three to six while retaining a strict total request ceiling. The probe makes no database connection and performs no imports. If a page cap is reached while `next_offset` remains, the result is explicitly marked pagination-incomplete; it is never reported as a complete window.
 
 NWSL's previous scheduled query returned zero rows for a 30-day horizon. The revised 180-day horizon tests whether this was simply an offseason/window issue. A zero result remains a coverage question, not proof of provider failure or proof of no scheduled fixtures.
 
@@ -46,7 +46,7 @@ The workflow runs local unit tests for pagination, non-advancing offsets, schedu
 
 ## Free-tier cost control
 
-The provider documents 500 free credits/month and 2 credits per `list_games` call. The verifier is capped at 48 documented credits per run. No event, odds, shot-map or lineup endpoints are called in this qualification step.
+The provider documents 500 free credits/month and 2 credits per `list_games` call. The verifier is capped at 96 documented credits per run (48 calls). No event, odds, shot-map or lineup endpoints are called in this qualification step.
 
 ## Credential
 
