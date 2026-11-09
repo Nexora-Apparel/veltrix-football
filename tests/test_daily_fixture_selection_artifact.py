@@ -48,11 +48,11 @@ class DailySelectionArtifactTests(unittest.TestCase):
                     "attestation_version": 1, "review_status": "qualified",
                     "repository": "Nexora-Apparel/veltrix-football",
                     "workflow_run_id": "qualification-2026-11-09",
-                    "workflow_path": ".github/workflows/verify-strikerapi-17-competitions.yml",
-                    "event": "workflow_dispatch", "head_branch": "phase-3/strikerapi-readonly-qualification",
+                    "workflow_path": ".github/workflows/qualify-fivedollar-competitions.yml",
+                    "event": "workflow_dispatch", "head_branch": "phase-3/budget-aware-acquisition-contract",
                     "reviewer": "unit-test-reviewer", "reviewed_at": "2026-11-09T20:00:00Z",
                     "head_sha": "c" * 40, "artifact_id": 456,
-                    "artifact_name": "strikerapi-17-competition-coverage",
+                    "artifact_name": "fivedollar-competition-qualification",
                     "github_artifact_digest": "b" * 64,
                     "local_archive_sha256": "b" * 64,
                     "local_report_sha256": "d" * 64,
@@ -155,6 +155,15 @@ class DailySelectionArtifactTests(unittest.TestCase):
         registry = copy.deepcopy(self.registry)
         registry["sources"][0]["invalid_rows"] = 1
         with self.assertRaisesRegex(SelectionArtifactError, "invalid_rows_nonzero"):
+            qualified_sources_from_registry(registry)
+
+    def test_nonzero_missing_team_ids_are_rejected(self):
+        registry = copy.deepcopy(self.registry)
+        registry["sources"][0]["review_attestation"]["coverage"]["missing_team_ids"] = 1
+        registry["sources"][0]["review_attestation"] = sign_attestation(
+            registry["sources"][0]["review_attestation"], self.signing_key
+        )
+        with self.assertRaisesRegex(SelectionArtifactError, "attestation_scope_invalid"):
             qualified_sources_from_registry(registry)
 
     def test_nonzero_duplicate_rows_are_rejected(self):
