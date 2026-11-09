@@ -49,7 +49,10 @@ class DailySelectionArtifactTests(unittest.TestCase):
                     "repository": "Nexora-Apparel/veltrix-football",
                     "workflow_run_id": "98765",
                     "workflow_path": ".github/workflows/qualify-fivedollar-competitions.yml",
-                    "event": "workflow_dispatch", "head_branch": "phase-3/budget-aware-acquisition-contract",
+                    "event": "workflow_dispatch", "dispatch_ref": "main",
+                    "dispatch_sha": "c" * 40, "head_branch": "main",
+                    "checkout_ref": "phase-3/budget-aware-acquisition-contract",
+                    "checkout_sha": "d" * 40,
                     "reviewer": "unit-test-reviewer", "reviewed_at": "2026-11-09T20:00:00Z",
                     "head_sha": "c" * 40, "artifact_id": 456,
                     "artifact_name": "fivedollar-competition-qualification",
@@ -130,6 +133,23 @@ class DailySelectionArtifactTests(unittest.TestCase):
         registry = copy.deepcopy(self.registry)
         registry["sources"][0]["review_attestation"]["head_sha"] = "f" * 40
         with self.assertRaisesRegex(SelectionArtifactError, "attestation_signature_invalid"):
+            qualified_sources_from_registry(registry)
+
+
+    def test_fivedollar_attestation_requires_distinct_dispatch_and_checkout_refs(self):
+        registry = copy.deepcopy(self.registry)
+        attestation = registry["sources"][0]["review_attestation"]
+        attestation["checkout_ref"] = "main"
+        registry["sources"][0]["review_attestation"] = sign_attestation(attestation, self.signing_key)
+        with self.assertRaisesRegex(SelectionArtifactError, "attestation_ref_invalid"):
+            qualified_sources_from_registry(registry)
+
+    def test_fivedollar_attestation_requires_both_commit_shas(self):
+        registry = copy.deepcopy(self.registry)
+        attestation = registry["sources"][0]["review_attestation"]
+        attestation.pop("checkout_sha")
+        registry["sources"][0]["review_attestation"] = sign_attestation(attestation, self.signing_key)
+        with self.assertRaisesRegex(SelectionArtifactError, "attestation_commit_invalid"):
             qualified_sources_from_registry(registry)
 
     def test_qualified_registry_builds_allowlist(self):
