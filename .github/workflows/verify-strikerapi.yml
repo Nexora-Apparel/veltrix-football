@@ -25,5 +25,8 @@ jobs:
         with:
           python-version: "3.12"
 
+      - name: Run StrikerAPI verifier unit tests
+        run: python -m unittest discover -s tests -p 'test_strikerapi*.py' -v
+
       - name: Run bounded read-only qualification
         run: python scripts/verify_strikerapi.py
