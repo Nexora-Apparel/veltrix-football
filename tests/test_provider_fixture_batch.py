@@ -65,6 +65,15 @@ class ProviderFixtureBatchTests(unittest.TestCase):
         self.assertEqual(result["duplicate_identity_count"], 1)
         self.assertEqual(result["quarantined_count"], 3)
 
+    def test_all_rows_in_three_way_duplicate_group_are_quarantined(self):
+        result = process_observations([
+            striker("triple"), striker("triple"), striker("triple")
+        ])
+        self.assertEqual(result["accepted_count"], 0)
+        self.assertEqual(result["duplicate_identity_count"], 1)
+        self.assertEqual(result["quarantined_count"], 3)
+        self.assertTrue(all(item["source"] is not None for item in result["quarantined"]))
+
 
 if __name__ == "__main__":
     unittest.main()
