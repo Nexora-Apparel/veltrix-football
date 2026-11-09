@@ -78,14 +78,14 @@ class HistoricalAcquisitionTests(unittest.TestCase):
             )
 
     def test_batch_stops_before_request_budget_is_exceeded(self):
-        client = FakeHistoryClient()
+        client = FakeHistoryClient(extra_page=True)
         with self.assertRaisesRegex(AcquisitionAdapterError, "request_budget_exhausted"):
             acquire_fivedollar_history_batch(
                 client=client, competition_ids=COMPETITIONS,
                 start_date="2026-11-01", end_date="2026-11-07",
-                run_id="budget-test", max_requests=4,
+                run_id="budget-test", max_requests=5,
             )
-        self.assertEqual(len(client.calls), 4)
+        self.assertEqual(len(client.calls), 5)
 
     def test_batch_rejects_truncated_pagination(self):
         client = FakeHistoryClient(extra_page=True)
