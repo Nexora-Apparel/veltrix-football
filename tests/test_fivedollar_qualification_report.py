@@ -91,6 +91,12 @@ class FiveDollarQualificationReportTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "report_hash_mismatch"):
             validate_fivedollar_qualification_report(report)
 
+    def test_each_competition_requires_accepted_results(self):
+        comps = self.build()["competitions"]
+        comps[1]["accepted_rows"] = 0
+        report = self.build(competitions=comps)
+        self.assertFalse(report["acceptance_pass"])
+
     def test_scope_is_fixed_to_5dollar_provider(self):
         report = self.build()
         report["provider"] = "another-provider"
