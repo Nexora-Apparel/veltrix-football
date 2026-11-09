@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import os
 import sys
+import time
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
@@ -39,17 +40,31 @@ FINAL_WINDOW_DAYS = 90
 SCHEDULE_WINDOW_DAYS = 60
 
 
-def collect_bounded(api_key, league, status, start, end, call, budget):
+def collect_bounded(api_key, league, status, start, end, call, budget, pause_seconds=0.0, sleep=time.sleep, max_429_retries=2):
     rows, page_counts = [], []
     offset, pages = 0, 0
     truncated = False
     while pages < MAX_PAGES_PER_CHECK:
         if budget["calls"] >= MAX_CALLS:
             raise ProbeError("global 17-competition request budget exhausted")
+        if budget["calls"] >= MAX_CALLS:
+            raise ProbeError("global 17-competition request budget exhausted")
+        if budget["calls"] and pause_seconds:
+            sleep(pause_seconds)
         budget["calls"] += 1
-        data = call(
-            api_key, league, status, start, end, offset,
-        )
+        retries = 0
+        while True:
+            try:
+                data = call(api_key, league, status, start, end, offset)
+                break
+            except ProbeError as exc:
+                if "HTTP 429" not in str(exc) or retries >= max_429_retries:
+                    raise
+                retries += 1
+                if budget["calls"] >= MAX_CALLS:
+                    raise ProbeError("global request budget exhausted during 429 retry")
+                sleep(65.0)
+                budget["calls"] += 1
         games = data.get("games")
         if not isinstance(games, list):
             raise ProbeError("expected games array")
@@ -68,7 +83,7 @@ def collect_bounded(api_key, league, status, start, end, call, budget):
     return rows, pages, truncated, page_counts
 
 
-def qualify(api_key: str, now: datetime, call=call_api) -> dict:
+def qualify(api_key: str, now: datetime, call=call_api, pause_seconds=0.0, sleep=time.sleep) -> dict:
     now = now.astimezone(timezone.utc).replace(microsecond=0)
     today = now.date()
     final_start = (today - timedelta(days=FINAL_WINDOW_DAYS)).isoformat()
@@ -87,7 +102,8 @@ def qualify(api_key: str, now: datetime, call=call_api) -> dict:
                 else (today_text, schedule_end)
             )
             rows, pages, truncated, page_counts = collect_bounded(
-                api_key, league, status, start, end, call, budget
+                api_key, league, status, start, end, call, budget,
+                pause_seconds=pause_seconds, sleep=sleep,
             )
             valid = invalid = duplicates = 0
             for row in rows:
@@ -178,7 +194,7 @@ def main() -> int:
         return 2
     now = datetime.now(timezone.utc)
     try:
-        report = qualify(key, now)
+        report = qualify(key, now, pause_seconds=7.0)
     except ProbeError as exc:
         print(f"STRIKERAPI_17_LEAGUE_FAILED: {str(exc)[:160]}")
         print("DATABASE_WRITES: 0; IMPORTS: 0; CHECKPOINTS: 0; CANONICAL_MERGES: 0")
