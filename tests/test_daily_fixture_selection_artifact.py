@@ -40,8 +40,42 @@ class DailySelectionArtifactTests(unittest.TestCase):
                 "evidence_ref": "actions-run:42504992170",
                 "pagination_complete": True,
                 "invalid_rows": 0, "duplicate_rows": 0,
+                "review_attestation": {
+                    "attestation_version": 1, "review_status": "qualified",
+                    "repository": "Nexora-Apparel/veltrix-football",
+                    "workflow_run_id": "qualification-2026-11-09",
+                    "workflow_path": ".github/workflows/verify-strikerapi-17-competitions.yml",
+                    "event": "workflow_dispatch", "head_branch": "phase-3/strikerapi-readonly-qualification",
+                    "head_sha": "c" * 40, "artifact_id": 456,
+                    "github_artifact_digest": "b" * 64,
+                    "local_archive_sha256": "b" * 64,
+                    "local_report_sha256": "d" * 64,
+                    "coverage": {
+                        "provider": "strikerapi", "competition_keys": ["39"],
+                        "pagination_complete": True, "invalid_rows": 0, "duplicate_rows": 0,
+                    },
+                },
             }],
         }
+
+
+    def test_registry_rejects_self_declared_qualified_source_without_attestation(self):
+        registry = copy.deepcopy(self.registry)
+        del registry["sources"][0]["review_attestation"]
+        with self.assertRaisesRegex(SelectionArtifactError, "reviewer_attestation_missing"):
+            qualified_sources_from_registry(registry)
+
+    def test_registry_rejects_attestation_for_different_competition(self):
+        registry = copy.deepcopy(self.registry)
+        registry["sources"][0]["review_attestation"]["coverage"]["competition_keys"] = ["other"]
+        with self.assertRaisesRegex(SelectionArtifactError, "attestation_scope_invalid"):
+            qualified_sources_from_registry(registry)
+
+    def test_registry_rejects_mismatched_artifact_digest(self):
+        registry = copy.deepcopy(self.registry)
+        registry["sources"][0]["review_attestation"]["github_artifact_digest"] = "e" * 64
+        with self.assertRaisesRegex(SelectionArtifactError, "artifact_hash_mismatch"):
+            qualified_sources_from_registry(registry)
 
     def test_qualified_registry_builds_allowlist(self):
         self.assertEqual(qualified_sources_from_registry(self.registry),
