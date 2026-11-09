@@ -1,4 +1,4 @@
-"""Read-only Premier League fixture reconciliation across StrikerAPI and 5DollarFootballAPI."""
+"Read-only Premier League fixture reconciliation across StrikerAPI and 5DollarFootballAPI."""
 from __future__ import annotations
 
 import json
@@ -9,6 +9,10 @@ from urllib.error import HTTPError, URLError
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 from pathlib import Path
+
+# Direct script execution places scripts/ rather than the repository root on sys.path.
+# Add the root so the shared reconciliation module is importable in GitHub Actions.
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from scripts.reconcile_provider_fixtures import reconcile, striker_record, fivedollar_record, valid_identity
 from scripts.verify_strikerapi import call_api, collect_pages, validate_game, ProbeError
@@ -164,7 +168,7 @@ def main() -> int:
     print(f"RECONCILIATION_ACCEPTANCE: {'PASS' if report['acceptance_pass'] else 'FAIL_REVIEW_REQUIRED'}")
     print(f"RECONCILIATION_REPORT: {output.name}")
     print("DATABASE_WRITES: 0; IMPORTS: 0; CHECKPOINTS: 0; CANONICAL_MERGES: 0")
-    # A completed audit with conflicts is a valid diagnostic artifact, not an API failure.
+    # A completed audit with conflicts is a valid diagnostic artifact, not API failure.
     return 0
 
 
