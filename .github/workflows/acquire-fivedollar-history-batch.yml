@@ -12,7 +12,7 @@ on:
         required: true
         type: string
       max_requests:
-        description: "Hard HTTP-attempt ceiling for this batch (1-20)"
+        description: "Hard HTTP-attempt ceiling for this batch (5-20)"
         required: true
         default: "15"
         type: string
@@ -59,7 +59,7 @@ jobs:
           from datetime import date
           start, end = date.fromisoformat(os.environ["START_DATE"]), date.fromisoformat(os.environ["END_DATE"])
           assert 0 <= (end - start).days <= 6, "batch must cover at most seven inclusive dates"
-          assert 1 <= int(os.environ["MAX_REQUESTS"]) <= 20
+          assert 5 <= int(os.environ["MAX_REQUESTS"]) <= 20
           assert 1 <= int(os.environ["MAX_PAGES"]) <= 3
           PY
           python -m unittest discover -s tests -p 'test_fivedollar_history_batch.py' -v
