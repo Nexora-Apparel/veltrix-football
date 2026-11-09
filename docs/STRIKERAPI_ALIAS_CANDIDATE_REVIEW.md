@@ -73,9 +73,31 @@ Based on the 20/20 provider catalogue result plus the anchored crosswalk audit, 
 
 The read-only reconciliation engine now has optional alias-registry support and records whether each side matched by strict name or approved alias. The live Premier League runner loads the scoped registry and passes the explicit competition/season. This remains a diagnostic reconciliation path, not production prediction code and not a canonical merge.
 
+
+## Fresh alias-assisted live reconciliation — PASS
+
+A fresh 90-day live comparison was run after scoped aliases were approved and integrated into the read-only reconciliation engine:
+
+- Workflow run: [42680798028](https://github.com/Nexora-Apparel/veltrix-football/actions/runs/42680798028)
+- Commit: `b28f88d91337c85281b19734c8a5b3370211671a`
+- Artifact: [strikerapi-5dollar-epl-reconciliation](https://github.com/Nexora-Apparel/veltrix-football/actions/runs/42680798028/artifacts/13701808156)
+- Artifact SHA-256: `252c2656805cea95595d55c86b6f275c175b587b75689ab4a409e2ead9534e10`
+- Window: `2026-08-11T19:11:02Z` to `2026-11-09T19:11:02Z`.
+- StrikerAPI: 100 finished fixtures, 3 calls / 6 credits.
+- 5DollarFootballAPI: 100 finished fixtures, 1 call.
+- Result: 100/100 `MATCHED_UNIQUE`; zero unmatched, ambiguous, quarantined, duplicate or conflict rows.
+- All 100 kickoff deltas were exactly zero seconds.
+- All 100 status pairs agreed (`final` / `finished`) and all 100 final scores agreed.
+- Identity methods: 18 strict-name matches, 54 one-side approved-alias matches, 28 two-side approved-alias matches.
+- The 11 non-seed alias pairs were each used in 10 distinct fixture matches.
+- Alias scope recorded in report: `england_premier_league` / `2026-27`; registry status `approved`.
+- Database writes, imports, checkpoints and canonical merges: zero.
+
+The artifact was downloaded and inspected, not just inferred from the workflow's exit code. The full source accounting balances on both providers (100 total = 100 matched + 0 unmatched + 0 quarantined). This establishes a clean bounded cross-provider reconciliation for this exact 90-day Premier League sample. It does not establish broader competition coverage or authorize historical imports.
+
 ## Current gate
 
-The baseline strict-name audit remains **18 strict matches + 82 unmatched per provider**. The separate anchored crosswalk audit now supports all 20 team-ID mappings across those 82 fixtures, without fuzzy names or score/status evidence. The next gate is a fresh live 90-day reconciliation using the approved, season-scoped registry; phase 3 sign-off remains pending.
+The baseline strict-name audit remains **18 strict matches + 82 unmatched per provider**. The separate anchored crosswalk audit now supports all 20 team-ID mappings across those 82 fixtures, without fuzzy names or score/status evidence. The fresh live 90-day alias-assisted reconciliation passed 100/100 with zero conflicts. Phase 3 sign-off remains pending for broader provider coverage, data-rights review and import qualification.
 
 
 
