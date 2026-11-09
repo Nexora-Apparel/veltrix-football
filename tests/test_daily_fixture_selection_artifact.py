@@ -74,12 +74,18 @@ class DailySelectionArtifactTests(unittest.TestCase):
     def test_registry_rejects_attestation_for_different_competition(self):
         registry = copy.deepcopy(self.registry)
         registry["sources"][0]["review_attestation"]["coverage"]["competition_keys"] = ["other"]
+        registry["sources"][0]["review_attestation"] = sign_attestation(
+            registry["sources"][0]["review_attestation"], self.signing_key
+        )
         with self.assertRaisesRegex(SelectionArtifactError, "attestation_scope_invalid"):
             qualified_sources_from_registry(registry)
 
     def test_registry_rejects_mismatched_artifact_digest(self):
         registry = copy.deepcopy(self.registry)
         registry["sources"][0]["review_attestation"]["github_artifact_digest"] = "e" * 64
+        registry["sources"][0]["review_attestation"] = sign_attestation(
+            registry["sources"][0]["review_attestation"], self.signing_key
+        )
         with self.assertRaisesRegex(SelectionArtifactError, "artifact_hash_mismatch"):
             qualified_sources_from_registry(registry)
 
