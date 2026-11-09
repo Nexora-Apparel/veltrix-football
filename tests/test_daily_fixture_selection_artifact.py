@@ -41,7 +41,7 @@ class DailySelectionArtifactTests(unittest.TestCase):
                 "qualification_status": "qualified",
                 "qualification_run_id": "qualification-2026-11-09",
                 "artifact_sha256": "b" * 64,
-                "evidence_ref": "actions-run:42504992170",
+                "evidence_ref": "https://github.com/Nexora-Apparel/veltrix-football/actions/runs/qualification-2026-11-09/artifacts/456",
                 "pagination_complete": True,
                 "invalid_rows": 0, "duplicate_rows": 0,
                 "review_attestation": {
@@ -57,7 +57,8 @@ class DailySelectionArtifactTests(unittest.TestCase):
                     "local_archive_sha256": "b" * 64,
                     "local_report_sha256": "d" * 64,
                     "coverage": {
-                        "provider": "fivedollar", "competition_keys": ["39"],
+                        "provider": "fivedollar", "competition_keys": ["39"], "competition_count": 1,
+                        "source_rows": 100, "accepted_rows": 100,
                         "pagination_complete": True, "invalid_rows": 0, "duplicate_rows": 0,
                     },
                 },
@@ -164,6 +165,18 @@ class DailySelectionArtifactTests(unittest.TestCase):
             registry["sources"][0]["review_attestation"], self.signing_key
         )
         with self.assertRaisesRegex(SelectionArtifactError, "attestation_scope_invalid"):
+            qualified_sources_from_registry(registry)
+
+    def test_nonzero_missing_team_ids_in_registry_entry_are_rejected(self):
+        registry = copy.deepcopy(self.registry)
+        registry["sources"][0]["missing_team_ids"] = 1
+        with self.assertRaisesRegex(SelectionArtifactError, "missing_team_ids_nonzero"):
+            qualified_sources_from_registry(registry)
+
+    def test_evidence_reference_must_bind_exact_artifact(self):
+        registry = copy.deepcopy(self.registry)
+        registry["sources"][0]["evidence_ref"] = "https://github.com/Nexora-Apparel/veltrix-football"
+        with self.assertRaisesRegex(SelectionArtifactError, "evidence_ref_invalid"):
             qualified_sources_from_registry(registry)
 
     def test_nonzero_duplicate_rows_are_rejected(self):
