@@ -104,6 +104,20 @@ class QualificationRunnerTests(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError, "provider_catalogue_row_invalid"):
             collect("test-key", budget, 90, 3, "test-run")
 
+    def test_non_numeric_catalogue_id_is_rejected(self):
+        budget = FakeBudget()
+        original = budget.get
+
+        def altered(endpoint, params, key):
+            payload = original(endpoint, params, key)
+            if endpoint == "leagues":
+                payload["data"][0]["id"] = "../39"
+            return payload
+
+        budget.get = altered
+        with self.assertRaisesRegex(RuntimeError, "provider_catalogue_row_invalid"):
+            collect("test-key", budget, 90, 3, "test-run")
+
     def test_out_of_window_result_is_invalid(self):
         budget = FakeBudget()
         original = budget.get
