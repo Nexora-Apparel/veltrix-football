@@ -52,6 +52,19 @@ class AcquisitionAdapterTests(unittest.TestCase):
         self.assertEqual(result["side_effects"]["database_writes"], 0)
         self.assertEqual(len(client.calls), 2)
 
+    def test_fivedollar_adapter_accepts_a_genuinely_empty_window(self):
+        class EmptyClient(FakeFiveDollarClient):
+            def _get(self, path, params):
+                return {"success": 1, "data": [], "pagination": {"has_more": False}}, {}
+
+        result = acquire_fivedollar_day(
+            client=EmptyClient(), day="2026-11-09", run_id="empty-run",
+            retrieved_at="2026-11-09T13:00:00Z",
+        )
+        self.assertEqual(result["batch"]["accepted_count"], 0)
+        self.assertEqual(result["batch"]["quarantined_count"], 0)
+        self.assertEqual(result["report"]["competition_scope"], [])
+
     def test_fivedollar_adapter_fails_if_page_limit_would_truncate(self):
         client = FakeFiveDollarClient()
         with self.assertRaisesRegex(AcquisitionAdapterError, "pagination_truncated"):
