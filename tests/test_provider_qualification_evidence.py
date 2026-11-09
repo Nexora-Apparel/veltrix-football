@@ -125,6 +125,9 @@ class QualificationEvidenceTests(unittest.TestCase):
             if row["status"] == "final":
                 row["rows"] = 0
                 row["valid"] = 0
+            else:
+                row["rows"] = 3
+                row["valid"] = 3
         report["totals"]["rows"] = 51
         report["totals"]["valid"] = 51
         with self.assertRaisesRegex(QualificationEvidenceError, "coverage_no_competition_with_final_history"):
