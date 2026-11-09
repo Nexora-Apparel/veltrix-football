@@ -1,4 +1,4 @@
-"Read-only Premier League fixture reconciliation across StrikerAPI and 5DollarFootballAPI."""
+"""Read-only Premier League fixture reconciliation across StrikerAPI and 5DollarFootballAPI."""
 from __future__ import annotations
 
 import json
