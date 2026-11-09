@@ -8,7 +8,7 @@ from __future__ import annotations
 import argparse
 import json
 from collections import defaultdict
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 
 
@@ -16,7 +16,7 @@ def kickoff_key(value: str) -> str:
     parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
     if parsed.tzinfo is None or parsed.utcoffset() is None:
         raise ValueError("kickoff must include timezone")
-    return parsed.astimezone().isoformat()
+    return parsed.astimezone(timezone.utc).isoformat()
 
 
 def team_pair(row: dict, side: str) -> tuple[str, str]:
@@ -45,6 +45,7 @@ def audit_crosswalk(report: dict, minimum_support: int = 3) -> dict:
 
     mapping: dict[str, str] = {}
     reverse: dict[str, str] = {}
+    strict_seed_ids: set[str] = set()
     names: dict[tuple[str, str], tuple[str, str]] = {}
     support: dict[tuple[str, str], dict[str, dict]] = defaultdict(dict)
     for decision in report.get("decisions", []):
@@ -55,6 +56,7 @@ def audit_crosswalk(report: dict, minimum_support: int = 3) -> dict:
             sid, sname = team_pair(s, side)
             did, dname = team_pair(d, side)
             add_mapping(mapping, reverse, sid, did)
+            strict_seed_ids.add(sid)
             names[(sid, did)] = (sname, dname)
             support[(sid, did)][f"strict:{s['source_id']}:{d['source_id']}"] = {
                 "striker_fixture_id": s["source_id"],
@@ -170,7 +172,7 @@ def audit_crosswalk(report: dict, minimum_support: int = 3) -> dict:
             "striker_name": sname,
             "fivedollar_team_id": did,
             "fivedollar_name": dname,
-            "strict_seed": not fixture_evidence,
+            "strict_seed": sid in strict_seed_ids,
             "strict_seed_fixture_count": sum(
                 x["evidence"] == "strict_name_fixture_match" for x in evidence
             ),
@@ -179,17 +181,18 @@ def audit_crosswalk(report: dict, minimum_support: int = 3) -> dict:
                 (x["striker_fixture_id"], x["fivedollar_fixture_id"])
                 for x in fixture_evidence
             }),
-            "status": "REPEATED_ANCHORED_CROSSWALK_SUPPORTED"
+            "status": ("STRICT_NAME_MATCH_SEED" if sid in strict_seed_ids else
+                "REPEATED_ANCHORED_CROSSWALK_SUPPORTED"
                 if len({(x["striker_fixture_id"], x["fivedollar_fixture_id"])
                         for x in fixture_evidence}) >= minimum_support
-                else "INSUFFICIENT_ANCHORED_SUPPORT",
+                else "INSUFFICIENT_ANCHORED_SUPPORT"),
         })
 
     unmatched_after = {
         "striker": len(left) - len(used_left),
         "fivedollar": len(right) - len(used_right),
     }
-    approved = all(x["status"] == "REPEATED_ANCHORED_CROSSWALK_SUPPORTED"
+    approved = all(x["status"] in ("STRICT_NAME_MATCH_SEED", "REPEATED_ANCHORED_CROSSWALK_SUPPORTED")
                    for x in aliases) and not conflict_records
     return {
         "schema_version": 1,
