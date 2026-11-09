@@ -49,7 +49,6 @@ def collect_bounded(api_key, league, status, start, end, call, budget):
         budget["calls"] += 1
         data = call(
             api_key, league, status, start, end, offset,
-            limit=LIMIT,
         )
         games = data.get("games")
         if not isinstance(games, list):
