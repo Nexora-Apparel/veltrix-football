@@ -10,7 +10,7 @@ import json
 import os
 import re
 import sys
-from datetime import date, timedelta
+from datetime import datetime, timedelta, timezone
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
@@ -104,7 +104,7 @@ def main() -> int:
         print("STRIKERAPI_RESULT: BLOCKED_MISSING_SECRET (STRIKERAPI_API_KEY)")
         return 2
 
-    today = date.today()
+    today = datetime.now(timezone.utc).date()
     historical_start = (today - timedelta(days=WINDOW_DAYS)).isoformat()
     future_end = (today + timedelta(days=FUTURE_DAYS)).isoformat()
     today_text = today.isoformat()
@@ -114,6 +114,7 @@ def main() -> int:
 
     seen = {}
     total_rows = 0
+    attempted_calls = 0
     total_valid = 0
     total_invalid = 0
     final_counts = {}
@@ -121,11 +122,12 @@ def main() -> int:
 
     for league, status in CHECKS:
         start, end = (historical_start, today_text) if status == "final" else (today_text, future_end)
+        attempted_calls += 1
         try:
             data = call_api(key, league, status, start, end)
         except ProbeError as exc:
             print(f"STRIKERAPI_CHECK_FAILED: league={league}; status={status}; reason={safe_text(str(exc))}")
-            print(f"API_CALLS_ATTEMPTED: {len(seen) + 1}; DATABASE_WRITES: 0; IMPORTS: 0")
+            print(f"API_CALLS_ATTEMPTED: {attempted_calls}; DATABASE_WRITES: 0; IMPORTS: 0")
             return 1
 
         games = data.get("games")
