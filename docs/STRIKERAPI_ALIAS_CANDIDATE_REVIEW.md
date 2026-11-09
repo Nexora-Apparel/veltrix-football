@@ -49,9 +49,33 @@ Across the 82 candidate fixture pairs, the following 20 provider team-ID pairs r
 - Do not add them to the production matcher until each provider team ID is verified against its own team catalogue or equivalent official provider documentation, with evidence URL, retrieval date, competition scope, and reviewer recorded.
 - After independent verification, add a versioned alias registry and regression tests for ID scope, competition scope, orientation, ambiguity, and cross-team collision. Then rerun reconciliation and compare strict vs alias-assisted outcomes.
 
+
+## Anchored crosswalk audit — 2026-11-09
+
+A second deterministic audit was implemented and run against the sanitized baseline reconciliation artifact from run `42650167137`:
+
+- Workflow run: https://github.com/Nexora-Apparel/veltrix-football/actions/runs/42680085808
+- Artifact: https://github.com/Nexora-Apparel/veltrix-football/actions/runs/42680085808/artifacts/13701329212
+- Artifact SHA-256: `ebfea11b44d82ac4597f7f1a0da9f588899b93ecd9e5f0ce24d641e629a1973a`
+- Six anchored-crosswalk unit tests passed.
+- Nine distinct team mappings were seeded from the 18 strict unique fixture matches.
+- The audit paired remaining fixtures only where UTC kickoff was identical and at least one already-established team ID pair appeared on the same home/away side.
+- No scores, statuses, fuzzy names or team-name similarity were used to infer a mapping.
+- Result: 20 team mappings, all 82 previously unmatched fixture pairs accounted for, zero remaining unmatched rows, zero conflicts.
+- Each inferred team mapping has at least five distinct anchored fixture-pair observations; the audit's configured minimum was three.
+- Database writes, imports and canonical merges: zero.
+
+This is materially stronger than catalogue existence alone: it is a repeated fixture-graph crosswalk anchored by exact team-name fixture matches. It remains limited to the exact Premier League 2026-27 sample and must not be extrapolated to other competitions or seasons.
+
+## Scoped alias registry promotion
+
+Based on the 20/20 provider catalogue result plus the anchored crosswalk audit, all 20 mappings were promoted in `data/provider_team_aliases.json` to `approved`, but only under `england_premier_league` / `2026-27`. The registry records both artifact URLs, retrieval timestamps, strict-seed status and anchored fixture support counts. The matcher requires an explicit competition key and season; registry approval alone does not enable aliases outside that exact scope.
+
+The read-only reconciliation engine now has optional alias-registry support and records whether each side matched by strict name or approved alias. The live Premier League runner loads the scoped registry and passes the explicit competition/season. This remains a diagnostic reconciliation path, not production prediction code and not a canonical merge.
+
 ## Current gate
 
-The live audit remains **18 strict matches + 82 unmatched per provider**. The 82 proposed pairs are a separate diagnostic candidate set and must not be added to the accepted match count. Phase 3 reconciliation sign-off remains pending.
+The baseline strict-name audit remains **18 strict matches + 82 unmatched per provider**. The separate anchored crosswalk audit now supports all 20 team-ID mappings across those 82 fixtures, without fuzzy names or score/status evidence. The next gate is a fresh live 90-day reconciliation using the approved, season-scoped registry; phase 3 sign-off remains pending.
 
 
 
