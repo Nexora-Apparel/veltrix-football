@@ -57,6 +57,9 @@ jobs:
       - name: Run provider qualification evidence review tests
         run: python -m unittest discover -s tests -p 'test_provider_qualification_evidence.py' -v
 
+      - name: Run qualification artifact extraction security tests
+        run: python -m unittest discover -s tests -p 'test_provider_qualification_artifact_extraction.py' -v
+
       - name: Validate offline qualification reviewer CLI without network access
         run: python scripts/review_provider_qualification.py --help
 
