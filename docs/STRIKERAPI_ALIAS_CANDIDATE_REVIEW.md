@@ -54,6 +54,24 @@ Across the 82 candidate fixture pairs, the following 20 provider team-ID pairs r
 The live audit remains **18 strict matches + 82 unmatched per provider**. The 82 proposed pairs are a separate diagnostic candidate set and must not be added to the accepted match count. Phase 3 reconciliation sign-off remains pending.
 
 
+
+## Live provider-catalogue verification — 2026-11-09
+
+The corrected workflow completed successfully:
+- Run: [42679026303](https://github.com/Nexora-Apparel/veltrix-football/actions/runs/42679026303)
+- Commit: `17e2bb2d7d877ee28c3e6a5aab0707d19ad0f6a4`
+- Workflow tests: 6 alias-verifier tests passed; 7 registry-safety tests passed.
+- StrikerAPI: one `POST /v1/list_teams` request for season 2026.
+- 5DollarFootballAPI: 20 `GET /v1/teams/{id}` requests.
+- Result: `TEAM_ALIAS_VERIFIED: 20/20`; each requested ID was returned by its own provider with a team name.
+- Artifact: [strikerapi-5dollar-team-alias-verification](https://github.com/Nexora-Apparel/veltrix-football/actions/runs/42679026303/artifacts/13701866539), SHA-256 `4c6ebc968f2d2798b6f10737b6a419bae1aed9272a49ac9f931d35a06f347ca3`.
+- The artifact was downloaded and inspected. All 20 IDs exist in the respective catalogues and the returned names align with the candidate names/known short forms.
+- Database writes, imports and canonical merges: zero.
+
+**Important distinction:** this proves that each provider recognizes the individual team IDs and returns the recorded names. It does not expose a provider-issued crosswalk proving that a particular StrikerAPI ID and 5Dollar ID are the same real-world club. The proposed pairings still originate from the repeated fixture-level schedule comparison described above. Therefore, the registry remains `review_only`, all 20 rows remain `pending_independent_verification` for cross-provider identity, and the production matcher remains unchanged. Do not promote these aliases solely on the 20/20 catalogue lookup result.
+
+The workflow initialization defect in the first attempt was fixed in commit `17e2bb2`. Both offline test suites then passed (13 total tests), and the live catalogue verifier plus artifact upload completed successfully.
+
 ## Registry and provider-catalogue verification implementation
 
 The qualification branch now contains `data/provider_team_aliases.json`, a versioned registry with all 20 pairs marked `pending_independent_verification`, scoped to `england_premier_league` / `2026-27`. It is review-only and is not connected to the reconciliation matcher.
@@ -68,4 +86,4 @@ The manual/push-triggered workflow `.github/workflows/verify-strikerapi-team-ali
 
 The initial draft was corrected to remove an undocumented `league` parameter from StrikerAPI `list_teams`. Official references: https://strikerapi.com/docs/list-teams and https://5dollarfootballapi.com/docs.
 
-The live workflow result has not yet been independently retrieved. Until its test logs and catalogue artifact are inspected, all 20 registry entries remain pending and the strict reconciliation remains 18 matched / 82 unmatched per provider.
+The live workflow result and catalogue artifact have now been inspected (run 42679026303). All 20 provider IDs exist in their respective catalogues, but cross-provider club identity still requires independent review. All 20 registry entries remain pending and the strict reconciliation remains 18 matched / 82 unmatched per provider.
