@@ -43,7 +43,7 @@ class DailySelectionArtifactTests(unittest.TestCase):
                 "artifact_sha256": "b" * 64,
                 "evidence_ref": "https://github.com/Nexora-Apparel/veltrix-football/actions/runs/qualification-2026-11-09/artifacts/456",
                 "pagination_complete": True,
-                "invalid_rows": 0, "duplicate_rows": 0,
+                "invalid_rows": 0, "duplicate_rows": 0, "missing_team_ids": 0,
                 "review_attestation": {
                     "attestation_version": 1, "review_status": "qualified",
                     "repository": "Nexora-Apparel/veltrix-football",
