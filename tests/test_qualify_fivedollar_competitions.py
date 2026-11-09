@@ -60,6 +60,50 @@ class QualificationRunnerTests(unittest.TestCase):
         self.assertFalse(report["acceptance_pass"])
         self.assertEqual(report["aggregates"]["missing_team_ids"], 1)
 
+    def test_empty_team_identifier_is_not_accepted(self):
+        budget = FakeBudget()
+        original = budget.get
+
+        def altered(endpoint, params, key):
+            payload = original(endpoint, params, key)
+            if endpoint == "leagues/39/fixtures":
+                payload["data"][0]["teams"]["home"]["id"] = ""
+            return payload
+
+        budget.get = altered
+        report = collect("test-key", budget, 90, 3, "test-run")
+        self.assertFalse(report["acceptance_pass"])
+        self.assertEqual(report["aggregates"]["missing_team_ids"], 1)
+
+    def test_same_home_and_away_team_is_invalid(self):
+        budget = FakeBudget()
+        original = budget.get
+
+        def altered(endpoint, params, key):
+            payload = original(endpoint, params, key)
+            if endpoint == "leagues/39/fixtures":
+                payload["data"][0]["teams"]["away"]["id"] = 1
+            return payload
+
+        budget.get = altered
+        report = collect("test-key", budget, 90, 3, "test-run")
+        self.assertFalse(report["acceptance_pass"])
+        self.assertEqual(report["aggregates"]["invalid_rows"], 1)
+
+    def test_malformed_catalogue_row_fails_closed(self):
+        budget = FakeBudget()
+        original = budget.get
+
+        def altered(endpoint, params, key):
+            payload = original(endpoint, params, key)
+            if endpoint == "leagues":
+                payload["data"].append({"id": 999})
+            return payload
+
+        budget.get = altered
+        with self.assertRaisesRegex(RuntimeError, "provider_catalogue_row_invalid"):
+            collect("test-key", budget, 90, 3, "test-run")
+
     def test_out_of_window_result_is_invalid(self):
         budget = FakeBudget()
         original = budget.get
