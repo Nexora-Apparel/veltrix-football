@@ -33,5 +33,8 @@ jobs:
       - name: Run provider fixture normalizer tests
         run: python -m unittest discover -s tests -p 'test_provider_fixture_normalizer.py' -v
 
+      - name: Run fixture batch deduplication and quarantine tests
+        run: python -m unittest discover -s tests -p 'test_provider_fixture_batch.py' -v
+
       - name: Run existing 17-competition verifier tests
         run: python -m unittest discover -s tests -p 'test_strikerapi_17_competitions.py' -v
