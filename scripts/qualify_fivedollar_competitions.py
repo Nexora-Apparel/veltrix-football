@@ -77,8 +77,7 @@ def _valid_final_row(item: dict, competition_id: str, start: datetime, end: date
     league = item.get("league")
     teams = item.get("teams")
     goals = item.get("goals")
-    if (not isinstance(item.get("id"), (str, int)) or isinstance(item.get("id"), bool)
-            or not str(item["id"]).strip()):
+    if not _valid_identifier(item.get("id")):
         return False
     if not isinstance(league, dict) or str(league.get("id")) != str(competition_id):
         return False
@@ -89,7 +88,7 @@ def _valid_final_row(item: dict, competition_id: str, start: datetime, end: date
             or not isinstance(home.get("name"), str) or not home["name"].strip()
             or not isinstance(away.get("name"), str) or not away["name"].strip()
             or not _valid_identifier(home.get("id")) or not _valid_identifier(away.get("id"))
-            or str(home.get("id")) == str(away.get("id"))):
+            or int(home.get("id")) == int(away.get("id"))):
         return False
     kickoff = item.get("kickoff_utc")
     try:
@@ -172,10 +171,13 @@ def collect(key: str, budget: Budget, days: int, max_pages: int, run_id: str) ->
                         counters["invalid_rows"] += 1
                         continue
                     fixture_id = item.get("id")
-                    if fixture_id is None:
+                    if not _valid_identifier(fixture_id):
                         counters["invalid_rows"] += 1
                         continue
-                    identity = str(fixture_id)
+                    # Provider IDs may arrive as integers or numeric strings.
+                    # Canonicalize before deduplication so 1001 and "1001"
+                    # cannot be counted as two different fixtures.
+                    identity = str(int(fixture_id))
                     if identity in seen:
                         counters["duplicate_ids"] += 1
                         continue
