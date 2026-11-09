@@ -14,6 +14,13 @@ from urllib.request import Request, urlopen
 STRIKER_URL = "https://mcp.strikerapi.com/v1/list_teams"
 DOLLAR_BASE = "https://api.5dollarfootballapi.com/v1/teams"
 TIMEOUT = 25
+STRIKER_SEASON = 2026
+MAX_PROVIDER_CALLS = 1 + len(CANDIDATES)
+
+
+def striker_request_body() -> dict:
+    # list_teams documents season as its only request parameter.
+    return {"season": STRIKER_SEASON}
 # Candidate pairs discovered in docs/STRIKERAPI_ALIAS_CANDIDATE_REVIEW.md.
 CANDIDATES = [
     ("306", "2133281510"), ("331", "1298357733"),
@@ -101,7 +108,11 @@ def build_report(striker_teams: list[dict], dollar_teams: dict[str, dict]) -> di
         "schema_version": 1,
         "mode": "read_only_provider_catalogue_verification",
         "retrieved_at": datetime.now(timezone.utc).isoformat(),
-        "striker_endpoint": "POST /v1/list_teams (league=soccer, season=2026)",
+        "striker_endpoint": "POST /v1/list_teams",
+        "striker_query": {"season": STRIKER_SEASON},
+        "documented_striker_credits": 1,
+        "fivedollar_calls": len(CANDIDATES),
+        "maximum_provider_calls": MAX_PROVIDER_CALLS,
         "fivedollar_endpoint": "GET /v1/teams/{id}",
         "candidate_count": len(CANDIDATES),
         "verified_count": verified,
@@ -123,7 +134,7 @@ def main() -> int:
         striker_payload = request_json(
             STRIKER_URL,
             {"Accept": "application/json", "Content-Type": "application/json", "x-api-key": striker_key},
-            {"league": "soccer", "season": 2026},
+            striker_request_body(),
         )
         striker_teams = unwrap_striker(striker_payload)
         dollar_teams = {}
