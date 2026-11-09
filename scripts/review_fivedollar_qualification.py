@@ -25,6 +25,7 @@ from app.provider_qualification_evidence import (
     validate_artifact_metadata,
     validate_checkout_metadata,
     validate_run_metadata,
+    verify_attestation_signature,
 )
 from scripts.review_provider_qualification import download_artifact_zip, gh_json
 
@@ -55,7 +56,11 @@ def download_job_logs(repository: str, job_id: int) -> str:
             "User-Agent": "veltrix-qualification-reviewer",
         },
     )
-    opener = urllib.request.build_opener()
+    class NoRedirect(urllib.request.HTTPRedirectHandler):
+        def redirect_request(self, req, fp, code, msg, headers, newurl):
+            return None
+
+    opener = urllib.request.build_opener(NoRedirect)
     try:
         with opener.open(request, timeout=30) as response:
             archive_bytes = response.read(MAX_JOB_LOG_BYTES + 1)
@@ -179,6 +184,11 @@ def main() -> int:
             reviewed_at=datetime.now(timezone.utc).replace(microsecond=0).isoformat(),
             signing_key=signing_key, artifact_url=artifact_url,
         )
+        if len(registry["sources"]) != validation["competition_count"]:
+            raise QualificationEvidenceError("registry_competition_count_mismatch")
+        for source in registry["sources"]:
+            if not verify_attestation_signature(source.get("review_attestation"), signing_key):
+                raise QualificationEvidenceError("generated_registry_signature_invalid")
         output = Path(args.output)
         output.parent.mkdir(parents=True, exist_ok=True)
         output.write_text(json.dumps(registry, indent=2, sort_keys=True) + "\n", encoding="utf-8")
