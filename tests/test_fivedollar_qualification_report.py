@@ -18,7 +18,7 @@ class FiveDollarQualificationReportTests(unittest.TestCase):
             "window_end_utc": "2026-11-09T00:00:00Z",
             "max_requests": 20,
             "actual_requests": 3,
-            "endpoint_requests": [{"endpoint": "fixtures", "requests": 3}],
+            "endpoint_requests": [{"endpoint": "leagues/39/fixtures", "requests": 3}],
             "competitions": [
                 {"competition_id": "39", "competition_name": "EPL",
                  "pages_fetched": 1, "source_rows": 10, "accepted_rows": 10,
