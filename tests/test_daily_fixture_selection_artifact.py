@@ -39,7 +39,7 @@ class DailySelectionArtifactTests(unittest.TestCase):
             "sources": [{
                 "provider": "fivedollar", "competition_key": "39",
                 "qualification_status": "qualified",
-                "qualification_run_id": "qualification-2026-11-09",
+                "qualification_run_id": "98765",
                 "artifact_sha256": "b" * 64,
                 "evidence_ref": "https://github.com/Nexora-Apparel/veltrix-football/actions/runs/qualification-2026-11-09/artifacts/456",
                 "pagination_complete": True,
