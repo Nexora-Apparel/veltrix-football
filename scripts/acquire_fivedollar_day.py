@@ -10,16 +10,15 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from app.provider_acquisition_adapters import acquire_fivedollar_day
-from app.provider_adapters import FiveDollarFootballClient
-
-
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--date", required=True, help="Africa/Lagos calendar date (YYYY-MM-DD)")
     parser.add_argument("--output", default="fivedollar_fixture_acquisition.json")
     parser.add_argument("--max-pages", type=int, default=5)
     args = parser.parse_args()
+
+    from app.provider_acquisition_adapters import acquire_fivedollar_day
+    from app.provider_adapters import FiveDollarFootballClient
 
     retrieved = datetime.now(timezone.utc).replace(microsecond=0)
     run_id = f"fivedollar-{args.date}-{retrieved.strftime('%Y%m%dT%H%M%SZ')}"
