@@ -73,6 +73,12 @@ class ProviderReconciliationTests(unittest.TestCase):
         self.assertEqual(outcomes, {"UNMATCHED_STRIKER_ONLY", "UNMATCHED_5DOLLAR_ONLY"})
         self.assertFalse(report["acceptance_pass"])
 
+    def test_unmapped_competition_never_creates_cross_league_match(self):
+        report = reconcile([srow()], [drow()], {"soccer":"999999"})
+        self.assertEqual(report["accounting"]["striker"]["matched"], 0)
+        self.assertEqual(report["accounting"]["fivedollar"]["matched"], 0)
+        self.assertFalse(report["acceptance_pass"])
+
     def test_missing_timezone_is_invalid_and_accounted(self):
         bad = srow(kickoff="2026-08-15T16:30:00")
         report = reconcile([bad], [drow()], {"soccer":"39"})
