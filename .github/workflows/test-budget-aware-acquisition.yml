@@ -54,6 +54,9 @@ jobs:
       - name: Run provider acquisition adapter tests
         run: python -m unittest discover -s tests -p 'test_provider_acquisition_adapters.py' -v
 
+      - name: Run qualified 5Dollar historical batch tests
+        run: python -m unittest discover -s tests -p 'test_fivedollar_history_batch.py' -v
+
       - name: Run end-to-end read-only fixture pipeline tests
         run: python -m unittest discover -s tests -p 'test_provider_fixture_pipeline.py' -v
 
@@ -74,6 +77,9 @@ jobs:
 
       - name: Validate manual acquisition CLI without network access
         run: python scripts/acquire_fivedollar_day.py --help
+
+      - name: Validate historical acquisition CLI without network access
+        run: python scripts/acquire_fivedollar_history_batch.py --help
 
       - name: Validate 5Dollar qualification CLI without network access
         run: python scripts/qualify_fivedollar_competitions.py --help
