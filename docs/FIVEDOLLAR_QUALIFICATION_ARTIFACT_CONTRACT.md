@@ -71,4 +71,4 @@ A successful bounded 90-day preflight is not proof of full-season history or con
 - Offline 5Dollar-specific artifact reviewer: not implemented.
 - Qualification registry admission: blocked until a new manual run produces a valid artifact and the provider-specific reviewer verifies it.
 
-No provider requests should be repeated merely to reproduce the old console output. First implement report generation, artifact upload, secret-free tests, and the offline reviewer; then run a new manual qualification only when the request budget is explicitly approved.
+No provider requests should be repeated merely to reproduce the old console output. The new qualification workflow is manual-dispatch only, accepts an explicit 1–60 request ceiling, defaults to 20 requests, uses no automatic retries, and uploads one seven-day artifact. It has not been dispatched. Run it only after the request budget is explicitly approved.
