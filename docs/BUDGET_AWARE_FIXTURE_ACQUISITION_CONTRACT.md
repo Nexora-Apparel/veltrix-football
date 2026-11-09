@@ -213,3 +213,32 @@ Duplicate registry entries, incomplete pagination, nonzero invalid/duplicate cou
 
 
 The repository includes `data/provider_qualification_registry.template.json` as an intentionally empty starter. It is explicitly marked as non-evidence and contains no qualified competitions. Until inspected provider artifacts are added as qualification entries, the daily selector returns zero eligible fixtures rather than assuming coverage.
+
+
+## 6. Qualified 5Dollar historical batches
+
+The signed qualification registry currently admits exactly five numeric competition IDs:
+- Italy Serie A: `3405541143`
+- France Ligue 1: `3614399544`
+- England Premier League: `4160026622`
+- Spain La Liga: `4212821298`
+- Germany Bundesliga I: `686337048`
+
+The historical batch adapter and CLI enforce this exact allowlist in addition to validating the HMAC-signed registry. A provider response containing a row from another competition fails the entire batch rather than being silently accepted.
+
+### Batch contract
+- One run covers one to seven inclusive Africa/Lagos calendar dates.
+- The end date must be before the current Lagos date.
+- The start date must fall within the documented 90-day results window.
+- Only finished fixtures are requested.
+- Maximum 20 HTTP attempts per run; default 15.
+- Maximum three pages per competition; a `has_more` response at the page ceiling fails closed.
+- Automatic HTTP retries are disabled for this adapter. Each HTTP attempt is reserved before dispatch and counted exactly.
+- Pagination must complete for all five competitions before an artifact is emitted.
+- Rows are normalized, source-hashed, deduplicated by provider/competition/source ID, and quarantined when invalid.
+- No raw provider payloads, credentials, database writes, imports, checkpoints, canonical merges or prediction publications are emitted.
+
+### Execution
+Use the manual workflow `.github/workflows/acquire-fivedollar-history-batch.yml` after its dispatch entrypoint is available on the default branch. Each run produces one sanitized `fivedollar-historical-batch` artifact with a SHA-256-protected report. Run adjacent, non-overlapping seven-day batches to cover the available 90-day window; do not assume an empty historical response proves coverage.
+
+This workflow is manual-only. No provider request is made by CI tests or by pushing code. Historical artifacts must be reviewed and reconciled before any separate import authorization is considered.
