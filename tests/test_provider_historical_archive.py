@@ -42,7 +42,7 @@ def batch(start, end, retrieved, run_id):
     return acquire_fivedollar_history_batch(
         client=FakeClient(), competition_ids=COMPETITIONS,
         start_date=start, end_date=end, run_id=run_id,
-        retrieved_at=retrieved, max_requests=15,
+        retrieved_at=retrieved, max_requests=15, sleep=lambda _: None,
     )["report"]
 
 
