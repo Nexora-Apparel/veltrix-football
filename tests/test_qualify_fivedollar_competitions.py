@@ -1,5 +1,5 @@
 import unittest
-from unittest.mock import patch
+from datetime import datetime, timezone
 
 from scripts.qualify_fivedollar_competitions import Budget, collect
 
@@ -20,14 +20,16 @@ class FakeBudget(Budget):
             ], "pagination": {"has_more": False}}
         if endpoint == "leagues/39/fixtures":
             return {"success": 1, "data": [{
-                "id": 1001, "status": "finished",
-                "teams": {"home": {"id": 1}, "away": {"id": 2}},
+                "id": 1001, "status": "finished", "kickoff_utc": datetime.now(timezone.utc).isoformat(),
+                "league": {"id": 39},
+                "teams": {"home": {"id": 1, "name": "Home A"}, "away": {"id": 2, "name": "Away A"}},
                 "goals": {"home": 2, "away": 0},
             }], "pagination": {"has_more": False}}
         if endpoint == "leagues/140/fixtures":
             return {"success": 1, "data": [{
-                "id": 2001, "status": "finished",
-                "teams": {"home": {"id": 3}, "away": {"id": 4}},
+                "id": 2001, "status": "finished", "kickoff_utc": datetime.now(timezone.utc).isoformat(),
+                "league": {"id": 140},
+                "teams": {"home": {"id": 3, "name": "Home B"}, "away": {"id": 4, "name": "Away B"}},
                 "goals": {"home": 1, "away": 1},
             }], "pagination": {"has_more": False}}
         raise AssertionError(endpoint)
@@ -57,6 +59,21 @@ class QualificationRunnerTests(unittest.TestCase):
         report = collect("test-key", budget, 90, 3, "test-run")
         self.assertFalse(report["acceptance_pass"])
         self.assertEqual(report["aggregates"]["missing_team_ids"], 1)
+
+    def test_out_of_window_result_is_invalid(self):
+        budget = FakeBudget()
+        original = budget.get
+
+        def altered(endpoint, params, key):
+            payload = original(endpoint, params, key)
+            if endpoint == "leagues/39/fixtures":
+                payload["data"][0]["kickoff_utc"] = "2020-01-01T00:00:00Z"
+            return payload
+
+        budget.get = altered
+        report = collect("test-key", budget, 90, 3, "test-run")
+        self.assertFalse(report["acceptance_pass"])
+        self.assertEqual(report["aggregates"]["invalid_rows"], 1)
 
     def test_catalogue_truncation_blocks_acceptance(self):
         budget = FakeBudget()
