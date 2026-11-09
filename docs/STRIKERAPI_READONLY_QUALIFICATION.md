@@ -106,3 +106,16 @@ Diagnostic plan (read-only, 2 credits per call):
 - Compare season-level final counts with the provider's published season table; do not treat website totals as a substitute for API response evidence.
 
 Reference: https://strikerapi.com/nwsl and https://strikerapi.com/docs/list-games.
+
+
+## Explicit NWSL season/stage diagnostics
+
+The verifier now follows the documented `season` and `stage` filters to investigate the zero-row rolling schedule response. The API documentation defines NWSL seasons by calendar year and supports `stage=league|knockout`; each request costs two credits. See the [official list_games reference](https://strikerapi.com/docs/list-games).
+
+The diagnostic performs four read-only checks:
+- NWSL season 2026, `status=final`, `stage=league`;
+- NWSL season 2026, `status=final`, `stage=knockout`;
+- NWSL season 2027, `status=scheduled`, `stage=league`;
+- NWSL season 2027, `status=scheduled`, `stage=knockout`.
+
+These checks distinguish historical season coverage from publication of the next calendar-year schedule. They are separately accounted and do not inflate the original rolling-window row totals. The overall hard limit remains 48 calls / 96 documented credits; run #4 used 21 calls, and the four new diagnostic requests are expected to bring a fully paginated execution to 25 calls / 50 credits. The result must be read from the next workflow log; this documentation alone is not evidence that the diagnostic has run.
