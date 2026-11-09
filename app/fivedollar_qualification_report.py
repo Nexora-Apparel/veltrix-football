@@ -110,6 +110,8 @@ def build_fivedollar_qualification_report(
         "canonical_merges": _nonnegative_int(canonical_merges, "canonical_merges"),
         "prediction_publications": _nonnegative_int(prediction_publications, "prediction_publications"),
     }
+    if any(value != 0 for value in side_effects.values()):
+        raise ValueError("side_effect_boundary_invalid")
     complete = all(row["pagination_complete"] for row in cleaned)
     acceptance = (
         complete and sums["source_rows"] > 0
