@@ -16,6 +16,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from scripts.reconcile_provider_fixtures import reconcile, striker_record, fivedollar_record, valid_identity
 from scripts.verify_strikerapi import call_api, collect_pages, validate_game, ProbeError
+from app.provider_team_aliases import load_registry
 
 FIVEDOLLAR_BASE = "https://api.5dollarfootballapi.com/v1"
 FIVEDOLLAR_EPL_ID = 4160026622
@@ -134,10 +135,14 @@ def main() -> int:
 
     normalized_striker = [striker_record(row, "soccer") for row in striker_rows]
     normalized_dollar = [fivedollar_record(row) for row in dollar_rows]
+    alias_registry = load_registry(Path("data/provider_team_aliases.json"))
     report = reconcile(
         normalized_striker,
         normalized_dollar,
         {"soccer":str(FIVEDOLLAR_EPL_ID)},
+        alias_registry=alias_registry,
+        alias_competition_key="england_premier_league",
+        season="2026-27",
     )
     report["provenance"] = {
         "window_start_utc":start.isoformat(),
