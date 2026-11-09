@@ -71,7 +71,7 @@ class FiveDollarQualificationReportTests(unittest.TestCase):
     def test_invalid_rows_prevent_acceptance(self):
         comps = self.build()["competitions"]
         comps[0]["invalid_rows"] = 1
-        comps[0]["accepted_rows"] = 9
+        comps[0]["accepted_rows"] -= 1
         report = self.build(competitions=comps)
         self.assertFalse(report["acceptance_pass"])
 
