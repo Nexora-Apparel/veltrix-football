@@ -120,7 +120,7 @@ def reconcile_artifact_records(
                 alias_competition_key, s.get("season"), d.get("season"))
             away_alias = not same_away and alias_ok(
                 s["away_team_source_id"], d["away_team_source_id"],
-                s["competition_key"], s.get("season"), d.get("season"))
+                alias_competition_key, s.get("season"), d.get("season"))
             if (same_home or home_alias) and (same_away or away_alias):
                 edges[(i, j)] = {
                     "home": "approved_alias" if home_alias else "strict_name",
@@ -129,10 +129,10 @@ def reconcile_artifact_records(
                 continue
             reverse_home = (_name(s["home_team_name"]) == _name(d["away_team_name"])
                             or alias_ok(s["home_team_source_id"], d["away_team_source_id"],
-                                        s["competition_key"], s.get("season"), d.get("season")))
+                                        alias_competition_key, s.get("season"), d.get("season")))
             reverse_away = (_name(s["away_team_name"]) == _name(d["home_team_name"])
                             or alias_ok(s["away_team_source_id"], d["home_team_source_id"],
-                                        s["competition_key"], s.get("season"), d.get("season")))
+                                        alias_competition_key, s.get("season"), d.get("season")))
             if reverse_home and reverse_away:
                 reverse.append((i, j))
 
