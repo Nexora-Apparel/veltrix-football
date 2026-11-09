@@ -4,7 +4,8 @@ from __future__ import annotations
 import hashlib
 import json
 from collections import Counter
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
+from zoneinfo import ZoneInfo
 from typing import Any
 
 from app.provider_acquisition_artifact import (
@@ -177,6 +178,41 @@ def validate_fivedollar_history_archive(archive: Any) -> dict:
         raise HistoricalArchiveError("archive_quality_not_complete")
     if quality.get("accepted_count") != len(records) or quality.get("duplicate_fixture_identities") != 0 or quality.get("quarantined_rows") != 0:
         raise HistoricalArchiveError("archive_record_accounting_invalid")
+    if quality.get("accepted_by_competition") != {
+        key: sum(1 for row in records if isinstance(row, dict) and row.get("competition_key") == key)
+        for key in sorted(FIVEDOLLAR_HISTORY_COMPETITIONS)
+    }:
+        raise HistoricalArchiveError("archive_competition_counts_invalid")
+    seen = set()
+    zone = ZoneInfo("Africa/Lagos")
+    for index, record in enumerate(records):
+        if not isinstance(record, dict) or record.get("provider") != "fivedollar":
+            raise HistoricalArchiveError(f"archive_record_provider_invalid:{index}")
+        if record.get("competition_key") not in FIVEDOLLAR_HISTORY_COMPETITIONS:
+            raise HistoricalArchiveError(f"archive_record_competition_invalid:{index}")
+        if record.get("normalized_status") != "finished":
+            raise HistoricalArchiveError(f"archive_record_status_invalid:{index}")
+        identity = (record.get("provider"), record.get("competition_key"), record.get("source_id"))
+        if not all(isinstance(value, str) and value for value in identity) or identity in seen:
+            raise HistoricalArchiveError(f"archive_record_identity_invalid:{index}")
+        seen.add(identity)
+        try:
+            kickoff = datetime.fromisoformat(record["kickoff_at"].replace("Z", "+00:00"))
+        except (KeyError, AttributeError, ValueError):
+            raise HistoricalArchiveError(f"archive_record_kickoff_invalid:{index}") from None
+        local_day = kickoff.astimezone(zone).date()
+        if local_day < target_start or local_day > target_end:
+            raise HistoricalArchiveError(f"archive_record_outside_target_window:{index}")
+    budget = archive.get("request_budget")
+    if not isinstance(budget, dict) or budget.get("automatic_retries") != 0:
+        raise HistoricalArchiveError("archive_request_budget_invalid")
+    pages = budget.get("pages_by_competition")
+    if not isinstance(pages, dict) or set(pages) != FIVEDOLLAR_HISTORY_COMPETITIONS:
+        raise HistoricalArchiveError("archive_page_accounting_scope_invalid")
+    if any(isinstance(value, bool) or not isinstance(value, int) or value < 1 for value in pages.values()):
+        raise HistoricalArchiveError("archive_page_count_invalid")
+    if sum(pages.values()) != budget.get("actual_requests"):
+        raise HistoricalArchiveError("archive_request_page_accounting_mismatch")
     side_effects = archive.get("side_effects")
     if not isinstance(side_effects, dict) or any(side_effects.get(key) != 0 for key in (
         "provider_requests", "database_writes", "imports", "checkpoints",
