@@ -68,6 +68,43 @@ def _valid_score(value) -> bool:
     return isinstance(value, int) and not isinstance(value, bool) and value >= 0
 
 
+def _valid_final_row(item: dict, competition_id: str, start: datetime, end: datetime) -> bool:
+    league = item.get("league")
+    teams = item.get("teams")
+    goals = item.get("goals")
+    if not isinstance(league, dict) or str(league.get("id")) != str(competition_id):
+        return False
+    if not isinstance(teams, dict):
+        return False
+    home, away = teams.get("home"), teams.get("away")
+    if (not isinstance(home, dict) or not isinstance(away, dict)
+            or not isinstance(home.get("name"), str) or not home["name"].strip()
+            or not isinstance(away.get("name"), str) or not away["name"].strip()):
+        return False
+    kickoff = item.get("kickoff_utc")
+    try:
+        if isinstance(kickoff, str) and kickoff.strip():
+            parsed = datetime.fromisoformat(kickoff.replace("Z", "+00:00"))
+            if parsed.tzinfo is None or parsed.utcoffset() is None:
+                return False
+            parsed = parsed.astimezone(timezone.utc)
+        else:
+            timestamp = item.get("kickoff_ts")
+            if isinstance(timestamp, bool) or not isinstance(timestamp, (int, float)):
+                return False
+            parsed = datetime.fromtimestamp(timestamp, timezone.utc)
+    except (ValueError, OverflowError, OSError):
+        return False
+    if not start <= parsed <= end:
+        return False
+    return (
+        item.get("status") == "finished"
+        and isinstance(goals, dict)
+        and _valid_score(goals.get("home"))
+        and _valid_score(goals.get("away"))
+    )
+
+
 def collect(key: str, budget: Budget, days: int, max_pages: int, run_id: str) -> dict:
     now = datetime.now(timezone.utc).replace(microsecond=0)
     start = now - timedelta(days=days)
@@ -138,9 +175,7 @@ def collect(key: str, budget: Budget, days: int, max_pages: int, run_id: str) ->
                             or home.get("id") is None or away.get("id") is None):
                         counters["missing_team_ids"] += 1
                         continue
-                    if (item.get("status") != "finished" or not isinstance(goals, dict)
-                            or not _valid_score(goals.get("home"))
-                            or not _valid_score(goals.get("away"))):
+                    if not _valid_final_row(item, competition["competition_id"], start, now):
                         counters["invalid_rows"] += 1
                         continue
                     counters["accepted_rows"] += 1
