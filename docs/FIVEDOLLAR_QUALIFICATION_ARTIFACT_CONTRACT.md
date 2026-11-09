@@ -65,10 +65,13 @@ A successful bounded 90-day preflight is not proof of full-season history or con
 
 ## 6. Current status
 
-- Historical preflight: bounded 488-result read-only sample reported successful.
-- Retained artifact from run `42504992170`: none.
-- Existing run event: `push`, not acceptable for manual-dispatch qualification.
-- Offline 5Dollar-specific artifact reviewer: not implemented.
-- Qualification registry admission: blocked until a new manual run produces a valid artifact and the provider-specific reviewer verifies it.
+- Historical preflight: bounded 488-result read-only sample reported successful, but its push-triggered run has no artifact and is not admissible qualification evidence.
+- The manual-only qualification workflow, bounded request ledger, sanitized report, artifact upload, offline reviewer, HMAC registry builder, and provider-specific daily-selector admission checks are implemented on PR #43.
+- Secret-free CI validates report schema, UTC window, catalogue completeness, fixture/team identity, per-row accounting, request-to-page accounting, budget exhaustion, artifact integrity, signature scope, and zero side effects.
+- The latest changes add fail-closed checks for malformed catalogue rows, missing/empty/colliding team IDs, fixture identity, and exact endpoint/page reconciliation.
+- A request-budget-exhausted run may still produce a valid but non-qualifying report for audit; it cannot create qualified registry entries.
+- The manual qualification workflow has not been dispatched. No provider credits have been consumed by this pipeline.
+- Registry admission remains blocked until a successful manual run produces a complete report/artifact and the offline reviewer verifies it. The protected HMAC signing secret must also be configured in the execution environment.
+- Qualification is restricted to the exact competitions and results window returned by the authenticated account catalogue. It does not imply access to other leagues, xG, lineups, events, odds, or future seasons.
 
-No provider requests should be repeated merely to reproduce the old console output. The new qualification workflow is manual-dispatch only, accepts an explicit 1–60 request ceiling, defaults to 20 requests, uses no automatic retries, and uploads one seven-day artifact. It has not been dispatched. Run it only after the request budget is explicitly approved.
+No provider request, production import, Neon write, prediction publication, Telegram delivery, schedule restart, or PR merge is authorized by this contract.
