@@ -51,7 +51,7 @@ class DailySelectionArtifactTests(unittest.TestCase):
                     "local_archive_sha256": "b" * 64,
                     "local_report_sha256": "d" * 64,
                     "coverage": {
-                        "provider": "strikerapi", "competition_keys": ["39"],
+                        "provider": "fivedollar", "competition_keys": ["39"],
                         "pagination_complete": True, "invalid_rows": 0, "duplicate_rows": 0,
                     },
                 },
