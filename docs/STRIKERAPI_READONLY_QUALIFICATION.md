@@ -1,6 +1,6 @@
 # StrikerAPI Read-Only Qualification
 
-Status: bounded 90-day history / 180-day schedule probe passed on 2026-11-09; NWSL scheduled coverage, cross-provider reconciliation and contractual terms review remain open.
+Status: bounded 90-day history / 180-day schedule probe passed on 2026-11-09; NWSL season-count discrepancy, live Premier League reconciliation and contractual terms review remain open.
 
 ## Why this provider
 
@@ -93,9 +93,9 @@ The atlas describes different coverage periods by league and dataset. Provider-c
 
 ## Acceptance sequence
 
-1. Investigate the zero-row NWSL scheduled response using provider season, stage and schedule documentation; do not infer coverage from the empty response.
-2. Implement and run deterministic read-only comparisons for the verified Premier League overlap only. The 5Dollar Free-tier catalogue contains no Argentina or Brazil competition, so those StrikerAPI competitions cannot be cross-reconciled against the current 5Dollar account.
-3. Record all unmatched, ambiguous and conflicting source rows without merging or rewriting provider identities.
+1. Clarify the 20-match discrepancy between the NWSL API's 244 2026 final rows and the provider's public page's 224-match season count.
+2. Run the live, read-only Premier League reconciliation using the verified 5Dollar overlap only. The Free-tier catalogue contains no Argentina or Brazil competition, so those StrikerAPI competitions cannot be cross-reconciled against the current 5Dollar account.
+3. Review every unmatched, ambiguous and conflicting source row without merging or rewriting provider identities.
 4. Review the provider's current timing, storage, commercial-use and redistribution terms and retain a dated copy.
 5. Approve only competition- and data-type-specific source authority after all evidence passes.
 
@@ -119,4 +119,4 @@ The diagnostic performs four read-only checks:
 - NWSL season 2027, `status=scheduled`, `stage=league`;
 - NWSL season 2027, `status=scheduled`, `stage=knockout`.
 
-These checks distinguish historical season coverage from publication of the next calendar-year schedule. They are separately accounted and do not inflate the original rolling-window row totals. The overall hard limit remains 48 calls / 96 documented credits; run #4 used 21 calls, and the four new diagnostic requests are expected to bring a fully paginated execution to 25 calls / 50 credits. The result must be read from the next workflow log; this documentation alone is not evidence that the diagnostic has run.
+These checks distinguish historical season coverage from publication of the next calendar-year schedule. They are separately accounted and do not inflate the original rolling-window row totals. Run #4 attempt 3 completed all four scoped checks using eight paginated calls, for 29 calls / 58 documented credits overall. The API returned 244 final NWSL fixtures for 2026 (240 league and 4 knockout) and no 2027 scheduled fixtures. The provider's public NWSL page lists 224 matches for 2026; that 20-match discrepancy remains unresolved.
