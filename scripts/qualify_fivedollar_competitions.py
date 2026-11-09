@@ -68,10 +68,18 @@ def _valid_score(value) -> bool:
     return isinstance(value, int) and not isinstance(value, bool) and value >= 0
 
 
+def _valid_identifier(value) -> bool:
+    return ((isinstance(value, int) and not isinstance(value, bool) and value > 0)
+            or (isinstance(value, str) and bool(value.strip())))
+
+
 def _valid_final_row(item: dict, competition_id: str, start: datetime, end: datetime) -> bool:
     league = item.get("league")
     teams = item.get("teams")
     goals = item.get("goals")
+    if (not isinstance(item.get("id"), (str, int)) or isinstance(item.get("id"), bool)
+            or not str(item["id"]).strip()):
+        return False
     if not isinstance(league, dict) or str(league.get("id")) != str(competition_id):
         return False
     if not isinstance(teams, dict):
@@ -79,7 +87,9 @@ def _valid_final_row(item: dict, competition_id: str, start: datetime, end: date
     home, away = teams.get("home"), teams.get("away")
     if (not isinstance(home, dict) or not isinstance(away, dict)
             or not isinstance(home.get("name"), str) or not home["name"].strip()
-            or not isinstance(away.get("name"), str) or not away["name"].strip()):
+            or not isinstance(away.get("name"), str) or not away["name"].strip()
+            or not _valid_identifier(home.get("id")) or not _valid_identifier(away.get("id"))
+            or str(home.get("id")) == str(away.get("id"))):
         return False
     kickoff = item.get("kickoff_utc")
     try:
@@ -117,9 +127,11 @@ def collect(key: str, budget: Budget, days: int, max_pages: int, run_id: str) ->
             if not isinstance(rows, list):
                 raise RuntimeError("provider_catalogue_data_invalid")
             for item in rows:
-                if isinstance(item, dict) and item.get("id") is not None and item.get("name"):
-                    competitions.append({"competition_id": str(item["id"]),
-                                         "competition_name": str(item["name"])})
+                if (not isinstance(item, dict) or not _valid_identifier(item.get("id"))
+                        or not isinstance(item.get("name"), str) or not item["name"].strip()):
+                    raise RuntimeError("provider_catalogue_row_invalid")
+                competitions.append({"competition_id": str(item["id"]),
+                                     "competition_name": item["name"].strip()})
             catalogue_pages += 1
             if not _has_more(payload):
                 catalogue_complete = True
@@ -172,7 +184,8 @@ def collect(key: str, budget: Budget, days: int, max_pages: int, run_id: str) ->
                     home = teams.get("home") if isinstance(teams, dict) else None
                     away = teams.get("away") if isinstance(teams, dict) else None
                     if (not isinstance(home, dict) or not isinstance(away, dict)
-                            or home.get("id") is None or away.get("id") is None):
+                            or not _valid_identifier(home.get("id"))
+                            or not _valid_identifier(away.get("id"))):
                         counters["missing_team_ids"] += 1
                         continue
                     if not _valid_final_row(item, competition["competition_id"], start, now):
