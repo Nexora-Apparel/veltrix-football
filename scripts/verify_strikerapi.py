@@ -130,8 +130,9 @@ def validate_game(row: object, expected_status: str) -> tuple[bool, str]:
         return False, "status_mismatch"
     try:
         datetime.fromisoformat(str(row["date"]))
-        timestamp = str(row["starts_at"]).replace("Z", "+00:00")
-        datetime.fromisoformat(timestamp)
+        timestamp = datetime.fromisoformat(str(row["starts_at"]).replace("Z", "+00:00"))
+        if timestamp.tzinfo is None or timestamp.utcoffset() is None:
+            return False, "timezone_missing_from_kickoff_timestamp"
     except ValueError:
         return False, "invalid_date_or_timestamp"
     for side in ("home", "away"):
@@ -245,7 +246,7 @@ def main() -> int:
             f"rows={len(games)}; valid={valid}; invalid={invalid}; "
             f"duplicate_ids={duplicates}; pages={pages}; "
             f"pagination_truncated={str(truncated).lower()}; "
-            f"page_count_fields={safe_text(page_counts)}"
+            f"page_count_fields={json.dumps(page_counts)}"
         )
 
     print(
