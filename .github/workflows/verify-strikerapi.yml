@@ -17,8 +17,10 @@ jobs:
     env:
       STRIKERAPI_API_KEY: ${{ secrets.STRIKERAPI_API_KEY }}
     steps:
-      - name: Check out repository
+      - name: Check out qualification branch
         uses: actions/checkout@v4
+        with:
+          ref: phase-3/strikerapi-readonly-qualification
 
       - name: Set up Python
         uses: actions/setup-python@v5
