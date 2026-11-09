@@ -181,3 +181,18 @@ Both adapters feed the same normalization, batch validation, quarantine, and aud
 - `scripts/verify_acquisition_artifact.py` provides an offline verifier suitable for CI or pre-import review.
 - The manual 5Dollar workflow verifies the emitted JSON artifact before upload.
 - Artifact integrity passing proves structural integrity and consistency only. It does not certify provider completeness, source correctness, model quality, betting value, or permission to import into production.
+
+
+## 12. Daily fixture selection gate
+
+The deterministic selector is implemented in `app/daily_fixture_selection.py`.
+
+- Hard maximum: 25 selected fixtures per Africa/Lagos calendar date.
+- Selection requires an explicit provider/competition allowlist supplied from verified qualification evidence. Provider catalogue documentation alone is not sufficient.
+- Only normalized `scheduled` fixtures with timezone-aware future kickoffs on the requested Lagos date are eligible.
+- Source identity must be present; duplicates within a provider/competition/source-ID scope are selected once.
+- Results are ordered deterministically by kickoff, provider, competition, and source ID.
+- No favourite-only filter is applied.
+- No cross-provider fuzzy matching is attempted. Independent provider observations must pass the separate reconciliation stage before they can be treated as one canonical fixture.
+- Empty eligible sets remain empty; no fixtures are fabricated to meet the 25-fixture maximum.
+- Selection output is an in-memory read-only result and is not connected to production import or prediction publication.
