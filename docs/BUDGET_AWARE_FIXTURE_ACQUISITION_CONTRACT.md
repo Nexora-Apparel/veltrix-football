@@ -235,6 +235,7 @@ The historical batch adapter and CLI enforce this exact allowlist in addition to
 - Maximum three pages per competition; a `has_more` response at the page ceiling fails closed.
 - Automatic HTTP retries are disabled for this adapter. Each HTTP attempt is reserved before dispatch and counted exactly.
 - Requests are spaced at least 3.1 seconds apart to remain below the documented 20-request/minute burst ceiling; the offline artifact validator enforces a minimum 3.0-second interval.
+- The per-run cap does not enforce the provider's separate 60-request/hour quota across multiple workflow runs. The operator must keep the aggregate across all batches at or below 60 attempts in any hour; do not dispatch batches in parallel.
 - Pagination must complete for all five competitions before an artifact is emitted.
 - Rows are normalized, source-hashed, deduplicated by provider/competition/source ID, and quarantined when invalid.
 - No raw provider payloads, credentials, database writes, imports, checkpoints, canonical merges or prediction publications are emitted.
