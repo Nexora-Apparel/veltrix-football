@@ -51,5 +51,8 @@ jobs:
       - name: Validate manual acquisition CLI without network access
         run: python scripts/acquire_fivedollar_day.py --help
 
+      - name: Validate offline artifact verifier CLI
+        run: python scripts/verify_acquisition_artifact.py --help
+
       - name: Run existing 17-competition verifier tests
         run: python -m unittest discover -s tests -p 'test_strikerapi_17_competitions.py' -v
