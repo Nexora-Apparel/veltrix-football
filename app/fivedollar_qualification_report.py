@@ -98,6 +98,8 @@ def build_fivedollar_qualification_report(
         row = {"competition_id": key, "competition_name": name.strip()}
         for field in fields:
             row[field] = _nonnegative_int(item[field], field)
+        if row["pages_fetched"] > 5 or (row["accepted_rows"] > 0 and row["pages_fetched"] == 0):
+            raise ValueError(f"competition_page_accounting_invalid:{index}")
         if not isinstance(item["pagination_complete"], bool):
             raise ValueError(f"pagination_complete_invalid:{index}")
         row["pagination_complete"] = item["pagination_complete"]
@@ -222,6 +224,7 @@ def validate_fivedollar_qualification_report(report: Any) -> dict:
     if not isinstance(entries, list) or not entries:
         raise ValueError("request_accounting_invalid")
     endpoint_names = set()
+    endpoint_counts = {}
     endpoint_total = 0
     for entry in entries:
         if not isinstance(entry, dict) or set(entry) != _REQUIRED_ENDPOINT:
@@ -233,9 +236,18 @@ def validate_fivedollar_qualification_report(report: Any) -> dict:
         if endpoint in endpoint_names:
             raise ValueError("duplicate_endpoint_accounting")
         endpoint_names.add(endpoint)
+        endpoint_counts[endpoint] = count
         endpoint_total += count
     if endpoint_total != actual:
         raise ValueError("request_accounting_mismatch")
+    if endpoint_counts.get("leagues") != catalogue["pages_fetched"]:
+        raise ValueError("catalogue_request_accounting_mismatch")
+    expected_fixture_endpoints = {f"leagues/{item['competition_id']}/fixtures" for item in competitions}
+    if set(endpoint_counts) != expected_fixture_endpoints | {"leagues"}:
+        raise ValueError("competition_endpoint_scope_mismatch")
+    for item in competitions:
+        if endpoint_counts.get(f"leagues/{item['competition_id']}/fixtures", 0) != item["pages_fetched"]:
+            raise ValueError("competition_request_accounting_mismatch")
     effects = report.get("side_effects")
     required = ("database_writes", "imports", "checkpoints", "canonical_merges", "prediction_publications")
     if not isinstance(effects, dict) or set(effects) != set(required) or any(effects.get(key) != 0 for key in required):
