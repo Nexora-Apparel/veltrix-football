@@ -63,6 +63,8 @@ class HistoricalAcquisitionTests(unittest.TestCase):
         self.assertEqual(result["report"]["competition_scope"], COMPETITIONS)
         self.assertEqual(result["report"]["request_budget"]["actual_requests"], 5)
         self.assertTrue(all(call[2] == 0 for call in client.calls))
+        self.assertTrue(all(call[1]["start_time"] == 20261101 for call in client.calls))
+        self.assertTrue(all(call[1]["end_time"] == 20261108 for call in client.calls))
         self.assertEqual(result["side_effects"]["database_writes"], 0)
         self.assertEqual(result["side_effects"]["imports"], 0)
 
