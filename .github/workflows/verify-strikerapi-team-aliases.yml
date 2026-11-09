@@ -2,6 +2,13 @@ name: Verify StrikerAPI Team Alias Candidates
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - phase-3/strikerapi-readonly-qualification
+    paths:
+      - ".github/workflows/verify-strikerapi-team-aliases.yml"
+      - "scripts/verify_strikerapi_team_aliases.py"
+      - "tests/test_team_alias_verification.py"
 
 permissions:
   contents: read
