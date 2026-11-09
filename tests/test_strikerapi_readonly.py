@@ -76,5 +76,28 @@ class StrikerPaginationTests(unittest.TestCase):
         self.assertEqual(reason, "valid")
 
 
+
+
+class StrikerSeasonFilterTests(unittest.TestCase):
+    def test_collect_pages_forwards_season_and_stage_filters(self):
+        received = []
+
+        def fake_call(_key, league, status, start, end, offset, **filters):
+            received.append((league, status, start, end, offset, filters))
+            return {"games": [], "count": 0}
+
+        rows, pages, truncated, _counts = collect_pages(
+            "test", "nwsl", "final", None, None, fake_call,
+            extra_params={"season": 2026, "stage": "knockout"},
+        )
+        self.assertEqual(rows, [])
+        self.assertEqual(pages, 1)
+        self.assertFalse(truncated)
+        self.assertEqual(
+            received,
+            [("nwsl", "final", None, None, 0, {"season": 2026, "stage": "knockout"})],
+        )
+
+
 if __name__ == "__main__":
     unittest.main()
