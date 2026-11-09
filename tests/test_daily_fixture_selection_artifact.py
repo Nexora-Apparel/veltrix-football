@@ -6,6 +6,7 @@ from app.daily_fixture_selection_artifact import (
     SelectionArtifactError,
     build_daily_selection_artifact,
     qualified_sources_from_registry,
+    validate_daily_selection_artifact,
 )
 
 
@@ -56,6 +57,17 @@ class DailySelectionArtifactTests(unittest.TestCase):
         self.assertEqual(artifact["source_acquisition_report_sha256"],
                          self.report["report_sha256"])
         self.assertEqual(len(artifact["selection_sha256"]), 64)
+        self.assertTrue(validate_daily_selection_artifact(artifact)["valid"])
+
+    def test_selection_artifact_tampering_is_detected(self):
+        artifact = build_daily_selection_artifact(
+            acquisition_report=self.report,
+            qualification_registry=self.registry,
+            target_date="2026-11-10", as_of="2026-11-09T20:00:00Z",
+        )
+        artifact["selection"]["selected_count"] = 0
+        with self.assertRaisesRegex(SelectionArtifactError, "selection_artifact_hash_mismatch"):
+            validate_daily_selection_artifact(artifact)
 
     def test_unqualified_source_is_rejected(self):
         registry = copy.deepcopy(self.registry)
