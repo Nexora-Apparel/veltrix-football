@@ -15,8 +15,8 @@ def build_acquisition_report(*, run_id: str, provider_scope: list[str],
         raise ValueError("run_id_required")
     if not isinstance(provider_scope, list) or not provider_scope:
         raise ValueError("provider_scope_required")
-    if not isinstance(competition_scope, list) or not competition_scope:
-        raise ValueError("competition_scope_required")
+    if not isinstance(competition_scope, list):
+        raise ValueError("competition_scope_must_be_a_list")
     if not isinstance(window, dict):
         raise ValueError("window_must_be_object")
     if not isinstance(batch_result, dict):
