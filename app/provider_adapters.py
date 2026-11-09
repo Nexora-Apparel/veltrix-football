@@ -177,12 +177,15 @@ class FiveDollarFootballClient:
         self.api_key = (api_key if api_key is not None else os.getenv("FIVEDOLLARFOOTBALL_API_KEY", "")).strip()
         self.timeout = timeout
 
-    def _get(self, path: str, params: dict[str, Any] | None = None) -> tuple[Any, Any]:
+    def _get(self, path: str, params: dict[str, Any] | None = None, *, retries: int = 2) -> tuple[Any, Any]:
         if not self.api_key:
             raise ProviderAPIError("FIVEDOLLARFOOTBALL_API_KEY is missing.")
         query = urlencode({k: v for k, v in (params or {}).items() if v is not None})
         url = f"{self.base_url}/{path.lstrip('/')}" + (f"?{query}" if query else "")
-        status, headers, payload = _json_request(url, {"Authorization": f"Bearer {self.api_key}"}, self.timeout)
+        status, headers, payload = _json_request(
+            url, {"Authorization": f"Bearer {self.api_key}"},
+            self.timeout, retries=retries,
+        )
         if status != 200 or not isinstance(payload, dict) or payload.get("success") != 1:
             raise ProviderAPIError("5DollarFootballAPI returned an unsuccessful or unexpected response.")
         return payload, headers
