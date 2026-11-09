@@ -6,6 +6,8 @@ import json
 import re
 from pathlib import Path
 from typing import Any
+from datetime import date, datetime, timedelta
+from zoneinfo import ZoneInfo
 
 _HEX_SHA256 = re.compile(r"^[0-9a-f]{64}$")
 _RECORD_KEYS = {
@@ -93,3 +95,79 @@ def validate_acquisition_report_file(path: str | Path) -> dict:
     except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
         raise ArtifactIntegrityError(f"report_file_unreadable:{type(exc).__name__}") from None
     return validate_acquisition_report(report)
+
+
+FIVEDOLLAR_HISTORY_COMPETITIONS = {
+    "3405541143", "3614399544", "4160026622", "4212821298", "686337048",
+}
+
+
+def validate_fivedollar_history_batch_report(report: Any) -> dict:
+    """Validate the historical batch's five-league scope, time window and exact request ledger."""
+    base = validate_acquisition_report(report)
+    if report.get("provider_scope") != ["fivedollar"]:
+        raise ArtifactIntegrityError("history_provider_scope_invalid")
+    if report.get("competition_scope") != sorted(FIVEDOLLAR_HISTORY_COMPETITIONS):
+        raise ArtifactIntegrityError("history_competition_scope_invalid")
+    window = report.get("window")
+    if not isinstance(window, dict) or window.get("timezone") != "Africa/Lagos":
+        raise ArtifactIntegrityError("history_window_invalid")
+    try:
+        start = date.fromisoformat(window.get("start_date"))
+        end = date.fromisoformat(window.get("end_date"))
+        retrieved = datetime.fromisoformat(report["retrieved_at"].replace("Z", "+00:00"))
+        retrieved_local_date = retrieved.astimezone(ZoneInfo("Africa/Lagos")).date()
+    except (TypeError, ValueError, KeyError):
+        raise ArtifactIntegrityError("history_window_or_retrieval_timestamp_invalid") from None
+    if end < start or (end - start).days > 6:
+        raise ArtifactIntegrityError("history_window_must_be_one_to_seven_days")
+    if end >= retrieved_local_date or start < retrieved_local_date - timedelta(days=89):
+        raise ArtifactIntegrityError("history_window_outside_documented_results_period")
+    if window.get("status") != "finished" or window.get("semantics") != "inclusive_calendar_dates":
+        raise ArtifactIntegrityError("history_status_or_date_semantics_invalid")
+
+    budget = report.get("request_budget")
+    if not isinstance(budget, dict) or budget.get("provider") != "fivedollar":
+        raise ArtifactIntegrityError("history_request_budget_missing")
+    maximum = budget.get("maximum_requests")
+    actual = budget.get("actual_requests")
+    if (isinstance(maximum, bool) or not isinstance(maximum, int) or not 1 <= maximum <= 20
+            or isinstance(actual, bool) or not isinstance(actual, int) or not 5 <= actual <= maximum):
+        raise ArtifactIntegrityError("history_request_budget_invalid")
+    if budget.get("automatic_retries") != 0:
+        raise ArtifactIntegrityError("history_automatic_retries_not_disabled")
+    if budget.get("request_accounting") != "one_reserved_call_per_http_attempt":
+        raise ArtifactIntegrityError("history_request_accounting_contract_invalid")
+    pages = budget.get("pages_by_competition")
+    if not isinstance(pages, dict) or set(pages) != FIVEDOLLAR_HISTORY_COMPETITIONS:
+        raise ArtifactIntegrityError("history_page_accounting_scope_invalid")
+    for competition_id, count in pages.items():
+        if isinstance(count, bool) or not isinstance(count, int) or not 1 <= count <= 3:
+            raise ArtifactIntegrityError(f"history_page_count_invalid:{competition_id}")
+    if sum(pages.values()) != actual:
+        raise ArtifactIntegrityError("history_request_page_accounting_mismatch")
+
+    zone = ZoneInfo("Africa/Lagos")
+    for index, record in enumerate(report["records"]):
+        if record["provider"] != "fivedollar":
+            raise ArtifactIntegrityError(f"history_record_provider_invalid:{index}")
+        if record["competition_key"] not in FIVEDOLLAR_HISTORY_COMPETITIONS:
+            raise ArtifactIntegrityError(f"history_record_competition_invalid:{index}")
+        if record["normalized_status"] != "finished":
+            raise ArtifactIntegrityError(f"history_record_status_invalid:{index}")
+        try:
+            kickoff = datetime.fromisoformat(record["kickoff_at"].replace("Z", "+00:00"))
+        except (AttributeError, ValueError):
+            raise ArtifactIntegrityError(f"history_record_kickoff_invalid:{index}") from None
+        if kickoff.astimezone(zone).date() < start or kickoff.astimezone(zone).date() > end:
+            raise ArtifactIntegrityError(f"history_record_outside_batch_window:{index}")
+    if report["quality"].get("acceptance_pass") is not True or report["quarantine"]:
+        raise ArtifactIntegrityError("history_batch_quality_not_accepted")
+    return {
+        **base,
+        "provider": "fivedollar",
+        "competition_count": 5,
+        "actual_requests": actual,
+        "start_date": start.isoformat(),
+        "end_date": end.isoformat(),
+    }
