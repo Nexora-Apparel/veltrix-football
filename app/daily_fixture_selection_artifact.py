@@ -39,6 +39,21 @@ def qualified_sources_from_registry(registry: Any) -> dict[str, list[str]]:
             raise SelectionArtifactError(f"qualification_entry_invalid:{index}")
         provider = entry.get("provider")
         competition = entry.get("competition_key")
+        provider_policies = {
+            "strikerapi": {
+                "workflow_path": ".github/workflows/verify-strikerapi-17-competitions.yml",
+                "head_branch": "phase-3/strikerapi-readonly-qualification",
+                "artifact_name": "strikerapi-17-competition-coverage",
+            },
+            "fivedollar": {
+                "workflow_path": ".github/workflows/qualify-fivedollar-competitions.yml",
+                "head_branch": "phase-3/budget-aware-acquisition-contract",
+                "artifact_name": "fivedollar-competition-qualification",
+            },
+        }
+        policy = provider_policies.get(provider) if isinstance(provider, str) else None
+        if policy is None:
+            raise SelectionArtifactError(f"qualification_provider_not_supported:{index}")
         run_id = entry.get("qualification_run_id")
         artifact_hash = entry.get("artifact_sha256")
         evidence_ref = entry.get("evidence_ref")
@@ -60,11 +75,11 @@ def qualified_sources_from_registry(registry: Any) -> dict[str, list[str]]:
             raise SelectionArtifactError(f"qualification_attestation_repository_invalid:{index}")
         if attestation.get("event") != "workflow_dispatch":
             raise SelectionArtifactError(f"qualification_attestation_event_invalid:{index}")
-        if attestation.get("workflow_path") != ".github/workflows/verify-strikerapi-17-competitions.yml":
+        if attestation.get("workflow_path") != policy["workflow_path"]:
             raise SelectionArtifactError(f"qualification_attestation_workflow_invalid:{index}")
-        if attestation.get("head_branch") != "phase-3/strikerapi-readonly-qualification":
+        if attestation.get("head_branch") != policy["head_branch"]:
             raise SelectionArtifactError(f"qualification_attestation_branch_invalid:{index}")
-        if attestation.get("artifact_name") != "strikerapi-17-competition-coverage":
+        if attestation.get("artifact_name") != policy["artifact_name"]:
             raise SelectionArtifactError(f"qualification_attestation_artifact_name_invalid:{index}")
         if not isinstance(attestation.get("reviewer"), str) or not attestation["reviewer"].strip():
             raise SelectionArtifactError(f"qualification_attestation_reviewer_missing:{index}")
@@ -82,7 +97,8 @@ def qualified_sources_from_registry(registry: Any) -> dict[str, list[str]]:
         if (not isinstance(coverage, dict) or coverage.get("provider") != provider.lower()
                 or str(competition) not in coverage.get("competition_keys", [])
                 or coverage.get("pagination_complete") is not True
-                or coverage.get("invalid_rows") != 0 or coverage.get("duplicate_rows") != 0):
+                or coverage.get("invalid_rows") != 0 or coverage.get("duplicate_rows") != 0
+                or coverage.get("missing_team_ids", 0) != 0):
             raise SelectionArtifactError(f"qualification_attestation_scope_invalid:{index}")
         if not isinstance(run_id, str) or not run_id.strip():
             raise SelectionArtifactError(f"qualification_run_id_missing:{index}")
