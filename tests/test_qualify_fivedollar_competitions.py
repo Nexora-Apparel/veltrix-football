@@ -1,5 +1,5 @@
 import unittest
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 from scripts.qualify_fivedollar_competitions import Budget, collect
 
@@ -20,7 +20,7 @@ class FakeBudget(Budget):
             ], "pagination": {"has_more": False}}
         if endpoint == "leagues/39/fixtures":
             return {"success": 1, "data": [{
-                "id": 1001, "status": "finished", "kickoff_utc": datetime.now(timezone.utc).isoformat(),
+                "id": 1001, "status": "finished", "kickoff_utc": (datetime.now(timezone.utc) - timedelta(seconds=2)).isoformat(),
                 "league": {"id": 39},
                 "teams": {"home": {"id": 1, "name": "Home A"}, "away": {"id": 2, "name": "Away A"}},
                 "goals": {"home": 2, "away": 0},
