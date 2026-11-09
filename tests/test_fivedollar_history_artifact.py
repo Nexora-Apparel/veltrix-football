@@ -77,6 +77,14 @@ class HistoricalArtifactTests(unittest.TestCase):
         with self.assertRaisesRegex(ArtifactIntegrityError, "page_accounting_mismatch"):
             validate_fivedollar_history_batch_report(report)
 
+
+    def test_offline_validator_rejects_burst_unsafe_request_pacing(self):
+        report = valid_report()
+        report["request_budget"]["minimum_request_interval_seconds"] = 1.0
+        rehash(report)
+        with self.assertRaisesRegex(ArtifactIntegrityError, "request_pacing_invalid"):
+            validate_fivedollar_history_batch_report(report)
+
     def test_offline_validator_rejects_records_outside_competition_allowlist(self):
         report = valid_report()
         report["records"][0]["competition_key"] = "999999"
