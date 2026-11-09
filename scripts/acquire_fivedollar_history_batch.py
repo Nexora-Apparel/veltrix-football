@@ -41,8 +41,8 @@ def main() -> int:
             raise ValueError("start_date_outside_documented_90_day_history_window")
         if end < start or (end - start).days > 6:
             raise ValueError("history_batch_must_cover_one_to_seven_days")
-        if not 1 <= args.max_requests <= 20:
-            raise ValueError("max_requests_must_be_between_1_and_20")
+        if not 5 <= args.max_requests <= 20:
+            raise ValueError("max_requests_must_be_between_5_and_20")
         if not 1 <= args.max_pages_per_competition <= 3:
             raise ValueError("max_pages_per_competition_must_be_between_1_and_3")
         registry = json.loads(Path(args.registry).read_text(encoding="utf-8"))
