@@ -29,6 +29,16 @@ WORKFLOW = ".github/workflows/verify-strikerapi-17-competitions.yml"
 ARTIFACT_NAME = "strikerapi-17-competition-coverage"
 REPORT_NAME = "strikerapi_17_competition_coverage.json"
 API = "https://api.github.com"
+MAX_ARCHIVE_BYTES = 20 * 1024 * 1024
+MAX_REPORT_BYTES = 5 * 1024 * 1024
+MAX_ARCHIVE_ENTRIES = 50
+
+
+def read_limited(stream, limit: int) -> bytes:
+    data = stream.read(limit + 1)
+    if len(data) > limit:
+        raise RuntimeError("download_or_report_size_limit_exceeded")
+    return data
 
 
 def gh_json(endpoint: str) -> dict:
@@ -67,7 +77,7 @@ def download_artifact_zip(repo: str, artifact_id: int, destination: Path) -> Non
     opener = urllib.request.build_opener(NoRedirect)
     try:
         response = opener.open(request, timeout=30)
-        data = response.read()
+        data = read_limited(response, MAX_ARCHIVE_BYTES)
     except urllib.error.HTTPError as exc:
         if exc.code != 302:
             raise RuntimeError(f"artifact_download_http_{exc.code}") from None
@@ -76,7 +86,7 @@ def download_artifact_zip(repo: str, artifact_id: int, destination: Path) -> Non
             raise RuntimeError("artifact_download_redirect_missing") from None
         # The redirect is a short-lived signed URL; do not forward the GitHub token.
         with urllib.request.urlopen(location, timeout=60) as response:
-            data = response.read()
+            data = read_limited(response, MAX_ARCHIVE_BYTES)
     if not data.startswith(b"PK"):
         raise RuntimeError("artifact_download_not_zip")
     destination.write_bytes(data)
@@ -126,10 +136,16 @@ def main() -> int:
             if archive_sha != artifact_evidence["github_artifact_digest"]:
                 raise QualificationEvidenceError("github_artifact_digest_mismatch")
             with zipfile.ZipFile(archive) as bundle:
-                files = [name for name in bundle.namelist()
-                         if Path(name).name == REPORT_NAME and not name.endswith("/")]
+                members = bundle.infolist()
+                if len(members) > MAX_ARCHIVE_ENTRIES:
+                    raise QualificationEvidenceError("artifact_archive_entry_limit_exceeded")
+                files = [item for item in members
+                         if Path(item.filename).name == REPORT_NAME
+                         and not item.is_dir()]
                 if len(files) != 1:
                     raise QualificationEvidenceError("coverage_report_missing_or_ambiguous")
+                if files[0].file_size > MAX_REPORT_BYTES:
+                    raise QualificationEvidenceError("coverage_report_size_limit_exceeded")
                 report_bytes = bundle.read(files[0])
             report_sha = hashlib.sha256(report_bytes).hexdigest()
             try:
