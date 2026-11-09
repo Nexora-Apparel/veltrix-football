@@ -100,7 +100,7 @@ class QualificationEvidenceTests(unittest.TestCase):
         self.assertEqual(result["competition_count"], 17)
         self.assertEqual(result["check_count"], 34)
 
-    def test_rejects_missing_competition_and_empty_final_window(self):
+    def test_rejects_missing_competition_but_records_empty_final_window(self):
         report = good_report()
         report["checks"].pop()
         report["check_count"] = 33
@@ -111,8 +111,9 @@ class QualificationEvidenceTests(unittest.TestCase):
         report["checks"][0]["valid"] = 0
         report["totals"]["rows"] = 48
         report["totals"]["valid"] = 48
-        with self.assertRaises(QualificationEvidenceError):
-            validate_coverage_report(report)
+        result = validate_coverage_report(report)
+        self.assertEqual(result["competition_count"], 16)
+        self.assertEqual(result["observed_competition_count"], 17)
 
     def test_rejects_bad_counts_truncation_and_side_effects(self):
         for mutate in (
