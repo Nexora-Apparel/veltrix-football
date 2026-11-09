@@ -25,6 +25,7 @@ def main() -> int:
     from app.daily_fixture_selection_artifact import (
         SelectionArtifactError,
         build_daily_selection_artifact,
+        validate_daily_selection_artifact,
     )
 
     try:
@@ -38,6 +39,7 @@ def main() -> int:
             as_of=as_of,
             max_fixtures=args.max_fixtures,
         )
+        validate_daily_selection_artifact(artifact)
     except (OSError, UnicodeDecodeError, json.JSONDecodeError, ValueError, SelectionArtifactError) as exc:
         print(f"DAILY_SELECTION: BLOCKED ({type(exc).__name__}: {str(exc)[:180]})")
         return 2
