@@ -8,6 +8,7 @@ from app.provider_qualification_evidence import (
     validate_artifact_metadata,
     validate_coverage_report,
     build_review_attestation,
+    verify_attestation_signature,
 )
 
 
@@ -140,9 +141,18 @@ class QualificationEvidenceTests(unittest.TestCase):
             run=run, artifact=artifact, archive_sha256="d" * 64,
             report_sha256="e" * 64, coverage=validate_coverage_report(good_report()),
             reviewer="reviewer", reviewed_at="2026-11-10T00:15:00Z",
+            signing_key="unit-test-qualification-key-32chars-minimum",
         )
         self.assertEqual(attestation["review_status"], "qualified")
         self.assertEqual(attestation["head_sha"], "a" * 40)
+        self.assertTrue(verify_attestation_signature(
+            attestation, "unit-test-qualification-key-32chars-minimum"
+        ))
+        tampered = dict(attestation)
+        tampered["head_sha"] = "f" * 40
+        self.assertFalse(verify_attestation_signature(
+            tampered, "unit-test-qualification-key-32chars-minimum"
+        ))
 
 
 if __name__ == "__main__":
