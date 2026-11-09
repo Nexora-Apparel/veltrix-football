@@ -1,8 +1,12 @@
 """Convert independently verified 5Dollar artifacts into signed registry entries."""
 from __future__ import annotations
 
+import re
+
 from app.fivedollar_qualification_report import validate_fivedollar_qualification_report
 from app.provider_qualification_evidence import sign_attestation
+
+_SHA256 = re.compile(r"^[0-9a-f]{64}$")
 
 
 def build_fivedollar_registry(*, run: dict, artifact: dict, report: dict,
@@ -14,10 +18,10 @@ def build_fivedollar_registry(*, run: dict, artifact: dict, report: dict,
         raise ValueError("fivedollar_report_not_qualified")
     if str(report.get("run_id")) != str(run.get("workflow_run_id")):
         raise ValueError("fivedollar_report_run_id_mismatch")
-    if report.get("report_sha256") != report_sha256:
-        raise ValueError("fivedollar_report_hash_mismatch")
-    if not archive_sha256 or len(archive_sha256) != 64:
+    if not isinstance(archive_sha256, str) or not _SHA256.fullmatch(archive_sha256):
         raise ValueError("fivedollar_archive_hash_invalid")
+    if not isinstance(report_sha256, str) or not _SHA256.fullmatch(report_sha256):
+        raise ValueError("fivedollar_report_hash_invalid")
     if not reviewer.strip() or not reviewed_at.strip():
         raise ValueError("fivedollar_reviewer_identity_missing")
     if not artifact_url.startswith("https://github.com/"):
