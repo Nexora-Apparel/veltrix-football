@@ -130,6 +130,8 @@ def validate_coverage_report(report: Any) -> dict:
                      and row[field] >= 0, f"coverage_check_count_invalid:{field}")
         _require(row.get("invalid") == 0 and row.get("duplicate_ids") == 0,
                  "coverage_check_quality_failure")
+        _require(1 <= row["pages"] <= 3, "coverage_check_page_count_invalid")
+        _require(row["rows"] <= row["pages"] * 50, "coverage_check_page_capacity_exceeded")
         _require(row.get("pagination_truncated") is False, "coverage_check_truncated")
         _require(row.get("valid") == row.get("rows"), "coverage_check_accounting_mismatch")
         if status == "final" and row["rows"] > 0:
@@ -148,9 +150,17 @@ def validate_coverage_report(report: Any) -> dict:
     _require(bool(accepted_by_competition), "coverage_no_competition_with_final_history")
     budget = report.get("request_budget")
     _require(isinstance(budget, dict), "coverage_request_budget_missing")
-    _require(budget.get("maximum_calls") == 102 and budget.get("actual_calls", 103) <= 102,
+    actual_calls = budget.get("actual_calls")
+    _require(budget.get("maximum_calls") == 102
+             and isinstance(actual_calls, int) and not isinstance(actual_calls, bool)
+             and 34 <= actual_calls <= 102,
              "coverage_request_budget_invalid")
-    _require(budget.get("actual_documented_credits") == budget.get("actual_calls", -1) * 2,
+    _require(budget.get("max_pages_per_check") == 3
+             and budget.get("page_size") == 50
+             and budget.get("documented_credits_per_call") == 2
+             and budget.get("maximum_credits") == 204,
+             "coverage_request_budget_contract_mismatch")
+    _require(budget.get("actual_documented_credits") == actual_calls * 2,
              "coverage_credit_accounting_mismatch")
     return {
         "provider": "strikerapi",
