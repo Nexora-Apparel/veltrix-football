@@ -33,8 +33,12 @@ class FiveDollarRegistryReviewTests(unittest.TestCase):
                     "workflow_run_id": "98765",
                     "workflow_path": ".github/workflows/qualify-fivedollar-competitions.yml",
                     "event": "workflow_dispatch",
-                    "head_branch": "phase-3/budget-aware-acquisition-contract",
-                    "head_sha": "a" * 40},
+                    "dispatch_ref": "main",
+                    "dispatch_sha": "a30348ee19bb601ed0047d226ba7bc89b19a8f59",
+                    "head_branch": "main",
+                    "head_sha": "a30348ee19bb601ed0047d226ba7bc89b19a8f59",
+                    "checkout_ref": "phase-3/budget-aware-acquisition-contract",
+                    "checkout_sha": "60cfbc3775b67e6a3227e6294c8fd458b1555bc0"},
             "artifact": {"artifact_id": 123, "artifact_name": "fivedollar-competition-qualification",
                          "github_artifact_digest": "b" * 64},
             "report": self.report(), "archive_sha256": "b" * 64,
@@ -54,6 +58,44 @@ class FiveDollarRegistryReviewTests(unittest.TestCase):
         self.assertTrue(verify_attestation_signature(attestation, "test-key-that-is-at-least-thirty-two-characters"))
         self.assertEqual(attestation["coverage"]["provider"], "fivedollar")
         self.assertEqual(attestation["coverage"]["competition_keys"], ["140", "39"])
+        self.assertEqual(attestation["dispatch_ref"], "main")
+        self.assertEqual(attestation["dispatch_sha"], "a30348ee19bb601ed0047d226ba7bc89b19a8f59")
+        self.assertEqual(attestation["checkout_ref"], "phase-3/budget-aware-acquisition-contract")
+        self.assertEqual(attestation["checkout_sha"], "60cfbc3775b67e6a3227e6294c8fd458b1555bc0")
+
+
+    def test_main_dispatch_with_feature_branch_checkout_is_accepted_and_bound(self):
+        registry = self.build()
+        attestation = registry["sources"][0]["review_attestation"]
+        self.assertNotEqual(attestation["dispatch_ref"], attestation["checkout_ref"])
+        self.assertNotEqual(attestation["dispatch_sha"], attestation["checkout_sha"])
+        self.assertTrue(verify_attestation_signature(
+            attestation, "test-key-that-is-at-least-thirty-two-characters"
+        ))
+
+    def test_wrong_dispatch_or_checkout_identity_is_rejected(self):
+        cases = [
+            ({"dispatch_ref": "phase-3/budget-aware-acquisition-contract"}, "dispatch_ref_invalid"),
+            ({"dispatch_sha": "f" * 40}, "dispatch_sha_invalid"),
+            ({"checkout_ref": "main"}, "checkout_ref_invalid"),
+            ({"checkout_sha": "f" * 40}, "checkout_sha_invalid"),
+        ]
+        for update, reason in cases:
+            run = {
+                "repository": "Nexora-Apparel/veltrix-football",
+                "workflow_run_id": "98765",
+                "workflow_path": ".github/workflows/qualify-fivedollar-competitions.yml",
+                "event": "workflow_dispatch",
+                "dispatch_ref": "main",
+                "dispatch_sha": "a30348ee19bb601ed0047d226ba7bc89b19a8f59",
+                "head_branch": "main",
+                "head_sha": "a30348ee19bb601ed0047d226ba7bc89b19a8f59",
+                "checkout_ref": "phase-3/budget-aware-acquisition-contract",
+                "checkout_sha": "60cfbc3775b67e6a3227e6294c8fd458b1555bc0",
+            }
+            run.update(update)
+            with self.subTest(reason=reason), self.assertRaisesRegex(ValueError, reason):
+                self.build(run=run)
 
     def test_report_run_id_must_match_verified_run(self):
         with self.assertRaisesRegex(ValueError, "run_id_mismatch"):
