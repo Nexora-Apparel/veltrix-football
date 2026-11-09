@@ -124,7 +124,15 @@ The script fetches run and artifact metadata from GitHub, requires exactly one e
 
 The generated registry is a review record, not an assertion of complete season coverage. Its attestation is bound to the workflow run, branch, commit, artifact ID/digest, local report hash, and exact measured competition scope. It remains subject to normal repository review and must not be hand-edited to widen scope.
 
-The reviewer currently qualifies only the StrikerAPI 17-competition report schema. Other providers require their own provider-specific evidence validator and workflow contract; do not reuse this reviewer for 5Dollar qualification artifacts.
+The StrikerAPI reviewer remains provider-specific. A separate 5Dollar reviewer is implemented at `scripts/review_fivedollar_qualification.py`, using:
+- Workflow: `.github/workflows/qualify-fivedollar-competitions.yml`
+- Artifact: `fivedollar-competition-qualification`
+- Report: `fivedollar_competition_qualification.json`
+- Exact branch: `phase-3/budget-aware-acquisition-contract`
+- Validator: `app/fivedollar_qualification_report.py`
+- Registry signer: `app/fivedollar_qualification_review.py`
+
+The 5Dollar reviewer independently fetches the manual run and artifact metadata from GitHub, verifies the artifact digest and report SHA-256, validates the complete account catalogue and per-competition pagination/accounting, and emits one HMAC-attested registry entry per measured competition. It rejects non-qualifying reports and never calls football providers. The daily selection registry validator has separate allowlisted workflow, branch, and artifact identity for 5Dollar. Do not reuse the StrikerAPI report validator for 5Dollar evidence.
 
 ## 9. Attestation authenticity and runtime key
 
