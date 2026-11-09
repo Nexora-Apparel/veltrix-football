@@ -42,7 +42,7 @@ def main() -> int:
     output = Path(args.output)
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(
-        json.dumps(result["report"], indent=2, sort_keys=True, ensure_ascii=False) + "\\n",
+        json.dumps(result["report"], indent=2, sort_keys=True, ensure_ascii=False) + "\n",
         encoding="utf-8",
     )
     print(
