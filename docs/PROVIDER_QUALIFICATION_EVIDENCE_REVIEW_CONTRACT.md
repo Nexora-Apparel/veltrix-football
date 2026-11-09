@@ -125,3 +125,21 @@ The script fetches run and artifact metadata from GitHub, requires exactly one e
 The generated registry is a review record, not an assertion of complete season coverage. Its attestation is bound to the workflow run, branch, commit, artifact ID/digest, local report hash, and exact measured competition scope. It remains subject to normal repository review and must not be hand-edited to widen scope.
 
 The reviewer currently qualifies only the StrikerAPI 17-competition report schema. Other providers require their own provider-specific evidence validator and workflow contract; do not reuse this reviewer for 5Dollar qualification artifacts.
+
+## 9. Attestation authenticity and runtime key
+
+Reviewer attestations are authenticated with HMAC-SHA256 over canonical JSON. This prevents a user from fabricating or editing a registry row and merely copying the expected attestation fields.
+
+The reviewer and daily selection process require the same independently provisioned secret:
+
+- Environment variable: `VELTRIX_QUALIFICATION_ATTESTATION_KEY`
+- Minimum length: 32 characters.
+- Store it as a protected GitHub Actions secret for any future CI job that validates a populated registry, and provide it only to the trusted offline reviewer/runtime environment.
+- Never commit the value, place it in a registry, or print it in logs.
+- Missing or invalid key means fail closed; the reviewer emits no qualified registry and daily selection rejects qualified entries.
+
+The key has not been provisioned in this repository by this change. Provisioning it is an operational prerequisite before any reviewer can issue a usable signed registry.
+
+## 10. Empty competition windows
+
+All 17 competition keys must be represented in the report with both final and scheduled checks, but an empty final-history window does not become a qualified competition. The reviewer qualifies only competitions with at least one validated final result in the measured window. Empty windows remain explicitly represented in the audit evidence. A report with no competition having final history is rejected.
