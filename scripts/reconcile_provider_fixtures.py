@@ -111,7 +111,7 @@ def reconcile(striker_rows: list[dict], dollar_rows: list[dict], competition_map
     acceptance_pass = (all(v["balanced"] for v in {
         "striker":{"balanced":len(left)==matched_l+unmatched_l+len(ql)},
         "fivedollar":{"balanced":len(right)==matched_r+unmatched_r+len(qr)}
-    }.items()) and not duplicate_left and not duplicate_right)
+    }.values()) and not duplicate_left and not duplicate_right)
     return {"schema_version":1,"mode":"read_only_no_merge","acceptance_pass":acceptance_pass,"tolerance_seconds":tolerance_seconds,
             "competition_map_striker_to_fivedollar":competition_map,
             "source_counts":{"striker":len(left),"fivedollar":len(right)},
