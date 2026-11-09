@@ -91,6 +91,22 @@ class FixtureNormalizerTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "unsupported_provider"):
             normalize_observation("unknown", {}, endpoint="x")
 
+    def test_unknown_provider_status_is_rejected(self):
+        row = striker_row()
+        row["status"] = "mystery_state"
+        with self.assertRaisesRegex(ValueError, "unsupported_source_status"):
+            normalize_striker_game(row, competition_key="soccer", endpoint="list_games",
+                                   retrieved_at=RETRIEVED, run_id=RUN)
+
+    def test_fivedollar_unix_kickoff_timestamp_is_normalized(self):
+        row = dollar_row()
+        row.pop("kickoff_utc")
+        row["kickoff_ts"] = 1794330000
+        result = normalize_fivedollar_fixture(
+            row, endpoint="fixtures", retrieved_at=RETRIEVED, run_id=RUN,
+        )
+        self.assertTrue(result["kickoff_at"].endswith("Z"))
+
     def test_payload_hash_is_stable(self):
         first = normalize_striker_game(
             striker_row(), competition_key="soccer", endpoint="list_games",
