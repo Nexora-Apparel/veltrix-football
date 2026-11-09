@@ -96,3 +96,42 @@ def build_daily_selection_artifact(*, acquisition_report: dict,
     }
     artifact["selection_sha256"] = _canonical_hash(artifact)
     return artifact
+
+
+def validate_daily_selection_artifact(artifact: Any) -> dict:
+    if not isinstance(artifact, dict) or artifact.get("schema_version") != 1:
+        raise SelectionArtifactError("selection_artifact_schema_invalid")
+    if artifact.get("artifact_type") != "veltrix_daily_fixture_selection":
+        raise SelectionArtifactError("selection_artifact_type_invalid")
+    supplied = artifact.get("selection_sha256")
+    if not isinstance(supplied, str) or not _SHA256.fullmatch(supplied):
+        raise SelectionArtifactError("selection_artifact_hash_invalid")
+    unhashed = dict(artifact)
+    unhashed.pop("selection_sha256", None)
+    if _canonical_hash(unhashed) != supplied:
+        raise SelectionArtifactError("selection_artifact_hash_mismatch")
+    selection = artifact.get("selection")
+    if not isinstance(selection, dict) or not isinstance(selection.get("selected"), list):
+        raise SelectionArtifactError("selection_payload_invalid")
+    selected_count = selection.get("selected_count")
+    if selected_count != len(selection["selected"]):
+        raise SelectionArtifactError("selection_count_mismatch")
+    if isinstance(selection.get("maximum_fixtures"), bool) or not isinstance(selection.get("maximum_fixtures"), int) or not 1 <= selection["maximum_fixtures"] <= 25:
+        raise SelectionArtifactError("selection_cap_invalid")
+    if selected_count > selection["maximum_fixtures"]:
+        raise SelectionArtifactError("selection_cap_exceeded")
+    policy = selection.get("policy")
+    if not isinstance(policy, dict) or policy.get("synthetic_fixtures") != 0 or policy.get("database_writes") != 0 or policy.get("prediction_publications") != 0:
+        raise SelectionArtifactError("selection_policy_boundary_invalid")
+    side_effects = artifact.get("side_effects")
+    if not isinstance(side_effects, dict) or any(
+        side_effects.get(key) != 0
+        for key in ("provider_requests", "database_writes", "imports", "prediction_publications")
+    ):
+        raise SelectionArtifactError("selection_side_effect_boundary_invalid")
+    return {
+        "valid": True,
+        "selection_sha256": supplied,
+        "selected_count": selected_count,
+        "maximum_fixtures": selection["maximum_fixtures"],
+    }
