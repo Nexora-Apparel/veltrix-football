@@ -61,9 +61,13 @@ class AnchoredCrosswalkTests(unittest.TestCase):
                     x["fivedollar"]["away_id"], x["fivedollar"]["home_id"]
                 )
         result = audit_crosswalk(report, minimum_support=2)
-        self.assertNotIn(("30", "130"), {
-            (x["striker_team_id"], x["fivedollar_team_id"]) for x in result["crosswalks"]
-        })
+        candidate = next(
+            x for x in result["crosswalks"]
+            if (x["striker_team_id"], x["fivedollar_team_id"]) == ("30", "130")
+        )
+        self.assertEqual(candidate["anchored_crosswalk_fixture_count"], 1)
+        self.assertEqual(candidate["status"], "INSUFFICIENT_ANCHORED_SUPPORT")
+        self.assertFalse(result["all_crosswalks_repeatedly_supported"])
 
     def test_timezone_offsets_are_normalized(self):
         result = audit_crosswalk(self.report(), minimum_support=2)
