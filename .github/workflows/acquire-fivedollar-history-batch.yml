@@ -49,7 +49,7 @@ jobs:
       - name: Check out historical acquisition implementation
         uses: actions/checkout@v4
         with:
-          ref: 75f036dc7f4e088cfe5e359ad67fa2daaf25df9b
+          ref: bf58e96fd4a6a6ac2a8b7df806c866383606e11e
 
       - name: Check out persistent hourly quota ledger
         uses: actions/checkout@v4
