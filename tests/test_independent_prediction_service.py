@@ -139,7 +139,7 @@ class IndependentPredictionServiceTests(unittest.TestCase):
         snapshot["feature_count"] = len(snapshot["features"])
         snapshot.pop("snapshot_sha256")
         snapshot["snapshot_sha256"] = _hash(snapshot)
-        with self.assertRaisesRegex(IndependentInferenceError, "feature_snapshot_rejected"):
+        with self.assertRaisesRegex(IndependentInferenceError, "required_model_features_missing"):
             infer_independent_fixture(
                 fixture=fixture, feature_snapshot=snapshot,
                 results_model=self.model,
