@@ -5,7 +5,7 @@ from app.market_probability_calibration import (
     MarketCalibrationError,
     calibrate_model_on_validation_split,
 )
-from app.independent_market_models import predict_independent_markets
+from app.independent_market_models import ResultsModelError, predict_independent_markets
 from test_dataset_bound_market_training import dataset_fixture
 
 
@@ -59,7 +59,7 @@ class MarketProbabilityCalibrationTests(unittest.TestCase):
             model=model, dataset=dataset, calibrated_at="2026-11-18T00:00:00Z",
         )["model"]
         row = next(row for row in dataset["rows"] if row["split"] == "test")
-        with self.assertRaisesRegex(Exception, "calibrated_after_prediction_cutoff"):
+        with self.assertRaisesRegex(ResultsModelError, "calibrated_after_prediction_cutoff"):
             predict_independent_markets(
                 model=calibrated, features=row["predictors"],
                 prediction_as_of="2026-11-17T00:00:00Z",
