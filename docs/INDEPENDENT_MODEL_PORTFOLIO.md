@@ -21,12 +21,14 @@ Improve probability quality through independent model families, strict point-in-
 - Produces rating difference and history counts as model features, not market probabilities.
 - Must be tested against static and alternative K-factor variants in walk-forward evaluation.
 
-### 3. Goal-count model family — next
-- Independent home/away goal-rate estimators.
-- Poisson scoreline matrix as a baseline.
-- Dixon-Coles low-score dependence correction as a separately fitted challenger, not inherited legacy logic.
-- Derive 1X2, BTTS and totals probabilities from the joint score distribution.
-- Validate tail mass, scoreline calibration and low-score correction stability.
+### 3. Goal-count model family — fitted shadow implementation added
+- `app/poisson_dixon_coles_model.py` fits separate competition-scoped home/away scoring intercepts and team attack/defence effects from settled training rows.
+- L2 regularization and within-competition identifiability constraints; optional exponential time-decay weights.
+- Dixon-Coles rho is estimated by deterministic profile-likelihood grid search on training rows only.
+- Uses `app/poisson_dc_head.py` to derive 1X2, BTTS and half-goal totals from the corrected scoreline matrix; material Poisson tail mass fails closed.
+- Artifacts bind dataset digest, train/validation/test fixture manifests, training cutoff, training timestamp, source digest and configuration.
+- Inference verifies artifact integrity and point-in-time ordering. Unknown competitions/teams abstain.
+- Research-only; no publication or value betting. Unit/CI tests do not constitute real-data training or accuracy certification.
 
 ### 4. Nonlinear tabular challenger — next
 - Gradient-boosted trees (candidate: LightGBM or CatBoost) for 1X2, BTTS and totals.
