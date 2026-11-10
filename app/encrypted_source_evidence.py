@@ -47,6 +47,8 @@ def _key(value: str | bytes) -> bytes:
 def _binding(report: dict) -> dict:
     digest = report.get("report_sha256")
     run_ids = {r.get("run_id") for r in report.get("records", []) if isinstance(r, dict)}
+    if not run_ids and isinstance(report.get("run_id"), str):
+        run_ids.add(report["run_id"])
     run_ids.update(q.get("source", {}).get("run_id") for q in report.get("quarantine", [])
                    if isinstance(q, dict) and isinstance(q.get("source"), dict))
     window = report.get("window")
