@@ -24,6 +24,9 @@ from app.settlement_timestamp_source import (
 from app.results_training_dataset_adapter import (
     ResultsTrainingAdapterError, assemble_results_history_dataset,
 )
+from app.source_qualification_registry import (
+    SourceQualificationRegistryError, resolve_qualified_settlement_source,
+)
 
 
 class AcquisitionDatasetBridgeError(ValueError):
@@ -50,8 +53,8 @@ def _timestamp(value: Any, field: str) -> str:
 
 def _qualified_settlement(record: dict, package: Any) -> dict:
     if not isinstance(package, dict) or set(package) != {
-        "source_contract", "raw_payload", "fixture_identity",
-        "expected_fixture_identity", "evidence",
+        "source_contract", "qualification_registry", "trusted_kms_clients",
+        "raw_payload", "fixture_identity", "expected_fixture_identity", "evidence",
     }:
         raise AcquisitionDatasetBridgeError("qualified_settlement_package_invalid")
     provider_payload = record.get("source_evidence", {}).get("raw_payload")
@@ -61,14 +64,25 @@ def _qualified_settlement(record: dict, package: Any) -> dict:
             raise AcquisitionDatasetBridgeError("provider_terminal_status_evidence_mismatch")
         if provider_status.get("terminal_status_confirmed") is not True:
             raise AcquisitionDatasetBridgeError("provider_terminal_status_not_confirmed")
+        qualification = resolve_qualified_settlement_source(
+            registry=package["qualification_registry"],
+            source_id=package["source_contract"].get("source_id"),
+            competition_id=record.get("competition_key"),
+            trusted_kms_clients=package["trusted_kms_clients"],
+            as_of=record.get("retrieved_at"),
+        )
+        if qualification["contract"] != package["source_contract"]:
+            raise AcquisitionDatasetBridgeError("settlement_source_contract_not_registry_bound")
         verified = validate_settlement_timestamp_evidence(
             package["evidence"],
-            source_contract=package["source_contract"],
+            source_contract=qualification["contract"],
             raw_payload=package["raw_payload"],
             fixture_identity=package["fixture_identity"],
             expected_fixture_identity=package["expected_fixture_identity"],
             kickoff_at=record.get("kickoff_at"),
         )
+    except SourceQualificationRegistryError as exc:
+        raise AcquisitionDatasetBridgeError(f"settlement_source_registry_rejected:{exc}") from None
     except SettlementTimestampSourceError as exc:
         raise AcquisitionDatasetBridgeError(f"qualified_settlement_rejected:{exc}") from None
     except (KeyError, TypeError, SettlementEvidenceError) as exc:
@@ -81,8 +95,10 @@ def _qualified_settlement(record: dict, package: Any) -> dict:
     return {
         "settled_at": settled_at,
         "settlement_source_id": verified["source_id"],
-        "settlement_qualification_digest": package["source_contract"]["qualification_digest"],
+        "settlement_qualification_digest": qualification["contract"]["qualification_digest"],
         "settlement_evidence_sha256": verified["evidence_sha256"],
+        "settlement_registry_sha256": qualification["registry_sha256"],
+        "settlement_registry_signing_key_arn": qualification["signing_key_arn"],
     }
 
 
@@ -186,11 +202,14 @@ def assemble_provider_acquisition_dataset(*, acquisition_records: list[dict],
             "settlement_source_id": row["settlement_source_id"],
             "settlement_qualification_digest": row["settlement_qualification_digest"],
             "settlement_evidence_sha256": row["settlement_evidence_sha256"],
+            "settlement_registry_sha256": row["settlement_registry_sha256"],
+            "settlement_registry_signing_key_arn": row["settlement_registry_signing_key_arn"],
         })
     feature_history = [
         {key: value for key, value in row.items() if key not in {
             "settlement_source_id", "settlement_qualification_digest",
-            "settlement_evidence_sha256",
+            "settlement_evidence_sha256", "settlement_registry_sha256",
+            "settlement_registry_signing_key_arn",
         }}
         for row in history
     ]
