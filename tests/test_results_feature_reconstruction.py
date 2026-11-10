@@ -96,9 +96,11 @@ class ResultsFeatureReconstructionTests(unittest.TestCase):
 
     def test_rejects_history_settled_after_feature_cutoff(self):
         history = make_history()
-        history[0]["settled_at"] = "2026-09-01T17:00:00Z"
+        for row in history:
+            if "A" in (row["home_team_id"], row["away_team_id"]):
+                row["settled_at"] = "2026-09-01T13:00:00Z"
         with self.assertRaisesRegex(
-            FeatureReconstructionError, "home_history_below_minimum|away_history_below_minimum"
+            FeatureReconstructionError, "home_history_below_minimum"
         ):
             reconstruct_pre_match_features(
                 historical_matches=history, target_fixture=TARGET,
