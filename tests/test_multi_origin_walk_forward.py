@@ -125,7 +125,9 @@ class MultiOriginWalkForwardTests(unittest.TestCase):
 
     def test_rejects_overlapping_test_windows(self):
         overlapping = [dict(ORIGINS[0]), dict(ORIGINS[1])]
-        overlapping[1]["test_start_date"] = "2026-09-01"
+        overlapping[1]["validation_end_date"] = "2026-09-07"
+        overlapping[1]["test_start_date"] = "2026-09-15"
+        overlapping[1]["test_end_date"] = "2026-10-14"
         with self.assertRaisesRegex(WalkForwardEvaluationError, "test_windows_overlap"):
             evaluate_multi_origin_walk_forward(
                 dataset=walk_forward_dataset(), origins=overlapping, epochs=100,
