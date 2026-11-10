@@ -139,6 +139,10 @@ def _walk_forward(rows: object, market: str, evaluated: datetime) -> tuple[list[
             raise CertificationError(f"{market}_walk_forward_record_after_evaluation:{fixture}")
         if label_available <= kickoff:
             raise CertificationError(f"{market}_label_not_available_after_kickoff:{fixture}")
+        for digest_field in ("label_source_evidence_sha256",):
+            digest = row.get(digest_field)
+            if not isinstance(digest, str) or len(digest) != 64 or any(ch not in "0123456789abcdef" for ch in digest):
+                raise CertificationError(f"{market}_{digest_field}_invalid:{fixture}")
         target = row.get("target")
         if target not in classes:
             raise CertificationError(f"{market}_target_invalid:{fixture}")
@@ -150,6 +154,9 @@ def _walk_forward(rows: object, market: str, evaluated: datetime) -> tuple[list[
             captured = _timestamp(captured_at, f"{market}_bookmaker_odds_at")
             if captured > kickoff:
                 raise CertificationError(f"{market}_odds_after_kickoff:{fixture}")
+            odds_digest = row.get("odds_source_evidence_sha256")
+            if not isinstance(odds_digest, str) or len(odds_digest) != 64 or any(ch not in "0123456789abcdef" for ch in odds_digest):
+                raise CertificationError(f"{market}_odds_source_evidence_sha256_invalid:{fixture}")
             if not isinstance(odds, dict) or set(odds) != set(classes):
                 raise CertificationError(f"{market}_bookmaker_odds_classes_invalid:{fixture}")
             implied = {}
@@ -189,6 +196,10 @@ def _prospective(rows: object, market: str, evaluated: datetime) -> list[dict]:
             raise CertificationError(f"{market}_settlement_not_after_kickoff:{fixture}")
         if settled > evaluated or kickoff > evaluated:
             raise CertificationError(f"{market}_prospective_record_after_evaluation:{fixture}")
+        for digest_field in ("settlement_source_evidence_sha256", "odds_source_evidence_sha256"):
+            digest = row.get(digest_field)
+            if not isinstance(digest, str) or len(digest) != 64 or any(ch not in "0123456789abcdef" for ch in digest):
+                raise CertificationError(f"{market}_{digest_field}_invalid:{fixture}")
         odds_at = _timestamp(row.get("odds_captured_at"), f"{market}_prospective_odds_captured_at")
         if odds_at > kickoff:
             raise CertificationError(f"{market}_prospective_odds_after_kickoff:{fixture}")
