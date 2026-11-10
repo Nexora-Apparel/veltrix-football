@@ -14,7 +14,8 @@ from datetime import datetime, timezone
 from typing import Any
 
 from app.evidence_receipt_trust import (
-    ReceiptTrustError, validate_current_signing_key, validate_key_arn,
+    ReceiptTrustError, parse_trusted_key_regions,
+    validate_current_signing_key, validate_key_arn,
 )
 
 SCHEMA = "veltrix-settlement-source-qualification-registry-v1"
@@ -68,6 +69,28 @@ def _time(value: Any, field: str) -> datetime:
     if parsed.tzinfo is None or parsed.utcoffset() is None:
         raise SourceQualificationRegistryError(f"{field}_timezone_missing")
     return parsed.astimezone(timezone.utc)
+
+
+def build_trusted_kms_clients(*, registry_json: str,
+                               boto3_session: Any = None) -> dict:
+    """Construct verification clients only from explicit out-of-band ARN/region config."""
+    try:
+        key_regions = parse_trusted_key_regions(registry_json=registry_json)
+    except ReceiptTrustError as exc:
+        raise SourceQualificationRegistryError(str(exc)) from None
+    if boto3_session is None:
+        try:
+            import boto3
+            boto3_session = boto3.session.Session()
+        except Exception:
+            raise SourceQualificationRegistryError("trusted_kms_session_unavailable") from None
+    clients = {}
+    for key_arn, region in key_regions.items():
+        try:
+            clients[key_arn] = boto3_session.client("kms", region_name=region)
+        except Exception:
+            raise SourceQualificationRegistryError("trusted_kms_client_initialization_failed") from None
+    return clients
 
 
 def _record_contract(record: Any) -> dict:
