@@ -69,8 +69,8 @@ def validate_selection_policy(policy: Any) -> dict:
         raise ProspectiveValueLedgerError("selection_policy_bookmakers_invalid")
     ranges = {
         "min_model_probability": (0.0, 1.0),
-        "min_edge": (-1.0, 1.0),
-        "min_expected_return": (-1.0, 100.0),
+        "min_edge": (0.0, 1.0),
+        "min_expected_return": (0.0, 100.0),
         "min_odds_decimal": (1.000001, 1000.0),
         "max_odds_decimal": (1.000001, 1000.0),
         "stake_units": (0.000001, 1000000.0),
@@ -120,6 +120,88 @@ def _validate_ledger(ledger: Any) -> dict:
             or not isinstance(ledger["selections"], list)
             or not isinstance(ledger["settlements"], list)):
         raise ProspectiveValueLedgerError("ledger_schema_invalid")
+    seen_ids, fixture_market = set(), set()
+    for item in ledger["selections"]:
+        required = {
+            "schema_version", "fixture_id", "market", "selection", "bookmaker",
+            "odds_provider", "odds_observation_id", "odds_source_evidence_sha256",
+            "odds_captured_at", "kickoff_at", "prediction_as_of", "decision_at",
+            "model_sha256", "feature_snapshot_sha256", "model_probability",
+            "bookmaker_probability", "decimal_odds", "edge", "expected_return",
+            "stake_units", "policy_id", "policy_version", "policy_sha256",
+            "selection_id",
+        }
+        if not isinstance(item, dict) or set(item) != required or item["schema_version"] != 1:
+            raise ProspectiveValueLedgerError("selection_record_shape_invalid")
+        if item["market"] not in MARKETS or item["selection"] not in MARKETS[item["market"]]:
+            raise ProspectiveValueLedgerError("selection_record_market_invalid")
+        if item["odds_provider"] != "the_odds_api":
+            raise ProspectiveValueLedgerError("selection_record_provider_invalid")
+        for field in ("model_sha256", "feature_snapshot_sha256",
+                      "odds_source_evidence_sha256", "policy_sha256"):
+            _digest(item[field], field)
+        for field in ("fixture_id", "bookmaker", "policy_id", "policy_version",
+                      "odds_observation_id"):
+            if not isinstance(item[field], str) or not item[field].strip():
+                raise ProspectiveValueLedgerError(f"selection_record_{field}_invalid")
+        kickoff = _time(item["kickoff_at"], "kickoff_at")
+        prediction_time = _time(item["prediction_as_of"], "prediction_as_of")
+        decision_time = _time(item["decision_at"], "decision_at")
+        odds_time = _time(item["odds_captured_at"], "odds_captured_at")
+        if not prediction_time <= decision_time < kickoff or odds_time > decision_time:
+            raise ProspectiveValueLedgerError("selection_record_time_order_invalid")
+        numeric = {}
+        for field in ("model_probability", "bookmaker_probability", "decimal_odds",
+                      "edge", "expected_return", "stake_units"):
+            value = item[field]
+            if isinstance(value, bool) or not isinstance(value, (int, float)):
+                raise ProspectiveValueLedgerError(f"selection_record_{field}_invalid")
+            value = float(value)
+            if not math.isfinite(value):
+                raise ProspectiveValueLedgerError(f"selection_record_{field}_invalid")
+            numeric[field] = value
+        if (not 0 <= numeric["model_probability"] <= 1
+                or not 0 <= numeric["bookmaker_probability"] <= 1
+                or numeric["decimal_odds"] <= 1 or numeric["stake_units"] <= 0):
+            raise ProspectiveValueLedgerError("selection_record_numeric_range_invalid")
+        expected_edge = numeric["model_probability"] - numeric["bookmaker_probability"]
+        expected_return = numeric["model_probability"] * numeric["decimal_odds"] - 1.0
+        if (not math.isclose(numeric["edge"], expected_edge, rel_tol=1e-12, abs_tol=1e-12)
+                or not math.isclose(numeric["expected_return"], expected_return,
+                                    rel_tol=1e-12, abs_tol=1e-12)):
+            raise ProspectiveValueLedgerError("selection_record_value_integrity_mismatch")
+        selection_id = item["selection_id"]
+        payload = {key: value for key, value in item.items() if key != "selection_id"}
+        if _canonical_hash(payload) != selection_id or selection_id in seen_ids:
+            raise ProspectiveValueLedgerError("selection_record_digest_invalid")
+        seen_ids.add(selection_id)
+        identity = (item["fixture_id"], item["market"])
+        if identity in fixture_market:
+            raise ProspectiveValueLedgerError("existing_fixture_market_duplicate")
+        fixture_market.add(identity)
+
+    settled_ids = set()
+    for item in ledger["settlements"]:
+        required = {
+            "schema_version", "selection_id", "actual", "settled_at",
+            "settlement_source_evidence_sha256", "settlement_id",
+        }
+        if not isinstance(item, dict) or set(item) != required or item["schema_version"] != 1:
+            raise ProspectiveValueLedgerError("settlement_record_shape_invalid")
+        if item["selection_id"] not in seen_ids or item["selection_id"] in settled_ids:
+            raise ProspectiveValueLedgerError("settlement_record_identity_invalid")
+        selection = next(row for row in ledger["selections"]
+                         if row["selection_id"] == item["selection_id"])
+        if item["actual"] not in MARKETS[selection["market"]]:
+            raise ProspectiveValueLedgerError("settlement_record_actual_invalid")
+        if _time(item["settled_at"], "settled_at") <= _time(selection["kickoff_at"], "kickoff_at"):
+            raise ProspectiveValueLedgerError("settlement_record_time_invalid")
+        _digest(item["settlement_source_evidence_sha256"],
+                "settlement_source_evidence_sha256")
+        payload = {key: value for key, value in item.items() if key != "settlement_id"}
+        if _canonical_hash(payload) != item["settlement_id"]:
+            raise ProspectiveValueLedgerError("settlement_record_digest_invalid")
+        settled_ids.add(item["selection_id"])
     return ledger
 
 
