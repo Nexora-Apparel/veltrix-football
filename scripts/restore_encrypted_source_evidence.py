@@ -1,0 +1,149 @@
+#!/usr/bin/env python3
+"""Restore and cryptographically verify a private Veltrix evidence archive."""
+from __future__ import annotations
+
+import argparse
+import hashlib
+import json
+import os
+import re
+import sys
+from pathlib import Path
+from typing import Any
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
+from app.encrypted_source_evidence import decrypt_and_verify_source_evidence
+from app.provider_acquisition_artifact import validate_fivedollar_history_batch_report
+
+_SAFE = re.compile(r"^[A-Za-z0-9._-]{1,160}$")
+_REQUIRED_OBJECTS = {"report", "evidence", "manifest"}
+
+
+class EvidenceRestoreError(RuntimeError):
+    pass
+
+
+def _sha(data: bytes) -> str:
+    return hashlib.sha256(data).hexdigest()
+
+
+def restore_evidence(*, client: Any, bucket: str, receipt_key: str,
+                     encryption_key: str, output_dir: str | Path) -> dict:
+    if not isinstance(receipt_key, str) or not receipt_key or ".." in Path(receipt_key).parts:
+        raise EvidenceRestoreError("restore_receipt_key_invalid")
+    try:
+        receipt_bytes = client.get_object(Bucket=bucket, Key=receipt_key)["Body"].read()
+        receipt = json.loads(receipt_bytes)
+    except Exception:
+        raise EvidenceRestoreError("restore_receipt_unreadable") from None
+    if (not isinstance(receipt, dict)
+            or receipt.get("schema") != "veltrix-evidence-archive-receipt-v1"
+            or receipt.get("provider") != "fivedollar"
+            or receipt.get("bucket") != bucket
+            or receipt.get("readback_verified") is not True
+            or receipt.get("raw_payloads") != "encrypted_only"):
+        raise EvidenceRestoreError("restore_receipt_invalid")
+    run_id = receipt.get("run_id")
+    if not isinstance(run_id, str) or not _SAFE.fullmatch(run_id):
+        raise EvidenceRestoreError("restore_run_id_invalid")
+    if not receipt_key.endswith(f"/receipts/{run_id}.json"):
+        raise EvidenceRestoreError("restore_receipt_run_binding_invalid")
+
+    objects = receipt.get("objects")
+    if not isinstance(objects, list) or {item.get("kind") for item in objects if isinstance(item, dict)} != _REQUIRED_OBJECTS:
+        raise EvidenceRestoreError("restore_object_inventory_invalid")
+    restored: dict[str, bytes] = {}
+    for item in objects:
+        if not isinstance(item, dict):
+            raise EvidenceRestoreError("restore_object_entry_invalid")
+        kind, key, digest, size = item.get("kind"), item.get("key"), item.get("sha256"), item.get("bytes")
+        if (kind not in _REQUIRED_OBJECTS or kind in restored
+                or not isinstance(key, str) or not key or ".." in Path(key).parts
+                or not isinstance(digest, str) or not re.fullmatch(r"[0-9a-f]{64}", digest)
+                or isinstance(size, bool) or not isinstance(size, int) or size < 0):
+            raise EvidenceRestoreError("restore_object_metadata_invalid")
+        try:
+            body = client.get_object(Bucket=bucket, Key=key)["Body"].read()
+        except Exception:
+            raise EvidenceRestoreError(f"restore_object_missing:{kind}") from None
+        if len(body) != size or _sha(body) != digest:
+            raise EvidenceRestoreError(f"restore_object_digest_mismatch:{kind}")
+        restored[kind] = body
+
+    try:
+        report = json.loads(restored["report"])
+        manifest = json.loads(restored["manifest"])
+    except (TypeError, ValueError):
+        raise EvidenceRestoreError("restore_report_or_manifest_invalid") from None
+    integrity = validate_fivedollar_history_batch_report(report, require_acceptance=False)
+    if (integrity.get("report_sha256") != receipt.get("report_sha256")
+            or report.get("run_id") != run_id
+            or manifest.get("run_id") != run_id
+            or manifest.get("report_sha256") != receipt.get("report_sha256")
+            or manifest.get("evidence_count") != receipt.get("evidence_count")
+            or manifest.get("ciphertext_sha256") != _sha(restored["evidence"])
+            or manifest.get("evidence_count") != integrity.get("input_count")):
+        raise EvidenceRestoreError("restore_report_manifest_binding_invalid")
+    evidence = decrypt_and_verify_source_evidence(
+        restored["evidence"], report=report, manifest=manifest, key=encryption_key
+    )
+    if len(evidence) != integrity["input_count"]:
+        raise EvidenceRestoreError("restore_evidence_coverage_incomplete")
+
+    destination = Path(output_dir)
+    destination.mkdir(parents=True, exist_ok=True)
+    filenames = {
+        "report": "fivedollar_history_batch.json",
+        "evidence": "fivedollar_source_evidence.enc",
+        "manifest": "fivedollar_source_evidence.enc.manifest.json",
+    }
+    paths = {}
+    for kind, filename in filenames.items():
+        path = destination / filename
+        path.write_bytes(restored[kind])
+        paths[kind] = str(path)
+    return {
+        "valid": True, "run_id": run_id, "report_sha256": integrity["report_sha256"],
+        "accepted_count": integrity["accepted_count"],
+        "quarantined_count": integrity["quarantined_count"],
+        "evidence_count": len(evidence), "paths": paths,
+    }
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--run-id", required=True)
+    parser.add_argument("--output-dir", default="restored-fivedollar-evidence")
+    args = parser.parse_args()
+    try:
+        if not _SAFE.fullmatch(args.run_id):
+            raise EvidenceRestoreError("restore_run_id_invalid")
+        endpoint = os.getenv("VELTRIX_EVIDENCE_ARCHIVE_ENDPOINT_URL")
+        bucket = os.getenv("VELTRIX_EVIDENCE_ARCHIVE_BUCKET")
+        access = os.getenv("VELTRIX_EVIDENCE_ARCHIVE_ACCESS_KEY_ID")
+        secret = os.getenv("VELTRIX_EVIDENCE_ARCHIVE_SECRET_ACCESS_KEY")
+        encryption_key = os.getenv("VELTRIX_RAW_EVIDENCE_ENCRYPTION_KEY")
+        region = os.getenv("VELTRIX_EVIDENCE_ARCHIVE_REGION", "auto")
+        prefix = os.getenv("VELTRIX_EVIDENCE_ARCHIVE_PREFIX", "veltrix-football/evidence/v1").strip("/")
+        if not all((endpoint, bucket, access, secret, encryption_key)):
+            raise EvidenceRestoreError("private_evidence_restore_configuration_missing")
+        import boto3
+        client = boto3.client(
+            "s3", endpoint_url=endpoint, region_name=region,
+            aws_access_key_id=access, aws_secret_access_key=secret,
+        )
+        result = restore_evidence(
+            client=client, bucket=bucket,
+            receipt_key=f"{prefix}/receipts/{args.run_id}.json",
+            encryption_key=encryption_key, output_dir=args.output_dir,
+        )
+        print("PRIVATE_EVIDENCE_RESTORE: PASS; " + json.dumps(result, sort_keys=True))
+        return 0
+    except (OSError, ValueError, TypeError, KeyError, EvidenceRestoreError) as exc:
+        print(f"PRIVATE_EVIDENCE_RESTORE: FAIL ({type(exc).__name__}: {str(exc)[:160]})")
+        return 1
+
+
+if __name__ == "__main__":
+    sys.exit(main())
