@@ -31,6 +31,7 @@ def evidence_fixture(walk_count=1000, prospective_count=300):
                 },
                 "bookmaker_odds_at": f"{day}T10:00:00+01:00",
                 "odds_source_evidence_sha256": "b" * 64,
+                "crosswalk_source_evidence_sha256": "e" * 64,
                 "bookmaker_odds_decimal": {outcome: float(len(classes)) for outcome in classes},
             })
         prospective = []
@@ -44,6 +45,7 @@ def evidence_fixture(walk_count=1000, prospective_count=300):
                 "odds_captured_at": f"{day}T10:00:00+01:00",
                 "settlement_source_evidence_sha256": "c" * 64,
                 "odds_source_evidence_sha256": "d" * 64,
+                "crosswalk_source_evidence_sha256": "e" * 64,
                 "selection": selected,
                 "actual": selected,
                 "odds_decimal": 2.1,
@@ -59,7 +61,7 @@ class MarketReleaseCertificationTests(unittest.TestCase):
             evidence=evidence_fixture(),
             evaluated_at="2026-11-10T20:00:00Z",
             verified_source_evidence_sha256=[
-                "a" * 64, "b" * 64, "c" * 64, "d" * 64,
+                "a" * 64, "b" * 64, "c" * 64, "d" * 64, "e" * 64,
             ],
         )
         self.assertTrue(report["all_markets_certified"])
