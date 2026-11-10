@@ -71,20 +71,26 @@ def archive_evidence(*, client: Any, bucket: str, prefix: str,
     ]
     receipt_objects = []
     for label, key, body, content_type in objects:
+        expected_digest = _sha(body)
         if _head_exists(client, bucket, key):
-            raise EvidenceArchiveError(f"archive_object_already_exists:{label}")
-        client.put_object(
-            Bucket=bucket, Key=key, Body=body, ContentType=content_type,
-            Metadata={"sha256": _sha(body), "run-id": run_id},
-        )
-        downloaded = client.get_object(Bucket=bucket, Key=key)["Body"].read()
-        if _sha(downloaded) != _sha(body):
-            raise EvidenceArchiveError(f"archive_readback_digest_mismatch:{label}")
+            # Idempotent retry: accept an existing immutable object only when
+            # its downloaded bytes are exactly the bytes for this run.
+            downloaded = client.get_object(Bucket=bucket, Key=key)["Body"].read()
+            if _sha(downloaded) != expected_digest:
+                raise EvidenceArchiveError(f"archive_existing_object_digest_conflict:{label}")
+        else:
+            client.put_object(
+                Bucket=bucket, Key=key, Body=body, ContentType=content_type,
+                Metadata={"sha256": expected_digest, "run-id": run_id},
+            )
+            downloaded = client.get_object(Bucket=bucket, Key=key)["Body"].read()
+            if _sha(downloaded) != expected_digest:
+                raise EvidenceArchiveError(f"archive_readback_digest_mismatch:{label}")
         head = client.head_object(Bucket=bucket, Key=key)
         receipt_objects.append({
             "kind": label,
             "key": key,
-            "sha256": _sha(body),
+            "sha256": expected_digest,
             "bytes": len(body),
             "version_id": head.get("VersionId"),
         })
@@ -104,15 +110,31 @@ def archive_evidence(*, client: Any, bucket: str, prefix: str,
     receipt_bytes = (json.dumps(receipt, sort_keys=True, indent=2) + "\n").encode()
     receipt_key = f"{base}receipts/{run_id}.json"
     if _head_exists(client, bucket, receipt_key):
-        raise EvidenceArchiveError("archive_receipt_already_exists")
-    client.put_object(
-        Bucket=bucket, Key=receipt_key, Body=receipt_bytes,
-        ContentType="application/json",
-        Metadata={"sha256": _sha(receipt_bytes), "run-id": run_id},
-    )
-    downloaded_receipt = client.get_object(Bucket=bucket, Key=receipt_key)["Body"].read()
-    if _sha(downloaded_receipt) != _sha(receipt_bytes):
-        raise EvidenceArchiveError("archive_receipt_readback_failed")
+        # A prior attempt may have completed the commit marker but failed
+        # before writing its local receipt. Reuse it only after validating
+        # its run/report/object bindings and its own read-back digest.
+        downloaded_receipt = client.get_object(Bucket=bucket, Key=receipt_key)["Body"].read()
+        try:
+            archived_receipt = json.loads(downloaded_receipt)
+        except (TypeError, ValueError):
+            raise EvidenceArchiveError("archive_existing_receipt_invalid") from None
+        if (archived_receipt.get("schema") != "veltrix-evidence-archive-receipt-v1"
+                or archived_receipt.get("run_id") != run_id
+                or archived_receipt.get("report_sha256") != integrity["report_sha256"]
+                or archived_receipt.get("objects") != receipt_objects
+                or archived_receipt.get("readback_verified") is not True):
+            raise EvidenceArchiveError("archive_existing_receipt_binding_conflict")
+        receipt = archived_receipt
+        receipt_bytes = downloaded_receipt
+    else:
+        client.put_object(
+            Bucket=bucket, Key=receipt_key, Body=receipt_bytes,
+            ContentType="application/json",
+            Metadata={"sha256": _sha(receipt_bytes), "run-id": run_id},
+        )
+        downloaded_receipt = client.get_object(Bucket=bucket, Key=receipt_key)["Body"].read()
+        if _sha(downloaded_receipt) != _sha(receipt_bytes):
+            raise EvidenceArchiveError("archive_receipt_readback_failed")
     receipt["receipt_key"] = receipt_key
     receipt["receipt_sha256"] = _sha(receipt_bytes)
     Path(receipt_output_path).write_text(
