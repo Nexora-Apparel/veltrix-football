@@ -136,11 +136,8 @@ class IndependentPredictionServiceTests(unittest.TestCase):
             if item["name"] != FEATURES[0]
         ]
         from app.point_in_time_feature_contract import _hash
-        unhashed = dict(snapshot)
-        unhashed.pop("snapshot_sha256")
         snapshot["feature_count"] = len(snapshot["features"])
-        unhashed = dict(snapshot)
-        unhashed.pop("snapshot_sha256", None)
+        snapshot.pop("snapshot_sha256")
         snapshot["snapshot_sha256"] = _hash(snapshot)
         with self.assertRaisesRegex(IndependentInferenceError, "feature_snapshot_rejected"):
             infer_independent_fixture(
