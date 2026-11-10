@@ -7,10 +7,10 @@ from pathlib import Path
 from unittest.mock import patch
 
 from scripts.archive_encrypted_source_evidence import (
-    EvidenceArchiveError, archive_evidence,
+    EvidenceArchiveError, archive_evidence, _validate_endpoint_url as validate_archive_endpoint,
 )
 from scripts.restore_encrypted_source_evidence import (
-    EvidenceRestoreError, restore_evidence,
+    EvidenceRestoreError, restore_evidence, _validate_endpoint_url as validate_restore_endpoint,
 )
 
 
@@ -39,6 +39,26 @@ class FakeS3:
         if self.corrupt_readback and Key.endswith(".enc"):
             body = body + b"tamper"
         return {"Body": BytesIO(body)}
+
+
+class PrivateEvidenceEndpointTests(unittest.TestCase):
+    def test_archive_and_restore_require_https(self):
+        self.assertEqual(validate_archive_endpoint("https://objects.example.test"), "https://objects.example.test")
+        self.assertEqual(validate_restore_endpoint("https://objects.example.test"), "https://objects.example.test")
+        for endpoint in ("http://objects.example.test", "file:///tmp/archive", "", None):
+            with self.subTest(endpoint=endpoint):
+                with self.assertRaisesRegex(EvidenceArchiveError, "must_be_https"):
+                    validate_archive_endpoint(endpoint)
+                with self.assertRaisesRegex(EvidenceRestoreError, "must_be_https"):
+                    validate_restore_endpoint(endpoint)
+
+    def test_archive_and_restore_reject_embedded_credentials(self):
+        for endpoint in ("https://user:secret@objects.example.test", "https://user@objects.example.test"):
+            with self.subTest(endpoint=endpoint):
+                with self.assertRaisesRegex(EvidenceArchiveError, "must_be_https"):
+                    validate_archive_endpoint(endpoint)
+                with self.assertRaisesRegex(EvidenceRestoreError, "must_be_https"):
+                    validate_restore_endpoint(endpoint)
 
 
 class PrivateEvidenceArchiveTests(unittest.TestCase):
