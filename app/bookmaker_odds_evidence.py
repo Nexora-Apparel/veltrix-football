@@ -190,6 +190,7 @@ def append_odds_observations(ledger: Any, observations: list[dict]) -> dict:
         raise BookmakerOddsEvidenceError("observations_must_be_list")
     existing = list(ledger["observations"])
     seen = set()
+    seen_times = set()
     last: dict[tuple[str, str, str, str], datetime] = {}
     for item in existing:
         validate_odds_observation(item)
@@ -198,6 +199,10 @@ def append_odds_observations(ledger: Any, observations: list[dict]) -> dict:
         seen.add(item["observation_id"])
         key = (item["provider"], item["fixture_id"], item["market"], item["bookmaker"])
         stamp = _time(item["captured_at"], "captured_at")
+        time_key = (*key, stamp.isoformat())
+        if time_key in seen_times:
+            raise BookmakerOddsEvidenceError("existing_observation_timestamp_conflict")
+        seen_times.add(time_key)
         if key in last and stamp < last[key]:
             raise BookmakerOddsEvidenceError("existing_observation_order_invalid")
         last[key] = stamp
@@ -209,10 +214,14 @@ def append_odds_observations(ledger: Any, observations: list[dict]) -> dict:
             continue
         key = (item["provider"], item["fixture_id"], item["market"], item["bookmaker"])
         stamp = _time(item["captured_at"], "captured_at")
+        time_key = (*key, stamp.isoformat())
+        if time_key in seen_times:
+            raise BookmakerOddsEvidenceError("observation_timestamp_conflict")
         if key in last and stamp < last[key]:
             raise BookmakerOddsEvidenceError("observation_time_regression")
         existing.append(item)
         seen.add(oid)
+        seen_times.add(time_key)
         last[key] = stamp
         added += 1
     return {
