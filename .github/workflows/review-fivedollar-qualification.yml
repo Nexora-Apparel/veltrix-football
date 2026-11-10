@@ -27,11 +27,15 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Run offline review against the existing 5Dollar artifact
+      - name: Run offline review against the completed qualification artifact
         run: |
           python scripts/review_fivedollar_qualification.py \
             --repository Nexora-Apparel/veltrix-football \
-            --run-id 42717802779 \
+            --run-id 42839384647 \
+            --expected-dispatch-ref main \
+            --expected-dispatch-sha fa68dbc7eea42a2830a77165230426b3220aed9d \
+            --expected-checkout-ref phase-3/budget-aware-acquisition-contract \
+            --expected-checkout-sha f9c06b8dd8a398ff3ef37e0d2b2b36e026a7817f \
             --reviewer "VELTRIX qualification evidence reviewer" \
             --output fivedollar_reviewed_registry.json
 
@@ -43,47 +47,38 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
-      - name: Admit the five signed competition entries on the qualification branch
+      - name: Replace only the exact previously admitted 5Dollar scope with the newly reviewed registry
         env:
           GH_TOKEN: ${{ github.token }}
-          VELTRIX_QUALIFICATION_ATTESTATION_KEY: ${{ secrets.VELTRIX_QUALIFICATION_ATTESTATION_KEY }}
         run: |
+          set -euo pipefail
           python - <<'PY'
           import json
-          import os
           from pathlib import Path
-          from app.daily_fixture_selection_artifact import qualified_sources_from_registry
 
-          registry = json.loads(Path("fivedollar_reviewed_registry.json").read_text(encoding="utf-8"))
-          admitted = qualified_sources_from_registry(registry)
           expected = ["3405541143", "3614399544", "4160026622", "4212821298", "686337048"]
-          if admitted != {"fivedollar": expected}:
-              raise SystemExit("refusing_registry_commit_scope_mismatch")
-          if any(item.get("qualification_run_id") != "42717802779" for item in registry["sources"]):
-              raise SystemExit("refusing_registry_commit_run_mismatch")
+          path = Path("data/provider_qualification_registry.json")
+          if not path.is_file():
+              raise SystemExit("existing_signed_registry_missing")
+          existing = json.loads(path.read_text(encoding="utf-8"))
+          sources = existing.get("sources")
+          if not isinstance(sources, list) or len(sources) != len(expected):
+              raise SystemExit("existing_registry_scope_not_exact_fivedollar_set")
+          if any(item.get("provider") != "fivedollar" for item in sources):
+              raise SystemExit("existing_registry_contains_other_provider_scope")
+          if sorted(item.get("competition_key", "") for item in sources) != expected:
+              raise SystemExit("existing_registry_competition_scope_mismatch")
+          reviewed = json.loads(Path("fivedollar_reviewed_registry.json").read_text(encoding="utf-8"))
+          if sorted(item.get("competition_key", "") for item in reviewed.get("sources", [])) != expected:
+              raise SystemExit("reviewed_registry_competition_scope_mismatch")
+          if any(item.get("qualification_run_id") != "42839384647" for item in reviewed["sources"]):
+              raise SystemExit("reviewed_registry_run_id_mismatch")
           PY
-          mkdir -p data
-          if [ -f data/provider_qualification_registry.json ]; then
-            python - <<'PY'
-          import json
-          import os
-          from pathlib import Path
-          from app.daily_fixture_selection_artifact import qualified_sources_from_registry
-
-          existing = json.loads(Path("data/provider_qualification_registry.json").read_text(encoding="utf-8"))
-          admitted = qualified_sources_from_registry(existing)
-          expected = ["3405541143", "3614399544", "4160026622", "4212821298", "686337048"]
-          if admitted != {"fivedollar": expected}:
-              raise SystemExit("existing_registry_differs_from_approved_scope")
-          if any(item.get("qualification_run_id") != "42717802779" for item in existing["sources"]):
-              raise SystemExit("existing_registry_evidence_run_mismatch")
-          PY
-            echo "Existing registry already contains the exact verified five-competition evidence; no overwrite."
-          else
-            REGISTRY_B64="$(base64 -w 0 fivedollar_reviewed_registry.json)"
-            gh api --method PUT \
-              repos/Nexora-Apparel/veltrix-football/contents/data/provider_qualification_registry.json \
-              -f message="Admit five 5Dollar competitions from verified artifact [skip ci]" \
-              -f content="$REGISTRY_B64" \
-              -f branch="phase-3/budget-aware-acquisition-contract"
-          fi
+          REGISTRY_B64="$(base64 -w 0 fivedollar_reviewed_registry.json)"
+          REGISTRY_SHA="$(gh api "repos/Nexora-Apparel/veltrix-football/contents/data/provider_qualification_registry.json?ref=phase-3%2Fbudget-aware-acquisition-contract" --jq .sha)"
+          gh api --method PUT \
+            repos/Nexora-Apparel/veltrix-football/contents/data/provider_qualification_registry.json \
+            -f message="Refresh signed 5Dollar registry from run 42839384647 [skip ci]" \
+            -f content="$REGISTRY_B64" \
+            -f sha="$REGISTRY_SHA" \
+            -f branch="phase-3/budget-aware-acquisition-contract"

@@ -34,11 +34,11 @@ class FiveDollarRegistryReviewTests(unittest.TestCase):
                     "workflow_path": ".github/workflows/qualify-fivedollar-competitions.yml",
                     "event": "workflow_dispatch",
                     "dispatch_ref": "main",
-                    "dispatch_sha": "a30348ee19bb601ed0047d226ba7bc89b19a8f59",
+                    "dispatch_sha": "fa68dbc7eea42a2830a77165230426b3220aed9d",
                     "head_branch": "main",
-                    "head_sha": "a30348ee19bb601ed0047d226ba7bc89b19a8f59",
+                    "head_sha": "fa68dbc7eea42a2830a77165230426b3220aed9d",
                     "checkout_ref": "phase-3/budget-aware-acquisition-contract",
-                    "checkout_sha": "60cfbc3775b67e6a3227e6294c8fd458b1555bc0"},
+                    "checkout_sha": "f9c06b8dd8a398ff3ef37e0d2b2b36e026a7817f"},
             "artifact": {"artifact_id": 123, "artifact_name": "fivedollar-competition-qualification",
                          "github_artifact_digest": "b" * 64},
             "report": self.report(), "archive_sha256": "b" * 64,
@@ -59,9 +59,9 @@ class FiveDollarRegistryReviewTests(unittest.TestCase):
         self.assertEqual(attestation["coverage"]["provider"], "fivedollar")
         self.assertEqual(attestation["coverage"]["competition_keys"], ["140", "39"])
         self.assertEqual(attestation["dispatch_ref"], "main")
-        self.assertEqual(attestation["dispatch_sha"], "a30348ee19bb601ed0047d226ba7bc89b19a8f59")
+        self.assertEqual(attestation["dispatch_sha"], "fa68dbc7eea42a2830a77165230426b3220aed9d")
         self.assertEqual(attestation["checkout_ref"], "phase-3/budget-aware-acquisition-contract")
-        self.assertEqual(attestation["checkout_sha"], "60cfbc3775b67e6a3227e6294c8fd458b1555bc0")
+        self.assertEqual(attestation["checkout_sha"], "f9c06b8dd8a398ff3ef37e0d2b2b36e026a7817f")
 
 
     def test_main_dispatch_with_feature_branch_checkout_is_accepted_and_bound(self):
@@ -87,11 +87,11 @@ class FiveDollarRegistryReviewTests(unittest.TestCase):
                 "workflow_path": ".github/workflows/qualify-fivedollar-competitions.yml",
                 "event": "workflow_dispatch",
                 "dispatch_ref": "main",
-                "dispatch_sha": "a30348ee19bb601ed0047d226ba7bc89b19a8f59",
+                "dispatch_sha": "fa68dbc7eea42a2830a77165230426b3220aed9d",
                 "head_branch": "main",
-                "head_sha": "a30348ee19bb601ed0047d226ba7bc89b19a8f59",
+                "head_sha": "fa68dbc7eea42a2830a77165230426b3220aed9d",
                 "checkout_ref": "phase-3/budget-aware-acquisition-contract",
-                "checkout_sha": "60cfbc3775b67e6a3227e6294c8fd458b1555bc0",
+                "checkout_sha": "f9c06b8dd8a398ff3ef37e0d2b2b36e026a7817f",
             }
             run.update(update)
             with self.subTest(reason=reason), self.assertRaisesRegex(ValueError, reason):

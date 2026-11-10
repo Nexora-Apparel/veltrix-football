@@ -30,11 +30,11 @@ def build_fivedollar_registry(*, run: dict, artifact: dict, report: dict,
         raise ValueError("fivedollar_workflow_path_invalid")
     if run.get("dispatch_ref") != "main" or run.get("head_branch") != "main":
         raise ValueError("fivedollar_dispatch_ref_invalid")
-    if run.get("dispatch_sha") != "a30348ee19bb601ed0047d226ba7bc89b19a8f59":
+    if run.get("dispatch_sha") != "fa68dbc7eea42a2830a77165230426b3220aed9d":
         raise ValueError("fivedollar_dispatch_sha_invalid")
     if run.get("checkout_ref") != "phase-3/budget-aware-acquisition-contract":
         raise ValueError("fivedollar_checkout_ref_invalid")
-    if run.get("checkout_sha") != "60cfbc3775b67e6a3227e6294c8fd458b1555bc0":
+    if run.get("checkout_sha") != "f9c06b8dd8a398ff3ef37e0d2b2b36e026a7817f":
         raise ValueError("fivedollar_checkout_sha_invalid")
     if artifact.get("artifact_name") != "fivedollar-competition-qualification":
         raise ValueError("fivedollar_artifact_name_invalid")
