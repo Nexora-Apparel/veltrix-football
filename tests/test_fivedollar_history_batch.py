@@ -1,10 +1,16 @@
 import unittest
+import base64
+import json
+import tempfile
+from pathlib import date
+from pathlib import Path
 from datetime import date
 
 from app.provider_acquisition_adapters import (
     AcquisitionAdapterError,
     acquire_fivedollar_history_batch,
 )
+from app.encrypted_source_evidence import decrypt_and_verify_source_evidence
 
 
 COMPETITIONS = [
@@ -69,6 +75,31 @@ class HistoricalAcquisitionTests(unittest.TestCase):
         self.assertTrue(all(call[1]["end_time"] == 20261108 for call in client.calls))
         self.assertEqual(result["side_effects"]["database_writes"], 0)
         self.assertEqual(result["side_effects"]["imports"], 0)
+
+
+    def test_batch_writes_bound_encrypted_evidence_sidecar(self):
+        key = base64.b64encode(bytes(range(32))).decode('ascii')
+        with tempfile.TemporaryDirectory() as temp:
+            destination = Path(temp) / 'evidence.enc'
+            result = acquire_fivedollar_history_batch(
+                client=FakeHistoryClient(), competition_ids=COMPETITIONS,
+                start_date='2026-11-01', end_date='2026-11-07',
+                run_id='encrypted-history-test', retrieved_at='2026-11-08T00:00:00Z',
+                max_requests=15, sleep=lambda _: None,
+                evidence_encryption_key=key, evidence_output_path=destination,
+            )
+            report = result['report']
+            manifest_path = destination.with_suffix('.enc.manifest.json')
+            manifest = json.loads(manifest_path.read_text(encoding='utf-8'))
+            self.assertTrue(destination.is_file())
+            self.assertEqual(manifest['evidence_count'], 5)
+            self.assertEqual(manifest['report_sha256'], report['report_sha256'])
+            evidence = decrypt_and_verify_source_evidence(
+                destination.read_bytes(), report=report, manifest=manifest, key=key
+            )
+            self.assertEqual(len(evidence), 5)
+            self.assertNotIn('"payload":', json.dumps(report))
+            self.assertEqual(result['encrypted_evidence']['evidence_count'], 5)
 
     def test_batch_rejects_provider_rows_from_an_unqualified_competition(self):
         client = FakeHistoryClient(wrong_competition="999999")
