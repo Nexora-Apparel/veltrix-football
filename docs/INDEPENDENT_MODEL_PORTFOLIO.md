@@ -139,3 +139,7 @@ python scripts/evaluate_market_release_certification.py \
   --evaluated-at 2026-11-10T20:00:00Z \
   --output market-release-certification.json
 ```
+
+### Exact-byte The Odds API response capture
+
+The existing `TheOddsAPIClient` now has explicit `odds_for_sport_with_raw` and `event_btts_with_raw` methods. They preserve the exact HTTP response bytes, compute SHA-256 over those bytes, record retrieval time and quota headers, and return the parsed event payload alongside the bytes. The existing JSON-only client methods retain their original return contract. Raw capture is bounded to one request per method call and disables automatic retries to avoid hidden duplicate quota consumption. The returned bytes must be written to the encrypted evidence archive before observations are treated as certification evidence; this change does not itself call the provider or archive the response.
