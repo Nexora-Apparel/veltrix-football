@@ -71,6 +71,8 @@ class IndependentMarketModelTests(unittest.TestCase):
     def test_rejects_rows_after_training_cutoff(self):
         rows = training_rows()
         rows[0]["kickoff_at"] = "2026-10-03T15:00:00Z"
+        rows[0]["feature_as_of"] = "2026-10-02T12:00:00Z"
+        rows[0]["settled_at"] = "2026-10-03T18:00:00Z"
         with self.assertRaisesRegex(ResultsModelError, "after_training_cutoff"):
             self.fit(rows)
 
