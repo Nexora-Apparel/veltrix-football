@@ -32,3 +32,5 @@ jobs:
         run: python -m unittest discover -s tests -p 'test_dataset_bound_market_training.py' -v
       - name: Run validation-only market calibration tests
         run: python -m unittest discover -s tests -p 'test_market_probability_calibration.py' -v
+      - name: Run held-out test evaluation tests
+        run: python -m unittest discover -s tests -p 'test_heldout_market_evaluation.py' -v
