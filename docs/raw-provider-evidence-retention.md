@@ -16,6 +16,8 @@ GitHub Actions artifacts are a short-lived traceability layer, not the canonical
 
 The acquisition workflow must run only from the repository default branch (`main`). GitHub allows `workflow_dispatch` to target a selected branch; a branch-level dispatch guard is therefore required so an unreviewed feature branch cannot execute a workflow with provider, encryption, or archive credentials. The acquisition implementation itself is checked out by immutable commit SHA. Do not remove the default-branch guard or replace the pinned implementation with an unreviewed branch reference.
 
+The job also targets the protected GitHub Environment `historical-acquisition`. Before merging or dispatching, configure that environment with required reviewer approval and deployment-branch restrictions allowing only `main`. Store the acquisition-only secrets in that environment under these exact names: `VELTRIX_HISTORICAL_FIVEDOLLAR_API_KEY`, `VELTRIX_HISTORICAL_QUALIFICATION_ATTESTATION_KEY`, `VELTRIX_HISTORICAL_RAW_EVIDENCE_ENCRYPTION_KEY`, `VELTRIX_HISTORICAL_ARCHIVE_ENDPOINT_URL`, `VELTRIX_HISTORICAL_ARCHIVE_BUCKET`, `VELTRIX_HISTORICAL_ARCHIVE_ACCESS_KEY_ID`, and `VELTRIX_HISTORICAL_ARCHIVE_SECRET_ACCESS_KEY`. The workflow maps those environment secrets to the runtime variable names expected by the scripts. Do not copy these credentials into repository-level secrets.
+
 ## Canonical private archive
 
 Use a private S3-compatible bucket with:
