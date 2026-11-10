@@ -48,10 +48,12 @@ class SourceQualificationRegistryTests(unittest.TestCase):
             "sources": [self.entry],
         }
         self.trusted = {KEY_ARN: self.kms}
+        self.trusted_regions = {KEY_ARN: "eu-west-1"}
 
     def signed(self, registry=None):
         return sign_source_qualification_registry(
             kms_client=self.kms, key_arn=KEY_ARN,
+            trusted_key_regions=self.trusted_regions,
             registry=copy.deepcopy(registry or self.registry),
         )
 
@@ -70,6 +72,15 @@ class SourceQualificationRegistryTests(unittest.TestCase):
         with self.assertRaisesRegex(SourceQualificationRegistryError, "registry_signing_key_arn_invalid"):
             sign_source_qualification_registry(
                 kms_client=self.kms, key_arn="not-an-aws-kms-arn",
+                trusted_key_regions=self.trusted_regions,
+                registry=copy.deepcopy(self.registry),
+            )
+
+    def test_registry_cannot_be_signed_with_untrusted_key(self):
+        with self.assertRaisesRegex(SourceQualificationRegistryError, "current_signing_key_not_in_trust_registry"):
+            sign_source_qualification_registry(
+                kms_client=self.kms, key_arn=KEY_ARN,
+                trusted_key_regions={},
                 registry=copy.deepcopy(self.registry),
             )
 
