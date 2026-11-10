@@ -8,6 +8,7 @@ import json
 import os
 import re
 import sys
+from urllib.parse import urlparse
 from pathlib import Path
 from typing import Any
 
@@ -26,6 +27,14 @@ class EvidenceRestoreError(RuntimeError):
 
 def _sha(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
+
+
+def _validate_endpoint_url(endpoint: str | None) -> str:
+    parsed = urlparse(endpoint or "")
+    if (parsed.scheme != "https" or not parsed.hostname
+            or parsed.username is not None or parsed.password is not None):
+        raise EvidenceRestoreError("archive_endpoint_must_be_https_without_embedded_credentials")
+    return endpoint
 
 
 def restore_evidence(*, client: Any, bucket: str, receipt_key: str,
@@ -126,6 +135,7 @@ def main() -> int:
         if not _SAFE.fullmatch(args.run_id):
             raise EvidenceRestoreError("restore_run_id_invalid")
         endpoint = os.getenv("VELTRIX_EVIDENCE_ARCHIVE_ENDPOINT_URL")
+        endpoint = _validate_endpoint_url(endpoint)
         bucket = os.getenv("VELTRIX_EVIDENCE_ARCHIVE_BUCKET")
         access = os.getenv("VELTRIX_EVIDENCE_ARCHIVE_ACCESS_KEY_ID")
         secret = os.getenv("VELTRIX_EVIDENCE_ARCHIVE_SECRET_ACCESS_KEY")
