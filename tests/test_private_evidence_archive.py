@@ -6,6 +6,8 @@ from io import BytesIO
 from pathlib import Path
 from unittest.mock import patch
 
+from app.evidence_receipt_signing import verify_receipt_signature
+
 from scripts.archive_encrypted_source_evidence import (
     EvidenceArchiveError, archive_evidence, _validate_endpoint_url as validate_archive_endpoint,
 )
