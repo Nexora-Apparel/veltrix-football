@@ -17,7 +17,7 @@ _RECORD_KEYS = {
     "home_team_source_id", "away_team_source_id", "home_team_name",
     "away_team_name", "kickoff_at", "source_status", "normalized_status",
     "home_score", "away_score", "endpoint", "retrieved_at", "payload_sha256",
-    "run_id", "source_evidence",
+    "run_id", "settled_at", "settlement_evidence", "source_evidence",
 }
 _QUARANTINE_KEYS = {"input_index", "reason", "source"}
 
