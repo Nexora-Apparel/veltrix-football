@@ -19,6 +19,7 @@ from app.prediction import match_probabilities
 from app.advanced_models import dixon_coles_1x2, recency_weighted_mean, rest_congestion_context
 from app.poisson_dc_head import dixon_coles_markets
 from app.team_form import summarize_team_form
+from app.team_name_normalization import normalize_team_name
 
 MIN_TEAM_MATCHES = 5
 TEAM_WINDOW = 10
@@ -52,75 +53,8 @@ LEAGUE_DIVISION_BY_ID = {
 
 
 def _name_key(name: Any) -> str:
-    """Normalize common provider naming wrappers and explicit club aliases.
-
-    Only generic legal/club markers at the edges are stripped. Ambiguous
-    fuzzy matches remain suggestions only; a wrong team merge is worse than
-    withholding a forecast.
-    """
-    raw_name = str(name or "").strip().casefold()
-    # Preserve only explicit squad suffix markers before punctuation is removed.
-    explicit_reserve = bool(re.search(r"(?:\(\s*(?:r|b)\s*\)|\s+(?:r|b))$", raw_name))
-    explicit_women = bool(re.search(r"(?:\(\s*w\s*\)|\s+w)$", raw_name))
-    normalized = unicodedata.normalize("NFKD", raw_name)
-    normalized = "".join(char for char in normalized if not unicodedata.combining(char))
-    # Preserve a small set of letters that NFKD does not decompose consistently.
-    normalized = normalized.replace("ø", "o").replace("ł", "l").replace("đ", "d").replace("ð", "d").replace("þ", "th")
-    tokens = re.findall(r"[a-z0-9]+", normalized)
-    edge_markers = {"fc", "afc", "cf", "sc", "ac", "as", "ec", "sbv", "acf", "cd", "ud", "bc"}
-    while tokens and tokens[0] in edge_markers:
-        tokens.pop(0)
-    while tokens and tokens[-1] in edge_markers:
-        tokens.pop()
-    key = "".join(tokens)
-    if explicit_reserve:
-        key += "reservemarker"
-    if explicit_women:
-        key += "womenmarker"
-    aliases = {
-        "manutd": "manchesterunited",
-        "manunited": "manchesterunited",
-        "manchesterutd": "manchesterunited",
-        "mancity": "manchestercity",
-        "manchestercty": "manchestercity",
-        "spurs": "tottenhamhotspur",
-        "tottenham": "tottenhamhotspur",
-        "wolves": "wolverhamptonwanderers",
-        "wolverhampton": "wolverhamptonwanderers",
-        "psg": "parissaintgermain",
-        "parissg": "parissaintgermain",
-        "barca": "barcelona",
-        "bayern": "bayernmunich",
-        "bayernmunchen": "bayernmunich",
-        "juve": "juventus",
-        "atleticomadrid": "atleticodemadrid",
-        "athleticomadrid": "atleticodemadrid",
-        "athmadrid": "atleticodemadrid",
-        "newcastleutd": "newcastleunited",
-        "newcastle": "newcastleunited",
-        "deportivolacoruna": "deportivocoruna",
-        "deportivoacoruna": "deportivocoruna",
-        "caosasuna": "osasuna",
-        "westham": "westhamunited",
-        "westhamutd": "westhamunited",
-        "athleticclub": "athleticbilbao",
-        "athbilbao": "athleticbilbao",
-        "internazionale": "intermilan",
-        "internazionalemilano": "intermilan",
-        "inter": "intermilan",
-        "psveindhoven": "psv",
-        "feyenoordrotterdam": "feyenoord",
-        "nec": "necnijmegen",
-        # Exact provider abbreviations observed in API-Sports/fixture feeds.
-        "argentinosjrs": "argentinosjuniors",
-        "independrivadavia": "independienterivadavia",
-        # French Ligue 1 event-feed naming variants.
-        "losclille": "lille",
-        "lilleosc": "lille",
-        "rclens": "lens",
-    }
-    return aliases.get(key, key)
-
+    """Compatibility wrapper for the shared identity normalizer."""
+    return normalize_team_name(name)
 
 def _team_variant_signature(key: str) -> tuple[str, ...]:
     """Identify squad/category markers that must never be erased by fuzzy matching."""
