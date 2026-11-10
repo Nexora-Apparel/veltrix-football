@@ -55,20 +55,26 @@ The subject condition deliberately binds the role to the named GitHub Environmen
 
 ## 3. Restrict the role permissions
 
-Attach only this permission policy to the OIDC role (replace REGION, AWS_ACCOUNT_ID and KEY_ID):
+Attach a least-privilege policy to the OIDC role. The active signer needs `kms:Sign` on the current key; verification needs `kms:Verify` on every key in the explicit trust registry. Replace the resource ARNs with the exact current and retained key ARNs. Do not use a wildcard.
 
 ```json
 {
   "Version": "2012-10-17",
   "Statement": [
     {
-      "Sid": "SignAndVerifyVeltrixEvidenceReceiptsOnly",
+      "Sid": "SignWithCurrentVeltrixReceiptKey",
       "Effect": "Allow",
-      "Action": [
-        "kms:Sign",
-        "kms:Verify"
-      ],
-      "Resource": "arn:aws:kms:<REGION>:<AWS_ACCOUNT_ID>:key/<KEY_ID>"
+      "Action": "kms:Sign",
+      "Resource": "arn:aws:kms:<CURRENT_REGION>:<AWS_ACCOUNT_ID>:key/<CURRENT_KEY_ID>"
+    },
+    {
+      "Sid": "VerifyOnlyAllowlistedVeltrixReceiptKeys",
+      "Effect": "Allow",
+      "Action": "kms:Verify",
+      "Resource": [
+        "arn:aws:kms:<OLD_REGION>:<AWS_ACCOUNT_ID>:key/<OLD_KEY_ID>",
+        "arn:aws:kms:<CURRENT_REGION>:<AWS_ACCOUNT_ID>:key/<CURRENT_KEY_ID>"
+      ]
     }
   ]
 }
@@ -84,11 +90,12 @@ In repository Settings → Environments → historical-acquisition, configure th
 
 | Variable | Value |
 |---|---|
-| VELTRIX_EVIDENCE_RECEIPT_KMS_KEY_ARN | Full KMS key ARN |
-| VELTRIX_EVIDENCE_RECEIPT_KMS_REGION | KMS key region |
+| VELTRIX_EVIDENCE_RECEIPT_KMS_KEY_ARN | Full ARN of the current signing key |
+| VELTRIX_EVIDENCE_RECEIPT_KMS_REGION | Region of the current signing key |
 | VELTRIX_EVIDENCE_RECEIPT_KMS_ROLE_ARN | OIDC role ARN |
+| VELTRIX_EVIDENCE_RECEIPT_KMS_TRUSTED_KEYS_JSON | JSON object mapping every trusted full KMS key ARN to its region |
 
-Keep required reviewers enabled and deployment branches restricted to main. The workflow requests the OIDC token only for the protected environment job. The pinned configure-aws-credentials action assumes the role and supplies short-lived AWS credentials to boto3.
+Example trust registry (replace with real full ARNs):\n\n```json\n{\n  "arn:aws:kms:us-east-1:123456789012:key/<OLD_KEY_ID>": "us-east-1",\n  "arn:aws:kms:eu-west-1:123456789012:key/<CURRENT_KEY_ID>": "eu-west-1"\n}\n```\n\nThe JSON is configuration, not a secret. It is an explicit allowlist; a receipt cannot add its own key. The current signing ARN must be present in the registry and its region must match. If the registry variable is absent, the CLI retains a compatibility mode that trusts only the single configured key ARN/region. For rotation, configure the registry before the first receipt is signed by the new key.\n\nKeep required reviewers enabled and deployment branches restricted to main. The workflow requests the OIDC token only for the protected environment job. The pinned configure-aws-credentials action assumes the role and supplies short-lived AWS credentials to boto3.
 
 ## 5. Validate without provider acquisition
 
@@ -107,7 +114,15 @@ The repository CI uses a fake KMS implementation and does not validate AWS IAM, 
 
 Asymmetric KMS signing keys are not rotated by symmetric-key automatic rotation. For rotation, create a new dedicated signing key and update the trusted-key configuration only through a reviewed change. Retained receipts signed by the old key still require verification against that old key. Do not disable or schedule deletion of an old signing key while receipts signed by it remain within retention.
 
-The current restore CLI trusts one exact KMS key ARN. Therefore, do not rotate the configured ARN while retained v2 receipts signed by the old key still need restore. Before the first rotation, implement and test an explicit allowlisted key registry mapping receipt key ARN to KMS region; never trust arbitrary key ARNs supplied by receipts.
+The archive and restore CLIs now support an explicit allowlisted key registry mapping full key ARN to region. During rotation:
+1. Create and validate the new asymmetric key.
+2. Add both old and new full ARNs to `VELTRIX_EVIDENCE_RECEIPT_KMS_TRUSTED_KEYS_JSON`.
+3. Grant the workflow role `kms:Verify` on both keys and `kms:Sign` only on the new current key.
+4. Set the current signer ARN/region to the new key and run synthetic sign/verify plus an old-receipt restore test.
+5. Keep the old key enabled and in the trust registry until every receipt signed by it has expired under the approved retention policy.
+6. Remove the old ARN and its Verify permission only after retention and restore obligations are complete.
+
+Archive retries verify an existing receipt using the receipt's key ARN only after that ARN is found in the configured allowlist. Restore follows the same rule. Unknown receipt ARNs are rejected before any KMS verification call. If the registry is absent, the compatibility path remains single-key only. Never trust arbitrary key ARNs supplied by receipts.
 
 ## Security boundary
 
