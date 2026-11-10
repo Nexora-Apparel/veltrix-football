@@ -251,7 +251,7 @@ def latest_pre_kickoff_snapshot(ledger: dict, *, fixture_id: str,
         return None
     matches.sort(key=lambda item: _time(item["captured_at"], "captured_at"))
     chosen = matches[-1]
-    return {
+    snapshot = {
         "observation_id": chosen["observation_id"],
         "fixture_id": fixture_id,
         "market": market,
@@ -264,3 +264,6 @@ def latest_pre_kickoff_snapshot(ledger: dict, *, fixture_id: str,
         "source_payload_sha256": chosen["source_payload_sha256"],
         "timestamp_semantics": "latest_observed_pre_kickoff_snapshot",
     }
+    if "crosswalk_evidence_sha256" in chosen:
+        snapshot["crosswalk_evidence_sha256"] = chosen["crosswalk_evidence_sha256"]
+    return snapshot
