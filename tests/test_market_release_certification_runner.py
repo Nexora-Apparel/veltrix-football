@@ -141,7 +141,11 @@ class MarketReleaseCertificationRunnerTests(unittest.TestCase):
 
     def test_unverified_crosswalk_digest_fails_provenance_gate(self):
         registry = json.loads(self.verified_path.read_text())
+        registry.pop("signature", None)
         registry["verified_source_evidence_sha256"].remove("c" * 64)
+        registry = sign_receipt(
+            kms_client=FakeKMS(), key_arn=TEST_KEY_ARN, receipt=registry,
+        )
         self.verified_path.write_text(json.dumps(registry))
         report = self.run_evaluation()
         self.assertTrue(all(
