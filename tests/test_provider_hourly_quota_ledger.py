@@ -64,13 +64,14 @@ class HourlyQuotaLedgerTests(unittest.TestCase):
         )
 
     def test_pending_reservation_is_conservatively_charged_at_full_ceiling(self):
-        reserve_hourly_quota(
-            ledger_path=self.path, run_id="run-1", reserved_requests=20,
-            now="2026-11-10T05:00:00Z",
-        )
+        for index in range(3):
+            reserve_hourly_quota(
+                ledger_path=self.path, run_id=f"run-{index + 1}", reserved_requests=20,
+                now="2026-11-10T05:00:00Z",
+            )
         with self.assertRaisesRegex(HourlyQuotaError, "hourly_quota_exceeded"):
             reserve_hourly_quota(
-                ledger_path=self.path, run_id="run-2", reserved_requests=20,
+                ledger_path=self.path, run_id="run-4", reserved_requests=5,
                 now="2026-11-10T05:01:00Z",
             )
 
