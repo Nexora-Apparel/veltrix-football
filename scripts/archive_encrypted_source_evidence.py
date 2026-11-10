@@ -20,6 +20,10 @@ from app.evidence_receipt_signing import (
     SCHEMA_V2, ReceiptSignatureError, canonical_receipt_payload,
     sign_receipt, verify_receipt_signature,
 )
+from app.evidence_receipt_trust import (
+    ReceiptTrustError, parse_trusted_key_regions,
+    validate_current_signing_key, verify_receipt_with_trusted_clients,
+)
 
 _SAFE = re.compile(r"^[A-Za-z0-9._-]{1,160}$")
 
@@ -56,7 +60,8 @@ def _head_exists(client: Any, bucket: str, key: str) -> bool:
 def archive_evidence(*, client: Any, kms_client: Any, signing_key_arn: str, bucket: str, prefix: str,
                      report_path: str | Path, evidence_path: str | Path,
                      manifest_path: str | Path,
-                     receipt_output_path: str | Path = "fivedollar_evidence_archive_receipt.json") -> dict:
+                     receipt_output_path: str | Path = "fivedollar_evidence_archive_receipt.json",
+                     trusted_kms_clients: dict[str, Any] | None = None) -> dict:
     report_bytes = Path(report_path).read_bytes()
     evidence_bytes = Path(evidence_path).read_bytes()
     manifest_bytes = Path(manifest_path).read_bytes()
@@ -74,6 +79,8 @@ def archive_evidence(*, client: Any, kms_client: Any, signing_key_arn: str, buck
         raise EvidenceArchiveError("archive_evidence_count_mismatch")
     if not bucket or not isinstance(bucket, str):
         raise EvidenceArchiveError("archive_bucket_missing")
+    if trusted_kms_clients is not None and signing_key_arn not in trusted_kms_clients:
+        raise EvidenceArchiveError("archive_signing_key_not_in_trust_registry")
 
     root = prefix.strip("/")
     base = f"{root}/" if root else ""
@@ -127,11 +134,17 @@ def archive_evidence(*, client: Any, kms_client: Any, signing_key_arn: str, buck
         downloaded_receipt = client.get_object(Bucket=bucket, Key=receipt_key)["Body"].read()
         try:
             archived_receipt = json.loads(downloaded_receipt)
-            verify_receipt_signature(
-                kms_client=kms_client, trusted_key_arn=signing_key_arn,
-                receipt=archived_receipt,
-            )
-        except (TypeError, ValueError, ReceiptSignatureError):
+            if trusted_kms_clients is not None:
+                verify_receipt_with_trusted_clients(
+                    receipt=archived_receipt,
+                    trusted_kms_clients=trusted_kms_clients,
+                )
+            else:
+                verify_receipt_signature(
+                    kms_client=kms_client, trusted_key_arn=signing_key_arn,
+                    receipt=archived_receipt,
+                )
+        except (TypeError, ValueError, ReceiptSignatureError, ReceiptTrustError):
             raise EvidenceArchiveError("archive_existing_receipt_signature_invalid") from None
         receipt["archived_at"] = archived_receipt.get("archived_at")
         if canonical_receipt_payload(archived_receipt) != canonical_receipt_payload(receipt):
@@ -176,18 +189,36 @@ def main() -> int:
         prefix = os.getenv("VELTRIX_EVIDENCE_ARCHIVE_PREFIX", "veltrix-football/evidence/v2")
         signing_key_arn = os.getenv("VELTRIX_EVIDENCE_RECEIPT_KMS_KEY_ARN")
         kms_region = os.getenv("VELTRIX_EVIDENCE_RECEIPT_KMS_REGION")
+        registry_json = os.getenv("VELTRIX_EVIDENCE_RECEIPT_KMS_TRUSTED_KEYS_JSON")
         if not all((endpoint, bucket, access, secret, signing_key_arn, kms_region)):
             raise EvidenceArchiveError("private_evidence_archive_or_kms_signing_configuration_missing")
+        try:
+            trusted_regions = parse_trusted_key_regions(
+                registry_json=registry_json,
+                legacy_key_arn=signing_key_arn,
+                legacy_region=kms_region,
+            )
+            validate_current_signing_key(
+                signing_key_arn=signing_key_arn,
+                signing_region=kms_region,
+                trusted_key_regions=trusted_regions,
+            )
+        except ReceiptTrustError:
+            raise EvidenceArchiveError("private_evidence_kms_trust_configuration_invalid") from None
         import boto3
         client = boto3.client(
             "s3", endpoint_url=endpoint, region_name=region,
             aws_access_key_id=access, aws_secret_access_key=secret,
         )
-        kms_client = boto3.client("kms", region_name=kms_region)
+        trusted_kms_clients = {
+            key_arn: boto3.client("kms", region_name=key_region)
+            for key_arn, key_region in trusted_regions.items()
+        }
+        kms_client = trusted_kms_clients[signing_key_arn]
         receipt = archive_evidence(
             client=client, kms_client=kms_client, signing_key_arn=signing_key_arn, bucket=bucket, prefix=prefix,
             report_path=args.report, evidence_path=args.evidence,
-            manifest_path=args.manifest,
+            manifest_path=args.manifest, trusted_kms_clients=trusted_kms_clients,
         )
         print(
             "PRIVATE_EVIDENCE_ARCHIVE: PASS; "
