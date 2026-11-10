@@ -8,6 +8,7 @@ import json
 import os
 import re
 import sys
+from urllib.parse import urlparse
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -25,6 +26,14 @@ class EvidenceArchiveError(RuntimeError):
 
 def _sha(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
+
+
+def _validate_endpoint_url(endpoint: str | None) -> str:
+    parsed = urlparse(endpoint or "")
+    if (parsed.scheme != "https" or not parsed.hostname
+            or parsed.username is not None or parsed.password is not None):
+        raise EvidenceArchiveError("archive_endpoint_must_be_https_without_embedded_credentials")
+    return endpoint
 
 
 def _head_exists(client: Any, bucket: str, key: str) -> bool:
@@ -151,6 +160,7 @@ def main() -> int:
     args = parser.parse_args()
     try:
         endpoint = os.getenv("VELTRIX_EVIDENCE_ARCHIVE_ENDPOINT_URL")
+        endpoint = _validate_endpoint_url(endpoint)
         bucket = os.getenv("VELTRIX_EVIDENCE_ARCHIVE_BUCKET")
         access = os.getenv("VELTRIX_EVIDENCE_ARCHIVE_ACCESS_KEY_ID")
         secret = os.getenv("VELTRIX_EVIDENCE_ARCHIVE_SECRET_ACCESS_KEY")
