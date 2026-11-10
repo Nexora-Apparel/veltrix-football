@@ -104,3 +104,7 @@ The module intentionally does not poll an odds provider or claim fixture identit
 `app/the_odds_api_evidence_adapter.py` converts a single already-retrieved The Odds API event response into the odds evidence ledger. It supports h2h (1X2), BTTS and totals at exactly 2.5. It requires an explicit reviewed crosswalk with exact provider event ID, canonical fixture ID, kickoff and teams; ID, team or kickoff mismatch is rejected. It never guesses fixture identity. Quotes after retrieval, after kickoff or older than the configured freshness window are quarantined. The raw event payload digest and crosswalk evidence digest are bound into each observation.
 
 This is a pure adapter and does not call The Odds API. It is not yet connected to a scheduled acquisition worker or durable evidence archive. Provider credentials and endpoint access do not by themselves establish historical odds availability; actual timestamped quote coverage still has to be measured.
+
+### Offline odds evidence ingestion
+
+`scripts/ingest_the_odds_api_evidence.py` is a manual, network-free CLI that accepts one archived event JSON file plus its reviewed crosswalk, converts the response through the strict adapter, and atomically appends observations to a local ledger. It refuses symlink destinations, preserves the previous ledger if validation fails, and is idempotent on repeated ingestion. It never reads API credentials, calls a provider, writes Neon, publishes predictions or sends Telegram. This is a local evidence-preparation tool, not a scheduled production collector.
