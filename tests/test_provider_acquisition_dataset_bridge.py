@@ -29,7 +29,7 @@ TIMESTAMP_PAYLOAD = {
 
 
 class AcquisitionDatasetBridgeTests(unittest.TestCase):
-    def provider_record(self):
+    def provider_record(self, retrieved_at="2026-11-02T00:00:00Z"):
         payload = {
             "game_id": "g-1", "starts_at": "2026-11-01T15:00:00Z",
             "status": "final", "status_detail": "FT",
@@ -38,7 +38,7 @@ class AcquisitionDatasetBridgeTests(unittest.TestCase):
         }
         record = normalize_striker_game(
             payload, competition_key="soccer", endpoint="list_games",
-            retrieved_at="2026-11-02T00:00:00Z", run_id="run-1",
+            retrieved_at=retrieved_at, run_id="run-1",
         )
         record["source_evidence"] = build_source_evidence(
             provider="strikerapi", payload=payload, normalized_record=record,
@@ -95,9 +95,7 @@ class AcquisitionDatasetBridgeTests(unittest.TestCase):
             )
 
     def test_provider_retrieval_before_external_settlement_is_rejected(self):
-        record = self.provider_record()
-        record["retrieved_at"] = "2026-11-01T16:00:00Z"
-        # The provider evidence is bound to its original retrieval timestamp.
+        record = self.provider_record(retrieved_at="2026-11-01T16:00:00Z")
         with self.assertRaises(AcquisitionDatasetBridgeError):
             acquisition_record_to_history_row(
                 record, settlement_timestamp_package=self.settlement_package(),
