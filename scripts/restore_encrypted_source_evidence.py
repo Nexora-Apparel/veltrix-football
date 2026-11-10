@@ -156,11 +156,25 @@ def restore_evidence(*, client: Any, kms_client: Any, trusted_signing_key_arn: s
         raise
 
     paths = {kind: str(destination / filename) for kind, filename in filenames.items()}
+    verified_digests = set()
+    for item in evidence:
+        if not isinstance(item, dict):
+            continue
+        for field in ("payload_sha256", "normalized_record_sha256"):
+            digest = item.get(field)
+            if isinstance(digest, str) and re.fullmatch(r"[0-9a-f]{64}", digest):
+                verified_digests.add(digest)
+    signature = receipt.get("signature", {})
     return {
-        "valid": True, "run_id": run_id, "report_sha256": integrity["report_sha256"],
+        "valid": True, "archive_receipt_signature_verified": True,
+        "receipt_sha256": _sha(receipt_bytes),
+        "receipt_signing_key_arn": signature.get("key_arn") if isinstance(signature, dict) else None,
+        "run_id": run_id, "report_sha256": integrity["report_sha256"],
         "accepted_count": integrity["accepted_count"],
         "quarantined_count": integrity["quarantined_count"],
-        "evidence_count": len(evidence), "paths": paths,
+        "evidence_count": len(evidence),
+        "verified_source_evidence_sha256": sorted(verified_digests),
+        "paths": paths,
     }
 
 
