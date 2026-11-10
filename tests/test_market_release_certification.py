@@ -1,4 +1,5 @@
 import unittest
+from datetime import date, timedelta
 
 from app.market_release_certification import (
     CertificationError, evaluate_market_release_certification,
@@ -17,26 +18,26 @@ def evidence_fixture(walk_count=1000, prospective_count=300):
         walk = []
         for i in range(walk_count):
             actual = classes[i % len(classes)]
-            day = i % 100 + 1
+            day = (date(2026, 1, 1) + timedelta(days=i % 100)).isoformat()
             walk.append({
                 "fixture_id": f"{market}-wf-{i}",
-                "kickoff_at": f"2026-01-{day:02d}T12:00:00+01:00",
+                "kickoff_at": f"{day}T12:00:00+01:00",
                 "target": actual,
                 "probabilities": {
                     outcome: (0.8 if outcome == actual else 0.2 / (len(classes) - 1))
                     for outcome in classes
                 },
-                "bookmaker_odds_at": f"2026-01-{day:02d}T10:00:00+01:00",
+                "bookmaker_odds_at": f"{day}T10:00:00+01:00",
                 "bookmaker_odds_decimal": {outcome: float(len(classes)) for outcome in classes},
             })
         prospective = []
         for i in range(prospective_count):
-            day = i % 100 + 1
+            day = (date(2026, 1, 1) + timedelta(days=i % 100)).isoformat()
             selected = classes[i % len(classes)]
             prospective.append({
                 "fixture_id": f"{market}-prospective-{i}",
                 "kickoff_at": f"2026-01-{day:02d}T12:00:00+01:00",
-                "settled_at": f"2026-01-{day:02d}T14:00:00+01:00",
+                "settled_at": f"{day}T14:00:00+01:00",
                 "odds_captured_at": f"2026-01-{day:02d}T10:00:00+01:00",
                 "selection": selected,
                 "actual": selected,
