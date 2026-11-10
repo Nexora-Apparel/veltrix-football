@@ -6,7 +6,7 @@ from app.encrypted_source_evidence import (
     EncryptedEvidenceError, assert_sanitized_report_has_no_raw_payload,
     decrypt_and_verify_source_evidence, encrypt_source_evidence,
 )
-from app.source_payload_provenance import canonical_payload_sha256
+from app.source_payload_provenance import canonical_payload_sha256, SourcePayloadProvenanceError
 
 
 class EncryptedSourceEvidenceTests(unittest.TestCase):
@@ -81,7 +81,7 @@ class EncryptedSourceEvidenceTests(unittest.TestCase):
     def test_payload_mutation_rejected_after_authenticated_decryption(self):
         evidence = copy.deepcopy(self.evidence)
         evidence[0]["payload"]["score"] = [9, 0]
-        with self.assertRaises(EncryptedEvidenceError):
+        with self.assertRaises(SourcePayloadProvenanceError):
             encrypt_source_evidence(evidence, report=self.report, key=self.key)
 
 
