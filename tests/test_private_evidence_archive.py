@@ -174,7 +174,7 @@ class PrivateEvidenceArchiveTests(unittest.TestCase):
         )
         first = archive_evidence(**kwargs)
         second = archive_evidence(**kwargs)
-        self.assertEqual(first["receipt_sha256"], second["receipt_sha256"])
+        self.assertEqual(first["signature"], second["signature"])
         self.assertEqual(len(client.objects), 4)
 
     @patch("scripts.archive_encrypted_source_evidence.validate_fivedollar_history_batch_report")
@@ -290,6 +290,35 @@ class PrivateEvidenceArchiveTests(unittest.TestCase):
             )
         self.assertFalse(destination.exists())
 
+
+    @patch("scripts.restore_encrypted_source_evidence.validate_fivedollar_history_batch_report")
+    def test_restore_rejects_modified_receipt_before_fetching_archived_objects(self, validate):
+        validate.return_value = {
+            "valid": True, "report_sha256": "a" * 64,
+            "accepted_count": 1, "quarantined_count": 0, "input_count": 1,
+        }
+        client = FakeS3()
+        with patch("scripts.archive_encrypted_source_evidence.validate_fivedollar_history_batch_report") as archive_validate:
+            archive_validate.return_value = validate.return_value
+            archive_evidence(
+                client=client, kms_client=FakeKMS(), signing_key_arn=TEST_SIGNING_KEY_ARN,
+                bucket="private-bucket", prefix="veltrix",
+                report_path=self.report_path, evidence_path=self.evidence_path,
+                manifest_path=self.manifest_path, receipt_output_path=self.root / "receipt.json",
+            )
+        receipt_key = "veltrix/receipts/batch-20261110T060000Z.json"
+        receipt = json.loads(client.objects[("private-bucket", receipt_key)])
+        receipt["evidence_count"] = 999
+        client.objects[("private-bucket", receipt_key)] = json.dumps(receipt).encode()
+        destination = self.root / "tampered-receipt-restore"
+        with self.assertRaisesRegex(EvidenceRestoreError, "restore_receipt_signature_invalid"):
+            restore_evidence(
+                client=client, kms_client=FakeKMS(), trusted_signing_key_arn=TEST_SIGNING_KEY_ARN,
+                bucket="private-bucket", receipt_key=receipt_key,
+                encryption_key="test-key", output_dir=destination,
+            )
+        self.assertFalse(destination.exists())
+        self.assertEqual(len(client.objects), 4)
 
     @patch("scripts.restore_encrypted_source_evidence.validate_fivedollar_history_batch_report")
     def test_restore_rejects_receipt_object_key_outside_run_prefix(self, validate):
