@@ -62,31 +62,38 @@ def _binding(report: dict) -> dict:
 
 
 def build_source_evidence(observations: list[dict], report: dict) -> list[dict]:
-    """Pair original observations to normalized accepted rows without guessing."""
+    """Build complete encrypted evidence for accepted and quarantined inputs."""
     records = report.get("records")
-    if not isinstance(observations, list) or not isinstance(records, list):
+    quarantine = report.get("quarantine")
+    if (not isinstance(observations, list) or not isinstance(records, list)
+            or not isinstance(quarantine, list)):
         raise EncryptedEvidenceError("evidence_inputs_invalid")
-    raw_by_key = {}
-    for item in observations:
+    raw_by_key: dict[tuple[str, str, str], list[tuple[int, dict, dict]]] = {}
+    for index, item in enumerate(observations):
         if not isinstance(item, dict) or not isinstance(item.get("row"), dict):
-            raise EncryptedEvidenceError("raw_observation_invalid")
+            continue
         options = item.get("options") or {}
         row = item["row"]
         league = row.get("league") or {}
         key = (item.get("provider"), str(league.get("id", "")), str(row.get("id", "")))
-        if key in raw_by_key:
-            raise EncryptedEvidenceError("duplicate_raw_observation")
-        raw_by_key[key] = (row, options)
+        raw_by_key.setdefault(key, []).append((index, row, options))
 
-    evidence = []
+    evidence: list[dict] = []
+    accepted_indexes: set[int] = set()
     for record in records:
         key = (record.get("provider"), str(record.get("competition_key", "")),
                str(record.get("source_id", "")))
-        match = raw_by_key.pop(key, None)
-        if match is None:
-            raise EncryptedEvidenceError("accepted_record_raw_payload_missing")
-        payload, options = match
+        matches = raw_by_key.get(key, [])
+        if len(matches) != 1:
+            raise EncryptedEvidenceError("accepted_record_raw_payload_missing_or_ambiguous")
+        input_index, payload, options = matches.pop()
+        accepted_indexes.add(input_index)
+        normalized_record = {
+            field: value for field, value in record.items() if field != "source_evidence"
+        }
         item = {
+            "kind": "accepted",
+            "input_index": input_index,
             "provider": record["provider"],
             "endpoint": record["endpoint"],
             "source_id": record["source_id"],
@@ -94,17 +101,67 @@ def build_source_evidence(observations: list[dict], report: dict) -> list[dict]:
             "retrieved_at": record["retrieved_at"],
             "payload": payload,
             "payload_sha256": canonical_payload_sha256(payload),
-            "normalized_record": record,
-            "normalized_record_sha256": canonical_payload_sha256(record),
+            "normalized_record": normalized_record,
+            "normalized_record_sha256": canonical_payload_sha256(normalized_record),
         }
         if options.get("run_id") != record["run_id"] or options.get("endpoint") != record["endpoint"]:
             raise EncryptedEvidenceError("raw_observation_metadata_mismatch")
-        validate_source_payload_evidence(item)
+        validate_source_payload_evidence({
+            key: value for key, value in item.items()
+            if key not in {"kind", "input_index"}
+        })
         if item["payload_sha256"] != record["payload_sha256"]:
             raise EncryptedEvidenceError("normalizer_payload_hash_mismatch")
         evidence.append(item)
-    if len(evidence) != len(records):
-        raise EncryptedEvidenceError("evidence_coverage_mismatch")
+
+    quarantined_indexes: set[int] = set()
+    for quarantine_item in quarantine:
+        if not isinstance(quarantine_item, dict):
+            raise EncryptedEvidenceError("quarantine_record_invalid")
+        input_index = quarantine_item.get("input_index")
+        if (isinstance(input_index, bool) or not isinstance(input_index, int)
+                or input_index < 0 or input_index >= len(observations)
+                or input_index in quarantined_indexes or input_index in accepted_indexes):
+            raise EncryptedEvidenceError("quarantine_input_index_invalid")
+        observation = observations[input_index]
+        if isinstance(observation, dict):
+            provider = observation.get("provider")
+            payload = observation.get("row")
+            options = observation.get("options") or {}
+        else:
+            provider, payload, options = None, observation, {}
+        try:
+            payload_digest = canonical_payload_sha256(payload)
+        except SourcePayloadProvenanceError:
+            raise EncryptedEvidenceError("quarantine_payload_not_canonical_json") from None
+        source_summary = quarantine_item.get("source")
+        if isinstance(source_summary, dict) and source_summary.get("payload_sha256") not in (None, payload_digest):
+            raise EncryptedEvidenceError("quarantine_payload_hash_binding_mismatch")
+        entry = {
+            "kind": "quarantined",
+            "input_index": input_index,
+            "provider": provider if isinstance(provider, str) else "unknown",
+            "endpoint": options.get("endpoint") if isinstance(options, dict) else None,
+            "run_id": options.get("run_id") if isinstance(options, dict) else None,
+            "retrieved_at": options.get("retrieved_at") if isinstance(options, dict) else None,
+            "payload": payload,
+            "payload_sha256": payload_digest,
+            "quarantine_reason": quarantine_item.get("reason"),
+            "source_summary": source_summary,
+        }
+        if entry["run_id"] is None:
+            entry["run_id"] = report.get("run_id")
+        if entry["retrieved_at"] is None:
+            entry["retrieved_at"] = report.get("retrieved_at")
+        evidence.append(entry)
+        quarantined_indexes.add(input_index)
+
+    expected_indexes = set(range(len(observations)))
+    if accepted_indexes | quarantined_indexes != expected_indexes:
+        raise EncryptedEvidenceError("encrypted_evidence_input_coverage_incomplete")
+    if accepted_indexes & quarantined_indexes:
+        raise EncryptedEvidenceError("encrypted_evidence_input_coverage_overlap")
+    evidence.sort(key=lambda item: item["input_index"])
     return evidence
 
 
@@ -112,12 +169,27 @@ def encrypt_source_evidence(evidence: list[dict], *, report: dict,
                             key: str | bytes, nonce: bytes | None = None) -> tuple[bytes, dict]:
     """Return encrypted JSON envelope bytes and a plaintext-safe manifest."""
     binding = _binding(report)
-    if not isinstance(evidence, list) or len(evidence) != len(report.get("records", [])):
+    expected_count = report.get("quality", {}).get("input_count")
+    if (isinstance(expected_count, bool) or not isinstance(expected_count, int)
+            or not isinstance(evidence, list) or len(evidence) != expected_count):
         raise EncryptedEvidenceError("evidence_count_mismatch")
     for item in evidence:
-        validated = validate_source_payload_evidence(item)
-        if validated["run_id"] != binding["run_id"]:
+        if not isinstance(item, dict) or item.get("kind") not in {"accepted", "quarantined"}:
+            raise EncryptedEvidenceError("evidence_entry_kind_invalid")
+        if item.get("run_id") != binding["run_id"]:
             raise EncryptedEvidenceError("evidence_run_binding_mismatch")
+        if item["kind"] == "accepted":
+            validated = validate_source_payload_evidence({
+                key: value for key, value in item.items()
+                if key not in {"kind", "input_index"}
+            })
+            if validated["run_id"] != binding["run_id"]:
+                raise EncryptedEvidenceError("evidence_run_binding_mismatch")
+        else:
+            if canonical_payload_sha256(item.get("payload")) != item.get("payload_sha256"):
+                raise EncryptedEvidenceError("quarantine_payload_digest_mismatch")
+            if not isinstance(item.get("quarantine_reason"), str):
+                raise EncryptedEvidenceError("quarantine_reason_missing")
     aes_key = _key(key)
     import os
     nonce = nonce or os.urandom(12)
@@ -138,6 +210,8 @@ def encrypt_source_evidence(evidence: list[dict], *, report: dict,
         "run_id": binding["run_id"],
         "window": binding["window"],
         "evidence_count": len(evidence),
+        "accepted_count": sum(1 for item in evidence if item.get("kind") == "accepted"),
+        "quarantined_count": sum(1 for item in evidence if item.get("kind") == "quarantined"),
         "ciphertext_sha256": hashlib.sha256(encoded).hexdigest(),
         "encryption": "AES-256-GCM",
         "plaintext_in_report": False,
@@ -170,20 +244,46 @@ def decrypt_and_verify_source_evidence(envelope_bytes: bytes, *, report: dict,
     if decoded.get("schema") != _SCHEMA or decoded.get("binding") != binding:
         raise EncryptedEvidenceError("decrypted_binding_mismatch")
     evidence = decoded.get("evidence")
-    if not isinstance(evidence, list) or len(evidence) != manifest.get("evidence_count"):
+    expected_total = report.get("quality", {}).get("input_count")
+    if (not isinstance(evidence, list) or len(evidence) != manifest.get("evidence_count")
+            or len(evidence) != expected_total):
         raise EncryptedEvidenceError("decrypted_evidence_count_mismatch")
-    expected = {(r["provider"], r["competition_key"], r["source_id"]): r
-                for r in report.get("records", [])}
-    seen = set()
+    expected = {(r["provider"], r["competition_key"], r["source_id"]): {
+        key: value for key, value in r.items() if key != "source_evidence"
+    } for r in report.get("records", [])}
+    expected_quarantine = {item["input_index"]: item for item in report.get("quarantine", [])}
+    seen_accepted = set()
+    seen_quarantine = set()
+    seen_indexes = set()
     for item in evidence:
-        result = validate_source_payload_evidence(item)
-        normalized = item["normalized_record"]
-        key_tuple = (result["provider"], normalized["competition_key"], result["source_id"])
-        if key_tuple in seen or key_tuple not in expected or normalized != expected[key_tuple]:
-            raise EncryptedEvidenceError("decrypted_record_binding_mismatch")
-        seen.add(key_tuple)
-    if seen != set(expected):
+        if not isinstance(item, dict) or item.get("kind") not in {"accepted", "quarantined"}:
+            raise EncryptedEvidenceError("decrypted_evidence_entry_invalid")
+        index = item.get("input_index")
+        if isinstance(index, bool) or not isinstance(index, int) or index in seen_indexes:
+            raise EncryptedEvidenceError("decrypted_evidence_input_index_invalid")
+        seen_indexes.add(index)
+        if item["kind"] == "accepted":
+            result = validate_source_payload_evidence({
+                key: value for key, value in item.items()
+                if key not in {"kind", "input_index"}
+            })
+            normalized = item["normalized_record"]
+            key_tuple = (result["provider"], normalized["competition_key"], result["source_id"])
+            if key_tuple in seen_accepted or key_tuple not in expected or normalized != expected[key_tuple]:
+                raise EncryptedEvidenceError("decrypted_record_binding_mismatch")
+            seen_accepted.add(key_tuple)
+        else:
+            quarantine_item = expected_quarantine.get(index)
+            if (quarantine_item is None or item.get("quarantine_reason") != quarantine_item.get("reason")
+                    or item.get("source_summary") != quarantine_item.get("source")
+                    or canonical_payload_sha256(item.get("payload")) != item.get("payload_sha256")):
+                raise EncryptedEvidenceError("decrypted_quarantine_binding_mismatch")
+            seen_quarantine.add(index)
+    if (seen_accepted != set(expected) or seen_quarantine != set(expected_quarantine)
+            or seen_indexes != set(range(expected_total))):
         raise EncryptedEvidenceError("decrypted_evidence_coverage_incomplete")
+    if manifest.get("accepted_count") != len(seen_accepted) or manifest.get("quarantined_count") != len(seen_quarantine):
+        raise EncryptedEvidenceError("decrypted_evidence_manifest_counts_mismatch")
     return evidence
 
 
