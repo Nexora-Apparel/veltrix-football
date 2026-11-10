@@ -250,6 +250,22 @@ def reconstruct_pre_match_features(*, historical_matches: list[dict],
     provenance_rows = sorted(
         eligible, key=lambda item: (item["_kickoff"], item["fixture_id"])
     )
+    eligible_source_records = [
+        {"fixture_id": row["fixture_id"], "provider": row["provider"],
+         "source_id": row["source_id"], "endpoint": row["endpoint"],
+         "payload_sha256": row["payload_sha256"], "run_id": row["run_id"],
+         "settled_at": row["_settled"].isoformat(),
+         "retrieved_at": row["_retrieved"].isoformat()}
+        for row in provenance_rows
+    ]
+    source_provenance = {
+        "source": "veltrix_results_feature_reconstruction",
+        "source_id": "history:" + _digest(eligible_source_records),
+        "payload_sha256": _digest(eligible_source_records),
+        "observed_at": max(row["_kickoff"] for row in provenance_rows).isoformat(),
+        "available_at": max(row["_settled"] for row in provenance_rows).isoformat(),
+        "retrieved_at": max(row["_retrieved"] for row in provenance_rows).isoformat(),
+    }
     provenance = {
         "schema_version": FEATURE_SCHEMA_VERSION,
         "target_fixture_id": target_fixture["fixture_id"],
@@ -261,12 +277,8 @@ def reconstruct_pre_match_features(*, historical_matches: list[dict],
         "eligible_history_count": len(eligible),
         "home_history_count": len(home_matches),
         "away_history_count": len(away_matches),
-        "eligible_fixture_ids_sha256": _digest([
-            {"fixture_id": row["fixture_id"], "provider": row["provider"],
-             "source_id": row["source_id"], "source_record_sha256": row["source_record_sha256"],
-             "retrieved_at": row["_retrieved"].isoformat(), "run_id": row["run_id"]}
-            for row in provenance_rows
-        ]),
+        "eligible_fixture_ids_sha256": _digest(eligible_source_records),
+        "source_provenance": source_provenance,
         "source": "settled_historical_results_only",
         "xg_used": False,
         "point_in_time_verified": True,
