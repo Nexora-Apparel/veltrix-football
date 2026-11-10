@@ -1,17 +1,20 @@
 # Raw provider evidence retention and key operations
 
-## Current boundary
+## Data boundary
 
-The acquisition workflow emits three files only:
-- Sanitized, hash-verified acquisition report.
-- AES-256-GCM encrypted raw-source sidecar.
-- Non-sensitive sidecar manifest containing report digest, run/window binding, ciphertext digest and evidence count.
+Each acquisition run produces:
+- A sanitized, hash-verified report. Raw provider rows are never serialized into it.
+- An AES-256-GCM encrypted sidecar covering every input observation, including accepted and quarantined rows.
+- A plaintext-safe manifest binding the sidecar to the report digest, run ID, date window, ciphertext digest, and accepted/quarantined/total counts.
+- A sanitized archive receipt written only after private object upload and read-back verification.
 
-GitHub Actions artifacts are currently retained for 14 days. They are a transport/debugging layer, not the canonical evidence archive. Historical acquisition MUST remain undispatched until durable private retention is provisioned and its restore path is tested.
+Quarantine is an evidence-retention outcome, not an acceptance outcome. A rejected batch may be archived so its original source observations remain auditable. The workflow then fails its final acceptance gate. Such a batch is never eligible for import, canonical merge, training, prediction publication, or Telegram delivery.
 
-## Canonical archive target
+GitHub Actions artifacts are a short-lived traceability layer, not the canonical archive. They contain only the sanitized report, manifest, and receipt; the encrypted sidecar is kept in private object storage.
 
-Use a private object-storage bucket with:
+## Canonical private archive
+
+Use a private S3-compatible bucket with:
 - Public access blocked; no public listing or object URLs.
 - Object versioning enabled.
 - Server-side encryption enabled in addition to application-level AES-256-GCM.
@@ -19,22 +22,25 @@ Use a private object-storage bucket with:
 - Access limited to the acquisition workflow identity and designated evidence-review identity.
 - No raw provider payload in logs, Git commits, PR diffs, public reports, Telegram, or website responses.
 
-Canonical object key:
-`veltrix-football/evidence/v1/{provider}/{competition_key}/{YYYY}/{MM}/{run_id}/{source_id}.json.enc`
+For run ID `{run_id}` under prefix `veltrix-football/evidence/v1`, the archive writes:
+- `reports/{run_id}.json`
+- `encrypted/{run_id}.enc`
+- `manifests/{run_id}.json`
+- `receipts/{run_id}.json`
 
-The encrypted sidecar may initially be stored as one batch object, with its manifest stored beside it. If split into per-record objects later, preserve the same authenticated batch binding and record coverage manifest.
+The receipt is the commit marker. It is written only after all three data objects have been uploaded and read back with matching SHA-256 digests. Retries may reuse existing objects only when the downloaded bytes match the expected digest; conflicting objects fail closed.
 
-## Upload protocol (must be implemented before dispatch)
+## Upload and restore protocol
 
-1. Validate the sanitized report and recompute its digest.
-2. Decrypt the sidecar in a restricted verification step; validate every raw payload and normalized-record digest and exact record coverage.
-3. Upload ciphertext and manifest to the private bucket using a unique immutable object key.
-4. Read back the uploaded object and compare its SHA-256 with the manifest.
-5. Record object URI, version ID, byte length, digest, run ID, report digest, evidence count and retention expiry in a separate sanitized archive receipt.
-6. Mark archive status complete only after read-back verification succeeds.
-7. Upload the sanitized report, encrypted sidecar and receipt to the short-lived GitHub artifact for traceability.
+1. Validate the sanitized report structure, digest, five-competition scope, date window, and request accounting.
+2. Build an encrypted evidence entry for each input index. Accepted entries bind raw payloads to normalized records; quarantined entries bind raw payloads to the quarantine reason and sanitized source summary.
+3. Verify the sidecar cryptographically against the report and manifest.
+4. Upload report, encrypted sidecar, and manifest to the private bucket.
+5. Read back every object and compare byte length and SHA-256.
+6. Write the receipt last, then read it back. A receipt is not emitted before the archive commit marker is verified.
+7. Restore with `scripts/restore_encrypted_source_evidence.py --run-id RUN_ID`. The restore command verifies the receipt inventory, exact object keys, object lengths and digests, report/manifest binding, AES-GCM authentication, and full accepted/quarantined input coverage before writing local files.
 
-No import into Neon, model training, canonical merge, prediction publication or Telegram delivery is part of this process.
+The archive and restore scripts are covered by secret-free fake-object-storage tests. Those tests do not substitute for a real provider provisioning and restore test.
 
 ## Key management
 
@@ -46,18 +52,19 @@ Generate a fresh 32-byte key and base64-encode it locally:
 python -c "import base64,secrets; print(base64.b64encode(secrets.token_bytes(32)).decode())"
 ```
 
-Add the output as the GitHub Actions secret. Never commit it, paste it into chat, include it in logs, or reuse provider/API/signing credentials. Keep a separately controlled recovery copy in an approved password manager or secrets vault. If the key is lost, encrypted evidence is unrecoverable.
+Add the output as a GitHub Actions secret. Never commit it, paste it into chat, include it in logs, or reuse provider/API/signing credentials. Keep a separately controlled recovery copy in an approved password manager or secrets vault. If the key is lost, encrypted evidence is unrecoverable.
 
 Key rotation must be versioned. New evidence uses a new key; old keys remain available only to the restricted decryption identity for the required retention period. Re-encryption, if required, must preserve original ciphertext digest and record a new derivative object with an auditable parent reference. Do not overwrite evidence objects.
 
 ## Release gates
 
-- [ ] Repository secret exists and has been tested using a synthetic payload only.
+- [ ] Repository encryption key and archive credentials are configured and tested using synthetic data only.
 - [ ] Private object storage is provisioned with public access blocked.
 - [ ] Workflow upload identity is scoped to the target bucket/prefix only.
-- [ ] Upload, read-back digest verification and archive receipt are implemented.
-- [ ] Restore/decrypt test succeeds from the canonical archive, not the Actions artifact.
+- [ ] Bucket versioning, server-side encryption, retention, and recovery access are verified.
+- [ ] A real upload/read-back/restore/decrypt test succeeds from canonical storage, not from a GitHub artifact.
 - [ ] Retention duration and deletion procedure are approved.
 - [ ] Terms and public attribution requirements remain satisfied.
+- [ ] Historical batch acceptance gates are met independently of evidence archival.
 
-Until every gate above is verified, the manual historical acquisition workflow must not be dispatched.
+Until every gate above is verified, the manual historical acquisition workflow must not be dispatched. A successful CI run proves only the synthetic test suite; it does not prove real storage provisioning or authorize acquisition.
