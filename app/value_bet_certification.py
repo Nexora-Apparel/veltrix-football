@@ -227,6 +227,7 @@ def certify_value_bet_markets(*, evaluation_records: list[dict]) -> dict:
         timestamped = sum(1 for row in rows if row["odds_timestamped"])
         odds_coverage = timestamped / len(rows) if rows else 0.0
         selected_rows = [row for row in rows if row["prospective_selection"]]
+        prospective_dates = sorted({row["local_date"] for row in selected_rows})
         total_stake = sum(row["stake"] for row in selected_rows)
         total_profit = sum(row["profit"] for row in selected_rows)
         roi = total_profit / total_stake if total_stake else None
@@ -257,7 +258,7 @@ def certify_value_bet_markets(*, evaluation_records: list[dict]) -> dict:
         checks = {
             "walk_forward_sample": len(rows) >= MIN_WALK_FORWARD_MATCHES,
             "prospective_settled_selections": len(selected_rows) >= MIN_PROSPECTIVE_SETTLED_SELECTIONS,
-            "distinct_dates": len(dates) >= MIN_DISTINCT_DATES,
+            "distinct_dates": len(prospective_dates) >= MIN_DISTINCT_DATES,
             "timestamped_odds_coverage": odds_coverage >= MIN_TIMESTAMPED_ODDS_COVERAGE,
             "net_roi_positive": roi is not None and roi > 0,
             "roi_lower_95_bound_positive": lower is not None and lower > 0,
@@ -268,7 +269,8 @@ def certify_value_bet_markets(*, evaluation_records: list[dict]) -> dict:
         market_reports[market] = {
             "walk_forward_matches": len(rows),
             "prospective_settled_selections": len(selected_rows),
-            "distinct_dates": len(dates),
+            "distinct_dates": len(prospective_dates),
+            "walk_forward_distinct_dates": len(dates),
             "timestamped_odds_count": timestamped,
             "timestamped_odds_coverage": round(odds_coverage, 6),
             "net_profit_units": round(total_profit, 6),
@@ -373,12 +375,15 @@ def validate_value_bet_certification_report(report: Any, *,
         sample = item.get("walk_forward_matches")
         selections = item.get("prospective_settled_selections")
         dates = item.get("distinct_dates")
+        walk_forward_dates = item.get("walk_forward_distinct_dates")
         odds_count = item.get("timestamped_odds_count")
         coverage = item.get("timestamped_odds_coverage")
         if any(isinstance(value, bool) or not isinstance(value, int) or value < 0
-               for value in (sample, selections, dates, odds_count)):
+               for value in (sample, selections, dates, walk_forward_dates, odds_count)):
             raise ValueBetCertificationError(f"certification_market_counts_invalid:{market}")
-        if sample < 0 or selections > sample or dates > sample or odds_count > sample:
+        if (sample < 0 or selections > sample or dates > selections
+                or walk_forward_dates > sample or dates > walk_forward_dates
+                or odds_count > sample):
             raise ValueBetCertificationError(f"certification_market_count_bounds_invalid:{market}")
         if isinstance(coverage, bool) or not isinstance(coverage, (int, float)) or not math.isfinite(coverage) or not 0 <= coverage <= 1:
             raise ValueBetCertificationError(f"certification_odds_coverage_invalid:{market}")
