@@ -60,7 +60,9 @@ class MarketReleaseCertificationTests(unittest.TestCase):
             evaluated_at="2026-11-10T20:00:00Z",
         )
         self.assertTrue(report["all_markets_certified"])
-        self.assertTrue(report["value_betting_authorized"])
+        self.assertTrue(report["value_betting_thresholds_met"])
+        self.assertFalse(report["value_betting_authorized"])
+        self.assertTrue(report["provenance_receipt_verification_required"])
         self.assertFalse(report["publication_authorized"])
         self.assertTrue(report["human_release_approval_required"])
         for market in CLASSES:
