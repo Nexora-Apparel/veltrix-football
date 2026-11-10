@@ -135,3 +135,9 @@ provider-to-external fixture mismatch, missing settlement timestamps and
 provider retrieval chronology. These tests use fake KMS signatures and
 synthetic fixtures; they do not qualify a real provider or establish model
 training eligibility.
+
+Registry issuance now also requires the signing key to be present in an
+out-of-band ARN-to-region signing allowlist. A caller cannot ask the signing
+helper to create a registry under an arbitrary KMS key and treat that action
+as trusted issuance. Verification and signing use separate explicit trust
+inputs, and both fail closed on unknown keys or region mismatches.
