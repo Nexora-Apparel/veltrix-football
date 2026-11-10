@@ -130,12 +130,12 @@ The verified-source registry must be assembled from successful signature-verifie
 Example invocation (all inputs are local, already verified artifacts):
 
 ```sh
-python scripts/evaluate_market_release_certification.py \\
-  --walk-forward-report walk-forward-report.json \\
-  --odds-ledger bookmaker-odds-ledger.json \\
-  --prospective-ledger prospective-value-ledger.json \\
-  --verified-digests verified-source-digests.json \\
-  --benchmark-bookmaker <qualified-bookmaker-key> \\
-  --evaluated-at 2026-11-10T20:00:00Z \\
+python scripts/evaluate_market_release_certification.py \
+  --walk-forward-report walk-forward-report.json \
+  --odds-ledger bookmaker-odds-ledger.json \
+  --prospective-ledger prospective-value-ledger.json \
+  --verified-digests verified-source-digests.json \
+  --benchmark-bookmaker <qualified-bookmaker-key> \
+  --evaluated-at 2026-11-10T20:00:00Z \
   --output market-release-certification.json
 ```
