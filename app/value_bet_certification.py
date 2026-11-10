@@ -325,7 +325,8 @@ def certify_value_bet_markets(*, evaluation_records: list[dict]) -> dict:
     return report
 
 
-def validate_value_bet_certification_report(report: Any) -> dict:
+def validate_value_bet_certification_report(report: Any, *,
+                                          evaluation_records: list[dict] | None = None) -> dict:
     if not isinstance(report, dict) or report.get("schema_version") != 1:
         raise ValueBetCertificationError("certification_schema_invalid")
     if report.get("report_type") != "veltrix_value_bet_certification":
@@ -337,6 +338,31 @@ def validate_value_bet_certification_report(report: Any) -> dict:
     unhashed.pop("certification_sha256", None)
     if _hash(unhashed) != supplied:
         raise ValueBetCertificationError("certification_hash_mismatch")
+    source_hash = report.get("evaluation_records_sha256")
+    if not isinstance(source_hash, str) or len(source_hash) != 64:
+        raise ValueBetCertificationError("certification_source_hash_invalid")
+
+    expected_thresholds = {
+        "walk_forward_matches_per_market": MIN_WALK_FORWARD_MATCHES,
+        "prospective_settled_selections_per_market": MIN_PROSPECTIVE_SETTLED_SELECTIONS,
+        "distinct_dates_per_market": MIN_DISTINCT_DATES,
+        "timestamped_odds_coverage_per_market": MIN_TIMESTAMPED_ODDS_COVERAGE,
+        "net_roi": ">0",
+        "roi_lower_95_bound": ">0",
+        "one_x_two_beats_bookmaker": ["brier", "log_loss"],
+    }
+    if report.get("thresholds") != expected_thresholds:
+        raise ValueBetCertificationError("certification_thresholds_mismatch")
+    methodology = report.get("methodology")
+    if not isinstance(methodology, dict) or (
+        methodology.get("roi_confidence_interval") != "date-clustered percentile bootstrap"
+        or methodology.get("bootstrap_replicates") != BOOTSTRAP_REPLICATES
+        or methodology.get("bootstrap_seed") != BOOTSTRAP_SEED
+        or methodology.get("bookmaker_probabilities") != "inverse decimal odds normalized by market overround"
+        or methodology.get("timezone_for_distinct_dates") != "Africa/Lagos"
+    ):
+        raise ValueBetCertificationError("certification_methodology_mismatch")
+
     markets = report.get("markets")
     if not isinstance(markets, dict) or set(markets) != set(MARKETS):
         raise ValueBetCertificationError("certification_market_scope_invalid")
@@ -344,9 +370,79 @@ def validate_value_bet_certification_report(report: Any) -> dict:
     for market, item in markets.items():
         if not isinstance(item, dict) or not isinstance(item.get("checks"), dict):
             raise ValueBetCertificationError(f"certification_market_report_invalid:{market}")
-        if item.get("certified") is not all(item["checks"].values()):
+        sample = item.get("walk_forward_matches")
+        selections = item.get("prospective_settled_selections")
+        dates = item.get("distinct_dates")
+        odds_count = item.get("timestamped_odds_count")
+        coverage = item.get("timestamped_odds_coverage")
+        if any(isinstance(value, bool) or not isinstance(value, int) or value < 0
+               for value in (sample, selections, dates, odds_count)):
+            raise ValueBetCertificationError(f"certification_market_counts_invalid:{market}")
+        if sample < 0 or selections > sample or dates > sample or odds_count > sample:
+            raise ValueBetCertificationError(f"certification_market_count_bounds_invalid:{market}")
+        if isinstance(coverage, bool) or not isinstance(coverage, (int, float)) or not math.isfinite(coverage) or not 0 <= coverage <= 1:
+            raise ValueBetCertificationError(f"certification_odds_coverage_invalid:{market}")
+        expected_coverage = round(odds_count / sample, 6) if sample else 0.0
+        if round(float(coverage), 6) != expected_coverage:
+            raise ValueBetCertificationError(f"certification_odds_coverage_count_mismatch:{market}")
+
+        profit, stake, roi = item.get("net_profit_units"), item.get("stake_units"), item.get("net_roi")
+        if any(isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value)
+               for value in (profit, stake)):
+            raise ValueBetCertificationError(f"certification_roi_totals_invalid:{market}")
+        if stake < 0 or (stake == 0 and roi is not None):
+            raise ValueBetCertificationError(f"certification_roi_stake_invalid:{market}")
+        if stake > 0:
+            if isinstance(roi, bool) or not isinstance(roi, (int, float)) or not math.isfinite(roi):
+                raise ValueBetCertificationError(f"certification_roi_invalid:{market}")
+            if abs(float(roi) - float(profit) / float(stake)) > 1e-5:
+                raise ValueBetCertificationError(f"certification_roi_total_mismatch:{market}")
+        interval = item.get("roi_confidence_interval_95_clustered_by_date")
+        if not isinstance(interval, dict) or (
+            interval.get("method") != "percentile_cluster_bootstrap"
+            or interval.get("replicates") != BOOTSTRAP_REPLICATES
+        ):
+            raise ValueBetCertificationError(f"certification_roi_interval_invalid:{market}")
+        lower, upper = interval.get("lower"), interval.get("upper")
+        if (lower is None) != (upper is None):
+            raise ValueBetCertificationError(f"certification_roi_interval_bounds_invalid:{market}")
+        if lower is not None and (
+            isinstance(lower, bool) or isinstance(upper, bool)
+            or not isinstance(lower, (int, float)) or not isinstance(upper, (int, float))
+            or not math.isfinite(lower) or not math.isfinite(upper) or lower > upper
+        ):
+            raise ValueBetCertificationError(f"certification_roi_interval_bounds_invalid:{market}")
+
+        expected_checks = {
+            "walk_forward_sample": sample >= MIN_WALK_FORWARD_MATCHES,
+            "prospective_settled_selections": selections >= MIN_PROSPECTIVE_SETTLED_SELECTIONS,
+            "distinct_dates": dates >= MIN_DISTINCT_DATES,
+            "timestamped_odds_coverage": float(coverage) >= MIN_TIMESTAMPED_ODDS_COVERAGE,
+            "net_roi_positive": roi is not None and roi > 0,
+            "roi_lower_95_bound_positive": lower is not None and lower > 0,
+        }
+        if market == "1x2":
+            brier, logloss = item.get("brier"), item.get("log_loss")
+            if not isinstance(brier, dict) or not isinstance(logloss, dict):
+                raise ValueBetCertificationError("certification_1x2_metrics_missing")
+            bm, bb = brier.get("model"), brier.get("bookmaker")
+            lm, lb = logloss.get("model"), logloss.get("bookmaker")
+            numeric = (bm, bb, lm, lb)
+            if any(isinstance(value, bool) or not isinstance(value, (int, float))
+                   or not math.isfinite(value) or value < 0 for value in numeric):
+                raise ValueBetCertificationError("certification_1x2_metrics_invalid")
+            expected_checks["beats_bookmaker_brier"] = bm < bb
+            expected_checks["beats_bookmaker_log_loss"] = lm < lb
+        else:
+            if item.get("brier") != {"model": None, "bookmaker": None} or item.get("log_loss") != {"model": None, "bookmaker": None}:
+                raise ValueBetCertificationError(f"certification_unexpected_baseline_metrics:{market}")
+        if item["checks"] != expected_checks:
+            raise ValueBetCertificationError(f"certification_checks_do_not_match_metrics:{market}")
+        certified = all(expected_checks.values())
+        if item.get("certified") is not certified:
             raise ValueBetCertificationError(f"certification_market_status_mismatch:{market}")
-        all_pass = all_pass and item["certified"]
+        all_pass = all_pass and certified
+
     if report.get("value_betting_enabled") is not all_pass:
         raise ValueBetCertificationError("certification_global_status_mismatch")
     side_effects = report.get("side_effects")
@@ -354,9 +450,22 @@ def validate_value_bet_certification_report(report: Any) -> dict:
         "provider_requests", "database_writes", "real_money_bets", "prediction_publications",
     )):
         raise ValueBetCertificationError("certification_side_effect_boundary_invalid")
+
+    source_revalidated = False
+    if evaluation_records is not None:
+        if _hash({"records": evaluation_records}) != source_hash:
+            raise ValueBetCertificationError("certification_source_records_hash_mismatch")
+        recomputed = certify_value_bet_markets(evaluation_records=evaluation_records)
+        if recomputed["certification_sha256"] != supplied:
+            raise ValueBetCertificationError("certification_recomputation_mismatch")
+        source_revalidated = True
+    elif all_pass:
+        raise ValueBetCertificationError("source_records_required_for_certification_enablement")
+
     return {
         "valid": True,
         "certification_sha256": supplied,
-        "value_betting_enabled": all_pass,
+        "value_betting_enabled": all_pass and source_revalidated,
+        "source_records_revalidated": source_revalidated,
         "market_status": {market: item["certified"] for market, item in markets.items()},
     }
