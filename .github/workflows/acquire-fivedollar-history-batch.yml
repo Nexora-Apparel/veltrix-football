@@ -31,6 +31,8 @@ concurrency:
 
 jobs:
   acquire:
+    # workflow_dispatch can target non-default branches; never expose archive/provider secrets there.
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     env:
