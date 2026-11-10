@@ -74,6 +74,8 @@ jobs:
         run: python -m unittest discover -s tests -p 'test_prospective_value_selection_ledger.py' -v
       - name: Run integrated offline market certification runner tests
         run: python -m unittest discover -s tests -p 'test_market_release_certification_runner.py' -v
+      - name: Run signed multi-batch evidence registry merge tests
+        run: python -m unittest discover -s tests -p 'test_verified_digest_registry_merge.py' -v
       - name: Run point-in-time bookmaker odds evidence tests
         run: python -m unittest discover -s tests -p 'test_bookmaker_odds_evidence.py' -v
       - name: Run The Odds API evidence adapter tests
