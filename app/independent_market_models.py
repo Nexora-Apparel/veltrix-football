@@ -420,6 +420,10 @@ def predict_independent_markets(*, model: dict, features: dict,
            for outcomes in output.values() for p in outcomes.values()):
         raise ResultsModelError("inference_probability_invalid")
     calibration = model.get("calibration", {"status": "not_calibrated"})
+    if calibration.get("status") == "calibrated":
+        calibrated_at = calibration.get("calibrated_at")
+        if _time(calibrated_at, "model_calibrated_at") > cutoff:
+            raise ResultsModelError("model_calibrated_after_prediction_cutoff")
     output = _apply_calibration(output, calibration)
     return {
         "schema_version": 1,
