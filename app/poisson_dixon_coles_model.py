@@ -131,20 +131,32 @@ def _fit_rho(rows: list[dict], params_by_comp: dict, max_abs_rho: float) -> floa
     candidates = [round(-max_abs_rho + i * (2 * max_abs_rho / 100), 8)
                   for i in range(101)]
     best_rho, best_ll = 0.0, -math.inf
+    # Require every low-score correction to remain nonnegative for every
+    # known home/away team pairing, not merely the observed score in-sample.
+    pair_rates = []
+    for comp, params in params_by_comp.items():
+        teams = sorted(params["attack"])
+        for home in teams:
+            for away in teams:
+                if home != away:
+                    pair_rates.append(_rates(params, home, away))
     for rho in candidates:
+        valid = all(
+            min(1.0 - lam * mu * rho, 1.0 + lam * rho,
+                1.0 + mu * rho, 1.0 - rho) > 0
+            for lam, mu in pair_rates
+        )
+        if not valid:
+            continue
         ll = 0.0
-        valid = True
         for row in rows:
             lam, mu = _rates(params_by_comp[row["competition_key"]],
                              row["home_team_id"], row["away_team_id"])
             tau = _tau(row["home_score"], row["away_score"], lam, mu, rho)
-            if tau <= 0 or not math.isfinite(tau):
-                valid = False
-                break
             # The independent Poisson terms do not vary with rho; tau is
             # the Dixon-Coles likelihood contribution.
             ll += row["_weight"] * math.log(tau)
-        if valid and ll > best_ll:
+        if ll > best_ll:
             best_rho, best_ll = rho, ll
     if not math.isfinite(best_ll):
         raise PoissonModelError("no_valid_dixon_coles_rho")
@@ -167,7 +179,8 @@ def fit_poisson_dixon_coles(*, history: list[dict], training_cutoff: str,
     cutoff, fit_time = _dt(training_cutoff, "training_cutoff"), _dt(trained_at, "trained_at")
     if fit_time <= cutoff:
         raise PoissonModelError("training_timestamp_must_follow_cutoff")
-    if not isinstance(dataset_sha256, str) or len(dataset_sha256) != 64:
+    if (not isinstance(dataset_sha256, str) or len(dataset_sha256) != 64
+            or any(ch not in "0123456789abcdef" for ch in dataset_sha256)):
         raise PoissonModelError("dataset_digest_invalid")
     for name, ids in (("train", train_fixture_ids), ("validation", validation_fixture_ids),
                       ("test", test_fixture_ids)):
