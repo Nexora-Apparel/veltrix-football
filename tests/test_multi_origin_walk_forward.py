@@ -106,6 +106,12 @@ class MultiOriginWalkForwardTests(unittest.TestCase):
         )
         self.assertEqual(report["origin_count"], 2)
         self.assertEqual(report["pooled_test_fixture_count"], 150)
+        self.assertEqual(len(report["pooled_test_records"]), 150)
+        sample = report["pooled_test_records"][0]
+        self.assertIn("kickoff_at", sample)
+        self.assertIn("label_available_at", sample)
+        self.assertEqual(len(sample["label_source_evidence_sha256"]), 64)
+        self.assertEqual(len(sample["feature_snapshot_sha256"]), 64)
         self.assertEqual(len(report["origins"]), 2)
         for origin in report["origins"]:
             self.assertGreaterEqual(origin["counts"]["train"], 100)
