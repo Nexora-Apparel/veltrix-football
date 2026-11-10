@@ -103,7 +103,8 @@ def validate_model_parameter_set(params: Any, prediction_as_of: str) -> dict:
     data_cutoff = _parse_time(params["training_data_cutoff_at"], "training_data_cutoff_at")
     trained_until = _parse_time(params["trained_until"], "trained_until")
     trained_at = _parse_time(params["trained_at"], "trained_at")
-    if data_cutoff > cutoff or trained_until > data_cutoff or trained_at > cutoff:
+    if (data_cutoff > cutoff or trained_until > data_cutoff
+            or trained_at < data_cutoff or trained_at > cutoff):
         raise ModelInferenceError("model_parameter_temporal_leakage")
 
     home_advantage = params.get("home_advantage_multiplier")
@@ -119,12 +120,12 @@ def validate_model_parameter_set(params: Any, prediction_as_of: str) -> dict:
             raise ModelInferenceError(f"model_parameter_{name}_invalid")
     if not 0.8 <= home_advantage <= 1.3:
         raise ModelInferenceError("home_advantage_multiplier_out_of_range")
-    if not 0 <= elo_coefficient <= 0.01:
+    if not 0 <= elo_coefficient <= 0.002:
         raise ModelInferenceError("elo_goal_coefficient_out_of_range")
     if not -0.2 <= rho <= 0.2:
         raise ModelInferenceError("dixon_coles_rho_out_of_range")
-    if isinstance(max_goals, bool) or not isinstance(max_goals, int) or not 12 <= max_goals <= 15:
-        raise ModelInferenceError("max_goals_out_of_range")
+    if isinstance(max_goals, bool) or not isinstance(max_goals, int) or max_goals != 15:
+        raise ModelInferenceError("max_goals_must_be_15_for_tail_mass_tolerance")
     return {
         "valid": True,
         "parameter_sha256": supplied,
@@ -180,6 +181,8 @@ def infer_pre_match_forecast(*, snapshot: dict, model_parameters: dict) -> dict:
         "missing_features": missing,
         "publication_allowed": False,
         "value_betting_enabled": False,
+        "fallback_prior_used": False,
+        "favourite_filter_used": False,
     }
     if missing:
         result = {
