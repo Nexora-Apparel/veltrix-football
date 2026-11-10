@@ -9,28 +9,38 @@ Find a source that supplies an independently auditable, timezone-aware wall-cloc
 
 ## Candidate assessment
 
-### Genius Sports Warehouse football stream — promising candidate; not yet qualified
+### Genius Sports Warehouse — strongest candidate; not yet qualified
 
-The official Genius Sports developer documentation for the Warehouse football read stream defines a `summary` message that is usually sent once at the end of the match. Its `timeEndActual` field is explicitly described as the actual end date/time of the match in UTC, formatted as `YYYY-MM-DD HH:MM:SS`. The documentation includes a concrete timestamp example.
+The official Genius Sports developer documentation exposes `timeEndActual` in two relevant contracts:
+
+1. **Football streaming API:** the `summary` message is usually sent once at the end of a match. Its `timeEndActual` field is explicitly described as the actual end date/time of the match in UTC, formatted as `YYYY-MM-DD HH:MM:SS`.
+2. **Warehouse REST match resource:** the match object also exposes `timeEndActual`, described as the actual end time of the match. The REST API provides match lookup by ID and match listing by competition with date filters. The Developer Centre describes the Warehouse REST API as querying information about both past and future matches.
 
 Official references:
 - https://developer.geniussports.com/warehouse/livestream/read/index_football.html
 - https://developer.geniussports.com/livestats/tvfeed/index_football.html
+- https://developer.geniussports.com/warehouse/rest/index_football.html
+- https://developer.geniussports.com/warehouse/old/match.html
+- https://developer.geniussports.com/warehouse/old/resource_match.html
+- https://developer.geniussports.com/
 
 Positive evidence:
 - The field is explicitly named `timeEndActual`, not `updated_at`, `last_processed_at`, or a retrieval timestamp.
-- The official schema describes it as the match's actual end date/time and explicitly specifies UTC.
-- The `summary` message is described as normally being sent once at the end of the match.
-- The read-stream schema also exposes match status and event/action data that could support consistency checks.
+- The official schema describes it as the match's actual end time; the stream schema explicitly specifies UTC.
+- The stream's `summary` message is described as normally being sent once at the end of the match.
+- The REST match resource includes native match ID, competition ID, match status, kickoff, teams/competitors and `timeEndActual`, supporting exact identity and historical match lookup.
+- The REST API supports listing matches by competition and date range, while the Developer Centre says the Warehouse REST API covers past and future matches. This makes historical retrieval plausible without relying solely on a live stream.
 
-Unresolved qualification requirements:
-1. The reviewed documentation does not state whether `timeEndActual` is immutable, whether it can be revised, or how corrections are represented.
-2. It does not explicitly define the timestamp as the referee's final-whistle instant in all competition formats. The provider must confirm whether it means the end of play, the end of the data-capture session, or another operational end marker.
-3. The documented read API is a long-running live stream expected to be connected before kickoff and maintained during the match. Historical replay, archive retrieval, and bulk backfill access are not established by these documents.
-4. Competition/season coverage, fixture identity guarantees, raw-response retention rights, and commercial storage/reuse rights remain unverified.
-5. Abandoned, suspended, replayed, awarded, extra-time and penalty-shootout handling needs an explicit provider contract.
+Critical limitations and unresolved qualification requirements:
+1. **Mutable records:** the REST API's general documentation explicitly warns that data may be removed or changed. The match resource documentation does not specify an immutable revision history or explain how timestamp corrections are exposed. A current historical response alone cannot prove what value was present at an earlier training cutoff.
+2. **Event semantics:** the documentation calls the field the actual end time, but does not explicitly state that it is the referee's final-whistle instant in every competition format. Genius Sports must clarify whether it means end of play, end of capture, or another operational marker.
+3. **Archive depth:** the REST API supports past-match queries, but the reviewed documentation does not establish the available historical seasons, retention period, or whether the relevant competitions and match records include populated `timeEndActual`.
+4. **Access and coverage:** API keys specify access and quota; production content is limited to what the customer is licensed to receive. Competition-level availability and pricing must be confirmed before any acquisition.
+5. **Rights:** raw payload retention, derived feature use, model training, and long-term archive rights must be confirmed in the applicable contract.
+6. **Edge cases:** abandoned, suspended, replayed, awarded, extra-time and penalty-shootout handling needs an explicit provider contract.
+7. **Evidence integrity:** every acquired response must be archived byte-for-byte with retrieval time, endpoint, provider match ID, request/run ID and SHA-256. Repeated retrievals must be retained as separate observations so changes can be detected rather than overwritten.
 
-**Decision:** Retain as the strongest newly identified candidate, but do not admit it to the signed settlement-source qualification registry yet. No provider account, API access, coverage, historical archive, or rights have been verified. Do not spend credits or acquire data until the unresolved semantics, access model, coverage and terms are confirmed in writing.
+**Decision:** Keep Genius Sports as the primary candidate for vendor qualification. Do not admit it to the signed settlement-source qualification registry yet. The documentation supports an actual-end-time field and historical match retrieval, but does not establish immutable revisions, universal final-whistle semantics, coverage, commercial access or data-use rights. No provider account, API access, archive, or terms have been verified. Do not spend credits or acquire data until these conditions are confirmed.
 
 ### Sportradar Soccer API — not qualified for settlement time
 
@@ -103,4 +113,4 @@ This is a deliberate fail-closed data-quality boundary. No timestamp is fabricat
 
 ## Next action
 
-Obtain written clarification from Genius Sports on the meaning, correction/immutability behavior, historical replay access, competition coverage, and data-use rights for `timeEndActual`. If those conditions cannot be satisfied, continue discovery against official competition match centres and specialist event-data providers. If no suitable source exists within the project's provider budget, revise the training-label temporal contract through a separately reviewed design decision rather than silently weakening it.
+Obtain written clarification from Genius Sports on the meaning and correction/revision behavior of `timeEndActual`; confirm which historical seasons and competitions expose populated values; obtain the commercial schedule and explicit rights for archival retention and model training; then validate a small, permitted sample against independent match-centre evidence. Only after those checks pass should a source-specific extraction adapter and signed qualification record be implemented. If those conditions cannot be satisfied, continue discovery against official competition match centres and specialist event-data providers. If no suitable source exists within the project's provider budget, revise the training-label temporal contract through a separately reviewed design decision rather than silently weakening it.
