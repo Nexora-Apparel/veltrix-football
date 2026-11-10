@@ -24,6 +24,8 @@ jobs:
           python-version: "3.12"
       - name: Run independent market model tests
         run: python -m unittest discover -s tests -p 'test_independent_market_models.py' -v
+      - name: Run canonical source payload provenance tests
+        run: python -m unittest discover -s tests -p 'test_source_payload_provenance.py' -v
       - name: Run historical feature reconstruction tests
         run: python -m unittest discover -s tests -p 'test_results_feature_reconstruction.py' -v
       - name: Run chronological dataset adapter tests
