@@ -35,7 +35,13 @@ def make_history(days=6):
                 "away_team_id": away,
                 "home_score": home_score,
                 "away_score": away_score,
-                "source_record_sha256": f"{len(rows) + 1:064x}",
+                "provider": "fivedollar",
+                "source_id": fixture_id,
+                "endpoint": "/fixtures",
+                "retrieved_at": f"{day.isoformat()}T{kickoff_hour + 3:02d}:00:00Z",
+                "payload_sha256": f"{len(rows) + 1:064x}",
+                "run_id": "fixture-run-001",
+                "normalized_status": "finished",
             })
     return rows
 
@@ -82,7 +88,13 @@ class ResultsFeatureReconstructionTests(unittest.TestCase):
             "settled_at": "2026-09-10T20:00:00Z",
             "home_team_id": "A", "away_team_id": "B",
             "home_score": 9, "away_score": 0,
-            "source_record_sha256": f"{999:064x}",
+            "provider": "fivedollar",
+            "source_id": "future-001",
+            "endpoint": "/fixtures",
+            "retrieved_at": "2026-09-10T21:00:00Z",
+            "payload_sha256": f"{999:064x}",
+            "run_id": "fixture-run-002",
+            "normalized_status": "finished",
         }
         changed = reconstruct_pre_match_features(
             historical_matches=history + [future], target_fixture=TARGET,
@@ -131,6 +143,19 @@ class ResultsFeatureReconstructionTests(unittest.TestCase):
         with self.assertRaisesRegex(FeatureReconstructionError, "history_below_minimum"):
             reconstruct_pre_match_features(
                 historical_matches=only_home, target_fixture=TARGET,
+                minimum_team_matches=3,
+            )
+
+    def test_rejects_records_retrieved_after_feature_cutoff(self):
+        history = make_history()
+        for row in history:
+            if row["home_team_id"] == "A" or row["away_team_id"] == "A":
+                row["retrieved_at"] = "2026-09-01T13:00:00Z"
+        with self.assertRaisesRegex(
+            FeatureReconstructionError, "home_history_below_minimum"
+        ):
+            reconstruct_pre_match_features(
+                historical_matches=history, target_fixture=TARGET,
                 minimum_team_matches=3,
             )
 
