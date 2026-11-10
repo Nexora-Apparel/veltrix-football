@@ -25,10 +25,11 @@ class FakeHistoryClient:
             date(day.year, day.month, day.day).strftime("%Y%m%d")
         ) + 1
 
-    def __init__(self, *, extra_page=False, wrong_competition=None):
+    def __init__(self, *, extra_page=False, wrong_competition=None, invalid_kickoff_competition=None):
         self.calls = []
         self.extra_page = extra_page
         self.wrong_competition = wrong_competition
+        self.invalid_kickoff_competition = invalid_kickoff_competition
 
     def _get(self, path, params, *, retries=2):
         self.calls.append((path, params, retries))
@@ -37,7 +38,10 @@ class FakeHistoryClient:
         page = params["page"]
         row = {
             "id": int(competition_id) + page,
-            "kickoff_utc": "2026-11-02T12:00:00Z",
+            "kickoff_utc": (
+                "invalid-timestamp" if self.invalid_kickoff_competition == competition_id
+                else "2026-11-02T12:00:00Z"
+            ),
             "status": "finished",
             "league": {"id": row_competition, "name": "Qualified League"},
             "teams": {
@@ -99,6 +103,36 @@ class HistoricalAcquisitionTests(unittest.TestCase):
             self.assertEqual(len(evidence), 5)
             self.assertNotIn('"payload":', json.dumps(report))
             self.assertEqual(result['encrypted_evidence']['evidence_count'], 5)
+
+
+    def test_sidecar_covers_quarantined_raw_rows_without_leaking_them_into_report(self):
+        key = base64.b64encode(bytes(range(32))).decode("ascii")
+        client = FakeHistoryClient(invalid_kickoff_competition=COMPETITIONS[0])
+        with tempfile.TemporaryDirectory() as temp:
+            destination = Path(temp) / "evidence.enc"
+            result = acquire_fivedollar_history_batch(
+                client=client, competition_ids=COMPETITIONS,
+                start_date="2026-11-01", end_date="2026-11-07",
+                run_id="quarantine-evidence-test", retrieved_at="2026-11-08T00:00:00Z",
+                max_requests=15, sleep=lambda _: None,
+                evidence_encryption_key=key, evidence_output_path=destination,
+            )
+            report = result["report"]
+            manifest = json.loads(destination.with_suffix(".enc.manifest.json").read_text())
+            evidence = decrypt_and_verify_source_evidence(
+                destination.read_bytes(), report=report, manifest=manifest, key=key
+            )
+            self.assertEqual(report["quality"]["accepted_count"], 4)
+            self.assertEqual(report["quality"]["quarantined_count"], 1)
+            self.assertEqual(manifest["accepted_count"], 4)
+            self.assertEqual(manifest["quarantined_count"], 1)
+            self.assertEqual(len(evidence), 5)
+            quarantine_evidence = [item for item in evidence if item["kind"] == "quarantined"]
+            self.assertEqual(len(quarantine_evidence), 1)
+            self.assertEqual(quarantine_evidence[0]["payload"]["kickoff_utc"], "invalid-timestamp")
+            serialized = json.dumps(report)
+            self.assertNotIn('"raw_payload"', serialized)
+            self.assertNotIn('"payload":', serialized)
 
     def test_batch_rejects_provider_rows_from_an_unqualified_competition(self):
         client = FakeHistoryClient(wrong_competition="999999")
