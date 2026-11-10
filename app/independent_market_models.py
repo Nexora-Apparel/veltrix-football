@@ -80,11 +80,15 @@ def _softmax(values: list[float]) -> list[float]:
 
 
 def _validate_row(row: Any, index: int, training_cutoff: datetime) -> dict:
-    required = {
+    score_shape = {
         "fixture_id", "kickoff_at", "feature_as_of", "settled_at",
         "features", "home_score", "away_score", "source_record_sha256",
     }
-    if not isinstance(row, dict) or set(row) != required:
+    market_shape = {
+        "fixture_id", "kickoff_at", "feature_as_of", "settled_at",
+        "features", "market_targets", "source_record_sha256",
+    }
+    if not isinstance(row, dict) or set(row) not in (score_shape, market_shape):
         raise ResultsModelError(f"training_row_shape_invalid:{index}")
     fixture_id = row.get("fixture_id")
     if not isinstance(fixture_id, str) or not fixture_id.strip():
@@ -124,19 +128,30 @@ def _validate_row(row: Any, index: int, training_cutoff: datetime) -> dict:
         raise ResultsModelError(f"form_rate_out_of_range:{fixture_id}")
     if any(not 0 <= clean[name] <= 30 for name in ("home_rest_days", "away_rest_days")):
         raise ResultsModelError(f"rest_days_out_of_range:{fixture_id}")
-    home, away = row["home_score"], row["away_score"]
-    if (isinstance(home, bool) or not isinstance(home, int) or home < 0
-            or isinstance(away, bool) or not isinstance(away, int) or away < 0):
-        raise ResultsModelError(f"settled_score_invalid:{fixture_id}")
+    if "market_targets" in row:
+        labels = row["market_targets"]
+        if (not isinstance(labels, dict)
+                or set(labels) != {"1x2", "btts", "over_2_5"}
+                or labels["1x2"] not in MARKETS["1x2"]
+                or labels["btts"] not in MARKETS["btts"]
+                or labels["over_2_5"] not in MARKETS["over_2_5"]):
+            raise ResultsModelError(f"market_targets_invalid:{fixture_id}")
+        clean_labels = dict(labels)
+    else:
+        home, away = row["home_score"], row["away_score"]
+        if (isinstance(home, bool) or not isinstance(home, int) or home < 0
+                or isinstance(away, bool) or not isinstance(away, int) or away < 0):
+            raise ResultsModelError(f"settled_score_invalid:{fixture_id}")
+        clean_labels = {
+            "1x2": "home" if home > away else "away" if home < away else "draw",
+            "btts": "yes" if home > 0 and away > 0 else "no",
+            "over_2_5": "yes" if home + away >= 3 else "no",
+        }
     return {
         "fixture_id": fixture_id,
         "kickoff_at": kickoff,
         "features": clean,
-        "labels": {
-            "1x2": "home" if home > away else "away" if home < away else "draw",
-            "btts": "yes" if home > 0 and away > 0 else "no",
-            "over_2_5": "yes" if home + away >= 3 else "no",
-        },
+        "labels": clean_labels,
         "source_record_sha256": digest,
     }
 
