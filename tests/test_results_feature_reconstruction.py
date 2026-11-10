@@ -111,6 +111,7 @@ class ResultsFeatureReconstructionTests(unittest.TestCase):
         for row in history:
             if "A" in (row["home_team_id"], row["away_team_id"]):
                 row["settled_at"] = "2026-09-01T13:00:00Z"
+                row["retrieved_at"] = "2026-09-01T14:00:00Z"
         with self.assertRaisesRegex(
             FeatureReconstructionError, "home_history_below_minimum"
         ):
