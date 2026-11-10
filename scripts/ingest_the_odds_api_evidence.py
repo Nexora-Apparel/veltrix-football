@@ -63,7 +63,8 @@ def _atomic_write_json(path: str, value: dict) -> None:
 
 
 def ingest(*, event_path: str, crosswalk_path: str, retrieved_at: str,
-           ledger_path: str, max_quote_age_seconds: int = 86400) -> dict:
+           source_payload_sha256: str, ledger_path: str,
+           max_quote_age_seconds: int = 86400) -> dict:
     event = _read_json(event_path)
     crosswalk = _read_json(crosswalk_path)
     destination = Path(ledger_path)
@@ -76,6 +77,7 @@ def ingest(*, event_path: str, crosswalk_path: str, retrieved_at: str,
             event_payload=event,
             crosswalk=crosswalk,
             retrieved_at=retrieved_at,
+            source_payload_sha256=source_payload_sha256,
             max_quote_age_seconds=max_quote_age_seconds,
         )
         merged = append_odds_observations(
@@ -106,6 +108,8 @@ def main() -> int:
     parser.add_argument("--crosswalk-json", required=True)
     parser.add_argument("--retrieved-at", required=True,
                         help="Timezone-aware ISO-8601 retrieval timestamp")
+    parser.add_argument("--source-payload-sha256", required=True,
+                        help="SHA-256 of the exact archived HTTP response bytes")
     parser.add_argument("--ledger-json", required=True)
     parser.add_argument("--max-quote-age-seconds", type=int, default=86400)
     args = parser.parse_args()
@@ -114,6 +118,7 @@ def main() -> int:
             event_path=args.event_json,
             crosswalk_path=args.crosswalk_json,
             retrieved_at=args.retrieved_at,
+            source_payload_sha256=args.source_payload_sha256,
             ledger_path=args.ledger_json,
             max_quote_age_seconds=args.max_quote_age_seconds,
         )
