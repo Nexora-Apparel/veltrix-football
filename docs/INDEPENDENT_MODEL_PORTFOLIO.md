@@ -108,3 +108,9 @@ This is a pure adapter and does not call The Odds API. It is not yet connected t
 ### Offline odds evidence ingestion
 
 `scripts/ingest_the_odds_api_evidence.py` is a manual, network-free CLI that accepts one archived event JSON file plus its reviewed crosswalk and the SHA-256 of the exact archived HTTP response bytes, converts the response through the strict adapter, and atomically appends observations to a local ledger. It refuses symlink destinations, preserves the previous ledger if validation fails, and is idempotent on repeated ingestion. It never reads API credentials, calls a provider, writes Neon, publishes predictions or sends Telegram. This is a local evidence-preparation tool, not a scheduled production collector.
+
+### Walk-forward to certification evidence bridge
+
+`app/multi_origin_walk_forward.py` now emits its pooled out-of-sample records with fixture kickoff, label-availability timestamp, label-source digest and feature-snapshot digest. These are the point-in-time records required by the release certification layer; aggregate metrics alone are not enough to reconstruct a trustworthy certification sample.
+
+`app/walk_forward_certification_adapter.py` verifies the pooled-record digest, joins each fixture/market to the latest pre-kickoff quote from one explicitly named benchmark bookmaker in the The Odds API evidence ledger, and preserves missing quotes as missing. It does not substitute another bookmaker or select the most favorable quote for benchmark scoring. Prospective selections are passed as a separate market-partitioned evidence set and must still be independently provenance-verified. This bridge performs no provider requests or persistence.
