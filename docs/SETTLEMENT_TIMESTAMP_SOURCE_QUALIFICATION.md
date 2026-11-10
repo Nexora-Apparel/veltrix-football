@@ -85,3 +85,32 @@ make it eligible for a historical backtest.
 The bridge remains offline and side-effect-free. No external timestamp source
 has been qualified, no archive has been acquired, and no model training or
 publication is enabled by this integration.
+
+## Signed source qualification registry — 2026-11-10
+
+`app/source_qualification_registry.py` now implements a versioned KMS-signed
+registry. A registry is trusted only when its ECDSA-SHA256 signature verifies
+against an explicitly supplied out-of-band ARN-to-KMS-client allowlist.
+The key ARN inside the registry signature is only a lookup key into that
+allowlist; it cannot introduce a new trust anchor.
+
+Each source entry binds a qualification record, its canonical SHA-256,
+competition scope, timestamp field and final-whistle semantics, qualification
+evidence digests, validity interval and optional revocation time. Resolution
+recomputes the qualification-record digest and rejects modified records,
+unsupported semantics, duplicate source IDs, expired registries, inactive or
+revoked sources, and unsupported competitions.
+
+The provider acquisition dataset bridge now requires the signed registry and
+trusted KMS client mapping in each settlement package. It resolves the source
+at the provider record's retrieval timestamp and requires the supplied
+contract to equal the registry-resolved contract before accepting timestamp
+evidence. The output manifest retains the registry digest and signing-key
+ARN alongside the qualification and timestamp-evidence digests.
+
+This is a cryptographic trust and software-enforcement boundary, not proof
+that a source's timestamp is factually correct. Qualification evidence still
+requires human/source review, and the real KMS key, registry publication,
+external timestamp source and competition coverage have not been configured
+or verified. CI uses a deterministic fake KMS implementation only. No live
+acquisition, training, prediction publication or Telegram delivery is enabled.
