@@ -20,7 +20,7 @@ POLICY = {
 }
 
 
-def dataset_fixture():
+def dataset_fixture(late_retrieval=False):
     snapshots, labels = [], []
     windows = [
         ("train", date(2026, 7, 20), 120, 1),
@@ -74,7 +74,11 @@ def dataset_fixture():
                 "away_score": away_score,
                 "label_source": "fivedollar",
                 "label_source_id": f"result-{index}",
-                "label_retrieved_at": f"{day.isoformat()}T18:00:00Z",
+                "label_retrieved_at": (
+                    "2026-10-02T01:00:00Z"
+                    if late_retrieval and split == "train" and offset == 119
+                    else f"{day.isoformat()}T18:00:00Z"
+                ),
                 "payload_sha256": digest,
             })
             index += 1
@@ -110,6 +114,16 @@ class DatasetBoundTrainingTests(unittest.TestCase):
         dataset = dataset_fixture()
         dataset["rows"][0]["predictors"]["elo_difference_home"] += 1
         with self.assertRaisesRegex(DatasetTrainingError, "dataset_rejected"):
+            fit_models_from_chronological_dataset(
+                dataset=dataset, trained_at="2026-10-02T00:00:00Z", epochs=150,
+            )
+
+
+    def test_rejects_labels_retrieved_after_training_timestamp(self):
+        dataset = dataset_fixture(late_retrieval=True)
+        with self.assertRaisesRegex(
+            DatasetTrainingError, "label_retrieved_after_model_training"
+        ):
             fit_models_from_chronological_dataset(
                 dataset=dataset, trained_at="2026-10-02T00:00:00Z", epochs=150,
             )
