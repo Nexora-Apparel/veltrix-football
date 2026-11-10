@@ -29,7 +29,7 @@ class MarketProbabilityCalibrationTests(unittest.TestCase):
         self.assertEqual(audit["validation_dates_used"], 40)
         self.assertEqual(audit["training_rows_used_for_calibration"], 0)
         self.assertEqual(audit["test_rows_used_for_calibration"], 0)
-        self.assertFalse(audit["test_partition_opened"])
+        self.assertFalse(audit["test_partition_used_for_calibration"])
         self.assertFalse(audit["publication_allowed"])
         self.assertFalse(audit["value_betting_enabled"])
         test_row = next(row for row in dataset["rows"] if row["split"] == "test")
