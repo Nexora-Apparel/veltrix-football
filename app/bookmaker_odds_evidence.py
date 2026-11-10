@@ -127,15 +127,38 @@ def validate_odds_observation(item: Any) -> dict:
     prices = item["decimal_odds"]
     if not isinstance(prices, dict) or set(prices) != set(selections):
         raise BookmakerOddsEvidenceError("odds_selection_set_invalid")
-    implied = {key: 1.0 / float(prices[key]) for key in selections}
+    implied = {}
+    for key in selections:
+        price = prices[key]
+        if isinstance(price, bool) or not isinstance(price, (int, float)):
+            raise BookmakerOddsEvidenceError(f"decimal_odds_invalid:{key}")
+        price = float(price)
+        if not math.isfinite(price) or price <= 1.0 or price > 1000.0:
+            raise BookmakerOddsEvidenceError(f"decimal_odds_out_of_range:{key}")
+        implied[key] = 1.0 / price
     overround = sum(implied.values())
     normalized = {key: value / overround for key, value in implied.items()}
-    if (item["implied_probabilities"] != normalized
-            or not math.isclose(float(item["overround"]), overround, rel_tol=1e-12)
-            or not isinstance(item["raw_payload_sha256"], str)
-            or len(item["raw_payload_sha256"]) != 64
-            or not isinstance(item["source_payload_sha256"], str)
-            or len(item["source_payload_sha256"]) != 64):
+    digest_fields = ("raw_payload_sha256", "source_payload_sha256")
+    digests_valid = all(
+        isinstance(item.get(name), str) and len(item[name]) == 64
+        and all(char in "0123456789abcdef" for char in item[name])
+        for name in digest_fields
+    )
+    stored_probs = item.get("implied_probabilities")
+    probabilities_valid = (
+        isinstance(stored_probs, dict) and set(stored_probs) == set(selections)
+        and all(isinstance(stored_probs[key], (int, float))
+                and not isinstance(stored_probs[key], bool)
+                and math.isfinite(float(stored_probs[key]))
+                and math.isclose(float(stored_probs[key]), normalized[key], rel_tol=1e-12, abs_tol=1e-12)
+                for key in selections)
+    )
+    stored_overround = item.get("overround")
+    if (not digests_valid or not probabilities_valid
+            or isinstance(stored_overround, bool)
+            or not isinstance(stored_overround, (int, float))
+            or not math.isfinite(float(stored_overround))
+            or not math.isclose(float(stored_overround), overround, rel_tol=1e-12, abs_tol=1e-12)):
         raise BookmakerOddsEvidenceError("odds_observation_integrity_mismatch")
     payload = {key: value for key, value in item.items() if key != "observation_id"}
     if _canonical_hash(payload) != item["observation_id"]:
