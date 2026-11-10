@@ -64,7 +64,7 @@ class SettlementTimestampSourceTests(unittest.TestCase):
 
     def test_competition_scope_is_enforced(self):
         other = {**IDENTITY, "competition_id": "unqualified-league"}
-        with self.assertRaisesRegex(SettlementTimestampSourceError, "fixture_identity_mismatch"):
+        with self.assertRaisesRegex(SettlementTimestampSourceError, "competition_not_qualified_for_timestamp_source"):
             self.build(fixture_identity=other, expected_fixture_identity=other)
 
     def test_naive_timestamp_rejected(self):
