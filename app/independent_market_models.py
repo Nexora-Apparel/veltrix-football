@@ -98,10 +98,10 @@ def _validate_row(row: Any, index: int, training_cutoff: datetime, trained_at: d
     settled = _time(row["settled_at"], f"row_{index}_settled_at")
     if feature_as_of >= kickoff or settled <= kickoff:
         raise ResultsModelError(f"row_temporal_order_invalid:{fixture_id}")
-    if settled > trained_at:
-        raise ResultsModelError(f"settled_after_model_training:{fixture_id}")
     if kickoff > training_cutoff:
         raise ResultsModelError(f"row_after_training_cutoff:{fixture_id}")
+    if settled > trained_at:
+        raise ResultsModelError(f"settled_after_model_training:{fixture_id}")
     digest = row.get("source_record_sha256")
     if (not isinstance(digest, str) or len(digest) != 64
             or any(c not in "0123456789abcdef" for c in digest)):
