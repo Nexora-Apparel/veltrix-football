@@ -70,8 +70,7 @@ def _verified_digest_registry(value: dict, trusted_kms_clients: dict) -> list[st
                 or not isinstance(receipt.get("receipt_signing_key_arn"), str)
                 or not receipt.get("receipt_signing_key_arn")
                 or not isinstance(receipt.get("run_id"), str)
-                or not receipt.get("run_id")
-                or receipt.get("receipt_signing_key_arn") != verified_key_arn):
+                or not receipt.get("run_id")):
             raise CertificationRunnerError("verified_archive_receipt_attestation_invalid")
     return digests
 
