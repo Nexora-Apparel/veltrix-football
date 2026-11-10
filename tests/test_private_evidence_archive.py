@@ -9,6 +9,9 @@ from unittest.mock import patch
 from scripts.archive_encrypted_source_evidence import (
     EvidenceArchiveError, archive_evidence,
 )
+from scripts.restore_encrypted_source_evidence import (
+    EvidenceRestoreError, restore_evidence,
+)
 
 
 class FakeS3:
@@ -154,6 +157,64 @@ class PrivateEvidenceArchiveTests(unittest.TestCase):
         self.assertTrue(result["readback_verified"])
         validate.assert_called_once()
         self.assertEqual(validate.call_args.kwargs, {"require_acceptance": False})
+
+
+    @patch("scripts.restore_encrypted_source_evidence.decrypt_and_verify_source_evidence")
+    @patch("scripts.restore_encrypted_source_evidence.validate_fivedollar_history_batch_report")
+    @patch("scripts.archive_encrypted_source_evidence.validate_fivedollar_history_batch_report")
+    def test_restore_verifies_archive_and_writes_only_after_full_validation(
+        self, archive_validate, restore_validate, decrypt
+    ):
+        archive_validate.return_value = {
+            "valid": True, "report_sha256": "a" * 64,
+            "accepted_count": 1, "quarantined_count": 0, "input_count": 1,
+        }
+        restore_validate.return_value = {
+            "valid": True, "report_sha256": "a" * 64,
+            "accepted_count": 1, "quarantined_count": 0, "input_count": 1,
+        }
+        decrypt.return_value = [{"kind": "accepted", "input_index": 0}]
+        client = FakeS3()
+        archive_evidence(
+            client=client, bucket="private-bucket", prefix="veltrix",
+            report_path=self.report_path, evidence_path=self.evidence_path,
+            manifest_path=self.manifest_path, receipt_output_path=self.root / "receipt.json",
+        )
+        result = restore_evidence(
+            client=client, bucket="private-bucket",
+            receipt_key="veltrix/receipts/batch-20261110T060000Z.json",
+            encryption_key="test-key", output_dir=self.root / "restored",
+        )
+        self.assertTrue(result["valid"])
+        self.assertEqual(result["evidence_count"], 1)
+        self.assertTrue(Path(result["paths"]["report"]).is_file())
+        decrypt.assert_called_once()
+
+    @patch("scripts.restore_encrypted_source_evidence.validate_fivedollar_history_batch_report")
+    def test_restore_rejects_tampered_archived_object_before_writing(self, validate):
+        validate.return_value = {
+            "valid": True, "report_sha256": "a" * 64,
+            "accepted_count": 1, "quarantined_count": 0, "input_count": 1,
+        }
+        client = FakeS3()
+        # Build a structurally valid archive receipt through the production writer.
+        with patch("scripts.archive_encrypted_source_evidence.validate_fivedollar_history_batch_report") as archive_validate:
+            archive_validate.return_value = validate.return_value
+            archive_evidence(
+                client=client, bucket="private-bucket", prefix="veltrix",
+                report_path=self.report_path, evidence_path=self.evidence_path,
+                manifest_path=self.manifest_path, receipt_output_path=self.root / "receipt.json",
+            )
+        key = ("private-bucket", "veltrix/encrypted/batch-20261110T060000Z.enc")
+        client.objects[key] = b"tampered"
+        destination = self.root / "tampered-restore"
+        with self.assertRaisesRegex(EvidenceRestoreError, "restore_object_digest_mismatch:evidence"):
+            restore_evidence(
+                client=client, bucket="private-bucket",
+                receipt_key="veltrix/receipts/batch-20261110T060000Z.json",
+                encryption_key="test-key", output_dir=destination,
+            )
+        self.assertFalse(destination.exists())
 
 
 
