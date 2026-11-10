@@ -3,7 +3,7 @@ import unittest
 from app.bookmaker_odds_evidence import (
     append_odds_observations, build_odds_observation,
 )
-from app.prospective_value_selection_ledger import (
+from app.market_release_certification import evaluate_market_release_certification\nfrom app.prospective_value_selection_ledger import (
     ProspectiveValueLedgerError, append_prospective_selections,
     export_settled_certification_rows, settle_prospective_selection,
 )
@@ -126,6 +126,33 @@ class ProspectiveValueSelectionLedgerTests(unittest.TestCase):
             self.assertEqual(row["settlement_source_evidence_sha256"], "e" * 64)
             self.assertEqual(row["odds_source_evidence_sha256"], "a" * 64)
             self.assertEqual(row["stake_units"], 1.0)
+
+    def test_exported_rows_match_market_certification_input_contract(self):
+        selected = append_prospective_selections(
+            ledger={"schema_version": 1, "selections": [], "settlements": []},
+            predictions=[prediction()], odds_ledger=odds_ledger(), policy=POLICY,
+        )
+        ledger = selected["ledger"]
+        for selection in list(ledger["selections"]):
+            ledger = settle_prospective_selection(
+                ledger=ledger, selection_id=selection["selection_id"],
+                actual=selection["selection"], settled_at="2026-11-10T14:00:00Z",
+                settlement_source_evidence_sha256="e" * 64,
+            )["ledger"]
+        exported = export_settled_certification_rows(
+            ledger=ledger, evaluated_at="2026-11-11T00:00:00Z",
+        )
+        evidence = {
+            market: {"walk_forward": [], "prospective": exported["prospective"][market]}
+            for market in ("1x2", "btts", "over_2_5")
+        }
+        report = evaluate_market_release_certification(
+            evidence=evidence, evaluated_at="2026-11-11T00:00:00Z",
+        )
+        self.assertFalse(report["all_markets_certified"])
+        self.assertEqual(report["markets"]["1x2"]["prospective_selection_count"], 1)
+        self.assertEqual(report["markets"]["btts"]["prospective_selection_count"], 1)
+        self.assertEqual(report["markets"]["over_2_5"]["prospective_selection_count"], 1)
 
     def test_selection_append_is_idempotent(self):
         first = append_prospective_selections(
