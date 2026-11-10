@@ -36,6 +36,8 @@ For run ID `{run_id}` under prefix `veltrix-football/evidence/v1`, the archive w
 
 The receipt is the commit marker. It is written only after all three data objects have been uploaded and read back with matching SHA-256 digests. Retries may reuse existing objects only when the downloaded bytes match the expected digest; conflicting objects fail closed.
 
+**Receipt trust limitation:** the receipt is not independently digitally signed in this version. Its `readback_verified` assertion is trusted only because the archive writer runs under the protected `historical-acquisition` environment and the bucket write identity is tightly scoped. SHA-256 checks detect object-byte changes, and AES-256-GCM authenticates encrypted evidence, but those controls do not independently establish the identity of the actor who wrote the receipt. Do not describe this as non-repudiable chain-of-custody. If that assurance is required, add a separately governed signing identity (for example, a KMS-backed signature) and verify it during restore.
+
 ## Upload and restore protocol
 
 1. Validate the sanitized report structure, digest, five-competition scope, date window, and request accounting.
