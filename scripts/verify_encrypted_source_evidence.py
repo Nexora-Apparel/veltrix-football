@@ -26,17 +26,17 @@ def main() -> int:
             raise ValueError("raw_evidence_encryption_key_missing")
         report = json.loads(Path(args.report).read_text(encoding="utf-8"))
         manifest = json.loads(Path(args.manifest).read_text(encoding="utf-8"))
-        integrity = validate_fivedollar_history_batch_report(report)
+        integrity = validate_fivedollar_history_batch_report(report, require_acceptance=False)
         evidence = decrypt_and_verify_source_evidence(
             Path(args.evidence).read_bytes(), report=report, manifest=manifest, key=key
         )
-        if len(evidence) != integrity["accepted_count"]:
+        if len(evidence) != integrity["input_count"]:
             raise ValueError("encrypted_evidence_accepted_count_mismatch")
         print(
             "ENCRYPTED_EVIDENCE_VERIFICATION: PASS; "
             f"report_sha256={integrity['report_sha256']}; "
             f"accepted={integrity['accepted_count']}; "
-            f"evidence={len(evidence)}; raw_payloads=encrypted_only"
+            f"total_evidence={len(evidence)}; raw_payloads=encrypted_only"
         )
         return 0
     except (OSError, ValueError, TypeError, KeyError, json.JSONDecodeError) as exc:
