@@ -95,3 +95,6 @@ jobs:
 
       - name: Run audited provider dataset pipeline tests
         run: python -m unittest discover -s tests -p 'test_provider_acquisition_dataset_pipeline.py' -v
+
+      - name: Compile audited provider dataset CLI
+        run: python -m py_compile scripts/assemble_audited_provider_dataset.py
