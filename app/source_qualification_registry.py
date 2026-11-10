@@ -28,6 +28,8 @@ _ENTRY_FIELDS = {
     "qualification_record", "qualification_record_sha256",
     "valid_from", "valid_until", "revoked_at",
 }
+_REGISTRY_FIELDS = {"schema", "issued_at", "expires_at", "sources"}
+_SIGNATURE_FIELDS = {"algorithm", "message_type", "key_arn", "region", "value_base64"}
 
 
 class SourceQualificationRegistryError(ValueError):
@@ -94,6 +96,9 @@ def _record_contract(record: Any) -> dict:
 def _unsigned_registry(registry: dict) -> dict:
     if not isinstance(registry, dict):
         raise SourceQualificationRegistryError("registry_shape_invalid")
+    fields = set(registry)
+    if fields not in (_REGISTRY_FIELDS, _REGISTRY_FIELDS | {"signature"}):
+        raise SourceQualificationRegistryError("registry_shape_invalid")
     return {k: v for k, v in registry.items() if k != "signature"}
 
 
@@ -134,6 +139,8 @@ def verify_source_qualification_registry(*, registry: Any,
     envelope = registry.get("signature") if isinstance(registry, dict) else None
     if not isinstance(envelope, dict):
         raise SourceQualificationRegistryError("registry_signature_missing")
+    if set(envelope) != _SIGNATURE_FIELDS:
+        raise SourceQualificationRegistryError("registry_signature_shape_invalid")
     key_arn = envelope.get("key_arn")
     if not isinstance(trusted_kms_clients, dict) or key_arn not in trusted_kms_clients:
         raise SourceQualificationRegistryError("registry_signing_key_not_trusted")
@@ -181,6 +188,9 @@ def verify_source_qualification_registry(*, registry: Any,
         valid_until = _time(entry["valid_until"], "source_valid_until")
         if valid_until <= valid_from:
             raise SourceQualificationRegistryError("source_validity_window_invalid")
+        qualified_at = _time(record["qualified_at"], "qualified_at")
+        if qualified_at > valid_from:
+            raise SourceQualificationRegistryError("source_active_before_qualification")
         if entry["revoked_at"] is not None:
             revoked = _time(entry["revoked_at"], "source_revoked_at")
             if revoked <= valid_from:
