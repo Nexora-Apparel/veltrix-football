@@ -434,19 +434,33 @@ def validate_value_bet_certification_report(report: Any, *,
             "net_roi_positive": roi is not None and roi > 0,
             "roi_lower_95_bound_positive": lower is not None and lower > 0,
         }
+        comparison_matches = item.get("bookmaker_comparison_matches")
+        if (isinstance(comparison_matches, bool) or not isinstance(comparison_matches, int)
+                or comparison_matches < 0 or comparison_matches > sample):
+            raise ValueBetCertificationError(f"certification_bookmaker_comparison_count_invalid:{market}")
         if market == "1x2":
+            if comparison_matches != odds_count:
+                raise ValueBetCertificationError("certification_1x2_comparison_coverage_mismatch")
             brier, logloss = item.get("brier"), item.get("log_loss")
             if not isinstance(brier, dict) or not isinstance(logloss, dict):
                 raise ValueBetCertificationError("certification_1x2_metrics_missing")
             bm, bb = brier.get("model"), brier.get("bookmaker")
             lm, lb = logloss.get("model"), logloss.get("bookmaker")
-            numeric = (bm, bb, lm, lb)
-            if any(isinstance(value, bool) or not isinstance(value, (int, float))
-                   or not math.isfinite(value) or value < 0 for value in numeric):
-                raise ValueBetCertificationError("certification_1x2_metrics_invalid")
-            expected_checks["beats_bookmaker_brier"] = bm < bb
-            expected_checks["beats_bookmaker_log_loss"] = lm < lb
+            if comparison_matches:
+                numeric = (bm, bb, lm, lb)
+                if any(isinstance(value, bool) or not isinstance(value, (int, float))
+                       or not math.isfinite(value) or value < 0 for value in numeric):
+                    raise ValueBetCertificationError("certification_1x2_metrics_invalid")
+                expected_checks["beats_bookmaker_brier"] = bm < bb
+                expected_checks["beats_bookmaker_log_loss"] = lm < lb
+            else:
+                if any(value is not None for value in (bm, bb, lm, lb)):
+                    raise ValueBetCertificationError("certification_1x2_empty_comparison_has_metrics")
+                expected_checks["beats_bookmaker_brier"] = False
+                expected_checks["beats_bookmaker_log_loss"] = False
         else:
+            if comparison_matches != 0:
+                raise ValueBetCertificationError(f"certification_unexpected_baseline_count:{market}")
             if item.get("brier") != {"model": None, "bookmaker": None} or item.get("log_loss") != {"model": None, "bookmaker": None}:
                 raise ValueBetCertificationError(f"certification_unexpected_baseline_metrics:{market}")
         if item["checks"] != expected_checks:
