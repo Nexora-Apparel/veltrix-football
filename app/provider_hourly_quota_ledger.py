@@ -23,6 +23,16 @@ def _time(value: Any, field: str) -> datetime:
     return parsed.astimezone(timezone.utc)
 
 
+def _save(path: str | Path, ledger: dict) -> None:
+    destination = Path(path)
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    temporary = destination.with_name(destination.name + ".tmp")
+    temporary.write_text(
+        json.dumps(ledger, indent=2, sort_keys=True) + "\\n", encoding="utf-8"
+    )
+    temporary.replace(destination)
+
+
 def _load(path: str | Path) -> dict:
     try:
         ledger = json.loads(Path(path).read_text(encoding="utf-8"))
@@ -66,8 +76,11 @@ def _validate_reservations(ledger: dict, now: datetime) -> list[dict]:
                 raise HourlyQuotaError(f"hourly_settled_reservation_amount_invalid:{index}")
             if not item.get("settled_at"):
                 raise HourlyQuotaError(f"hourly_settled_timestamp_missing:{index}")
-            if _time(item["settled_at"], f"reservation_{index}_settled_at") < reserved_at:
+            settled_time = _time(item["settled_at"], f"reservation_{index}_settled_at")
+            if settled_time < reserved_at:
                 raise HourlyQuotaError(f"hourly_settled_timestamp_precedes_reservation:{index}")
+            if settled_time > now:
+                raise HourlyQuotaError(f"hourly_settled_timestamp_from_future:{index}")
             effective = actual
         else:
             raise HourlyQuotaError(f"hourly_reservation_state_invalid:{index}")
@@ -90,7 +103,6 @@ def reserve_hourly_quota(*, ledger_path: str | Path, run_id: str,
     existing = _validate_reservations(ledger, instant)
     if any(item["run_id"] == run_id for item in existing):
         raise HourlyQuotaError("run_id_already_reserved")
-    cutoff = instant - timedelta(seconds=3600)
     active = [
         item for item in existing
         if instant - item["_reserved_at"] < timedelta(seconds=3600)
