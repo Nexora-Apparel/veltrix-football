@@ -49,7 +49,7 @@ def archive_evidence(*, client: Any, bucket: str, prefix: str,
     manifest_bytes = Path(manifest_path).read_bytes()
     report = json.loads(report_bytes)
     manifest = json.loads(manifest_bytes)
-    integrity = validate_fivedollar_history_batch_report(report)
+    integrity = validate_fivedollar_history_batch_report(report, require_acceptance=False)
     run_id = manifest.get("run_id")
     if not isinstance(run_id, str) or not _SAFE.fullmatch(run_id):
         raise EvidenceArchiveError("archive_run_id_invalid")
@@ -57,7 +57,7 @@ def archive_evidence(*, client: Any, bucket: str, prefix: str,
         raise EvidenceArchiveError("archive_report_digest_mismatch")
     if manifest.get("ciphertext_sha256") != _sha(evidence_bytes):
         raise EvidenceArchiveError("archive_ciphertext_digest_mismatch")
-    if manifest.get("evidence_count") != integrity.get("accepted_count"):
+    if manifest.get("evidence_count") != integrity.get("input_count"):
         raise EvidenceArchiveError("archive_evidence_count_mismatch")
     if not bucket or not isinstance(bucket, str):
         raise EvidenceArchiveError("archive_bucket_missing")
