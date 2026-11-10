@@ -289,3 +289,20 @@ A certification summary binds the source evaluation-record digest and rechecks t
 `app/pre_match_prediction_engine.py` implements a new Dixon-Coles-corrected independent-Poisson score model. It requires a validated point-in-time snapshot containing both teams' Elo ratings and rolling xG-for/xG-against features. Expected goal rates combine the geometric mean of attack and opponent concession xG with explicit fitted home-advantage and Elo coefficients. The low-score Dixon-Coles correction is applied to the 0-0, 0-1, 1-0 and 1-1 cells; the joint score matrix is normalized before deriving 1X2, BTTS and Over 2.5 probabilities.
 
 The engine requires a digest-bound parameter set with a training dataset hash, data cutoff, latest training match, model training timestamp, calibration ID and bounded fitted parameters. Model training/data cutoffs later than the fixture's prediction cutoff are rejected. Missing required features, implausible xG/Elo values, excessive Poisson tail mass, or invalid Dixon-Coles corrections withhold the forecast. No global prior, home-default probability, favourite-only filter or fabricated statistic is used. Every inference output is marked `publication_allowed=false` and `value_betting_enabled=false`; actual parameter fitting, walk-forward calibration and publication certification remain separate unfinished stages.
+
+
+## 14. Restricted source-evidence sidecars and mapping verification
+
+The acquisition batch now retains a `source_evidence` sidecar on every accepted normalized fixture record. This sidecar is restricted to private/internal acquisition artifacts and must not be published, exposed through the public website, or redistributed as a raw/bulk provider feed.
+
+Each sidecar binds:
+- evidence schema version and provider-specific normalization mapping version;
+- provider, endpoint, source ID, acquisition run ID and retrieval timestamp;
+- the original raw provider row and its canonical SHA-256;
+- the complete normalized record projection and its canonical SHA-256.
+
+The offline artifact validator recomputes the raw digest, normalized projection digest, and provider-specific normalization output. It rejects unknown mapping versions, altered raw payloads, changed normalized fields, mismatched metadata, or a record not exactly bound to its sidecar. Current mapping IDs are `strikerapi.list_games.normalization.v1` and `fivedollar.fixtures.normalization.v1`.
+
+The evidence sidecar proves integrity and repeatability of the current versioned mapping implementation; it is not a cryptographic signature from the provider and does not independently prove that the provider's original data is true. Any mapping change requires a new version identifier and regression tests. Raw payload retention is subject to the provider's storage and licensing terms; the sidecar must remain in access-restricted, non-public artifacts only.
+
+The pipeline remains read-only: no production imports, Neon writes, canonical merges, prediction publications, Telegram deliveries or schedule changes are introduced by evidence retention.
