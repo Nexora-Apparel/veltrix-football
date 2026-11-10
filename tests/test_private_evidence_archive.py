@@ -12,9 +12,11 @@ from scripts.archive_encrypted_source_evidence import (
 
 
 class FakeS3:
-    def __init__(self, corrupt_readback=False):
+    def __init__(self, corrupt_readback=False, fail_once_on_key=None):
         self.objects = {}
         self.corrupt_readback = corrupt_readback
+        self.fail_once_on_key = fail_once_on_key
+        self.failed_once = False
 
     def head_object(self, Bucket, Key):
         if (Bucket, Key) not in self.objects:
@@ -24,6 +26,9 @@ class FakeS3:
         return {"VersionId": "version-1"}
 
     def put_object(self, Bucket, Key, Body, **kwargs):
+        if Key == self.fail_once_on_key and not self.failed_once:
+            self.failed_once = True
+            raise RuntimeError("simulated transient upload failure")
         self.objects[(Bucket, Key)] = bytes(Body)
 
     def get_object(self, Bucket, Key):
@@ -98,6 +103,37 @@ class PrivateEvidenceArchiveTests(unittest.TestCase):
                 report_path=self.report_path, evidence_path=self.evidence_path,
                 manifest_path=self.manifest_path, receipt_output_path=self.root / "receipt.json",
             )
+
+    @patch("scripts.archive_encrypted_source_evidence.validate_fivedollar_history_batch_report")
+    def test_retry_completes_partial_upload_without_overwriting_verified_objects(self, validate):
+        validate.return_value = {"valid": True, "report_sha256": "a" * 64, "accepted_count": 1}
+        client = FakeS3(fail_once_on_key="veltrix/encrypted/batch-20261110T060000Z.enc")
+        kwargs = dict(
+            client=client, bucket="private-bucket", prefix="veltrix",
+            report_path=self.report_path, evidence_path=self.evidence_path,
+            manifest_path=self.manifest_path, receipt_output_path=self.root / "receipt.json",
+        )
+        with self.assertRaisesRegex(RuntimeError, "simulated transient upload failure"):
+            archive_evidence(**kwargs)
+        # The report is already present, but its identical digest makes retry safe.
+        self.assertIn(("private-bucket", "veltrix/reports/batch-20261110T060000Z.json"), client.objects)
+        result = archive_evidence(**kwargs)
+        self.assertTrue(result["readback_verified"])
+        self.assertEqual(len(client.objects), 4)
+
+    @patch("scripts.archive_encrypted_source_evidence.validate_fivedollar_history_batch_report")
+    def test_completed_archive_retry_reuses_validated_receipt(self, validate):
+        validate.return_value = {"valid": True, "report_sha256": "a" * 64, "accepted_count": 1}
+        client = FakeS3()
+        kwargs = dict(
+            client=client, bucket="private-bucket", prefix="veltrix",
+            report_path=self.report_path, evidence_path=self.evidence_path,
+            manifest_path=self.manifest_path, receipt_output_path=self.root / "receipt.json",
+        )
+        first = archive_evidence(**kwargs)
+        second = archive_evidence(**kwargs)
+        self.assertEqual(first["receipt_sha256"], second["receipt_sha256"])
+        self.assertEqual(len(client.objects), 4)
 
 
 if __name__ == "__main__":
