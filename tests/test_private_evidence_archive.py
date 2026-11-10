@@ -351,5 +351,79 @@ class PrivateEvidenceArchiveTests(unittest.TestCase):
 
 
 
+    @patch("scripts.archive_encrypted_source_evidence.validate_fivedollar_history_batch_report")
+    def test_archive_retry_verifies_receipt_signed_by_allowlisted_old_key(self, validate):
+        validate.return_value = {
+            "valid": True, "report_sha256": "a" * 64,
+            "accepted_count": 1, "input_count": 1,
+        }
+        old_arn = "arn:aws:kms:us-east-1:123456789012:key/old-receipt-key"
+        new_arn = "arn:aws:kms:eu-west-1:123456789012:key/new-receipt-key"
+        old_kms, new_kms = FakeKMS(old_arn), FakeKMS(new_arn)
+        trusted = {old_arn: old_kms, new_arn: new_kms}
+        client = FakeS3()
+        first = archive_evidence(
+            client=client, kms_client=old_kms, signing_key_arn=old_arn,
+            trusted_kms_clients=trusted, bucket="private-bucket", prefix="veltrix",
+            report_path=self.report_path, evidence_path=self.evidence_path,
+            manifest_path=self.manifest_path, receipt_output_path=self.root / "old-receipt.json",
+        )
+        second = archive_evidence(
+            client=client, kms_client=new_kms, signing_key_arn=new_arn,
+            trusted_kms_clients=trusted, bucket="private-bucket", prefix="veltrix",
+            report_path=self.report_path, evidence_path=self.evidence_path,
+            manifest_path=self.manifest_path, receipt_output_path=self.root / "new-retry.json",
+        )
+        self.assertEqual(first["signature"], second["signature"])
+        self.assertEqual(old_kms.sign_calls, 1)
+        self.assertEqual(old_kms.verify_calls, 1)
+        self.assertEqual(new_kms.sign_calls, 0)
+
+    @patch("scripts.restore_encrypted_source_evidence.decrypt_and_verify_source_evidence")
+    @patch("scripts.restore_encrypted_source_evidence.validate_fivedollar_history_batch_report")
+    @patch("scripts.archive_encrypted_source_evidence.validate_fivedollar_history_batch_report")
+    def test_restore_accepts_old_receipt_only_through_explicit_trust_registry(
+        self, archive_validate, restore_validate, decrypt
+    ):
+        archive_validate.return_value = {
+            "valid": True, "report_sha256": "a" * 64,
+            "accepted_count": 1, "quarantined_count": 0, "input_count": 1,
+        }
+        restore_validate.return_value = archive_validate.return_value
+        decrypt.return_value = [{"kind": "accepted", "input_index": 0}]
+        old_arn = "arn:aws:kms:us-east-1:123456789012:key/old-receipt-key"
+        new_arn = "arn:aws:kms:eu-west-1:123456789012:key/new-receipt-key"
+        old_kms, new_kms = FakeKMS(old_arn), FakeKMS(new_arn)
+        trusted = {old_arn: old_kms, new_arn: new_kms}
+        client = FakeS3()
+        archive_evidence(
+            client=client, kms_client=old_kms, signing_key_arn=old_arn,
+            bucket="private-bucket", prefix="veltrix",
+            report_path=self.report_path, evidence_path=self.evidence_path,
+            manifest_path=self.manifest_path, receipt_output_path=self.root / "receipt.json",
+        )
+        result = restore_evidence(
+            client=client, kms_client=None, trusted_signing_key_arn="",
+            trusted_kms_clients=trusted, bucket="private-bucket",
+            receipt_key="veltrix/receipts/batch-20261110T060000Z.json",
+            encryption_key="test-key", output_dir=self.root / "rotated-restore",
+        )
+        self.assertTrue(result["valid"])
+        self.assertEqual(old_kms.verify_calls, 1)
+        self.assertEqual(new_kms.verify_calls, 0)
+
+    def test_archive_rejects_current_signing_key_not_in_trust_registry(self):
+        new_arn = "arn:aws:kms:eu-west-1:123456789012:key/new-receipt-key"
+        new_kms = FakeKMS(new_arn)
+        with self.assertRaisesRegex(EvidenceArchiveError, "signing_key_not_in_trust_registry"):
+            archive_evidence(
+                client=FakeS3(), kms_client=new_kms, signing_key_arn=new_arn,
+                trusted_kms_clients={TEST_SIGNING_KEY_ARN: FakeKMS()},
+                bucket="private-bucket", prefix="veltrix",
+                report_path=self.report_path, evidence_path=self.evidence_path,
+                manifest_path=self.manifest_path, receipt_output_path=self.root / "blocked.json",
+            )
+
+
 if __name__ == "__main__":
     unittest.main()
