@@ -10,7 +10,8 @@ from scripts.archive_encrypted_source_evidence import (
     EvidenceArchiveError, archive_evidence, _validate_endpoint_url as validate_archive_endpoint,
 )
 from scripts.restore_encrypted_source_evidence import (
-    EvidenceRestoreError, restore_evidence, _validate_endpoint_url as validate_restore_endpoint,
+    EvidenceRestoreError, restore_evidence, write_verified_digest_registry,
+    _validate_endpoint_url as validate_restore_endpoint,
 )
 
 
@@ -437,6 +438,37 @@ class PrivateEvidenceArchiveTests(unittest.TestCase):
                 report_path=self.report_path, evidence_path=self.evidence_path,
                 manifest_path=self.manifest_path, receipt_output_path=self.root / "blocked.json",
             )
+
+
+    def test_restore_exports_signature_verified_digest_registry_atomically(self):
+        output = self.root / "verified-digests.json"
+        registry = write_verified_digest_registry({
+            "archive_receipt_signature_verified": True,
+            "receipt_sha256": "a" * 64,
+            "receipt_signing_key_arn": TEST_SIGNING_KEY_ARN,
+            "run_id": "batch-20261110T060000Z",
+            "verified_source_evidence_sha256": ["b" * 64, "a" * 64, "b" * 64],
+        }, output)
+        self.assertTrue(output.is_file())
+        saved = json.loads(output.read_text())
+        self.assertEqual(saved, registry)
+        self.assertEqual(saved["verified_source_evidence_sha256"], ["a" * 64, "b" * 64])
+        self.assertTrue(saved["verified_archive_receipts"][0]["archive_receipt_signature_verified"])
+
+    def test_verified_digest_registry_refuses_symlink_destination(self):
+        target = self.root / "target-digests.json"
+        target.write_text("{}")
+        link = self.root / "linked-digests.json"
+        link.symlink_to(target)
+        with self.assertRaisesRegex(EvidenceRestoreError, "symlink_rejected"):
+            write_verified_digest_registry({
+                "archive_receipt_signature_verified": True,
+                "receipt_sha256": "a" * 64,
+                "receipt_signing_key_arn": TEST_SIGNING_KEY_ARN,
+                "run_id": "batch-20261110T060000Z",
+                "verified_source_evidence_sha256": ["b" * 64],
+            }, link)
+        self.assertEqual(target.read_text(), "{}")
 
 
 if __name__ == "__main__":
