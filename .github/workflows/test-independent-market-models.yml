@@ -31,6 +31,10 @@ jobs:
         run: python -m unittest discover -s tests -p 'test_independent_market_models.py' -v
       - name: Run raw source evidence archive tests
         run: python -m unittest discover -s tests -p 'test_provider_source_evidence.py' -v
+      - name: Run private evidence archive and KMS receipt-signature tests
+        run: |
+          python -m unittest discover -s tests -p 'test_private_evidence_archive.py' -v
+          python -m unittest discover -s tests -p 'test_evidence_receipt_signing.py' -v
       - name: Run provider fixture normalization and batch tests
         run: |
           python -m unittest discover -s tests -p 'test_provider_fixture_normalizer.py' -v
