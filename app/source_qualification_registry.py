@@ -13,7 +13,7 @@ import re
 from datetime import datetime, timezone
 from typing import Any
 
-from app.evidence_receipt_trust import validate_key_arn
+from app.evidence_receipt_trust import ReceiptTrustError, validate_key_arn
 
 SCHEMA = "veltrix-settlement-source-qualification-registry-v1"
 ALGORITHM = "ECDSA_SHA_256"
@@ -46,6 +46,14 @@ def canonical_json_bytes(value: Any) -> bytes:
 
 def canonical_sha256(value: Any) -> str:
     return hashlib.sha256(canonical_json_bytes(value)).hexdigest()
+
+
+def _key_region(key_arn: Any) -> str:
+    try:
+        region, _ = validate_key_arn(key_arn)
+        return region
+    except ReceiptTrustError:
+        raise SourceQualificationRegistryError("registry_signing_key_arn_invalid") from None
 
 
 def _time(value: Any, field: str) -> datetime:
@@ -104,7 +112,7 @@ def _unsigned_registry(registry: dict) -> dict:
 
 def sign_source_qualification_registry(*, kms_client: Any, key_arn: str,
                                        registry: dict) -> dict:
-    region, _ = validate_key_arn(key_arn)
+    region = _key_region(key_arn)
     unsigned = _unsigned_registry(registry)
     if unsigned.get("schema") != SCHEMA:
         raise SourceQualificationRegistryError("registry_schema_unsupported")
@@ -144,7 +152,7 @@ def verify_source_qualification_registry(*, registry: Any,
     key_arn = envelope.get("key_arn")
     if not isinstance(trusted_kms_clients, dict) or key_arn not in trusted_kms_clients:
         raise SourceQualificationRegistryError("registry_signing_key_not_trusted")
-    region, _ = validate_key_arn(key_arn)
+    region = _key_region(key_arn)
     if (envelope.get("algorithm") != ALGORITHM
             or envelope.get("message_type") != MESSAGE_TYPE
             or envelope.get("region") != region):
@@ -163,7 +171,7 @@ def verify_source_qualification_registry(*, registry: Any,
         )
     except Exception:
         raise SourceQualificationRegistryError("registry_kms_verify_failed") from None
-    if verified.get("SignatureValid") is not True:
+    if not isinstance(verified, dict) or verified.get("SignatureValid") is not True:
         raise SourceQualificationRegistryError("registry_signature_invalid")
 
     now = _time(as_of, "as_of")
