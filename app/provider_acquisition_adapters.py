@@ -259,9 +259,9 @@ def acquire_fivedollar_history_batch(*, client, competition_ids: list[str],
                 raise AcquisitionAdapterError("fivedollar_history_data_missing")
             pages += 1
             for row in payload["data"]:
-                if not isinstance(row, dict):
-                    raise AcquisitionAdapterError("fivedollar_history_row_not_object")
-                league = row.get("league")
+                # Preserve malformed JSON observations for encrypted quarantine
+                # evidence; normalization will reject them without dropping bytes.
+                league = row.get("league") if isinstance(row, dict) else None
                 source_competition = league.get("id") if isinstance(league, dict) else None
                 if (source_competition is None or not str(source_competition).isdigit()
                         or str(int(source_competition)) != competition_id):
