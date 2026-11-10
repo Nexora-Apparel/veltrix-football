@@ -184,6 +184,7 @@ def certify_value_bet_markets(*, evaluation_records: list[dict]) -> dict:
 
         model_probabilities = None
         bookmaker_odds = None
+        bookmaker_probabilities = None
         if market == "1x2":
             model_probabilities = _probability_map(
                 row.get("model_probabilities"), outcomes, f"record_{index}_model_probabilities"
@@ -191,13 +192,16 @@ def certify_value_bet_markets(*, evaluation_records: list[dict]) -> dict:
             bookmaker_odds = _valid_decimal_map(
                 row.get("bookmaker_odds"), outcomes, f"record_{index}_bookmaker_odds"
             )
-            if bookmaker_odds is None or not odds_timestamped:
-                raise ValueBetCertificationError(f"1x2_bookmaker_baseline_missing:{index}")
-            if any(abs(bookmaker_odds[key] - odds[key]) > 1e-9 for key in outcomes):
-                raise ValueBetCertificationError(f"1x2_bookmaker_quote_mismatch:{index}")
-            implied = {key: 1.0 / value for key, value in bookmaker_odds.items()}
-            overround = sum(implied.values())
-            bookmaker_probabilities = {key: value / overround for key, value in implied.items()}
+            if odds_timestamped:
+                if bookmaker_odds is None:
+                    raise ValueBetCertificationError(f"1x2_bookmaker_baseline_missing:{index}")
+                if any(abs(bookmaker_odds[key] - odds[key]) > 1e-9 for key in outcomes):
+                    raise ValueBetCertificationError(f"1x2_bookmaker_quote_mismatch:{index}")
+                implied = {key: 1.0 / value for key, value in bookmaker_odds.items()}
+                overround = sum(implied.values())
+                bookmaker_probabilities = {key: value / overround for key, value in implied.items()}
+            elif bookmaker_odds is not None:
+                raise ValueBetCertificationError(f"1x2_untimestamped_bookmaker_quote:{index}")
             grouped[market].append({
                 "fixture_id": fixture_id,
                 "local_date": local_date,
@@ -240,9 +244,12 @@ def certify_value_bet_markets(*, evaluation_records: list[dict]) -> dict:
         })
 
         brier_model = brier_book = logloss_model = logloss_book = None
-        if market == "1x2" and rows:
+        bookmaker_comparison_rows = [
+            row for row in rows if row.get("bookmaker_probabilities") is not None
+        ] if market == "1x2" else []
+        if market == "1x2" and bookmaker_comparison_rows:
             model_brier = bookmaker_brier = model_logloss = bookmaker_logloss = 0.0
-            for row in rows:
+            for row in bookmaker_comparison_rows:
                 actual = row["actual"]
                 model = row["model_probabilities"]
                 book = row["bookmaker_probabilities"]
@@ -250,10 +257,10 @@ def certify_value_bet_markets(*, evaluation_records: list[dict]) -> dict:
                 bookmaker_brier += sum((book[key] - (1.0 if key == actual else 0.0)) ** 2 for key in MARKETS["1x2"]["outcomes"])
                 model_logloss -= math.log(model[actual])
                 bookmaker_logloss -= math.log(book[actual])
-            brier_model = model_brier / len(rows)
-            brier_book = bookmaker_brier / len(rows)
-            logloss_model = model_logloss / len(rows)
-            logloss_book = bookmaker_logloss / len(rows)
+            brier_model = model_brier / len(bookmaker_comparison_rows)
+            brier_book = bookmaker_brier / len(bookmaker_comparison_rows)
+            logloss_model = model_logloss / len(bookmaker_comparison_rows)
+            logloss_book = bookmaker_logloss / len(bookmaker_comparison_rows)
 
         checks = {
             "walk_forward_sample": len(rows) >= MIN_WALK_FORWARD_MATCHES,
@@ -273,6 +280,7 @@ def certify_value_bet_markets(*, evaluation_records: list[dict]) -> dict:
             "walk_forward_distinct_dates": len(dates),
             "timestamped_odds_count": timestamped,
             "timestamped_odds_coverage": round(odds_coverage, 6),
+            "bookmaker_comparison_matches": len(bookmaker_comparison_rows),
             "net_profit_units": round(total_profit, 6),
             "stake_units": round(total_stake, 6),
             "net_roi": round(roi, 6) if roi is not None else None,
