@@ -145,7 +145,8 @@ def _validate_ledger(ledger: Any) -> dict:
         if item["odds_provider"] != "the_odds_api":
             raise ProspectiveValueLedgerError("selection_record_provider_invalid")
         for field in ("model_sha256", "feature_snapshot_sha256",
-                      "odds_source_evidence_sha256", "policy_sha256"):
+                      "odds_source_evidence_sha256", "policy_sha256",
+                      "odds_observation_id"):
             _digest(item[field], field)
         for field in ("fixture_id", "bookmaker", "policy_id", "policy_version",
                       "odds_observation_id"):
