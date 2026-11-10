@@ -5,9 +5,12 @@ dataset bound to a fitted model. The test partition is never read for fitting.
 """
 from __future__ import annotations
 
+import hashlib
+import json
 import math
 from datetime import datetime, timezone
 from typing import Any
+from zoneinfo import ZoneInfo
 
 from app.chronological_training_dataset import (
     ChronologicalDatasetError,
@@ -144,8 +147,8 @@ def calibrate_model_on_validation_split(*, model: dict, dataset: dict,
 
     validation = [row for row in dataset["rows"] if row["split"] == "validation"]
     expected = manifest["validation"]
-    fixture_digest = __import__("hashlib").sha256(
-        __import__("json").dumps(
+    fixture_digest = hashlib.sha256(
+        json.dumps(
             sorted(row["fixture_id"] for row in validation),
             separators=(",", ":"), ensure_ascii=False,
         ).encode("utf-8")
@@ -160,9 +163,7 @@ def calibrate_model_on_validation_split(*, model: dict, dataset: dict,
     raw_predictions, labels = [], []
     for row in validation:
         kickoff = _time(row["kickoff_at"], "validation_kickoff")
-        dates.add(kickoff.astimezone(
-            __import__("zoneinfo").ZoneInfo("Africa/Lagos")
-        ).date())
+        dates.add(kickoff.astimezone(ZoneInfo("Africa/Lagos")).date())
         if _time(row["label_provenance"]["retrieved_at"], "label_retrieved_at") > calibrated_time:
             raise MarketCalibrationError(
                 f"validation_label_retrieved_after_calibration:{row['fixture_id']}"
