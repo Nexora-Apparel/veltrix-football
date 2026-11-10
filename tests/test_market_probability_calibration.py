@@ -20,7 +20,7 @@ class MarketProbabilityCalibrationTests(unittest.TestCase):
     def test_calibrates_only_validation_and_preserves_test_holdout(self):
         dataset, model = self.fitted()
         result = calibrate_model_on_validation_split(
-            model=model, dataset=dataset, calibrated_at="2026-12-15T00:00:00Z",
+            model=model, dataset=dataset, calibrated_at="2026-11-18T00:00:00Z",
         )
         calibrated = result["model"]
         audit = result["calibration_audit"]
@@ -49,7 +49,20 @@ class MarketProbabilityCalibrationTests(unittest.TestCase):
         altered["dataset_sha256"] = "0" * 64
         with self.assertRaisesRegex(MarketCalibrationError, "dataset_rejected|binding_mismatch"):
             calibrate_model_on_validation_split(
-                model=model, dataset=altered, calibrated_at="2026-12-15T00:00:00Z",
+                model=model, dataset=altered, calibrated_at="2026-11-18T00:00:00Z",
+            )
+
+
+    def test_rejects_calibrated_model_before_calibration_timestamp(self):
+        dataset, model = self.fitted()
+        calibrated = calibrate_model_on_validation_split(
+            model=model, dataset=dataset, calibrated_at="2026-11-18T00:00:00Z",
+        )["model"]
+        row = next(row for row in dataset["rows"] if row["split"] == "test")
+        with self.assertRaisesRegex(Exception, "calibrated_after_prediction_cutoff"):
+            predict_independent_markets(
+                model=calibrated, features=row["predictors"],
+                prediction_as_of="2026-11-17T00:00:00Z",
             )
 
     def test_rejects_calibration_before_validation_labels_are_retrieved(self):
