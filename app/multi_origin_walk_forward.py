@@ -120,7 +120,11 @@ def _sealed_origin_dataset(dataset: dict, origin: dict, embargo_days: int) -> di
         "embargo_days": embargo_days,
     }
     quality = copy.deepcopy(dataset["quality"])
+    quality["input_snapshot_count"] = len(selected)
+    quality["input_settled_label_count"] = len(selected)
+    quality["joined_fixture_count"] = len(selected)
     quality["included_fixture_count"] = len(selected)
+    quality["excluded_fixture_count"] = 0
     quality["counts_by_split"] = counts
     quality["chronological_order"] = True
     quality["fixture_overlap_between_splits"] = False
@@ -134,6 +138,7 @@ def _sealed_origin_dataset(dataset: dict, origin: dict, embargo_days: int) -> di
     origin_dataset = {
         "schema_version": dataset["schema_version"],
         "dataset_type": dataset["dataset_type"],
+        "source_dataset_sha256": dataset["dataset_sha256"],
         "split_policy": policy,
         "rows": sorted(selected, key=lambda row: (row["kickoff_at"], row["fixture_id"])),
         "excluded": [],
