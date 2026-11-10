@@ -143,3 +143,7 @@ python scripts/evaluate_market_release_certification.py \
 ### Exact-byte The Odds API response capture
 
 The existing `TheOddsAPIClient` now has explicit `odds_for_sport_with_raw` and `event_btts_with_raw` methods. They preserve the exact HTTP response bytes, compute SHA-256 over those bytes, record retrieval time and quota headers, and return the parsed event payload alongside the bytes. The existing JSON-only client methods retain their original return contract. Raw capture is bounded to one request per method call and disables automatic retries to avoid hidden duplicate quota consumption. The returned bytes must be written to the encrypted evidence archive before observations are treated as certification evidence; this change does not itself call the provider or archive the response.
+
+### Prediction-independent team identity utility
+
+The canonical team-name normalizer now lives in `app/team_name_normalization.py`, an identity-only module with no prediction/model dependencies. The legacy `live_predictions._name_key` remains as a compatibility wrapper, while `provider_adapters.py` imports the standalone normalizer directly. This removes the provider adapter's direct import dependency on the legacy prediction pipeline without changing its alias behavior. Women's/reserve suffixes remain distinct; unknown names are normalized but never fuzzy-merged.
