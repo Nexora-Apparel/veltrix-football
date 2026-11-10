@@ -59,12 +59,13 @@ class SourceQualificationRegistryTests(unittest.TestCase):
 
     def test_runtime_kms_clients_are_built_only_from_explicit_trust_registry(self):
         class Session:
-            def __init__(self):
+            def __init__(self, kms):
                 self.calls = []
+                self.kms = kms
             def client(self, service, region_name):
                 self.calls.append((service, region_name))
                 return self.kms
-        session = Session()
+        session = Session(self.kms)
         clients = build_trusted_kms_clients(
             registry_json='{"' + KEY_ARN + '":"eu-west-1"}',
             boto3_session=session,
