@@ -448,12 +448,16 @@ class PrivateEvidenceArchiveTests(unittest.TestCase):
             "receipt_signing_key_arn": TEST_SIGNING_KEY_ARN,
             "run_id": "batch-20261110T060000Z",
             "verified_source_evidence_sha256": ["b" * 64, "a" * 64, "b" * 64],
-        }, output)
+        }, output, FakeKMS())
         self.assertTrue(output.is_file())
         saved = json.loads(output.read_text())
         self.assertEqual(saved, registry)
         self.assertEqual(saved["verified_source_evidence_sha256"], ["a" * 64, "b" * 64])
         self.assertTrue(saved["verified_archive_receipts"][0]["archive_receipt_signature_verified"])
+        self.assertEqual(saved["schema"], "veltrix-evidence-archive-receipt-v2")
+        verify_receipt_signature(
+            kms_client=FakeKMS(), trusted_key_arn=TEST_SIGNING_KEY_ARN, receipt=saved,
+        )
 
     def test_verified_digest_registry_refuses_symlink_destination(self):
         target = self.root / "target-digests.json"
@@ -467,7 +471,7 @@ class PrivateEvidenceArchiveTests(unittest.TestCase):
                 "receipt_signing_key_arn": TEST_SIGNING_KEY_ARN,
                 "run_id": "batch-20261110T060000Z",
                 "verified_source_evidence_sha256": ["b" * 64],
-            }, link)
+            }, link, FakeKMS())
         self.assertEqual(target.read_text(), "{}")
 
 
