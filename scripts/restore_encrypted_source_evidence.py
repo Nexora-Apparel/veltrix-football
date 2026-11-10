@@ -54,11 +54,17 @@ def write_verified_digest_registry(result: dict, output_path: str | Path) -> dic
             or not isinstance(result.get("run_id"), str)
             or not isinstance(result.get("verified_source_evidence_sha256"), list)):
         raise EvidenceRestoreError("verified_digest_registry_source_invalid")
+    raw_digests = result["verified_source_evidence_sha256"]
+    if any(not isinstance(digest, str) or not re.fullmatch(r"[0-9a-f]{64}", digest)
+           for digest in raw_digests):
+        raise EvidenceRestoreError("verified_digest_registry_digest_invalid")
+    if (not re.fullmatch(r"[0-9a-f]{64}", result["receipt_sha256"])
+            or not result["receipt_signing_key_arn"].startswith("arn:aws:kms:")
+            or ":key/" not in result["receipt_signing_key_arn"]):
+        raise EvidenceRestoreError("verified_digest_registry_receipt_identity_invalid")
     registry = {
         "schema_version": 1,
-        "verified_source_evidence_sha256": sorted(set(
-            result["verified_source_evidence_sha256"]
-        )),
+        "verified_source_evidence_sha256": sorted(set(raw_digests)),
         "verified_archive_receipts": [{
             "archive_receipt_signature_verified": True,
             "receipt_sha256": result["receipt_sha256"],
@@ -66,9 +72,6 @@ def write_verified_digest_registry(result: dict, output_path: str | Path) -> dic
             "run_id": result["run_id"],
         }],
     }
-    for digest in registry["verified_source_evidence_sha256"]:
-        if not isinstance(digest, str) or not re.fullmatch(r"[0-9a-f]{64}", digest):
-            raise EvidenceRestoreError("verified_digest_registry_digest_invalid")
     destination = Path(output_path)
     if destination.is_symlink():
         raise EvidenceRestoreError("verified_digest_registry_symlink_rejected")
