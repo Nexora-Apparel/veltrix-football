@@ -23,7 +23,7 @@ on:
         type: string
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
   group: fivedollar-historical-acquisition
@@ -41,6 +41,12 @@ jobs:
         uses: actions/checkout@v4
         with:
           ref: 3ea3918bbc418c7bd874f62b05db5846cd09fe0a
+
+      - name: Check out persistent hourly quota ledger
+        uses: actions/checkout@v4
+        with:
+          ref: ops/fivedollar-request-hourly-ledger
+          path: quota-ledger
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -67,6 +73,21 @@ jobs:
           python -m unittest discover -s tests -p 'test_provider_fixture_normalizer.py' -v
           python scripts/acquire_fivedollar_history_batch.py --help
 
+      - name: Reserve rolling-hour provider quota before any API request
+        env:
+          RUN_ID: ${{ github.run_id }}
+          MAX_REQUESTS: ${{ inputs.max_requests }}
+        run: |
+          python scripts/manage_fivedollar_hourly_quota.py reserve \
+            --ledger quota-ledger/data/provider_request_hourly_ledger.json \
+            --run-id "$RUN_ID" \
+            --reserved-requests "$MAX_REQUESTS"
+          git -C quota-ledger config user.name "github-actions[bot]"
+          git -C quota-ledger config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git -C quota-ledger add data/provider_request_hourly_ledger.json
+          git -C quota-ledger commit -m "Reserve provider quota for run $RUN_ID"
+          git -C quota-ledger push origin HEAD:ops/fivedollar-request-hourly-ledger
+
       - name: Install provider runtime dependency
         run: python -m pip install "requests>=2.32.0,<3.0.0"
 
@@ -87,6 +108,18 @@ jobs:
 
       - name: Verify acquisition artifact integrity
         run: python scripts/verify_acquisition_artifact.py fivedollar_history_batch.json
+
+      - name: Settle rolling-hour quota from the validated acquisition report
+        env:
+          RUN_ID: ${{ github.run_id }}
+        run: |
+          python scripts/manage_fivedollar_hourly_quota.py settle \
+            --ledger quota-ledger/data/provider_request_hourly_ledger.json \
+            --run-id "$RUN_ID" \
+            --report fivedollar_history_batch.json
+          git -C quota-ledger add data/provider_request_hourly_ledger.json
+          git -C quota-ledger commit -m "Settle provider quota for run $RUN_ID"
+          git -C quota-ledger push origin HEAD:ops/fivedollar-request-hourly-ledger
 
       - name: Upload sanitized historical acquisition report
         uses: actions/upload-artifact@v4
