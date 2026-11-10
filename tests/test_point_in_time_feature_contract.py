@@ -1,3 +1,5 @@
+import hashlib
+import json
 import unittest
 
 from app.point_in_time_feature_contract import (
@@ -76,6 +78,37 @@ class PointInTimeFeatureContractTests(unittest.TestCase):
             build_point_in_time_feature_snapshot(
                 fixture_id="fixture-1", prediction_as_of=CUTOFF, features=[invalid],
             )
+
+
+    def test_rehashed_artifact_with_future_or_reversed_provenance_is_rejected(self):
+        for changes in (
+            {"retrieved_at": "2026-11-10T05:01:00Z"},
+            {"available_at": "2026-11-09T04:59:00Z"},
+        ):
+            snapshot = build_point_in_time_feature_snapshot(
+                fixture_id="fixture-1", prediction_as_of=CUTOFF, features=[BASE],
+            )
+            snapshot["features"][0].update(changes)
+            snapshot.pop("snapshot_sha256")
+            snapshot["snapshot_sha256"] = hashlib.sha256(
+                json.dumps(snapshot, sort_keys=True, separators=(",", ":"),
+                           ensure_ascii=False, allow_nan=False).encode("utf-8")
+            ).hexdigest()
+            with self.subTest(changes=changes), self.assertRaises(PointInTimeFeatureError):
+                validate_point_in_time_feature_snapshot(snapshot)
+
+    def test_rehashed_artifact_cannot_smuggle_extra_feature_fields(self):
+        snapshot = build_point_in_time_feature_snapshot(
+            fixture_id="fixture-1", prediction_as_of=CUTOFF, features=[BASE],
+        )
+        snapshot["features"][0]["home_score"] = 3
+        snapshot.pop("snapshot_sha256")
+        snapshot["snapshot_sha256"] = hashlib.sha256(
+            json.dumps(snapshot, sort_keys=True, separators=(",", ":"),
+                       ensure_ascii=False, allow_nan=False).encode("utf-8")
+        ).hexdigest()
+        with self.assertRaisesRegex(PointInTimeFeatureError, "shape_invalid"):
+            validate_point_in_time_feature_snapshot(snapshot)
 
     def test_snapshot_tampering_is_rejected(self):
         snapshot = build_point_in_time_feature_snapshot(
