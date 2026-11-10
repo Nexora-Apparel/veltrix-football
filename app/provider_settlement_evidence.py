@@ -42,7 +42,7 @@ def extract_fivedollar_settlement(payload: Any) -> dict:
     if not isinstance(payload, dict):
         raise SettlementEvidenceError("fivedollar_payload_invalid")
     status, status_code = payload.get("status"), payload.get("status_code")
-    confirmed = status == "finished" and status_code == "full"
+    confirmed = status == "finished" and status_code in (None, "full")
     return {
         "mapping_version": SETTLEMENT_MAPPING_VERSIONS["fivedollar"],
         "provider": "fivedollar",
