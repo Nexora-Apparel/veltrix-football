@@ -3,7 +3,7 @@ import hashlib
 import unittest
 
 from app.source_qualification_registry import (
-    SCHEMA, SourceQualificationRegistryError,
+    SCHEMA, SourceQualificationRegistryError, build_trusted_kms_clients,
     canonical_json_bytes, canonical_sha256,
     sign_source_qualification_registry,
     verify_source_qualification_registry,
@@ -56,6 +56,28 @@ class SourceQualificationRegistryTests(unittest.TestCase):
             trusted_key_regions=self.trusted_regions,
             registry=copy.deepcopy(registry or self.registry),
         )
+
+    def test_runtime_kms_clients_are_built_only_from_explicit_trust_registry(self):
+        class Session:
+            def __init__(self):
+                self.calls = []
+            def client(self, service, region_name):
+                self.calls.append((service, region_name))
+                return self.kms
+        session = Session()
+        clients = build_trusted_kms_clients(
+            registry_json='{"' + KEY_ARN + '":"eu-west-1"}',
+            boto3_session=session,
+        )
+        self.assertEqual(clients, {KEY_ARN: self.kms})
+        self.assertEqual(session.calls, [("kms", "eu-west-1")])
+
+    def test_runtime_kms_client_builder_rejects_untrusted_registry_shape(self):
+        with self.assertRaisesRegex(SourceQualificationRegistryError, "trusted_kms_key_region_mismatch"):
+            build_trusted_kms_clients(
+                registry_json='{"' + KEY_ARN + '":"us-east-1"}',
+                boto3_session=object(),
+            )
 
     def test_valid_signed_registry_resolves_only_scoped_contract(self):
         signed = self.signed()
