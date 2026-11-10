@@ -121,7 +121,7 @@ def _bootstrap_roi(rows: list[dict], seed: int) -> dict:
     }
 
 
-def _walk_forward(rows: object, market: str) -> tuple[list[dict], dict]:
+def _walk_forward(rows: object, market: str, evaluated: datetime) -> tuple[list[dict], dict]:
     classes = MARKETS[market]
     if not isinstance(rows, list):
         raise CertificationError(f"{market}_walk_forward_rows_invalid")
@@ -134,6 +134,11 @@ def _walk_forward(rows: object, market: str) -> tuple[list[dict], dict]:
             raise CertificationError(f"{market}_walk_forward_fixture_identity_invalid:{index}")
         seen.add(fixture)
         kickoff = _timestamp(row.get("kickoff_at"), f"{market}_kickoff_at")
+        label_available = _timestamp(row.get("label_available_at"), f"{market}_label_available_at")
+        if kickoff > evaluated or label_available > evaluated:
+            raise CertificationError(f"{market}_walk_forward_record_after_evaluation:{fixture}")
+        if label_available <= kickoff:
+            raise CertificationError(f"{market}_label_not_available_after_kickoff:{fixture}")
         target = row.get("target")
         if target not in classes:
             raise CertificationError(f"{market}_target_invalid:{fixture}")
@@ -166,7 +171,7 @@ def _walk_forward(rows: object, market: str) -> tuple[list[dict], dict]:
     return normalized, {row["fixture_id"] for row in normalized}
 
 
-def _prospective(rows: object, market: str) -> list[dict]:
+def _prospective(rows: object, market: str, evaluated: datetime) -> list[dict]:
     classes = MARKETS[market]
     if not isinstance(rows, list):
         raise CertificationError(f"{market}_prospective_rows_invalid")
@@ -182,6 +187,8 @@ def _prospective(rows: object, market: str) -> list[dict]:
         settled = _timestamp(row.get("settled_at"), f"{market}_prospective_settled_at")
         if settled <= kickoff:
             raise CertificationError(f"{market}_settlement_not_after_kickoff:{fixture}")
+        if settled > evaluated or kickoff > evaluated:
+            raise CertificationError(f"{market}_prospective_record_after_evaluation:{fixture}")
         odds_at = _timestamp(row.get("odds_captured_at"), f"{market}_prospective_odds_captured_at")
         if odds_at > kickoff:
             raise CertificationError(f"{market}_prospective_odds_after_kickoff:{fixture}")
@@ -213,7 +220,7 @@ def evaluate_market_release_certification(*, evidence: dict,
     Odds are decimal prices captured before kickoff. ROI is derived from
     selections, actual outcomes, prices and stakes; supplied P/L is ignored.
     """
-    _timestamp(evaluated_at, "evaluated_at")
+    evaluated = _timestamp(evaluated_at, "evaluated_at")
     if not isinstance(evidence, dict) or set(evidence) != set(MARKETS):
         raise CertificationError("evidence_must_contain_exactly_all_markets")
     results = {}
@@ -221,8 +228,8 @@ def evaluate_market_release_certification(*, evidence: dict,
         bundle = evidence[market]
         if not isinstance(bundle, dict) or set(bundle) != {"walk_forward", "prospective"}:
             raise CertificationError(f"{market}_evidence_bundle_invalid")
-        wf, _ = _walk_forward(bundle["walk_forward"], market)
-        prospective = _prospective(bundle["prospective"], market)
+        wf, _ = _walk_forward(bundle["walk_forward"], market, evaluated)
+        prospective = _prospective(bundle["prospective"], market, evaluated)
         wf_dates = {row["wat_date"] for row in wf}
         odds_rows = [row for row in wf if row["bookmaker_probabilities"] is not None]
         coverage = len(odds_rows) / len(wf) if wf else 0.0
@@ -271,7 +278,7 @@ def evaluate_market_release_certification(*, evidence: dict,
     return {
         "schema_version": 1,
         "evaluation_type": "market_release_and_value_bet_certification",
-        "evaluated_at": _timestamp(evaluated_at, "evaluated_at").isoformat(),
+        "evaluated_at": evaluated.isoformat(),
         "thresholds": {
             "walk_forward_fixtures_per_market": MIN_WALK_FORWARD,
             "prospective_selections_per_market": MIN_PROSPECTIVE,
