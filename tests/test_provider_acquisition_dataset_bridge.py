@@ -84,7 +84,7 @@ class AcquisitionDatasetBridgeTests(unittest.TestCase):
             "sources": [{
                 "qualification_record": QUALIFICATION_RECORD,
                 "qualification_record_sha256": canonical_sha256(QUALIFICATION_RECORD),
-                "valid_from": "2026-10-01T00:00:00Z",
+                "valid_from": "2026-10-01T10:00:00Z",
                 "valid_until": "2027-01-01T00:00:00Z",
                 "revoked_at": None,
             }],
