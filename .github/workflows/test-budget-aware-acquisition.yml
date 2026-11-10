@@ -66,6 +66,9 @@ jobs:
       - name: Run historical coverage profiling tests
         run: python -m unittest discover -s tests -p 'test_provider_historical_coverage.py' -v
 
+      - name: Run point-in-time feature contract tests
+        run: python -m unittest discover -s tests -p 'test_point_in_time_feature_contract.py' -v
+
       - name: Run end-to-end read-only fixture pipeline tests
         run: python -m unittest discover -s tests -p 'test_provider_fixture_pipeline.py' -v
 
