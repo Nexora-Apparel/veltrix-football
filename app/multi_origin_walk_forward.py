@@ -252,10 +252,10 @@ def _group_metrics(rows: list[dict], group_key: str, digest: str) -> dict:
                 "log_loss": log_loss / len(members),
                 "accuracy": correct / len(members),
                 "brier_ci_95": _cluster_bootstrap(
-                    members, market, "brier", int(digest[:8], 16) ^ hash((group, market, "b"))
+                    members, market, "brier", int(hashlib.sha256((digest + ":" + group + ":" + market + ":brier").encode()).hexdigest()[:8], 16)
                 ),
                 "log_loss_ci_95": _cluster_bootstrap(
-                    members, market, "log_loss", int(digest[8:16], 16) ^ hash((group, market, "l"))
+                    members, market, "log_loss", int(hashlib.sha256((digest + ":" + group + ":" + market + ":logloss").encode()).hexdigest()[:8], 16)
                 ),
             }
         result[group] = metrics
@@ -292,7 +292,9 @@ def evaluate_multi_origin_walk_forward(*, dataset: dict, origins: list[dict],
         train = [row for row in origin_dataset["rows"] if row["split"] == "train"]
         validation = [row for row in origin_dataset["rows"] if row["split"] == "validation"]
         test = [row for row in origin_dataset["rows"] if row["split"] == "test"]
-        trained_at = _post_retrieval_timestamp(train, "train_label_retrieved_at")
+        latest_train_retrieval = _post_retrieval_timestamp(train, "train_label_retrieved_at")
+        train_cutoff = datetime.fromisoformat(origin["train_end_date"] + "T23:59:59+01:00").astimezone(timezone.utc) + timedelta(microseconds=1)
+        trained_at = max(latest_train_retrieval, train_cutoff)
         validation_start = datetime.fromisoformat(
             origin["validation_start_date"] + "T00:00:00+01:00"
         ).astimezone(timezone.utc)
