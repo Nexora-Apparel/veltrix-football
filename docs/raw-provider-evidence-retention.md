@@ -12,6 +12,10 @@ Quarantine is an evidence-retention outcome, not an acceptance outcome. A reject
 
 GitHub Actions artifacts are a short-lived traceability layer, not the canonical archive. They contain only the sanitized report, manifest, and receipt; the encrypted sidecar is kept in private object storage.
 
+## Workflow dispatch trust boundary
+
+The acquisition workflow must run only from the repository default branch (`main`). GitHub allows `workflow_dispatch` to target a selected branch; a branch-level dispatch guard is therefore required so an unreviewed feature branch cannot execute a workflow with provider, encryption, or archive credentials. The acquisition implementation itself is checked out by immutable commit SHA. Do not remove the default-branch guard or replace the pinned implementation with an unreviewed branch reference.
+
 ## Canonical private archive
 
 Use a private S3-compatible bucket with:
