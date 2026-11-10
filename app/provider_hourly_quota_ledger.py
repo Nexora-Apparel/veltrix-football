@@ -28,7 +28,7 @@ def _save(path: str | Path, ledger: dict) -> None:
     destination.parent.mkdir(parents=True, exist_ok=True)
     temporary = destination.with_name(destination.name + ".tmp")
     temporary.write_text(
-        json.dumps(ledger, indent=2, sort_keys=True) + "\\n", encoding="utf-8"
+        json.dumps(ledger, indent=2, sort_keys=True) + "\n", encoding="utf-8"
     )
     temporary.replace(destination)
 
@@ -117,9 +117,7 @@ def reserve_hourly_quota(*, ledger_path: str | Path, run_id: str,
         "actual_requests": None,
         "state": "reserved",
     })
-    Path(ledger_path).write_text(
-        json.dumps(ledger, indent=2, sort_keys=True) + "\n", encoding="utf-8"
-    )
+    _save(ledger_path, ledger)
     return {
         "reserved": True,
         "run_id": run_id,
@@ -150,9 +148,7 @@ def settle_hourly_quota(*, ledger_path: str | Path, run_id: str,
             item["state"] = "settled"
             item["settled_at"] = instant.isoformat().replace("+00:00", "Z")
             break
-    Path(ledger_path).write_text(
-        json.dumps(ledger, indent=2, sort_keys=True) + "\n", encoding="utf-8"
-    )
+    _save(ledger_path, ledger)
     return {
         "settled": True,
         "run_id": run_id,

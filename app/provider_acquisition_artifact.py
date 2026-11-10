@@ -9,7 +9,7 @@ from typing import Any
 from datetime import date, datetime, timedelta
 from zoneinfo import ZoneInfo
 
-from app.provider_source_evidence import SourceEvidenceError, validate_source_evidence
+from app.provider_source_evidence import MAPPING_VERSIONS, canonical_sha256
 
 _HEX_SHA256 = re.compile(r"^[0-9a-f]{64}$")
 _RECORD_KEYS = {
@@ -65,10 +65,28 @@ def validate_acquisition_report(report: Any) -> dict:
         if not isinstance(record.get("payload_sha256"), str) or not _HEX_SHA256.fullmatch(record["payload_sha256"]):
             raise ArtifactIntegrityError(f"payload_hash_invalid:{index}")
         projection = {key: value for key, value in record.items() if key != "source_evidence"}
-        try:
-            validate_source_evidence(record["source_evidence"], expected_record=projection)
-        except SourceEvidenceError as exc:
-            raise ArtifactIntegrityError(f"source_evidence_invalid:{index}:{exc}") from None
+        evidence = record.get("source_evidence")
+        safe_evidence_keys = {
+            "schema_version", "mapping_version", "provider", "endpoint",
+            "source_id", "run_id", "retrieved_at", "raw_payload_sha256",
+            "normalized_record_sha256", "settlement_evidence",
+        }
+        if not isinstance(evidence, dict) or set(evidence) != safe_evidence_keys:
+            raise ArtifactIntegrityError(f"source_evidence_safe_shape_invalid:{index}")
+        if evidence.get("schema_version") != 1:
+            raise ArtifactIntegrityError(f"source_evidence_schema_invalid:{index}")
+        provider = record.get("provider")
+        if evidence.get("mapping_version") != MAPPING_VERSIONS.get(provider):
+            raise ArtifactIntegrityError(f"source_evidence_mapping_version_invalid:{index}")
+        for field in ("provider", "endpoint", "source_id", "run_id", "retrieved_at"):
+            if evidence.get(field) != record.get(field):
+                raise ArtifactIntegrityError(f"source_evidence_{field}_binding_invalid:{index}")
+        if evidence.get("raw_payload_sha256") != record.get("payload_sha256"):
+            raise ArtifactIntegrityError(f"source_evidence_payload_hash_binding_invalid:{index}")
+        if evidence.get("normalized_record_sha256") != canonical_sha256(projection):
+            raise ArtifactIntegrityError(f"source_evidence_normalized_hash_binding_invalid:{index}")
+        if evidence.get("settlement_evidence") != record.get("settlement_evidence"):
+            raise ArtifactIntegrityError(f"source_evidence_settlement_binding_invalid:{index}")
 
     safe_source_keys = {
         "provider", "source_id", "competition_key", "home_team_source_id",
@@ -109,8 +127,13 @@ FIVEDOLLAR_HISTORY_COMPETITIONS = {
 }
 
 
-def validate_fivedollar_history_batch_report(report: Any) -> dict:
-    """Validate the historical batch's five-league scope, time window and exact request ledger."""
+def validate_fivedollar_history_batch_report(report: Any, *, require_acceptance: bool = True) -> dict:
+    """Validate five-league scope, time window and request ledger.
+
+    Set require_acceptance=False only for evidence retention of rejected batches;
+    this never makes those batches eligible for import or publication.
+    """
+
     base = validate_acquisition_report(report)
     if report.get("provider_scope") != ["fivedollar"]:
         raise ArtifactIntegrityError("history_provider_scope_invalid")
@@ -172,7 +195,9 @@ def validate_fivedollar_history_batch_report(report: Any) -> dict:
             raise ArtifactIntegrityError(f"history_record_kickoff_invalid:{index}") from None
         if kickoff.astimezone(zone).date() < start or kickoff.astimezone(zone).date() > end:
             raise ArtifactIntegrityError(f"history_record_outside_batch_window:{index}")
-    if report["quality"].get("acceptance_pass") is not True or report["quarantine"]:
+    if require_acceptance and (
+        report["quality"].get("acceptance_pass") is not True or report["quarantine"]
+    ):
         raise ArtifactIntegrityError("history_batch_quality_not_accepted")
     return {
         **base,

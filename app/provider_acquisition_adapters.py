@@ -9,6 +9,10 @@ from __future__ import annotations
 from datetime import datetime, timezone
 import time
 from typing import Callable
+from pathlib import Path
+import json
+
+from app.encrypted_source_evidence import build_source_evidence, encrypt_source_evidence
 
 from app.provider_fixture_pipeline import run_fixture_acquisition_pipeline
 from app.provider_fixture_normalizer import normalize_fivedollar_fixture, normalize_striker_game
@@ -187,7 +191,9 @@ def acquire_fivedollar_history_batch(*, client, competition_ids: list[str],
                                      retrieved_at: str | None = None,
                                      transport: Callable[..., tuple[dict, dict]] | None = None,
                                      min_request_interval_seconds: float = 3.1,
-                                     sleep: Callable[[float], None] = time.sleep) -> dict:
+                                     sleep: Callable[[float], None] = time.sleep,
+                                     evidence_encryption_key: str | bytes | None = None,
+                                     evidence_output_path: str | Path | None = None) -> dict:
     """Acquire one bounded historical date batch across explicitly qualified competitions.
 
     The inclusive window is at most seven Lagos-local calendar days. Every HTTP
@@ -196,6 +202,8 @@ def acquire_fivedollar_history_batch(*, client, competition_ids: list[str],
     """
     from datetime import date, timedelta
 
+    if (evidence_encryption_key is None) != (evidence_output_path is None):
+        raise ValueError("encrypted_evidence_key_and_output_must_be_supplied_together")
     start, end = date.fromisoformat(start_date), date.fromisoformat(end_date)
     if end < start or (end - start).days > 6:
         raise ValueError("history_window_must_be_one_to_seven_days")
@@ -251,12 +259,14 @@ def acquire_fivedollar_history_batch(*, client, competition_ids: list[str],
                 raise AcquisitionAdapterError("fivedollar_history_data_missing")
             pages += 1
             for row in payload["data"]:
-                if not isinstance(row, dict):
-                    raise AcquisitionAdapterError("fivedollar_history_row_not_object")
-                league = row.get("league")
+                # Preserve malformed JSON observations for encrypted quarantine
+                # evidence; normalization will reject them without dropping bytes.
+                league = row.get("league") if isinstance(row, dict) else None
                 source_competition = league.get("id") if isinstance(league, dict) else None
-                if (source_competition is None or not str(source_competition).isdigit()
-                        or str(int(source_competition)) != competition_id):
+                if isinstance(row, dict) and (
+                    source_competition is None or not str(source_competition).isdigit()
+                    or str(int(source_competition)) != competition_id
+                ):
                     raise AcquisitionAdapterError("fivedollar_history_competition_scope_mismatch")
                 observations.append({
                     "provider": "fivedollar",
@@ -301,4 +311,22 @@ def acquire_fivedollar_history_batch(*, client, competition_ids: list[str],
             "request_accounting": "one_reserved_call_per_http_attempt",
         },
     )
+    if evidence_encryption_key is not None:
+        report = result["report"]
+        evidence = build_source_evidence(observations, report)
+        encrypted, manifest = encrypt_source_evidence(
+            evidence, report=report, key=evidence_encryption_key
+        )
+        destination = Path(evidence_output_path)
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        destination.write_bytes(encrypted)
+        destination.with_suffix(destination.suffix + ".manifest.json").write_text(
+            json.dumps(manifest, sort_keys=True, indent=2) + "\n", encoding="utf-8"
+        )
+        result["encrypted_evidence"] = {
+            "path": str(destination),
+            "manifest_path": str(destination) + ".manifest.json",
+            "evidence_count": manifest["evidence_count"],
+            "ciphertext_sha256": manifest["ciphertext_sha256"],
+        }
     return result

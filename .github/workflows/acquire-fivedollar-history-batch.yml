@@ -23,7 +23,8 @@ on:
         type: string
 
 permissions:
-  contents: read
+  contents: write
+  id-token: write
 
 concurrency:
   group: fivedollar-historical-acquisition
@@ -31,16 +32,37 @@ concurrency:
 
 jobs:
   acquire:
+    # workflow_dispatch can target non-default branches; never expose archive/provider secrets there.
+    if: github.ref == 'refs/heads/main'
+    environment:
+      name: historical-acquisition
     runs-on: ubuntu-latest
     timeout-minutes: 10
     env:
-      FIVEDOLLARFOOTBALL_API_KEY: ${{ secrets.FIVEDOLLARFOOTBALL_API_KEY }}
-      VELTRIX_QUALIFICATION_ATTESTATION_KEY: ${{ secrets.VELTRIX_QUALIFICATION_ATTESTATION_KEY }}
+      FIVEDOLLARFOOTBALL_API_KEY: ${{ secrets.VELTRIX_HISTORICAL_FIVEDOLLAR_API_KEY }}
+      VELTRIX_QUALIFICATION_ATTESTATION_KEY: ${{ secrets.VELTRIX_HISTORICAL_QUALIFICATION_ATTESTATION_KEY }}
+      VELTRIX_RAW_EVIDENCE_ENCRYPTION_KEY: ${{ secrets.VELTRIX_HISTORICAL_RAW_EVIDENCE_ENCRYPTION_KEY }}
+      VELTRIX_EVIDENCE_ARCHIVE_ENDPOINT_URL: ${{ secrets.VELTRIX_HISTORICAL_ARCHIVE_ENDPOINT_URL }}
+      VELTRIX_EVIDENCE_ARCHIVE_BUCKET: ${{ secrets.VELTRIX_HISTORICAL_ARCHIVE_BUCKET }}
+      VELTRIX_EVIDENCE_ARCHIVE_ACCESS_KEY_ID: ${{ secrets.VELTRIX_HISTORICAL_ARCHIVE_ACCESS_KEY_ID }}
+      VELTRIX_EVIDENCE_ARCHIVE_SECRET_ACCESS_KEY: ${{ secrets.VELTRIX_HISTORICAL_ARCHIVE_SECRET_ACCESS_KEY }}
+      VELTRIX_EVIDENCE_ARCHIVE_REGION: ${{ vars.VELTRIX_EVIDENCE_ARCHIVE_REGION }}
+      VELTRIX_EVIDENCE_ARCHIVE_PREFIX: veltrix-football/evidence/v2
+      VELTRIX_EVIDENCE_RECEIPT_KMS_KEY_ARN: ${{ vars.VELTRIX_EVIDENCE_RECEIPT_KMS_KEY_ARN }}
+      VELTRIX_EVIDENCE_RECEIPT_KMS_REGION: ${{ vars.VELTRIX_EVIDENCE_RECEIPT_KMS_REGION }}
+      VELTRIX_EVIDENCE_RECEIPT_KMS_ROLE_ARN: ${{ vars.VELTRIX_EVIDENCE_RECEIPT_KMS_ROLE_ARN }}
+      VELTRIX_EVIDENCE_RECEIPT_KMS_TRUSTED_KEYS_JSON: ${{ vars.VELTRIX_EVIDENCE_RECEIPT_KMS_TRUSTED_KEYS_JSON }}
     steps:
       - name: Check out historical acquisition implementation
         uses: actions/checkout@v4
         with:
-          ref: phase-3/budget-aware-acquisition-contract
+          ref: e4289c55320ab6107f421417e8fe4e8fcca05230
+
+      - name: Check out persistent hourly quota ledger
+        uses: actions/checkout@v4
+        with:
+          ref: ops/fivedollar-request-hourly-ledger
+          path: quota-ledger
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -54,6 +76,7 @@ jobs:
           MAX_REQUESTS: ${{ inputs.max_requests }}
           MAX_PAGES: ${{ inputs.max_pages_per_competition }}
         run: |
+          python -m pip install "cryptography>=42.0.0,<47.0.0"
           python - <<'PY'
           import os
           from datetime import date
@@ -65,10 +88,42 @@ jobs:
           python -m unittest discover -s tests -p 'test_fivedollar_history_batch.py' -v
           python -m unittest discover -s tests -p 'test_provider_acquisition_adapters.py' -v
           python -m unittest discover -s tests -p 'test_provider_fixture_normalizer.py' -v
+          python -m unittest discover -s tests -p 'test_encrypted_source_evidence.py' -v
+          python -m unittest discover -s tests -p 'test_private_evidence_archive.py' -v
+          python -m unittest discover -s tests -p 'test_evidence_receipt_signing.py' -v
+          python -m unittest discover -s tests -p 'test_evidence_receipt_trust.py' -v
           python scripts/acquire_fivedollar_history_batch.py --help
+          python scripts/restore_encrypted_source_evidence.py --help
 
-      - name: Install provider runtime dependency
-        run: python -m pip install "requests>=2.32.0,<3.0.0"
+      - name: Install provider and encryption runtime dependencies
+        run: python -m pip install "requests>=2.32.0,<3.0.0" "cryptography>=42.0.0,<47.0.0"
+
+      - name: Fail closed when evidence encryption key is unavailable
+        run: |
+          test -n "$VELTRIX_RAW_EVIDENCE_ENCRYPTION_KEY"
+          test -n "$VELTRIX_QUALIFICATION_ATTESTATION_KEY"
+          test -n "$VELTRIX_EVIDENCE_ARCHIVE_ENDPOINT_URL"
+          test -n "$VELTRIX_EVIDENCE_ARCHIVE_BUCKET"
+          test -n "$VELTRIX_EVIDENCE_ARCHIVE_ACCESS_KEY_ID"
+          test -n "$VELTRIX_EVIDENCE_ARCHIVE_SECRET_ACCESS_KEY"
+          test -n "$VELTRIX_EVIDENCE_RECEIPT_KMS_KEY_ARN"
+          test -n "$VELTRIX_EVIDENCE_RECEIPT_KMS_REGION"
+          test -n "$VELTRIX_EVIDENCE_RECEIPT_KMS_ROLE_ARN"
+
+      - name: Reserve rolling-hour provider quota before any API request
+        env:
+          RUN_ID: ${{ github.run_id }}-${{ github.run_attempt }}
+          MAX_REQUESTS: ${{ inputs.max_requests }}
+        run: |
+          python scripts/manage_fivedollar_hourly_quota.py reserve \
+            --ledger quota-ledger/data/provider_request_hourly_ledger.json \
+            --run-id "$RUN_ID" \
+            --reserved-requests "$MAX_REQUESTS"
+          git -C quota-ledger config user.name "github-actions[bot]"
+          git -C quota-ledger config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git -C quota-ledger add data/provider_request_hourly_ledger.json
+          git -C quota-ledger commit -m "Reserve provider quota for run $RUN_ID"
+          git -C quota-ledger push origin HEAD:ops/fivedollar-request-hourly-ledger
 
       - name: Acquire signed-registry-scoped historical batch
         env:
@@ -88,10 +143,79 @@ jobs:
       - name: Verify acquisition artifact integrity
         run: python scripts/verify_acquisition_artifact.py fivedollar_history_batch.json
 
-      - name: Upload sanitized historical acquisition report
+      - name: Settle rolling-hour provider quota from the validated acquisition report
+        env:
+          RUN_ID: ${{ github.run_id }}-${{ github.run_attempt }}
+        run: |
+          python scripts/manage_fivedollar_hourly_quota.py settle \
+            --ledger quota-ledger/data/provider_request_hourly_ledger.json \
+            --run-id "$RUN_ID" \
+            --report fivedollar_history_batch.json
+          git -C quota-ledger add data/provider_request_hourly_ledger.json
+          git -C quota-ledger commit -m "Settle provider quota for run $RUN_ID"
+          git -C quota-ledger push origin HEAD:ops/fivedollar-request-hourly-ledger
+
+      - name: Verify encrypted evidence manifest is present and raw report stays sanitized
+        run: |
+          test -s fivedollar_source_evidence.enc
+          test -s fivedollar_source_evidence.enc.manifest.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          report = json.loads(Path('fivedollar_history_batch.json').read_text())
+          manifest = json.loads(Path('fivedollar_source_evidence.enc.manifest.json').read_text())
+          forbidden = {'payload', 'raw_payload', 'raw_row', 'source_payload'}
+          def walk(value):
+              if isinstance(value, dict):
+                  assert not (forbidden & value.keys()), 'raw payload field leaked into report'
+                  for child in value.values(): walk(child)
+              elif isinstance(value, list):
+                  for child in value: walk(child)
+          walk(report)
+          assert manifest['report_sha256'] == report['report_sha256']
+          assert manifest['evidence_count'] == report['quality']['input_count']
+          PY
+
+      - name: Cryptographically verify encrypted source evidence
+        run: python scripts/verify_encrypted_source_evidence.py --report fivedollar_history_batch.json --evidence fivedollar_source_evidence.enc --manifest fivedollar_source_evidence.enc.manifest.json
+
+      - name: Install private archive client
+        run: python -m pip install "boto3>=1.34.0,<2.0.0"
+
+      - name: Obtain short-lived AWS credentials for receipt-signing KMS
+        uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a
+        with:
+          role-to-assume: ${{ env.VELTRIX_EVIDENCE_RECEIPT_KMS_ROLE_ARN }}
+          aws-region: ${{ env.VELTRIX_EVIDENCE_RECEIPT_KMS_REGION }}
+          role-session-name: VeltrixEvidenceReceipt-${{ github.run_id }}
+
+      - name: Archive encrypted evidence to private object storage and verify read-back
+        id: archive
+        run: python scripts/archive_encrypted_source_evidence.py --report fivedollar_history_batch.json --evidence fivedollar_source_evidence.enc --manifest fivedollar_source_evidence.enc.manifest.json
+
+      - name: Upload sanitized report and archive receipt only
         uses: actions/upload-artifact@v4
         with:
           name: fivedollar-historical-batch
-          path: fivedollar_history_batch.json
+          path: |
+            fivedollar_history_batch.json
+            fivedollar_source_evidence.enc.manifest.json
+            fivedollar_evidence_archive_receipt.json
           if-no-files-found: error
           retention-days: 14
+
+      - name: Final fail-closed gate for rejected acquisition batches
+        if: always() && steps.archive.outcome == 'success'
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          report = json.loads(Path('fivedollar_history_batch.json').read_text())
+          quality = report['quality']
+          if quality['acceptance_pass'] is not True or quality['quarantined_count'] != 0:
+              raise SystemExit(
+                  f"REJECTED_BATCH_ARCHIVED_ONLY: accepted={quality['accepted_count']} "
+                  f"quarantined={quality['quarantined_count']}; no import/publication permitted"
+              )
+          print("HISTORICAL_BATCH_ACCEPTANCE: PASS")
+          PY

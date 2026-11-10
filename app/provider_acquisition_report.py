@@ -41,6 +41,25 @@ def build_acquisition_report(*, run_id: str, provider_scope: list[str],
     by_status = Counter(row.get("normalized_status", "unknown") for row in accepted)
     quarantine_reasons = Counter(row.get("reason", "unknown") for row in quarantined)
 
+    # Keep raw provider payloads out of the serialized report. Full provenance
+    # objects remain in memory for encrypted sidecar construction only.
+    public_records = []
+    for accepted_record in accepted:
+        record = dict(accepted_record)
+        evidence = record.get("source_evidence")
+        if not isinstance(evidence, dict):
+            raise ValueError("accepted_source_evidence_missing")
+        record["source_evidence"] = {
+            key: evidence[key]
+            for key in (
+                "schema_version", "mapping_version", "provider", "endpoint",
+                "source_id", "run_id", "retrieved_at", "raw_payload_sha256",
+                "normalized_record_sha256", "settlement_evidence",
+            )
+            if key in evidence
+        }
+        public_records.append(record)
+
     report = {
         "schema_version": 1,
         "report_type": "veltrix_provider_fixture_acquisition",
@@ -68,7 +87,7 @@ def build_acquisition_report(*, run_id: str, provider_scope: list[str],
             "canonical_merges": 0,
             "prediction_publications": 0,
         },
-        "records": accepted,
+        "records": public_records,
         "quarantine": quarantined,
     }
     canonical = json.dumps(report, sort_keys=True, separators=(",", ":"),
