@@ -187,9 +187,16 @@ def assemble_provider_acquisition_dataset(*, acquisition_records: list[dict],
             "settlement_qualification_digest": row["settlement_qualification_digest"],
             "settlement_evidence_sha256": row["settlement_evidence_sha256"],
         })
+    feature_history = [
+        {key: value for key, value in row.items() if key not in {
+            "settlement_source_id", "settlement_qualification_digest",
+            "settlement_evidence_sha256",
+        }}
+        for row in history
+    ]
     try:
         assembled = assemble_results_history_dataset(
-            historical_matches=history,
+            historical_matches=feature_history,
             target_fixtures=targets,
             settled_labels=labels,
             split_policy=split_policy,
