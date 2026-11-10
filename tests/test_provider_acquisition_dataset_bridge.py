@@ -147,6 +147,29 @@ class AcquisitionDatasetBridgeTests(unittest.TestCase):
                 trusted_kms_clients={KEY_ARN: KMS},
             )
 
+    def test_settlement_fixture_mapping_must_match_provider_record(self):
+        package = self.settlement_package()
+        package["expected_fixture_identity"] = {
+            **IDENTITY, "home_team_id": "different-home-team",
+        }
+        package["fixture_identity"] = package["expected_fixture_identity"]
+        package["evidence"] = build_settlement_timestamp_evidence(
+            source_contract=CONTRACT, raw_payload=TIMESTAMP_PAYLOAD,
+            fixture_identity=package["fixture_identity"],
+            expected_fixture_identity=package["expected_fixture_identity"],
+            kickoff_at=IDENTITY["kickoff_at"],
+            observed_at="2026-11-01T16:52:14Z",
+            retrieved_at="2026-11-01T16:53:00Z",
+        )
+        with self.assertRaisesRegex(
+            AcquisitionDatasetBridgeError,
+            "settlement_fixture_mapping_not_bound_to_provider_record",
+        ):
+            acquisition_record_to_history_row(
+                self.provider_record(), settlement_timestamp_package=package,
+                trusted_kms_clients={KEY_ARN: KMS},
+            )
+
     def test_unbound_raw_payload_cannot_enter_training_history(self):
         record = self.provider_record()
         record["source_evidence"]["raw_payload"]["home"]["score"] = 9
