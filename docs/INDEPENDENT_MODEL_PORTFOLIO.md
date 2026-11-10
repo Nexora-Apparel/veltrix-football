@@ -95,7 +95,7 @@ Synthetic unit tests exercise threshold boundaries and integrity failures only. 
 
 ### Timestamped bookmaker odds evidence
 
-`app/bookmaker_odds_evidence.py` adds a network-free, append-only observation ledger for 1X2, BTTS and Over 2.5 decimal prices. It validates complete selection sets, timezone-aware capture times, capture-before-kickoff ordering, source payload digests, overround and de-vigged implied probabilities. It supports idempotent append and selects the latest captured snapshot before kickoff for an exact fixture/market/bookmaker key.
+`app/bookmaker_odds_evidence.py` adds a network-free, append-only observation ledger for 1X2, BTTS and Over 2.5 decimal prices. It validates complete selection sets, timezone-aware capture times, capture-before-kickoff ordering, source payload digests, overround and de-vigged implied probabilities. It supports idempotent append, rejects conflicting quotes for the same fixture/market/bookmaker at an identical timestamp, and selects the latest captured snapshot before kickoff for an exact fixture/market/bookmaker key.
 
 The module intentionally does not poll an odds provider or claim fixture identity reconciliation. Provider adapters must preserve the raw response in the encrypted evidence archive, independently verify the referenced payload digest, map the provider event to a canonical fixture using a reviewed crosswalk, and then append the observation. A missing or ambiguous fixture mapping must be quarantined, not guessed.
 
