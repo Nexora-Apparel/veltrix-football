@@ -44,9 +44,9 @@ def _digest(value: Any) -> str:
 
 def _validate_match(row: Any, index: int) -> dict:
     required = {
-        "fixture_id", "competition_id", "kickoff_at", "settled_at",
-        "home_team_id", "away_team_id", "home_score", "away_score",
-        "source_record_sha256",
+        "fixture_id", "provider", "source_id", "competition_id", "kickoff_at",
+        "settled_at", "home_team_id", "away_team_id", "home_score", "away_score",
+        "endpoint", "retrieved_at", "payload_sha256", "run_id", "normalized_status",
     }
     if not isinstance(row, dict) or set(row) != required:
         raise FeatureReconstructionError(f"match_shape_invalid:{index}")
@@ -55,22 +55,30 @@ def _validate_match(row: Any, index: int) -> dict:
             raise FeatureReconstructionError(f"{field}_invalid:{index}")
     if row["home_team_id"] == row["away_team_id"]:
         raise FeatureReconstructionError(f"same_team_fixture:{row['fixture_id']}")
+    for field in ("provider", "source_id", "endpoint", "run_id"):
+        if not isinstance(row[field], str) or not row[field].strip():
+            raise FeatureReconstructionError(f"{field}_invalid:{index}")
+    if row["normalized_status"] != "finished":
+        raise FeatureReconstructionError(f"historical_status_not_finished:{row['fixture_id']}")
     kickoff = _parse_time(row["kickoff_at"], f"kickoff_{index}")
     settled = _parse_time(row["settled_at"], f"settled_{index}")
-    if settled <= kickoff:
-        raise FeatureReconstructionError(f"settlement_not_after_kickoff:{row['fixture_id']}")
+    retrieved = _parse_time(row["retrieved_at"], f"retrieved_{index}")
+    if settled <= kickoff or retrieved < settled:
+        raise FeatureReconstructionError(f"source_temporal_order_invalid:{row['fixture_id']}")
     for field in ("home_score", "away_score"):
         value = row[field]
         if isinstance(value, bool) or not isinstance(value, int) or value < 0:
             raise FeatureReconstructionError(f"score_invalid:{row['fixture_id']}:{field}")
-    digest = row["source_record_sha256"]
+    digest = row["payload_sha256"]
     if (not isinstance(digest, str) or len(digest) != 64
             or any(char not in "0123456789abcdef" for char in digest)):
         raise FeatureReconstructionError(f"source_hash_invalid:{row['fixture_id']}")
     return {
         **row,
+        "source_record_sha256": digest,
         "_kickoff": kickoff,
         "_settled": settled,
+        "_retrieved": retrieved,
     }
 
 
@@ -91,7 +99,7 @@ def _team_goals(team_id: str, row: dict) -> tuple[int, int]:
 def _elo_ratings(history: list[dict], cutoff: datetime) -> dict[str, float]:
     ratings: dict[str, float] = {}
     for row in sorted(history, key=lambda item: (item["_kickoff"], item["fixture_id"])):
-        if row["_settled"] > cutoff:
+        if row["_settled"] > cutoff or row["_retrieved"] > cutoff:
             continue
         home = ratings.get(row["home_team_id"], DEFAULT_ELO)
         away = ratings.get(row["away_team_id"], DEFAULT_ELO)
@@ -115,6 +123,7 @@ def _team_window(team_id: str, history: list[dict], cutoff: datetime,
     eligible = [
         row for row in history
         if row["_settled"] <= cutoff
+        and row["_retrieved"] <= cutoff
         and row["_kickoff"] < cutoff
         and team_id in (row["home_team_id"], row["away_team_id"])
     ]
@@ -140,6 +149,7 @@ def _competition_rates(competition_id: str, history: list[dict],
         row for row in history
         if row["competition_id"] == competition_id
         and row["_settled"] <= cutoff
+        and row["_retrieved"] <= cutoff
         and row["_kickoff"] < cutoff
     ]
     if not rows:
@@ -195,7 +205,8 @@ def reconstruct_pre_match_features(*, historical_matches: list[dict],
         raise FeatureReconstructionError("target_fixture_present_in_history")
     eligible = [
         row for row in history
-        if row["_kickoff"] < kickoff and row["_settled"] <= cutoff
+        if (row["_kickoff"] < kickoff and row["_settled"] <= cutoff
+                and row["_retrieved"] <= cutoff)
     ]
     if not eligible:
         raise FeatureReconstructionError("no_eligible_pre_kickoff_history")
@@ -251,8 +262,9 @@ def reconstruct_pre_match_features(*, historical_matches: list[dict],
         "home_history_count": len(home_matches),
         "away_history_count": len(away_matches),
         "eligible_fixture_ids_sha256": _digest([
-            {"fixture_id": row["fixture_id"],
-             "source_record_sha256": row["source_record_sha256"]}
+            {"fixture_id": row["fixture_id"], "provider": row["provider"],
+             "source_id": row["source_id"], "source_record_sha256": row["source_record_sha256"],
+             "retrieved_at": row["_retrieved"].isoformat(), "run_id": row["run_id"]}
             for row in provenance_rows
         ]),
         "source": "settled_historical_results_only",
