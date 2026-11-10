@@ -79,7 +79,7 @@ def _softmax(values: list[float]) -> list[float]:
     return [value / total for value in exps]
 
 
-def _validate_row(row: Any, index: int, training_cutoff: datetime) -> dict:
+def _validate_row(row: Any, index: int, training_cutoff: datetime, trained_at: datetime) -> dict:
     score_shape = {
         "fixture_id", "kickoff_at", "feature_as_of", "settled_at",
         "features", "home_score", "away_score", "source_record_sha256",
@@ -98,6 +98,8 @@ def _validate_row(row: Any, index: int, training_cutoff: datetime) -> dict:
     settled = _time(row["settled_at"], f"row_{index}_settled_at")
     if feature_as_of >= kickoff or settled <= kickoff:
         raise ResultsModelError(f"row_temporal_order_invalid:{fixture_id}")
+    if settled > trained_at:
+        raise ResultsModelError(f"settled_after_model_training:{fixture_id}")
     if kickoff > training_cutoff:
         raise ResultsModelError(f"row_after_training_cutoff:{fixture_id}")
     digest = row.get("source_record_sha256")
@@ -249,7 +251,7 @@ def fit_independent_market_models(*, training_rows: list[dict],
     trained = _time(trained_at, "trained_at")
     if trained <= cutoff:
         raise ResultsModelError("model_training_timestamp_must_follow_data_cutoff")
-    rows = [_validate_row(row, i, cutoff) for i, row in enumerate(training_rows)]
+    rows = [_validate_row(row, i, cutoff, trained) for i, row in enumerate(training_rows)]
     if len({row["fixture_id"] for row in rows}) != len(rows):
         raise ResultsModelError("duplicate_training_fixture")
     if len({row["kickoff_at"] for row in rows}) < 30:
