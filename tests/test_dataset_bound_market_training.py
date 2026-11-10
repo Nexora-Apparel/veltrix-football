@@ -13,9 +13,9 @@ from app.independent_market_models import FEATURES, predict_independent_markets
 POLICY = {
     "train_end_date": "2026-09-30",
     "validation_start_date": "2026-10-08",
-    "validation_end_date": "2026-10-20",
-    "test_start_date": "2026-10-28",
-    "test_end_date": "2026-11-30",
+    "validation_end_date": "2026-11-16",
+    "test_start_date": "2026-11-24",
+    "test_end_date": "2026-12-13",
     "embargo_days": 7,
 }
 
@@ -24,13 +24,13 @@ def dataset_fixture(late_retrieval=False):
     snapshots, labels = [], []
     windows = [
         ("train", date(2026, 7, 20), 120, 1),
-        ("validation", date(2026, 10, 8), 13, 1),
-        ("test", date(2026, 10, 28), 20, 1),
+        ("validation", date(2026, 10, 8), 120, 1),
+        ("test", date(2026, 11, 24), 20, 1),
     ]
     index = 0
     for split, start, count, step in windows:
         for offset in range(count):
-            day = start + timedelta(days=(offset % 60) if split == "train" else offset * step)
+            day = start + timedelta(days=(offset % 60) if split == "train" else (offset % 40) if split == "validation" else offset * step)
             kickoff = f"{day.isoformat()}T15:00:00Z"
             cutoff = f"{day.isoformat()}T09:00:00Z"
             observed = f"{(day - timedelta(days=1)).isoformat()}T09:00:00Z"
@@ -96,7 +96,7 @@ class DatasetBoundTrainingTests(unittest.TestCase):
         model = result["model"]
         audit = result["training_audit"]
         self.assertEqual(audit["train_rows_used"], 120)
-        self.assertEqual(audit["validation_rows_held_out"], 13)
+        self.assertEqual(audit["validation_rows_held_out"], 120)
         self.assertEqual(audit["test_rows_held_out"], 20)
         self.assertFalse(audit["validation_and_test_passed_to_optimizer"])
         self.assertEqual(model["training_dataset_sha256"], dataset["dataset_sha256"])
@@ -106,7 +106,7 @@ class DatasetBoundTrainingTests(unittest.TestCase):
         row = next(row for row in dataset["rows"] if row["split"] == "test")
         prediction = predict_independent_markets(
             model=model, features=row["predictors"],
-            prediction_as_of="2026-11-01T00:00:00Z",
+            prediction_as_of="2026-11-25T00:00:00Z",
         )
         self.assertEqual(prediction["model_sha256"], model["model_sha256"])
 
