@@ -95,7 +95,6 @@ class AcquisitionDatasetBridgeTests(unittest.TestCase):
         return {
             "source_contract": CONTRACT,
             "qualification_registry": signed_registry,
-            "trusted_kms_clients": {KEY_ARN: KMS},
             "raw_payload": TIMESTAMP_PAYLOAD,
             "fixture_identity": IDENTITY,
             "expected_fixture_identity": IDENTITY,
@@ -113,6 +112,7 @@ class AcquisitionDatasetBridgeTests(unittest.TestCase):
         row = acquisition_record_to_history_row(
             self.provider_record(),
             settlement_timestamp_package=self.settlement_package(),
+            trusted_kms_clients={KEY_ARN: KMS},
         )
         self.assertEqual(row["settled_at"], "2026-11-01T16:52:13Z")
         self.assertEqual(row["settlement_source_id"], "qualified-source-a")
@@ -127,14 +127,15 @@ class AcquisitionDatasetBridgeTests(unittest.TestCase):
         with self.assertRaisesRegex(AcquisitionDatasetBridgeError, "qualified_settlement_rejected"):
             acquisition_record_to_history_row(
                 self.provider_record(), settlement_timestamp_package=package,
+                trusted_kms_clients={KEY_ARN: KMS},
             )
 
     def test_untrusted_registry_signer_is_rejected(self):
         package = self.settlement_package()
-        package["trusted_kms_clients"] = {}
-        with self.assertRaisesRegex(AcquisitionDatasetBridgeError, "settlement_source_registry_rejected"):
+        with self.assertRaisesRegex(AcquisitionDatasetBridgeError, "trusted_settlement_registry_keys_required"):
             acquisition_record_to_history_row(
                 self.provider_record(), settlement_timestamp_package=package,
+                trusted_kms_clients={},
             )
 
     def test_contract_not_bound_to_signed_registry_is_rejected(self):
@@ -151,6 +152,7 @@ class AcquisitionDatasetBridgeTests(unittest.TestCase):
         with self.assertRaises(AcquisitionDatasetBridgeError):
             acquisition_record_to_history_row(
                 record, settlement_timestamp_package=self.settlement_package(),
+                trusted_kms_clients={KEY_ARN: KMS},
             )
 
     def test_provider_retrieval_before_external_settlement_is_rejected(self):
