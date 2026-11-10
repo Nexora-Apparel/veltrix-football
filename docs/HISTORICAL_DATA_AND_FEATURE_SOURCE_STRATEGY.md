@@ -115,3 +115,22 @@ A provider's historical data count is not interchangeable with prospective evide
 ## 5. Safety and rights
 
 This document is a technical source assessment, not legal advice. Provider terms, retention rights, model-training rights, attribution and redistribution restrictions must be reviewed for the actual subscription and deployment use before integration. Public availability is not equivalent to commercial-use permission.
+
+
+## 6. Historical replay versus live point-in-time retrieval
+
+The existing `app/point_in_time_feature_contract.py` correctly requires each feature's observation, source availability and VELTRIX retrieval timestamps to be no later than the prediction cutoff. This is appropriate for live captured features.
+
+A historical batch downloaded today has an actual `retrieved_at` later than the original fixture's prediction cutoff. It must not be relabelled as if VELTRIX retrieved it before kickoff. Therefore, the current live snapshot contract cannot simply be reused to certify retrospectively reconstructed training features.
+
+Before historical model fitting, add a separate historical-replay evidence contract with explicit distinctions:
+
+- `observed_at`: when the underlying prior-match event/result occurred.
+- `source_available_at`: when the provider made that exact version available, supported by a provider timestamp or documented publication guarantee.
+- `retrieved_at`: the actual time VELTRIX downloaded the archive; this remains the real current timestamp.
+- `version_identity`: immutable source record/version or a preserved payload hash and archive digest.
+- `reconstruction_mode`: explicitly `historical_replay`, never silently represented as a live capture.
+
+A replay feature may be admitted to a historical walk-forward only when its source availability is evidenced to precede the target fixture's cutoff and the source version is stable enough to reconstruct what could have been known then. If the provider supplies no usable availability/version evidence, mark the feature as historically unverifiable and exclude it from leakage-sensitive training/evaluation. Do not substitute the download timestamp, infer an undocumented publication time, or backdate retrieval.
+
+The same distinction must be reflected in reports: live-capture validity, historical-replay validity and source-version certainty are separate statuses. A historical feature snapshot is not a live point-in-time capture merely because its underlying match finished earlier.
