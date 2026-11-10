@@ -19,7 +19,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from app.encrypted_source_evidence import decrypt_and_verify_source_evidence
 from app.provider_acquisition_artifact import validate_fivedollar_history_batch_report
 from app.evidence_receipt_signing import (
-    SCHEMA_V2, ReceiptSignatureError, verify_receipt_signature,
+    SCHEMA_V2, ReceiptSignatureError, sign_receipt, verify_receipt_signature,
 )
 from app.evidence_receipt_trust import (
     ReceiptTrustError, parse_trusted_key_regions,
@@ -46,7 +46,8 @@ def _validate_endpoint_url(endpoint: str | None) -> str:
     return endpoint
 
 
-def write_verified_digest_registry(result: dict, output_path: str | Path) -> dict:
+def write_verified_digest_registry(result: dict, output_path: str | Path,
+                                   kms_client: Any) -> dict:
     if (not isinstance(result, dict)
             or result.get("archive_receipt_signature_verified") is not True
             or not isinstance(result.get("receipt_sha256"), str)
@@ -63,6 +64,7 @@ def write_verified_digest_registry(result: dict, output_path: str | Path) -> dic
             or ":key/" not in result["receipt_signing_key_arn"]):
         raise EvidenceRestoreError("verified_digest_registry_receipt_identity_invalid")
     registry = {
+        "schema": SCHEMA_V2,
         "schema_version": 1,
         "verified_source_evidence_sha256": sorted(set(raw_digests)),
         "verified_archive_receipts": [{
@@ -72,6 +74,14 @@ def write_verified_digest_registry(result: dict, output_path: str | Path) -> dic
             "run_id": result["run_id"],
         }],
     }
+    try:
+        registry = sign_receipt(
+            kms_client=kms_client,
+            key_arn=result["receipt_signing_key_arn"],
+            receipt=registry,
+        )
+    except ReceiptSignatureError:
+        raise EvidenceRestoreError("verified_digest_registry_signing_failed") from None
     destination = Path(output_path)
     if destination.is_symlink():
         raise EvidenceRestoreError("verified_digest_registry_symlink_rejected")
@@ -276,7 +286,11 @@ def main() -> int:
             encryption_key=encryption_key, output_dir=args.output_dir,
         )
         if args.verified_digests_output:
-            registry = write_verified_digest_registry(result, args.verified_digests_output)
+            signing_key_arn = result["receipt_signing_key_arn"]
+            registry = write_verified_digest_registry(
+                result, args.verified_digests_output,
+                trusted_kms_clients[signing_key_arn],
+            )
             result["verified_digest_registry_path"] = str(args.verified_digests_output)
             result["verified_digest_registry_count"] = len(registry["verified_source_evidence_sha256"])
         print("PRIVATE_EVIDENCE_RESTORE: PASS; " + json.dumps(result, sort_keys=True))
