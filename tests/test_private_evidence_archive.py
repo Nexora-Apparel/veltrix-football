@@ -66,7 +66,7 @@ class PrivateEvidenceArchiveTests(unittest.TestCase):
 
     @patch("scripts.archive_encrypted_source_evidence.validate_fivedollar_history_batch_report")
     def test_uploads_and_reads_back_all_private_objects(self, validate):
-        validate.return_value = {"valid": True, "report_sha256": "a" * 64, "accepted_count": 1}
+        validate.return_value = {"valid": True, "report_sha256": "a" * 64, "accepted_count": 1, "input_count": 1}
         client = FakeS3()
         receipt_path = self.root / "receipt.json"
         result = archive_evidence(
@@ -134,6 +134,27 @@ class PrivateEvidenceArchiveTests(unittest.TestCase):
         second = archive_evidence(**kwargs)
         self.assertEqual(first["receipt_sha256"], second["receipt_sha256"])
         self.assertEqual(len(client.objects), 4)
+
+    @patch("scripts.archive_encrypted_source_evidence.validate_fivedollar_history_batch_report")
+    def test_archives_rejected_batch_using_total_input_count(self, validate):
+        validate.return_value = {
+            "valid": True, "report_sha256": "a" * 64,
+            "accepted_count": 1, "quarantined_count": 1, "input_count": 2,
+        }
+        self.report["quarantine"] = [{"input_index": 1, "reason": "invalid_row", "source": None}]
+        self.manifest["evidence_count"] = 2
+        self.report_path.write_text(json.dumps(self.report))
+        self.manifest_path.write_text(json.dumps(self.manifest))
+        client = FakeS3()
+        result = archive_evidence(
+            client=client, bucket="private-bucket", prefix="veltrix",
+            report_path=self.report_path, evidence_path=self.evidence_path,
+            manifest_path=self.manifest_path, receipt_output_path=self.root / "receipt.json",
+        )
+        self.assertTrue(result["readback_verified"])
+        validate.assert_called_once()
+        self.assertEqual(validate.call_args.kwargs, {"require_acceptance": False})
+
 
 
 if __name__ == "__main__":
