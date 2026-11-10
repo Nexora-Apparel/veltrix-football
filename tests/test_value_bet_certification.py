@@ -85,6 +85,26 @@ class ValueBetCertificationTests(unittest.TestCase):
         verified = validate_value_bet_certification_report(report)
         self.assertFalse(verified["value_betting_enabled"])
 
+
+    def test_90_distinct_dates_must_be_prospective_not_backtest_only(self):
+        records = synthetic_records()
+        start = date(2026, 1, 1)
+        selected_index = 0
+        for row in records:
+            if row["market"] == "btts" and row["selected"]:
+                local_day = start + timedelta(days=selected_index % 30)
+                selected_index += 1
+                row["kickoff_at"] = f"{local_day.isoformat()}T12:00:00Z"
+                row["prediction_as_of"] = f"{local_day.isoformat()}T05:00:00Z"
+                row["odds_observed_at"] = f"{local_day.isoformat()}T04:45:00Z"
+                row["odds_retrieved_at"] = f"{local_day.isoformat()}T04:50:00Z"
+                row["settled_at"] = f"{local_day.isoformat()}T15:00:00Z"
+        report = certify_value_bet_markets(evaluation_records=records)
+        self.assertEqual(report["markets"]["btts"]["walk_forward_distinct_dates"], 100)
+        self.assertEqual(report["markets"]["btts"]["distinct_dates"], 30)
+        self.assertFalse(report["markets"]["btts"]["checks"]["distinct_dates"])
+        self.assertFalse(report["value_betting_enabled"])
+
     def test_future_odds_and_post_cutoff_quotes_are_rejected(self):
         records = synthetic_records()
         records[0]["odds_observed_at"] = "2026-01-01T05:01:00Z"
