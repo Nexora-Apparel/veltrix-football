@@ -412,7 +412,12 @@ class PrivateEvidenceArchiveTests(unittest.TestCase):
         self.assertEqual(old_kms.verify_calls, 1)
         self.assertEqual(new_kms.verify_calls, 0)
 
-    def test_archive_rejects_current_signing_key_not_in_trust_registry(self):
+    @patch("scripts.archive_encrypted_source_evidence.validate_fivedollar_history_batch_report")
+    def test_archive_rejects_current_signing_key_not_in_trust_registry(self, validate):
+        validate.return_value = {
+            "valid": True, "report_sha256": "a" * 64,
+            "accepted_count": 1, "input_count": 1,
+        }
         new_arn = "arn:aws:kms:eu-west-1:123456789012:key/new-receipt-key"
         new_kms = FakeKMS(new_arn)
         with self.assertRaisesRegex(EvidenceArchiveError, "signing_key_not_in_trust_registry"):
