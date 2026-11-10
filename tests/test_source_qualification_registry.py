@@ -169,7 +169,8 @@ class SourceQualificationRegistryTests(unittest.TestCase):
         changed["operator_note"] = "unreviewed"
         with self.assertRaisesRegex(SourceQualificationRegistryError, "registry_shape_invalid"):
             sign_source_qualification_registry(
-                kms_client=self.kms, key_arn=KEY_ARN, registry=changed,
+                kms_client=self.kms, key_arn=KEY_ARN,
+                trusted_key_regions=self.trusted_regions, registry=changed,
             )
 
     def test_unrecognized_signature_fields_rejected(self):
