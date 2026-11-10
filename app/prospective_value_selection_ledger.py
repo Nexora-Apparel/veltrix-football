@@ -133,7 +133,9 @@ def _validate_ledger(ledger: Any) -> dict:
         }
         if not isinstance(item, dict) or set(item) != required or item["schema_version"] != 1:
             raise ProspectiveValueLedgerError("selection_record_shape_invalid")
-        if item["market"] not in MARKETS or item["selection"] not in MARKETS[item["market"]]:
+        if (not isinstance(item["market"], str) or item["market"] not in MARKETS
+                or not isinstance(item["selection"], str)
+                or item["selection"] not in MARKETS[item["market"]]):
             raise ProspectiveValueLedgerError("selection_record_market_invalid")
         if item["odds_provider"] != "the_odds_api":
             raise ProspectiveValueLedgerError("selection_record_provider_invalid")
@@ -171,6 +173,8 @@ def _validate_ledger(ledger: Any) -> dict:
                                     rel_tol=1e-12, abs_tol=1e-12)):
             raise ProspectiveValueLedgerError("selection_record_value_integrity_mismatch")
         selection_id = item["selection_id"]
+        if not isinstance(selection_id, str) or len(selection_id) != 64:
+            raise ProspectiveValueLedgerError("selection_record_digest_invalid")
         payload = {key: value for key, value in item.items() if key != "selection_id"}
         if _canonical_hash(payload) != selection_id or selection_id in seen_ids:
             raise ProspectiveValueLedgerError("selection_record_digest_invalid")
@@ -188,7 +192,9 @@ def _validate_ledger(ledger: Any) -> dict:
         }
         if not isinstance(item, dict) or set(item) != required or item["schema_version"] != 1:
             raise ProspectiveValueLedgerError("settlement_record_shape_invalid")
-        if item["selection_id"] not in seen_ids or item["selection_id"] in settled_ids:
+        if (not isinstance(item["selection_id"], str)
+                or item["selection_id"] not in seen_ids
+                or item["selection_id"] in settled_ids):
             raise ProspectiveValueLedgerError("settlement_record_identity_invalid")
         selection = next(row for row in ledger["selections"]
                          if row["selection_id"] == item["selection_id"])
@@ -199,7 +205,8 @@ def _validate_ledger(ledger: Any) -> dict:
         _digest(item["settlement_source_evidence_sha256"],
                 "settlement_source_evidence_sha256")
         payload = {key: value for key, value in item.items() if key != "settlement_id"}
-        if _canonical_hash(payload) != item["settlement_id"]:
+        if (not isinstance(item["settlement_id"], str)
+                or _canonical_hash(payload) != item["settlement_id"]):
             raise ProspectiveValueLedgerError("settlement_record_digest_invalid")
         settled_ids.add(item["selection_id"])
     return ledger
