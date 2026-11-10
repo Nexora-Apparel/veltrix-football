@@ -121,6 +121,7 @@ def archive_evidence(*, client: Any, kms_client: Any, signing_key_arn: str, buck
         "raw_payloads": "encrypted_only",
     }
     receipt_key = f"{base}receipts/{run_id}.json"
+    receipt["receipt_key"] = receipt_key
     if _head_exists(client, bucket, receipt_key):
         # Reuse a prior commit marker only after independent KMS verification.
         downloaded_receipt = client.get_object(Bucket=bucket, Key=receipt_key)["Body"].read()
@@ -152,8 +153,6 @@ def archive_evidence(*, client: Any, kms_client: Any, signing_key_arn: str, buck
         downloaded_receipt = client.get_object(Bucket=bucket, Key=receipt_key)["Body"].read()
         if _sha(downloaded_receipt) != _sha(receipt_bytes):
             raise EvidenceArchiveError("archive_receipt_readback_failed")
-    receipt["receipt_key"] = receipt_key
-    receipt["receipt_sha256"] = _sha(receipt_bytes)
     Path(receipt_output_path).write_text(
         json.dumps(receipt, sort_keys=True, indent=2) + "\n", encoding="utf-8"
     )
