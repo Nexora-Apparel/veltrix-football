@@ -53,7 +53,7 @@ def _head_exists(client: Any, bucket: str, key: str) -> bool:
         raise
 
 
-def archive_evidence(*, client: Any, kms_client: Any, signing_key_arn: str, bucket: str, prefix:
+def archive_evidence(*, client: Any, kms_client: Any, signing_key_arn: str, bucket: str, prefix: str,
                      report_path: str | Path, evidence_path: str | Path,
                      manifest_path: str | Path,
                      receipt_output_path: str | Path = "fivedollar_evidence_archive_receipt.json") -> dict:
@@ -133,6 +133,7 @@ def archive_evidence(*, client: Any, kms_client: Any, signing_key_arn: str, buck
             )
         except (TypeError, ValueError, ReceiptSignatureError):
             raise EvidenceArchiveError("archive_existing_receipt_signature_invalid") from None
+        receipt["archived_at"] = archived_receipt.get("archived_at")
         if canonical_receipt_payload(archived_receipt) != canonical_receipt_payload(receipt):
             raise EvidenceArchiveError("archive_existing_receipt_binding_conflict")
         receipt = archived_receipt
