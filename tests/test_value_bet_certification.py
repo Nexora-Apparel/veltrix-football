@@ -105,6 +105,36 @@ class ValueBetCertificationTests(unittest.TestCase):
         self.assertFalse(report["markets"]["btts"]["checks"]["distinct_dates"])
         self.assertFalse(report["value_betting_enabled"])
 
+
+    def test_98_percent_timestamped_odds_coverage_is_accepted_but_below_is_not(self):
+        records = synthetic_records()
+        for row in records:
+            if row["market"] == "1x2" and row["fixture_id"] in {
+                f"1x2-{index}" for index in range(980, 1000)
+            }:
+                row["odds"] = None
+                row["odds_observed_at"] = None
+                row["odds_retrieved_at"] = None
+                row["bookmaker_odds"] = None
+        report = certify_value_bet_markets(evaluation_records=records)
+        self.assertEqual(report["markets"]["1x2"]["timestamped_odds_coverage"], 0.98)
+        self.assertEqual(report["markets"]["1x2"]["bookmaker_comparison_matches"], 980)
+        self.assertTrue(report["value_betting_enabled"])
+
+        records_below = synthetic_records()
+        for row in records_below:
+            if row["market"] == "1x2" and row["fixture_id"] in {
+                f"1x2-{index}" for index in range(979, 1000)
+            }:
+                row["odds"] = None
+                row["odds_observed_at"] = None
+                row["odds_retrieved_at"] = None
+                row["bookmaker_odds"] = None
+        below = certify_value_bet_markets(evaluation_records=records_below)
+        self.assertLess(below["markets"]["1x2"]["timestamped_odds_coverage"], 0.98)
+        self.assertFalse(below["markets"]["1x2"]["certified"])
+        self.assertFalse(below["value_betting_enabled"])
+
     def test_future_odds_and_post_cutoff_quotes_are_rejected(self):
         records = synthetic_records()
         records[0]["odds_observed_at"] = "2026-01-01T05:01:00Z"
