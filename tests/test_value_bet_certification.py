@@ -93,11 +93,14 @@ class ValueBetCertificationTests(unittest.TestCase):
 
     def test_1x2_must_beat_both_bookmaker_metrics(self):
         records = synthetic_records()
+        raw = {key: 1.0 / value for key, value in {
+            "home": 2.2, "draw": 3.0, "away": 3.6,
+        }.items()}
+        total = sum(raw.values())
+        same_as_bookmaker = {key: value / total for key, value in raw.items()}
         for row in records:
             if row["market"] == "1x2":
-                row["model_probabilities"] = {
-                    "home": 0.40, "draw": 0.30, "away": 0.30,
-                }
+                row["model_probabilities"] = dict(same_as_bookmaker)
         report = certify_value_bet_markets(evaluation_records=records)
         self.assertFalse(report["markets"]["1x2"]["checks"]["beats_bookmaker_brier"])
         self.assertFalse(report["markets"]["1x2"]["checks"]["beats_bookmaker_log_loss"])
