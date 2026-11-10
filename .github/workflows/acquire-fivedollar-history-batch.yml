@@ -41,7 +41,7 @@ jobs:
       - name: Check out historical acquisition implementation
         uses: actions/checkout@v4
         with:
-          ref: 64b74f85dc00d3ccb2ef3eb647b6b7d7bea64c0f
+          ref: dc476983830e7a1f4d54deb5a97968212e16b63e
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -116,6 +116,9 @@ jobs:
           assert manifest['report_sha256'] == report['report_sha256']
           assert manifest['evidence_count'] == len(report['records'])
           PY
+
+      - name: Cryptographically verify encrypted source evidence
+        run: python scripts/verify_encrypted_source_evidence.py --report fivedollar_history_batch.json --evidence fivedollar_source_evidence.enc --manifest fivedollar_source_evidence.enc.manifest.json
 
       - name: Upload sanitized historical acquisition report
         uses: actions/upload-artifact@v4
