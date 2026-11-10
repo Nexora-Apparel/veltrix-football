@@ -9,6 +9,9 @@ from app.provider_acquisition_adapters import (
     AcquisitionAdapterError,
     acquire_fivedollar_history_batch,
 )
+from app.provider_acquisition_artifact import (
+    ArtifactIntegrityError, validate_fivedollar_history_batch_report,
+)
 from app.encrypted_source_evidence import decrypt_and_verify_source_evidence
 
 
@@ -118,6 +121,13 @@ class HistoricalAcquisitionTests(unittest.TestCase):
                 evidence_encryption_key=key, evidence_output_path=destination,
             )
             report = result["report"]
+            integrity = validate_fivedollar_history_batch_report(
+                report, require_acceptance=False
+            )
+            self.assertEqual(integrity["input_count"], 5)
+            self.assertEqual(integrity["accepted_count"], 4)
+            with self.assertRaisesRegex(ArtifactIntegrityError, "history_batch_quality_not_accepted"):
+                validate_fivedollar_history_batch_report(report)
             manifest = json.loads(destination.with_suffix(".enc.manifest.json").read_text())
             evidence = decrypt_and_verify_source_evidence(
                 destination.read_bytes(), report=report, manifest=manifest, key=key
