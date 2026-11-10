@@ -42,10 +42,15 @@ class FixtureNormalizerTests(unittest.TestCase):
         self.assertEqual(result["provider"], "strikerapi")
         self.assertEqual(result["source_id"], "9001")
         self.assertEqual(result["kickoff_at"], "2026-11-10T17:00:00Z")
+        self.assertIsNone(result["settled_at"])
+        self.assertFalse(result["settlement_evidence"]["settlement_time_available"])
         self.assertEqual(result["normalized_status"], "finished")
         self.assertEqual(result["home_score"], 2)
         self.assertEqual(len(result["payload_sha256"]), 64)
         self.assertEqual(result["run_id"], RUN)
+        self.assertTrue(result["settlement_evidence"]["terminal_status_confirmed"])
+        self.assertIsNone(result["settled_at"])
+        self.assertFalse(result["settlement_evidence"]["settlement_time_available"])
 
     def test_fivedollar_normalizes_provider_specific_ids(self):
         result = normalize_fivedollar_fixture(
