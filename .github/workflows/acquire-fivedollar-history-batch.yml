@@ -40,7 +40,7 @@ jobs:
       - name: Check out historical acquisition implementation
         uses: actions/checkout@v4
         with:
-          ref: f0f2d3d5347621dda503082203fcfe5415e5d9da
+          ref: 3ea3918bbc418c7bd874f62b05db5846cd09fe0a
 
       - name: Set up Python
         uses: actions/setup-python@v5
