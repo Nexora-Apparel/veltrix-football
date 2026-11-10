@@ -105,7 +105,7 @@ class MultiOriginWalkForwardTests(unittest.TestCase):
             dataset=walk_forward_dataset(), origins=ORIGINS, epochs=100,
         )
         self.assertEqual(report["origin_count"], 2)
-        self.assertEqual(report["pooled_test_fixture_count"], 60)
+        self.assertEqual(report["pooled_test_fixture_count"], 150)
         self.assertEqual(len(report["origins"]), 2)
         for origin in report["origins"]:
             self.assertGreaterEqual(origin["counts"]["train"], 100)
