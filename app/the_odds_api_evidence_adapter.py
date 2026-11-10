@@ -163,11 +163,11 @@ def adapt_the_odds_api_event(*, event_payload: dict, crosswalk: dict,
         except OddsProviderAdapterError as exc:
             rejected.append({"bookmaker": bookmaker, "reason": str(exc)})
             continue
-        if quote_time > retrieved:
-            rejected.append({"bookmaker": bookmaker, "reason": "quote_after_retrieval"})
-            continue
         if quote_time > kickoff:
             rejected.append({"bookmaker": bookmaker, "reason": "quote_after_kickoff"})
+            continue
+        if quote_time > retrieved:
+            rejected.append({"bookmaker": bookmaker, "reason": "quote_after_retrieval"})
             continue
         if (kickoff - quote_time).total_seconds() > max_quote_age_seconds:
             rejected.append({"bookmaker": bookmaker, "reason": "quote_stale"})
