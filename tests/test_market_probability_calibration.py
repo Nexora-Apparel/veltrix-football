@@ -6,7 +6,7 @@ from app.market_probability_calibration import (
     calibrate_model_on_validation_split,
 )
 from app.independent_market_models import predict_independent_markets
-from tests.test_dataset_bound_market_training import dataset_fixture
+from test_dataset_bound_market_training import dataset_fixture
 
 
 class MarketProbabilityCalibrationTests(unittest.TestCase):
