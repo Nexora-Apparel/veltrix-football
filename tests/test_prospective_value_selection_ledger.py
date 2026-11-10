@@ -50,6 +50,29 @@ def odds_ledger(captured_at="2026-11-10T10:30:00Z"):
     )["ledger"]
 
 
+def odds_ledger_with_later_quotes():
+    observations = []
+    for market, prices in PRICES.items():
+        for captured_at, adjusted in (
+            ("2026-11-10T10:30:00Z", prices),
+            ("2026-11-10T11:30:00Z", {
+                key: value + 0.2 for key, value in prices.items()
+            }),
+        ):
+            observations.append(build_odds_observation(
+                provider="the_odds_api", provider_event_id="event-1",
+                fixture_id="fixture-1", market=market, bookmaker="book-a",
+                captured_at=captured_at, kickoff_at="2026-11-10T12:00:00Z",
+                decimal_odds=adjusted,
+                raw_payload={"event": "event-1", "market": market, "at": captured_at},
+                source_payload_sha256=("a" if captured_at.endswith("10:30:00Z") else "b") * 64,
+                crosswalk_evidence_sha256="b" * 64,
+            ))
+    return append_odds_observations(
+        {"schema_version": 1, "observations": []}, observations,
+    )["ledger"]
+
+
 def prediction(probabilities=None):
     return {
         "fixture_id": "fixture-1",
@@ -116,6 +139,19 @@ class ProspectiveValueSelectionLedgerTests(unittest.TestCase):
         self.assertEqual(first["added_count"], 3)
         self.assertEqual(second["added_count"], 0)
         self.assertEqual(len(second["ledger"]["selections"]), 3)
+
+    def test_uses_latest_quote_available_by_decision_not_later_pre_kickoff_quote(self):
+        result = append_prospective_selections(
+            ledger={"schema_version": 1, "selections": [], "settlements": []},
+            predictions=[prediction()],
+            odds_ledger=odds_ledger_with_later_quotes(),
+            policy=POLICY,
+        )
+        self.assertEqual(result["added_count"], 3)
+        self.assertTrue(all(
+            item["odds_captured_at"] == "2026-11-10T10:30:00+00:00"
+            for item in result["ledger"]["selections"]
+        ))
 
     def test_rejects_quote_not_available_at_decision_time(self):
         result = append_prospective_selections(
