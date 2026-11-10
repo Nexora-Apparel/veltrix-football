@@ -165,7 +165,7 @@ class PrivateEvidenceArchiveTests(unittest.TestCase):
 
     @patch("scripts.archive_encrypted_source_evidence.validate_fivedollar_history_batch_report")
     def test_completed_archive_retry_reuses_validated_receipt(self, validate):
-        validate.return_value = {"valid": True, "report_sha256": "a" * 64, "accepted_count": 1}
+        validate.return_value = {"valid": True, "report_sha256": "a" * 64, "accepted_count": 1, "input_count": 1}
         client = FakeS3()
         kwargs = dict(
             client=client, kms_client=FakeKMS(), signing_key_arn=TEST_SIGNING_KEY_ARN, bucket="private-bucket", prefix="veltrix",
