@@ -92,3 +92,9 @@ Every walk-forward label and prospective settlement/odds record must carry a SHA
 A successful evaluator result can mark the value-betting evidence thresholds as met, but never authorizes publication. Human release approval, model promotion, operational readiness and the separate public prediction gates remain mandatory. It performs no provider requests, database writes, publication, Telegram delivery or schedule activation.
 
 Synthetic unit tests exercise threshold boundaries and integrity failures only. They are not model performance evidence and cannot certify VELTRIX.
+
+### Timestamped bookmaker odds evidence
+
+`app/bookmaker_odds_evidence.py` adds a network-free, append-only observation ledger for 1X2, BTTS and Over 2.5 decimal prices. It validates complete selection sets, timezone-aware capture times, capture-before-kickoff ordering, source payload digests, overround and de-vigged implied probabilities. It supports idempotent append and selects the latest captured snapshot before kickoff for an exact fixture/market/bookmaker key.
+
+The module intentionally does not poll an odds provider or claim fixture identity reconciliation. Provider adapters must preserve the raw response in the encrypted evidence archive, independently verify the referenced payload digest, map the provider event to a canonical fixture using a reviewed crosswalk, and then append the observation. A missing or ambiguous fixture mapping must be quarantined, not guessed.
