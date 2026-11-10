@@ -7,6 +7,7 @@ from pathlib import Path
 from app.bookmaker_odds_evidence import (
     append_odds_observations, build_odds_observation,
 )
+from app.evidence_receipt_signing import sign_receipt
 from scripts.evaluate_market_release_certification import (
     CertificationRunnerError, evaluate,
 )
@@ -27,6 +28,21 @@ def digest(value):
         value, sort_keys=True, separators=(",", ":"),
         ensure_ascii=False, allow_nan=False,
     ).encode()).hexdigest()
+
+
+TEST_KEY_ARN = "arn:aws:kms:us-east-1:123456789012:key/test-key"
+
+
+class FakeKMS:
+    def sign(self, KeyId, Message, MessageType, SigningAlgorithm):
+        return {"Signature": hashlib.sha256(KeyId.encode() + Message).digest()}
+
+    def verify(self, KeyId, Message, MessageType, Signature, SigningAlgorithm):
+        expected = hashlib.sha256(KeyId.encode() + Message).digest()
+        return {"SignatureValid": (
+            KeyId == TEST_KEY_ARN and MessageType == "DIGEST"
+            and SigningAlgorithm == "ECDSA_SHA_256" and Signature == expected
+        )}
 
 
 class MarketReleaseCertificationRunnerTests(unittest.TestCase):
@@ -77,16 +93,21 @@ class MarketReleaseCertificationRunnerTests(unittest.TestCase):
         self.prospective_path.write_text(json.dumps({
             "schema_version": 1, "selections": [], "settlements": [],
         }))
-        self.verified_path.write_text(json.dumps({
+        registry = {
+            "schema": "veltrix-evidence-archive-receipt-v2",
             "schema_version": 1,
             "verified_source_evidence_sha256": ["a" * 64, "b" * 64, "c" * 64],
             "verified_archive_receipts": [{
                 "archive_receipt_signature_verified": True,
                 "receipt_sha256": "d" * 64,
-                "receipt_signing_key_arn": "arn:aws:kms:us-east-1:123456789012:key/test-key",
+                "receipt_signing_key_arn": TEST_KEY_ARN,
                 "run_id": "restore-run-1",
             }],
-        }))
+        }
+        registry = sign_receipt(
+            kms_client=FakeKMS(), key_arn=TEST_KEY_ARN, receipt=registry,
+        )
+        self.verified_path.write_text(json.dumps(registry))
 
     def tearDown(self):
         self.temp.cleanup()
@@ -100,6 +121,7 @@ class MarketReleaseCertificationRunnerTests(unittest.TestCase):
             benchmark_bookmaker="book-a",
             evaluated_at="2026-11-11T00:00:00Z",
             output_path=str(self.output_path),
+            trusted_kms_clients={TEST_KEY_ARN: FakeKMS()},
         )
 
     def test_runs_full_offline_evidence_chain_and_keeps_authorization_locked(self):
@@ -130,6 +152,9 @@ class MarketReleaseCertificationRunnerTests(unittest.TestCase):
     def test_rejects_registry_without_verified_archive_receipt(self):
         registry = json.loads(self.verified_path.read_text())
         registry["verified_archive_receipts"] = []
+        registry = sign_receipt(
+            kms_client=FakeKMS(), key_arn=TEST_KEY_ARN, receipt=registry,
+        )
         self.verified_path.write_text(json.dumps(registry))
         with self.assertRaisesRegex(CertificationRunnerError, "registry_content_invalid"):
             self.run_evaluation()
