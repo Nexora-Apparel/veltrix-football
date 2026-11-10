@@ -23,7 +23,7 @@ on:
         type: string
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
   group: fivedollar-historical-acquisition
@@ -47,7 +47,13 @@ jobs:
       - name: Check out historical acquisition implementation
         uses: actions/checkout@v4
         with:
-          ref: dc476983830e7a1f4d54deb5a97968212e16b63e
+          ref: 8970a4099aa84a13911adab00ef9725161d61f48
+
+      - name: Check out persistent hourly quota ledger
+        uses: actions/checkout@v4
+        with:
+          ref: ops/fivedollar-request-hourly-ledger
+          path: quota-ledger
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -89,6 +95,21 @@ jobs:
           test -n "$VELTRIX_EVIDENCE_ARCHIVE_ACCESS_KEY_ID"
           test -n "$VELTRIX_EVIDENCE_ARCHIVE_SECRET_ACCESS_KEY"
 
+      - name: Reserve rolling-hour provider quota before any API request
+        env:
+          RUN_ID: ${{ github.run_id }}-${{ github.run_attempt }}
+          MAX_REQUESTS: ${{ inputs.max_requests }}
+        run: |
+          python scripts/manage_fivedollar_hourly_quota.py reserve \
+            --ledger quota-ledger/data/provider_request_hourly_ledger.json \
+            --run-id "$RUN_ID" \
+            --reserved-requests "$MAX_REQUESTS"
+          git -C quota-ledger config user.name "github-actions[bot]"
+          git -C quota-ledger config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git -C quota-ledger add data/provider_request_hourly_ledger.json
+          git -C quota-ledger commit -m "Reserve provider quota for run $RUN_ID"
+          git -C quota-ledger push origin HEAD:ops/fivedollar-request-hourly-ledger
+
       - name: Acquire signed-registry-scoped historical batch
         env:
           START_DATE: ${{ inputs.start_date }}
@@ -106,6 +127,18 @@ jobs:
 
       - name: Verify acquisition artifact integrity
         run: python scripts/verify_acquisition_artifact.py fivedollar_history_batch.json
+
+      - name: Settle rolling-hour provider quota from the validated acquisition report
+        env:
+          RUN_ID: ${{ github.run_id }}-${{ github.run_attempt }}
+        run: |
+          python scripts/manage_fivedollar_hourly_quota.py settle \
+            --ledger quota-ledger/data/provider_request_hourly_ledger.json \
+            --run-id "$RUN_ID" \
+            --report fivedollar_history_batch.json
+          git -C quota-ledger add data/provider_request_hourly_ledger.json
+          git -C quota-ledger commit -m "Settle provider quota for run $RUN_ID"
+          git -C quota-ledger push origin HEAD:ops/fivedollar-request-hourly-ledger
 
       - name: Verify encrypted evidence manifest is present and raw report stays sanitized
         run: |
