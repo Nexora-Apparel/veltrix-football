@@ -7,6 +7,7 @@ Neon, executes bets, publishes predictions or sends Telegram messages.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 import re
@@ -46,7 +47,7 @@ def _verified_digest_registry(value: dict) -> list[str]:
         raise CertificationRunnerError("verified_digest_registry_schema_invalid")
     digests = value.get("verified_source_evidence_sha256")
     receipts = value.get("verified_archive_receipts")
-    if not isinstance(digests, list) or not isinstance(receipts, list) or not receipts:
+    if not isinstance(digests, list) or not digests or not isinstance(receipts, list) or not receipts:
         raise CertificationRunnerError("verified_digest_registry_content_invalid")
     for digest in digests:
         if not isinstance(digest, str) or not re.fullmatch(r"[0-9a-f]{64}", digest):
@@ -121,7 +122,7 @@ def evaluate(*, walk_forward_path: str, odds_ledger_path: str,
         "odds_ledger_observation_count": joined["odds_ledger_observation_count"],
         "benchmark_bookmaker": benchmark_bookmaker,
         "prospective_settled_selection_count": prospective["settled_selection_count"],
-        "verified_digest_registry_sha256": __import__("hashlib").sha256(
+        "verified_digest_registry_sha256": hashlib.sha256(
             json.dumps(verified_registry, sort_keys=True, separators=(",", ":"),
                        ensure_ascii=False, allow_nan=False).encode("utf-8")
         ).hexdigest(),
