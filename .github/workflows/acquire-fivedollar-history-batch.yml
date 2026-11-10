@@ -41,7 +41,7 @@ jobs:
       - name: Check out historical acquisition implementation
         uses: actions/checkout@v4
         with:
-          ref: phase-3/budget-aware-acquisition-contract
+          ref: 64b74f85dc00d3ccb2ef3eb647b6b7d7bea64c0f
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -95,6 +95,27 @@ jobs:
 
       - name: Verify acquisition artifact integrity
         run: python scripts/verify_acquisition_artifact.py fivedollar_history_batch.json
+
+      - name: Verify encrypted evidence manifest is present and raw report stays sanitized
+        run: |
+          test -s fivedollar_source_evidence.enc
+          test -s fivedollar_source_evidence.enc.manifest.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          report = json.loads(Path('fivedollar_history_batch.json').read_text())
+          manifest = json.loads(Path('fivedollar_source_evidence.enc.manifest.json').read_text())
+          forbidden = {'payload', 'raw_payload', 'raw_row', 'source_payload'}
+          def walk(value):
+              if isinstance(value, dict):
+                  assert not (forbidden & value.keys()), 'raw payload field leaked into report'
+                  for child in value.values(): walk(child)
+              elif isinstance(value, list):
+                  for child in value: walk(child)
+          walk(report)
+          assert manifest['report_sha256'] == report['report_sha256']
+          assert manifest['evidence_count'] == len(report['records'])
+          PY
 
       - name: Upload sanitized historical acquisition report
         uses: actions/upload-artifact@v4
