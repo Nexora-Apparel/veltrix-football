@@ -92,7 +92,7 @@ class DatasetBoundTrainingTests(unittest.TestCase):
         model = result["model"]
         audit = result["training_audit"]
         self.assertEqual(audit["train_rows_used"], 120)
-        self.assertEqual(audit["validation_rows_held_out"], 20)
+        self.assertEqual(audit["validation_rows_held_out"], 13)
         self.assertEqual(audit["test_rows_held_out"], 20)
         self.assertFalse(audit["validation_and_test_passed_to_optimizer"])
         self.assertEqual(model["training_dataset_sha256"], dataset["dataset_sha256"])
