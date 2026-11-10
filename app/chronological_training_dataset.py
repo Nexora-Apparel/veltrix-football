@@ -13,6 +13,8 @@ from typing import Any
 from zoneinfo import ZoneInfo
 
 from app.point_in_time_feature_contract import (
+    FEATURE_CATALOGUE,
+    FORBIDDEN_FEATURE_NAMES,
     PointInTimeFeatureError,
     validate_point_in_time_feature_snapshot,
 )
@@ -291,10 +293,40 @@ def validate_chronological_training_dataset(dataset: Any) -> dict:
             date.fromisoformat(policy["test_start_date"]) <= local_day <= date.fromisoformat(policy["test_end_date"])
         ):
             raise ChronologicalDatasetError(f"dataset_test_window_violation:{index}")
-        if not isinstance(row.get("predictors"), dict) or not isinstance(row.get("targets"), dict):
+        if not isinstance(row.get("competition_key"), str) or not row["competition_key"].strip():
+            raise ChronologicalDatasetError(f"dataset_competition_invalid:{index}")
+        snapshot_hash = row.get("feature_snapshot_sha256")
+        if (not isinstance(snapshot_hash, str) or len(snapshot_hash) != 64
+                or any(char not in "0123456789abcdef" for char in snapshot_hash)):
+            raise ChronologicalDatasetError(f"dataset_feature_snapshot_hash_invalid:{index}")
+        predictors, targets = row.get("predictors"), row.get("targets")
+        if not isinstance(predictors, dict) or not predictors or not isinstance(targets, dict):
             raise ChronologicalDatasetError(f"dataset_predictor_target_shape_invalid:{index}")
-        if set(row["targets"]) != {"1x2", "btts", "over_2_5"}:
+        if any(name not in FEATURE_CATALOGUE or name in FORBIDDEN_FEATURE_NAMES
+               or isinstance(value, bool) or not isinstance(value, (int, float))
+               for name, value in predictors.items()):
+            raise ChronologicalDatasetError(f"dataset_predictor_allowlist_invalid:{index}")
+        if set(targets) != {"1x2", "btts", "over_2_5"}:
             raise ChronologicalDatasetError(f"dataset_market_target_scope_invalid:{index}")
+        if (targets["1x2"] not in {"home", "draw", "away"}
+                or targets["btts"] not in {"yes", "no"}
+                or targets["over_2_5"] not in {"yes", "no"}):
+            raise ChronologicalDatasetError(f"dataset_market_target_value_invalid:{index}")
+        provenance = row.get("label_provenance")
+        provenance_keys = {"source", "source_id", "settled_at", "retrieved_at", "payload_sha256"}
+        if not isinstance(provenance, dict) or set(provenance) != provenance_keys:
+            raise ChronologicalDatasetError(f"dataset_label_provenance_invalid:{index}")
+        if any(not isinstance(provenance.get(key), str) or not provenance[key].strip()
+               for key in ("source", "source_id")):
+            raise ChronologicalDatasetError(f"dataset_label_source_invalid:{index}")
+        label_hash = provenance.get("payload_sha256")
+        if (not isinstance(label_hash, str) or len(label_hash) != 64
+                or any(char not in "0123456789abcdef" for char in label_hash)):
+            raise ChronologicalDatasetError(f"dataset_label_hash_invalid:{index}")
+        settled = _time(provenance.get("settled_at"), f"row_{index}_settled_at")
+        retrieved = _time(provenance.get("retrieved_at"), f"row_{index}_label_retrieved_at")
+        if settled <= kickoff or retrieved < settled:
+            raise ChronologicalDatasetError(f"dataset_label_temporal_order_invalid:{index}")
         actual_counts[split] += 1
     if quality.get("included_fixture_count") != len(rows):
         raise ChronologicalDatasetError("dataset_included_count_mismatch")
@@ -302,7 +334,9 @@ def validate_chronological_training_dataset(dataset: Any) -> dict:
         split: actual_counts.get(split, 0) for split in ("train", "validation", "test")
     }:
         raise ChronologicalDatasetError("dataset_split_count_mismatch")
-    if quality.get("chronological_order") is not True or quality.get("fixture_overlap_between_splits") is not False:
+    if (quality.get("chronological_order") is not True
+            or quality.get("fixture_overlap_between_splits") is not False
+            or quality.get("target_labels_separate_from_predictors") is not True):
         raise ChronologicalDatasetError("dataset_split_integrity_invalid")
     readiness = dataset.get("training_readiness")
     if not isinstance(readiness, dict) or readiness.get("ready_for_model_training") is not False:
