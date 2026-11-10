@@ -91,6 +91,7 @@ jobs:
           python -m unittest discover -s tests -p 'test_encrypted_source_evidence.py' -v
           python -m unittest discover -s tests -p 'test_private_evidence_archive.py' -v
           python -m unittest discover -s tests -p 'test_evidence_receipt_signing.py' -v
+          python -m unittest discover -s tests -p 'test_evidence_receipt_trust.py' -v
           python scripts/acquire_fivedollar_history_batch.py --help
           python scripts/restore_encrypted_source_evidence.py --help
 
