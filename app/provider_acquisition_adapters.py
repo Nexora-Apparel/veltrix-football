@@ -263,8 +263,10 @@ def acquire_fivedollar_history_batch(*, client, competition_ids: list[str],
                 # evidence; normalization will reject them without dropping bytes.
                 league = row.get("league") if isinstance(row, dict) else None
                 source_competition = league.get("id") if isinstance(league, dict) else None
-                if (source_competition is None or not str(source_competition).isdigit()
-                        or str(int(source_competition)) != competition_id):
+                if isinstance(row, dict) and (
+                    source_competition is None or not str(source_competition).isdigit()
+                    or str(int(source_competition)) != competition_id
+                ):
                     raise AcquisitionAdapterError("fivedollar_history_competition_scope_mismatch")
                 observations.append({
                     "provider": "fivedollar",
