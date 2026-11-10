@@ -23,12 +23,14 @@ def evidence_fixture(walk_count=1000, prospective_count=300):
                 "fixture_id": f"{market}-wf-{i}",
                 "kickoff_at": f"{day}T12:00:00+01:00",
                 "label_available_at": f"{day}T14:00:00+01:00",
+                "label_source_evidence_sha256": "a" * 64,
                 "target": actual,
                 "probabilities": {
                     outcome: (0.8 if outcome == actual else 0.2 / (len(classes) - 1))
                     for outcome in classes
                 },
                 "bookmaker_odds_at": f"{day}T10:00:00+01:00",
+                "odds_source_evidence_sha256": "b" * 64,
                 "bookmaker_odds_decimal": {outcome: float(len(classes)) for outcome in classes},
             })
         prospective = []
@@ -40,6 +42,8 @@ def evidence_fixture(walk_count=1000, prospective_count=300):
                 "kickoff_at": f"{day}T12:00:00+01:00",
                 "settled_at": f"{day}T14:00:00+01:00",
                 "odds_captured_at": f"{day}T10:00:00+01:00",
+                "settlement_source_evidence_sha256": "c" * 64,
+                "odds_source_evidence_sha256": "d" * 64,
                 "selection": selected,
                 "actual": selected,
                 "odds_decimal": 2.1,
