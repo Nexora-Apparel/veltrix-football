@@ -48,7 +48,7 @@ The receipt is the commit marker. It is written only after all three data object
 4. Upload report, encrypted sidecar, and manifest to the private bucket.
 5. Read back every object and compare byte length and SHA-256.
 6. Write the receipt last, then read it back. A receipt is not emitted before the archive commit marker is verified.
-7. Restore with `scripts/restore_encrypted_source_evidence.py --run-id RUN_ID`. The restore command verifies the receipt inventory, exact object keys, object lengths and digests, report/manifest binding, AES-GCM authentication, and full accepted/quarantined input coverage before writing local files.
+7. Restore with `scripts/restore_encrypted_source_evidence.py --run-id RUN_ID`. The restore command verifies the receipt inventory, exact object keys, object lengths and digests, report/manifest binding, AES-GCM authentication, and full accepted/quarantined input coverage before publishing any local output. It stages all three verified files in a temporary sibling directory and publishes the complete restore with a same-filesystem directory rename; an existing destination is rejected rather than merged or overwritten.
 
 The archive and restore scripts are covered by secret-free fake-object-storage tests. Those tests do not substitute for a real provider provisioning and restore test.
 
