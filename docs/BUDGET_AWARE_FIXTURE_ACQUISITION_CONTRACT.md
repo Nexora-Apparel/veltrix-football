@@ -268,3 +268,10 @@ Target/result fields (scores, match result, BTTS/Over 2.5 outcomes and post-matc
 ## 10. Persistent rolling-hour quota ledger
 
 `app/provider_hourly_quota_ledger.py` and `scripts/manage_fivedollar_hourly_quota.py` enforce the provider's 60-request rolling-hour allowance across workflow runs. The workflow reserves its maximum request ceiling and commits the reservation to a dedicated operational branch before making API calls. The workflow's concurrency group prevents simultaneous runs from racing the ledger. Once the report passes the historical artifact validator, the workflow settles the reservation to the report's actual request count. If a run fails after reservation or cannot safely settle, the full ceiling remains charged for one hour. The workflow must have `contents:write` solely to update this ledger branch; it does not write to Neon or canonical football data. A corrupted, missing, future-dated, duplicate, or policy-mismatched ledger fails closed.
+
+
+## 11. Chronological labelled-dataset assembly
+
+`app/chronological_training_dataset.py` joins one validated point-in-time feature snapshot to one separately sourced settled result using exact fixture IDs. It rejects duplicate or unmatched joins, invalid score labels, result retrieval before settlement, and any prediction cutoff at or after kickoff. It derives separate 1X2, BTTS, and Over 2.5 targets from settled scores.
+
+The dataset partition policy is date-based in Africa/Lagos time, with strictly chronological train, validation and test windows and an explicit embargo gap between each. Rows in embargo/out-of-window dates are excluded. The output binds feature snapshot hashes and label provenance, reports class counts per market and split, and hashes the dataset manifest. The validator independently checks the date windows, chronology, target scope, counts, and zero-side-effect boundary. It always leaves `ready_for_model_training=false`; actual training requires the source and sample-size certification gates to pass.
