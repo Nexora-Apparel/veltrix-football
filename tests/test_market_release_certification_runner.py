@@ -97,12 +97,20 @@ class MarketReleaseCertificationRunnerTests(unittest.TestCase):
             "schema": "veltrix-evidence-archive-receipt-v2",
             "schema_version": 1,
             "verified_source_evidence_sha256": ["a" * 64, "b" * 64, "c" * 64],
-            "verified_archive_receipts": [{
-                "archive_receipt_signature_verified": True,
-                "receipt_sha256": "d" * 64,
-                "receipt_signing_key_arn": TEST_KEY_ARN,
-                "run_id": "restore-run-1",
-            }],
+            "verified_archive_receipts": [
+                {
+                    "archive_receipt_signature_verified": True,
+                    "receipt_sha256": "d" * 64,
+                    "receipt_signing_key_arn": TEST_KEY_ARN,
+                    "run_id": "restore-run-1",
+                },
+                {
+                    "archive_receipt_signature_verified": True,
+                    "receipt_sha256": "e" * 64,
+                    "receipt_signing_key_arn": "arn:aws:kms:us-west-2:123456789012:key/retired-key",
+                    "run_id": "restore-run-legacy",
+                },
+            ],
         }
         registry = sign_receipt(
             kms_client=FakeKMS(), key_arn=TEST_KEY_ARN, receipt=registry,
