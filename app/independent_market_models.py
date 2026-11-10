@@ -297,6 +297,39 @@ def fit_independent_market_models(*, training_rows: list[dict],
     return model
 
 
+def bind_model_to_dataset(model: dict, *, dataset_sha256: str,
+                            split_manifest: dict) -> dict:
+    """Seal a fitted model to its exact chronological dataset and split manifest."""
+    if not isinstance(model, dict) or model.get("model_family") != MODEL_FAMILY:
+        raise ResultsModelError("model_family_invalid")
+    if not isinstance(dataset_sha256, str) or len(dataset_sha256) != 64:
+        raise ResultsModelError("training_dataset_digest_invalid")
+    if any(char not in "0123456789abcdef" for char in dataset_sha256):
+        raise ResultsModelError("training_dataset_digest_invalid")
+    if not isinstance(split_manifest, dict) or set(split_manifest) != {
+        "train", "validation", "test"
+    }:
+        raise ResultsModelError("training_split_manifest_invalid")
+    for split, value in split_manifest.items():
+        if (not isinstance(value, dict)
+                or set(value) != {"row_count", "fixture_ids_sha256"}
+                or isinstance(value["row_count"], bool)
+                or not isinstance(value["row_count"], int)
+                or value["row_count"] < 0
+                or not isinstance(value["fixture_ids_sha256"], str)
+                or len(value["fixture_ids_sha256"]) != 64
+                or any(char not in "0123456789abcdef"
+                       for char in value["fixture_ids_sha256"])):
+            raise ResultsModelError(f"training_split_manifest_invalid:{split}")
+    sealed = dict(model)
+    sealed["training_dataset_sha256"] = dataset_sha256
+    sealed["training_split_manifest"] = split_manifest
+    sealed["model_sha256"] = _canonical_hash({
+        key: value for key, value in sealed.items() if key != "model_sha256"
+    })
+    return sealed
+
+
 def predict_independent_markets(*, model: dict, features: dict,
                                 prediction_as_of: str) -> dict:
     """Infer three independently fitted markets; output remains non-publishable."""
