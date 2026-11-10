@@ -147,6 +147,15 @@ def build_point_in_time_feature_snapshot(*, fixture_id: str,
 def validate_point_in_time_feature_snapshot(snapshot: Any) -> dict:
     if not isinstance(snapshot, dict) or snapshot.get("schema_version") != 1:
         raise PointInTimeFeatureError("snapshot_schema_invalid")
+    expected_snapshot_keys = {
+        "schema_version", "snapshot_type", "fixture_id", "prediction_as_of",
+        "feature_count", "features", "target_label_separate",
+        "model_training_certified", "snapshot_sha256",
+    }
+    if set(snapshot) != expected_snapshot_keys:
+        raise PointInTimeFeatureError("snapshot_shape_invalid")
+    if not isinstance(snapshot.get("fixture_id"), str) or not snapshot["fixture_id"].strip():
+        raise PointInTimeFeatureError("snapshot_fixture_id_invalid")
     if snapshot.get("snapshot_type") != "veltrix_point_in_time_pre_match_features":
         raise PointInTimeFeatureError("snapshot_type_invalid")
     supplied = snapshot.get("snapshot_sha256")
@@ -158,7 +167,9 @@ def validate_point_in_time_feature_snapshot(snapshot: Any) -> dict:
         raise PointInTimeFeatureError("snapshot_hash_mismatch")
     cutoff = _parse_time(snapshot.get("prediction_as_of"), "prediction_as_of")
     features = snapshot.get("features")
-    if not isinstance(features, list) or snapshot.get("feature_count") != len(features):
+    if (not isinstance(features, list) or isinstance(snapshot.get("feature_count"), bool)
+            or not isinstance(snapshot.get("feature_count"), int)
+            or snapshot.get("feature_count") != len(features)):
         raise PointInTimeFeatureError("snapshot_feature_count_mismatch")
     if snapshot.get("target_label_separate") is not True or snapshot.get("model_training_certified") is not False:
         raise PointInTimeFeatureError("snapshot_certification_boundary_invalid")
@@ -166,8 +177,14 @@ def validate_point_in_time_feature_snapshot(snapshot: Any) -> dict:
     for index, feature in enumerate(features):
         if not isinstance(feature, dict):
             raise PointInTimeFeatureError(f"snapshot_feature_invalid:{index}")
+        expected_feature_keys = {
+            "name", "value", "source", "source_id", "observed_at",
+            "available_at", "retrieved_at", "payload_sha256",
+        }
+        if set(feature) != expected_feature_keys:
+            raise PointInTimeFeatureError(f"snapshot_feature_shape_invalid:{index}")
         name = feature.get("name")
-        if name not in FEATURE_CATALOGUE or name in FORBIDDEN_FEATURE_NAMES:
+        if not isinstance(name, str) or name not in FEATURE_CATALOGUE or name in FORBIDDEN_FEATURE_NAMES:
             raise PointInTimeFeatureError(f"snapshot_feature_not_allowed:{index}")
         value = feature.get("value")
         if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value):
