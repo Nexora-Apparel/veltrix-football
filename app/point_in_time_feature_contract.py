@@ -169,11 +169,26 @@ def validate_point_in_time_feature_snapshot(snapshot: Any) -> dict:
         name = feature.get("name")
         if name not in FEATURE_CATALOGUE or name in FORBIDDEN_FEATURE_NAMES:
             raise PointInTimeFeatureError(f"snapshot_feature_not_allowed:{index}")
-        if isinstance(feature.get("value"), bool) or not isinstance(feature.get("value"), (int, float)) or not math.isfinite(feature["value"]):
+        value = feature.get("value")
+        if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value):
             raise PointInTimeFeatureError(f"snapshot_feature_value_invalid:{index}")
-        for field in ("observed_at", "available_at", "retrieved_at"):
-            if _parse_time(feature.get(field), f"feature_{field}") > cutoff:
-                raise PointInTimeFeatureError(f"snapshot_future_timestamp:{index}:{field}")
+        if not isinstance(feature.get("source"), str) or not feature["source"].strip():
+            raise PointInTimeFeatureError(f"snapshot_feature_source_invalid:{index}")
+        if not isinstance(feature.get("source_id"), str) or not feature["source_id"].strip():
+            raise PointInTimeFeatureError(f"snapshot_feature_source_id_invalid:{index}")
+        payload_hash = feature.get("payload_sha256")
+        if (not isinstance(payload_hash, str) or len(payload_hash) != 64
+                or any(char not in HEX for char in payload_hash)):
+            raise PointInTimeFeatureError(f"snapshot_feature_payload_hash_invalid:{index}")
+        observed = _parse_time(feature.get("observed_at"), f"feature_{name}_observed_at")
+        available = _parse_time(feature.get("available_at"), f"feature_{name}_available_at")
+        retrieved = _parse_time(feature.get("retrieved_at"), f"feature_{name}_retrieved_at")
+        if observed > cutoff or available > cutoff or retrieved > cutoff:
+            raise PointInTimeFeatureError(f"snapshot_future_timestamp:{index}")
+        if available < observed or retrieved < available:
+            raise PointInTimeFeatureError(f"snapshot_provenance_time_order_invalid:{index}")
+        if (cutoff - observed).total_seconds() > FEATURE_CATALOGUE[name]["max_age_seconds"]:
+            raise PointInTimeFeatureError(f"snapshot_feature_stale:{index}")
         names.append(name)
     if names != sorted(names) or len(names) != len(set(names)):
         raise PointInTimeFeatureError("snapshot_feature_order_or_uniqueness_invalid")
