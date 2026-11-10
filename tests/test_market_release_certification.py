@@ -22,6 +22,7 @@ def evidence_fixture(walk_count=1000, prospective_count=300):
             walk.append({
                 "fixture_id": f"{market}-wf-{i}",
                 "kickoff_at": f"{day}T12:00:00+01:00",
+                "label_available_at": f"{day}T14:00:00+01:00",
                 "target": actual,
                 "probabilities": {
                     outcome: (0.8 if outcome == actual else 0.2 / (len(classes) - 1))
@@ -77,6 +78,14 @@ class MarketReleaseCertificationTests(unittest.TestCase):
         self.assertFalse(report["publication_authorized"])
         self.assertFalse(report["markets"]["btts"]["checks"]["walk_forward_fixtures"])
         self.assertFalse(report["markets"]["over_2_5"]["checks"]["prospective_selections"])
+
+    def test_rejects_walk_forward_label_not_yet_available_at_evaluation(self):
+        evidence = evidence_fixture()
+        evidence["1x2"]["walk_forward"][0]["label_available_at"] = "2026-11-11T14:00:00Z"
+        with self.assertRaisesRegex(CertificationError, "after_evaluation"):
+            evaluate_market_release_certification(
+                evidence=evidence, evaluated_at="2026-11-10T20:00:00Z",
+            )
 
     def test_rejects_odds_captured_after_kickoff(self):
         evidence = evidence_fixture()
