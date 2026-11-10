@@ -101,7 +101,7 @@ def _market_prices(market: dict, event: dict, canonical: dict) -> tuple[str, dic
 
 
 def adapt_the_odds_api_event(*, event_payload: dict, crosswalk: dict,
-                             retrieved_at: str,
+                             retrieved_at: str, source_payload_sha256: str,
                              max_quote_age_seconds: int = 86400) -> dict:
     """Convert a single event response into point-in-time odds observations.
 
@@ -145,6 +145,9 @@ def adapt_the_odds_api_event(*, event_payload: dict, crosswalk: dict,
         raise OddsProviderAdapterError("event_retrieved_after_kickoff")
 
     raw_digest = _digest(event_payload)
+    if (not isinstance(source_payload_sha256, str) or len(source_payload_sha256) != 64
+            or any(ch not in "0123456789abcdef" for ch in source_payload_sha256)):
+        raise OddsProviderAdapterError("source_payload_sha256_invalid")
     bookmakers = event_payload.get("bookmakers")
     if not isinstance(bookmakers, list):
         raise OddsProviderAdapterError("event_bookmakers_invalid")
@@ -194,7 +197,7 @@ def adapt_the_odds_api_event(*, event_payload: dict, crosswalk: dict,
                     kickoff_at=kickoff.isoformat(),
                     decimal_odds=prices,
                     raw_payload=event_payload,
-                    source_payload_sha256=raw_digest,
+                    source_payload_sha256=source_payload_sha256,
                     crosswalk_evidence_sha256=crosswalk_digest,
                 )
             except BookmakerOddsEvidenceError as exc:
@@ -214,6 +217,7 @@ def adapt_the_odds_api_event(*, event_payload: dict, crosswalk: dict,
         "rejected_count": len(rejected),
         "rejected": rejected,
         "raw_event_payload_sha256": raw_digest,
+        "source_payload_sha256": source_payload_sha256,
         "crosswalk_evidence_sha256": crosswalk_digest,
         "provider_requests_made": 0,
         "database_writes": 0,
