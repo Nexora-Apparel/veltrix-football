@@ -25,6 +25,7 @@ def main() -> int:
     parser.add_argument("--max-pages-per-competition", type=int, default=3)
     parser.add_argument("--registry", default="data/provider_qualification_registry.json")
     parser.add_argument("--output", default="fivedollar_history_batch.json")
+    parser.add_argument("--encrypted-evidence-output", default="fivedollar_source_evidence.enc")
     args = parser.parse_args()
 
     from app.daily_fixture_selection_artifact import qualified_sources_from_registry
@@ -52,6 +53,9 @@ def main() -> int:
             raise ValueError("signed_fivedollar_registry_scope_mismatch")
         if not os.getenv("VELTRIX_QUALIFICATION_ATTESTATION_KEY"):
             raise ValueError("qualification_attestation_key_missing")
+        evidence_key = os.getenv("VELTRIX_RAW_EVIDENCE_ENCRYPTION_KEY")
+        if not evidence_key:
+            raise ValueError("raw_evidence_encryption_key_missing")
         client = FiveDollarFootballClient()
         if not client.api_key:
             print("ACQUISITION_RESULT: BLOCKED_MISSING_SECRET (FIVEDOLLARFOOTBALL_API_KEY)")
@@ -67,6 +71,8 @@ def main() -> int:
             max_requests=args.max_requests,
             max_pages_per_competition=args.max_pages_per_competition,
             retrieved_at=retrieved.isoformat().replace("+00:00", "Z"),
+            evidence_encryption_key=evidence_key,
+            evidence_output_path=args.encrypted_evidence_output,
         )
         integrity = validate_fivedollar_history_batch_report(result["report"])
         if not integrity["valid"] or not result["acceptance_pass"]:
@@ -89,6 +95,9 @@ def main() -> int:
         print(f"ARTIFACT_INTEGRITY: PASS")
         print(f"REPORT_FILE: {output}")
         print(f"REPORT_SHA256: {result['report']['report_sha256']}")
+        print(f"ENCRYPTED_EVIDENCE: {result['encrypted_evidence']['path']}")
+        print(f"EVIDENCE_MANIFEST: {result['encrypted_evidence']['manifest_path']}")
+        print(f"EVIDENCE_SHA256: {result['encrypted_evidence']['ciphertext_sha256']}")
         return 0
     except (RuntimeError, ValueError, OSError, KeyError, TypeError) as exc:
         print(f"ACQUISITION_RESULT: REVIEW_REQUIRED ({type(exc).__name__}: {str(exc)[:160]})")
