@@ -51,6 +51,7 @@ class OfflineOddsEvidenceIngestTests(unittest.TestCase):
             event_path=str(self.event_path),
             crosswalk_path=str(self.crosswalk_path),
             retrieved_at="2026-11-10T11:00:00Z",
+            source_payload_sha256="a" * 64,
             ledger_path=str(self.ledger_path),
         )
 
