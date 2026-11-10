@@ -10,6 +10,11 @@ from __future__ import annotations
 import hashlib
 import json
 import math
+
+from app.source_payload_provenance import (
+    SourcePayloadProvenanceError,
+    validate_source_payload_evidence,
+)
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
@@ -47,6 +52,7 @@ def _validate_match(row: Any, index: int) -> dict:
         "fixture_id", "provider", "source_id", "competition_id", "kickoff_at",
         "settled_at", "home_team_id", "away_team_id", "home_score", "away_score",
         "endpoint", "retrieved_at", "payload_sha256", "run_id", "normalized_status",
+        "source_payload",
     }
     if not isinstance(row, dict) or set(row) != required:
         raise FeatureReconstructionError(f"match_shape_invalid:{index}")
@@ -69,9 +75,33 @@ def _validate_match(row: Any, index: int) -> dict:
         value = row[field]
         if isinstance(value, bool) or not isinstance(value, int) or value < 0:
             raise FeatureReconstructionError(f"score_invalid:{row['fixture_id']}:{field}")
+    evidence = row["source_payload"]
+    try:
+        evidence_integrity = validate_source_payload_evidence(evidence)
+    except SourcePayloadProvenanceError as exc:
+        raise FeatureReconstructionError(
+            f"source_payload_evidence_invalid:{row['fixture_id']}:{exc}"
+        ) from None
+    normalized_record = {
+        key: row[key] for key in (
+            "fixture_id", "competition_id", "kickoff_at", "settled_at",
+            "home_team_id", "away_team_id", "home_score", "away_score",
+            "normalized_status",
+        )
+    }
+    if evidence["normalized_record"] != normalized_record:
+        raise FeatureReconstructionError(
+            f"normalized_record_payload_binding_mismatch:{row['fixture_id']}"
+        )
+    if any(evidence_integrity[key] != row[key] for key in (
+        "provider", "source_id", "endpoint", "run_id", "retrieved_at",
+        "payload_sha256",
+    )):
+        raise FeatureReconstructionError(
+            f"source_payload_metadata_binding_mismatch:{row['fixture_id']}"
+        )
     digest = row["payload_sha256"]
-    if (not isinstance(digest, str) or len(digest) != 64
-            or any(char not in "0123456789abcdef" for char in digest)):
+    if digest != evidence_integrity["payload_sha256"]:
         raise FeatureReconstructionError(f"source_hash_invalid:{row['fixture_id']}")
     return {
         **row,
