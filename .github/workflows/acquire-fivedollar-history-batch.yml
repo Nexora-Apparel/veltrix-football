@@ -55,6 +55,7 @@ jobs:
           MAX_REQUESTS: ${{ inputs.max_requests }}
           MAX_PAGES: ${{ inputs.max_pages_per_competition }}
         run: |
+          python -m pip install "cryptography>=42.0.0,<47.0.0"
           python - <<'PY'
           import os
           from datetime import date
