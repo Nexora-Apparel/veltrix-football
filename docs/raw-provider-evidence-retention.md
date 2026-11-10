@@ -16,7 +16,7 @@ GitHub Actions artifacts are a short-lived traceability layer, not the canonical
 
 The acquisition workflow must run only from the repository default branch (`main`). GitHub allows `workflow_dispatch` to target a selected branch; a branch-level dispatch guard is therefore required so an unreviewed feature branch cannot execute a workflow with provider, encryption, or archive credentials. The acquisition implementation itself is checked out by immutable commit SHA. Do not remove the default-branch guard or replace the pinned implementation with an unreviewed branch reference.
 
-The job also targets the protected GitHub Environment `historical-acquisition`. Before merging or dispatching, configure that environment with required reviewer approval and deployment-branch restrictions allowing only `main`. Store the acquisition-only secrets in that environment under these exact names: `VELTRIX_HISTORICAL_FIVEDOLLAR_API_KEY`, `VELTRIX_HISTORICAL_QUALIFICATION_ATTESTATION_KEY`, `VELTRIX_HISTORICAL_RAW_EVIDENCE_ENCRYPTION_KEY`, `VELTRIX_HISTORICAL_ARCHIVE_ENDPOINT_URL`, `VELTRIX_HISTORICAL_ARCHIVE_BUCKET`, `VELTRIX_HISTORICAL_ARCHIVE_ACCESS_KEY_ID`, and `VELTRIX_HISTORICAL_ARCHIVE_SECRET_ACCESS_KEY`. The workflow maps those environment secrets to the runtime variable names expected by the scripts. Do not copy these credentials into repository-level secrets.
+The job also targets the protected GitHub Environment `historical-acquisition`. Before merging or dispatching, configure that environment with required reviewer approval and deployment-branch restrictions allowing only `main`. Store the acquisition-only secrets in that environment under these exact names: `VELTRIX_HISTORICAL_FIVEDOLLAR_API_KEY`, `VELTRIX_HISTORICAL_QUALIFICATION_ATTESTATION_KEY`, `VELTRIX_HISTORICAL_RAW_EVIDENCE_ENCRYPTION_KEY`, `VELTRIX_HISTORICAL_ARCHIVE_ENDPOINT_URL`, `VELTRIX_HISTORICAL_ARCHIVE_BUCKET`, `VELTRIX_HISTORICAL_ARCHIVE_ACCESS_KEY_ID`, and `VELTRIX_HISTORICAL_ARCHIVE_SECRET_ACCESS_KEY`. The workflow maps those environment secrets to the runtime variable names expected by the scripts. Do not copy these credentials into repository-level secrets. The receipt-signing KMS key ARN, KMS region and KMS role ARN are non-secret GitHub Environment variables: `VELTRIX_EVIDENCE_RECEIPT_KMS_KEY_ARN`, `VELTRIX_EVIDENCE_RECEIPT_KMS_REGION`, and `VELTRIX_EVIDENCE_RECEIPT_KMS_ROLE_ARN`.
 
 ## Canonical private archive
 
@@ -30,7 +30,7 @@ Use a private S3-compatible bucket with:
 - Access limited to the acquisition workflow identity and designated evidence-review identity.
 - No raw provider payload in logs, Git commits, PR diffs, public reports, Telegram, or website responses.
 
-For run ID `{run_id}` under prefix `veltrix-football/evidence/v1`, the archive writes:
+For run ID `{run_id}` under prefix `veltrix-football/evidence/v2`, the archive writes:
 - `reports/{run_id}.json`
 - `encrypted/{run_id}.enc`
 - `manifests/{run_id}.json`
@@ -38,7 +38,7 @@ For run ID `{run_id}` under prefix `veltrix-football/evidence/v1`, the archive w
 
 The receipt is the commit marker. It is written only after all three data objects have been uploaded and read back with matching SHA-256 digests. Retries may reuse existing objects only when the downloaded bytes match the expected digest; conflicting objects fail closed.
 
-**Receipt trust limitation:** the receipt is not independently digitally signed in this version. Its `readback_verified` assertion is trusted only because the archive writer runs under the protected `historical-acquisition` environment and the bucket write identity is tightly scoped. SHA-256 checks detect object-byte changes, and AES-256-GCM authenticates encrypted evidence, but those controls do not independently establish the identity of the actor who wrote the receipt. Do not describe this as non-repudiable chain-of-custody. If that assurance is required, add a separately governed signing identity (for example, a KMS-backed signature) and verify it during restore.
+**Receipt authenticity:** receipts use schema `veltrix-evidence-archive-receipt-v2`. The canonical receipt payload (all receipt fields except the signature envelope) is SHA-256 hashed and signed with AWS KMS `ECDSA_SHA_256` using an asymmetric `ECC_NIST_P256` key configured for `SIGN_VERIFY`. The signature envelope records the algorithm, digest message type, exact KMS key ARN and base64 signature. Restore verifies the signature with the trusted key ARN configured out-of-band before it trusts the receipt inventory or downloads archive objects. A v1 unsigned receipt is rejected by the v2 restore path; no silent downgrade is allowed. The signing key is independent of the AES-256-GCM encryption key. The workflow obtains short-lived KMS credentials through GitHub OIDC using a role whose trust policy is restricted to this repository's `historical-acquisition` environment. Grant that role only `kms:Sign` and `kms:Verify` on the exact receipt key. Do not grant it KMS key administration, S3 access or unrelated AWS permissions. This establishes receipt authenticity relative to the configured KMS trust anchor, but does not prove a human authorized the acquisition or provide a non-repudiable identity for the workflow operator.
 
 ## Upload and restore protocol
 
@@ -48,14 +48,14 @@ The receipt is the commit marker. It is written only after all three data object
 4. Upload report, encrypted sidecar, and manifest to the private bucket.
 5. Read back every object and compare byte length and SHA-256.
 6. Write the receipt last, then read it back. A receipt is not emitted before the archive commit marker is verified.
-7. Restore with `scripts/restore_encrypted_source_evidence.py --run-id RUN_ID`. The restore command verifies the receipt inventory, exact object keys, object lengths and digests, report/manifest binding, AES-GCM authentication, and full accepted/quarantined input coverage before publishing any local output. It stages all three verified files in a temporary sibling directory and publishes the complete restore with a same-filesystem directory rename; an existing destination is rejected rather than merged or overwritten.
+7. Restore with `scripts/restore_encrypted_source_evidence.py --run-id RUN_ID`. The restore command first verifies the v2 receipt signature against the configured trusted KMS key ARN. Only then does it verify the receipt inventory, exact object keys, object lengths and digests, report/manifest binding, AES-GCM authentication, and full accepted/quarantined input coverage before publishing any local output. It stages all three verified files in a temporary sibling directory and publishes the complete restore with a same-filesystem directory rename; an existing destination is rejected rather than merged or overwritten.
 
-The archive and restore scripts are covered by secret-free fake-object-storage tests. Those tests do not substitute for a real provider provisioning and restore test.
+The archive and restore scripts are covered by secret-free fake-object-storage and fake-KMS tests. Those tests validate the signing contract and tamper rejection but do not substitute for a real KMS key, IAM/OIDC trust policy, private bucket, or provider provisioning and restore test.
 
 ## Key management
 
-Required repository secret:
-`VELTRIX_RAW_EVIDENCE_ENCRYPTION_KEY`
+Required GitHub Environment secret:
+`VELTRIX_HISTORICAL_RAW_EVIDENCE_ENCRYPTION_KEY` (mapped to `VELTRIX_RAW_EVIDENCE_ENCRYPTION_KEY` at runtime).
 
 Generate a fresh 32-byte key and base64-encode it locally:
 ```sh
@@ -64,13 +64,17 @@ python -c "import base64,secrets; print(base64.b64encode(secrets.token_bytes(32)
 
 Add the output as a GitHub Actions secret. Never commit it, paste it into chat, include it in logs, or reuse provider/API/signing credentials. Keep a separately controlled recovery copy in an approved password manager or secrets vault. If the key is lost, encrypted evidence is unrecoverable.
 
-Key rotation must be versioned. New evidence uses a new key; old keys remain available only to the restricted decryption identity for the required retention period. Re-encryption, if required, must preserve original ciphertext digest and record a new derivative object with an auditable parent reference. Do not overwrite evidence objects.
+Receipt signing key: create a dedicated asymmetric KMS key with key spec `ECC_NIST_P256` and key usage `SIGN_VERIFY`. Record its exact key ARN and region in the three GitHub Environment variables listed above. Configure the KMS role trust policy for GitHub's OIDC provider with audience `sts.amazonaws.com` and subject `repo:Nexora-Apparel/veltrix-football:environment:historical-acquisition`. Restrict its permissions to `kms:Sign` and `kms:Verify` on that exact key. The acquisition workflow pins `aws-actions/configure-aws-credentials` to a full commit SHA and requests only the OIDC token needed to assume this role. Restore operators must independently obtain a role/session authorized for `kms:Verify` and configure the same trusted key ARN; never accept a key ARN supplied only by the untrusted receipt.
+
+Key rotation must be versioned. New evidence uses a new encryption key; old keys remain available only to the restricted decryption identity for the required retention period. Receipt signing key rotation must similarly retain old public verification capability/key access for retained receipts, or record a controlled key-rotation trust registry. Do not silently replace the trusted key ARN or re-sign old receipts. Re-encryption, if required, must preserve original ciphertext digest and record a new derivative object with an auditable parent reference. Do not overwrite evidence objects.
 
 ## Release gates
 
-- [ ] Repository encryption key and archive credentials are configured and tested using synthetic data only.
+- [ ] Environment encryption key and archive credentials are configured and tested using synthetic data only.
+- [ ] Dedicated KMS `ECC_NIST_P256` signing key and restricted OIDC role are provisioned; key policy and OIDC trust subject are independently verified.
 - [ ] Private object storage is provisioned with public access blocked.
 - [ ] Workflow upload identity is scoped to the target bucket/prefix only.
+- [ ] KMS role is scoped to `kms:Sign` and `kms:Verify` on the exact receipt-signing key only.
 - [ ] Bucket versioning, server-side encryption, retention, and recovery access are verified.
 - [ ] A real upload/read-back/restore/decrypt test succeeds from canonical storage, not from a GitHub artifact.
 - [ ] Retention duration and deletion procedure are approved.
