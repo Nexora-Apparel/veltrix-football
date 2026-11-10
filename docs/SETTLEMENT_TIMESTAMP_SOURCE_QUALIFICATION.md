@@ -21,9 +21,9 @@ The adapter requires a source contract with:
 - an explicit list of supported competition IDs.
 
 The contract is a consumer of a separately verified qualification registry.
-The adapter does not itself authenticate a registry signature. Callers must
-verify the registry and bind its admitted contract before calling this module.
-A digest provides integrity, not proof of source authenticity or truth.
+The acquisition dataset bridge now verifies the registry signature and
+resolves the exact source contract before admitting evidence. A digest provides
+integrity, not proof of source authenticity or factual truth.
 
 ## Evidence contract
 
@@ -51,12 +51,12 @@ still evidence, not automatic dataset admission.
 
 ## Current limitation
 
-No timestamp source has been qualified or integrated into the existing
-provider dataset bridge. The new module is a fail-closed adapter and synthetic
-contract tests only. Existing 5Dollar and StrikerAPI records remain ineligible
-for training labels until a real source is qualified and its evidence is
-integrated and independently verified. No model training, production import,
-prediction publication or Telegram delivery is enabled by this component.
+No real timestamp source has been qualified. The adapter, signed registry and
+provider dataset bridge integration currently have synthetic contract tests
+only. Existing 5Dollar and StrikerAPI records remain ineligible for training
+labels until a real source is qualified, its evidence is integrated, and
+historical feature availability is independently proven. No model training,
+production import, prediction publication or Telegram delivery is enabled.
 
 ## Acquisition bridge integration — 2026-11-10
 
@@ -73,14 +73,15 @@ payload/evidence tampering, and provider result retrieval earlier than the
 external settlement timestamp. It carries the qualification digest and
 settlement-evidence digest into the acquisition source manifest.
 
-This integration does **not** qualify a provider, verify a qualification
-registry signature, or prove historical result availability at a past
-prediction cutoff. The caller must resolve the source contract from an
-independently verified qualification registry and provide an audited
-cross-provider fixture mapping. The existing point-in-time feature builder
-continues to require source retrieval/availability before each historical
-feature cutoff. Retrospectively downloading a finished match today does not
-make it eligible for a historical backtest.
+This integration does **not** qualify a provider or prove historical result
+availability at a past prediction cutoff. The bridge now verifies the signed
+qualification registry against a runtime KMS-client allowlist built from
+out-of-band ARN-to-region configuration. It also requires an audited
+cross-provider fixture mapping bound to the acquired provider record. The
+existing point-in-time feature builder continues to require source
+retrieval/availability before each historical feature cutoff. Retrospectively
+downloading a finished match today does not make it eligible for a historical
+backtest.
 
 The bridge remains offline and side-effect-free. No external timestamp source
 has been qualified, no archive has been acquired, and no model training or
