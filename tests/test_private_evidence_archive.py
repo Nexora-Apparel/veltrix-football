@@ -217,7 +217,11 @@ class PrivateEvidenceArchiveTests(unittest.TestCase):
             "valid": True, "report_sha256": "a" * 64,
             "accepted_count": 1, "quarantined_count": 0, "input_count": 1,
         }
-        decrypt.return_value = [{"kind": "accepted", "input_index": 0}]
+        decrypt.return_value = [{
+            "kind": "accepted", "input_index": 0,
+            "payload_sha256": "a" * 64,
+            "normalized_record_sha256": "b" * 64,
+        }]
         client = FakeS3()
         archive_evidence(
             client=client, kms_client=FakeKMS(), signing_key_arn=TEST_SIGNING_KEY_ARN, bucket="private-bucket", prefix="veltrix",
@@ -230,7 +234,12 @@ class PrivateEvidenceArchiveTests(unittest.TestCase):
             encryption_key="test-key", output_dir=self.root / "restored",
         )
         self.assertTrue(result["valid"])
+        self.assertTrue(result["archive_receipt_signature_verified"])
+        self.assertEqual(result["receipt_signing_key_arn"], TEST_SIGNING_KEY_ARN)
         self.assertEqual(result["evidence_count"], 1)
+        self.assertEqual(
+            result["verified_source_evidence_sha256"], ["a" * 64, "b" * 64]
+        )
         self.assertTrue(Path(result["paths"]["report"]).is_file())
         decrypt.assert_called_once()
 
