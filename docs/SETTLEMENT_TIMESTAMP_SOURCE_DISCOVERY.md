@@ -9,6 +9,29 @@ Find a source that supplies an independently auditable, timezone-aware wall-cloc
 
 ## Candidate assessment
 
+### Genius Sports Warehouse football stream — promising candidate; not yet qualified
+
+The official Genius Sports developer documentation for the Warehouse football read stream defines a `summary` message that is usually sent once at the end of the match. Its `timeEndActual` field is explicitly described as the actual end date/time of the match in UTC, formatted as `YYYY-MM-DD HH:MM:SS`. The documentation includes a concrete timestamp example.
+
+Official references:
+- https://developer.geniussports.com/warehouse/livestream/read/index_football.html
+- https://developer.geniussports.com/livestats/tvfeed/index_football.html
+
+Positive evidence:
+- The field is explicitly named `timeEndActual`, not `updated_at`, `last_processed_at`, or a retrieval timestamp.
+- The official schema describes it as the match's actual end date/time and explicitly specifies UTC.
+- The `summary` message is described as normally being sent once at the end of the match.
+- The read-stream schema also exposes match status and event/action data that could support consistency checks.
+
+Unresolved qualification requirements:
+1. The reviewed documentation does not state whether `timeEndActual` is immutable, whether it can be revised, or how corrections are represented.
+2. It does not explicitly define the timestamp as the referee's final-whistle instant in all competition formats. The provider must confirm whether it means the end of play, the end of the data-capture session, or another operational end marker.
+3. The documented read API is a long-running live stream expected to be connected before kickoff and maintained during the match. Historical replay, archive retrieval, and bulk backfill access are not established by these documents.
+4. Competition/season coverage, fixture identity guarantees, raw-response retention rights, and commercial storage/reuse rights remain unverified.
+5. Abandoned, suspended, replayed, awarded, extra-time and penalty-shootout handling needs an explicit provider contract.
+
+**Decision:** Retain as the strongest newly identified candidate, but do not admit it to the signed settlement-source qualification registry yet. No provider account, API access, coverage, historical archive, or rights have been verified. Do not spend credits or acquire data until the unresolved semantics, access model, coverage and terms are confirmed in writing.
+
 ### Sportradar Soccer API — not qualified for settlement time
 
 Official documentation identifies a `match_ended` timeline event type. However, the documented Soccer Sport Event Timeline `event.time` field is explicitly the UTC time when the event record was created or most recently updated in Sportradar's system. It is not the time the event occurred on the pitch; it can lag by minutes or hours and is overwritten when the event is updated.
@@ -80,4 +103,4 @@ This is a deliberate fail-closed data-quality boundary. No timestamp is fabricat
 
 ## Next action
 
-Continue discovery against official competition match centres and specialist event-data providers. Require a documented immutable `occurred_at`/final-whistle timestamp before spending credits or acquiring a large historical archive. If no suitable source exists within the project's provider budget, revise the training-label temporal contract through a separately reviewed design decision rather than silently weakening it.
+Obtain written clarification from Genius Sports on the meaning, correction/immutability behavior, historical replay access, competition coverage, and data-use rights for `timeEndActual`. If those conditions cannot be satisfied, continue discovery against official competition match centres and specialist event-data providers. If no suitable source exists within the project's provider budget, revise the training-label temporal contract through a separately reviewed design decision rather than silently weakening it.
