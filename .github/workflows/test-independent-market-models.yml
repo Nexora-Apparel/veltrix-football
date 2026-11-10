@@ -64,3 +64,5 @@ jobs:
         run: python -m unittest discover -s tests -p 'test_heldout_market_evaluation.py' -v
       - name: Run multi-origin walk-forward evaluation tests
         run: python -m unittest discover -s tests -p 'test_multi_origin_walk_forward.py' -v
+      - name: Run fail-closed market release certification tests
+        run: python -m unittest discover -s tests -p 'test_market_release_certification.py' -v
