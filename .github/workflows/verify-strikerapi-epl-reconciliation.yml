@@ -1,0 +1,40 @@
+name: Verify StrikerAPI EPL Cross-Provider Reconciliation
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: strikerapi-epl-cross-provider-reconciliation
+  cancel-in-progress: false
+
+jobs:
+  reconcile:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      STRIKERAPI_API_KEY: ${{ secrets.STRIKERAPI_API_KEY }}
+      FIVEDOLLARFOOTBALL_API_KEY: ${{ secrets.FIVEDOLLARFOOTBALL_API_KEY }}
+    steps:
+      - name: Check out reconciliation implementation
+        uses: actions/checkout@v4
+        with:
+          ref: phase-3/strikerapi-readonly-qualification
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Run read-only Premier League cross-provider reconciliation
+        run: python scripts/run_readonly_epl_reconciliation.py
+
+      - name: Upload sanitized reconciliation report
+        uses: actions/upload-artifact@v4
+        with:
+          name: strikerapi-5dollar-epl-reconciliation
+          path: strikerapi_5dollar_epl_reconciliation.json
+          if-no-files-found: error
+          retention-days: 7
