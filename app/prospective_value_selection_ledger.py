@@ -129,7 +129,7 @@ def _validate_ledger(ledger: Any) -> dict:
     for item in ledger["selections"]:
         required = {
             "schema_version", "fixture_id", "market", "selection", "bookmaker",
-            "odds_provider", "odds_observation_id", "odds_source_evidence_sha256",
+            "odds_provider", "odds_observation_id", "odds_source_evidence_sha256", "crosswalk_evidence_sha256",
             "odds_captured_at", "kickoff_at", "prediction_as_of", "decision_at",
             "model_sha256", "feature_snapshot_sha256", "model_probability",
             "bookmaker_probability", "decimal_odds", "edge", "expected_return",
@@ -145,8 +145,8 @@ def _validate_ledger(ledger: Any) -> dict:
         if item["odds_provider"] != "the_odds_api":
             raise ProspectiveValueLedgerError("selection_record_provider_invalid")
         for field in ("model_sha256", "feature_snapshot_sha256",
-                      "odds_source_evidence_sha256", "policy_sha256",
-                      "odds_observation_id"):
+                      "odds_source_evidence_sha256", "crosswalk_evidence_sha256",
+                      "policy_sha256", "odds_observation_id"):
             _digest(item[field], field)
         for field in ("fixture_id", "bookmaker", "policy_id", "policy_version",
                       "odds_observation_id"):
@@ -234,6 +234,7 @@ def _selection_record(*, prediction: dict, market: str, selection: str,
         "odds_provider": "the_odds_api",
         "odds_observation_id": snapshot["observation_id"],
         "odds_source_evidence_sha256": snapshot["source_payload_sha256"],
+        "crosswalk_evidence_sha256": snapshot.get("crosswalk_evidence_sha256"),
         "odds_captured_at": snapshot["captured_at"],
         "kickoff_at": prediction["kickoff_at"],
         "prediction_as_of": prediction["prediction_as_of"],
@@ -357,6 +358,12 @@ def append_prospective_selections(*, ledger: dict, predictions: list[dict],
                     })
                     continue
                 if snapshot is None:
+                    continue
+                if snapshot.get("crosswalk_evidence_sha256") is None:
+                    rejected.append({
+                        "prediction_index": index, "market": market,
+                        "bookmaker": bookmaker, "reason": "crosswalk_evidence_missing",
+                    })
                     continue
                 for outcome in MARKETS[market]:
                     price = float(snapshot["decimal_odds"][outcome])
@@ -488,6 +495,7 @@ def export_settled_certification_rows(*, ledger: dict, evaluated_at: str) -> dic
                 "settlement_source_evidence_sha256"
             ],
             "odds_source_evidence_sha256": selection["odds_source_evidence_sha256"],
+            "crosswalk_source_evidence_sha256": selection["crosswalk_evidence_sha256"],
             "selection": selection["selection"],
             "actual": settlement["actual"],
             "odds_decimal": selection["decimal_odds"],
