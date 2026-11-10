@@ -141,6 +141,19 @@ python scripts/evaluate_market_release_certification.py \
   --output market-release-certification.json
 ```
 
+
+
+For multi-batch acquisition, merge the per-restore signed registries before certification:
+
+```sh
+python scripts/merge_verified_source_digest_registries.py \
+  --output verified-source-digests-merged.json \
+  restore-batch-001/verified-source-digests.json \
+  restore-batch-002/verified-source-digests.json
+```
+
+The merger verifies every input registry using the out-of-band KMS allowlist, unions the source digests, deduplicates receipt attestations by receipt SHA-256, rejects conflicting identities, and signs the aggregate registry with the current allowlisted signing key. This supports explicit key rotation: old receipt registries remain verifiable through their old trusted keys, while the merged registry is signed by the current key. The certification runner verifies the aggregate signature and accepts receipt attestations from multiple trusted historical keys. The allowlist must include every key needed to verify the inputs and the current signing key.
+
 ### Exact-byte The Odds API response capture
 
 The existing `TheOddsAPIClient` now has explicit `odds_for_sport_with_raw` and `event_btts_with_raw` methods. They preserve the exact HTTP response bytes, compute SHA-256 over those bytes, record retrieval time and quota headers, and return the parsed event payload alongside the bytes. The existing JSON-only client methods retain their original return contract. Raw capture is bounded to one request per method call and disables automatic retries to avoid hidden duplicate quota consumption. The returned bytes must be written to the encrypted evidence archive before observations are treated as certification evidence; this change does not itself call the provider or archive the response.
