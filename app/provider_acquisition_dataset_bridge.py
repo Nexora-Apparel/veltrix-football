@@ -74,6 +74,16 @@ def _qualified_settlement(record: dict, package: Any, *,
         )
         if qualification["contract"] != package["source_contract"]:
             raise AcquisitionDatasetBridgeError("settlement_source_contract_not_registry_bound")
+        expected_identity = package["expected_fixture_identity"]
+        if not isinstance(expected_identity, dict) or {
+            "competition_id": record.get("competition_key"),
+            "home_team_id": record.get("home_team_source_id"),
+            "away_team_id": record.get("away_team_source_id"),
+            "kickoff_at": record.get("kickoff_at"),
+        } != {key: expected_identity.get(key) for key in (
+            "competition_id", "home_team_id", "away_team_id", "kickoff_at",
+        )}:
+            raise AcquisitionDatasetBridgeError("settlement_fixture_mapping_not_bound_to_provider_record")
         verified = validate_settlement_timestamp_evidence(
             package["evidence"],
             source_contract=qualification["contract"],
