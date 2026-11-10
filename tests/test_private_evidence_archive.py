@@ -210,6 +210,41 @@ class PrivateEvidenceArchiveTests(unittest.TestCase):
         self.assertTrue(Path(result["paths"]["report"]).is_file())
         decrypt.assert_called_once()
 
+    @patch("scripts.restore_encrypted_source_evidence.decrypt_and_verify_source_evidence")
+    @patch("scripts.restore_encrypted_source_evidence.validate_fivedollar_history_batch_report")
+    @patch("scripts.archive_encrypted_source_evidence.validate_fivedollar_history_batch_report")
+    def test_restore_refuses_existing_destination_without_modifying_it(
+        self, archive_validate, restore_validate, decrypt
+    ):
+        archive_validate.return_value = {
+            "valid": True, "report_sha256": "a" * 64,
+            "accepted_count": 1, "quarantined_count": 0, "input_count": 1,
+        }
+        restore_validate.return_value = {
+            "valid": True, "report_sha256": "a" * 64,
+            "accepted_count": 1, "quarantined_count": 0, "input_count": 1,
+        }
+        decrypt.return_value = [{"kind": "accepted", "input_index": 0}]
+        client = FakeS3()
+        archive_evidence(
+            client=client, bucket="private-bucket", prefix="veltrix",
+            report_path=self.report_path, evidence_path=self.evidence_path,
+            manifest_path=self.manifest_path, receipt_output_path=self.root / "receipt.json",
+        )
+        destination = self.root / "existing-restore"
+        destination.mkdir()
+        marker = destination / "keep.txt"
+        marker.write_text("preserve-existing-data")
+        with self.assertRaisesRegex(EvidenceRestoreError, "restore_destination_already_exists"):
+            restore_evidence(
+                client=client, bucket="private-bucket",
+                receipt_key="veltrix/receipts/batch-20261110T060000Z.json",
+                encryption_key="test-key", output_dir=destination,
+            )
+        self.assertEqual(marker.read_text(), "preserve-existing-data")
+        self.assertEqual(list(destination.iterdir()), [marker])
+        self.assertFalse(any(self.root.glob(".existing-restore.restore-*")))
+
     @patch("scripts.restore_encrypted_source_evidence.validate_fivedollar_history_batch_report")
     def test_restore_rejects_tampered_archived_object_before_writing(self, validate):
         validate.return_value = {
