@@ -34,3 +34,5 @@ jobs:
         run: python -m unittest discover -s tests -p 'test_market_probability_calibration.py' -v
       - name: Run held-out test evaluation tests
         run: python -m unittest discover -s tests -p 'test_heldout_market_evaluation.py' -v
+      - name: Run multi-origin walk-forward evaluation tests
+        run: python -m unittest discover -s tests -p 'test_multi_origin_walk_forward.py' -v
