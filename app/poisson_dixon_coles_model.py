@@ -11,7 +11,6 @@ import math
 from datetime import datetime, timezone
 from typing import Any
 
-from app.poisson_dc_head import dixon_coles_markets
 
 MODEL_FAMILY = "veltrix-independent-poisson-dixon-coles-v1"
 _EPS = 1e-12
@@ -163,6 +162,88 @@ def _fit_rho(rows: list[dict], params_by_comp: dict, max_abs_rho: float) -> floa
     return best_rho
 
 
+def _poisson_pmf(rate: float, max_goals: int) -> list[float]:
+    values = [math.exp(-rate)]
+    for goals in range(1, max_goals + 1):
+        values.append(values[-1] * rate / goals)
+    return values
+
+
+def _independent_dixon_coles_markets(lam: float, mu: float, *, rho: float,
+                                     max_goals: int) -> dict:
+    """Build score-grid probabilities locally; never call the legacy prediction head."""
+    if not (math.isfinite(lam) and math.isfinite(mu) and 0 < lam <= 10 and 0 < mu <= 10):
+        raise PoissonModelError("expected_goals_outside_supported_range")
+    if (isinstance(max_goals, bool) or not isinstance(max_goals, int)
+            or not 12 <= max_goals <= 40):
+        raise PoissonModelError("max_goals_out_of_range")
+    if not math.isfinite(rho) or not -0.25 <= rho <= 0.25:
+        raise PoissonModelError("rho_out_of_range")
+
+    hp, ap = _poisson_pmf(lam, max_goals), _poisson_pmf(mu, max_goals)
+    tail_home = max(0.0, 1.0 - sum(hp))
+    tail_away = max(0.0, 1.0 - sum(ap))
+    tail_bound = min(1.0, tail_home + tail_away)
+    if tail_bound > 1e-8:
+        raise PoissonModelError("score_grid_truncation_too_large")
+
+    grid = []
+    for home_goals, home_probability in enumerate(hp):
+        row = []
+        for away_goals, away_probability in enumerate(ap):
+            tau = _tau(home_goals, away_goals, lam, mu, rho)
+            if not math.isfinite(tau) or tau < 0:
+                raise PoissonModelError("invalid_dixon_coles_low_score_probability")
+            row.append(home_probability * away_probability * tau)
+        grid.append(row)
+
+    mass = sum(sum(row) for row in grid)
+    if not math.isfinite(mass) or mass <= 0:
+        raise PoissonModelError("score_probability_mass_invalid")
+    grid = [[probability / mass for probability in row] for row in grid]
+
+    home_win = draw = away_win = btts_yes = 0.0
+    totals_over = {line: 0.0 for line in (0.5, 1.5, 2.5, 3.5, 4.5)}
+    scorelines = []
+    for home_goals, row in enumerate(grid):
+        for away_goals, probability in enumerate(row):
+            if home_goals > away_goals:
+                home_win += probability
+            elif home_goals == away_goals:
+                draw += probability
+            else:
+                away_win += probability
+            if home_goals > 0 and away_goals > 0:
+                btts_yes += probability
+            for line in totals_over:
+                if home_goals + away_goals > line:
+                    totals_over[line] += probability
+            scorelines.append((probability, home_goals, away_goals))
+
+    return {
+        "status": "SHADOW_RESEARCH",
+        "expected_goals": {"home_lambda": lam, "away_mu": mu},
+        "rho": rho,
+        "max_goals": max_goals,
+        "truncated_poisson_tail_estimate": {
+            "home": tail_home, "away": tail_away, "upper_bound_union": tail_bound,
+        },
+        "markets": {
+            "1x2": {"H": home_win, "D": draw, "A": away_win},
+            "btts": {"yes": btts_yes, "no": 1.0 - btts_yes},
+            "totals": {
+                str(line): {"over": probability, "under": 1.0 - probability}
+                for line, probability in sorted(totals_over.items())
+            },
+        },
+        "top_scorelines": [
+            {"score": f"{home_goals}-{away_goals}", "probability": probability}
+            for probability, home_goals, away_goals
+            in sorted(scorelines, reverse=True)[:10]
+        ],
+    }
+
+
 def fit_poisson_dixon_coles(*, history: list[dict], training_cutoff: str,
                             trained_at: str, dataset_sha256: str,
                             train_fixture_ids: list[str], validation_fixture_ids: list[str],
@@ -278,7 +359,7 @@ def predict_poisson_dixon_coles(*, artifact: dict, fixture: dict,
         raise PoissonModelError("competition_unseen_in_training")
     lam, mu = _rates(artifact["competitions"][comp],
                      fixture.get("home_team_id"), fixture.get("away_team_id"))
-    markets = dixon_coles_markets(lam, mu, rho=artifact["rho"], max_goals=max_goals)
+    markets = _independent_dixon_coles_markets(lam, mu, rho=artifact["rho"], max_goals=max_goals)
     return {
         "fixture_id": fixture.get("fixture_id"),
         "model_family": MODEL_FAMILY,
