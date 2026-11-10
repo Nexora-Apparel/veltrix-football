@@ -24,6 +24,7 @@ on:
 
 permissions:
   contents: write
+  id-token: write
 
 concurrency:
   group: fivedollar-historical-acquisition
@@ -46,7 +47,10 @@ jobs:
       VELTRIX_EVIDENCE_ARCHIVE_ACCESS_KEY_ID: ${{ secrets.VELTRIX_HISTORICAL_ARCHIVE_ACCESS_KEY_ID }}
       VELTRIX_EVIDENCE_ARCHIVE_SECRET_ACCESS_KEY: ${{ secrets.VELTRIX_HISTORICAL_ARCHIVE_SECRET_ACCESS_KEY }}
       VELTRIX_EVIDENCE_ARCHIVE_REGION: ${{ vars.VELTRIX_EVIDENCE_ARCHIVE_REGION }}
-      VELTRIX_EVIDENCE_ARCHIVE_PREFIX: veltrix-football/evidence/v1
+      VELTRIX_EVIDENCE_ARCHIVE_PREFIX: veltrix-football/evidence/v2
+      VELTRIX_EVIDENCE_RECEIPT_KMS_KEY_ARN: ${{ vars.VELTRIX_EVIDENCE_RECEIPT_KMS_KEY_ARN }}
+      VELTRIX_EVIDENCE_RECEIPT_KMS_REGION: ${{ vars.VELTRIX_EVIDENCE_RECEIPT_KMS_REGION }}
+      VELTRIX_EVIDENCE_RECEIPT_KMS_ROLE_ARN: ${{ vars.VELTRIX_EVIDENCE_RECEIPT_KMS_ROLE_ARN }}
     steps:
       - name: Check out historical acquisition implementation
         uses: actions/checkout@v4
@@ -99,6 +103,9 @@ jobs:
           test -n "$VELTRIX_EVIDENCE_ARCHIVE_BUCKET"
           test -n "$VELTRIX_EVIDENCE_ARCHIVE_ACCESS_KEY_ID"
           test -n "$VELTRIX_EVIDENCE_ARCHIVE_SECRET_ACCESS_KEY"
+          test -n "$VELTRIX_EVIDENCE_RECEIPT_KMS_KEY_ARN"
+          test -n "$VELTRIX_EVIDENCE_RECEIPT_KMS_REGION"
+          test -n "$VELTRIX_EVIDENCE_RECEIPT_KMS_ROLE_ARN"
 
       - name: Reserve rolling-hour provider quota before any API request
         env:
@@ -171,6 +178,13 @@ jobs:
 
       - name: Install private archive client
         run: python -m pip install "boto3>=1.34.0,<2.0.0"
+
+      - name: Obtain short-lived AWS credentials for receipt-signing KMS
+        uses: aws-actions/configure-aws-credentials@7474bc4690e29a8392af63c5b98e7449536d5c3a
+        with:
+          role-to-assume: ${{ env.VELTRIX_EVIDENCE_RECEIPT_KMS_ROLE_ARN }}
+          aws-region: ${{ env.VELTRIX_EVIDENCE_RECEIPT_KMS_REGION }}
+          role-session-name: VeltrixEvidenceReceipt-${{ github.run_id }}
 
       - name: Archive encrypted evidence to private object storage and verify read-back
         id: archive
