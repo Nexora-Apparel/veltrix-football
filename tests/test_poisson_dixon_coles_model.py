@@ -55,6 +55,12 @@ def test_fit_seals_independent_artifact_and_prediction_is_shadow_only():
                  "feature_as_of": "2025-03-04T00:00:00Z"},
     )
     assert sum(pred["markets"]["1x2"].values()) == pytest.approx(1.0)
+    assert sum(pred["markets"]["btts"].values()) == pytest.approx(1.0)
+    for line in ("0.5", "1.5", "2.5", "3.5", "4.5"):
+        assert sum(pred["markets"]["totals"][line].values()) == pytest.approx(1.0)
+    assert pred["expected_goals"]["home_lambda"] > 0
+    assert pred["expected_goals"]["away_mu"] > 0
+    assert pred["top_scorelines"]
     assert pred["publication_allowed"] is False
 
 
@@ -123,3 +129,23 @@ def test_minimum_training_and_manifest_are_enforced():
             train_fixture_ids=ids, validation_fixture_ids=[],
             test_fixture_ids=[], iterations=400,
         )
+
+
+
+def test_score_grid_rejects_unsupported_grid_size():
+    model = _fit()
+    with pytest.raises(PoissonModelError, match="max_goals_out_of_range"):
+        predict_poisson_dixon_coles(
+            artifact=model,
+            fixture={"fixture_id": "future", "competition_key": "EPL",
+                     "home_team_id": "A", "away_team_id": "B",
+                     "kickoff_at": "2025-03-05T15:00:00Z",
+                     "feature_as_of": "2025-03-04T00:00:00Z"},
+            max_goals=5,
+        )
+
+
+def test_poisson_model_source_has_no_legacy_prediction_head_import():
+    from pathlib import Path
+    source = Path("app/poisson_dixon_coles_model.py").read_text(encoding="utf-8")
+    assert "app.poisson_dc_head" not in source
