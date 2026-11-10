@@ -55,6 +55,8 @@ jobs:
         run: python -m unittest discover -s tests -p 'test_source_payload_provenance.py' -v
       - name: Run encrypted source evidence sidecar tests
         run: python -m unittest discover -s tests -p 'test_encrypted_source_evidence.py' -v
+      - name: Compile encrypted evidence CLI verifier
+        run: python -m py_compile scripts/verify_encrypted_source_evidence.py
       - name: Run historical feature reconstruction tests
         run: python -m unittest discover -s tests -p 'test_results_feature_reconstruction.py' -v
       - name: Run chronological dataset adapter tests
