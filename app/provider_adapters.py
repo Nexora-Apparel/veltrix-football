@@ -8,6 +8,7 @@ home/away names and the kickoff's Africa/Lagos calendar date.
 from __future__ import annotations
 
 import json
+import hashlib
 import math
 import os
 import re
@@ -61,14 +62,17 @@ def _name_key(value: Any) -> str:
     return _canonical_name_key(value)
 
 
-def _json_request(url: str, headers: dict[str, str] | None = None, timeout: int = 20, retries: int = 2):
+def _json_request(url: str, headers: dict[str, str] | None = None, timeout: int = 20, retries: int = 2, include_raw: bool = False):
     request = Request(url, headers={"Accept": "application/json", "User-Agent": "VeltrixFootball/1.0", **(headers or {})})
     host = urlparse(url).hostname or "unknown-provider"
     attempts = max(0, min(int(retries), 3)) + 1
     for attempt in range(attempts):
         try:
             with urlopen(request, timeout=timeout) as response:
-                payload = json.loads(response.read().decode("utf-8"))
+                raw_payload = response.read()
+                payload = json.loads(raw_payload.decode("utf-8"))
+                if include_raw:
+                    return response.status, response.headers, payload, raw_payload
                 return response.status, response.headers, payload
         except HTTPError as exc:
             # 5Dollar's hourly plans expose a short Retry-After for the separate
@@ -397,6 +401,61 @@ class TheOddsAPIClient:
         if isinstance(payload, list):
             return [row for row in payload if isinstance(row, dict)]
         return []
+    
+    def _get_with_raw(self, path: str, params: dict[str, Any] | None = None) -> dict[str, Any]:
+        """Retrieve one response while preserving the exact HTTP response bytes."""
+        if not self.api_key:
+            raise ProviderAPIError("THE_ODDS_API_KEY is missing.")
+        query = dict(params or {})
+        query["apiKey"] = self.api_key
+        url = f"{self.base_url}/{path.lstrip('/')}?{urlencode(query)}"
+        status, headers, payload, raw_payload = _json_request(
+            url, timeout=self.timeout, include_raw=True, retries=0,
+        )
+        self.last_quota = {
+            "remaining": headers.get("x-requests-remaining"),
+            "used": headers.get("x-requests-used"),
+            "last_cost": headers.get("x-requests-last"),
+        }
+        if status != 200:
+            raise ProviderAPIError("The Odds API returned an unsuccessful response.")
+        if not isinstance(raw_payload, bytes):
+            raise ProviderAPIError("The Odds API raw response was not bytes.")
+        return {
+            "payload": payload,
+            "raw_payload_bytes": raw_payload,
+            "raw_payload_sha256": hashlib.sha256(raw_payload).hexdigest(),
+            "retrieved_at": datetime.now(timezone.utc).isoformat(),
+            "quota": dict(self.last_quota),
+        }
+
+    def odds_for_sport_with_raw(
+        self, sport_key: str, *, regions: str = "uk",
+        markets: str = "h2h,totals",
+    ) -> dict[str, Any]:
+        result = self._get_with_raw(f"sports/{sport_key}/odds", {
+            "regions": regions, "markets": markets,
+            "oddsFormat": "decimal", "dateFormat": "iso",
+        })
+        if not isinstance(result["payload"], list):
+            raise ProviderAPIError("The Odds API odds response had an unexpected shape.")
+        result["payload"] = [row for row in result["payload"] if isinstance(row, dict)]
+        return result
+
+    def event_btts_with_raw(
+        self, sport_key: str, event_id: str, *, regions: str = "uk",
+    ) -> dict[str, Any]:
+        result = self._get_with_raw(f"sports/{sport_key}/events/{event_id}/odds", {
+            "regions": regions, "markets": "btts",
+            "oddsFormat": "decimal", "dateFormat": "iso",
+        })
+        if isinstance(result["payload"], dict):
+            result["payload"] = [result["payload"]]
+        elif isinstance(result["payload"], list):
+            result["payload"] = [row for row in result["payload"] if isinstance(row, dict)]
+        else:
+            raise ProviderAPIError("The Odds API BTTS response had an unexpected shape.")
+        return result
 
 
 class InferSportsClient:
