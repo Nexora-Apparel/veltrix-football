@@ -91,6 +91,14 @@ class MarketReleaseCertificationTests(unittest.TestCase):
                 evidence=evidence, evaluated_at="2026-11-10T20:00:00Z",
             )
 
+    def test_rejects_walk_forward_and_prospective_sample_overlap(self):
+        evidence = evidence_fixture()
+        evidence["1x2"]["prospective"][0]["fixture_id"] = evidence["1x2"]["walk_forward"][0]["fixture_id"]
+        with self.assertRaisesRegex(CertificationError, "fixture_overlap"):
+            evaluate_market_release_certification(
+                evidence=evidence, evaluated_at="2026-11-10T20:00:00Z",
+            )
+
     def test_rejects_odds_captured_after_kickoff(self):
         evidence = evidence_fixture()
         evidence["1x2"]["walk_forward"][0]["bookmaker_odds_at"] = "2026-01-01T13:00:00+01:00"
