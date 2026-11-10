@@ -132,7 +132,7 @@ def validate_fivedollar_history_batch_report(report: Any, *, require_acceptance:
 
     Set require_acceptance=False only for evidence retention of rejected batches;
     this never makes those batches eligible for import or publication.
-    """)
+    """
 
     base = validate_acquisition_report(report)
     if report.get("provider_scope") != ["fivedollar"]:
