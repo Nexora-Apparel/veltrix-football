@@ -345,6 +345,40 @@ def bind_model_to_dataset(model: dict, *, dataset_sha256: str,
     return sealed
 
 
+def _apply_calibration(probabilities: dict, calibration: dict) -> dict:
+    if calibration.get("status") != "calibrated":
+        return probabilities
+    methods = calibration.get("markets")
+    if not isinstance(methods, dict) or set(methods) != set(MARKETS):
+        raise ResultsModelError("calibration_manifest_invalid")
+    calibrated = {}
+    temperature = methods["1x2"].get("temperature")
+    if (isinstance(temperature, bool) or not isinstance(temperature, (int, float))
+            or not math.isfinite(temperature) or temperature <= 0):
+        raise ResultsModelError("calibration_temperature_invalid")
+    calibrated["1x2"] = dict(zip(
+        MARKETS["1x2"],
+        _softmax([
+            math.log(max(probabilities["1x2"][name], 1e-15)) / temperature
+            for name in MARKETS["1x2"]
+        ]),
+    ))
+    for market in ("btts", "over_2_5"):
+        params = methods[market]
+        slope, intercept = params.get("slope"), params.get("intercept")
+        if any(isinstance(value, bool) or not isinstance(value, (int, float))
+               or not math.isfinite(value) for value in (slope, intercept)):
+            raise ResultsModelError(f"calibration_parameters_invalid:{market}")
+        p = min(max(probabilities[market]["yes"], 1e-15), 1 - 1e-15)
+        logit = math.log(p / (1 - p))
+        calibrated_yes = _sigmoid(slope * logit + intercept)
+        calibrated[market] = {
+            "no": 1.0 - calibrated_yes,
+            "yes": calibrated_yes,
+        }
+    return calibrated
+
+
 def predict_independent_markets(*, model: dict, features: dict,
                                 prediction_as_of: str) -> dict:
     """Infer three independently fitted markets; output remains non-publishable."""
@@ -385,13 +419,15 @@ def predict_independent_markets(*, model: dict, features: dict,
     if any(not 0 <= p <= 1 or not math.isfinite(p)
            for outcomes in output.values() for p in outcomes.values()):
         raise ResultsModelError("inference_probability_invalid")
+    calibration = model.get("calibration", {"status": "not_calibrated"})
+    output = _apply_calibration(output, calibration)
     return {
         "schema_version": 1,
         "model_family": MODEL_FAMILY,
         "model_sha256": supplied,
         "prediction_as_of": cutoff.isoformat(),
         "probabilities": output,
-        "calibration_status": "not_calibrated",
+        "calibration_status": calibration.get("status", "not_calibrated"),
         "publication_allowed": False,
         "value_betting_enabled": False,
         "legacy_model_dependency": False,
