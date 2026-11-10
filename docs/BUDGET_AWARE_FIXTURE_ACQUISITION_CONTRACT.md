@@ -249,3 +249,10 @@ This workflow is manual-only. No provider request is made by CI tests or by push
 ## 7. Offline historical archive assembly
 
 The CLI `scripts/assemble_fivedollar_history_archive.py` combines previously downloaded, individually validated batch reports. It performs no provider requests. It requires contiguous, non-overlapping inclusive date windows that exactly cover the requested one-to-90-day target period. Gaps, overlaps, duplicate provider/competition/source identities, invalid batch hashes, out-of-scope records, non-finished rows, and request/page accounting mismatches fail closed. The resulting archive records each source batch report hash, per-competition counts, aggregate request totals, and a canonical archive SHA-256. It remains an offline artifact; no Neon import is performed.
+
+
+## 8. Historical coverage profiling (offline)
+
+After individually validated batches have been assembled, run `scripts/profile_fivedollar_historical_coverage.py` against the archive. The profiler reports accepted finished matches by competition and month, active local calendar days, unique provider team IDs, team-name variants, duplicate match slots, score summaries, and unavailable research fields. It validates the archive hash and emits its own deterministic SHA-256 report.
+
+Important distinction: complete pagination for the requested windows means all pages exposed by the provider were fetched. It does **not** prove that the provider's historical catalogue is complete, that all real-world matches are present, or that the sample is sufficient for model training. The report explicitly sets `ready_for_model_training=false`. Model work still requires independent source-completeness review, team/season continuity checks, point-in-time feature provenance, chronological partitions, and leakage audits.
