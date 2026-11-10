@@ -31,7 +31,7 @@ def main() -> int:
             Path(args.evidence).read_bytes(), report=report, manifest=manifest, key=key
         )
         if len(evidence) != integrity["input_count"]:
-            raise ValueError("encrypted_evidence_accepted_count_mismatch")
+            raise ValueError("encrypted_evidence_input_count_mismatch")
         print(
             "ENCRYPTED_EVIDENCE_VERIFICATION: PASS; "
             f"report_sha256={integrity['report_sha256']}; "
