@@ -135,6 +135,33 @@ class SourceQualificationRegistryTests(unittest.TestCase):
                 registry=signed, trusted_kms_clients=self.trusted, as_of="2026-11-10T10:00:00Z",
             )
 
+    def test_unrecognized_top_level_registry_fields_rejected(self):
+        changed = copy.deepcopy(self.registry)
+        changed["operator_note"] = "unreviewed"
+        with self.assertRaisesRegex(SourceQualificationRegistryError, "registry_shape_invalid"):
+            sign_source_qualification_registry(
+                kms_client=self.kms, key_arn=KEY_ARN, registry=changed,
+            )
+
+    def test_unrecognized_signature_fields_rejected(self):
+        signed = self.signed()
+        signed["signature"]["operator"] = "untrusted"
+        with self.assertRaisesRegex(SourceQualificationRegistryError, "registry_signature_shape_invalid"):
+            verify_source_qualification_registry(
+                registry=signed, trusted_kms_clients=self.trusted,
+                as_of="2026-11-10T10:00:00Z",
+            )
+
+    def test_source_cannot_be_active_before_qualification(self):
+        changed = copy.deepcopy(self.registry)
+        changed["sources"][0]["valid_from"] = "2026-09-01T00:00:00Z"
+        signed = self.signed(changed)
+        with self.assertRaisesRegex(SourceQualificationRegistryError, "source_active_before_qualification"):
+            verify_source_qualification_registry(
+                registry=signed, trusted_kms_clients=self.trusted,
+                as_of="2026-11-10T10:00:00Z",
+            )
+
     def test_naive_verification_time_rejected(self):
         with self.assertRaisesRegex(SourceQualificationRegistryError, "as_of_timezone_missing"):
             verify_source_qualification_registry(
