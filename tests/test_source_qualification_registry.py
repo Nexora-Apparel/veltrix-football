@@ -37,7 +37,7 @@ class SourceQualificationRegistryTests(unittest.TestCase):
         self.entry = {
             "qualification_record": self.record,
             "qualification_record_sha256": canonical_sha256(self.record),
-            "valid_from": "2026-10-01T00:00:00Z",
+            "valid_from": "2026-10-01T10:00:00Z",
             "valid_until": "2027-01-01T00:00:00Z",
             "revoked_at": None,
         }
