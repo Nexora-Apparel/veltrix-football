@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import math
 from collections import Counter, defaultdict
 from datetime import date, datetime, timezone
 from typing import Any
@@ -304,6 +305,7 @@ def validate_chronological_training_dataset(dataset: Any) -> dict:
             raise ChronologicalDatasetError(f"dataset_predictor_target_shape_invalid:{index}")
         if any(name not in FEATURE_CATALOGUE or name in FORBIDDEN_FEATURE_NAMES
                or isinstance(value, bool) or not isinstance(value, (int, float))
+               or not math.isfinite(value)
                for name, value in predictors.items()):
             raise ChronologicalDatasetError(f"dataset_predictor_allowlist_invalid:{index}")
         if set(targets) != {"1x2", "btts", "over_2_5"}:
