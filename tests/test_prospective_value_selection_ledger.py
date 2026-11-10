@@ -58,7 +58,9 @@ def prediction(probabilities=None):
         "decision_at": "2026-11-10T11:00:00Z",
         "model_sha256": "c" * 64,
         "feature_snapshot_sha256": "d" * 64,
-        "probabilities": probabilities or PROBABILITIES,
+        "probabilities": probabilities or {
+            market: dict(values) for market, values in PROBABILITIES.items()
+        },
     }
 
 
