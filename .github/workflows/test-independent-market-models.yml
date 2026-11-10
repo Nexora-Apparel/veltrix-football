@@ -1,0 +1,26 @@
+name: Test Independent Market Model Rebuild
+
+on:
+  push:
+    branches:
+      - rebuild/independent-market-models
+  pull_request:
+    branches:
+      - phase-3/budget-aware-acquisition-contract
+
+permissions:
+  contents: read
+
+jobs:
+  independent-market-models:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Run independent market model tests
+        run: python -m unittest discover -s tests -p 'test_independent_market_models.py' -v
