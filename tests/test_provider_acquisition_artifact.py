@@ -4,21 +4,24 @@ import unittest
 
 from app.provider_acquisition_report import build_acquisition_report
 from app.provider_acquisition_artifact import ArtifactIntegrityError, validate_acquisition_report
+from app.provider_fixture_normalizer import normalize_striker_game
+from app.provider_source_evidence import build_source_evidence
 
 
 class AcquisitionArtifactTests(unittest.TestCase):
     def make_report(self):
-        record = {
-            "schema_version": 1, "provider": "strikerapi", "source_id": "42",
-            "competition_key": "soccer", "season": "2026",
-            "home_team_source_id": "1", "away_team_source_id": "2",
-            "home_team_name": "Home", "away_team_name": "Away",
-            "kickoff_at": "2026-11-10T18:00:00Z",
-            "source_status": "final", "normalized_status": "finished",
-            "home_score": 2, "away_score": 0, "endpoint": "list_games",
-            "retrieved_at": "2026-11-09T12:00:00Z",
-            "payload_sha256": "a" * 64, "run_id": "r-1",
+        raw = {
+            "game_id": 42, "starts_at": "2026-11-10T18:00:00Z", "status": "final",
+            "home": {"team_id": 1, "name": "Home", "score": 2},
+            "away": {"team_id": 2, "name": "Away", "score": 0},
         }
+        record = normalize_striker_game(
+            raw, competition_key="soccer", endpoint="list_games",
+            retrieved_at="2026-11-09T12:00:00Z", run_id="r-1", season="2026",
+        )
+        record["source_evidence"] = build_source_evidence(
+            provider="strikerapi", payload=raw, normalized_record=record,
+        )
         return build_acquisition_report(
             run_id="r-1", provider_scope=["strikerapi"],
             competition_scope=["soccer"], window={"from": "2026-11-01", "to": "2026-11-09"},
