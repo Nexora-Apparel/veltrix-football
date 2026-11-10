@@ -51,9 +51,10 @@ def _timestamp(value: Any, field: str) -> str:
     return parsed.isoformat().replace("+00:00", "Z")
 
 
-def _qualified_settlement(record: dict, package: Any) -> dict:
+def _qualified_settlement(record: dict, package: Any, *,
+                          trusted_kms_clients: dict) -> dict:
     if not isinstance(package, dict) or set(package) != {
-        "source_contract", "qualification_registry", "trusted_kms_clients",
+        "source_contract", "qualification_registry",
         "raw_payload", "fixture_identity", "expected_fixture_identity", "evidence",
     }:
         raise AcquisitionDatasetBridgeError("qualified_settlement_package_invalid")
@@ -68,7 +69,7 @@ def _qualified_settlement(record: dict, package: Any) -> dict:
             registry=package["qualification_registry"],
             source_id=package["source_contract"].get("source_id"),
             competition_id=record.get("competition_key"),
-            trusted_kms_clients=package["trusted_kms_clients"],
+            trusted_kms_clients=trusted_kms_clients,
             as_of=record.get("retrieved_at"),
         )
         if qualification["contract"] != package["source_contract"]:
@@ -103,7 +104,8 @@ def _qualified_settlement(record: dict, package: Any) -> dict:
 
 
 def acquisition_record_to_history_row(record: Any, *,
-                                       settlement_timestamp_package: dict | None = None) -> dict:
+                                       settlement_timestamp_package: dict | None = None,
+                                       trusted_kms_clients: dict | None = None) -> dict:
     if not isinstance(record, dict):
         raise AcquisitionDatasetBridgeError("acquisition_record_invalid")
     evidence = record.get("source_evidence")
@@ -116,7 +118,12 @@ def acquisition_record_to_history_row(record: Any, *,
 
     if settlement_timestamp_package is None:
         raise AcquisitionDatasetBridgeError("settlement_timestamp_unavailable")
-    settlement = _qualified_settlement(record, settlement_timestamp_package)
+    if not isinstance(trusted_kms_clients, dict) or not trusted_kms_clients:
+        raise AcquisitionDatasetBridgeError("trusted_settlement_registry_keys_required")
+    settlement = _qualified_settlement(
+        record, settlement_timestamp_package,
+        trusted_kms_clients=trusted_kms_clients,
+    )
     fixture_id = f'{record["provider"]}:{record["source_id"]}'
     normalized = {
         "fixture_id": fixture_id,
@@ -155,6 +162,7 @@ def acquisition_record_to_history_row(record: Any, *,
 
 def assemble_provider_acquisition_dataset(*, acquisition_records: list[dict],
                                           settlement_timestamp_packages: dict,
+                                          trusted_kms_clients: dict,
                                           split_policy: dict,
                                           cutoff_hours: int = 6,
                                           form_window: int = 10,
@@ -168,7 +176,8 @@ def assemble_provider_acquisition_dataset(*, acquisition_records: list[dict],
         fixture_id = f'{record.get("provider")}:{record.get("source_id")}' if isinstance(record, dict) else None
         package = settlement_timestamp_packages.get(fixture_id)
         history.append(acquisition_record_to_history_row(
-            record, settlement_timestamp_package=package
+            record, settlement_timestamp_package=package,
+            trusted_kms_clients=trusted_kms_clients,
         ))
 
     targets, labels, manifest = [], [], []
