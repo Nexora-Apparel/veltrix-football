@@ -16,6 +16,10 @@ from typing import Any
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from app.provider_acquisition_artifact import validate_fivedollar_history_batch_report
+from app.evidence_receipt_signing import (
+    SCHEMA_V2, ReceiptSignatureError, canonical_receipt_payload,
+    sign_receipt, verify_receipt_signature,
+)
 
 _SAFE = re.compile(r"^[A-Za-z0-9._-]{1,160}$")
 
@@ -49,7 +53,7 @@ def _head_exists(client: Any, bucket: str, key: str) -> bool:
         raise
 
 
-def archive_evidence(*, client: Any, bucket: str, prefix: str,
+def archive_evidence(*, client: Any, kms_client: Any, signing_key_arn: str, bucket: str, prefix:
                      report_path: str | Path, evidence_path: str | Path,
                      manifest_path: str | Path,
                      receipt_output_path: str | Path = "fivedollar_evidence_archive_receipt.json") -> dict:
@@ -105,7 +109,7 @@ def archive_evidence(*, client: Any, bucket: str, prefix: str,
         })
 
     receipt = {
-        "schema": "veltrix-evidence-archive-receipt-v1",
+        "schema": SCHEMA_V2,
         "provider": "fivedollar",
         "run_id": run_id,
         "report_sha256": integrity["report_sha256"],
@@ -116,26 +120,30 @@ def archive_evidence(*, client: Any, bucket: str, prefix: str,
         "readback_verified": True,
         "raw_payloads": "encrypted_only",
     }
-    receipt_bytes = (json.dumps(receipt, sort_keys=True, indent=2) + "\n").encode()
     receipt_key = f"{base}receipts/{run_id}.json"
     if _head_exists(client, bucket, receipt_key):
-        # A prior attempt may have completed the commit marker but failed
-        # before writing its local receipt. Reuse it only after validating
-        # its run/report/object bindings and its own read-back digest.
+        # Reuse a prior commit marker only after independent KMS verification.
         downloaded_receipt = client.get_object(Bucket=bucket, Key=receipt_key)["Body"].read()
         try:
             archived_receipt = json.loads(downloaded_receipt)
-        except (TypeError, ValueError):
-            raise EvidenceArchiveError("archive_existing_receipt_invalid") from None
-        if (archived_receipt.get("schema") != "veltrix-evidence-archive-receipt-v1"
-                or archived_receipt.get("run_id") != run_id
-                or archived_receipt.get("report_sha256") != integrity["report_sha256"]
-                or archived_receipt.get("objects") != receipt_objects
-                or archived_receipt.get("readback_verified") is not True):
+            verify_receipt_signature(
+                kms_client=kms_client, trusted_key_arn=signing_key_arn,
+                receipt=archived_receipt,
+            )
+        except (TypeError, ValueError, ReceiptSignatureError):
+            raise EvidenceArchiveError("archive_existing_receipt_signature_invalid") from None
+        if canonical_receipt_payload(archived_receipt) != canonical_receipt_payload(receipt):
             raise EvidenceArchiveError("archive_existing_receipt_binding_conflict")
         receipt = archived_receipt
         receipt_bytes = downloaded_receipt
     else:
+        try:
+            receipt = sign_receipt(
+                kms_client=kms_client, key_arn=signing_key_arn, receipt=receipt,
+            )
+        except ReceiptSignatureError:
+            raise EvidenceArchiveError("archive_receipt_signing_failed") from None
+        receipt_bytes = (json.dumps(receipt, sort_keys=True, indent=2) + "\n").encode()
         client.put_object(
             Bucket=bucket, Key=receipt_key, Body=receipt_bytes,
             ContentType="application/json",
@@ -165,16 +173,19 @@ def main() -> int:
         access = os.getenv("VELTRIX_EVIDENCE_ARCHIVE_ACCESS_KEY_ID")
         secret = os.getenv("VELTRIX_EVIDENCE_ARCHIVE_SECRET_ACCESS_KEY")
         region = os.getenv("VELTRIX_EVIDENCE_ARCHIVE_REGION", "auto")
-        prefix = os.getenv("VELTRIX_EVIDENCE_ARCHIVE_PREFIX", "veltrix-football/evidence/v1")
-        if not all((endpoint, bucket, access, secret)):
-            raise EvidenceArchiveError("private_evidence_archive_configuration_missing")
+        prefix = os.getenv("VELTRIX_EVIDENCE_ARCHIVE_PREFIX", "veltrix-football/evidence/v2")
+        signing_key_arn = os.getenv("VELTRIX_EVIDENCE_RECEIPT_KMS_KEY_ARN")
+        kms_region = os.getenv("VELTRIX_EVIDENCE_RECEIPT_KMS_REGION")
+        if not all((endpoint, bucket, access, secret, signing_key_arn, kms_region)):
+            raise EvidenceArchiveError("private_evidence_archive_or_kms_signing_configuration_missing")
         import boto3
         client = boto3.client(
             "s3", endpoint_url=endpoint, region_name=region,
             aws_access_key_id=access, aws_secret_access_key=secret,
         )
+        kms_client = boto3.client("kms", region_name=kms_region)
         receipt = archive_evidence(
-            client=client, bucket=bucket, prefix=prefix,
+            client=client, kms_client=kms_client, signing_key_arn=signing_key_arn, bucket=bucket, prefix=prefix,
             report_path=args.report, evidence_path=args.evidence,
             manifest_path=args.manifest,
         )
