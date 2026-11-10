@@ -7,7 +7,9 @@ import hashlib
 import json
 import os
 import re
+import shutil
 import sys
+import tempfile
 from urllib.parse import urlparse
 from pathlib import Path
 from typing import Any
@@ -106,18 +108,33 @@ def restore_evidence(*, client: Any, bucket: str, receipt_key: str,
     if len(evidence) != integrity["input_count"]:
         raise EvidenceRestoreError("restore_evidence_coverage_incomplete")
 
+    # Publish the complete restore as one directory rename. Staging is created
+    # beside the destination so the rename stays on one filesystem. Existing
+    # destinations are never merged or overwritten.
     destination = Path(output_dir)
-    destination.mkdir(parents=True, exist_ok=True)
+    parent = destination.parent
+    parent.mkdir(parents=True, exist_ok=True)
+    if destination.exists() or destination.is_symlink():
+        raise EvidenceRestoreError("restore_destination_already_exists")
+    staging = Path(tempfile.mkdtemp(prefix=f".{destination.name}.restore-", dir=parent))
     filenames = {
         "report": "fivedollar_history_batch.json",
         "evidence": "fivedollar_source_evidence.enc",
         "manifest": "fivedollar_source_evidence.enc.manifest.json",
     }
-    paths = {}
-    for kind, filename in filenames.items():
-        path = destination / filename
-        path.write_bytes(restored[kind])
-        paths[kind] = str(path)
+    try:
+        for kind, filename in filenames.items():
+            (staging / filename).write_bytes(restored[kind])
+        # Recheck immediately before publication; never intentionally replace
+        # an existing restore directory.
+        if destination.exists() or destination.is_symlink():
+            raise EvidenceRestoreError("restore_destination_already_exists")
+        os.rename(staging, destination)
+    except Exception:
+        shutil.rmtree(staging, ignore_errors=True)
+        raise
+
+    paths = {kind: str(destination / filename) for kind, filename in filenames.items()}
     return {
         "valid": True, "run_id": run_id, "report_sha256": integrity["report_sha256"],
         "accepted_count": integrity["accepted_count"],
