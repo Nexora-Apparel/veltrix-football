@@ -39,7 +39,7 @@ def main() -> int:
         else:
             from app.provider_acquisition_artifact import validate_fivedollar_history_batch_report
             report = json.loads(Path(args.report).read_text(encoding="utf-8"))
-            integrity = validate_fivedollar_history_batch_report(report)
+            integrity = validate_fivedollar_history_batch_report(report, require_acceptance=False)
             if not integrity["valid"]:
                 raise HourlyQuotaError("historical_report_integrity_not_valid")
             result = settle_hourly_quota(
