@@ -50,6 +50,7 @@ class TheOddsApiEvidenceAdapterTests(unittest.TestCase):
             event_payload=kwargs.get("event_payload", self.event),
             crosswalk=kwargs.get("crosswalk", self.crosswalk),
             retrieved_at=kwargs.get("retrieved_at", "2026-11-10T11:00:00Z"),
+            source_payload_sha256=kwargs.get("source_payload_sha256", "a" * 64),
             max_quote_age_seconds=kwargs.get("max_quote_age_seconds", 86400),
         )
 
