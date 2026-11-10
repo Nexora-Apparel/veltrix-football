@@ -89,7 +89,7 @@ A model remains a challenger until it beats the current champion on repeated chr
 
 Every walk-forward label and prospective settlement/odds record must carry a SHA-256 evidence reference. This evaluator validates digest shape and chronology; upstream ingestion must independently resolve each digest to verified, provenance-bound source evidence before certification is trusted. It does not verify archive receipts itself.
 
-A successful evaluator result can mark the value-betting evidence thresholds as met, but never authorizes publication. Human release approval, model promotion, operational readiness and the separate public prediction gates remain mandatory. It performs no provider requests, database writes, publication, Telegram delivery or schedule activation.
+A successful evaluator result can mark the numeric value-betting evidence thresholds as met, but it always leaves `value_betting_authorized=false` and `publication_authorized=false`. Source digests must be resolved against verified archive receipts, followed by human release approval, model promotion, operational readiness and the separate public prediction gates. No evaluator output alone can unlock value betting. It performs no provider requests, database writes, publication, Telegram delivery or schedule activation.
 
 Synthetic unit tests exercise threshold boundaries and integrity failures only. They are not model performance evidence and cannot certify VELTRIX.
 
