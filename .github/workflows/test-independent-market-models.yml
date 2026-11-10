@@ -26,3 +26,5 @@ jobs:
         run: python -m unittest discover -s tests -p 'test_independent_market_models.py' -v
       - name: Run historical feature reconstruction tests
         run: python -m unittest discover -s tests -p 'test_results_feature_reconstruction.py' -v
+      - name: Run chronological dataset adapter tests
+        run: python -m unittest discover -s tests -p 'test_results_training_dataset_adapter.py' -v
