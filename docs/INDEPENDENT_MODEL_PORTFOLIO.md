@@ -25,10 +25,19 @@ Improve probability quality through independent model families, strict point-in-
 - `app/poisson_dixon_coles_model.py` fits separate competition-scoped home/away scoring intercepts and team attack/defence effects from settled training rows.
 - L2 regularization and within-competition identifiability constraints; optional exponential time-decay weights.
 - Dixon-Coles rho is estimated by deterministic profile-likelihood grid search on training rows only.
-- Uses `app/poisson_dc_head.py` to derive 1X2, BTTS and half-goal totals from the corrected scoreline matrix; material Poisson tail mass fails closed.
+- Derives 1X2, BTTS and half-goal totals through a self-contained corrected scoreline matrix; it no longer imports or calls the legacy `app.poisson_dc_head` helper. Material Poisson tail mass fails closed.
 - Artifacts bind dataset digest, train/validation/test fixture manifests, training cutoff, training timestamp, source digest and configuration.
 - Inference verifies artifact integrity and point-in-time ordering. Unknown competitions/teams abstain.
 - Research-only; no publication or value betting. Unit/CI tests do not constitute real-data training or accuracy certification.
+
+### Independent inference boundary — implemented, shadow-only
+- `app/independent_prediction_service.py` is the new fixture-level inference boundary.
+- Requires exact fixture identity, kickoff and feature-cutoff agreement with a hash-validated point-in-time feature snapshot.
+- Requires all logistic model features; missing values are rejected rather than imputed from generic priors.
+- Emits separate results-history logistic and optional Poisson/Dixon-Coles candidate outputs. It does not blend them; ensemble weights require out-of-fold evidence first.
+- Explicitly marks publication and value betting disabled and declares no legacy predictor dependency.
+- Regression tests cover valid inference, fixture/snapshot mismatch, cutoff mismatch and missing-feature rejection.
+- This is an inference integration contract, not a trained model or accuracy claim.
 
 ### 4. Nonlinear tabular challenger — next
 - Gradient-boosted trees (candidate: LightGBM or CatBoost) for 1X2, BTTS and totals.
