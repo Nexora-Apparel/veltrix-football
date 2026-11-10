@@ -370,11 +370,7 @@ def evaluate_multi_origin_walk_forward(*, dataset: dict, origins: list[dict],
     # when a fixture is tested in more than one expanding-window origin.
     pooled = []
     for report, origin in zip(origin_reports, normalized):
-        for row in [item for item in all_test_records
-                    if item["fixture_id"] in {
-                        r["fixture_id"] for r in dataset["rows"]
-                        if r["split"] == "test"
-                    }]:
+        for row in all_test_records:
             # Per-origin metrics remain authoritative; pooled rows are added
             # below from the source test window, scoped by origin dates.
             day = date.fromisoformat(row["wat_date"])
