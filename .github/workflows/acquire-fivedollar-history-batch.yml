@@ -73,6 +73,9 @@ jobs:
           python -m unittest discover -s tests -p 'test_provider_fixture_normalizer.py' -v
           python scripts/acquire_fivedollar_history_batch.py --help
 
+      - name: Install provider runtime dependency
+        run: python -m pip install "requests>=2.32.0,<3.0.0"
+
       - name: Reserve rolling-hour provider quota before any API request
         env:
           RUN_ID: ${{ github.run_id }}
@@ -87,9 +90,6 @@ jobs:
           git -C quota-ledger add data/provider_request_hourly_ledger.json
           git -C quota-ledger commit -m "Reserve provider quota for run $RUN_ID"
           git -C quota-ledger push origin HEAD:ops/fivedollar-request-hourly-ledger
-
-      - name: Install provider runtime dependency
-        run: python -m pip install "requests>=2.32.0,<3.0.0"
 
       - name: Acquire signed-registry-scoped historical batch
         env:
