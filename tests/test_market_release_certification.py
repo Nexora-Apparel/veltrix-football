@@ -36,9 +36,9 @@ def evidence_fixture(walk_count=1000, prospective_count=300):
             selected = classes[i % len(classes)]
             prospective.append({
                 "fixture_id": f"{market}-prospective-{i}",
-                "kickoff_at": f"2026-01-{day:02d}T12:00:00+01:00",
+                "kickoff_at": f"{day}T12:00:00+01:00",
                 "settled_at": f"{day}T14:00:00+01:00",
-                "odds_captured_at": f"2026-01-{day:02d}T10:00:00+01:00",
+                "odds_captured_at": f"{day}T10:00:00+01:00",
                 "selection": selected,
                 "actual": selected,
                 "odds_decimal": 2.1,
