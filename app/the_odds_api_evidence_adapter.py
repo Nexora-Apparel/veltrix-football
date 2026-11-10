@@ -141,8 +141,8 @@ def adapt_the_odds_api_event(*, event_payload: dict, crosswalk: dict,
     if (_name(event_payload.get("home_team")) != _name(crosswalk["home_team"])
             or _name(event_payload.get("away_team")) != _name(crosswalk["away_team"])):
         raise OddsProviderAdapterError("event_crosswalk_team_mismatch")
-    if retrieved < event_kickoff and retrieved > kickoff:
-        raise OddsProviderAdapterError("retrieval_time_invalid")
+    if retrieved > kickoff:
+        raise OddsProviderAdapterError("event_retrieved_after_kickoff")
 
     raw_digest = _digest(event_payload)
     bookmakers = event_payload.get("bookmakers")
@@ -195,6 +195,7 @@ def adapt_the_odds_api_event(*, event_payload: dict, crosswalk: dict,
                     decimal_odds=prices,
                     raw_payload=event_payload,
                     source_payload_sha256=raw_digest,
+                    crosswalk_evidence_sha256=crosswalk_digest,
                 )
             except BookmakerOddsEvidenceError as exc:
                 rejected.append({
@@ -202,11 +203,6 @@ def adapt_the_odds_api_event(*, event_payload: dict, crosswalk: dict,
                     "reason": str(exc)[:120],
                 })
                 continue
-            observation["crosswalk_evidence_sha256"] = crosswalk_digest
-            observation["observation_id"] = _digest({
-                key: value for key, value in observation.items()
-                if key != "observation_id"
-            })
             observations.append(observation)
     return {
         "schema_version": 1,
