@@ -98,3 +98,9 @@ Synthetic unit tests exercise threshold boundaries and integrity failures only. 
 `app/bookmaker_odds_evidence.py` adds a network-free, append-only observation ledger for 1X2, BTTS and Over 2.5 decimal prices. It validates complete selection sets, timezone-aware capture times, capture-before-kickoff ordering, source payload digests, overround and de-vigged implied probabilities. It supports idempotent append and selects the latest captured snapshot before kickoff for an exact fixture/market/bookmaker key.
 
 The module intentionally does not poll an odds provider or claim fixture identity reconciliation. Provider adapters must preserve the raw response in the encrypted evidence archive, independently verify the referenced payload digest, map the provider event to a canonical fixture using a reviewed crosswalk, and then append the observation. A missing or ambiguous fixture mapping must be quarantined, not guessed.
+
+### The Odds API evidence adapter
+
+`app/the_odds_api_evidence_adapter.py` converts a single already-retrieved The Odds API event response into the odds evidence ledger. It supports h2h (1X2), BTTS and totals at exactly 2.5. It requires an explicit reviewed crosswalk with exact provider event ID, canonical fixture ID, kickoff and teams; ID, team or kickoff mismatch is rejected. It never guesses fixture identity. Quotes after retrieval, after kickoff or older than the configured freshness window are quarantined. The raw event payload digest and crosswalk evidence digest are bound into each observation.
+
+This is a pure adapter and does not call The Odds API. It is not yet connected to a scheduled acquisition worker or durable evidence archive. Provider credentials and endpoint access do not by themselves establish historical odds availability; actual timestamped quote coverage still has to be measured.
