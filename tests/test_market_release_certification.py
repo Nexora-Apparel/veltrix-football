@@ -79,6 +79,25 @@ class MarketReleaseCertificationTests(unittest.TestCase):
         self.assertTrue(report["markets"]["1x2"]["checks"]["beats_bookmaker_brier"])
         self.assertTrue(report["markets"]["1x2"]["checks"]["beats_bookmaker_log_loss"])
 
+    def test_numeric_thresholds_cannot_pass_without_verified_source_receipts(self):
+        report = evaluate_market_release_certification(
+            evidence=evidence_fixture(),
+            evaluated_at="2026-11-10T20:00:00Z",
+        )
+        self.assertFalse(report["all_markets_certified"])
+        self.assertFalse(report["value_betting_thresholds_met"])
+        self.assertFalse(report["markets"]["1x2"]["checks"]["source_evidence_receipts_verified"])
+
+    def test_rejects_odds_without_fixture_crosswalk_evidence(self):
+        evidence = evidence_fixture()
+        evidence["1x2"]["walk_forward"][0].pop("crosswalk_source_evidence_sha256")
+        with self.assertRaisesRegex(CertificationError, "crosswalk_source_evidence_sha256_invalid"):
+            evaluate_market_release_certification(
+                evidence=evidence,
+                evaluated_at="2026-11-10T20:00:00Z",
+                verified_source_evidence_sha256=["a" * 64, "b" * 64, "c" * 64, "d" * 64, "e" * 64],
+            )
+
     def test_shortfall_keeps_everything_locked(self):
         evidence = evidence_fixture(walk_count=999, prospective_count=299)
         report = evaluate_market_release_certification(
