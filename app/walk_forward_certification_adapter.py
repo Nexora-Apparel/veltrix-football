@@ -120,6 +120,7 @@ def build_market_certification_evidence(*, walk_forward_report: dict,
                     "bookmaker_odds_at": snapshot["captured_at"],
                     "bookmaker_odds_decimal": snapshot["decimal_odds"],
                     "odds_source_evidence_sha256": snapshot["source_payload_sha256"],
+                    "crosswalk_source_evidence_sha256": snapshot.get("crosswalk_evidence_sha256"),
                 })
             walk_rows.append(row)
         prospective = prospective_selections[market]
