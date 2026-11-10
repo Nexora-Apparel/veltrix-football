@@ -217,6 +217,31 @@ class PrivateEvidenceArchiveTests(unittest.TestCase):
         self.assertFalse(destination.exists())
 
 
+    @patch("scripts.restore_encrypted_source_evidence.validate_fivedollar_history_batch_report")
+    def test_restore_rejects_receipt_object_key_outside_run_prefix(self, validate):
+        validate.return_value = {
+            "valid": True, "report_sha256": "a" * 64,
+            "accepted_count": 1, "quarantined_count": 0, "input_count": 1,
+        }
+        client = FakeS3()
+        with patch("scripts.archive_encrypted_source_evidence.validate_fivedollar_history_batch_report") as archive_validate:
+            archive_validate.return_value = validate.return_value
+            archive_evidence(
+                client=client, bucket="private-bucket", prefix="veltrix",
+                report_path=self.report_path, evidence_path=self.evidence_path,
+                manifest_path=self.manifest_path, receipt_output_path=self.root / "receipt.json",
+            )
+        receipt_key = "veltrix/receipts/batch-20261110T060000Z.json"
+        receipt = json.loads(client.objects[("private-bucket", receipt_key)])
+        receipt["objects"][0]["key"] = "unrelated/private-object"
+        client.objects[("private-bucket", receipt_key)] = json.dumps(receipt).encode()
+        with self.assertRaisesRegex(EvidenceRestoreError, "restore_object_metadata_invalid"):
+            restore_evidence(
+                client=client, bucket="private-bucket", receipt_key=receipt_key,
+                encryption_key="test-key", output_dir=self.root / "bad-key-restore",
+            )
+
+
 
 if __name__ == "__main__":
     unittest.main()
