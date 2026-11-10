@@ -121,7 +121,7 @@ def certify_value_bet_markets(*, evaluation_records: list[dict]) -> dict:
         if set(row) != required:
             raise ValueBetCertificationError(f"evaluation_record_shape_invalid:{index}")
         market = row.get("market")
-        if market not in MARKETS:
+        if not isinstance(market, str) or market not in MARKETS:
             raise ValueBetCertificationError(f"evaluation_market_invalid:{index}")
         fixture_id = row.get("fixture_id")
         if not isinstance(fixture_id, str) or not fixture_id.strip():
@@ -138,7 +138,7 @@ def certify_value_bet_markets(*, evaluation_records: list[dict]) -> dict:
             raise ValueBetCertificationError(f"evaluation_selection_flags_invalid:{index}")
         outcomes = MARKETS[market]["outcomes"]
         actual = row.get("actual_outcome")
-        if actual not in outcomes:
+        if not isinstance(actual, str) or actual not in outcomes:
             raise ValueBetCertificationError(f"evaluation_actual_outcome_invalid:{index}")
         kickoff = _time(row.get("kickoff_at"), f"record_{index}_kickoff")
         cutoff = _time(row.get("prediction_as_of"), f"record_{index}_prediction_as_of")
@@ -168,9 +168,11 @@ def certify_value_bet_markets(*, evaluation_records: list[dict]) -> dict:
         profit = 0.0
         prospective_selection = False
         if selected:
-            if pick not in outcomes or not row["is_prospective"] or odds is None or pick not in odds:
+            if not isinstance(pick, str) or pick not in outcomes or not row["is_prospective"] or odds is None or pick not in odds:
                 raise ValueBetCertificationError(f"invalid_prospective_selection:{index}")
-            if stake <= 0 or isinstance(decimal_odds, bool) or not isinstance(decimal_odds, (int, float)):
+            if (stake <= 0 or isinstance(decimal_odds, bool)
+                    or not isinstance(decimal_odds, (int, float))
+                    or not math.isfinite(decimal_odds) or decimal_odds <= 1.0):
                 raise ValueBetCertificationError(f"selected_stake_or_odds_invalid:{index}")
             if abs(float(decimal_odds) - odds[pick]) > 1e-9:
                 raise ValueBetCertificationError(f"selected_odds_do_not_match_timestamped_quote:{index}")
@@ -191,6 +193,8 @@ def certify_value_bet_markets(*, evaluation_records: list[dict]) -> dict:
             )
             if bookmaker_odds is None or not odds_timestamped:
                 raise ValueBetCertificationError(f"1x2_bookmaker_baseline_missing:{index}")
+            if any(abs(bookmaker_odds[key] - odds[key]) > 1e-9 for key in outcomes):
+                raise ValueBetCertificationError(f"1x2_bookmaker_quote_mismatch:{index}")
             implied = {key: 1.0 / value for key, value in bookmaker_odds.items()}
             overround = sum(implied.values())
             bookmaker_probabilities = {key: value / overround for key, value in implied.items()}
@@ -291,6 +295,7 @@ def certify_value_bet_markets(*, evaluation_records: list[dict]) -> dict:
     report = {
         "schema_version": 1,
         "report_type": "veltrix_value_bet_certification",
+        "evaluation_records_sha256": _hash({"records": evaluation_records}),
         "thresholds": {
             "walk_forward_matches_per_market": MIN_WALK_FORWARD_MATCHES,
             "prospective_settled_selections_per_market": MIN_PROSPECTIVE_SETTLED_SELECTIONS,
