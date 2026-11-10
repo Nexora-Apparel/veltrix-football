@@ -14,6 +14,7 @@ from typing import Any
 
 from app.bookmaker_odds_evidence import (
     BookmakerOddsEvidenceError, latest_pre_kickoff_snapshot,
+    validate_odds_observation,
 )
 from app.market_release_certification import MARKETS
 
@@ -263,13 +264,15 @@ def append_prospective_selections(*, ledger: dict, predictions: list[dict],
     raw_odds = odds_ledger.get("observations")
     if not isinstance(raw_odds, list):
         raise ProspectiveValueLedgerError("odds_ledger_observations_invalid")
-    provider_ledger = {
-        "schema_version": 1,
-        "observations": [
-            item for item in raw_odds
-            if isinstance(item, dict) and item.get("provider") == "the_odds_api"
-        ],
-    }
+    provider_observations = [
+        item for item in raw_odds
+        if isinstance(item, dict) and item.get("provider") == "the_odds_api"
+    ]
+    for item in provider_observations:
+        try:
+            validate_odds_observation(item)
+        except BookmakerOddsEvidenceError as exc:
+            raise ProspectiveValueLedgerError(f"odds_observation_invalid:{exc}") from None
 
     selections = list(ledger["selections"])
     settlements = list(ledger["settlements"])
@@ -329,11 +332,21 @@ def append_prospective_selections(*, ledger: dict, predictions: list[dict],
                     "reason": str(exc)[:120],
                 })
                 continue
+            decision_ledger = {
+                "schema_version": 1,
+                "observations": [
+                    item for item in provider_observations
+                    if item["fixture_id"] == fixture_id
+                    and item["market"] == market
+                    and item["bookmaker"] in policy["allowed_bookmakers"]
+                    and _time(item["captured_at"], "odds_captured_at") <= decision_time
+                ],
+            }
             candidates = []
             for bookmaker in policy["allowed_bookmakers"]:
                 try:
                     snapshot = latest_pre_kickoff_snapshot(
-                        provider_ledger, fixture_id=fixture_id, market=market,
+                        decision_ledger, fixture_id=fixture_id, market=market,
                         bookmaker=bookmaker, kickoff_at=kickoff_at,
                     )
                 except BookmakerOddsEvidenceError as exc:
@@ -343,9 +356,6 @@ def append_prospective_selections(*, ledger: dict, predictions: list[dict],
                     })
                     continue
                 if snapshot is None:
-                    continue
-                quote_time = _time(snapshot["captured_at"], "odds_captured_at")
-                if quote_time > decision_time:
                     continue
                 for outcome in MARKETS[market]:
                     price = float(snapshot["decimal_odds"][outcome])
