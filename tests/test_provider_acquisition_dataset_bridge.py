@@ -90,7 +90,8 @@ class AcquisitionDatasetBridgeTests(unittest.TestCase):
             }],
         }
         signed_registry = sign_source_qualification_registry(
-            kms_client=KMS, key_arn=KEY_ARN, registry=registry,
+            kms_client=KMS, key_arn=KEY_ARN,
+            trusted_key_regions={KEY_ARN: "eu-west-1"}, registry=registry,
         )
         return {
             "source_contract": CONTRACT,
