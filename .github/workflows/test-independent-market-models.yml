@@ -24,3 +24,5 @@ jobs:
           python-version: "3.12"
       - name: Run independent market model tests
         run: python -m unittest discover -s tests -p 'test_independent_market_models.py' -v
+      - name: Run historical feature reconstruction tests
+        run: python -m unittest discover -s tests -p 'test_results_feature_reconstruction.py' -v
