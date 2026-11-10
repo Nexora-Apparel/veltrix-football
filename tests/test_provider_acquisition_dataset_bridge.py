@@ -184,6 +184,7 @@ class AcquisitionDatasetBridgeTests(unittest.TestCase):
         with self.assertRaises(AcquisitionDatasetBridgeError):
             acquisition_record_to_history_row(
                 record, settlement_timestamp_package=self.settlement_package(),
+                trusted_kms_clients={KEY_ARN: KMS},
             )
 
 
