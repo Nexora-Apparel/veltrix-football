@@ -85,6 +85,7 @@ class WalkForwardCertificationAdapterTests(unittest.TestCase):
             self.assertEqual(rows[0]["fixture_id"], "fixture-1")
             self.assertIn("bookmaker_odds_decimal", rows[0])
             self.assertEqual(rows[0]["odds_source_evidence_sha256"], "c" * 64)
+            self.assertEqual(rows[0]["crosswalk_source_evidence_sha256"], "d" * 64)
             self.assertEqual(rows[1]["fixture_id"], "fixture-2")
             self.assertNotIn("bookmaker_odds_decimal", rows[1])
             self.assertEqual(evidence[market]["prospective"], [])
