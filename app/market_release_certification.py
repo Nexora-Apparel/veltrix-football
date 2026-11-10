@@ -157,6 +157,9 @@ def _walk_forward(rows: object, market: str, evaluated: datetime) -> tuple[list[
             odds_digest = row.get("odds_source_evidence_sha256")
             if not isinstance(odds_digest, str) or len(odds_digest) != 64 or any(ch not in "0123456789abcdef" for ch in odds_digest):
                 raise CertificationError(f"{market}_odds_source_evidence_sha256_invalid:{fixture}")
+            crosswalk_digest = row.get("crosswalk_source_evidence_sha256")
+            if not isinstance(crosswalk_digest, str) or len(crosswalk_digest) != 64 or any(ch not in "0123456789abcdef" for ch in crosswalk_digest):
+                raise CertificationError(f"{market}_crosswalk_source_evidence_sha256_invalid:{fixture}")
             if not isinstance(odds, dict) or set(odds) != set(classes):
                 raise CertificationError(f"{market}_bookmaker_odds_classes_invalid:{fixture}")
             implied = {}
@@ -174,6 +177,8 @@ def _walk_forward(rows: object, market: str, evaluated: datetime) -> tuple[list[
             "wat_date": kickoff.astimezone(WAT).date().isoformat(),
             "target": target, "probabilities": probabilities,
             "bookmaker_probabilities": book_probs,
+            "odds_source_evidence_sha256": row.get("odds_source_evidence_sha256"),
+            "crosswalk_source_evidence_sha256": row.get("crosswalk_source_evidence_sha256"),
         })
     return normalized, {row["fixture_id"] for row in normalized}
 
@@ -196,7 +201,8 @@ def _prospective(rows: object, market: str, evaluated: datetime) -> list[dict]:
             raise CertificationError(f"{market}_settlement_not_after_kickoff:{fixture}")
         if settled > evaluated or kickoff > evaluated:
             raise CertificationError(f"{market}_prospective_record_after_evaluation:{fixture}")
-        for digest_field in ("settlement_source_evidence_sha256", "odds_source_evidence_sha256"):
+        for digest_field in ("settlement_source_evidence_sha256", "odds_source_evidence_sha256",
+                             "crosswalk_source_evidence_sha256"):
             digest = row.get(digest_field)
             if not isinstance(digest, str) or len(digest) != 64 or any(ch not in "0123456789abcdef" for ch in digest):
                 raise CertificationError(f"{market}_{digest_field}_invalid:{fixture}")
@@ -221,6 +227,7 @@ def _prospective(rows: object, market: str, evaluated: datetime) -> list[dict]:
             "selection": selection, "actual": actual,
             "settlement_source_evidence_sha256": row["settlement_source_evidence_sha256"],
             "odds_source_evidence_sha256": row["odds_source_evidence_sha256"],
+            "crosswalk_source_evidence_sha256": row["crosswalk_source_evidence_sha256"],
         })
     return output
 
@@ -280,6 +287,13 @@ def evaluate_market_release_certification(*, evidence: dict,
         )
         required_source_digests.update(
             row["odds_source_evidence_sha256"] for row in prospective
+        )
+        required_source_digests.update(
+            row["crosswalk_source_evidence_sha256"] for row in bundle["walk_forward"]
+            if isinstance(row, dict) and row.get("crosswalk_source_evidence_sha256") is not None
+        )
+        required_source_digests.update(
+            row["crosswalk_source_evidence_sha256"] for row in prospective
         )
         checks = {
             "source_evidence_receipts_verified": bool(required_source_digests)
