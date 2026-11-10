@@ -239,8 +239,11 @@ def evaluate_market_release_certification(*, evidence: dict,
         bundle = evidence[market]
         if not isinstance(bundle, dict) or set(bundle) != {"walk_forward", "prospective"}:
             raise CertificationError(f"{market}_evidence_bundle_invalid")
-        wf, _ = _walk_forward(bundle["walk_forward"], market, evaluated)
+        wf, wf_fixture_ids = _walk_forward(bundle["walk_forward"], market, evaluated)
         prospective = _prospective(bundle["prospective"], market, evaluated)
+        prospective_ids = {row["fixture_id"] for row in prospective}
+        if wf_fixture_ids & prospective_ids:
+            raise CertificationError(f"{market}_walk_forward_prospective_fixture_overlap")
         wf_dates = {row["wat_date"] for row in wf}
         odds_rows = [row for row in wf if row["bookmaker_probabilities"] is not None]
         coverage = len(odds_rows) / len(wf) if wf else 0.0
