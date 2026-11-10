@@ -75,12 +75,13 @@ class HourlyQuotaLedgerTests(unittest.TestCase):
             )
 
     def test_reservation_expires_after_rolling_hour(self):
-        reserve_hourly_quota(
-            ledger_path=self.path, run_id="run-1", reserved_requests=60,
-            now="2026-11-10T05:00:00Z",
-        )
+        for index in range(3):
+            reserve_hourly_quota(
+                ledger_path=self.path, run_id=f"run-{index + 1}", reserved_requests=20,
+                now="2026-11-10T05:00:00Z",
+            )
         result = reserve_hourly_quota(
-            ledger_path=self.path, run_id="run-2", reserved_requests=5,
+            ledger_path=self.path, run_id="run-4", reserved_requests=5,
             now="2026-11-10T06:00:01Z",
         )
         self.assertTrue(result["reserved"])
