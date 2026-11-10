@@ -92,3 +92,6 @@ jobs:
         run: python -m unittest discover -s tests -p 'test_team_name_normalization.py' -v
       - name: Run offline odds evidence ingestion tests
         run: python -m unittest discover -s tests -p 'test_offline_odds_evidence_ingest.py' -v
+
+      - name: Run audited provider dataset pipeline tests
+        run: python -m unittest discover -s tests -p 'test_provider_acquisition_dataset_pipeline.py' -v
