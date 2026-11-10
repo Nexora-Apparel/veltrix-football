@@ -66,6 +66,24 @@ class SourceQualificationRegistryTests(unittest.TestCase):
         self.assertEqual(result["contract"]["timestamp_semantics"], "final_whistle")
         self.assertEqual(result["contract"]["qualification_digest"], canonical_sha256(self.record))
 
+    def test_malformed_signing_key_arn_rejected(self):
+        with self.assertRaisesRegex(SourceQualificationRegistryError, "registry_signing_key_arn_invalid"):
+            sign_source_qualification_registry(
+                kms_client=self.kms, key_arn="not-an-aws-kms-arn",
+                registry=copy.deepcopy(self.registry),
+            )
+
+    def test_malformed_kms_verification_response_fails_closed(self):
+        class MalformedKms:
+            def verify(self, **kwargs):
+                return None
+        signed = self.signed()
+        with self.assertRaisesRegex(SourceQualificationRegistryError, "registry_signature_invalid"):
+            verify_source_qualification_registry(
+                registry=signed, trusted_kms_clients={KEY_ARN: MalformedKms()},
+                as_of="2026-11-10T10:00:00Z",
+            )
+
     def test_unknown_signing_key_rejected(self):
         signed = self.signed()
         with self.assertRaisesRegex(SourceQualificationRegistryError, "registry_signing_key_not_trusted"):
