@@ -101,8 +101,11 @@ recomputes the qualification-record digest and rejects modified records,
 unsupported semantics, duplicate source IDs, expired registries, inactive or
 revoked sources, and unsupported competitions.
 
-The provider acquisition dataset bridge now requires the signed registry and
-trusted KMS client mapping in each settlement package. It resolves the source
+The provider acquisition dataset bridge now requires the signed registry in
+each settlement package, while trusted KMS clients are injected separately
+from the evidence package as a runtime trust dependency. Production callers
+must construct that mapping only from out-of-band configuration; an archive
+or acquisition payload cannot add trusted keys. The bridge resolves the source
 at the provider record's retrieval timestamp and requires the supplied
 contract to equal the registry-resolved contract before accepting timestamp
 evidence. The output manifest retains the registry digest and signing-key
