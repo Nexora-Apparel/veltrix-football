@@ -13,7 +13,9 @@ import re
 from datetime import datetime, timezone
 from typing import Any
 
-from app.evidence_receipt_trust import ReceiptTrustError, validate_key_arn
+from app.evidence_receipt_trust import (
+    ReceiptTrustError, validate_current_signing_key, validate_key_arn,
+)
 
 SCHEMA = "veltrix-settlement-source-qualification-registry-v1"
 ALGORITHM = "ECDSA_SHA_256"
@@ -111,8 +113,16 @@ def _unsigned_registry(registry: dict) -> dict:
 
 
 def sign_source_qualification_registry(*, kms_client: Any, key_arn: str,
+                                       trusted_key_regions: dict[str, str],
                                        registry: dict) -> dict:
     region = _key_region(key_arn)
+    try:
+        validate_current_signing_key(
+            signing_key_arn=key_arn, signing_region=region,
+            trusted_key_regions=trusted_key_regions,
+        )
+    except ReceiptTrustError as exc:
+        raise SourceQualificationRegistryError(str(exc)) from None
     unsigned = _unsigned_registry(registry)
     if unsigned.get("schema") != SCHEMA:
         raise SourceQualificationRegistryError("registry_schema_unsupported")
