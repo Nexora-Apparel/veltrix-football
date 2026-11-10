@@ -24,6 +24,16 @@ jobs:
           python-version: "3.12"
       - name: Run independent market model tests
         run: python -m unittest discover -s tests -p 'test_independent_market_models.py' -v
+      - name: Run raw source evidence archive tests
+        run: python -m unittest discover -s tests -p 'test_provider_source_evidence.py' -v
+      - name: Run provider fixture normalization and batch tests
+        run: |
+          python -m unittest discover -s tests -p 'test_provider_fixture_normalizer.py' -v
+          python -m unittest discover -s tests -p 'test_provider_fixture_batch.py' -v
+      - name: Run acquisition adapter and artifact integrity tests
+        run: |
+          python -m unittest discover -s tests -p 'test_provider_acquisition_adapters.py' -v
+          python -m unittest discover -s tests -p 'test_provider_acquisition_artifact.py' -v
       - name: Run canonical source payload provenance tests
         run: python -m unittest discover -s tests -p 'test_source_payload_provenance.py' -v
       - name: Run historical feature reconstruction tests
