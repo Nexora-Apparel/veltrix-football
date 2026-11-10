@@ -66,3 +66,5 @@ jobs:
         run: python -m unittest discover -s tests -p 'test_multi_origin_walk_forward.py' -v
       - name: Run fail-closed market release certification tests
         run: python -m unittest discover -s tests -p 'test_market_release_certification.py' -v
+      - name: Run point-in-time bookmaker odds evidence tests
+        run: python -m unittest discover -s tests -p 'test_bookmaker_odds_evidence.py' -v
