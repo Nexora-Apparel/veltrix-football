@@ -15,7 +15,6 @@ from typing import Any
 from app.bookmaker_odds_evidence import (
     BookmakerOddsEvidenceError, latest_pre_kickoff_snapshot,
 )
-from app.market_probability_calibration import _time as _calibration_time
 from app.market_release_certification import MARKETS
 
 
@@ -42,10 +41,15 @@ def _canonical_hash(value: Any) -> str:
 
 
 def _time(value: Any, field: str) -> datetime:
+    if not isinstance(value, str) or not value.strip():
+        raise ProspectiveValueLedgerError(f"{field}_missing")
     try:
-        return _calibration_time(value, field)
-    except ValueError as exc:
-        raise ProspectiveValueLedgerError(str(exc)) from None
+        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError:
+        raise ProspectiveValueLedgerError(f"{field}_invalid") from None
+    if parsed.tzinfo is None or parsed.utcoffset() is None:
+        raise ProspectiveValueLedgerError(f"{field}_timezone_missing")
+    return parsed.astimezone(timezone.utc)
 
 
 def _digest(value: Any, field: str) -> str:
