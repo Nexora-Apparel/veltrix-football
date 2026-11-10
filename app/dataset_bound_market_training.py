@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+from datetime import datetime, timezone
 
 from app.chronological_training_dataset import (
     ChronologicalDatasetError,
@@ -54,6 +55,14 @@ def fit_models_from_chronological_dataset(*, dataset: dict, trained_at: str,
     if any(not partitions[split] for split in partitions):
         raise DatasetTrainingError("all_three_chronological_splits_required")
 
+    try:
+        trained_time = datetime.fromisoformat(trained_at.replace("Z", "+00:00"))
+    except (AttributeError, ValueError):
+        raise DatasetTrainingError("model_training_timestamp_invalid") from None
+    if trained_time.tzinfo is None or trained_time.utcoffset() is None:
+        raise DatasetTrainingError("model_training_timestamp_timezone_missing")
+    trained_time = trained_time.astimezone(timezone.utc)
+
     train_rows = []
     for row in partitions["train"]:
         if set(row["predictors"]) != set(FEATURES):
@@ -61,6 +70,22 @@ def fit_models_from_chronological_dataset(*, dataset: dict, trained_at: str,
                 f"training_feature_schema_mismatch:{row['fixture_id']}"
             )
         provenance = row["label_provenance"]
+        try:
+            label_retrieved = datetime.fromisoformat(
+                provenance["retrieved_at"].replace("Z", "+00:00")
+            )
+        except (AttributeError, ValueError):
+            raise DatasetTrainingError(
+                f"label_retrieval_timestamp_invalid:{row['fixture_id']}"
+            ) from None
+        if label_retrieved.tzinfo is None or label_retrieved.utcoffset() is None:
+            raise DatasetTrainingError(
+                f"label_retrieval_timezone_missing:{row['fixture_id']}"
+            )
+        if label_retrieved.astimezone(timezone.utc) > trained_time:
+            raise DatasetTrainingError(
+                f"label_retrieved_after_model_training:{row['fixture_id']}"
+            )
         source_digest = _digest({
             "feature_snapshot_sha256": row["feature_snapshot_sha256"],
             "label_payload_sha256": provenance["payload_sha256"],
