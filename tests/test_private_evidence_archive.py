@@ -18,17 +18,22 @@ TEST_SIGNING_KEY_ARN = "arn:aws:kms:us-east-1:123456789012:key/test-signing-key"
 
 
 class FakeKMS:
+    def __init__(self, allowed_key_arn=TEST_SIGNING_KEY_ARN):
+        self.allowed_key_arn = allowed_key_arn
+        self.sign_calls = 0
+        self.verify_calls = 0
+
     def sign(self, KeyId, Message, MessageType, SigningAlgorithm):
-        import hashlib
-        assert KeyId == TEST_SIGNING_KEY_ARN
+        self.sign_calls += 1
+        assert KeyId == self.allowed_key_arn
         assert MessageType == "DIGEST" and SigningAlgorithm == "ECDSA_SHA_256"
         return {"Signature": hashlib.sha256(KeyId.encode() + Message).digest()}
 
     def verify(self, KeyId, Message, MessageType, Signature, SigningAlgorithm):
-        import hashlib
+        self.verify_calls += 1
         expected = hashlib.sha256(KeyId.encode() + Message).digest()
         return {"SignatureValid": (
-            KeyId == TEST_SIGNING_KEY_ARN and MessageType == "DIGEST"
+            KeyId == self.allowed_key_arn and MessageType == "DIGEST"
             and SigningAlgorithm == "ECDSA_SHA_256" and Signature == expected
         )}
 
