@@ -18,6 +18,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from app.encrypted_source_evidence import decrypt_and_verify_source_evidence
 from app.provider_acquisition_artifact import validate_fivedollar_history_batch_report
+from app.evidence_receipt_signing import (
+    SCHEMA_V2, ReceiptSignatureError, verify_receipt_signature,
+)
 
 _SAFE = re.compile(r"^[A-Za-z0-9._-]{1,160}$")
 _REQUIRED_OBJECTS = {"report", "evidence", "manifest"}
@@ -39,7 +42,7 @@ def _validate_endpoint_url(endpoint: str | None) -> str:
     return endpoint
 
 
-def restore_evidence(*, client: Any, bucket: str, receipt_key: str,
+def restore_evidence(*, client: Any, kms_client: Any, trusted_signing_key_arn: str, bucket: str, receipt_key: str,
                      encryption_key: str, output_dir: str | Path) -> dict:
     if not isinstance(receipt_key, str) or not receipt_key or ".." in Path(receipt_key).parts:
         raise EvidenceRestoreError("restore_receipt_key_invalid")
@@ -48,10 +51,18 @@ def restore_evidence(*, client: Any, bucket: str, receipt_key: str,
         receipt = json.loads(receipt_bytes)
     except Exception:
         raise EvidenceRestoreError("restore_receipt_unreadable") from None
+    try:
+        verify_receipt_signature(
+            kms_client=kms_client, trusted_key_arn=trusted_signing_key_arn,
+            receipt=receipt,
+        )
+    except ReceiptSignatureError:
+        raise EvidenceRestoreError("restore_receipt_signature_invalid") from None
     if (not isinstance(receipt, dict)
-            or receipt.get("schema") != "veltrix-evidence-archive-receipt-v1"
+            or receipt.get("schema") != SCHEMA_V2
             or receipt.get("provider") != "fivedollar"
             or receipt.get("bucket") != bucket
+            or receipt.get("receipt_key") != receipt_key
             or receipt.get("readback_verified") is not True
             or receipt.get("raw_payloads") != "encrypted_only"):
         raise EvidenceRestoreError("restore_receipt_invalid")
@@ -158,16 +169,19 @@ def main() -> int:
         secret = os.getenv("VELTRIX_EVIDENCE_ARCHIVE_SECRET_ACCESS_KEY")
         encryption_key = os.getenv("VELTRIX_RAW_EVIDENCE_ENCRYPTION_KEY")
         region = os.getenv("VELTRIX_EVIDENCE_ARCHIVE_REGION", "auto")
-        prefix = os.getenv("VELTRIX_EVIDENCE_ARCHIVE_PREFIX", "veltrix-football/evidence/v1").strip("/")
-        if not all((endpoint, bucket, access, secret, encryption_key)):
-            raise EvidenceRestoreError("private_evidence_restore_configuration_missing")
+        prefix = os.getenv("VELTRIX_EVIDENCE_ARCHIVE_PREFIX", "veltrix-football/evidence/v2").strip("/")
+        signing_key_arn = os.getenv("VELTRIX_EVIDENCE_RECEIPT_KMS_KEY_ARN")
+        kms_region = os.getenv("VELTRIX_EVIDENCE_RECEIPT_KMS_REGION")
+        if not all((endpoint, bucket, access, secret, encryption_key, signing_key_arn, kms_region)):
+            raise EvidenceRestoreError("private_evidence_restore_or_kms_configuration_missing")
         import boto3
         client = boto3.client(
             "s3", endpoint_url=endpoint, region_name=region,
             aws_access_key_id=access, aws_secret_access_key=secret,
         )
+        kms_client = boto3.client("kms", region_name=kms_region)
         result = restore_evidence(
-            client=client, bucket=bucket,
+            client=client, kms_client=kms_client, trusted_signing_key_arn=signing_key_arn, bucket=bucket,
             receipt_key=f"{prefix}/receipts/{args.run_id}.json",
             encryption_key=encryption_key, output_dir=args.output_dir,
         )
