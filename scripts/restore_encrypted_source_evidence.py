@@ -21,6 +21,10 @@ from app.provider_acquisition_artifact import validate_fivedollar_history_batch_
 from app.evidence_receipt_signing import (
     SCHEMA_V2, ReceiptSignatureError, verify_receipt_signature,
 )
+from app.evidence_receipt_trust import (
+    ReceiptTrustError, parse_trusted_key_regions,
+    verify_receipt_with_trusted_clients,
+)
 
 _SAFE = re.compile(r"^[A-Za-z0-9._-]{1,160}$")
 _REQUIRED_OBJECTS = {"report", "evidence", "manifest"}
@@ -43,7 +47,8 @@ def _validate_endpoint_url(endpoint: str | None) -> str:
 
 
 def restore_evidence(*, client: Any, kms_client: Any, trusted_signing_key_arn: str, bucket: str, receipt_key: str,
-                     encryption_key: str, output_dir: str | Path) -> dict:
+                     encryption_key: str, output_dir: str | Path,
+                     trusted_kms_clients: dict[str, Any] | None = None) -> dict:
     if not isinstance(receipt_key, str) or not receipt_key or ".." in Path(receipt_key).parts:
         raise EvidenceRestoreError("restore_receipt_key_invalid")
     try:
@@ -52,11 +57,16 @@ def restore_evidence(*, client: Any, kms_client: Any, trusted_signing_key_arn: s
     except Exception:
         raise EvidenceRestoreError("restore_receipt_unreadable") from None
     try:
-        verify_receipt_signature(
-            kms_client=kms_client, trusted_key_arn=trusted_signing_key_arn,
-            receipt=receipt,
-        )
-    except ReceiptSignatureError:
+        if trusted_kms_clients is not None:
+            verify_receipt_with_trusted_clients(
+                receipt=receipt, trusted_kms_clients=trusted_kms_clients,
+            )
+        else:
+            verify_receipt_signature(
+                kms_client=kms_client, trusted_key_arn=trusted_signing_key_arn,
+                receipt=receipt,
+            )
+    except (ReceiptSignatureError, ReceiptTrustError):
         raise EvidenceRestoreError("restore_receipt_signature_invalid") from None
     if (not isinstance(receipt, dict)
             or receipt.get("schema") != SCHEMA_V2
@@ -172,16 +182,29 @@ def main() -> int:
         prefix = os.getenv("VELTRIX_EVIDENCE_ARCHIVE_PREFIX", "veltrix-football/evidence/v2").strip("/")
         signing_key_arn = os.getenv("VELTRIX_EVIDENCE_RECEIPT_KMS_KEY_ARN")
         kms_region = os.getenv("VELTRIX_EVIDENCE_RECEIPT_KMS_REGION")
-        if not all((endpoint, bucket, access, secret, encryption_key, signing_key_arn, kms_region)):
-            raise EvidenceRestoreError("private_evidence_restore_or_kms_configuration_missing")
+        registry_json = os.getenv("VELTRIX_EVIDENCE_RECEIPT_KMS_TRUSTED_KEYS_JSON")
+        if not all((endpoint, bucket, access, secret, encryption_key)):
+            raise EvidenceRestoreError("private_evidence_restore_configuration_missing")
+        try:
+            trusted_regions = parse_trusted_key_regions(
+                registry_json=registry_json,
+                legacy_key_arn=signing_key_arn,
+                legacy_region=kms_region,
+            )
+        except ReceiptTrustError:
+            raise EvidenceRestoreError("private_evidence_kms_trust_configuration_invalid") from None
         import boto3
         client = boto3.client(
             "s3", endpoint_url=endpoint, region_name=region,
             aws_access_key_id=access, aws_secret_access_key=secret,
         )
-        kms_client = boto3.client("kms", region_name=kms_region)
+        trusted_kms_clients = {
+            key_arn: boto3.client("kms", region_name=key_region)
+            for key_arn, key_region in trusted_regions.items()
+        }
         result = restore_evidence(
-            client=client, kms_client=kms_client, trusted_signing_key_arn=signing_key_arn, bucket=bucket,
+            client=client, kms_client=None, trusted_signing_key_arn=signing_key_arn or "",
+            trusted_kms_clients=trusted_kms_clients, bucket=bucket,
             receipt_key=f"{prefix}/receipts/{args.run_id}.json",
             encryption_key=encryption_key, output_dir=args.output_dir,
         )
