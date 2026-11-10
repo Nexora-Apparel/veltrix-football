@@ -9,6 +9,16 @@ from app.chronological_training_dataset import (
 from app.point_in_time_feature_contract import build_point_in_time_feature_snapshot
 
 
+def rehash(dataset):
+    dataset.pop("dataset_sha256", None)
+    dataset["dataset_sha256"] = hashlib.sha256(
+        __import__("json").dumps(
+            dataset, sort_keys=True, separators=(",", ":"),
+            ensure_ascii=False, allow_nan=False,
+        ).encode("utf-8")
+    ).hexdigest()
+
+
 POLICY = {
     "train_end_date": "2026-10-01",
     "validation_start_date": "2026-10-09",
@@ -120,6 +130,25 @@ class ChronologicalDatasetTests(unittest.TestCase):
             assemble_chronological_training_dataset(
                 snapshots=self.snapshots, settled_labels=self.labels[:-1], split_policy=POLICY,
             )
+
+
+    def test_rehashed_dataset_with_invalid_market_target_is_rejected(self):
+        dataset = assemble_chronological_training_dataset(
+            snapshots=self.snapshots, settled_labels=self.labels, split_policy=POLICY,
+        )
+        dataset["rows"][0]["targets"]["1x2"] = "home_score"
+        rehash(dataset)
+        with self.assertRaisesRegex(ChronologicalDatasetError, "target_value_invalid"):
+            validate_chronological_training_dataset(dataset)
+
+    def test_rehashed_dataset_with_label_retrieved_before_settlement_is_rejected(self):
+        dataset = assemble_chronological_training_dataset(
+            snapshots=self.snapshots, settled_labels=self.labels, split_policy=POLICY,
+        )
+        dataset["rows"][0]["label_provenance"]["retrieved_at"] = "2026-09-15T13:00:00Z"
+        rehash(dataset)
+        with self.assertRaisesRegex(ChronologicalDatasetError, "label_temporal_order_invalid"):
+            validate_chronological_training_dataset(dataset)
 
     def test_dataset_hash_tampering_is_rejected(self):
         dataset = assemble_chronological_training_dataset(
