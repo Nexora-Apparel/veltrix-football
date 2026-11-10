@@ -477,6 +477,20 @@ def export_settled_certification_rows(*, ledger: dict, evaluated_at: str) -> dic
             "actual": settlement["actual"],
             "odds_decimal": selection["decimal_odds"],
             "stake_units": selection["stake_units"],
+            "selection_id": selection["selection_id"],
+            "bookmaker": selection["bookmaker"],
+            "odds_observation_id": selection["odds_observation_id"],
+            "model_sha256": selection["model_sha256"],
+            "feature_snapshot_sha256": selection["feature_snapshot_sha256"],
+            "prediction_as_of": selection["prediction_as_of"],
+            "decision_at": selection["decision_at"],
+            "model_probability": selection["model_probability"],
+            "bookmaker_probability": selection["bookmaker_probability"],
+            "edge": selection["edge"],
+            "expected_return": selection["expected_return"],
+            "policy_id": selection["policy_id"],
+            "policy_version": selection["policy_version"],
+            "policy_sha256": selection["policy_sha256"],
         })
     for market in output:
         output[market].sort(key=lambda row: (row["kickoff_at"], row["fixture_id"]))
