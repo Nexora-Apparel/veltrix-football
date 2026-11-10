@@ -70,3 +70,5 @@ jobs:
         run: python -m unittest discover -s tests -p 'test_bookmaker_odds_evidence.py' -v
       - name: Run The Odds API evidence adapter tests
         run: python -m unittest discover -s tests -p 'test_the_odds_api_evidence_adapter.py' -v
+      - name: Run offline odds evidence ingestion tests
+        run: python -m unittest discover -s tests -p 'test_offline_odds_evidence_ingest.py' -v
