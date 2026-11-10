@@ -1,10 +1,30 @@
 import unittest
 from datetime import date, timedelta
 
+from app.source_payload_provenance import canonical_payload_sha256
 from app.results_training_dataset_adapter import (
     assemble_results_history_dataset,
     build_results_history_snapshot,
 )
+
+
+def attach_evidence(row):
+    normalized = {key: row[key] for key in (
+        "fixture_id", "competition_id", "kickoff_at", "settled_at",
+        "home_team_id", "away_team_id", "home_score", "away_score",
+        "normalized_status",
+    )}
+    payload = {"provider_fixture": dict(normalized), "source_version": 1}
+    row["payload_sha256"] = canonical_payload_sha256(payload)
+    row["source_payload"] = {
+        "provider": row["provider"], "endpoint": row["endpoint"],
+        "source_id": row["source_id"], "run_id": row["run_id"],
+        "retrieved_at": row["retrieved_at"], "payload": payload,
+        "payload_sha256": row["payload_sha256"],
+        "normalized_record": normalized,
+        "normalized_record_sha256": canonical_payload_sha256(normalized),
+    }
+    return row
 
 
 def history_rows():
@@ -23,7 +43,7 @@ def history_rows():
         for match_index, (home, away) in enumerate(pair):
             hour = 12 + match_index * 3
             fixture_id = f"history-{day_index}-{match_index}"
-            rows.append({
+            rows.append(attach_evidence({
                 "fixture_id": fixture_id,
                 "provider": "fivedollar",
                 "source_id": fixture_id,
@@ -36,10 +56,10 @@ def history_rows():
                 "away_score": (day_index * 2 + match_index + 1) % 3,
                 "endpoint": "/fixtures",
                 "retrieved_at": f"{day.isoformat()}T{hour + 3:02d}:00:00Z",
-                "payload_sha256": f"{len(rows) + 1:064x}",
+                "payload_sha256": "",
                 "run_id": "history-acquisition-run-1",
                 "normalized_status": "finished",
-            })
+            }))
     return rows
 
 
@@ -106,6 +126,7 @@ class ResultsTrainingDatasetAdapterTests(unittest.TestCase):
         for row in history:
             if "A" in (row["home_team_id"], row["away_team_id"]):
                 row["retrieved_at"] = "2026-09-01T13:00:00Z"
+                attach_evidence(row)
         result = assemble_results_history_dataset(
             historical_matches=history,
             target_fixtures=[TARGET],
