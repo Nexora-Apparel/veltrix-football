@@ -3,7 +3,9 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from scripts.ingest_the_odds_api_evidence import ingest
+from scripts.ingest_the_odds_api_evidence import (
+    OfflineOddsIngestError, ingest,
+)
 
 
 class OfflineOddsEvidenceIngestTests(unittest.TestCase):
@@ -69,7 +71,7 @@ class OfflineOddsEvidenceIngestTests(unittest.TestCase):
         crosswalk = json.loads(self.crosswalk_path.read_text())
         crosswalk["mapping_status"] = "pending"
         self.crosswalk_path.write_text(json.dumps(crosswalk))
-        with self.assertRaisesRegex(ValueError, "crosswalk_not_verified"):
+        with self.assertRaisesRegex(OfflineOddsIngestError, "crosswalk_not_verified"):
             self.run_ingest()
         self.assertEqual(self.ledger_path.read_bytes(), original)
 
@@ -77,7 +79,7 @@ class OfflineOddsEvidenceIngestTests(unittest.TestCase):
         target = self.root / "target.json"
         target.write_text('{"schema_version":1,"observations":[]}')
         self.ledger_path.symlink_to(target)
-        with self.assertRaisesRegex(ValueError, "symlink_rejected"):
+        with self.assertRaisesRegex(OfflineOddsIngestError, "symlink_rejected"):
             self.run_ingest()
         self.assertEqual(json.loads(target.read_text()), {
             "schema_version": 1, "observations": [],
