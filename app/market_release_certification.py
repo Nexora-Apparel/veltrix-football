@@ -219,12 +219,15 @@ def _prospective(rows: object, market: str, evaluated: datetime) -> list[dict]:
             "fixture_id": fixture, "wat_date": kickoff.astimezone(WAT).date().isoformat(),
             "stake_units": stake, "profit_units": profit,
             "selection": selection, "actual": actual,
+            "settlement_source_evidence_sha256": row["settlement_source_evidence_sha256"],
+            "odds_source_evidence_sha256": row["odds_source_evidence_sha256"],
         })
     return output
 
 
 def evaluate_market_release_certification(*, evidence: dict,
-                                          evaluated_at: str) -> dict:
+                                          evaluated_at: str,
+                                          verified_source_evidence_sha256: list[str] | set[str] | tuple[str, ...] | None = None) -> dict:
     """Evaluate market thresholds without activating any production behavior.
 
     evidence[market] = {"walk_forward": [...], "prospective": [...]}.
@@ -234,6 +237,14 @@ def evaluate_market_release_certification(*, evidence: dict,
     evaluated = _timestamp(evaluated_at, "evaluated_at")
     if not isinstance(evidence, dict) or set(evidence) != set(MARKETS):
         raise CertificationError("evidence_must_contain_exactly_all_markets")
+    verified_digests = set()
+    if verified_source_evidence_sha256 is not None:
+        if not isinstance(verified_source_evidence_sha256, (list, set, tuple)):
+            raise CertificationError("verified_source_evidence_digest_set_invalid")
+        for digest in verified_source_evidence_sha256:
+            if not isinstance(digest, str) or not re.fullmatch(r"[0-9a-f]{64}", digest):
+                raise CertificationError("verified_source_evidence_digest_invalid")
+            verified_digests.add(digest)
     results = {}
     for market, classes in MARKETS.items():
         bundle = evidence[market]
@@ -257,7 +268,22 @@ def evaluate_market_release_certification(*, evidence: dict,
             "lower_95": None, "upper_95": None, "method": "wat_date_cluster_bootstrap",
             "replicates": 0, "status": "no_selections",
         }
+        required_source_digests = {
+            row["label_source_evidence_sha256"] for row in bundle["walk_forward"]
+        }
+        required_source_digests.update(
+            row["odds_source_evidence_sha256"] for row in bundle["walk_forward"]
+            if isinstance(row, dict) and row.get("odds_source_evidence_sha256") is not None
+        )
+        required_source_digests.update(
+            row["settlement_source_evidence_sha256"] for row in prospective
+        )
+        required_source_digests.update(
+            row["odds_source_evidence_sha256"] for row in prospective
+        )
         checks = {
+            "source_evidence_receipts_verified": bool(required_source_digests)
+                and required_source_digests.issubset(verified_digests),
             "walk_forward_fixtures": len(wf) >= MIN_WALK_FORWARD,
             "walk_forward_dates": len(wf_dates) >= MIN_DATES,
             "prospective_selections": len(prospective) >= MIN_PROSPECTIVE,
@@ -303,6 +329,7 @@ def evaluate_market_release_certification(*, evidence: dict,
         "markets": results,
         "all_markets_certified": all_certified,
         "value_betting_thresholds_met": all_certified,
+        "verified_source_evidence_digest_count": len(verified_digests),
         "value_betting_authorized": False,
         "publication_authorized": False,
         "provenance_receipt_verification_required": True,
