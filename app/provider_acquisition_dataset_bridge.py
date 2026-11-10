@@ -1,8 +1,8 @@
 """Bridge verified acquisition records into the chronological history dataset.
 
-This is deliberately fail-closed: provider terminal status alone is not a
-settlement timestamp. Records without an independently supplied settlement
-timestamp cannot become historical labels or feature-history rows.
+Provider terminal status and independently qualified final-whistle evidence
+are separate facts. This bridge joins them only through an explicit reviewed
+fixture identity mapping. It never infers settlement time from provider status.
 """
 from __future__ import annotations
 
@@ -15,7 +15,11 @@ from app.provider_source_evidence import (
     SourceEvidenceError, validate_source_evidence,
 )
 from app.provider_settlement_evidence import (
-    SettlementEvidenceError, validate_settlement_evidence,
+    extract_settlement_evidence, SettlementEvidenceError,
+)
+from app.settlement_timestamp_source import (
+    SettlementTimestampSourceError,
+    validate_settlement_timestamp_evidence,
 )
 from app.results_training_dataset_adapter import (
     ResultsTrainingAdapterError, assemble_results_history_dataset,
@@ -44,7 +48,46 @@ def _timestamp(value: Any, field: str) -> str:
     return parsed.isoformat().replace("+00:00", "Z")
 
 
-def acquisition_record_to_history_row(record: Any) -> dict:
+def _qualified_settlement(record: dict, package: Any) -> dict:
+    if not isinstance(package, dict) or set(package) != {
+        "source_contract", "raw_payload", "fixture_identity",
+        "expected_fixture_identity", "evidence",
+    }:
+        raise AcquisitionDatasetBridgeError("qualified_settlement_package_invalid")
+    provider_payload = record.get("source_evidence", {}).get("raw_payload")
+    try:
+        provider_status = extract_settlement_evidence(record.get("provider"), provider_payload)
+        if record.get("settlement_evidence") != provider_status:
+            raise AcquisitionDatasetBridgeError("provider_terminal_status_evidence_mismatch")
+        if provider_status.get("terminal_status_confirmed") is not True:
+            raise AcquisitionDatasetBridgeError("provider_terminal_status_not_confirmed")
+        verified = validate_settlement_timestamp_evidence(
+            package["evidence"],
+            source_contract=package["source_contract"],
+            raw_payload=package["raw_payload"],
+            fixture_identity=package["fixture_identity"],
+            expected_fixture_identity=package["expected_fixture_identity"],
+            kickoff_at=record.get("kickoff_at"),
+        )
+    except SettlementTimestampSourceError as exc:
+        raise AcquisitionDatasetBridgeError(f"qualified_settlement_rejected:{exc}") from None
+    except (KeyError, TypeError, SettlementEvidenceError) as exc:
+        raise AcquisitionDatasetBridgeError(f"provider_settlement_evidence_invalid:{exc}") from None
+
+    settled_at = _timestamp(verified["settlement_at"], "settled_at")
+    retrieved_at = _timestamp(record.get("retrieved_at"), "retrieved_at")
+    if datetime.fromisoformat(retrieved_at.replace("Z", "+00:00")) < datetime.fromisoformat(settled_at.replace("Z", "+00:00")):
+        raise AcquisitionDatasetBridgeError("provider_retrieval_precedes_settlement")
+    return {
+        "settled_at": settled_at,
+        "settlement_source_id": verified["source_id"],
+        "settlement_qualification_digest": package["source_contract"]["qualification_digest"],
+        "settlement_evidence_sha256": verified["evidence_sha256"],
+    }
+
+
+def acquisition_record_to_history_row(record: Any, *,
+                                       settlement_timestamp_package: dict | None = None) -> dict:
     if not isinstance(record, dict):
         raise AcquisitionDatasetBridgeError("acquisition_record_invalid")
     evidence = record.get("source_evidence")
@@ -52,64 +95,66 @@ def acquisition_record_to_history_row(record: Any) -> dict:
         validate_source_evidence(evidence, expected_record={
             key: value for key, value in record.items() if key != "source_evidence"
         })
-        settlement = validate_settlement_evidence(
-            record.get("settlement_evidence"), provider=record.get("provider"),
-            payload=evidence["raw_payload"],
-        )
-    except (SourceEvidenceError, SettlementEvidenceError, KeyError, TypeError) as exc:
+    except (SourceEvidenceError, KeyError, TypeError) as exc:
         raise AcquisitionDatasetBridgeError(str(exc)) from None
-    settled_at = record.get("settled_at")
-    if not settlement.get("settlement_time_available") or not settled_at:
+
+    if settlement_timestamp_package is None:
         raise AcquisitionDatasetBridgeError("settlement_timestamp_unavailable")
-    settled_at = _timestamp(settled_at, "settled_at")
-    retrieved_at = _timestamp(record.get("retrieved_at"), "retrieved_at")
-    if datetime.fromisoformat(retrieved_at.replace("Z", "+00:00")) < datetime.fromisoformat(settled_at.replace("Z", "+00:00")):
-        raise AcquisitionDatasetBridgeError("retrieval_precedes_settlement")
+    settlement = _qualified_settlement(record, settlement_timestamp_package)
     fixture_id = f'{record["provider"]}:{record["source_id"]}'
     normalized = {
         "fixture_id": fixture_id,
         "competition_id": record["competition_key"],
         "kickoff_at": record["kickoff_at"],
-        "settled_at": settled_at,
+        "settled_at": settlement["settled_at"],
         "home_team_id": record["home_team_source_id"],
         "away_team_id": record["away_team_source_id"],
         "home_score": record["home_score"],
         "away_score": record["away_score"],
         "normalized_status": record["normalized_status"],
     }
-    payload = evidence["raw_payload"]
-    normalized_hash = _canonical_hash(normalized)
     source_payload = {
         "provider": record["provider"],
         "endpoint": record["endpoint"],
         "source_id": record["source_id"],
         "run_id": record["run_id"],
-        "retrieved_at": retrieved_at,
-        "payload": payload,
+        "retrieved_at": _timestamp(record["retrieved_at"], "retrieved_at"),
+        "payload": evidence["raw_payload"],
         "payload_sha256": evidence["raw_payload_sha256"],
         "normalized_record": normalized,
-        "normalized_record_sha256": normalized_hash,
+        "normalized_record_sha256": _canonical_hash(normalized),
     }
     return {
         **normalized,
         "provider": record["provider"],
         "source_id": record["source_id"],
         "endpoint": record["endpoint"],
-        "retrieved_at": retrieved_at,
+        "retrieved_at": source_payload["retrieved_at"],
         "payload_sha256": evidence["raw_payload_sha256"],
         "run_id": record["run_id"],
         "source_payload": source_payload,
+        **settlement,
     }
 
 
 def assemble_provider_acquisition_dataset(*, acquisition_records: list[dict],
+                                          settlement_timestamp_packages: dict,
                                           split_policy: dict,
                                           cutoff_hours: int = 6,
                                           form_window: int = 10,
                                           minimum_team_matches: int = 3) -> dict:
     if not isinstance(acquisition_records, list) or not acquisition_records:
         raise AcquisitionDatasetBridgeError("acquisition_records_required")
-    history = [acquisition_record_to_history_row(row) for row in acquisition_records]
+    if not isinstance(settlement_timestamp_packages, dict):
+        raise AcquisitionDatasetBridgeError("settlement_timestamp_packages_required")
+    history = []
+    for record in acquisition_records:
+        fixture_id = f'{record.get("provider")}:{record.get("source_id")}' if isinstance(record, dict) else None
+        package = settlement_timestamp_packages.get(fixture_id)
+        history.append(acquisition_record_to_history_row(
+            record, settlement_timestamp_package=package
+        ))
+
     targets, labels, manifest = [], [], []
     for row in history:
         targets.append({
@@ -138,6 +183,9 @@ def assemble_provider_acquisition_dataset(*, acquisition_records: list[dict],
             "run_id": row["run_id"],
             "payload_sha256": row["payload_sha256"],
             "settled_at": row["settled_at"],
+            "settlement_source_id": row["settlement_source_id"],
+            "settlement_qualification_digest": row["settlement_qualification_digest"],
+            "settlement_evidence_sha256": row["settlement_evidence_sha256"],
         })
     try:
         assembled = assemble_results_history_dataset(
@@ -163,4 +211,6 @@ def assemble_provider_acquisition_dataset(*, acquisition_records: list[dict],
         "source_evidence_manifest_sha256": dataset["source_evidence_manifest_sha256"],
         "acquisition_record_count": len(acquisition_records),
         "settlement_timestamp_eligible_count": len(history),
+        "historical_availability_proven": False,
+        "model_training_started": False,
     }
