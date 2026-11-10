@@ -74,6 +74,7 @@ jobs:
           python -m unittest discover -s tests -p 'test_provider_acquisition_adapters.py' -v
           python -m unittest discover -s tests -p 'test_provider_fixture_normalizer.py' -v
           python -m unittest discover -s tests -p 'test_encrypted_source_evidence.py' -v
+          python -m unittest discover -s tests -p 'test_private_evidence_archive.py' -v
           python scripts/acquire_fivedollar_history_batch.py --help
 
       - name: Install provider and encryption runtime dependencies
