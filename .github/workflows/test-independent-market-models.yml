@@ -36,6 +36,8 @@ jobs:
           python -m unittest discover -s tests -p 'test_provider_acquisition_artifact.py' -v
       - name: Run provider settlement timestamp evidence tests
         run: python -m unittest discover -s tests -p 'test_provider_settlement_evidence.py' -v
+      - name: Run qualified external settlement timestamp source tests
+        run: python -m unittest discover -s tests -p 'test_settlement_timestamp_source.py' -v
       - name: Run acquisition-to-dataset bridge tests
         run: python -m unittest discover -s tests -p 'test_provider_acquisition_dataset_bridge.py' -v
       - name: Run canonical source payload provenance tests
