@@ -38,7 +38,7 @@ def _timestamp(value: object, field: str) -> datetime:
 def validate_source_payload_evidence(evidence: object) -> dict:
     required = {
         "provider", "endpoint", "source_id", "run_id", "retrieved_at",
-        "payload", "payload_sha256",
+        "payload", "payload_sha256", "normalized_record", "normalized_record_sha256",
     }
     if not isinstance(evidence, dict) or set(evidence) != required:
         raise SourcePayloadProvenanceError("source_evidence_shape_invalid")
@@ -47,14 +47,20 @@ def validate_source_payload_evidence(evidence: object) -> dict:
             raise SourcePayloadProvenanceError(f"{key}_invalid")
     if not isinstance(evidence["payload"], (dict, list)):
         raise SourcePayloadProvenanceError("source_payload_type_invalid")
+    if not isinstance(evidence["normalized_record"], dict):
+        raise SourcePayloadProvenanceError("normalized_record_type_invalid")
     retrieved = _timestamp(evidence["retrieved_at"], "retrieved_at")
     actual = canonical_payload_sha256(evidence["payload"])
     supplied = evidence["payload_sha256"]
     if not isinstance(supplied, str) or supplied != actual:
         raise SourcePayloadProvenanceError("source_payload_hash_mismatch")
+    normalized_actual = canonical_payload_sha256(evidence["normalized_record"])
+    if evidence["normalized_record_sha256"] != normalized_actual:
+        raise SourcePayloadProvenanceError("normalized_record_hash_mismatch")
     return {
         "valid": True,
         "payload_sha256": actual,
+        "normalized_record_sha256": normalized_actual,
         "provider": evidence["provider"],
         "endpoint": evidence["endpoint"],
         "source_id": evidence["source_id"],
