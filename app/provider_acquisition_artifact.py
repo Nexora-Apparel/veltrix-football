@@ -127,8 +127,13 @@ FIVEDOLLAR_HISTORY_COMPETITIONS = {
 }
 
 
-def validate_fivedollar_history_batch_report(report: Any) -> dict:
-    """Validate the historical batch's five-league scope, time window and exact request ledger."""
+def validate_fivedollar_history_batch_report(report: Any, *, require_acceptance: bool = True) -> dict:
+    """Validate five-league scope, time window and request ledger.
+
+    Set require_acceptance=False only for evidence retention of rejected batches;
+    this never makes those batches eligible for import or publication.
+    """)
+
     base = validate_acquisition_report(report)
     if report.get("provider_scope") != ["fivedollar"]:
         raise ArtifactIntegrityError("history_provider_scope_invalid")
@@ -190,7 +195,9 @@ def validate_fivedollar_history_batch_report(report: Any) -> dict:
             raise ArtifactIntegrityError(f"history_record_kickoff_invalid:{index}") from None
         if kickoff.astimezone(zone).date() < start or kickoff.astimezone(zone).date() > end:
             raise ArtifactIntegrityError(f"history_record_outside_batch_window:{index}")
-    if report["quality"].get("acceptance_pass") is not True or report["quarantine"]:
+    if require_acceptance and (
+        report["quality"].get("acceptance_pass") is not True or report["quarantine"]
+    ):
         raise ArtifactIntegrityError("history_batch_quality_not_accepted")
     return {
         **base,
