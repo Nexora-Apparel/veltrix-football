@@ -153,6 +153,13 @@ class MarketReleaseCertificationRunnerTests(unittest.TestCase):
             for market in MARKETS
         ))
 
+    def test_rejects_tampered_digest_registry_signature(self):
+        registry = json.loads(self.verified_path.read_text())
+        registry["verified_source_evidence_sha256"].remove("c" * 64)
+        self.verified_path.write_text(json.dumps(registry))
+        with self.assertRaisesRegex(CertificationRunnerError, "signature_invalid"):
+            self.run_evaluation()
+
     def test_rejects_registry_without_verified_archive_receipt(self):
         registry = json.loads(self.verified_path.read_text())
         registry["verified_archive_receipts"] = []
