@@ -24,13 +24,13 @@ def dataset_fixture():
     snapshots, labels = [], []
     windows = [
         ("train", date(2026, 7, 20), 120, 1),
-        ("validation", date(2026, 10, 8), 20, 1),
+        ("validation", date(2026, 10, 8), 13, 1),
         ("test", date(2026, 10, 28), 20, 1),
     ]
     index = 0
     for split, start, count, step in windows:
         for offset in range(count):
-            day = start + timedelta(days=offset * step)
+            day = start + timedelta(days=(offset % 60) if split == "train" else offset * step)
             kickoff = f"{day.isoformat()}T15:00:00Z"
             cutoff = f"{day.isoformat()}T09:00:00Z"
             observed = f"{(day - timedelta(days=1)).isoformat()}T09:00:00Z"
