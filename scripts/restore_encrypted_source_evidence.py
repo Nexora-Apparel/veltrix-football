@@ -53,13 +53,19 @@ def restore_evidence(*, client: Any, bucket: str, receipt_key: str,
     objects = receipt.get("objects")
     if not isinstance(objects, list) or {item.get("kind") for item in objects if isinstance(item, dict)} != _REQUIRED_OBJECTS:
         raise EvidenceRestoreError("restore_object_inventory_invalid")
+    archive_prefix = receipt_key.rsplit("/receipts/", 1)[0]
+    expected_keys = {
+        "report": f"{archive_prefix}/reports/{run_id}.json",
+        "evidence": f"{archive_prefix}/encrypted/{run_id}.enc",
+        "manifest": f"{archive_prefix}/manifests/{run_id}.json",
+    }
     restored: dict[str, bytes] = {}
     for item in objects:
         if not isinstance(item, dict):
             raise EvidenceRestoreError("restore_object_entry_invalid")
         kind, key, digest, size = item.get("kind"), item.get("key"), item.get("sha256"), item.get("bytes")
         if (kind not in _REQUIRED_OBJECTS or kind in restored
-                or not isinstance(key, str) or not key or ".." in Path(key).parts
+                or not isinstance(key, str) or key != expected_keys.get(kind)
                 or not isinstance(digest, str) or not re.fullmatch(r"[0-9a-f]{64}", digest)
                 or isinstance(size, bool) or not isinstance(size, int) or size < 0):
             raise EvidenceRestoreError("restore_object_metadata_invalid")
