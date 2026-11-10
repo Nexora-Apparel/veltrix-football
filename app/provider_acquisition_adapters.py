@@ -319,7 +319,7 @@ def acquire_fivedollar_history_batch(*, client, competition_ids: list[str],
         destination.parent.mkdir(parents=True, exist_ok=True)
         destination.write_bytes(encrypted)
         destination.with_suffix(destination.suffix + ".manifest.json").write_text(
-            json.dumps(manifest, sort_keys=True, indent=2) + "\\n", encoding="utf-8"
+            json.dumps(manifest, sort_keys=True, indent=2) + "\n", encoding="utf-8"
         )
         result["encrypted_evidence"] = {
             "path": str(destination),
