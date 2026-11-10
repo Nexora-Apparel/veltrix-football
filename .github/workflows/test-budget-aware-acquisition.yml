@@ -72,6 +72,9 @@ jobs:
       - name: Run rolling-hour provider quota ledger tests
         run: python -m unittest discover -s tests -p 'test_provider_hourly_quota_ledger.py' -v
 
+      - name: Run rolling-hour provider quota ledger tests
+        run: python -m unittest discover -s tests -p 'test_provider_hourly_quota_ledger.py' -v
+
       - name: Run end-to-end read-only fixture pipeline tests
         run: python -m unittest discover -s tests -p 'test_provider_fixture_pipeline.py' -v
 
@@ -101,6 +104,9 @@ jobs:
 
       - name: Validate historical coverage profiling CLI without network access
         run: python scripts/profile_fivedollar_historical_coverage.py --help
+
+      - name: Validate hourly quota management CLI without network access
+        run: python scripts/manage_fivedollar_hourly_quota.py --help
 
       - name: Validate hourly quota management CLI without network access
         run: python scripts/manage_fivedollar_hourly_quota.py --help
