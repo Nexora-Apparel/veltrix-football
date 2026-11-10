@@ -58,6 +58,9 @@ class MarketReleaseCertificationTests(unittest.TestCase):
         report = evaluate_market_release_certification(
             evidence=evidence_fixture(),
             evaluated_at="2026-11-10T20:00:00Z",
+            verified_source_evidence_sha256=[
+                "a" * 64, "b" * 64, "c" * 64, "d" * 64,
+            ],
         )
         self.assertTrue(report["all_markets_certified"])
         self.assertTrue(report["value_betting_thresholds_met"])
