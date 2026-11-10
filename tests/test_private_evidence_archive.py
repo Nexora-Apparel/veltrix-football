@@ -137,7 +137,7 @@ class PrivateEvidenceArchiveTests(unittest.TestCase):
 
     @patch("scripts.archive_encrypted_source_evidence.validate_fivedollar_history_batch_report")
     def test_fails_when_uploaded_ciphertext_readback_differs(self, validate):
-        validate.return_value = {"valid": True, "report_sha256": "a" * 64, "accepted_count": 1}
+        validate.return_value = {"valid": True, "report_sha256": "a" * 64, "accepted_count": 1, "input_count": 1}
         client = FakeS3(corrupt_readback=True)
         with self.assertRaisesRegex(EvidenceArchiveError, "readback_digest_mismatch"):
             archive_evidence(
@@ -148,7 +148,7 @@ class PrivateEvidenceArchiveTests(unittest.TestCase):
 
     @patch("scripts.archive_encrypted_source_evidence.validate_fivedollar_history_batch_report")
     def test_retry_completes_partial_upload_without_overwriting_verified_objects(self, validate):
-        validate.return_value = {"valid": True, "report_sha256": "a" * 64, "accepted_count": 1}
+        validate.return_value = {"valid": True, "report_sha256": "a" * 64, "accepted_count": 1, "input_count": 1}
         client = FakeS3(fail_once_on_key="veltrix/encrypted/batch-20261110T060000Z.enc")
         kwargs = dict(
             client=client, kms_client=FakeKMS(), signing_key_arn=TEST_SIGNING_KEY_ARN, bucket="private-bucket", prefix="veltrix",
@@ -168,7 +168,7 @@ class PrivateEvidenceArchiveTests(unittest.TestCase):
         validate.return_value = {"valid": True, "report_sha256": "a" * 64, "accepted_count": 1}
         client = FakeS3()
         kwargs = dict(
-            client=client, bucket="private-bucket", prefix="veltrix",
+            client=client, kms_client=FakeKMS(), signing_key_arn=TEST_SIGNING_KEY_ARN, bucket="private-bucket", prefix="veltrix",
             report_path=self.report_path, evidence_path=self.evidence_path,
             manifest_path=self.manifest_path, receipt_output_path=self.root / "receipt.json",
         )
@@ -338,7 +338,7 @@ class PrivateEvidenceArchiveTests(unittest.TestCase):
         receipt = json.loads(client.objects[("private-bucket", receipt_key)])
         receipt["objects"][0]["key"] = "unrelated/private-object"
         client.objects[("private-bucket", receipt_key)] = json.dumps(receipt).encode()
-        with self.assertRaisesRegex(EvidenceRestoreError, "restore_object_metadata_invalid"):
+        with self.assertRaisesRegex(EvidenceRestoreError, "restore_receipt_signature_invalid"):
             restore_evidence(
                 client=client, kms_client=FakeKMS(), trusted_signing_key_arn=TEST_SIGNING_KEY_ARN, bucket="private-bucket", receipt_key=receipt_key,
                 encryption_key="test-key", output_dir=self.root / "bad-key-restore",
