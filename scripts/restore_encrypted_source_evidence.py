@@ -46,6 +46,54 @@ def _validate_endpoint_url(endpoint: str | None) -> str:
     return endpoint
 
 
+def write_verified_digest_registry(result: dict, output_path: str | Path) -> dict:
+    if (not isinstance(result, dict)
+            or result.get("archive_receipt_signature_verified") is not True
+            or not isinstance(result.get("receipt_sha256"), str)
+            or not isinstance(result.get("receipt_signing_key_arn"), str)
+            or not isinstance(result.get("run_id"), str)
+            or not isinstance(result.get("verified_source_evidence_sha256"), list)):
+        raise EvidenceRestoreError("verified_digest_registry_source_invalid")
+    registry = {
+        "schema_version": 1,
+        "verified_source_evidence_sha256": sorted(set(
+            result["verified_source_evidence_sha256"]
+        )),
+        "verified_archive_receipts": [{
+            "archive_receipt_signature_verified": True,
+            "receipt_sha256": result["receipt_sha256"],
+            "receipt_signing_key_arn": result["receipt_signing_key_arn"],
+            "run_id": result["run_id"],
+        }],
+    }
+    for digest in registry["verified_source_evidence_sha256"]:
+        if not isinstance(digest, str) or not re.fullmatch(r"[0-9a-f]{64}", digest):
+            raise EvidenceRestoreError("verified_digest_registry_digest_invalid")
+    destination = Path(output_path)
+    if destination.is_symlink():
+        raise EvidenceRestoreError("verified_digest_registry_symlink_rejected")
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    if destination.exists() and not destination.is_file():
+        raise EvidenceRestoreError("verified_digest_registry_destination_invalid")
+    fd, temporary = tempfile.mkstemp(
+        prefix=f".{destination.name}.", suffix=".tmp", dir=destination.parent
+    )
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as stream:
+            json.dump(registry, stream, sort_keys=True, indent=2)
+            stream.write("\n")
+            stream.flush()
+            os.fsync(stream.fileno())
+        os.replace(temporary, destination)
+    except Exception:
+        try:
+            os.unlink(temporary)
+        except OSError:
+            pass
+        raise
+    return registry
+
+
 def restore_evidence(*, client: Any, kms_client: Any, trusted_signing_key_arn: str, bucket: str, receipt_key: str,
                      encryption_key: str, output_dir: str | Path,
                      trusted_kms_clients: dict[str, Any] | None = None) -> dict:
@@ -182,6 +230,8 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--run-id", required=True)
     parser.add_argument("--output-dir", default="restored-fivedollar-evidence")
+    parser.add_argument("--verified-digests-output", default=None,
+                        help="Optional atomic JSON export of signature-verified source digests")
     args = parser.parse_args()
     try:
         if not _SAFE.fullmatch(args.run_id):
@@ -222,6 +272,10 @@ def main() -> int:
             receipt_key=f"{prefix}/receipts/{args.run_id}.json",
             encryption_key=encryption_key, output_dir=args.output_dir,
         )
+        if args.verified_digests_output:
+            registry = write_verified_digest_registry(result, args.verified_digests_output)
+            result["verified_digest_registry_path"] = str(args.verified_digests_output)
+            result["verified_digest_registry_count"] = len(registry["verified_source_evidence_sha256"])
         print("PRIVATE_EVIDENCE_RESTORE: PASS; " + json.dumps(result, sort_keys=True))
         return 0
     except (OSError, ValueError, TypeError, KeyError, EvidenceRestoreError) as exc:
