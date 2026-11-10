@@ -130,6 +130,7 @@ The verified-source registry is emitted by the restore CLI and is itself signed 
 Example invocation (evidence inputs are local; the registry signature is checked using the configured AWS KMS trust key):
 
 ```sh
+export VELTRIX_EVIDENCE_RECEIPT_KMS_TRUSTED_KEYS_JSON='{"arn:aws:kms:us-east-1:123456789012:key/REPLACE":"us-east-1"}'
 python scripts/evaluate_market_release_certification.py \
   --walk-forward-report walk-forward-report.json \
   --odds-ledger bookmaker-odds-ledger.json \
