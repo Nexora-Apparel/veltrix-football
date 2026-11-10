@@ -22,7 +22,7 @@ from urllib.request import Request, urlopen
 from zoneinfo import ZoneInfo
 
 from app.api_football_odds import APIFootballError
-from app.live_predictions import _name_key as _canonical_name_key
+from app.team_name_normalization import normalize_team_name
 from app.fixture_identity import fixtures_match, unique_prediction_match
 
 
@@ -58,8 +58,8 @@ class ProviderAPIError(APIFootballError):
 
 
 def _name_key(value: Any) -> str:
-    """Use the model pipeline's canonical team aliases for cross-source joins."""
-    return _canonical_name_key(value)
+    """Use the shared identity-only team normalizer for cross-source joins."""
+    return normalize_team_name(value)
 
 
 def _json_request(url: str, headers: dict[str, str] | None = None, timeout: int = 20, retries: int = 2, include_raw: bool = False):
