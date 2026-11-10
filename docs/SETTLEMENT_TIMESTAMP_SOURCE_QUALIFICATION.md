@@ -117,3 +117,21 @@ requires human/source review, and the real KMS key, registry publication,
 external timestamp source and competition coverage have not been configured
 or verified. CI uses a deterministic fake KMS implementation only. No live
 acquisition, training, prediction publication or Telegram delivery is enabled.
+
+## Additional fail-closed controls — 2026-11-10
+
+The signed registry now rejects unknown top-level fields and unknown signature
+envelope fields, preventing unsigned extension data from being mistaken for
+part of the versioned contract. A source cannot become active before its
+qualification timestamp. The provider bridge also binds the reviewed expected
+fixture identity back to the acquired record's competition, canonical home
+and away team IDs, and kickoff timestamp. This prevents a valid external
+timestamp for one fixture from being attached to a different provider result
+through a mismatched crosswalk.
+
+Regression coverage includes tampered and untrusted registries, inactive or
+revoked sources, unsupported competitions, source activation chronology,
+provider-to-external fixture mismatch, missing settlement timestamps and
+provider retrieval chronology. These tests use fake KMS signatures and
+synthetic fixtures; they do not qualify a real provider or establish model
+training eligibility.
