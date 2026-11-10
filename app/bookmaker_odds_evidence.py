@@ -48,7 +48,8 @@ def build_odds_observation(*, provider: str, provider_event_id: str,
                            fixture_id: str, market: str, bookmaker: str,
                            captured_at: str, kickoff_at: str,
                            decimal_odds: dict, raw_payload: dict,
-                           source_payload_sha256: str) -> dict:
+                           source_payload_sha256: str,
+                           crosswalk_evidence_sha256: str | None = None) -> dict:
     for name, value in (
         ("provider", provider), ("provider_event_id", provider_event_id),
         ("fixture_id", fixture_id), ("bookmaker", bookmaker),
@@ -85,6 +86,12 @@ def build_odds_observation(*, provider: str, provider_event_id: str,
         raise BookmakerOddsEvidenceError("overround_invalid")
     normalized = {selection: probability / overround
                   for selection, probability in implied.items()}
+    if crosswalk_evidence_sha256 is not None and (
+        not isinstance(crosswalk_evidence_sha256, str)
+        or len(crosswalk_evidence_sha256) != 64
+        or any(char not in "0123456789abcdef" for char in crosswalk_evidence_sha256)
+    ):
+        raise BookmakerOddsEvidenceError("crosswalk_evidence_sha256_invalid")
     observation = {
         "schema_version": SCHEMA_VERSION,
         "provider": provider,
@@ -100,6 +107,8 @@ def build_odds_observation(*, provider: str, provider_event_id: str,
         "implied_probabilities": normalized,
         "overround": overround,
     }
+    if crosswalk_evidence_sha256 is not None:
+        observation["crosswalk_evidence_sha256"] = crosswalk_evidence_sha256
     observation["observation_id"] = _canonical_hash(observation)
     return observation
 
@@ -111,8 +120,14 @@ def validate_odds_observation(item: Any) -> dict:
         "raw_payload_sha256", "source_payload_sha256", "implied_probabilities",
         "overround", "observation_id",
     }
-    if not isinstance(item, dict) or set(item) != required:
+    optional = {"crosswalk_evidence_sha256"}
+    if not isinstance(item, dict) or not required.issubset(item) or set(item) - required - optional:
         raise BookmakerOddsEvidenceError("observation_shape_invalid")
+    if "crosswalk_evidence_sha256" in item:
+        crosswalk_digest = item["crosswalk_evidence_sha256"]
+        if (not isinstance(crosswalk_digest, str) or len(crosswalk_digest) != 64
+                or any(char not in "0123456789abcdef" for char in crosswalk_digest)):
+            raise BookmakerOddsEvidenceError("crosswalk_evidence_sha256_invalid")
     if item["schema_version"] != SCHEMA_VERSION:
         raise BookmakerOddsEvidenceError("schema_version_unsupported")
     # Reconstruct from the immutable fields and a digest-only payload surrogate.
