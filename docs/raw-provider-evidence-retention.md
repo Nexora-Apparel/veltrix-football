@@ -20,6 +20,8 @@ The job also targets the protected GitHub Environment `historical-acquisition`. 
 
 ## Canonical private archive
 
+The archive endpoint must use HTTPS and must not embed access credentials in its URL. Both archive and restore clients reject plaintext HTTP, non-HTTPS schemes, and user-info credentials before creating the S3 client.
+
 Use a private S3-compatible bucket with:
 - Public access blocked; no public listing or object URLs.
 - Object versioning enabled.
