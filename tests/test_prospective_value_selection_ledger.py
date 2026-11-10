@@ -3,7 +3,8 @@ import unittest
 from app.bookmaker_odds_evidence import (
     append_odds_observations, build_odds_observation,
 )
-from app.market_release_certification import evaluate_market_release_certification\nfrom app.prospective_value_selection_ledger import (
+from app.market_release_certification import evaluate_market_release_certification
+from app.prospective_value_selection_ledger import (
     ProspectiveValueLedgerError, append_prospective_selections,
     export_settled_certification_rows, settle_prospective_selection,
 )
