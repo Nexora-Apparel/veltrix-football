@@ -52,6 +52,14 @@ class BookmakerOddsEvidenceTests(unittest.TestCase):
         with self.assertRaisesRegex(BookmakerOddsEvidenceError, "time_regression"):
             append_odds_observations(ledger, [earlier])
 
+    def test_rejects_conflicting_quotes_at_same_timestamp(self):
+        first = self.observation(odds={"home": 2.0, "draw": 3.0, "away": 4.0})
+        conflicting = self.observation(odds={"home": 2.1, "draw": 3.0, "away": 4.0})
+        with self.assertRaisesRegex(BookmakerOddsEvidenceError, "timestamp_conflict"):
+            append_odds_observations(
+                {"schema_version": 1, "observations": [first]}, [conflicting]
+            )
+
     def test_selects_latest_snapshot_before_kickoff(self):
         first = self.observation(captured="2026-11-10T09:00:00Z")
         later = self.observation(captured="2026-11-10T11:00:00Z")
