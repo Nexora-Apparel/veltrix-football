@@ -11,6 +11,7 @@ import json
 from collections import Counter
 
 from app.provider_fixture_normalizer import normalize_observation
+from app.provider_source_evidence import SourceEvidenceError, build_source_evidence
 
 
 def _safe_source_summary(provider, row, options) -> dict:
@@ -80,7 +81,10 @@ def process_observations(observations: list[dict]) -> dict:
             continue
         try:
             record = normalize_observation(provider, row, **options)
-        except (TypeError, ValueError, AttributeError) as exc:
+            record["source_evidence"] = build_source_evidence(
+                provider=provider, payload=row, normalized_record=record,
+            )
+        except (TypeError, ValueError, AttributeError, SourceEvidenceError) as exc:
             quarantined.append({
                 "input_index": index, "reason": str(exc)[:120] or "normalization_failed",
                 "source": _safe_source_summary(provider, row, options),
