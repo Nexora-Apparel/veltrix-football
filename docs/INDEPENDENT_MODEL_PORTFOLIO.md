@@ -76,3 +76,19 @@ Improve probability quality through independent model families, strict point-in-
 ## Promotion policy
 
 A model remains a challenger until it beats the current champion on repeated chronological out-of-sample origins, by market and competition, with sufficient samples and statistically defensible improvement. Value betting remains separately locked to its certification thresholds. Predictions, Telegram and schedules remain paused until all release gates pass.
+
+## Release certification evaluator
+
+`app/market_release_certification.py` provides a pure, fail-closed evaluator for the release thresholds. It consumes a complete evidence bundle for each of 1X2, BTTS and Over 2.5 and reports each gate independently:
+- At least 1,000 chronological walk-forward fixtures per market.
+- At least 90 distinct WAT dates in both walk-forward and prospective samples.
+- At least 300 prospective settled selections per market.
+- At least 98% of walk-forward fixtures with timestamped bookmaker decimal odds captured no later than kickoff.
+- Positive net prospective ROI and a positive lower 95% confidence bound using a 5,000-replicate WAT-date cluster bootstrap.
+- 1X2 Brier score and log loss must both beat the de-vigged bookmaker probabilities on the same odds-covered fixture set.
+
+Every walk-forward label and prospective settlement/odds record must carry a SHA-256 evidence reference. This evaluator validates digest shape and chronology; upstream ingestion must independently resolve each digest to verified, provenance-bound source evidence before certification is trusted. It does not verify archive receipts itself.
+
+A successful evaluator result can mark the value-betting evidence thresholds as met, but never authorizes publication. Human release approval, model promotion, operational readiness and the separate public prediction gates remain mandatory. It performs no provider requests, database writes, publication, Telegram delivery or schedule activation.
+
+Synthetic unit tests exercise threshold boundaries and integrity failures only. They are not model performance evidence and cannot certify VELTRIX.
