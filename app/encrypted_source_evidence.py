@@ -14,6 +14,7 @@ from typing import Any
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 
 from app.source_payload_provenance import (
+    SourcePayloadProvenanceError,
     canonical_payload_sha256,
     validate_source_payload_evidence,
 )
