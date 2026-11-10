@@ -144,6 +144,7 @@ class AcquisitionDatasetBridgeTests(unittest.TestCase):
         with self.assertRaisesRegex(AcquisitionDatasetBridgeError, "settlement_source_contract_not_registry_bound"):
             acquisition_record_to_history_row(
                 self.provider_record(), settlement_timestamp_package=package,
+                trusted_kms_clients={KEY_ARN: KMS},
             )
 
     def test_unbound_raw_payload_cannot_enter_training_history(self):
