@@ -56,6 +56,8 @@ jobs:
         run: python -m unittest discover -s tests -p 'test_source_qualification_registry.py' -v
       - name: Run acquisition-to-dataset bridge tests
         run: python -m unittest discover -s tests -p 'test_provider_acquisition_dataset_bridge.py' -v
+      - name: Run per-record acquisition eligibility audit tests
+        run: python -m unittest discover -s tests -p 'test_provider_acquisition_eligibility_audit.py' -v
       - name: Run canonical source payload provenance tests
         run: python -m unittest discover -s tests -p 'test_source_payload_provenance.py' -v
       - name: Run historical feature reconstruction tests
