@@ -11,6 +11,7 @@ import json
 from typing import Any
 
 from app.provider_fixture_normalizer import normalize_fivedollar_fixture, normalize_striker_game
+from app.provider_settlement_evidence import extract_settlement_evidence
 
 EVIDENCE_SCHEMA_VERSION = 1
 MAPPING_VERSIONS = {
@@ -20,7 +21,7 @@ MAPPING_VERSIONS = {
 _REQUIRED = {
     "schema_version", "mapping_version", "provider", "endpoint", "source_id",
     "run_id", "retrieved_at", "raw_payload", "raw_payload_sha256",
-    "normalized_record", "normalized_record_sha256",
+    "normalized_record", "normalized_record_sha256", "settlement_evidence",
 }
 
 
@@ -79,6 +80,7 @@ def build_source_evidence(*, provider: str, payload: dict, normalized_record: di
         "raw_payload_sha256": canonical_sha256(payload),
         "normalized_record": projection,
         "normalized_record_sha256": canonical_sha256(projection),
+        "settlement_evidence": extract_settlement_evidence(provider, payload),
     }
     validate_source_evidence(evidence, expected_record=projection)
     return evidence
@@ -116,6 +118,13 @@ def validate_source_evidence(evidence: Any, *, expected_record: dict | None = No
         raise SourceEvidenceError("raw_payload_sha256_mismatch")
     if evidence.get("normalized_record_sha256") != normalized_hash:
         raise SourceEvidenceError("normalized_record_sha256_mismatch")
+    expected_settlement = extract_settlement_evidence(provider, payload)
+    if evidence.get("settlement_evidence") != expected_settlement:
+        raise SourceEvidenceError("settlement_evidence_payload_binding_mismatch")
+    if normalized.get("settlement_evidence") != expected_settlement:
+        raise SourceEvidenceError("normalized_settlement_evidence_mismatch")
+    if normalized.get("settled_at") != expected_settlement.get("settlement_at"):
+        raise SourceEvidenceError("normalized_settlement_time_mismatch")
     for field in ("provider", "endpoint", "source_id", "run_id", "retrieved_at"):
         if normalized.get(field) != evidence.get(field):
             raise SourceEvidenceError(f"evidence_{field}_projection_mismatch")
