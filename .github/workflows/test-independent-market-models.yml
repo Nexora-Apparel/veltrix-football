@@ -34,6 +34,8 @@ jobs:
         run: |
           python -m unittest discover -s tests -p 'test_provider_acquisition_adapters.py' -v
           python -m unittest discover -s tests -p 'test_provider_acquisition_artifact.py' -v
+      - name: Run chronological Elo feature tests
+        run: python -m unittest discover -s tests -p 'test_chronological_elo_features.py' -v
       - name: Run prospective result collector tests
         run: python -m unittest discover -s tests -p 'test_prospective_result_collector.py' -v
       - name: Run historical result availability ledger tests
