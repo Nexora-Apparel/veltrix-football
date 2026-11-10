@@ -42,7 +42,8 @@ def _head_exists(client: Any, bucket: str, key: str) -> bool:
 
 def archive_evidence(*, client: Any, bucket: str, prefix: str,
                      report_path: str | Path, evidence_path: str | Path,
-                     manifest_path: str | Path) -> dict:
+                     manifest_path: str | Path,
+                     receipt_output_path: str | Path = "fivedollar_evidence_archive_receipt.json") -> dict:
     report_bytes = Path(report_path).read_bytes()
     evidence_bytes = Path(evidence_path).read_bytes()
     manifest_bytes = Path(manifest_path).read_bytes()
@@ -114,7 +115,7 @@ def archive_evidence(*, client: Any, bucket: str, prefix: str,
         raise EvidenceArchiveError("archive_receipt_readback_failed")
     receipt["receipt_key"] = receipt_key
     receipt["receipt_sha256"] = _sha(receipt_bytes)
-    Path("fivedollar_evidence_archive_receipt.json").write_text(
+    Path(receipt_output_path).write_text(
         json.dumps(receipt, sort_keys=True, indent=2) + "\n", encoding="utf-8"
     )
     return receipt
