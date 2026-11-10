@@ -74,9 +74,11 @@ def main() -> int:
             evidence_encryption_key=evidence_key,
             evidence_output_path=args.encrypted_evidence_output,
         )
-        integrity = validate_fivedollar_history_batch_report(result["report"])
-        if not integrity["valid"] or not result["acceptance_pass"]:
-            raise ValueError("historical_batch_quality_or_integrity_failed")
+        integrity = validate_fivedollar_history_batch_report(
+            result["report"], require_acceptance=False
+        )
+        if not integrity["valid"]:
+            raise ValueError("historical_batch_integrity_failed")
         if result["report"]["competition_scope"] != EXPECTED_COMPETITIONS:
             raise ValueError("historical_batch_competition_scope_mismatch")
         output = Path(args.output)
@@ -85,13 +87,24 @@ def main() -> int:
             json.dumps(result["report"], indent=2, sort_keys=True, ensure_ascii=False) + "\n",
             encoding="utf-8",
         )
-        print(
-            "ACQUISITION_RESULT: PASS; "
-            f"accepted={integrity['accepted_count']}; "
-            f"quarantined={integrity['quarantined_count']}; "
-            f"requests={result['report']['request_budget']['actual_requests']}; "
-            "database_writes=0; imports=0; canonical_merges=0"
-        )
+        if result["acceptance_pass"]:
+            print(
+                "ACQUISITION_RESULT: PASS; "
+                f"accepted={integrity['accepted_count']}; "
+                f"quarantined={integrity['quarantined_count']}; "
+                f"requests={result['report']['request_budget']['actual_requests']}; "
+                "database_writes=0; imports=0; canonical_merges=0"
+            )
+        else:
+            # Exit successfully so quota settlement and encrypted private
+            # archival can complete. The workflow applies a final fail-closed
+            # acceptance gate after the evidence receipt has been written.
+            print(
+                "ACQUISITION_RESULT: RETAIN_ONLY_REJECTED_BATCH; "
+                f"accepted={integrity['accepted_count']}; "
+                f"quarantined={integrity['quarantined_count']}; "
+                "imports=0; publications=0"
+            )
         print(f"ARTIFACT_INTEGRITY: PASS")
         print(f"REPORT_FILE: {output}")
         print(f"REPORT_SHA256: {result['report']['report_sha256']}")
