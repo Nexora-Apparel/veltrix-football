@@ -78,6 +78,9 @@ jobs:
       - name: Run value-bet certification gate tests
         run: python -m unittest discover -s tests -p 'test_value_bet_certification.py' -v
 
+      - name: Run new pre-match prediction engine tests
+        run: python -m unittest discover -s tests -p 'test_pre_match_prediction_engine.py' -v
+
       - name: Run end-to-end read-only fixture pipeline tests
         run: python -m unittest discover -s tests -p 'test_provider_fixture_pipeline.py' -v
 
