@@ -144,6 +144,8 @@ def sign_team_crosswalk_registry(*, kms_client: Any, key_arn: str,
         )
     except ReceiptTrustError as exc:
         raise TeamCrosswalkError(str(exc)) from None
+    if isinstance(registry, dict) and "signature" in registry:
+        raise TeamCrosswalkError("team_registry_already_signed")
     unsigned = _unsigned(registry)
     if unsigned.get("schema") != SCHEMA:
         raise TeamCrosswalkError("team_registry_schema_unsupported")
@@ -232,6 +234,31 @@ def verify_team_crosswalk_registry(*, registry: Any,
         "mappings": resolved,
     }
 
+
+def resolve_canonical_team_pair(*, registry: Any, trusted_kms_clients: dict[str, Any],
+                                provider: str, competition_id: str,
+                                home_source_team_id: str, away_source_team_id: str,
+                                as_of: str) -> dict:
+    """Resolve both fixture participants and reject cross-scope pairings."""
+    if (not isinstance(home_source_team_id, str) or not home_source_team_id.strip()
+            or not isinstance(away_source_team_id, str) or not away_source_team_id.strip()
+            or home_source_team_id == away_source_team_id):
+        raise TeamCrosswalkError("team_pair_source_identity_invalid")
+    verified = verify_team_crosswalk_registry(
+        registry=registry, trusted_kms_clients=trusted_kms_clients, as_of=as_of,
+    )
+    home = verified["mappings"].get((provider, competition_id, home_source_team_id))
+    away = verified["mappings"].get((provider, competition_id, away_source_team_id))
+    if home is None or away is None:
+        raise TeamCrosswalkError("team_pair_mapping_missing_or_inactive")
+    if home["canonical_team_id"] == away["canonical_team_id"]:
+        raise TeamCrosswalkError("team_pair_resolves_to_same_canonical_team")
+    if home["team_scope"] != away["team_scope"]:
+        raise TeamCrosswalkError("team_pair_scope_mismatch")
+    return {"home": home, "away": away,
+            "registry_sha256": verified["registry_sha256"],
+            "signing_key_arn": verified["signing_key_arn"],
+            "verified_at": verified["verified_at"]}
 
 def resolve_canonical_team(*, registry: Any, trusted_kms_clients: dict[str, Any],
                            provider: str, competition_id: str,
