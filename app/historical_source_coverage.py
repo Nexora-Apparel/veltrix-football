@@ -472,7 +472,8 @@ def build_historical_source_coverage_report(
                             "away_mapping_reviewed_at": record_evidence.get("away_mapping_reviewed_at"),
                             "registry_sha256": team_at_cutoff["registry_sha256"],
                             "signing_key_arn": team_at_cutoff["signing_key_arn"],
-                            "verified_at": record_evidence.get("verified_at"),
+                            "verified_at": snapshot["prediction_as_of"],
+                            "source_verified_at": record_evidence.get("verified_at"),
                         }
                         and home_mapping["canonical_team_id"] == team_evidence["home_canonical_team_id"]
                         and away_mapping["canonical_team_id"] == team_evidence["away_canonical_team_id"]
