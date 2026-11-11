@@ -180,7 +180,7 @@ def build_point_in_time_feature_snapshot(*, fixture_id: str,
             "home_mapping_evidence_sha256", "away_mapping_evidence_sha256",
             "home_mapping_reviewer", "away_mapping_reviewer",
             "home_mapping_reviewed_at", "away_mapping_reviewed_at",
-            "registry_sha256", "signing_key_arn", "verified_at",
+            "registry_sha256", "signing_key_arn", "verified_at", "source_verified_at",
         }
         if not isinstance(team_identity_evidence, dict) or set(team_identity_evidence) != required_team_fields:
             raise PointInTimeFeatureError("team_identity_evidence_shape_invalid")
@@ -206,15 +206,20 @@ def build_point_in_time_feature_snapshot(*, fixture_id: str,
                     or len(set(digests)) != len(digests)):
                 raise PointInTimeFeatureError(f"team_identity_evidence_digest_invalid:{key}")
         verified_at = _parse_time(team_identity_evidence["verified_at"], "team_identity_verified_at")
-        if verified_at > cutoff:
-            raise PointInTimeFeatureError("team_identity_verified_after_cutoff")
+        source_verified_at = _parse_time(
+            team_identity_evidence["source_verified_at"], "team_identity_source_verified_at"
+        )
+        if verified_at != cutoff:
+            raise PointInTimeFeatureError("team_identity_registry_not_verified_at_feature_cutoff")
+        if source_verified_at < verified_at and source_verified_at > cutoff:
+            raise PointInTimeFeatureError("team_identity_source_verification_time_invalid")
         for key in ("home_mapping_reviewed_at", "away_mapping_reviewed_at"):
             _parse_time(team_identity_evidence[key], key)
         snapshot["team_identity_evidence"] = dict(team_identity_evidence)
     if season_identity_evidence is not None:
         required_season_fields = {
             "provider", "competition_id", "source_season", "canonical_season_id",
-            "registry_sha256", "signing_key_arn", "verified_at",
+            "registry_sha256", "signing_key_arn", "verified_at", "source_verified_at",
             "evidence_sha256", "reviewer", "reviewed_at",
         }
         if not isinstance(season_identity_evidence, dict) or set(season_identity_evidence) != required_season_fields:
@@ -278,8 +283,15 @@ def validate_point_in_time_feature_snapshot(snapshot: Any) -> dict:
                            or any(char not in HEX for char in digest) for digest in digests)
                     or len(set(digests)) != len(digests)):
                 raise PointInTimeFeatureError(f"snapshot_team_identity_digest_invalid:{key}")
-        if _parse_time(team.get("verified_at"), "snapshot_team_identity_verified_at") > _parse_time(snapshot.get("prediction_as_of"), "prediction_as_of"):
-            raise PointInTimeFeatureError("snapshot_team_identity_verified_after_cutoff")
+        team_verified_at = _parse_time(team.get("verified_at"), "snapshot_team_identity_verified_at")
+        team_source_verified_at = _parse_time(
+            team.get("source_verified_at"), "snapshot_team_identity_source_verified_at"
+        )
+        snapshot_cutoff = _parse_time(snapshot.get("prediction_as_of"), "prediction_as_of")
+        if team_verified_at != snapshot_cutoff:
+            raise PointInTimeFeatureError("snapshot_team_identity_not_verified_at_feature_cutoff")
+        if team_source_verified_at < team_verified_at and team_source_verified_at > snapshot_cutoff:
+            raise PointInTimeFeatureError("snapshot_team_identity_source_verification_time_invalid")
         _parse_time(team.get("home_mapping_reviewed_at"), "snapshot_home_team_mapping_reviewed_at")
         _parse_time(team.get("away_mapping_reviewed_at"), "snapshot_away_team_mapping_reviewed_at")
     if "season_identity_evidence" in snapshot:
