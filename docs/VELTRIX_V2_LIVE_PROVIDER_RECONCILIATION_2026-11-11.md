@@ -40,7 +40,7 @@ The initial workflow failure was a league catalogue identity assumption. The aut
 - Bootstrap SHA-256: `f4a3c27f6e71641c98b09775ec951469a49760c581adbe7881fd521039b6d6f1`
 - Fixture SHA-256: `ce30fce58d110a21c446420455f37f8b67c1c82c03ee2d8366cb990e0d78d0b5`
 
-FPL data is season-level fantasy/player aggregation, not a full per-match player-stat feed. Its public API is undocumented and remains an optional research source pending terms, retention and stability review.
+FPL data is season-level fantasy/player aggregation, not a full per-match player-stat feed. A subsequent terms review found that the FPL terms prohibit automated extraction and commercial exploitation absent express permission. This one-time probe is quarantined: it must not be used for feature generation, training, persistence or public outputs. FPL retrieval has been removed from the workflow.
 
 ## Exact row-level reconciliation
 
@@ -70,7 +70,7 @@ Score agreement among comparable scores was 45/45 (100%). However, only 45/100 r
 
 **5Dollar remains the bounded EPL fixture/results reference** within its already qualified plan and time window. Do not expand this acceptance to other competitions or other data domains automatically.
 
-**FPL is a promising optional EPL player-season-statistics source**, but not yet production-approved. It does not fill the full player-match history, lineup confirmation, injury provenance or cross-competition requirements.
+**FPL is excluded.** The one-time schema probe is quarantined because its terms prohibit automated extraction and commercial exploitation absent express permission. It does not enter VELTRIX features, training or storage.
 
 No Neon writes occurred. No prediction model, feature, calibration, publication, Telegram report or schedule was changed or activated.
 
@@ -78,6 +78,6 @@ No Neon writes occurred. No prediction model, feature, calibration, publication,
 
 1. Investigate the six OpenFootball date conflicts and 49 missing scores upstream; do not normalize them away.
 2. Qualify OpenPlay's historical event/player/lineup/xG dataset, with its CC BY 4.0 attribution and source/model provenance.
-3. Keep FPL optional while checking terms, API stability, player-season field definitions and player-summary match-history availability.
+3. Keep FPL excluded unless the rights holder grants explicit written permission for automated extraction and the intended commercial/model-training use.
 4. Investigate PitchAPI's data lineage and model-training/storage rights before any persistent ingestion.
 5. Continue with accepted 5Dollar EPL records and only the separately qualified player/event sources.
