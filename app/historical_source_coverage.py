@@ -635,6 +635,7 @@ def build_historical_source_coverage_report(
                 reason.endswith("insufficient_fixtures")
                 or reason.endswith("insufficient_team_coverage")
                 or reason == "feature_coverage_below_threshold"
+                or reason == "feature_source_qualification_unverified"
                 or reason == "season_crosswalk_unverified"
                 for reason in threshold_failures
             ),
