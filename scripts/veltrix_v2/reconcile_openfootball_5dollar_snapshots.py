@@ -303,9 +303,15 @@ def main() -> int:
     parser.add_argument("--output", default="readonly-snapshots/reconciliation_report.json")
     parser.add_argument("--openfootball-sha256", default="")
     parser.add_argument("--fivedollar-sha256", default="")
+    parser.add_argument("--manifest", default="")
     args = parser.parse_args()
     openfootball = json.loads(Path(args.openfootball).read_text(encoding="utf-8"))
     fivedollar = json.loads(Path(args.fivedollar).read_text(encoding="utf-8"))
+    if args.manifest:
+        manifest = json.loads(Path(args.manifest).read_text(encoding="utf-8"))
+        sources = manifest.get("sources", {})
+        args.openfootball_sha256 = args.openfootball_sha256 or sources.get("openfootball", {}).get("payload_sha256", "")
+        args.fivedollar_sha256 = args.fivedollar_sha256 or sources.get("fivedollar", {}).get("aggregate_sha256", "")
     report = reconcile(
         openfootball, fivedollar, args.start_date, args.end_date_exclusive,
         args.openfootball_sha256, args.fivedollar_sha256,
