@@ -27,26 +27,7 @@ from app.feature_source_qualification import (
     validate_feature_source,
 )
 
-FEATURE_DOMAINS = {
-    "team_strength_and_form": [
-        "home_team_elo", "away_team_elo", "elo_difference_home",
-        "home_attack_goals_rate", "home_defence_conceded_rate",
-        "away_attack_goals_rate", "away_defence_conceded_rate",
-        "home_form_points_rate", "away_form_points_rate",
-    ],
-    "expected_goals": [
-        "home_rolling_xg_for", "home_rolling_xg_against",
-        "away_rolling_xg_for", "away_rolling_xg_against",
-    ],
-    "lineups": ["home_lineup_strength", "away_lineup_strength"],
-    "fatigue_and_travel": [
-        "home_rest_days", "away_rest_days", "home_travel_km", "away_travel_km",
-    ],
-    "market_odds": [
-        "odds_home_decimal", "odds_draw_decimal", "odds_away_decimal",
-        "odds_btts_yes_decimal", "odds_over_2_5_decimal",
-    ],
-}
+from app.feature_domain_catalogue import FEATURE_DOMAINS
 
 
 class HistoricalSourceCoverageError(ValueError):
