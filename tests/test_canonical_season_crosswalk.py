@@ -49,6 +49,12 @@ def signed(value=None):
 
 
 class CanonicalSeasonCrosswalkTests(unittest.TestCase):
+    def test_signer_rejects_registry_that_already_contains_signature(self):
+        value = registry()
+        value["signature"] = {"unexpected": "preexisting"}
+        with self.assertRaisesRegex(SeasonCrosswalkError, "already_signed"):
+            signed(value)
+
     def test_resolves_exact_provider_competition_and_source_season(self):
         result = resolve_canonical_season(
             registry=signed(), trusted_kms_clients={KEY_ARN: KMS},
