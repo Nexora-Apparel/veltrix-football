@@ -46,6 +46,11 @@ def test_total_line_is_configurable():
     assert markets.p_under == pytest.approx(0.2)
 
 
+def test_integer_total_line_is_rejected_without_push_contract():
+    with pytest.raises(ValueError, match="half-goal line"):
+        distribution().derive_markets(total_line=2.0)
+
+
 def test_probability_mass_is_not_silently_renormalized():
     with pytest.raises(ValueError, match="must sum to one"):
         ScorelineDistribution.from_rows(
