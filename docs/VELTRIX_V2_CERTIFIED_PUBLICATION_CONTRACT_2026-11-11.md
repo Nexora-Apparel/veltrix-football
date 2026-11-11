@@ -20,7 +20,7 @@ The report date is a Nigeria local calendar date (`Africa/Lagos`). The delivery 
 
 ## Website payload
 
-The JSON-ready payload includes schema version, report date, generation time, delivery deadline, prediction certification ID, value-bet enabled flag, source-attribution lines, fixture count, fixture identity/competition/teams, UTC and WAT kickoff, verdict, AI insight, value-bet verdict and market probabilities. Provider attribution supplied to the report builder is preserved in the website payload and appended to Telegram output; for 5Dollar Free data, include the required linked credit “Football data by 5DollarFootballAPI”. The existing website should consume this payload only after the prediction publication gate passes; its existing dashboard/status/market routing remains the presentation layer.
+The JSON-ready payload includes schema version, report date, generation time, delivery deadline, prediction certification ID, value-bet enabled flag, source-attribution lines, fixture count, fixture identity/competition/teams, UTC and WAT kickoff, verdict, AI insight, value-bet verdict and market probabilities. Each fixture carries explicit source-provider IDs. The report builder rejects any provider ID without an attribution rule and rejects missing required credits. 5Dollar Free data requires the linked credit “Football data by 5DollarFootballAPI”; OpenLigaDB data requires ODbL attribution. Attribution lines are preserved in the website payload and appended to Telegram output. The existing website should consume this payload only after the prediction publication gate passes; its existing dashboard/status/market routing remains the presentation layer.
 
 ## Telegram rendering
 
