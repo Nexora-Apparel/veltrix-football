@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime, timezone
-from math import exp, log
+from math import exp, isfinite, log
 from typing import Iterable
 
 from veltrix_v2.features.snapshot import FeatureSnapshot, FeatureValue
@@ -72,8 +72,11 @@ def build_team_form_snapshot(
     cutoff = cutoff_utc.astimezone(timezone.utc)
     if not all((provider, fixture_provider_id, team_provider_id, competition_key, season)):
         raise ValueError("fixture, team and competition scope are required")
-    if window_matches < 1 or minimum_sample < 1 or half_life_matches <= 0:
-        raise ValueError("window, minimum sample and half-life must be positive")
+    if (isinstance(window_matches, bool) or not isinstance(window_matches, int)
+            or isinstance(minimum_sample, bool) or not isinstance(minimum_sample, int)
+            or window_matches < 1 or minimum_sample < 1
+            or not isfinite(float(half_life_matches)) or half_life_matches <= 0):
+        raise ValueError("window, minimum sample and finite positive half-life are required")
 
     eligible = [
         match for match in matches
@@ -85,24 +88,26 @@ def build_team_form_snapshot(
         and match.available_at_utc <= cutoff
         and match.status == "FINISHED"
     ]
+    fixture_ids = [match.provider_fixture_id for match in eligible]
+    if len(fixture_ids) != len(set(fixture_ids)):
+        raise ValueError("duplicate provider fixture IDs in team-form input")
+    observation_ids = [match.source_observation_id for match in eligible]
+    if len(observation_ids) != len(set(observation_ids)):
+        raise ValueError("duplicate source observation IDs in team-form input")
+
     eligible.sort(key=lambda item: (item.kickoff_utc, item.provider_fixture_id))
     selected = eligible[-window_matches:]
     count = len(selected)
     if count == 0:
-        values = (
-            ("goals_for_per_match", None),
-            ("goals_against_per_match", None),
-            ("points_per_match", None),
-        )
+        names = ("goals_for_per_match", "goals_against_per_match", "points_per_match")
         features = tuple(
             FeatureValue(
-                name=name, value=None,
-                source_observation_ids=(),
+                name=name, value=None, source_observation_ids=(),
                 computed_at_utc=cutoff, cutoff_utc=cutoff,
                 sample_size=0, quality_state="missing",
                 missing_reason="no settled, point-in-time-available matches in competition-season scope",
             )
-            for name, _ in values
+            for name in names
         )
         return FeatureSnapshot(provider, fixture_provider_id, cutoff, feature_set_version, features)
 
