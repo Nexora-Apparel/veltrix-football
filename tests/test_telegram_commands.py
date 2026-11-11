@@ -492,7 +492,7 @@ def test_value_screen_reports_1x2_btts_totals_coverage_without_releasing_picks()
 
     
 
-def test_value_command_displays_only_upcoming_paper_candidates_as_unapproved():
+def test_value_command_hides_paper_candidates_without_separate_authorization():
     now = datetime.now(ZoneInfo("Africa/Lagos"))
     kickoff = (now + timedelta(hours=3)).isoformat()
     report = {
@@ -515,8 +515,7 @@ def test_value_command_displays_only_upcoming_paper_candidates_as_unapproved():
         }],
     }
     reply = handle_command("/value", report=authorized_report(report))
-    assert "Arsenal vs Chelsea" in reply
-    assert "1X2 · HOME" in reply
-    assert "Odds 2.10" in reply
-    assert "PAPER ONLY — NOT APPROVED FOR BETTING" in reply
+    assert "Arsenal vs Chelsea" not in reply
+    assert "Upcoming paper-only candidates: 0" in reply
+    assert "Release certificate: LOCKED_INSUFFICIENT_EVIDENCE" in reply
     assert "Live value alerts remain locked" in reply
