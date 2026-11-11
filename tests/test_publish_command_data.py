@@ -57,6 +57,20 @@ def test_daily_report_archive_path_rejects_invalid_report_date():
         _archive_report_path({"as_of_date": "not-a-date"}, datetime.now(timezone.utc))
 
 
+def test_publisher_refuses_legacy_daily_prediction_artifacts(tmp_path):
+    import json
+    import pytest
+    from scripts.publish_command_data import publish
+
+    target = tmp_path / "daily_predictions.json"
+    target.write_text(json.dumps({
+        "as_of_date": "2026-11-11",
+        "predictions": [{"home_team": "Legacy FC", "probabilities": {}}],
+    }), encoding="utf-8")
+    with pytest.raises(ValueError, match="LEGACY_OR_UNCERTIFIED_REPORT_PUBLICATION_BLOCKED"):
+        publish("public-data/daily_predictions.json", target, "owner/repo", "token")
+
+
 def test_large_json_snapshot_uses_git_data_api_without_four_mb_rejection(tmp_path, monkeypatch):
     import json
     from scripts import publish_command_data as publisher
