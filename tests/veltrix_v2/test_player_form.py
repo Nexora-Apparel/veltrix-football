@@ -21,6 +21,7 @@ def evidence(index, **overrides):
         },
         "started": True,
         "xg_model_id": "openplay-xg-v1",
+        "xa_model_id": "openplay-xa-v1",
     }
     values.update(overrides)
     return PlayerMatchEvidence(**values)
