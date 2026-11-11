@@ -27,6 +27,7 @@ def build_rows():
             rows.append(TrainingMatch(
                 f"f{fixture}", "league", "2024/25", kickoff,
                 kickoff + timedelta(hours=4), home, away, hg, ag, f"obs{fixture}",
+                availability_basis="source_timestamp",
             ))
     return rows
 
@@ -144,3 +145,19 @@ def test_home_advantage_is_a_fitted_parameter_not_a_hard_coded_bonus():
     assert isinstance(model.home_advantage_log_rate, float)
     assert __import__("math").isfinite(model.home_advantage_log_rate)
     assert model.training_match_count == 54
+
+
+def test_unspecified_availability_basis_cannot_enter_training():
+    rows = build_rows()
+    rows[0] = TrainingMatch(
+        rows[0].fixture_id, rows[0].competition_key, rows[0].season,
+        rows[0].kickoff_utc, rows[0].available_at_utc, rows[0].home_team_id,
+        rows[0].away_team_id, rows[0].home_goals, rows[0].away_goals,
+        rows[0].source_observation_id, availability_basis="unspecified",
+    )
+    with pytest.raises(ValueError, match="AVAILABILITY_BASIS_REQUIRED"):
+        fit_poisson_strength_model(
+            rows, competition_key="league", season="2024/25",
+            training_cutoff_utc=BASE + timedelta(days=150),
+            minimum_matches=30, minimum_team_matches=10,
+        )

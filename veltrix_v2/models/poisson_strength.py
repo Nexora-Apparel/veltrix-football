@@ -160,6 +160,8 @@ def fit_poisson_strength_model(
         and row.kickoff_utc < cutoff
         and row.available_at_utc <= cutoff
     ]
+    if any(row.availability_basis == "unspecified" for row in eligible):
+        raise ValueError("POISSON_TRAIN_AVAILABILITY_BASIS_REQUIRED")
     fixture_ids = [row.fixture_id for row in eligible]
     observation_ids = [row.source_observation_id for row in eligible]
     if len(fixture_ids) != len(set(fixture_ids)) or len(observation_ids) != len(set(observation_ids)):

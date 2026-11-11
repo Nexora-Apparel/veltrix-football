@@ -21,6 +21,7 @@ def dataset():
                 f"f{fixture}", "league", "2024/25", kickoff,
                 kickoff + timedelta(hours=4), home, away,
                 home_goals, away_goals, f"obs{fixture}",
+                availability_basis="source_timestamp",
             ))
     return rows
 
