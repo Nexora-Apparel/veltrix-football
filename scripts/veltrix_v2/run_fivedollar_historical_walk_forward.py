@@ -50,6 +50,8 @@ class RequestBudget:
     def get(self, endpoint: str, params: dict[str, object]) -> dict:
         if self.actual >= self.maximum:
             raise RuntimeError("FIVEDOLLAR_REQUEST_BUDGET_EXHAUSTED")
+        if self.remaining_header is not None and self.remaining_header <= 0:
+            raise RuntimeError("FIVEDOLLAR_PROVIDER_QUOTA_EXHAUSTED")
         if self._last_request_at is not None:
             elapsed = time.monotonic() - self._last_request_at
             if elapsed < 3.2:
@@ -247,6 +249,46 @@ def _score(report):
     }
 
 
+def _wilson(successes: int, total: int) -> tuple[float, float] | None:
+    if total <= 0:
+        return None
+    z = 1.959963984540054
+    p = successes / total
+    denom = 1 + z * z / total
+    centre = (p + z * z / (2 * total)) / denom
+    margin = z * ((p * (1 - p) / total + z * z / (4 * total * total)) ** 0.5) / denom
+    return max(0.0, centre - margin), min(1.0, centre + margin)
+
+
+def _one_x_two_accuracy(evaluation):
+    forecasts = [
+        forecast
+        for scope in evaluation.scope_reports
+        for fold in scope.folds
+        for forecast in fold.forecasts_1x2
+    ]
+    outcomes = {
+        outcome.fixture_id: outcome.outcome
+        for scope in evaluation.scope_reports
+        for fold in scope.folds
+        for outcome in fold.outcomes_1x2
+    }
+    hits = 0
+    for forecast in forecasts:
+        predicted = max(
+            (("HOME", forecast.p_home), ("DRAW", forecast.p_draw), ("AWAY", forecast.p_away)),
+            key=lambda item: item[1],
+        )[0]
+        hits += int(predicted == outcomes[forecast.fixture_id])
+    interval = _wilson(hits, len(forecasts))
+    return {
+        "sample_size": len(forecasts),
+        "correct": hits,
+        "accuracy": hits / len(forecasts) if forecasts else None,
+        "accuracy_ci95": list(interval) if interval is not None else None,
+    }
+
+
 def _binary_score(report):
     if report is None:
         return None
@@ -370,7 +412,7 @@ def run(args) -> dict:
             ))
     calibration = diagnose_1x2_calibration(calibration_folds, bin_count=10)
     market_results = {
-        "1X2": _score(evaluation.aggregate_1x2),
+        "1X2": {**(_score(evaluation.aggregate_1x2) or {}), **_one_x_two_accuracy(evaluation)},
         "BTTS": _binary_score(evaluation.aggregate_btts),
         "OU_2_5": _binary_score(evaluation.aggregate_totals),
     }
