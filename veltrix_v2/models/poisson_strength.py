@@ -26,6 +26,7 @@ class TrainingMatch:
     source_observation_id: str
     quality_state: str = "valid"
     availability_basis: str = "unspecified"
+    source_training_approved: bool = False
 
     def __post_init__(self) -> None:
         for field in ("kickoff_utc", "available_at_utc"):
@@ -47,6 +48,8 @@ class TrainingMatch:
             raise ValueError("POISSON_TRAIN_RESULT_AVAILABLE_BEFORE_KICKOFF")
         if self.availability_basis not in {"unspecified", "source_timestamp", "verified_published_timestamp", "date_only_conservative_4d", "provider_finished_status_conservative_4d"}:
             raise ValueError("POISSON_TRAIN_AVAILABILITY_BASIS_INVALID")
+        if type(self.source_training_approved) is not bool:
+            raise ValueError("POISSON_TRAIN_SOURCE_APPROVAL_FLAG_MUST_BE_BOOLEAN")
 
 
 @dataclass(frozen=True, slots=True)
@@ -162,6 +165,8 @@ def fit_poisson_strength_model(
     ]
     if any(row.availability_basis == "unspecified" for row in eligible):
         raise ValueError("POISSON_TRAIN_AVAILABILITY_BASIS_REQUIRED")
+    if any(not row.source_training_approved for row in eligible):
+        raise ValueError("POISSON_TRAIN_SOURCE_NOT_APPROVED_FOR_MODEL_TRAINING")
     fixture_ids = [row.fixture_id for row in eligible]
     observation_ids = [row.source_observation_id for row in eligible]
     if len(fixture_ids) != len(set(fixture_ids)) or len(observation_ids) != len(set(observation_ids)):

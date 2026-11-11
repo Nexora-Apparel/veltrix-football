@@ -167,7 +167,7 @@ def load_fivedollar_finished_matches(
         duplicate_fixture_ids=duplicates,
         availability_basis=AVAILABILITY_BASIS,
         point_in_time_certifiable=False,
-        model_training_approved=True,
+        model_training_approved=False,
         attribution_required=True,
         raw_redistribution_allowed=False,
     )

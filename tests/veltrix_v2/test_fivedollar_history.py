@@ -43,7 +43,7 @@ def test_history_adapter_uses_four_day_lag_and_ignores_market_fields():
     assert row.home_goals == 2 and row.away_goals == 1
     assert row.season == "rolling-365d"
     assert history.manifest.point_in_time_certifiable is False
-    assert history.manifest.model_training_approved is True
+    assert history.manifest.model_training_approved is False
     assert history.manifest.raw_redistribution_allowed is False
 
 
