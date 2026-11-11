@@ -121,7 +121,7 @@ Independent v2 contract/foundation implementation may proceed on its isolated ar
 ## 7. New execution artifacts — 2026-11-11 follow-up
 
 - Added `scripts/neon_acceptance.py` and `.github/workflows/neon-readonly-acceptance.yml`. Python runner remains unexecuted pending manual workflow dispatch and the repository DATABASE_URL secret.
-- Added `scripts/provider_import_dry_run.py` and `.github/workflows/provider-import-dry-run.yml`. It fetches StrikerAPI fixture/results for EPL, Argentina and Brazil over 90 days and 5Dollar EPL for the same period. It validates unique provider IDs, home/away team IDs and names, timezone-aware kickoffs, final scores, pagination, payload SHA-256 and rights approval IDs; performs full EPL cross-provider identity/status/score reconciliation; checks existing isolated database records for provider-ID, kickoff, team-identity and score conflicts; and asserts before/after row counts are unchanged. It contains no INSERT/UPDATE/DELETE or DDL.
+- Added `scripts/provider_import_dry_run.py` and `.github/workflows/provider-import-dry-run.yml`. It fetches StrikerAPI fixture/results for EPL, Argentina and Brazil over 90 days and 5Dollar EPL for the same period. It validates unique provider IDs, home/away team IDs and names, timezone-aware kickoffs, final scores, pagination, payload SHA-256 and rights approval IDs; performs full EPL cross-provider identity/status/score reconciliation; checks existing isolated database records for provider-ID, competition identity, kickoff, team identity, status, missing-result and score conflicts; and asserts before/after row counts are unchanged. It contains no INSERT/UPDATE/DELETE or DDL.
 - Created isolated Neon branch `veltrix-phase3-import-dry-run` (`br-silent-violet-bc5de88s`) from production main and provisioned a 0.25 CU read-write compute endpoint on that child branch only. Production main was not modified.
 - Workflow dispatch and secrets remain external execution blockers. No provider API calls or dry-run writes have been made in this follow-up.
 - NWSL issue #49 still has no vendor response. No written explanation has been received, so NWSL remains excluded.
@@ -129,7 +129,7 @@ Independent v2 contract/foundation implementation may proceed on its isolated ar
 
 ## 8. Unit-test and production-write verification — 2026-11-11
 
-- Provider dry-run validation tests: 5 passed, 0 failed on PR head `4700fac546c9b2554a28bc6abf6d1b5538ce24f7`, run [42978186050](https://github.com/Nexora-Apparel/veltrix-football/actions/runs/42978186050).
+- Provider dry-run validation tests: 5 passed, 0 failed on latest validation commit `5980b58e1b9f0d4d53b3dbcaa056599ee91b1582`, run [42978553967](https://github.com/Nexora-Apparel/veltrix-football/actions/runs/42978553967).
 - StrikerAPI reconciliation unit suite: passed on the same head.
 - The live provider-backed dry-run did not begin because `DRY_RUN_DATABASE_URL` is absent. The live Python Neon acceptance did not begin because `DATABASE_URL` is absent. These are failed secret-preflight runs, not failed Python assertions.
 - Production `main` read-only snapshot: 0 fixtures, teams, competitions, results, source observations, import runs and import checkpoints. Neon branch metadata reports `written_data_bytes=0`.
