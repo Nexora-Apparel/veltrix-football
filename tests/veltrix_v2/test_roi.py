@@ -21,6 +21,7 @@ def settled(fixture, market, selection, *, status_result="COMPLETED",
         fixture_id=fixture, status=status_result,
         home_goals_regulation=home, away_goals_regulation=away,
         match_date=(match_date if match_date is not None else date(2026, 11, int(fixture[1:]) if fixture[1:].isdigit() else 1)),
+        match_date_source_observation_id=(f"obs-{fixture}" if (match_date is not None or fixture) else None),
     )
     return settle_market_bet(bet, result)
 
@@ -137,3 +138,10 @@ def test_missing_source_match_date_withholds_roi_interval():
     report = evaluate_roi(rows, bootstrap_draws=500)
     assert report.overall.roi_ci_95 is None
     assert report.overall.roi_ci_method == "unavailable_missing_match_date"
+
+
+def test_conflicting_match_date_provenance_for_one_fixture_is_rejected():
+    first = settled("f1", "1X2", "HOME", match_date=date(2026, 11, 1))
+    second = settled("f1", "BTTS", "YES", match_date=date(2026, 11, 2))
+    with pytest.raises(ValueError, match="match-date provenance conflicts"):
+        evaluate_roi([first, second])

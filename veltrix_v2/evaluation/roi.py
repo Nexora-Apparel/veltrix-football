@@ -74,7 +74,10 @@ def _date_block_roi_interval(
     rows: list[Settlement], *, draws: int, seed: int
 ) -> tuple[Decimal, Decimal] | None:
     """Bootstrap source-backed match-date blocks, retaining all fixtures/bets."""
-    if draws < 100 or any(row.match_date is None for row in rows):
+    if draws < 100 or any(
+        row.match_date is None or not row.match_date_source_observation_id
+        for row in rows
+    ):
         return None
     blocks: dict[object, list[Settlement]] = {}
     for row in rows:
@@ -142,6 +145,8 @@ def _summarize(
         roi_ci_method=(
             "unavailable_missing_match_date"
             if any(row.match_date is None for row in non_void)
+            else "unavailable_unproven_match_date"
+            if any(not row.match_date_source_observation_id for row in non_void)
             else "unavailable_insufficient_match_dates"
             if len({row.match_date for row in non_void}) < 2
             else "date_block_bootstrap_by_match_date"
@@ -165,6 +170,7 @@ def evaluate_roi(
         raise ValueError("bootstrap_draws must be a non-negative integer")
     rows = list(settlements)
     seen: set[tuple[str, str, str, str]] = set()
+    fixture_date_provenance: dict[str, tuple[object, str | None]] = {}
     for row in rows:
         if not isinstance(row, Settlement):
             raise ValueError("all rows must be Settlement instances")
@@ -177,6 +183,11 @@ def evaluate_roi(
         if key in seen:
             raise ValueError("duplicate settlement identity")
         seen.add(key)
+        prior_date_provenance = fixture_date_provenance.get(row.fixture_id)
+        current_date_provenance = (row.match_date, row.match_date_source_observation_id)
+        if prior_date_provenance is not None and prior_date_provenance != current_date_provenance:
+            raise ValueError("settlement match-date provenance conflicts within fixture")
+        fixture_date_provenance[row.fixture_id] = current_date_provenance
         stake = _decimal(row.stake, "stake")
         odds = _decimal(row.decimal_odds, "decimal_odds")
         gross = _decimal(row.gross_return, "gross_return")

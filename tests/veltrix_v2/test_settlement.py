@@ -31,6 +31,7 @@ def result(home=2, away=1, *, status="COMPLETED", et_home=0, et_away=0):
         home_goals_extra_time=et_home,
         away_goals_extra_time=et_away,
         match_date=date(2026, 11, 11),
+        match_date_source_observation_id="source-fixture-1",
     )
 
 

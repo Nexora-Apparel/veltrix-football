@@ -37,6 +37,7 @@ class MatchResult:
     away_goals_extra_time: int = 0
     penalties_included: bool = False
     match_date: date | None = None
+    match_date_source_observation_id: str | None = None
 
     def __post_init__(self) -> None:
         if not isinstance(self.fixture_id, str) or not self.fixture_id.strip():
@@ -55,6 +56,13 @@ class MatchResult:
             raise ValueError("penalty shoot-out goals must never enter match settlement")
         if self.match_date is not None and (not isinstance(self.match_date, date) or isinstance(self.match_date, datetime)):
             raise ValueError("match_date must be a source-backed calendar date")
+        if self.match_date is not None and (
+            not isinstance(self.match_date_source_observation_id, str)
+            or not self.match_date_source_observation_id.strip()
+        ):
+            raise ValueError("match_date requires source observation provenance")
+        if self.match_date is None and self.match_date_source_observation_id is not None:
+            raise ValueError("match date provenance cannot exist without a match date")
 
 
 @dataclass(frozen=True, slots=True)
@@ -114,6 +122,7 @@ class Settlement:
     net_profit: Decimal
     period: str
     match_date: date | None = None
+    match_date_source_observation_id: str | None = None
 
 
 def settle_market_bet(bet: MarketBet, result: MatchResult) -> Settlement:
@@ -167,4 +176,5 @@ def settle_market_bet(bet: MarketBet, result: MatchResult) -> Settlement:
         net_profit=gross_return - bet.stake,
         period=bet.period,
         match_date=result.match_date,
+        match_date_source_observation_id=result.match_date_source_observation_id,
     )
