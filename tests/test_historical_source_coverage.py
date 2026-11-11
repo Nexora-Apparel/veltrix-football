@@ -39,8 +39,8 @@ def fixture(fixture_id, home, away, kickoff):
         "home_team_id": home,
         "away_team_id": away,
         "kickoff_at": kickoff,
-        "settled_at": "2026-09-01T13:00:00Z",
-        "retrieved_at": "2026-09-01T13:05:00Z",
+        "settled_at": kickoff[:10] + "T13:00:00Z",
+        "retrieved_at": kickoff[:10] + "T13:05:00Z",
         "settlement_source_id": "final-whistle-source",
         "source_season": "2025/26",
     }
