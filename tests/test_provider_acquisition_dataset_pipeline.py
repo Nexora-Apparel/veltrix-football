@@ -103,7 +103,7 @@ def season_registry():
 def make_snapshot(fixture_id, predictors):
     registry = feature_source_registry()
     verified = verify_feature_source_qualification_registry(
-        registry=registry, trusted_kms_clients={TEAM_KEY_ARN: TEAM_KMS},
+        registry=registry, trusted_kms_clients={TEAM_KEY_ARN: TEAM_KMS, SEASON_KEY_ARN: TEAM_KMS},
         as_of="2026-09-01T12:00:00Z",
     )
     return build_point_in_time_feature_snapshot(
@@ -198,7 +198,7 @@ class AuditedProviderDatasetPipelineTests(unittest.TestCase):
             result = assemble_audited_provider_dataset(
                 acquisition_records=records,
                 settlement_timestamp_packages=packages,
-                trusted_kms_clients={TEAM_KEY_ARN: TEAM_KMS},
+                trusted_kms_clients={TEAM_KEY_ARN: TEAM_KMS, SEASON_KEY_ARN: TEAM_KMS},
                 team_crosswalk_registry=team_registry()[0],
                 season_crosswalk_registry=season_registry(),
                 season_crosswalk_as_of="2026-09-01T12:00:00Z",
@@ -268,7 +268,7 @@ class AuditedProviderDatasetPipelineTests(unittest.TestCase):
                 assemble_audited_provider_dataset(
                     acquisition_records=[{"provider": "provider", "source_id": "good"}],
                     settlement_timestamp_packages={"provider:good": {}},
-                    trusted_kms_clients={TEAM_KEY_ARN: TEAM_KMS},
+                    trusted_kms_clients={TEAM_KEY_ARN: TEAM_KMS, SEASON_KEY_ARN: TEAM_KMS},
                     team_crosswalk_registry=team_registry()[0],
 
                     team_crosswalk_as_of="2026-09-01T12:00:00Z",
@@ -288,7 +288,7 @@ class AuditedProviderDatasetPipelineTests(unittest.TestCase):
                 assemble_audited_provider_dataset(
                     acquisition_records=[],
                     settlement_timestamp_packages={},
-                    trusted_kms_clients={TEAM_KEY_ARN: TEAM_KMS},
+                    trusted_kms_clients={TEAM_KEY_ARN: TEAM_KMS, SEASON_KEY_ARN: TEAM_KMS},
                     team_crosswalk_registry=team_registry()[0],
 
                     team_crosswalk_as_of="2026-09-01T12:00:00Z",
@@ -308,7 +308,7 @@ class AuditedProviderDatasetPipelineTests(unittest.TestCase):
             result = assemble_audited_provider_dataset(
                 acquisition_records=[{"provider": "p", "source_id": "x"}],
                 settlement_timestamp_packages={},
-                trusted_kms_clients={TEAM_KEY_ARN: TEAM_KMS},
+                trusted_kms_clients={TEAM_KEY_ARN: TEAM_KMS, SEASON_KEY_ARN: TEAM_KMS},
                 team_crosswalk_registry=team_registry()[0],
 
                 team_crosswalk_as_of="2026-09-01T12:00:00Z",
@@ -340,7 +340,7 @@ class AuditedProviderDatasetPipelineTests(unittest.TestCase):
                 assemble_audited_provider_dataset(
                     acquisition_records=[{"provider": "provider", "source_id": "other"}],
                     settlement_timestamp_packages={"provider:good": {}},
-                    trusted_kms_clients={TEAM_KEY_ARN: TEAM_KMS},
+                    trusted_kms_clients={TEAM_KEY_ARN: TEAM_KMS, SEASON_KEY_ARN: TEAM_KMS},
                     team_crosswalk_registry=team_registry()[0],
 
                     team_crosswalk_as_of="2026-09-01T12:00:00Z",
