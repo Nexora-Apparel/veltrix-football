@@ -62,7 +62,6 @@ def test_both_provider_credentials_report_healthy(monkeypatch, capsys):
 
 
 def test_optional_top_five_btts_probe_is_bounded_to_five_odds_credits(monkeypatch, capsys):
-    from datetime import datetime, timedelta, timezone
     from types import SimpleNamespace
     from veltrix_v2.providers import the_odds_api
 
