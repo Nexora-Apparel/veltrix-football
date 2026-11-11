@@ -13,6 +13,10 @@ from app.canonical_team_crosswalk import (
     SCHEMA as TEAM_CROSSWALK_SCHEMA, canonical_sha256,
     sign_team_crosswalk_registry,
 )
+from app.feature_source_qualification import (
+    SCHEMA as FEATURE_SOURCE_SCHEMA, sign_feature_source_qualification_registry,
+    verify_feature_source_qualification_registry,
+)
 
 TEAM_KEY_ARN = "arn:aws:kms:eu-west-1:123456789012:key/team-pipeline-test"
 class FakeTeamKms:
@@ -22,6 +26,31 @@ class FakeTeamKms:
         return {"SignatureValid": kwargs["Signature"] == kwargs["Message"]}
 
 TEAM_KMS = FakeTeamKms()
+
+def feature_source_registry():
+    return sign_feature_source_qualification_registry(
+        kms_client=TEAM_KMS, key_arn=TEAM_KEY_ARN,
+        trusted_key_regions={TEAM_KEY_ARN: "eu-west-1"},
+        registry={
+            "schema": FEATURE_SOURCE_SCHEMA,
+            "issued_at": "2026-01-01T00:00:00Z",
+            "expires_at": "2027-01-01T00:00:00Z",
+            "sources": [{
+                "source": "test-source",
+                "qualified_features": ["home_team_elo"],
+                "supported_competitions": ["league-a"],
+                "observed_at_semantics": "historical_match_kickoff",
+                "available_at_semantics": "final_whistle_timestamp",
+                "qualification_evidence_sha256": ["c" * 64],
+                "reviewer": "feature-source-review",
+                "qualified_at": "2026-01-01T00:00:00Z",
+                "valid_from": "2026-01-01T00:00:00Z",
+                "valid_until": "2027-01-01T00:00:00Z",
+                "revoked_at": None,
+            }],
+        },
+    )
+
 
 def team_registry():
     mappings = []
@@ -48,9 +77,16 @@ def team_registry():
 
 
 def make_snapshot(fixture_id, predictors):
+    registry = feature_source_registry()
+    verified = verify_feature_source_qualification_registry(
+        registry=registry, trusted_kms_clients={TEAM_KEY_ARN: TEAM_KMS},
+        as_of="2026-09-01T12:00:00Z",
+    )
     return build_point_in_time_feature_snapshot(
         fixture_id=fixture_id,
         prediction_as_of="2026-09-01T12:00:00Z",
+        verified_source_registry=verified,
+        competition_id="league-a",
         features=[{
             "name": name, "value": value, "source": "test-source",
             "source_id": f"source-{fixture_id}-{name}",
@@ -141,6 +177,7 @@ class AuditedProviderDatasetPipelineTests(unittest.TestCase):
                 team_crosswalk_registry=team_registry()[0],
 
                 team_crosswalk_as_of="2026-09-01T12:00:00Z",
+                feature_source_qualification_registry=feature_source_registry(),
 
                 split_policy={"train": "a", "validation": "b", "test": "c"},
             )
