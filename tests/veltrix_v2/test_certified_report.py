@@ -243,7 +243,7 @@ def test_fivedollar_report_requires_visible_linked_provider_attribution():
         ),
         source_provider_ids=("5dollarfootballapi",),
         verdict="HOME LEAN", ai_insight="Attribution enforcement test.",
-        source_provider_ids=("5dollarfootballapi",),
+
     )
     with pytest.raises(ValueError, match="REPORT_REQUIRED_PROVIDER_ATTRIBUTION_MISSING:5dollarfootballapi"):
         build_certified_daily_report(
@@ -266,7 +266,7 @@ def test_openligadb_report_requires_odbl_attribution():
         ),
         source_provider_ids=("openligadb",),
         verdict="HOME LEAN", ai_insight="ODbL attribution test.",
-        source_provider_ids=("openligadb",),
+
     )
     with pytest.raises(ValueError, match="REPORT_REQUIRED_PROVIDER_ATTRIBUTION_MISSING:openligadb"):
         build_certified_daily_report(
