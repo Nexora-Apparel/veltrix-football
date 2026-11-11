@@ -305,24 +305,27 @@ class HistoricalSourceCoverageTests(unittest.TestCase):
             {"canonical-a": 1, "canonical-b": 2, "canonical-c": 1},
         )
 
-    def test_unmapped_team_identity_blocks_team_coverage_threshold(self):
-        result = build_historical_source_coverage_report(
-            report_input(),
-            minimum_fixtures_per_competition=2,
-            minimum_distinct_teams_per_competition=3,
-            minimum_feature_coverage_rate=0.9,
-            team_crosswalk_registry=signed_team_crosswalk(source_ids=("team-a", "team-b")),
-            trusted_kms_clients={SEASON_KEY_ARN: SEASON_KMS},
-            team_crosswalk_as_of="2026-06-01T00:00:00Z",
-        )
-        league = result["competition_coverage"]["league-1"]
-        self.assertEqual(league["team_identity"]["status"], "partially_verified")
-        self.assertEqual(league["team_identity"]["unmapped_team_appearances"], 1)
-        self.assertFalse(league["thresholds"]["teams_met"])
-        self.assertIn(
-            "league-1:team_identity_crosswalk_unverified",
-            result["qualification"]["threshold_failures"],
-        )
+    def test_unmapped_team_identity_cannot_be_present_in_admitted_coverage(self):
+        value = report_input()
+        registry = signed_team_crosswalk(source_ids=("team-a", "team-b"))
+        registry_digest = canonical_sha256({
+            key: item for key, item in registry.items() if key != "signature"
+        })
+        for record in value["acquisition_eligibility"]["accepted_records"]:
+            record["team_identity_evidence"]["registry_sha256"] = registry_digest
+        with self.assertRaisesRegex(
+            HistoricalSourceCoverageError,
+            "accepted_record_team_crosswalk_binding_invalid:provider:2",
+        ):
+            build_historical_source_coverage_report(
+                value,
+                minimum_fixtures_per_competition=2,
+                minimum_distinct_teams_per_competition=3,
+                minimum_feature_coverage_rate=0.9,
+                team_crosswalk_registry=registry,
+                trusted_kms_clients={SEASON_KEY_ARN: SEASON_KMS},
+                team_crosswalk_as_of="2026-06-01T00:00:00Z",
+            )
 
     def test_signed_team_crosswalk_requires_out_of_band_trust(self):
         with self.assertRaisesRegex(HistoricalSourceCoverageError, "team_crosswalk_trusted_keys_required"):
