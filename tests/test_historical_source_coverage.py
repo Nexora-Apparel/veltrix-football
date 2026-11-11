@@ -2,6 +2,7 @@ import unittest
 
 from app.canonical_season_crosswalk import (
     SCHEMA as SEASON_CROSSWALK_SCHEMA,
+    canonical_sha256 as season_canonical_sha256,
     sign_season_crosswalk_registry,
 )
 from app.canonical_team_crosswalk import (
@@ -16,9 +17,24 @@ from app.historical_source_coverage import (
 
 
 def snapshot(fixture_id, kickoff, features):
+    season_registry = signed_season_crosswalk()
+    season_unsigned = {key: value for key, value in season_registry.items() if key != "signature"}
+    season_evidence = {
+        "provider": "provider-a",
+        "competition_id": "league-1",
+        "source_season": "2025/26",
+        "canonical_season_id": "league-1:2025-2026",
+        "registry_sha256": season_canonical_sha256(season_unsigned),
+        "signing_key_arn": SEASON_KEY_ARN,
+        "verified_at": kickoff,
+        "evidence_sha256": ["a" * 64],
+        "reviewer": "data-governance-review",
+        "reviewed_at": "2026-01-02T00:00:00Z",
+    }
     return build_point_in_time_feature_snapshot(
         fixture_id=fixture_id,
         prediction_as_of=kickoff,
+        season_identity_evidence=season_evidence,
         features=[{
             "name": name, "value": value, "source": "results-provider",
             "source_id": f"source-{fixture_id}-{name}",
