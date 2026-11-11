@@ -40,6 +40,9 @@ def test_each_fold_fits_only_past_and_scores_disjoint_future_fixtures():
     assert result.aggregate_score is not None
     assert result.aggregate_score.sample_size == result.total_forecasts
     assert result.folds[0].train_fixture_count == 36
+    assert len(result.folds[0].training_fixture_ids) == 36
+    assert len(result.folds[0].training_observation_ids) == 36
+    assert result.folds[0].training_availability_bases == ("source_timestamp",)
     assert result.folds[1].train_fixture_count == 42
     assert result.folds[0].training_converged is True
 

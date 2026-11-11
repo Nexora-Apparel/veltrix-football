@@ -75,6 +75,8 @@ def test_all_three_markets_share_same_forecast_coverage(monkeypatch):
     assert result.total_forecasts == 2
     assert result.total_abstentions == 0
     assert fold.score_1x2.sample_size == 2
+    assert fold.training_fixture_ids == ("train-1", "train-2")
+    assert fold.training_observation_ids == ("obs-train-1", "obs-train-2")
     assert fold.btts_report.sample_size == 2
     assert fold.totals_report.sample_size == 2
     assert fold.btts_report.coverage == fold.totals_report.coverage == 1.0

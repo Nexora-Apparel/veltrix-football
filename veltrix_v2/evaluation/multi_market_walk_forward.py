@@ -41,6 +41,8 @@ class MultiMarketFoldEvaluation:
     model_objective: float | None
     training_availability_bases: tuple[str, ...]
     train_fixture_count: int
+    training_fixture_ids: tuple[str, ...]
+    training_observation_ids: tuple[str, ...]
     test_fixture_count: int
     forecast_count: int
     abstained_fixture_ids: tuple[str, ...]
@@ -249,6 +251,8 @@ def run_multi_market_walk_forward(
             model_objective=model_objective,
             training_availability_bases=availability_bases,
             train_fixture_count=len(training_rows),
+            training_fixture_ids=tuple(getattr(model, "training_fixture_ids", tuple(sorted(train_ids)))),
+            training_observation_ids=tuple(getattr(model, "training_observation_ids", tuple(sorted(row.source_observation_id for row in training_rows)))),
             test_fixture_count=len(test_rows),
             forecast_count=len(forecasts_1x2),
             abstained_fixture_ids=tuple(abstained),

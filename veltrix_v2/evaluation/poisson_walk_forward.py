@@ -20,6 +20,9 @@ from veltrix_v2.models.poisson_strength import TrainingMatch, fit_poisson_streng
 class FoldEvaluation:
     fold_number: int
     train_fixture_count: int
+    training_fixture_ids: tuple[str, ...]
+    training_observation_ids: tuple[str, ...]
+    training_availability_bases: tuple[str, ...]
     test_fixture_count: int
     forecast_count: int
     abstained_fixture_ids: tuple[str, ...]
@@ -140,9 +143,19 @@ def run_poisson_walk_forward(
         all_forecasts.extend(forecasts)
         all_outcomes.extend(outcomes)
         fold_results.append(FoldEvaluation(
-            fold.fold_number, len(training_rows), len(test_rows), len(forecasts),
-            tuple(abstained), tuple(forecasts), tuple(outcomes), report,
-            model.objective, model.converged,
+            fold_number=fold.fold_number,
+            train_fixture_count=len(training_rows),
+            training_fixture_ids=tuple(getattr(model, "training_fixture_ids", tuple(sorted(train_ids)))),
+            training_observation_ids=tuple(getattr(model, "training_observation_ids", tuple(sorted(row.source_observation_id for row in training_rows)))),
+            training_availability_bases=tuple(getattr(model, "training_availability_bases", ())),
+            test_fixture_count=len(test_rows),
+            forecast_count=len(forecasts),
+            abstained_fixture_ids=tuple(abstained),
+            forecasts=tuple(forecasts),
+            outcomes=tuple(outcomes),
+            score_report=report,
+            training_objective=model.objective,
+            training_converged=model.converged,
         ))
 
     aggregate = score_1x2(all_forecasts, all_outcomes) if all_forecasts else None
