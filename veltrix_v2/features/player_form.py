@@ -34,6 +34,7 @@ class PlayerMatchEvidence:
     metrics: Mapping[str, int | float | None]
     started: bool | None
     xg_model_id: str | None
+    xa_model_id: str | None = None
     quality_state: str = "eligible_for_research"
 
     def __post_init__(self):
@@ -58,7 +59,7 @@ class PlayerMatchEvidence:
             raise ValueError("PLAYER_FORM_MINUTES_OUT_OF_RANGE")
         if any(copied.get(key) is not None for key in ("xg", "npxg")) and not (self.xg_model_id or "").strip():
             raise ValueError("PLAYER_FORM_XG_MODEL_ID_REQUIRED")
-        if copied.get("xa") is not None and not (self.xg_model_id or "").strip():
+        if copied.get("xa") is not None and not (self.xa_model_id or "").strip():
             raise ValueError("PLAYER_FORM_XA_MODEL_ID_REQUIRED")
         if self.started is not None and type(self.started) is not bool:
             raise ValueError("PLAYER_FORM_STARTER_FLAG_INVALID")
@@ -79,6 +80,7 @@ class PlayerFormFeatures:
     npxg_per90: float | None
     xa_per90: float | None
     xg_model_id: str | None
+    xa_model_id: str | None
     source_match_ids: tuple[str, ...]
 
 
@@ -112,6 +114,10 @@ def build_player_form(
     if len(model_ids) > 1:
         raise ValueError("PLAYER_FORM_MIXED_XG_MODEL_IDENTITIES")
     model_id = next(iter(model_ids), None)
+    xa_model_ids = {row.xa_model_id for row in selected if row.metrics.get("xa") is not None}
+    if len(xa_model_ids) > 1:
+        raise ValueError("PLAYER_FORM_MIXED_XA_MODEL_IDENTITIES")
+    xa_model_id = next(iter(xa_model_ids), None)
 
     def total(key: str) -> float | None:
         values = [row.metrics.get(key) for row in selected]
@@ -142,5 +148,6 @@ def build_player_form(
         npxg_per90=per90(npxg),
         xa_per90=per90(xa),
         xg_model_id=model_id,
+        xa_model_id=xa_model_id,
         source_match_ids=tuple(row.match_id for row in selected),
     )
