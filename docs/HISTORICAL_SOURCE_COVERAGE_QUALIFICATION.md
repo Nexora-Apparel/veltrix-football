@@ -67,6 +67,27 @@ signature establishes registry integrity and trusted issuance, not the truth
 of a team's identity; mapping evidence and reviewer decisions still require
 independent review. Synthetic fake-KMS tests do not qualify real team IDs.
 
+## Signed feature-source qualification
+
+`app/feature_source_qualification.py` defines a KMS-signed registry of
+feature-source contracts. Each source entry explicitly lists qualified feature
+names, supported competitions, observation and availability timestamp
+semantics, qualification evidence digests, reviewer, qualification timestamp,
+validity interval and optional revocation timestamp.
+
+The point-in-time dataset adapter verifies this registry at each target's
+feature cutoff. A source qualification issued after that cutoff cannot
+retroactively admit the historical snapshot. Each feature cell carries the
+registry digest, signer ARN, verification timestamp, timestamp semantics and
+evidence digests. The coverage report re-verifies the same signed registry
+against each snapshot and rejects missing, changed, revoked, expired or
+out-of-scope qualifications.
+
+This qualification establishes a reviewed source contract and provenance
+binding, not the factual correctness of feature values or historical
+availability. Source evidence and licensing still require independent review.
+Synthetic fake-KMS tests do not qualify any real feature source.
+
 ## Screening thresholds
 
 Defaults are 100 settlement-eligible fixtures per competition, 16 distinct teams per competition and 95% feature-cell coverage. They are configurable screening thresholds only. They are not model-training sample-size guarantees, market certification criteria, or evidence of predictive performance.
