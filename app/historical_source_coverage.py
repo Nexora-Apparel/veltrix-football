@@ -16,6 +16,9 @@ from typing import Any
 from app.point_in_time_feature_contract import (
     FEATURE_CATALOGUE, validate_point_in_time_feature_snapshot,
 )
+from app.canonical_season_crosswalk import (
+    SeasonCrosswalkError, verify_season_crosswalk_registry,
+)
 
 
 class HistoricalSourceCoverageError(ValueError):
@@ -49,6 +52,9 @@ def build_historical_source_coverage_report(
     minimum_fixtures_per_competition: int = 100,
     minimum_distinct_teams_per_competition: int = 16,
     minimum_feature_coverage_rate: float = 0.95,
+    season_crosswalk_registry: dict | None = None,
+    trusted_kms_clients: dict | None = None,
+    season_crosswalk_as_of: str | None = None,
 ) -> dict:
     """Measure admitted source coverage; never infer missing season identity."""
     if not isinstance(pipeline_report, dict):
@@ -76,6 +82,25 @@ def build_historical_source_coverage_report(
     rows = [] if dataset is None else dataset.get("rows") if isinstance(dataset, dict) else None
     if not isinstance(rows, list):
         raise HistoricalSourceCoverageError("dataset_rows_invalid")
+
+    crosswalk_verified = None
+    if season_crosswalk_registry is not None:
+        if not isinstance(trusted_kms_clients, dict) or not trusted_kms_clients:
+            raise HistoricalSourceCoverageError("season_crosswalk_trusted_keys_required")
+        if not isinstance(season_crosswalk_as_of, str) or not season_crosswalk_as_of:
+            raise HistoricalSourceCoverageError("season_crosswalk_as_of_required")
+        try:
+            crosswalk_verified = verify_season_crosswalk_registry(
+                registry=season_crosswalk_registry,
+                trusted_kms_clients=trusted_kms_clients,
+                as_of=season_crosswalk_as_of,
+            )
+        except SeasonCrosswalkError as exc:
+            raise HistoricalSourceCoverageError(
+                f"season_crosswalk_registry_rejected:{exc}"
+            ) from None
+    elif trusted_kms_clients is not None or season_crosswalk_as_of is not None:
+        raise HistoricalSourceCoverageError("season_crosswalk_inputs_incomplete")
 
     accepted_by_id = {}
     competition_records = defaultdict(list)
@@ -138,6 +163,21 @@ def build_historical_source_coverage_report(
     for provider, rejected_count in provider_rejected_counts.items():
         provider_input_counts[provider] += rejected_count
 
+    season_resolutions = {}
+    season_mapping_failures = Counter()
+    if crosswalk_verified is not None:
+        for fixture_id, record in accepted_by_id.items():
+            source_season = record.get("source_season")
+            if not isinstance(source_season, str) or not source_season.strip():
+                season_mapping_failures[record["competition_id"]] += 1
+                continue
+            identity = (record["provider"], record["competition_id"], source_season)
+            mapping = crosswalk_verified["mappings"].get(identity)
+            if mapping is None:
+                season_mapping_failures[record["competition_id"]] += 1
+            else:
+                season_resolutions[fixture_id] = mapping
+
     snapshot_by_id = {}
     feature_source_counts = Counter()
     feature_source_ids = Counter()
@@ -190,8 +230,18 @@ def build_historical_source_coverage_report(
         meets_teams = teams >= minimum_distinct_teams_per_competition
         season_values = source_seasons[competition]
         missing_seasons = missing_season_counts[competition]
+        canonical_season_counts = Counter(
+            season_resolutions[record["fixture_id"]]["canonical_season_id"]
+            for record in records if record["fixture_id"] in season_resolutions
+        )
+        mapped_seasons = sum(canonical_season_counts.values())
+        mapping_failures = season_mapping_failures[competition]
         if not season_values:
             season_status = "not_available"
+        elif mapped_seasons == fixtures and mapping_failures == 0:
+            season_status = "verified"
+        elif mapped_seasons:
+            season_status = "partially_verified"
         elif missing_seasons:
             season_status = "partially_reported"
         else:
@@ -207,8 +257,20 @@ def build_historical_source_coverage_report(
                 "source_reported_season_counts": dict(sorted(season_values.items())),
                 "records_missing_season": missing_seasons,
                 "distinct_source_seasons": len(season_values),
-                "canonical_season_crosswalk_verified": False,
-                "reason": "source season labels are retained but require a reviewed canonical competition-season crosswalk",
+                "canonical_season_counts": dict(sorted(canonical_season_counts.items())),
+                "mapped_records": mapped_seasons,
+                "unmapped_records": fixtures - mapped_seasons,
+                "canonical_season_crosswalk_verified": bool(
+                    fixtures and mapped_seasons == fixtures and mapping_failures == 0
+                ),
+                "crosswalk_registry_sha256": (
+                    crosswalk_verified["registry_sha256"] if crosswalk_verified else None
+                ),
+                "reason": (
+                    "all provider/competition/source-season labels resolved through the trusted signed crosswalk"
+                    if season_status == "verified"
+                    else "source season labels require an exact reviewed provider/competition/source-season mapping"
+                ),
             },
             "thresholds": {
                 "minimum_fixtures": minimum_fixtures_per_competition,
