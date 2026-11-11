@@ -217,6 +217,7 @@ def test_provider_attribution_is_included_in_website_and_telegram_payloads():
                 Decimal("0.5"), Decimal("0.3"), Decimal("0.2"),
                 Decimal("0.55"), Decimal("2.5"), Decimal("0.52"),
             ),
+            source_provider_ids=("5dollarfootballapi",),
             verdict="HOME LEAN", ai_insight="Attribution test.",
             source_provider_ids=("5dollarfootballapi",),
         ),),
@@ -239,6 +240,7 @@ def test_fivedollar_report_requires_visible_linked_provider_attribution():
             Decimal("0.5"), Decimal("0.3"), Decimal("0.2"),
             Decimal("0.55"), Decimal("2.5"), Decimal("0.52"),
         ),
+        source_provider_ids=("5dollarfootballapi",),
         verdict="HOME LEAN", ai_insight="Attribution enforcement test.",
         source_provider_ids=("5dollarfootballapi",),
     )
@@ -261,6 +263,7 @@ def test_openligadb_report_requires_odbl_attribution():
             Decimal("0.5"), Decimal("0.3"), Decimal("0.2"),
             Decimal("0.55"), Decimal("2.5"), Decimal("0.52"),
         ),
+        source_provider_ids=("openligadb",),
         verdict="HOME LEAN", ai_insight="ODbL attribution test.",
         source_provider_ids=("openligadb",),
     )
@@ -271,4 +274,20 @@ def test_openligadb_report_requires_odbl_attribution():
             certification=passing_prediction_certification(),
             certification_id="prediction-cert-v2-001",
             fixtures=(attributed_fixture,),
+        )
+
+
+
+def test_published_fixture_requires_explicit_source_provenance():
+    with pytest.raises(ValueError, match="REPORT_SOURCE_PROVIDER_REQUIRED"):
+        PublishedFixture(
+            fixture_id="f-no-source", competition="England Premier League",
+            home_team="Team A", away_team="Team B",
+            kickoff_utc=datetime(2026, 11, 12, 6, tzinfo=UTC),
+            forecasts=MarketForecasts(
+                Decimal("0.5"), Decimal("0.3"), Decimal("0.2"),
+                Decimal("0.55"), Decimal("2.5"), Decimal("0.52"),
+            ),
+            source_provider_ids=(),
+            verdict="HOME LEAN", ai_insight="No source IDs should fail.",
         )

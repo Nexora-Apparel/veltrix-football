@@ -49,10 +49,10 @@ class PublishedFixture:
     away_team: str
     kickoff_utc: datetime
     forecasts: MarketForecasts
+    source_provider_ids: tuple[str, ...]
     verdict: str
     ai_insight: str
     value_bet_verdict: str = "LOCKED — NOT CERTIFIED"
-    source_provider_ids: tuple[str, ...] = ()
 
     def __post_init__(self) -> None:
         for field in ("fixture_id", "competition", "home_team", "away_team", "verdict", "ai_insight", "value_bet_verdict"):
