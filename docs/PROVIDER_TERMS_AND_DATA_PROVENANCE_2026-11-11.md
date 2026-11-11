@@ -45,7 +45,7 @@ See STRIKERAPI_DATA_GOVERNANCE.md and STRIKERAPI_READONLY_QUALIFICATION.md.
 - Free account: 500 credits/month, no card; list_games costs 2 credits.
 - Key is stored as GitHub Actions secret STRIKERAPI_API_KEY.
 - Commercial use of derived data and model outputs is permitted under published terms; raw feed redistribution is prohibited; no attribution is required; StrikerAPI grants no league/team marks or official rights.
-- Bounded fixture/results approval: EPL, Argentina and Brazil. NWSL remains provisional pending clarification of the 2026 page/API count discrepancy.
+- Bounded fixture/results approval: EPL, Argentina and Brazil. NWSL is excluded from the supported launch/import scope; its 2026 page/API count discrepancy remains unresolved pending written provider clarification.
 - Other competitions and non-fixture datasets are not approved by this record.
 
 ## 3. Shared provenance rules
@@ -64,7 +64,7 @@ Do not infer that one provider's team or fixture ID is another provider's canoni
 | StrikerAPI Free | EPL | Approved, bounded evidence | Not approved by this record | Not approved by this record | Limited approval |
 | StrikerAPI Free | Argentina | Approved for fixture/results within bounded probe | Not approved by this record | Not approved by this record | Limited approval |
 | StrikerAPI Free | Brazil | Approved for fixture/results within bounded probe | Not approved by this record | Not approved by this record | Limited approval |
-| StrikerAPI Free | NWSL | Provisional pending vendor explanation of 224 vs 240 league rows | Not approved; NWSL odds archive absent | Shot locations from 2025; separate validation required | Provisional |
+| StrikerAPI Free | NWSL | Excluded from supported launch/import scope; 224 vs 240 discrepancy unresolved | Not approved; NWSL odds archive absent | Not approved for model use; shot locations from 2025 require separate validation | Excluded |
 | StrikerAPI Free | Other 13 competitions | Not qualified by current bounded run | Not approved | Not approved | Unsupported pending qualification |
 
-A limited provider/competition approval is not a full Phase 3 sign-off. Historical import pipeline qualification, NWSL clarification and a reproducible Python database acceptance runner remain open.
+A limited provider/competition approval is not a full Phase 3 sign-off. Historical import pipeline qualification and execution of the reproducible Python database acceptance runner remain open. NWSL is excluded from the supported launch scope until the provider discrepancy is resolved and independently requalified.
