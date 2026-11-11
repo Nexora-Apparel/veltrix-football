@@ -175,7 +175,7 @@ def fetch_5dollar(out: Path, start: date, end_exclusive: date, manifest: dict) -
         pages += 1
         if not (payload.get("pagination") or {}).get("has_more"):
             break
-        time.sleep(1.1)  # Stay below the documented 20/minute burst limit.
+        time.sleep(3.1)  # Stay below the documented 20/minute burst limit.
     else:
         raise SafeFetchError("FIVEDOLLAR_FIXTURE_PAGINATION_LIMIT")
 
