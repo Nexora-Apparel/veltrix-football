@@ -84,13 +84,11 @@ def signed_season_crosswalk(provider="provider-a"):
     )
 
 
-def signed_team_crosswalk():
+def signed_team_crosswalk(source_ids=("team-a", "team-b", "team-c")):
     mappings = []
-    for source_id, canonical_id in (
-        ("team-a", "canonical-a"),
-        ("team-b", "canonical-b"),
-        ("team-c", "canonical-c"),
-    ):
+    canonical_ids = {"team-a": "canonical-a", "team-b": "canonical-b", "team-c": "canonical-c"}
+    for source_id in source_ids:
+        canonical_id = canonical_ids[source_id]
         mappings.append({
             "provider": "provider-a",
             "competition_id": "league-1",
@@ -263,13 +261,18 @@ class HistoricalSourceCoverageTests(unittest.TestCase):
             minimum_fixtures_per_competition=2,
             minimum_distinct_teams_per_competition=3,
             minimum_feature_coverage_rate=0.9,
-            team_crosswalk_registry=signed_team_crosswalk(),
+            team_crosswalk_registry=signed_team_crosswalk(source_ids=("team-a", "team-b")),
             trusted_kms_clients={SEASON_KEY_ARN: SEASON_KMS},
             team_crosswalk_as_of="2026-06-01T00:00:00Z",
         )
-        # The signed registry maps all three source teams; this assertion guards
-        # the fail-closed status for the no-registry path instead.
-        self.assertTrue(result["competition_coverage"]["league-1"]["thresholds"]["teams_met"])
+        league = result["competition_coverage"]["league-1"]
+        self.assertEqual(league["team_identity"]["status"], "partially_verified")
+        self.assertEqual(league["team_identity"]["unmapped_team_appearances"], 1)
+        self.assertFalse(league["thresholds"]["teams_met"])
+        self.assertIn(
+            "league-1:team_identity_crosswalk_unverified",
+            result["qualification"]["threshold_failures"],
+        )
 
     def test_signed_team_crosswalk_requires_out_of_band_trust(self):
         with self.assertRaisesRegex(HistoricalSourceCoverageError, "team_crosswalk_trusted_keys_required"):
