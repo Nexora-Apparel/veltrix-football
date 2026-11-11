@@ -269,11 +269,11 @@ def test_today_excludes_withheld_fixtures_and_only_shows_real_forecasts():
     status = handle_command("/status", report=authorized_report(report))
 
     assert "Forecast FC vs Model FC" in today
-    assert "Low Data FC vs Unknown United" in today
-    assert "LIMITED EVIDENCE · VALUE BET NOT RECOMMENDED" in today
+    assert "Low Data FC vs Unknown United" not in today
+    assert "LIMITED EVIDENCE" not in today
     assert "Withheld FC" not in today
     assert "Withheld FC vs Unknown FC" in fixtures
-    assert "Available match forecasts: 2" in status
+    assert "Available match forecasts: 1" in status
     assert "Fixtures in report: 3" in status
 
 
