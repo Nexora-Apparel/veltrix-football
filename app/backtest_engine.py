@@ -14,7 +14,7 @@ from collections import defaultdict, deque
 from pathlib import Path
 from typing import Any, Iterable
 
-from app.live_predictions import ELO_K, MIN_TEAM_MATCHES, _name_key
+from app.fixture_history_utils import ELO_K, MIN_TEAM_MATCHES, _name_key
 from app.advanced_models import dixon_coles_1x2, recency_weighted_mean
 from app.poisson_dc_head import dixon_coles_markets
 from app.bias_audit import audit_favourites_and_underdogs
