@@ -40,17 +40,16 @@ Branch: `veltrix-2.0-architecture-blueprint`
 - Cold-start teams remain explicitly missing; no fabricated 1500 rating is emitted for a team with no eligible appearances.
 - Duplicate fixture/source identities and invalid timestamps/parameters fail closed.
 
-## Evaluation foundation added
+## Evaluation and market-coherence foundation
 
 - Expanding-window walk-forward fold builder partitions fixtures into disjoint chronological test windows.
-- A training fixture is eligible only if its kickoff precedes the test window and its outcome settlement timestamp is no later than the training-label cutoff.
-- Supports a configurable embargo, minimum training sample and number/duration of folds.
-- Rejects duplicate fixture IDs, naive timestamps, invalid windows, empty test folds and insufficient training samples.
-- Strict 1X2 proper-scoring functions added for multiclass Brier, log loss and ranked probability score.
-- Ranked probability score uses the ordinal outcome order AWAY/DRAW/HOME, corresponding to increasing home goal difference.
+- Training outcomes must be settled before the test-window cutoff, with configurable embargo; test windows are disjoint.
+- Strict 1X2 proper-scoring functions calculate multiclass Brier, log loss and ranked probability score.
+- RPS uses the ordinal AWAY/DRAW/HOME order by increasing home goal difference.
 - Paired model-versus-benchmark comparison reports Brier, log-loss and RPS deltas on the exact same settled fixture set; negative deltas indicate lower scoring loss.
-- Forecast vectors must be real finite strictly-positive values, normalized and uniquely keyed; forecast/outcome fixture sets must match exactly.
-- Evaluation code computes scores only; it does not fit, calibrate, repair or publish predictions.
+- Forecast vectors must be real, finite, strictly positive, normalized and uniquely keyed; forecast/outcome fixture sets must match exactly.
+- Joint scoreline distribution contract derives 1X2, BTTS and O/U probabilities from the same normalized scoreline mass. No market-specific independent fallback or silent renormalization is allowed.
+- Scoreline-derived markets are deterministic transformations only; this does not fit or train the goal model.
 
 ## Verification state
 
@@ -58,11 +57,12 @@ Branch: `veltrix-2.0-architecture-blueprint`
 - Corrected walk-forward suite: **45 passed, 0 failed**, including all seven walk-forward tests; legacy-import boundary check passed. [Run #42987573786](https://github.com/Nexora-Apparel/veltrix-football/actions/runs/42987573786).
 - Elo feature suite: **52 passed, 0 failed**; legacy-import boundary check passed. [Run #42988271363](https://github.com/Nexora-Apparel/veltrix-football/actions/runs/42988271363).
 - Team-form duplicate-evidence guards and initial 1X2 scoring tests: **66 passed, 0 failed**; legacy-import boundary check passed. [Run #42988562701](https://github.com/Nexora-Apparel/veltrix-football/actions/runs/42988562701).
-- Paired benchmark comparison, stricter probability typing and final RPS ordering were added after run #42988562701. Latest combined CI must be inspected before these additions are marked verified.
+- Paired benchmark comparison, strict probability typing and ordinal RPS ordering: **70 passed, 0 failed**; legacy-import boundary check passed. [Run #42988827971](https://github.com/Nexora-Apparel/veltrix-football/actions/runs/42988827971).
+- Scoreline-to-market derivation and its new tests were added after that run. Fresh CI verification is pending; do not count them as passed yet.
 - No model fitting, calibration, prediction publication, provider ingestion or production activation has been performed.
 
 ## Next gate
 
-1. Verify the paired benchmark and scoring changes in CI.
+1. Verify scoreline-derived market coherence tests in CI.
 2. Resume provider dry-run only after StrikerAPI credit balance/entitlement is restored.
 3. Sign Phase 3 only after the provider dry-run completes with complete accounting, zero unresolved identity/score conflicts and unchanged database counts.
