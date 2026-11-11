@@ -128,10 +128,8 @@ def build_results_history_snapshot(*, historical_matches: list[dict],
             f"season_crosswalk_registry_rejected_at_feature_cutoff:{exc}"
         ) from None
 
-    if target_row is None:
-        raise ResultsTrainingAdapterError("target_season_identity_row_missing")
-    target_provider = target_fixture.get("provider", target_row.get("provider"))
-    target_source_season = target_fixture.get("source_season", target_row.get("source_season"))
+    target_provider = target_fixture.get("provider")
+    target_source_season = target_fixture.get("source_season")
     target_season_identity = (
         target_provider, target_fixture.get("competition_id"), target_source_season
     )
