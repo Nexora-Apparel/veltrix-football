@@ -68,7 +68,7 @@ def test_verification_reference_is_mandatory():
     ("source", "another-source"),
     ("bookmaker", "another-bookmaker"),
     ("selection", "AWAY"),
-    ("line", "2.5"),
+    ("line", "3.0"),
 ])
 def test_clv_rejects_mismatched_quote_identity(field, value):
     taken = quote("taken", "2.00", KICKOFF - timedelta(hours=2), market="TOTALS",
