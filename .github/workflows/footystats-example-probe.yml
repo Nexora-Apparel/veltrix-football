@@ -2,6 +2,10 @@ name: FootyStats Free Example API Probe
 
 on:
   workflow_dispatch:
+  push:
+    branches: [veltrix-2.0-architecture-blueprint]
+    paths:
+      - ".github/workflows/footystats-example-probe.yml"
 
 permissions:
   contents: read
