@@ -82,6 +82,42 @@ class AuditedProviderDatasetPipelineTests(unittest.TestCase):
         self.assertEqual(result["admission_profile"]["dataset"]["included_rows"], 1)
         self.assertFalse(result["admission_profile"]["training_readiness"]["ready_for_model_training"])
 
+
+    def test_rejects_dataset_quality_count_that_disagrees_with_actual_rows(self):
+        admitted = {"fixture_id": "provider:good", "provider": "provider", "source_id": "good"}
+        report = self.audit_report([admitted])
+        assembled = {
+            "dataset": {
+                "rows": [{
+                    "fixture_id": "provider:good", "competition_key": "league-a",
+                    "split": "train", "predictors": {"home_team_elo": 1500},
+                    "targets": {"1x2": "home", "btts": "yes", "over_2_5": "yes"},
+                }],
+                "quality": {"included_fixture_count": 0, "excluded_fixture_count": 0},
+            },
+            "feature_reconstruction": {
+                "target_fixture_count": 1, "snapshot_count": 1,
+                "withheld_count": 0, "withheld_by_reason": {}, "withheld": [],
+                "labels_without_admitted_targets": [],
+            },
+        }
+        with patch(
+            "app.provider_acquisition_dataset_pipeline.audit_provider_acquisition_eligibility",
+            return_value=report,
+        ), patch(
+            "app.provider_acquisition_dataset_pipeline.assemble_provider_acquisition_dataset",
+            return_value=assembled,
+        ):
+            with self.assertRaisesRegex(
+                ProviderDatasetPipelineError, "dataset_included_fixture_count_mismatch"
+            ):
+                assemble_audited_provider_dataset(
+                    acquisition_records=[{"provider": "provider", "source_id": "good"}],
+                    settlement_timestamp_packages={"provider:good": {}},
+                    trusted_kms_clients={"trusted": object()},
+                    split_policy={},
+                )
+
     def test_tampered_audit_report_is_rejected(self):
         report = self.audit_report([])
         report["rejected_count"] = 99
