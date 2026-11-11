@@ -6,7 +6,7 @@ from app.canonical_season_crosswalk import (
 )
 from app.canonical_team_crosswalk import (
     SCHEMA as TEAM_CROSSWALK_SCHEMA,
-    sign_team_crosswalk_registry,
+    sign_team_crosswalk_registry, canonical_sha256,
 )
 from app.point_in_time_feature_contract import build_point_in_time_feature_snapshot
 from app.historical_source_coverage import (
@@ -119,6 +119,25 @@ def signed_team_crosswalk(source_ids=("team-a", "team-b", "team-c")):
 def report_input():
     a = fixture("provider:1", "team-a", "team-b", "2026-09-01T12:00:00Z")
     b = fixture("provider:2", "team-b", "team-c", "2026-09-02T12:00:00Z")
+    registry = signed_team_crosswalk()
+    registry_digest = canonical_sha256({
+        key: value for key, value in registry.items() if key != "signature"
+    })
+    for record in (a, b):
+        home_source, away_source = record["home_team_id"], record["away_team_id"]
+        canonical = {"team-a": "canonical-a", "team-b": "canonical-b", "team-c": "canonical-c"}
+        record["home_team_source_id"] = home_source
+        record["away_team_source_id"] = away_source
+        record["team_identity_evidence"] = {
+            "home_source_team_id": home_source,
+            "away_source_team_id": away_source,
+            "home_canonical_team_id": canonical[home_source],
+            "away_canonical_team_id": canonical[away_source],
+            "team_scope": "men_first_team",
+            "registry_sha256": registry_digest,
+            "signing_key_arn": SEASON_KEY_ARN,
+            "verified_at": "2026-06-01T00:00:00Z",
+        }
     sa = snapshot(a["fixture_id"], "2026-09-01T11:00:00Z", {"home_team_elo": 1500})
     sb = snapshot(b["fixture_id"], "2026-09-02T11:00:00Z", {"home_team_elo": 1490})
     return {
