@@ -61,23 +61,46 @@ def check_fivedollar() -> str:
         return "MISSING_SECRET"
     headers = {"Authorization": f"Bearer {key}"}
     base = "https://api.5dollarfootballapi.com/v1"
-    url = base + "/fixtures?" + urlencode({"status": "scheduled", "per_page": 1})
     try:
-        status, response_headers, payload = request_json(url, headers)
+        status, response_headers, payload = request_json(base + "/leagues?per_page=100", headers)
         if status != 200 or not isinstance(payload, dict) or payload.get("success") != 1:
             print("5DollarFootballAPI: UNEXPECTED_RESPONSE")
             return "FAILED"
-        data = payload.get("data")
-        if not isinstance(data, list):
+        leagues = payload.get("data")
+        if not isinstance(leagues, list):
             print("5DollarFootballAPI: AUTH_OK_BUT_SCHEMA_UNEXPECTED")
             return "FAILED"
+        league_names = [
+            str(item.get("name") or item.get("short_name") or "unknown")
+            for item in leagues if isinstance(item, dict)
+        ]
         remaining = response_headers.get("X-RateLimit-Remaining", "not supplied")
-        print(f"5DollarFootballAPI: AUTH_OK; scheduled fixture sample={len(data)}; requests_remaining={remaining}")
-        if not data:
-            print("5DollarFootballAPI ODDS_SAMPLE: SKIPPED_NO_SCHEDULED_FIXTURE")
+        print(
+            f"5DollarFootballAPI: AUTH_OK; accessible_leagues={len(league_names)}; "
+            f"leagues={'; '.join(league_names[:12])}; requests_remaining={remaining}"
+        )
+        selected_fixture = None
+        selected_league = None
+        for league in leagues[:8]:
+            if not isinstance(league, dict) or league.get("id") is None:
+                continue
+            league_id = quote(str(league["id"]), safe="")
+            fixtures_url = base + f"/leagues/{league_id}/fixtures?" + urlencode({
+                "status": "scheduled", "per_page": 1,
+            })
+            try:
+                _, _, fixture_payload = request_json(fixtures_url, headers)
+            except ProviderCheckError:
+                continue
+            fixture_rows = fixture_payload.get("data") if isinstance(fixture_payload, dict) else None
+            if isinstance(fixture_rows, list) and fixture_rows:
+                selected_fixture = fixture_rows[0]
+                selected_league = league
+                break
+        if selected_fixture is None:
+            print("5DollarFootballAPI ODDS_SAMPLE: SKIPPED_NO_SCHEDULED_FIXTURE_IN_ACCESSIBLE_LEAGUES")
             return "AUTH_OK"
-        fixture = data[0]
-        fixture_id = fixture.get("id") or fixture.get("fixture_id")
+        fixture_id = selected_fixture.get("id") or selected_fixture.get("fixture_id")
         if fixture_id is None:
             print("5DollarFootballAPI ODDS_SAMPLE: FIXTURE_ID_MISSING")
             return "AUTH_OK"
@@ -108,7 +131,7 @@ def check_fivedollar() -> str:
             }
             print(
                 "5DollarFootballAPI ODDS_SAMPLE: "
-                f"fixture_id={safe_id(fixture_id)}; "
+                f"league={safe_id(selected_league.get('id'))}; fixture_id={safe_id(fixture_id)}; "
                 + "; ".join(f"{market}={'available' if present else 'missing'}" for market, present in available.items())
                 + f"; requests_remaining={odds_headers.get('X-RateLimit-Remaining', 'not supplied')}"
             )
@@ -121,12 +144,6 @@ def check_fivedollar() -> str:
             return "RATE_LIMITED"
         print(f"5DollarFootballAPI: FAILED ({exc})")
         return "FAILED"
-
-
-def safe_id(value: object) -> str:
-    if isinstance(value, (str, int)) and not isinstance(value, bool):
-        return re.sub(r"[^A-Za-z0-9_-]", "", str(value))[:48] or "not reported"
-    return "not reported"
 
 
 def check_odds_api() -> str:
