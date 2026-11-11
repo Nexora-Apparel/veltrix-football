@@ -1,6 +1,6 @@
 # VELTRIX FOOTBALL 2.0 — Independent Prediction Architecture
 
-Status: architecture blueprint only. Implementation and prediction activation are blocked until full Phase 3 data acceptance is signed off.
+Status: architecture blueprint plus initial independent contract implementation. Model fitting, calibration, evaluation claims, publication and prediction activation remain blocked until full Phase 3 data acceptance is signed off. Foundation work is isolated from the production prediction path.
 Design rule: preserve the website, APIs, Telegram infrastructure and approved historical records; rebuild prediction logic independently. No legacy prediction model, feature pipeline, probability fallback, calibrator or decision rule may be imported, wrapped or reused.
 
 ## 1. System boundaries
@@ -161,3 +161,15 @@ Existing value certification thresholds remain separate and unchanged: at least 
 ## 12. Current gate
 
 Phase 3 is not fully signed off. The 2026-11-11 acceptance record allows only limited fixture/results sources for the next import dry-run. The Python Neon acceptance runner, isolated provider-backed import dry-run and written NWSL clarification remain outstanding. Therefore this branch contains architecture only; it must not be merged as production prediction code or deployed as an active prediction system.
+
+
+## 11. Initial implementation record — 2026-11-11
+
+The isolated `veltrix-2.0-architecture-blueprint` branch now contains:
+- `veltrix_v2/contracts/observations.py`: immutable provider-observation, fixture-identity and forecast-cutoff contracts.
+- UTC normalization and timezone-awareness enforcement.
+- SHA-256 format validation, required provenance and rights-approval identifiers.
+- Explicit point-in-time availability checks.
+- `tests/veltrix_v2/test_observation_contracts.py`: contract tests for immutability, timestamp validity, hash validation, cutoff enforcement and distinct team identity.
+
+This is foundational implementation only. It does not fit a model, generate a forecast, import legacy code or activate prediction delivery. Next modules are ingestion normalization and identity crosswalk contracts, followed by feature lineage and point-in-time feature snapshots after data acceptance.
