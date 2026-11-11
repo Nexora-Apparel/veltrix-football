@@ -81,6 +81,9 @@ def build_historical_source_coverage_report(
     competition_records = defaultdict(list)
     team_appearances = defaultdict(Counter)
     provider_counts = Counter()
+    provider_input_counts = Counter()
+    provider_rejected_counts = Counter()
+    provider_rejection_reasons = defaultdict(Counter)
     settlement_sources = Counter()
     kickoff_dates = defaultdict(set)
     source_seasons = defaultdict(Counter)
@@ -113,6 +116,27 @@ def build_historical_source_coverage_report(
             source_seasons[competition][source_season.strip()] += 1
         else:
             missing_season_counts[competition] += 1
+
+    rejected_records = eligibility.get("rejected_records", [])
+    if not isinstance(rejected_records, list):
+        raise HistoricalSourceCoverageError("rejected_records_invalid")
+    for index, rejected in enumerate(rejected_records):
+        if not isinstance(rejected, dict):
+            raise HistoricalSourceCoverageError(f"rejected_record_invalid:{index}")
+        provider = rejected.get("provider")
+        reason = rejected.get("reason")
+        if provider is None:
+            # Malformed identities cannot be attributed to a provider.
+            continue
+        if not isinstance(provider, str) or not provider.strip() or not isinstance(reason, str) or not reason:
+            raise HistoricalSourceCoverageError(f"rejected_provider_identity_invalid:{index}")
+        provider_rejected_counts[provider] += 1
+        provider_rejection_reasons[provider][reason.split(":", 1)[0]] += 1
+
+    for provider, accepted_count in provider_counts.items():
+        provider_input_counts[provider] += accepted_count
+    for provider, rejected_count in provider_rejected_counts.items():
+        provider_input_counts[provider] += rejected_count
 
     snapshot_by_id = {}
     feature_source_counts = Counter()
@@ -279,6 +303,24 @@ def build_historical_source_coverage_report(
             "rejected_records": rejected_count,
             "settlement_eligibility_rate": len(accepted) / input_count if input_count else 0.0,
             "accepted_by_provider": dict(sorted(provider_counts.items())),
+            "rejected_by_provider": dict(sorted(provider_rejected_counts.items())),
+            "provider_quality": {
+                provider: {
+                    "input_records": provider_input_counts[provider],
+                    "accepted_records": provider_counts[provider],
+                    "rejected_records": provider_rejected_counts[provider],
+                    "acceptance_rate": (
+                        provider_counts[provider] / provider_input_counts[provider]
+                        if provider_input_counts[provider] else 0.0
+                    ),
+                    "rejection_reasons": dict(sorted(provider_rejection_reasons[provider].items())),
+                }
+                for provider in sorted(set(provider_input_counts) | set(provider_counts))
+            },
+            "unattributed_rejections": sum(
+                1 for item in rejected_records
+                if isinstance(item, dict) and item.get("provider") is None
+            ),
             "accepted_by_settlement_source": dict(sorted(settlement_sources.items())),
         },
         "competition_coverage": competition_report,
