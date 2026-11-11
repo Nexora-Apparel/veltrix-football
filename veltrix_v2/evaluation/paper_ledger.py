@@ -192,7 +192,7 @@ class PaperLedger:
         if len(event_ids) != len(set(event_ids)):
             raise ValueError("PAPER_LEDGER_DUPLICATE_SETTLEMENT_EVENT_ID")
         settlement_selection_ids = [row.selection_id for row in settlements]
-        if len(settlement_selection_ids) != len(settlement_selection_ids):
+        if len(settlement_selection_ids) != len(set(settlement_selection_ids)):
             raise ValueError("PAPER_LEDGER_DUPLICATE_SETTLEMENT_FOR_SELECTION")
         selection_by_id = {row.selection_id: row for row in selections}
         for event in settlements:
