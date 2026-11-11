@@ -9,8 +9,13 @@ from app.results_training_dataset_adapter import (
 from app.canonical_season_crosswalk import (
     SCHEMA as SEASON_SCHEMA, sign_season_crosswalk_registry,
 )
+from app.canonical_team_crosswalk import (
+    SCHEMA as TEAM_SCHEMA, canonical_sha256 as team_canonical_sha256,
+    sign_team_crosswalk_registry,
+)
 
 SEASON_KEY_ARN = "arn:aws:kms:eu-west-1:123456789012:key/season-adapter-test"
+TEAM_KEY_ARN = "arn:aws:kms:eu-west-1:123456789012:key/team-adapter-test"
 
 class FakeKms:
     def sign(self, **kwargs):
@@ -21,6 +26,41 @@ class FakeKms:
 KMS = FakeKms()
 
 
+
+def team_registry():
+    mappings = [{
+        "provider": "fivedollar",
+        "competition_id": "4160026622",
+        "source_team_id": team_id,
+        "canonical_team_id": team_id,
+        "team_scope": "men_first_team",
+        "evidence_sha256": ["c" * 64],
+        "reviewer": "team-review",
+        "reviewed_at": "2026-01-02T00:00:00Z",
+        "valid_from": "2026-01-03T00:00:00Z",
+        "valid_until": "2026-12-31T00:00:00Z",
+        "revoked_at": None,
+    } for team_id in ("A", "B", "C", "D")]
+    unsigned = {
+        "schema": TEAM_SCHEMA,
+        "issued_at": "2026-01-01T00:00:00Z",
+        "expires_at": "2027-01-01T00:00:00Z",
+        "mappings": mappings,
+    }
+    return sign_team_crosswalk_registry(
+        kms_client=KMS, key_arn=TEAM_KEY_ARN,
+        trusted_key_regions={TEAM_KEY_ARN: "eu-west-1"},
+        registry=unsigned,
+    )
+
+TEAM_REGISTRY = team_registry()
+TEAM_REGISTRY_DIGEST = team_canonical_sha256({
+    key: value for key, value in TEAM_REGISTRY.items() if key != "signature"
+})
+
+def trusted_clients():
+    return {SEASON_KEY_ARN: KMS, TEAM_KEY_ARN: KMS}
+
 def attach_evidence(row):
     row.setdefault("home_team_source_id", row["home_team_id"])
     row.setdefault("away_team_source_id", row["away_team_id"])
@@ -30,8 +70,8 @@ def attach_evidence(row):
         "home_canonical_team_id": row["home_team_id"],
         "away_canonical_team_id": row["away_team_id"],
         "team_scope": "men_first_team",
-        "registry_sha256": "b" * 64,
-        "signing_key_arn": "arn:aws:kms:eu-west-1:123456789012:key/test",
+        "registry_sha256": TEAM_REGISTRY_DIGEST,
+        "signing_key_arn": TEAM_KEY_ARN,
         "verified_at": row["retrieved_at"],
     }
     normalized = {
@@ -144,6 +184,29 @@ TARGET = {
     "home_team_id": "A",
     "away_team_id": "B",
 }
+
+def history_with_target():
+    history = history_rows()
+    history.append(attach_evidence({
+        "fixture_id": TARGET["fixture_id"],
+        "provider": "fivedollar",
+        "source_id": TARGET["fixture_id"],
+        "competition_id": TARGET["competition_id"],
+        "source_season": TARGET["source_season"],
+        "kickoff_at": TARGET["kickoff_at"],
+        "settled_at": "2026-09-01T20:00:00Z",
+        "home_team_id": TARGET["home_team_id"],
+        "away_team_id": TARGET["away_team_id"],
+        "home_score": 2,
+        "away_score": 1,
+        "endpoint": "/fixtures",
+        "retrieved_at": "2026-09-01T21:00:00Z",
+        "payload_sha256": "",
+        "run_id": "target-acquisition-run",
+        "normalized_status": "finished",
+    }))
+    return history
+
 LABEL = {
     "fixture_id": TARGET["fixture_id"],
     "competition_key": "4160026622",
@@ -169,9 +232,10 @@ POLICY = {
 class ResultsTrainingDatasetAdapterTests(unittest.TestCase):
     def test_builds_pit_snapshot_with_reconstruction_source_provenance(self):
         snapshot = build_results_history_snapshot(
-            historical_matches=history_rows(), target_fixture=TARGET,
+            historical_matches=history_with_target(), target_fixture=TARGET,
             season_crosswalk_registry=season_registry(),
-            trusted_kms_clients={SEASON_KEY_ARN: KMS},
+            trusted_kms_clients=trusted_clients(),
+            team_crosswalk_registry=TEAM_REGISTRY,
         )
         self.assertEqual(snapshot["fixture_id"], TARGET["fixture_id"])
         self.assertEqual(snapshot["feature_count"], 11)
@@ -206,14 +270,16 @@ class ResultsTrainingDatasetAdapterTests(unittest.TestCase):
         }))
         registry = season_registry(include_prior=True)
         baseline = build_results_history_snapshot(
-            historical_matches=history_rows(), target_fixture=TARGET,
+            historical_matches=history_with_target(), target_fixture=TARGET,
             season_crosswalk_registry=registry,
-            trusted_kms_clients={SEASON_KEY_ARN: KMS},
+            trusted_kms_clients=trusted_clients(),
+            team_crosswalk_registry=TEAM_REGISTRY,
         )
         mixed = build_results_history_snapshot(
             historical_matches=history, target_fixture=TARGET,
             season_crosswalk_registry=registry,
-            trusted_kms_clients={SEASON_KEY_ARN: KMS},
+            trusted_kms_clients=trusted_clients(),
+            team_crosswalk_registry=TEAM_REGISTRY,
         )
         self.assertEqual(
             {item["name"]: item["value"] for item in baseline["features"]},
@@ -230,17 +296,19 @@ class ResultsTrainingDatasetAdapterTests(unittest.TestCase):
             ValueError, "target_canonical_season_mapping_not_valid_at_feature_cutoff"
         ):
             build_results_history_snapshot(
-                historical_matches=history_rows(), target_fixture=target,
+                historical_matches=history_with_target(), target_fixture=target,
                 season_crosswalk_registry=season_registry(),
-                trusted_kms_clients={SEASON_KEY_ARN: KMS},
+                trusted_kms_clients=trusted_clients(),
+            team_crosswalk_registry=TEAM_REGISTRY,
             )
 
     def test_registry_issued_after_feature_cutoff_cannot_retroactively_map_season(self):
         with self.assertRaisesRegex(ValueError, "season_crosswalk_registry_rejected_at_feature_cutoff"):
             build_results_history_snapshot(
-                historical_matches=history_rows(), target_fixture=TARGET,
+                historical_matches=history_with_target(), target_fixture=TARGET,
                 season_crosswalk_registry=season_registry(issued_at="2026-09-01T13:00:00Z"),
-                trusted_kms_clients={SEASON_KEY_ARN: KMS},
+                trusted_kms_clients=trusted_clients(),
+            team_crosswalk_registry=TEAM_REGISTRY,
             )
 
     def test_target_row_is_excluded_from_its_own_historical_feature_input(self):
@@ -267,19 +335,21 @@ class ResultsTrainingDatasetAdapterTests(unittest.TestCase):
         snapshot = build_results_history_snapshot(
             historical_matches=history, target_fixture=TARGET,
             season_crosswalk_registry=season_registry(),
-            trusted_kms_clients={SEASON_KEY_ARN: KMS},
+            trusted_kms_clients=trusted_clients(),
+            team_crosswalk_registry=TEAM_REGISTRY,
         )
         self.assertEqual(snapshot["fixture_id"], TARGET["fixture_id"])
         self.assertEqual(snapshot["feature_count"], 11)
 
     def test_assembles_snapshot_and_settled_label_into_chronological_dataset(self):
         result = assemble_results_history_dataset(
-            historical_matches=history_rows(),
+            historical_matches=history_with_target(),
             target_fixtures=[TARGET],
             settled_labels=[LABEL],
             split_policy=POLICY,
             season_crosswalk_registry=season_registry(),
-            trusted_kms_clients={SEASON_KEY_ARN: KMS},
+            trusted_kms_clients=trusted_clients(),
+            team_crosswalk_registry=TEAM_REGISTRY,
         )
         self.assertEqual(result["feature_reconstruction"]["snapshot_count"], 1)
         self.assertEqual(result["dataset"]["quality"]["included_fixture_count"], 1)
@@ -299,7 +369,8 @@ class ResultsTrainingDatasetAdapterTests(unittest.TestCase):
             settled_labels=[LABEL],
             split_policy=POLICY,
             season_crosswalk_registry=season_registry(),
-            trusted_kms_clients={SEASON_KEY_ARN: KMS},
+            trusted_kms_clients=trusted_clients(),
+            team_crosswalk_registry=TEAM_REGISTRY,
         )
         self.assertEqual(result["feature_reconstruction"]["snapshot_count"], 0)
         self.assertEqual(result["feature_reconstruction"]["withheld_count"], 1)
