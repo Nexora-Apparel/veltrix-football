@@ -102,7 +102,7 @@ For chronological training, the source's actual availability time must be no lat
 
 1. Probe 5Dollar account status and the exact five permitted league IDs; capture quotas and current plan response.
 2. Probe StrikerAPI monthly credit balance and one fixture/results request; if still 402, defer until balance refresh.
-3. Probe GOAL API with X-AUTH-APIKEY on a documented read-only endpoint and inspect the full 403 response.
+3. Probe GOAL API with the documented Authorization: Bearer header on a documented read-only endpoint; capture the sanitized 403 response and request/correlation ID.
 4. Build a per-competition coverage snapshot for current and previous seasons, then perform 100-fixture cross-source reconciliation.
 5. Only after acceptance, stage immutable observations in the isolated Neon branch. Do not write production Neon.
 
