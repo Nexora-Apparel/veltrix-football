@@ -80,9 +80,16 @@ def _validate_match(row: Any, index: int) -> dict:
             or not isinstance(identity["signing_key_arn"], str)
             or not identity["signing_key_arn"].startswith("arn:aws:kms:")
             or not isinstance(identity["registry_sha256"], str)
-            or len(identity["registry_sha256"]) != 64):
+            or len(identity["registry_sha256"]) != 64
+            or any(char not in "0123456789abcdef" for char in identity["registry_sha256"])
+            or not isinstance(identity["home_source_team_id"], str)
+            or not identity["home_source_team_id"].strip()
+            or not isinstance(identity["away_source_team_id"], str)
+            or not identity["away_source_team_id"].strip()):
         raise FeatureReconstructionError(f"team_identity_binding_invalid:{row['fixture_id']}")
-    _parse_time(identity["verified_at"], f"team_identity_verified_at_{index}")
+    identity_verified_at = _parse_time(
+        identity["verified_at"], f"team_identity_verified_at_{index}"
+    )
     for field in ("provider", "source_id", "endpoint", "run_id"):
         if not isinstance(row[field], str) or not row[field].strip():
             raise FeatureReconstructionError(f"{field}_invalid:{index}")
@@ -93,6 +100,10 @@ def _validate_match(row: Any, index: int) -> dict:
     retrieved = _parse_time(row["retrieved_at"], f"retrieved_{index}")
     if settled <= kickoff or retrieved < settled:
         raise FeatureReconstructionError(f"source_temporal_order_invalid:{row['fixture_id']}")
+    if identity_verified_at != retrieved:
+        raise FeatureReconstructionError(
+            f"team_identity_verification_time_mismatch:{row['fixture_id']}"
+        )
     for field in ("home_score", "away_score"):
         value = row[field]
         if isinstance(value, bool) or not isinstance(value, int) or value < 0:
