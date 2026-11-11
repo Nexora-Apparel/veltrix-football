@@ -65,13 +65,14 @@ class AuditedProviderDatasetPipelineTests(unittest.TestCase):
                 "dataset_sha256": "a" * 64,
                 "rows": [{
                     "fixture_id": "provider:good", "competition_key": "league-a",
-                    "split": "train", "predictors": predictors,\n                    "feature_snapshot_sha256": snapshot["snapshot_sha256"],
+                    "split": "train", "predictors": predictors,
+                    "feature_snapshot_sha256": snapshot["snapshot_sha256"],
                     "targets": {"1x2": "home", "btts": "yes", "over_2_5": "yes"},
                 }],
                 "quality": {"included_fixture_count": 1, "excluded_fixture_count": 0},
             },
             "feature_reconstruction": {
-                "target_fixture_count": 1, "snapshot_count": 1, "snapshots": [snapshot], "snapshots": [snapshot],
+                "target_fixture_count": 1, "snapshot_count": 1, "snapshots": [snapshot],
                 "withheld_count": 0, "withheld_by_reason": {}, "withheld": [],
                 "labels_without_admitted_targets": [],
             },
@@ -110,13 +111,14 @@ class AuditedProviderDatasetPipelineTests(unittest.TestCase):
             "dataset": {
                 "rows": [{
                     "fixture_id": "provider:good", "competition_key": "league-a",
-                    "split": "train", "predictors": predictors,\n                    "feature_snapshot_sha256": snapshot["snapshot_sha256"],
+                    "split": "train", "predictors": predictors,
+                    "feature_snapshot_sha256": snapshot["snapshot_sha256"],
                     "targets": {"1x2": "home", "btts": "yes", "over_2_5": "yes"},
                 }],
                 "quality": {"included_fixture_count": 0, "excluded_fixture_count": 0},
             },
             "feature_reconstruction": {
-                "target_fixture_count": 1, "snapshot_count": 1,
+                "target_fixture_count": 1, "snapshot_count": 1, "snapshots": [snapshot],
                 "withheld_count": 0, "withheld_by_reason": {}, "withheld": [],
                 "labels_without_admitted_targets": [],
             },
