@@ -106,7 +106,7 @@ def attach_evidence(row):
 
 
 
-def season_registry(*, include_prior=False, issued_at="2026-01-01T00:00:00Z",
+def season_registry(*, include_prior=False, issued_at="2026-01-02T00:00:00Z",
                     valid_from="2026-01-03T00:00:00Z",
                     valid_until="2026-12-31T00:00:00Z", revoked_at=None):
     mappings = [{
