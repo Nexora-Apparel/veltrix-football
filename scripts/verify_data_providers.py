@@ -150,9 +150,6 @@ def check_fivedollar() -> str:
         )
         return "AUTH_OK"
     except ProviderCheckError as exc:
-            print(f"5DollarFootballAPI ODDS_SAMPLE: FAILED ({exc})")
-        return "AUTH_OK"
-    except ProviderCheckError as exc:
         if str(exc) == "HTTP 429":
             print("5DollarFootballAPI: RATE_LIMITED_RETRYABLE (HTTP 429)")
             return "RATE_LIMITED"
