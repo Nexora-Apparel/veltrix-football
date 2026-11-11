@@ -2,6 +2,9 @@ name: Neon Read-only Acceptance
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - phase-3/strikerapi-readonly-qualification
 
 permissions:
   contents: read
