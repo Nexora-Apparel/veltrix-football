@@ -1,5 +1,9 @@
 import unittest
 
+from app.canonical_season_crosswalk import (
+    SCHEMA as SEASON_CROSSWALK_SCHEMA,
+    sign_season_crosswalk_registry,
+)
 from app.point_in_time_feature_contract import build_point_in_time_feature_snapshot
 from app.historical_source_coverage import (
     HistoricalSourceCoverageError,
@@ -35,6 +39,45 @@ def fixture(fixture_id, home, away, kickoff):
         "settlement_source_id": "final-whistle-source",
         "source_season": "2025/26",
     }
+
+
+SEASON_KEY_ARN = "arn:aws:kms:eu-west-1:123456789012:key/veltrix-season-test-key"
+
+
+class FakeSeasonKms:
+    def sign(self, **kwargs):
+        return {"Signature": kwargs["Message"]}
+
+    def verify(self, **kwargs):
+        return {"SignatureValid": kwargs["Signature"] == kwargs["Message"]}
+
+
+SEASON_KMS = FakeSeasonKms()
+
+
+def signed_season_crosswalk(provider="provider-a"):
+    return sign_season_crosswalk_registry(
+        kms_client=SEASON_KMS,
+        key_arn=SEASON_KEY_ARN,
+        trusted_key_regions={SEASON_KEY_ARN: "eu-west-1"},
+        registry={
+            "schema": SEASON_CROSSWALK_SCHEMA,
+            "issued_at": "2026-01-01T00:00:00Z",
+            "expires_at": "2027-01-01T00:00:00Z",
+            "mappings": [{
+                "provider": provider,
+                "competition_id": "league-1",
+                "source_season": "2025/26",
+                "canonical_season_id": "league-1:2025-2026",
+                "evidence_sha256": ["a" * 64],
+                "reviewer": "data-governance-review",
+                "reviewed_at": "2026-01-02T00:00:00Z",
+                "valid_from": "2026-01-03T00:00:00Z",
+                "valid_until": "2026-12-31T00:00:00Z",
+                "revoked_at": None,
+            }],
+        },
+    )
 
 
 def report_input():
@@ -112,6 +155,48 @@ class HistoricalSourceCoverageTests(unittest.TestCase):
         self.assertEqual(quality["rejected_records"], 1)
         self.assertAlmostEqual(quality["acceptance_rate"], 2 / 3)
         self.assertEqual(quality["rejection_reasons"], {"no_settlement": 1})
+
+    def test_signed_crosswalk_verifies_canonical_season_identity(self):
+        result = build_historical_source_coverage_report(
+            report_input(),
+            minimum_fixtures_per_competition=2,
+            minimum_distinct_teams_per_competition=3,
+            minimum_feature_coverage_rate=0.9,
+            season_crosswalk_registry=signed_season_crosswalk(),
+            trusted_kms_clients={SEASON_KEY_ARN: SEASON_KMS},
+            season_crosswalk_as_of="2026-06-01T00:00:00Z",
+        )
+        season = result["competition_coverage"]["league-1"]["season_coverage"]
+        self.assertEqual(season["status"], "verified")
+        self.assertTrue(season["canonical_season_crosswalk_verified"])
+        self.assertEqual(season["canonical_season_counts"], {"league-1:2025-2026": 2})
+        self.assertEqual(season["mapped_records"], 2)
+        self.assertEqual(season["unmapped_records"], 0)
+        self.assertNotIn("season_crosswalk_unverified", result["qualification"]["threshold_failures"])
+
+    def test_signed_crosswalk_does_not_allow_provider_scope_substitution(self):
+        result = build_historical_source_coverage_report(
+            report_input(),
+            minimum_fixtures_per_competition=2,
+            minimum_distinct_teams_per_competition=3,
+            minimum_feature_coverage_rate=0.9,
+            season_crosswalk_registry=signed_season_crosswalk(provider="different-provider"),
+            trusted_kms_clients={SEASON_KEY_ARN: SEASON_KMS},
+            season_crosswalk_as_of="2026-06-01T00:00:00Z",
+        )
+        season = result["competition_coverage"]["league-1"]["season_coverage"]
+        self.assertEqual(season["status"], "source_reported_crosswalk_unverified")
+        self.assertFalse(season["canonical_season_crosswalk_verified"])
+        self.assertIn("season_crosswalk_unverified", result["qualification"]["threshold_failures"])
+
+    def test_signed_crosswalk_requires_out_of_band_trust(self):
+        with self.assertRaisesRegex(HistoricalSourceCoverageError, "trusted_keys_required"):
+            build_historical_source_coverage_report(
+                report_input(),
+                season_crosswalk_registry=signed_season_crosswalk(),
+                trusted_kms_clients={},
+                season_crosswalk_as_of="2026-06-01T00:00:00Z",
+            )
 
     def test_rejects_dataset_row_with_wrong_snapshot_digest(self):
         value = report_input()
