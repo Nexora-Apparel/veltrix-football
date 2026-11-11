@@ -12,6 +12,7 @@ from app.provider_acquisition_dataset_bridge import (
 from app.canonical_team_crosswalk import (
     SCHEMA as TEAM_CROSSWALK_SCHEMA, sign_team_crosswalk_registry,
 )
+from app.results_feature_reconstruction import reconstruct_pre_match_features
 
 
 KEY_ARN = "arn:aws:kms:eu-west-1:123456789012:key/veltrix-test-key"
@@ -204,7 +205,7 @@ class AcquisitionDatasetBridgeTests(unittest.TestCase):
 
     def test_men_women_reserve_and_youth_scopes_cannot_be_conflated(self):
         for incompatible_scope in (
-            "women_first_team", "men_reserve", "youth_men", "youth_women",
+            "women_first_team", "men_reserve", "women_reserve", "youth_men", "youth_women",
         ):
             with self.subTest(scope=incompatible_scope):
                 with self.assertRaisesRegex(
@@ -217,6 +218,34 @@ class AcquisitionDatasetBridgeTests(unittest.TestCase):
                             away_scope=incompatible_scope
                         ),
                     )
+
+    def test_canonical_ids_drive_team_history_joins(self):
+        row = acquisition_record_to_history_row(
+            self.provider_record(), settlement_timestamp_package=self.settlement_package(),
+            trusted_kms_clients={KEY_ARN: KMS},
+            team_crosswalk_registry=signed_team_crosswalk_registry(),
+        )
+        feature_fields = {
+            "fixture_id", "provider", "source_id", "competition_id", "kickoff_at",
+            "settled_at", "home_team_id", "away_team_id", "home_score", "away_score",
+            "endpoint", "retrieved_at", "payload_sha256", "run_id", "normalized_status",
+            "source_payload", "home_team_source_id", "away_team_source_id",
+            "team_identity_evidence",
+        }
+        history_row = {key: value for key, value in row.items() if key in feature_fields}
+        features = reconstruct_pre_match_features(
+            historical_matches=[history_row],
+            target_fixture={
+                "fixture_id": "target-after-canonicalization",
+                "competition_id": "soccer",
+                "kickoff_at": "2026-11-03T15:00:00Z",
+                "home_team_id": "canonical-home",
+                "away_team_id": "canonical-away",
+            },
+            cutoff_hours=6, minimum_team_matches=1,
+        )["features"]
+        self.assertEqual(features["home_attack_goals_rate"], 2.0)
+        self.assertEqual(features["away_attack_goals_rate"], 1.0)
 
     def test_external_timestamp_evidence_tampering_is_rejected(self):
         package = self.settlement_package()
