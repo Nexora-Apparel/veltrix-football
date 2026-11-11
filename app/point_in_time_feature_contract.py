@@ -211,8 +211,6 @@ def build_point_in_time_feature_snapshot(*, fixture_id: str,
         )
         if verified_at != cutoff:
             raise PointInTimeFeatureError("team_identity_registry_not_verified_at_feature_cutoff")
-        if source_verified_at < verified_at and source_verified_at > cutoff:
-            raise PointInTimeFeatureError("team_identity_source_verification_time_invalid")
         for key in ("home_mapping_reviewed_at", "away_mapping_reviewed_at"):
             _parse_time(team_identity_evidence[key], key)
         snapshot["team_identity_evidence"] = dict(team_identity_evidence)
@@ -290,8 +288,6 @@ def validate_point_in_time_feature_snapshot(snapshot: Any) -> dict:
         snapshot_cutoff = _parse_time(snapshot.get("prediction_as_of"), "prediction_as_of")
         if team_verified_at != snapshot_cutoff:
             raise PointInTimeFeatureError("snapshot_team_identity_not_verified_at_feature_cutoff")
-        if team_source_verified_at < team_verified_at and team_source_verified_at > snapshot_cutoff:
-            raise PointInTimeFeatureError("snapshot_team_identity_source_verification_time_invalid")
         _parse_time(team.get("home_mapping_reviewed_at"), "snapshot_home_team_mapping_reviewed_at")
         _parse_time(team.get("away_mapping_reviewed_at"), "snapshot_away_team_mapping_reviewed_at")
     if "season_identity_evidence" in snapshot:
