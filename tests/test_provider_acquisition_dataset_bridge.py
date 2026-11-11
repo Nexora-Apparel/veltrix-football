@@ -32,13 +32,14 @@ KMS = FakeKms()
 def signed_team_crosswalk_registry(*, home_scope="men_first_team",
                                    away_scope="men_first_team",
                                    same_canonical=False,
+                                   missing_away=False,
                                    valid_until="2027-01-01T00:00:00Z",
                                    revoked_at=None):
     mappings = []
-    for source_id, canonical_id, scope in (
-        ("h", "canonical-home", home_scope),
-        ("a", "canonical-home" if same_canonical else "canonical-away", away_scope),
-    ):
+    entries = [("h", "canonical-home", home_scope)]
+    if not missing_away:
+        entries.append(("a", "canonical-home" if same_canonical else "canonical-away", away_scope))
+    for source_id, canonical_id, scope in entries:
         mappings.append({
             "provider": "strikerapi", "competition_id": "soccer",
             "source_team_id": source_id, "canonical_team_id": canonical_id,
@@ -168,6 +169,16 @@ class AcquisitionDatasetBridgeTests(unittest.TestCase):
         self.assertEqual(
             row["source_payload"]["normalized_record"]["home_team_id"], "h"
         )
+
+    def test_missing_team_mapping_is_rejected_before_history_admission(self):
+        with self.assertRaisesRegex(
+            AcquisitionDatasetBridgeError, "canonical_team_pair_rejected:team_pair_mapping_missing_or_inactive"
+        ):
+            acquisition_record_to_history_row(
+                self.provider_record(), settlement_timestamp_package=self.settlement_package(),
+                trusted_kms_clients={KEY_ARN: KMS},
+                team_crosswalk_registry=signed_team_crosswalk_registry(missing_away=True),
+            )
 
     def test_expired_team_mapping_is_rejected(self):
         with self.assertRaisesRegex(
