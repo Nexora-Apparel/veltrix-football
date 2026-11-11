@@ -13,16 +13,6 @@ on:
         required: false
         default: ""
         type: string
-  schedule:
-    - cron: "20 3 * * 1"
-  push:
-    branches: [main]
-    paths:
-      - "scripts/import_open_dataset.py"
-      - "scripts/audit_historical_csv.py"
-      - "tests/test_import_open_dataset.py"
-      - "tests/test_audit_historical_csv.py"
-      - ".github/workflows/historical-dataset-import.yml"
 
 permissions:
   contents: read
