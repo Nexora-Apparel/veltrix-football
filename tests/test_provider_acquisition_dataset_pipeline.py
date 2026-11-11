@@ -270,6 +270,8 @@ class AuditedProviderDatasetPipelineTests(unittest.TestCase):
                     settlement_timestamp_packages={"provider:good": {}},
                     trusted_kms_clients={TEAM_KEY_ARN: TEAM_KMS, SEASON_KEY_ARN: TEAM_KMS},
                     team_crosswalk_registry=team_registry()[0],
+                season_crosswalk_registry=season_registry(),
+                season_crosswalk_as_of="2026-09-01T12:00:00Z",
 
                     team_crosswalk_as_of="2026-09-01T12:00:00Z",
                     feature_source_qualification_registry=feature_source_registry(),
@@ -290,6 +292,8 @@ class AuditedProviderDatasetPipelineTests(unittest.TestCase):
                     settlement_timestamp_packages={},
                     trusted_kms_clients={TEAM_KEY_ARN: TEAM_KMS, SEASON_KEY_ARN: TEAM_KMS},
                     team_crosswalk_registry=team_registry()[0],
+                season_crosswalk_registry=season_registry(),
+                season_crosswalk_as_of="2026-09-01T12:00:00Z",
 
                     team_crosswalk_as_of="2026-09-01T12:00:00Z",
                     feature_source_qualification_registry=feature_source_registry(),
@@ -310,6 +314,8 @@ class AuditedProviderDatasetPipelineTests(unittest.TestCase):
                 settlement_timestamp_packages={},
                 trusted_kms_clients={TEAM_KEY_ARN: TEAM_KMS, SEASON_KEY_ARN: TEAM_KMS},
                 team_crosswalk_registry=team_registry()[0],
+                season_crosswalk_registry=season_registry(),
+                season_crosswalk_as_of="2026-09-01T12:00:00Z",
 
                 team_crosswalk_as_of="2026-09-01T12:00:00Z",
                 feature_source_qualification_registry=feature_source_registry(),
@@ -342,6 +348,8 @@ class AuditedProviderDatasetPipelineTests(unittest.TestCase):
                     settlement_timestamp_packages={"provider:good": {}},
                     trusted_kms_clients={TEAM_KEY_ARN: TEAM_KMS, SEASON_KEY_ARN: TEAM_KMS},
                     team_crosswalk_registry=team_registry()[0],
+                season_crosswalk_registry=season_registry(),
+                season_crosswalk_as_of="2026-09-01T12:00:00Z",
 
                     team_crosswalk_as_of="2026-09-01T12:00:00Z",
                     feature_source_qualification_registry=feature_source_registry(),
