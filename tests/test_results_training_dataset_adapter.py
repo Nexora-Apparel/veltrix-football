@@ -37,9 +37,9 @@ def team_registry():
         "evidence_sha256": ["c" * 64],
         "reviewer": "team-review",
         "reviewed_at": "2026-01-02T00:00:00Z",
-        "valid_from": "2026-01-03T00:00:00Z",
-        "valid_until": "2026-12-31T00:00:00Z",
-        "revoked_at": None,
+        "valid_from": valid_from,
+        "valid_until": valid_until,
+        "revoked_at": revoked_at,
     } for team_id in ("A", "B", "C", "D")]
     unsigned = {
         "schema": TEAM_SCHEMA,
@@ -106,7 +106,9 @@ def attach_evidence(row):
 
 
 
-def season_registry(*, include_prior=False, issued_at="2026-01-01T00:00:00Z"):
+def season_registry(*, include_prior=False, issued_at="2026-01-01T00:00:00Z",
+                    valid_from="2026-01-03T00:00:00Z",
+                    valid_until="2026-12-31T00:00:00Z", revoked_at=None):
     mappings = [{
         "provider": "fivedollar",
         "competition_id": "4160026622",
@@ -339,6 +341,58 @@ class ResultsTrainingDatasetAdapterTests(unittest.TestCase):
                 trusted_kms_clients=trusted_clients(),
             team_crosswalk_registry=TEAM_REGISTRY,
             )
+
+    def test_expired_season_mapping_is_not_eligible_at_feature_cutoff(self):
+        with self.assertRaisesRegex(
+            ValueError, "target_canonical_season_mapping_not_valid_at_feature_cutoff"
+        ):
+            build_results_history_snapshot(
+                historical_matches=history_with_target(), target_fixture=TARGET,
+                season_crosswalk_registry=season_registry(
+                    valid_until="2026-09-01T11:59:59Z"
+                ),
+                trusted_kms_clients=trusted_clients(),
+                team_crosswalk_registry=TEAM_REGISTRY,
+            )
+
+    def test_revoked_season_mapping_is_not_eligible_at_feature_cutoff(self):
+        with self.assertRaisesRegex(
+            ValueError, "target_canonical_season_mapping_not_valid_at_feature_cutoff"
+        ):
+            build_results_history_snapshot(
+                historical_matches=history_with_target(), target_fixture=TARGET,
+                season_crosswalk_registry=season_registry(
+                    revoked_at="2026-09-01T11:59:59Z"
+                ),
+                trusted_kms_clients=trusted_clients(),
+                team_crosswalk_registry=TEAM_REGISTRY,
+            )
+
+    def test_season_mapping_requires_exact_provider_and_competition_identity(self):
+        registry = season_registry()
+        for changed in (
+            {**TARGET, "provider": "another-provider"},
+            {**TARGET, "competition_id": "another-competition"},
+        ):
+            with self.subTest(changed=changed):
+                with self.assertRaisesRegex(
+                    ValueError, "target_canonical_season_mapping_not_valid_at_feature_cutoff"
+                ):
+                    build_results_history_snapshot(
+                        historical_matches=history_with_target(), target_fixture=changed,
+                        season_crosswalk_registry=registry,
+                        trusted_kms_clients=trusted_clients(),
+                        team_crosswalk_registry=TEAM_REGISTRY,
+                    )
+
+    def test_provider_source_season_label_remains_in_original_payload_evidence(self):
+        target_row = next(
+            row for row in history_with_target() if row["fixture_id"] == TARGET["fixture_id"]
+        )
+        self.assertEqual(target_row["source_season"], "2025/26")
+        self.assertEqual(
+            target_row["source_payload"]["normalized_record"]["source_season"], "2025/26"
+        )
 
     def test_registry_issued_after_feature_cutoff_cannot_retroactively_map_season(self):
         with self.assertRaisesRegex(ValueError, "season_crosswalk_registry_rejected_at_feature_cutoff"):
