@@ -242,6 +242,11 @@ def build_historical_source_coverage_report(
                 raise HistoricalSourceCoverageError(f"feature_snapshot_invalid:{index}")
             fixture_id = snapshot.get("fixture_id")
             prediction_as_of = snapshot.get("prediction_as_of")
+            snapshot_features = snapshot.get("features")
+            if not isinstance(snapshot_features, list) or not snapshot_features:
+                raise HistoricalSourceCoverageError(
+                    f"feature_snapshot_has_no_qualified_cells:{fixture_id}"
+                )
             accepted_record = accepted_by_id.get(fixture_id)
             if accepted_record is None:
                 raise HistoricalSourceCoverageError(
@@ -257,7 +262,7 @@ def build_historical_source_coverage_report(
                 raise HistoricalSourceCoverageError(
                     f"feature_source_registry_rejected:{exc}"
                 ) from None
-            for feature in snapshot.get("features", []):
+            for feature in snapshot_features:
                 qualification = feature.get("source_qualification") if isinstance(feature, dict) else None
                 if not isinstance(qualification, dict):
                     raise HistoricalSourceCoverageError(
@@ -284,13 +289,20 @@ def build_historical_source_coverage_report(
                 None, verified_source_registry["registry_sha256"]
             ):
                 raise HistoricalSourceCoverageError("feature_source_registry_changed_across_snapshots")
+            if feature_source_qualification["signing_key_arn"] not in (
+                None, verified_source_registry["signing_key_arn"]
+            ):
+                raise HistoricalSourceCoverageError("feature_source_signer_changed_across_snapshots")
             feature_source_qualification["registry_sha256"] = verified_source_registry["registry_sha256"]
             feature_source_qualification["signing_key_arn"] = verified_source_registry["signing_key_arn"]
         feature_source_qualification.update({
-            "verified": bool(snapshots),
+            "verified": bool(snapshots) and qualified_cells > 0,
             "qualified_feature_cells": qualified_cells,
             "source_feature_counts": dict(sorted(source_feature_counts.items())),
-            "status": "verified" if snapshots else "no_feature_snapshots",
+            "status": (
+                "verified" if snapshots and qualified_cells > 0
+                else "no_qualified_feature_cells"
+            ),
         })
     elif snapshots:
         feature_source_qualification["rejected_feature_cells"] = sum(
