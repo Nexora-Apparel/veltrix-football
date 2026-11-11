@@ -277,6 +277,7 @@ class AuditedProviderDatasetPipelineTests(unittest.TestCase):
                 team_crosswalk_registry=team_registry()[0],
 
                 team_crosswalk_as_of="2026-09-01T12:00:00Z",
+                feature_source_qualification_registry=feature_source_registry(),
 
                 split_policy={},
             )
