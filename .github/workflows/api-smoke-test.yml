@@ -1,4 +1,4 @@
-name: Provider Adapter Regression (Live Probes Opt-in)
+name: Repository Unit Tests (Live Provider Probes Opt-in)
 
 on:
   push:
@@ -11,6 +11,8 @@ on:
       - "scripts/verify_multi_source_integration.py"
       - "tests/test_provider_adapters.py"
       - ".github/workflows/api-smoke-test.yml"
+      - "veltrix_v2/**"
+      - "tests/veltrix_v2/**"
   pull_request:
     branches: [main]
     paths:
@@ -21,6 +23,8 @@ on:
       - "scripts/verify_multi_source_integration.py"
       - "tests/test_provider_adapters.py"
       - ".github/workflows/api-smoke-test.yml"
+      - "veltrix_v2/**"
+      - "tests/veltrix_v2/**"
   workflow_dispatch:
 
 permissions:
