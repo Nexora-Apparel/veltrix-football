@@ -25,13 +25,19 @@ jobs:
       - name: Install provider adapter import dependency
         run: python -m pip install --disable-pip-version-check requests
       - name: Install test dependencies
-        run: python -m pip install --disable-pip-version-check pytest
+        run: python -m pip install --disable-pip-version-check pytest fastapi
       - name: Run Poisson and Dixon-Coles model tests
         run: python -m pytest -q tests/test_poisson_dc_head.py tests/test_poisson_dixon_coles_model.py
       - name: Run independent market model tests
         run: python -m unittest discover -s tests -p 'test_independent_market_models.py' -v
       - name: Run independent fixture inference service tests
         run: python -m unittest discover -s tests -p 'test_independent_prediction_service.py' -v
+      - name: Run independent report publication contract tests
+        run: python -m unittest discover -s tests -p 'test_independent_report_contract.py' -v
+      - name: Run Telegram and dashboard legacy-report suppression tests
+        run: |
+          python -m unittest discover -s tests -p 'test_telegram_commands.py' -v
+          python -m pytest -q tests/test_dashboard_routing.py
       - name: Run raw source evidence archive tests
         run: python -m unittest discover -s tests -p 'test_provider_source_evidence.py' -v
       - name: Run provider fixture normalization and batch tests
