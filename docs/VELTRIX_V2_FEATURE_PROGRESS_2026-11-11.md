@@ -48,7 +48,8 @@ Branch: `veltrix-2.0-architecture-blueprint`
 - RPS uses the ordinal AWAY/DRAW/HOME order by increasing home goal difference.
 - Paired model-versus-benchmark comparison reports Brier, log-loss and RPS deltas on the exact same settled fixture set; negative deltas indicate lower scoring loss.
 - Forecast vectors must be real, finite, strictly positive, normalized and uniquely keyed; forecast/outcome fixture sets must match exactly.
-- Joint scoreline distribution contract derives 1X2, BTTS and O/U probabilities from the same normalized scoreline mass. No market-specific independent fallback or silent renormalization is allowed.
+- Joint scoreline distribution contract derives 1X2, BTTS and half-goal O/U probabilities from the same normalized scoreline mass. Integer totals lines are rejected until explicit push settlement is implemented.
+- No market-specific independent fallback or silent probability renormalization is allowed.
 - Scoreline-derived markets are deterministic transformations only; this does not fit or train the goal model.
 
 ## Verification state
@@ -58,7 +59,7 @@ Branch: `veltrix-2.0-architecture-blueprint`
 - Elo feature suite: **52 passed, 0 failed**; legacy-import boundary check passed. [Run #42988271363](https://github.com/Nexora-Apparel/veltrix-football/actions/runs/42988271363).
 - Team-form duplicate-evidence guards and initial 1X2 scoring tests: **66 passed, 0 failed**; legacy-import boundary check passed. [Run #42988562701](https://github.com/Nexora-Apparel/veltrix-football/actions/runs/42988562701).
 - Paired benchmark comparison, strict probability typing and ordinal RPS ordering: **70 passed, 0 failed**; legacy-import boundary check passed. [Run #42988827971](https://github.com/Nexora-Apparel/veltrix-football/actions/runs/42988827971).
-- Scoreline-to-market derivation and its new tests were added after that run. Fresh CI verification is pending; do not count them as passed yet.
+- Scoreline-to-market derivation, including half-goal-line/push safeguards, was added after run #42988827971. Fresh CI verification is pending.
 - No model fitting, calibration, prediction publication, provider ingestion or production activation has been performed.
 
 ## Next gate
