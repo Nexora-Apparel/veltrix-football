@@ -274,3 +274,15 @@ No source is approved for model training solely because it has a public endpoint
 - A lookback above 90 days requires a minimum observed history span of at least 300 days. The 1,000 held-out-match certification gate remains unchanged.
 - The manual GitHub Actions workflow now accepts up to 365 days, but the runner enforces the actual account plan. No Community activation or provider request was performed during this code change.
 - Official reference: https://5dollarfootballapi.com/docs/status
+
+
+#### Timestamped odds and CLV constraint — 2026-11-11
+
+- 5Dollar `GET /v1/fixtures/{id}/odds` returns Bet365 opening, closing and in-play values. Its documented 1X2 opening contains `opened_at`; other market examples (including totals and BTTS) do not expose an equivalent per-stage timestamp.
+- Full per-tick history with `recorded_at` for 13 Bet365 markets (including BTTS) is `GET /v1/fixtures/{id}/odds/history`. The endpoint requires Ultra or above; Free, Community and Pro receive HTTP 403. Community's 12-month results/odds entitlement does not include tick-history access.
+- Therefore Community Access alone does not meet the 98% timestamped-odds gate for all markets and cannot provide full tick-level CLV.
+- The no-cost prospective route is The Odds API current `/odds` endpoint: it returns market-level `last_update` timestamps and current upcoming-event prices. Capture and store the request timestamp plus each market's source `last_update`; do not treat the report generation time as a source timestamp.
+- One daily snapshot for five competitions, one region and three markets costs up to 15 credits/day (about 450 per 30-day month), fitting the 500-credit Free plan with little headroom. The actual BTTS market availability must be probed per competition/bookmaker. A second daily snapshot or additional regions/competitions can exceed the quota.
+- Daily snapshots can support a prospective, timestamped pre-match movement measure by comparing the report-time quote with the latest later snapshot before kickoff. This is a daily-snapshot CLV proxy, not true closing-line/tick-level CLV; report it as such unless a final near-kickoff timestamp is captured.
+- The Odds API historical snapshot endpoint remains paid-only, so no free historical odds backfill is approved. Historical 1X2/bookmaker benchmark data must not be fabricated from untimestamped closing fields.
+- Official references: https://5dollarfootballapi.com/docs/odds ; https://5dollarfootballapi.com/docs/odds-history ; https://the-odds-api.com/liveapi/guides/v4/ ; https://the-odds-api.com/historical-odds-data/
