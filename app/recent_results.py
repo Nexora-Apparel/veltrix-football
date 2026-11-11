@@ -6,7 +6,7 @@ from typing import Any
 
 from app.football_api import FootballAPIError  # retained for compatibility with Highlightly adapter tests
 from app.api_football_odds import APIFootballError
-from app.live_predictions import LEAGUE_DIVISION_BY_CODE, LEAGUE_DIVISION_BY_ID, _name_key
+from app.fixture_history_utils import LEAGUE_DIVISION_BY_CODE, LEAGUE_DIVISION_BY_ID, _name_key
 
 COMPLETED_STATUSES = {"FT", "AET", "PEN"}
 
