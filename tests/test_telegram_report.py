@@ -390,6 +390,8 @@ def test_telegram_report_lists_all_fixtures_and_marks_ineligible_forecasts():
         {**report["predictions"][0], "home_team": "Forecasted FC", "away_team": "Modelled FC"},
         {
             "status": "INSUFFICIENT_HISTORY",
+            "model_portfolio_id": MODEL_PORTFOLIO_ID,
+            "legacy_model_dependency": False,
             "home_team": "History Gap FC",
             "away_team": "New Club FC",
             "league": "Example League",
@@ -397,6 +399,8 @@ def test_telegram_report_lists_all_fixtures_and_marks_ineligible_forecasts():
         },
         {
             "status": "UNSUPPORTED_COMPETITION",
+            "model_portfolio_id": MODEL_PORTFOLIO_ID,
+            "legacy_model_dependency": False,
             "home_team": "Cup Side",
             "away_team": "Regional Side",
             "league": "Unmapped Cup",
@@ -436,6 +440,8 @@ def test_telegram_retains_fixture_with_unverified_kickoff():
     report = sample_report()
     report["predictions"] = [{
         "status": "KICKOFF_UNVERIFIED",
+        "model_portfolio_id": MODEL_PORTFOLIO_ID,
+        "legacy_model_dependency": False,
         "home_team": "Retained FC",
         "away_team": "Visible United",
         "league": "Test League",
