@@ -54,6 +54,12 @@ def request_json(url: str, headers: dict[str, str] | None = None):
         raise ProviderCheckError("invalid JSON response") from None
 
 
+def safe_id(value: object) -> str:
+    if isinstance(value, (str, int)) and not isinstance(value, bool):
+        return str(value)[:48]
+    return "not reported"
+
+
 def check_fivedollar() -> str:
     key = os.getenv("FIVEDOLLARFOOTBALL_API_KEY", "").strip()
     if not key:
