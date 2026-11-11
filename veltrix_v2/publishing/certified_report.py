@@ -85,6 +85,8 @@ class CertifiedDailyReport:
     generated_at_utc: datetime
     delivery_deadline_utc: datetime
     certification_id: str
+    prediction_certification: PredictionReleaseCertification
+    value_bet_certification: ReleaseCertification | None
     value_bets_enabled: bool
     source_attributions: tuple[str, ...]
     fixtures: tuple[PublishedFixture, ...]
@@ -104,8 +106,13 @@ class CertifiedDailyReport:
             raise ValueError("REPORT_GENERATED_AFTER_0600_WAT_DEADLINE")
         if generated.astimezone(WAT).date() != self.report_date_wat:
             raise ValueError("REPORT_GENERATION_DATE_WAT_MISMATCH")
-        if type(self.value_bets_enabled) is not bool:
-            raise ValueError("REPORT_VALUE_BETS_ENABLED_MUST_BE_BOOLEAN")
+        if not isinstance(self.prediction_certification, PredictionReleaseCertification) or not self.prediction_certification.passed:
+            raise ValueError("REPORT_PREDICTION_RELEASE_CERTIFICATION_REQUIRED")
+        if self.value_bet_certification is not None and not isinstance(self.value_bet_certification, ReleaseCertification):
+            raise ValueError("REPORT_VALUE_BET_CERTIFICATION_TYPE_INVALID")
+        expected_value_bets_enabled = bool(self.value_bet_certification and self.value_bet_certification.passed)
+        if type(self.value_bets_enabled) is not bool or self.value_bets_enabled != expected_value_bets_enabled:
+            raise ValueError("REPORT_VALUE_BET_STATE_CONFLICTS_WITH_CERTIFICATION")
         attributions = tuple(self.source_attributions)
         if any(not isinstance(item, str) or not item.strip() for item in attributions):
             raise ValueError("REPORT_SOURCE_ATTRIBUTIONS_INVALID")
@@ -121,6 +128,13 @@ class CertifiedDailyReport:
             raise ValueError("REPORT_CONTAINS_STARTED_OR_PAST_FIXTURE")
         if any(row.kickoff_utc.astimezone(WAT).date() != self.report_date_wat for row in rows):
             raise ValueError("REPORT_FIXTURE_OUTSIDE_WAT_REPORT_DATE")
+        for fixture in rows:
+            if not self.value_bets_enabled and fixture.value_bet_verdict != "LOCKED — NOT CERTIFIED":
+                raise ValueError("REPORT_UNCERTIFIED_VALUE_BET_MUST_REMAIN_LOCKED")
+            for provider in fixture.source_provider_ids:
+                required_attribution = PROVIDER_ATTRIBUTION_RULES[provider]
+                if required_attribution and required_attribution not in self.source_attributions:
+                    raise ValueError(f"REPORT_REQUIRED_PROVIDER_ATTRIBUTION_MISSING:{provider}")
         if tuple(sorted(rows, key=lambda row: (row.kickoff_utc, row.fixture_id))) != rows:
             raise ValueError("REPORT_FIXTURES_MUST_BE_CHRONOLOGICALLY_SORTED")
 
@@ -157,6 +171,8 @@ def build_certified_daily_report(
         generated_at_utc=generated_at_utc,
         delivery_deadline_utc=deadline,
         certification_id=certification_id,
+        prediction_certification=certification,
+        value_bet_certification=value_bet_certification,
         value_bets_enabled=value_bets_enabled,
         source_attributions=tuple(source_attributions),
         fixtures=ordered,
