@@ -106,6 +106,9 @@ def test_dashboard_data_handler_returns_json(monkeypatch):
     import api.telegram
 
     monkeypatch.setattr(api.telegram, "load_paper_ledger", lambda: {
+        "ledger_schema": "VELTRIX_INDEPENDENT_PAPER_LEDGER_V1",
+        "model_portfolio_id": "veltrix-independent-market-portfolio-v1",
+        "legacy_model_dependency": False,
         "model_status": "PAPER_TRACKING_ONLY",
         "evaluated_report_dates": 2,
         "cumulative_metrics_by_model": {},
@@ -202,12 +205,15 @@ def test_dashboard_exposes_calibration_coverage_and_versioned_value_ledger(monke
         "markets": [],
     }
     ledger = {
+        "ledger_schema": "VELTRIX_INDEPENDENT_PAPER_LEDGER_V1",
+        "model_portfolio_id": "veltrix-independent-market-portfolio-v1",
+        "legacy_model_dependency": False,
         "model_status": "PAPER_TRACKING_ONLY",
         "evaluated_report_dates": 4,
         "value_market_metrics_by_market": {"1x2": {"settled_bets": 2}},
-        "value_validation_markets_by_model_version": {"experimental_recent_goals_poisson": {"1X2": {"settled_bets": 2}}},
+        "value_validation_markets_by_model_version": {"veltrix_independent_market_portfolio_v1": {"1X2": {"settled_bets": 2}}},
         "value_validation_markets_by_calibration_version": {},
-        "value_model_versions": ["experimental_recent_goals_poisson"],
+        "value_model_versions": ["veltrix_independent_market_portfolio_v1"],
         "calibration_versions": [],
         "scored_matches": [],
     }
@@ -220,8 +226,8 @@ def test_dashboard_exposes_calibration_coverage_and_versioned_value_ledger(monke
     payload = telegram.dashboard_data()
     assert payload["goal_market_calibration"] == calibration
     assert payload["paper_tracking"]["value_market_metrics_by_market"] == {"1x2": {"settled_bets": 2}}
-    assert payload["paper_tracking"]["value_model_versions"] == ["experimental_recent_goals_poisson"]
-    assert payload["paper_tracking"]["value_validation_markets_by_model_version"]["experimental_recent_goals_poisson"]["1X2"]["settled_bets"] == 2
+    assert payload["paper_tracking"]["value_model_versions"] == ["veltrix_independent_market_portfolio_v1"]
+    assert payload["paper_tracking"]["value_validation_markets_by_model_version"]["veltrix_independent_market_portfolio_v1"]["1X2"]["settled_bets"] == 2
 
 
 def test_dashboard_keeps_future_unsupported_fixtures_visible(monkeypatch):
@@ -330,6 +336,9 @@ def test_dashboard_exposes_model_validation_evidence(monkeypatch):
     from api import telegram
 
     validation = {
+        "validation_schema": "VELTRIX_INDEPENDENT_MODEL_VALIDATION_V1",
+        "model_portfolio_id": "veltrix-independent-market-portfolio-v1",
+        "legacy_model_dependency": False,
         "status": "RESEARCH_DIAGNOSTIC_ONLY",
         "dataset": {
             "valid_rows": 238854,
@@ -425,15 +434,18 @@ def test_dashboard_api_deduplicates_paper_tracking_rows_by_fixture_id(monkeypatc
     })
     monkeypatch.setattr(telegram, "load_model_validation_report", lambda: None)
     monkeypatch.setattr(telegram, "load_paper_ledger", lambda: {
+        "ledger_schema": "VELTRIX_INDEPENDENT_PAPER_LEDGER_V1",
+        "model_portfolio_id": "veltrix-independent-market-portfolio-v1",
+        "legacy_model_dependency": False,
         "model_status": "PAPER_TRACKING_ONLY",
         "scored_matches": [
             {
                 "fixture_id": 9001, "home_team": "Alpha", "away_team": "Beta",
-                "report_date": "2099-04-30", "model": "experimental_recent_goals_poisson",
+                "report_date": "2099-04-30", "model": "veltrix_independent_market_portfolio_v1",
             },
             {
                 "fixture_id": 9001, "home_team": "Alpha", "away_team": "Beta",
-                "report_date": "2099-04-30", "model": "experimental_elo_global_fallback",
+                "report_date": "2099-04-30", "model": "veltrix_independent_elo_baseline",
             },
         ],
     })
@@ -443,4 +455,4 @@ def test_dashboard_api_deduplicates_paper_tracking_rows_by_fixture_id(monkeypatc
     assert tracking["scored_matches_model_rows"] == 2
     assert tracking["scored_matches_unique_fixtures"] == 1
     assert len(tracking["scored_matches"]) == 1
-    assert tracking["scored_matches"][0]["model"] == "experimental_recent_goals_poisson"
+    assert tracking["scored_matches"][0]["model"] == "veltrix_independent_market_portfolio_v1"
