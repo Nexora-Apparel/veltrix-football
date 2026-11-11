@@ -113,7 +113,7 @@ class ResultsFeatureReconstructionTests(unittest.TestCase):
         self.assertEqual(set(result["features"]), {
             "home_attack_goals_rate", "home_defence_conceded_rate",
             "away_attack_goals_rate", "away_defence_conceded_rate",
-            "home_team_elo", "away_team_elo", "elo_difference_home", "home_form_points_rate",
+            "elo_difference_home", "home_form_points_rate",
             "away_form_points_rate", "home_rest_days", "away_rest_days",
             "competition_home_goals_rate", "competition_away_goals_rate",
         })
