@@ -19,7 +19,7 @@ def attach_evidence(row):
         "team_scope": "men_first_team",
         "registry_sha256": "b" * 64,
         "signing_key_arn": "arn:aws:kms:eu-west-1:123456789012:key/test",
-        "verified_at": "2026-08-01T00:00:00Z",
+        "verified_at": row["retrieved_at"],
     })
     normalized = {
         "fixture_id": row["fixture_id"],
