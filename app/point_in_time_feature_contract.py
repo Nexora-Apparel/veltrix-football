@@ -265,6 +265,15 @@ def validate_point_in_time_feature_snapshot(snapshot: Any) -> dict:
         names.append(name)
     if names != sorted(names) or len(names) != len(set(names)):
         raise PointInTimeFeatureError("snapshot_feature_order_or_uniqueness_invalid")
+    qualified = ["source_qualification" in item for item in features]
+    if any(qualified) and not all(qualified):
+        raise PointInTimeFeatureError("snapshot_source_qualification_partial")
+    if all(qualified) and qualified:
+        registry_ids = {item["source_qualification"]["registry_sha256"] for item in features}
+        signer_ids = {item["source_qualification"]["signing_key_arn"] for item in features}
+        verified_times = {item["source_qualification"]["verified_at"] for item in features}
+        if len(registry_ids) != 1 or len(signer_ids) != 1 or len(verified_times) != 1:
+            raise PointInTimeFeatureError("snapshot_source_qualification_registry_mismatch")
     return {
         "valid": True,
         "snapshot_sha256": supplied,
