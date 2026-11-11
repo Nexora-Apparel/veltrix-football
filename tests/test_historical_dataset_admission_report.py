@@ -86,6 +86,9 @@ class HistoricalDatasetAdmissionReportTests(unittest.TestCase):
             report["feature_coverage"]["by_data_domain"]["pressing_intensity_ppda"]["status"],
             "not_in_feature_catalogue",
         )
+        clv = report["feature_coverage"]["by_data_domain"]["odds_movement_and_clv"]
+        self.assertEqual(clv["status"], "evaluation_evidence_not_in_feature_catalogue")
+        self.assertTrue(clv["evaluation_only"])
         self.assertTrue(
             report["feature_coverage"]["feature_level_source_timestamps_and_source_ids_in_rows"]
         )
