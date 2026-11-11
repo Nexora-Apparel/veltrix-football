@@ -87,7 +87,7 @@ def season_registry():
         trusted_key_regions={SEASON_KEY_ARN: "eu-west-1"},
         registry={
             "schema": SEASON_CROSSWALK_SCHEMA,
-            "issued_at": "2026-01-01T00:00:00Z",
+            "issued_at": "2026-01-02T00:00:00Z",
             "expires_at": "2027-01-01T00:00:00Z",
             "mappings": [{
                 "provider": "provider", "competition_id": "league-a",
