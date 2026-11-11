@@ -66,6 +66,12 @@ class PublishedFixture:
         if not isinstance(self.kickoff_utc, datetime) or self.kickoff_utc.tzinfo is None or self.kickoff_utc.utcoffset() is None:
             raise ValueError("REPORT_KICKOFF_MUST_BE_TIMEZONE_AWARE")
         object.__setattr__(self, "kickoff_utc", self.kickoff_utc.astimezone(timezone.utc))
+        providers = tuple(dict.fromkeys(self.source_provider_ids))
+        if not providers:
+            raise ValueError("REPORT_SOURCE_PROVIDER_REQUIRED")
+        if any(not isinstance(provider, str) or provider not in PROVIDER_ATTRIBUTION_RULES for provider in providers):
+            raise ValueError("REPORT_SOURCE_PROVIDER_UNKNOWN_OR_UNMAPPED")
+        object.__setattr__(self, "source_provider_ids", providers)
 
 
 @dataclass(frozen=True, slots=True)

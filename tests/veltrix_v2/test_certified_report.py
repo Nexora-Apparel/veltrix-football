@@ -63,6 +63,7 @@ def fixture(fid, kickoff):
             Decimal("0.55"), Decimal("0.25"), Decimal("0.20"),
             Decimal("0.58"), Decimal("2.5"), Decimal("0.53"),
         ),
+        source_provider_ids=("synthetic",),
         verdict="HOME LEAN",
         ai_insight="Home side creates more high-quality chances.",
     )
@@ -158,6 +159,7 @@ def test_value_bets_unlock_only_after_full_value_bet_certification():
             Decimal("0.55"), Decimal("0.25"), Decimal("0.20"),
             Decimal("0.58"), Decimal("2.5"), Decimal("0.53"),
         ),
+        source_provider_ids=("synthetic",),
         verdict="HOME LEAN", ai_insight="Test-only certified evidence.",
         value_bet_verdict="QUALIFIED VALUE",
     )
