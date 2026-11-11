@@ -48,8 +48,10 @@ def test_both_provider_credentials_report_healthy(monkeypatch, capsys):
 
     def fake_request(url, headers=None):
         calls["count"] += 1
-        if calls["count"] == 1:
-            return 200, {"X-RateLimit-Remaining": "59"}, {"success": 1, "data": []}
+        if "/status" in url:
+            return 200, {"X-RateLimit-Remaining": "59"}, {"success": 1, "data": {"plan": "free"}}
+        if "/leagues?" in url:
+            return 200, {"X-RateLimit-Remaining": "58"}, {"success": 1, "data": []}
         return 200, {"x-requests-remaining": "476"}, [
             {"key": "soccer_england_premier_league", "active": True}
         ]
