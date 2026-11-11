@@ -88,6 +88,55 @@ def build_historical_dataset_admission_report(pipeline_report: Any) -> dict:
         for name in sorted(FEATURE_CATALOGUE)
     }
     absent_feature_names = sorted(name for name, stats in feature_coverage.items() if stats["fixtures"] == 0)
+    feature_domains = {
+        "team_strength_and_form": [
+            "home_team_elo", "away_team_elo", "elo_difference_home",
+            "home_attack_strength", "away_attack_strength",
+            "home_defence_strength", "away_defence_strength",
+            "home_form_points_rate", "away_form_points_rate",
+        ],
+        "expected_goals": [
+            "home_rolling_xg_for", "home_rolling_xg_against",
+            "away_rolling_xg_for", "away_rolling_xg_against",
+        ],
+        "lineups": ["home_lineup_strength", "away_lineup_strength"],
+        "fatigue_and_travel": [
+            "home_rest_days", "away_rest_days", "home_travel_km", "away_travel_km",
+        ],
+        "market_odds": [
+            "odds_home_decimal", "odds_draw_decimal", "odds_away_decimal",
+            "odds_btts_yes_decimal", "odds_over_2_5_decimal",
+        ],
+    }
+    domain_coverage = {}
+    for domain, names in feature_domains.items():
+        present = [name for name in names if name in FEATURE_CATALOGUE]
+        observed = sum(feature_counts.get(name, 0) for name in present)
+        denominator = len(rows) * len(present)
+        domain_coverage[domain] = {
+            "catalogue_feature_count": len(present),
+            "features_present_in_dataset": [
+                name for name in present if feature_counts.get(name, 0) > 0
+            ],
+            "features_absent_from_dataset": [
+                name for name in present if feature_counts.get(name, 0) == 0
+            ],
+            "feature_cell_coverage_rate": observed / denominator if denominator else 0.0,
+        }
+    domain_coverage["injury_availability"] = {
+        "catalogue_feature_count": 0,
+        "features_present_in_dataset": [],
+        "features_absent_from_dataset": [],
+        "feature_cell_coverage_rate": 0.0,
+        "status": "not_in_feature_catalogue",
+    }
+    domain_coverage["pressing_intensity_ppda"] = {
+        "catalogue_feature_count": 0,
+        "features_present_in_dataset": [],
+        "features_absent_from_dataset": [],
+        "feature_cell_coverage_rate": 0.0,
+        "status": "not_in_feature_catalogue",
+    }
     market_counts = {
         market: {
             split: dict(sorted(outcomes.get(split, {}).items()))
@@ -127,6 +176,9 @@ def build_historical_dataset_admission_report(pipeline_report: Any) -> dict:
             "included_row_denominator": len(rows),
             "by_feature": feature_coverage,
             "catalogue_features_absent": absent_feature_names,
+            "by_data_domain": domain_coverage,
+            "feature_level_source_timestamps_and_source_ids_in_rows": False,
+            "provenance_reference": "feature_snapshot_sha256 is retained per row; detailed feature provenance remains in the separately retained snapshot evidence",
         },
         "training_readiness": {
             "ready_for_model_training": False,
