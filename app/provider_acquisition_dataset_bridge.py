@@ -27,6 +27,9 @@ from app.results_training_dataset_adapter import (
 from app.source_qualification_registry import (
     SourceQualificationRegistryError, resolve_qualified_settlement_source,
 )
+from app.canonical_team_crosswalk import (
+    TeamCrosswalkError, resolve_canonical_team_pair,
+)
 
 
 class AcquisitionDatasetBridgeError(ValueError):
@@ -115,7 +118,8 @@ def _qualified_settlement(record: dict, package: Any, *,
 
 def acquisition_record_to_history_row(record: Any, *,
                                        settlement_timestamp_package: dict | None = None,
-                                       trusted_kms_clients: dict | None = None) -> dict:
+                                       trusted_kms_clients: dict | None = None,
+                                       team_crosswalk_registry: dict | None = None) -> dict:
     if not isinstance(record, dict):
         raise AcquisitionDatasetBridgeError("acquisition_record_invalid")
     evidence = record.get("source_evidence")
@@ -130,12 +134,31 @@ def acquisition_record_to_history_row(record: Any, *,
         raise AcquisitionDatasetBridgeError("settlement_timestamp_unavailable")
     if not isinstance(trusted_kms_clients, dict) or not trusted_kms_clients:
         raise AcquisitionDatasetBridgeError("trusted_settlement_registry_keys_required")
+    if not isinstance(team_crosswalk_registry, dict):
+        raise AcquisitionDatasetBridgeError("team_crosswalk_registry_required")
+    try:
+        team_identity = resolve_canonical_team_pair(
+            registry=team_crosswalk_registry,
+            trusted_kms_clients=trusted_kms_clients,
+            provider=record["provider"],
+            competition_id=record["competition_key"],
+            home_source_team_id=record["home_team_source_id"],
+            away_source_team_id=record["away_team_source_id"],
+            as_of=record["retrieved_at"],
+        )
+    except TeamCrosswalkError as exc:
+        raise AcquisitionDatasetBridgeError(
+            f"canonical_team_pair_rejected:{exc}"
+        ) from None
+
     settlement = _qualified_settlement(
         record, settlement_timestamp_package,
         trusted_kms_clients=trusted_kms_clients,
     )
     fixture_id = f'{record["provider"]}:{record["source_id"]}'
-    normalized = {
+    # The source-normalized record deliberately retains provider IDs. Canonical
+    # identity is a separate signed evidence layer and never rewrites raw evidence.
+    source_normalized = {
         "fixture_id": fixture_id,
         "competition_id": record["competition_key"],
         "kickoff_at": record["kickoff_at"],
@@ -146,6 +169,21 @@ def acquisition_record_to_history_row(record: Any, *,
         "away_score": record["away_score"],
         "normalized_status": record["normalized_status"],
     }
+    identity_evidence = {
+        "home_source_team_id": record["home_team_source_id"],
+        "away_source_team_id": record["away_team_source_id"],
+        "home_canonical_team_id": team_identity["home"]["canonical_team_id"],
+        "away_canonical_team_id": team_identity["away"]["canonical_team_id"],
+        "team_scope": team_identity["home"]["team_scope"],
+        "registry_sha256": team_identity["registry_sha256"],
+        "signing_key_arn": team_identity["signing_key_arn"],
+        "verified_at": team_identity["verified_at"],
+    }
+    normalized = {
+        **source_normalized,
+        "home_team_id": identity_evidence["home_canonical_team_id"],
+        "away_team_id": identity_evidence["away_canonical_team_id"],
+    }
     source_payload = {
         "provider": record["provider"],
         "endpoint": record["endpoint"],
@@ -154,8 +192,8 @@ def acquisition_record_to_history_row(record: Any, *,
         "retrieved_at": _timestamp(record["retrieved_at"], "retrieved_at"),
         "payload": evidence["raw_payload"],
         "payload_sha256": evidence["raw_payload_sha256"],
-        "normalized_record": normalized,
-        "normalized_record_sha256": _canonical_hash(normalized),
+        "normalized_record": source_normalized,
+        "normalized_record_sha256": _canonical_hash(source_normalized),
     }
     return {
         **normalized,
@@ -166,6 +204,9 @@ def acquisition_record_to_history_row(record: Any, *,
         "payload_sha256": evidence["raw_payload_sha256"],
         "run_id": record["run_id"],
         "source_payload": source_payload,
+        "home_team_source_id": identity_evidence["home_source_team_id"],
+        "away_team_source_id": identity_evidence["away_source_team_id"],
+        "team_identity_evidence": identity_evidence,
         **settlement,
     }
 
@@ -173,6 +214,7 @@ def acquisition_record_to_history_row(record: Any, *,
 def assemble_provider_acquisition_dataset(*, acquisition_records: list[dict],
                                           settlement_timestamp_packages: dict,
                                           trusted_kms_clients: dict,
+                                          team_crosswalk_registry: dict,
                                           split_policy: dict,
                                           cutoff_hours: int = 6,
                                           form_window: int = 10,
@@ -188,6 +230,7 @@ def assemble_provider_acquisition_dataset(*, acquisition_records: list[dict],
         history.append(acquisition_record_to_history_row(
             record, settlement_timestamp_package=package,
             trusted_kms_clients=trusted_kms_clients,
+            team_crosswalk_registry=team_crosswalk_registry,
         ))
 
     targets, labels, manifest = [], [], []
@@ -223,6 +266,7 @@ def assemble_provider_acquisition_dataset(*, acquisition_records: list[dict],
             "settlement_evidence_sha256": row["settlement_evidence_sha256"],
             "settlement_registry_sha256": row["settlement_registry_sha256"],
             "settlement_registry_signing_key_arn": row["settlement_registry_signing_key_arn"],
+            "team_identity_evidence": row["team_identity_evidence"],
         })
     feature_history = [
         {key: value for key, value in row.items() if key not in {
