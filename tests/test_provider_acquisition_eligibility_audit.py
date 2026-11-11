@@ -63,7 +63,7 @@ class ProviderAcquisitionEligibilityAuditTests(unittest.TestCase):
             "away": {"team_id": "a", "name": "Away", "score": 1},
         }
         record = normalize_striker_game(
-            payload, competition_key="soccer", endpoint="list_games",
+            payload, competition_key="soccer", season="2025/26", endpoint="list_games",
             retrieved_at="2026-11-02T00:00:00Z", run_id="run-1",
         )
         record["source_evidence"] = build_source_evidence(
@@ -122,6 +122,7 @@ class ProviderAcquisitionEligibilityAuditTests(unittest.TestCase):
         accepted = report["accepted_records"][0]
         self.assertEqual(accepted["fixture_id"], "strikerapi:g-1")
         self.assertEqual(accepted["settlement_source_id"], "qualified-source-a")
+        self.assertEqual(accepted["source_season"], "2025/26")
         self.assertEqual(len(accepted["payload_sha256"]), 64)
         self.assertNotIn("raw_payload", json.dumps(report))
 
