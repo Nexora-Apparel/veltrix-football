@@ -61,7 +61,7 @@ def test_both_provider_credentials_report_healthy(monkeypatch, capsys):
     assert "HEALTHY" in capsys.readouterr().out
 
 
-def test_optional_top_five_btts_probe_is_bounded_to_five_odds_credits(monkeypatch, capsys):
+def test_optional_top_five_and_south_american_btts_probe_is_bounded_to_eight_credits(monkeypatch, capsys):
     from types import SimpleNamespace
     from veltrix_v2.providers import the_odds_api
 
