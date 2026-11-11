@@ -11,6 +11,7 @@ on:
       - "tests/veltrix_v2/**"
       - "scripts/veltrix_v2/**"
       - ".github/workflows/veltrix-v2-foundation.yml"
+      - ".github/workflows/veltrix-v2-historical-walk-forward.yml"
   pull_request:
     paths:
       - "veltrix_v2/**"
