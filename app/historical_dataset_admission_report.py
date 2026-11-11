@@ -98,7 +98,6 @@ def build_historical_dataset_admission_report(pipeline_report: Any) -> dict:
     report = {
         "schema_version": 1,
         "report_type": "veltrix_historical_dataset_admission_profile",
-        "source_pipeline_report_sha256": pipeline_report.get("pipeline_report_sha256"),
         "settlement_admission": {
             "input_records": eligibility.get("input_record_count", 0),
             "eligible_fixtures": len(accepted),
