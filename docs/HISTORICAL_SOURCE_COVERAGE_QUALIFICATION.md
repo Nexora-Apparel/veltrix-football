@@ -19,6 +19,21 @@ It is a fail-closed screening report, not proof of model quality, a source licen
 
 Dataset rows must join to an admitted fixture, the same competition, and the exact retained feature snapshot digest. Predictor values must equal the snapshot values. A mismatch aborts report generation.
 
+## Competition-isolated team history
+
+The results reconstruction layer now restricts team form, Elo updates and
+competition scoring baselines to the target fixture's exact competition ID.
+A canonical team ID appearing in another competition is not sufficient to
+make that competition's matches eligible history. Cross-competition borrowing
+remains disabled until a separately evaluated competition-strength adjustment
+and cross-competition history policy exist. If the target competition lacks
+enough pre-cutoff history, the target is withheld rather than filled from a
+different competition.
+
+This is intentionally conservative. It prevents domestic-league results,
+cups and unrelated competition formats from being silently pooled into the
+same raw rates or Elo scale.
+
 ## Season identity limitation
 
 The normalized acquisition record already retains a provider-reported `season` value where supplied. The eligibility audit now carries that value forward as `source_season`. The report distinguishes missing season labels from source-reported labels that still lack a reviewed canonical competition-season crosswalk. It does not infer seasons from calendar years, league schedules or kickoff dates. Even complete source-reported labels remain unqualified until an explicit crosswalk is reviewed and verified.
