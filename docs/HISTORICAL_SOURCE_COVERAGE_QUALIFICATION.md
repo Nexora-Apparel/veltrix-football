@@ -17,6 +17,7 @@ It is a fail-closed screening report, not proof of model quality, a source licen
 - Explicit domain coverage for team strength/form, xG, lineups, fatigue/travel and bookmaker odds, including source-record counts, distinct source IDs and availability-to-retrieval lag statistics.
 - Per-canonical-season feature-domain coverage and source provenance, not only competition-wide aggregates.
 - Explicit absence of injury availability and PPDA when those features are not in the point-in-time feature catalogue.
+- Odds movement and closing-line value (CLV) are tracked as separate evaluation-only evidence, not pre-match predictors. They require an independently timestamped quote ledger and fixed benchmark; post-cutoff closing prices must never enter feature snapshots.
 - Historical feature-availability status.
 
 Dataset rows must join to an admitted fixture, the same competition, and the exact retained feature snapshot digest. Predictor values must equal the snapshot values. A mismatch aborts report generation.
