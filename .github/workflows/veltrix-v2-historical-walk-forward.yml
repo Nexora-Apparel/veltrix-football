@@ -4,9 +4,9 @@ on:
   workflow_dispatch:
     inputs:
       days:
-        description: "Historical lookback days (300-365)"
+        description: "Historical lookback days for the current Free plan (60-90)"
         required: true
-        default: "365"
+        default: "90"
         type: string
       max_requests:
         description: "Hard provider request budget (1-60)"
@@ -19,9 +19,9 @@ on:
         default: "5"
         type: string
       min_history_days:
-        description: "Minimum observed history span"
+        description: "Minimum observed history span (60-90 days)"
         required: true
-        default: "300"
+        default: "60"
         type: string
       min_test_sample:
         description: "Minimum walk-forward forecasts per market"
@@ -66,10 +66,10 @@ jobs:
 
       - name: Validate bounded inputs
         run: |
-          python -c "import os; assert 300 <= int(os.environ['DAYS']) <= 365"
+          python -c "import os; assert 60 <= int(os.environ['DAYS']) <= 90"
           python -c "import os; assert 1 <= int(os.environ['MAX_REQUESTS']) <= 60"
           python -c "import os; assert 1 <= int(os.environ['MAX_PAGES']) <= 5"
-          python -c "import os; assert 300 <= int(os.environ['MIN_HISTORY_DAYS']) <= int(os.environ['DAYS'])"
+          python -c "import os; assert 60 <= int(os.environ['MIN_HISTORY_DAYS']) <= int(os.environ['DAYS']) <= 90"
           python -c "import os; assert int(os.environ['MIN_TEST_SAMPLE']) >= 1"
           python -c "import os; assert 100 <= int(os.environ['MAX_ITERATIONS']) <= 20000"
 
