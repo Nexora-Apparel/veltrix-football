@@ -185,6 +185,7 @@ def certify_release(
         one_x_two_beats_bookmaker_brier=bool(one_x_two_beats_bookmaker_brier),
         one_x_two_beats_bookmaker_log_loss=bool(one_x_two_beats_bookmaker_log_loss),
         global_failures=tuple(global_failures),
+        evidence=rows,
     )
 
 
