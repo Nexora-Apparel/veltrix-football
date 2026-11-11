@@ -233,7 +233,11 @@ def build_point_in_time_feature_snapshot(*, fixture_id: str,
                 or any(not isinstance(x, str) or len(x) != 64 or any(c not in HEX for c in x)
                        for x in season_identity_evidence["evidence_sha256"])):
             raise PointInTimeFeatureError("season_identity_evidence_digest_invalid")
-        _parse_time(season_identity_evidence["verified_at"], "season_identity_verified_at")
+        season_verified_at = _parse_time(
+            season_identity_evidence["verified_at"], "season_identity_verified_at"
+        )
+        if season_verified_at != cutoff:
+            raise PointInTimeFeatureError("season_identity_registry_not_verified_at_feature_cutoff")
         _parse_time(season_identity_evidence["reviewed_at"], "season_identity_reviewed_at")
         snapshot["season_identity_evidence"] = dict(season_identity_evidence)
     snapshot["snapshot_sha256"] = _hash(snapshot)
@@ -325,8 +329,8 @@ def validate_point_in_time_feature_snapshot(snapshot: Any) -> dict:
                        for x in season["evidence_sha256"])):
             raise PointInTimeFeatureError("snapshot_season_identity_evidence_digest_invalid")
         verified_at = _parse_time(season.get("verified_at"), "snapshot_season_verified_at")
-        if verified_at > _parse_time(snapshot.get("prediction_as_of"), "prediction_as_of"):
-            raise PointInTimeFeatureError("snapshot_season_registry_verified_after_cutoff")
+        if verified_at != _parse_time(snapshot.get("prediction_as_of"), "prediction_as_of"):
+            raise PointInTimeFeatureError("snapshot_season_registry_not_verified_at_feature_cutoff")
         _parse_time(season.get("reviewed_at"), "snapshot_season_reviewed_at")
     cutoff = _parse_time(snapshot.get("prediction_as_of"), "prediction_as_of")
     features = snapshot.get("features")
