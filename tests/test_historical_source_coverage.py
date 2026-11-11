@@ -373,6 +373,7 @@ class HistoricalSourceCoverageTests(unittest.TestCase):
         self.assertEqual(league["team_identity"]["status"], "verified")
         self.assertTrue(league["thresholds"]["teams_met"])
         self.assertTrue(result["team_coverage"]["league-1"]["canonical_team_crosswalk_verified"])
+        self.assertTrue(league["team_identity"]["feature_snapshot_identity"]["all_snapshots_verified"])
         self.assertEqual(
             result["team_coverage"]["league-1"]["canonical_team_fixture_appearances"],
             {"canonical-a": 1, "canonical-b": 2, "canonical-c": 1},
