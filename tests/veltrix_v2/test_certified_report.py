@@ -133,6 +133,8 @@ def test_report_deadline_is_exactly_0600_wat():
             generated_at_utc=datetime(2026, 11, 12, 4, 30, tzinfo=UTC),
             delivery_deadline_utc=datetime(2026, 11, 12, 6, 0, tzinfo=UTC),
             certification_id="cert-v2-001",
+            prediction_certification=passing_prediction_certification(),
+            value_bet_certification=None,
             value_bets_enabled=False,
             source_attributions=(),
             fixtures=(),
@@ -294,4 +296,39 @@ def test_published_fixture_requires_explicit_source_provenance():
             ),
             source_provider_ids=(),
             verdict="HOME LEAN", ai_insight="No source IDs should fail.",
+        )
+
+
+
+def test_report_value_bet_state_cannot_be_enabled_without_passed_certification():
+    from veltrix_v2.publishing.certified_report import CertifiedDailyReport
+
+    with pytest.raises(ValueError, match="VALUE_BET_STATE_CONFLICTS"):
+        CertifiedDailyReport(
+            report_date_wat=date(2026, 11, 12),
+            generated_at_utc=datetime(2026, 11, 12, 4, 30, tzinfo=UTC),
+            delivery_deadline_utc=datetime(2026, 11, 12, 5, 0, tzinfo=UTC),
+            certification_id="cert-v2-001",
+            prediction_certification=passing_prediction_certification(),
+            value_bet_certification=None,
+            value_bets_enabled=True,
+            source_attributions=(),
+            fixtures=(),
+        )
+
+
+def test_report_constructor_rechecks_required_provider_attribution():
+    from veltrix_v2.publishing.certified_report import CertifiedDailyReport
+
+    with pytest.raises(ValueError, match="REQUIRED_PROVIDER_ATTRIBUTION_MISSING"):
+        CertifiedDailyReport(
+            report_date_wat=date(2026, 11, 12),
+            generated_at_utc=datetime(2026, 11, 12, 4, 30, tzinfo=UTC),
+            delivery_deadline_utc=datetime(2026, 11, 12, 5, 0, tzinfo=UTC),
+            certification_id="cert-v2-001",
+            prediction_certification=passing_prediction_certification(),
+            value_bet_certification=None,
+            value_bets_enabled=False,
+            source_attributions=(),
+            fixtures=(fixture("f-direct", datetime(2026, 11, 12, 6, tzinfo=UTC)),),
         )
