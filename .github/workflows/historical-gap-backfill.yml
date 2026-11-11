@@ -2,14 +2,7 @@ name: Historical Results Gap Backfill
 # One-shot ODbL recovery pass over the expanded 2026 European competition catalogue.
 
 on:
-  schedule:
-    # Retry unresolved history 30 minutes after the 06:00 WAT report target.
-    - cron: "30 5 * * *"
-  push:
-    branches: [main]
-    paths:
-      - "scripts/backfill_history_gaps.py"
-      - ".github/workflows/historical-gap-backfill.yml"
+
   workflow_dispatch:
     inputs:
       from:
@@ -35,7 +28,7 @@ concurrency:
 
 jobs:
   backfill:
-    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[run-gap-backfill]') || contains(github.event.head_commit.message, '[run-openligadb-backfill]')
+    if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     concurrency:
       group: veltrix-5dollar-provider
