@@ -1,4 +1,4 @@
-name: FootyStats Free Example API Probe
+name: Public Football API Example Probes (FootyStats and OpenFootAPI)
 
 on:
   workflow_dispatch:
@@ -62,4 +62,89 @@ jobs:
           print("XG_FIELDS=" + (",".join(xg_fields) if xg_fields else "NOT_PRESENT_IN_LEAGUE_MATCHES_RESPONSE"))
           print("SAMPLE_FIELD_NAMES=" + ",".join(fields))
           print("RIGHTS_NOTE=Example key only; no account entitlement, production coverage, or timestamp rights inferred.")
+          PY
+
+      - name: Probe OpenFootAPI public preview and source-license metadata
+        run: |
+          python - <<'PY'
+          import json
+          from urllib.parse import urlencode
+          from urllib.request import Request, urlopen
+
+          BASE = "https://openfootapi.com/v1"
+
+          def get(path):
+              request = Request(
+                  BASE + path,
+                  headers={"Accept": "application/json", "User-Agent": "VELTRIX-2.0-provider-qualification/1.0"},
+              )
+              with urlopen(request, timeout=20) as response:
+                  payload = json.loads(response.read().decode("utf-8"))
+              if not isinstance(payload, dict) or payload.get("error"):
+                  raise SystemExit("OPENFOOTAPI_UNSUCCESSFUL_RESPONSE:" + str(payload.get("error")))
+              return payload
+
+          competitions = get("/competitions")
+          competition_rows = competitions.get("data")
+          if not isinstance(competition_rows, list) or not competition_rows:
+              raise SystemExit("OPENFOOTAPI_COMPETITION_CATALOGUE_EMPTY")
+
+          top_five = [
+              row for row in competition_rows
+              if row.get("id") in {
+                  "comp_premier_league_eng", "comp_laliga_es",
+                  "comp_serie_a_it", "comp_bundesliga_de", "comp_ligue_1_fr",
+              }
+          ]
+          if not top_five:
+              top_five = competition_rows[:5]
+          for row in top_five:
+              source = row.get("source") or {}
+              if not all(source.get(key) for key in ("name", "license", "url", "mode")):
+                  raise SystemExit("OPENFOOTAPI_COMPETITION_SOURCE_LICENSE_METADATA_MISSING")
+          print("OPENFOOTAPI_COMPETITIONS=PASS")
+          print("COMPETITION_COUNT=" + str(len(competition_rows)))
+          print("COMPETITION_LICENSES=" + json.dumps([
+              {
+                  "id": row.get("id"), "name": row.get("name"),
+                  "seasons": len(row.get("availableSeasons") or []),
+                  "source": (row.get("source") or {}).get("name"),
+                  "license": (row.get("source") or {}).get("license"),
+                  "mode": (row.get("source") or {}).get("mode"),
+              }
+              for row in top_five
+          ], sort_keys=True))
+
+          recent = get("/matches?" + urlencode({"date": "2026-08-28"}))
+          recent_rows = recent.get("data") or []
+          recent_meta = recent.get("meta") or {}
+          print("OPENFOOTAPI_PUBLIC_MATCHES=" + str(len(recent_rows)))
+          if recent_rows:
+              sample = recent_rows[0]
+              required = ("id", "competitionId", "season", "kickoffAt", "status", "updatedAt", "sourceRefs")
+              missing = [key for key in required if key not in sample]
+              if missing:
+                  raise SystemExit("OPENFOOTAPI_MATCH_PROVENANCE_FIELDS_MISSING:" + ",".join(missing))
+              print("MATCH_PROVENANCE_FIELDS=PASS")
+              print("MATCH_SAMPLE=" + json.dumps({
+                  "id": sample.get("id"),
+                  "competitionId": sample.get("competitionId"),
+                  "season": sample.get("season"),
+                  "kickoffAt": sample.get("kickoffAt"),
+                  "status": sample.get("status"),
+                  "updatedAt": sample.get("updatedAt"),
+                  "sourceRefs": sample.get("sourceRefs"),
+                  "sources": recent_meta.get("sources"),
+              }, sort_keys=True))
+          else:
+              print("MATCH_PROVENANCE_FIELDS=NOT_VERIFIED_NO_PUBLIC_MATCHES_FOR_DATE")
+
+          historical = get("/matches?" + urlencode({
+              "competition": "comp_premier_league_eng",
+              "season": "2010/11",
+          }))
+          historical_rows = historical.get("data") or []
+          print("OPENFOOTAPI_EPL_2010_11_PREVIEW_ROWS=" + str(len(historical_rows)))
+          print("HISTORICAL_META_SOURCES=" + json.dumps((historical.get("meta") or {}).get("sources") or [], sort_keys=True))
+          print("RIGHTS_NOTE=Public preview only; each competition source license must be checked before model training or public use.")
           PY
