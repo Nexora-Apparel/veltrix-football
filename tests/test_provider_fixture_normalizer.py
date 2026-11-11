@@ -78,6 +78,20 @@ class FixtureNormalizerTests(unittest.TestCase):
             normalize_striker_game(row, competition_key="soccer", endpoint="list_games",
                                    retrieved_at=RETRIEVED, run_id=RUN)
 
+    def test_missing_retrieval_timestamp_is_reported_as_retrieval_error(self):
+        with self.assertRaisesRegex(ValueError, "missing_retrieved_at"):
+            normalize_striker_game(
+                striker_row(), competition_key="soccer", endpoint="list_games",
+                retrieved_at="", run_id=RUN,
+            )
+
+    def test_naive_retrieval_timestamp_is_rejected(self):
+        with self.assertRaisesRegex(ValueError, "retrieved_at_timezone_missing"):
+            normalize_striker_game(
+                striker_row(), competition_key="soccer", endpoint="list_games",
+                retrieved_at="2026-11-09T12:00:00", run_id=RUN,
+            )
+
     def test_finished_match_without_both_scores_is_rejected(self):
         row = striker_row()
         row["away"]["score"] = None
