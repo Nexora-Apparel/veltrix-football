@@ -1,0 +1,25 @@
+name: Provider Import Dry Run Unit Tests
+
+on:
+  pull_request:
+    paths:
+      - "scripts/provider_import_dry_run.py"
+      - "scripts/reconcile_provider_fixtures.py"
+      - "tests/test_provider_import_dry_run.py"
+      - ".github/workflows/provider-import-dry-run-tests.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  dry-run-unit-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install dependencies
+        run: python -m pip install --upgrade pip && pip install -r requirements.txt
+      - name: Test import dry-run guards
+        run: python -m pytest -q tests/test_provider_import_dry_run.py
