@@ -37,9 +37,9 @@ def team_registry():
         "evidence_sha256": ["c" * 64],
         "reviewer": "team-review",
         "reviewed_at": "2026-01-02T00:00:00Z",
-        "valid_from": valid_from,
-        "valid_until": valid_until,
-        "revoked_at": revoked_at,
+        "valid_from": "2026-01-03T00:00:00Z",
+        "valid_until": "2026-12-31T00:00:00Z",
+        "revoked_at": None,
     } for team_id in ("A", "B", "C", "D")]
     unsigned = {
         "schema": TEAM_SCHEMA,
@@ -117,9 +117,9 @@ def season_registry(*, include_prior=False, issued_at="2026-01-02T00:00:00Z",
         "evidence_sha256": ["d" * 64],
         "reviewer": "season-review",
         "reviewed_at": "2026-01-02T00:00:00Z",
-        "valid_from": "2026-01-03T00:00:00Z",
-        "valid_until": "2026-12-31T00:00:00Z",
-        "revoked_at": None,
+        "valid_from": valid_from,
+        "valid_until": valid_until,
+        "revoked_at": revoked_at,
     }]
     if include_prior:
         mappings.append({
