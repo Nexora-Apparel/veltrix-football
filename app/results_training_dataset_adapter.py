@@ -47,6 +47,14 @@ def build_results_history_snapshot(*, historical_matches: list[dict],
     # A target is also one of the admitted historical rows. Remove that row
     # before reconstruction; otherwise the target leaks into its own history
     # and the reconstruction contract correctly rejects the duplicate fixture.
+    try:
+        kickoff = datetime.fromisoformat(
+            target_fixture["kickoff_at"].replace("Z", "+00:00")
+        )
+        if kickoff.tzinfo is None or kickoff.utcoffset() is None:
+            raise ValueError("target_kickoff_timezone_missing")
+    except (KeyError, TypeError, ValueError):
+        raise ResultsTrainingAdapterError("target_kickoff_timezone_missing") from None
     target_rows = [row for row in historical_matches
                    if isinstance(row, dict)
                    and row.get("fixture_id") == target_fixture.get("fixture_id")]
@@ -61,11 +69,6 @@ def build_results_history_snapshot(*, historical_matches: list[dict],
         if not isinstance(trusted_kms_clients, dict) or not trusted_kms_clients:
             raise ResultsTrainingAdapterError("team_crosswalk_trusted_kms_clients_required")
         try:
-            kickoff = datetime.fromisoformat(
-                target_fixture["kickoff_at"].replace("Z", "+00:00")
-            )
-            if kickoff.tzinfo is None or kickoff.utcoffset() is None:
-                raise ValueError("target_kickoff_timezone_missing")
             feature_as_of = (kickoff - timedelta(hours=cutoff_hours)).isoformat()
             verified_team_registry = verify_team_crosswalk_registry(
                 registry=team_crosswalk_registry,
@@ -163,7 +166,13 @@ def build_results_history_snapshot(*, historical_matches: list[dict],
 
     reconstructed = reconstruct_pre_match_features(
         historical_matches=target_history,
-        target_fixture=target_fixture,
+        target_fixture={
+            "fixture_id": target_fixture["fixture_id"],
+            "competition_id": target_fixture["competition_id"],
+            "kickoff_at": target_fixture["kickoff_at"],
+            "home_team_id": target_fixture["home_team_id"],
+            "away_team_id": target_fixture["away_team_id"],
+        },
         cutoff_hours=cutoff_hours,
         form_window=form_window,
         minimum_team_matches=minimum_team_matches,
