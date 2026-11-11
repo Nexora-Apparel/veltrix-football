@@ -1,3 +1,5 @@
+from dataclasses import replace
+from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 
 import pytest
@@ -7,23 +9,133 @@ from veltrix_v2.evaluation.binary_metrics import BinaryForecast, SettledBinaryOu
 from veltrix_v2.evaluation.odds_normalization import NormalizedBookProbability
 
 
-def book(selection, probability, fixture="f1"):
+UTC = timezone.utc
+
+
+def quote(fixture, selection, probability, *, market="BTTS", line=None):
+    kickoff = datetime(2026, 11, 1, 18, tzinfo=UTC)
     return NormalizedBookProbability(
-        fixture_id=fixture, source_id="the-odds-api", bookmaker_id="bet365",
-        market="BTTS", selection=selection, line=None,
-        captured_at=__import__("datetime").datetime(2026, 1, 1, tzinfo=__import__("datetime").timezone.utc),
-        kickoff_at=__import__("datetime").datetime(2026, 1, 2, tzinfo=__import__("datetime").timezone.utc),
-        snapshot_id=f"{fixture}-{selection}", decimal_odds=Decimal("2"),
+        fixture_id=fixture,
+        source_id="striker",
+        bookmaker_id="book-a",
+        market=market,
+        selection=selection,
+        line=None if line is None else Decimal(line),
+        captured_at=kickoff - timedelta(minutes=10),
+        kickoff_at=kickoff,
+        snapshot_id=f"{fixture}-{selection}",
+        decimal_odds=Decimal("2"),
         raw_implied_probability=Decimal("0.5"),
-        normalized_probability=Decimal(str(probability)), overround=Decimal("0"),
+        normalized_probability=Decimal(str(probability)),
+        overround=Decimal("0.05"),
     )
 
 
-def test_binary_benchmark_rejects_non_normalized_selection_pair():
-    with pytest.raises(ValueError, match="MUST_SUM_TO_ONE"):
+def test_binary_benchmark_compares_exact_common_fixture_set():
+    models = [
+        BinaryForecast("f1", 0.8),
+        BinaryForecast("f2", 0.2),
+        BinaryForecast("f3", 0.7),
+    ]
+    books = [
+        quote("f1", "YES", 0.55), quote("f1", "NO", 0.45),
+        quote("f2", "YES", 0.45), quote("f2", "NO", 0.55),
+    ]
+    outcomes = [
+        SettledBinaryOutcome("f1", "YES"),
+        SettledBinaryOutcome("f2", "NO"),
+        SettledBinaryOutcome("f3", "YES"),
+    ]
+    result = compare_binary_to_bookmaker(
+        models, books, outcomes,
+        eligible_fixture_ids=["f1", "f2", "f3", "f4"],
+        affirmative_selection="YES",
+    )
+    assert result.common_sample_size == 2
+    assert result.eligible_fixture_count == 4
+    assert result.model_coverage == 0.75
+    assert result.bookmaker_coverage == 0.5
+    assert result.model_report.sample_size == result.bookmaker_report.sample_size == 2
+    assert result.model_beats_brier
+    assert result.model_beats_log_loss
+
+
+def test_mixed_bookmaker_is_rejected():
+    rows = [quote("f1", "YES", 0.5), quote("f1", "NO", 0.5), quote("f2", "YES", 0.5), quote("f2", "NO", 0.5)]
+    rows[2] = replace(rows[2], bookmaker_id="book-b")
+    with pytest.raises(ValueError, match="MIXED_BOOKMAKER"):
+        compare_binary_to_bookmaker(
+            [BinaryForecast("f1", 0.5), BinaryForecast("f2", 0.5)],
+            rows,
+            [SettledBinaryOutcome("f1", "YES"), SettledBinaryOutcome("f2", "NO")],
+            eligible_fixture_ids=["f1", "f2"],
+            affirmative_selection="YES",
+        )
+
+
+def test_no_common_quotes_rejected():
+    with pytest.raises(ValueError, match="NO_COMMON"):
         compare_binary_to_bookmaker(
             [BinaryForecast("f1", 0.6)],
-            [book("YES", 0.8), book("NO", 0.8)],
+            [quote("f2", "YES", 0.5), quote("f2", "NO", 0.5)],
+            [SettledBinaryOutcome("f1", "YES"), SettledBinaryOutcome("f2", "NO")],
+            eligible_fixture_ids=["f1", "f2"],
+            affirmative_selection="YES",
+        )
+
+
+def test_totals_requires_over_selection_and_same_line():
+    with pytest.raises(ValueError, match="SELECTION_DOES_NOT_MATCH"):
+        compare_binary_to_bookmaker(
+            [BinaryForecast("f1", 0.6)],
+            [quote("f1", "OVER", 0.5, market="TOTALS", line="2.5"), quote("f1", "UNDER", 0.5, market="TOTALS", line="2.5")],
+            [SettledBinaryOutcome("f1", "YES")],
+            eligible_fixture_ids=["f1"],
+            affirmative_selection="YES",
+        )
+
+
+def test_duplicate_bookmaker_fixture_quote_rejected():
+    with pytest.raises(ValueError, match="DUPLICATE_FIXTURE_QUOTE"):
+        compare_binary_to_bookmaker(
+            [BinaryForecast("f1", 0.6)],
+            [quote("f1", "YES", 0.5), quote("f1", "NO", 0.5), replace(quote("f1", "YES", 0.5), snapshot_id="duplicate-yes"), quote("f1", "NO", 0.5)],
+            [SettledBinaryOutcome("f1", "YES")],
+            eligible_fixture_ids=["f1"],
+            affirmative_selection="YES",
+        )
+
+
+def test_quote_pair_must_share_exact_capture_timestamp():
+    yes = quote("f1", "YES", 0.5)
+    no = replace(quote("f1", "NO", 0.5), captured_at=yes.captured_at - timedelta(minutes=1))
+    with pytest.raises(ValueError, match="TIMESTAMPS_MISMATCH"):
+        compare_binary_to_bookmaker(
+            [BinaryForecast("f1", 0.6)],
+            [yes, no],
+            [SettledBinaryOutcome("f1", "YES")],
+            eligible_fixture_ids=["f1"],
+            affirmative_selection="YES",
+        )
+
+
+def test_outcome_outside_eligible_universe_is_rejected():
+    with pytest.raises(ValueError, match="OUTSIDE_ELIGIBLE"):
+        compare_binary_to_bookmaker(
+            [BinaryForecast("f1", 0.6)],
+            [quote("f1", "YES", 0.5), quote("f1", "NO", 0.5)],
+            [SettledBinaryOutcome("f1", "YES"), SettledBinaryOutcome("f2", "NO")],
+            eligible_fixture_ids=["f1"],
+            affirmative_selection="YES",
+        )
+
+
+
+def test_binary_benchmark_rejects_non_normalized_selection_pair():
+    with pytest.raises(ValueError, match="NORMALIZED_SELECTIONS_MUST_SUM_TO_ONE"):
+        compare_binary_to_bookmaker(
+            [BinaryForecast("f1", 0.6)],
+            [quote("f1", "YES", 0.8), quote("f1", "NO", 0.8)],
             [SettledBinaryOutcome("f1", "YES")],
             eligible_fixture_ids=["f1"],
             affirmative_selection="YES",
