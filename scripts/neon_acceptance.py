@@ -26,7 +26,7 @@ EXPECTED = {
     "primary_keys": 11,
     "foreign_keys": 7,
     "unique_constraints": 5,
-    "check_constraints": 20,
+    "check_constraints": 83,
     "indexes": 22,
 }
 
