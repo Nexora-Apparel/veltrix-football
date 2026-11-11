@@ -296,6 +296,9 @@ class HistoricalSourceCoverageTests(unittest.TestCase):
             {"results-provider": 2},
         )
         self.assertNotIn("season_crosswalk_unverified", result["qualification"]["threshold_failures"])
+        clv = result["domain_coverage"]["odds_movement_and_clv"]
+        self.assertEqual(clv["status"], "evaluation_evidence_not_in_feature_catalogue")
+        self.assertTrue(clv["evaluation_only"])
 
     def test_signed_crosswalk_does_not_allow_provider_scope_substitution(self):
         result = build_historical_source_coverage_report(
