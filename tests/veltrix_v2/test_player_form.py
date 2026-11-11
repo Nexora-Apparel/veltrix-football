@@ -29,7 +29,7 @@ def evidence(index, **overrides):
 
 def test_builds_rolling_features_only_from_available_past_matches():
     rows = [evidence(i) for i in range(4)]
-    cutoff = BASE + timedelta(days=24)
+    cutoff = BASE + timedelta(days=18)
     result = build_player_form(rows, player_id="p1", cutoff_utc=cutoff, last_n=5)
     assert result.matches_used == 3
     assert result.sample_state == "usable_research_sample"
@@ -38,6 +38,7 @@ def test_builds_rolling_features_only_from_available_past_matches():
     assert result.goals_per90 == pytest.approx(1)
     assert result.xg_per90 == pytest.approx(0.4)
     assert result.xg_model_id == "openplay-xg-v1"
+    assert result.xa_model_id == "openplay-xa-v1"
     assert result.source_match_ids == ("m0", "m1", "m2")
 
 
@@ -47,7 +48,7 @@ def test_post_cutoff_or_not_yet_available_matches_are_excluded():
         evidence(1, available_at_utc=BASE + timedelta(days=50)),
         evidence(3),
     ]
-    result = build_player_form(rows, player_id="p1", cutoff_utc=BASE + timedelta(days=30))
+    result = build_player_form(rows, player_id="p1", cutoff_utc=BASE + timedelta(days=20))
     assert result.source_match_ids == ("m0",)
 
 
