@@ -1,7 +1,7 @@
 """Safe Telegram Command Centre router for Veltrix Football.
 
 Formats command replies and reads only explicitly supplied report data. It never
-invents odds or treats experimental estimates as validated bets.
+invents odds or treats unvalidated estimates as validated bets.
 """
 from __future__ import annotations
 
