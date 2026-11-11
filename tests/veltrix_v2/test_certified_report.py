@@ -221,7 +221,6 @@ def test_provider_attribution_is_included_in_website_and_telegram_payloads():
             ),
             source_provider_ids=("5dollarfootballapi",),
             verdict="HOME LEAN", ai_insight="Attribution test.",
-            source_provider_ids=("5dollarfootballapi",),
         ),),
         source_attributions=(attribution,),
     )
