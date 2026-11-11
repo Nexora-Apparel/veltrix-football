@@ -37,6 +37,10 @@ def test_aggregates_multiple_competitions_without_pooling_strength_models(monkey
     fit_scopes = []
 
     class FakeModel:
+        converged = True
+        objective = 1.0
+        training_availability_bases = ("unspecified",)
+
         def expected_goals(self, home_team_id, away_team_id):
             return (1.3, 1.1)
 
