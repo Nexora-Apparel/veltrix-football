@@ -1,4 +1,5 @@
 name: VELTRIX 2.0 Foundation Tests
+# StatsBomb event adapter contract coverage included.
 
 on:
   pull_request:
