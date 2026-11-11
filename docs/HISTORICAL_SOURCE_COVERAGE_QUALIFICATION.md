@@ -90,6 +90,8 @@ signature establishes registry integrity and trusted issuance, not the truth
 of a team's identity; mapping evidence and reviewer decisions still require
 independent review. Synthetic fake-KMS tests do not qualify real team IDs.
 
+Each feature snapshot also binds the target's exact home/away mapping evidence. It records the original acquisition-time verification separately from a fresh verification of the signed team registry at the snapshot's feature cutoff. Coverage re-resolves both source IDs at that cutoff and compares canonical IDs, scope, evidence digests and reviewer provenance; a snapshot without a matching pair is not verified.
+
 ## Signed feature-source qualification
 
 `app/feature_source_qualification.py` defines a KMS-signed registry of
