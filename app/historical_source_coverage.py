@@ -516,6 +516,7 @@ def build_historical_source_coverage_report(
                 ).date().isoformat()
                 for record in season_records
             }
+            season_dataset_count = len(season_rows)
             season_feature_counts = Counter()
             season_feature_sources = Counter()
             season_feature_source_ids = Counter()
