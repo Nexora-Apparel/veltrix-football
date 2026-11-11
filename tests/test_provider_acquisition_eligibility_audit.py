@@ -138,6 +138,16 @@ class ProviderAcquisitionEligibilityAuditTests(unittest.TestCase):
             "settlement_timestamp_unavailable",
         )
 
+    def test_rejections_retain_provider_identity_for_quality_accounting(self):
+        report = self.audit(
+            [self.provider_record(), self.provider_record("g-2")],
+            {"strikerapi:g-1": self.settlement_package()},
+        )
+        rejected = report["rejected_records"][0]
+        self.assertEqual(rejected["provider"], "strikerapi")
+        self.assertEqual(rejected["source_id"], "g-2")
+        self.assertEqual(rejected["reason"], "settlement_timestamp_unavailable")
+
     def test_untrusted_registry_key_is_reported_as_rejection(self):
         report = self.audit(
             [self.provider_record()],
