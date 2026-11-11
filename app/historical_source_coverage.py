@@ -377,6 +377,7 @@ def build_historical_source_coverage_report(
 
     snapshot_by_id = {}
     season_snapshot_verified = Counter()
+    season_snapshot_verified_ids = set()
     season_snapshot_failures = Counter()
     feature_source_counts = Counter()
     feature_source_ids = Counter()
@@ -427,6 +428,7 @@ def build_historical_source_coverage_report(
                     )
                     if expected:
                         season_snapshot_verified[record["competition_id"]] += 1
+                        season_snapshot_verified_ids.add(fixture_id)
                     else:
                         season_snapshot_failures[record["competition_id"]] += 1
                 except (SeasonCrosswalkError, HistoricalSourceCoverageError, TypeError, KeyError):
@@ -597,10 +599,7 @@ def build_historical_source_coverage_report(
             )
             season_snapshot_ids_verified = sum(
                 1 for record in season_records
-                if record["fixture_id"] in snapshot_by_id
-                and snapshot_by_id[record["fixture_id"]].get("season_identity_evidence", {}).get(
-                    "canonical_season_id"
-                ) == canonical_season_id
+                if record["fixture_id"] in season_snapshot_verified_ids
             )
             by_canonical_season[canonical_season_id] = {
                 "settlement_eligible_fixtures": season_fixture_count,
