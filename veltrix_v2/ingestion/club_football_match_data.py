@@ -1,10 +1,9 @@
-"""Read-only adapter for the archived Club-Football-Match-Data CSV.
+"""Read-only audit adapter for the archived Club-Football-Match-Data CSV.
 
-The Veltrix artifact contains date-only match records, not exact kickoff or
-source-publication timestamps. This adapter therefore marks every row with a
-conservative four-calendar-day availability surrogate. It is suitable only
-for exploratory retrospective walk-forward diagnostics, never production
-certification. Odds, Elo and in-match statistics are deliberately ignored.
+This archive is retained for coverage and schema reconciliation only. It has
+date-only records, no exact kickoff/publication timestamps, and Football-Data
+upstream terms do not authorize automated AI model training. No TrainingMatch
+objects are produced by this adapter.
 """
 from __future__ import annotations
 
@@ -12,19 +11,27 @@ import csv
 import hashlib
 import re
 from dataclasses import dataclass
-from datetime import date, datetime, time, timedelta, timezone
+from datetime import date, datetime, timezone
 from pathlib import Path
 from typing import Iterable
 
-from veltrix_v2.models.poisson_strength import TrainingMatch
-
 EXPECTED_SOURCE = "xgabora/Club-Football-Match-Data"
-SEASON_KEY = "cfmd-2020-2026-continuous"
-AVAILABILITY_BASIS = "date_only_conservative_4d"
 REQUIRED_COLUMNS = {
     "source", "division", "match_date", "home_team", "away_team",
     "home_goals", "away_goals", "full_time_result",
 }
+
+
+@dataclass(frozen=True, slots=True)
+class ClubFootballAuditRow:
+    fixture_id: str
+    competition_key: str
+    match_date: date
+    home_team: str
+    away_team: str
+    home_goals: int
+    away_goals: int
+    source_observation_id: str
 
 
 @dataclass(frozen=True, slots=True)
@@ -41,12 +48,14 @@ class ClubFootballDatasetManifest:
     exact_kickoff_times_available: bool
     source_publication_timestamps_available: bool
     point_in_time_certifiable: bool
+    model_training_approved: bool
+    upstream_rights_verified: bool
     ignored_feature_columns: tuple[str, ...]
 
 
 @dataclass(frozen=True, slots=True)
 class ClubFootballDataset:
-    matches: tuple[TrainingMatch, ...]
+    matches: tuple[ClubFootballAuditRow, ...]
     manifest: ClubFootballDatasetManifest
 
 
@@ -84,7 +93,7 @@ def load_club_football_match_data(
         raise ValueError("CFMD_DIVISIONS_REQUIRED")
     raw = source_path.read_bytes()
     digest = hashlib.sha256(raw).hexdigest()
-    rows: list[TrainingMatch] = []
+    rows: list[ClubFootballAuditRow] = []
     seen: set[tuple[str, str, str, str]] = set()
     dates: list[date] = []
     selected = set(requested)
@@ -113,37 +122,28 @@ def load_club_football_match_data(
             expected_result = "H" if home_goals > away_goals else "A" if home_goals < away_goals else "D"
             if str(record.get("full_time_result", "")).strip().upper() != expected_result:
                 raise ValueError("CFMD_FULL_TIME_RESULT_CONFLICT")
-            # Date-only source: noon UTC is a neutral date anchor, not a claimed kickoff.
-            kickoff_anchor = datetime.combine(match_day, time(12, 0), tzinfo=timezone.utc)
-            # Four-day lag is deliberately conservative and still only a proxy.
-            available_anchor = datetime.combine(match_day + timedelta(days=4), time.min, tzinfo=timezone.utc)
             fixture_digest = hashlib.sha256("|".join(key).encode("utf-8")).hexdigest()[:24]
-            rows.append(TrainingMatch(
+            rows.append(ClubFootballAuditRow(
                 fixture_id=f"cfmd:{division}:{fixture_digest}",
                 competition_key=f"cfmd:{division}",
-                season=SEASON_KEY,
-                kickoff_utc=kickoff_anchor,
-                available_at_utc=available_anchor,
-                home_team_id=f"cfmd:{division}:{home_key}",
-                away_team_id=f"cfmd:{division}:{away_key}",
+                match_date=match_day,
+                home_team=home_name,
+                away_team=away_name,
                 home_goals=home_goals,
                 away_goals=away_goals,
                 source_observation_id=f"cfmd:{digest}:row:{line_number}",
-                quality_state="valid",
-                availability_basis=AVAILABILITY_BASIS,
             ))
             dates.append(match_day)
     if not rows:
         raise ValueError("CFMD_NO_ROWS_FOR_REQUESTED_DIVISIONS")
-    matches = tuple(sorted(rows, key=lambda row: (row.kickoff_utc, row.fixture_id)))
-    ignored = tuple(sorted(
-        set()
-        | {"home_elo", "away_elo", "home_odds", "draw_odds", "away_odds",
-           "over25_odds", "under25_odds", "half_time_home_goals",
-           "half_time_away_goals", "home_shots", "away_shots",
-           "home_shots_on_target", "away_shots_on_target",
-           "home_form3", "away_form3", "home_form5", "away_form5"}
-    ))
+    matches = tuple(sorted(rows, key=lambda row: (row.match_date, row.fixture_id)))
+    ignored = tuple(sorted({
+        "home_elo", "away_elo", "home_odds", "draw_odds", "away_odds",
+        "over25_odds", "under25_odds", "half_time_home_goals",
+        "half_time_away_goals", "home_shots", "away_shots",
+        "home_shots_on_target", "away_shots_on_target",
+        "home_form3", "away_form3", "home_form5", "away_form5",
+    }))
     manifest = ClubFootballDatasetManifest(
         source=EXPECTED_SOURCE,
         dataset_sha256=digest,
@@ -153,10 +153,12 @@ def load_club_football_match_data(
         first_match_date=min(dates).isoformat(),
         last_match_date=max(dates).isoformat(),
         retrieved_at_utc=retrieved.isoformat(),
-        availability_basis=AVAILABILITY_BASIS,
+        availability_basis="date_only_no_source_publication_timestamp",
         exact_kickoff_times_available=False,
         source_publication_timestamps_available=False,
         point_in_time_certifiable=False,
+        model_training_approved=False,
+        upstream_rights_verified=False,
         ignored_feature_columns=ignored,
     )
     return ClubFootballDataset(matches=matches, manifest=manifest)
