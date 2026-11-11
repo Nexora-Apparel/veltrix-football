@@ -21,9 +21,9 @@ Dataset rows must join to an admitted fixture, the same competition, and the exa
 
 ## Season identity limitation
 
-The current qualified acquisition record contract carries competition and team IDs but does not carry a reviewed season ID. The report therefore emits `season_coverage.status=not_available` and blocks `source_coverage_qualified`. It does not infer seasons from calendar years, league schedules or kickoff dates.
+The normalized acquisition record already retains a provider-reported `season` value where supplied. The eligibility audit now carries that value forward as `source_season`. The report distinguishes missing season labels from source-reported labels that still lack a reviewed canonical competition-season crosswalk. It does not infer seasons from calendar years, league schedules or kickoff dates. Even complete source-reported labels remain unqualified until an explicit crosswalk is reviewed and verified.
 
-A future source-contract revision must add an explicit season identifier, its source provenance and a reviewed competition-season crosswalk before season coverage can be counted.
+A future qualification step must bind each provider/competition/source-season label to a canonical season ID, with source provenance and review evidence. Until that crosswalk exists, `season_crosswalk_unverified` blocks source qualification.
 
 ## Screening thresholds
 
