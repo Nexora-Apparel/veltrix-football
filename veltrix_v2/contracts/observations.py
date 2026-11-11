@@ -2,8 +2,20 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from types import MappingProxyType
+from collections.abc import Mapping as MappingABC
 from datetime import datetime, timezone
 from typing import Mapping
+
+
+def _deep_freeze(value: object) -> object:
+    if isinstance(value, MappingABC):
+        return MappingProxyType({key: _deep_freeze(item) for key, item in value.items()})
+    if isinstance(value, (list, tuple)):
+        return tuple(_deep_freeze(item) for item in value)
+    if isinstance(value, set):
+        return frozenset(_deep_freeze(item) for item in value)
+    return value
 
 
 def require_aware_utc(value: datetime, field: str) -> datetime:
@@ -39,6 +51,7 @@ class ProviderObservation:
         if len(digest) != 64 or any(c not in "0123456789abcdef" for c in digest):
             raise ValueError("payload_sha256 must be a 64-character SHA-256 hex digest")
         object.__setattr__(self, "payload_sha256", digest)
+        object.__setattr__(self, "values", _deep_freeze(self.values))
         if self.available_at_utc > self.retrieved_at_utc:
             raise ValueError("available_at_utc cannot be after retrieved_at_utc")
 
