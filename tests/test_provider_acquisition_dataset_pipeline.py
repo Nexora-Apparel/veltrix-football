@@ -35,13 +35,14 @@ def digest(value):
 
 
 class AuditedProviderDatasetPipelineTests(unittest.TestCase):
-    def audit_report(self, accepted):
+    def audit_report(self, accepted, input_count=None):
         report = {
             "schema_version": "veltrix-provider-acquisition-eligibility-audit-v1",
+            "input_record_count": len(accepted) if input_count is None else input_count,
             "accepted_records": accepted,
             "rejected_records": [],
             "settlement_eligible_count": len(accepted),
-            "rejected_count": 0,
+            "rejected_count": (len(accepted) if input_count is None else input_count) - len(accepted),
             "model_training_started": False,
             "database_writes": 0,
             "prediction_publications": 0,
@@ -51,7 +52,7 @@ class AuditedProviderDatasetPipelineTests(unittest.TestCase):
         return report
 
     def test_only_audit_admitted_original_records_reach_dataset_assembly(self):
-        admitted = {"fixture_id": "provider:good", "provider": "provider", "source_id": "good"}
+        admitted = {"fixture_id": "provider:good", "provider": "provider", "source_id": "good",\n                    "competition_id": "league-a", "home_team_id": "home-1",\n                    "away_team_id": "away-1", "kickoff_at": "2026-09-01T13:00:00Z",\n                    "settled_at": "2026-09-01T14:00:00Z",\n                    "settlement_source_id": "final-whistle"}
         records = [
             {"provider": "provider", "source_id": "good", "raw": "retained"},
             {"provider": "provider", "source_id": "bad", "raw": "must-not-pass"},
@@ -99,6 +100,8 @@ class AuditedProviderDatasetPipelineTests(unittest.TestCase):
         self.assertFalse(result["publication_allowed"])
         self.assertEqual(len(result["pipeline_report_sha256"]), 64)
         self.assertEqual(result["admission_profile"]["dataset"]["included_rows"], 1)
+        self.assertIn("source_coverage", result)
+        self.assertFalse(result["source_coverage"]["qualification"]["source_coverage_qualified"])
         self.assertFalse(result["admission_profile"]["training_readiness"]["ready_for_model_training"])
 
 
@@ -156,7 +159,7 @@ class AuditedProviderDatasetPipelineTests(unittest.TestCase):
                 )
 
     def test_no_admitted_records_returns_audited_empty_result_without_assembly(self):
-        report = self.audit_report([])
+        report = self.audit_report([], input_count=1)
         with patch(
             "app.provider_acquisition_dataset_pipeline.audit_provider_acquisition_eligibility",
             return_value=report,
@@ -178,6 +181,9 @@ class AuditedProviderDatasetPipelineTests(unittest.TestCase):
     def test_audit_identity_cannot_be_used_to_select_different_source_record(self):
         report = self.audit_report([{
             "fixture_id": "provider:good", "provider": "provider", "source_id": "good",
+            "competition_id": "league-a", "home_team_id": "home-1",
+            "away_team_id": "away-1", "kickoff_at": "2026-09-01T13:00:00Z",
+            "settled_at": "2026-09-01T14:00:00Z", "settlement_source_id": "final-whistle",
         }])
         with patch(
             "app.provider_acquisition_dataset_pipeline.audit_provider_acquisition_eligibility",
