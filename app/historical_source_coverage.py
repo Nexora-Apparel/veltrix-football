@@ -140,6 +140,7 @@ def build_historical_source_coverage_report(
     provider_input_counts = Counter()
     provider_rejected_counts = Counter()
     provider_rejection_reasons = defaultdict(Counter)
+    provider_settlement_provenance = defaultdict(Counter)
     settlement_sources = Counter()
     kickoff_dates = defaultdict(set)
     source_seasons = defaultdict(Counter)
@@ -159,7 +160,21 @@ def build_historical_source_coverage_report(
         if home == away:
             raise HistoricalSourceCoverageError(f"accepted_record_same_team:{fixture_id}")
         kickoff = _utc(record.get("kickoff_at"), f"{fixture_id}_kickoff")
-        _utc(record.get("settled_at"), f"{fixture_id}_settled")
+        settled = _utc(record.get("settled_at"), f"{fixture_id}_settled")
+        retrieved_value = record.get("retrieved_at")
+        if retrieved_value is None:
+            provider_settlement_provenance[provider]["retrieval_timestamp_missing"] += 1
+        else:
+            retrieved = _utc(retrieved_value, f"{fixture_id}_retrieved")
+            provider_settlement_provenance[provider]["retrieval_timestamp_present"] += 1
+            if retrieved < settled:
+                raise HistoricalSourceCoverageError(
+                    f"provider_retrieval_precedes_settlement:{fixture_id}"
+                )
+            provider_settlement_provenance[provider]["retrieval_after_settlement"] += 1
+        if settled < kickoff:
+            raise HistoricalSourceCoverageError(f"settlement_precedes_kickoff:{fixture_id}")
+        provider_settlement_provenance[provider]["settlement_timestamp_present"] += 1
         accepted_by_id[fixture_id] = record
         competition_records[competition].append(record)
         team_appearances[competition][home] += 1
@@ -216,7 +231,7 @@ def build_historical_source_coverage_report(
             if not isinstance(source_season, str) or not source_season.strip():
                 season_mapping_failures[record["competition_id"]] += 1
                 continue
-            identity = (record["provider"], record["competition_id"], source_season)
+            identity = (record["provider"], record["competition_id"], source_season.strip())
             mapping = crosswalk_verified["mappings"].get(identity)
             if mapping is None:
                 season_mapping_failures[record["competition_id"]] += 1
@@ -444,6 +459,9 @@ def build_historical_source_coverage_report(
                         if provider_input_counts[provider] else 0.0
                     ),
                     "rejection_reasons": dict(sorted(provider_rejection_reasons[provider].items())),
+                    "settlement_timestamp_provenance": dict(sorted(
+                        provider_settlement_provenance[provider].items()
+                    )),
                 }
                 for provider in sorted(set(provider_input_counts) | set(provider_counts))
             },
