@@ -233,7 +233,13 @@ def format_report_messages(report: dict[str, Any], ledger: dict[str, Any] | None
     timezone_name = str(report.get("timezone", "Africa/Lagos"))
     predictions = report.get("predictions", [])
     fixtures = [item for item in predictions if isinstance(item, dict)]
-    usable = [item for item in fixtures if item.get("status") in {"EXPERIMENTAL_ONLY", "LOW_HISTORY_FORECAST"} and isinstance(item.get("probabilities"), dict)]
+    usable = [
+        item for item in fixtures
+        if item.get("status") == "INDEPENDENT_FORECAST"
+        and isinstance(item.get("probabilities"), dict)
+        and item.get("legacy_model_dependency") is False
+        and item.get("model_portfolio_id") == "veltrix-independent-market-portfolio-v1"
+    ]
 
     header = [
         DIVIDER,
@@ -327,12 +333,10 @@ def format_report_messages(report: dict[str, Any], ledger: dict[str, Any] | None
     # Do not silently hide discovered fixtures just because the model cannot
     # produce an eligible forecast. Publish the fixture and the explicit gate.
     for item in fixtures:
-        if item.get("status") in {"EXPERIMENTAL_ONLY", "LOW_HISTORY_FORECAST"}:
+        if item.get("status") == "INDEPENDENT_FORECAST" and isinstance(item.get("probabilities"), dict):
             continue
         status = str(item.get("status") or "FORECAST_UNAVAILABLE").upper()
-        if status == "LOW_HISTORY_FORECAST":
-            continue
-        elif status == "EXPERIMENTAL_LOW_DATA":
+        if status in {"EXPERIMENTAL_ONLY", "LOW_HISTORY_FORECAST", "EXPERIMENTAL_LOW_DATA"}:
             status = "INSUFFICIENT_HISTORY"
             reason = "Historical evidence is not yet sufficient for a reliable forecast."
         elif status == "INSUFFICIENT_HISTORY":
