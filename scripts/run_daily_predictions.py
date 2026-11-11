@@ -335,6 +335,10 @@ def _limit_fixture_payload(
     return result
 
 def main() -> None:
+    raise SystemExit(
+        "LEGACY_PREDICTION_PIPELINE_DISABLED: daily reports from app.live_predictions are quarantined. "
+        "Use the independently certified publication pipeline only after release authorization."
+    )
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--date", default=None, help="Fixture date YYYY-MM-DD in the selected timezone (defaults to today)")
     parser.add_argument("--history", default="data/open_historical_matches.csv")
