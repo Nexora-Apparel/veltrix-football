@@ -6,7 +6,7 @@ Quotes are normalized only within an exact timestamp/bookmaker/market/line group
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timezone
 from decimal import Decimal
 from typing import Iterable
 
@@ -36,6 +36,33 @@ class NormalizedBookProbability:
     raw_implied_probability: Decimal
     normalized_probability: Decimal
     overround: Decimal
+
+    def __post_init__(self) -> None:
+        for field in ("fixture_id", "source_id", "bookmaker_id", "market", "selection", "snapshot_id"):
+            value = getattr(self, field)
+            if not isinstance(value, str) or not value.strip():
+                raise ValueError(f"NORMALIZED_ODDS_{field.upper()}_REQUIRED")
+        for field in ("captured_at", "kickoff_at"):
+            value = getattr(self, field)
+            if not isinstance(value, datetime) or value.tzinfo is None or value.utcoffset() is None:
+                raise ValueError(f"NORMALIZED_ODDS_{field.upper()}_MUST_BE_AWARE")
+            object.__setattr__(self, field, value.astimezone(timezone.utc))
+        if self.captured_at >= self.kickoff_at:
+            raise ValueError("NORMALIZED_ODDS_CAPTURE_MUST_PRECEDE_KICKOFF")
+        for field in ("decimal_odds", "raw_implied_probability", "normalized_probability", "overround"):
+            value = getattr(self, field)
+            if not isinstance(value, Decimal) or not value.is_finite():
+                raise ValueError(f"NORMALIZED_ODDS_{field.upper()}_MUST_BE_FINITE_DECIMAL")
+        if self.decimal_odds <= Decimal("1"):
+            raise ValueError("NORMALIZED_ODDS_DECIMAL_ODDS_MUST_EXCEED_ONE")
+        if not Decimal("0") < self.raw_implied_probability < Decimal("1"):
+            raise ValueError("NORMALIZED_ODDS_RAW_PROBABILITY_OUT_OF_RANGE")
+        if not Decimal("0") < self.normalized_probability < Decimal("1"):
+            raise ValueError("NORMALIZED_ODDS_PROBABILITY_OUT_OF_RANGE")
+        if abs(self.raw_implied_probability - Decimal("1") / self.decimal_odds) > Decimal("0.000000001"):
+            raise ValueError("NORMALIZED_ODDS_RAW_PROBABILITY_DOES_NOT_MATCH_PRICE")
+        if self.line is not None and (not isinstance(self.line, Decimal) or not self.line.is_finite()):
+            raise ValueError("NORMALIZED_ODDS_LINE_INVALID")
 
 
 def normalize_bookmaker_market(
