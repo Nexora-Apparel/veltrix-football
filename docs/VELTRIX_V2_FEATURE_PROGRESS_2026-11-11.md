@@ -47,8 +47,9 @@ Branch: `veltrix-2.0-architecture-blueprint`
 - Supports a configurable embargo, minimum training sample and number/duration of folds.
 - Rejects duplicate fixture IDs, naive timestamps, invalid windows, empty test folds and insufficient training samples.
 - Strict 1X2 proper-scoring functions added for multiclass Brier, log loss and ranked probability score.
-- Ranked probability score uses the ordinal outcome order AWAY/DRAW/HOME, corresponding to increasing home goal difference; this avoids imposing an arbitrary nominal class order.
-- Forecast vectors must be finite, strictly positive, normalized and uniquely keyed; forecast/outcome fixture sets must match exactly.
+- Ranked probability score uses the ordinal outcome order AWAY/DRAW/HOME, corresponding to increasing home goal difference.
+- Paired model-versus-benchmark comparison reports Brier, log-loss and RPS deltas on the exact same settled fixture set; negative deltas indicate lower scoring loss.
+- Forecast vectors must be real finite strictly-positive values, normalized and uniquely keyed; forecast/outcome fixture sets must match exactly.
 - Evaluation code computes scores only; it does not fit, calibrate, repair or publish predictions.
 
 ## Verification state
@@ -56,12 +57,12 @@ Branch: `veltrix-2.0-architecture-blueprint`
 - Foundation suite including venue context: **38 passed, 0 failed**; legacy-import boundary check passed. [Run #42984863222](https://github.com/Nexora-Apparel/veltrix-football/actions/runs/42984863222).
 - Corrected walk-forward suite: **45 passed, 0 failed**, including all seven walk-forward tests; legacy-import boundary check passed. [Run #42987573786](https://github.com/Nexora-Apparel/veltrix-football/actions/runs/42987573786).
 - Elo feature suite: **52 passed, 0 failed**; legacy-import boundary check passed. [Run #42988271363](https://github.com/Nexora-Apparel/veltrix-football/actions/runs/42988271363).
-- Team-form duplicate-evidence guards and strict 1X2 scoring tests: **66 passed, 0 failed**; legacy-import boundary check passed. [Run #42988562701](https://github.com/Nexora-Apparel/veltrix-football/actions/runs/42988562701).
-- After that run, the RPS class order was tightened to AWAY/DRAW/HOME and the forecast probabilities aligned to that order. The latest commit containing this final ordering correction still requires a fresh CI result.
+- Team-form duplicate-evidence guards and initial 1X2 scoring tests: **66 passed, 0 failed**; legacy-import boundary check passed. [Run #42988562701](https://github.com/Nexora-Apparel/veltrix-football/actions/runs/42988562701).
+- Paired benchmark comparison, stricter probability typing and final RPS ordering were added after run #42988562701. Latest combined CI must be inspected before these additions are marked verified.
 - No model fitting, calibration, prediction publication, provider ingestion or production activation has been performed.
 
 ## Next gate
 
-1. Verify the final RPS ordering correction in CI.
+1. Verify the paired benchmark and scoring changes in CI.
 2. Resume provider dry-run only after StrikerAPI credit balance/entitlement is restored.
 3. Sign Phase 3 only after the provider dry-run completes with complete accounting, zero unresolved identity/score conflicts and unchanged database counts.
