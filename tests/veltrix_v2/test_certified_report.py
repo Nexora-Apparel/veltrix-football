@@ -3,7 +3,10 @@ from decimal import Decimal
 
 import pytest
 
-from veltrix_v2.evaluation.certification import MarketCertificationEvidence, certify_release
+from veltrix_v2.evaluation.certification import (
+    MarketCertificationEvidence, PredictionMarketEvidence,
+    certify_prediction_publication, certify_release,
+)
 from veltrix_v2.publishing.certified_report import (
     MarketForecasts,
     PublishedFixture,
@@ -15,7 +18,18 @@ from veltrix_v2.publishing.certified_report import (
 UTC = timezone.utc
 
 
-def passing_certification():
+def passing_prediction_certification():
+    return certify_prediction_publication([
+        PredictionMarketEvidence(
+            market=market, walk_forward_matches=1000,
+            source_approved=True, point_in_time_validated=True,
+            leakage_tests_passed=True, calibration_passed=True,
+        )
+        for market in ("1X2", "BTTS", "TOTALS")
+    ])
+
+
+def passing_value_bet_certification():
     rows = [
         MarketCertificationEvidence(
             market=market,
@@ -58,7 +72,7 @@ def build(rows):
     return build_certified_daily_report(
         report_date_wat=date(2026, 11, 12),
         generated_at_utc=datetime(2026, 11, 12, 4, 30, tzinfo=UTC),
-        certification=passing_certification(),
+        certification=passing_prediction_certification(),
         certification_id="cert-v2-001",
         fixtures=tuple(rows),
     )
@@ -72,26 +86,23 @@ def test_certified_report_serializes_for_website_and_telegram():
     assert payload["fixtures"][0]["kickoff_wat"].startswith("2026-11-12T07:00")
     message = telegram_report_text(report)
     assert message.startswith("🔔 🆕 NEW VELTRIX UPDATE")
-    assert "Value bet: NO QUALIFIED VALUE" in message
+    assert report.value_bets_enabled is False
+    assert payload["value_bets_enabled"] is False
+    assert "Value betting: LOCKED — NOT CERTIFIED" in message
+    assert "Value bet: LOCKED — NOT CERTIFIED" in message
     assert "experimental" not in message.lower()
 
 
 def test_uncertified_report_cannot_be_published():
-    cert = certify_release(
+    cert = certify_prediction_publication([
         [
-            MarketCertificationEvidence(
+            PredictionMarketEvidence(
                 market=market, walk_forward_matches=0,
-                prospective_settled_selections=0, distinct_dates=0,
-                timestamped_odds_coverage=Decimal("0"), net_roi=Decimal("0"),
-                roi_ci95_lower=Decimal("0"),
-                roi_ci_method="iid_bet_row_bootstrap",
                 source_approved=False, point_in_time_validated=False,
+                leakage_tests_passed=False, calibration_passed=False,
             )
             for market in ("1X2", "BTTS", "TOTALS")
-        ],
-        one_x_two_beats_bookmaker_brier=False,
-        one_x_two_beats_bookmaker_log_loss=False,
-    )
+        ])
     with pytest.raises(ValueError, match="CERTIFICATION_REQUIRED"):
         build_certified_daily_report(
             report_date_wat=date(2026, 11, 12),
@@ -121,6 +132,7 @@ def test_report_deadline_is_exactly_0600_wat():
             generated_at_utc=datetime(2026, 11, 12, 4, 30, tzinfo=UTC),
             delivery_deadline_utc=datetime(2026, 11, 12, 6, 0, tzinfo=UTC),
             certification_id="cert-v2-001",
+            value_bets_enabled=False,
             fixtures=(),
         )
 
@@ -134,3 +146,56 @@ def test_empty_day_report_is_valid_but_does_not_force_fixtures():
 def test_report_rejects_fixtures_outside_wat_report_date():
     with pytest.raises(ValueError, match="OUTSIDE_WAT_REPORT_DATE"):
         build([fixture("tomorrow", datetime(2026, 11, 12, 23, 30, tzinfo=UTC))])
+
+
+
+def test_value_bets_unlock_only_after_full_value_bet_certification():
+    value_fixture = PublishedFixture(
+        fixture_id="f-value", competition="England Premier League",
+        home_team="Team A", away_team="Team B",
+        kickoff_utc=datetime(2026, 11, 12, 6, tzinfo=UTC),
+        forecasts=MarketForecasts(
+            Decimal("0.55"), Decimal("0.25"), Decimal("0.20"),
+            Decimal("0.58"), Decimal("2.5"), Decimal("0.53"),
+        ),
+        verdict="HOME LEAN", ai_insight="Test-only certified evidence.",
+        value_bet_verdict="QUALIFIED VALUE",
+    )
+    report = build_certified_daily_report(
+        report_date_wat=date(2026, 11, 12),
+        generated_at_utc=datetime(2026, 11, 12, 4, 30, tzinfo=UTC),
+        certification=passing_prediction_certification(),
+        certification_id="prediction-cert-v2-001",
+        fixtures=(value_fixture,),
+        value_bet_certification=passing_value_bet_certification(),
+    )
+    assert report.value_bets_enabled is True
+    assert report.fixtures[0].value_bet_verdict == "QUALIFIED VALUE"
+
+
+def test_failed_value_bet_certification_does_not_block_prediction_publication():
+    failed_value_cert = certify_release(
+        [
+            MarketCertificationEvidence(
+                market=market, walk_forward_matches=1000,
+                prospective_settled_selections=0, distinct_dates=90,
+                timestamped_odds_coverage=Decimal("0.99"),
+                net_roi=Decimal("0.02"), roi_ci95_lower=Decimal("0.01"),
+                roi_ci_method="date_block_bootstrap_by_match_date",
+                source_approved=True, point_in_time_validated=True,
+            )
+            for market in ("1X2", "BTTS", "TOTALS")
+        ],
+        one_x_two_beats_bookmaker_brier=True,
+        one_x_two_beats_bookmaker_log_loss=True,
+    )
+    report = build_certified_daily_report(
+        report_date_wat=date(2026, 11, 12),
+        generated_at_utc=datetime(2026, 11, 12, 4, 30, tzinfo=UTC),
+        certification=passing_prediction_certification(),
+        certification_id="prediction-cert-v2-001",
+        fixtures=(fixture("f-locked", datetime(2026, 11, 12, 6, tzinfo=UTC)),),
+        value_bet_certification=failed_value_cert,
+    )
+    assert report.value_bets_enabled is False
+    assert report.fixtures[0].value_bet_verdict == "LOCKED — NOT CERTIFIED"

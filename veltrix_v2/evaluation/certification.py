@@ -125,3 +125,81 @@ def certify_release(
         one_x_two_beats_bookmaker_log_loss=bool(one_x_two_beats_bookmaker_log_loss),
         global_failures=tuple(global_failures),
     )
+
+
+
+@dataclass(frozen=True, slots=True)
+class PredictionMarketEvidence:
+    """Evidence required to publish model forecasts without enabling betting."""
+    market: str
+    walk_forward_matches: int
+    source_approved: bool
+    point_in_time_validated: bool
+    leakage_tests_passed: bool
+    calibration_passed: bool
+
+    def __post_init__(self) -> None:
+        if self.market not in REQUIRED_MARKETS:
+            raise ValueError("PREDICTION_CERTIFICATION_UNSUPPORTED_MARKET")
+        if (
+            isinstance(self.walk_forward_matches, bool)
+            or not isinstance(self.walk_forward_matches, int)
+            or self.walk_forward_matches < 0
+        ):
+            raise ValueError("PREDICTION_CERTIFICATION_INVALID_WALK_FORWARD_MATCHES")
+        for field in (
+            "source_approved", "point_in_time_validated",
+            "leakage_tests_passed", "calibration_passed",
+        ):
+            if type(getattr(self, field)) is not bool:
+                raise ValueError("PREDICTION_CERTIFICATION_FLAGS_MUST_BE_BOOLEAN")
+
+
+@dataclass(frozen=True, slots=True)
+class PredictionReleaseCertification:
+    passed: bool
+    markets: tuple[CertificationResult, ...]
+
+
+def certify_prediction_publication(
+    evidence: Iterable[PredictionMarketEvidence],
+) -> PredictionReleaseCertification:
+    """Gate forecast publication independently from value-bet certification.
+
+    This gate requires chronological out-of-sample volume, approved sources,
+    point-in-time integrity, leakage checks and calibration. It does not require
+    prospective bet volume, positive ROI, odds coverage or bookmaker superiority;
+    those remain mandatory in certify_release before value betting is enabled.
+    """
+    rows = tuple(evidence)
+    if any(not isinstance(row, PredictionMarketEvidence) for row in rows):
+        raise ValueError("PREDICTION_CERTIFICATION_EVIDENCE_TYPE_INVALID")
+    by_market = {row.market: row for row in rows}
+    if len(by_market) != len(rows):
+        raise ValueError("PREDICTION_CERTIFICATION_DUPLICATE_MARKET")
+    if set(by_market) != set(REQUIRED_MARKETS):
+        raise ValueError("PREDICTION_CERTIFICATION_REQUIRES_EXACTLY_1X2_BTTS_TOTALS")
+
+    results: list[CertificationResult] = []
+    for market in REQUIRED_MARKETS:
+        row = by_market[market]
+        failures: list[str] = []
+        if row.walk_forward_matches < MIN_WALK_FORWARD_MATCHES:
+            failures.append("PREDICTION_WALK_FORWARD_SAMPLE_BELOW_1000")
+        if not row.source_approved:
+            failures.append("PREDICTION_SOURCE_NOT_APPROVED")
+        if not row.point_in_time_validated:
+            failures.append("PREDICTION_POINT_IN_TIME_VALIDATION_MISSING")
+        if not row.leakage_tests_passed:
+            failures.append("PREDICTION_LEAKAGE_TESTS_FAILED")
+        if not row.calibration_passed:
+            failures.append("PREDICTION_CALIBRATION_NOT_PASSED")
+        results.append(CertificationResult(
+            market=market,
+            passed=not failures,
+            failed_gates=tuple(failures),
+        ))
+    return PredictionReleaseCertification(
+        passed=all(item.passed for item in results),
+        markets=tuple(results),
+    )

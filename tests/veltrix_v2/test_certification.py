@@ -4,6 +4,8 @@ import pytest
 
 from veltrix_v2.evaluation.certification import (
     MarketCertificationEvidence,
+    PredictionMarketEvidence,
+    certify_prediction_publication,
     certify_release,
 )
 
@@ -121,3 +123,43 @@ def test_invalid_coverage_and_sample_types_are_rejected():
 def test_source_approval_flags_must_be_boolean():
     with pytest.raises(ValueError, match="MUST_BE_BOOLEAN"):
         evidence("1X2", source_approved="yes")
+
+
+
+def test_prediction_publication_gate_does_not_require_value_bet_evidence():
+    result = certify_prediction_publication([
+        PredictionMarketEvidence(
+            market=market, walk_forward_matches=1000,
+            source_approved=True, point_in_time_validated=True,
+            leakage_tests_passed=True, calibration_passed=True,
+        )
+        for market in ("1X2", "BTTS", "TOTALS")
+    ])
+    assert result.passed
+    assert all(item.passed for item in result.markets)
+
+
+def test_prediction_publication_gate_rejects_missing_model_quality_evidence():
+    result = certify_prediction_publication([
+        PredictionMarketEvidence(
+            market="1X2", walk_forward_matches=1000,
+            source_approved=True, point_in_time_validated=True,
+            leakage_tests_passed=True, calibration_passed=True,
+        ),
+        PredictionMarketEvidence(
+            market="BTTS", walk_forward_matches=999,
+            source_approved=True, point_in_time_validated=False,
+            leakage_tests_passed=False, calibration_passed=False,
+        ),
+        PredictionMarketEvidence(
+            market="TOTALS", walk_forward_matches=1000,
+            source_approved=True, point_in_time_validated=True,
+            leakage_tests_passed=True, calibration_passed=True,
+        ),
+    ])
+    assert not result.passed
+    btts = next(item for item in result.markets if item.market == "BTTS")
+    assert "PREDICTION_WALK_FORWARD_SAMPLE_BELOW_1000" in btts.failed_gates
+    assert "PREDICTION_POINT_IN_TIME_VALIDATION_MISSING" in btts.failed_gates
+    assert "PREDICTION_LEAKAGE_TESTS_FAILED" in btts.failed_gates
+    assert "PREDICTION_CALIBRATION_NOT_PASSED" in btts.failed_gates

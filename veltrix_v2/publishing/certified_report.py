@@ -6,13 +6,13 @@ certification gate passes. No schedule or network delivery is performed here.
 """
 from __future__ import annotations
 
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, replace
 from datetime import date, datetime, time, timezone
 from decimal import Decimal
 from typing import Any
 from zoneinfo import ZoneInfo
 
-from veltrix_v2.evaluation.certification import ReleaseCertification
+from veltrix_v2.evaluation.certification import PredictionReleaseCertification, ReleaseCertification
 
 WAT = ZoneInfo("Africa/Lagos")
 MAX_DAILY_FIXTURES = 25
@@ -51,7 +51,7 @@ class PublishedFixture:
     forecasts: MarketForecasts
     verdict: str
     ai_insight: str
-    value_bet_verdict: str = "NO QUALIFIED VALUE"
+    value_bet_verdict: str = "LOCKED — NOT CERTIFIED"
 
     def __post_init__(self) -> None:
         for field in ("fixture_id", "competition", "home_team", "away_team", "verdict", "ai_insight", "value_bet_verdict"):
@@ -73,6 +73,7 @@ class CertifiedDailyReport:
     generated_at_utc: datetime
     delivery_deadline_utc: datetime
     certification_id: str
+    value_bets_enabled: bool
     fixtures: tuple[PublishedFixture, ...]
 
     def __post_init__(self) -> None:
@@ -90,6 +91,8 @@ class CertifiedDailyReport:
             raise ValueError("REPORT_GENERATED_AFTER_0600_WAT_DEADLINE")
         if generated.astimezone(WAT).date() != self.report_date_wat:
             raise ValueError("REPORT_GENERATION_DATE_WAT_MISMATCH")
+        if type(self.value_bets_enabled) is not bool:
+            raise ValueError("REPORT_VALUE_BETS_ENABLED_MUST_BE_BOOLEAN")
         rows = tuple(self.fixtures)
         object.__setattr__(self, "fixtures", rows)
         if len(rows) > MAX_DAILY_FIXTURES:
@@ -109,21 +112,28 @@ def build_certified_daily_report(
     *,
     report_date_wat: date,
     generated_at_utc: datetime,
-    certification: ReleaseCertification,
+    certification: PredictionReleaseCertification,
     certification_id: str,
     fixtures: tuple[PublishedFixture, ...],
+    value_bet_certification: ReleaseCertification | None = None,
 ) -> CertifiedDailyReport:
-    if not isinstance(certification, ReleaseCertification) or not certification.passed:
-        raise ValueError("REPORT_RELEASE_CERTIFICATION_REQUIRED")
+    if not isinstance(certification, PredictionReleaseCertification) or not certification.passed:
+        raise ValueError("REPORT_PREDICTION_RELEASE_CERTIFICATION_REQUIRED")
+    if value_bet_certification is not None and not isinstance(value_bet_certification, ReleaseCertification):
+        raise ValueError("REPORT_VALUE_BET_CERTIFICATION_TYPE_INVALID")
+    value_bets_enabled = bool(value_bet_certification and value_bet_certification.passed)
     if not certification_id or not certification_id.strip():
         raise ValueError("REPORT_CERTIFICATION_ID_REQUIRED")
     ordered = tuple(sorted(fixtures, key=lambda row: (row.kickoff_utc, row.fixture_id)))
+    if not value_bets_enabled:
+        ordered = tuple(replace(row, value_bet_verdict="LOCKED — NOT CERTIFIED") for row in ordered)
     deadline = datetime.combine(report_date_wat, time(6, 0), tzinfo=WAT).astimezone(timezone.utc)
     return CertifiedDailyReport(
         report_date_wat=report_date_wat,
         generated_at_utc=generated_at_utc,
         delivery_deadline_utc=deadline,
         certification_id=certification_id,
+        value_bets_enabled=value_bets_enabled,
         fixtures=ordered,
     )
 
@@ -136,6 +146,7 @@ def website_report_payload(report: CertifiedDailyReport) -> dict[str, Any]:
         "generated_at_utc": report.generated_at_utc.isoformat(),
         "delivery_deadline_utc": report.delivery_deadline_utc.isoformat(),
         "certification_id": report.certification_id,
+        "value_bets_enabled": report.value_bets_enabled,
         "fixture_count": len(report.fixtures),
         "fixtures": [
             {
@@ -158,6 +169,7 @@ def telegram_report_text(report: CertifiedDailyReport) -> str:
         "🔔 🆕 NEW VELTRIX UPDATE",
         f"Date: {report.report_date_wat.isoformat()} (WAT)",
         f"Qualified fixtures: {len(report.fixtures)}",
+        f"Value betting: {'ENABLED' if report.value_bets_enabled else 'LOCKED — NOT CERTIFIED'}",
         "",
     ]
     if not report.fixtures:
