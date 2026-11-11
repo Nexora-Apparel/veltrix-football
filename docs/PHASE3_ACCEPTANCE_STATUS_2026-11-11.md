@@ -157,3 +157,10 @@ Full Phase 3 sign-off remains withheld until both Python workflows execute and p
 - NWSL is formally excluded from the supported launch/import scope. The 224-versus-240 discrepancy is still unexplained by StrikerAPI; official league format explains why 240 regular-season fixtures are expected, but not why the provider's public page lists 224. Issue #49 remains open for a written explanation. No NWSL source data is approved.
 - Exact approved fixture/results coverage for the limited launch/dry-run remains: StrikerAPI EPL, Argentina and Brazil within the bounded qualification windows; 5Dollar EPL within the Free-plan three-month results window. All odds, xG, shot data, lineups, events and player statistics remain unapproved by Phase 3 fixture/results qualification.
 - Phase 3 sign-off remains withheld until both manual Python workflows execute successfully and the provider dry-run artifact demonstrates complete source accounting, zero conflicts and unchanged isolated/production database counts.
+
+
+## 10. Provider dry-run guard CI — 2026-11-11
+
+- The latest pull-request CI run for the provider import dry-run tests completed successfully: run [#42979471873](https://github.com/Nexora-Apparel/veltrix-football/actions/runs/42979471873), commit `55a3fa356c01165b52322fb952b6556fa03c4dce`.
+- GitHub Actions log confirms **7 passed, 0 failed** in `tests/test_provider_import_dry_run.py`, including the isolated Neon hostname allowlist and production/unknown-host rejection.
+- This is the offline validation suite only. It does not mean the provider-backed import workflow or Neon Python acceptance workflow executed.
