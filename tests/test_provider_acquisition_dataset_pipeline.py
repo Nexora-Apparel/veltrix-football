@@ -195,6 +195,14 @@ class AuditedProviderDatasetPipelineTests(unittest.TestCase):
         self.assertEqual(
             result["source_coverage"]["feature_source_qualification"]["qualified_feature_cells"], 1
         )
+        signed_features = feature_source_registry()
+        expected_feature_registry_digest = digest({
+            key: value for key, value in signed_features.items() if key != "signature"
+        })
+        self.assertEqual(
+            result["source_coverage"]["feature_source_qualification"]["registry_sha256"],
+            expected_feature_registry_digest,
+        )
         self.assertFalse(result["source_coverage"]["qualification"]["source_coverage_qualified"])
         self.assertFalse(result["admission_profile"]["training_readiness"]["ready_for_model_training"])
 
