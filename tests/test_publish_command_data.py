@@ -153,6 +153,7 @@ def test_one_snapshot_failure_does_not_block_later_publications(tmp_path, monkey
         "legacy_model_dependency": False,
         "model_status": "PAPER_TRACKING_ONLY",
         "cumulative_metrics_by_model": {},
+        "scored_matches": [],
     }), encoding="utf-8")
     evidence.write_text(json.dumps({
         "version": "VELTRIX_VALUE_EVIDENCE_V1",
