@@ -123,6 +123,7 @@ class ProviderAcquisitionEligibilityAuditTests(unittest.TestCase):
         self.assertEqual(accepted["fixture_id"], "strikerapi:g-1")
         self.assertEqual(accepted["settlement_source_id"], "qualified-source-a")
         self.assertEqual(accepted["source_season"], "2025/26")
+        self.assertEqual(accepted["retrieved_at"], "2026-11-02T00:00:00Z")
         self.assertEqual(len(accepted["payload_sha256"]), 64)
         self.assertNotIn("raw_payload", json.dumps(report))
 
