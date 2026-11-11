@@ -11,6 +11,8 @@ from datetime import date, datetime
 from zoneinfo import ZoneInfo
 from typing import Any
 
+from app.independent_report_contract import is_publishable_independent_report
+
 COMMANDS: dict[str, str] = {
     "/start": "Open the Veltrix Football Command Centre.",
     "/help": "Show available commands.",
@@ -46,7 +48,7 @@ def _reply(body: str) -> str:
 
 
 def _report_predictions(report: dict[str, Any] | None) -> list[dict[str, Any]]:
-    if not isinstance(report, dict):
+    if not is_publishable_independent_report(report):
         return []
     report_date = report.get("as_of_date")
     if report_date:
