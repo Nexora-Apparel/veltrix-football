@@ -126,6 +126,32 @@ class ResultsTrainingDatasetAdapterTests(unittest.TestCase):
             for feature in snapshot["features"]
         ))
 
+    def test_target_row_is_excluded_from_its_own_historical_feature_input(self):
+        history = history_rows()
+        target_row = attach_evidence({
+            "fixture_id": TARGET["fixture_id"],
+            "provider": "fivedollar",
+            "source_id": TARGET["fixture_id"],
+            "competition_id": TARGET["competition_id"],
+            "kickoff_at": TARGET["kickoff_at"],
+            "settled_at": "2026-09-01T20:00:00Z",
+            "home_team_id": TARGET["home_team_id"],
+            "away_team_id": TARGET["away_team_id"],
+            "home_score": 2,
+            "away_score": 1,
+            "endpoint": "/fixtures",
+            "retrieved_at": "2026-09-01T21:00:00Z",
+            "payload_sha256": "",
+            "run_id": "history-acquisition-run-2",
+            "normalized_status": "finished",
+        })
+        history.append(target_row)
+        snapshot = build_results_history_snapshot(
+            historical_matches=history, target_fixture=TARGET,
+        )
+        self.assertEqual(snapshot["fixture_id"], TARGET["fixture_id"])
+        self.assertEqual(snapshot["feature_count"], 11)
+
     def test_assembles_snapshot_and_settled_label_into_chronological_dataset(self):
         result = assemble_results_history_dataset(
             historical_matches=history_rows(),
