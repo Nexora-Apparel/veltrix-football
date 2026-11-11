@@ -61,6 +61,18 @@ def sample_report():
     return authorized_report(report)
 
 
+def test_telegram_formatter_rejects_legacy_prediction_reports():
+    with pytest.raises(ValueError, match="LEGACY_OR_UNCERTIFIED_REPORT_SUPPRESSED"):
+        format_report({
+            "as_of_date": "2026-11-11",
+            "predictions": [{
+                "home_team": "Legacy FC",
+                "away_team": "Old Model United",
+                "probabilities": {"home_win": 0.6, "draw": 0.2, "away_win": 0.2},
+            }],
+        })
+
+
 def test_telegram_report_is_predictions_only_and_keeps_new_update_alert():
     message = format_report(sample_report())
     assert "🔔 🆕 NEW VELTRIX UPDATE" in message
