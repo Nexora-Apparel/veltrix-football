@@ -37,6 +37,9 @@ class MarketCoverage:
 @dataclass(frozen=True, slots=True)
 class MultiMarketFoldEvaluation:
     fold_number: int
+    model_converged: bool
+    model_objective: float | None
+    training_availability_bases: tuple[str, ...]
     train_fixture_count: int
     test_fixture_count: int
     forecast_count: int
@@ -162,8 +165,18 @@ def run_multi_market_walk_forward(
         totals_forecasts: list[BinaryForecast] = []
         totals_outcomes: list[SettledBinaryOutcome] = []
         abstained: list[str] = []
+        model_converged = bool(getattr(model, "converged", False))
+        model_objective_raw = getattr(model, "objective", None)
+        model_objective = (
+            float(model_objective_raw)
+            if isinstance(model_objective_raw, (int, float)) and math.isfinite(float(model_objective_raw))
+            else None
+        )
+        availability_bases = tuple(getattr(model, "training_availability_bases", ("unspecified",)))
+        if not model_converged:
+            abstained.extend(eligible_ids)
 
-        for row in test_rows:
+        for row in (() if not model_converged else test_rows):
             try:
                 expected_home, expected_away = model.expected_goals(
                     row.home_team_id, row.away_team_id
@@ -230,6 +243,9 @@ def run_multi_market_walk_forward(
         )
         fold_reports.append(MultiMarketFoldEvaluation(
             fold_number=fold.fold_number,
+            model_converged=model_converged,
+            model_objective=model_objective,
+            training_availability_bases=availability_bases,
             train_fixture_count=len(training_rows),
             test_fixture_count=len(test_rows),
             forecast_count=len(forecasts_1x2),
