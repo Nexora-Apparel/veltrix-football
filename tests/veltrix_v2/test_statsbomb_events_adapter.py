@@ -69,7 +69,7 @@ def test_event_file_requires_sorted_unique_ids_and_indexes():
         adapt_event_file([second, first], match_id="2781")
 
 
-@pytest.mark.parametrize("timestamp", ["00:60:00.000", "00:00:60.000", "bad"])
+@pytest.mark.parametrize("timestamp", ["00:60:00.000", "00:00:60.000", "00:00:01.1234", "bad"])
 def test_invalid_match_clock_is_rejected(timestamp):
     with pytest.raises(ValueError, match="INVALID_EVENT_TIMESTAMP"):
         adapt_event(event(timestamp=timestamp), match_id="2781")
