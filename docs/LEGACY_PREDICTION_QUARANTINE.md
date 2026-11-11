@@ -29,7 +29,7 @@ A report is publishable only when all of the following hold:
 7. `release_certificate.signature_verified == true`.
 8. The certificate digest is a valid lowercase SHA-256 digest and binds the same model portfolio.
 
-The independent certification runner currently returns publication authorization as false. Therefore no report can currently pass this contract. This is intentional.
+The independent certification runner currently returns publication authorization as false. In addition, the code-level switches `INDEPENDENT_REPORT_PUBLICATION_ENABLED` and `VALUE_BETTING_AUTHORIZATION_ENABLED` are both hard-coded false. Therefore no report or value certificate can currently pass, even if an artifact claims authorization. This is intentional until real-data qualification, formal certification and explicit release approval are complete.
 
 ## Non-goals
 
