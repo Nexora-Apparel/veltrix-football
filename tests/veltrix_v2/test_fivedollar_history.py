@@ -58,10 +58,6 @@ def test_recent_matches_inside_four_day_embargo_are_excluded():
 
 
 def test_non_finished_rows_are_not_training_labels():
-    history = load_fivedollar_finished_matches(
-        [fixture(1, RETRIEVED - timedelta(days=10), status="scheduled")],
-        retrieved_at_utc=RETRIEVED,
-    ) if False else None
     with pytest.raises(ValueError, match="NO_ELIGIBLE"):
         load_fivedollar_finished_matches(
             [fixture(1, RETRIEVED - timedelta(days=10), status="scheduled")],
