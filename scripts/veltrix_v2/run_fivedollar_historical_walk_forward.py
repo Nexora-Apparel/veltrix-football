@@ -115,7 +115,7 @@ def _norm(value: str) -> str:
 
 def _is_target_league(name: str) -> bool:
     normalized = _norm(name)
-    if any(country in normalized for country in ("argentina", "brazil")):
+    if any(country in normalized for country in ("argentina", "brazil", "nigeria")):
         return True
     return any(country in normalized and league in normalized for country, league in TOP_LEAGUE_RULES)
 
