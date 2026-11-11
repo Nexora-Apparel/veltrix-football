@@ -137,7 +137,7 @@ class AuditedProviderDatasetPipelineTests(unittest.TestCase):
             result = assemble_audited_provider_dataset(
                 acquisition_records=records,
                 settlement_timestamp_packages=packages,
-                trusted_kms_clients={"trusted": object()},
+                trusted_kms_clients={TEAM_KEY_ARN: TEAM_KMS},
                 team_crosswalk_registry=team_registry()[0],
 
                 team_crosswalk_as_of="2026-09-01T12:00:00Z",
@@ -192,7 +192,7 @@ class AuditedProviderDatasetPipelineTests(unittest.TestCase):
                 assemble_audited_provider_dataset(
                     acquisition_records=[{"provider": "provider", "source_id": "good"}],
                     settlement_timestamp_packages={"provider:good": {}},
-                    trusted_kms_clients={"trusted": object()},
+                    trusted_kms_clients={TEAM_KEY_ARN: TEAM_KMS},
                     team_crosswalk_registry=team_registry()[0],
 
                     team_crosswalk_as_of="2026-09-01T12:00:00Z",
@@ -211,7 +211,7 @@ class AuditedProviderDatasetPipelineTests(unittest.TestCase):
                 assemble_audited_provider_dataset(
                     acquisition_records=[],
                     settlement_timestamp_packages={},
-                    trusted_kms_clients={},
+                    trusted_kms_clients={TEAM_KEY_ARN: TEAM_KMS},
                     team_crosswalk_registry=team_registry()[0],
 
                     team_crosswalk_as_of="2026-09-01T12:00:00Z",
@@ -230,7 +230,7 @@ class AuditedProviderDatasetPipelineTests(unittest.TestCase):
             result = assemble_audited_provider_dataset(
                 acquisition_records=[{"provider": "p", "source_id": "x"}],
                 settlement_timestamp_packages={},
-                trusted_kms_clients={},
+                trusted_kms_clients={TEAM_KEY_ARN: TEAM_KMS},
                 team_crosswalk_registry=team_registry()[0],
 
                 team_crosswalk_as_of="2026-09-01T12:00:00Z",
@@ -261,7 +261,7 @@ class AuditedProviderDatasetPipelineTests(unittest.TestCase):
                 assemble_audited_provider_dataset(
                     acquisition_records=[{"provider": "provider", "source_id": "other"}],
                     settlement_timestamp_packages={"provider:good": {}},
-                    trusted_kms_clients={},
+                    trusted_kms_clients={TEAM_KEY_ARN: TEAM_KMS},
                     team_crosswalk_registry=team_registry()[0],
 
                     team_crosswalk_as_of="2026-09-01T12:00:00Z",
