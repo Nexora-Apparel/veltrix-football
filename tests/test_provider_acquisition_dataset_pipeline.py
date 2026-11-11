@@ -72,6 +72,8 @@ class AuditedProviderDatasetPipelineTests(unittest.TestCase):
         self.assertFalse(result["training_authorized"])
         self.assertFalse(result["publication_allowed"])
         self.assertEqual(len(result["pipeline_report_sha256"]), 64)
+        self.assertEqual(result["admission_profile"]["dataset"]["included_rows"], 1)
+        self.assertFalse(result["admission_profile"]["training_readiness"]["ready_for_model_training"])
 
     def test_tampered_audit_report_is_rejected(self):
         report = self.audit_report([])
