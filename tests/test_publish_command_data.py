@@ -255,6 +255,7 @@ def test_large_blob_publication_retries_when_command_data_branch_moves(tmp_path,
         raise AssertionError(url)
 
     monkeypatch.setattr(publisher, "_github_json", fake_github_json)
+    monkeypatch.setattr(publisher, "is_publishable_independent_report", lambda report: True)
     publisher.publish("public-data/daily_predictions.json", target, "owner/repo", "token")
     assert ref_reads == 2
     assert patch_attempts == 2
