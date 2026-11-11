@@ -2,6 +2,12 @@ name: Verify Multi-Source Football Providers
 
 on:
   workflow_dispatch:
+    inputs:
+      probe_odds_markets:
+        description: "Probe one upcoming BTTS quote per top-five league (up to 5 Odds API credits)"
+        required: false
+        default: false
+        type: boolean
   push:
     paths:
       - "scripts/verify_data_providers.py"
@@ -20,6 +26,7 @@ jobs:
     env:
       FIVEDOLLARFOOTBALL_API_KEY: ${{ secrets.FIVEDOLLARFOOTBALL_API_KEY }}
       THE_ODDS_API_KEY: ${{ secrets.THE_ODDS_API_KEY }}
+      PROBE_THE_ODDS_API_MARKETS: ${{ inputs.probe_odds_markets || false }}
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
