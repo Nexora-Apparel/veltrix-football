@@ -120,6 +120,8 @@ def sign_season_crosswalk_registry(*, kms_client: Any, key_arn: str,
         )
     except ReceiptTrustError as exc:
         raise SeasonCrosswalkError(str(exc)) from None
+    if isinstance(registry, dict) and "signature" in registry:
+        raise SeasonCrosswalkError("season_registry_already_signed")
     unsigned = _unsigned(registry)
     if unsigned.get("schema") != SCHEMA:
         raise SeasonCrosswalkError("season_registry_schema_unsupported")
