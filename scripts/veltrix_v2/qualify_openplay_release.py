@@ -150,8 +150,9 @@ def audit_release(output_dir: str | Path) -> dict:
     schema_failures = []
     for name, expected_rows in EXPECTED_ROWS.items():
         path = (root / name).as_posix()
-        count = db.execute("SELECT COUNT(*) FROM read_parquet(?)", [path]).fetchone()[0]
-        columns = [row[0] for row in db.execute("DESCRIBE SELECT * FROM read_parquet(?)", [path]).fetchall()]
+        safe_path = path.replace("'", "''")
+        count = db.execute(f"SELECT COUNT(*) FROM read_parquet('{safe_path}')").fetchone()[0]
+        columns = [row[0] for row in db.execute(f"DESCRIBE SELECT * FROM read_parquet('{safe_path}')").fetchall()]
         missing = sorted(REQUIRED_COLUMNS.get(name, set()) - set(columns))
         if count != expected_rows or missing:
             schema_failures.append({
