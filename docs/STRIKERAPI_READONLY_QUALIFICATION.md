@@ -125,3 +125,21 @@ These checks distinguish historical season coverage from publication of the next
 ## Continuous integration for offline reconciliation
 
 A separate pull-request workflow, `.github/workflows/strikerapi-reconciliation-tests.yml`, runs the complete `test_strikerapi*.py` suite on PR changes to the reconciliation implementation/tests. It has no provider credential and makes no API calls. This keeps deterministic unit testing independent of the manual, credit-bounded provider qualification workflow.
+
+## NWSL 2026 public-page count reconciliation — 2026-11-11
+
+Additional official evidence was checked after the original 2026-11-09 probe:
+- StrikerAPI API returned 240 2026 league-stage finals and 4 completed knockout-stage finals (244 total).
+- StrikerAPI's public NWSL page lists 224 matches for 2026.
+- The official NWSL 2026 competition rules specify 16 teams, each playing 30 regular-season games: 16 × 30 ÷ 2 = 240 regular-season fixtures.
+- The official NWSL 2026 schedule footprint describes 248 matches including an eight-team playoff and the Challenge Cup.
+
+Interpretation: the API's 240 league-stage count is consistent with the official regular-season format; its four additional rows are knockout fixtures. The public page is 16 below the official regular-season fixture count. This narrows the discrepancy but does not establish why the public page undercounts; it may reflect a page count/data coverage issue, but that has not been confirmed by StrikerAPI.
+
+No written provider support response has been obtained. Keep NWSL fixture/results provisional until StrikerAPI explains the public-page count and confirms the 240 league-stage records. Do not use this arithmetic as proof of complete NWSL match data or authorize NWSL odds, xG, shot data or player statistics.
+
+Official references:
+- https://strikerapi.com/nwsl
+- https://strikerapi.com/docs/list-games
+- https://www.nwslsoccer.com/news/nwsl-announces-2026-schedule-footprint
+- https://images.nwslsoccer.com/image/private/t_q-good/prd/tstudhfledlk7z8ygtzd.pdf
