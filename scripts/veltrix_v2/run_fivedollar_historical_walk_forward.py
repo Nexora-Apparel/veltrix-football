@@ -328,12 +328,10 @@ def run(args) -> dict:
     retrieved = datetime.now(timezone.utc).replace(microsecond=0)
     budget = RequestBudget(args.max_requests, key)
     status_payload = budget.get("status", {})
+    if not isinstance(status_payload, dict) or status_payload.get("success") != 1:
+        raise RuntimeError("FIVEDOLLAR_ACCOUNT_STATUS_INVALID")
     status_data = status_payload.get("data")
-    if (
-        not isinstance(status_payload, dict)
-        or status_payload.get("success") != 1
-        or not isinstance(status_data, dict)
-    ):
+    if not isinstance(status_data, dict):
         raise RuntimeError("FIVEDOLLAR_ACCOUNT_STATUS_INVALID")
     provider_plan = status_data.get("plan")
     plan_history_limit_days = _history_limit_for_plan(provider_plan)
