@@ -31,8 +31,8 @@ class FeatureValue:
         cutoff = _utc(self.cutoff_utc, "cutoff_utc")
         object.__setattr__(self, "computed_at_utc", computed)
         object.__setattr__(self, "cutoff_utc", cutoff)
-        if computed < cutoff:
-            raise ValueError("feature cannot be computed before its cutoff")
+        if computed > cutoff:
+            raise ValueError("feature cannot be computed after its cutoff")
         if self.sample_size < 0:
             raise ValueError("sample_size cannot be negative")
         if self.value is not None and not isfinite(float(self.value)):

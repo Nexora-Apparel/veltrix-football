@@ -32,10 +32,15 @@ def test_snapshot_rejects_duplicate_feature_names():
         FeatureSnapshot("strikerapi", "fx-1", T, "features-0.1", (feature(), feature()))
 
 
-def test_snapshot_rejects_future_feature_computation():
-    late = feature(computed_at_utc=T + timedelta(seconds=1))
-    with pytest.raises(ValueError, match="after the forecast cutoff"):
-        FeatureSnapshot("strikerapi", "fx-1", T, "features-0.1", (late,))
+def test_feature_computation_must_not_occur_after_cutoff():
+    with pytest.raises(ValueError, match="after its cutoff"):
+        feature(computed_at_utc=T + timedelta(seconds=1))
+
+
+def test_snapshot_accepts_feature_computed_before_cutoff():
+    early = feature(computed_at_utc=T - timedelta(seconds=30))
+    snap = FeatureSnapshot("strikerapi", "fx-1", T, "features-0.1", (early,))
+    assert snap.features[0].computed_at_utc == T - timedelta(seconds=30)
 
 
 def test_rejects_nonfinite_features():
