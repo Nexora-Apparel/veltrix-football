@@ -112,6 +112,7 @@ def assemble_results_history_dataset(*, historical_matches: list[dict],
         "feature_reconstruction": {
             "target_fixture_count": len(target_fixtures),
             "snapshot_count": len(snapshots),
+            "snapshots": snapshots,
             "withheld_count": len(withheld),
             "withheld_by_reason": dict(sorted(reasons.items())),
             "withheld": withheld,
