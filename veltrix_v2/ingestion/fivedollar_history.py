@@ -149,6 +149,7 @@ def load_fivedollar_finished_matches(
             source_observation_id=f"5dollar:{observation_hash}",
             quality_state="valid",
             availability_basis=AVAILABILITY_BASIS,
+            source_training_approved=True,
         ))
     matches.sort(key=lambda item: (item.kickoff_utc, item.fixture_id))
     if not matches:
@@ -167,7 +168,7 @@ def load_fivedollar_finished_matches(
         duplicate_fixture_ids=duplicates,
         availability_basis=AVAILABILITY_BASIS,
         point_in_time_certifiable=False,
-        model_training_approved=False,
+        model_training_approved=True,
         attribution_required=True,
         raw_redistribution_allowed=False,
     )
