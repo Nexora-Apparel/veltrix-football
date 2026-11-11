@@ -56,16 +56,9 @@ Common public read-only endpoints documented by the community:
 - `element-summary/{player_id}/`: player match history and previous seasons.
 - `event/{gameweek}/live/`: gameweek player performance.
 
-Useful player fields include minutes, goals, assists, expected goals, expected assists, form, ICT metrics and availability/status fields. It is particularly useful for EPL player form and squad availability signals.
+Terms reviewed: clauses prohibit automated systems from accessing/extracting game data and prohibit commercial exploitation absent express permission. The upstream API is undocumented and only covers EPL/FPL-defined metrics.
 
-Qualification caveats:
-- This is an undocumented internal API used by the official FPL website. The Premier League does not publish a formal API specification or compatibility guarantee.
-- Field names and payloads can change without notice.
-- FPL availability status is not a fully authoritative injury report; preserve the exact source timestamp and status meaning.
-- It only covers the Premier League and FPL-defined player metrics.
-- Confirm the applicable Premier League/FPL terms for the intended use before commercial display, long-term retention or model-training use.
-
-Decision: **DO NOT USE** for VELTRIX automated data collection or commercial prediction. The terms prohibit automated extraction and commercial exploitation absent express permission. The one-time probe artifact is quarantined and will expire; no further requests will be made.
+Decision: **DO NOT USE** for VELTRIX automated collection, feature generation, training, persistence or public outputs. The one-time probe is quarantined and must not be used. Automated retrieval was removed from the workflow.
 
 ### C. PitchAPI — high-priority live API candidate, rights gate unresolved
 
@@ -137,7 +130,7 @@ Every provider must be qualified independently for each competition and season. 
 |---|---|---|---|
 | Fixtures/results | Stable match ID, teams, competition, kickoff, status, FT/HT score | 5Dollar EPL; OpenFootball CC0 | Paired reconciliation pending |
 | Player match stats | Minutes, starts, goals, assists, shots, passes, tackles, cards, goalkeeper saves | OpenPlay historical; PitchAPI rights-gated probe | Historical candidate; live candidate pending |
-| xG / xA | Shot-level xG, xA, model/version, penalty flag, shot coordinates | OpenPlay historical; PitchAPI probe; FPL EPL aggregate | Must preserve provider/model identity |
+| xG / xA | Shot-level xG, xA, model/version, penalty flag, shot coordinates | OpenPlay historical; PitchAPI rights-gated probe | Must preserve provider/model identity |
 | Shots | Attempts, on-target, blocked, shot location, body part, situation | OpenPlay historical; PitchAPI probe | Pending live qualification |
 | Lineups | Starting XI, bench, formation, confirmed/predicted flag, publication timestamp | OpenPlay historical; PitchAPI probe; TheSportsDB spot checks | Pending |
 | Injuries/availability | Player, status, reason, effective time, last update, confidence | PitchAPI provider confirmation required; other rights-cleared sources to research | No approved free source yet |
@@ -250,3 +243,41 @@ Separate VELTRIX_V2 model/evaluation/publication gates
 - The script does not import legacy prediction modules, access Neon or modify predictions.
 - **Live acquisition has not yet run.** A repository user with write access must manually trigger the workflow from the Actions tab because no workflow-dispatch action is exposed in the connected GitHub toolset.
 - After the artifact is available, implement and run exact fixture-level reconciliation with an explicit team-ID crosswalk. Do not claim a pass based on successful downloads alone.
+
+
+## Additional provider and dataset findings (2026-11-11)
+
+### OpenPlay live qualification result
+- GitHub Actions run #43006720029 completed successfully.
+- Pinned release `data-v0.1.0`, tag commit `ac0bd9aff52016066433ebebf818bec4278fcf54`.
+- 10 Parquet tables and 5 supporting files downloaded and hash-verified (about 71 MiB).
+- 775,994 player-match rows; 1,068,162 lineup rows; 669,404 shot rows; 53,094 team-match rows.
+- 26,575 matches played in the v1 coverage scope; 26,536 with events; 39 gaps; 58 known data issues in that scope.
+- Technical structure/hash qualification passed. Production and commercial model-training remain blocked pending upstream-rights review because the maintainer identifies WhoScored / Opta (Stats Perform) as the underlying source.
+- Detailed evidence: `docs/VELTRIX_V2_OPENPLAY_QUALIFICATION_2026-11-11.md`.
+
+### OpenFootball paired reconciliation result
+- The read-only GitHub Actions workflow now completes successfully and produces a row-level reconciliation report.
+- 100 5Dollar EPL finished fixtures; 94 exact date/team matches; 45 score agreements; 49 missing OpenFootball scores; 6 one-day date conflicts; zero score conflicts or duplicate IDs.
+- Score coverage against the 5Dollar reference was only 45%. OpenFootball is **not accepted** as the current-season EPL results source.
+- Detailed evidence: `docs/VELTRIX_V2_LIVE_PROVIDER_RECONCILIATION_2026-11-11.md`.
+
+### FootballAPI.org — possible EPL team-statistics source, not approved
+Documentation: https://footballapi.org/documentation
+- The free key is limited to the current EPL season and 50 calls/day.
+- Its match statistics endpoint documents team-level xG, shots, possession, passes, corners, fouls, offsides and cards.
+- It does not document player-match statistics or confirmed lineups in the public free feature list.
+- Its terms allow using data in apps and showing it to end users, but prohibit bulk downloading to rebuild the collection and prohibit building a competing product. This needs a written fit-for-purpose clarification for VELTRIX before automated use.
+- Decision: optional EPL team-statistics candidate only; no credential or production use assumed.
+
+### Datasets excluded on licence grounds
+- **Gamblistics Lab sport-statistics:** player stats and lineups exist, but the Hugging Face dataset declares CC BY-NC 4.0. Exclude from commercial VELTRIX model training and product use.
+- **Impect Open Data:** Bundesliga 2023/24 event/player/lineup dataset; its licence terms restrict use to non-commercial research. Exclude from commercial production.
+- **Open Matchday:** 2026/27 results and team stats across 75 competitions; its README explicitly limits access to informational, non-commercial use. Exclude from VELTRIX commercial ingestion.
+- **FPL public API:** excluded after terms review; do not automate access or use the quarantined one-time probe.
+
+### Current data-source decision
+- 5DollarFootballAPI remains the bounded EPL fixture/results reference and has commercial application rights subject to its attribution and no-raw-feed-resale terms.
+- OpenPlay is the strongest audited historical player/lineup/xG dataset candidate, but upstream rights review is still required before training/production approval.
+- No rights-cleared, free, current-season, multi-competition player-statistics and confirmed-lineup provider has yet passed qualification.
+- PitchAPI remains a high-potential API candidate, but its data lineage and commercial storage/training permissions remain unverified.
