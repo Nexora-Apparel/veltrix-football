@@ -278,9 +278,20 @@ def reconstruct_pre_match_features(*, historical_matches: list[dict],
     if not eligible:
         raise FeatureReconstructionError("no_eligible_pre_kickoff_history")
 
+    # Canonical team IDs may legitimately recur across competitions. Do not
+    # mix league/cup histories or competition baselines until a separately
+    # validated cross-competition strength model exists.
+    competition_history = [
+        row for row in eligible
+        if row["competition_id"] == target_fixture["competition_id"]
+    ]
+    if not competition_history:
+        raise FeatureReconstructionError(
+            f"insufficient_competition_history:{target_fixture['competition_id']}"
+        )
     home_id, away_id = target_fixture["home_team_id"], target_fixture["away_team_id"]
-    home_matches = _team_window(home_id, eligible, cutoff, form_window)
-    away_matches = _team_window(away_id, eligible, cutoff, form_window)
+    home_matches = _team_window(home_id, competition_history, cutoff, form_window)
+    away_matches = _team_window(away_id, competition_history, cutoff, form_window)
     if len(home_matches) < minimum_team_matches:
         raise FeatureReconstructionError(f"home_history_below_minimum:{len(home_matches)}")
     if len(away_matches) < minimum_team_matches:
@@ -294,9 +305,9 @@ def reconstruct_pre_match_features(*, historical_matches: list[dict],
         raise FeatureReconstructionError("rest_interval_out_of_range")
 
     competition_home, competition_away = _competition_rates(
-        target_fixture["competition_id"], eligible, cutoff
+        target_fixture["competition_id"], competition_history, cutoff
     )
-    elo = _elo_ratings(eligible, cutoff)
+    elo = _elo_ratings(competition_history, cutoff)
     features = {
         "home_attack_goals_rate": home_attack,
         "home_defence_conceded_rate": home_defence,
@@ -315,7 +326,7 @@ def reconstruct_pre_match_features(*, historical_matches: list[dict],
     if any(not math.isfinite(value) for value in features.values()):
         raise FeatureReconstructionError("non_finite_feature")
     provenance_rows = sorted(
-        eligible, key=lambda item: (item["_kickoff"], item["fixture_id"])
+        competition_history, key=lambda item: (item["_kickoff"], item["fixture_id"])
     )
     eligible_source_records = [
         {"fixture_id": row["fixture_id"], "provider": row["provider"],
