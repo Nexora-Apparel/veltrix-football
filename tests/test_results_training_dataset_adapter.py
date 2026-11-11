@@ -290,6 +290,25 @@ class ResultsTrainingDatasetAdapterTests(unittest.TestCase):
             "league:2025-2026",
         )
 
+    def test_missing_team_crosswalk_fails_closed(self):
+        with self.assertRaisesRegex(ValueError, "team_crosswalk_registry_required"):
+            build_results_history_snapshot(
+                historical_matches=history_with_target(),
+                target_fixture=TARGET,
+                season_crosswalk_registry=season_registry(),
+                trusted_kms_clients=trusted_clients(),
+            )
+
+    def test_target_without_admitted_team_pair_row_is_rejected(self):
+        with self.assertRaisesRegex(ValueError, "target_team_identity_not_valid_at_feature_cutoff"):
+            build_results_history_snapshot(
+                historical_matches=history_rows(),
+                target_fixture=TARGET,
+                season_crosswalk_registry=season_registry(),
+                trusted_kms_clients=trusted_clients(),
+                team_crosswalk_registry=TEAM_REGISTRY,
+            )
+
     def test_missing_target_season_mapping_withholds_target(self):
         target = {**TARGET, "source_season": "unmapped-season"}
         with self.assertRaisesRegex(
