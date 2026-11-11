@@ -285,6 +285,7 @@ def _one_x_two_accuracy(evaluation):
         "sample_size": len(forecasts),
         "correct": hits,
         "accuracy": hits / len(forecasts) if forecasts else None,
+        "accuracy_target_80pct_met": (hits / len(forecasts) >= 0.80) if forecasts else False,
         "accuracy_ci95": list(interval) if interval is not None else None,
     }
 
