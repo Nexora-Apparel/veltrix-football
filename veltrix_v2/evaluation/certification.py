@@ -100,8 +100,8 @@ def certify_release(
             failures.append("NET_ROI_NOT_POSITIVE")
         if row.roi_ci95_lower <= ZERO:
             failures.append("ROI_LOWER_95_PERCENT_BOUND_NOT_POSITIVE")
-        if row.roi_ci_method != "fixture_block_bootstrap_by_fixture":
-            failures.append("ROI_INTERVAL_NOT_FIXTURE_BLOCK_BOOTSTRAP")
+        if row.roi_ci_method != "chronological_block_bootstrap_by_match_date":
+            failures.append("ROI_INTERVAL_NOT_MATCH_DATE_BLOCK_BOOTSTRAP")
         if not row.source_approved:
             failures.append("SOURCE_NOT_APPROVED")
         if not row.point_in_time_validated:

@@ -40,6 +40,7 @@ def test_roi_accounts_for_win_loss_push_and_excludes_void_turnover():
     assert overall.win_rate == Decimal("0.5")
     assert overall.win_rate_ci_95 is not None
     assert overall.roi_ci_95 is not None
+    assert overall.roi_ci_method == "fixture_block_bootstrap_by_fixture"
 
 
 def test_market_summaries_are_separate():

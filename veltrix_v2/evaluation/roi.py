@@ -4,9 +4,11 @@ ROI uses settled exposure: WIN, LOSS and PUSH stakes are included; VOID stakes
 are excluded. Pushes contribute zero net profit and remain in turnover. Void
 returns are bookkeeping only and never inflate gross profit or turnover.
 
-The bootstrap interval is a deterministic percentile interval over settled
-bet rows. It is descriptive, not a substitute for chronological prospective
-validation or a dependence-aware match/day block bootstrap.
+The ROI interval uses a deterministic percentile bootstrap over fixture
+clusters. Every selection from a sampled fixture remains in the same draw.
+This accounts for within-match dependence, but not cross-fixture dependence
+within a match date; the settlement contract currently has no source-backed
+match-date field.
 """
 from __future__ import annotations
 
@@ -45,6 +47,7 @@ class MarketPerformance:
     net_profit: Decimal
     roi: Decimal | None
     roi_ci_95: tuple[Decimal, Decimal] | None
+    roi_ci_method: str
 
 
 @dataclass(frozen=True, slots=True)
@@ -144,6 +147,7 @@ def _summarize(
         roi_ci_95=_fixture_block_roi_interval(
             non_void, draws=bootstrap_draws, seed=bootstrap_seed
         ),
+        roi_ci_method="fixture_block_bootstrap_by_fixture",
     )
 
 
