@@ -55,6 +55,14 @@ class CanonicalSeasonCrosswalkTests(unittest.TestCase):
         with self.assertRaisesRegex(SeasonCrosswalkError, "already_signed"):
             signed(value)
 
+    def test_mapping_review_must_precede_registry_issuance(self):
+        value = registry()
+        value["issued_at"] = "2026-01-01T00:00:00Z"
+        with self.assertRaisesRegex(
+            SeasonCrosswalkError, "season_mapping_reviewed_after_registry_issuance"
+        ):
+            signed(value)
+
     def test_resolves_exact_provider_competition_and_source_season(self):
         result = resolve_canonical_season(
             registry=signed(), trusted_kms_clients={KEY_ARN: KMS},
