@@ -94,6 +94,25 @@ class HistoricalSourceCoverageTests(unittest.TestCase):
         self.assertFalse(result["qualification"]["training_authorized"])
         self.assertEqual(len(result["report_sha256"]), 64)
 
+    def test_reports_provider_specific_acceptance_and_rejection_rates(self):
+        value = report_input()
+        value["acquisition_eligibility"]["rejected_records"][0].update({
+            "provider": "provider-a",
+            "source_id": "3",
+        })
+        result = build_historical_source_coverage_report(
+            value,
+            minimum_fixtures_per_competition=2,
+            minimum_distinct_teams_per_competition=3,
+            minimum_feature_coverage_rate=0.9,
+        )
+        quality = result["settlement_source_coverage"]["provider_quality"]["provider-a"]
+        self.assertEqual(quality["input_records"], 3)
+        self.assertEqual(quality["accepted_records"], 2)
+        self.assertEqual(quality["rejected_records"], 1)
+        self.assertAlmostEqual(quality["acceptance_rate"], 2 / 3)
+        self.assertEqual(quality["rejection_reasons"], {"no_settlement": 1})
+
     def test_rejects_dataset_row_with_wrong_snapshot_digest(self):
         value = report_input()
         value["dataset"]["rows"][0]["feature_snapshot_sha256"] = "b" * 64
