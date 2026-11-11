@@ -1,6 +1,11 @@
 name: OpenFootball + 5Dollar Read-only Snapshot
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/openfootball-5dollar-readonly-reconciliation.yml'
+      - 'scripts/veltrix_v2/fetch_openfootball_5dollar_snapshots.py'
   workflow_dispatch:
     inputs:
       start_date:
@@ -42,8 +47,8 @@ jobs:
         id: snapshots
         run: |
           python scripts/veltrix_v2/fetch_openfootball_5dollar_snapshots.py \
-            --start-date "${{ inputs.start_date }}" \
-            --end-date-exclusive "${{ inputs.end_date_exclusive }}" \
+            --start-date "${{ inputs.start_date || '2026-08-14' }}" \
+            --end-date-exclusive "${{ inputs.end_date_exclusive || '2026-11-12' }}" \
             --out readonly-snapshots
 
       - name: Upload immutable snapshot evidence
