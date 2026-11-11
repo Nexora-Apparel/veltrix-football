@@ -181,3 +181,8 @@ For the additional 80% high-confidence target, require at least 300 prospective 
 5. Qualify FPL EPL player snapshots as a limited, undocumented source; keep it optional until terms and schema stability are reviewed.
 6. Probe PitchAPI only after provider confirms source lineage, storage, commercial display and model-training rights.
 7. Build point-in-time feature snapshots, then candidate score models and market-specific evaluation.
+
+
+## Low-history team handling
+
+The Poisson strength model and walk-forward runners accept a team with one eligible historical match by default. Team estimates are regularized by the model rather than replaced with a generic fallback probability. A team with no eligible history is not assigned an invented rating: the fixture is abstained. Low-sample form features retain their sample count and low-sample quality state. This expands evidence use without weakening the independent publication, calibration and point-in-time release gates.

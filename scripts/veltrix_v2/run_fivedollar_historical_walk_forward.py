@@ -394,7 +394,7 @@ def run(args) -> dict:
         n_splits=n_splits,
         embargo=timedelta(0),
         minimum_training_matches=40,
-        minimum_team_matches=3,
+        minimum_team_matches=1,
         max_iterations=args.max_iterations,
         recency_half_life_days=180.0,
         ridge=0.05,

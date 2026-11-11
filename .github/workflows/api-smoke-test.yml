@@ -13,6 +13,7 @@ on:
       - ".github/workflows/api-smoke-test.yml"
       - "veltrix_v2/**"
       - "tests/veltrix_v2/**"
+      - "scripts/veltrix_v2/**"
   pull_request:
     branches: [main]
     paths:
@@ -25,6 +26,7 @@ on:
       - ".github/workflows/api-smoke-test.yml"
       - "veltrix_v2/**"
       - "tests/veltrix_v2/**"
+      - "scripts/veltrix_v2/**"
   workflow_dispatch:
 
 permissions:
