@@ -68,7 +68,11 @@ def parse_match(raw: Mapping[str, Any], source_index: int) -> OpenFootballMatch:
         full_time_away=ft[1] if ft else None,
         half_time_home=ht[0] if ht else None,
         half_time_away=ht[1] if ht else None,
-        timestamp_precision="local_datetime_unzoned" if local_time else "date_only",
+        timestamp_precision=(
+            "date_only" if local_time is None
+            else "local_datetime_with_utc_offset" if local_time.utcoffset() is not None
+            else "local_datetime_unzoned"
+        ),
         raw_date=raw_date,
         raw_time=raw_time if isinstance(raw_time, str) else None,
     )

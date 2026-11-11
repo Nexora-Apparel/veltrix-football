@@ -36,3 +36,14 @@ def test_invalid_score_fails_closed():
 def test_dataset_requires_all_rows_to_be_objects():
     with pytest.raises(ValueError):
         parse_dataset({"name": "League", "matches": [{"date": "2026-11-07", "team1": "A", "team2": "B"}, None]})
+
+
+
+def test_explicit_clock_offset_is_preserved_without_inventing_iana_zone():
+    match = parse_match(
+        {"date": "2026-10-01", "time": "20:00:00+02:00", "team1": "A", "team2": "B"},
+        0,
+    )
+    assert match.timestamp_precision == "local_datetime_with_utc_offset"
+    assert match.local_time is not None
+    assert match.local_time.utcoffset().total_seconds() == 7200
