@@ -2,19 +2,6 @@ name: Historical Model Backtest
 
 on:
   workflow_dispatch:
-  schedule:
-    - cron: "40 4 * * 1"
-  push:
-    branches: [main]
-    paths:
-      - "app/backtest_engine.py"
-      - "app/calibration.py"
-      - "scripts/run_backtest.py"
-      - "scripts/publish_model_validation.py"
-      - "scripts/audit_historical_csv.py"
-      - "tests/**"
-      - "requirements.txt"
-      - ".github/workflows/historical-model-backtest.yml"
 
 permissions:
   contents: write
@@ -25,6 +12,8 @@ concurrency:
 
 jobs:
   backtest:
+    # DISABLED: legacy prediction/backtest modules are excluded from VELTRIX 2.0.
+    if: false
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
