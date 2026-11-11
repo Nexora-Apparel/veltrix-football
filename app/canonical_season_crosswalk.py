@@ -135,6 +135,8 @@ def sign_season_crosswalk_registry(*, kms_client: Any, key_arn: str,
     seen = set()
     for mapping in mappings:
         checked = _validate_mapping(mapping)
+        if _time(checked["reviewed_at"], "season_mapping_reviewed_at") > issued:
+            raise SeasonCrosswalkError("season_mapping_reviewed_after_registry_issuance")
         identity = (checked["provider"], checked["competition_id"], checked["source_season"])
         if identity in seen:
             raise SeasonCrosswalkError("season_registry_duplicate_source_mapping")
@@ -204,6 +206,8 @@ def verify_season_crosswalk_registry(*, registry: Any,
     resolved = {}
     for mapping in mappings:
         checked = _validate_mapping(mapping)
+        if _time(checked["reviewed_at"], "season_mapping_reviewed_at") > issued:
+            raise SeasonCrosswalkError("season_mapping_reviewed_after_registry_issuance")
         identity = (checked["provider"], checked["competition_id"], checked["source_season"])
         if identity in resolved:
             raise SeasonCrosswalkError("season_registry_duplicate_source_mapping")
