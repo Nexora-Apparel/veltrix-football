@@ -84,7 +84,7 @@ def _validate_sources(sources: Any) -> list[dict]:
             raise FeatureSourceQualificationError(f"source_shape_invalid:{index}")
         name = source.get("source")
         reviewer = source.get("reviewer")
-        if not isinstance(name, str) or not name.strip() or name in seen:
+        if not isinstance(name, str) or not name.strip() or name != name.strip() or name in seen:
             raise FeatureSourceQualificationError(f"source_identity_invalid:{index}")
         if not isinstance(reviewer, str) or not reviewer.strip():
             raise FeatureSourceQualificationError(f"source_reviewer_invalid:{name}")
@@ -93,11 +93,11 @@ def _validate_sources(sources: Any) -> list[dict]:
         competitions = source.get("supported_competitions")
         digests = source.get("qualification_evidence_sha256")
         if (not isinstance(features, list) or not features
-                or any(not isinstance(x, str) or not x.strip() for x in features)
+                or any(not isinstance(x, str) or not x.strip() or x != x.strip() for x in features)
                 or len(set(features)) != len(features)):
             raise FeatureSourceQualificationError(f"source_features_invalid:{name}")
         if (not isinstance(competitions, list) or not competitions
-                or any(not isinstance(x, str) or not x.strip() for x in competitions)
+                or any(not isinstance(x, str) or not x.strip() or x != x.strip() for x in competitions)
                 or len(set(competitions)) != len(competitions)):
             raise FeatureSourceQualificationError(f"source_competitions_invalid:{name}")
         if (not isinstance(digests, list) or not digests
@@ -142,7 +142,9 @@ def sign_feature_source_qualification_registry(
     )
     if expires <= issued:
         raise FeatureSourceQualificationError("registry_validity_invalid")
-    _validate_sources(unsigned.get("sources"))
+    checked_sources = _validate_sources(unsigned.get("sources"))
+    if any(_time(item["qualified_at"], "qualified_at") > issued for item in checked_sources):
+        raise FeatureSourceQualificationError("source_qualified_after_registry_issued")
     digest = hashlib.sha256(canonical_json_bytes(unsigned)).digest()
     try:
         response = kms_client.sign(
@@ -201,8 +203,11 @@ def verify_feature_source_qualification_registry(
     )
     if now < issued or now >= expires:
         raise FeatureSourceQualificationError("registry_outside_validity_window")
+    checked_sources = _validate_sources(unsigned.get("sources"))
+    if any(_time(item["qualified_at"], "qualified_at") > issued for item in checked_sources):
+        raise FeatureSourceQualificationError("source_qualified_after_registry_issued")
     resolved = {}
-    for source in _validate_sources(unsigned.get("sources")):
+    for source in checked_sources:
         start = _time(source["valid_from"], f"{source['source']}_valid_from")
         end = _time(source["valid_until"], f"{source['source']}_valid_until")
         revoked = _time(source["revoked_at"], f"{source['source']}_revoked_at") if source["revoked_at"] else None
