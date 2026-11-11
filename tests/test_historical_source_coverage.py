@@ -270,6 +270,8 @@ class HistoricalSourceCoverageTests(unittest.TestCase):
             season_crosswalk_registry=signed_season_crosswalk(),
             trusted_kms_clients={SEASON_KEY_ARN: SEASON_KMS},
             season_crosswalk_as_of="2026-06-01T00:00:00Z",
+            minimum_fixtures_per_season=2,
+            minimum_distinct_teams_per_season=3,
         )
         season = result["competition_coverage"]["league-1"]["season_coverage"]
         self.assertEqual(season["status"], "verified")
@@ -277,6 +279,14 @@ class HistoricalSourceCoverageTests(unittest.TestCase):
         self.assertEqual(season["canonical_season_counts"], {"league-1:2025-2026": 2})
         self.assertEqual(season["mapped_records"], 2)
         self.assertEqual(season["unmapped_records"], 0)
+        self.assertTrue(season["feature_snapshot_identity"]["all_snapshots_verified"])
+        season_detail = season["by_canonical_season"]["league-1:2025-2026"]
+        self.assertEqual(season_detail["settlement_eligible_fixtures"], 2)
+        self.assertEqual(season_detail["distinct_canonical_teams"], 3)
+        self.assertEqual(season_detail["distinct_kickoff_wat_dates"], 2)
+        self.assertTrue(season_detail["thresholds"]["fixtures_met"])
+        self.assertTrue(season_detail["thresholds"]["teams_met"])
+        self.assertEqual(season_detail["feature_coverage_by_feature"]["home_team_elo"], 1.0)
         self.assertNotIn("season_crosswalk_unverified", result["qualification"]["threshold_failures"])
 
     def test_signed_crosswalk_does_not_allow_provider_scope_substitution(self):
