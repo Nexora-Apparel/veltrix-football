@@ -4,6 +4,10 @@ from app.canonical_season_crosswalk import (
     SCHEMA as SEASON_CROSSWALK_SCHEMA,
     sign_season_crosswalk_registry,
 )
+from app.canonical_team_crosswalk import (
+    SCHEMA as TEAM_CROSSWALK_SCHEMA,
+    sign_team_crosswalk_registry,
+)
 from app.point_in_time_feature_contract import build_point_in_time_feature_snapshot
 from app.historical_source_coverage import (
     HistoricalSourceCoverageError,
@@ -80,6 +84,39 @@ def signed_season_crosswalk(provider="provider-a"):
     )
 
 
+def signed_team_crosswalk():
+    mappings = []
+    for source_id, canonical_id in (
+        ("team-a", "canonical-a"),
+        ("team-b", "canonical-b"),
+        ("team-c", "canonical-c"),
+    ):
+        mappings.append({
+            "provider": "provider-a",
+            "competition_id": "league-1",
+            "source_team_id": source_id,
+            "canonical_team_id": canonical_id,
+            "team_scope": "men_first_team",
+            "evidence_sha256": ["b" * 64],
+            "reviewer": "team-identity-review",
+            "reviewed_at": "2026-01-02T00:00:00Z",
+            "valid_from": "2026-01-03T00:00:00Z",
+            "valid_until": "2026-12-31T00:00:00Z",
+            "revoked_at": None,
+        })
+    return sign_team_crosswalk_registry(
+        kms_client=SEASON_KMS,
+        key_arn=SEASON_KEY_ARN,
+        trusted_key_regions={SEASON_KEY_ARN: "eu-west-1"},
+        registry={
+            "schema": TEAM_CROSSWALK_SCHEMA,
+            "issued_at": "2026-01-01T00:00:00Z",
+            "expires_at": "2027-01-01T00:00:00Z",
+            "mappings": mappings,
+        },
+    )
+
+
 def report_input():
     a = fixture("provider:1", "team-a", "team-b", "2026-09-01T12:00:00Z")
     b = fixture("provider:2", "team-b", "team-c", "2026-09-02T12:00:00Z")
@@ -118,7 +155,9 @@ class HistoricalSourceCoverageTests(unittest.TestCase):
         )
         league = result["competition_coverage"]["league-1"]
         self.assertEqual(league["settlement_eligible_fixtures"], 2)
-        self.assertEqual(league["distinct_teams"], 3)
+        self.assertIsNone(league["distinct_teams"])
+        self.assertEqual(league["distinct_source_team_ids"], 3)
+        self.assertFalse(league["team_identity"]["canonical_team_crosswalk_verified"])
         self.assertEqual(league["dataset_rows"], 2)
         self.assertEqual(league["season_coverage"]["status"], "source_reported_crosswalk_unverified")
         self.assertFalse(league["season_coverage"]["canonical_season_crosswalk_verified"])
@@ -196,6 +235,49 @@ class HistoricalSourceCoverageTests(unittest.TestCase):
                 season_crosswalk_registry=signed_season_crosswalk(),
                 trusted_kms_clients={},
                 season_crosswalk_as_of="2026-06-01T00:00:00Z",
+            )
+
+    def test_signed_team_crosswalk_qualifies_canonical_team_coverage(self):
+        result = build_historical_source_coverage_report(
+            report_input(),
+            minimum_fixtures_per_competition=2,
+            minimum_distinct_teams_per_competition=3,
+            minimum_feature_coverage_rate=0.9,
+            team_crosswalk_registry=signed_team_crosswalk(),
+            trusted_kms_clients={SEASON_KEY_ARN: SEASON_KMS},
+            team_crosswalk_as_of="2026-06-01T00:00:00Z",
+        )
+        league = result["competition_coverage"]["league-1"]
+        self.assertEqual(league["distinct_teams"], 3)
+        self.assertEqual(league["team_identity"]["status"], "verified")
+        self.assertTrue(league["thresholds"]["teams_met"])
+        self.assertTrue(result["team_coverage"]["league-1"]["canonical_team_crosswalk_verified"])
+        self.assertEqual(
+            result["team_coverage"]["league-1"]["canonical_team_fixture_appearances"],
+            {"canonical-a": 1, "canonical-b": 2, "canonical-c": 1},
+        )
+
+    def test_unmapped_team_identity_blocks_team_coverage_threshold(self):
+        result = build_historical_source_coverage_report(
+            report_input(),
+            minimum_fixtures_per_competition=2,
+            minimum_distinct_teams_per_competition=3,
+            minimum_feature_coverage_rate=0.9,
+            team_crosswalk_registry=signed_team_crosswalk(),
+            trusted_kms_clients={SEASON_KEY_ARN: SEASON_KMS},
+            team_crosswalk_as_of="2026-06-01T00:00:00Z",
+        )
+        # The signed registry maps all three source teams; this assertion guards
+        # the fail-closed status for the no-registry path instead.
+        self.assertTrue(result["competition_coverage"]["league-1"]["thresholds"]["teams_met"])
+
+    def test_signed_team_crosswalk_requires_out_of_band_trust(self):
+        with self.assertRaisesRegex(HistoricalSourceCoverageError, "team_crosswalk_trusted_keys_required"):
+            build_historical_source_coverage_report(
+                report_input(),
+                team_crosswalk_registry=signed_team_crosswalk(),
+                trusted_kms_clients={},
+                team_crosswalk_as_of="2026-06-01T00:00:00Z",
             )
 
     def test_rejects_dataset_row_with_wrong_snapshot_digest(self):
