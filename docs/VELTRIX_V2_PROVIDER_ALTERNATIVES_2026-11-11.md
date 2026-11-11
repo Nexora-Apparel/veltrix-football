@@ -72,3 +72,31 @@ Status: research-only; no new source is approved for import by this document.
 - Confirm no duplicate fixture identity and report coverage gaps.
 - Run isolated dry-run only; compare database counts before/after and require zero writes.
 - Obtain separate source approval for each data type. This candidate currently covers fixtures/results only.
+
+
+## Existing VELTRIX integrations audited for StrikerAPI replacement
+
+This section distinguishes existing credentials/adapters from providers that can actually supply the missing historical match data. Credential names are recorded only; secret values are never read or exposed.
+
+| Existing integration | Repository/config evidence | Can replace StrikerAPI historical fixtures/results? | Decision |
+|---|---|---:|---|
+| 5DollarFootballAPI (`FIVEDOLLARFOOTBALL_API_KEY`) | Existing primary adapter; Free entitlement previously verified at 60 requests/hour, last three months, five competitions. Bounded StrikerAPI ↔ 5Dollar EPL reconciliation previously matched 100/100 fixtures. | **Partially** | Retain as the already qualified bounded primary for EPL only. It does not replace StrikerAPI's broader Argentina/Brazil results coverage under the known Free entitlement. |
+| football-data.org (`FOOTBALL_DATA_TOKEN`) | Historical workflow used this exact variable; the 2026-10-25 results refresh returned HTTP 400 invalid-token. No successful replacement-token verification is recorded. | **Potentially, after requalification** | Best existing API candidate for a fixture/results supplement if the credential is corrected, exact competition coverage is confirmed, and written rights clarification covers model training, retention and post-cancellation use. Do not ingest now. |
+| The Odds API (`THE_ODDS_API_KEY`) | Existing odds adapter; historical register records successful auth and soccer market discovery. | **No** | Odds-only role. Not a historical results/fixture source. Preserve for separately approved timestamped bookmaker odds and CLV work. |
+| OddsPapi (`ODDSPAPI_API_KEY`) | Optional repository odds-enrichment adapter. Fresh live coverage not established in the current qualification record. | **No** | Odds-only candidate; require its own live coverage and timestamp audit. |
+| InferSports (keyless) | Existing adapter; prior read-only probe returned 200 same-day events, but three bounded event-odds probes returned no current quotes. Schema supports 1X2/totals, not BTTS. | **No, not yet** | Not qualified as a historical-results source; keep disabled until a separate data endpoint and coverage are proven. |
+| Highlightly | Legacy adapter retained for audit/compatibility; prior 429 rate-limit warning. | **Not approved** | Do not reactivate or use as a silent fallback. Fresh entitlement and coverage qualification would be required. |
+| API-Football/API-Sports (`API_FOOTBALL_KEY`) | User-reported suspended; explicitly excluded from active runtime dependencies. | **No** | Remains excluded. |
+| Open Matchday | Existing reference in provider register; README describes non-commercial-only use. | **No for VELTRIX production** | Excluded unless licensing is independently changed in writing. |
+
+### Replacement decision
+
+No currently verified existing API fully replaces StrikerAPI's qualified historical results coverage. The viable no-new-spend route is:
+
+1. Keep 5DollarFootballAPI for its already reconciled EPL scope only.
+2. Qualify OpenFootball as a CC0 supplemental historical-results dataset, using the read-only overlap and freshness checks in this document. Its current-season freshness spot-check already showed recent fixtures without scores, so it cannot be promoted to current-results primary.
+3. Re-test football-data.org authentication only after confirming the credential has been updated; keep it blocked from production until its licensing/retention questions are answered in writing.
+4. Do not treat odds providers as match-history replacements.
+5. Keep Argentina/Brazil and all other unqualified competition/data-type combinations blocked until a source passes coverage, rights, identity and reconciliation gates.
+
+The prior StrikerAPI HTTP 402 indicates exhausted credits, not invalid credentials. The existing evidence does not provide a supported way to refill those credits from this repository. Retry only after the account balance/monthly allowance is restored; never spend credits on exploratory probes before defining the bounded acceptance sample.
