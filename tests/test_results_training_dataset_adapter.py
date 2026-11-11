@@ -246,7 +246,7 @@ class ResultsTrainingDatasetAdapterTests(unittest.TestCase):
             team_crosswalk_registry=TEAM_REGISTRY,
         )
         self.assertEqual(snapshot["fixture_id"], TARGET["fixture_id"])
-        self.assertEqual(snapshot["feature_count"], 11)
+        self.assertEqual(snapshot["feature_count"], 13)
         self.assertTrue(all(
             feature["source"] == "veltrix_results_feature_reconstruction"
             for feature in snapshot["features"]
