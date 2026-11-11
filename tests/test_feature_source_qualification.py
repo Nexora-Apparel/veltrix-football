@@ -84,7 +84,9 @@ class FeatureSourceQualificationTests(unittest.TestCase):
             )
 
     def test_expired_source_is_not_resolved(self):
-        verified = self.verified(as_of="2027-01-01T00:00:00Z")
+        changed = copy.deepcopy(self.registry)
+        changed["sources"][0]["valid_until"] = "2026-11-01T00:00:00Z"
+        verified = self.verified(changed, as_of="2026-11-10T00:00:00Z")
         with self.assertRaisesRegex(FeatureSourceQualificationError, "feature_source_not_qualified"):
             validate_feature_source(
                 verified_registry=verified, source="provider-x",
