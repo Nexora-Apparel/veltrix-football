@@ -98,3 +98,6 @@ jobs:
 
       - name: Compile audited provider dataset CLI
         run: python -m py_compile scripts/assemble_audited_provider_dataset.py
+
+      - name: Run historical dataset admission profile tests
+        run: python -m unittest discover -s tests -p 'test_historical_dataset_admission_report.py' -v
