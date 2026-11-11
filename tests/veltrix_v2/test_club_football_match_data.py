@@ -3,7 +3,6 @@ from datetime import datetime, timezone
 import pytest
 
 from veltrix_v2.ingestion.club_football_match_data import (
-    AVAILABILITY_BASIS,
     load_club_football_match_data,
 )
 
@@ -24,7 +23,7 @@ def row(division="E0", day="2026-08-01", home="Team A", away="Team B",
     return f"{source},{division},{day},{home},{away},{hg},{ag},{result},1500,1490,6,4,2.0,3.0,4.0"
 
 
-def test_adapter_creates_date_only_records_and_ignores_odds_elo(tmp_path):
+def test_adapter_is_audit_only_and_ignores_odds_elo(tmp_path):
     path = write_csv(tmp_path / "matches.csv", [row()])
     dataset = load_club_football_match_data(
         path,
@@ -33,10 +32,12 @@ def test_adapter_creates_date_only_records_and_ignores_odds_elo(tmp_path):
     )
     assert len(dataset.matches) == 1
     match = dataset.matches[0]
-    assert match.kickoff_utc == datetime(2026, 8, 1, 12, tzinfo=UTC)
-    assert match.available_at_utc == datetime(2026, 8, 5, 0, tzinfo=UTC)
-    assert match.availability_basis == AVAILABILITY_BASIS
+    assert match.match_date.isoformat() == "2026-08-01"
+    assert match.home_goals == 2 and match.away_goals == 1
+    assert dataset.manifest.availability_basis == "date_only_no_source_publication_timestamp"
     assert dataset.manifest.point_in_time_certifiable is False
+    assert dataset.manifest.model_training_approved is False
+    assert dataset.manifest.upstream_rights_verified is False
     assert dataset.manifest.source_publication_timestamps_available is False
     assert "home_odds" in dataset.manifest.ignored_feature_columns
     assert "home_elo" in dataset.manifest.ignored_feature_columns
