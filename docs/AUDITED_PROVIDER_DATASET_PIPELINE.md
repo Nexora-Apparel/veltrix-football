@@ -19,7 +19,9 @@ export VELTRIX_EVIDENCE_RECEIPT_KMS_TRUSTED_KEYS_JSON='{"trusted_keys":[{"key_ar
 
 python scripts/assemble_audited_provider_dataset.py \
   --records retained_acquisition_records.json \
-  --settlement-packages settlement_timestamp_packages.json \
+  --settlement-packages settlement_timestamp_packages.json \\
+  --team-crosswalk-registry signed_canonical_team_crosswalk.json \\
+  --team-crosswalk-as-of 2026-11-11T00:00:00Z \\
   --split-policy chronological_split_policy.json \
   --output audited_dataset_report.json
 ```
