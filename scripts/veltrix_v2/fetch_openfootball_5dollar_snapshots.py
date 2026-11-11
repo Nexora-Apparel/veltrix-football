@@ -207,6 +207,38 @@ def fetch_5dollar(out: Path, start: date, end_exclusive: date, manifest: dict) -
     }
 
 
+
+def fetch_fpl(out: Path, manifest: dict) -> None:
+    """Read the public EPL Fantasy Premier League player/fixture snapshots."""
+    base = "https://fantasy.premierleague.com/api"
+    bootstrap, bootstrap_raw, bootstrap_headers = get_json(f"{base}/bootstrap-static/")
+    if not isinstance(bootstrap, dict) or not isinstance(bootstrap.get("elements"), list) or not isinstance(bootstrap.get("teams"), list):
+        raise SafeFetchError("FPL_BOOTSTRAP_SCHEMA_INVALID")
+    fixtures, fixtures_raw, fixtures_headers = get_json(f"{base}/fixtures/")
+    if not isinstance(fixtures, list):
+        raise SafeFetchError("FPL_FIXTURES_SCHEMA_INVALID")
+    (out / "fpl_bootstrap_static.json").write_bytes(bootstrap_raw)
+    (out / "fpl_fixtures.json").write_bytes(fixtures_raw)
+    players = bootstrap["elements"]
+    manifest["fpl"] = {
+        "status": "FETCHED",
+        "retrieved_at_utc": utc_now(),
+        "source": "Fantasy Premier League public JSON API (undocumented)",
+        "bootstrap_http_status": bootstrap_headers.get("http_status"),
+        "bootstrap_sha256": sha256(bootstrap_raw),
+        "bootstrap_bytes": len(bootstrap_raw),
+        "player_rows": len(players),
+        "team_rows": len(bootstrap["teams"]),
+        "players_with_expected_goals_field": sum(1 for p in players if isinstance(p, dict) and "expected_goals" in p),
+        "players_with_expected_assists_field": sum(1 for p in players if isinstance(p, dict) and "expected_assists" in p),
+        "players_with_availability_status": sum(1 for p in players if isinstance(p, dict) and "status" in p),
+        "players_with_chance_of_playing_field": sum(1 for p in players if isinstance(p, dict) and "chance_of_playing_next_round" in p),
+        "fixture_http_status": fixtures_headers.get("http_status"),
+        "fixture_sha256": sha256(fixtures_raw),
+        "fixture_bytes": len(fixtures_raw),
+        "fixture_rows": len(fixtures),
+    }
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--start-date", required=True)
@@ -238,6 +270,7 @@ def main() -> int:
     for name, operation in (
         ("openfootball", lambda: fetch_openfootball(out, manifest)),
         ("fivedollar", lambda: fetch_5dollar(out, start, end, manifest)),
+        ("fpl", lambda: fetch_fpl(out, manifest)),
     ):
         try:
             operation()
@@ -245,9 +278,10 @@ def main() -> int:
             safe = str(exc)[:100]
             manifest["sources"][name] = {"status": "FAILED", "error": safe, "retrieved_at_utc": utc_now()}
             failures.append(name)
-    manifest["sources"].update({k: v for k, v in list(manifest.items()) if k in {"openfootball", "fivedollar"}})
+    manifest["sources"].update({k: v for k, v in list(manifest.items()) if k in {"openfootball", "fivedollar", "fpl"}})
     manifest.pop("openfootball", None)
     manifest.pop("fivedollar", None)
+    manifest.pop("fpl", None)
     manifest["overall_status"] = "SNAPSHOTS_FETCHED" if not failures else "PARTIAL_OR_FAILED"
     manifest["failed_sources"] = failures
     write_json(out / "snapshot_manifest.json", manifest)
