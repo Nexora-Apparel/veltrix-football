@@ -37,7 +37,7 @@ def feature_source_registry():
         trusted_key_regions={TEAM_KEY_ARN: "eu-west-1"},
         registry={
             "schema": FEATURE_SOURCE_SCHEMA,
-            "issued_at": "2026-01-01T00:00:00Z",
+            "issued_at": "2026-01-02T00:00:00Z",
             "expires_at": "2027-01-01T00:00:00Z",
             "sources": [{
                 "source": "test-source",
