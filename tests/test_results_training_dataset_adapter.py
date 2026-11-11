@@ -6,6 +6,19 @@ from app.results_training_dataset_adapter import (
     assemble_results_history_dataset,
     build_results_history_snapshot,
 )
+from app.canonical_season_crosswalk import (
+    SCHEMA as SEASON_SCHEMA, sign_season_crosswalk_registry,
+)
+
+SEASON_KEY_ARN = "arn:aws:kms:eu-west-1:123456789012:key/season-adapter-test"
+
+class FakeKms:
+    def sign(self, **kwargs):
+        return {"Signature": kwargs["Message"]}
+    def verify(self, **kwargs):
+        return {"SignatureValid": kwargs["Signature"] == kwargs["Message"]}
+
+KMS = FakeKms()
 
 
 def attach_evidence(row):
@@ -163,6 +176,7 @@ class ResultsTrainingDatasetAdapterTests(unittest.TestCase):
             "provider": "fivedollar",
             "source_id": TARGET["fixture_id"],
             "competition_id": TARGET["competition_id"],
+            "source_season": TARGET["source_season"],
             "kickoff_at": TARGET["kickoff_at"],
             "settled_at": "2026-09-01T20:00:00Z",
             "home_team_id": TARGET["home_team_id"],
@@ -192,8 +206,6 @@ class ResultsTrainingDatasetAdapterTests(unittest.TestCase):
             split_policy=POLICY,
             season_crosswalk_registry=season_registry(),
             trusted_kms_clients={SEASON_KEY_ARN: KMS},
-            season_crosswalk_registry=season_registry(),
-            trusted_kms_clients={SEASON_KEY_ARN: KMS},
         )
         self.assertEqual(result["feature_reconstruction"]["snapshot_count"], 1)
         self.assertEqual(result["dataset"]["quality"]["included_fixture_count"], 1)
@@ -212,6 +224,8 @@ class ResultsTrainingDatasetAdapterTests(unittest.TestCase):
             target_fixtures=[TARGET],
             settled_labels=[LABEL],
             split_policy=POLICY,
+            season_crosswalk_registry=season_registry(),
+            trusted_kms_clients={SEASON_KEY_ARN: KMS},
         )
         self.assertEqual(result["feature_reconstruction"]["snapshot_count"], 0)
         self.assertEqual(result["feature_reconstruction"]["withheld_count"], 1)
