@@ -16,7 +16,7 @@ from typing import Mapping
 from uuid import UUID
 
 
-_CLOCK = re.compile(r"^(?P<h>\d{2}):(?P<m>[0-5]\d):(?P<s>[0-5]\d)(?:\.(?P<ms>\d{1,6}))?$")
+_CLOCK = re.compile(r"^(?P<h>\d{2}):(?P<m>[0-5]\d):(?P<s>[0-5]\d)(?:\.(?P<ms>\d{1,3}))?$")
 _PERIODS = frozenset({1, 2, 3, 4, 5})
 
 
