@@ -25,7 +25,7 @@ def passing_certification():
             timestamped_odds_coverage=Decimal("0.99"),
             net_roi=Decimal("0.03"),
             roi_ci95_lower=Decimal("0.01"),
-            roi_ci_method="chronological_block_bootstrap_by_match_date",
+            roi_ci_method="fixture_block_bootstrap_by_fixture",
             source_approved=True,
             point_in_time_validated=True,
         )
