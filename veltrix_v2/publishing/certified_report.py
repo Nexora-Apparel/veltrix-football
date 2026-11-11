@@ -60,6 +60,8 @@ class PublishedFixture:
                 raise ValueError(f"REPORT_{field.upper()}_REQUIRED")
         if self.home_team == self.away_team:
             raise ValueError("REPORT_HOME_AWAY_TEAMS_MUST_DIFFER")
+        if not isinstance(self.forecasts, MarketForecasts):
+            raise ValueError("REPORT_MARKET_FORECASTS_REQUIRED")
         if not isinstance(self.kickoff_utc, datetime) or self.kickoff_utc.tzinfo is None or self.kickoff_utc.utcoffset() is None:
             raise ValueError("REPORT_KICKOFF_MUST_BE_TIMEZONE_AWARE")
         object.__setattr__(self, "kickoff_utc", self.kickoff_utc.astimezone(timezone.utc))
