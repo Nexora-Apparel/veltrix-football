@@ -52,7 +52,7 @@ def _validate_match(row: Any, index: int) -> dict:
         "fixture_id", "provider", "source_id", "competition_id", "kickoff_at",
         "settled_at", "home_team_id", "away_team_id", "home_score", "away_score",
         "endpoint", "retrieved_at", "payload_sha256", "run_id", "normalized_status",
-        "source_payload", "home_team_source_id", "away_team_source_id",
+        "source_payload", "source_season", "home_team_source_id", "away_team_source_id",
         "team_identity_evidence",
     }
     if not isinstance(row, dict) or set(row) != required:
@@ -90,6 +90,8 @@ def _validate_match(row: Any, index: int) -> dict:
     identity_verified_at = _parse_time(
         identity["verified_at"], f"team_identity_verified_at_{index}"
     )
+    if not isinstance(row["source_season"], str) or not row["source_season"].strip():
+        raise FeatureReconstructionError(f"source_season_invalid:{index}")
     for field in ("provider", "source_id", "endpoint", "run_id"):
         if not isinstance(row[field], str) or not row[field].strip():
             raise FeatureReconstructionError(f"{field}_invalid:{index}")
@@ -118,6 +120,7 @@ def _validate_match(row: Any, index: int) -> dict:
     normalized_record = {
         "fixture_id": row["fixture_id"],
         "competition_id": row["competition_id"],
+        "source_season": row["source_season"],
         "kickoff_at": row["kickoff_at"],
         "settled_at": row["settled_at"],
         "home_team_id": row["home_team_source_id"],
