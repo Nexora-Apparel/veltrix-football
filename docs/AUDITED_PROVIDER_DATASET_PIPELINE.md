@@ -48,6 +48,7 @@ Output:
 - Feature snapshot and withheld counts, including point-in-time reconstruction reasons.
 - Dataset and source-evidence manifests when eligible snapshots exist.
 - Separate team identity evidence: original provider IDs, canonical IDs, team scope, signed registry digest, signer ARN and verification timestamp. Raw provider payloads and their original provider-ID normalization remain unchanged and independently hash-verifiable.
+- Canonical team-pair evidence is also embedded in each feature snapshot: both provider team IDs, canonical team IDs, common team scope, per-team mapping evidence digests and review provenance, registry digest, signer ARN and verification timestamp. Coverage re-verifies each pair against the signed registry at that snapshot's feature cutoff.
 - Canonical season identity evidence embedded in each feature snapshot: provider, competition, original source-season label, canonical season ID, signed registry digest, signer ARN, verification timestamp, review evidence digests and reviewer.
 - Per-feature source qualification evidence: registry digest, signer ARN, verification timestamp, observation/availability timestamp semantics and qualification evidence digests.
 - A canonical pipeline report digest.
