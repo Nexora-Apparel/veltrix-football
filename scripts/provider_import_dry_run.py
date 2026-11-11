@@ -296,6 +296,11 @@ def main() -> int:
     if cross_conflicts:
         all_issues.extend({"competition": "EPL", "kind": "cross_provider_" + item["outcome"].lower()}
                            for item in cross_conflicts)
+    if not cross["acceptance_pass"]:
+        all_issues.append({"competition": "EPL", "kind": "cross_provider_reconciliation_not_accepted"})
+    if (cross["accounting"]["striker"]["matched"] != cross["accounting"]["striker"]["total"]
+            or cross["accounting"]["fivedollar"]["matched"] != cross["accounting"]["fivedollar"]["total"]):
+        all_issues.append({"competition": "EPL", "kind": "cross_provider_source_accounting_not_fully_matched"})
     after = read_database_snapshot(dsn)
     report["database_after"] = after
     report["database_unchanged"] = before == after
