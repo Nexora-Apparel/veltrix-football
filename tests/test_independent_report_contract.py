@@ -29,6 +29,31 @@ class IndependentReportContractTests(unittest.TestCase):
     def test_valid_independent_report_requires_release_authorization(self):
         self.assertTrue(is_publishable_independent_report(self.valid_report()))
 
+    def test_forecast_rows_require_independent_portfolio_and_feature_provenance(self):
+        report = self.valid_report()
+        report["predictions"] = [{
+            "model_portfolio_id": MODEL_PORTFOLIO_ID,
+            "legacy_model_dependency": False,
+            "probabilities": {"home_win": 0.5, "draw": 0.25, "away_win": 0.25},
+            "feature_snapshot_sha256": "b" * 64,
+            "model_versions": ["results_history_logistic"],
+        }]
+        self.assertTrue(is_publishable_independent_report(report))
+        report["predictions"][0]["model_portfolio_id"] = "legacy"
+        self.assertFalse(is_publishable_independent_report(report))
+
+    def test_legacy_model_labels_cannot_hide_inside_independent_report(self):
+        report = self.valid_report()
+        report["predictions"] = [{
+            "model_portfolio_id": MODEL_PORTFOLIO_ID,
+            "legacy_model_dependency": False,
+            "model": "experimental_recent_goals_poisson",
+            "probabilities": {"home_win": 0.5, "draw": 0.25, "away_win": 0.25},
+            "feature_snapshot_sha256": "b" * 64,
+            "model_versions": ["results_history_logistic"],
+        }]
+        self.assertFalse(is_publishable_independent_report(report))
+
     def test_legacy_report_is_never_publishable(self):
         self.assertFalse(is_publishable_independent_report({
             "predictions": [{"home_team": "Legacy FC", "probabilities": {}}],
