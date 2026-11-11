@@ -12,7 +12,7 @@ import json
 import os
 import re
 import sys
-from urllib.parse import urlencode
+from urllib.parse import urlencode, urlsplit
 from urllib.request import Request, urlopen
 from collections import defaultdict
 from datetime import datetime, timedelta, timezone
@@ -30,6 +30,10 @@ SCOPES = (
     ("brazil", "BRA", "strikerapi-free-fixtures-brazil"),
 )
 PAGE_LIMIT = 50
+EXPECTED_DRY_RUN_HOSTS = {
+    "ep-ancient-block-bcb439pk.c-16.us-east-1.aws.neon.tech",
+    "ep-ancient-block-bcb439pk-pooler.c-16.us-east-1.aws.neon.tech",
+}
 MAX_PAGES = 3
 WINDOW_DAYS = 90
 DOMAIN_TABLES = ("competitions", "teams", "fixtures", "fixture_results", "source_observations", "import_runs", "import_checkpoints")
@@ -167,7 +171,19 @@ def fetch_fivedollar_epl(api_key: str, start: str, end: str) -> tuple[list[dict]
     raise RuntimeError("5Dollar EPL pagination exceeded 10-page dry-run safety cap")
 
 
+def assert_isolated_database_target(dsn: str) -> str:
+    """Refuse any DB host except the dedicated isolated Neon branch endpoint."""
+    try:
+        host = urlsplit(dsn).hostname
+    except Exception:
+        host = None
+    if not host or host.lower() not in EXPECTED_DRY_RUN_HOSTS:
+        raise RuntimeError("DRY_RUN_DATABASE_URL host is not the approved isolated Neon branch")
+    return host.lower()
+
+
 def read_database_snapshot(dsn: str) -> dict[str, int]:
+    assert_isolated_database_target(dsn)
     snapshot: dict[str, int] = {}
     with psycopg.connect(dsn, connect_timeout=10, row_factory=dict_row) as conn:
         with conn.transaction():
@@ -184,6 +200,7 @@ def read_database_snapshot(dsn: str) -> dict[str, int]:
 
 
 def read_existing_fixtures(dsn: str) -> dict[tuple[str, str], dict[str, Any]]:
+    assert_isolated_database_target(dsn)
     query = """
         SELECT f.provider, f.provider_fixture_id, f.kickoff_at, f.status,
                c.provider AS competition_provider, c.provider_competition_id,
@@ -247,6 +264,7 @@ def main() -> int:
     now = datetime.now(timezone.utc)
     start = (now.date() - timedelta(days=WINDOW_DAYS)).isoformat()
     end = now.date().isoformat()
+    assert_isolated_database_target(dsn)
     before = read_database_snapshot(dsn)
     existing = read_existing_fixtures(dsn)
     report: dict[str, Any] = {
