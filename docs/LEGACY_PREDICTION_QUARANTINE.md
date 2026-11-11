@@ -12,8 +12,9 @@ VELTRIX FOOTBALL 2.0 is a clean rebuild. Legacy prediction probabilities, model 
 - Shared team-name and league-division utilities were moved to `app/fixture_history_utils.py`, so provider result ingestion and report filtering no longer import the legacy prediction module.
 - The existing `daily-fixture-predictions.yml` job remains paused with `if: false`. The schedule is not restarted by this change.
 - `app/independent_prediction_service.py` uses only the independent market models and independent Poisson/Dixon-Coles implementation. It does not import the legacy predictor.
-- The dashboard API suppresses reports unless they satisfy `VELTRIX_INDEPENDENT_PREDICTION_REPORT_V1`, identify the independent portfolio, explicitly deny legacy dependencies, and carry a release certificate marked certified, publication-authorized and signature-verified with a valid digest.
-- Telegram prediction commands use the same report contract. Legacy or uncertified reports return no fixtures or forecasts.
+- The dashboard API suppresses reports unless they satisfy `VELTRIX_INDEPENDENT_PREDICTION_REPORT_V1`, identify the independent portfolio, explicitly deny legacy dependencies, and carry a release certificate marked certified, publication-authorized and signature-verified with a valid digest. Each forecast row must independently identify the portfolio, deny legacy dependencies, bind a feature-snapshot SHA-256 and list its model versions.
+- Telegram prediction commands, the direct Telegram sender and the command-data publisher use the same report contract. Legacy or uncertified reports cannot produce forecasts, be sent, or be published.
+- Value betting has a separate market-specific certificate gate; prediction publication authorization alone cannot enable value screens or alerts. Paper ledgers and model-validation snapshots must identify the same independent portfolio before the dashboard can display them.
 - Legacy paper ledgers, model-validation summaries, value screens and value certificates are not surfaced by the dashboard while no authorized independent report exists. Their source artifacts remain archived; they are not deleted.
 
 ## Publication contract
@@ -29,7 +30,7 @@ A report is publishable only when all of the following hold:
 7. `release_certificate.signature_verified == true`.
 8. The certificate digest is a valid lowercase SHA-256 digest and binds the same model portfolio.
 
-The independent certification runner currently returns publication authorization as false. In addition, the code-level switches `INDEPENDENT_REPORT_PUBLICATION_ENABLED` and `VALUE_BETTING_AUTHORIZATION_ENABLED` are both hard-coded false. Therefore no report or value certificate can currently pass, even if an artifact claims authorization. This is intentional until real-data qualification, formal certification and explicit release approval are complete.
+The independent certification runner currently returns publication authorization as false. In addition, the code-level switches `INDEPENDENT_REPORT_PUBLICATION_ENABLED` and `VALUE_BETTING_AUTHORIZATION_ENABLED` are both hard-coded false. Therefore no report or value certificate can currently pass, even if an artifact claims authorization. The API validates the certificate's declared fields and digest format; cryptographic signature verification must be performed by the trusted report-producing workflow before it sets `signature_verified=true`. This is intentional until real-data qualification, formal certification and explicit release approval are complete.
 
 ## Non-goals
 
