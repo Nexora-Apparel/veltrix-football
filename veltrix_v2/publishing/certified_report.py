@@ -182,21 +182,21 @@ def telegram_report_text(report: CertifiedDailyReport) -> str:
     ]
     if not report.fixtures:
         lines.append("No fixtures passed the publication gate today.")
-        if report.source_attributions:
+    else:
+        for index, fixture in enumerate(report.fixtures, start=1):
+            local_kickoff = fixture.kickoff_utc.astimezone(WAT).strftime("%H:%M")
+            f = fixture.forecasts
+            lines.extend([
+                f"{index}. {fixture.home_team} vs {fixture.away_team}",
+                f"{fixture.competition} · {local_kickoff} WAT",
+                f"Verdict: {fixture.verdict}",
+                f"1X2: H {f.p_home:.0%} | D {f.p_draw:.0%} | A {f.p_away:.0%}",
+                f"BTTS: {f.p_btts_yes:.0%} YES",
+                f"O/U {f.total_line}: {f.p_over:.0%} OVER",
+                f"AI insight: {fixture.ai_insight}",
+                f"Value bet: {fixture.value_bet_verdict}",
+                "",
+            ])
+    if report.source_attributions:
         lines.extend(["", *report.source_attributions])
-    return "\n".join(lines)
-    for index, fixture in enumerate(report.fixtures, start=1):
-        local_kickoff = fixture.kickoff_utc.astimezone(WAT).strftime("%H:%M")
-        f = fixture.forecasts
-        lines.extend([
-            f"{index}. {fixture.home_team} vs {fixture.away_team}",
-            f"{fixture.competition} · {local_kickoff} WAT",
-            f"Verdict: {fixture.verdict}",
-            f"1X2: H {f.p_home:.0%} | D {f.p_draw:.0%} | A {f.p_away:.0%}",
-            f"BTTS: {f.p_btts_yes:.0%} YES",
-            f"O/U {f.total_line}: {f.p_over:.0%} OVER",
-            f"AI insight: {fixture.ai_insight}",
-            f"Value bet: {fixture.value_bet_verdict}",
-            "",
-        ])
     return "\n".join(lines).rstrip()
