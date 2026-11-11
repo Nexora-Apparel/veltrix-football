@@ -74,6 +74,8 @@ def main() -> int:
                 report["database"] = conn.execute(
                     "SELECT current_database()"
                 ).fetchone()[0]
+                if report["database"] != "veltrix-football":
+                    raise RuntimeError("DATABASE_URL is not connected to the veltrix-football database")
 
                 queries = {
                     "public_tables": """
