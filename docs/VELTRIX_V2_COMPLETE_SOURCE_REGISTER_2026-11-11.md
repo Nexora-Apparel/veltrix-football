@@ -149,3 +149,50 @@ No source is approved for model training solely because it has a public endpoint
 - The API publishes match IDs, UTC kickoff timestamps and per-competition field coverage. It documents measured xG from 2022 and estimated xG from shot data, but those fields are not part of the current Free entitlement. It also publishes exchange prices at kickoff and half-time on paid plans.
 - The provider expressly states that data may be incomplete or inaccurate and is not authoritative for settlement. Recommendation: if a Free key is manually created, use a bounded once-daily results-only cross-check against 5Dollar/GOAL, preserve disagreements and source hashes, and never use it as the sole settlement authority. Accumulated daily records could later support a rights-approved prospective dataset, but not a 1,000-match historical backtest now.
 - Official references: https://footballsoccerapi.com/terms ; https://footballsoccerapi.com/acceptable-use ; https://footballsoccerapi.com/pricing ; https://footballsoccerapi.com/documentation ; https://footballsoccerapi.com/documentation/changelog ; https://footballsoccerapi.com/free-key
+
+
+### Provider documentation refresh — 2026-11-11 (official-source recheck)
+
+#### 5DollarFootballAPI — Community Access is a no-cost expansion, not yet activated
+
+- The current official documentation confirms Community Access is $0, requires no card, and adds one selected country's whitelisted leagues to the existing top-five European leagues.
+- Community Access advertises 12 months of results and odds, 300 requests/hour and the same 20-requests/minute burst ceiling. It can be activated from the provider's Community page for a 12-month term.
+- The existing VELTRIX account remains confirmed as Free; do not assume the Community entitlement until the account status endpoint or dashboard confirms `community`.
+- This could extend the historical window and add either Argentina or Brazil without a paid subscription, but it only adds one country pack. The country selection remains a manual account decision; no account setting was changed.
+- Free and Community public-facing output must show “Football data by 5DollarFootballAPI” with a link. Own-model use, caching and display in the user's own product are permitted; raw-feed resale/redistribution is prohibited.
+- Official references: https://5dollarfootballapi.com/terms ; https://5dollarfootballapi.com/docs ; https://5dollarfootballapi.com/docs/changelog ; https://5dollarfootballapi.com/community
+
+#### StrikerAPI — revised timestamp, xG and retention restrictions
+
+- Current official docs describe 17 competitions, including Brazil Serie A and Argentina Liga Profesional; shot-location/xG data is documented from 2014 for Brazil and Argentina, with coverage varying by league and season.
+- The provider permits storage while the account is open, internal research/backtesting, training the user's own models, and commercial use of derived predictions. It prohibits redistributing raw datasets/feeds and raw or bulk odds exports. No attribution is required. After cancellation, retained data is limited to the user's internal research/backtesting and cannot continue powering a user-facing product.
+- Free accounts receive 500 credits/month. Calls cost 1–25 credits; rate protection is 60 requests/minute above 100 credits and 10/minute below 100. The VELTRIX account previously returned HTTP 402 due to exhausted credits; wait for refresh before further probes.
+- Events and box scores are refreshed once daily at 10:00 UTC and records may be overwritten during the post-match refresh window. The provider does not retain per-record revision history or revision IDs.
+- Crucially, provider xG is not point-in-time: its league model is fitted using all seasons, including later seasons, and historical shots are revalued after manual refits. Do not use its published xG as a historical pre-match feature or certified historical benchmark. If rights and provenance are accepted, use shot locations to fit VELTRIX's own xG model chronologically.
+- The provider says it combines public sources and its own models but does not publish a source list per dataset, and it does not grant league rights. These limits must remain in the provenance record.
+- Official references: https://strikerapi.com/docs/timing-and-rights ; https://strikerapi.com/docs ; https://strikerapi.com/data
+
+#### FootyStats — point-in-time query capability confirmed in documentation
+
+- The League Matches endpoint documents `max_time` as a Unix timestamp that returns league and team statistics up to the specified time. This is a useful point-in-time query mechanism and matches the previous public example-key test, which accepted two cutoff values.
+- The FAQ states match statistics are usually available within about 20 minutes after full-time, but this is a freshness claim, not a per-record publication timestamp.
+- The API is not a live/in-play score feed. Its FAQ documents results, xG, shots, possession, odds, lineups and player statistics, with field availability varying by league and season.
+- The published FAQ and Terms permit data retrieved through the API to be stored, retained after cancellation, used for AI/ML/prediction models and displayed in websites/apps; raw data resale/redistribution is prohibited and no attribution is required.
+- The Free tier remains ambiguous: the pricing page advertises EPL-only access at 180 requests/hour with limited endpoints, while the setup/tutorial says subscription is needed and the public example key is explicitly for testing. No production account entitlement is assumed.
+- Qualification decision remains: strong EPL historical-enrichment candidate, but require a real account key and validate `max_time` semantics, historical pagination, per-match xG completeness and cutoff-safe feature values before persistence/training.
+- Official references: https://footystats.org/api ; https://footystats.org/api/documentations/faq ; https://footystats.org/api/documentations/match-schedule-and-stats ; https://footystats.org/api/documentations/terms-of-use-and-legal
+
+#### PitchAPI — technical feature claims confirmed; rights gate remains closed
+
+- Current docs claim one free plan covering 77 leagues, unlimited requests, all endpoints and history back to 2021. Documented endpoints include fixtures/results, shots, lineups, events, player stats, team stats, xG timelines and advanced metrics including PPDA.
+- The API documents UTC RFC 3339 timestamps and explicitly marks lineups as predicted until confirmed. Some matches may return `ANALYTICS_UNAVAILABLE`; coverage is not universal.
+- The published documentation page contains no terms of service, privacy/retention policy, attribution requirements or upstream source-lineage statement. A technical claim of free access is not a data licence.
+- Decision remains quarantine: no persistence, training, public display or production dependency until written provider confirmation covers upstream rights, model training, retention, public display, attribution and privacy.
+- Official reference: https://pitchapi.dev/
+
+#### GOAL API — technical access does not confer underlying sports-data rights
+
+- November 2026 Terms state GOAL API licenses data from third-party providers for redistribution through its service, but explicitly grant no IP licence to the underlying sports data and place competition/territorial rights clearance on the customer.
+- The Terms warn that betting platforms and mass-media distribution may require additional rights-holder licences. No explicit ML model-training or indefinite-retention grant was found.
+- The prior Argentina/Brazil technical probes remain valid evidence of endpoint access only. Keep GOAL records out of training and public display pending written clarification of model-training, retention and upstream rights.
+- Official reference: https://goal-api.com/terms
