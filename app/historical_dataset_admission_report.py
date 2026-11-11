@@ -14,6 +14,7 @@ from typing import Any
 from app.point_in_time_feature_contract import (
     FEATURE_CATALOGUE, validate_point_in_time_feature_snapshot,
 )
+from app.feature_domain_catalogue import FEATURE_DOMAINS
 
 
 class HistoricalAdmissionReportError(ValueError):
@@ -117,28 +118,8 @@ def build_historical_dataset_admission_report(pipeline_report: Any) -> dict:
         for name in sorted(FEATURE_CATALOGUE)
     }
     absent_feature_names = sorted(name for name, stats in feature_coverage.items() if stats["fixtures"] == 0)
-    feature_domains = {
-        "team_strength_and_form": [
-            "home_team_elo", "away_team_elo", "elo_difference_home",
-            "home_attack_strength", "away_attack_strength",
-            "home_defence_strength", "away_defence_strength",
-            "home_form_points_rate", "away_form_points_rate",
-        ],
-        "expected_goals": [
-            "home_rolling_xg_for", "home_rolling_xg_against",
-            "away_rolling_xg_for", "away_rolling_xg_against",
-        ],
-        "lineups": ["home_lineup_strength", "away_lineup_strength"],
-        "fatigue_and_travel": [
-            "home_rest_days", "away_rest_days", "home_travel_km", "away_travel_km",
-        ],
-        "market_odds": [
-            "odds_home_decimal", "odds_draw_decimal", "odds_away_decimal",
-            "odds_btts_yes_decimal", "odds_over_2_5_decimal",
-        ],
-    }
     domain_coverage = {}
-    for domain, names in feature_domains.items():
+    for domain, names in FEATURE_DOMAINS.items():
         present = [name for name in names if name in FEATURE_CATALOGUE]
         observed = sum(feature_counts.get(name, 0) for name in present)
         denominator = len(rows) * len(present)
