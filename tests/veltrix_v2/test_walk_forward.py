@@ -43,7 +43,7 @@ def test_expanding_folds_are_chronological_and_test_windows_disjoint():
 def test_unsettled_training_labels_are_excluded():
     rows = [
         row("settled", 1, 1),
-        row("late-settled", 2, 9),
+        row("late-settled", 2, 11),
         row("test", 10, 10),
     ]
     fold = build_expanding_walk_forward_folds(
