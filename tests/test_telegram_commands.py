@@ -2,6 +2,24 @@ from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 
 from app.telegram_commands import NEW_MESSAGE_HEADER, handle_command
+from app.independent_report_contract import MODEL_PORTFOLIO_ID, REPORT_SCHEMA
+
+
+def authorized_report(report):
+    return {
+        **report,
+        "report_schema": REPORT_SCHEMA,
+        "model_portfolio_id": MODEL_PORTFOLIO_ID,
+        "legacy_model_dependency": False,
+        "publication_allowed": True,
+        "release_certificate": {
+            "status": "CERTIFIED",
+            "publication_authorized": True,
+            "signature_verified": True,
+            "certificate_sha256": "a" * 64,
+            "model_portfolio_id": MODEL_PORTFOLIO_ID,
+        },
+    }
 
 
 def test_every_reply_has_new_message_header():
@@ -39,12 +57,12 @@ def test_status_distinguishes_report_odds_from_direct_provider_feed():
         "live_odds_sync": {"status": "NO_VALID_1X2_ODDS"},
         "publication_status": "LIVE_REPORT_GENERATED_PENDING_PUBLICATION",
     }
-    reply = handle_command("/status", report=report)
+    reply = handle_command("/status", report=authorized_report(report))
     assert "Report multi-source odds integration: NO_VALID_1X2_ODDS" in reply
     assert "Command-data publication: UNCONFIRMED" in reply
     assert "/oddsdiag reads saved provider coverage" in reply
     report["command_data_publication"] = "PUBLISHED"
-    published_reply = handle_command("/status", report=report)
+    published_reply = handle_command("/status", report=authorized_report(report))
     assert "Command-data publication: PUBLISHED" in published_reply
     assert "Report freshness / reuse: LIVE_REPORT_GENERATED_AND_PUBLISHED" in published_reply
 
@@ -82,7 +100,7 @@ def test_odds_command_fails_closed_when_only_stale_prices_returned():
         "home_team": "Past FC", "away_team": "Done FC", "date": yesterday,
         "time": "10:00", "bookmaker": "Example Book",
         "odds": {"home": 2.0, "draw": 3.0, "away": 4.0},
-    }]})
+    }]}))
     assert "NO UPCOMING FIXTURES" in reply
     assert "Past FC" not in reply
 
@@ -108,11 +126,26 @@ def test_status_discloses_historical_refresh_gaps():
         },
         "publication_status": "REUSED_SNAPSHOT_NOT_REFRESHED",
     }
-    reply = handle_command("/status", report=report)
+    reply = handle_command("/status", report=authorized_report(report))
     assert "Recent-results refresh: PARTIAL (1/8 ranges refreshed)" in reply
     assert "Historical coverage: GAPPED_OR_STALE" in reply
     assert "Report freshness / reuse: REUSED_SNAPSHOT_NOT_REFRESHED" in reply
     assert "continuous through 2026-09-03, latest available 2026-10-24" in reply
+
+
+def test_legacy_report_predictions_are_suppressed():
+    legacy = {
+        "predictions": [{
+            "home_team": "Legacy FC",
+            "away_team": "Old Model United",
+            "kickoff_local": (datetime.now(ZoneInfo("Africa/Lagos")) + timedelta(hours=3)).isoformat(),
+            "status": "EXPERIMENTAL_ONLY",
+            "probabilities": {"home_win": 0.6, "draw": 0.2, "away_win": 0.2},
+        }]
+    }
+    reply = handle_command("/today", report=legacy)
+    assert "Legacy FC" not in reply
+    assert "DATA NOT AVAILABLE" in reply
 
 
 def test_match_lookup_uses_supplied_report_only():
@@ -127,7 +160,7 @@ def test_match_lookup_uses_supplied_report_only():
             "probabilities": {"home_win": 0.5, "draw": 0.25, "away_win": 0.25},
         }]
     }
-    reply = handle_command("/match Arsenal vs Chelsea", report=report)
+    reply = handle_command("/match Arsenal vs Chelsea", report=authorized_report(report))
     assert "Arsenal vs Chelsea" in reply
     assert "Home 50%" in reply
 
@@ -154,7 +187,7 @@ def test_today_discloses_gapped_historical_data():
         },
         "publication_status": "REUSED_SNAPSHOT_NOT_REFRESHED",
     }
-    reply = handle_command("/today", report=report)
+    reply = handle_command("/today", report=authorized_report(report))
     assert "SNAPSHOT NOTICE: This is a reused same-day snapshot" in reply
     assert "History is continuous through 2026-09-03" in reply
     assert "latest available result date is 2026-10-24" in reply
@@ -196,9 +229,9 @@ def test_today_excludes_withheld_fixtures_and_only_shows_real_forecasts():
             },
         ]
     }
-    today = handle_command("/today", report=report)
-    fixtures = handle_command("/fixtures", report=report)
-    status = handle_command("/status", report=report)
+    today = handle_command("/today", report=authorized_report(report))
+    fixtures = handle_command("/fixtures", report=authorized_report(report))
+    status = handle_command("/status", report=authorized_report(report))
 
     assert "Forecast FC vs Model FC" in today
     assert "Low Data FC vs Unknown United" in today
@@ -237,7 +270,7 @@ def test_match_does_not_publish_invalid_probability_vectors():
         "probabilities": {"home_win": 0.8, "draw": 0.8, "away_win": -0.6},
         "reason": "Unsupported competition",
     }]}
-    reply = handle_command("/match Unsafe FC vs Example FC", report=report)
+    reply = handle_command("/match Unsafe FC vs Example FC", report=authorized_report(report))
     assert "Analysis unavailable: Unsupported competition" in reply
     assert "H 80%" not in reply
 
@@ -250,7 +283,7 @@ def test_match_with_nan_probabilities_is_withheld():
         "kickoff_local": future, "status": "EXPERIMENTAL_ONLY",
         "probabilities": {"home_win": float("nan"), "draw": 0.3, "away_win": 0.7},
     }]}
-    reply = handle_command("/match NaN FC vs Example FC", report=report)
+    reply = handle_command("/match NaN FC vs Example FC", report=authorized_report(report))
     assert "Analysis unavailable:" in reply
 
 
@@ -283,7 +316,7 @@ def test_overunder_command_returns_experimental_goal_line_probabilities():
             "expected_goals": {"home": 1.5, "away": 1.2},
         }],
     }
-    reply = handle_command("/overunder", report=report)
+    reply = handle_command("/overunder", report=authorized_report(report))
     assert "PRIMARY MARKET — OVER / UNDER GOALS" in reply
     assert "O/U 0.5" in reply and "O/U 2.5" in reply and "O/U 4.5" in reply
     assert "Estimates are not guaranteed outcomes" in reply
@@ -304,7 +337,7 @@ def test_btts_command_returns_yes_no_probability_from_expected_goals():
             "expected_goals": {"home": 1.5, "away": 1.2},
         }],
     }
-    reply = handle_command("/btts", report=report)
+    reply = handle_command("/btts", report=authorized_report(report))
     assert "PRIMARY MARKET — BOTH TEAMS TO SCORE" in reply
     assert "BTTS: Yes" in reply and "No " in reply
     assert "Kick-off times: WAT" in reply
@@ -329,7 +362,7 @@ def test_goal_market_command_formats_ten_matches_as_separate_readable_cards():
             "probabilities": {"home_win": 0.45, "draw": 0.25, "away_win": 0.30},
             "expected_goals": {"home": 1.5, "away": 1.2},
         })
-    reply = handle_command("/btts", report=report)
+    reply = handle_command("/btts", report=authorized_report(report))
     assert "Home 0 vs Away 0" in reply and "Home 9 vs Away 9" in reply
     assert "Home 0 vs Away 0" in reply
     assert "Home 9 vs Away 9" in reply
@@ -354,8 +387,8 @@ def test_goal_markets_withhold_invalid_expected_goals():
             "expected_goals": {"home": float("nan"), "away": -1},
         }],
     }
-    assert "NO USABLE GOAL-MARKET ESTIMATES" in handle_command("/overunder", report=report)
-    assert "NO USABLE GOAL-MARKET ESTIMATES" in handle_command("/btts", report=report)
+    assert "NO USABLE GOAL-MARKET ESTIMATES" in handle_command("/overunder", report=authorized_report(report))
+    assert "NO USABLE GOAL-MARKET ESTIMATES" in handle_command("/btts", report=authorized_report(report))
 
 
 def test_odds_command_reads_saved_multisource_btts_and_totals_prices():
@@ -378,7 +411,7 @@ def test_odds_command_reads_saved_multisource_btts_and_totals_prices():
             }]}},
         }],
     }
-    reply = handle_command("/odds", report=report)
+    reply = handle_command("/odds", report=authorized_report(report))
     assert "Arsenal vs Chelsea" in reply
     assert "5DollarFootballAPI" in reply
     assert "BTTS Yes 1.80 / No 2.00" in reply
@@ -404,7 +437,7 @@ def test_1x2_command_displays_home_draw_away_and_real_h2h_prices():
             ],
         }]}},
     }]}
-    reply = handle_command("/1x2", report=report)
+    reply = handle_command("/1x2", report=authorized_report(report))
     assert "1X2 probabilities: Home 55% · Draw 25% · Away 20%" in reply
     assert "Bookmaker A" in reply
     assert "Why this verdict: competition-level historical goal-rate prior; team-specific history below minimum" in reply
@@ -442,12 +475,12 @@ def test_odds_command_includes_1x2_h2h_prices():
             ],
         }]}},
     }]}
-    reply = handle_command("/odds", report=report)
+    reply = handle_command("/odds", report=authorized_report(report))
     assert "1X2: Arsenal 1.90 / Draw 3.50 / Chelsea 4.20" in reply
 
 
 def test_value_screen_reports_1x2_btts_totals_coverage_without_releasing_picks():
-    reply = handle_command("/value", report={"predictions": [{
+    reply = handle_command("/value", report=authorized_report({"predictions": [{
         "home_team": "Arsenal", "away_team": "Chelsea",
         "probabilities": {"home_win": 0.55, "draw": 0.25, "away_win": 0.20},
         "expected_goals": {"home": 1.6, "away": 0.9},
@@ -481,7 +514,7 @@ def test_value_command_displays_only_upcoming_paper_candidates_as_unapproved():
             }},
         }],
     }
-    reply = handle_command("/value", report=report)
+    reply = handle_command("/value", report=authorized_report(report))
     assert "Arsenal vs Chelsea" in reply
     assert "1X2 · HOME" in reply
     assert "Odds 2.10" in reply
