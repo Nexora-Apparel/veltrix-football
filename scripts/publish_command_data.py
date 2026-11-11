@@ -152,17 +152,20 @@ def _dashboard_snapshot(report: dict) -> dict:
         "command_data_published_at_utc", "publication_status", "publication_notice",
         "primary_provider_request", "fixture_discovery", "multi_source_odds_sync",
         "live_odds_sync", "historical_data_coverage", "fixtures_received",
-        "fixtures_with_market_odds", "goal_market_calibration", "value_bet_screen",
-        "value_validation_certificate",
+        "fixtures_with_market_odds", "goal_market_calibration",
     )
     row_fields = (
         "fixture_id", "id", "match_id", "league", "country", "competition", "status", "fixture_phase", "fixture_visibility_note",
         "home_team", "away_team", "home_team_id", "away_team_id",
         "kickoff", "kickoff_local", "status", "fixture_phase",
         "fixture_visibility_note", "probabilities", "btts_yes", "over_2_5",
-        "expected_goals", "prediction_basis", "value_bet_screen", "five_dollar_market_odds",
+        "expected_goals", "prediction_basis", "five_dollar_market_odds",
         "the_odds_api_market_odds", "infer_sports_market_odds", "odds", "market_odds",
     )
+    value_authorized = is_value_betting_authorized_report(report)
+    if value_authorized:
+        top_level = top_level + ("value_bet_screen", "value_validation_certificate")
+        row_fields = row_fields + ("value_bet_screen",)
     rows = report.get("predictions") if isinstance(report.get("predictions"), list) else []
     compact_rows = [{key: row[key] for key in row_fields if key in row} for row in rows if isinstance(row, dict)]
     payload = {key: report[key] for key in top_level if key in report}
