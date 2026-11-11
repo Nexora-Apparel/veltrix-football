@@ -218,7 +218,8 @@ def assemble_provider_acquisition_dataset(*, acquisition_records: list[dict],
                                           split_policy: dict,
                                           cutoff_hours: int = 6,
                                           form_window: int = 10,
-                                          minimum_team_matches: int = 3) -> dict:
+                                          minimum_team_matches: int = 3,
+                                          feature_source_qualification_registry: dict | None = None) -> dict:
     if not isinstance(acquisition_records, list) or not acquisition_records:
         raise AcquisitionDatasetBridgeError("acquisition_records_required")
     if not isinstance(settlement_timestamp_packages, dict):
@@ -285,6 +286,8 @@ def assemble_provider_acquisition_dataset(*, acquisition_records: list[dict],
             cutoff_hours=cutoff_hours,
             form_window=form_window,
             minimum_team_matches=minimum_team_matches,
+            feature_source_qualification_registry=feature_source_qualification_registry,
+            trusted_kms_clients=trusted_kms_clients,
         )
     except (ResultsTrainingAdapterError, ValueError, KeyError) as exc:
         raise AcquisitionDatasetBridgeError(str(exc)) from None
