@@ -19,6 +19,7 @@ jobs:
     timeout-minutes: 15
     env:
       STRIKERAPI_API_KEY: ${{ secrets.STRIKERAPI_API_KEY }}
+      FIVEDOLLARFOOTBALL_API_KEY: ${{ secrets.FIVEDOLLARFOOTBALL_API_KEY }}
       DRY_RUN_DATABASE_URL: ${{ secrets.DRY_RUN_DATABASE_URL }}
     steps:
       - uses: actions/checkout@v4
@@ -35,8 +36,8 @@ jobs:
             echo "::error::DRY_RUN_DATABASE_URL secret is required."
             exit 2
           fi
-          if [ -z "$STRIKERAPI_API_KEY" ]; then
-            echo "::error::STRIKERAPI_API_KEY secret is required."
+          if [ -z "$STRIKERAPI_API_KEY" ] || [ -z "$FIVEDOLLARFOOTBALL_API_KEY" ]; then
+            echo "::error::STRIKERAPI_API_KEY and FIVEDOLLARFOOTBALL_API_KEY secrets are required."
             exit 2
           fi
       - name: Run provider-backed dry-run
