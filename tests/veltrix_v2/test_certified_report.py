@@ -200,7 +200,7 @@ def test_failed_value_bet_certification_does_not_block_prediction_publication():
         certification_id="prediction-cert-v2-001",
         fixtures=(fixture("f-locked", datetime(2026, 11, 12, 6, tzinfo=UTC)),),
         value_bet_certification=failed_value_cert,
-        source_attributions=("Football data by 5DollarFootballAPI — https://5dollarfootballapi",),
+        source_attributions=("Football data by 5DollarFootballAPI — https://5dollarfootballapi.com",),
     )
     assert report.value_bets_enabled is False
     assert report.fixtures[0].value_bet_verdict == "LOCKED — NOT CERTIFIED"
