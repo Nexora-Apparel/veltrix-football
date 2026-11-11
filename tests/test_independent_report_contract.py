@@ -71,6 +71,7 @@ class IndependentReportContractTests(unittest.TestCase):
         report["value_betting_authorized"] = True
         report["value_validation_certificate"] = {
             "status": "CERTIFIED",
+            "model_portfolio_id": MODEL_PORTFOLIO_ID,
             "approved_markets": ["BTTS"],
             "alerts_enabled": True,
             "signature_verified": True,
@@ -83,6 +84,7 @@ class IndependentReportContractTests(unittest.TestCase):
         report["value_betting_authorized"] = True
         report["value_validation_certificate"] = {
             "status": "PARTIALLY_VALIDATED",
+            "model_portfolio_id": MODEL_PORTFOLIO_ID,
             "approved_markets": ["BTTS"],
             "alerts_enabled": True,
             "signature_verified": True,
