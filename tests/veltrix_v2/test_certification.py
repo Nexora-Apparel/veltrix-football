@@ -181,7 +181,7 @@ def test_certification_objects_reject_internally_conflicting_pass_flags():
             evidence=tuple(evidence(market) for market in ("1X2", "BTTS", "TOTALS")),
         )
     bad_market = CertificationResult("BTTS", False, ("PREDICTION_CALIBRATION_NOT_PASSED",))
-    with pytest.raises(ValueError, match="STATUS_CONFLICTS_WITH_EVIDENCE"):
+    with pytest.raises(ValueError, match="MARKET_RESULTS_DO_NOT_MATCH_EVIDENCE"):
         PredictionReleaseCertification(
             passed=True,
             markets=(
