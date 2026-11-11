@@ -8,6 +8,7 @@ from app.independent_report_contract import MODEL_PORTFOLIO_ID, REPORT_SCHEMA
 def authorized_report(report):
     return {
         **report,
+        "as_of_date": report.get("as_of_date") or "2026-11-11",
         "report_schema": REPORT_SCHEMA,
         "model_portfolio_id": MODEL_PORTFOLIO_ID,
         "legacy_model_dependency": False,
