@@ -1,4 +1,4 @@
-name: Multi-Source Provider Verification
+name: Provider Adapter Regression (Live Probes Opt-in)
 
 on:
   push:
@@ -46,6 +46,10 @@ jobs:
 
       - name: Run unit tests
         run: python -m pytest --import-mode=importlib -q
+
+      - name: Explain live-probe policy for pull requests
+        if: github.event_name == 'pull_request'
+        run: echo "Pull-request CI runs unit tests only. Credential-backed provider probes are opt-in via workflow_dispatch or the [run-provider-integration] marker."
 
       - name: Verify provider authentication (no odds quota used)
         if: github.event_name == 'workflow_dispatch' || github.event_name == 'schedule' || (github.event_name == 'push' && contains(github.event.head_commit.message, '[run-provider-integration]'))
