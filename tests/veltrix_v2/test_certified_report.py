@@ -1,4 +1,4 @@
-from datetime import date, datetime, timezone
+from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal
 
 import pytest
@@ -106,7 +106,7 @@ def test_report_rejects_started_fixtures_and_more_than_25():
     with pytest.raises(ValueError, match="STARTED_OR_PAST"):
         build([fixture("past", datetime(2026, 11, 12, 4, 0, tzinfo=UTC))])
     rows = [
-        fixture(f"f{i}", datetime(2026, 11, 12, 6 + i, tzinfo=UTC))
+        fixture(f"f{i}", datetime(2026, 11, 12, 6, tzinfo=UTC) + timedelta(hours=i))
         for i in range(26)
     ]
     with pytest.raises(ValueError, match="FIXTURE_CAP"):
