@@ -1,0 +1,69 @@
+from datetime import datetime, timedelta, timezone
+
+from veltrix_v2.contracts import ForecastCutoff, ProviderObservation
+from veltrix_v2.quality import SourceApproval, evaluate_observation
+
+T = datetime(2026, 11, 11, 6, tzinfo=timezone.utc)
+
+
+def observation():
+    return ProviderObservation(
+        provider="strikerapi", endpoint="list_games", entity_type="fixture",
+        provider_entity_id="fx-1", competition_key="EPL", season="2026",
+        retrieved_at_utc=T, source_event_time_utc=T, available_at_utc=T,
+        payload_sha256="b" * 64, schema_version="1",
+        rights_approval_id="approval-epl-fixtures", values={},
+    )
+
+
+def approval(**overrides):
+    values = dict(approval_id="approval-epl-fixtures", provider="strikerapi",
+                  competition_key="EPL", data_type="fixtures_results", status="approved",
+                  valid_from_utc=T - timedelta(days=1))
+    values.update(overrides)
+    return SourceApproval(**values)
+
+
+def decide(obs=None, approvals=None, cutoff=None):
+    return evaluate_observation(
+        obs or observation(), data_type="fixtures_results",
+        cutoff=ForecastCutoff(cutoff or T), approvals=tuple(approvals or (approval(),)),
+        max_age=timedelta(days=2),
+    )
+
+
+def test_approved_exact_scope_is_eligible():
+    assert decide().eligible
+
+
+def test_provisional_or_wrong_data_type_is_rejected():
+    assert not decide(approvals=(approval(status="provisional"),)).eligible
+    assert not decide(approvals=(approval(data_type="odds"),)).eligible
+
+
+def test_future_observation_is_rejected():
+    late = ProviderObservation(
+        provider="strikerapi", endpoint="list_games", entity_type="fixture",
+        provider_entity_id="fx-2", competition_key="EPL", season="2026",
+        retrieved_at_utc=T + timedelta(minutes=1),
+        source_event_time_utc=T, available_at_utc=T + timedelta(minutes=1),
+        payload_sha256="c" * 64, schema_version="1",
+        rights_approval_id="approval-epl-fixtures", values={},
+    )
+    assert not decide(obs=late).eligible
+
+
+def test_stale_observation_is_rejected():
+    old = T - timedelta(days=10)
+    stale = ProviderObservation(
+        provider="strikerapi", endpoint="list_games", entity_type="fixture",
+        provider_entity_id="fx-3", competition_key="EPL", season="2026",
+        retrieved_at_utc=old, source_event_time_utc=old, available_at_utc=old,
+        payload_sha256="d" * 64, schema_version="1",
+        rights_approval_id="approval-epl-fixtures", values={},
+    )
+    assert decide(obs=stale).reason == "observation_stale_at_forecast_cutoff"
+
+
+def test_expired_approval_is_rejected():
+    assert decide(approvals=(approval(valid_until_utc=T),)).reason == "approval_expired_at_cutoff"
