@@ -74,3 +74,27 @@ def test_integer_total_lines_are_rejected_and_valid_negative_rho_is_supported():
         assert "HALF_GOAL" in str(exc)
     result = run_poisson_walk_forward(**args, rho=-0.05)
     assert result.total_test_fixtures == 6
+
+
+def test_nonconverged_model_abstains_from_every_test_fixture(monkeypatch):
+    class NonConvergedModel:
+        objective = 123.0
+        converged = False
+
+    monkeypatch.setattr(
+        "veltrix_v2.evaluation.poisson_walk_forward.fit_poisson_strength_model",
+        lambda *args, **kwargs: NonConvergedModel(),
+    )
+    result = run_poisson_walk_forward(
+        dataset(), competition_key="league", season="2024/25",
+        first_test_start_utc=BASE + timedelta(days=84),
+        test_window=timedelta(days=14), n_splits=1,
+        minimum_training_matches=30, minimum_team_matches=10,
+    )
+    fold = result.folds[0]
+    assert fold.training_converged is False
+    assert fold.forecast_count == 0
+    assert fold.score_report is None
+    assert len(fold.abstained_fixture_ids) == fold.test_fixture_count
+    assert result.total_forecasts == 0
+    assert result.total_abstentions == result.total_test_fixtures
