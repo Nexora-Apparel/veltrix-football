@@ -209,10 +209,66 @@ def test_provider_attribution_is_included_in_website_and_telegram_payloads():
         generated_at_utc=datetime(2026, 11, 12, 4, 30, tzinfo=UTC),
         certification=passing_prediction_certification(),
         certification_id="prediction-cert-v2-001",
-        fixtures=(fixture("f-attribution", datetime(2026, 11, 12, 6, tzinfo=UTC)),),
+        fixtures=(PublishedFixture(
+            fixture_id="f-attribution", competition="England Premier League",
+            home_team="Team A", away_team="Team B",
+            kickoff_utc=datetime(2026, 11, 12, 6, tzinfo=UTC),
+            forecasts=MarketForecasts(
+                Decimal("0.5"), Decimal("0.3"), Decimal("0.2"),
+                Decimal("0.55"), Decimal("2.5"), Decimal("0.52"),
+            ),
+            verdict="HOME LEAN", ai_insight="Attribution test.",
+            source_provider_ids=("5dollarfootballapi",),
+        ),),
         source_attributions=(attribution,),
     )
     payload = website_report_payload(report)
     message = telegram_report_text(report)
     assert payload["source_attributions"] == [attribution]
+    assert payload["fixtures"][0]["source_provider_ids"] == ["5dollarfootballapi"]
     assert message.endswith(attribution)
+
+
+
+def test_fivedollar_report_requires_visible_linked_provider_attribution():
+    attributed_fixture = PublishedFixture(
+        fixture_id="f-attribution-required", competition="England Premier League",
+        home_team="Team A", away_team="Team B",
+        kickoff_utc=datetime(2026, 11, 12, 6, tzinfo=UTC),
+        forecasts=MarketForecasts(
+            Decimal("0.5"), Decimal("0.3"), Decimal("0.2"),
+            Decimal("0.55"), Decimal("2.5"), Decimal("0.52"),
+        ),
+        verdict="HOME LEAN", ai_insight="Attribution enforcement test.",
+        source_provider_ids=("5dollarfootballapi",),
+    )
+    with pytest.raises(ValueError, match="REPORT_REQUIRED_PROVIDER_ATTRIBUTION_MISSING:5dollarfootballapi"):
+        build_certified_daily_report(
+            report_date_wat=date(2026, 11, 12),
+            generated_at_utc=datetime(2026, 11, 12, 4, 30, tzinfo=UTC),
+            certification=passing_prediction_certification(),
+            certification_id="prediction-cert-v2-001",
+            fixtures=(attributed_fixture,),
+        )
+
+
+def test_openligadb_report_requires_odbl_attribution():
+    attributed_fixture = PublishedFixture(
+        fixture_id="f-openligadb", competition="Germany Bundesliga",
+        home_team="Team A", away_team="Team B",
+        kickoff_utc=datetime(2026, 11, 12, 6, tzinfo=UTC),
+        forecasts=MarketForecasts(
+            Decimal("0.5"), Decimal("0.3"), Decimal("0.2"),
+            Decimal("0.55"), Decimal("2.5"), Decimal("0.52"),
+        ),
+        verdict="HOME LEAN", ai_insight="ODbL attribution test.",
+        source_provider_ids=("openligadb",),
+    )
+    with pytest.raises(ValueError, match="REPORT_REQUIRED_PROVIDER_ATTRIBUTION_MISSING:openligadb"):
+        build_certified_daily_report(
+            report_date_wat=date(2026, 11, 12),
+            generated_at_utc=datetime(2026, 11, 12, 4, 30, tzinfo=UTC),
+            certification=passing_prediction_certification(),
+            certification_id="prediction-cert-v2-001",
+            fixtures=(attributed_fixture,),
+        )
