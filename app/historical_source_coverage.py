@@ -346,6 +346,8 @@ def build_historical_source_coverage_report(
                 season_resolutions[fixture_id] = mapping
 
     snapshot_by_id = {}
+    season_snapshot_verified = Counter()
+    season_snapshot_failures = Counter()
     feature_source_counts = Counter()
     feature_source_ids = Counter()
     feature_sources_by_name = defaultdict(Counter)
@@ -362,6 +364,41 @@ def build_historical_source_coverage_report(
         if fixture_id in snapshot_by_id or fixture_id not in accepted_by_id:
             raise HistoricalSourceCoverageError(f"snapshot_fixture_join_invalid:{fixture_id}")
         snapshot_by_id[fixture_id] = snapshot
+        if season_crosswalk_registry is not None:
+            season_evidence = snapshot.get("season_identity_evidence")
+            record = accepted_by_id[fixture_id]
+            if not isinstance(season_evidence, dict):
+                season_snapshot_failures[record["competition_id"]] += 1
+            else:
+                try:
+                    at_cutoff = verify_season_crosswalk_registry(
+                        registry=season_crosswalk_registry,
+                        trusted_kms_clients=trusted_kms_clients,
+                        as_of=snapshot["prediction_as_of"],
+                    )
+                    source_season = record.get("source_season")
+                    identity = (
+                        record["provider"], record["competition_id"], source_season
+                    )
+                    mapping = at_cutoff["mappings"].get(identity)
+                    expected = (
+                        mapping is not None
+                        and season_evidence.get("provider") == record["provider"]
+                        and season_evidence.get("competition_id") == record["competition_id"]
+                        and season_evidence.get("source_season") == source_season
+                        and season_evidence.get("canonical_season_id") == mapping["canonical_season_id"]
+                        and season_evidence.get("registry_sha256") == at_cutoff["registry_sha256"]
+                        and season_evidence.get("signing_key_arn") == at_cutoff["signing_key_arn"]
+                        and season_evidence.get("evidence_sha256") == mapping["evidence_sha256"]
+                        and _utc(season_evidence.get("verified_at"), "season_identity_verified_at")
+                            == _utc(snapshot["prediction_as_of"], "season_snapshot_prediction_as_of")
+                    )
+                    if expected:
+                        season_snapshot_verified[record["competition_id"]] += 1
+                    else:
+                        season_snapshot_failures[record["competition_id"]] += 1
+                except (SeasonCrosswalkError, HistoricalSourceCoverageError, TypeError, KeyError):
+                    season_snapshot_failures[record["competition_id"]] += 1
         for feature in snapshot["features"]:
             feature_source_counts[feature["source"]] += 1
             feature_source_ids[feature["source_id"]] += 1
@@ -458,6 +495,15 @@ def build_historical_source_coverage_report(
             "distinct_kickoff_dates": len(kickoff_dates[competition]),
             "season_coverage": {
                 "status": season_status,
+                "feature_snapshot_identity": {
+                    "verified_snapshots": season_snapshot_verified[competition],
+                    "unverified_snapshots": season_snapshot_failures[competition],
+                    "all_snapshots_verified": bool(
+                        snapshots_count
+                        and season_snapshot_verified[competition] == snapshots_count
+                        and season_snapshot_failures[competition] == 0
+                    ),
+                },
                 "source_reported_season_counts": dict(sorted(season_values.items())),
                 "records_missing_season": missing_seasons,
                 "distinct_source_seasons": len(season_values),
