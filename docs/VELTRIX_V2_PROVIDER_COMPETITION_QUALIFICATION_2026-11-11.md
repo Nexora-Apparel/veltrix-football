@@ -68,7 +68,7 @@ Its published xG is explicitly not point-in-time: the provider says its location
 
 ### GOAL API
 
-The user's key is confirmed active by the user. A previous 403 must be debugged at the request-contract layer. Public documentation identifies `X-AUTH-APIKEY` as the required header. Test the exact endpoint, header and account entitlement in a single read-only probe, record status/body/request ID, and do not assume key revocation. Terms state coverage and refresh frequency vary by competition and endpoint.
+The user confirms the key is active. The existing VELTRIX probe targets `https://api.goal-api.com/v1` and sends `Authorization: Bearer ...`, which matches the current official documentation. A different project named GoalAPI.com uses a different hostname and an `X-AUTH-APIKEY` header; do not conflate those products or change the VELTRIX header based on the unrelated documentation. The prior 403 therefore remains unexplained and should be investigated through account/key scope, endpoint permission, request path, plan entitlements, provider-side restrictions and the complete sanitized error body/request ID. The current GOAL API documentation lists 401 for missing/invalid key, 429 for rate limits/plan quota and 500 for server errors but does not document 403. Public pages advertise 1,000+ competitions, but per-competition endpoint coverage, free quota and historical completeness must be verified against the account and sample data.
 
 ## 4. Qualification gates per competition and endpoint
 
@@ -113,7 +113,7 @@ For chronological training, the source's actual availability time must be no lat
 - StrikerAPI docs: https://strikerapi.com/docs
 - StrikerAPI data atlas: https://strikerapi.com/docs/atlas
 - StrikerAPI timing and rights: https://strikerapi.com/docs/timing-and-rights
-- GOAL API documentation: https://github.com/goalapi/documentation
+- GOAL API documentation: https://goal-api.com/documentation
 - GOAL API terms: https://goal-api.com/terms
 - FootballAPI.org documentation: https://footballapi.org/documentation
 
