@@ -39,6 +39,9 @@ def is_publishable_independent_report(report: Any) -> bool:
         has_forecast = any(
             key in row for key in ("probabilities", "btts_yes", "over_1_5", "over_2_5", "over_3_5")
         )
+        row_model = str(row.get("model") or "").casefold()
+        if any(marker in row_model for marker in ("experimental", "legacy", "fallback_prior")):
+            return False
         if has_forecast:
             feature_digest = row.get("feature_snapshot_sha256")
             model_versions = row.get("model_versions")
@@ -48,6 +51,7 @@ def is_publishable_independent_report(report: Any) -> bool:
                 or not isinstance(model_versions, list)
                 or not model_versions
                 or any(not isinstance(version, str) or not version.strip() for version in model_versions)
+                or any(any(marker in version.casefold() for marker in ("experimental", "legacy", "fallback_prior")) for version in model_versions)
             ):
                 return False
     certificate = report.get("release_certificate")
