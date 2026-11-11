@@ -7,6 +7,7 @@ partial abandoned score is treated as a completed result.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import date, datetime
 from decimal import Decimal, InvalidOperation
 from typing import Literal
 
@@ -35,6 +36,7 @@ class MatchResult:
     home_goals_extra_time: int = 0
     away_goals_extra_time: int = 0
     penalties_included: bool = False
+    match_date: date | None = None
 
     def __post_init__(self) -> None:
         if not isinstance(self.fixture_id, str) or not self.fixture_id.strip():
@@ -51,6 +53,8 @@ class MatchResult:
                     raise ValueError(f"{name} must be a non-negative integer")
         if self.penalties_included:
             raise ValueError("penalty shoot-out goals must never enter match settlement")
+        if self.match_date is not None and (not isinstance(self.match_date, date) or isinstance(self.match_date, datetime)):
+            raise ValueError("match_date must be a source-backed calendar date")
 
 
 @dataclass(frozen=True, slots=True)
@@ -109,6 +113,7 @@ class Settlement:
     gross_return: Decimal
     net_profit: Decimal
     period: str
+    match_date: date | None = None
 
 
 def settle_market_bet(bet: MarketBet, result: MatchResult) -> Settlement:
@@ -161,4 +166,5 @@ def settle_market_bet(bet: MarketBet, result: MatchResult) -> Settlement:
         gross_return=gross_return,
         net_profit=gross_return - bet.stake,
         period=bet.period,
+        match_date=result.match_date,
     )

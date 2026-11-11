@@ -4,11 +4,10 @@ ROI uses settled exposure: WIN, LOSS and PUSH stakes are included; VOID stakes
 are excluded. Pushes contribute zero net profit and remain in turnover. Void
 returns are bookkeeping only and never inflate gross profit or turnover.
 
-The ROI interval uses a deterministic percentile bootstrap over fixture
-clusters. Every selection from a sampled fixture remains in the same draw.
-This accounts for within-match dependence, but not cross-fixture dependence
-within a match date; the settlement contract currently has no source-backed
-match-date field.
+The ROI interval uses a deterministic percentile bootstrap over source-backed
+match-date clusters. Every selection and fixture from a sampled match date
+remains in the same draw. If any settled row lacks a match date, the interval
+is withheld rather than falling back to an IID or fixture-only estimate.
 """
 from __future__ import annotations
 
@@ -71,33 +70,26 @@ def _wilson_interval(wins: int, trials: int) -> tuple[Decimal, Decimal] | None:
     return (Decimal(str(max(0.0, centre - margin))), Decimal(str(min(1.0, centre + margin))))
 
 
-def _fixture_block_roi_interval(
+def _date_block_roi_interval(
     rows: list[Settlement], *, draws: int, seed: int
 ) -> tuple[Decimal, Decimal] | None:
-    """Bootstrap fixture clusters, retaining every selection from each draw.
-
-    Settlements do not currently carry a trustworthy match-date field. Fixture
-    ID is therefore the strongest available dependence block: correlated
-    markets/selections from one match are sampled together rather than as
-    independent bet rows. A date-block interval must not be claimed until
-    source-backed match dates are part of the settlement contract.
-    """
-    if draws < 100:
+    """Bootstrap source-backed match-date blocks, retaining all fixtures/bets."""
+    if draws < 100 or any(row.match_date is None for row in rows):
         return None
-    blocks: dict[str, list[Settlement]] = {}
+    blocks: dict[object, list[Settlement]] = {}
     for row in rows:
-        blocks.setdefault(row.fixture_id, []).append(row)
-    fixture_ids = sorted(blocks)
-    if len(fixture_ids) < 2:
+        blocks.setdefault(row.match_date, []).append(row)
+    match_dates = sorted(blocks)
+    if len(match_dates) < 2:
         return None
 
     rng = random.Random(seed)
     samples: list[float] = []
-    block_count = len(fixture_ids)
+    block_count = len(match_dates)
     for _ in range(draws):
         selected: list[Settlement] = []
         for _ in range(block_count):
-            selected.extend(blocks[fixture_ids[rng.randrange(block_count)]])
+            selected.extend(blocks[match_dates[rng.randrange(block_count)]])
         turnover = sum((row.stake for row in selected), ZERO)
         if turnover <= ZERO:
             continue
@@ -144,10 +136,16 @@ def _summarize(
         gross_return=gross,
         net_profit=profit,
         roi=roi,
-        roi_ci_95=_fixture_block_roi_interval(
+        roi_ci_95=_date_block_roi_interval(
             non_void, draws=bootstrap_draws, seed=bootstrap_seed
         ),
-        roi_ci_method="fixture_block_bootstrap_by_fixture",
+        roi_ci_method=(
+            "unavailable_missing_match_date"
+            if any(row.match_date is None for row in non_void)
+            else "unavailable_insufficient_match_dates"
+            if len({row.match_date for row in non_void}) < 2
+            else "date_block_bootstrap_by_match_date"
+        ),
     )
 
 

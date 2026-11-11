@@ -1,3 +1,4 @@
+from datetime import date
 from decimal import Decimal
 
 import pytest
@@ -29,6 +30,7 @@ def result(home=2, away=1, *, status="COMPLETED", et_home=0, et_away=0):
         away_goals_regulation=away,
         home_goals_extra_time=et_home,
         away_goals_extra_time=et_away,
+        match_date=date(2026, 11, 11),
     )
 
 

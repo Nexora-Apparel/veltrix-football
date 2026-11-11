@@ -1,4 +1,5 @@
 from dataclasses import replace
+from datetime import date
 from decimal import Decimal
 
 import pytest
@@ -40,7 +41,7 @@ def test_roi_accounts_for_win_loss_push_and_excludes_void_turnover():
     assert overall.win_rate == Decimal("0.5")
     assert overall.win_rate_ci_95 is not None
     assert overall.roi_ci_95 is not None
-    assert overall.roi_ci_method == "fixture_block_bootstrap_by_fixture"
+    assert overall.roi_ci_method == "date_block_bootstrap_by_match_date"
 
 
 def test_market_summaries_are_separate():
@@ -107,20 +108,31 @@ def test_invalid_bootstrap_draw_count_is_rejected():
         evaluate_roi([], bootstrap_draws=-1)
 
 
-def test_fixture_block_bootstrap_is_reported_and_requires_multiple_fixtures():
-    same_fixture = [
-        settled("f1", "1X2", "HOME"),
-        settled("f1", "BTTS", "YES"),
+def test_date_block_bootstrap_groups_all_fixtures_from_each_match_date():
+    same_date = [
+        settled("f1", "1X2", "HOME", match_date=date(2026, 11, 1)),
+        settled("f2", "BTTS", "YES", match_date=date(2026, 11, 1)),
     ]
-    report = evaluate_roi(same_fixture, bootstrap_draws=500)
+    report = evaluate_roi(same_date, bootstrap_draws=500)
     assert report.overall.roi_ci_95 is None
+    assert report.overall.roi_ci_method == "unavailable_insufficient_match_dates"
 
-    multiple_fixtures = same_fixture + [
-        settled("f2", "1X2", "AWAY"),
-        settled("f2", "BTTS", "NO", home=0, away=1),
-        settled("f3", "1X2", "HOME", odds="1.8"),
+    multiple_dates = same_date + [
+        settled("f3", "1X2", "AWAY", match_date=date(2026, 11, 2)),
+        settled("f4", "BTTS", "NO", home=0, away=1, match_date=date(2026, 11, 2)),
+        settled("f5", "1X2", "HOME", odds="1.8", match_date=date(2026, 11, 3)),
     ]
-    first = evaluate_roi(multiple_fixtures, bootstrap_draws=500).overall.roi_ci_95
-    second = evaluate_roi(multiple_fixtures, bootstrap_draws=500).overall.roi_ci_95
+    first = evaluate_roi(multiple_dates, bootstrap_draws=500).overall.roi_ci_95
+    second = evaluate_roi(multiple_dates, bootstrap_draws=500).overall.roi_ci_95
     assert first is not None
     assert first == second
+
+
+def test_missing_source_match_date_withholds_roi_interval():
+    rows = [
+        settled("f1", "1X2", "HOME", match_date=date(2026, 11, 1)),
+        settled("f2", "1X2", "AWAY", match_date=None),
+    ]
+    report = evaluate_roi(rows, bootstrap_draws=500)
+    assert report.overall.roi_ci_95 is None
+    assert report.overall.roi_ci_method == "unavailable_missing_match_date"
