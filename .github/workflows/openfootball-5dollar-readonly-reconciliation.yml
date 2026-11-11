@@ -1,0 +1,62 @@
+name: OpenFootball + 5Dollar Read-only Snapshot
+
+on:
+  workflow_dispatch:
+    inputs:
+      start_date:
+        description: "Start date (UTC, inclusive; within the 5Dollar Free history window)"
+        required: true
+        type: string
+        default: "2026-08-14"
+      end_date_exclusive:
+        description: "End date (UTC, exclusive)"
+        required: true
+        type: string
+        default: "2026-11-12"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: veltrix-openfootball-5dollar-readonly-snapshot
+  cancel-in-progress: false
+
+jobs:
+  paired-snapshot:
+    name: Fetch pinned source snapshots (no database or prediction access)
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    env:
+      FIVEDOLLARFOOTBALL_API_KEY: ${{ secrets.FIVEDOLLARFOOTBALL_API_KEY }}
+      PYTHONUNBUFFERED: "1"
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Fetch OpenFootball and 5Dollar EPL snapshots
+        id: snapshots
+        run: |
+          python scripts/veltrix_v2/fetch_openfootball_5dollar_snapshots.py \
+            --start-date "${{ inputs.start_date }}" \
+            --end-date-exclusive "${{ inputs.end_date_exclusive }}" \
+            --out readonly-snapshots
+
+      - name: Upload immutable snapshot evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: veltrix-openfootball-5dollar-readonly-snapshots
+          path: readonly-snapshots/
+          if-no-files-found: warn
+          retention-days: 14
+
+      - name: Enforce successful paired acquisition
+        if: steps.snapshots.outcome != 'success'
+        run: |
+          echo "Paired snapshot acquisition did not complete. Inspect the sanitized manifest artifact."
+          exit 1
