@@ -96,3 +96,13 @@ def test_integer_total_line_is_rejected():
             payload(), fixture_id="fixture-123", kickoff_at=KICKOFF,
             captured_at=CAPTURE, total_line=Decimal("2.0")
         )
+
+
+def test_partial_market_is_reported_and_no_partial_rows_are_emitted():
+    body = payload()
+    body["data"]["bookmakers"][0]["odds"]["1x2"]["closing"]["away"] = None
+    result = parse_fivedollar_fixture_odds(
+        body, fixture_id="fixture-123", kickoff_at=KICKOFF, captured_at=CAPTURE
+    )
+    assert "1X2" in result.missing_markets
+    assert not any(row.market == "1X2" for row in result.snapshots)
