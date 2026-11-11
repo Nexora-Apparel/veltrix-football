@@ -129,3 +129,12 @@ No source is approved for model training solely because it has a public endpoint
 - Official FootyStats pricing page lists a Free / Premier League-only / 180 requests per hour plan with limited endpoints. Its official tutorial instead states API packages start at £29.99/month, while its FAQ says several endpoints can be tested for free using the example key.
 - The provider explicitly permits retrieved API data to be stored, retained after subscription cancellation, used for AI/ML/prediction systems and displayed in websites/apps; raw data resale/redistribution is prohibited.
 - Status: model-use rights are documented for data retrieved through an eligible API account, but whether an actual zero-cost production account has usable access remains unresolved. Do not schedule production ingestion against the public example key.
+
+
+### V2 historical runner and model-evaluation status — 2026-11-11
+
+- The 5Dollar Free account's three-month history entitlement is now reflected in the default V2 historical runner: 90-day acquisition window, 60-day minimum usable history, shorter chronological diagnostic folds and a 200-row minimum for attempting the diagnostic. These are execution thresholds only. The 1,000 held-out matches per market certification gate is unchanged.
+- The runner reports 1X2, BTTS and O/U 2.5 calibration diagnostics separately. All are marked diagnostics-only and do not imply a fitted calibrator or passed prediction-publication certification.
+- The full repository unit-test suite passed **852 tests, 1 warning** on commit `781e75917908eb625ed5ec539af3a4226744d7cb` (workflow run [#43079910512](https://github.com/Nexora-Apparel/veltrix-football/actions/runs/43079910512)). Live provider probes remain opt-in; skipped probes are not treated as qualification.
+- Core safeguards added during the audit: source rights must cover retrieval and forecast cutoff; player statistics cannot be available before kickoff; nonconverged Poisson models cannot emit expected goals; feature values require provenance; exact event/quote timestamps are required for The Odds API; binary odds pairs must normalize to one; and ROI method labels reflect whether a date-block interval was actually produced.
+- No new provider is approved for training solely from published marketing claims. Football API (footballapi.org) remains pending written model-training permission and a live bounded key probe. FootyStats model-use rights are documented, but free-account endpoint entitlement remains contradictory pending account verification.

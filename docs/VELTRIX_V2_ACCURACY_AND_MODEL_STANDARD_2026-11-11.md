@@ -186,3 +186,16 @@ For the additional 80% high-confidence target, require at least 300 prospective 
 ## Low-history team handling
 
 The Poisson strength model and walk-forward runners accept a team with one eligible historical match by default. Team estimates are regularized by the model rather than replaced with a generic fallback probability. A team with no eligible history is not assigned an invented rating: the fixture is abstained. Low-sample form features retain their sample count and low-sample quality state. This expands evidence use without weakening the independent publication, calibration and point-in-time release gates.
+
+
+## 9. Core audit corrections — 2026-11-11
+
+- The 5Dollar Free account is limited to approximately 90 days of historical results. Its V2 runner now defaults to a 90-day diagnostic window and a 60-day minimum usable span. Shorter chronological folds permit a diagnostic run against the actual entitlement; the per-market 1,000 held-out-match certification threshold is unchanged. A 90-day run is not expected to certify the model by itself.
+- The historical runner now emits separate held-out calibration diagnostics for 1X2, BTTS and totals. These are explicitly marked diagnostics-only; no calibration mapping is considered fitted or approved by this report.
+- A Poisson model that did not converge cannot emit expected goals, including through direct model calls. Training input order is sorted before optimization for deterministic results.
+- Source approval must be active both when the observation is retrieved and at the forecast cutoff. An approval granted after retrieval or expired before retrieval is not applied retroactively without explicit provider terms.
+- Player-match statistics whose availability timestamp precedes kickoff are rejected. Observed feature values require positive sample counts and source-observation lineage.
+- The Odds API parser requires exact provider event identity, an explicit kickoff timestamp and a provider quote timestamp no later than capture. Binary bookmaker benchmark pairs must sum to one. Normalized quote records validate raw implied probability against decimal price.
+- ROI reporting only labels the confidence interval as a date-block bootstrap when the interval was actually computed. Insufficient draws, dates or provenance remain explicitly unavailable.
+- Prediction and value-bet release certificates carry their market evidence and verify that result flags match that evidence. A passing flag without the required evidence is rejected.
+- These changes improve fail-closed behavior and diagnostic reproducibility. They do not establish live-data coverage, calibration quality, model accuracy, prospective ROI or production readiness.
