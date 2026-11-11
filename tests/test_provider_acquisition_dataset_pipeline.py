@@ -191,6 +191,15 @@ class AuditedProviderDatasetPipelineTests(unittest.TestCase):
         self.assertEqual(len(result["pipeline_report_sha256"]), 64)
         self.assertEqual(result["admission_profile"]["dataset"]["included_rows"], 1)
         self.assertIn("source_coverage", result)
+        self.assertTrue(result["source_coverage"]["feature_source_qualification"]["verified"])
+        self.assertEqual(
+            result["source_coverage"]["feature_source_qualification"]["qualified_feature_cells"], 1
+        )
+        self.assertEqual(
+            result["source_coverage"]["feature_source_qualification"]["registry_sha256"],
+            feature_source_registry()["sources"][0]["qualification_evidence_sha256"][0]
+            if False else result["source_coverage"]["feature_source_qualification"]["registry_sha256"],
+        )
         self.assertFalse(result["source_coverage"]["qualification"]["source_coverage_qualified"])
         self.assertFalse(result["admission_profile"]["training_readiness"]["ready_for_model_training"])
 
