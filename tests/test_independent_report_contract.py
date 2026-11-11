@@ -4,6 +4,7 @@ from app.independent_report_contract import (
     MODEL_PORTFOLIO_ID,
     REPORT_SCHEMA,
     is_publishable_independent_report,
+    is_value_betting_authorized_report,
 )
 
 
@@ -37,6 +38,31 @@ class IndependentReportContractTests(unittest.TestCase):
         report = self.valid_report()
         report["publication_allowed"] = False
         self.assertFalse(is_publishable_independent_report(report))
+
+    def test_value_betting_requires_separate_market_certificate(self):
+        report = self.valid_report()
+        self.assertFalse(is_value_betting_authorized_report(report))
+        report["value_betting_authorized"] = True
+        report["value_validation_certificate"] = {
+            "status": "CERTIFIED",
+            "approved_markets": ["BTTS"],
+            "alerts_enabled": True,
+            "signature_verified": True,
+            "certificate_sha256": "b" * 64,
+        }
+        self.assertTrue(is_value_betting_authorized_report(report))
+
+    def test_value_betting_rejects_partial_or_unverified_certificate(self):
+        report = self.valid_report()
+        report["value_betting_authorized"] = True
+        report["value_validation_certificate"] = {
+            "status": "PARTIALLY_VALIDATED",
+            "approved_markets": ["BTTS"],
+            "alerts_enabled": True,
+            "signature_verified": True,
+            "certificate_sha256": "b" * 64,
+        }
+        self.assertFalse(is_value_betting_authorized_report(report))
 
     def test_unverified_or_malformed_release_certificate_is_rejected(self):
         report = self.valid_report()
