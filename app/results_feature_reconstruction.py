@@ -52,7 +52,8 @@ def _validate_match(row: Any, index: int) -> dict:
         "fixture_id", "provider", "source_id", "competition_id", "kickoff_at",
         "settled_at", "home_team_id", "away_team_id", "home_score", "away_score",
         "endpoint", "retrieved_at", "payload_sha256", "run_id", "normalized_status",
-        "source_payload",
+        "source_payload", "home_team_source_id", "away_team_source_id",
+        "team_identity_evidence",
     }
     if not isinstance(row, dict) or set(row) != required:
         raise FeatureReconstructionError(f"match_shape_invalid:{index}")
@@ -61,6 +62,27 @@ def _validate_match(row: Any, index: int) -> dict:
             raise FeatureReconstructionError(f"{field}_invalid:{index}")
     if row["home_team_id"] == row["away_team_id"]:
         raise FeatureReconstructionError(f"same_team_fixture:{row['fixture_id']}")
+    identity = row["team_identity_evidence"]
+    identity_fields = {
+        "home_source_team_id", "away_source_team_id",
+        "home_canonical_team_id", "away_canonical_team_id",
+        "team_scope", "registry_sha256", "signing_key_arn", "verified_at",
+    }
+    if not isinstance(identity, dict) or set(identity) != identity_fields:
+        raise FeatureReconstructionError(f"team_identity_evidence_invalid:{row['fixture_id']}")
+    if (identity["home_source_team_id"] != row["home_team_source_id"]
+            or identity["away_source_team_id"] != row["away_team_source_id"]
+            or identity["home_canonical_team_id"] != row["home_team_id"]
+            or identity["away_canonical_team_id"] != row["away_team_id"]
+            or identity["home_canonical_team_id"] == identity["away_canonical_team_id"]
+            or not isinstance(identity["team_scope"], str)
+            or not identity["team_scope"].strip()
+            or not isinstance(identity["signing_key_arn"], str)
+            or not identity["signing_key_arn"].startswith("arn:aws:kms:")
+            or not isinstance(identity["registry_sha256"], str)
+            or len(identity["registry_sha256"]) != 64):
+        raise FeatureReconstructionError(f"team_identity_binding_invalid:{row['fixture_id']}")
+    _parse_time(identity["verified_at"], f"team_identity_verified_at_{index}")
     for field in ("provider", "source_id", "endpoint", "run_id"):
         if not isinstance(row[field], str) or not row[field].strip():
             raise FeatureReconstructionError(f"{field}_invalid:{index}")
@@ -83,11 +105,15 @@ def _validate_match(row: Any, index: int) -> dict:
             f"source_payload_evidence_invalid:{row['fixture_id']}:{exc}"
         ) from None
     normalized_record = {
-        key: row[key] for key in (
-            "fixture_id", "competition_id", "kickoff_at", "settled_at",
-            "home_team_id", "away_team_id", "home_score", "away_score",
-            "normalized_status",
-        )
+        "fixture_id": row["fixture_id"],
+        "competition_id": row["competition_id"],
+        "kickoff_at": row["kickoff_at"],
+        "settled_at": row["settled_at"],
+        "home_team_id": row["home_team_source_id"],
+        "away_team_id": row["away_team_source_id"],
+        "home_score": row["home_score"],
+        "away_score": row["away_score"],
+        "normalized_status": row["normalized_status"],
     }
     if evidence["normalized_record"] != normalized_record:
         raise FeatureReconstructionError(
