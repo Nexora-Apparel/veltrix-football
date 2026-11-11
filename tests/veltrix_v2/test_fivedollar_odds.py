@@ -83,7 +83,7 @@ def test_invalid_or_inplay_price_is_not_emitted():
 
 
 def test_capture_at_or_after_kickoff_fails_through_contract():
-    with pytest.raises(ValueError, match="captured strictly before kickoff"):
+    with pytest.raises(ValueError, match="CAPTURE_MUST_PRECEDE_KICKOFF"):
         parse_fivedollar_fixture_odds(
             payload(), fixture_id="fixture-123", kickoff_at=KICKOFF,
             captured_at=KICKOFF + timedelta(seconds=1)
