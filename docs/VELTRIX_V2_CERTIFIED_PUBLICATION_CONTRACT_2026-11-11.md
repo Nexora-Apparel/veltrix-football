@@ -8,7 +8,11 @@ Date: 2026-11-11
 
 ## Publication gate
 
-A report can be constructed only from a `ReleaseCertification` whose overall `passed` flag is true. The certification ID is carried into the report payload for audit traceability. The report contains at most 25 fixtures, unique fixture IDs, chronological kickoff ordering and only fixtures whose kickoff is strictly after report generation. An empty report is valid; no fixture quota can force publication of unsupported matches.
+A forecast report can be constructed only from a `PredictionReleaseCertification` whose overall `passed` flag is true. That gate requires, independently for 1X2, BTTS and totals: at least 1,000 chronological walk-forward matches, explicit source approval, point-in-time validation, passing leakage tests and passing calibration checks. It does not require prospective betting volume, positive ROI, odds coverage or bookmaker superiority; those are value-bet certification requirements. The prediction certification ID is carried into the report payload for audit traceability.
+
+Value betting is a separate gate. The builder accepts an optional `ReleaseCertification`; value bets are enabled only when that full certification exists and passes. If it is absent or fails, every fixture's value-bet verdict is forcibly set to `LOCKED — NOT CERTIFIED`, even if a caller supplied a value verdict. The report exposes `value_bets_enabled` to both website and Telegram consumers.
+
+The report contains at most 25 fixtures, unique fixture IDs, chronological kickoff ordering and only fixtures whose kickoff is strictly after report generation. An empty report is valid; no fixture quota can force publication of unsupported matches.
 
 ## Time contract
 
@@ -16,7 +20,7 @@ The report date is a Nigeria local calendar date (`Africa/Lagos`). The delivery 
 
 ## Website payload
 
-The JSON-ready payload includes schema version, report date, generation time, delivery deadline, certification ID, fixture count, fixture identity/competition/teams, UTC and WAT kickoff, verdict, AI insight, value-bet verdict and market probabilities. The existing website should consume this payload only after certification; its existing dashboard/status/market routing remains the presentation layer.
+The JSON-ready payload includes schema version, report date, generation time, delivery deadline, prediction certification ID, value-bet enabled flag, fixture count, fixture identity/competition/teams, UTC and WAT kickoff, verdict, AI insight, value-bet verdict and market probabilities. The existing website should consume this payload only after the prediction publication gate passes; its existing dashboard/status/market routing remains the presentation layer.
 
 ## Telegram rendering
 
@@ -24,4 +28,4 @@ The renderer uses the required header `🔔 🆕 NEW VELTRIX UPDATE`, followed b
 
 ## Release boundary
 
-The current project is not certified, so no production report can currently be built. Do not wire this renderer into the live schedule, website route or Telegram sender until source qualification, historical evaluation, prospective certification and transport integration tests all pass.
+The prediction publication gate and the value-bet certification gate are independent. A controlled predictions-only release is allowed after the prediction gate and data-quality requirements pass; value betting must remain locked until the full prospective certification contract passes. Do not wire this renderer into the live schedule, website route or Telegram sender until source qualification, historical evaluation, the appropriate release gate and transport integration tests pass.
