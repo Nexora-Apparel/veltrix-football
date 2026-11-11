@@ -34,7 +34,7 @@ def test_roi_accounts_for_win_loss_push_and_excludes_void_turnover():
     overall = report.overall
     assert (overall.wins, overall.losses, overall.pushes, overall.voids) == (1, 1, 1, 1)
     assert overall.settled_turnover == Decimal("40")
-    assert overall.gross_return == Decimal("20")
+    assert overall.gross_return == Decimal("30")
     assert overall.net_profit == Decimal("-10")
     assert overall.roi == Decimal("-0.25")
     assert overall.win_rate == Decimal("0.5")
