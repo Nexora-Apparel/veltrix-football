@@ -44,6 +44,7 @@ class AuditedProviderDatasetPipelineTests(unittest.TestCase):
         report = self.audit_report([admitted])
         assembled = {
             "dataset": {"dataset_sha256": "a" * 64},
+            "quality": {"included_fixture_count": 1},
             "feature_reconstruction": {
                 "target_fixture_count": 1, "snapshot_count": 1,
                 "withheld_count": 0, "withheld_by_reason": {}, "withheld": [],
