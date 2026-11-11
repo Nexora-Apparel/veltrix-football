@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta, timezone
+from dataclasses import replace
 
 import pytest
 
@@ -75,3 +76,21 @@ def test_result_cannot_be_available_before_kickoff():
 def test_naive_cutoff_is_rejected():
     with pytest.raises(ValueError, match="timezone-aware"):
         build([], cutoff_utc=datetime(2026, 11, 11, 6))
+
+
+def test_duplicate_fixture_ids_fail_closed():
+    row = match("duplicate")
+    with pytest.raises(ValueError, match="duplicate provider fixture IDs"):
+        build([row, replace(row, home_goals=0, away_goals=1)])
+
+
+def test_duplicate_source_observation_ids_fail_closed():
+    first = match("first")
+    second = replace(match("second"), source_observation_id=first.source_observation_id)
+    with pytest.raises(ValueError, match="duplicate source observation IDs"):
+        build([first, second])
+
+
+def test_non_finite_half_life_is_rejected():
+    with pytest.raises(ValueError, match="finite positive half-life"):
+        build([match()], half_life_matches=float("nan"))
