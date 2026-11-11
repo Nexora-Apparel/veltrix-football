@@ -390,6 +390,8 @@ def build_historical_source_coverage_report(
                         and season_evidence.get("registry_sha256") == at_cutoff["registry_sha256"]
                         and season_evidence.get("signing_key_arn") == at_cutoff["signing_key_arn"]
                         and season_evidence.get("evidence_sha256") == mapping["evidence_sha256"]
+                        and season_evidence.get("reviewer") == mapping["reviewer"]
+                        and season_evidence.get("reviewed_at") == mapping["reviewed_at"]
                         and _utc(season_evidence.get("verified_at"), "season_identity_verified_at")
                             == _utc(snapshot["prediction_as_of"], "season_snapshot_prediction_as_of")
                     )
