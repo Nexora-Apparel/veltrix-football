@@ -296,7 +296,7 @@ class HistoricalSourceCoverageTests(unittest.TestCase):
             {"results-provider": 2},
         )
         self.assertNotIn("season_crosswalk_unverified", result["qualification"]["threshold_failures"])
-        clv = result["domain_coverage"]["odds_movement_and_clv"]
+        clv = result["feature_coverage"]["by_data_domain"]["odds_movement_and_clv"]
         self.assertEqual(clv["status"], "evaluation_evidence_not_in_feature_catalogue")
         self.assertTrue(clv["evaluation_only"])
 
