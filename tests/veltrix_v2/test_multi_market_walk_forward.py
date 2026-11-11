@@ -46,6 +46,8 @@ def test_all_three_markets_share_same_forecast_coverage(monkeypatch):
             fold_number=1,
             train_fixture_ids=("train-1", "train-2"),
             test_fixture_ids=("test-1", "test-2"),
+            test_start_utc=datetime(2026, 1, 10, tzinfo=UTC),
+            test_end_utc=datetime(2026, 1, 17, tzinfo=UTC),
             training_label_cutoff_utc=datetime(2026, 1, 9, tzinfo=UTC),
         ),)
 
@@ -96,6 +98,8 @@ def test_unknown_team_abstention_counts_against_every_market(monkeypatch):
             fold_number=1,
             train_fixture_ids=("train-1",),
             test_fixture_ids=("test-1",),
+            test_start_utc=datetime(2026, 1, 10, tzinfo=UTC),
+            test_end_utc=datetime(2026, 1, 17, tzinfo=UTC),
             training_label_cutoff_utc=datetime(2026, 1, 9, tzinfo=UTC),
         ),)
 
