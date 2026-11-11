@@ -414,7 +414,10 @@ def run(args) -> dict:
                 forecasts=fold.forecasts_1x2,
                 outcomes=fold.outcomes_1x2,
             ))
-    calibration = diagnose_1x2_calibration(calibration_folds, bin_count=10)
+    calibration = (
+        diagnose_1x2_calibration(calibration_folds, bin_count=10)
+        if any(fold.forecasts for fold in calibration_folds) else None
+    )
 
     btts_calibration_folds = []
     totals_calibration_folds = []
@@ -504,23 +507,26 @@ def run(args) -> dict:
         "market_results": market_results,
         "market_sample_sizes": sample_sizes,
         "market_sample_gate": sample_gate,
-        "calibration_1x2": {
-            "status": "DIAGNOSTICS_ONLY_NOT_CALIBRATED",
-            "fold_count": calibration.fold_count,
-            "sample_size": calibration.forecast_count,
-            "coverage": calibration.coverage,
-            "classes": [
-                {
-                    "class": row.outcome_class,
-                    "sample_size": row.sample_size,
-                    "brier_score": row.brier_score,
-                    "ece": row.expected_calibration_error,
-                    "max_calibration_error": row.maximum_calibration_error,
-                    "non_empty_bins": len(row.bins),
-                }
-                for row in calibration.classes
-            ],
-        },
+        "calibration_1x2": (
+            {"status": "NOT_AVAILABLE_NO_HELD_OUT_FORECASTS"}
+            if calibration is None else {
+                "status": "DIAGNOSTICS_ONLY_NOT_CALIBRATED",
+                "fold_count": calibration.fold_count,
+                "sample_size": calibration.forecast_count,
+                "coverage": calibration.coverage,
+                "classes": [
+                    {
+                        "class": row.outcome_class,
+                        "sample_size": row.sample_size,
+                        "brier_score": row.brier_score,
+                        "ece": row.expected_calibration_error,
+                        "max_calibration_error": row.maximum_calibration_error,
+                        "non_empty_bins": len(row.bins),
+                    }
+                    for row in calibration.classes
+                ],
+            }
+        ),
         "calibration_btts": binary_calibration_summary(btts_calibration),
         "calibration_totals_ou_2_5": binary_calibration_summary(totals_calibration),
         "prospective_validation": "NOT_STARTED",
