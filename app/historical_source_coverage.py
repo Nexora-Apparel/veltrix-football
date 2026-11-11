@@ -27,6 +27,27 @@ from app.feature_source_qualification import (
     validate_feature_source,
 )
 
+FEATURE_DOMAINS = {
+    "team_strength_and_form": [
+        "home_team_elo", "away_team_elo", "elo_difference_home",
+        "home_attack_goals_rate", "home_defence_conceded_rate",
+        "away_attack_goals_rate", "away_defence_conceded_rate",
+        "home_form_points_rate", "away_form_points_rate",
+    ],
+    "expected_goals": [
+        "home_rolling_xg_for", "home_rolling_xg_against",
+        "away_rolling_xg_for", "away_rolling_xg_against",
+    ],
+    "lineups": ["home_lineup_strength", "away_lineup_strength"],
+    "fatigue_and_travel": [
+        "home_rest_days", "away_rest_days", "home_travel_km", "away_travel_km",
+    ],
+    "market_odds": [
+        "odds_home_decimal", "odds_draw_decimal", "odds_away_decimal",
+        "odds_btts_yes_decimal", "odds_over_2_5_decimal",
+    ],
+}
+
 
 class HistoricalSourceCoverageError(ValueError):
     pass
@@ -496,11 +517,19 @@ def build_historical_source_coverage_report(
                 for record in season_records
             }
             season_feature_counts = Counter()
+            season_feature_sources = Counter()
+            season_feature_source_ids = Counter()
+            season_feature_lags = defaultdict(list)
             for row in season_rows:
                 snapshot = snapshot_by_id[row["fixture_id"]]
-                season_feature_counts.update(
-                    feature["name"] for feature in snapshot["features"]
-                )
+                for feature in snapshot["features"]:
+                    season_feature_counts[feature["name"]] += 1
+                    season_feature_sources[feature["source"]] += 1
+                    season_feature_source_ids[feature["source_id"]] += 1
+                    season_feature_lags[feature["name"]].append(
+                        (_utc(feature["retrieved_at"], "season_feature_retrieved")
+                         - _utc(feature["available_at"], "season_feature_available")).total_seconds()
+                    )
             season_feature_coverage = {
                 name: (
                     season_feature_counts[name] / len(season_rows)
@@ -508,6 +537,50 @@ def build_historical_source_coverage_report(
                 )
                 for name in sorted(FEATURE_CATALOGUE)
             }
+            season_domain_coverage = {}
+            for domain, names in FEATURE_DOMAINS.items():
+                available_names = [name for name in names if name in FEATURE_CATALOGUE]
+                observed_cells = sum(season_feature_counts[name] for name in available_names)
+                denominator = season_dataset_count * len(available_names)
+                source_counts = Counter()
+                source_ids = set()
+                domain_lags = []
+                for name in available_names:
+                    domain_lags.extend(season_feature_lags[name])
+                for row in season_rows:
+                    for feature in snapshot_by_id[row["fixture_id"]]["features"]:
+                        if feature["name"] in available_names:
+                            source_counts[feature["source"]] += 1
+                            source_ids.add(feature["source_id"])
+                season_domain_coverage[domain] = {
+                    "catalogue_feature_count": len(available_names),
+                    "features_present": [
+                        name for name in available_names if season_feature_counts[name] > 0
+                    ],
+                    "features_absent": [
+                        name for name in available_names if season_feature_counts[name] == 0
+                    ],
+                    "feature_cell_coverage_rate": (
+                        observed_cells / denominator if denominator else 0.0
+                    ),
+                    "source_record_counts": dict(sorted(source_counts.items())),
+                    "distinct_source_id_count": len(source_ids),
+                    "availability_to_retrieval_lag_seconds": {
+                        "minimum": min(domain_lags) if domain_lags else None,
+                        "maximum": max(domain_lags) if domain_lags else None,
+                        "mean": sum(domain_lags) / len(domain_lags) if domain_lags else None,
+                    },
+                }
+            for domain in ("injury_availability", "pressing_intensity_ppda"):
+                season_domain_coverage[domain] = {
+                    "catalogue_feature_count": 0,
+                    "features_present": [],
+                    "features_absent": [],
+                    "feature_cell_coverage_rate": 0.0,
+                    "source_record_counts": {},
+                    "distinct_source_id_count": 0,
+                    "status": "not_in_feature_catalogue",
+                }
             season_fixture_count = len(season_records)
             season_team_count = len(season_team_ids)
             season_snapshot_count = sum(
@@ -539,6 +612,9 @@ def build_historical_source_coverage_report(
                     if isinstance(record.get("source_season"), str)
                 }),
                 "feature_coverage_by_feature": season_feature_coverage,
+                "feature_coverage_by_domain": season_domain_coverage,
+                "feature_source_record_counts": dict(sorted(season_feature_sources.items())),
+                "distinct_feature_source_id_count": len(season_feature_source_ids),
                 "feature_snapshot_identity_verified": season_snapshot_ids_verified,
                 "thresholds": {
                     "minimum_fixtures": minimum_fixtures_per_season,
@@ -632,26 +708,7 @@ def build_historical_source_coverage_report(
             if team_crosswalk_verified is None or team_mapping_failures[competition]:
                 threshold_failures.append(f"{competition}:team_identity_crosswalk_unverified")
 
-    feature_domains = {
-        "team_strength_and_form": [
-            "home_team_elo", "away_team_elo", "elo_difference_home",
-            "home_attack_goals_rate", "home_defence_conceded_rate",
-            "away_attack_goals_rate", "away_defence_conceded_rate",
-            "home_form_points_rate", "away_form_points_rate",
-        ],
-        "expected_goals": [
-            "home_rolling_xg_for", "home_rolling_xg_against",
-            "away_rolling_xg_for", "away_rolling_xg_against",
-        ],
-        "lineups": ["home_lineup_strength", "away_lineup_strength"],
-        "fatigue_and_travel": [
-            "home_rest_days", "away_rest_days", "home_travel_km", "away_travel_km",
-        ],
-        "market_odds": [
-            "odds_home_decimal", "odds_draw_decimal", "odds_away_decimal",
-            "odds_btts_yes_decimal", "odds_over_2_5_decimal",
-        ],
-    }
+    feature_domains = FEATURE_DOMAINS
     domain_coverage = {}
     for domain, names in feature_domains.items():
         available = [name for name in names if name in FEATURE_CATALOGUE]
@@ -662,6 +719,29 @@ def build_historical_source_coverage_report(
             "features_present": [name for name in available if feature_counts[name] > 0],
             "features_absent": [name for name in available if feature_counts[name] == 0],
             "feature_cell_coverage_rate": cells / denominator if denominator else 0.0,
+            "source_record_counts": dict(sorted(Counter({
+                source: sum(feature_sources_by_name[name][source] for name in available)
+                for name in available
+                for source in feature_sources_by_name[name]
+            }).items())),
+            "distinct_source_id_count": len({
+                source_id for name in available for source_id in feature_source_ids_by_name[name]
+            }),
+            "availability_to_retrieval_lag_seconds": {
+                "minimum": min(
+                    (lag for name in available for lag in feature_availability_lag_seconds[name]),
+                    default=None,
+                ),
+                "maximum": max(
+                    (lag for name in available for lag in feature_availability_lag_seconds[name]),
+                    default=None,
+                ),
+                "mean": (
+                    sum(lag for name in available for lag in feature_availability_lag_seconds[name])
+                    / sum(len(feature_availability_lag_seconds[name]) for name in available)
+                    if sum(len(feature_availability_lag_seconds[name]) for name in available) else None
+                ),
+            },
         }
     for domain in ("injury_availability", "pressing_intensity_ppda"):
         domain_coverage[domain] = {
