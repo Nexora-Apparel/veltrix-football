@@ -25,6 +25,7 @@ class TrainingMatch:
     away_goals: int
     source_observation_id: str
     quality_state: str = "valid"
+    availability_basis: str = "unspecified"
 
     def __post_init__(self) -> None:
         for field in ("kickoff_utc", "available_at_utc"):
@@ -44,6 +45,8 @@ class TrainingMatch:
             raise ValueError("POISSON_TRAIN_INVALID_SCORE")
         if self.available_at_utc < self.kickoff_utc:
             raise ValueError("POISSON_TRAIN_RESULT_AVAILABLE_BEFORE_KICKOFF")
+        if self.availability_basis not in {"unspecified", "source_timestamp", "verified_published_timestamp", "date_only_conservative_4d"}:
+            raise ValueError("POISSON_TRAIN_AVAILABILITY_BASIS_INVALID")
 
 
 @dataclass(frozen=True, slots=True)
@@ -66,6 +69,7 @@ class PoissonStrengthModel:
     training_team_count: int
     training_fixture_ids: tuple[str, ...]
     training_observation_ids: tuple[str, ...]
+    training_availability_bases: tuple[str, ...]
     objective: float
     converged: bool
     iterations: int
@@ -215,6 +219,7 @@ def fit_poisson_strength_model(
     return PoissonStrengthModel(
         model_version, competition_key, season, cutoff, params[0], params[1],
         team_strengths, len(eligible), len(teams), tuple(sorted(fixture_ids)),
-        tuple(sorted(observation_ids)), objective, converged, iteration,
-        recency_half_life_days,
+        tuple(sorted(observation_ids)),
+        tuple(sorted({row.availability_basis for row in eligible})),
+        objective, converged, iteration, recency_half_life_days,
     )
