@@ -176,6 +176,7 @@ def test_dashboard_data_exposes_published_validation_certificate(monkeypatch):
 
     certificate = {
         "status": "CERTIFIED",
+        "model_portfolio_id": "veltrix-independent-market-portfolio-v1",
         "approved_markets": ["BTTS"],
         "alerts_enabled": True,
         "signature_verified": True,
