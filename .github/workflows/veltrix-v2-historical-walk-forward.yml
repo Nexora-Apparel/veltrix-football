@@ -11,7 +11,7 @@ on:
       max_requests:
         description: "Hard provider request budget (1-60)"
         required: true
-        default: "50"
+        default: "30"
         type: string
       max_pages:
         description: "Maximum pages per competition (1-5)"
