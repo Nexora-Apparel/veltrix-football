@@ -54,6 +54,41 @@ def signed(value=None):
 
 
 class CanonicalTeamCrosswalkTests(unittest.TestCase):
+
+    def test_signer_rejects_pre_signed_registry(self):
+        value = registry()
+        value["signature"] = {"unexpected": "preexisting"}
+        with self.assertRaisesRegex(TeamCrosswalkError, "already_signed"):
+            signed(value)
+
+    def test_pair_resolver_rejects_same_canonical_team(self):
+        from app.canonical_team_crosswalk import resolve_canonical_team_pair
+        value = signed(registry([
+            mapping("home", "canonical-shared"),
+            mapping("away", "canonical-shared"),
+        ]))
+        with self.assertRaisesRegex(TeamCrosswalkError, "same_canonical_team"):
+            resolve_canonical_team_pair(
+                registry=value, trusted_kms_clients={KEY_ARN: KMS},
+                provider="provider-a", competition_id="league-1",
+                home_source_team_id="home", away_source_team_id="away",
+                as_of="2026-06-01T00:00:00Z",
+            )
+
+    def test_pair_resolver_rejects_scope_mismatch(self):
+        from app.canonical_team_crosswalk import resolve_canonical_team_pair
+        value = signed(registry([
+            mapping("home", "canonical-home", "men_first_team"),
+            mapping("away", "canonical-away", "women_first_team"),
+        ]))
+        with self.assertRaisesRegex(TeamCrosswalkError, "scope_mismatch"):
+            resolve_canonical_team_pair(
+                registry=value, trusted_kms_clients={KEY_ARN: KMS},
+                provider="provider-a", competition_id="league-1",
+                home_source_team_id="home", away_source_team_id="away",
+                as_of="2026-06-01T00:00:00Z",
+            )
+
     def test_resolves_exact_provider_competition_and_source_team(self):
         result = resolve_canonical_team(
             registry=signed(), trusted_kms_clients={KEY_ARN: KMS},
