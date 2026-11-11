@@ -41,7 +41,7 @@ def test_uses_only_completed_results_available_before_cutoff():
     rows = [
         match("old", kickoff=CUTOFF - timedelta(days=20)),
         match("late-available", available=CUTOFF + timedelta(seconds=1)),
-        match("future-kickoff", kickoff=CUTOFF + timedelta(minutes=1)),
+        match("future-kickoff", kickoff=CUTOFF + timedelta(minutes=1),\n                  available=CUTOFF + timedelta(hours=1)),
         match("wrong-league", competition="LaLiga"),
         match("eligible", home_goals=3, away_goals=0),
     ]
