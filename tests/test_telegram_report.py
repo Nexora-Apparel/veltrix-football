@@ -6,7 +6,9 @@ import json
 import requests
 import pytest
 
-from app.independent_report_contract import MODEL_PORTFOLIO_ID, REPORT_SCHEMA
+from app.independent_report_contract import (
+    MODEL_PORTFOLIO_ID, REPORT_SCHEMA, is_publishable_independent_report,
+)
 
 from scripts.send_telegram_report import (
     MAX_MESSAGE_LENGTH,
@@ -52,7 +54,7 @@ def sample_report():
             "kickoff_local": "2026-10-23T16:00:00Z",
             "probabilities": {"home_win": 0.5, "draw": 0.25, "away_win": 0.25},
             "expected_goals": {"home": 1.4, "away": 0.8},
-            "model": "experimental_recent_goals_poisson",
+            "model": "veltrix_independent_market_portfolio_v1",
             "elo_probabilities": {"home_win": 0.6, "draw": 0.25, "away_win": 0.15},
             "btts_yes": 0.58,
             "over_2_5": 0.52,
@@ -469,11 +471,8 @@ def test_telegram_withholds_legacy_low_data_forecast_probabilities():
     report["predictions"][0]["model"] = "experimental_global_licensed_prior_poisson"
     report["predictions"][0]["prediction_basis"] = "licensed global goal-rate prior only"
     report["predictions"][0]["betting_recommendation"] = False
-    message = format_report(report)
-    assert "Alpha FC vs Beta FC" in message
-    assert "FORECAST STATUS: INSUFFICIENT_HISTORY" in message
-    assert "Historical evidence is not yet sufficient for a reliable forecast." in message
-    assert "1X2: Home 50%" not in message
-    assert "BTTS Yes: 58%" not in message
+    assert not is_publishable_independent_report(report)
+    with pytest.raises(ValueError, match="LEGACY_OR_UNCERTIFIED_REPORT_SUPPRESSED"):
+        format_report(report)
     assert "xG: 1.40 - 0.80" not in message
     assert "LOW-DATA EXPERIMENTAL" not in message
