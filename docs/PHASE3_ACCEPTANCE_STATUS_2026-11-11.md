@@ -172,3 +172,16 @@ Full Phase 3 sign-off remains withheld until both Python workflows execute and p
 - It checks the 11-table schema baseline, 11 primary keys, 7 foreign keys, 5 unique constraints, 83 CHECK constraints, 22 indexes, one applied migration and one PASS reconciliation audit.
 - Every query runs inside an explicit PostgreSQL READ ONLY transaction; credentials and exception text are not printed.
 - This hardening does not change the actual execution status: the workflow has not yet reached the Python runner because the DATABASE_URL repository secret was missing in the previous preflight. No Python acceptance pass is claimed.
+
+
+
+## 12. Secret-backed workflow execution — 2026-11-11 (continued)
+
+- The repository secrets are now present and are consumed by GitHub Actions. This is confirmed by masked non-empty environment values in both workflow logs.
+- Neon Python acceptance run [#42983237444](https://github.com/Nexora-Apparel/veltrix-football/actions/runs/42983237444) reached the Python runner in a PostgreSQL read-only transaction but failed the target validation: the configured connection resolves to a database other than `veltrix-football`. No writes occurred.
+- Provider-backed dry-run [#42983219130](https://github.com/Nexora-Apparel/veltrix-football/actions/runs/42983219130) passed secret preflight and the isolated-host allowlist, then rejected the database name before any provider API calls. No import writes occurred.
+- The provider dry-run's direct-execution import-path defect was corrected by adding the repository root to `sys.path`. The latest provider dry-run unit suite passed on commit `67cf638cc819679d72e02eff551ab13648509913`: run [#42983244812](https://github.com/Nexora-Apparel/veltrix-football/actions/runs/42983244812).
+- The Neon runner now explicitly rejects a connection whose current database is not `veltrix-football`; it does not silently query another database.
+- Both GitHub Actions workflows now support manual dispatch and narrowly scoped pushes to the qualification branch for their relevant validator/workflow changes.
+- Required manual correction: update both GitHub secret values so their Neon connection strings select database `veltrix-football` (not `neondb`). `DATABASE_URL` must target production branch `main`; `DRY_RUN_DATABASE_URL` must target isolated branch `veltrix-phase3-import-dry-run`. Keep the verified hostnames unchanged.
+- Phase 3 remains unsigned. No provider import, production write, migration or model activation occurred.
