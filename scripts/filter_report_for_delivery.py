@@ -8,7 +8,7 @@ from datetime import date, datetime, timedelta
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
-from app.live_predictions import _name_key, _one_edit_apart, _team_variant_signature
+from app.fixture_history_utils import _name_key, _one_edit_apart, _team_variant_signature
 
 def _withhold_forecast(row: dict) -> dict:
     """Keep the fixture visible while removing every model/value output."""
