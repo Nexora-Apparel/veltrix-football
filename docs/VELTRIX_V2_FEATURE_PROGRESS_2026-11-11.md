@@ -42,12 +42,13 @@ Branch: `veltrix-2.0-architecture-blueprint`
 ## Verification state
 
 - Foundation suite including venue context: **38 passed, 0 failed**; legacy-import boundary check passed on PR merge commit for head `ee90b575edeb3ff6a769333389469f5eab6a73ca`. [GitHub Actions run #42984863222](https://github.com/Nexora-Apparel/veltrix-football/actions/runs/42984863222).
-- Seven new walk-forward tests have been added. Their CI result is pending; do not count them as passed until a run against the latest PR head is inspected.
+- Latest walk-forward CI attempt ran 45 tests: **44 passed, 1 failed**. Investigation showed the failing test incorrectly labelled a result settled before the test-window cutoff as unsettled. The fixture was corrected to settle after the cutoff and committed as `c86584bae6a51f089425511f498519353edb5cf4`.
+- A fresh CI run for the corrected head has not yet appeared. The seven walk-forward tests are therefore **not yet certified green**. Do not count them as passed until a new run against the corrected PR head is inspected.
 - No model fitting, calibration, prediction publication, provider ingestion or production activation has been performed.
 
 ## Next gate
 
-1. Verify the new walk-forward tests in CI.
+1. Obtain and inspect a fresh CI run against the corrected PR head.
 2. Continue deterministic, evidence-backed feature contracts only while StrikerAPI is credit-blocked.
 3. Resume the provider dry-run only after credit balance/entitlement is restored.
 4. Sign Phase 3 only after the provider dry-run completes with complete accounting, zero unresolved identity/score conflicts and unchanged database counts.
