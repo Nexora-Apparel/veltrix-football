@@ -2,21 +2,14 @@ name: Women's Historical Model Backtest
 
 on:
   workflow_dispatch:
-  push:
-    branches: [main]
-    paths:
-      - "app/backtest_engine.py"
-      - "scripts/run_backtest.py"
-      - "scripts/import_womens_club_history.py"
-      - "tests/test_backtest_engine.py"
-      - "tests/test_import_womens_club_history.py"
-      - ".github/workflows/womens-model-backtest.yml"
 
 permissions:
   contents: read
 
 jobs:
   womens-backtest:
+    # DISABLED: legacy prediction/backtest modules are excluded from VELTRIX 2.0.
+    if: false
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
