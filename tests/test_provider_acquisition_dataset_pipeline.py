@@ -101,6 +101,24 @@ def season_registry():
     )
 
 def make_snapshot(fixture_id, predictors):
+    team_signed, team_digest = team_registry()
+    team_mappings = {item["source_team_id"]: item for item in team_signed["mappings"]}
+    team_identity = {
+        "home_source_team_id": "home-src",
+        "away_source_team_id": "away-src",
+        "home_canonical_team_id": "home-1",
+        "away_canonical_team_id": "away-1",
+        "team_scope": "men_first_team",
+        "home_mapping_evidence_sha256": team_mappings["home-src"]["evidence_sha256"],
+        "away_mapping_evidence_sha256": team_mappings["away-src"]["evidence_sha256"],
+        "home_mapping_reviewer": team_mappings["home-src"]["reviewer"],
+        "away_mapping_reviewer": team_mappings["away-src"]["reviewer"],
+        "home_mapping_reviewed_at": team_mappings["home-src"]["reviewed_at"],
+        "away_mapping_reviewed_at": team_mappings["away-src"]["reviewed_at"],
+        "registry_sha256": team_digest,
+        "signing_key_arn": TEAM_KEY_ARN,
+        "verified_at": "2026-09-01T12:00:00Z",
+    }
     registry = feature_source_registry()
     verified = verify_feature_source_qualification_registry(
         registry=registry, trusted_kms_clients={TEAM_KEY_ARN: TEAM_KMS, SEASON_KEY_ARN: TEAM_KMS},
@@ -111,6 +129,7 @@ def make_snapshot(fixture_id, predictors):
         prediction_as_of="2026-09-01T12:00:00Z",
         verified_source_registry=verified,
         competition_id="league-a",
+        team_identity_evidence=team_identity,
         features=[{
             "name": name, "value": value, "source": "test-source",
             "source_id": f"source-{fixture_id}-{name}",
