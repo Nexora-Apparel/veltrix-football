@@ -22,8 +22,6 @@ on:
       - "tests/test_provider_adapters.py"
       - ".github/workflows/api-smoke-test.yml"
   workflow_dispatch:
-  schedule:
-    - cron: "25 5 * * 1"
 
 permissions:
   contents: read
