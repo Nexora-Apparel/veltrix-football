@@ -39,7 +39,8 @@ def test_rejects_invalid_payload_hash():
 
 
 def test_point_in_time_cutoff_excludes_late_observation():
-    item = observation(available_at_utc=NOW + timedelta(seconds=1))
+    later = NOW + timedelta(seconds=1)
+    item = observation(retrieved_at_utc=later, available_at_utc=later)
     assert not ForecastCutoff(NOW).permits(item)
     assert ForecastCutoff(NOW + timedelta(seconds=1)).permits(item)
 
