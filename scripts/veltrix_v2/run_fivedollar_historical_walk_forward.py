@@ -97,6 +97,18 @@ class RequestBudget:
         return payload
 
 
+
+def _history_limit_for_plan(plan: object) -> int:
+    if not isinstance(plan, str):
+        raise RuntimeError("FIVEDOLLAR_ACCOUNT_PLAN_MISSING")
+    normalized = plan.strip().casefold()
+    if normalized == "free":
+        return 90
+    if normalized in {"community", "education", "pro", "ultra", "business"}:
+        return 365
+    raise RuntimeError("FIVEDOLLAR_ACCOUNT_PLAN_UNRECOGNIZED")
+
+
 def _norm(value: str) -> str:
     return re.sub(r"\s+", " ", value.casefold().strip())
 
@@ -314,8 +326,36 @@ def run(args) -> dict:
     if not key:
         raise RuntimeError("FIVEDOLLAR_API_KEY_MISSING")
     retrieved = datetime.now(timezone.utc).replace(microsecond=0)
-    start = retrieved - timedelta(days=args.days)
     budget = RequestBudget(args.max_requests, key)
+    status_payload = budget.get("status", {})
+    status_data = status_payload.get("data")
+    if not isinstance(status_data, dict):
+        raise RuntimeError("FIVEDOLLAR_ACCOUNT_STATUS_INVALID")
+    provider_plan = status_data.get("plan")
+    plan_history_limit_days = _history_limit_for_plan(provider_plan)
+    base_plan = {
+        "provider_plan": provider_plan,
+        "plan_history_limit_days": plan_history_limit_days,
+        "requested_history_days": args.days,
+        "requests_used": budget.actual,
+        "provider_requests_remaining_header": budget.remaining_header,
+    }
+    if args.days > plan_history_limit_days:
+        return {
+            "report_version": 1,
+            "created_at_utc": datetime.now(timezone.utc).isoformat(),
+            "source": "5DollarFootballAPI",
+            **base_plan,
+            "status": "BLOCKED_PLAN_HISTORY_LIMIT",
+            "reason": f"Account plan {provider_plan} allows at most {plan_history_limit_days} history days.",
+            "raw_rows_in_report": False,
+            "raw_rows_persisted": False,
+            "prospective_validation": "NOT_STARTED",
+            "bookmaker_benchmark": "NOT_EVALUATED",
+            "roi_certification": "NOT_EVALUATED",
+            "telegram_publication": "NOT_AUTHORIZED",
+        }
+    start = retrieved - timedelta(days=args.days)
     leagues, catalogue_complete = _select_leagues(budget)
     rows, competition_summary, data_complete = _fetch_finished_rows(
         budget, leagues, start=start, end=retrieved, max_pages=args.max_pages,
@@ -332,7 +372,7 @@ def run(args) -> dict:
         "source": "5DollarFootballAPI",
         "source_response_sha256": manifest.source_response_sha256,
         "retrieved_at_utc": manifest.retrieved_at_utc,
-        "requested_history_days": args.days,
+        **base_plan,
         "observed_history_span_days": history_span,
         "raw_rows_in_report": False,
         "raw_rows_persisted": False,
@@ -556,6 +596,8 @@ def main() -> int:
         parser.error("--max-pages must be between 1 and 5")
     if not 60 <= args.min_history_days <= args.days:
         parser.error("--min-history-days must be between 60 and --days")
+    if args.days > 90 and args.min_history_days < 300:
+        parser.error("12-month history runs require --min-history-days of at least 300")
     if args.min_training_rows < 40 or args.min_test_sample < 1:
         parser.error("sample thresholds are invalid")
     output = Path(args.output)
