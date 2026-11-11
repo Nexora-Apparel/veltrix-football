@@ -156,7 +156,8 @@ def assemble_results_history_dataset(*, historical_matches: list[dict],
                                       form_window: int = 10,
                                       minimum_team_matches: int = 3,
                                       feature_source_qualification_registry: dict | None = None,
-                                      trusted_kms_clients: dict | None = None) -> dict:
+                                      trusted_kms_clients: dict | None = None,
+                                      team_crosswalk_registry: dict | None = None) -> dict:
     if not isinstance(target_fixtures, list) or not isinstance(settled_labels, list):
         raise ResultsTrainingAdapterError("targets_and_labels_must_be_arrays")
     snapshots = []
