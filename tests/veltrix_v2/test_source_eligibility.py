@@ -67,3 +67,27 @@ def test_stale_observation_is_rejected():
 
 def test_expired_approval_is_rejected():
     assert decide(approvals=(approval(valid_until_utc=T),)).reason == "approval_expired_at_cutoff"
+
+
+
+def test_approval_must_be_valid_when_observation_was_retrieved():
+    approval_after_retrieval = approval(valid_from_utc=T + timedelta(minutes=1))
+    assert decide(approvals=(approval_after_retrieval,)).reason == "approval_not_valid_at_observation_retrieval"
+
+    approval_expired_before_retrieval = approval(
+        valid_from_utc=T - timedelta(days=2),
+        valid_until_utc=T - timedelta(minutes=1),
+    )
+    assert decide(approvals=(approval_expired_before_retrieval,)).reason == "approval_expired_at_observation_retrieval"
+
+
+def test_negative_max_age_is_rejected():
+    import pytest
+    from veltrix_v2.quality.eligibility import evaluate_observation
+
+    with pytest.raises(ValueError, match="MAX_AGE_MUST_BE_NON_NEGATIVE"):
+        evaluate_observation(
+            observation(), data_type="fixtures_results",
+            cutoff=ForecastCutoff(T), approvals=(approval(),),
+            max_age=-timedelta(seconds=1),
+        )

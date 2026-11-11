@@ -50,6 +50,8 @@ def evaluate_observation(
     approvals: tuple[SourceApproval, ...],
     max_age: timedelta,
 ) -> EligibilityDecision:
+    if not isinstance(max_age, timedelta) or max_age < timedelta(0):
+        raise ValueError("SOURCE_ELIGIBILITY_MAX_AGE_MUST_BE_NON_NEGATIVE")
     candidates = [
         item for item in approvals
         if item.approval_id == observation.rights_approval_id
@@ -61,6 +63,10 @@ def evaluate_observation(
     if len(candidates) != 1:
         return EligibilityDecision(False, "no_unique_active_approval_for_provider_competition_data_type", None)
     approval = candidates[0]
+    if observation.retrieved_at_utc < approval.valid_from_utc:
+        return EligibilityDecision(False, "approval_not_valid_at_observation_retrieval", approval.approval_id)
+    if approval.valid_until_utc and observation.retrieved_at_utc >= approval.valid_until_utc:
+        return EligibilityDecision(False, "approval_expired_at_observation_retrieval", approval.approval_id)
     if cutoff.cutoff_utc < approval.valid_from_utc:
         return EligibilityDecision(False, "approval_not_yet_valid_at_cutoff", approval.approval_id)
     if approval.valid_until_utc and cutoff.cutoff_utc >= approval.valid_until_utc:
