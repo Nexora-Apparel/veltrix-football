@@ -10,7 +10,7 @@ from __future__ import annotations
 import hashlib
 import json
 from collections import Counter, defaultdict
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from typing import Any
 
 from app.point_in_time_feature_contract import (
@@ -59,6 +59,9 @@ def build_historical_source_coverage_report(
     minimum_fixtures_per_competition: int = 100,
     minimum_distinct_teams_per_competition: int = 16,
     minimum_feature_coverage_rate: float = 0.95,
+    minimum_fixtures_per_season: int = 100,
+    minimum_distinct_teams_per_season: int = 16,
+    minimum_feature_coverage_rate_per_season: float = 0.95,
     season_crosswalk_registry: dict | None = None,
     trusted_kms_clients: dict | None = None,
     season_crosswalk_as_of: str | None = None,
@@ -72,6 +75,8 @@ def build_historical_source_coverage_report(
     for name, value, minimum in (
         ("minimum_fixtures_per_competition", minimum_fixtures_per_competition, 1),
         ("minimum_distinct_teams_per_competition", minimum_distinct_teams_per_competition, 2),
+        ("minimum_fixtures_per_season", minimum_fixtures_per_season, 1),
+        ("minimum_distinct_teams_per_season", minimum_distinct_teams_per_season, 2),
     ):
         if isinstance(value, bool) or not isinstance(value, int) or value < minimum:
             raise HistoricalSourceCoverageError(f"{name}_invalid")
@@ -79,6 +84,10 @@ def build_historical_source_coverage_report(
             or not isinstance(minimum_feature_coverage_rate, (int, float))
             or not 0 < minimum_feature_coverage_rate <= 1):
         raise HistoricalSourceCoverageError("minimum_feature_coverage_rate_invalid")
+    if (isinstance(minimum_feature_coverage_rate_per_season, bool)
+            or not isinstance(minimum_feature_coverage_rate_per_season, (int, float))
+            or not 0 < minimum_feature_coverage_rate_per_season <= 1):
+        raise HistoricalSourceCoverageError("minimum_feature_coverage_rate_per_season_invalid")
 
     eligibility = pipeline_report.get("acquisition_eligibility")
     reconstruction = pipeline_report.get("feature_reconstruction")
@@ -463,6 +472,89 @@ def build_historical_source_coverage_report(
             season_resolutions[record["fixture_id"]]["canonical_season_id"]
             for record in records if record["fixture_id"] in season_resolutions
         )
+        season_groups = defaultdict(list)
+        for record in records:
+            resolution = season_resolutions.get(record["fixture_id"])
+            if resolution is not None:
+                season_groups[resolution["canonical_season_id"]].append(record)
+
+        by_canonical_season = {}
+        for canonical_season_id, season_records in sorted(season_groups.items()):
+            season_ids = {record["fixture_id"] for record in season_records}
+            season_rows = [
+                row for row in rows if row.get("fixture_id") in season_ids
+            ]
+            season_team_ids = {
+                team_id
+                for record in season_records
+                for team_id in (record["home_team_id"], record["away_team_id"])
+            }
+            season_wat_dates = {
+                _utc(record["kickoff_at"], "season_kickoff").astimezone(
+                    timezone(timedelta(hours=1))
+                ).date().isoformat()
+                for record in season_records
+            }
+            season_feature_counts = Counter()
+            for row in season_rows:
+                snapshot = snapshot_by_id[row["fixture_id"]]
+                season_feature_counts.update(
+                    feature["name"] for feature in snapshot["features"]
+                )
+            season_feature_coverage = {
+                name: (
+                    season_feature_counts[name] / len(season_rows)
+                    if season_rows else 0.0
+                )
+                for name in sorted(FEATURE_CATALOGUE)
+            }
+            season_fixture_count = len(season_records)
+            season_team_count = len(season_team_ids)
+            season_snapshot_count = sum(
+                1 for record in season_records
+                if record["fixture_id"] in snapshot_by_id
+            )
+            season_dataset_count = len(season_rows)
+            fixtures_met = season_fixture_count >= minimum_fixtures_per_season
+            teams_met = season_team_count >= minimum_distinct_teams_per_season
+            feature_coverage_met = bool(season_rows) and all(
+                rate >= minimum_feature_coverage_rate_per_season
+                for rate in season_feature_coverage.values()
+            )
+            season_snapshot_ids_verified = sum(
+                1 for record in season_records
+                if record["fixture_id"] in snapshot_by_id
+                and snapshot_by_id[record["fixture_id"]].get("season_identity_evidence", {}).get(
+                    "canonical_season_id"
+                ) == canonical_season_id
+            )
+            by_canonical_season[canonical_season_id] = {
+                "settlement_eligible_fixtures": season_fixture_count,
+                "distinct_canonical_teams": season_team_count,
+                "distinct_kickoff_wat_dates": len(season_wat_dates),
+                "feature_snapshots": season_snapshot_count,
+                "dataset_rows": season_dataset_count,
+                "source_season_labels": sorted({
+                    record["source_season"] for record in season_records
+                    if isinstance(record.get("source_season"), str)
+                }),
+                "feature_coverage_by_feature": season_feature_coverage,
+                "feature_snapshot_identity_verified": season_snapshot_ids_verified,
+                "thresholds": {
+                    "minimum_fixtures": minimum_fixtures_per_season,
+                    "minimum_distinct_teams": minimum_distinct_teams_per_season,
+                    "minimum_feature_coverage_rate": minimum_feature_coverage_rate_per_season,
+                    "fixtures_met": fixtures_met,
+                    "teams_met": teams_met,
+                    "feature_coverage_met": feature_coverage_met,
+                    "all_met": fixtures_met and teams_met and feature_coverage_met,
+                },
+            }
+            if not (fixtures_met and teams_met and feature_coverage_met):
+                threshold_failures.append(
+                    f"{competition}:{canonical_season_id}:season_coverage_below_threshold"
+                )
+
         mapped_seasons = sum(canonical_season_counts.values())
         mapping_failures = season_mapping_failures[competition]
         if not season_values:
@@ -510,6 +602,7 @@ def build_historical_source_coverage_report(
                 "records_missing_season": missing_seasons,
                 "distinct_source_seasons": len(season_values),
                 "canonical_season_counts": dict(sorted(canonical_season_counts.items())),
+                "by_canonical_season": by_canonical_season,
                 "mapped_records": mapped_seasons,
                 "unmapped_records": fixtures - mapped_seasons,
                 "canonical_season_crosswalk_verified": bool(
@@ -622,7 +715,14 @@ def build_historical_source_coverage_report(
         threshold_failures.append("feature_source_qualification_unverified")
     if not competition_report:
         threshold_failures.append("no_competition_coverage")
-    elif any(item["season_coverage"]["status"] != "verified" for item in competition_report.values()):
+    elif any(
+        item["season_coverage"]["status"] != "verified"
+        or (
+            item["feature_snapshots"]
+            and not item["season_coverage"]["feature_snapshot_identity"]["all_snapshots_verified"]
+        )
+        for item in competition_report.values()
+    ):
         threshold_failures.append("season_crosswalk_unverified")
 
     report = {
