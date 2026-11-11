@@ -7,6 +7,9 @@ VELTRIX FOOTBALL 2.0 is a clean rebuild. Legacy prediction probabilities, model 
 ## Runtime boundaries
 
 - `scripts/run_daily_predictions.py` exits immediately with `LEGACY_PREDICTION_PIPELINE_DISABLED`; it cannot fetch fixtures, build a report, publish artifacts or send Telegram messages.
+- `app/live_predictions.py`, `app/prediction.py`, `app/advanced_models.py`, `app/poisson_dc_head.py` and `app/team_form.py` now expose only disabled compatibility stubs; their former model implementations are removed.
+- `app/backtest_engine.py` and `scripts/run_backtest.py` are disabled. The independent multi-origin walk-forward evaluator is the only active model-evaluation path.
+- Shared team-name and league-division utilities were moved to `app/fixture_history_utils.py`, so provider result ingestion and report filtering no longer import the legacy prediction module.
 - The existing `daily-fixture-predictions.yml` job remains paused with `if: false`. The schedule is not restarted by this change.
 - `app/independent_prediction_service.py` uses only the independent market models and independent Poisson/Dixon-Coles implementation. It does not import the legacy predictor.
 - The dashboard API suppresses reports unless they satisfy `VELTRIX_INDEPENDENT_PREDICTION_REPORT_V1`, identify the independent portfolio, explicitly deny legacy dependencies, and carry a release certificate marked certified, publication-authorized and signature-verified with a valid digest.
