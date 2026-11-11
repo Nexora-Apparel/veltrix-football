@@ -16,6 +16,7 @@ Branch: `veltrix-2.0-architecture-blueprint`
 - Strict provider, competition and season scope.
 - Results must be final, kicked off before cutoff and available by cutoff.
 - Missing history remains missing; small samples are explicitly marked.
+- Duplicate provider fixture IDs and duplicate source-observation IDs fail closed; non-finite half-life parameters are rejected.
 
 ### Team schedule load
 - Rest days since last match.
@@ -38,7 +39,6 @@ Branch: `veltrix-2.0-architecture-blueprint`
 - Exposes ratings and Elo expected score as descriptive features, not calibrated match probabilities.
 - Cold-start teams remain explicitly missing; no fabricated 1500 rating is emitted for a team with no eligible appearances.
 - Duplicate fixture/source identities and invalid timestamps/parameters fail closed.
-- Seven focused tests included in the verified suite.
 
 ## Evaluation foundation added
 
@@ -46,17 +46,20 @@ Branch: `veltrix-2.0-architecture-blueprint`
 - A training fixture is eligible only if its kickoff precedes the test window and its outcome settlement timestamp is no later than the training-label cutoff.
 - Supports a configurable embargo, minimum training sample and number/duration of folds.
 - Rejects duplicate fixture IDs, naive timestamps, invalid windows, empty test folds and insufficient training samples.
-- This is evaluation infrastructure only; it does not fit models or calculate performance metrics.
+- Strict 1X2 proper-scoring functions added for multiclass Brier, log loss and ranked probability score.
+- Forecast vectors must be finite, strictly positive, normalized and uniquely keyed; forecast/outcome fixture sets must match exactly.
+- Evaluation code computes scores only; it does not fit, calibrate, repair or publish predictions.
 
 ## Verification state
 
-- Foundation suite including venue context: **38 passed, 0 failed**; legacy-import boundary check passed on PR merge commit for head `ee90b575edeb3ff6a769333389469f5eab6a73ca`. [GitHub Actions run #42984863222](https://github.com/Nexora-Apparel/veltrix-football/actions/runs/42984863222).
-- Corrected walk-forward suite: **45 passed, 0 failed**, including all seven walk-forward tests; legacy-import boundary check passed. [GitHub Actions run #42987573786](https://github.com/Nexora-Apparel/veltrix-football/actions/runs/42987573786).
-- Latest suite including Elo: **52 passed, 0 failed**; legacy-import boundary check passed. [GitHub Actions run #42988271363](https://github.com/Nexora-Apparel/veltrix-football/actions/runs/42988271363).
+- Foundation suite including venue context: **38 passed, 0 failed**; legacy-import boundary check passed. [Run #42984863222](https://github.com/Nexora-Apparel/veltrix-football/actions/runs/42984863222).
+- Corrected walk-forward suite: **45 passed, 0 failed**, including all seven walk-forward tests; legacy-import boundary check passed. [Run #42987573786](https://github.com/Nexora-Apparel/veltrix-football/actions/runs/42987573786).
+- Latest suite including Elo: **52 passed, 0 failed**; legacy-import boundary check passed. [Run #42988271363](https://github.com/Nexora-Apparel/veltrix-football/actions/runs/42988271363).
+- Team-form duplicate-evidence guards and the new 1X2 metrics module/tests were added after that run. Latest combined CI is queued/in progress and must be inspected before these additions are marked verified.
 - No model fitting, calibration, prediction publication, provider ingestion or production activation has been performed.
 
 ## Next gate
 
-1. Continue deterministic, evidence-backed feature contracts only while StrikerAPI is credit-blocked.
-2. Resume the provider dry-run only after credit balance/entitlement is restored.
+1. Inspect the latest CI run for team-form and evaluation-metrics changes.
+2. Resume provider dry-run only after StrikerAPI credit balance/entitlement is restored.
 3. Sign Phase 3 only after the provider dry-run completes with complete accounting, zero unresolved identity/score conflicts and unchanged database counts.
