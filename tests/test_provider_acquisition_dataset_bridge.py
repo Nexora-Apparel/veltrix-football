@@ -9,6 +9,9 @@ from app.source_qualification_registry import (
 from app.provider_acquisition_dataset_bridge import (
     AcquisitionDatasetBridgeError, acquisition_record_to_history_row,
 )
+from app.canonical_team_crosswalk import (
+    SCHEMA as TEAM_CROSSWALK_SCHEMA, sign_team_crosswalk_registry,
+)
 
 
 KEY_ARN = "arn:aws:kms:eu-west-1:123456789012:key/veltrix-test-key"
@@ -23,6 +26,38 @@ class FakeKms:
 
 
 KMS = FakeKms()
+
+
+def signed_team_crosswalk_registry(*, home_scope="men_first_team",
+                                   away_scope="men_first_team",
+                                   same_canonical=False,
+                                   valid_until="2027-01-01T00:00:00Z",
+                                   revoked_at=None):
+    mappings = []
+    for source_id, canonical_id, scope in (
+        ("h", "canonical-home", home_scope),
+        ("a", "canonical-home" if same_canonical else "canonical-away", away_scope),
+    ):
+        mappings.append({
+            "provider": "strikerapi", "competition_id": "soccer",
+            "source_team_id": source_id, "canonical_team_id": canonical_id,
+            "team_scope": scope, "evidence_sha256": ["b" * 64],
+            "reviewer": "identity-review", "reviewed_at": "2026-01-01T00:00:00Z",
+            "valid_from": "2026-01-02T00:00:00Z",
+            "valid_until": valid_until, "revoked_at": revoked_at,
+        })
+    return sign_team_crosswalk_registry(
+        kms_client=KMS, key_arn=KEY_ARN,
+        trusted_key_regions={KEY_ARN: "eu-west-1"},
+        registry={
+            "schema": TEAM_CROSSWALK_SCHEMA,
+            "issued_at": "2026-01-01T00:00:00Z",
+            "expires_at": "2027-01-01T00:00:00Z",
+            "mappings": mappings,
+        },
+    )
+
+
 QUALIFICATION_RECORD = {
     "source_id": "qualified-source-a",
     "qualification_status": "qualified",
@@ -114,6 +149,7 @@ class AcquisitionDatasetBridgeTests(unittest.TestCase):
             self.provider_record(),
             settlement_timestamp_package=self.settlement_package(),
             trusted_kms_clients={KEY_ARN: KMS},
+            team_crosswalk_registry=signed_team_crosswalk_registry(),
         )
         self.assertEqual(row["settled_at"], "2026-11-01T16:52:13Z")
         self.assertEqual(row["settlement_source_id"], "qualified-source-a")
@@ -121,6 +157,66 @@ class AcquisitionDatasetBridgeTests(unittest.TestCase):
         self.assertEqual(len(row["settlement_evidence_sha256"]), 64)
         self.assertEqual(len(row["settlement_registry_sha256"]), 64)
         self.assertEqual(row["settlement_registry_signing_key_arn"], KEY_ARN)
+        self.assertEqual(row["home_team_id"], "canonical-home")
+        self.assertEqual(row["away_team_id"], "canonical-away")
+        self.assertEqual(row["home_team_source_id"], "h")
+        self.assertEqual(row["away_team_source_id"], "a")
+        self.assertEqual(row["team_identity_evidence"]["signing_key_arn"], KEY_ARN)
+        self.assertEqual(row["team_identity_evidence"]["team_scope"], "men_first_team")
+        self.assertEqual(row["source_payload"]["payload"]["home"]["team_id"], "h")
+        self.assertEqual(
+            row["source_payload"]["normalized_record"]["home_team_id"], "h"
+        )
+
+    def test_expired_team_mapping_is_rejected(self):
+        with self.assertRaisesRegex(
+            AcquisitionDatasetBridgeError, "canonical_team_pair_rejected:team_pair_mapping_missing_or_inactive"
+        ):
+            acquisition_record_to_history_row(
+                self.provider_record(), settlement_timestamp_package=self.settlement_package(),
+                trusted_kms_clients={KEY_ARN: KMS},
+                team_crosswalk_registry=signed_team_crosswalk_registry(
+                    valid_until="2026-11-01T00:00:00Z"
+                ),
+            )
+
+    def test_revoked_team_mapping_is_rejected(self):
+        with self.assertRaisesRegex(
+            AcquisitionDatasetBridgeError, "canonical_team_pair_rejected:team_pair_mapping_missing_or_inactive"
+        ):
+            acquisition_record_to_history_row(
+                self.provider_record(), settlement_timestamp_package=self.settlement_package(),
+                trusted_kms_clients={KEY_ARN: KMS},
+                team_crosswalk_registry=signed_team_crosswalk_registry(
+                    revoked_at="2026-11-01T00:00:00Z"
+                ),
+            )
+
+    def test_two_source_ids_cannot_resolve_to_same_canonical_team(self):
+        with self.assertRaisesRegex(
+            AcquisitionDatasetBridgeError, "team_pair_resolves_to_same_canonical_team"
+        ):
+            acquisition_record_to_history_row(
+                self.provider_record(), settlement_timestamp_package=self.settlement_package(),
+                trusted_kms_clients={KEY_ARN: KMS},
+                team_crosswalk_registry=signed_team_crosswalk_registry(same_canonical=True),
+            )
+
+    def test_men_women_reserve_and_youth_scopes_cannot_be_conflated(self):
+        for incompatible_scope in (
+            "women_first_team", "men_reserve", "youth_men", "youth_women",
+        ):
+            with self.subTest(scope=incompatible_scope):
+                with self.assertRaisesRegex(
+                    AcquisitionDatasetBridgeError, "team_pair_scope_mismatch"
+                ):
+                    acquisition_record_to_history_row(
+                        self.provider_record(), settlement_timestamp_package=self.settlement_package(),
+                        trusted_kms_clients={KEY_ARN: KMS},
+                        team_crosswalk_registry=signed_team_crosswalk_registry(
+                            away_scope=incompatible_scope
+                        ),
+                    )
 
     def test_external_timestamp_evidence_tampering_is_rejected(self):
         package = self.settlement_package()
