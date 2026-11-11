@@ -35,3 +35,28 @@ def is_publishable_independent_report(report: Any) -> bool:
         and _CERTIFICATE_DIGEST.fullmatch(certificate["certificate_sha256"]) is not None
         and certificate.get("model_portfolio_id") == MODEL_PORTFOLIO_ID
     )
+
+
+def is_value_betting_authorized_report(report: Any) -> bool:
+    """Require a separate signed, market-specific value-betting authorization."""
+    if not is_publishable_independent_report(report):
+        return False
+    if report.get("value_betting_authorized") is not True:
+        return False
+    certificate = report.get("value_validation_certificate")
+    if not isinstance(certificate, dict):
+        return False
+    approved = certificate.get("approved_markets")
+    allowed_markets = {
+        "1X2", "BTTS", "OVER_UNDER_1_5", "OVER_UNDER_2_5", "OVER_UNDER_3_5"
+    }
+    return (
+        certificate.get("status") == "CERTIFIED"
+        and certificate.get("alerts_enabled") is True
+        and certificate.get("signature_verified") is True
+        and isinstance(certificate.get("certificate_sha256"), str)
+        and _CERTIFICATE_DIGEST.fullmatch(certificate["certificate_sha256"]) is not None
+        and isinstance(approved, list)
+        and bool(approved)
+        and set(approved).issubset(allowed_markets)
+    )
