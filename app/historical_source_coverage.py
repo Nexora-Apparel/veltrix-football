@@ -797,6 +797,7 @@ def build_historical_source_coverage_report(
                 or reason == "feature_coverage_below_threshold"
                 or reason == "feature_source_qualification_unverified"
                 or reason == "season_crosswalk_unverified"
+                or reason.endswith("season_coverage_below_threshold")
                 for reason in threshold_failures
             ),
             "source_coverage_qualified": not threshold_failures,
