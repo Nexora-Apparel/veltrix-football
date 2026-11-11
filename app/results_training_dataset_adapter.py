@@ -65,52 +65,53 @@ def build_results_history_snapshot(*, historical_matches: list[dict],
                       if not isinstance(row, dict)
                       or row.get("fixture_id") != target_fixture.get("fixture_id")]
 
-    if team_crosswalk_registry is not None:
-        if not isinstance(trusted_kms_clients, dict) or not trusted_kms_clients:
-            raise ResultsTrainingAdapterError("team_crosswalk_trusted_kms_clients_required")
-        try:
-            feature_as_of = (kickoff - timedelta(hours=cutoff_hours)).isoformat()
-            verified_team_registry = verify_team_crosswalk_registry(
-                registry=team_crosswalk_registry,
-                trusted_kms_clients=trusted_kms_clients,
-                as_of=feature_as_of,
-            )
-        except (TeamCrosswalkError, KeyError, TypeError, ValueError) as exc:
-            raise ResultsTrainingAdapterError(
-                f"team_crosswalk_registry_rejected_at_feature_cutoff:{exc}"
-            ) from None
+    if not isinstance(team_crosswalk_registry, dict):
+        raise ResultsTrainingAdapterError("team_crosswalk_registry_required")
+    if not isinstance(trusted_kms_clients, dict) or not trusted_kms_clients:
+        raise ResultsTrainingAdapterError("team_crosswalk_trusted_kms_clients_required")
+    try:
+        feature_as_of = (kickoff - timedelta(hours=cutoff_hours)).isoformat()
+        verified_team_registry = verify_team_crosswalk_registry(
+            registry=team_crosswalk_registry,
+            trusted_kms_clients=trusted_kms_clients,
+            as_of=feature_as_of,
+        )
+    except (TeamCrosswalkError, KeyError, TypeError, ValueError) as exc:
+        raise ResultsTrainingAdapterError(
+            f"team_crosswalk_registry_rejected_at_feature_cutoff:{exc}"
+        ) from None
 
-        def pair_is_valid(row):
-            if not isinstance(row, dict):
-                return False
-            evidence = row.get("team_identity_evidence")
-            if not isinstance(evidence, dict):
-                return False
-            if (evidence.get("registry_sha256") != verified_team_registry["registry_sha256"]
-                    or evidence.get("signing_key_arn") != verified_team_registry["signing_key_arn"]):
-                return False
-            home_source = row.get("home_team_source_id")
-            away_source = row.get("away_team_source_id")
-            home = verified_team_registry["mappings"].get(
-                (row.get("provider"), row.get("competition_id"), home_source)
-            )
-            away = verified_team_registry["mappings"].get(
-                (row.get("provider"), row.get("competition_id"), away_source)
-            )
-            return bool(
-                home and away
-                and home["canonical_team_id"] == row.get("home_team_id")
-                and away["canonical_team_id"] == row.get("away_team_id")
-                and home["canonical_team_id"] != away["canonical_team_id"]
-                and home["team_scope"] == away["team_scope"]
-                and home["team_scope"] == evidence.get("team_scope")
-            )
+    def pair_is_valid(row):
+        if not isinstance(row, dict):
+            return False
+        evidence = row.get("team_identity_evidence")
+        if not isinstance(evidence, dict):
+            return False
+        if (evidence.get("registry_sha256") != verified_team_registry["registry_sha256"]
+                or evidence.get("signing_key_arn") != verified_team_registry["signing_key_arn"]):
+            return False
+        home_source = row.get("home_team_source_id")
+        away_source = row.get("away_team_source_id")
+        home = verified_team_registry["mappings"].get(
+            (row.get("provider"), row.get("competition_id"), home_source)
+        )
+        away = verified_team_registry["mappings"].get(
+            (row.get("provider"), row.get("competition_id"), away_source)
+        )
+        return bool(
+            home and away
+            and home["canonical_team_id"] == row.get("home_team_id")
+            and away["canonical_team_id"] == row.get("away_team_id")
+            and home["canonical_team_id"] != away["canonical_team_id"]
+            and home["team_scope"] == away["team_scope"]
+            and home["team_scope"] == evidence.get("team_scope")
+        )
 
-        if target_row is None or not pair_is_valid(target_row):
-            raise ResultsTrainingAdapterError(
-                "target_team_identity_not_valid_at_feature_cutoff"
-            )
-        target_history = [row for row in target_history if pair_is_valid(row)]
+    if target_row is None or not pair_is_valid(target_row):
+        raise ResultsTrainingAdapterError(
+            "target_team_identity_not_valid_at_feature_cutoff"
+        )
+    target_history = [row for row in target_history if pair_is_valid(row)]
 
     if not isinstance(season_crosswalk_registry, dict):
         raise ResultsTrainingAdapterError("season_crosswalk_registry_required")
