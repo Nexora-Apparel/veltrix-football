@@ -77,6 +77,7 @@ class ReleaseCertification:
     one_x_two_beats_bookmaker_brier: bool
     one_x_two_beats_bookmaker_log_loss: bool
     global_failures: tuple[str, ...]
+    evidence: tuple[MarketCertificationEvidence, ...] = ()
 
     def __post_init__(self) -> None:
         if type(self.passed) is not bool:
@@ -93,6 +94,27 @@ class ReleaseCertification:
             raise ValueError("RELEASE_CERTIFICATION_GLOBAL_FAILURES_INVALID")
         object.__setattr__(self, "markets", markets)
         object.__setattr__(self, "global_failures", failures)
+        evidence = tuple(self.evidence)
+        if any(not isinstance(row, MarketCertificationEvidence) for row in evidence):
+            raise ValueError("RELEASE_CERTIFICATION_EVIDENCE_TYPE_INVALID")
+        if len(evidence) != len(REQUIRED_MARKETS) or {row.market for row in evidence} != set(REQUIRED_MARKETS):
+            raise ValueError("RELEASE_CERTIFICATION_REQUIRES_COMPLETE_MARKET_EVIDENCE")
+        object.__setattr__(self, "evidence", evidence)
+        expected_by_market = {}
+        for row in evidence:
+            failed = []
+            if row.walk_forward_matches < MIN_WALK_FORWARD_MATCHES: failed.append("WALK_FORWARD_SAMPLE_BELOW_1000")
+            if row.prospective_settled_selections < MIN_PROSPECTIVE_SETTLED: failed.append("PROSPECTIVE_SAMPLE_BELOW_300")
+            if row.distinct_dates < MIN_DISTINCT_DATES: failed.append("DISTINCT_DATES_BELOW_90")
+            if row.timestamped_odds_coverage < MIN_ODDS_COVERAGE: failed.append("TIMESTAMPED_ODDS_COVERAGE_BELOW_98_PERCENT")
+            if row.net_roi <= ZERO: failed.append("NET_ROI_NOT_POSITIVE")
+            if row.roi_ci95_lower <= ZERO: failed.append("ROI_LOWER_95_PERCENT_BOUND_NOT_POSITIVE")
+            if row.roi_ci_method != "date_block_bootstrap_by_match_date": failed.append("ROI_INTERVAL_NOT_DATE_BLOCK_BOOTSTRAP")
+            if not row.source_approved: failed.append("SOURCE_NOT_APPROVED")
+            if not row.point_in_time_validated: failed.append("POINT_IN_TIME_VALIDATION_MISSING")
+            expected_by_market[row.market] = CertificationResult(row.market, not failed, tuple(failed))
+        if {row.market: row for row in markets} != expected_by_market:
+            raise ValueError("RELEASE_CERTIFICATION_MARKET_RESULTS_DO_NOT_MATCH_EVIDENCE")
         if not self.one_x_two_beats_bookmaker_brier and "1X2_DOES_NOT_BEAT_BOOKMAKER_BRIER" not in failures:
             raise ValueError("RELEASE_CERTIFICATION_BRIER_FAILURE_NOT_RECORDED")
         if self.one_x_two_beats_bookmaker_brier and "1X2_DOES_NOT_BEAT_BOOKMAKER_BRIER" in failures:
@@ -198,6 +220,7 @@ class PredictionMarketEvidence:
 class PredictionReleaseCertification:
     passed: bool
     markets: tuple[CertificationResult, ...]
+    evidence: tuple["PredictionMarketEvidence", ...] = ()
 
     def __post_init__(self) -> None:
         if type(self.passed) is not bool:
@@ -208,6 +231,23 @@ class PredictionReleaseCertification:
         if len(markets) != len(REQUIRED_MARKETS) or {row.market for row in markets} != set(REQUIRED_MARKETS):
             raise ValueError("PREDICTION_RELEASE_REQUIRES_EXACTLY_1X2_BTTS_TOTALS")
         object.__setattr__(self, "markets", markets)
+        evidence = tuple(self.evidence)
+        if any(not isinstance(row, PredictionMarketEvidence) for row in evidence):
+            raise ValueError("PREDICTION_RELEASE_EVIDENCE_TYPE_INVALID")
+        if len(evidence) != len(REQUIRED_MARKETS) or {row.market for row in evidence} != set(REQUIRED_MARKETS):
+            raise ValueError("PREDICTION_RELEASE_REQUIRES_COMPLETE_MARKET_EVIDENCE")
+        object.__setattr__(self, "evidence", evidence)
+        expected_by_market = {}
+        for row in evidence:
+            failed = []
+            if row.walk_forward_matches < MIN_WALK_FORWARD_MATCHES: failed.append("PREDICTION_WALK_FORWARD_SAMPLE_BELOW_1000")
+            if not row.source_approved: failed.append("PREDICTION_SOURCE_NOT_APPROVED")
+            if not row.point_in_time_validated: failed.append("PREDICTION_POINT_IN_TIME_VALIDATION_MISSING")
+            if not row.leakage_tests_passed: failed.append("PREDICTION_LEAKAGE_TESTS_FAILED")
+            if not row.calibration_passed: failed.append("PREDICTION_CALIBRATION_NOT_PASSED")
+            expected_by_market[row.market] = CertificationResult(row.market, not failed, tuple(failed))
+        if {row.market: row for row in markets} != expected_by_market:
+            raise ValueError("PREDICTION_RELEASE_MARKET_RESULTS_DO_NOT_MATCH_EVIDENCE")
         if self.passed != all(row.passed for row in markets):
             raise ValueError("PREDICTION_RELEASE_STATUS_CONFLICTS_WITH_EVIDENCE")
 
@@ -253,4 +293,5 @@ def certify_prediction_publication(
     return PredictionReleaseCertification(
         passed=all(item.passed for item in results),
         markets=tuple(results),
+        evidence=rows,
     )
