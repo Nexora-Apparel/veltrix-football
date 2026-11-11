@@ -7,7 +7,8 @@
 The pipeline performs two distinct admission stages:
 
 1. **Settlement/provenance eligibility:** every acquisition record is audited through the signed settlement-source registry and provider raw-payload provenance bridge. Rejected records are excluded before dataset assembly.
-2. **Point-in-time feature eligibility:** only settlement-admitted records are passed to the chronological results feature adapter. Targets lacking sufficient pre-kickoff team/competition history or valid feature snapshots remain in the adapter's withheld report.
+2. **Canonical team identity eligibility:** both provider team IDs must resolve through the same trusted KMS-signed team crosswalk, scoped by provider and competition. The pair must have active mappings, matching team scope, and distinct canonical IDs. Missing, expired, revoked or scope-incompatible identities are rejected before reconstruction.
+3. **Point-in-time feature eligibility:** only settlement- and identity-admitted records are passed to the chronological results feature adapter. Historical and target fixtures use canonical team IDs only. Targets lacking sufficient pre-kickoff team/competition history or valid feature snapshots remain in the adapter's withheld report.
 
 The sanitized audit report is hash-verified before its decisions are used. The pipeline joins admitted identities back to the exact original acquisition records; it never substitutes the audit's sanitized summaries for the retained raw-evidence records.
 
@@ -23,17 +24,20 @@ python scripts/assemble_audited_provider_dataset.py \
   --output audited_dataset_report.json
 ```
 
-The trust JSON is an out-of-band allowlist. The signing key ARN embedded in a registry is not trusted unless it appears in this environment-provided allowlist. The command uses KMS only to verify signed source qualification registries. It makes no provider HTTP requests.
+The trust JSON is an out-of-band allowlist. The signing key ARN embedded in either registry is not trusted unless it appears in this environment-provided allowlist. The command uses KMS only to verify signed settlement-source and canonical team registries. It makes no provider HTTP requests.
 
 Inputs:
 - `records`: array of normalized provider acquisition records retaining their raw source-evidence payloads.
-- `settlement-packages`: object keyed by exact `provider:source_id`, containing signed registry, source contract, fixture identity, timestamp payload and timestamp evidence.
+- `settlement-packages`: object keyed by exact `provider:source_id`, containing signed settlement registry, source contract, fixture identity, timestamp payload and timestamp evidence.
+- `team-crosswalk-registry`: KMS-signed canonical identity registry. Exact `(provider, competition, source_team_id)` mappings bind canonical team IDs and explicit men's/women's/reserve/youth scope.
+- `team-crosswalk-as-of`: timezone-aware timestamp used by the coverage report; each acquired record is independently resolved at its own provider retrieval timestamp.
 - `split-policy`: explicit chronological train/validation/test policy accepted by the existing dataset adapter.
 
 Output:
 - Per-record settlement eligibility decisions and rejection reasons.
 - Feature snapshot and withheld counts, including point-in-time reconstruction reasons.
 - Dataset and source-evidence manifests when eligible snapshots exist.
+- Separate team identity evidence: original provider IDs, canonical IDs, team scope, signed registry digest, signer ARN and verification timestamp. Raw provider payloads and their original provider-ID normalization remain unchanged and independently hash-verifiable.
 - A canonical pipeline report digest.
 
 ## Safety boundaries
