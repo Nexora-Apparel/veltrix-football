@@ -6,6 +6,8 @@ import json
 import requests
 import pytest
 
+from app.independent_report_contract import MODEL_PORTFOLIO_ID, REPORT_SCHEMA
+
 from scripts.send_telegram_report import (
     MAX_MESSAGE_LENGTH,
     format_report,
@@ -16,8 +18,25 @@ from scripts.send_telegram_report import (
 )
 
 
-def sample_report():
+def authorized_report(report):
     return {
+        **report,
+        "report_schema": REPORT_SCHEMA,
+        "model_portfolio_id": MODEL_PORTFOLIO_ID,
+        "legacy_model_dependency": False,
+        "publication_allowed": True,
+        "release_certificate": {
+            "status": "CERTIFIED",
+            "publication_authorized": True,
+            "signature_verified": True,
+            "certificate_sha256": "a" * 64,
+            "model_portfolio_id": MODEL_PORTFOLIO_ID,
+        },
+    }
+
+
+def sample_report():
+    report = {
         "as_of_date": "2026-10-23",
         "timezone": "Africa/Lagos",
         "same_day_only": True,
@@ -39,6 +58,7 @@ def sample_report():
             },
         }],
     }
+    return authorized_report(report)
 
 
 def test_telegram_report_is_predictions_only_and_keeps_new_update_alert():
@@ -297,8 +317,8 @@ def test_telegram_report_includes_value_screen_status_and_only_supplied_candidat
     message = format_report(report)
     assert "Value screen: 1X2 / BTTS / Over-Under · DISABLED_UNVALIDATED" not in message
     assert "LOCKED_INSUFFICIENT_EVIDENCE" not in message
-    assert "VALUE BET VERDICT: Potential edge under review · 1X2 home_win @ 2.10" in message
-    assert "· not approved" in message
+    assert "VALUE BET VERDICT:" not in message
+    assert "1X2 home_win @ 2.10" not in message
     assert "· approved" not in message
 
 
