@@ -17,7 +17,7 @@ def evidence(market, **overrides):
         timestamped_odds_coverage=Decimal("0.98"),
         net_roi=Decimal("0.04"),
         roi_ci95_lower=Decimal("0.01"),
-        roi_ci_method="chronological_block_bootstrap_by_match_date",
+        roi_ci_method="fixture_block_bootstrap_by_fixture",
         source_approved=True,
         point_in_time_validated=True,
     )
@@ -71,7 +71,7 @@ def test_iid_bootstrap_is_not_accepted_for_release():
         one_x_two_beats_bookmaker_log_loss=True,
     )
     assert not result.passed
-    assert "ROI_INTERVAL_NOT_MATCH_DATE_BLOCK_BOOTSTRAP" in result.markets[0].failed_gates
+    assert "ROI_INTERVAL_NOT_FIXTURE_BLOCK_BOOTSTRAP" in result.markets[0].failed_gates
 
 
 def test_bookmaker_brier_and_logloss_are_both_mandatory():

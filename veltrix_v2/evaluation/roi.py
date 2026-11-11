@@ -68,16 +68,33 @@ def _wilson_interval(wins: int, trials: int) -> tuple[Decimal, Decimal] | None:
     return (Decimal(str(max(0.0, centre - margin))), Decimal(str(min(1.0, centre + margin))))
 
 
-def _roi_interval(
+def _fixture_block_roi_interval(
     rows: list[Settlement], *, draws: int, seed: int
 ) -> tuple[Decimal, Decimal] | None:
-    if len(rows) < 2 or draws < 100:
+    """Bootstrap fixture clusters, retaining every selection from each draw.
+
+    Settlements do not currently carry a trustworthy match-date field. Fixture
+    ID is therefore the strongest available dependence block: correlated
+    markets/selections from one match are sampled together rather than as
+    independent bet rows. A date-block interval must not be claimed until
+    source-backed match dates are part of the settlement contract.
+    """
+    if draws < 100:
         return None
+    blocks: dict[str, list[Settlement]] = {}
+    for row in rows:
+        blocks.setdefault(row.fixture_id, []).append(row)
+    fixture_ids = sorted(blocks)
+    if len(fixture_ids) < 2:
+        return None
+
     rng = random.Random(seed)
     samples: list[float] = []
-    size = len(rows)
+    block_count = len(fixture_ids)
     for _ in range(draws):
-        selected = [rows[rng.randrange(size)] for _ in range(size)]
+        selected: list[Settlement] = []
+        for _ in range(block_count):
+            selected.extend(blocks[fixture_ids[rng.randrange(block_count)]])
         turnover = sum((row.stake for row in selected), ZERO)
         if turnover <= ZERO:
             continue
@@ -124,7 +141,7 @@ def _summarize(
         gross_return=gross,
         net_profit=profit,
         roi=roi,
-        roi_ci_95=_roi_interval(
+        roi_ci_95=_fixture_block_roi_interval(
             non_void, draws=bootstrap_draws, seed=bootstrap_seed
         ),
     )

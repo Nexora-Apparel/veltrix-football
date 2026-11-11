@@ -104,3 +104,22 @@ def test_bootstrap_interval_is_deterministic():
 def test_invalid_bootstrap_draw_count_is_rejected():
     with pytest.raises(ValueError, match="bootstrap_draws"):
         evaluate_roi([], bootstrap_draws=-1)
+
+
+def test_fixture_block_bootstrap_is_reported_and_requires_multiple_fixtures():
+    same_fixture = [
+        settled("f1", "1X2", "HOME"),
+        settled("f1", "BTTS", "YES"),
+    ]
+    report = evaluate_roi(same_fixture, bootstrap_draws=500)
+    assert report.overall.roi_ci_95 is None
+
+    multiple_fixtures = same_fixture + [
+        settled("f2", "1X2", "AWAY"),
+        settled("f2", "BTTS", "NO", home=0, away=1),
+        settled("f3", "1X2", "HOME", odds="1.8"),
+    ]
+    first = evaluate_roi(multiple_fixtures, bootstrap_draws=500).overall.roi_ci_95
+    second = evaluate_roi(multiple_fixtures, bootstrap_draws=500).overall.roi_ci_95
+    assert first is not None
+    assert first == second
