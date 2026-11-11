@@ -257,7 +257,7 @@ def test_today_excludes_withheld_fixtures_and_only_shows_real_forecasts():
                 "league": "Unmapped Senior League",
                 "kickoff_local": future_kickoff,
                 "status": "INSUFFICIENT_HISTORY",
-                "prediction_basis": "licensed global goal-rate prior only",
+                "prediction_basis": "independent model features from verified pre-match team history",
                 "probabilities": {"home_win": 0.45, "draw": 0.28, "away_win": 0.27},
                 "btts_yes": 0.51,
                 "over_2_5": 0.49,
@@ -405,7 +405,7 @@ def test_goal_market_command_formats_ten_matches_as_separate_readable_cards():
     assert "🎯 BTTS: Yes" in reply
     assert "Kick-off times: WAT" in reply
     assert "━━━━━━━━━━━━━━━━━━━━" in reply
-    assert "Method: independent-Poisson estimates" in reply
+    assert "Method: explicit model-produced goal-market probabilities" in reply
 
 
 def test_goal_markets_withhold_invalid_expected_goals():
@@ -461,7 +461,7 @@ def test_1x2_command_displays_home_draw_away_and_real_h2h_prices():
         "home_team": "Arsenal", "away_team": "Chelsea", "league": "Premier League",
         "kickoff_local": (now + timedelta(hours=3)).isoformat(),
         "status": "INDEPENDENT_FORECAST",
-        "prediction_basis": "competition-level historical goal-rate prior; team-specific history below minimum",
+        "prediction_basis": "verified pre-match team strength, recent form and opponent-adjusted performance",
         "probabilities": {"home_win": 0.55, "draw": 0.25, "away_win": 0.20},
         "the_odds_api_market_odds": {"markets": {"h2h": [{
             "bookmaker": "Bookmaker A",
@@ -475,7 +475,7 @@ def test_1x2_command_displays_home_draw_away_and_real_h2h_prices():
     reply = handle_command("/1x2", report=authorized_report(report))
     assert "1X2 probabilities: Home 55% · Draw 25% · Away 20%" in reply
     assert "Bookmaker A" in reply
-    assert "Why this verdict: competition-level historical goal-rate prior; team-specific history below minimum" in reply
+    assert "Why this verdict: verified pre-match team strength, recent form and opponent-adjusted performance" in reply
     assert "Arsenal 1.90" in reply
     assert "Draw 3.50" in reply
 
