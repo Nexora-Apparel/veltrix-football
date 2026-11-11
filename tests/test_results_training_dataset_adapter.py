@@ -11,7 +11,7 @@ from app.results_training_dataset_adapter import (
 def attach_evidence(row):
     row.setdefault("home_team_source_id", row["home_team_id"])
     row.setdefault("away_team_source_id", row["away_team_id"])
-    row.setdefault("team_identity_evidence", {
+    row["team_identity_evidence"] = {
         "home_source_team_id": row["home_team_source_id"],
         "away_source_team_id": row["away_team_source_id"],
         "home_canonical_team_id": row["home_team_id"],
@@ -20,7 +20,7 @@ def attach_evidence(row):
         "registry_sha256": "b" * 64,
         "signing_key_arn": "arn:aws:kms:eu-west-1:123456789012:key/test",
         "verified_at": row["retrieved_at"],
-    })
+    }
     normalized = {
         "fixture_id": row["fixture_id"],
         "competition_id": row["competition_id"],
