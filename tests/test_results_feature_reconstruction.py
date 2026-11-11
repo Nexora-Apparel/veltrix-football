@@ -113,6 +113,43 @@ class ResultsFeatureReconstructionTests(unittest.TestCase):
         self.assertFalse(result["provenance"]["xg_used"])
         self.assertFalse(result["publication_allowed"])
 
+    def test_other_competition_history_cannot_change_team_features(self):
+        history = make_history()
+        baseline = reconstruct_pre_match_features(
+            historical_matches=history, target_fixture=TARGET,
+            minimum_team_matches=3,
+        )
+        foreign = []
+        for index, original in enumerate(history):
+            row = dict(original)
+            row["fixture_id"] = f"foreign-{index}"
+            row["competition_id"] = "cup-2"
+            row["home_score"] = 8
+            row["away_score"] = 0
+            row["settled_at"] = original["settled_at"]
+            row["retrieved_at"] = original["retrieved_at"]
+            attach_evidence(row)
+            foreign.append(row)
+        changed = reconstruct_pre_match_features(
+            historical_matches=history + foreign, target_fixture=TARGET,
+            minimum_team_matches=3,
+        )
+        self.assertEqual(baseline["features"], changed["features"])
+        self.assertEqual(
+            baseline["provenance"]["eligible_history_count"],
+            changed["provenance"]["eligible_history_count"],
+        )
+
+    def test_history_from_another_competition_cannot_satisfy_team_minimum(self):
+        target = {**TARGET, "competition_id": "cup-2"}
+        with self.assertRaisesRegex(
+            FeatureReconstructionError, "insufficient_competition_history:cup-2"
+        ):
+            reconstruct_pre_match_features(
+                historical_matches=make_history(), target_fixture=target,
+                minimum_team_matches=3,
+            )
+
     def test_future_fixture_cannot_change_historical_features(self):
         history = make_history()
         baseline = reconstruct_pre_match_features(
