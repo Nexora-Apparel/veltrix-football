@@ -125,3 +125,22 @@ Independent v2 contract/foundation implementation may proceed on its isolated ar
 - Created isolated Neon branch `veltrix-phase3-import-dry-run` (`br-silent-violet-bc5de88s`) from production main and provisioned a 0.25 CU read-write compute endpoint on that child branch only. Production main was not modified.
 - Workflow dispatch and secrets remain external execution blockers. No provider API calls or dry-run writes have been made in this follow-up.
 - NWSL issue #49 still has no vendor response. No written explanation has been received, so NWSL remains excluded.
+
+
+## 8. Unit-test and production-write verification — 2026-11-11
+
+- Provider dry-run validation tests: 5 passed, 0 failed on PR head `4700fac546c9b2554a28bc6abf6d1b5538ce24f7`, run [42978186050](https://github.com/Nexora-Apparel/veltrix-football/actions/runs/42978186050).
+- StrikerAPI reconciliation unit suite: passed on the same head.
+- The live provider-backed dry-run did not begin because `DRY_RUN_DATABASE_URL` is absent. The live Python Neon acceptance did not begin because `DATABASE_URL` is absent. These are failed secret-preflight runs, not failed Python assertions.
+- Production `main` read-only snapshot: 0 fixtures, teams, competitions, results, source observations, import runs and import checkpoints. Neon branch metadata reports `written_data_bytes=0`.
+- Isolated child branch read-only snapshot: same seven domain counts all zero; branch metadata reports `written_data_bytes=0`. The 0.25 CU compute endpoint exists only on this child branch.
+- No INSERT, UPDATE, DELETE, DDL, import or migration was executed on production or the child branch.
+- Manual-only workflow dispatch was restored after the initial push-triggered preflight runs. The two verification workflows will not run automatically on future branch commits.
+
+### Exact secret requirements
+
+- `DATABASE_URL`: read-only credential for the production database, used only by `scripts/neon_acceptance.py`.
+- `DRY_RUN_DATABASE_URL`: credential for Neon child branch `br-silent-violet-bc5de88s` only, used by the provider-backed dry-run.
+- `STRIKERAPI_API_KEY` and `FIVEDOLLARFOOTBALL_API_KEY` are wired into the provider workflow; StrikerAPI secret was present in the preflight run. Do not paste any secret into chat or source code.
+
+Full Phase 3 sign-off remains withheld until both Python workflows execute and pass, the dry-run artifact demonstrates balanced cross-provider EPL source accounting and no conflicts, and NWSL is either formally excluded from the release scope or clarified by the provider. No prediction-model fitting or publication is authorized yet.
