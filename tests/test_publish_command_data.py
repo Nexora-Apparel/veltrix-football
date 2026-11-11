@@ -139,6 +139,9 @@ def test_one_snapshot_failure_does_not_block_later_publications(tmp_path, monkey
     import sys
     from scripts import publish_command_data as publisher
 
+    monkeypatch.setattr(publisher, "is_publishable_independent_report", lambda report: True)
+    monkeypatch.setattr(publisher, "is_independent_paper_ledger", lambda ledger: True)
+
     report = tmp_path / "report.json"
     ledger = tmp_path / "paper.json"
     evidence = tmp_path / "evidence.json"
