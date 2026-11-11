@@ -61,6 +61,7 @@ def is_publishable_independent_report(report: Any) -> bool:
         certificate.get("status") == "CERTIFIED"
         and certificate.get("publication_authorized") is True
         and certificate.get("signature_verified") is True
+        and certificate.get("model_portfolio_id") == MODEL_PORTFOLIO_ID
         and isinstance(certificate.get("certificate_sha256"), str)
         and _CERTIFICATE_DIGEST.fullmatch(certificate["certificate_sha256"]) is not None
         and certificate.get("model_portfolio_id") == MODEL_PORTFOLIO_ID
@@ -88,6 +89,7 @@ def is_value_betting_authorized_report(report: Any) -> bool:
         and _CERTIFICATE_DIGEST.fullmatch(certificate["certificate_sha256"]) is not None
         and isinstance(approved, list)
         and bool(approved)
+        and len(set(approved)) == len(approved)
         and set(approved).issubset(allowed_markets)
     )
 
