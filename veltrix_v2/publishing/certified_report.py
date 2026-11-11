@@ -92,6 +92,10 @@ class CertifiedDailyReport:
     fixtures: tuple[PublishedFixture, ...]
 
     def __post_init__(self) -> None:
+        if not isinstance(self.report_date_wat, date) or isinstance(self.report_date_wat, datetime):
+            raise ValueError("REPORT_DATE_WAT_INVALID")
+        if not isinstance(self.certification_id, str) or not self.certification_id.strip():
+            raise ValueError("REPORT_CERTIFICATION_ID_REQUIRED")
         if not isinstance(self.generated_at_utc, datetime) or self.generated_at_utc.tzinfo is None or self.generated_at_utc.utcoffset() is None:
             raise ValueError("REPORT_GENERATED_AT_MUST_BE_AWARE")
         if not isinstance(self.delivery_deadline_utc, datetime) or self.delivery_deadline_utc.tzinfo is None or self.delivery_deadline_utc.utcoffset() is None:
@@ -118,6 +122,8 @@ class CertifiedDailyReport:
             raise ValueError("REPORT_SOURCE_ATTRIBUTIONS_INVALID")
         object.__setattr__(self, "source_attributions", tuple(dict.fromkeys(attributions)))
         rows = tuple(self.fixtures)
+        if any(not isinstance(row, PublishedFixture) for row in rows):
+            raise ValueError("REPORT_FIXTURE_TYPE_INVALID")
         object.__setattr__(self, "fixtures", rows)
         if len(rows) > MAX_DAILY_FIXTURES:
             raise ValueError("REPORT_FIXTURE_CAP_EXCEEDED")
