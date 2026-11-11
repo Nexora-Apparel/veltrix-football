@@ -44,6 +44,7 @@ def _finalize_report(
     season_crosswalk_as_of: str | None = None,
     team_crosswalk_registry: dict | None = None,
     team_crosswalk_as_of: str | None = None,
+    feature_source_qualification_registry: dict | None = None,
 ) -> dict:
     result["admission_profile"] = build_historical_dataset_admission_report(result)
     result["source_coverage"] = build_historical_source_coverage_report(
@@ -57,6 +58,7 @@ def _finalize_report(
         season_crosswalk_as_of=season_crosswalk_as_of,
         team_crosswalk_registry=team_crosswalk_registry,
         team_crosswalk_as_of=team_crosswalk_as_of,
+        feature_source_qualification_registry=feature_source_qualification_registry,
     )
     result["pipeline_report_sha256"] = _canonical_sha256(result)
     return result
@@ -75,12 +77,15 @@ def assemble_audited_provider_dataset(
     season_crosswalk_as_of: str | None = None,
     team_crosswalk_registry: dict | None = None,
     team_crosswalk_as_of: str | None = None,
+    feature_source_qualification_registry: dict | None = None,
 ) -> dict:
     """Audit all records, then assemble features from admitted originals only."""
     if not isinstance(team_crosswalk_registry, dict):
         raise ProviderDatasetPipelineError("team_crosswalk_registry_required")
     if not isinstance(team_crosswalk_as_of, str) or not team_crosswalk_as_of:
         raise ProviderDatasetPipelineError("team_crosswalk_as_of_required")
+    if not isinstance(feature_source_qualification_registry, dict):
+        raise ProviderDatasetPipelineError("feature_source_qualification_registry_required")
     audit = audit_provider_acquisition_eligibility(
         acquisition_records=acquisition_records,
         settlement_timestamp_packages=settlement_timestamp_packages,
@@ -153,6 +158,7 @@ def assemble_audited_provider_dataset(
             season_crosswalk_as_of=season_crosswalk_as_of,
             team_crosswalk_registry=team_crosswalk_registry,
             team_crosswalk_as_of=team_crosswalk_as_of,
+            feature_source_qualification_registry=feature_source_qualification_registry,
         )
 
     try:
@@ -161,6 +167,7 @@ def assemble_audited_provider_dataset(
             settlement_timestamp_packages=selected_packages,
             trusted_kms_clients=trusted_kms_clients,
             team_crosswalk_registry=team_crosswalk_registry,
+            feature_source_qualification_registry=feature_source_qualification_registry,
             split_policy=split_policy,
             cutoff_hours=cutoff_hours,
             form_window=form_window,
