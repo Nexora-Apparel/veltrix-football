@@ -7,7 +7,7 @@ VELTRIX 2.0 is a ground-up rebuild of the prediction and evaluation system. The 
 - **Repository:** `Nexora-Apparel/veltrix-football`
 - **Working branch:** `veltrix-2.0-architecture-blueprint`
 - **Pull request:** [#51 — open, draft, unmerged](https://github.com/Nexora-Apparel/veltrix-football/pull/51)
-- **Latest verified code commit:** `771371aa9a004aad977fbbf66d75ae80298fdb6f`
+- **Latest verified code commit:** `a398a24a328ac5f50bda23f120b371dd21e495b5`
 - **CI:** 833 passed, 1 warning. This validates the test suite, not real-world model accuracy or production readiness.
 - **Release safety:** no production database writes, Vercel deployment, PR merge, Telegram activation or daily report schedule has occurred.
 
