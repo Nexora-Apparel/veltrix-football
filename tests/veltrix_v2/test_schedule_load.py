@@ -72,7 +72,7 @@ def test_future_or_not_yet_available_results_are_excluded():
     rows = [
         match("eligible", 3),
         match("late-result", 2, available_days_ago=-1),
-        match("future-kickoff", -1, available_days_ago=-0.5),
+        match("future-kickoff", -1, available_days_ago=-2),
         match("other-provider", 1, provider="other"),
     ]
     result = values(build(rows))
