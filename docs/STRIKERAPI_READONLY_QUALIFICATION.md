@@ -1,6 +1,6 @@
 # StrikerAPI Read-Only Qualification
 
-Status: bounded 90-day history / 180-day schedule probe passed on 2026-11-09; NWSL season-count discrepancy, live Premier League reconciliation and contractual terms review remain open.
+Status: bounded 90-day history / 180-day schedule probe passed on 2026-11-09; NWSL public-page/API count discrepancy remains unresolved pending written vendor clarification; the bounded EPL reconciliation and contractual terms review are recorded.
 
 ## Why this provider
 
@@ -53,7 +53,7 @@ The verifier checks:
   - 2027 league-stage scheduled: 0 rows.
   - 2027 knockout-stage scheduled: 0 rows.
   - All four scoped checks completed without invalid rows or pagination truncation.
-- NWSL API therefore returned 244 final fixtures for 2026 and no 2027 scheduled fixtures at probe time. The provider's public NWSL page lists 224 matches for 2026, so the 20-match discrepancy is an explicit provider-data reconciliation issue; do not silently treat either count as authoritative until clarified.
+- NWSL API therefore returned 244 final fixtures for 2026 and no 2027 scheduled fixtures at probe time. The provider's public NWSL page lists 224 matches for 2026: 16 fewer than the official 240 regular-season fixture count and 20 fewer than the API's 244 total final rows including four knockout fixtures. Do not silently treat the public-page count as authoritative until clarified.
 - API use: 29 calls / 58 documented credits, below the 48-call / 96-credit hard cap.
 - Database writes, imported records, import runs and checkpoints: all zero.
 - Verifier result: `BOUNDED_COVERAGE_PASS_PENDING_MANUAL_RECONCILIATION_AND_TERMS_REVIEW`.
@@ -143,3 +143,9 @@ Official references:
 - https://strikerapi.com/docs/list-games
 - https://www.nwslsoccer.com/news/nwsl-announces-2026-schedule-footprint
 - https://images.nwslsoccer.com/image/private/t_q-good/prd/tstudhfledlk7z8ygtzd.pdf
+
+## 2026-11-11 follow-up — NWSL discrepancy decision
+
+The public documentation was rechecked on 2026-11-11. The endpoint docs explicitly support separate `stage=league` and `stage=knockout` queries. The existing bounded API evidence remains 240 league-stage finals plus four knockout finals (244 total). The public NWSL page still reports 224 for 2026. Official NWSL rules specify 16 clubs playing 30 regular-season matches each, yielding 240 fixtures; the official 2026 schedule footprint includes 248 matches across regular season, playoffs and Challenge Cup.
+
+This resolves the arithmetic and categorization, not the provider's data discrepancy. The page's 224 count is 16 below regular season and 20 below the API's all-stage total. No provider support response is recorded in issue #49. NWSL therefore remains **not approved for import or production model use**. The exact approved fixture/results scope remains StrikerAPI EPL, Argentina and Brazil within the bounded 90-day probe, plus 5Dollar EPL within its Free-plan three-month entitlement. No odds, xG, shots, lineups, events or other stats are approved by this fixture/results qualification.
