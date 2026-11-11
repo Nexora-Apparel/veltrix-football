@@ -25,9 +25,11 @@ class FeatureValue:
     missing_reason: str | None = None
 
     def __post_init__(self) -> None:
+        object.__setattr__(self, "source_observation_ids", tuple(self.source_observation_ids))
         if not self.name.strip():
             raise ValueError("feature name is required")
         computed = _utc(self.computed_at_utc, "computed_at_utc")
+        object.__setattr__(self, "features", tuple(self.features))
         cutoff = _utc(self.cutoff_utc, "cutoff_utc")
         object.__setattr__(self, "computed_at_utc", computed)
         object.__setattr__(self, "cutoff_utc", cutoff)
