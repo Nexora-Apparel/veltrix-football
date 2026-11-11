@@ -11,7 +11,9 @@ import json
 from collections import Counter, defaultdict
 from typing import Any
 
-from app.point_in_time_feature_contract import FEATURE_CATALOGUE
+from app.point_in_time_feature_contract import (
+    FEATURE_CATALOGUE, validate_point_in_time_feature_snapshot,
+)
 
 
 class HistoricalAdmissionReportError(ValueError):
@@ -38,7 +40,9 @@ def build_historical_dataset_admission_report(pipeline_report: Any) -> dict:
     accepted = eligibility.get("accepted_records")
     rejected = eligibility.get("rejected_records")
     withheld = reconstruction.get("withheld")
-    if not isinstance(accepted, list) or not isinstance(rejected, list) or not isinstance(withheld, list):
+    snapshots = reconstruction.get("snapshots")
+    if (not isinstance(accepted, list) or not isinstance(rejected, list)
+            or not isinstance(withheld, list) or not isinstance(snapshots, list)):
         raise HistoricalAdmissionReportError("pipeline_admission_records_invalid")
     if dataset is None:
         rows = []
@@ -55,10 +59,32 @@ def build_historical_dataset_admission_report(pipeline_report: Any) -> dict:
     competition_counts = defaultdict(Counter)
     market_outcomes = defaultdict(lambda: defaultdict(Counter))
     feature_counts = Counter()
+    snapshots_by_fixture = {}
+    feature_sources = Counter()
+    feature_source_ids = Counter()
+    for index, snapshot in enumerate(snapshots):
+        try:
+            validate_point_in_time_feature_snapshot(snapshot)
+        except (ValueError, TypeError, KeyError) as exc:
+            raise HistoricalAdmissionReportError(f"feature_snapshot_invalid:{index}:{str(exc)[:100]}") from None
+        fixture_id = snapshot.get("fixture_id")
+        if fixture_id in snapshots_by_fixture:
+            raise HistoricalAdmissionReportError(f"duplicate_feature_snapshot:{fixture_id}")
+        snapshots_by_fixture[fixture_id] = snapshot
+        for feature in snapshot["features"]:
+            feature_sources[feature["source"]] += 1
+            feature_source_ids[feature["source_id"]] += 1
     for index, row in enumerate(rows):
         if not isinstance(row, dict):
             raise HistoricalAdmissionReportError(f"dataset_row_invalid:{index}")
         split, competition = row.get("split"), row.get("competition_key")
+        snapshot = snapshots_by_fixture.get(row.get("fixture_id"))
+        if (snapshot is None
+                or snapshot.get("snapshot_sha256") != row.get("feature_snapshot_sha256")):
+            raise HistoricalAdmissionReportError(f"dataset_snapshot_provenance_join_invalid:{index}")
+        snapshot_values = {item["name"]: item["value"] for item in snapshot["features"]}
+        if snapshot_values != row.get("predictors"):
+            raise HistoricalAdmissionReportError(f"dataset_snapshot_predictor_mismatch:{index}")
         predictors, targets = row.get("predictors"), row.get("targets")
         if split not in {"train", "validation", "test"} or not isinstance(competition, str) or not competition:
             raise HistoricalAdmissionReportError(f"dataset_row_scope_invalid:{index}")
@@ -177,8 +203,11 @@ def build_historical_dataset_admission_report(pipeline_report: Any) -> dict:
             "by_feature": feature_coverage,
             "catalogue_features_absent": absent_feature_names,
             "by_data_domain": domain_coverage,
-            "feature_level_source_timestamps_and_source_ids_in_rows": False,
-            "provenance_reference": "feature_snapshot_sha256 is retained per row; detailed feature provenance remains in the separately retained snapshot evidence",
+            "feature_level_source_timestamps_and_source_ids_in_rows": True,
+            "retained_snapshot_count": len(snapshots),
+            "feature_source_record_counts": dict(sorted(feature_sources.items())),
+            "distinct_feature_source_id_count": len(feature_source_ids),
+            "feature_snapshot_manifest_sha256": _digest(snapshots),
         },
         "training_readiness": {
             "ready_for_model_training": False,
