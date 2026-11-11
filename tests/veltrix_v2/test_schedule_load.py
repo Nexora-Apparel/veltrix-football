@@ -1,3 +1,4 @@
+"""Regression tests for point-in-time team schedule load features."""
 from datetime import datetime, timedelta, timezone
 
 import pytest
