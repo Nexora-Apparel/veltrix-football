@@ -132,6 +132,7 @@ def test_report_deadline_is_exactly_0600_wat():
             delivery_deadline_utc=datetime(2026, 11, 12, 6, 0, tzinfo=UTC),
             certification_id="cert-v2-001",
             value_bets_enabled=False,
+            source_attributions=(),
             fixtures=(),
         )
 
@@ -198,3 +199,20 @@ def test_failed_value_bet_certification_does_not_block_prediction_publication():
     )
     assert report.value_bets_enabled is False
     assert report.fixtures[0].value_bet_verdict == "LOCKED — NOT CERTIFIED"
+
+
+
+def test_provider_attribution_is_included_in_website_and_telegram_payloads():
+    attribution = "Football data by 5DollarFootballAPI — https://5dollarfootballapi.com"
+    report = build_certified_daily_report(
+        report_date_wat=date(2026, 11, 12),
+        generated_at_utc=datetime(2026, 11, 12, 4, 30, tzinfo=UTC),
+        certification=passing_prediction_certification(),
+        certification_id="prediction-cert-v2-001",
+        fixtures=(fixture("f-attribution", datetime(2026, 11, 12, 6, tzinfo=UTC)),),
+        source_attributions=(attribution,),
+    )
+    payload = website_report_payload(report)
+    message = telegram_report_text(report)
+    assert payload["source_attributions"] == [attribution]
+    assert message.endswith(attribution)

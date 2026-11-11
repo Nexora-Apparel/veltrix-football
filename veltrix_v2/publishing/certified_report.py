@@ -74,6 +74,7 @@ class CertifiedDailyReport:
     delivery_deadline_utc: datetime
     certification_id: str
     value_bets_enabled: bool
+    source_attributions: tuple[str, ...]
     fixtures: tuple[PublishedFixture, ...]
 
     def __post_init__(self) -> None:
@@ -93,6 +94,10 @@ class CertifiedDailyReport:
             raise ValueError("REPORT_GENERATION_DATE_WAT_MISMATCH")
         if type(self.value_bets_enabled) is not bool:
             raise ValueError("REPORT_VALUE_BETS_ENABLED_MUST_BE_BOOLEAN")
+        attributions = tuple(self.source_attributions)
+        if any(not isinstance(item, str) or not item.strip() for item in attributions):
+            raise ValueError("REPORT_SOURCE_ATTRIBUTIONS_INVALID")
+        object.__setattr__(self, "source_attributions", tuple(dict.fromkeys(attributions)))
         rows = tuple(self.fixtures)
         object.__setattr__(self, "fixtures", rows)
         if len(rows) > MAX_DAILY_FIXTURES:
@@ -116,6 +121,7 @@ def build_certified_daily_report(
     certification_id: str,
     fixtures: tuple[PublishedFixture, ...],
     value_bet_certification: ReleaseCertification | None = None,
+    source_attributions: tuple[str, ...] = (),
 ) -> CertifiedDailyReport:
     if not isinstance(certification, PredictionReleaseCertification) or not certification.passed:
         raise ValueError("REPORT_PREDICTION_RELEASE_CERTIFICATION_REQUIRED")
@@ -134,6 +140,7 @@ def build_certified_daily_report(
         delivery_deadline_utc=deadline,
         certification_id=certification_id,
         value_bets_enabled=value_bets_enabled,
+        source_attributions=tuple(source_attributions),
         fixtures=ordered,
     )
 
@@ -147,6 +154,7 @@ def website_report_payload(report: CertifiedDailyReport) -> dict[str, Any]:
         "delivery_deadline_utc": report.delivery_deadline_utc.isoformat(),
         "certification_id": report.certification_id,
         "value_bets_enabled": report.value_bets_enabled,
+        "source_attributions": list(report.source_attributions),
         "fixture_count": len(report.fixtures),
         "fixtures": [
             {
@@ -174,7 +182,9 @@ def telegram_report_text(report: CertifiedDailyReport) -> str:
     ]
     if not report.fixtures:
         lines.append("No fixtures passed the publication gate today.")
-        return "\n".join(lines)
+        if report.source_attributions:
+        lines.extend(["", *report.source_attributions])
+    return "\n".join(lines)
     for index, fixture in enumerate(report.fixtures, start=1):
         local_kickoff = fixture.kickoff_utc.astimezone(WAT).strftime("%H:%M")
         f = fixture.forecasts
