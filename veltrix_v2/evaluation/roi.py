@@ -151,7 +151,8 @@ def evaluate_roi(
             raise ValueError("all rows must be Settlement instances")
         if row.status not in VALID_STATUSES:
             raise ValueError("unsupported settlement status")
-        if not row.fixture_id.strip() or not row.market.strip() or not row.selection.strip():
+        identity_fields = (row.fixture_id, row.market, row.selection, row.period)
+        if any(not isinstance(value, str) or not value.strip() for value in identity_fields):
             raise ValueError("settlement identity fields are required")
         key = (row.fixture_id, row.market, row.selection, row.period)
         if key in seen:
