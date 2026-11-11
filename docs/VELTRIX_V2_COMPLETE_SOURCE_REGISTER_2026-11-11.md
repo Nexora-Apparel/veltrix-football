@@ -156,7 +156,7 @@ No source is approved for model training solely because it has a public endpoint
 #### 5DollarFootballAPI — Community Access is a no-cost expansion, not yet activated
 
 - The current official documentation confirms Community Access is $0, requires no card, and adds one selected country's whitelisted leagues to the existing top-five European leagues.
-- Community Access advertises 12 months of results and odds, 300 requests/hour and the same 20-requests/minute burst ceiling. It can be activated from the provider's Community page for a 12-month term.
+- Community Access advertises 12 months of results and odds, 300 requests/hour and the same 20-requests/minute burst ceiling. It can be activated from the provider's Community page for a 12-month term. It does not include the Pro batch-odds expansion (`include=odds`) on fixture lists, so VELTRIX must budget one odds request per fixture when needed.
 - The existing VELTRIX account remains confirmed as Free; do not assume the Community entitlement until the account status endpoint or dashboard confirms `community`.
 - This could extend the historical window and add either Argentina or Brazil without a paid subscription, but it only adds one country pack. The country selection remains a manual account decision; no account setting was changed.
 - Free and Community public-facing output must show “Football data by 5DollarFootballAPI” with a link. Own-model use, caching and display in the user's own product are permitted; raw-feed resale/redistribution is prohibited.
