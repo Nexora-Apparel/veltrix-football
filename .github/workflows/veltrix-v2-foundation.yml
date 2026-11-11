@@ -1,5 +1,7 @@
 name: VELTRIX 2.0 Foundation Tests
 # V2 source adapters, point-in-time features, estimators and walk-forward tests included.
+# Runs on PR changes to V2 code/contracts; workflow_dispatch is available once this
+# workflow definition is present on the repository default branch.
 
 on:
   pull_request:
