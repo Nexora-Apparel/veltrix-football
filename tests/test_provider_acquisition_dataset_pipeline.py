@@ -118,6 +118,7 @@ def make_snapshot(fixture_id, predictors):
         "registry_sha256": team_digest,
         "signing_key_arn": TEAM_KEY_ARN,
         "verified_at": "2026-09-01T12:00:00Z",
+        "source_verified_at": "2026-09-01T12:00:00Z",
     }
     registry = feature_source_registry()
     verified = verify_feature_source_qualification_registry(
