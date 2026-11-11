@@ -2,8 +2,8 @@
 
 This is a descriptive, fail-closed coverage layer. It does not qualify a
 provider contract, prove historical availability, train models or authorize
-publication. Season coverage is explicitly unavailable until season identity
-is carried by reviewed source evidence.
+publication. Canonical season coverage is reported only when source-season
+labels resolve through the trusted signed crosswalk at each feature cutoff.
 """
 from __future__ import annotations
 
