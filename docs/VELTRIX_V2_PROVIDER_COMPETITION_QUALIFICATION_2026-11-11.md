@@ -111,7 +111,7 @@ For chronological training, the source's actual availability time must be no lat
 - Primary fixture/results probe: 5DollarFootballAPI Free, limited to the five accessible competitions and its current historical window.
 - Historical supplemental candidates: StrikerAPI, OpenPlay, StatsBomb Open Data and manual Football-Data.co.uk snapshots, each with separate legal and point-in-time gates.
 - Odds benchmark: timestamped 5Dollar/StrikerAPI odds only after quote-level coverage and identity reconciliation; bookmaker market data remains a separate benchmark lane, never a football-strength model input.
-- GOAL API: unresolved 403; no ingestion approval.
+- GOAL API: Argentina Liga Profesional and Brazil Serie A fixtures/results probes passed on 2026-11-11 after using the documented Bearer header with a browser-like User-Agent. This is a technical fixtures/results pass only; underlying data rights and model-training/public-display permissions remain unresolved, so no training or public display approval is granted.
 - API-Football/API-Sports: excluded as a dependency due prior suspension history.
 - No source currently has blanket approval for all competitions and all model features.
 
