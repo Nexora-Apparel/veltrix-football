@@ -121,6 +121,7 @@ def audit_provider_acquisition_eligibility(
             "provider": provider,
             "source_id": source_id,
             "competition_id": row["competition_id"],
+            "source_season": record.get("season"),
             "home_team_id": row["home_team_id"],
             "away_team_id": row["away_team_id"],
             "kickoff_at": row["kickoff_at"],
