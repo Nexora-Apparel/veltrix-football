@@ -6,6 +6,7 @@ Quotes are normalized only within an exact timestamp/bookmaker/market/line group
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import datetime
 from decimal import Decimal
 from typing import Iterable
 
@@ -28,8 +29,8 @@ class NormalizedBookProbability:
     market: str
     selection: str
     line: Decimal | None
-    captured_at: object
-    kickoff_at: object
+    captured_at: datetime
+    kickoff_at: datetime
     snapshot_id: str
     decimal_odds: Decimal
     raw_implied_probability: Decimal
