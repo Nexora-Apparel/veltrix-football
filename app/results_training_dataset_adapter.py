@@ -188,7 +188,8 @@ def build_results_history_snapshot(*, historical_matches: list[dict],
         "away_mapping_reviewed_at": target_team_identity_evidence["away_mapping_reviewed_at"],
         "registry_sha256": target_team_identity_evidence["registry_sha256"],
         "signing_key_arn": target_team_identity_evidence["signing_key_arn"],
-        "verified_at": target_team_identity_evidence["verified_at"],
+        "verified_at": feature_as_of,
+        "source_verified_at": target_team_identity_evidence["verified_at"],
     }
 
     canonical_season_evidence = {
