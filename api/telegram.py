@@ -14,6 +14,7 @@ from fastapi import FastAPI, Header, HTTPException, Request as FastAPIRequest
 from fastapi.responses import HTMLResponse, JSONResponse
 
 from app.telegram_commands import handle_command
+from app.independent_report_contract import is_publishable_independent_report
 from app.report_artifacts import load_latest_report, load_dashboard_snapshot, load_paper_ledger, load_model_validation_report
 from app.telegram_security import telegram_webhook_secret_token
 
@@ -443,6 +444,43 @@ def dashboard_data() -> dict:
 
     if not isinstance(report, dict):
         return {"status": "UNAVAILABLE", "warning": "No published report could be loaded.", "predictions": []}
+    if not is_publishable_independent_report(report):
+        return {
+            "status": "LOCKED",
+            "as_of_date": None,
+            "generated_at_utc": None,
+            "published_at_utc": None,
+            "publication_status": "LOCKED_NO_CERTIFIED_INDEPENDENT_REPORT",
+            "report_generation_status": "LEGACY_REPORT_SUPPRESSED",
+            "report_freshness_note": "Legacy prediction artifacts are suppressed until an independently certified report is authorized.",
+            "data_connection": {
+                "status": "CONNECTED",
+                "freshness": "NOT_QUALIFIED",
+                "report_date": None,
+                "report_age_days": None,
+                "published": False,
+                "provider": None,
+                "provider_status": "NO_QUALIFIED_REPORT",
+                "checked_at_local": datetime.now(ZoneInfo("Africa/Lagos")).isoformat(),
+            },
+            "primary_provider_request": None,
+            "fixture_discovery": None,
+            "multi_source_odds_sync": None,
+            "live_odds_sync": None,
+            "historical_data_coverage": None,
+            "fixtures_received": 0,
+            "available_forecasts": 0,
+            "fixtures_visible": 0,
+            "unsupported_fixtures": 0,
+            "fixtures_with_market_odds": 0,
+            "model_validation": {"status": "NOT_REPORTED", "dataset": {}, "historical_1x2": {}, "rolling_origin_1x2_calibration": {}, "rolling_origin_goal_market_calibration": {}, "release_controls": {}},
+            "goal_market_calibration": {"status": "NOT_REPORTED", "markets": [], "compatible_forecasts": 0, "applied_forecasts": 0},
+            "value_bet_screen": {"status": "LOCKED_UNVALIDATED", "model_validated": False, "markets": ["1X2", "BTTS", "OVER_UNDER_1_5", "OVER_UNDER_2_5", "OVER_UNDER_3_5"], "candidate_count": 0},
+            "value_validation_certificate": {"status": "LOCKED_INSUFFICIENT_EVIDENCE", "approved_markets": [], "alerts_enabled": False, "market_diagnostics": {}, "note": "No verified independent release certificate is published."},
+            "paper_tracking": None,
+            "warning": "Legacy predictions, legacy value screens and legacy paper metrics are hidden. No certified independent prediction report is currently authorized.",
+            "predictions": [],
+        }
     now = datetime.now(ZoneInfo("Africa/Lagos"))
     rows = report.get("predictions") if isinstance(report.get("predictions"), list) else []
     upcoming = []
