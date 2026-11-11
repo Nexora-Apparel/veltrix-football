@@ -254,3 +254,13 @@ No source is approved for model training solely because it has a public endpoint
 - Use The Odds API as the secondary prospective odds/time-stamp lane, not as the fixtures/results source. Store request time, returned snapshot time/market `last_update`, bookmaker, region, market and fixture mapping. Never infer a capture timestamp from the daily report time.
 - The API key was previously authenticated and listed 46 soccer competitions. No new live call was made during this documentation audit, so current remaining credits and current market-by-market coverage remain unverified.
 - Official references: https://the-odds-api.com/terms-and-conditions.html ; https://the-odds-api.com/historical-odds-data/ ; https://the-odds-api.com/liveapi/guides/v4/ ; https://the-odds-api.com/
+
+
+#### Community country-pack comparison — Argentina vs Brazil
+
+- The provider's 2026-11-07 data-quality snapshot reports Argentina Liga Profesional (527 finished matches in 12 months) and Argentina Nacional B (647), for 1,174 combined. Both have odds, events and live-stat coverage reported at 100%; corners are 100% for both. Argentina Nacional B corner-line coverage is 94.9%.
+- Brazil Serie A reports 391 finished matches and Brazil Serie B 392, for 783 combined. Both have odds, events and live-stat coverage at 100%; corners are 99.7% for both and corner-line coverage is 100% / 99.5%.
+- Both country pairs have history listed since 2014 across 13 seasons in the Pro data-quality table. Community Access itself still only advertises the last 12 months, not the full 13-season archive.
+- If both divisions are included in the Community country pack, Argentina yields 391 more finished matches in the last 12 months than Brazil and is the stronger no-cost choice for historical sample volume and daily fixture supply. This is a data-volume comparison, not a prediction-quality claim.
+- Recommendation: prioritize Argentina for the single Community pack if its Liga Profesional and Nacional B are both selectable. Verify the actual selectable leagues and `/v1/status` entitlement before changing the historical runner. Brazil remains a strong second choice; Nigeria is a lower-volume domestic option (207 finished matches in the same 12-month snapshot).
+- Official reference: https://5dollarfootballapi.com/docs/data-quality
