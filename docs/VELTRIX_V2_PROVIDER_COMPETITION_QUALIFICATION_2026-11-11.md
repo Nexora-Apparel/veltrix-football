@@ -59,6 +59,8 @@ The Free plan's three-month historical window is not sufficient by itself for 1,
 
 For prospective odds capture, the per-fixture GET /v1/fixtures/{id}/odds endpoint is available on Free and returns Bet365 1X2, BTTS, goal lines and other supported markets. Fixture-list include=odds is not available on Free, and full tick history requires Ultra. Capture one odds payload per selected fixture, store the V2 retrieval time as captured_at, preserve any provider-supplied opened_at, and reject quotes captured at/after kickoff. This supports up to 25 daily fixture snapshots within the hourly quota if calls are batched safely. It does not create historical quote timestamps retroactively.
 
+The 2026-11-11 live probe authenticated successfully and confirmed exactly five accessible leagues: England Premier League, France Ligue 1, Germany Bundesliga I, Italy Serie A and Spain La Liga. A small upcoming-fixture sample (5 EPL fixtures) returned complete 1X2 and O/U 2.5 closing quotes for 5/5, but BTTS for only 3/5. This is a preliminary sample, not a 98% coverage certification. V2 therefore treats missing BTTS as missing data and may query The Odds API fallback; it never copies or invents prices.
+
 Free/Community/Education public-facing outputs must visibly attribute "Football data by 5DollarFootballAPI" and link to https://5dollarfootballapi.com. Raw feed resale/redistribution is prohibited.
 
 ### StrikerAPI
@@ -73,7 +75,7 @@ Events and box scores update daily around 10:00 UTC and are refetched for about 
 
 ### The Odds API
 
-The existing VELTRIX register records a successful live authentication and soccer-market probe on 2026-10-28, with 497 credits remaining after three credits were used. The previous pipeline capped event-specific BTTS checks at three events per report to control monthly quota. Re-probe current balance and actual 1X2/totals/BTTS event coverage before relying on it.
+The existing VELTRIX register records a successful live authentication and soccer-market probe on 2026-10-28. A fresh 2026-11-11 probe returned 46 active soccer sports and 298 requests remaining. The provider-specific BTTS market is available through event-specific requests and exposes market last_update timestamps. V2 will use it only as a fallback when the 5Dollar Bet365 BTTS board is missing, with a hard monthly budget and daily call cap; the API key is not a bulk odds source for all 25 daily fixtures.
 
 ### GOAL API
 
