@@ -24,6 +24,9 @@ sys.path.insert(0, str(ROOT))
 from veltrix_v2.evaluation.calibration import (
     HeldOutFold1X2, diagnose_1x2_calibration,
 )
+from veltrix_v2.evaluation.binary_calibration import (
+    HeldOutBinaryFold, diagnose_binary_calibration,
+)
 from veltrix_v2.evaluation.multi_competition_walk_forward import (
     run_multi_competition_walk_forward,
 )
@@ -412,6 +415,62 @@ def run(args) -> dict:
                 outcomes=fold.outcomes_1x2,
             ))
     calibration = diagnose_1x2_calibration(calibration_folds, bin_count=10)
+
+    btts_calibration_folds = []
+    totals_calibration_folds = []
+    for scope_index, scope_report in enumerate(evaluation.scope_reports, start=1):
+        for fold in scope_report.folds:
+            fold_number = scope_index * 100 + fold.fold_number
+            btts_calibration_folds.append(HeldOutBinaryFold(
+                fold_number=fold_number,
+                market="BTTS",
+                test_fixture_count=fold.test_fixture_count,
+                forecasts=fold.btts_forecasts,
+                outcomes=fold.btts_outcomes,
+            ))
+            totals_calibration_folds.append(HeldOutBinaryFold(
+                fold_number=fold_number,
+                market="TOTALS",
+                test_fixture_count=fold.test_fixture_count,
+                forecasts=fold.totals_forecasts,
+                outcomes=fold.totals_outcomes,
+            ))
+    btts_calibration = (
+        diagnose_binary_calibration(btts_calibration_folds, bin_count=10)
+        if any(fold.forecasts for fold in btts_calibration_folds) else None
+    )
+    totals_calibration = (
+        diagnose_binary_calibration(totals_calibration_folds, bin_count=10)
+        if any(fold.forecasts for fold in totals_calibration_folds) else None
+    )
+
+    def binary_calibration_summary(report):
+        if report is None:
+            return {"status": "NOT_AVAILABLE_NO_HELD_OUT_FORECASTS"}
+        return {
+            "status": "DIAGNOSTICS_ONLY_NOT_CALIBRATED",
+            "market": report.market,
+            "fold_count": report.fold_count,
+            "test_fixture_count": report.test_fixture_count,
+            "forecast_count": report.forecast_count,
+            "abstentions": report.abstentions,
+            "coverage": report.coverage,
+            "brier_score": report.calibration.brier_score,
+            "expected_calibration_error": report.calibration.expected_calibration_error,
+            "maximum_calibration_error": report.calibration.maximum_calibration_error,
+            "reliability_bins": [
+                {
+                    "lower_bound": row.lower_bound,
+                    "upper_bound": row.upper_bound,
+                    "sample_count": row.sample_count,
+                    "mean_predicted_probability": row.mean_predicted_probability,
+                    "observed_frequency": row.observed_frequency,
+                    "absolute_calibration_gap": row.absolute_calibration_gap,
+                }
+                for row in report.calibration.bins
+            ],
+        }
+
     market_results = {
         "1X2": {**(_score(evaluation.aggregate_1x2) or {}), **_one_x_two_accuracy(evaluation)},
         "BTTS": _binary_score(evaluation.aggregate_btts),
@@ -446,6 +505,7 @@ def run(args) -> dict:
         "market_sample_sizes": sample_sizes,
         "market_sample_gate": sample_gate,
         "calibration_1x2": {
+            "status": "DIAGNOSTICS_ONLY_NOT_CALIBRATED",
             "fold_count": calibration.fold_count,
             "sample_size": calibration.forecast_count,
             "coverage": calibration.coverage,
@@ -461,6 +521,8 @@ def run(args) -> dict:
                 for row in calibration.classes
             ],
         },
+        "calibration_btts": binary_calibration_summary(btts_calibration),
+        "calibration_totals_ou_2_5": binary_calibration_summary(totals_calibration),
         "prospective_validation": "NOT_STARTED",
         "bookmaker_benchmark": "NOT_EVALUATED",
         "roi_certification": "NOT_EVALUATED",
