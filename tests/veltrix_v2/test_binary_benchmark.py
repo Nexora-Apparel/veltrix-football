@@ -1,3 +1,4 @@
+from dataclasses import replace
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 
@@ -37,8 +38,8 @@ def test_binary_benchmark_compares_exact_common_fixture_set():
         BinaryForecast("f3", 0.7),
     ]
     books = [
-        quote("f1", "YES", 0.55),
-        quote("f2", "YES", 0.45),
+        quote("f1", "YES", 0.55), quote("f1", "NO", 0.45),
+        quote("f2", "YES", 0.45), quote("f2", "NO", 0.55),
     ]
     outcomes = [
         SettledBinaryOutcome("f1", "YES"),
@@ -60,10 +61,8 @@ def test_binary_benchmark_compares_exact_common_fixture_set():
 
 
 def test_mixed_bookmaker_is_rejected():
-    rows = [quote("f1", "YES", 0.5), quote("f2", "YES", 0.5)]
-    rows[1] = NormalizedBookProbability(
-        **{**rows[1].__dict__, "bookmaker_id": "book-b"}
-    )
+    rows = [quote("f1", "YES", 0.5), quote("f1", "NO", 0.5), quote("f2", "YES", 0.5), quote("f2", "NO", 0.5)]
+    rows[2] = replace(rows[2], bookmaker_id="book-b")
     with pytest.raises(ValueError, match="MIXED_BOOKMAKER"):
         compare_binary_to_bookmaker(
             [BinaryForecast("f1", 0.5), BinaryForecast("f2", 0.5)],
@@ -78,7 +77,7 @@ def test_no_common_quotes_rejected():
     with pytest.raises(ValueError, match="NO_COMMON"):
         compare_binary_to_bookmaker(
             [BinaryForecast("f1", 0.6)],
-            [quote("f2", "YES", 0.5)],
+            [quote("f2", "YES", 0.5), quote("f2", "NO", 0.5)],
             [SettledBinaryOutcome("f1", "YES"), SettledBinaryOutcome("f2", "NO")],
             eligible_fixture_ids=["f1", "f2"],
             affirmative_selection="YES",
@@ -89,7 +88,7 @@ def test_totals_requires_over_selection_and_same_line():
     with pytest.raises(ValueError, match="SELECTION_DOES_NOT_MATCH"):
         compare_binary_to_bookmaker(
             [BinaryForecast("f1", 0.6)],
-            [quote("f1", "YES", 0.5, market="TOTALS", line="2.5")],
+            [quote("f1", "OVER", 0.5, market="TOTALS", line="2.5"), quote("f1", "UNDER", 0.5, market="TOTALS", line="2.5")],
             [SettledBinaryOutcome("f1", "YES")],
             eligible_fixture_ids=["f1"],
             affirmative_selection="YES",
@@ -100,7 +99,7 @@ def test_duplicate_bookmaker_fixture_quote_rejected():
     with pytest.raises(ValueError, match="DUPLICATE_FIXTURE_QUOTE"):
         compare_binary_to_bookmaker(
             [BinaryForecast("f1", 0.6)],
-            [quote("f1", "YES", 0.5), quote("f1", "YES", 0.5)],
+            [quote("f1", "YES", 0.5), quote("f1", "NO", 0.5), quote("f1", "YES", 0.5), quote("f1", "NO", 0.5)],
             [SettledBinaryOutcome("f1", "YES")],
             eligible_fixture_ids=["f1"],
             affirmative_selection="YES",
