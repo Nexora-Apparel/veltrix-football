@@ -124,6 +124,17 @@ class Settlement:
     match_date: date | None = None
     match_date_source_observation_id: str | None = None
 
+    def __post_init__(self) -> None:
+        if self.match_date is not None and (not isinstance(self.match_date, date) or isinstance(self.match_date, datetime)):
+            raise ValueError("settlement match_date must be a calendar date")
+        if self.match_date is not None and (
+            not isinstance(self.match_date_source_observation_id, str)
+            or not self.match_date_source_observation_id.strip()
+        ):
+            raise ValueError("settlement match_date requires source observation provenance")
+        if self.match_date is None and self.match_date_source_observation_id is not None:
+            raise ValueError("settlement match-date provenance cannot exist without a date")
+
 
 def settle_market_bet(bet: MarketBet, result: MatchResult) -> Settlement:
     if bet.fixture_id != result.fixture_id:

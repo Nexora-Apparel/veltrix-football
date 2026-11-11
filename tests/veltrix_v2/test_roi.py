@@ -5,23 +5,29 @@ from decimal import Decimal
 import pytest
 
 from veltrix_v2.evaluation.roi import evaluate_roi
+_DEFAULT_MATCH_DATE = object()
+
 from veltrix_v2.evaluation.settlement import (
     MarketBet, MatchResult, settle_market_bet,
 )
 
 
 def settled(fixture, market, selection, *, status_result="COMPLETED",
-            home=2, away=1, odds="2.0", stake="10", line=None, match_date=None):
+            home=2, away=1, odds="2.0", stake="10", line=None, match_date=_DEFAULT_MATCH_DATE):
     bet = MarketBet(
         fixture_id=fixture, market=market, selection=selection,
         decimal_odds=Decimal(odds), stake=Decimal(stake),
         line=None if line is None else Decimal(line),
     )
+    resolved_match_date = (
+        date(2026, 11, int(fixture[1:]) if fixture[1:].isdigit() else 1)
+        if match_date is _DEFAULT_MATCH_DATE else match_date
+    )
     result = MatchResult(
         fixture_id=fixture, status=status_result,
         home_goals_regulation=home, away_goals_regulation=away,
-        match_date=(match_date if match_date is not None else date(2026, 11, int(fixture[1:]) if fixture[1:].isdigit() else 1)),
-        match_date_source_observation_id=(f"obs-{fixture}" if (match_date is not None or fixture) else None),
+        match_date=resolved_match_date,
+        match_date_source_observation_id=f"obs-{fixture}" if resolved_match_date is not None else None,
     )
     return settle_market_bet(bet, result)
 
