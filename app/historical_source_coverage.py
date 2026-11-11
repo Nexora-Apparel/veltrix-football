@@ -83,6 +83,8 @@ def build_historical_source_coverage_report(
     provider_counts = Counter()
     settlement_sources = Counter()
     kickoff_dates = defaultdict(set)
+    source_seasons = defaultdict(Counter)
+    missing_season_counts = Counter()
     for index, record in enumerate(accepted):
         if not isinstance(record, dict):
             raise HistoricalSourceCoverageError(f"accepted_record_invalid:{index}")
@@ -106,6 +108,11 @@ def build_historical_source_coverage_report(
         provider_counts[provider] += 1
         settlement_sources[record.get("settlement_source_id", "unknown")] += 1
         kickoff_dates[competition].add(kickoff.date().isoformat())
+        source_season = record.get("source_season")
+        if isinstance(source_season, str) and source_season.strip():
+            source_seasons[competition][source_season.strip()] += 1
+        else:
+            missing_season_counts[competition] += 1
 
     snapshot_by_id = {}
     feature_source_counts = Counter()
@@ -157,6 +164,14 @@ def build_historical_source_coverage_report(
         snapshots_count = sum(1 for record in records if record["fixture_id"] in snapshot_by_id)
         meets_fixtures = fixtures >= minimum_fixtures_per_competition
         meets_teams = teams >= minimum_distinct_teams_per_competition
+        season_values = source_seasons[competition]
+        missing_seasons = missing_season_counts[competition]
+        if not season_values:
+            season_status = "not_available"
+        elif missing_seasons:
+            season_status = "partially_reported"
+        else:
+            season_status = "source_reported_crosswalk_unverified"
         item = {
             "settlement_eligible_fixtures": fixtures,
             "distinct_teams": teams,
@@ -164,9 +179,12 @@ def build_historical_source_coverage_report(
             "dataset_rows": included,
             "distinct_kickoff_dates": len(kickoff_dates[competition]),
             "season_coverage": {
-                "status": "not_available",
-                "reason": "season_id_not_present_in_qualified_acquisition_record",
-                "distinct_seasons": 0,
+                "status": season_status,
+                "source_reported_season_counts": dict(sorted(season_values.items())),
+                "records_missing_season": missing_seasons,
+                "distinct_source_seasons": len(season_values),
+                "canonical_season_crosswalk_verified": False,
+                "reason": "source season labels are retained but require a reviewed canonical competition-season crosswalk",
             },
             "thresholds": {
                 "minimum_fixtures": minimum_fixtures_per_competition,
@@ -250,7 +268,7 @@ def build_historical_source_coverage_report(
     if not competition_report:
         threshold_failures.append("no_competition_coverage")
     elif any(item["season_coverage"]["status"] != "verified" for item in competition_report.values()):
-        threshold_failures.append("season_coverage_unavailable")
+        threshold_failures.append("season_crosswalk_unverified")
 
     report = {
         "schema_version": 1,
@@ -291,7 +309,7 @@ def build_historical_source_coverage_report(
                 reason.endswith("insufficient_fixtures")
                 or reason.endswith("insufficient_team_coverage")
                 or reason == "feature_coverage_below_threshold"
-                or reason == "season_coverage_unavailable"
+                or reason == "season_crosswalk_unverified"
                 for reason in threshold_failures
             ),
             "source_coverage_qualified": not threshold_failures,
