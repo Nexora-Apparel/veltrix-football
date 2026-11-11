@@ -485,7 +485,7 @@ def test_value_screen_reports_1x2_btts_totals_coverage_without_releasing_picks()
         "probabilities": {"home_win": 0.55, "draw": 0.25, "away_win": 0.20},
         "expected_goals": {"home": 1.6, "away": 0.9},
         "the_odds_api_market_odds": {"markets": {"h2h": [{}], "btts": [{}], "totals": [{}]}},
-    }]})
+    }]}))
     assert "VALUE RESEARCH" in reply
     assert "Upcoming paper-only candidates: 0" in reply
     assert "Live value alerts remain locked" in reply
