@@ -440,6 +440,7 @@ def test_dashboard_api_deduplicates_paper_tracking_rows_by_fixture_id(monkeypatc
         "model_portfolio_id": "veltrix-independent-market-portfolio-v1",
         "legacy_model_dependency": False,
         "model_status": "PAPER_TRACKING_ONLY",
+        "cumulative_metrics_by_model": {},
         "scored_matches": [
             {
                 "fixture_id": 9001, "home_team": "Alpha", "away_team": "Beta",
