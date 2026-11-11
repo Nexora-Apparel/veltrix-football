@@ -123,9 +123,9 @@ def test_normalized_quote_contract_rejects_probability_price_mismatch():
     from dataclasses import replace
 
     row = normalize_bookmaker_market([
-        snapshot("HOME", "2.0"),
-        snapshot("DRAW", "3.5"),
-        snapshot("AWAY", "4.0"),
+        quote("HOME", "2.0"),
+        quote("DRAW", "3.5"),
+        quote("AWAY", "4.0"),
     ])[0]
     with pytest.raises(ValueError, match="RAW_PROBABILITY_DOES_NOT_MATCH_PRICE"):
         replace(row, raw_implied_probability=Decimal("0.9"))
