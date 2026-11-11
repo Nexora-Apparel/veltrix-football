@@ -240,7 +240,7 @@ class AcquisitionDatasetBridgeTests(unittest.TestCase):
             "fixture_id", "provider", "source_id", "competition_id", "kickoff_at",
             "settled_at", "home_team_id", "away_team_id", "home_score", "away_score",
             "endpoint", "retrieved_at", "payload_sha256", "run_id", "normalized_status",
-            "source_payload", "home_team_source_id", "away_team_source_id",
+            "source_payload", "source_season", "home_team_source_id", "away_team_source_id",
             "team_identity_evidence",
         }
         history_row = {key: value for key, value in row.items() if key in feature_fields}
