@@ -157,10 +157,16 @@ def fetch_5dollar(out: Path, start: date, end_exclusive: date, manifest: dict) -
             short_name = str(row.get("short_name", "")).strip().casefold()
             country_code = str(country.get("code", "")).strip().upper()
             country_name = str(country.get("name", "")).strip().casefold()
-            exact_name = name == "premier league"
+            # The account-qualified catalogue historically labels EPL as
+            # "England Premier League" (ID 4160026622), while current docs
+            # examples use "Premier League". Accept only these exact aliases,
+            # with an explicit England/EPL identity signal.
+            exact_name = name in {"premier league", "england premier league"}
             exact_country = country_code == "GB-ENG" or country_name == "england"
             exact_short_name = short_name == "epl"
-            if exact_name and (exact_country or exact_short_name):
+            qualified_id_match = str(row.get("id", "")) == "4160026622"
+            explicit_england_name = name == "england premier league"
+            if exact_name and (exact_country or exact_short_name or qualified_id_match or explicit_england_name):
                 candidates.append(row)
 
         discovery_evidence.append({
