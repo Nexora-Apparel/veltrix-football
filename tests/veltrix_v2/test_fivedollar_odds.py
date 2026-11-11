@@ -106,3 +106,17 @@ def test_partial_market_is_reported_and_no_partial_rows_are_emitted():
     )
     assert "1X2" in result.missing_markets
     assert not any(row.market == "1X2" for row in result.snapshots)
+
+
+
+def test_capture_after_kickoff_is_rejected_even_when_no_markets_exist():
+    payload = {"success": 1, "data": {"fixture_id": "fx-1", "bookmakers": [
+        {"slug": "bet365", "odds": {}}
+    ]}}
+    with pytest.raises(ValueError, match="CAPTURE_MUST_PRECEDE_KICKOFF"):
+        parse_fivedollar_fixture_odds(
+            payload,
+            fixture_id="fx-1",
+            kickoff_at=KICKOFF,
+            captured_at=KICKOFF + timedelta(seconds=1),
+        )

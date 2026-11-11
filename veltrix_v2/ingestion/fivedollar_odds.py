@@ -90,6 +90,8 @@ def parse_fivedollar_fixture_odds(
         raise ValueError("FIVEDOLLAR_ODDS_MARKETS_MISSING")
     capture = captured_at.astimezone(timezone.utc)
     kickoff = kickoff_at.astimezone(timezone.utc)
+    if capture >= kickoff:
+        raise ValueError("FIVEDOLLAR_ODDS_CAPTURE_MUST_PRECEDE_KICKOFF")
     bookmaker_id = str(book.get("slug", bookmaker_slug))
     snapshots: list[OddsSnapshot] = []
     present: set[str] = set()
