@@ -35,6 +35,12 @@ def _canonical_sha256(value: Any) -> str:
     return hashlib.sha256(payload).hexdigest()
 
 
+def _finalize_report(result: dict) -> dict:
+    result["admission_profile"] = build_historical_dataset_admission_report(result)
+    result["pipeline_report_sha256"] = _canonical_sha256(result)
+    return result
+
+
 def assemble_audited_provider_dataset(
     *,
     acquisition_records: list[dict],
@@ -45,12 +51,7 @@ def assemble_audited_provider_dataset(
     form_window: int = 10,
     minimum_team_matches: int = 3,
 ) -> dict:
-    """Run the eligibility audit, then assemble from admitted raw records only.
-
-    The audit's sanitized records are never used as feature inputs: the exact
-    original records are selected by their audited provider/source identities,
-    preserving the raw payload evidence required by the downstream bridge.
-    """
+    """Audit all records, then assemble features from admitted originals only."""
     audit = audit_provider_acquisition_eligibility(
         acquisition_records=acquisition_records,
         settlement_timestamp_packages=settlement_timestamp_packages,
@@ -58,7 +59,8 @@ def assemble_audited_provider_dataset(
     )
     unsigned_audit = dict(audit)
     supplied_digest = unsigned_audit.pop("report_sha256", None)
-    if not isinstance(supplied_digest, str) or supplied_digest != _canonical_sha256(unsigned_audit):
+    if (not isinstance(supplied_digest, str)
+            or supplied_digest != _canonical_sha256(unsigned_audit)):
         raise ProviderDatasetPipelineError("eligibility_audit_digest_invalid")
 
     accepted = audit.get("accepted_records")
@@ -96,6 +98,7 @@ def assemble_audited_provider_dataset(
             "dataset": None,
             "dataset_assembled": False,
             "dataset_fixture_count": 0,
+            "feature_snapshot_count": 0,
             "acquisition_eligibility": audit,
             "feature_reconstruction": {
                 "target_fixture_count": 0,
@@ -108,16 +111,12 @@ def assemble_audited_provider_dataset(
                 "database_writes": 0,
                 "prediction_publications": 0,
             },
+            "historical_availability_proven": False,
             "training_authorized": False,
             "value_betting_enabled": False,
             "publication_allowed": False,
         }
-        result["admission_profile"] = build_historical_dataset_admission_report(result)
-        result["admission_profile"] = build_historical_dataset_admission_report(result)
-    result["pipeline_report_sha256"] = _canonical_sha256({
-            key: value for key, value in result.items() if key != "pipeline_report_sha256"
-        })
-        return result
+        return _finalize_report(result)
 
     try:
         assembled = assemble_provider_acquisition_dataset(
@@ -133,12 +132,22 @@ def assemble_audited_provider_dataset(
         raise ProviderDatasetPipelineError(f"admitted_dataset_assembly_failed:{exc}") from None
 
     dataset = assembled.get("dataset")
-    reconstruction = assembled.get("feature_reconstruction", {})
+    reconstruction = assembled.get("feature_reconstruction")
     if not isinstance(dataset, dict) or not isinstance(reconstruction, dict):
         raise ProviderDatasetPipelineError("dataset_assembly_contract_invalid")
+    rows = dataset.get("rows")
+    quality = dataset.get("quality")
+    if not isinstance(rows, list) or not isinstance(quality, dict):
+        raise ProviderDatasetPipelineError("dataset_rows_or_quality_invalid")
+    included_count = quality.get("included_fixture_count")
+    snapshot_count = reconstruction.get("snapshot_count")
+    if (isinstance(included_count, bool) or not isinstance(included_count, int)
+            or included_count < 0 or included_count != len(rows)):
+        raise ProviderDatasetPipelineError("dataset_included_fixture_count_mismatch")
+    if (isinstance(snapshot_count, bool) or not isinstance(snapshot_count, int)
+            or snapshot_count < 0):
+        raise ProviderDatasetPipelineError("feature_snapshot_count_invalid")
 
-    snapshot_count = int(reconstruction.get("snapshot_count", 0))
-    included_count = int(dataset.get("quality", {}).get("included_fixture_count", 0))
     result = {
         **assembled,
         "dataset_assembled": included_count > 0,
@@ -146,11 +155,9 @@ def assemble_audited_provider_dataset(
         "feature_snapshot_count": snapshot_count,
         "acquisition_eligibility": audit,
         "feature_reconstruction": reconstruction,
+        "historical_availability_proven": assembled.get("historical_availability_proven") is True,
         "training_authorized": False,
         "value_betting_enabled": False,
         "publication_allowed": False,
     }
-    result["pipeline_report_sha256"] = _canonical_sha256({
-        key: value for key, value in result.items() if key != "pipeline_report_sha256"
-    })
-    return result
+    return _finalize_report(result)
