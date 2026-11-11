@@ -124,6 +124,23 @@ def _summarize(
     gross = sum((row.gross_return for row in non_void), ZERO)
     profit = sum((row.net_profit for row in non_void), ZERO)
     roi = profit / turnover if turnover > ZERO else None
+    roi_interval = _date_block_roi_interval(
+        non_void, draws=bootstrap_draws, seed=bootstrap_seed
+    )
+    if any(row.match_date is None for row in non_void):
+        roi_interval_method = "unavailable_missing_match_date"
+    elif any(not row.match_date_source_observation_id for row in non_void):
+        roi_interval_method = "unavailable_unproven_match_date"
+    elif len({row.match_date for row in non_void}) < 2:
+        roi_interval_method = "unavailable_insufficient_match_dates"
+    elif bootstrap_draws < 100:
+        roi_interval_method = "unavailable_insufficient_bootstrap_draws"
+    elif roi is None:
+        roi_interval_method = "unavailable_zero_turnover"
+    elif roi_interval is None:
+        roi_interval_method = "unavailable_bootstrap_failed"
+    else:
+        roi_interval_method = "date_block_bootstrap_by_match_date"
     return MarketPerformance(
         market=market,
         total_bets=len(rows),
@@ -139,18 +156,8 @@ def _summarize(
         gross_return=gross,
         net_profit=profit,
         roi=roi,
-        roi_ci_95=_date_block_roi_interval(
-            non_void, draws=bootstrap_draws, seed=bootstrap_seed
-        ),
-        roi_ci_method=(
-            "unavailable_missing_match_date"
-            if any(row.match_date is None for row in non_void)
-            else "unavailable_unproven_match_date"
-            if any(not row.match_date_source_observation_id for row in non_void)
-            else "unavailable_insufficient_match_dates"
-            if len({row.match_date for row in non_void}) < 2
-            else "date_block_bootstrap_by_match_date"
-        ),
+        roi_ci_95=roi_interval,
+        roi_ci_method=roi_interval_method,
     )
 
 

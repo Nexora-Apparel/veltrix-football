@@ -151,3 +151,14 @@ def test_conflicting_match_date_provenance_for_one_fixture_is_rejected():
     second = settled("f1", "BTTS", "YES", match_date=date(2026, 11, 2))
     with pytest.raises(ValueError, match="match-date provenance conflicts"):
         evaluate_roi([first, second])
+
+
+
+def test_roi_method_never_claims_bootstrap_when_draws_are_insufficient():
+    rows = [
+        settled("f1", "1X2", "HOME", match_date=date(2026, 11, 1)),
+        settled("f2", "1X2", "AWAY", match_date=date(2026, 11, 2)),
+    ]
+    report = evaluate_roi(rows, bootstrap_draws=0)
+    assert report.overall.roi_ci_95 is None
+    assert report.overall.roi_ci_method == "unavailable_insufficient_bootstrap_draws"
