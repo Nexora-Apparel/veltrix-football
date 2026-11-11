@@ -152,3 +152,54 @@ def test_integer_totals_line_is_rejected():
             n_splits=1,
             total_line=2.0,
         )
+
+
+def test_nonconverged_model_abstains_from_all_markets(monkeypatch):
+    rows = [
+        match("train-1", 1, "A", "B", 2, 0),
+        match("test-1", 10, "A", "B", 1, 0),
+    ]
+
+    class NonConvergedModel:
+        converged = False
+        objective = 123.0
+        training_availability_bases = ("date_only_conservative_4d",)
+
+        def expected_goals(self, home_team_id, away_team_id):
+            return (1.4, 1.0)
+
+    def fake_folds(*args, **kwargs):
+        return (WalkForwardFold(
+            fold_number=1,
+            train_fixture_ids=("train-1",),
+            test_fixture_ids=("test-1",),
+            test_start_utc=datetime(2026, 1, 10, tzinfo=UTC),
+            test_end_utc=datetime(2026, 1, 17, tzinfo=UTC),
+            training_label_cutoff_utc=datetime(2026, 1, 9, tzinfo=UTC),
+        ),)
+
+    monkeypatch.setattr(
+        "veltrix_v2.evaluation.multi_market_walk_forward.build_expanding_walk_forward_folds",
+        fake_folds,
+    )
+    monkeypatch.setattr(
+        "veltrix_v2.evaluation.multi_market_walk_forward.fit_poisson_strength_model",
+        lambda *args, **kwargs: NonConvergedModel(),
+    )
+    result = run_multi_market_walk_forward(
+        rows,
+        competition_key="league-a",
+        season="2025-26",
+        first_test_start_utc=datetime(2026, 1, 10, tzinfo=UTC),
+        test_window=timedelta(days=7),
+        n_splits=1,
+        minimum_training_matches=1,
+    )
+    fold = result.folds[0]
+    assert fold.model_converged is False
+    assert fold.model_objective == 123.0
+    assert fold.training_availability_bases == ("date_only_conservative_4d",)
+    assert fold.abstained_fixture_ids == ("test-1",)
+    assert fold.coverage_1x2.coverage == 0.0
+    assert fold.coverage_btts.coverage == 0.0
+    assert fold.coverage_totals.coverage == 0.0
