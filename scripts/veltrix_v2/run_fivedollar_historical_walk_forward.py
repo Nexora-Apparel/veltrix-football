@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Run a bounded 5Dollar 12-month historical multi-market walk-forward.
+"""Run a bounded 5Dollar rolling-window multi-market diagnostic walk-forward.
 
 The provider's raw match records remain in memory and are never written to the
 artifact. The output contains aggregate derived metrics and source hashes only.
@@ -205,9 +205,9 @@ def _choose_schedule(matches, minimum_train: int = 40):
     min_kickoff = min(row.kickoff_utc for row in matches)
     max_kickoff = max(row.kickoff_utc for row in matches)
     best = None
-    for warmup_days in (60, 75, 90, 105, 120):
+    for warmup_days in (45, 60, 75, 90, 105, 120):
         first_start = min_kickoff + timedelta(days=warmup_days)
-        for window_days in (30, 45, 60, 75, 90):
+        for window_days in (7, 10, 14, 21, 30, 45, 60, 75, 90):
             n_splits = min(9, int((max_kickoff - first_start).total_seconds() // (window_days * 86400)))
             if n_splits < 3:
                 continue
@@ -400,7 +400,7 @@ def run(args) -> dict:
         ridge=0.05,
         rho=0.0,
         total_line=2.5,
-        model_version="veltrix-v2-5dollar-rolling365-0.1",
+        model_version=f"veltrix-v2-5dollar-rolling{args.days}d-0.2",
     )
     calibration_folds = []
     for scope_index, scope_report in enumerate(evaluation.scope_reports, start=1):
@@ -426,7 +426,7 @@ def run(args) -> dict:
     return {
         **base,
         "status": "HISTORICAL_SAMPLE_GATE_PASS" if sample_gate else "HISTORICAL_SAMPLE_GATE_FAIL",
-        "model_version": "veltrix-v2-5dollar-rolling365-0.1",
+        "model_version": f"veltrix-v2-5dollar-rolling{args.days}d-0.2",
         "fold_schedule": {
             "first_test_start_utc": first_start.isoformat(),
             "test_window_days": test_window.days,
@@ -471,23 +471,23 @@ def run(args) -> dict:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--days", type=int, default=365)
+    parser.add_argument("--days", type=int, default=90)
     parser.add_argument("--max-requests", type=int, default=50)
     parser.add_argument("--max-pages", type=int, default=5)
-    parser.add_argument("--min-history-days", type=int, default=300)
-    parser.add_argument("--min-training-rows", type=int, default=1200)
+    parser.add_argument("--min-history-days", type=int, default=60)
+    parser.add_argument("--min-training-rows", type=int, default=200)
     parser.add_argument("--min-test-sample", type=int, default=1000)
     parser.add_argument("--max-iterations", type=int, default=6000)
     parser.add_argument("--output", default="v2_historical_walk_forward_summary.json")
     args = parser.parse_args()
-    if not 300 <= args.days <= 365:
-        parser.error("--days must be between 300 and 365")
+    if not 60 <= args.days <= 365:
+        parser.error("--days must be between 60 and 365")
     if not 1 <= args.max_requests <= 60:
         parser.error("--max-requests must be between 1 and 60")
     if not 1 <= args.max_pages <= 5:
         parser.error("--max-pages must be between 1 and 5")
-    if not 300 <= args.min_history_days <= args.days:
-        parser.error("--min-history-days must be between 300 and --days")
+    if not 60 <= args.min_history_days <= args.days:
+        parser.error("--min-history-days must be between 60 and --days")
     if args.min_training_rows < 40 or args.min_test_sample < 1:
         parser.error("sample thresholds are invalid")
     output = Path(args.output)

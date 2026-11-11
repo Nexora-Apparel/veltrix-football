@@ -50,3 +50,13 @@ def test_schedule_selector_rejects_insufficient_training_history():
     import pytest
     with pytest.raises(RuntimeError, match="NO_VALID_CHRONOLOGICAL_FOLD_SCHEDULE"):
         RUNNER._choose_schedule(rows)
+
+
+
+def test_schedule_selector_can_evaluate_actual_three_month_provider_window():
+    rows = synthetic_matches(competitions=5, days=90)
+    first_start, window, splits, scheduled = RUNNER._choose_schedule(rows)
+    assert first_start - min(row.kickoff_utc for row in rows) <= timedelta(days=75)
+    assert window.days < 30
+    assert splits >= 3
+    assert scheduled > 0
