@@ -48,7 +48,7 @@ jobs:
           PYTHONPATH=scripts/veltrix_v2 python -m unittest discover \
             -s tests -p 'test_reconcile_openfootball_5dollar_snapshots.py' -v
 
-      - name: Fetch OpenFootball, 5Dollar EPL and FPL player snapshots
+      - name: Fetch pinned OpenFootball and 5Dollar EPL snapshots
         id: snapshots
         run: |
           python scripts/veltrix_v2/fetch_openfootball_5dollar_snapshots.py \
