@@ -246,7 +246,7 @@ Separate VELTRIX_V2 model/evaluation/publication gates
 ## Immediate execution status
 
 - Added `.github/workflows/openfootball-5dollar-readonly-reconciliation.yml` on the repository default branch. It is manual-only; it has no schedule trigger and no deployment step.
-- Added `scripts/veltrix_v2/fetch_openfootball_5dollar_snapshots.py`. It uses the existing GitHub secret `FIVEDOLLARFOOTBALL_API_KEY` without printing it, pins the OpenFootball file to a source commit, downloads a 90-day EPL reference window, records hashes and retrieval metadata, and uploads an audit artifact.
+- Added `scripts/veltrix_v2/fetch_openfootball_5dollar_snapshots.py`. It uses the existing GitHub secret `FIVEDOLLARFOOTBALL_API_KEY` without printing it, pins the OpenFootball file to a source commit, downloads a 90-day EPL reference window, and captures the public FPL player/fixture snapshots. It records hashes and retrieval metadata and uploads an audit artifact.
 - The script does not import legacy prediction modules, access Neon or modify predictions.
 - **Live acquisition has not yet run.** A repository user with write access must manually trigger the workflow from the Actions tab because no workflow-dispatch action is exposed in the connected GitHub toolset.
 - After the artifact is available, implement and run exact fixture-level reconciliation with an explicit team-ID crosswalk. Do not claim a pass based on successful downloads alone.
