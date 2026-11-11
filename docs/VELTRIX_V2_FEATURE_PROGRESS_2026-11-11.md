@@ -31,6 +31,15 @@ Branch: `veltrix-2.0-architecture-blueprint`
 - Does not infer venue from the nominal home-team designation.
 - Multiple eligible observations fail closed pending upstream correction resolution.
 
+### Competition-scoped Elo
+- Replays settled results chronologically within a single competition; ratings carry across seasons but never across competitions.
+- Uses pre-match ratings for simultaneous home/away updates and configurable K-factor/home advantage.
+- Excludes results not available by the forecast cutoff and all future kickoffs.
+- Exposes ratings and Elo expected score as descriptive features, not calibrated match probabilities.
+- Cold-start teams remain explicitly missing; no fabricated 1500 rating is emitted for a team with no eligible appearances.
+- Duplicate fixture/source identities and invalid timestamps/parameters fail closed.
+- Seven focused tests added; CI verification for this newest module is pending.
+
 ## Evaluation foundation added
 
 - Expanding-window walk-forward fold builder partitions fixtures into disjoint chronological test windows.
@@ -42,13 +51,13 @@ Branch: `veltrix-2.0-architecture-blueprint`
 ## Verification state
 
 - Foundation suite including venue context: **38 passed, 0 failed**; legacy-import boundary check passed on PR merge commit for head `ee90b575edeb3ff6a769333389469f5eab6a73ca`. [GitHub Actions run #42984863222](https://github.com/Nexora-Apparel/veltrix-football/actions/runs/42984863222).
-- Latest walk-forward CI attempt ran 45 tests: **44 passed, 1 failed**. Investigation showed the failing test incorrectly labelled a result settled before the test-window cutoff as unsettled. The fixture was corrected to settle after the cutoff and committed as `c86584bae6a51f089425511f498519353edb5cf4`.
-- A fresh CI run for the corrected head has not yet appeared. The seven walk-forward tests are therefore **not yet certified green**. Do not count them as passed until a new run against the corrected PR head is inspected.
+- Corrected walk-forward suite: **45 passed, 0 failed**, including all seven walk-forward tests; legacy-import boundary check passed. [GitHub Actions run #42987573786](https://github.com/Nexora-Apparel/veltrix-football/actions/runs/42987573786).
+- Elo feature and seven new tests were committed after that successful run. They are not yet included in a verified CI result.
 - No model fitting, calibration, prediction publication, provider ingestion or production activation has been performed.
 
 ## Next gate
 
-1. Obtain and inspect a fresh CI run against the corrected PR head.
+1. Verify the Elo module and tests in CI.
 2. Continue deterministic, evidence-backed feature contracts only while StrikerAPI is credit-blocked.
 3. Resume the provider dry-run only after credit balance/entitlement is restored.
 4. Sign Phase 3 only after the provider dry-run completes with complete accounting, zero unresolved identity/score conflicts and unchanged database counts.
