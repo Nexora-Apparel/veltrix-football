@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import json
 import os
+from datetime import datetime, timezone
 import re
 import sys
 from urllib.error import HTTPError, URLError
@@ -68,6 +69,12 @@ def check_fivedollar() -> str:
     headers = {"Authorization": f"Bearer {key}"}
     base = "https://api.5dollarfootballapi.com/v1"
     try:
+        status, _, account_payload = request_json(base + "/status", headers)
+        account_data = account_payload.get("data") if isinstance(account_payload, dict) else None
+        plan = account_data.get("plan") if isinstance(account_data, dict) else None
+        if status != 200 or not isinstance(plan, str) or not plan.strip():
+            print("5DollarFootballAPI: ACCOUNT_STATUS_UNAVAILABLE")
+            return "FAILED"
         status, response_headers, payload = request_json(base + "/leagues?per_page=100", headers)
         if status != 200 or not isinstance(payload, dict) or payload.get("success") != 1:
             print("5DollarFootballAPI: UNEXPECTED_RESPONSE")
@@ -82,8 +89,9 @@ def check_fivedollar() -> str:
         ]
         remaining = response_headers.get("X-RateLimit-Remaining", "not supplied")
         print(
-            f"5DollarFootballAPI: AUTH_OK; accessible_leagues={len(league_names)}; "
-            f"leagues={'; '.join(league_names[:12])}; requests_remaining={remaining}"
+            f"5DollarFootballAPI: AUTH_OK; plan={plan.strip().casefold()}; "
+            f"accessible_leagues={len(league_names)}; leagues={'; '.join(league_names[:12])}; "
+            f"requests_remaining={remaining}"
         )
         selected_fixtures = None
         selected_league = None
@@ -158,6 +166,86 @@ def check_fivedollar() -> str:
         return "FAILED"
 
 
+
+def probe_odds_api_btts(soccer_sports: list[dict], api_key: str) -> None:
+    """Optional five-credit BTTS spot-check, one upcoming event per top-five league."""
+    from veltrix_v2.providers.the_odds_api import (
+        TheOddsProviderError, fetch_event_btts_odds,
+    )
+
+    target_keys = (
+        "soccer_england_premier_league",
+        "soccer_france_ligue_one",
+        "soccer_germany_bundesliga",
+        "soccer_italy_serie_a",
+        "soccer_spain_la_liga",
+    )
+    available = {
+        str(item.get("key")): item
+        for item in soccer_sports
+        if isinstance(item, dict) and item.get("key")
+    }
+    base = "https://api.the-odds-api.com/v4"
+    probed = 0
+    quoted = 0
+    for sport_key in target_keys:
+        if sport_key not in available:
+            print(f"The Odds API BTTS_PROBE: sport={sport_key}; status=NOT_IN_PLAN")
+            continue
+        events_url = base + f"/sports/{quote(sport_key, safe='')}/events/?" + urlencode({"apiKey": api_key})
+        try:
+            _, _, events = request_json(events_url)
+        except ProviderCheckError as exc:
+            print(f"The Odds API BTTS_PROBE: sport={sport_key}; events_lookup=FAILED ({exc})")
+            continue
+        if not isinstance(events, list):
+            print(f"The Odds API BTTS_PROBE: sport={sport_key}; events_lookup=INVALID_RESPONSE")
+            continue
+        now = datetime.now(timezone.utc)
+        upcoming = []
+        for event in events:
+            if not isinstance(event, dict) or not event.get("id"):
+                continue
+            value = event.get("commence_time")
+            if not isinstance(value, str):
+                continue
+            try:
+                kickoff = datetime.fromisoformat(value.replace("Z", "+00:00"))
+            except ValueError:
+                continue
+            if kickoff.tzinfo is None or kickoff.utcoffset() is None or kickoff <= now:
+                continue
+            upcoming.append((kickoff.astimezone(timezone.utc), event))
+        if not upcoming:
+            print(f"The Odds API BTTS_PROBE: sport={sport_key}; status=NO_UPCOMING_EVENT")
+            continue
+        kickoff, event = min(upcoming, key=lambda item: item[0])
+        captured = datetime.now(timezone.utc)
+        try:
+            result = fetch_event_btts_odds(
+                api_key=api_key,
+                sport_key=sport_key,
+                event_id=str(event["id"]),
+                fixture_id=f"provider-probe:{sport_key}:{event['id']}",
+                kickoff_at=kickoff,
+                captured_at=captured,
+                regions="uk",
+            )
+        except (TheOddsProviderError, ValueError) as exc:
+            print(f"The Odds API BTTS_PROBE: sport={sport_key}; odds_lookup=FAILED ({getattr(exc, 'code', str(exc))})")
+            continue
+        bookmaker_quotes = len(result.snapshots) // 2
+        probed += 1
+        quoted += bookmaker_quotes
+        print(
+            f"The Odds API BTTS_PROBE: sport={sport_key}; event_found=1; "
+            f"bookmakers_with_complete_btts={bookmaker_quotes}; "
+            f"missing_bookmakers={len(result.missing_bookmakers)}; "
+            f"requests_remaining={result.requests_remaining if result.requests_remaining is not None else 'not supplied'}"
+        )
+    print(f"The Odds API BTTS_PROBE_SUMMARY: leagues_probed={probed}; complete_bookmaker_quotes={quoted}; maximum_odds_credits=5")
+
+
 def check_odds_api() -> str:
     key = os.getenv("THE_ODDS_API_KEY", "").strip()
     if not key:
@@ -181,6 +269,11 @@ def check_odds_api() -> str:
             print(f"The Odds API: KEY_ACCEPTED; NO_SOCCER_SPORTS_IN_PLAN; requests_remaining={remaining}")
             return "NO_SOCCER_SPORTS"
         print(f"The Odds API: KEY_ACCEPTED; soccer_sports={len(soccer)}; examples={','.join(soccer[:8])}; requests_remaining={remaining}")
+        if os.getenv("PROBE_THE_ODDS_API_MARKETS", "false").strip().casefold() in {"1", "true", "yes"}:
+            probe_odds_api_btts(
+                [item for item in payload if isinstance(item, dict) and str(item.get("key", "")).startswith("soccer_")],
+                key,
+            )
         return "KEY_ACCEPTED"
     except ProviderCheckError as exc:
         print(f"The Odds API: FAILED ({exc})")
