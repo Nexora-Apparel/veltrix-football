@@ -210,6 +210,7 @@ def test_dashboard_exposes_calibration_coverage_and_versioned_value_ledger(monke
         "model_portfolio_id": "veltrix-independent-market-portfolio-v1",
         "legacy_model_dependency": False,
         "model_status": "PAPER_TRACKING_ONLY",
+        "cumulative_metrics_by_model": {},
         "evaluated_report_dates": 4,
         "value_market_metrics_by_market": {"1x2": {"settled_bets": 2}},
         "value_validation_markets_by_model_version": {"veltrix_independent_market_portfolio_v1": {"1X2": {"settled_bets": 2}}},
