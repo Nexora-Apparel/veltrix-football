@@ -119,6 +119,12 @@ def build_results_history_snapshot(*, historical_matches: list[dict],
             and home["canonical_team_id"] != away["canonical_team_id"]
             and home["team_scope"] == away["team_scope"]
             and home["team_scope"] == evidence.get("team_scope")
+            and home["evidence_sha256"] == evidence.get("home_mapping_evidence_sha256")
+            and away["evidence_sha256"] == evidence.get("away_mapping_evidence_sha256")
+            and home["reviewer"] == evidence.get("home_mapping_reviewer")
+            and away["reviewer"] == evidence.get("away_mapping_reviewer")
+            and home["reviewed_at"] == evidence.get("home_mapping_reviewed_at")
+            and away["reviewed_at"] == evidence.get("away_mapping_reviewed_at")
             and evidence_verified_at.tzinfo is not None
             and retrieved_at.tzinfo is not None
             and evidence_verified_at.astimezone(timezone.utc) == retrieved_at.astimezone(timezone.utc)
