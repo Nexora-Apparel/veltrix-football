@@ -87,6 +87,15 @@ def normalize_bookmaker_market(
     if book_sum <= Decimal("0"):
         raise ValueError("ODDS_MARKET_INVALID_IMPLIED_SUM")
     overround = book_sum - Decimal("1")
+    ordered = sorted(by_selection.items())
+    normalized: dict[str, Decimal] = {}
+    running_total = Decimal("0")
+    for index, (selection, _) in enumerate(ordered):
+        if index == len(ordered) - 1:
+            normalized[selection] = Decimal("1") - running_total
+        else:
+            normalized[selection] = raw[selection] / book_sum
+            running_total += normalized[selection]
 
     return tuple(
         NormalizedBookProbability(
@@ -101,7 +110,7 @@ def normalize_bookmaker_market(
             snapshot_id=row.snapshot_id,
             decimal_odds=row.decimal_odds,
             raw_implied_probability=raw[selection],
-            normalized_probability=raw[selection] / book_sum,
+            normalized_probability=normalized[selection],
             overround=overround,
         )
         for selection, row in sorted(by_selection.items())
