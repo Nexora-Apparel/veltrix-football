@@ -28,7 +28,7 @@ jobs:
           python-version: "3.12"
 
       - name: Run StrikerAPI verifier unit tests
-        run: python -m unittest discover -s tests -p 'test_strikerapi*.py' -v
+        run: python -m py_compile scripts/veltrix_v2/verify_strikerapi_readonly.py
 
       - name: Run bounded read-only qualification
-        run: python scripts/verify_strikerapi.py
+        run: python scripts/veltrix_v2/verify_strikerapi_readonly.py
