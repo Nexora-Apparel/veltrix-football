@@ -601,10 +601,10 @@ def handle_command(
             if not selected:
                 return _reply("GOALS — NO USABLE EXPECTED-GOALS FORECASTS in the saved report.")
         else:
-            selected = forecast_rows[:15]
+            selected = all_rows[:15]
             if not selected:
                 notice = _history_notice(report)
-                body = "TODAY — NO USABLE FORECASTS. Fixtures may exist, but no rows passed the forecast-data checks."
+                body = "TODAY — NO SAME-DAY FIXTURES remain in the saved snapshot."
                 if notice:
                     body += "\n" + notice
                 return _reply(body)
