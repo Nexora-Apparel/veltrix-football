@@ -379,6 +379,8 @@ def build_historical_source_coverage_report(
     season_snapshot_verified = Counter()
     season_snapshot_verified_ids = set()
     season_snapshot_failures = Counter()
+    team_snapshot_verified = Counter()
+    team_snapshot_failures = Counter()
     feature_source_counts = Counter()
     feature_source_ids = Counter()
     feature_sources_by_name = defaultdict(Counter)
@@ -433,6 +435,62 @@ def build_historical_source_coverage_report(
                         season_snapshot_failures[record["competition_id"]] += 1
                 except (SeasonCrosswalkError, HistoricalSourceCoverageError, TypeError, KeyError):
                     season_snapshot_failures[record["competition_id"]] += 1
+        if team_crosswalk_registry is not None:
+            team_evidence = snapshot.get("team_identity_evidence")
+            record = accepted_by_id[fixture_id]
+            record_evidence = record.get("team_identity_evidence")
+            if not isinstance(team_evidence, dict) or not isinstance(record_evidence, dict):
+                team_snapshot_failures[record["competition_id"]] += 1
+            else:
+                try:
+                    team_at_cutoff = verify_team_crosswalk_registry(
+                        registry=team_crosswalk_registry,
+                        trusted_kms_clients=trusted_kms_clients,
+                        as_of=snapshot["prediction_as_of"],
+                    )
+                    home_source = team_evidence["home_source_team_id"]
+                    away_source = team_evidence["away_source_team_id"]
+                    home_mapping = team_at_cutoff["mappings"].get(
+                        (record["provider"], record["competition_id"], home_source)
+                    )
+                    away_mapping = team_at_cutoff["mappings"].get(
+                        (record["provider"], record["competition_id"], away_source)
+                    )
+                    expected_team = (
+                        home_mapping is not None and away_mapping is not None
+                        and team_evidence == {
+                            "home_source_team_id": record_evidence.get("home_source_team_id"),
+                            "away_source_team_id": record_evidence.get("away_source_team_id"),
+                            "home_canonical_team_id": record_evidence.get("home_canonical_team_id"),
+                            "away_canonical_team_id": record_evidence.get("away_canonical_team_id"),
+                            "team_scope": record_evidence.get("team_scope"),
+                            "home_mapping_evidence_sha256": record_evidence.get("home_mapping_evidence_sha256"),
+                            "away_mapping_evidence_sha256": record_evidence.get("away_mapping_evidence_sha256"),
+                            "home_mapping_reviewer": record_evidence.get("home_mapping_reviewer"),
+                            "away_mapping_reviewer": record_evidence.get("away_mapping_reviewer"),
+                            "home_mapping_reviewed_at": record_evidence.get("home_mapping_reviewed_at"),
+                            "away_mapping_reviewed_at": record_evidence.get("away_mapping_reviewed_at"),
+                            "registry_sha256": team_at_cutoff["registry_sha256"],
+                            "signing_key_arn": team_at_cutoff["signing_key_arn"],
+                            "verified_at": record_evidence.get("verified_at"),
+                        }
+                        and home_mapping["canonical_team_id"] == team_evidence["home_canonical_team_id"]
+                        and away_mapping["canonical_team_id"] == team_evidence["away_canonical_team_id"]
+                        and home_mapping["team_scope"] == team_evidence["team_scope"]
+                        and away_mapping["team_scope"] == team_evidence["team_scope"]
+                        and home_mapping["evidence_sha256"] == team_evidence["home_mapping_evidence_sha256"]
+                        and away_mapping["evidence_sha256"] == team_evidence["away_mapping_evidence_sha256"]
+                        and home_mapping["reviewer"] == team_evidence["home_mapping_reviewer"]
+                        and away_mapping["reviewer"] == team_evidence["away_mapping_reviewer"]
+                        and home_mapping["reviewed_at"] == team_evidence["home_mapping_reviewed_at"]
+                        and away_mapping["reviewed_at"] == team_evidence["away_mapping_reviewed_at"]
+                    )
+                    if expected_team:
+                        team_snapshot_verified[record["competition_id"]] += 1
+                    else:
+                        team_snapshot_failures[record["competition_id"]] += 1
+                except (TeamCrosswalkError, HistoricalSourceCoverageError, TypeError, KeyError):
+                    team_snapshot_failures[record["competition_id"]] += 1
         for feature in snapshot["features"]:
             feature_source_counts[feature["source"]] += 1
             feature_source_ids[feature["source_id"]] += 1
@@ -649,6 +707,15 @@ def build_historical_source_coverage_report(
             "distinct_source_team_ids": source_teams,
             "canonical_distinct_teams": canonical_teams,
             "team_identity": {
+                "feature_snapshot_identity": {
+                    "verified_snapshots": team_snapshot_verified[competition],
+                    "unverified_snapshots": team_snapshot_failures[competition],
+                    "all_snapshots_verified": bool(
+                        snapshots_count
+                        and team_snapshot_verified[competition] == snapshots_count
+                        and team_snapshot_failures[competition] == 0
+                    ),
+                },
                 "status": (
                     "verified" if all_team_ids_mapped
                     else "partially_verified" if canonical_teams
@@ -794,6 +861,12 @@ def build_historical_source_coverage_report(
         threshold_failures.append("historical_feature_availability_unproven")
     if not feature_source_qualification["verified"]:
         threshold_failures.append("feature_source_qualification_unverified")
+    if any(
+        item["feature_snapshots"]
+        and not item["team_identity"]["feature_snapshot_identity"]["all_snapshots_verified"]
+        for item in competition_report.values()
+    ):
+        threshold_failures.append("team_identity_snapshot_unverified")
     if not competition_report:
         threshold_failures.append("no_competition_coverage")
     elif any(
