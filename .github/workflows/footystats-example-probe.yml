@@ -108,6 +108,38 @@ jobs:
                   raise SystemExit("OPENFOOTAPI_COMPETITION_SOURCE_LICENSE_METADATA_MISSING")
           print("OPENFOOTAPI_COMPETITIONS=PASS")
           print("COMPETITION_COUNT=" + str(len(competition_rows)))
+          from collections import Counter
+          license_counts = Counter(
+              ((row.get("source") or {}).get("name", "UNKNOWN"),
+               (row.get("source") or {}).get("license", "UNKNOWN"))
+              for row in competition_rows
+          )
+          print("SOURCE_LICENSE_DISTRIBUTION=" + json.dumps([
+              {"source": key[0], "license": key[1], "competitions": count}
+              for key, count in sorted(license_counts.items())
+          ], sort_keys=True))
+          cc0_rows = [
+              row for row in competition_rows
+              if "CC0" in ((row.get("source") or {}).get("license", "").upper())
+          ]
+          odbl_rows = [
+              row for row in competition_rows
+              if "ODBL" in ((row.get("source") or {}).get("license", "").upper())
+          ]
+          print("CC0_COMPETITION_CANDIDATES=" + json.dumps([
+              {"id": row.get("id"), "name": row.get("name"),
+               "seasons": len(row.get("availableSeasons") or []),
+               "source": (row.get("source") or {}).get("name"),
+               "license": (row.get("source") or {}).get("license")}
+              for row in cc0_rows
+          ], sort_keys=True))
+          print("ODBL_COMPETITION_CANDIDATES=" + json.dumps([
+              {"id": row.get("id"), "name": row.get("name"),
+               "seasons": len(row.get("availableSeasons") or []),
+               "source": (row.get("source") or {}).get("name"),
+               "license": (row.get("source") or {}).get("license")}
+              for row in odbl_rows
+          ], sort_keys=True))
           print("COMPETITION_LICENSES=" + json.dumps([
               {
                   "id": row.get("id"), "name": row.get("name"),
