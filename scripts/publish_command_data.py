@@ -17,6 +17,8 @@ from urllib.error import HTTPError, URLError
 from urllib.parse import quote
 from urllib.request import Request, urlopen
 
+from app.independent_report_contract import is_publishable_independent_report
+
 API_ROOT = "https://api.github.com"
 BRANCH = os.getenv("VELTRIX_DATA_BRANCH", "command-data")
 
