@@ -22,6 +22,9 @@ def is_publishable_independent_report(report: Any) -> bool:
         or report.get("model_portfolio_id") != MODEL_PORTFOLIO_ID
         or report.get("legacy_model_dependency") is not False
         or report.get("publication_allowed") is not True
+        or not isinstance(report.get("predictions"), list)
+        or not isinstance(report.get("as_of_date"), str)
+        or not report["as_of_date"].strip()
     ):
         return False
     certificate = report.get("release_certificate")
@@ -69,6 +72,8 @@ def is_independent_paper_ledger(value: Any) -> bool:
         and value.get("model_portfolio_id") == MODEL_PORTFOLIO_ID
         and value.get("legacy_model_dependency") is False
         and value.get("model_status") == "PAPER_TRACKING_ONLY"
+        and isinstance(value.get("cumulative_metrics_by_model"), dict)
+        and isinstance(value.get("scored_matches"), list)
     )
 
 
