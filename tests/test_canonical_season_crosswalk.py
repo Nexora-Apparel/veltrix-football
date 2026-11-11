@@ -23,7 +23,7 @@ KMS = FakeKms()
 def registry():
     return {
         "schema": SCHEMA,
-        "issued_at": "2026-01-01T00:00:00Z",
+        "issued_at": "2026-01-02T00:00:00Z",
         "expires_at": "2027-01-01T00:00:00Z",
         "mappings": [{
             "provider": "provider-a",
