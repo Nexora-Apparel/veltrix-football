@@ -4,10 +4,26 @@ import json
 import unittest
 from unittest.mock import patch
 
+from app.point_in_time_feature_contract import build_point_in_time_feature_snapshot
 from app.provider_acquisition_dataset_pipeline import (
     ProviderDatasetPipelineError,
     assemble_audited_provider_dataset,
 )
+
+
+def make_snapshot(fixture_id, predictors):
+    return build_point_in_time_feature_snapshot(
+        fixture_id=fixture_id,
+        prediction_as_of="2026-09-01T12:00:00Z",
+        features=[{
+            "name": name, "value": value, "source": "test-source",
+            "source_id": f"source-{fixture_id}-{name}",
+            "observed_at": "2026-09-01T11:00:00Z",
+            "available_at": "2026-09-01T11:15:00Z",
+            "retrieved_at": "2026-09-01T11:30:00Z",
+            "payload_sha256": "a" * 64,
+        } for name, value in predictors.items()],
+    )
 
 
 def digest(value):
@@ -42,18 +58,20 @@ class AuditedProviderDatasetPipelineTests(unittest.TestCase):
         ]
         packages = {"provider:good": {"evidence": "good"}}
         report = self.audit_report([admitted])
+        predictors = {"home_team_elo": 1500}
+        snapshot = make_snapshot("provider:good", predictors)
         assembled = {
             "dataset": {
                 "dataset_sha256": "a" * 64,
                 "rows": [{
                     "fixture_id": "provider:good", "competition_key": "league-a",
-                    "split": "train", "predictors": {"home_team_elo": 1500},
+                    "split": "train", "predictors": predictors,\n                    "feature_snapshot_sha256": snapshot["snapshot_sha256"],
                     "targets": {"1x2": "home", "btts": "yes", "over_2_5": "yes"},
                 }],
                 "quality": {"included_fixture_count": 1, "excluded_fixture_count": 0},
             },
             "feature_reconstruction": {
-                "target_fixture_count": 1, "snapshot_count": 1,
+                "target_fixture_count": 1, "snapshot_count": 1, "snapshots": [snapshot], "snapshots": [snapshot],
                 "withheld_count": 0, "withheld_by_reason": {}, "withheld": [],
                 "labels_without_admitted_targets": [],
             },
@@ -86,11 +104,13 @@ class AuditedProviderDatasetPipelineTests(unittest.TestCase):
     def test_rejects_dataset_quality_count_that_disagrees_with_actual_rows(self):
         admitted = {"fixture_id": "provider:good", "provider": "provider", "source_id": "good"}
         report = self.audit_report([admitted])
+        predictors = {"home_team_elo": 1500}
+        snapshot = make_snapshot("provider:good", predictors)
         assembled = {
             "dataset": {
                 "rows": [{
                     "fixture_id": "provider:good", "competition_key": "league-a",
-                    "split": "train", "predictors": {"home_team_elo": 1500},
+                    "split": "train", "predictors": predictors,\n                    "feature_snapshot_sha256": snapshot["snapshot_sha256"],
                     "targets": {"1x2": "home", "btts": "yes", "over_2_5": "yes"},
                 }],
                 "quality": {"included_fixture_count": 0, "excluded_fixture_count": 0},
