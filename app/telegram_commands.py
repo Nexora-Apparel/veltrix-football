@@ -11,7 +11,10 @@ from datetime import date, datetime
 from zoneinfo import ZoneInfo
 from typing import Any
 
-from app.independent_report_contract import is_publishable_independent_report
+from app.independent_report_contract import (
+    is_publishable_independent_report,
+    is_value_betting_authorized_report,
+)
 
 COMMANDS: dict[str, str] = {
     "/start": "Open the Veltrix Football Command Centre.",
@@ -713,19 +716,27 @@ def handle_command(
             market_filter = {"OVER_UNDER_1_5", "OVER_UNDER_2_5", "OVER_UNDER_3_5"}
 
         candidates = []
-        for row in _future_fixtures(report):
-            screen = row.get("value_bet_screen") if isinstance(row.get("value_bet_screen"), dict) else {}
-            for market, details in (screen.get("markets") or {}).items():
-                if market_filter is not None and market not in market_filter:
-                    continue
-                if not isinstance(details, dict):
-                    continue
-                for candidate in details.get("paper_candidates") or []:
-                    if isinstance(candidate, dict):
-                        candidates.append((row, market, candidate))
+        value_authorized = is_value_betting_authorized_report(report)
+        if value_authorized:
+            for row in _future_fixtures(report):
+                screen = row.get("value_bet_screen") if isinstance(row.get("value_bet_screen"), dict) else {}
+                for market, details in (screen.get("markets") or {}).items():
+                    if market_filter is not None and market not in market_filter:
+                        continue
+                    if not isinstance(details, dict):
+                        continue
+                    for candidate in details.get("paper_candidates") or []:
+                        if isinstance(candidate, dict):
+                            candidates.append((row, market, candidate))
 
-        certificate = (report or {}).get("value_validation_certificate") or {}
-        summary = (report or {}).get("value_bet_screen") or {}
+        certificate = (
+            (report or {}).get("value_validation_certificate") or {}
+            if value_authorized else {"status": "LOCKED_INSUFFICIENT_EVIDENCE", "approved_markets": []}
+        )
+        summary = (
+            (report or {}).get("value_bet_screen") or {}
+            if value_authorized else {"candidate_count": 0}
+        )
         lines = [
             f"{command.upper()} — VALUE RESEARCH",
             "Release certificate: " + str(certificate.get("status") or "LOCKED_INSUFFICIENT_EVIDENCE"),
