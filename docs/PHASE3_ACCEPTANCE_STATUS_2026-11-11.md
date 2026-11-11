@@ -185,3 +185,19 @@ Full Phase 3 sign-off remains withheld until both Python workflows execute and p
 - Both GitHub Actions workflows now support manual dispatch and narrowly scoped pushes to the qualification branch for their relevant validator/workflow changes.
 - Required manual correction: update both GitHub secret values so their Neon connection strings select database `veltrix-football` (not `neondb`). `DATABASE_URL` must target production branch `main`; `DRY_RUN_DATABASE_URL` must target isolated branch `veltrix-phase3-import-dry-run`. Keep the verified hostnames unchanged.
 - Phase 3 remains unsigned. No provider import, production write, migration or model activation occurred.
+
+
+## 13. Corrected-secret rerun — 2026-11-11
+
+- Neon read-only acceptance rerun attempt 2: **PASS** — [workflow run #42983237444](https://github.com/Nexora-Apparel/veltrix-football/actions/runs/42983237444).
+  - Connected to the verified production Neon endpoint and database `veltrix-football`.
+  - Python runner completed successfully in a PostgreSQL READ ONLY transaction; `transaction_read_only=true`.
+  - All eight acceptance checks passed: 11 public tables, 11 PKs, 7 FKs, 5 unique constraints, 83 CHECK constraints, 22 indexes, one applied migration and one PASS reconciliation audit.
+  - No production writes occurred.
+- Provider-backed import dry-run rerun attempt 2: **FAIL — provider HTTP 402** — [workflow run #42983219130](https://github.com/Nexora-Apparel/veltrix-football/actions/runs/42983219130).
+  - Correct isolated Neon endpoint/database validation passed.
+  - Both provider API credentials and isolated database secret were present (masked by GitHub).
+  - The script reached its first StrikerAPI fixture request and received HTTP 402. No successful provider fixture response was received; the dry-run report was not produced.
+  - The workflow failed before database import/write logic. No provider-backed import or database write occurred.
+  - Treat HTTP 402 as a provider account/credit/billing entitlement blocker until StrikerAPI confirms the exact cause. Do not repeatedly retry or spend further credits until account balance/plan status is checked.
+- Phase 3 is still not fully signed off. Neon schema acceptance is now complete; provider-backed source accounting and isolated dry-run validation remain outstanding.
