@@ -14,9 +14,9 @@ def test_model_is_compared_with_bookmaker_on_identical_settled_fixtures():
         SettledOutcome1X2("f3", "AWAY"),
     ]
     model = [
-        Forecast1X2("f1", 0.10, 0.20, 0.70),
+        Forecast1X2("f1", 0.70, 0.20, 0.10),
         Forecast1X2("f2", 0.20, 0.60, 0.20),
-        Forecast1X2("f3", 0.70, 0.20, 0.10),
+        Forecast1X2("f3", 0.10, 0.20, 0.70),
     ]
     bookmaker = [
         Forecast1X2("f1", 0.30, 0.30, 0.40),
