@@ -13,6 +13,7 @@ from __future__ import annotations
 import json
 import os
 import sys
+from urllib.parse import urlsplit
 from typing import Any
 
 try:
@@ -28,6 +29,8 @@ EXPECTED = {
     "unique_constraints": 5,
     "check_constraints": 83,
     "indexes": 22,
+    "applied_migrations": 1,
+    "passing_reconciliation_audits": 1,
 }
 
 
@@ -38,13 +41,24 @@ def fetch_one(conn: psycopg.Connection[Any], query: str) -> int:
     return int(row[0])
 
 
+PRODUCTION_NEON_HOSTS = {
+    "ep-raspy-butterfly-bcuuxx6c.c-16.us-east-1.aws.neon.tech",
+    "ep-raspy-butterfly-bcuuxx6c-pooler.c-16.us-east-1.aws.neon.tech",
+}
+
+
 def main() -> int:
     dsn = os.environ.get("DATABASE_URL")
     if not dsn:
         print("BLOCKED: DATABASE_URL is not configured", file=sys.stderr)
         return 2
 
-    report: dict[str, Any] = {"target": "configured DATABASE_URL", "read_only": True}
+    host = urlsplit(dsn).hostname
+    if not host or host.lower() not in PRODUCTION_NEON_HOSTS:
+        print("BLOCKED: DATABASE_URL does not point to the verified production Neon endpoint", file=sys.stderr)
+        return 2
+
+    report: dict[str, Any] = {"target": "verified production Neon endpoint", "read_only": True}
     try:
         # read_only=True enforces PostgreSQL transaction read-only mode.
         with psycopg.connect(dsn, connect_timeout=10) as conn:
@@ -84,6 +98,13 @@ def main() -> int:
                     """,
                     "indexes": """
                         SELECT count(*) FROM pg_indexes WHERE schemaname = 'public'
+                    """,
+                    "applied_migrations": """
+                        SELECT count(*) FROM public.schema_migrations
+                    """,
+                    "passing_reconciliation_audits": """
+                        SELECT count(*) FROM public.reconciliation_audits
+                        WHERE status = 'PASS'
                     """,
                 }
                 observed = {name: fetch_one(conn, sql) for name, sql in queries.items()}
