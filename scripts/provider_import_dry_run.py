@@ -12,6 +12,8 @@ import json
 import os
 import re
 import sys
+from urllib.parse import urlencode
+from urllib.request import Request, urlopen
 from collections import defaultdict
 from datetime import datetime, timedelta, timezone
 from typing import Any
@@ -20,6 +22,7 @@ import psycopg
 from psycopg.rows import dict_row
 
 from scripts.verify_strikerapi import ProbeError, call_api, validate_game
+from scripts.reconcile_provider_fixtures import fivedollar_record, reconcile, striker_record
 
 SCOPES = (
     ("soccer", "EPL", "strikerapi-free-fixtures-epl"),
@@ -131,6 +134,39 @@ def inspect_rows(rows: list[dict], league: str, rights_id: str) -> dict[str, Any
     }
 
 
+def fetch_fivedollar_epl(api_key: str, start: str, end: str) -> tuple[list[dict], int]:
+    start_dt = datetime.fromisoformat(start).replace(tzinfo=timezone.utc)
+    end_dt = (datetime.fromisoformat(end) + timedelta(days=1)).replace(tzinfo=timezone.utc)
+    params = {
+        "start_time": int(start_dt.timestamp()),
+        "end_time": int(end_dt.timestamp()),
+        "status": "finished",
+        "page": 1,
+        "per_page": 100,
+    }
+    rows: list[dict] = []
+    page = calls = 0
+    while page < 10:
+        page += 1
+        calls += 1
+        params["page"] = page
+        url = "https://api.5dollarfootballapi.com/v1/leagues/4160026622/fixtures?" + urlencode(params)
+        request = Request(url, headers={"Accept": "application/json",
+                          "Authorization": f"Bearer {api_key}",
+                          "User-Agent": "VELTRIX-FOOTBALL-read-only-import-dry-run/1.0"})
+        try:
+            with urlopen(request, timeout=25) as response:
+                payload = json.loads(response.read().decode("utf-8"))
+        except Exception as exc:
+            raise RuntimeError(f"5Dollar EPL read-only request failed ({type(exc).__name__})") from None
+        if not isinstance(payload, dict) or payload.get("success") != 1 or not isinstance(payload.get("data"), list):
+            raise RuntimeError("5Dollar EPL response schema or success flag is invalid")
+        rows.extend(item for item in payload["data"] if isinstance(item, dict))
+        if not (payload.get("pagination") or {}).get("has_more"):
+            return rows, calls
+    raise RuntimeError("5Dollar EPL pagination exceeded 10-page dry-run safety cap")
+
+
 def read_database_snapshot(dsn: str) -> dict[str, int]:
     snapshot: dict[str, int] = {}
     with psycopg.connect(dsn, connect_timeout=10, row_factory=dict_row) as conn:
@@ -190,11 +226,12 @@ def compare_existing(candidate_records: list[dict], existing: dict[tuple[str, st
 def main() -> int:
     key = os.getenv("STRIKERAPI_API_KEY", "").strip()
     dsn = os.getenv("DRY_RUN_DATABASE_URL", "").strip()
-    if not key or not dsn:
+    dollar_key = os.getenv("FIVEDOLLARFOOTBALL_API_KEY", "").strip()
+    if not key or not dsn or not dollar_key:
         print(json.dumps({
             "status": "BLOCKED_MISSING_SECRET",
             "required_secrets": [
-                name for name, value in (("STRIKERAPI_API_KEY", key), ("DRY_RUN_DATABASE_URL", dsn)) if not value
+                name for name, value in (("STRIKERAPI_API_KEY", key), ("DRY_RUN_DATABASE_URL", dsn), ("FIVEDOLLARFOOTBALL_API_KEY", dollar_key)) if not value
             ],
             "database_writes": 0,
         }, indent=2))
@@ -216,6 +253,7 @@ def main() -> int:
         "imports": 0,
     }
     total_calls = 0
+    epl_striker_records: list[dict] = []
     all_issues = []
     candidate_records: list[dict] = []
     for league, code, rights_id in SCOPES:
@@ -224,6 +262,8 @@ def main() -> int:
         result = inspect_rows(rows, league, rights_id)
         all_issues.extend({"competition": code, **issue} for issue in result["issues"])
         candidate_records.extend(result["records"])
+        if code == "EPL":
+            epl_striker_records = [striker_record(row, league) for row in rows]
         report["approved_scopes"].append({
             "competition": code,
             "provider": "StrikerAPI",
@@ -237,12 +277,33 @@ def main() -> int:
         if truncated:
             all_issues.append({"competition": code, "kind": "pagination_truncated"})
     all_issues.extend(compare_existing(candidate_records, existing))
+
+    dollar_rows, dollar_calls = fetch_fivedollar_epl(dollar_key, start, end)
+    dollar_records = [fivedollar_record(row) for row in dollar_rows]
+    cross = reconcile(
+        epl_striker_records,
+        dollar_records,
+        competition_map={"EPL": "4160026622"},
+        tolerance_seconds=300,
+    )
+    total_calls += dollar_calls
+    cross_conflicts = [
+        item for item in cross["decisions"]
+        if item["outcome"] in {"STATUS_CONFLICT", "RESULT_CONFLICT", "IDENTITY_CONFLICT",
+                               "AMBIGUOUS_MULTIPLE_CANDIDATES", "DUPLICATE_SOURCE_ID",
+                               "INVALID_SOURCE_ROW"}
+    ]
+    if cross_conflicts:
+        all_issues.extend({"competition": "EPL", "kind": "cross_provider_" + item["outcome"].lower()}
+                           for item in cross_conflicts)
     after = read_database_snapshot(dsn)
     report["database_after"] = after
     report["database_unchanged"] = before == after
     report["database_writes"] = 0
     report["imports"] = 0
     report["provider_api_calls"] = total_calls
+    report["cross_provider_epl"] = {k: v for k, v in cross.items() if k != "decisions"}
+    report["cross_provider_epl"]["decision_counts"] = {outcome: sum(1 for item in cross["decisions"] if item["outcome"] == outcome) for outcome in sorted({item["outcome"] for item in cross["decisions"]})}
     report["issues"] = all_issues
     report["pass"] = report["database_unchanged"] and not all_issues
     print(json.dumps(report, indent=2, sort_keys=True))
