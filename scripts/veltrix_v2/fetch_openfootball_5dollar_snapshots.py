@@ -267,10 +267,11 @@ def main() -> int:
         "sources": {},
     }
     failures = []
-    for name, operation in (
-        ("openfootball", lambda: fetch_openfootball(out, manifest)),
-        ("fivedollar", lambda: fetch_5dollar(out, start, end, manifest)),
-        ("fpl", lambda: fetch_fpl(out, manifest)),
+    required_failures = []
+    for name, operation, required in (
+        ("openfootball", lambda: fetch_openfootball(out, manifest), True),
+        ("fivedollar", lambda: fetch_5dollar(out, start, end, manifest), True),
+        ("fpl", lambda: fetch_fpl(out, manifest), False),
     ):
         try:
             operation()
@@ -278,18 +279,22 @@ def main() -> int:
             safe = str(exc)[:100]
             manifest["sources"][name] = {"status": "FAILED", "error": safe, "retrieved_at_utc": utc_now()}
             failures.append(name)
+            if required:
+                required_failures.append(name)
     manifest["sources"].update({k: v for k, v in list(manifest.items()) if k in {"openfootball", "fivedollar", "fpl"}})
     manifest.pop("openfootball", None)
     manifest.pop("fivedollar", None)
     manifest.pop("fpl", None)
-    manifest["overall_status"] = "SNAPSHOTS_FETCHED" if not failures else "PARTIAL_OR_FAILED"
+    manifest["overall_status"] = "PAIRED_SNAPSHOTS_FETCHED" if not required_failures else "PAIRED_SNAPSHOT_FAILED"
     manifest["failed_sources"] = failures
+    manifest["required_source_failures"] = required_failures
+    manifest["optional_source_failures"] = [name for name in failures if name not in required_failures]
     write_json(out / "snapshot_manifest.json", manifest)
     print(f"SNAPSHOT_STATUS: {manifest['overall_status']}")
     for name, item in manifest["sources"].items():
-        print(f"{name.upper()}_STATUS: {item.get('status')}; rows={item.get('source_rows', item.get('fixture_rows', 'n/a'))}; sha256={item.get('payload_sha256', item.get('aggregate_sha256', 'n/a'))}")
+        print(f"{name.upper()}_STATUS: {item.get('status')}; rows={item.get('source_rows', item.get('fixture_rows', item.get('player_rows', 'n/a')))}; sha256={item.get('payload_sha256', item.get('aggregate_sha256', 'n/a'))}")
     print("READ_ONLY_GUARD: database_access=false; prediction_code_access=false")
-    return 0 if not failures else 1
+    return 0 if not required_failures else 1
 
 
 if __name__ == "__main__":
