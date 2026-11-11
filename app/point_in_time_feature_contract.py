@@ -194,10 +194,16 @@ def build_point_in_time_feature_snapshot(*, fixture_id: str,
             raise PointInTimeFeatureError("team_identity_evidence_identity_invalid")
         if team_identity_evidence["home_canonical_team_id"] == team_identity_evidence["away_canonical_team_id"]:
             raise PointInTimeFeatureError("team_identity_evidence_same_canonical_team")
-        for key in ("registry_sha256", "home_mapping_evidence_sha256", "away_mapping_evidence_sha256"):
-            digest = team_identity_evidence.get(key)
-            if (not isinstance(digest, str) or len(digest) != 64
-                    or any(char not in HEX for char in digest)):
+        registry_digest = team_identity_evidence.get("registry_sha256")
+        if (not isinstance(registry_digest, str) or len(registry_digest) != 64
+                or any(char not in HEX for char in registry_digest)):
+            raise PointInTimeFeatureError("team_identity_evidence_digest_invalid:registry_sha256")
+        for key in ("home_mapping_evidence_sha256", "away_mapping_evidence_sha256"):
+            digests = team_identity_evidence.get(key)
+            if (not isinstance(digests, list) or not digests
+                    or any(not isinstance(digest, str) or len(digest) != 64
+                           or any(char not in HEX for char in digest) for digest in digests)
+                    or len(set(digests)) != len(digests)):
                 raise PointInTimeFeatureError(f"team_identity_evidence_digest_invalid:{key}")
         verified_at = _parse_time(team_identity_evidence["verified_at"], "team_identity_verified_at")
         if verified_at > cutoff:
@@ -262,9 +268,15 @@ def validate_point_in_time_feature_snapshot(snapshot: Any) -> dict:
                 raise PointInTimeFeatureError(f"snapshot_team_identity_field_invalid:{key}")
         if not isinstance(team.get("signing_key_arn"), str) or not team["signing_key_arn"].startswith("arn:aws:kms:"):
             raise PointInTimeFeatureError("snapshot_team_identity_signer_invalid")
-        for key in ("registry_sha256", "home_mapping_evidence_sha256", "away_mapping_evidence_sha256"):
-            digest = team.get(key)
-            if not isinstance(digest, str) or len(digest) != 64 or any(char not in HEX for char in digest):
+        registry_digest = team.get("registry_sha256")
+        if not isinstance(registry_digest, str) or len(registry_digest) != 64 or any(char not in HEX for char in registry_digest):
+            raise PointInTimeFeatureError("snapshot_team_identity_digest_invalid:registry_sha256")
+        for key in ("home_mapping_evidence_sha256", "away_mapping_evidence_sha256"):
+            digests = team.get(key)
+            if (not isinstance(digests, list) or not digests
+                    or any(not isinstance(digest, str) or len(digest) != 64
+                           or any(char not in HEX for char in digest) for digest in digests)
+                    or len(set(digests)) != len(digests)):
                 raise PointInTimeFeatureError(f"snapshot_team_identity_digest_invalid:{key}")
         if _parse_time(team.get("verified_at"), "snapshot_team_identity_verified_at") > _parse_time(snapshot.get("prediction_as_of"), "prediction_as_of"):
             raise PointInTimeFeatureError("snapshot_team_identity_verified_after_cutoff")
