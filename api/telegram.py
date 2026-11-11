@@ -17,6 +17,8 @@ from app.telegram_commands import handle_command
 from app.independent_report_contract import (
     is_publishable_independent_report,
     is_value_betting_authorized_report,
+    is_independent_paper_ledger,
+    is_independent_model_validation,
 )
 from app.report_artifacts import load_latest_report, load_dashboard_snapshot, load_paper_ledger, load_model_validation_report
 from app.telegram_security import telegram_webhook_secret_token
@@ -484,6 +486,11 @@ def dashboard_data() -> dict:
             "warning": "Legacy predictions, legacy value screens and legacy paper metrics are hidden. No certified independent prediction report is currently authorized.",
             "predictions": [],
         }
+    if not is_independent_paper_ledger(ledger):
+        ledger = None
+    if not is_independent_model_validation(model_validation):
+        model_validation = None
+
     now = datetime.now(ZoneInfo("Africa/Lagos"))
     rows = report.get("predictions") if isinstance(report.get("predictions"), list) else []
     upcoming = []
