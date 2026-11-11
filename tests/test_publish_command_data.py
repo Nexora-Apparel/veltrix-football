@@ -1,6 +1,22 @@
 from datetime import datetime, timezone
 
 from scripts.publish_command_data import _archive_report_path, _valid_recent_cache
+from app.independent_report_contract import MODEL_PORTFOLIO_ID, REPORT_SCHEMA
+
+
+def authorized_report(report):
+    return {
+        **report,
+        "report_schema": REPORT_SCHEMA,
+        "model_portfolio_id": MODEL_PORTFOLIO_ID,
+        "legacy_model_dependency": False,
+        "publication_allowed": True,
+        "release_certificate": {
+            "status": "CERTIFIED", "publication_authorized": True,
+            "signature_verified": True, "certificate_sha256": "a" * 64,
+            "model_portfolio_id": MODEL_PORTFOLIO_ID,
+        },
+    }
 
 
 def test_recent_cache_publisher_accepts_current_v2_schema():
@@ -113,11 +129,14 @@ def test_one_snapshot_failure_does_not_block_later_publications(tmp_path, monkey
     ledger = tmp_path / "paper.json"
     evidence = tmp_path / "evidence.json"
     cache = tmp_path / "cache.json"
-    report.write_text(json.dumps({
+    report.write_text(json.dumps(authorized_report({
         "as_of_date": "2026-11-02",
         "predictions": [],
-    }), encoding="utf-8")
+    })), encoding="utf-8")
     ledger.write_text(json.dumps({
+        "ledger_schema": "VELTRIX_INDEPENDENT_PAPER_LEDGER_V1",
+        "model_portfolio_id": MODEL_PORTFOLIO_ID,
+        "legacy_model_dependency": False,
         "model_status": "PAPER_TRACKING_ONLY",
         "cumulative_metrics_by_model": {},
     }), encoding="utf-8")
