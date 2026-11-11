@@ -52,6 +52,16 @@ Branch: `veltrix-2.0-architecture-blueprint`
 - No market-specific independent fallback or silent probability renormalization is allowed.
 - Scoreline-derived markets are deterministic transformations only; this does not fit or train the goal model.
 
+## Provider alternatives review
+
+- Research recorded in `docs/VELTRIX_V2_PROVIDER_ALTERNATIVES_2026-11-11.md`.
+- OpenFootball CC0 is the strongest zero-cost supplemental historical results candidate, but not approved for current-results use. A 2026-11-11 spot-check of its public 2026/27 EPL file found Matchday 10 fixtures dated 2026-11-07 without score fields. It also lacks odds, lineups and xG, and its timing precision must not be invented.
+- football-data.org free tier offers 12 competitions and delayed scores, but commercial/retention rights need written clarification.
+- FootyStats free tier is EPL-only and limited; broader model-data access starts at £29.99/month.
+- Sportmonks free tier covers Danish and Scottish competitions only; broader data and xG/odds/history require paid tiers/add-ons.
+- Football-Data.co.uk free downloads are explicitly not licensed for commercial/AI model training. StatsBomb Open Data is research-oriented and not approved as a commercial product source.
+- No new provider has been called, substituted, imported or written to Neon.
+
 ## Verification state
 
 - Foundation suite including venue context: **38 passed, 0 failed**; legacy-import boundary check passed. [Run #42984863222](https://github.com/Nexora-Apparel/veltrix-football/actions/runs/42984863222).
@@ -64,6 +74,6 @@ Branch: `veltrix-2.0-architecture-blueprint`
 
 ## Next gate
 
-1. Continue model-independent contracts only where they improve release correctness; avoid speculative feature sprawl.
-2. Resume provider dry-run only after StrikerAPI credit balance/entitlement is restored.
-3. Sign Phase 3 only after the provider dry-run completes with complete accounting, zero unresolved identity/score conflicts and unchanged database counts.
+1. Keep 5Dollar and StrikerAPI within their already qualified scopes; do not retry StrikerAPI while credits are exhausted.
+2. Qualify OpenFootball only as a supplemental historical-results source through a bounded, read-only overlap probe; preserve date precision and exclude incomplete current-season results.
+3. Sign Phase 3 only after provider-backed dry-run completes with complete source accounting, zero unresolved identity/score conflicts and unchanged database counts.
