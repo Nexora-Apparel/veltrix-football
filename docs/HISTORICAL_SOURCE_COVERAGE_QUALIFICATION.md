@@ -14,7 +14,8 @@ It is a fail-closed screening report, not proof of model quality, a source licen
 - Per-canonical-season eligible fixtures, canonical teams, distinct WAT kickoff dates, feature snapshots, dataset rows and per-feature coverage.
 - Per-team fixture appearances within each competition.
 - Per-feature dataset coverage and feature-source/source-ID counts.
-- Explicit domain coverage for team strength/form, xG, lineups, fatigue/travel and bookmaker odds.
+- Explicit domain coverage for team strength/form, xG, lineups, fatigue/travel and bookmaker odds, including source-record counts, distinct source IDs and availability-to-retrieval lag statistics.
+- Per-canonical-season feature-domain coverage and source provenance, not only competition-wide aggregates.
 - Explicit absence of injury availability and PPDA when those features are not in the point-in-time feature catalogue.
 - Historical feature-availability status.
 
