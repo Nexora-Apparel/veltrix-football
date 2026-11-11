@@ -184,6 +184,8 @@ class HistoricalSourceCoverageTests(unittest.TestCase):
         self.assertEqual(result["feature_coverage"]["by_feature"]["home_team_elo"]["coverage_rate"], 1.0)
         self.assertFalse(result["historical_availability"]["proven"])
         self.assertFalse(result["qualification"]["source_coverage_qualified"])
+        self.assertFalse(result["feature_source_qualification"]["verified"])
+        self.assertIn("feature_source_qualification_unverified", result["qualification"]["threshold_failures"])
         self.assertIn("season_crosswalk_unverified", result["qualification"]["threshold_failures"])
         self.assertEqual(
             result["feature_coverage"]["by_data_domain"]["injury_availability"]["status"],
