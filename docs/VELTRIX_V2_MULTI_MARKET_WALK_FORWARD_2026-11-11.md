@@ -12,7 +12,7 @@ The evaluator does not independently fit three market models. This prevents mark
 
 Every fold retains its complete test-fixture ID universe. If a fixture cannot be forecast (for example, an unseen team), it is abstained from all three markets. Each market has an explicit coverage record (eligible, forecasted, abstained, coverage ratio), including folds with zero forecasts. Binary score reports are omitted for all-abstention folds rather than fabricating metrics.
 
-Integer totals lines are rejected until explicit push-aware binary settlement and scoring contracts are implemented. Quarter-goal Asian lines remain unsupported pending split-stake settlement.
+Integer totals lines are rejected until explicit push-aware binary settlement and scoring contracts are implemented. The cross-competition aggregate rejects duplicate fixture IDs across scopes and retains per-scope reports so aggregate scores cannot hide a weak or sparse competition. Quarter-goal Asian lines remain unsupported pending split-stake settlement.
 
 ## Leakage and limitations
 
