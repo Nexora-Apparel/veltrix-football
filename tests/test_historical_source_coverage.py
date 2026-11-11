@@ -207,6 +207,9 @@ class HistoricalSourceCoverageTests(unittest.TestCase):
             result["feature_coverage"]["by_data_domain"]["injury_availability"]["status"],
             "not_in_feature_catalogue",
         )
+        team_domain = result["feature_coverage"]["by_data_domain"]["team_strength_and_form"]
+        self.assertEqual(team_domain["source_record_counts"], {"results-provider": 2})
+        self.assertEqual(team_domain["distinct_source_id_count"], 2)
         self.assertEqual(
             result["feature_coverage"]["by_data_domain"]["pressing_intensity_ppda"]["status"],
             "not_in_feature_catalogue",
@@ -287,6 +290,10 @@ class HistoricalSourceCoverageTests(unittest.TestCase):
         self.assertTrue(season_detail["thresholds"]["fixtures_met"])
         self.assertTrue(season_detail["thresholds"]["teams_met"])
         self.assertEqual(season_detail["feature_coverage_by_feature"]["home_team_elo"], 1.0)
+        self.assertEqual(
+            season_detail["feature_coverage_by_domain"]["team_strength_and_form"]["source_record_counts"],
+            {"results-provider": 2},
+        )
         self.assertNotIn("season_crosswalk_unverified", result["qualification"]["threshold_failures"])
 
     def test_signed_crosswalk_does_not_allow_provider_scope_substitution(self):
