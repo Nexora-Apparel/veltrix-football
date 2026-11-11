@@ -45,7 +45,7 @@ jobs:
           pip install -r requirements.txt
 
       - name: Run unit tests
-        run: python -m pytest -q
+        run: python -m pytest --import-mode=importlib -q
 
       - name: Verify provider authentication (no odds quota used)
         if: github.event_name == 'workflow_dispatch' || github.event_name == 'schedule' || (github.event_name == 'push' && contains(github.event.head_commit.message, '[run-provider-integration]'))
