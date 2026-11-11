@@ -160,7 +160,7 @@ def test_value_bets_unlock_only_after_full_value_bet_certification():
             Decimal("0.55"), Decimal("0.25"), Decimal("0.20"),
             Decimal("0.58"), Decimal("2.5"), Decimal("0.53"),
         ),
-        source_provider_ids=("synthetic",),
+        source_provider_ids=("5dollarfootballapi",),
         verdict="HOME LEAN", ai_insight="Test-only certified evidence.",
         value_bet_verdict="QUALIFIED VALUE",
     )
@@ -171,6 +171,7 @@ def test_value_bets_unlock_only_after_full_value_bet_certification():
         certification_id="prediction-cert-v2-001",
         fixtures=(value_fixture,),
         value_bet_certification=passing_value_bet_certification(),
+        source_attributions=("Football data by 5DollarFootballAPI — https://5dollarfootballapi.com",),
     )
     assert report.value_bets_enabled is True
     assert report.fixtures[0].value_bet_verdict == "QUALIFIED VALUE"
@@ -199,6 +200,7 @@ def test_failed_value_bet_certification_does_not_block_prediction_publication():
         certification_id="prediction-cert-v2-001",
         fixtures=(fixture("f-locked", datetime(2026, 11, 12, 6, tzinfo=UTC)),),
         value_bet_certification=failed_value_cert,
+        source_attributions=("Football data by 5DollarFootballAPI — https://5dollarfootballapi",),
     )
     assert report.value_bets_enabled is False
     assert report.fixtures[0].value_bet_verdict == "LOCKED — NOT CERTIFIED"
