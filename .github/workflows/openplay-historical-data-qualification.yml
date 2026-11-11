@@ -1,0 +1,48 @@
+name: OpenPlay Historical Data Qualification
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/openplay-historical-data-qualification.yml'
+      - 'scripts/veltrix_v2/qualify_openplay_release.py'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: veltrix-openplay-historical-qualification
+  cancel-in-progress: false
+
+jobs:
+  qualify:
+    name: Verify pinned OpenPlay player, lineup and xG tables
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install pinned Parquet reader
+        run: python -m pip install duckdb==1.4.2
+
+      - name: Validate qualification script
+        run: python -m py_compile scripts/veltrix_v2/qualify_openplay_release.py
+
+      - name: Download and qualify OpenPlay release
+        run: python scripts/veltrix_v2/qualify_openplay_release.py openplay-audit
+
+      - name: Upload audit report only
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: veltrix-openplay-historical-qualification
+          path: openplay-audit/openplay_qualification_report.json
+          if-no-files-found: warn
+          retention-days: 14
