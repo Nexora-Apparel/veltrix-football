@@ -833,6 +833,10 @@ async def telegram_webhook(
         except Exception:
             # A data-source outage must not break the Telegram webhook.
             report, ledger = None, None
+        if not is_publishable_independent_report(report):
+            report = None
+        if not is_independent_paper_ledger(ledger):
+            ledger = None
         odds_data = None
         odds_error = None
         _send_message(
