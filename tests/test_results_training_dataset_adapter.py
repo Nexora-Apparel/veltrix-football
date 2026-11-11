@@ -37,6 +37,7 @@ def attach_evidence(row):
     normalized = {
         "fixture_id": row["fixture_id"],
         "competition_id": row["competition_id"],
+        "source_season": row["source_season"],
         "kickoff_at": row["kickoff_at"],
         "settled_at": row["settled_at"],
         "home_team_id": row["home_team_source_id"],
