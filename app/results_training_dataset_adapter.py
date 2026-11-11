@@ -167,6 +167,24 @@ def build_results_history_snapshot(*, historical_matches: list[dict],
             same_season_history.append(row)
     target_history = same_season_history
 
+    target_team_identity_evidence = target_row["team_identity_evidence"]
+    canonical_team_evidence = {
+        "home_source_team_id": target_team_identity_evidence["home_source_team_id"],
+        "away_source_team_id": target_team_identity_evidence["away_source_team_id"],
+        "home_canonical_team_id": target_team_identity_evidence["home_canonical_team_id"],
+        "away_canonical_team_id": target_team_identity_evidence["away_canonical_team_id"],
+        "team_scope": target_team_identity_evidence["team_scope"],
+        "home_mapping_evidence_sha256": target_team_identity_evidence["home_mapping_evidence_sha256"],
+        "away_mapping_evidence_sha256": target_team_identity_evidence["away_mapping_evidence_sha256"],
+        "home_mapping_reviewer": target_team_identity_evidence["home_mapping_reviewer"],
+        "away_mapping_reviewer": target_team_identity_evidence["away_mapping_reviewer"],
+        "home_mapping_reviewed_at": target_team_identity_evidence["home_mapping_reviewed_at"],
+        "away_mapping_reviewed_at": target_team_identity_evidence["away_mapping_reviewed_at"],
+        "registry_sha256": target_team_identity_evidence["registry_sha256"],
+        "signing_key_arn": target_team_identity_evidence["signing_key_arn"],
+        "verified_at": target_team_identity_evidence["verified_at"],
+    }
+
     canonical_season_evidence = {
         "provider": target_provider,
         "competition_id": target_fixture.get("competition_id"),
@@ -227,6 +245,7 @@ def build_results_history_snapshot(*, historical_matches: list[dict],
         verified_source_registry=verified_source_registry,
         competition_id=reconstructed["competition_id"],
         season_identity_evidence=canonical_season_evidence,
+        team_identity_evidence=canonical_team_evidence,
     )
 
 
