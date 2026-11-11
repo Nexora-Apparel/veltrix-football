@@ -2,13 +2,32 @@ import hashlib
 import json
 import unittest
 
-from app.historical_dataset_admission_report import (
+from app.point_in_time_feature_contract import build_point_in_time_feature_snapshot\nfrom app.historical_dataset_admission_report import (
     HistoricalAdmissionReportError,
     build_historical_dataset_admission_report,
 )
 
 
+def make_snapshot(fixture_id, predictors):
+    return build_point_in_time_feature_snapshot(
+        fixture_id=fixture_id,
+        prediction_as_of="2026-09-01T12:00:00Z",
+        features=[{
+            "name": name, "value": value, "source": "test-source",
+            "source_id": f"source-{fixture_id}-{name}",
+            "observed_at": "2026-09-01T11:00:00Z",
+            "available_at": "2026-09-01T11:15:00Z",
+            "retrieved_at": "2026-09-01T11:30:00Z",
+            "payload_sha256": "a" * 64,
+        } for name, value in predictors.items()],
+    )
+
+
 def pipeline():
+    first_predictors = {"home_team_elo": 1500, "away_team_elo": 1490}
+    second_predictors = {"home_team_elo": 1480}
+    first_snapshot = make_snapshot("p:1", first_predictors)
+    second_snapshot = make_snapshot("p:2", second_predictors)
     return {
         "pipeline_report_sha256": "a" * 64,
         "historical_availability_proven": False,
@@ -30,12 +49,12 @@ def pipeline():
             "rows": [
                 {
                     "fixture_id": "p:1", "competition_key": "league-a", "split": "train",
-                    "predictors": {"home_team_elo": 1500, "away_team_elo": 1490},
+                    "predictors": first_predictors,\n                    "feature_snapshot_sha256": first_snapshot["snapshot_sha256"],
                     "targets": {"1x2": "home", "btts": "yes", "over_2_5": "yes"},
                 },
                 {
                     "fixture_id": "p:2", "competition_key": "league-a", "split": "test",
-                    "predictors": {"home_team_elo": 1480},
+                    "predictors": second_predictors,\n                    "feature_snapshot_sha256": second_snapshot["snapshot_sha256"],
                     "targets": {"1x2": "draw", "btts": "no", "over_2_5": "no"},
                 },
             ],
