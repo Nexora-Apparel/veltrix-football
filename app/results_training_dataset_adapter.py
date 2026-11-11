@@ -28,7 +28,7 @@ from app.canonical_team_crosswalk import (
 from app.canonical_season_crosswalk import (
     SeasonCrosswalkError, verify_season_crosswalk_registry,
 )
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 
 class ResultsTrainingAdapterError(ValueError):
@@ -98,13 +98,30 @@ def build_results_history_snapshot(*, historical_matches: list[dict],
         away = verified_team_registry["mappings"].get(
             (row.get("provider"), row.get("competition_id"), away_source)
         )
+        if not home or not away:
+            return False
+        try:
+            evidence_verified_at = datetime.fromisoformat(
+                evidence.get("verified_at", "").replace("Z", "+00:00")
+            )
+            retrieved_at = datetime.fromisoformat(
+                row["retrieved_at"].replace("Z", "+00:00")
+            )
+        except (AttributeError, TypeError, ValueError, KeyError):
+            return False
         return bool(
-            home and away
-            and home["canonical_team_id"] == row.get("home_team_id")
+            home["canonical_team_id"] == row.get("home_team_id")
             and away["canonical_team_id"] == row.get("away_team_id")
+            and evidence.get("home_source_team_id") == home_source
+            and evidence.get("away_source_team_id") == away_source
+            and evidence.get("home_canonical_team_id") == home["canonical_team_id"]
+            and evidence.get("away_canonical_team_id") == away["canonical_team_id"]
             and home["canonical_team_id"] != away["canonical_team_id"]
             and home["team_scope"] == away["team_scope"]
             and home["team_scope"] == evidence.get("team_scope")
+            and evidence_verified_at.tzinfo is not None
+            and retrieved_at.tzinfo is not None
+            and evidence_verified_at.astimezone(timezone.utc) == retrieved_at.astimezone(timezone.utc)
         )
 
     if target_row is None or not pair_is_valid(target_row):
