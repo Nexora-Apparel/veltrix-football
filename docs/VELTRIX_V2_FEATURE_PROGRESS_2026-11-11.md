@@ -59,11 +59,11 @@ Branch: `veltrix-2.0-architecture-blueprint`
 - Elo feature suite: **52 passed, 0 failed**; legacy-import boundary check passed. [Run #42988271363](https://github.com/Nexora-Apparel/veltrix-football/actions/runs/42988271363).
 - Team-form duplicate-evidence guards and initial 1X2 scoring tests: **66 passed, 0 failed**; legacy-import boundary check passed. [Run #42988562701](https://github.com/Nexora-Apparel/veltrix-football/actions/runs/42988562701).
 - Paired benchmark comparison, strict probability typing and ordinal RPS ordering: **70 passed, 0 failed**; legacy-import boundary check passed. [Run #42988827971](https://github.com/Nexora-Apparel/veltrix-football/actions/runs/42988827971).
-- Scoreline-to-market derivation, including half-goal-line/push safeguards, was added after run #42988827971. Fresh CI verification is pending.
+- Latest suite including scoreline-to-market derivation and half-goal-line/push safeguards: **87 passed, 0 failed**; legacy-import boundary check passed. [Run #42989116722](https://github.com/Nexora-Apparel/veltrix-football/actions/runs/42989116722).
 - No model fitting, calibration, prediction publication, provider ingestion or production activation has been performed.
 
 ## Next gate
 
-1. Verify scoreline-derived market coherence tests in CI.
+1. Continue model-independent contracts only where they improve release correctness; avoid speculative feature sprawl.
 2. Resume provider dry-run only after StrikerAPI credit balance/entitlement is restored.
 3. Sign Phase 3 only after the provider dry-run completes with complete accounting, zero unresolved identity/score conflicts and unchanged database counts.
