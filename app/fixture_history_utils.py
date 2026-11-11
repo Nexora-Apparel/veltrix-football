@@ -6,9 +6,6 @@ from typing import Any
 
 from app.team_name_normalization import normalize_team_name
 
-MIN_TEAM_MATCHES = 5
-ELO_K = 20.0
-
 LEAGUE_DIVISION_BY_CODE = {
     "PL": "E0", "ELC": "E1", "EL1": "E2", "EL2": "E3",
     "PD": "SP1", "SD": "SP2", "SA": "I1", "SB": "I2",
