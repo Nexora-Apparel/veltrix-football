@@ -179,6 +179,9 @@ def probe_odds_api_btts(soccer_sports: list[dict], api_key: str) -> None:
         "soccer_germany_bundesliga",
         "soccer_italy_serie_a",
         "soccer_spain_la_liga",
+        "soccer_argentina_primera_division",
+        "soccer_brazil_campeonato",
+        "soccer_brazil_serie_b",
     )
     available = {
         str(item.get("key")): item
@@ -243,7 +246,7 @@ def probe_odds_api_btts(soccer_sports: list[dict], api_key: str) -> None:
             f"missing_bookmakers={len(result.missing_bookmakers)}; "
             f"requests_remaining={result.requests_remaining if result.requests_remaining is not None else 'not supplied'}"
         )
-    print(f"The Odds API BTTS_PROBE_SUMMARY: leagues_probed={probed}; complete_bookmaker_quotes={quoted}; maximum_odds_credits=5")
+    print(f"The Odds API BTTS_PROBE_SUMMARY: leagues_probed={probed}; complete_bookmaker_quotes={quoted}; maximum_odds_credits=8")
 
 
 def check_odds_api() -> str:
