@@ -2,6 +2,9 @@ name: Provider-backed Import Dry Run
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - phase-3/strikerapi-readonly-qualification
 
 permissions:
   contents: read
