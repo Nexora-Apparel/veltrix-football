@@ -213,3 +213,25 @@ def test_nonconverged_model_cannot_emit_expected_goals():
     unfit = replace(model, converged=False)
     with pytest.raises(ValueError, match="MODEL_NOT_CONVERGED"):
         unfit.expected_goals("A", "B")
+
+
+
+def test_training_order_does_not_change_fitted_model():
+    rows = build_rows()
+    kwargs = dict(
+        competition_key="league", season="2024/25",
+        training_cutoff_utc=BASE + timedelta(days=150),
+        minimum_matches=30, minimum_team_matches=10, max_iterations=4000,
+    )
+    forward = fit_poisson_strength_model(rows, **kwargs)
+    reverse = fit_poisson_strength_model(list(reversed(rows)), **kwargs)
+    assert forward == reverse
+
+
+def test_boolean_numeric_hyperparameters_are_rejected():
+    with pytest.raises(ValueError, match="HYPERPARAMETER_INVALID"):
+        fit_poisson_strength_model(
+            build_rows(), competition_key="league", season="2024/25",
+            training_cutoff_utc=BASE + timedelta(days=150),
+            minimum_matches=30, recency_half_life_days=True,
+        )

@@ -148,13 +148,16 @@ def fit_poisson_strength_model(
     cutoff = training_cutoff_utc.astimezone(timezone.utc)
     if not competition_key.strip() or not season.strip() or not model_version.strip():
         raise ValueError("POISSON_TRAIN_SCOPE_REQUIRED")
+    numeric_parameters = (recency_half_life_days, ridge, learning_rate, tolerance)
     if (type(minimum_matches) is not int or minimum_matches < 1
         or type(minimum_team_matches) is not int or minimum_team_matches < 1
         or type(max_iterations) is not int or max_iterations < 1
-        or not math.isfinite(recency_half_life_days) or recency_half_life_days <= 0
-        or not math.isfinite(ridge) or ridge < 0
-        or not math.isfinite(learning_rate) or learning_rate <= 0
-        or not math.isfinite(tolerance) or tolerance <= 0):
+        or any(isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value)
+               for value in numeric_parameters)
+        or recency_half_life_days <= 0
+        or ridge < 0
+        or learning_rate <= 0
+        or tolerance <= 0):
         raise ValueError("POISSON_TRAIN_HYPERPARAMETER_INVALID")
 
     eligible = [
@@ -165,6 +168,7 @@ def fit_poisson_strength_model(
         and row.kickoff_utc < cutoff
         and row.available_at_utc <= cutoff
     ]
+    eligible.sort(key=lambda row: (row.kickoff_utc, row.fixture_id))
     if any(row.availability_basis == "unspecified" for row in eligible):
         raise ValueError("POISSON_TRAIN_AVAILABILITY_BASIS_REQUIRED")
     if any(not row.source_training_approved for row in eligible):
