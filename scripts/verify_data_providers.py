@@ -149,42 +149,7 @@ def check_fivedollar() -> str:
             + f"; requests_remaining={odds_headers.get('X-RateLimit-Remaining', 'not supplied')}"
         )
         return "AUTH_OK"
-        fixture_id = selected_fixture.get("id") or selected_fixture.get("fixture_id")
-        if fixture_id is None:
-            print("5DollarFootballAPI ODDS_SAMPLE: FIXTURE_ID_MISSING")
-            return "AUTH_OK"
-        odds_url = base + f"/fixtures/{quote(str(fixture_id), safe='')}/odds"
-        try:
-            odds_status, odds_headers, odds_payload = request_json(odds_url, headers)
-            odds_data = odds_payload.get("data") if isinstance(odds_payload, dict) else None
-            bookmakers = odds_data.get("bookmakers") if isinstance(odds_data, dict) else None
-            bet365 = next(
-                (item for item in bookmakers or [] if isinstance(item, dict) and item.get("slug") == "bet365"),
-                None,
-            )
-            markets = bet365.get("odds") if isinstance(bet365, dict) else None
-            markets = markets if isinstance(markets, dict) else {}
-            one_x_two = markets.get("1x2")
-            btts = markets.get("btts")
-            fixed_lines = markets.get("goal_line_fixed")
-            total25 = next(
-                (item for item in fixed_lines or [] if isinstance(item, dict) and str(item.get("line")) == "2.5"),
-                None,
-            )
-            def complete(stage, keys):
-                return isinstance(stage, dict) and all(stage.get(key) not in (None, "", 0, "0") for key in keys)
-            available = {
-                "1X2": complete(one_x_two.get("closing") if isinstance(one_x_two, dict) else None, ("home", "draw", "away")),
-                "BTTS": complete(btts.get("closing") if isinstance(btts, dict) else None, ("yes", "no")),
-                "TOTALS_2_5": complete(total25.get("closing") if isinstance(total25, dict) else None, ("over", "under")),
-            }
-            print(
-                "5DollarFootballAPI ODDS_SAMPLE: "
-                f"league={safe_id(selected_league.get('id'))}; fixture_id={safe_id(fixture_id)}; "
-                + "; ".join(f"{market}={'available' if present else 'missing'}" for market, present in available.items())
-                + f"; requests_remaining={odds_headers.get('X-RateLimit-Remaining', 'not supplied')}"
-            )
-        except ProviderCheckError as exc:
+    except ProviderCheckError as exc:
             print(f"5DollarFootballAPI ODDS_SAMPLE: FAILED ({exc})")
         return "AUTH_OK"
     except ProviderCheckError as exc:
