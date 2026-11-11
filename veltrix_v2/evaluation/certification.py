@@ -45,6 +45,8 @@ class MarketCertificationEvidence:
                 raise ValueError(f"CERTIFICATION_INVALID_{field.upper()}")
         if not ZERO <= self.timestamped_odds_coverage <= Decimal("1"):
             raise ValueError("CERTIFICATION_ODDS_COVERAGE_OUT_OF_RANGE")
+        if type(self.source_approved) is not bool or type(self.point_in_time_validated) is not bool:
+            raise ValueError("CERTIFICATION_SOURCE_AND_POINT_IN_TIME_FLAGS_MUST_BE_BOOLEAN")
         if not isinstance(self.roi_ci_method, str) or not self.roi_ci_method.strip():
             raise ValueError("CERTIFICATION_ROI_CI_METHOD_REQUIRED")
 
