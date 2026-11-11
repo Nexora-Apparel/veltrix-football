@@ -1,0 +1,123 @@
+"""Fail-closed contract for publicly visible independent-model predictions.
+
+Legacy daily reports are never publishable. A report must carry the independent
+portfolio identity and an authorization artifact emitted by the release gate.
+"""
+from __future__ import annotations
+
+import re
+from typing import Any
+
+REPORT_SCHEMA = "VELTRIX_INDEPENDENT_PREDICTION_REPORT_V1"
+MODEL_PORTFOLIO_ID = "veltrix-independent-market-portfolio-v1"
+# Remains false until real-data qualification, formal certification and explicit release approval.
+INDEPENDENT_REPORT_PUBLICATION_ENABLED = False
+VALUE_BETTING_AUTHORIZATION_ENABLED = False
+_CERTIFICATE_DIGEST = re.compile(r"^[0-9a-f]{64}$")
+
+
+def is_publishable_independent_report(report: Any) -> bool:
+    """Return true only for a report carrying explicit independent release authorization."""
+    if not isinstance(report, dict):
+        return False
+    if (
+        report.get("report_schema") != REPORT_SCHEMA
+        or report.get("model_portfolio_id") != MODEL_PORTFOLIO_ID
+        or report.get("legacy_model_dependency") is not False
+        or report.get("publication_allowed") is not True
+        or not isinstance(report.get("predictions"), list)
+        or not isinstance(report.get("as_of_date"), str)
+        or not report["as_of_date"].strip()
+    ):
+        return False
+    predictions = report.get("predictions")
+    for row in predictions:
+        if not isinstance(row, dict):
+            return False
+        if (
+            row.get("model_portfolio_id") != MODEL_PORTFOLIO_ID
+            or row.get("legacy_model_dependency") is not False
+        ):
+            return False
+        has_forecast = any(
+            key in row for key in ("probabilities", "btts_yes", "over_1_5", "over_2_5", "over_3_5")
+        )
+        row_model = str(row.get("model") or "").casefold()
+        if any(marker in row_model for marker in ("experimental", "legacy", "fallback_prior")):
+            return False
+        if has_forecast:
+            feature_digest = row.get("feature_snapshot_sha256")
+            model_versions = row.get("model_versions")
+            if (
+                not isinstance(feature_digest, str)
+                or _CERTIFICATE_DIGEST.fullmatch(feature_digest) is None
+                or not isinstance(model_versions, list)
+                or not model_versions
+                or any(not isinstance(version, str) or not version.strip() for version in model_versions)
+                or any(any(marker in version.casefold() for marker in ("experimental", "legacy", "fallback_prior")) for version in model_versions)
+            ):
+                return False
+    if not INDEPENDENT_REPORT_PUBLICATION_ENABLED:
+        return False
+    certificate = report.get("release_certificate")
+    if not isinstance(certificate, dict):
+        return False
+    return (
+        certificate.get("status") == "CERTIFIED"
+        and certificate.get("publication_authorized") is True
+        and certificate.get("signature_verified") is True
+        and certificate.get("model_portfolio_id") == MODEL_PORTFOLIO_ID
+        and isinstance(certificate.get("certificate_sha256"), str)
+        and _CERTIFICATE_DIGEST.fullmatch(certificate["certificate_sha256"]) is not None
+        and certificate.get("model_portfolio_id") == MODEL_PORTFOLIO_ID
+    )
+
+
+def is_value_betting_authorized_report(report: Any) -> bool:
+    """Require a separate signed, market-specific value-betting authorization."""
+    if not VALUE_BETTING_AUTHORIZATION_ENABLED:
+        return False
+    if not is_publishable_independent_report(report):
+        return False
+    if report.get("value_betting_authorized") is not True:
+        return False
+    certificate = report.get("value_validation_certificate")
+    if not isinstance(certificate, dict):
+        return False
+    approved = certificate.get("approved_markets")
+    allowed_markets = {
+        "1X2", "BTTS", "OVER_UNDER_1_5", "OVER_UNDER_2_5", "OVER_UNDER_3_5"
+    }
+    return (
+        certificate.get("status") == "CERTIFIED"
+        and certificate.get("alerts_enabled") is True
+        and certificate.get("signature_verified") is True
+        and isinstance(certificate.get("certificate_sha256"), str)
+        and _CERTIFICATE_DIGEST.fullmatch(certificate["certificate_sha256"]) is not None
+        and isinstance(approved, list)
+        and bool(approved)
+        and len(set(approved)) == len(approved)
+        and set(approved).issubset(allowed_markets)
+    )
+
+
+def is_independent_paper_ledger(value: Any) -> bool:
+    return (
+        isinstance(value, dict)
+        and value.get("ledger_schema") == "VELTRIX_INDEPENDENT_PAPER_LEDGER_V1"
+        and value.get("model_portfolio_id") == MODEL_PORTFOLIO_ID
+        and value.get("legacy_model_dependency") is False
+        and value.get("model_status") == "PAPER_TRACKING_ONLY"
+        and isinstance(value.get("cumulative_metrics_by_model"), dict)
+        and isinstance(value.get("scored_matches"), list)
+    )
+
+
+def is_independent_model_validation(value: Any) -> bool:
+    return (
+        isinstance(value, dict)
+        and value.get("validation_schema") == "VELTRIX_INDEPENDENT_MODEL_VALIDATION_V1"
+        and value.get("model_portfolio_id") == MODEL_PORTFOLIO_ID
+        and value.get("legacy_model_dependency") is False
+        and isinstance(value.get("dataset"), dict)
+    )

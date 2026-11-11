@@ -9,13 +9,15 @@ from typing import Any
 from datetime import date, datetime, timedelta
 from zoneinfo import ZoneInfo
 
+from app.provider_source_evidence import SourceEvidenceError, validate_source_evidence
+
 _HEX_SHA256 = re.compile(r"^[0-9a-f]{64}$")
 _RECORD_KEYS = {
     "schema_version", "provider", "source_id", "competition_key", "season",
     "home_team_source_id", "away_team_source_id", "home_team_name",
     "away_team_name", "kickoff_at", "source_status", "normalized_status",
     "home_score", "away_score", "endpoint", "retrieved_at", "payload_sha256",
-    "run_id",
+    "run_id", "settled_at", "settlement_evidence", "source_evidence",
 }
 _QUARANTINE_KEYS = {"input_index", "reason", "source"}
 
@@ -62,6 +64,11 @@ def validate_acquisition_report(report: Any) -> dict:
             raise ArtifactIntegrityError(f"normalized_record_schema_invalid:{index}")
         if not isinstance(record.get("payload_sha256"), str) or not _HEX_SHA256.fullmatch(record["payload_sha256"]):
             raise ArtifactIntegrityError(f"payload_hash_invalid:{index}")
+        projection = {key: value for key, value in record.items() if key != "source_evidence"}
+        try:
+            validate_source_evidence(record["source_evidence"], expected_record=projection)
+        except SourceEvidenceError as exc:
+            raise ArtifactIntegrityError(f"source_evidence_invalid:{index}:{exc}") from None
 
     safe_source_keys = {
         "provider", "source_id", "competition_key", "home_team_source_id",

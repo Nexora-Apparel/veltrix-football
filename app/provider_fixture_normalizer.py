@@ -11,6 +11,8 @@ import json
 from datetime import datetime, timezone
 from typing import Any
 
+from app.provider_settlement_evidence import extract_settlement_evidence
+
 
 SCHEMA_VERSION = 1
 SETTLED_STATUSES = {"final", "finished", "ft", "full_time"}
@@ -20,16 +22,16 @@ def _text(value: Any) -> str:
     return str(value).strip() if value is not None else ""
 
 
-def _utc_timestamp(value: Any) -> str:
+def _utc_timestamp(value: Any, field: str) -> str:
     raw = _text(value)
     if not raw:
-        raise ValueError("missing_kickoff")
+        raise ValueError(f"missing_{field}")
     try:
         parsed = datetime.fromisoformat(raw.replace("Z", "+00:00"))
     except ValueError:
-        raise ValueError("invalid_kickoff") from None
+        raise ValueError(f"invalid_{field}") from None
     if parsed.tzinfo is None or parsed.utcoffset() is None:
-        raise ValueError("kickoff_timezone_missing")
+        raise ValueError(f"{field}_timezone_missing")
     return parsed.astimezone(timezone.utc).isoformat().replace("+00:00", "Z")
 
 
@@ -69,8 +71,8 @@ def _base_record(provider: str, source_id: Any, competition_key: Any,
         raise ValueError("home_away_team_id_collision")
     if not _text(endpoint) or not _text(run_id):
         raise ValueError("missing_endpoint_or_run_id")
-    retrieved = _utc_timestamp(retrieved_at)
-    kickoff_utc = _utc_timestamp(kickoff)
+    retrieved = _utc_timestamp(retrieved_at, "retrieved_at")
+    kickoff_utc = _utc_timestamp(kickoff, "kickoff")
     status = _text(source_status).casefold()
     if not status:
         raise ValueError("missing_status")
@@ -118,12 +120,15 @@ def normalize_striker_game(row: dict, *, competition_key: str,
     home, away = row.get("home") or {}, row.get("away") or {}
     if not isinstance(home, dict) or not isinstance(away, dict):
         raise ValueError("team_object_invalid")
-    return _base_record(
+    record = _base_record(
         "strikerapi", row.get("game_id"), competition_key, season,
         home.get("team_id"), away.get("team_id"), home.get("name"), away.get("name"),
         row.get("starts_at") or row.get("date"), row.get("status"),
         home.get("score"), away.get("score"), endpoint, retrieved_at, run_id, row,
     )
+    record["settlement_evidence"] = extract_settlement_evidence("strikerapi", row)
+    record["settled_at"] = record["settlement_evidence"]["settlement_at"]
+    return record
 
 
 def normalize_fivedollar_fixture(row: dict, *, endpoint: str,
@@ -142,12 +147,15 @@ def normalize_fivedollar_fixture(row: dict, *, endpoint: str,
             kickoff = datetime.fromtimestamp(int(row["kickoff_ts"]), timezone.utc).isoformat()
         except (TypeError, ValueError, OverflowError, OSError):
             raise ValueError("invalid_kickoff_timestamp") from None
-    return _base_record(
+    record = _base_record(
         "fivedollar", row.get("id"), league.get("id"), row.get("season"),
         home.get("id"), away.get("id"), home.get("name"), away.get("name"),
         kickoff, row.get("status"),
         goals.get("home"), goals.get("away"), endpoint, retrieved_at, run_id, row,
     )
+    record["settlement_evidence"] = extract_settlement_evidence("fivedollar", row)
+    record["settled_at"] = record["settlement_evidence"]["settlement_at"]
+    return record
 
 
 def normalize_observation(provider: str, row: dict, **kwargs) -> dict:

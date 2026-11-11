@@ -18,6 +18,12 @@ from urllib.request import Request, urlopen
 
 import requests
 
+from app.independent_report_contract import (
+    is_publishable_independent_report,
+    is_value_betting_authorized_report,
+    is_independent_paper_ledger,
+)
+
 
 MAX_MESSAGE_LENGTH = 3900
 MESSAGE_PREFIX = "🔔 🆕 NEW VELTRIX UPDATE  •  MESSAGE 999/999"
@@ -207,12 +213,34 @@ def _format_recent_form(team_form: Any) -> str:
 
 
 def format_report_messages(report: dict[str, Any], ledger: dict[str, Any] | None = None) -> list[str]:
+    if not is_publishable_independent_report(report):
+        raise ValueError("LEGACY_OR_UNCERTIFIED_REPORT_SUPPRESSED")
+    report = dict(report)
+    value_betting_authorized = is_value_betting_authorized_report(report)
+    if not value_betting_authorized:
+        report.pop("value_bet_screen", None)
+        report.pop("value_validation_certificate", None)
+        rows = report.get("predictions")
+        if isinstance(rows, list):
+            report["predictions"] = [
+                {key: value for key, value in row.items() if key != "value_bet_screen"}
+                if isinstance(row, dict) else row
+                for row in rows
+            ]
+    if not is_independent_paper_ledger(ledger):
+        ledger = None
     """Send concise match verdicts and evidence-based explanations to Telegram."""
     day = str(report.get("as_of_date", "unknown date"))
     timezone_name = str(report.get("timezone", "Africa/Lagos"))
     predictions = report.get("predictions", [])
     fixtures = [item for item in predictions if isinstance(item, dict)]
-    usable = [item for item in fixtures if item.get("status") in {"EXPERIMENTAL_ONLY", "LOW_HISTORY_FORECAST"} and isinstance(item.get("probabilities"), dict)]
+    usable = [
+        item for item in fixtures
+        if item.get("status") == "INDEPENDENT_FORECAST"
+        and isinstance(item.get("probabilities"), dict)
+        and item.get("legacy_model_dependency") is False
+        and item.get("model_portfolio_id") == "veltrix-independent-market-portfolio-v1"
+    ]
 
     header = [
         DIVIDER,
@@ -261,41 +289,42 @@ def format_report_messages(report: dict[str, Any], ledger: dict[str, Any] | None
         prediction_basis = str(item.get("prediction_basis") or "").strip()
         if prediction_basis:
             block.append("WHY THIS VERDICT: " + prediction_basis)
-        value_screen = item.get("value_bet_screen") if isinstance(item.get("value_bet_screen"), dict) else {}
-        certificate = report.get("value_validation_certificate")
-        certificate = certificate if isinstance(certificate, dict) else {}
-        certificate_status = str(certificate.get("status") or "").upper()
-        approved_markets = certificate.get("approved_markets") or []
-        if not isinstance(approved_markets, list):
-            approved_markets = []
-        certificate_releases = certificate_status in {"PASSED", "CERTIFIED", "APPROVED"}
-        for market, result in (value_screen.get("markets") or {}).items():
-            raw_candidates = (result.get("candidates") or [])[:2]
-            market_approved = certificate_releases and market in approved_markets
-            released = raw_candidates if market_approved else []
-            shadow = ((result.get("paper_candidates") or []) + ([] if market_approved else raw_candidates))[:2]
-            for candidate in released:
-                block.append(
-                    "VALUE BET VERDICT: {} {} @ {:.2f} · estimated edge {:.1f}pp · expected return {:.1f}% · approved".format(
-                        market, candidate.get("selection"), float(candidate.get("decimal_odds")),
-                        float(candidate.get("edge_percentage_points")),
-                        float(candidate.get("expected_return_per_unit")) * 100.0,
+        if value_betting_authorized:
+            value_screen = item.get("value_bet_screen") if isinstance(item.get("value_bet_screen"), dict) else {}
+            certificate = report.get("value_validation_certificate")
+            certificate = certificate if isinstance(certificate, dict) else {}
+            certificate_status = str(certificate.get("status") or "").upper()
+            approved_markets = certificate.get("approved_markets") or []
+            if not isinstance(approved_markets, list):
+                approved_markets = []
+            certificate_releases = certificate_status in {"PASSED", "CERTIFIED", "APPROVED"}
+            for market, result in (value_screen.get("markets") or {}).items():
+                raw_candidates = (result.get("candidates") or [])[:2]
+                market_approved = certificate_releases and market in approved_markets
+                released = raw_candidates if market_approved else []
+                shadow = ((result.get("paper_candidates") or []) + ([] if market_approved else raw_candidates))[:2]
+                for candidate in released:
+                    block.append(
+                        "VALUE BET VERDICT: {} {} @ {:.2f} · estimated edge {:.1f}pp · expected return {:.1f}% · approved".format(
+                            market, candidate.get("selection"), float(candidate.get("decimal_odds")),
+                            float(candidate.get("edge_percentage_points")),
+                            float(candidate.get("expected_return_per_unit")) * 100.0,
+                        )
                     )
-                )
-            for candidate in shadow:
-                block.append(
-                    "VALUE BET VERDICT: Potential edge under review · {} {} @ {:.2f} · edge {:.1f}pp · expected return {:.1f}% · not approved".format(
-                        market, candidate.get("selection"), float(candidate.get("decimal_odds")),
-                        float(candidate.get("edge_percentage_points")),
-                        float(candidate.get("expected_return_per_unit")) * 100.0,
+                for candidate in shadow:
+                    block.append(
+                        "VALUE BET VERDICT: Potential edge under review · {} {} @ {:.2f} · edge {:.1f}pp · expected return {:.1f}% · not approved".format(
+                            market, candidate.get("selection"), float(candidate.get("decimal_odds")),
+                            float(candidate.get("edge_percentage_points")),
+                            float(candidate.get("expected_return_per_unit")) * 100.0,
+                        )
                     )
-                )
-        if not any(
-            (result.get("candidates") or []) or (result.get("paper_candidates") or [])
-            for result in (value_screen.get("markets") or {}).values()
-            if isinstance(result, dict)
-        ):
-            block.append("VALUE BET VERDICT: No qualifying value bet at the available prices.")
+            if not any(
+                (result.get("candidates") or []) or (result.get("paper_candidates") or [])
+                for result in (value_screen.get("markets") or {}).values()
+                if isinstance(result, dict)
+            ):
+                block.append("VALUE BET VERDICT: No qualifying value bet at the available prices.")
         reference_lines = _reference_market_lines(item)
         if reference_lines:
             block.append("REFERENCE BOOKMAKER PRICES — NOT VALUE PICKS")
@@ -306,12 +335,10 @@ def format_report_messages(report: dict[str, Any], ledger: dict[str, Any] | None
     # Do not silently hide discovered fixtures just because the model cannot
     # produce an eligible forecast. Publish the fixture and the explicit gate.
     for item in fixtures:
-        if item.get("status") in {"EXPERIMENTAL_ONLY", "LOW_HISTORY_FORECAST"}:
+        if item.get("status") == "INDEPENDENT_FORECAST" and isinstance(item.get("probabilities"), dict):
             continue
         status = str(item.get("status") or "FORECAST_UNAVAILABLE").upper()
-        if status == "LOW_HISTORY_FORECAST":
-            continue
-        elif status == "EXPERIMENTAL_LOW_DATA":
+        if status in {"EXPERIMENTAL_ONLY", "LOW_HISTORY_FORECAST", "EXPERIMENTAL_LOW_DATA"}:
             status = "INSUFFICIENT_HISTORY"
             reason = "Historical evidence is not yet sufficient for a reliable forecast."
         elif status == "INSUFFICIENT_HISTORY":

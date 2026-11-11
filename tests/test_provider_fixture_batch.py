@@ -58,6 +58,17 @@ class ProviderFixtureBatchTests(unittest.TestCase):
         self.assertNotIn("raw-secret-like-value", rendered)
         self.assertIn("payload_sha256", rendered)
 
+    def test_accepted_rows_carry_recomputable_raw_source_evidence(self):
+        result = process_observations([striker("evidence-row")])
+        record = result["accepted"][0]
+        self.assertEqual(record["source_evidence"]["raw_payload"]["game_id"], "evidence-row")
+        self.assertEqual(
+            record["source_evidence"]["raw_payload_sha256"], record["payload_sha256"]
+        )
+        self.assertEqual(
+            record["source_evidence"]["normalized_record"]["source_id"], "evidence-row"
+        )
+
     def test_report_proves_no_side_effects(self):
         result = process_observations([striker()])
         self.assertEqual(result["database_writes"], 0)

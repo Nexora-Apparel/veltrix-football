@@ -1,7 +1,7 @@
 """Safe Telegram Command Centre router for Veltrix Football.
 
 Formats command replies and reads only explicitly supplied report data. It never
-invents odds or treats experimental estimates as validated bets.
+invents odds or treats unvalidated estimates as validated bets.
 """
 from __future__ import annotations
 
@@ -10,6 +10,11 @@ import re
 from datetime import date, datetime
 from zoneinfo import ZoneInfo
 from typing import Any
+
+from app.independent_report_contract import (
+    is_publishable_independent_report,
+    is_value_betting_authorized_report,
+)
 
 COMMANDS: dict[str, str] = {
     "/start": "Open the Veltrix Football Command Centre.",
@@ -46,7 +51,7 @@ def _reply(body: str) -> str:
 
 
 def _report_predictions(report: dict[str, Any] | None) -> list[dict[str, Any]]:
-    if not isinstance(report, dict):
+    if not isinstance(report, dict) or not is_publishable_independent_report(report):
         return []
     report_date = report.get("as_of_date")
     if report_date:
@@ -134,7 +139,9 @@ def _forecast_predictions(report: dict[str, Any] | None) -> list[dict[str, Any]]
     """Return only current-day, future, usable match forecasts."""
     return [
         row for row in _future_fixtures(report)
-        if row.get("status") in {"EXPERIMENTAL_ONLY", "EXPERIMENTAL_LOW_DATA", "LOW_HISTORY_FORECAST"}
+        if row.get("status") == "INDEPENDENT_FORECAST"
+        and row.get("legacy_model_dependency") is False
+        and row.get("model_portfolio_id") == "veltrix-independent-market-portfolio-v1"
         and _valid_probability_vector(row.get("probabilities"))
     ]
 
@@ -166,34 +173,43 @@ def _format_kickoff(value: Any) -> str:
         return "Time unavailable"
 
 
-def _poisson_probability_at_least(k: int, mean: float) -> float:
-    """P(X >= k) for a Poisson goal count, evaluated without external libraries."""
-    if k <= 0:
-        return 1.0
-    term = math.exp(-mean)
-    cumulative = term
-    for goals in range(1, k):
-        term *= mean / goals
-        cumulative += term
-    return min(1.0, max(0.0, 1.0 - cumulative))
-
-
 def _goal_market_probabilities(row: dict[str, Any]) -> dict[str, float] | None:
-    means = _expected_goals(row)
-    if means is None:
+    """Read explicit model-produced BTTS and totals probabilities; never derive them here."""
+    markets = row.get("markets")
+    if not isinstance(markets, dict):
         return None
-    home, away = means
-    total = home + away
-    # Independent Poisson approximation; not yet calibrated.
-    markets = {
-        "over_0_prob": _poisson_probability_at_least(1, total),
-        "over_1_prob": _poisson_probability_at_least(2, total),
-        "over_2_prob": _poisson_probability_at_least(3, total),
-        "over_3_prob": _poisson_probability_at_least(4, total),
-        "over_4_prob": _poisson_probability_at_least(5, total),
-        "btts_yes_prob": (1.0 - math.exp(-home)) * (1.0 - math.exp(-away)),
-    }
-    return markets
+    btts = markets.get("btts")
+    totals = markets.get("totals")
+    if not isinstance(btts, dict) or not isinstance(totals, dict):
+        return None
+    try:
+        yes = float(btts["yes"])
+        no = float(btts["no"])
+    except (KeyError, TypeError, ValueError, OverflowError):
+        return None
+    if not (math.isfinite(yes) and math.isfinite(no) and 0.0 <= yes <= 1.0 and 0.0 <= no <= 1.0):
+        return None
+    if abs((yes + no) - 1.0) > 1e-6:
+        return None
+    result = {"btts_yes_prob": yes}
+    for line in range(5):
+        entry = totals.get(f"{line}.5")
+        if not isinstance(entry, dict):
+            return None
+        try:
+            over = float(entry["over"])
+            under = float(entry["under"])
+        except (KeyError, TypeError, ValueError, OverflowError):
+            return None
+        if not (
+            math.isfinite(over) and math.isfinite(under)
+            and 0.0 <= over <= 1.0 and 0.0 <= under <= 1.0
+            and abs((over + under) - 1.0) <= 1e-6
+        ):
+            return None
+        result[f"over_{line}_prob"] = over
+    return result
+
 
 def _saved_market_price_lines(row: dict[str, Any], market_key: str) -> list[str]:
     """Read only actual prices attached to this fixture in the published report."""
@@ -588,7 +604,7 @@ def handle_command(
             selected = forecast_rows[:15]
             if not selected:
                 notice = _history_notice(report)
-                body = "TODAY — NO USABLE FORECASTS. Fixtures may exist, but no rows passed the forecast-data checks."
+                body = "TODAY — NO USABLE INDEPENDENT FORECASTS. Fixtures may exist, but no rows passed the strict forecast-data checks."
                 if notice:
                     body += "\n" + notice
                 return _reply(body)
@@ -625,10 +641,8 @@ def handle_command(
                 continue
 
             probs = row.get("probabilities")
-            if row.get("status") not in {"EXPERIMENTAL_ONLY", "EXPERIMENTAL_LOW_DATA", "LOW_HISTORY_FORECAST"} or not _valid_probability_vector(probs):
+            if row.get("status") != "INDEPENDENT_FORECAST" or not _valid_probability_vector(probs):
                 reason = row.get("reason") or {
-                    "EXPERIMENTAL_ONLY": "The probability data is incomplete or invalid.",
-                    "EXPERIMENTAL_LOW_DATA": "Historical evidence is limited.",
                     "INSUFFICIENT_HISTORY": "Historical evidence is limited.",
                     "UNSUPPORTED_COMPETITION": "Competition-specific data is not available.",
                 }.get(str(row.get("status") or ""), "Forecast data is unavailable.")
@@ -647,8 +661,6 @@ def handle_command(
                 f"⚽ {index}. {home} vs {away}",
                 f"🏆 {league}  ·  🕒 {kickoff}",
             ])
-            if row.get("status") == "EXPERIMENTAL_LOW_DATA":
-                lines.append("LIMITED EVIDENCE · VALUE BET NOT RECOMMENDED")
             if row.get("prediction_basis"):
                 lines.append("Why this verdict: " + str(row.get("prediction_basis")))
             if command not in {"/overunder", "/btts"}:
@@ -665,9 +677,10 @@ def handle_command(
                     lines.extend(f"• {price}" for price in prices[:3])
                 else:
                     lines.append("• No matched 1X2 prices in the saved report.")
-            if means is not None and command == "/overunder":
+            if command == "/overunder":
                 markets = _goal_market_probabilities(row) or {}
-                lines.append(f"⚽ Expected goals: {home} {means[0]:.2f}  ·  {away} {means[1]:.2f}")
+                if means is not None:
+                    lines.append(f"⚽ Expected goals: {home} {means[0]:.2f}  ·  {away} {means[1]:.2f}")
                 lines.append("GOAL-LINE PROBABILITIES")
                 for goal_line in (0, 1, 2, 3, 4):
                     over = markets[f"over_{goal_line}_prob"]
@@ -678,11 +691,12 @@ def handle_command(
                     lines.extend(f"• {price}" for price in prices[:3])
                 else:
                     lines.append("• No matched Over/Under prices in the saved report.")
-            if means is not None and command == "/btts":
+            if command == "/btts":
                 markets = _goal_market_probabilities(row) or {}
                 yes = markets["btts_yes_prob"]
                 lines.append(f"🎯 BTTS: Yes {yes:.0%}  ·  No {1.0 - yes:.0%}")
-                lines.append(f"⚽ Expected goals: {home} {means[0]:.2f}  ·  {away} {means[1]:.2f}")
+                if means is not None:
+                    lines.append(f"⚽ Expected goals: {home} {means[0]:.2f}  ·  {away} {means[1]:.2f}")
                 prices = _saved_market_price_lines(row, "btts")
                 if prices:
                     lines.append("REFERENCE BOOKMAKER PRICES")
@@ -694,7 +708,7 @@ def handle_command(
         if command in {"/overunder", "/btts"}:
             lines.extend([
                 "━━━━━━━━━━━━━━━━━━━━",
-                "Method: independent-Poisson estimates from expected goals.",
+                "Method: explicit market probabilities supplied by the independent model portfolio; the command layer does not reconstruct probabilities.",
                 "Estimates are not guaranteed outcomes. Prices are reference data only; value recommendations require separate market validation.",
             ])
         else:
@@ -711,19 +725,27 @@ def handle_command(
             market_filter = {"OVER_UNDER_1_5", "OVER_UNDER_2_5", "OVER_UNDER_3_5"}
 
         candidates = []
-        for row in _future_fixtures(report):
-            screen = row.get("value_bet_screen") if isinstance(row.get("value_bet_screen"), dict) else {}
-            for market, details in (screen.get("markets") or {}).items():
-                if market_filter is not None and market not in market_filter:
-                    continue
-                if not isinstance(details, dict):
-                    continue
-                for candidate in details.get("paper_candidates") or []:
-                    if isinstance(candidate, dict):
-                        candidates.append((row, market, candidate))
+        value_authorized = is_value_betting_authorized_report(report)
+        if value_authorized:
+            for row in _future_fixtures(report):
+                screen = row.get("value_bet_screen") if isinstance(row.get("value_bet_screen"), dict) else {}
+                for market, details in (screen.get("markets") or {}).items():
+                    if market_filter is not None and market not in market_filter:
+                        continue
+                    if not isinstance(details, dict):
+                        continue
+                    for candidate in details.get("paper_candidates") or []:
+                        if isinstance(candidate, dict):
+                            candidates.append((row, market, candidate))
 
-        certificate = (report or {}).get("value_validation_certificate") or {}
-        summary = (report or {}).get("value_bet_screen") or {}
+        certificate = (
+            (report or {}).get("value_validation_certificate") or {}
+            if value_authorized else {"status": "LOCKED_INSUFFICIENT_EVIDENCE", "approved_markets": []}
+        )
+        summary = (
+            (report or {}).get("value_bet_screen") or {}
+            if value_authorized else {"candidate_count": 0}
+        )
         lines = [
             f"{command.upper()} — VALUE RESEARCH",
             "Release certificate: " + str(certificate.get("status") or "LOCKED_INSUFFICIENT_EVIDENCE"),

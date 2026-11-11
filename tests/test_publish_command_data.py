@@ -1,6 +1,22 @@
 from datetime import datetime, timezone
 
 from scripts.publish_command_data import _archive_report_path, _valid_recent_cache
+from app.independent_report_contract import MODEL_PORTFOLIO_ID, REPORT_SCHEMA
+
+
+def authorized_report(report):
+    return {
+        **report,
+        "report_schema": REPORT_SCHEMA,
+        "model_portfolio_id": MODEL_PORTFOLIO_ID,
+        "legacy_model_dependency": False,
+        "publication_allowed": True,
+        "release_certificate": {
+            "status": "CERTIFIED", "publication_authorized": True,
+            "signature_verified": True, "certificate_sha256": "a" * 64,
+            "model_portfolio_id": MODEL_PORTFOLIO_ID,
+        },
+    }
 
 
 def test_recent_cache_publisher_accepts_current_v2_schema():
@@ -39,6 +55,56 @@ def test_daily_report_archive_path_rejects_invalid_report_date():
 
     with pytest.raises(ValueError):
         _archive_report_path({"as_of_date": "not-a-date"}, datetime.now(timezone.utc))
+
+
+def test_publisher_removes_unapproved_value_fields_from_published_bytes(tmp_path, monkeypatch):
+    import base64
+    import json
+    from scripts import publish_command_data as publisher
+
+    report = authorized_report({
+        "as_of_date": "2026-11-11",
+        "value_bet_screen": {"candidate_count": 99},
+        "value_validation_certificate": {"status": "CERTIFIED"},
+        "predictions": [{
+            "home_team": "Home FC",
+            "value_bet_screen": {"paper_candidates": [{"selection": "away"}]},
+            "probabilities": {"home": 0.4, "draw": 0.3, "away": 0.3},
+        }],
+    })
+    target = tmp_path / "daily_predictions.json"
+    target.write_text(json.dumps(report), encoding="utf-8")
+    captured = {}
+
+    def fake_github_json(url, token, method="GET", body=None):
+        if method == "GET":
+            return {}
+        captured["body"] = body
+        return {"content": {"sha": "published"}}
+
+    monkeypatch.setattr(publisher, "_github_json", fake_github_json)
+    monkeypatch.setattr(publisher, "is_publishable_independent_report", lambda value: True)
+    monkeypatch.setattr(publisher, "is_value_betting_authorized_report", lambda value: False)
+
+    publisher.publish("public-data/daily_predictions.json", target, "owner/repo", "token")
+    published = json.loads(base64.b64decode(captured["body"]["content"]).decode("utf-8"))
+    assert "value_bet_screen" not in published
+    assert "value_validation_certificate" not in published
+    assert "value_bet_screen" not in published["predictions"][0]
+
+
+def test_publisher_refuses_legacy_daily_prediction_artifacts(tmp_path):
+    import json
+    import pytest
+    from scripts.publish_command_data import publish
+
+    target = tmp_path / "daily_predictions.json"
+    target.write_text(json.dumps({
+        "as_of_date": "2026-11-11",
+        "predictions": [{"home_team": "Legacy FC", "probabilities": {}}],
+    }), encoding="utf-8")
+    with pytest.raises(ValueError, match="LEGACY_OR_UNCERTIFIED_REPORT_PUBLICATION_BLOCKED"):
+        publish("public-data/daily_predictions.json", target, "owner/repo", "token")
 
 
 def test_large_json_snapshot_uses_git_data_api_without_four_mb_rejection(tmp_path, monkeypatch):
@@ -109,17 +175,24 @@ def test_one_snapshot_failure_does_not_block_later_publications(tmp_path, monkey
     import sys
     from scripts import publish_command_data as publisher
 
+    monkeypatch.setattr(publisher, "is_publishable_independent_report", lambda report: True)
+    monkeypatch.setattr(publisher, "is_independent_paper_ledger", lambda ledger: True)
+
     report = tmp_path / "report.json"
     ledger = tmp_path / "paper.json"
     evidence = tmp_path / "evidence.json"
     cache = tmp_path / "cache.json"
-    report.write_text(json.dumps({
+    report.write_text(json.dumps(authorized_report({
         "as_of_date": "2026-11-02",
         "predictions": [],
-    }), encoding="utf-8")
+    })), encoding="utf-8")
     ledger.write_text(json.dumps({
+        "ledger_schema": "VELTRIX_INDEPENDENT_PAPER_LEDGER_V1",
+        "model_portfolio_id": MODEL_PORTFOLIO_ID,
+        "legacy_model_dependency": False,
         "model_status": "PAPER_TRACKING_ONLY",
         "cumulative_metrics_by_model": {},
+        "scored_matches": [],
     }), encoding="utf-8")
     evidence.write_text(json.dumps({
         "version": "VELTRIX_VALUE_EVIDENCE_V1",
@@ -218,6 +291,7 @@ def test_large_blob_publication_retries_when_command_data_branch_moves(tmp_path,
         raise AssertionError(url)
 
     monkeypatch.setattr(publisher, "_github_json", fake_github_json)
+    monkeypatch.setattr(publisher, "is_publishable_independent_report", lambda report: True)
     publisher.publish("public-data/daily_predictions.json", target, "owner/repo", "token")
     assert ref_reads == 2
     assert patch_attempts == 2

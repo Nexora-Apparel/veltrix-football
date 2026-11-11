@@ -12,10 +12,25 @@ import math
 from datetime import datetime, timezone
 from typing import Any
 
+from app.feature_source_qualification import (
+    FeatureSourceQualificationError, validate_feature_source,
+)
+
 
 FEATURE_CATALOGUE = {
     "home_team_elo": {"max_age_seconds": 7 * 86400},
     "away_team_elo": {"max_age_seconds": 7 * 86400},
+    "home_attack_goals_rate": {"max_age_seconds": 60 * 86400},
+    "home_defence_conceded_rate": {"max_age_seconds": 60 * 86400},
+    "away_attack_goals_rate": {"max_age_seconds": 60 * 86400},
+    "away_defence_conceded_rate": {"max_age_seconds": 60 * 86400},
+    "elo_difference_home": {"max_age_seconds": 60 * 86400},
+    "home_form_points_rate": {"max_age_seconds": 60 * 86400},
+    "away_form_points_rate": {"max_age_seconds": 60 * 86400},
+    "home_rest_days": {"max_age_seconds": 60 * 86400},
+    "away_rest_days": {"max_age_seconds": 60 * 86400},
+    "competition_home_goals_rate": {"max_age_seconds": 60 * 86400},
+    "competition_away_goals_rate": {"max_age_seconds": 60 * 86400},
     "home_attack_strength": {"max_age_seconds": 14 * 86400},
     "away_attack_strength": {"max_age_seconds": 14 * 86400},
     "home_defence_strength": {"max_age_seconds": 14 * 86400},
@@ -24,8 +39,8 @@ FEATURE_CATALOGUE = {
     "home_rolling_xg_against": {"max_age_seconds": 14 * 86400},
     "away_rolling_xg_for": {"max_age_seconds": 14 * 86400},
     "away_rolling_xg_against": {"max_age_seconds": 14 * 86400},
-    "home_rest_days": {"max_age_seconds": 14 * 86400},
-    "away_rest_days": {"max_age_seconds": 14 * 86400},
+    "home_rest_days": {"max_age_seconds": 60 * 86400},
+    "away_rest_days": {"max_age_seconds": 60 * 86400},
     "home_travel_km": {"max_age_seconds": 14 * 86400},
     "away_travel_km": {"max_age_seconds": 14 * 86400},
     "home_lineup_strength": {"max_age_seconds": 6 * 3600},
@@ -69,7 +84,11 @@ def _hash(value: dict) -> str:
 
 def build_point_in_time_feature_snapshot(*, fixture_id: str,
                                          prediction_as_of: str,
-                                         features: list[dict]) -> dict:
+                                         features: list[dict],
+                                         verified_source_registry: dict | None = None,
+                                         competition_id: str | None = None,
+                                         season_identity_evidence: dict | None = None,
+                                         team_identity_evidence: dict | None = None) -> dict:
     if not isinstance(fixture_id, str) or not fixture_id.strip():
         raise PointInTimeFeatureError("fixture_id_required")
     if not isinstance(features, list):
@@ -119,7 +138,7 @@ def build_point_in_time_feature_snapshot(*, fixture_id: str,
         age = (cutoff - observed).total_seconds()
         if age > FEATURE_CATALOGUE[name]["max_age_seconds"]:
             raise PointInTimeFeatureError(f"stale_feature:{name}")
-        normalized.append({
+        normalized_feature = {
             "name": name,
             "value": float(value),
             "source": source.strip(),
@@ -128,7 +147,21 @@ def build_point_in_time_feature_snapshot(*, fixture_id: str,
             "available_at": available.isoformat().replace("+00:00", "Z"),
             "retrieved_at": retrieved.isoformat().replace("+00:00", "Z"),
             "payload_sha256": payload_hash,
-        })
+        }
+        if verified_source_registry is not None:
+            if not isinstance(competition_id, str) or not competition_id.strip():
+                raise PointInTimeFeatureError("source_qualification_competition_required")
+            try:
+                normalized_feature["source_qualification"] = validate_feature_source(
+                    verified_registry=verified_source_registry,
+                    source=source.strip(), feature_name=name,
+                    competition_id=competition_id,
+                )
+            except FeatureSourceQualificationError as exc:
+                raise PointInTimeFeatureError(
+                    f"feature_source_qualification_rejected:{exc}"
+                ) from None
+        normalized.append(normalized_feature)
     normalized.sort(key=lambda item: item["name"])
     snapshot = {
         "schema_version": 1,
@@ -140,6 +173,73 @@ def build_point_in_time_feature_snapshot(*, fixture_id: str,
         "target_label_separate": True,
         "model_training_certified": False,
     }
+    if team_identity_evidence is not None:
+        required_team_fields = {
+            "home_source_team_id", "away_source_team_id",
+            "home_canonical_team_id", "away_canonical_team_id", "team_scope",
+            "home_mapping_evidence_sha256", "away_mapping_evidence_sha256",
+            "home_mapping_reviewer", "away_mapping_reviewer",
+            "home_mapping_reviewed_at", "away_mapping_reviewed_at",
+            "registry_sha256", "signing_key_arn", "verified_at", "source_verified_at",
+        }
+        if not isinstance(team_identity_evidence, dict) or set(team_identity_evidence) != required_team_fields:
+            raise PointInTimeFeatureError("team_identity_evidence_shape_invalid")
+        text_fields = (
+            "home_source_team_id", "away_source_team_id",
+            "home_canonical_team_id", "away_canonical_team_id", "team_scope",
+            "home_mapping_reviewer", "away_mapping_reviewer", "signing_key_arn",
+        )
+        if any(not isinstance(team_identity_evidence.get(key), str) or not team_identity_evidence[key].strip()
+               for key in text_fields):
+            raise PointInTimeFeatureError("team_identity_evidence_identity_invalid")
+        if team_identity_evidence["home_canonical_team_id"] == team_identity_evidence["away_canonical_team_id"]:
+            raise PointInTimeFeatureError("team_identity_evidence_same_canonical_team")
+        registry_digest = team_identity_evidence.get("registry_sha256")
+        if (not isinstance(registry_digest, str) or len(registry_digest) != 64
+                or any(char not in HEX for char in registry_digest)):
+            raise PointInTimeFeatureError("team_identity_evidence_digest_invalid:registry_sha256")
+        for key in ("home_mapping_evidence_sha256", "away_mapping_evidence_sha256"):
+            digests = team_identity_evidence.get(key)
+            if (not isinstance(digests, list) or not digests
+                    or any(not isinstance(digest, str) or len(digest) != 64
+                           or any(char not in HEX for char in digest) for digest in digests)
+                    or len(set(digests)) != len(digests)):
+                raise PointInTimeFeatureError(f"team_identity_evidence_digest_invalid:{key}")
+        verified_at = _parse_time(team_identity_evidence["verified_at"], "team_identity_verified_at")
+        source_verified_at = _parse_time(
+            team_identity_evidence["source_verified_at"], "team_identity_source_verified_at"
+        )
+        if verified_at != cutoff:
+            raise PointInTimeFeatureError("team_identity_registry_not_verified_at_feature_cutoff")
+        for key in ("home_mapping_reviewed_at", "away_mapping_reviewed_at"):
+            _parse_time(team_identity_evidence[key], key)
+        snapshot["team_identity_evidence"] = dict(team_identity_evidence)
+    if season_identity_evidence is not None:
+        required_season_fields = {
+            "provider", "competition_id", "source_season", "canonical_season_id",
+            "registry_sha256", "signing_key_arn", "verified_at",
+            "evidence_sha256", "reviewer", "reviewed_at",
+        }
+        if not isinstance(season_identity_evidence, dict) or set(season_identity_evidence) != required_season_fields:
+            raise PointInTimeFeatureError("season_identity_evidence_shape_invalid")
+        if any(not isinstance(season_identity_evidence.get(key), str) or not season_identity_evidence[key].strip()
+               for key in ("provider", "competition_id", "source_season", "canonical_season_id", "signing_key_arn", "reviewer")):
+            raise PointInTimeFeatureError("season_identity_evidence_identity_invalid")
+        if (not isinstance(season_identity_evidence["registry_sha256"], str)
+                or len(season_identity_evidence["registry_sha256"]) != 64
+                or any(c not in HEX for c in season_identity_evidence["registry_sha256"])
+                or not isinstance(season_identity_evidence["evidence_sha256"], list)
+                or not season_identity_evidence["evidence_sha256"]
+                or any(not isinstance(x, str) or len(x) != 64 or any(c not in HEX for c in x)
+                       for x in season_identity_evidence["evidence_sha256"])):
+            raise PointInTimeFeatureError("season_identity_evidence_digest_invalid")
+        season_verified_at = _parse_time(
+            season_identity_evidence["verified_at"], "season_identity_verified_at"
+        )
+        if season_verified_at != cutoff:
+            raise PointInTimeFeatureError("season_identity_registry_not_verified_at_feature_cutoff")
+        _parse_time(season_identity_evidence["reviewed_at"], "season_identity_reviewed_at")
+        snapshot["season_identity_evidence"] = dict(season_identity_evidence)
     snapshot["snapshot_sha256"] = _hash(snapshot)
     return snapshot
 
@@ -152,6 +252,52 @@ def validate_point_in_time_feature_snapshot(snapshot: Any) -> dict:
         "feature_count", "features", "target_label_separate",
         "model_training_certified", "snapshot_sha256",
     }
+    if "team_identity_evidence" in snapshot:
+        team = snapshot["team_identity_evidence"]
+        required_team_fields = {
+            "home_source_team_id", "away_source_team_id",
+            "home_canonical_team_id", "away_canonical_team_id", "team_scope",
+            "home_mapping_evidence_sha256", "away_mapping_evidence_sha256",
+            "home_mapping_reviewer", "away_mapping_reviewer",
+            "home_mapping_reviewed_at", "away_mapping_reviewed_at",
+            "registry_sha256", "signing_key_arn", "verified_at", "source_verified_at",
+        }
+        if not isinstance(team, dict) or set(team) != required_team_fields:
+            raise PointInTimeFeatureError("snapshot_team_identity_evidence_shape_invalid")
+        if team["home_canonical_team_id"] == team["away_canonical_team_id"]:
+            raise PointInTimeFeatureError("snapshot_team_identity_same_canonical_team")
+        for key in (
+            "home_source_team_id", "away_source_team_id",
+            "home_canonical_team_id", "away_canonical_team_id",
+            "team_scope", "home_mapping_reviewer", "away_mapping_reviewer",
+        ):
+            if not isinstance(team.get(key), str) or not team[key].strip():
+                raise PointInTimeFeatureError(f"snapshot_team_identity_field_invalid:{key}")
+        if not isinstance(team.get("signing_key_arn"), str) or not team["signing_key_arn"].startswith("arn:aws:kms:"):
+            raise PointInTimeFeatureError("snapshot_team_identity_signer_invalid")
+        registry_digest = team.get("registry_sha256")
+        if not isinstance(registry_digest, str) or len(registry_digest) != 64 or any(char not in HEX for char in registry_digest):
+            raise PointInTimeFeatureError("snapshot_team_identity_digest_invalid:registry_sha256")
+        for key in ("home_mapping_evidence_sha256", "away_mapping_evidence_sha256"):
+            digests = team.get(key)
+            if (not isinstance(digests, list) or not digests
+                    or any(not isinstance(digest, str) or len(digest) != 64
+                           or any(char not in HEX for char in digest) for digest in digests)
+                    or len(set(digests)) != len(digests)):
+                raise PointInTimeFeatureError(f"snapshot_team_identity_digest_invalid:{key}")
+        team_verified_at = _parse_time(team.get("verified_at"), "snapshot_team_identity_verified_at")
+        team_source_verified_at = _parse_time(
+            team.get("source_verified_at"), "snapshot_team_identity_source_verified_at"
+        )
+        snapshot_cutoff = _parse_time(snapshot.get("prediction_as_of"), "prediction_as_of")
+        if team_verified_at != snapshot_cutoff:
+            raise PointInTimeFeatureError("snapshot_team_identity_not_verified_at_feature_cutoff")
+        _parse_time(team.get("home_mapping_reviewed_at"), "snapshot_home_team_mapping_reviewed_at")
+        _parse_time(team.get("away_mapping_reviewed_at"), "snapshot_away_team_mapping_reviewed_at")
+    if "season_identity_evidence" in snapshot:
+        expected_snapshot_keys.add("season_identity_evidence")
+    if "team_identity_evidence" in snapshot:
+        expected_snapshot_keys.add("team_identity_evidence")
     if set(snapshot) != expected_snapshot_keys:
         raise PointInTimeFeatureError("snapshot_shape_invalid")
     if not isinstance(snapshot.get("fixture_id"), str) or not snapshot["fixture_id"].strip():
@@ -165,6 +311,27 @@ def validate_point_in_time_feature_snapshot(snapshot: Any) -> dict:
     unhashed.pop("snapshot_sha256", None)
     if _hash(unhashed) != supplied:
         raise PointInTimeFeatureError("snapshot_hash_mismatch")
+    if "season_identity_evidence" in snapshot:
+        season = snapshot["season_identity_evidence"]
+        required_season_fields = {
+            "provider", "competition_id", "source_season", "canonical_season_id",
+            "registry_sha256", "signing_key_arn", "verified_at",
+            "evidence_sha256", "reviewer", "reviewed_at",
+        }
+        if not isinstance(season, dict) or set(season) != required_season_fields:
+            raise PointInTimeFeatureError("snapshot_season_identity_evidence_shape_invalid")
+        if (not isinstance(season.get("registry_sha256"), str)
+                or len(season["registry_sha256"]) != 64
+                or any(c not in HEX for c in season["registry_sha256"])
+                or not isinstance(season.get("evidence_sha256"), list)
+                or not season["evidence_sha256"]
+                or any(not isinstance(x, str) or len(x) != 64 or any(c not in HEX for c in x)
+                       for x in season["evidence_sha256"])):
+            raise PointInTimeFeatureError("snapshot_season_identity_evidence_digest_invalid")
+        verified_at = _parse_time(season.get("verified_at"), "snapshot_season_verified_at")
+        if verified_at != _parse_time(snapshot.get("prediction_as_of"), "prediction_as_of"):
+            raise PointInTimeFeatureError("snapshot_season_registry_not_verified_at_feature_cutoff")
+        _parse_time(season.get("reviewed_at"), "snapshot_season_reviewed_at")
     cutoff = _parse_time(snapshot.get("prediction_as_of"), "prediction_as_of")
     features = snapshot.get("features")
     if (not isinstance(features, list) or isinstance(snapshot.get("feature_count"), bool)
@@ -181,7 +348,8 @@ def validate_point_in_time_feature_snapshot(snapshot: Any) -> dict:
             "name", "value", "source", "source_id", "observed_at",
             "available_at", "retrieved_at", "payload_sha256",
         }
-        if set(feature) != expected_feature_keys:
+        actual_keys = set(feature)
+        if actual_keys not in (expected_feature_keys, expected_feature_keys | {"source_qualification"}):
             raise PointInTimeFeatureError(f"snapshot_feature_shape_invalid:{index}")
         name = feature.get("name")
         if not isinstance(name, str) or name not in FEATURE_CATALOGUE or name in FORBIDDEN_FEATURE_NAMES:
@@ -197,6 +365,30 @@ def validate_point_in_time_feature_snapshot(snapshot: Any) -> dict:
         if (not isinstance(payload_hash, str) or len(payload_hash) != 64
                 or any(char not in HEX for char in payload_hash)):
             raise PointInTimeFeatureError(f"snapshot_feature_payload_hash_invalid:{index}")
+        if "source_qualification" in feature:
+            qualification = feature["source_qualification"]
+            qualification_fields = {
+                "registry_sha256", "signing_key_arn", "verified_at",
+                "observed_at_semantics", "available_at_semantics",
+                "qualification_evidence_sha256",
+            }
+            if not isinstance(qualification, dict) or set(qualification) != qualification_fields:
+                raise PointInTimeFeatureError(f"snapshot_source_qualification_shape_invalid:{index}")
+            if (not isinstance(qualification["registry_sha256"], str)
+                    or len(qualification["registry_sha256"]) != 64
+                    or any(char not in HEX for char in qualification["registry_sha256"])
+                    or not isinstance(qualification["signing_key_arn"], str)
+                    or not qualification["signing_key_arn"].startswith("arn:aws:kms:")
+                    or not isinstance(qualification["observed_at_semantics"], str)
+                    or not qualification["observed_at_semantics"].strip()
+                    or not isinstance(qualification["available_at_semantics"], str)
+                    or not qualification["available_at_semantics"].strip()
+                    or not isinstance(qualification["qualification_evidence_sha256"], list)
+                    or not qualification["qualification_evidence_sha256"]
+                    or any(not isinstance(x, str) or len(x) != 64 or any(c not in HEX for c in x)
+                           for x in qualification["qualification_evidence_sha256"])):
+                raise PointInTimeFeatureError(f"snapshot_source_qualification_invalid:{index}")
+            _parse_time(qualification["verified_at"], f"source_qualification_verified_at_{index}")
         observed = _parse_time(feature.get("observed_at"), f"feature_{name}_observed_at")
         available = _parse_time(feature.get("available_at"), f"feature_{name}_available_at")
         retrieved = _parse_time(feature.get("retrieved_at"), f"feature_{name}_retrieved_at")
@@ -209,6 +401,15 @@ def validate_point_in_time_feature_snapshot(snapshot: Any) -> dict:
         names.append(name)
     if names != sorted(names) or len(names) != len(set(names)):
         raise PointInTimeFeatureError("snapshot_feature_order_or_uniqueness_invalid")
+    qualified = ["source_qualification" in item for item in features]
+    if any(qualified) and not all(qualified):
+        raise PointInTimeFeatureError("snapshot_source_qualification_partial")
+    if all(qualified) and qualified:
+        registry_ids = {item["source_qualification"]["registry_sha256"] for item in features}
+        signer_ids = {item["source_qualification"]["signing_key_arn"] for item in features}
+        verified_times = {item["source_qualification"]["verified_at"] for item in features}
+        if len(registry_ids) != 1 or len(signer_ids) != 1 or len(verified_times) != 1:
+            raise PointInTimeFeatureError("snapshot_source_qualification_registry_mismatch")
     return {
         "valid": True,
         "snapshot_sha256": supplied,

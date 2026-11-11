@@ -19,7 +19,7 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from app.live_predictions import _name_key
+from app.fixture_history_utils import _name_key
 from app.market_evidence import probability_distribution_audit
 
 

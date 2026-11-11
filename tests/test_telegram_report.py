@@ -6,6 +6,10 @@ import json
 import requests
 import pytest
 
+from app.independent_report_contract import (
+    MODEL_PORTFOLIO_ID, REPORT_SCHEMA, is_publishable_independent_report,
+)
+
 from scripts.send_telegram_report import (
     MAX_MESSAGE_LENGTH,
     format_report,
@@ -16,20 +20,47 @@ from scripts.send_telegram_report import (
 )
 
 
-def sample_report():
+@pytest.fixture(autouse=True)
+def allow_test_reports_through_sender_formatter(monkeypatch):
+    from scripts import send_telegram_report as sender
+    monkeypatch.setattr(sender, "is_publishable_independent_report", lambda report: True)
+
+
+def authorized_report(report):
     return {
+        **report,
+        "report_schema": REPORT_SCHEMA,
+        "model_portfolio_id": MODEL_PORTFOLIO_ID,
+        "legacy_model_dependency": False,
+        "publication_allowed": True,
+        "release_certificate": {
+            "status": "CERTIFIED",
+            "publication_authorized": True,
+            "signature_verified": True,
+            "certificate_sha256": "a" * 64,
+            "model_portfolio_id": MODEL_PORTFOLIO_ID,
+        },
+    }
+
+
+def sample_report():
+    report = {
         "as_of_date": "2026-10-23",
         "timezone": "Africa/Lagos",
         "same_day_only": True,
         "predictions": [{
-            "status": "EXPERIMENTAL_ONLY",
+            "status": "INDEPENDENT_FORECAST",
+            "model_portfolio_id": MODEL_PORTFOLIO_ID,
+            "legacy_model_dependency": False,
+            "feature_snapshot_sha256": "b" * 64,
+            "model_versions": ["results_history_logistic"],
             "home_team": "Alpha FC",
             "away_team": "Beta FC",
             "league": "Example League",
             "kickoff_local": "2026-10-23T16:00:00Z",
             "probabilities": {"home_win": 0.5, "draw": 0.25, "away_win": 0.25},
             "expected_goals": {"home": 1.4, "away": 0.8},
-            "model": "experimental_recent_goals_poisson",
+            "model": "veltrix_independent_market_portfolio_v1",
             "elo_probabilities": {"home_win": 0.6, "draw": 0.25, "away_win": 0.15},
             "btts_yes": 0.58,
             "over_2_5": 0.52,
@@ -39,6 +70,22 @@ def sample_report():
             },
         }],
     }
+    return authorized_report(report)
+
+
+def test_telegram_formatter_rejects_legacy_prediction_reports(monkeypatch):
+    from app.independent_report_contract import is_publishable_independent_report
+    from scripts import send_telegram_report as sender
+    monkeypatch.setattr(sender, "is_publishable_independent_report", is_publishable_independent_report)
+    with pytest.raises(ValueError, match="LEGACY_OR_UNCERTIFIED_REPORT_SUPPRESSED"):
+        format_report({
+            "as_of_date": "2026-11-11",
+            "predictions": [{
+                "home_team": "Legacy FC",
+                "away_team": "Old Model United",
+                "probabilities": {"home_win": 0.6, "draw": 0.2, "away_win": 0.2},
+            }],
+        })
 
 
 def test_telegram_report_is_predictions_only_and_keeps_new_update_alert():
@@ -207,12 +254,12 @@ def test_main_skips_a_report_date_already_recorded_as_sent(tmp_path, monkeypatch
     from scripts import send_telegram_report as sender
 
     report_path = tmp_path / "report.json"
-    report_path.write_text(json.dumps({
+    report_path.write_text(json.dumps(authorized_report({
         "as_of_date": "2026-10-27",
         "same_day_only": True,
         "timezone": "Africa/Lagos",
         "predictions": [],
-    }), encoding="utf-8")
+    })), encoding="utf-8")
     monkeypatch.setattr("sys.argv", ["send_telegram_report.py", "--report", str(report_path), "--ledger", str(tmp_path / "missing-ledger.json")])
     monkeypatch.setenv("GITHUB_REPOSITORY", "Nexora-Apparel/veltrix-football")
     monkeypatch.setenv("GITHUB_TOKEN", "github-test-token")
@@ -257,12 +304,12 @@ def test_main_force_flag_resends_corrected_same_day_report(tmp_path, monkeypatch
     from scripts import send_telegram_report as sender
 
     report_path = tmp_path / "report.json"
-    report_path.write_text(json.dumps({
+    report_path.write_text(json.dumps(authorized_report({
         "as_of_date": "2026-10-27",
         "same_day_only": True,
         "timezone": "Africa/Lagos",
         "predictions": [],
-    }), encoding="utf-8")
+    })), encoding="utf-8")
     monkeypatch.setattr("sys.argv", ["send_telegram_report.py", "--report", str(report_path), "--ledger", str(tmp_path / "missing-ledger.json"), "--force"])
     monkeypatch.setenv("GITHUB_REPOSITORY", "Nexora-Apparel/veltrix-football")
     monkeypatch.setenv("GITHUB_TOKEN", "github-test-token")
@@ -297,24 +344,24 @@ def test_telegram_report_includes_value_screen_status_and_only_supplied_candidat
     message = format_report(report)
     assert "Value screen: 1X2 / BTTS / Over-Under · DISABLED_UNVALIDATED" not in message
     assert "LOCKED_INSUFFICIENT_EVIDENCE" not in message
-    assert "VALUE BET VERDICT: Potential edge under review · 1X2 home_win @ 2.10" in message
-    assert "· not approved" in message
+    assert "VALUE BET VERDICT:" not in message
+    assert "1X2 home_win @ 2.10" not in message
     assert "· approved" not in message
 
 
-def test_telegram_report_labels_competition_prior_forecast_basis():
+def test_telegram_report_labels_independent_feature_basis():
     report = sample_report()
     report["predictions"][0]["prediction_basis"] = (
-        "competition-level historical goal-rate prior; team-specific history below minimum"
+        "verified pre-kickoff team strength, recent form and opponent-adjusted performance"
     )
     message = format_report(report)
-    assert "WHY THIS VERDICT: competition-level historical goal-rate prior; team-specific history below minimum" in message
+    assert "WHY THIS VERDICT: verified pre-kickoff team strength, recent form and opponent-adjusted performance" in message
 
 
 def test_telegram_report_discloses_reference_prices_for_all_three_markets():
     report = sample_report()
     item = report["predictions"][0]
-    item["prediction_basis"] = "competition-level historical goal-rate prior; team-specific history below minimum"
+    item["prediction_basis"] = "verified pre-kickoff team strength, recent form and opponent-adjusted performance"
     item["the_odds_api_market_odds"] = {"markets": {
         "h2h": [{"bookmaker": "Book A", "outcomes": [
             {"name": "Alpha FC", "price": 2.10},
@@ -330,7 +377,7 @@ def test_telegram_report_discloses_reference_prices_for_all_three_markets():
         ]}],
     }}
     message = format_report(report)
-    assert "WHY THIS VERDICT: competition-level historical goal-rate prior" in message
+    assert "WHY THIS VERDICT: verified pre-kickoff team strength" in message
     assert "REFERENCE BOOKMAKER PRICES — NOT VALUE PICKS" in message
     assert "1X2 · Book A: Alpha FC 2.10 / Draw 3.20 / Beta FC 3.60" in message
     assert "BTTS · Book B: Yes 1.85 / No 1.95" in message
@@ -343,6 +390,8 @@ def test_telegram_report_lists_all_fixtures_and_marks_ineligible_forecasts():
         {**report["predictions"][0], "home_team": "Forecasted FC", "away_team": "Modelled FC"},
         {
             "status": "INSUFFICIENT_HISTORY",
+            "model_portfolio_id": MODEL_PORTFOLIO_ID,
+            "legacy_model_dependency": False,
             "home_team": "History Gap FC",
             "away_team": "New Club FC",
             "league": "Example League",
@@ -350,6 +399,8 @@ def test_telegram_report_lists_all_fixtures_and_marks_ineligible_forecasts():
         },
         {
             "status": "UNSUPPORTED_COMPETITION",
+            "model_portfolio_id": MODEL_PORTFOLIO_ID,
+            "legacy_model_dependency": False,
             "home_team": "Cup Side",
             "away_team": "Regional Side",
             "league": "Unmapped Cup",
@@ -389,6 +440,8 @@ def test_telegram_retains_fixture_with_unverified_kickoff():
     report = sample_report()
     report["predictions"] = [{
         "status": "KICKOFF_UNVERIFIED",
+        "model_portfolio_id": MODEL_PORTFOLIO_ID,
+        "legacy_model_dependency": False,
         "home_team": "Retained FC",
         "away_team": "Visible United",
         "league": "Test League",
@@ -427,17 +480,15 @@ def test_different_same_day_report_hash_is_not_suppressed():
 
 
 
-def test_telegram_withholds_legacy_low_data_forecast_probabilities():
+def test_telegram_withholds_legacy_low_data_forecast_probabilities(monkeypatch):
+    from app.independent_report_contract import is_publishable_independent_report
+    from scripts import send_telegram_report as sender
+    monkeypatch.setattr(sender, "is_publishable_independent_report", is_publishable_independent_report)
     report = sample_report()
-    report["predictions"][0]["status"] = "EXPERIMENTAL_LOW_DATA"
-    report["predictions"][0]["model"] = "experimental_global_licensed_prior_poisson"
-    report["predictions"][0]["prediction_basis"] = "licensed global goal-rate prior only"
+    report["predictions"][0]["status"] = "INSUFFICIENT_HISTORY"
+    report["predictions"][0]["model"] = "legacy_global_licensed_prior_poisson"
+    report["predictions"][0]["prediction_basis"] = "legacy global goal-rate prior only"
     report["predictions"][0]["betting_recommendation"] = False
-    message = format_report(report)
-    assert "Alpha FC vs Beta FC" in message
-    assert "FORECAST STATUS: INSUFFICIENT_HISTORY" in message
-    assert "Historical evidence is not yet sufficient for a reliable forecast." in message
-    assert "1X2: Home 50%" not in message
-    assert "BTTS Yes: 58%" not in message
-    assert "xG: 1.40 - 0.80" not in message
-    assert "LOW-DATA EXPERIMENTAL" not in message
+    assert not is_publishable_independent_report(report)
+    with pytest.raises(ValueError, match="LEGACY_OR_UNCERTIFIED_REPORT_SUPPRESSED"):
+        format_report(report)

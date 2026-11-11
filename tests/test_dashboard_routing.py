@@ -10,6 +10,8 @@ def isolate_dashboard_data_source(monkeypatch):
     import api.telegram
 
     monkeypatch.setattr(api.telegram, "load_dashboard_snapshot", lambda: None)
+    # Existing dashboard rendering tests model a report that has passed the new release gate.
+    monkeypatch.setattr(api.telegram, "is_publishable_independent_report", lambda report: True)
 
 
 
@@ -70,10 +72,43 @@ def test_tracking_history_renderer_is_safe_and_keeps_complete_fixture_history():
     ).read()
 
 
+def test_dashboard_suppresses_legacy_prediction_reports(monkeypatch):
+    import api.telegram
+    from app.independent_report_contract import is_publishable_independent_report
+
+    monkeypatch.setattr(api.telegram, "is_publishable_independent_report", is_publishable_independent_report)
+    monkeypatch.setattr(api.telegram, "load_latest_report", lambda: {
+        "as_of_date": "2026-11-11",
+        "status": "PUBLISHED",
+        "predictions": [{
+            "fixture_id": "legacy-1",
+            "home_team": "Legacy FC",
+            "away_team": "Old Model United",
+            "status": "EXPERIMENTAL_ONLY",
+            "probabilities": {"home_win": 0.6, "draw": 0.2, "away_win": 0.2},
+        }],
+        "value_validation_certificate": {"status": "PARTIALLY_VALIDATED", "alerts_enabled": True},
+    })
+    monkeypatch.setattr(api.telegram, "load_paper_ledger", lambda: {
+        "model_status": "PAPER_TRACKING_ONLY", "scored_matches": []
+    })
+    monkeypatch.setattr(api.telegram, "load_model_validation_report", lambda: None)
+    payload = get_dashboard_data()
+    assert payload["status"] == "LOCKED"
+    assert payload["publication_status"] == "LOCKED_NO_CERTIFIED_INDEPENDENT_REPORT"
+    assert payload["predictions"] == []
+    assert payload["available_forecasts"] == 0
+    assert payload["value_validation_certificate"]["alerts_enabled"] is False
+    assert payload["paper_tracking"] is None
+
+
 def test_dashboard_data_handler_returns_json(monkeypatch):
     import api.telegram
 
     monkeypatch.setattr(api.telegram, "load_paper_ledger", lambda: {
+        "ledger_schema": "VELTRIX_INDEPENDENT_PAPER_LEDGER_V1",
+        "model_portfolio_id": "veltrix-independent-market-portfolio-v1",
+        "legacy_model_dependency": False,
         "model_status": "PAPER_TRACKING_ONLY",
         "evaluated_report_dates": 2,
         "cumulative_metrics_by_model": {},
@@ -130,7 +165,7 @@ def test_dashboard_data_exposes_value_screen_status_and_market_coverage(monkeypa
     monkeypatch.setattr(telegram, "load_latest_report", lambda: report)
     monkeypatch.setattr(telegram, "load_paper_ledger", lambda: None)
     payload = telegram.dashboard_data()
-    assert payload["value_bet_screen"]["status"] == "DISABLED_UNVALIDATED"
+    assert payload["value_bet_screen"]["status"] == "LOCKED_UNVALIDATED"
     assert payload["value_bet_screen"]["markets"] == ["1X2", "BTTS", "OVER_UNDER_1_5", "OVER_UNDER_2_5", "OVER_UNDER_3_5"]
     assert payload["value_validation_certificate"]["status"] == "LOCKED_INSUFFICIENT_EVIDENCE"
     assert payload["value_validation_certificate"]["alerts_enabled"] is False
@@ -140,14 +175,19 @@ def test_dashboard_data_exposes_published_validation_certificate(monkeypatch):
     from api import telegram
 
     certificate = {
-        "status": "PARTIALLY_VALIDATED",
+        "status": "CERTIFIED",
+        "model_portfolio_id": "veltrix-independent-market-portfolio-v1",
         "approved_markets": ["BTTS"],
         "alerts_enabled": True,
+        "signature_verified": True,
+        "certificate_sha256": "a" * 64,
         "market_diagnostics": {"BTTS": {"status": "PASS"}},
     }
+    monkeypatch.setattr(telegram, "is_value_betting_authorized_report", lambda report: True)
     monkeypatch.setattr(telegram, "load_latest_report", lambda: {
         "as_of_date": "2026-10-30",
         "predictions": [],
+        "value_betting_authorized": True,
         "value_validation_certificate": certificate,
     })
     monkeypatch.setattr(telegram, "load_paper_ledger", lambda: None)
@@ -166,12 +206,16 @@ def test_dashboard_exposes_calibration_coverage_and_versioned_value_ledger(monke
         "markets": [],
     }
     ledger = {
+        "ledger_schema": "VELTRIX_INDEPENDENT_PAPER_LEDGER_V1",
+        "model_portfolio_id": "veltrix-independent-market-portfolio-v1",
+        "legacy_model_dependency": False,
         "model_status": "PAPER_TRACKING_ONLY",
+        "cumulative_metrics_by_model": {},
         "evaluated_report_dates": 4,
         "value_market_metrics_by_market": {"1x2": {"settled_bets": 2}},
-        "value_validation_markets_by_model_version": {"experimental_recent_goals_poisson": {"1X2": {"settled_bets": 2}}},
+        "value_validation_markets_by_model_version": {"veltrix_independent_market_portfolio_v1": {"1X2": {"settled_bets": 2}}},
         "value_validation_markets_by_calibration_version": {},
-        "value_model_versions": ["experimental_recent_goals_poisson"],
+        "value_model_versions": ["veltrix_independent_market_portfolio_v1"],
         "calibration_versions": [],
         "scored_matches": [],
     }
@@ -184,8 +228,8 @@ def test_dashboard_exposes_calibration_coverage_and_versioned_value_ledger(monke
     payload = telegram.dashboard_data()
     assert payload["goal_market_calibration"] == calibration
     assert payload["paper_tracking"]["value_market_metrics_by_market"] == {"1x2": {"settled_bets": 2}}
-    assert payload["paper_tracking"]["value_model_versions"] == ["experimental_recent_goals_poisson"]
-    assert payload["paper_tracking"]["value_validation_markets_by_model_version"]["experimental_recent_goals_poisson"]["1X2"]["settled_bets"] == 2
+    assert payload["paper_tracking"]["value_model_versions"] == ["veltrix_independent_market_portfolio_v1"]
+    assert payload["paper_tracking"]["value_validation_markets_by_model_version"]["veltrix_independent_market_portfolio_v1"]["1X2"]["settled_bets"] == 2
 
 
 def test_dashboard_keeps_future_unsupported_fixtures_visible(monkeypatch):
@@ -294,6 +338,9 @@ def test_dashboard_exposes_model_validation_evidence(monkeypatch):
     from api import telegram
 
     validation = {
+        "validation_schema": "VELTRIX_INDEPENDENT_MODEL_VALIDATION_V1",
+        "model_portfolio_id": "veltrix-independent-market-portfolio-v1",
+        "legacy_model_dependency": False,
         "status": "RESEARCH_DIAGNOSTIC_ONLY",
         "dataset": {
             "valid_rows": 238854,
@@ -389,15 +436,19 @@ def test_dashboard_api_deduplicates_paper_tracking_rows_by_fixture_id(monkeypatc
     })
     monkeypatch.setattr(telegram, "load_model_validation_report", lambda: None)
     monkeypatch.setattr(telegram, "load_paper_ledger", lambda: {
+        "ledger_schema": "VELTRIX_INDEPENDENT_PAPER_LEDGER_V1",
+        "model_portfolio_id": "veltrix-independent-market-portfolio-v1",
+        "legacy_model_dependency": False,
         "model_status": "PAPER_TRACKING_ONLY",
+        "cumulative_metrics_by_model": {},
         "scored_matches": [
             {
                 "fixture_id": 9001, "home_team": "Alpha", "away_team": "Beta",
-                "report_date": "2099-04-30", "model": "experimental_recent_goals_poisson",
+                "report_date": "2099-04-30", "model": "veltrix_independent_market_portfolio_v1",
             },
             {
                 "fixture_id": 9001, "home_team": "Alpha", "away_team": "Beta",
-                "report_date": "2099-04-30", "model": "experimental_elo_global_fallback",
+                "report_date": "2099-04-30", "model": "veltrix_independent_elo_baseline",
             },
         ],
     })
@@ -407,4 +458,4 @@ def test_dashboard_api_deduplicates_paper_tracking_rows_by_fixture_id(monkeypatc
     assert tracking["scored_matches_model_rows"] == 2
     assert tracking["scored_matches_unique_fixtures"] == 1
     assert len(tracking["scored_matches"]) == 1
-    assert tracking["scored_matches"][0]["model"] == "experimental_recent_goals_poisson"
+    assert tracking["scored_matches"][0]["model"] == "veltrix_independent_market_portfolio_v1"

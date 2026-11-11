@@ -17,6 +17,13 @@ from urllib.error import HTTPError, URLError
 from urllib.parse import quote
 from urllib.request import Request, urlopen
 
+from app.independent_report_contract import (
+    is_publishable_independent_report,
+    is_value_betting_authorized_report,
+    is_independent_paper_ledger,
+    is_independent_model_validation,
+)
+
 API_ROOT = "https://api.github.com"
 BRANCH = os.getenv("VELTRIX_DATA_BRANCH", "command-data")
 
@@ -87,6 +94,29 @@ def publish(path: str, local_file: Path, repo: str, token: str) -> None:
     parsed = json.loads(data.decode("utf-8"))
     if not isinstance(parsed, dict):
         raise ValueError(f"{path} must contain a JSON object.")
+    normalized_path = path.replace("\\", "/").rsplit("/", 1)[-1]
+    if normalized_path in {"daily_predictions.json", "dashboard_snapshot.json"}:
+        if not is_publishable_independent_report(parsed):
+            raise ValueError("LEGACY_OR_UNCERTIFIED_REPORT_PUBLICATION_BLOCKED")
+        if not is_value_betting_authorized_report(parsed):
+            parsed.pop("value_bet_screen", None)
+            parsed.pop("value_validation_certificate", None)
+            rows = parsed.get("predictions")
+            if isinstance(rows, list):
+                parsed["predictions"] = [
+                    {key: value for key, value in row.items() if key != "value_bet_screen"}
+                    if isinstance(row, dict) else row
+                    for row in rows
+                ]
+            # Publish the sanitized object, not the original source bytes.
+            data = (
+                json.dumps(parsed, indent=2, sort_keys=True, ensure_ascii=False, allow_nan=False)
+                + "\n"
+            ).encode("utf-8")
+    elif normalized_path == "paper_tracking_ledger.json" and not is_independent_paper_ledger(parsed):
+        raise ValueError("LEGACY_PAPER_LEDGER_PUBLICATION_BLOCKED")
+    elif normalized_path == "model_validation_report.json" and not is_independent_model_validation(parsed):
+        raise ValueError("LEGACY_MODEL_VALIDATION_PUBLICATION_BLOCKED")
     if len(data) > 900_000:
         _publish_large_blob(path, data, repo, token)
     else:
@@ -138,12 +168,13 @@ def _valid_recent_cache(cache: object) -> bool:
 def _dashboard_snapshot(report: dict) -> dict:
     """Create a compact projection of the published report."""
     top_level = (
+        "report_schema", "model_portfolio_id", "legacy_model_dependency",
+        "publication_allowed", "release_certificate", "value_betting_authorized",
         "as_of_date", "generated_at_utc", "command_data_publication",
         "command_data_published_at_utc", "publication_status", "publication_notice",
         "primary_provider_request", "fixture_discovery", "multi_source_odds_sync",
         "live_odds_sync", "historical_data_coverage", "fixtures_received",
-        "fixtures_with_market_odds", "goal_market_calibration", "value_bet_screen",
-        "value_validation_certificate",
+        "fixtures_with_market_odds", "goal_market_calibration",
     )
     row_fields = (
         "fixture_id", "id", "match_id", "league", "country", "competition", "status", "fixture_phase", "fixture_visibility_note",
@@ -153,6 +184,10 @@ def _dashboard_snapshot(report: dict) -> dict:
         "expected_goals", "prediction_basis", "five_dollar_market_odds",
         "the_odds_api_market_odds", "infer_sports_market_odds", "odds", "market_odds",
     )
+    value_authorized = is_value_betting_authorized_report(report)
+    if value_authorized:
+        top_level = top_level + ("value_bet_screen", "value_validation_certificate")
+        row_fields = row_fields + ("value_bet_screen",)
     rows = report.get("predictions") if isinstance(report.get("predictions"), list) else []
     compact_rows = [{key: row[key] for key in row_fields if key in row} for row in rows if isinstance(row, dict)]
     payload = {key: report[key] for key in top_level if key in report}
@@ -178,6 +213,9 @@ def main() -> int:
     report = json.loads(report_path.read_text(encoding="utf-8"))
     if not isinstance(report, dict) or not isinstance(report.get("predictions"), list) or not report.get("as_of_date"):
         print("Publication refused: report failed structural validation.", file=sys.stderr)
+        return 2
+    if not is_publishable_independent_report(report):
+        print("Publication refused: legacy or uncertified independent report.", file=sys.stderr)
         return 2
 
     errors: list[str] = []

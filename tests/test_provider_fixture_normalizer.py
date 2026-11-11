@@ -42,10 +42,15 @@ class FixtureNormalizerTests(unittest.TestCase):
         self.assertEqual(result["provider"], "strikerapi")
         self.assertEqual(result["source_id"], "9001")
         self.assertEqual(result["kickoff_at"], "2026-11-10T17:00:00Z")
+        self.assertIsNone(result["settled_at"])
+        self.assertFalse(result["settlement_evidence"]["settlement_time_available"])
         self.assertEqual(result["normalized_status"], "finished")
         self.assertEqual(result["home_score"], 2)
         self.assertEqual(len(result["payload_sha256"]), 64)
         self.assertEqual(result["run_id"], RUN)
+        self.assertTrue(result["settlement_evidence"]["terminal_status_confirmed"])
+        self.assertIsNone(result["settled_at"])
+        self.assertFalse(result["settlement_evidence"]["settlement_time_available"])
 
     def test_fivedollar_normalizes_provider_specific_ids(self):
         result = normalize_fivedollar_fixture(
@@ -72,6 +77,20 @@ class FixtureNormalizerTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "kickoff_timezone_missing"):
             normalize_striker_game(row, competition_key="soccer", endpoint="list_games",
                                    retrieved_at=RETRIEVED, run_id=RUN)
+
+    def test_missing_retrieval_timestamp_is_reported_as_retrieval_error(self):
+        with self.assertRaisesRegex(ValueError, "missing_retrieved_at"):
+            normalize_striker_game(
+                striker_row(), competition_key="soccer", endpoint="list_games",
+                retrieved_at="", run_id=RUN,
+            )
+
+    def test_naive_retrieval_timestamp_is_rejected(self):
+        with self.assertRaisesRegex(ValueError, "retrieved_at_timezone_missing"):
+            normalize_striker_game(
+                striker_row(), competition_key="soccer", endpoint="list_games",
+                retrieved_at="2026-11-09T12:00:00", run_id=RUN,
+            )
 
     def test_finished_match_without_both_scores_is_rejected(self):
         row = striker_row()
