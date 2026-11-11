@@ -13,6 +13,10 @@ Football intelligence, analytics and experimental prediction platform. The produ
 - **Quota safety** — 5Dollar fixture odds requests are capped per report, and The Odds API queries only report-relevant supported competitions with a hard cap on event-specific BTTS calls. Live provider smoke checks run only on manual, scheduled or explicitly marked integration runs, not every code push. Provider errors remain non-fatal for optional odds enrichment but primary fixture/result failure stops the live report rather than publishing invented fixtures.
 - **Suspended provider** — API-Football/API-Sports is not an active runtime dependency. Its historical adapter code is retained for audit/compatibility, but the daily workflow, history refresh and Telegram odds commands do not call it or require `API_FOOTBALL_KEY`.
 
+## Data attribution
+
+Public-facing VELTRIX surfaces that display Free-plan 5DollarFootballAPI data must include the linked attribution **[Football data by 5DollarFootballAPI](https://5dollarfootballapi.com)**. The dashboard footer already displays this attribution; this README repeats it as an additional public attribution location. Raw provider data is not redistributed as a competing feed.
+
 ## Requirements and secrets
 
 - Python 3.11+
