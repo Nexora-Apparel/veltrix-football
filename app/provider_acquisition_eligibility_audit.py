@@ -81,10 +81,18 @@ def audit_provider_acquisition_eligibility(
     for index, record in enumerate(acquisition_records):
         identity = identities[index]
         if identity is None:
-            rejected.append({
+            rejected_item = {
                 "fixture_id": f"record-index-{index}",
                 "reason": "acquisition_record_identity_invalid",
-            })
+            }
+            if isinstance(record, dict):
+                provider = record.get("provider")
+                source_id = record.get("source_id")
+                if isinstance(provider, str) and provider.strip():
+                    rejected_item["provider"] = provider
+                if isinstance(source_id, str) and source_id.strip():
+                    rejected_item["source_id"] = source_id
+            rejected.append(rejected_item)
             continue
 
         provider, source_id, fixture_id = identity
