@@ -3,7 +3,7 @@
 Date: 2026-11-11
 Repository: Nexora-Apparel/veltrix-football
 Qualification PR: #42 — Add bounded read-only StrikerAPI qualification
-PR head reviewed: 58f4779f4f4a30c51ac40410ee9cb0c1e4e5ab60
+PR head at latest recorded changes: ac9579dd8663e0731e2d151c8ca34e5244bc245e
 
 ## 1. Provider terms and provenance
 
@@ -12,7 +12,7 @@ Operational terms review is recorded in PROVIDER_TERMS_AND_DATA_PROVENANCE_2026-
 Limited sources:
 - 5Dollar Free: EPL fixture/results only, last-three-month window, 60 requests/hour and 20/minute burst ceiling. Required public attribution: Football data by 5DollarFootballAPI, linked to https://5dollarfootballapi.com.
 - StrikerAPI Free: fixture/results for EPL, Argentina and Brazil within observed endpoint/account coverage. Free allowance 500 credits/month; list_games costs 2 credits.
-- NWSL remains provisional pending provider explanation of the public page's 224 count versus 240 league-stage API rows.
+- NWSL remains provisional pending provider explanation of the public page's 224 count versus 240 league-stage API rows (16 fewer than the official regular-season fixture count; 20 fewer than the API's 244 total finals including four knockout fixtures).
 - No odds, xG, shot maps, box scores or lineups are approved as production prediction features by this fixture/results qualification.
 - Raw provider feed redistribution is prohibited.
 
@@ -64,7 +64,7 @@ No INSERT, UPDATE, DELETE, DDL, import or migration was executed during the 2026
 
 ### Python acceptance script status
 
-The repository tree and prior project history contain no exact Python acceptance script filename, path or execution command. Prior acceptance was performed through direct production SQL equivalent to repository assertions; the Python script itself was never run. This recheck repeats the SQL acceptance predicate and passes, but it must not be misreported as execution of a Python script. A reproducible Python runner using a securely supplied Neon connection string still needs to be added and executed.
+Added scripts/neon_acceptance.py and .github/workflows/neon-readonly-acceptance.yml. The runner checks the six recorded catalog counts inside a read-only transaction and emits a sanitized JSON result. It has not been executed: the available GitHub integration does not expose workflow_dispatch, and the DATABASE_URL secret cannot be read from this context. The direct SQL recheck is not a substitute for the Python execution result.
 
 ## 4. Historical import qualification
 
@@ -77,7 +77,7 @@ Completed evidence:
 - StrikerAPI bounded four-competition probe used 29 calls / 58 credits under the 48-call / 96-credit ceiling.
 
 Not yet qualified:
-- No database-targeted import dry-run artifact exists.
+- A database-targeted provider dry-run script and manual workflow have been added. No execution artifact exists yet.
 - No full historical export beyond bounded windows/page caps has been validated.
 - 5Dollar Free supplies only the last three months of results and the five top European competitions.
 - StrikerAPI's full advertised historical coverage has not been exhaustively fetched/reconciled by competition, season and endpoint.
@@ -111,8 +111,17 @@ Allowed for the next import dry-run only:
 NWSL remains provisional. Other StrikerAPI competitions and all non-fixture datasets remain unsupported pending separate qualification.
 
 Full Phase 3 remains blocked by:
-1. A reproducible Python Neon acceptance runner and execution against the target database.
-2. An import-pipeline dry-run with a provider-backed manifest and balanced source accounting, without production writes.
+1. Execute the newly added read-only Python Neon acceptance runner against the target database and retain its workflow artifact. The script and manual workflow now exist; execution is still pending.
+2. Execute the newly added provider-backed dry-run against the isolated Neon branch; the workflow and validator now exist, but no provider run artifact has been produced.
 3. Written StrikerAPI clarification of the NWSL 2026 224-versus-240 league count.
 
-Prediction architecture implementation and prediction activation remain gated until full Phase 3 sign-off. No legacy prediction model, feature pipeline, calibration or fallback logic may be reused.
+Independent v2 contract/foundation implementation may proceed on its isolated architecture branch. Model fitting, calibration, evaluation claims, publication and prediction activation remain gated until full Phase 3 sign-off. No legacy prediction model, feature pipeline, calibration or fallback logic may be reused.
+
+
+## 7. New execution artifacts — 2026-11-11 follow-up
+
+- Added `scripts/neon_acceptance.py` and `.github/workflows/neon-readonly-acceptance.yml`. Python runner remains unexecuted pending manual workflow dispatch and the repository DATABASE_URL secret.
+- Added `scripts/provider_import_dry_run.py` and `.github/workflows/provider-import-dry-run.yml`. It fetches only StrikerAPI fixture/results for EPL, Argentina and Brazil over 90 days, validates unique provider IDs, home/away team IDs and names, timezone-aware kickoffs, final scores, pagination, payload SHA-256 and rights approval IDs; it checks existing isolated database records for provider-ID, kickoff, team-identity and score conflicts; and it asserts before/after row counts are unchanged. It contains no INSERT/UPDATE/DELETE or DDL.
+- Created isolated Neon branch `veltrix-phase3-import-dry-run` (`br-silent-violet-bc5de88s`) from production main and provisioned a 0.25 CU read-write compute endpoint on that child branch only. Production main was not modified.
+- Workflow dispatch and secrets remain external execution blockers. No provider API calls or dry-run writes have been made in this follow-up.
+- NWSL issue #49 still has no vendor response. No written explanation has been received, so NWSL remains excluded.
