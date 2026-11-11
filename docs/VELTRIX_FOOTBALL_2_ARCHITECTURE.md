@@ -254,3 +254,17 @@ The following classification is an integration/retirement plan, not permission t
 | Legacy daily prediction/watchdog workflows | Keep disabled until replacement | No schedule or Telegram delivery is re-enabled before the V2 controlled-release gate. Remove obsolete workflows after V2 replacement is verified. |
 
 The existing repository's legacy tests may remain temporarily as archival regression tests for preserved infrastructure, but passing legacy-model tests do not qualify any legacy model for V2 reuse. The V2 import guard now rejects any `app.*` dependency from both `veltrix_v2/` and `scripts/veltrix_v2/`.
+
+
+## 15. Script inventory and disposition — 2026-11-11
+
+| Script group | Existing scripts | Disposition |
+|---|---|---|
+| V2 operational | `scripts/veltrix_v2/*` | Preserve. Five scripts are isolated from all `app.*` imports and are covered by the V2 import-boundary check. |
+| Provider qualification | `scripts/verify_data_providers.py`, `scripts/verify_goal_api.py` | Preserve as read-only/manual qualification tools. The Odds API BTTS probe is opt-in and quota-capped. GOAL API results remain technical-only until rights are cleared. |
+| Telegram infrastructure | `scripts/configure_telegram_webhook.py`, `scripts/test_telegram_webhook_live.py` | Preserve webhook setup/security testing. Keep live tests opt-in and never send production messages during CI. |
+| Generic publishing/visibility | `scripts/publish_command_data.py`, `scripts/publish_model_validation.py`, `scripts/publish_verification_status.py`, `scripts/validate_fixture_visibility.py` | Preserve transport/validation mechanics only; adapt to immutable V2 schemas and the V2 report ID. |
+| Historical data audit/import | `scripts/audit_historical_csv.py`, `scripts/import_open_dataset.py`, `scripts/import_womens_club_history.py` | Read-only or quarantined until source rights, lineage, timestamp semantics and retention permissions pass. |
+| Legacy model/provider/value pipeline | `scripts/audit_historical_model.py`, `scripts/audit_historical_coverage.py`, `scripts/backfill_history_gaps.py`, `scripts/build_value_certificate.py`, `scripts/build_value_certificate_runtime.py`, `scripts/build_value_certificate_runtime_v2.py`, `scripts/enrich_oddspapi_odds.py`, `scripts/evaluate_paper_predictions.py`, `scripts/filter_report_for_delivery.py`, `scripts/rebuild_value_screen.py`, `scripts/reconcile_value_evidence_recovery.py`, `scripts/run_backtest.py`, `scripts/run_daily_predictions.py`, `scripts/run_paper_tracking.py`, `scripts/send_telegram_report.py`, `scripts/update_value_evidence_ledger.py`, `scripts/verify_multi_source_integration.py` | Retire or replace with V2 equivalents. Do not patch or import their legacy prediction, calibration, odds-selection, value-bet, settlement or paper-tracking logic. For `send_telegram_report.py`, only the generic Telegram HTTP transport may be considered for reuse after review. |
+
+The script inventory confirms that the legacy daily prediction path is not a V2 adapter. The current V2 historical runner and provider verification harness are the only scripts approved for V2 data qualification; neither publishes predictions or writes production records.
