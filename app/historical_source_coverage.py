@@ -715,33 +715,25 @@ def build_historical_source_coverage_report(
         available = [name for name in names if name in FEATURE_CATALOGUE]
         cells = sum(feature_counts[name] for name in available)
         denominator = len(rows) * len(available)
+        source_counts = Counter()
+        source_ids = set()
+        for name in available:
+            source_counts.update(feature_sources_by_name[name])
+            source_ids.update(feature_source_ids_by_name[name])
+        domain_lags = [
+            lag for name in available for lag in feature_availability_lag_seconds[name]
+        ]
         domain_coverage[domain] = {
             "catalogue_feature_count": len(available),
             "features_present": [name for name in available if feature_counts[name] > 0],
             "features_absent": [name for name in available if feature_counts[name] == 0],
             "feature_cell_coverage_rate": cells / denominator if denominator else 0.0,
-            "source_record_counts": dict(sorted(Counter({
-                source: sum(feature_sources_by_name[name][source] for name in available)
-                for name in available
-                for source in feature_sources_by_name[name]
-            }).items())),
-            "distinct_source_id_count": len({
-                source_id for name in available for source_id in feature_source_ids_by_name[name]
-            }),
+            "source_record_counts": dict(sorted(source_counts.items())),
+            "distinct_source_id_count": len(source_ids),
             "availability_to_retrieval_lag_seconds": {
-                "minimum": min(
-                    (lag for name in available for lag in feature_availability_lag_seconds[name]),
-                    default=None,
-                ),
-                "maximum": max(
-                    (lag for name in available for lag in feature_availability_lag_seconds[name]),
-                    default=None,
-                ),
-                "mean": (
-                    sum(lag for name in available for lag in feature_availability_lag_seconds[name])
-                    / sum(len(feature_availability_lag_seconds[name]) for name in available)
-                    if sum(len(feature_availability_lag_seconds[name]) for name in available) else None
-                ),
+                "minimum": min(domain_lags) if domain_lags else None,
+                "maximum": max(domain_lags) if domain_lags else None,
+                "mean": sum(domain_lags) / len(domain_lags) if domain_lags else None,
             },
         }
     for domain in ("injury_availability", "pressing_intensity_ppda"):
