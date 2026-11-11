@@ -47,6 +47,9 @@ def test_existing_provider_id_with_different_score_is_a_conflict():
     existing = {
         ("strikerapi", "fx-1"): {
             "kickoff_at": datetime(2026, 8, 1, 17, tzinfo=timezone.utc),
+            "competition_provider": "strikerapi",
+            "provider_competition_id": "soccer",
+            "status": "FINISHED",
             "home_provider_team_id": "h1",
             "away_provider_team_id": "a1",
             "home_score": 1,
