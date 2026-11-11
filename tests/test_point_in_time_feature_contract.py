@@ -82,7 +82,8 @@ def valid_team_identity_evidence(**overrides):
         "away_mapping_reviewed_at": "2026-10-01T00:00:00Z",
         "registry_sha256": "d" * 64,
         "signing_key_arn": "arn:aws:kms:eu-west-1:123456789012:key/team-test",
-        "verified_at": "2026-11-09T00:00:00Z",
+        "verified_at": CUTOFF,
+        "source_verified_at": "2026-11-09T00:00:00Z",
     }
     value.update(overrides)
     return value
