@@ -66,7 +66,10 @@ def _validate_match(row: Any, index: int) -> dict:
     identity_fields = {
         "home_source_team_id", "away_source_team_id",
         "home_canonical_team_id", "away_canonical_team_id",
-        "team_scope", "registry_sha256", "signing_key_arn", "verified_at",
+        "team_scope", "home_mapping_evidence_sha256", "away_mapping_evidence_sha256",
+        "home_mapping_reviewer", "away_mapping_reviewer",
+        "home_mapping_reviewed_at", "away_mapping_reviewed_at",
+        "registry_sha256", "signing_key_arn", "verified_at",
     }
     if not isinstance(identity, dict) or set(identity) != identity_fields:
         raise FeatureReconstructionError(f"team_identity_evidence_invalid:{row['fixture_id']}")
@@ -85,11 +88,24 @@ def _validate_match(row: Any, index: int) -> dict:
             or not isinstance(identity["home_source_team_id"], str)
             or not identity["home_source_team_id"].strip()
             or not isinstance(identity["away_source_team_id"], str)
-            or not identity["away_source_team_id"].strip()):
+            or not identity["away_source_team_id"].strip()
+            or not isinstance(identity["home_mapping_reviewer"], str)
+            or not identity["home_mapping_reviewer"].strip()
+            or not isinstance(identity["away_mapping_reviewer"], str)
+            or not identity["away_mapping_reviewer"].strip()
+            or any(
+                not isinstance(identity[field], list) or not identity[field]
+                or any(not isinstance(digest, str) or len(digest) != 64
+                       or any(char not in "0123456789abcdef" for char in digest)
+                       for digest in identity[field])
+                for field in ("home_mapping_evidence_sha256", "away_mapping_evidence_sha256")
+            )):
         raise FeatureReconstructionError(f"team_identity_binding_invalid:{row['fixture_id']}")
     identity_verified_at = _parse_time(
         identity["verified_at"], f"team_identity_verified_at_{index}"
     )
+    _parse_time(identity["home_mapping_reviewed_at"], f"home_team_mapping_reviewed_at_{index}")
+    _parse_time(identity["away_mapping_reviewed_at"], f"away_team_mapping_reviewed_at_{index}")
     if not isinstance(row["source_season"], str) or not row["source_season"].strip():
         raise FeatureReconstructionError(f"source_season_invalid:{index}")
     for field in ("provider", "source_id", "endpoint", "run_id"):
