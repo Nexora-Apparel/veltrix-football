@@ -54,6 +54,8 @@ class MarketProbabilitySet:
                 raise ValueError("each derived market must sum to one")
         if not isfinite(self.total_line) or self.total_line < 0:
             raise ValueError("total_line must be finite and non-negative")
+        if abs((self.total_line % 1.0) - 0.5) > 1e-9:
+            raise ValueError("total_line must be a half-goal line; integer lines require push handling")
         if not isfinite(self.expected_home_goals) or not isfinite(self.expected_away_goals):
             raise ValueError("expected goals must be finite")
 
@@ -89,12 +91,14 @@ class ScorelineDistribution:
         return cls(fixture_id, model_version, tuple(scorelines))
 
     def derive_markets(self, *, total_line: float = 2.5) -> MarketProbabilitySet:
-        """Derive 1X2, BTTS and one O/U line from the same joint distribution."""
+        """Derive 1X2, BTTS and one half-goal O/U line from joint mass."""
         if isinstance(total_line, bool) or not isinstance(total_line, Real):
             raise ValueError("total_line must be a real number")
         line = float(total_line)
         if not isfinite(line) or line < 0:
             raise ValueError("total_line must be finite and non-negative")
+        if abs((line % 1.0) - 0.5) > 1e-9:
+            raise ValueError("total_line must be a half-goal line; integer lines require push handling")
 
         home_win = draw = away_win = btts_yes = over = 0.0
         expected_home = expected_away = 0.0
