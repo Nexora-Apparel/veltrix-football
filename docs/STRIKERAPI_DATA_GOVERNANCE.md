@@ -79,3 +79,48 @@ Before StrikerAPI data can feed a production model:
 8. approve the source separately for each data type and competition.
 
 This document does not authorize imports, paid upgrades, production model use or prediction delivery.
+
+## 8. Dated operational terms and provenance review — 2026-11-11
+
+Review basis: current public provider pages checked 2026-11-11. This is an operational product review, not legal advice or a signed licence.
+
+### Account and access
+- Free account: 500 credits each month; no payment card required.
+- list_games costs 2 credits per request.
+- Provider documents 60 requests/minute while credit balance is at least 100, and 10 requests/minute below 100.
+- API key authentication supports x-api-key or bearer-header form. Store as GitHub Actions secret STRIKERAPI_API_KEY only.
+- The 2026-11-09 bounded run used 29 calls / 58 credits. This proves the key worked and the four queried competition keys returned data at that time; it does not prove entitlement to all 17 competitions or every endpoint.
+
+### Permitted use and restrictions
+The current published timing-and-rights page permits storage while the account is open, deriving values, research, backtesting, training own models, and commercial display of derived statistics, forecasts and individual data points. It prohibits redistribution of the data as a dataset/feed/file/API, raw or bulk odds exports, competing data-feed products, and claims of official league/team/player endorsement. Stored data may remain for internal research after cancellation, but a user-facing product continuing to rely on the data requires an open account. No provider attribution is required. StrikerAPI does not grant league, club or federation rights.
+
+Official terms: https://strikerapi.com/docs/timing-and-rights
+
+### Provenance and source limitations
+- Provider says it combines public sources and archives with its own models, but does not publish a source list per dataset.
+- Provider xG and Elo are computed values, not raw observations. Label xG provider_modelled_xg, never observed xG.
+- Fixtures/results are advertised from 2001-02 to current for matches listed; this is a coverage claim, not proof every competition/season has been independently reconciled.
+- Shot-location coverage is competition-specific: top European leagues from 2012-13 (complete from 2013-14), Brazil and Argentina from 2014, NWSL from 2025. Lineups, box scores, events and odds have separate completeness limits.
+- Odds are partial and bookmaker count varies. The sportsbook odds archive excludes NWSL. The provider does not supply an in-match live feed.
+- Provider public product page says non-odds datasets refresh daily and odds refresh hourly for matches in the next four days. Record actual retrieval timestamps; do not infer historical as-of availability from today's response.
+- Provider records can be corrected or overwritten; there is no per-record revision history. Retain endpoint, provider ID, retrieval time, payload hash and normalized value for each observation.
+
+### Competition approvals from observed evidence
+- EPL (soccer): fixture/results observed and independently cross-reconciled against 5Dollar for a bounded 90-day sample: 100/100 unique matches, zero conflicts, exact kickoff and score agreement.
+- Argentina (argentina): bounded fixture/results probe returned 182 final and 8 scheduled rows; no second-provider overlap in the verified 5Dollar Free catalogue.
+- Brazil (brazil): bounded fixture/results probe returned 124 final and 41 scheduled rows; no second-provider overlap in the verified 5Dollar Free catalogue.
+- NWSL (nwsl): API probe returned 240 league-stage finals and 4 knockout-stage finals. Public NWSL coverage page says 224 for 2026. Official NWSL rules specify 16 teams with 30 regular-season games each (240 fixtures); official schedule footprint describes 248 matches including playoffs and Challenge Cup. The API's 240 league count agrees with the regular-season format, but the public-page count remains 16 lower. This is an evidence-based hypothesis, not a written provider explanation. Keep NWSL fixture/results provisional pending provider confirmation.
+- Other 13 StrikerAPI competitions were not in the bounded four-competition qualification and are not approved by this record.
+
+### Data-type release decision
+- Fixture/results: approve StrikerAPI for EPL, Argentina and Brazil within observed entitlement and source-coverage limits. NWSL remains provisional.
+- Lineups, box scores, events, shot maps, xG, Elo and odds: not approved as production model features by this fixture/results qualification; separate endpoint, completeness, timestamp and point-in-time validation is required.
+- Raw provider feed redistribution remains disabled.
+
+Sources checked:
+- https://strikerapi.com/docs/timing-and-rights
+- https://strikerapi.com/docs/atlas
+- https://strikerapi.com/docs/list-games
+- https://strikerapi.com/pricing
+- https://strikerapi.com/nwsl
+- https://strikerapi.com/
