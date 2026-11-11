@@ -49,7 +49,11 @@ def _finalize_report(
     result["source_coverage"] = build_historical_source_coverage_report(
         result,
         season_crosswalk_registry=season_crosswalk_registry,
-        trusted_kms_clients=trusted_kms_clients if season_crosswalk_registry is not None else None,
+        trusted_kms_clients=(
+            trusted_kms_clients
+            if season_crosswalk_registry is not None or team_crosswalk_registry is not None
+            else None
+        ),
         season_crosswalk_as_of=season_crosswalk_as_of,
         team_crosswalk_registry=team_crosswalk_registry,
         team_crosswalk_as_of=team_crosswalk_as_of,
