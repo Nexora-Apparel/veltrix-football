@@ -186,6 +186,7 @@ def read_database_snapshot(dsn: str) -> dict[str, int]:
 def read_existing_fixtures(dsn: str) -> dict[tuple[str, str], dict[str, Any]]:
     query = """
         SELECT f.provider, f.provider_fixture_id, f.kickoff_at, f.status,
+               c.provider AS competition_provider, c.provider_competition_id,
                ht.provider_team_id AS home_provider_team_id,
                at.provider_team_id AS away_provider_team_id,
                ht.name AS home_name, at.name AS away_name,
@@ -193,6 +194,7 @@ def read_existing_fixtures(dsn: str) -> dict[tuple[str, str], dict[str, Any]]:
         FROM public.fixtures f
         JOIN public.teams ht ON ht.id = f.home_team_id
         JOIN public.teams at ON at.id = f.away_team_id
+        LEFT JOIN public.competitions c ON c.id = f.competition_id
         LEFT JOIN public.fixture_results r ON r.fixture_id = f.id
     """
     with psycopg.connect(dsn, connect_timeout=10, row_factory=dict_row) as conn:
@@ -215,6 +217,11 @@ def compare_existing(candidate_records: list[dict], existing: dict[tuple[str, st
             conflicts.append({"kind": "provider_id_kickoff_conflict", "provider_fixture_id": key[1]})
         if str(stored["home_provider_team_id"]) != candidate["home_provider_team_id"] or str(stored["away_provider_team_id"]) != candidate["away_provider_team_id"]:
             conflicts.append({"kind": "provider_id_team_identity_conflict", "provider_fixture_id": key[1]})
+        if (stored["competition_provider"] != candidate["provider"]
+                or str(stored["provider_competition_id"]) != candidate["competition_key"]):
+            conflicts.append({"kind": "provider_id_competition_identity_conflict", "provider_fixture_id": key[1]})
+        if stored["status"] != "FINISHED":
+            conflicts.append({"kind": "provider_id_status_conflict", "provider_fixture_id": key[1]})
         if stored["home_score"] is not None and (
             int(stored["home_score"]) != candidate["home_score"]
             or int(stored["away_score"]) != candidate["away_score"]
