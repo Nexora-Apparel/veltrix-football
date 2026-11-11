@@ -25,6 +25,8 @@ VELTRIX 2.0 is a ground-up rebuild of the prediction and evaluation system. The 
 - **The Odds API:** key accepted; 46 soccer competitions listed. No odds-market quota was consumed by the catalogue check.
 - **FootyStats:** public example-key probe passed with 10 EPL sample rows and xG fields. Official terms allow storage, model use and website/app display; raw-data redistribution is prohibited. Free plan is EPL-only at 180 requests/hour. Actual account-key entitlement and full history/pagination still need verification.
 - **GOAL API:** Argentina/Brazil technical probes passed, but upstream rights and model-training scope remain unresolved.
+- **OpenFootAPI:** Free Starter catalogue reports 120 competitions and 5,000 requests/month, but live source metadata shows top-five historical data is FotMob “Unlicensed-Beta”; only three competitions are ODbL and have two seasons each. Do not use unlicensed upstream data for training or public display.
+- **OpenLigaDB:** direct ODbL API returned current Bundesliga/2. Bundesliga/3. Liga/DFB Pokal/UCL/LaLiga fixtures and four full Bundesliga historical seasons (2010/2015/2020/2025). Its update timestamps are timezone-naive, so they are not yet valid for point-in-time certification; logos need separate rights.
 - **PitchAPI:** rich free-plan documentation, but no verified terms, upstream lineage or data-use rights.
 - **OpenPlay/StatsBomb:** historical data is technically available; upstream/licensing restrictions remain unresolved for production training.
 
