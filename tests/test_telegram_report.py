@@ -480,7 +480,10 @@ def test_different_same_day_report_hash_is_not_suppressed():
 
 
 
-def test_telegram_withholds_legacy_low_data_forecast_probabilities():
+def test_telegram_withholds_legacy_low_data_forecast_probabilities(monkeypatch):
+    from app.independent_report_contract import is_publishable_independent_report
+    from scripts import send_telegram_report as sender
+    monkeypatch.setattr(sender, "is_publishable_independent_report", is_publishable_independent_report)
     report = sample_report()
     report["predictions"][0]["status"] = "EXPERIMENTAL_LOW_DATA"
     report["predictions"][0]["model"] = "experimental_global_licensed_prior_poisson"
