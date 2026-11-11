@@ -109,3 +109,10 @@ def test_free_plan_cannot_request_12_month_history(monkeypatch):
     assert report["provider_plan"] == "free"
     assert report["plan_history_limit_days"] == 90
     assert calls == ["status"]
+
+
+def test_community_country_pack_filter_supports_argentina_brazil_and_nigeria():
+    assert RUNNER._is_target_league("Argentina Liga Profesional")
+    assert RUNNER._is_target_league("Brazil Serie A")
+    assert RUNNER._is_target_league("Nigeria Premier Football League")
+    assert not RUNNER._is_target_league("Portugal Primeira Liga")
