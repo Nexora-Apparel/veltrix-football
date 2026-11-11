@@ -231,3 +231,13 @@ No source is approved for model training solely because it has a public endpoint
 - Nigeria can be added to VELTRIX's candidate competition map, but it must not be used to fill the 25-fixture daily quota.
 - Current-season fixture discovery is possible, but model publication requires approved historical results, stable team identities, reliable kickoff timezone and sufficient point-in-time feature history.
 - The RSSSF/OpenFootball file cannot satisfy those conditions by itself. The official NPFL website currently provides stronger current-season schedule/result visibility, but rights and timestamp semantics remain unresolved.
+
+
+#### 5DollarFootballAPI Nigeria Premier Football League — newly confirmed coverage
+
+- The official Pro coverage table lists Nigeria Premier Football League as league ID `3427505320`.
+- The official data-quality table reports 207 finished matches in its rolling 12-month window; corners 95.2%, half-time corners 95.2%, corner line 50%, odds 95.2%, event timeline 95.2% and live statistics 95.2%. Its recorded history starts in 2015 across 13 seasons.
+- These are provider-published completeness measurements, not an independent VELTRIX reconciliation. The data-quality snapshot was generated 2026-11-07 05:05 UTC and uses a 365-day window.
+- Nigeria is therefore a real 5Dollar competition, unlike the RSSSF-derived OpenFootball file whose upstream rights are unresolved. Pro access is paid, but Community Access offers the top-five plus one selected country's whitelisted leagues at $0. Nigeria's eligibility in the Community country-pack selector has not been confirmed from the public page; verify the available country choices and then verify `/v1/status` reports `plan: community` before assuming access.
+- The Free account cannot access Nigeria merely because the Pro coverage table lists it. Do not add the NPFL to the current Free workflow or treat a Pro league ID as an entitlement.
+- Official references: https://5dollarfootballapi.com/docs/league-coverage ; https://5dollarfootballapi.com/docs/data-quality ; https://5dollarfootballapi.com/community
