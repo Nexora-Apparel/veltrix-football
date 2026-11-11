@@ -8,10 +8,6 @@ on:
         required: false
         default: false
         type: boolean
-  push:
-    paths:
-      - "scripts/verify_data_providers.py"
-      - ".github/workflows/verify-data-providers.yml"
 
 permissions:
   contents: read
