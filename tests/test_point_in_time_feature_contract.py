@@ -115,7 +115,7 @@ class PointInTimeFeatureContractTests(unittest.TestCase):
             validate_point_in_time_feature_snapshot(tampered)
 
     def test_team_identity_registry_not_verified_at_feature_cutoff_is_rejected(self):
-        with self.assertRaisesRegex(PointInTimeFeatureError, "team_identity_verified_after_cutoff"):
+        with self.assertRaisesRegex(PointInTimeFeatureError, "team_identity_registry_not_verified_at_feature_cutoff"):
             build_point_in_time_feature_snapshot(
                 fixture_id="fixture-team", prediction_as_of=CUTOFF, features=[BASE],
                 team_identity_evidence=valid_team_identity_evidence(
