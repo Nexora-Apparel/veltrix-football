@@ -71,7 +71,11 @@ def certify_release(
     one_x_two_beats_bookmaker_brier: bool,
     one_x_two_beats_bookmaker_log_loss: bool,
 ) -> ReleaseCertification:
+    if type(one_x_two_beats_bookmaker_brier) is not bool or type(one_x_two_beats_bookmaker_log_loss) is not bool:
+        raise ValueError("CERTIFICATION_BENCHMARK_FLAGS_MUST_BE_BOOLEAN")
     rows = tuple(evidence)
+    if any(not isinstance(row, MarketCertificationEvidence) for row in rows):
+        raise ValueError("CERTIFICATION_EVIDENCE_TYPE_INVALID")
     by_market = {row.market: row for row in rows}
     if len(by_market) != len(rows):
         raise ValueError("CERTIFICATION_DUPLICATE_MARKET_EVIDENCE")
