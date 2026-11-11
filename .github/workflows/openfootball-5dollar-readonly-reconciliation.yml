@@ -43,6 +43,11 @@ jobs:
         with:
           python-version: "3.12"
 
+      - name: Run offline reconciliation safeguards
+        run: |
+          PYTHONPATH=scripts/veltrix_v2 python -m unittest discover \
+            -s tests -p 'test_reconcile_openfootball_5dollar_snapshots.py' -v
+
       - name: Fetch OpenFootball, 5Dollar EPL and FPL player snapshots
         id: snapshots
         run: |
@@ -50,6 +55,17 @@ jobs:
             --start-date "${{ inputs.start_date || '2026-08-14' }}" \
             --end-date-exclusive "${{ inputs.end_date_exclusive || '2026-11-12' }}" \
             --out readonly-snapshots
+
+      - name: Reconcile fixture identities, dates and scores
+        if: steps.snapshots.outcome == 'success'
+        run: |
+          python scripts/veltrix_v2/reconcile_openfootball_5dollar_snapshots.py \
+            --openfootball readonly-snapshots/openfootball_epl_2026-27.json \
+            --fivedollar readonly-snapshots/fivedollar_epl_fixtures.json \
+            --manifest readonly-snapshots/snapshot_manifest.json \
+            --start-date "${{ inputs.start_date || '2026-08-14' }}" \
+            --end-date-exclusive "${{ inputs.end_date_exclusive || '2026-11-12' }}" \
+            --output readonly-snapshots/reconciliation_report.json
 
       - name: Upload immutable snapshot evidence
         if: always()
