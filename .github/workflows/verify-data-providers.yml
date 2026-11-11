@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       probe_odds_markets:
-        description: "Probe one upcoming BTTS quote per top-five league (up to 5 Odds API credits)"
+        description: "Probe one upcoming BTTS quote per top-five, Argentina and Brazil league (up to 8 Odds API credits)"
         required: false
         default: false
         type: boolean
