@@ -41,7 +41,11 @@ def sample_report():
         "timezone": "Africa/Lagos",
         "same_day_only": True,
         "predictions": [{
-            "status": "EXPERIMENTAL_ONLY",
+            "status": "INDEPENDENT_FORECAST",
+            "model_portfolio_id": MODEL_PORTFOLIO_ID,
+            "legacy_model_dependency": False,
+            "feature_snapshot_sha256": "b" * 64,
+            "model_versions": ["results_history_logistic"],
             "home_team": "Alpha FC",
             "away_team": "Beta FC",
             "league": "Example League",
