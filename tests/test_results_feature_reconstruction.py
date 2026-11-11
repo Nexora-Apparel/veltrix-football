@@ -24,6 +24,7 @@ def attach_evidence(row):
     normalized = {
         "fixture_id": row["fixture_id"],
         "competition_id": row["competition_id"],
+        "source_season": row["source_season"],
         "kickoff_at": row["kickoff_at"],
         "settled_at": row["settled_at"],
         "home_team_id": row["home_team_source_id"],
@@ -67,6 +68,7 @@ def make_history(days=6):
             rows.append(attach_evidence({
                 "fixture_id": fixture_id,
                 "competition_id": "league-1",
+                "source_season": "2025/26",
                 "kickoff_at": f"{day.isoformat()}T{kickoff_hour:02d}:00:00Z",
                 "settled_at": f"{day.isoformat()}T{kickoff_hour + 2:02d}:00:00Z",
                 "home_team_id": home,
@@ -159,6 +161,7 @@ class ResultsFeatureReconstructionTests(unittest.TestCase):
         future = {
             "fixture_id": "future-001",
             "competition_id": "league-1",
+            "source_season": "2025/26",
             "kickoff_at": "2026-09-10T18:00:00Z",
             "settled_at": "2026-09-10T20:00:00Z",
             "home_team_id": "A", "away_team_id": "B",
