@@ -241,6 +241,9 @@ def build_historical_source_coverage_report(
     snapshot_by_id = {}
     feature_source_counts = Counter()
     feature_source_ids = Counter()
+    feature_sources_by_name = defaultdict(Counter)
+    feature_source_ids_by_name = defaultdict(Counter)
+    feature_availability_lag_seconds = defaultdict(list)
     for index, snapshot in enumerate(snapshots):
         try:
             validate_point_in_time_feature_snapshot(snapshot)
@@ -255,6 +258,19 @@ def build_historical_source_coverage_report(
         for feature in snapshot["features"]:
             feature_source_counts[feature["source"]] += 1
             feature_source_ids[feature["source_id"]] += 1
+            feature_sources_by_name[feature["name"]][feature["source"]] += 1
+            feature_source_ids_by_name[feature["name"]][feature["source_id"]] += 1
+            available = _utc(feature["available_at"], f"{fixture_id}_{feature['name']}_available")
+            observed = _utc(feature["observed_at"], f"{fixture_id}_{feature['name']}_observed")
+            retrieved = _utc(feature["retrieved_at"], f"{fixture_id}_{feature['name']}_retrieved")
+            cutoff = _utc(snapshot["prediction_as_of"], f"{fixture_id}_prediction_as_of")
+            if available < observed or retrieved < available or available > cutoff:
+                raise HistoricalSourceCoverageError(
+                    f"feature_source_chronology_invalid:{fixture_id}:{feature['name']}"
+                )
+            feature_availability_lag_seconds[feature["name"]].append(
+                (retrieved - available).total_seconds()
+            )
 
     included_by_competition = Counter()
     feature_counts = Counter()
@@ -413,6 +429,19 @@ def build_historical_source_coverage_report(
             "dataset_rows_with_feature": feature_counts[name],
             "dataset_row_denominator": len(rows),
             "coverage_rate": feature_counts[name] / len(rows) if rows else 0.0,
+            "source_record_counts": dict(sorted(feature_sources_by_name[name].items())),
+            "distinct_source_id_count": len(feature_source_ids_by_name[name]),
+            "availability_to_retrieval_lag_seconds": {
+                "minimum": min(feature_availability_lag_seconds[name])
+                if feature_availability_lag_seconds[name] else None,
+                "maximum": max(feature_availability_lag_seconds[name])
+                if feature_availability_lag_seconds[name] else None,
+                "mean": (
+                    sum(feature_availability_lag_seconds[name])
+                    / len(feature_availability_lag_seconds[name])
+                    if feature_availability_lag_seconds[name] else None
+                ),
+            },
             "meets_minimum": bool(rows) and feature_counts[name] / len(rows) >= minimum_feature_coverage_rate,
         }
         for name in sorted(FEATURE_CATALOGUE)
