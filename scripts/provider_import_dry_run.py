@@ -12,6 +12,7 @@ import json
 import os
 import re
 import sys
+from pathlib import Path
 from urllib.parse import urlencode, urlsplit
 from urllib.request import Request, urlopen
 from collections import defaultdict
@@ -20,6 +21,11 @@ from typing import Any
 
 import psycopg
 from psycopg.rows import dict_row
+
+# Direct script execution places scripts/ on sys.path, not the repository root.
+REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
+if str(REPOSITORY_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPOSITORY_ROOT))
 
 from scripts.verify_strikerapi import ProbeError, call_api, validate_game
 from scripts.reconcile_provider_fixtures import fivedollar_record, reconcile, striker_record
