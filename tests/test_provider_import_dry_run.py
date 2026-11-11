@@ -1,6 +1,10 @@
 from datetime import datetime, timezone
 
-from scripts.provider_import_dry_run import compare_existing, inspect_rows
+from scripts.provider_import_dry_run import (
+    assert_isolated_database_target,
+    compare_existing,
+    inspect_rows,
+)
 
 
 def game(game_id="fx-1", home_id="h1", away_id="a1", home_score=2, away_score=1,
@@ -58,3 +62,18 @@ def test_existing_provider_id_with_different_score_is_a_conflict():
     }
     conflicts = compare_existing([candidate], existing)
     assert [x["kind"] for x in conflicts] == ["provider_id_score_conflict"]
+
+
+
+def test_dry_run_database_target_accepts_only_isolated_neon_host():
+    dsn = "postgresql://user:pass@ep-ancient-block-bcb439pk.c-16.us-east-1.aws.neon.tech/veltrix-football"
+    assert assert_isolated_database_target(dsn) == "ep-ancient-block-bcb439pk.c-16.us-east-1.aws.neon.tech"
+
+
+def test_dry_run_database_target_rejects_production_or_unknown_host():
+    import pytest
+
+    with pytest.raises(RuntimeError, match="isolated Neon branch"):
+        assert_isolated_database_target(
+            "postgresql://user:pass@production-main.neon.tech/veltrix-football"
+        )
