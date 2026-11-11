@@ -16,6 +16,11 @@ from veltrix_v2.evaluation.certification import PredictionReleaseCertification, 
 
 WAT = ZoneInfo("Africa/Lagos")
 MAX_DAILY_FIXTURES = 25
+PROVIDER_ATTRIBUTION_RULES = {
+    "5dollarfootballapi": "Football data by 5DollarFootballAPI — https://5dollarfootballapi.com",
+    "openligadb": "Data by OpenLigaDB (ODbL 1.0) — https://www.openligadb.de",
+    "openfootball": None,
+}
 
 
 @dataclass(frozen=True, slots=True)
@@ -138,6 +143,12 @@ def build_certified_daily_report(
     if not certification_id or not certification_id.strip():
         raise ValueError("REPORT_CERTIFICATION_ID_REQUIRED")
     ordered = tuple(sorted(fixtures, key=lambda row: (row.kickoff_utc, row.fixture_id)))
+    supplied_attributions = set(source_attributions)
+    for fixture in ordered:
+        for provider in fixture.source_provider_ids:
+            required_attribution = PROVIDER_ATTRIBUTION_RULES[provider]
+            if required_attribution and required_attribution not in supplied_attributions:
+                raise ValueError(f"REPORT_REQUIRED_PROVIDER_ATTRIBUTION_MISSING:{provider}")
     if not value_bets_enabled:
         ordered = tuple(replace(row, value_bet_verdict="LOCKED — NOT CERTIFIED") for row in ordered)
     deadline = datetime.combine(report_date_wat, time(6, 0), tzinfo=WAT).astimezone(timezone.utc)

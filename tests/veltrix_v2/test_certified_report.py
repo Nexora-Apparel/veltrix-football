@@ -63,7 +63,7 @@ def fixture(fid, kickoff):
             Decimal("0.55"), Decimal("0.25"), Decimal("0.20"),
             Decimal("0.58"), Decimal("2.5"), Decimal("0.53"),
         ),
-        source_provider_ids=("synthetic",),
+        source_provider_ids=("5dollarfootballapi",),
         verdict="HOME LEAN",
         ai_insight="Home side creates more high-quality chances.",
     )
@@ -76,6 +76,7 @@ def build(rows):
         certification=passing_prediction_certification(),
         certification_id="cert-v2-001",
         fixtures=tuple(rows),
+        source_attributions=("Football data by 5DollarFootballAPI — https://5dollarfootballapi.com",),
     )
 
 
