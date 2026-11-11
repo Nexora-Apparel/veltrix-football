@@ -42,6 +42,7 @@ class OddsSnapshot:
     kickoff_at: datetime
     line: Optional[Decimal] = None
     provider_quote_at: Optional[datetime] = None
+    provider_event_id: Optional[str] = None
     schema_version: int = 1
 
     def __post_init__(self) -> None:
@@ -65,6 +66,9 @@ class OddsSnapshot:
             raise ValueError("provider_quote_at must be strictly before kickoff")
         if provider_quote is not None and provider_quote > captured:
             raise ValueError("provider_quote_at cannot be after captured_at")
+        provider_event_id = self.provider_event_id
+        if provider_event_id is not None and (not isinstance(provider_event_id, str) or not provider_event_id.strip()):
+            raise ValueError("provider_event_id must be a non-empty string when supplied")
         if self.schema_version != 1:
             raise ValueError("unsupported odds snapshot schema_version")
 
@@ -73,3 +77,4 @@ class OddsSnapshot:
         object.__setattr__(self, "decimal_odds", odds)
         object.__setattr__(self, "line", line)
         object.__setattr__(self, "provider_quote_at", provider_quote)
+        object.__setattr__(self, "provider_event_id", provider_event_id)
