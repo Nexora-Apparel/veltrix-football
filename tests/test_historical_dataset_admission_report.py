@@ -55,6 +55,17 @@ class HistoricalDatasetAdmissionReportTests(unittest.TestCase):
         self.assertEqual(report["dataset"]["counts_by_split"]["test"], 1)
         self.assertEqual(report["feature_coverage"]["by_feature"]["home_team_elo"]["coverage_rate"], 1.0)
         self.assertFalse(report["training_readiness"]["ready_for_model_training"])
+        self.assertEqual(
+            report["feature_coverage"]["by_data_domain"]["injury_availability"]["status"],
+            "not_in_feature_catalogue",
+        )
+        self.assertEqual(
+            report["feature_coverage"]["by_data_domain"]["pressing_intensity_ppda"]["status"],
+            "not_in_feature_catalogue",
+        )
+        self.assertFalse(
+            report["feature_coverage"]["feature_level_source_timestamps_and_source_ids_in_rows"]
+        )
         self.assertEqual(len(report["report_sha256"]), 64)
 
     def test_rejects_inconsistent_withheld_count(self):
