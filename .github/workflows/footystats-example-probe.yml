@@ -1,4 +1,4 @@
-name: Public Football API Example Probes (FootyStats and OpenFootAPI)
+name: Public Football Data Probes (FootyStats, OpenFootAPI and OpenLigaDB)
 
 on:
   workflow_dispatch:
@@ -183,4 +183,74 @@ jobs:
           print("OPENFOOTAPI_EPL_2010_11_PREVIEW_ROWS=" + str(len(historical_rows)))
           print("HISTORICAL_META_SOURCES=" + json.dumps((historical.get("meta") or {}).get("sources") or [], sort_keys=True))
           print("RIGHTS_NOTE=Public preview only; each competition source license must be checked before model training or public use.")
+          PY
+
+      - name: Probe OpenLigaDB ODbL current and historical match coverage
+        run: |
+          python - <<'PY'
+          import json
+          from urllib.request import Request, urlopen
+
+          BASE = "https://api.openligadb.de"
+
+          def get(path):
+              request = Request(
+                  BASE + path,
+                  headers={
+                      "Accept": "application/json",
+                      "User-Agent": "VELTRIX-2.0-provider-qualification/1.0 (+https://github.com/Nexora-Apparel/veltrix-football)",
+                  },
+              )
+              with urlopen(request, timeout=20) as response:
+                  return json.loads(response.read().decode("utf-8"))
+
+          leagues = get("/getavailableleagues/2026")
+          if not isinstance(leagues, list):
+              raise SystemExit("OPENLIGADB_LEAGUE_CATALOGUE_INVALID")
+          wanted = ("bl1", "bl2", "bl3", "dfb", "ucl", "la1", "pl1")
+          catalog = {
+              row.get("leagueShortcut"): row
+              for row in leagues if isinstance(row, dict)
+          }
+          print("OPENLIGADB_CATALOGUE_2026=" + str(len(leagues)))
+          for shortcut in wanted:
+              row = catalog.get(shortcut)
+              if row is None:
+                  print("LEAGUE_" + shortcut + "=NOT_IN_2026_CATALOGUE")
+                  continue
+              print("LEAGUE_META_" + shortcut + "=" + json.dumps(row, sort_keys=True))
+
+          for shortcut in ("bl1", "bl2", "bl3", "dfb", "ucl", "la1", "pl1"):
+              try:
+                  matches = get(f"/getmatchdata/{shortcut}/2026")
+              except Exception as exc:
+                  print("CURRENT_" + shortcut + "=ERROR:" + str(exc))
+                  continue
+              if not isinstance(matches, list):
+                  print("CURRENT_" + shortcut + "=INVALID_RESPONSE")
+                  continue
+              completed = sum(1 for match in matches if match.get("matchResults"))
+              utc_times = sum(1 for match in matches if match.get("matchDateTimeUTC"))
+              sample = matches[0] if matches else {}
+              print("CURRENT_" + shortcut + "=" + json.dumps({
+                  "rows": len(matches),
+                  "with_results": completed,
+                  "with_utc_kickoff": utc_times,
+                  "sample_fields": sorted(sample.keys()) if isinstance(sample, dict) else [],
+              }, sort_keys=True))
+
+          for shortcut in ("bl1", "la1"):
+              try:
+                  matches = get(f"/getmatchdata/{shortcut}/2010")
+              except Exception as exc:
+                  print("HISTORICAL_" + shortcut + "_2010=ERROR:" + str(exc))
+                  continue
+              if not isinstance(matches, list):
+                  print("HISTORICAL_" + shortcut + "_2010=INVALID_RESPONSE")
+                  continue
+              completed = sum(1 for match in matches if match.get("matchResults"))
+              print("HISTORICAL_" + shortcut + "_2010=" + json.dumps({
+                  "rows": len(matches), "with_results": completed,
+              }, sort_keys=True))
+          print("RIGHTS_NOTE=OpenLigaDB data is ODbL-1.0; attribute publicly and comply with share-alike if redistributing a modified database. User-entered records have no editorial review or immutable historical snapshots.")
           PY
