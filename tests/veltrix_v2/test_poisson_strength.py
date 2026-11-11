@@ -199,3 +199,17 @@ def test_single_prior_match_team_is_accepted_without_generic_fallback():
     assert model.expected_goals("RARE", "A")[0] > 0
     with pytest.raises(ValueError, match="TEAM_NOT_IN_TRAINING"):
         model.expected_goals("A", "NO_HISTORY")
+
+
+
+def test_nonconverged_model_cannot_emit_expected_goals():
+    from dataclasses import replace
+
+    model = fit_poisson_strength_model(
+        build_rows(), competition_key="league", season="2024/25",
+        training_cutoff_utc=BASE + timedelta(days=150), minimum_matches=30,
+        minimum_team_matches=10, max_iterations=4000,
+    )
+    unfit = replace(model, converged=False)
+    with pytest.raises(ValueError, match="MODEL_NOT_CONVERGED"):
+        unfit.expected_goals("A", "B")

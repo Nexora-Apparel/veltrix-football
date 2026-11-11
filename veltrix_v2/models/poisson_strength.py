@@ -79,6 +79,8 @@ class PoissonStrengthModel:
     recency_half_life_days: float
 
     def expected_goals(self, home_team_id: str, away_team_id: str) -> tuple[float, float]:
+        if not self.converged:
+            raise ValueError("POISSON_PREDICTION_MODEL_NOT_CONVERGED")
         strengths = {row.team_id: row for row in self.teams}
         if home_team_id not in strengths or away_team_id not in strengths:
             raise ValueError("POISSON_PREDICTION_TEAM_NOT_IN_TRAINING")
