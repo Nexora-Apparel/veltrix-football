@@ -33,13 +33,11 @@ Branch: `veltrix-2.0-architecture-blueprint`
 
 ## Verification state
 
-- Previously recorded foundation suite: 31 passed, 0 failed, including the legacy-import boundary check, on commit `73c49a933d2448f1f2d52076c0378c79f6af18de`.
-- Venue-context tests have now been added to the same isolated foundation suite. A new CI run is required before treating the new module as verified.
+- Foundation suite including venue context: **38 passed, 0 failed**; legacy-import boundary check passed on the PR merge commit for head `ee90b575edeb3ff6a769333389469f5eab6a73ca`. [GitHub Actions run #42984863222](https://github.com/Nexora-Apparel/veltrix-football/actions/runs/42984863222).
 - No model fitting, calibration, walk-forward evaluation, prediction publication, provider ingestion or production activation has been performed.
 
 ## Next gate
 
-1. Run and inspect the v2 foundation CI after the venue-context addition.
-2. Continue deterministic, evidence-backed feature contracts only while StrikerAPI is credit-blocked.
-3. Resume the provider dry-run only after credit balance/entitlement is restored.
-4. Sign Phase 3 only after the provider dry-run completes with complete accounting, zero unresolved identity/score conflicts and unchanged database counts.
+1. Continue deterministic, evidence-backed feature contracts only while StrikerAPI is credit-blocked.
+2. Resume the provider dry-run only after credit balance/entitlement is restored.
+3. Sign Phase 3 only after the provider dry-run completes with complete accounting, zero unresolved identity/score conflicts and unchanged database counts.
