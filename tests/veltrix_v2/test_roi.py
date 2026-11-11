@@ -11,7 +11,7 @@ from veltrix_v2.evaluation.settlement import (
 
 
 def settled(fixture, market, selection, *, status_result="COMPLETED",
-            home=2, away=1, odds="2.0", stake="10", line=None):
+            home=2, away=1, odds="2.0", stake="10", line=None, match_date=None):
     bet = MarketBet(
         fixture_id=fixture, market=market, selection=selection,
         decimal_odds=Decimal(odds), stake=Decimal(stake),
@@ -20,6 +20,7 @@ def settled(fixture, market, selection, *, status_result="COMPLETED",
     result = MatchResult(
         fixture_id=fixture, status=status_result,
         home_goals_regulation=home, away_goals_regulation=away,
+        match_date=(match_date if match_date is not None else date(2026, 11, int(fixture[1:]) if fixture[1:].isdigit() else 1)),
     )
     return settle_market_bet(bet, result)
 
