@@ -175,5 +175,7 @@ The isolated `veltrix-2.0-architecture-blueprint` branch now contains:
 - `tests/veltrix_v2/test_feature_snapshots.py`: tests for missing-value semantics, duplicate features, future computation and non-finite values.
 - `veltrix_v2/identity/crosswalk.py`: competition- and season-scoped provider-team crosswalks; only explicitly approved mappings resolve, while ambiguous mappings fail closed.
 - `tests/veltrix_v2/test_identity_crosswalk.py`: tests for approval state, scope isolation and ambiguous mapping rejection.
+- `veltrix_v2/ingestion/observations.py`: provider-neutral immutable observation builder with deterministic, order-independent SHA-256 payload hashing.
+- `tests/veltrix_v2/test_ingestion_observations.py`: payload-hash stability and provenance binding tests.
 
 This is foundational implementation only. It does not fit a model, generate a forecast, import legacy code or activate prediction delivery. Next modules are ingestion normalization and identity crosswalk contracts, followed by feature lineage and point-in-time feature snapshots after data acceptance.
