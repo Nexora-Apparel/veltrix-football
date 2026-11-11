@@ -266,8 +266,22 @@ class PaperLedger:
             for row in self.selections
         )
 
+    def settlements_for_market(self, market: str) -> tuple[Settlement, ...]:
+        canonical = _canonical_market(market)
+        if canonical not in {"1X2", "BTTS", "TOTALS"}:
+            raise ValueError("PAPER_LEDGER_MARKET_UNSUPPORTED")
+        selection_ids = {
+            row.selection_id for row in self.selections if row.market == canonical
+        }
+        return tuple(
+            event.settlement for event in self.settlements
+            if event.selection_id in selection_ids
+        )
+
     def counts_for_market(self, market: str) -> ProspectiveMarketCounts:
         canonical = _canonical_market(market)
+        if canonical not in {"1X2", "BTTS", "TOTALS"}:
+            raise ValueError("PAPER_LEDGER_MARKET_UNSUPPORTED")
         selected = [row for row in self.selections if row.market == canonical]
         selection_ids = {row.selection_id for row in selected}
         events = [row for row in self.settlements if row.selection_id in selection_ids]

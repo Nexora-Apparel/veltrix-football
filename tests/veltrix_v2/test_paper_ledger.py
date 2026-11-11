@@ -118,6 +118,7 @@ def test_settlement_is_recorded_once_and_counts_only_non_void_selections():
     )
     assert ledger.entries[0].settlement_event is not None
     assert ledger.entries[0].settlement_event.settlement.status == "WIN"
+    assert ledger.settlements_for_market("1X2")[0].status == "WIN"
     counts = ledger.counts_for_market("1X2")
     assert counts.selected_count == 1
     assert counts.settled_count == 1
@@ -147,3 +148,9 @@ def test_voided_selection_is_not_counted_as_prospective_settled_sample():
     assert counts.voided_count == 1
     assert counts.settled_count == 0
     assert counts.pending_count == 0
+
+
+
+def test_market_count_rejects_unsupported_market():
+    with pytest.raises(ValueError, match="MARKET_UNSUPPORTED"):
+        PaperLedger().counts_for_market("CORNERS")
