@@ -46,3 +46,20 @@ def test_snapshot_accepts_feature_computed_before_cutoff():
 def test_rejects_nonfinite_features():
     with pytest.raises(ValueError, match="finite"):
         feature(value=float("nan"))
+
+
+
+def test_observed_feature_requires_sample_and_source_provenance():
+    with pytest.raises(ValueError, match="positive sample size and source provenance"):
+        feature(source_observation_ids=())
+    with pytest.raises(ValueError, match="positive sample size and source provenance"):
+        feature(sample_size=0)
+    with pytest.raises(ValueError, match="non-negative integer"):
+        feature(sample_size=True)
+    with pytest.raises(ValueError, match="finite numeric value"):
+        feature(value=True)
+
+
+def test_snapshot_rejects_non_feature_rows():
+    with pytest.raises(ValueError, match="FeatureValue instances"):
+        FeatureSnapshot("strikerapi", "fx-1", T, "features-0.1", (object(),))
