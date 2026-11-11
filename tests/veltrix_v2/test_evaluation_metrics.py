@@ -5,6 +5,7 @@ import pytest
 from veltrix_v2.evaluation.metrics import (
     Forecast1X2,
     SettledOutcome1X2,
+    compare_1x2_forecasts,
     score_1x2,
 )
 
@@ -51,6 +52,8 @@ def test_fixture_order_does_not_change_score():
     (0.0, 0.5, 0.5),
     (float("nan"), 0.5, 0.5),
     (0.5, -0.1, 0.6),
+    (True, 0.0, 0.0),
+    ("0.5", 0.3, 0.2),
 ])
 def test_invalid_probability_vectors_are_rejected(values):
     with pytest.raises(ValueError):
@@ -77,3 +80,25 @@ def test_unmatched_fixture_sets_fail_closed():
 def test_empty_evaluation_fails_closed():
     with pytest.raises(ValueError, match="at least one"):
         score_1x2([], [])
+
+
+def test_model_benchmark_comparison_uses_same_fixtures_and_reports_deltas():
+    comparison = compare_1x2_forecasts(
+        model_forecasts=[forecast("same", 0.8, 0.1, 0.1)],
+        benchmark_forecasts=[forecast("same", 0.6, 0.2, 0.2)],
+        outcomes=[outcome("same", "HOME")],
+    )
+    assert comparison.sample_size == 1
+    assert comparison.model_beats_brier is True
+    assert comparison.model_beats_log_loss is True
+    assert comparison.brier_delta < 0
+    assert comparison.log_loss_delta < 0
+
+
+def test_benchmark_comparison_rejects_different_fixture_sets():
+    with pytest.raises(ValueError, match="must match exactly"):
+        compare_1x2_forecasts(
+            model_forecasts=[forecast("model")],
+            benchmark_forecasts=[forecast("market")],
+            outcomes=[outcome("model")],
+        )
