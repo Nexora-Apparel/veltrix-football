@@ -92,6 +92,7 @@ def test_dashboard_suppresses_legacy_prediction_reports(monkeypatch):
     monkeypatch.setattr(api.telegram, "load_paper_ledger", lambda: {
         "model_status": "PAPER_TRACKING_ONLY", "scored_matches": []
     })
+    monkeypatch.setattr(api.telegram, "load_model_validation_report", lambda: None)
     payload = get_dashboard_data()
     assert payload["status"] == "LOCKED"
     assert payload["publication_status"] == "LOCKED_NO_CERTIFIED_INDEPENDENT_REPORT"
