@@ -116,3 +116,26 @@ def test_community_country_pack_filter_supports_argentina_brazil_and_nigeria():
     assert RUNNER._is_target_league("Brazil Serie A")
     assert RUNNER._is_target_league("Nigeria Premier Football League")
     assert not RUNNER._is_target_league("Portugal Primeira Liga")
+
+
+def test_account_status_response_must_be_successful(monkeypatch):
+    from types import SimpleNamespace
+    import pytest
+
+    class FakeBudget:
+        actual = 0
+        remaining_header = None
+
+        def __init__(self, maximum, api_key):
+            pass
+
+        def get(self, endpoint, params):
+            return {"success": 0, "data": {"plan": "community"}}
+
+    monkeypatch.setenv("FIVEDOLLARFOOTBALL_API_KEY", "test-key")
+    monkeypatch.setattr(RUNNER, "RequestBudget", FakeBudget)
+    with pytest.raises(RuntimeError, match="ACCOUNT_STATUS_INVALID"):
+        RUNNER.run(SimpleNamespace(
+            days=90, max_requests=30, max_pages=5, min_history_days=60,
+            min_training_rows=200, min_test_sample=1000, max_iterations=6000,
+        ))
