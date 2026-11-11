@@ -43,8 +43,15 @@ class AuditedProviderDatasetPipelineTests(unittest.TestCase):
         packages = {"provider:good": {"evidence": "good"}}
         report = self.audit_report([admitted])
         assembled = {
-            "dataset": {"dataset_sha256": "a" * 64},
-            "quality": {"included_fixture_count": 1},
+            "dataset": {
+                "dataset_sha256": "a" * 64,
+                "rows": [{
+                    "fixture_id": "provider:good", "competition_key": "league-a",
+                    "split": "train", "predictors": {"home_team_elo": 1500},
+                    "targets": {"1x2": "home", "btts": "yes", "over_2_5": "yes"},
+                }],
+                "quality": {"included_fixture_count": 1, "excluded_fixture_count": 0},
+            },
             "feature_reconstruction": {
                 "target_fixture_count": 1, "snapshot_count": 1,
                 "withheld_count": 0, "withheld_by_reason": {}, "withheld": [],
