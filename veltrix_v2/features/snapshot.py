@@ -29,8 +29,8 @@ class FeatureValue:
         if not isinstance(self.source_observation_ids, (tuple, list)):
             raise ValueError("source observation IDs must be a sequence")
         object.__setattr__(self, "source_observation_ids", tuple(self.source_observation_ids))
-        if not self.name.strip():
-            raise ValueError("feature name is required")
+        if any(not isinstance(item, str) or not item.strip() for item in self.source_observation_ids):
+            raise ValueError("source observation IDs must be non-empty strings")
         computed = _utc(self.computed_at_utc, "computed_at_utc")
         cutoff = _utc(self.cutoff_utc, "cutoff_utc")
         object.__setattr__(self, "computed_at_utc", computed)
@@ -51,14 +51,12 @@ class FeatureValue:
             raise ValueError("missing feature requires a reason code")
         if self.value is not None and self.missing_reason is not None:
             raise ValueError("observed feature cannot carry a missing reason")
-        if self.quality_state not in {"valid", "low_sample", "missing", "quarantined"}:
+        if not isinstance(self.quality_state, str) or self.quality_state not in {"valid", "low_sample", "missing", "quarantined"}:
             raise ValueError("unknown feature quality state")
         if self.value is None and self.quality_state != "missing":
             raise ValueError("missing feature must have quality_state=missing")
         if len(set(self.source_observation_ids)) != len(self.source_observation_ids):
             raise ValueError("duplicate source observation IDs are not allowed")
-        if any(not isinstance(item, str) or not item.strip() for item in self.source_observation_ids):
-            raise ValueError("source observation IDs must be non-empty strings")
 
 
 @dataclass(frozen=True, slots=True)
@@ -73,7 +71,10 @@ class FeatureSnapshot:
         object.__setattr__(self, "features", tuple(self.features))
         cutoff = _utc(self.cutoff_utc, "cutoff_utc")
         object.__setattr__(self, "cutoff_utc", cutoff)
-        if not self.fixture_provider or not self.fixture_provider_id or not self.feature_set_version:
+        if any(
+            not isinstance(value, str) or not value.strip()
+            for value in (self.fixture_provider, self.fixture_provider_id, self.feature_set_version)
+        ):
             raise ValueError("fixture and feature-set identifiers are required")
         if any(not isinstance(feature, FeatureValue) for feature in self.features):
             raise ValueError("snapshot features must be FeatureValue instances")
