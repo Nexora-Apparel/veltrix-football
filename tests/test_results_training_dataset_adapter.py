@@ -249,7 +249,7 @@ class ResultsTrainingDatasetAdapterTests(unittest.TestCase):
         ))
 
     def test_other_canonical_season_history_cannot_change_target_features(self):
-        history = history_rows()
+        history = history_with_target()
         history.append(attach_evidence({
             "fixture_id": "prior-season-match",
             "provider": "fivedollar",
@@ -358,9 +358,9 @@ class ResultsTrainingDatasetAdapterTests(unittest.TestCase):
         self.assertEqual(result["feature_reconstruction"]["database_writes"], 0)
 
     def test_withholds_history_retrieved_after_target_feature_cutoff(self):
-        history = history_rows()
+        history = history_with_target()
         for row in history:
-            if "A" in (row["home_team_id"], row["away_team_id"]):
+            if row["fixture_id"] != TARGET["fixture_id"] and "A" in (row["home_team_id"], row["away_team_id"]):
                 row["retrieved_at"] = "2026-09-01T13:00:00Z"
                 attach_evidence(row)
         result = assemble_results_history_dataset(
