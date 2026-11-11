@@ -13,3 +13,7 @@ __all__ = [*__all__, "build_team_schedule_load_snapshot"]
 from .venue_context import VenueContextObservation, build_venue_context_snapshot
 
 __all__ = [*__all__, "VenueContextObservation", "build_venue_context_snapshot"]
+
+from .elo import build_elo_snapshot
+
+__all__ = [*__all__, "build_elo_snapshot"]
