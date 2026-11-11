@@ -27,6 +27,29 @@ def is_publishable_independent_report(report: Any) -> bool:
         or not report["as_of_date"].strip()
     ):
         return False
+    predictions = report.get("predictions")
+    for row in predictions:
+        if not isinstance(row, dict):
+            return False
+        if (
+            row.get("model_portfolio_id") != MODEL_PORTFOLIO_ID
+            or row.get("legacy_model_dependency") is not False
+        ):
+            return False
+        has_forecast = any(
+            key in row for key in ("probabilities", "btts_yes", "over_1_5", "over_2_5", "over_3_5")
+        )
+        if has_forecast:
+            feature_digest = row.get("feature_snapshot_sha256")
+            model_versions = row.get("model_versions")
+            if (
+                not isinstance(feature_digest, str)
+                or _CERTIFICATE_DIGEST.fullmatch(feature_digest) is None
+                or not isinstance(model_versions, list)
+                or not model_versions
+                or any(not isinstance(version, str) or not version.strip() for version in model_versions)
+            ):
+                return False
     certificate = report.get("release_certificate")
     if not isinstance(certificate, dict):
         return False
