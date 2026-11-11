@@ -211,4 +211,5 @@ def assemble_audited_provider_dataset(
         season_crosswalk_as_of=season_crosswalk_as_of,
         team_crosswalk_registry=team_crosswalk_registry,
         team_crosswalk_as_of=team_crosswalk_as_of,
+        feature_source_qualification_registry=feature_source_qualification_registry,
     )
