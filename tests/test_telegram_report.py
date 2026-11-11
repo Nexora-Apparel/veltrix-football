@@ -227,12 +227,12 @@ def test_main_skips_a_report_date_already_recorded_as_sent(tmp_path, monkeypatch
     from scripts import send_telegram_report as sender
 
     report_path = tmp_path / "report.json"
-    report_path.write_text(json.dumps({
+    report_path.write_text(json.dumps(authorized_report({
         "as_of_date": "2026-10-27",
         "same_day_only": True,
         "timezone": "Africa/Lagos",
         "predictions": [],
-    }), encoding="utf-8")
+    })), encoding="utf-8")
     monkeypatch.setattr("sys.argv", ["send_telegram_report.py", "--report", str(report_path), "--ledger", str(tmp_path / "missing-ledger.json")])
     monkeypatch.setenv("GITHUB_REPOSITORY", "Nexora-Apparel/veltrix-football")
     monkeypatch.setenv("GITHUB_TOKEN", "github-test-token")
@@ -277,12 +277,12 @@ def test_main_force_flag_resends_corrected_same_day_report(tmp_path, monkeypatch
     from scripts import send_telegram_report as sender
 
     report_path = tmp_path / "report.json"
-    report_path.write_text(json.dumps({
+    report_path.write_text(json.dumps(authorized_report({
         "as_of_date": "2026-10-27",
         "same_day_only": True,
         "timezone": "Africa/Lagos",
         "predictions": [],
-    }), encoding="utf-8")
+    })), encoding="utf-8")
     monkeypatch.setattr("sys.argv", ["send_telegram_report.py", "--report", str(report_path), "--ledger", str(tmp_path / "missing-ledger.json"), "--force"])
     monkeypatch.setenv("GITHUB_REPOSITORY", "Nexora-Apparel/veltrix-football")
     monkeypatch.setenv("GITHUB_TOKEN", "github-test-token")
