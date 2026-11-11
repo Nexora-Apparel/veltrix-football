@@ -99,7 +99,7 @@ def test_duplicate_bookmaker_fixture_quote_rejected():
     with pytest.raises(ValueError, match="DUPLICATE_FIXTURE_QUOTE"):
         compare_binary_to_bookmaker(
             [BinaryForecast("f1", 0.6)],
-            [quote("f1", "YES", 0.5), quote("f1", "NO", 0.5), quote("f1", "YES", 0.5), quote("f1", "NO", 0.5)],
+            [quote("f1", "YES", 0.5), quote("f1", "NO", 0.5), replace(quote("f1", "YES", 0.5), snapshot_id="duplicate-yes"), quote("f1", "NO", 0.5)],
             [SettledBinaryOutcome("f1", "YES")],
             eligible_fixture_ids=["f1"],
             affirmative_selection="YES",
