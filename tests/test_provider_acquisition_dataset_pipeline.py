@@ -9,6 +9,42 @@ from app.provider_acquisition_dataset_pipeline import (
     ProviderDatasetPipelineError,
     assemble_audited_provider_dataset,
 )
+from app.canonical_team_crosswalk import (
+    SCHEMA as TEAM_CROSSWALK_SCHEMA, canonical_sha256,
+    sign_team_crosswalk_registry,
+)
+
+TEAM_KEY_ARN = "arn:aws:kms:eu-west-1:123456789012:key/team-pipeline-test"
+class FakeTeamKms:
+    def sign(self, **kwargs):
+        return {"Signature": kwargs["Message"]}
+    def verify(self, **kwargs):
+        return {"SignatureValid": kwargs["Signature"] == kwargs["Message"]}
+
+TEAM_KMS = FakeTeamKms()
+
+def team_registry():
+    mappings = []
+    for source_id, canonical_id in (("home-src", "home-1"), ("away-src", "away-1")):
+        mappings.append({
+            "provider": "provider", "competition_id": "league-a",
+            "source_team_id": source_id, "canonical_team_id": canonical_id,
+            "team_scope": "men_first_team", "evidence_sha256": ["b" * 64],
+            "reviewer": "identity-review", "reviewed_at": "2026-01-01T00:00:00Z",
+            "valid_from": "2026-01-02T00:00:00Z",
+            "valid_until": "2027-01-01T00:00:00Z", "revoked_at": None,
+        })
+    unsigned = {
+        "schema": TEAM_CROSSWALK_SCHEMA,
+        "issued_at": "2026-01-01T00:00:00Z",
+        "expires_at": "2027-01-01T00:00:00Z", "mappings": mappings,
+    }
+    registry = sign_team_crosswalk_registry(
+        kms_client=TEAM_KMS, key_arn=TEAM_KEY_ARN,
+        trusted_key_regions={TEAM_KEY_ARN: "eu-west-1"}, registry=unsigned,
+    )
+    return registry, canonical_sha256(unsigned)
+
 
 
 def make_snapshot(fixture_id, predictors):
@@ -52,9 +88,18 @@ class AuditedProviderDatasetPipelineTests(unittest.TestCase):
         return report
 
     def test_only_audit_admitted_original_records_reach_dataset_assembly(self):
+        registry, registry_digest = team_registry()
         admitted = {"fixture_id": "provider:good", "provider": "provider", "source_id": "good",
                     "competition_id": "league-a", "home_team_id": "home-1",
-                    "away_team_id": "away-1", "kickoff_at": "2026-09-01T13:00:00Z",
+                    "away_team_id": "away-1", "home_team_source_id": "home-src",
+                    "away_team_source_id": "away-src",
+                    "team_identity_evidence": {
+                        "home_source_team_id": "home-src", "away_source_team_id": "away-src",
+                        "home_canonical_team_id": "home-1", "away_canonical_team_id": "away-1",
+                        "team_scope": "men_first_team", "registry_sha256": registry_digest,
+                        "signing_key_arn": TEAM_KEY_ARN, "verified_at": "2026-09-01T12:00:00Z",
+                    },
+                    "kickoff_at": "2026-09-01T13:00:00Z",
                     "settled_at": "2026-09-01T14:00:00Z",
                     "settlement_source_id": "final-whistle"}
         records = [
@@ -93,6 +138,10 @@ class AuditedProviderDatasetPipelineTests(unittest.TestCase):
                 acquisition_records=records,
                 settlement_timestamp_packages=packages,
                 trusted_kms_clients={"trusted": object()},
+                team_crosswalk_registry=team_registry()[0],
+
+                team_crosswalk_as_of="2026-09-01T12:00:00Z",
+
                 split_policy={"train": "a", "validation": "b", "test": "c"},
             )
         kwargs = assemble.call_args.kwargs
@@ -144,6 +193,10 @@ class AuditedProviderDatasetPipelineTests(unittest.TestCase):
                     acquisition_records=[{"provider": "provider", "source_id": "good"}],
                     settlement_timestamp_packages={"provider:good": {}},
                     trusted_kms_clients={"trusted": object()},
+                    team_crosswalk_registry=team_registry()[0],
+
+                    team_crosswalk_as_of="2026-09-01T12:00:00Z",
+
                     split_policy={},
                 )
 
@@ -159,6 +212,10 @@ class AuditedProviderDatasetPipelineTests(unittest.TestCase):
                     acquisition_records=[],
                     settlement_timestamp_packages={},
                     trusted_kms_clients={},
+                    team_crosswalk_registry=team_registry()[0],
+
+                    team_crosswalk_as_of="2026-09-01T12:00:00Z",
+
                     split_policy={},
                 )
 
@@ -174,6 +231,10 @@ class AuditedProviderDatasetPipelineTests(unittest.TestCase):
                 acquisition_records=[{"provider": "p", "source_id": "x"}],
                 settlement_timestamp_packages={},
                 trusted_kms_clients={},
+                team_crosswalk_registry=team_registry()[0],
+
+                team_crosswalk_as_of="2026-09-01T12:00:00Z",
+
                 split_policy={},
             )
         assemble.assert_not_called()
@@ -201,6 +262,10 @@ class AuditedProviderDatasetPipelineTests(unittest.TestCase):
                     acquisition_records=[{"provider": "provider", "source_id": "other"}],
                     settlement_timestamp_packages={"provider:good": {}},
                     trusted_kms_clients={},
+                    team_crosswalk_registry=team_registry()[0],
+
+                    team_crosswalk_as_of="2026-09-01T12:00:00Z",
+
                     split_policy={},
                 )
 
