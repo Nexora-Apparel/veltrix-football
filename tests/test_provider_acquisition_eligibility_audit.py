@@ -216,6 +216,37 @@ class ProviderAcquisitionEligibilityAuditTests(unittest.TestCase):
             "acquisition_record_identity_invalid",
         )
 
+    def test_mixed_rejection_causes_are_accounted_without_batch_abort(self):
+        report = self.audit(
+            [None, self.provider_record("missing-package"), self.provider_record("duplicate"),
+             self.provider_record("duplicate")],
+            {},
+        )
+        self.assertEqual(report["settlement_eligible_count"], 0)
+        self.assertEqual(report["rejected_count"], 4)
+        self.assertEqual(
+            report["rejected_by_reason"],
+            {
+                "acquisition_record_identity_invalid": 1,
+                "duplicate_provider_source_identity": 2,
+                "settlement_timestamp_unavailable": 1,
+            },
+        )
+
+    def test_missing_provider_identity_preserves_source_id_for_unattributed_rejection(self):
+        report = self.audit([{"source_id": "orphan-source"}])
+        rejected = report["rejected_records"][0]
+        self.assertEqual(rejected["fixture_id"], "record-index-0")
+        self.assertEqual(rejected["source_id"], "orphan-source")
+        self.assertNotIn("provider", rejected)
+        self.assertEqual(report["rejected_by_reason"]["acquisition_record_identity_invalid"], 1)
+
+    def test_missing_source_identity_preserves_provider_for_provider_quality_accounting(self):
+        report = self.audit([{"provider": "strikerapi"}])
+        rejected = report["rejected_records"][0]
+        self.assertEqual(rejected["provider"], "strikerapi")
+        self.assertNotIn("source_id", rejected)
+
     def test_unmatched_settlement_package_is_reported(self):
         report = self.audit(
             [self.provider_record()],
