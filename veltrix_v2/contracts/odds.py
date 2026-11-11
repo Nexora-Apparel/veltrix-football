@@ -41,6 +41,7 @@ class OddsSnapshot:
     captured_at: datetime
     kickoff_at: datetime
     line: Optional[Decimal] = None
+    provider_quote_at: Optional[datetime] = None
     schema_version: int = 1
 
     def __post_init__(self) -> None:
@@ -59,6 +60,11 @@ class OddsSnapshot:
             raise ValueError("decimal_odds must be greater than 1.0")
 
         line = None if self.line is None else _decimal(self.line, "line")
+        provider_quote = None if self.provider_quote_at is None else _aware_utc(self.provider_quote_at, "provider_quote_at")
+        if provider_quote is not None and provider_quote >= kickoff:
+            raise ValueError("provider_quote_at must be strictly before kickoff")
+        if provider_quote is not None and provider_quote > captured:
+            raise ValueError("provider_quote_at cannot be after captured_at")
         if self.schema_version != 1:
             raise ValueError("unsupported odds snapshot schema_version")
 
@@ -66,3 +72,4 @@ class OddsSnapshot:
         object.__setattr__(self, "kickoff_at", kickoff)
         object.__setattr__(self, "decimal_odds", odds)
         object.__setattr__(self, "line", line)
+        object.__setattr__(self, "provider_quote_at", provider_quote)
