@@ -27,6 +27,14 @@ from veltrix_v2.models.poisson_strength import (
 
 
 @dataclass(frozen=True, slots=True)
+class MarketCoverage:
+    eligible_fixture_count: int
+    forecast_count: int
+    abstention_count: int
+    coverage: float | None
+
+
+@dataclass(frozen=True, slots=True)
 class MultiMarketFoldEvaluation:
     fold_number: int
     train_fixture_count: int
@@ -37,12 +45,15 @@ class MultiMarketFoldEvaluation:
     forecasts_1x2: tuple[Forecast1X2, ...]
     outcomes_1x2: tuple[SettledOutcome1X2, ...]
     score_1x2: ScoreReport1X2 | None
+    coverage_1x2: MarketCoverage
     btts_forecasts: tuple[BinaryForecast, ...]
     btts_outcomes: tuple[SettledBinaryOutcome, ...]
     btts_report: BinaryScoreReport | None
+    coverage_btts: MarketCoverage
     totals_forecasts: tuple[BinaryForecast, ...]
     totals_outcomes: tuple[SettledBinaryOutcome, ...]
     totals_report: BinaryScoreReport | None
+    coverage_totals: MarketCoverage
 
 
 @dataclass(frozen=True, slots=True)
@@ -56,6 +67,9 @@ class MultiMarketWalkForwardEvaluation:
     aggregate_1x2: ScoreReport1X2 | None
     aggregate_btts: BinaryScoreReport | None
     aggregate_totals: BinaryScoreReport | None
+    aggregate_coverage_1x2: MarketCoverage
+    aggregate_coverage_btts: MarketCoverage
+    aggregate_coverage_totals: MarketCoverage
     total_line: float
     model_version: str
 
@@ -208,6 +222,12 @@ def run_multi_market_walk_forward(
         all_btts_outcomes.extend(btts_outcomes)
         all_totals_forecasts.extend(totals_forecasts)
         all_totals_outcomes.extend(totals_outcomes)
+        coverage = MarketCoverage(
+            eligible_fixture_count=len(eligible_ids),
+            forecast_count=len(forecasts_1x2),
+            abstention_count=len(abstained),
+            coverage=(len(forecasts_1x2) / len(eligible_ids)) if eligible_ids else None,
+        )
         fold_reports.append(MultiMarketFoldEvaluation(
             fold_number=fold.fold_number,
             train_fixture_count=len(training_rows),
@@ -218,12 +238,15 @@ def run_multi_market_walk_forward(
             forecasts_1x2=tuple(forecasts_1x2),
             outcomes_1x2=tuple(outcomes_1x2),
             score_1x2=one_x_two_report,
+            coverage_1x2=coverage,
             btts_forecasts=tuple(btts_forecasts),
             btts_outcomes=tuple(btts_outcomes),
             btts_report=btts_report,
+            coverage_btts=coverage,
             totals_forecasts=tuple(totals_forecasts),
             totals_outcomes=tuple(totals_outcomes),
             totals_report=totals_report,
+            coverage_totals=coverage,
         ))
 
     aggregate_1x2 = (
@@ -247,6 +270,12 @@ def run_multi_market_walk_forward(
         if all_totals_forecasts else None
     )
     total_forecasts = len(all_1x2_forecasts)
+    aggregate_coverage = MarketCoverage(
+        eligible_fixture_count=total_test,
+        forecast_count=total_forecasts,
+        abstention_count=total_abstentions,
+        coverage=(total_forecasts / total_test) if total_test else None,
+    )
     return MultiMarketWalkForwardEvaluation(
         competition_key=competition_key,
         season=season,
@@ -257,6 +286,9 @@ def run_multi_market_walk_forward(
         aggregate_1x2=aggregate_1x2,
         aggregate_btts=aggregate_btts,
         aggregate_totals=aggregate_totals,
+        aggregate_coverage_1x2=aggregate_coverage,
+        aggregate_coverage_btts=aggregate_coverage,
+        aggregate_coverage_totals=aggregate_coverage,
         total_line=float(total_line),
         model_version=model_version,
     )
