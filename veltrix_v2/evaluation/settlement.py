@@ -82,6 +82,8 @@ class MarketBet:
         if self.market in ("TOTALS", "OVER_UNDER"):
             if line is None or line < 0:
                 raise ValueError("totals market requires a non-negative line")
+            if line % Decimal("0.5") != 0:
+                raise ValueError("only half-goal and integer totals lines are supported")
             if self.selection.upper() not in ("OVER", "UNDER"):
                 raise ValueError("totals selection must be OVER or UNDER")
         elif line is not None:
