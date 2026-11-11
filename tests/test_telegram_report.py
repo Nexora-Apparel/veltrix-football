@@ -485,12 +485,11 @@ def test_telegram_withholds_legacy_low_data_forecast_probabilities(monkeypatch):
     from scripts import send_telegram_report as sender
     monkeypatch.setattr(sender, "is_publishable_independent_report", is_publishable_independent_report)
     report = sample_report()
-    report["predictions"][0]["status"] = "EXPERIMENTAL_LOW_DATA"
-    report["predictions"][0]["model"] = "experimental_global_licensed_prior_poisson"
-    report["predictions"][0]["prediction_basis"] = "licensed global goal-rate prior only"
+    report["predictions"][0]["status"] = "INSUFFICIENT_HISTORY"
+    report["predictions"][0]["model"] = "legacy_global_licensed_prior_poisson"
+    report["predictions"][0]["prediction_basis"] = "legacy global goal-rate prior only"
     report["predictions"][0]["betting_recommendation"] = False
     assert not is_publishable_independent_report(report)
     with pytest.raises(ValueError, match="LEGACY_OR_UNCERTIFIED_REPORT_SUPPRESSED"):
         format_report(report)
     assert "xG: 1.40 - 0.80" not in message
-    assert "LOW-DATA EXPERIMENTAL" not in message
