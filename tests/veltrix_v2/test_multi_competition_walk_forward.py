@@ -67,7 +67,7 @@ def test_aggregates_multiple_competitions_without_pooling_strength_models(monkey
     )
     result = run_multi_competition_walk_forward(
         rows,
-        competition_seasons=(("league-b", "2025-26"),),
+        competition_seasons=(("league-a", "2025-26"), ("league-b", "2025-26")),
         first_test_start_utc=datetime(2026, 1, 10, tzinfo=UTC),
         test_window=timedelta(days=7),
         n_splits=1,
@@ -88,7 +88,7 @@ def test_missing_competition_scope_fails_closed():
     with pytest.raises(ValueError, match="SCOPE_DATA_MISSING"):
         run_multi_competition_walk_forward(
             rows,
-            competition_seasons=(("league-a", "2025-26"), ("league-b", "2025-26")),
+            competition_seasons=(("league-b", "2025-26"),),
             first_test_start_utc=datetime(2026, 1, 10, tzinfo=UTC),
             test_window=timedelta(days=7),
             n_splits=1,
