@@ -296,7 +296,6 @@ def build_historical_source_coverage_report(
         feature_source_qualification["rejected_feature_cells"] = sum(
             len(item.get("features", [])) for item in snapshots if isinstance(item, dict)
         )
-        threshold_failures_placeholder = True
 
     rejected_records = eligibility.get("rejected_records", [])
     if not isinstance(rejected_records, list):
