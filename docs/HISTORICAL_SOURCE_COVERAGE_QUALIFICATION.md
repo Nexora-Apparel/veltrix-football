@@ -11,6 +11,7 @@ It is a fail-closed screening report, not proof of model quality, a source licen
 - Settlement eligible and rejected record counts and eligibility rate.
 - Accepted record counts by provider and settlement source.
 - Per-competition eligible fixtures, included dataset rows, feature snapshots, distinct teams and distinct kickoff dates.
+- Per-canonical-season eligible fixtures, canonical teams, distinct WAT kickoff dates, feature snapshots, dataset rows and per-feature coverage.
 - Per-team fixture appearances within each competition.
 - Per-feature dataset coverage and feature-source/source-ID counts.
 - Explicit domain coverage for team strength/form, xG, lineups, fatigue/travel and bookmaker odds.
@@ -34,11 +35,9 @@ This is intentionally conservative. It prevents domestic-league results,
 cups and unrelated competition formats from being silently pooled into the
 same raw rates or Elo scale.
 
-## Season identity limitation
+## Source-season preservation
 
-The normalized acquisition record already retains a provider-reported `season` value where supplied. The eligibility audit now carries that value forward as `source_season`. The report distinguishes missing season labels from source-reported labels that still lack a reviewed canonical competition-season crosswalk. It does not infer seasons from calendar years, league schedules or kickoff dates. Even complete source-reported labels remain unqualified until an explicit crosswalk is reviewed and verified.
-
-A future qualification step must bind each provider/competition/source-season label to a canonical season ID, with source provenance and review evidence. Until that crosswalk exists, `season_crosswalk_unverified` blocks source qualification.
+The normalized acquisition record retains the provider-reported `season` value where supplied. The eligibility audit carries it forward as `source_season`; the normalized record and raw provider payload remain hash-bound. Missing season labels are never inferred from calendar years, league schedules or kickoff dates.
 
 ## Signed canonical season crosswalk
 
@@ -49,17 +48,24 @@ validity interval and optional revocation timestamp. The registry signature is
 verified only through explicitly injected out-of-band KMS clients. A key ARN
 inside the signed registry cannot introduce a trust anchor.
 
-The coverage builder accepts the registry, trusted clients and an explicit
-evaluation timestamp. Every accepted record must resolve using its exact
-provider, competition and unmodified source-season label. Missing, ambiguous,
-expired, revoked or out-of-scope mappings remain unverified. A signed registry
-does not make the underlying evidence factually correct; reviewer evidence
-still requires independent governance review.
+The dataset adapter now requires this registry. For every target, it verifies
+the registry at that fixture's own feature cutoff, resolves the exact
+(provider, competition, source-season) identity, and resolves historical
+candidates at the same cutoff. Only history mapped to the target's canonical
+season can contribute to its features. Missing, expired, revoked, ambiguous,
+out-of-scope or retrospectively issued mappings withhold the target. No
+cross-season borrowing is allowed.
 
-The audited dataset pipeline can pass this registry into coverage reporting.
-Without it, source-reported season labels remain unverified. Synthetic fake-KMS
-tests validate the contract only; no production season crosswalk or signing key
-has been configured.
+Each feature snapshot includes the original source-season label, canonical
+season ID, registry digest, signer ARN, verification timestamp, reviewer and
+review-evidence digests inside its immutable snapshot hash. The coverage
+builder re-verifies this evidence against the signed registry at the snapshot's
+own cutoff, rather than relying only on the report-wide evaluation timestamp.
+A signed registry does not make the underlying evidence factually correct;
+reviewer evidence still requires independent governance review.
+
+Synthetic fake-KMS tests validate the contract only; no production season
+crosswalk or signing key has been configured.
 
 ## Signed canonical team identity crosswalk
 
@@ -105,7 +111,7 @@ Synthetic fake-KMS tests do not qualify any real feature source.
 
 ## Screening thresholds
 
-Defaults are 100 settlement-eligible fixtures per competition, 16 distinct teams per competition and 95% feature-cell coverage. They are configurable screening thresholds only. They are not model-training sample-size guarantees, market certification criteria, or evidence of predictive performance.
+Defaults are 100 settlement-eligible fixtures per competition, 16 distinct teams per competition and 95% feature-cell coverage. The same default screening minima are applied independently to each canonical season: 100 fixtures, 16 canonical teams and 95% coverage for every catalogue feature. Per-season reporting also counts distinct kickoff dates in WAT (UTC+1). These are configurable screening thresholds only. They are not model-training sample-size guarantees, market certification criteria, or evidence of predictive performance. Competition and season results are reported separately; a large competition total cannot conceal an under-covered individual season.
 
 Historical feature availability must separately be set by an evidence-backed pipeline proof. A retrospective download is not sufficient. The current pipeline deliberately reports it as unproven.
 
