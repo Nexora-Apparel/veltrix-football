@@ -87,7 +87,7 @@ Not yet qualified:
 Exact import scope currently safe to test:
 - EPL, previous 90 days, StrikerAPI plus 5Dollar.
 - Argentina and Brazil, previous 90 days, StrikerAPI only.
-- NWSL, previous 90 days, StrikerAPI only and provisional pending vendor clarification.
+- NWSL excluded from supported launch/import scope; provider count clarification remains open in issue #49.
 - Do not expand the import window or competition set until page counts, source accounting, identity matching, duplicate handling, result/score validation and rate budgets pass.
 
 ## 5. PR and CI state
@@ -108,12 +108,12 @@ Allowed for the next import dry-run only:
 - StrikerAPI Argentina fixture/results
 - StrikerAPI Brazil fixture/results
 
-NWSL remains provisional. Other StrikerAPI competitions and all non-fixture datasets remain unsupported pending separate qualification.
+NWSL is excluded from the supported launch scope. Its page/API discrepancy remains unresolved and must not be used as a production source. Other StrikerAPI competitions and all non-fixture datasets remain unsupported pending separate qualification.
 
 Full Phase 3 remains blocked by:
 1. Execute the newly added read-only Python Neon acceptance runner against the target database and retain its workflow artifact. The script and manual workflow now exist; execution is still pending.
 2. Execute the newly added provider-backed dry-run against the isolated Neon branch; the workflow and validator now exist, but no provider run artifact has been produced.
-3. Written StrikerAPI clarification of the NWSL 2026 224-versus-240 league count.
+3. NWSL remains formally excluded from the supported launch scope unless a written provider explanation and fresh qualification are obtained; this is no longer a blocker for the limited launch if exclusion is maintained.
 
 Independent v2 contract/foundation implementation may proceed on its isolated architecture branch. Model fitting, calibration, evaluation claims, publication and prediction activation remain gated until full Phase 3 sign-off. No legacy prediction model, feature pipeline, calibration or fallback logic may be reused.
 
@@ -144,3 +144,16 @@ Independent v2 contract/foundation implementation may proceed on its isolated ar
 - `STRIKERAPI_API_KEY` and `FIVEDOLLARFOOTBALL_API_KEY` are wired into the provider workflow; StrikerAPI secret was present in the preflight run. Do not paste any secret into chat or source code.
 
 Full Phase 3 sign-off remains withheld until both Python workflows execute and pass, the dry-run artifact demonstrates balanced cross-provider EPL source accounting and no conflicts, and NWSL is either formally excluded from the release scope or clarified by the provider. No prediction-model fitting or publication is authorized yet.
+
+
+## 9. Follow-up execution — 2026-11-11 (continued)
+
+- Live catalog recheck on both production `main` and isolated child branch returned 11 public tables, 11 primary keys, 7 foreign keys, 5 unique constraints, 83 check constraints and 22 indexes. The Python runner's expected CHECK count was corrected from 20 to 83 on the qualification branch.
+- Both databases still have zero fixtures, teams, competitions, fixture results, source observations, import runs and import checkpoints.
+- The isolated Neon endpoint was provisioned at 0.25 CU, then suspended after the read-only checks. No import execution occurred; branch metadata continued to report zero written data bytes and zero compute seconds.
+- The provider dry-run now rejects every database hostname except the exact dedicated isolated Neon endpoint (and its pooler hostname). This prevents a misconfigured DRY_RUN_DATABASE_URL from silently targeting production. A corresponding unit test was added.
+- The actual Python GitHub Actions acceptance workflow has **not** executed. The available GitHub integration cannot dispatch workflow_dispatch runs or create repository secrets. Earlier preflight evidence recorded DATABASE_URL and DRY_RUN_DATABASE_URL as missing. The SQL catalog recheck is not represented as a Python workflow pass.
+- The actual provider-backed import dry-run has **not** executed. Its workflow requires STRIKERAPI_API_KEY, FIVEDOLLARFOOTBALL_API_KEY and DRY_RUN_DATABASE_URL; the latter must point to the dedicated isolated endpoint. No provider API calls or import writes were made during this continuation.
+- NWSL is formally excluded from the supported launch/import scope. The 224-versus-240 discrepancy is still unexplained by StrikerAPI; official league format explains why 240 regular-season fixtures are expected, but not why the provider's public page lists 224. Issue #49 remains open for a written explanation. No NWSL source data is approved.
+- Exact approved fixture/results coverage for the limited launch/dry-run remains: StrikerAPI EPL, Argentina and Brazil within the bounded qualification windows; 5Dollar EPL within the Free-plan three-month results window. All odds, xG, shot data, lineups, events and player statistics remain unapproved by Phase 3 fixture/results qualification.
+- Phase 3 sign-off remains withheld until both manual Python workflows execute successfully and the provider dry-run artifact demonstrates complete source accounting, zero conflicts and unchanged isolated/production database counts.
