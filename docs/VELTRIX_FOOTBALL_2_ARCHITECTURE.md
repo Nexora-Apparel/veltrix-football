@@ -181,3 +181,14 @@ The isolated `veltrix-2.0-architecture-blueprint` branch now contains:
 - `tests/veltrix_v2/test_source_eligibility.py`: approved-scope, provisional, future-data, stale-data and expired-approval tests.
 
 This is foundational implementation only. It does not fit a model, generate a forecast, import legacy code or activate prediction delivery. Next modules are ingestion normalization and identity crosswalk contracts, followed by feature lineage and point-in-time feature snapshots after data acceptance.
+
+
+### 2026-11-11 continued — first point-in-time feature builder
+
+Added `veltrix_v2/features/team_form.py` and `tests/veltrix_v2/test_team_form.py`:
+- Immutable settled-match input with provider fixture/team IDs, competition-season scope, kickoff, result-availability timestamp, final status, score and source-observation ID.
+- As-of filtering requires kickoff strictly before cutoff and result availability no later than cutoff; wrong competitions/seasons and future/unavailable records are excluded.
+- Recency-weighted goals-for, goals-against and points-per-match features over a bounded last-N match window.
+- Explicit low-sample state; zero-history features are missing with a reason, never replaced by a generic prior.
+- No provider requests, database writes, model fitting, prediction generation or legacy imports.
+- The new feature builder is isolated to the v2 architecture branch and is not wired to production or publication.
