@@ -405,10 +405,10 @@ def test_goal_market_command_formats_ten_matches_as_separate_readable_cards():
     assert "🎯 BTTS: Yes" in reply
     assert "Kick-off times: WAT" in reply
     assert "━━━━━━━━━━━━━━━━━━━━" in reply
-    assert "Method: explicit model-produced goal-market probabilities" in reply
+    assert "Method: explicit market probabilities supplied by the independent model portfolio" in reply
 
 
-def test_goal_markets_withhold_invalid_expected_goals():
+def test_goal_markets_use_explicit_market_probabilities_independent_of_expected_goals():
     now = datetime.now(ZoneInfo("Africa/Lagos"))
     future_kickoff = (now + timedelta(hours=3)).isoformat()
     report = {
@@ -422,7 +422,9 @@ def test_goal_markets_withhold_invalid_expected_goals():
             "expected_goals": {"home": float("nan"), "away": -1},
         }],
     }
-    assert "NO USABLE GOAL-MARKET ESTIMATES" in handle_command("/overunder", report=authorized_report(report))
+    reply = handle_command("/overunder", report=authorized_report(report))
+    assert "O/U 2.5" in reply
+    assert "Expected goals:" not in reply
     assert "NO USABLE GOAL-MARKET ESTIMATES" in handle_command("/btts", report=authorized_report(report))
 
 
