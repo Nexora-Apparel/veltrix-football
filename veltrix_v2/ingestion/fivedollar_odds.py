@@ -7,7 +7,7 @@ reported, never synthesized. The fixed 2.5 total line is selected explicitly.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timezone
 from decimal import Decimal, InvalidOperation
 import hashlib
 from typing import Any
@@ -88,17 +88,19 @@ def parse_fivedollar_fixture_odds(
     odds = book.get("odds")
     if not isinstance(odds, dict):
         raise ValueError("FIVEDOLLAR_ODDS_MARKETS_MISSING")
-    capture = captured_at.astimezone(__import__("datetime").timezone.utc)
-    kickoff = kickoff_at.astimezone(__import__("datetime").timezone.utc)
+    capture = captured_at.astimezone(timezone.utc)
+    kickoff = kickoff_at.astimezone(timezone.utc)
     bookmaker_id = str(book.get("slug", bookmaker_slug))
     snapshots: list[OddsSnapshot] = []
     present: set[str] = set()
 
     def add_market(market: str, values: dict[str, Any], selections: tuple[str, ...], line: Decimal | None = None) -> None:
+        prices = {selection: _price(values.get(selection.lower())) for selection in selections}
+        if any(price is None for price in prices.values()):
+            return
         for selection in selections:
-            price = _price(values.get(selection.lower()))
-            if price is None:
-                continue
+            price = prices[selection]
+            assert price is not None
             snapshots.append(OddsSnapshot(
                 snapshot_id=_snapshot_id(str(fixture_id), market, selection, line, capture, bookmaker_id),
                 fixture_id=str(fixture_id),
@@ -111,8 +113,7 @@ def parse_fivedollar_fixture_odds(
                 kickoff_at=kickoff,
                 line=line,
             ))
-        if all(any(row.market == market and row.selection == selection for row in snapshots) for selection in selections):
-            present.add(market)
+        present.add(market)
 
     one_x_two = odds.get("1x2")
     if isinstance(one_x_two, dict) and isinstance(one_x_two.get("closing"), dict):
