@@ -116,3 +116,30 @@ def test_unseen_team_is_not_given_a_generic_fallback():
     )
     with pytest.raises(ValueError, match="TEAM_NOT_IN_TRAINING"):
         model.expected_goals("A", "UNSEEN")
+
+
+
+def test_training_contract_excludes_popularity_reputation_and_market_favourites():
+    from dataclasses import fields
+
+    accepted_fields = {field.name for field in fields(TrainingMatch)}
+    prohibited = {
+        "team_name", "team_popularity", "fanbase_size", "social_engagement",
+        "reputation", "club_rank", "league_prestige", "bookmaker_odds",
+        "implied_probability", "market_favourite", "public_betting_percentage",
+    }
+    assert accepted_fields.isdisjoint(prohibited)
+
+
+def test_home_advantage_is_a_fitted_parameter_not_a_hard_coded_bonus():
+    rows = build_rows()
+    cutoff = BASE + timedelta(days=150)
+    model = fit_poisson_strength_model(
+        rows, competition_key="league", season="2024/25",
+        training_cutoff_utc=cutoff, minimum_matches=30,
+        minimum_team_matches=10, max_iterations=4000,
+    )
+    # The model exposes the coefficient learned from this training sample;
+    # it does not inject a fixed percentage into every home forecast.
+    assert isinstance(model.home_advantage_log_rate, float)
+    assert model.home_advantage_log_rate != pytest.approx(__import__("math").log(1.18), abs=1e-3)
