@@ -72,7 +72,13 @@ def check_fivedollar() -> str:
         status, _, account_payload = request_json(base + "/status", headers)
         account_data = account_payload.get("data") if isinstance(account_payload, dict) else None
         plan = account_data.get("plan") if isinstance(account_data, dict) else None
-        if status != 200 or not isinstance(plan, str) or not plan.strip():
+        if (
+            status != 200
+            or not isinstance(account_payload, dict)
+            or account_payload.get("success") != 1
+            or not isinstance(plan, str)
+            or not plan.strip()
+        ):
             print("5DollarFootballAPI: ACCOUNT_STATUS_UNAVAILABLE")
             return "FAILED"
         status, response_headers, payload = request_json(base + "/leagues?per_page=100", headers)
