@@ -72,12 +72,12 @@ def test_event_file_requires_sorted_unique_ids_and_indexes():
 @pytest.mark.parametrize("timestamp", ["00:60:00.000", "00:00:60.000", "bad"])
 def test_invalid_match_clock_is_rejected(timestamp):
     with pytest.raises(ValueError, match="INVALID_EVENT_TIMESTAMP"):
-        adapt_event(timestamp=timestamp)
+        adapt_event(event(timestamp=timestamp), match_id="2781")
 
 
 def test_out_of_pitch_location_is_rejected():
     with pytest.raises(ValueError, match="LOCATION_OUT_OF_BOUNDS"):
-        adapt_event(location=[121, 40])
+        adapt_event(event(location=[121, 40]), match_id="2781")
 
 
 def test_unknown_optional_fields_are_preserved():
@@ -87,6 +87,6 @@ def test_unknown_optional_fields_are_preserved():
 
 def test_invalid_flags_and_period_are_rejected():
     with pytest.raises(ValueError, match="UNDER_PRESSURE_INVALID"):
-        adapt_event(under_pressure=1)
+        adapt_event(event(under_pressure=1), match_id="2781")
     with pytest.raises(ValueError, match="PERIOD_INVALID"):
-        adapt_event(period=6)
+        adapt_event(event(period=6), match_id="2781")
