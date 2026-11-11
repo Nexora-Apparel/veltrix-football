@@ -47,6 +47,9 @@ class PaperSelection:
     """One prospective value candidate recorded before its fixture kicks off."""
 
     selection_id: str
+    report_id: str
+    forecast_id: str
+    prediction_certification_id: str
     bet: MarketBet
     odds_snapshot: OddsSnapshot
     model_probability: Decimal
@@ -58,6 +61,10 @@ class PaperSelection:
     def __post_init__(self) -> None:
         if not isinstance(self.selection_id, str) or not self.selection_id.strip():
             raise ValueError("PAPER_LEDGER_SELECTION_ID_REQUIRED")
+        for field in ("report_id", "forecast_id", "prediction_certification_id"):
+            value = getattr(self, field)
+            if not isinstance(value, str) or not value.strip():
+                raise ValueError(f"PAPER_LEDGER_{field.upper()}_REQUIRED")
         if not isinstance(self.bet, MarketBet):
             raise ValueError("PAPER_LEDGER_MARKET_BET_REQUIRED")
         if not isinstance(self.odds_snapshot, OddsSnapshot):
@@ -188,6 +195,9 @@ class PaperLedger:
         identities = [row.identity_key for row in selections]
         if len(identities) != len(set(identities)):
             raise ValueError("PAPER_LEDGER_DUPLICATE_FIXTURE_MARKET_SELECTION")
+        forecast_ids = [row.forecast_id for row in selections]
+        if len(forecast_ids) != len(set(forecast_ids)):
+            raise ValueError("PAPER_LEDGER_DUPLICATE_FORECAST_ID")
         event_ids = [row.event_id for row in settlements]
         if len(event_ids) != len(set(event_ids)):
             raise ValueError("PAPER_LEDGER_DUPLICATE_SETTLEMENT_EVENT_ID")

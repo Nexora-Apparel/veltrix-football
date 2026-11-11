@@ -34,6 +34,9 @@ def selection(selection_id="s1", *, selected_at=NOW + timedelta(minutes=1), prob
     )
     return PaperSelection(
         selection_id=selection_id,
+        report_id="report-1",
+        forecast_id=f"forecast-id-{selection_id}",
+        prediction_certification_id="prediction-cert-1",
         bet=bet,
         odds_snapshot=quote,
         model_probability=Decimal(probability),
@@ -56,6 +59,9 @@ def test_paper_selection_rejects_missing_forecast_provenance():
     with pytest.raises(ValueError, match="FORECAST_PROVENANCE_REQUIRED"):
         PaperSelection(
             selection_id=row.selection_id,
+            report_id=row.report_id,
+            forecast_id=row.forecast_id,
+            prediction_certification_id=row.prediction_certification_id,
             bet=row.bet,
             odds_snapshot=row.odds_snapshot,
             model_probability=row.model_probability,
@@ -74,6 +80,9 @@ def test_ledger_is_append_only_and_rejects_duplicate_fixture_market_selection():
         PaperLedger((row, row), ())
     duplicate_id = PaperSelection(
         selection_id="s2",
+        report_id="report-1",
+        forecast_id="forecast-id-s2",
+        prediction_certification_id="prediction-cert-1",
         bet=row.bet,
         odds_snapshot=OddsSnapshot(
             snapshot_id="odds-s2", fixture_id=row.bet.fixture_id,
