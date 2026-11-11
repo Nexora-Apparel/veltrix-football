@@ -31,6 +31,9 @@ class MultiCompetitionWalkForwardEvaluation:
     total_test_fixtures: int
     total_forecasts: int
     total_abstentions: int
+    total_folds: int
+    converged_folds: int
+    model_convergence_rate: float | None
     aggregate_1x2: ScoreReport1X2 | None
     aggregate_btts: BinaryScoreReport | None
     aggregate_totals: BinaryScoreReport | None
@@ -120,6 +123,11 @@ def run_multi_competition_walk_forward(
         score_binary_market(forecasts_totals, outcomes_totals, eligible_fixture_ids=eligible_ids)
         if forecasts_totals else None
     )
+    total_folds = sum(len(report.folds) for report in reports)
+    converged_folds = sum(
+        1 for report in reports for fold in report.folds if fold.model_converged
+    )
+    convergence_rate = converged_folds / total_folds if total_folds else None
     coverage = MarketCoverage(
         eligible_fixture_count=test_count,
         forecast_count=forecast_count,
@@ -132,6 +140,9 @@ def run_multi_competition_walk_forward(
         total_test_fixtures=test_count,
         total_forecasts=forecast_count,
         total_abstentions=abstentions,
+        total_folds=total_folds,
+        converged_folds=converged_folds,
+        model_convergence_rate=convergence_rate,
         aggregate_1x2=aggregate_1x2,
         aggregate_btts=aggregate_btts,
         aggregate_totals=aggregate_totals,
