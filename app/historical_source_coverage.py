@@ -19,6 +19,9 @@ from app.point_in_time_feature_contract import (
 from app.canonical_season_crosswalk import (
     SeasonCrosswalkError, verify_season_crosswalk_registry,
 )
+from app.canonical_team_crosswalk import (
+    TeamCrosswalkError, verify_team_crosswalk_registry,
+)
 
 
 class HistoricalSourceCoverageError(ValueError):
@@ -55,6 +58,8 @@ def build_historical_source_coverage_report(
     season_crosswalk_registry: dict | None = None,
     trusted_kms_clients: dict | None = None,
     season_crosswalk_as_of: str | None = None,
+    team_crosswalk_registry: dict | None = None,
+    team_crosswalk_as_of: str | None = None,
 ) -> dict:
     """Measure admitted source coverage; never infer missing season identity."""
     if not isinstance(pipeline_report, dict):
@@ -99,12 +104,38 @@ def build_historical_source_coverage_report(
             raise HistoricalSourceCoverageError(
                 f"season_crosswalk_registry_rejected:{exc}"
             ) from None
-    elif trusted_kms_clients is not None or season_crosswalk_as_of is not None:
+    elif season_crosswalk_as_of is not None:
         raise HistoricalSourceCoverageError("season_crosswalk_inputs_incomplete")
+
+    team_crosswalk_verified = None
+    if team_crosswalk_registry is not None:
+        if not isinstance(trusted_kms_clients, dict) or not trusted_kms_clients:
+            raise HistoricalSourceCoverageError("team_crosswalk_trusted_keys_required")
+        if not isinstance(team_crosswalk_as_of, str) or not team_crosswalk_as_of:
+            raise HistoricalSourceCoverageError("team_crosswalk_as_of_required")
+        try:
+            team_crosswalk_verified = verify_team_crosswalk_registry(
+                registry=team_crosswalk_registry,
+                trusted_kms_clients=trusted_kms_clients,
+                as_of=team_crosswalk_as_of,
+            )
+        except TeamCrosswalkError as exc:
+            raise HistoricalSourceCoverageError(
+                f"team_crosswalk_registry_rejected:{exc}"
+            ) from None
+    elif team_crosswalk_as_of is not None:
+        raise HistoricalSourceCoverageError("team_crosswalk_inputs_incomplete")
+    if (trusted_kms_clients is not None
+            and season_crosswalk_registry is None
+            and team_crosswalk_registry is None):
+        raise HistoricalSourceCoverageError("crosswalk_trust_without_registry")
 
     accepted_by_id = {}
     competition_records = defaultdict(list)
     team_appearances = defaultdict(Counter)
+    canonical_team_appearances = defaultdict(Counter)
+    team_mapping_failures = Counter()
+    team_scope_by_canonical_id = {}
     provider_counts = Counter()
     provider_input_counts = Counter()
     provider_rejected_counts = Counter()
@@ -133,6 +164,20 @@ def build_historical_source_coverage_report(
         competition_records[competition].append(record)
         team_appearances[competition][home] += 1
         team_appearances[competition][away] += 1
+        if team_crosswalk_verified is not None:
+            for source_team_id in (home, away):
+                identity = (provider, competition, source_team_id)
+                mapping = team_crosswalk_verified["mappings"].get(identity)
+                if mapping is None:
+                    team_mapping_failures[competition] += 1
+                    continue
+                canonical_id = mapping["canonical_team_id"]
+                scope = mapping["team_scope"]
+                prior_scope = team_scope_by_canonical_id.get(canonical_id)
+                if prior_scope is not None and prior_scope != scope:
+                    raise HistoricalSourceCoverageError("canonical_team_scope_collision")
+                team_scope_by_canonical_id[canonical_id] = scope
+                canonical_team_appearances[competition][canonical_id] += 1
         provider_counts[provider] += 1
         settlement_sources[record.get("settlement_source_id", "unknown")] += 1
         kickoff_dates[competition].add(kickoff.date().isoformat())
@@ -223,11 +268,18 @@ def build_historical_source_coverage_report(
     threshold_failures = []
     for competition, records in sorted(competition_records.items()):
         fixtures = len(records)
-        teams = len(team_appearances[competition])
+        source_teams = len(team_appearances[competition])
+        canonical_teams = len(canonical_team_appearances[competition])
+        all_team_ids_mapped = (
+            team_crosswalk_verified is not None
+            and team_mapping_failures[competition] == 0
+            and canonical_team_appearances[competition]
+        )
+        teams = canonical_teams if team_crosswalk_verified is not None else None
         included = included_by_competition[competition]
         snapshots_count = sum(1 for record in records if record["fixture_id"] in snapshot_by_id)
         meets_fixtures = fixtures >= minimum_fixtures_per_competition
-        meets_teams = teams >= minimum_distinct_teams_per_competition
+        meets_teams = bool(all_team_ids_mapped) and canonical_teams >= minimum_distinct_teams_per_competition
         season_values = source_seasons[competition]
         missing_seasons = missing_season_counts[competition]
         canonical_season_counts = Counter(
@@ -249,6 +301,20 @@ def build_historical_source_coverage_report(
         item = {
             "settlement_eligible_fixtures": fixtures,
             "distinct_teams": teams,
+            "distinct_source_team_ids": source_teams,
+            "canonical_distinct_teams": canonical_teams,
+            "team_identity": {
+                "status": (
+                    "verified" if all_team_ids_mapped
+                    else "partially_verified" if canonical_teams
+                    else "unverified"
+                ),
+                "canonical_team_crosswalk_verified": bool(all_team_ids_mapped),
+                "unmapped_team_appearances": team_mapping_failures[competition],
+                "crosswalk_registry_sha256": (
+                    team_crosswalk_verified["registry_sha256"] if team_crosswalk_verified else None
+                ),
+            },
             "feature_snapshots": snapshots_count,
             "dataset_rows": included,
             "distinct_kickoff_dates": len(kickoff_dates[competition]),
@@ -284,6 +350,8 @@ def build_historical_source_coverage_report(
             threshold_failures.append(f"{competition}:insufficient_fixtures")
         if not meets_teams:
             threshold_failures.append(f"{competition}:insufficient_team_coverage")
+            if team_crosswalk_verified is None or team_mapping_failures[competition]:
+                threshold_failures.append(f"{competition}:team_identity_crosswalk_unverified")
 
     feature_domains = {
         "team_strength_and_form": [
@@ -388,8 +456,17 @@ def build_historical_source_coverage_report(
         "competition_coverage": competition_report,
         "team_coverage": {
             competition: {
-                "distinct_teams": len(counts),
-                "team_fixture_appearances": dict(sorted(counts.items())),
+                "distinct_source_team_ids": len(counts),
+                "source_team_id_fixture_appearances": dict(sorted(counts.items())),
+                "distinct_canonical_teams": len(canonical_team_appearances[competition]),
+                "canonical_team_fixture_appearances": dict(sorted(
+                    canonical_team_appearances[competition].items()
+                )),
+                "canonical_team_crosswalk_verified": bool(
+                    team_crosswalk_verified is not None
+                    and team_mapping_failures[competition] == 0
+                    and canonical_team_appearances[competition]
+                ),
             }
             for competition, counts in sorted(team_appearances.items())
         },
