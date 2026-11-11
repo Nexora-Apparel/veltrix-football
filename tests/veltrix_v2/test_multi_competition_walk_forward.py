@@ -83,6 +83,9 @@ def test_aggregates_multiple_competitions_without_pooling_strength_models(monkey
     assert result.aggregate_btts.sample_size == 2
     assert result.aggregate_totals.sample_size == 2
     assert result.coverage_1x2.coverage == 1.0
+    assert result.total_folds == 2
+    assert result.converged_folds == 2
+    assert result.model_convergence_rate == 1.0
     assert {scope for scope, _ in fit_scopes} == {"league-a", "league-b"}
     assert all(len(train_ids) == 1 for _, train_ids in fit_scopes)
 
