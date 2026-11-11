@@ -86,7 +86,8 @@ def build_point_in_time_feature_snapshot(*, fixture_id: str,
                                          prediction_as_of: str,
                                          features: list[dict],
                                          verified_source_registry: dict | None = None,
-                                         competition_id: str | None = None) -> dict:
+                                         competition_id: str | None = None,
+                                         season_identity_evidence: dict | None = None) -> dict:
     if not isinstance(fixture_id, str) or not fixture_id.strip():
         raise PointInTimeFeatureError("fixture_id_required")
     if not isinstance(features, list):
@@ -171,6 +172,28 @@ def build_point_in_time_feature_snapshot(*, fixture_id: str,
         "target_label_separate": True,
         "model_training_certified": False,
     }
+    if season_identity_evidence is not None:
+        required_season_fields = {
+            "provider", "competition_id", "source_season", "canonical_season_id",
+            "registry_sha256", "signing_key_arn", "verified_at",
+            "evidence_sha256", "reviewer", "reviewed_at",
+        }
+        if not isinstance(season_identity_evidence, dict) or set(season_identity_evidence) != required_season_fields:
+            raise PointInTimeFeatureError("season_identity_evidence_shape_invalid")
+        if any(not isinstance(season_identity_evidence.get(key), str) or not season_identity_evidence[key].strip()
+               for key in ("provider", "competition_id", "source_season", "canonical_season_id", "signing_key_arn", "reviewer")):
+            raise PointInTimeFeatureError("season_identity_evidence_identity_invalid")
+        if (not isinstance(season_identity_evidence["registry_sha256"], str)
+                or len(season_identity_evidence["registry_sha256"]) != 64
+                or any(c not in HEX for c in season_identity_evidence["registry_sha256"])
+                or not isinstance(season_identity_evidence["evidence_sha256"], list)
+                or not season_identity_evidence["evidence_sha256"]
+                or any(not isinstance(x, str) or len(x) != 64 or any(c not in HEX for c in x)
+                       for x in season_identity_evidence["evidence_sha256"])):
+            raise PointInTimeFeatureError("season_identity_evidence_digest_invalid")
+        _parse_time(season_identity_evidence["verified_at"], "season_identity_verified_at")
+        _parse_time(season_identity_evidence["reviewed_at"], "season_identity_reviewed_at")
+        snapshot["season_identity_evidence"] = dict(season_identity_evidence)
     snapshot["snapshot_sha256"] = _hash(snapshot)
     return snapshot
 
@@ -183,6 +206,8 @@ def validate_point_in_time_feature_snapshot(snapshot: Any) -> dict:
         "feature_count", "features", "target_label_separate",
         "model_training_certified", "snapshot_sha256",
     }
+    if "season_identity_evidence" in snapshot:
+        expected_snapshot_keys.add("season_identity_evidence")
     if set(snapshot) != expected_snapshot_keys:
         raise PointInTimeFeatureError("snapshot_shape_invalid")
     if not isinstance(snapshot.get("fixture_id"), str) or not snapshot["fixture_id"].strip():
@@ -196,6 +221,27 @@ def validate_point_in_time_feature_snapshot(snapshot: Any) -> dict:
     unhashed.pop("snapshot_sha256", None)
     if _hash(unhashed) != supplied:
         raise PointInTimeFeatureError("snapshot_hash_mismatch")
+    if "season_identity_evidence" in snapshot:
+        season = snapshot["season_identity_evidence"]
+        required_season_fields = {
+            "provider", "competition_id", "source_season", "canonical_season_id",
+            "registry_sha256", "signing_key_arn", "verified_at",
+            "evidence_sha256", "reviewer", "reviewed_at",
+        }
+        if not isinstance(season, dict) or set(season) != required_season_fields:
+            raise PointInTimeFeatureError("snapshot_season_identity_evidence_shape_invalid")
+        if (not isinstance(season.get("registry_sha256"), str)
+                or len(season["registry_sha256"]) != 64
+                or any(c not in HEX for c in season["registry_sha256"])
+                or not isinstance(season.get("evidence_sha256"), list)
+                or not season["evidence_sha256"]
+                or any(not isinstance(x, str) or len(x) != 64 or any(c not in HEX for c in x)
+                       for x in season["evidence_sha256"])):
+            raise PointInTimeFeatureError("snapshot_season_identity_evidence_digest_invalid")
+        verified_at = _parse_time(season.get("verified_at"), "snapshot_season_verified_at")
+        if verified_at > _parse_time(snapshot.get("prediction_as_of"), "prediction_as_of"):
+            raise PointInTimeFeatureError("snapshot_season_registry_verified_after_cutoff")
+        _parse_time(season.get("reviewed_at"), "snapshot_season_reviewed_at")
     cutoff = _parse_time(snapshot.get("prediction_as_of"), "prediction_as_of")
     features = snapshot.get("features")
     if (not isinstance(features, list) or isinstance(snapshot.get("feature_count"), bool)
