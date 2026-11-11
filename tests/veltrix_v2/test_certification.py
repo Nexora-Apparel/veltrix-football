@@ -114,7 +114,7 @@ def test_unapproved_source_and_missing_point_in_time_validation_block():
 def test_invalid_coverage_and_sample_types_are_rejected():
     with pytest.raises(ValueError, match="ODDS_COVERAGE_OUT_OF_RANGE"):
         evidence("1X2", timestamped_odds_coverage=Decimal("1.01"))
-    with pytest.raises(ValueError, match="WALK_FORWARD_SAMPLE"):
+    with pytest.raises(ValueError, match="INVALID_WALK_FORWARD_MATCHES"):
         evidence("1X2", walk_forward_matches=True)
 
 
