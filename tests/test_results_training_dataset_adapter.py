@@ -59,23 +59,37 @@ def attach_evidence(row):
 
 
 
-def season_registry(*, source_season="2025/26", canonical_season_id="league:2025-2026"):
-    unsigned = {
-        "schema": SEASON_SCHEMA,
-        "issued_at": "2026-01-01T00:00:00Z",
-        "expires_at": "2027-01-01T00:00:00Z",
-        "mappings": [{
+def season_registry(*, include_prior=False, issued_at="2026-01-01T00:00:00Z"):
+    mappings = [{
+        "provider": "fivedollar",
+        "competition_id": "4160026622",
+        "source_season": "2025/26",
+        "canonical_season_id": "league:2025-2026",
+        "evidence_sha256": ["d" * 64],
+        "reviewer": "season-review",
+        "reviewed_at": "2026-01-02T00:00:00Z",
+        "valid_from": "2026-01-03T00:00:00Z",
+        "valid_until": "2026-12-31T00:00:00Z",
+        "revoked_at": None,
+    }]
+    if include_prior:
+        mappings.append({
             "provider": "fivedollar",
             "competition_id": "4160026622",
-            "source_season": source_season,
-            "canonical_season_id": canonical_season_id,
-            "evidence_sha256": ["d" * 64],
+            "source_season": "2024/25",
+            "canonical_season_id": "league:2024-2025",
+            "evidence_sha256": ["e" * 64],
             "reviewer": "season-review",
             "reviewed_at": "2026-01-02T00:00:00Z",
             "valid_from": "2026-01-03T00:00:00Z",
             "valid_until": "2026-12-31T00:00:00Z",
             "revoked_at": None,
-        }],
+        })
+    unsigned = {
+        "schema": SEASON_SCHEMA,
+        "issued_at": issued_at,
+        "expires_at": "2027-01-01T00:00:00Z",
+        "mappings": mappings,
     }
     return sign_season_crosswalk_registry(
         kms_client=KMS, key_arn=SEASON_KEY_ARN,
@@ -168,6 +182,65 @@ class ResultsTrainingDatasetAdapterTests(unittest.TestCase):
             feature["retrieved_at"] <= snapshot["prediction_as_of"]
             for feature in snapshot["features"]
         ))
+
+    def test_other_canonical_season_history_cannot_change_target_features(self):
+        history = history_rows()
+        history.append(attach_evidence({
+            "fixture_id": "prior-season-match",
+            "provider": "fivedollar",
+            "source_id": "prior-season-match",
+            "competition_id": TARGET["competition_id"],
+            "source_season": "2024/25",
+            "kickoff_at": "2026-08-20T09:00:00Z",
+            "settled_at": "2026-08-20T11:00:00Z",
+            "home_team_id": "A",
+            "away_team_id": "B",
+            "home_score": 9,
+            "away_score": 0,
+            "endpoint": "/fixtures",
+            "retrieved_at": "2026-08-20T11:30:00Z",
+            "payload_sha256": "",
+            "run_id": "prior-season-run",
+            "normalized_status": "finished",
+        }))
+        registry = season_registry(include_prior=True)
+        baseline = build_results_history_snapshot(
+            historical_matches=history_rows(), target_fixture=TARGET,
+            season_crosswalk_registry=registry,
+            trusted_kms_clients={SEASON_KEY_ARN: KMS},
+        )
+        mixed = build_results_history_snapshot(
+            historical_matches=history, target_fixture=TARGET,
+            season_crosswalk_registry=registry,
+            trusted_kms_clients={SEASON_KEY_ARN: KMS},
+        )
+        self.assertEqual(
+            {item["name"]: item["value"] for item in baseline["features"]},
+            {item["name"]: item["value"] for item in mixed["features"]},
+        )
+        self.assertEqual(
+            mixed["season_identity_evidence"]["canonical_season_id"],
+            "league:2025-2026",
+        )
+
+    def test_missing_target_season_mapping_withholds_target(self):
+        target = {**TARGET, "source_season": "unmapped-season"}
+        with self.assertRaisesRegex(
+            ValueError, "target_canonical_season_mapping_not_valid_at_feature_cutoff"
+        ):
+            build_results_history_snapshot(
+                historical_matches=history_rows(), target_fixture=target,
+                season_crosswalk_registry=season_registry(),
+                trusted_kms_clients={SEASON_KEY_ARN: KMS},
+            )
+
+    def test_registry_issued_after_feature_cutoff_cannot_retroactively_map_season(self):
+        with self.assertRaisesRegex(ValueError, "season_crosswalk_registry_rejected_at_feature_cutoff"):
+            build_results_history_snapshot(
+                historical_matches=history_rows(), target_fixture=TARGET,
+                season_crosswalk_registry=season_registry(issued_at="2026-09-01T13:00:00Z"),
+                trusted_kms_clients={SEASON_KEY_ARN: KMS},
+            )
 
     def test_target_row_is_excluded_from_its_own_historical_feature_input(self):
         history = history_rows()
