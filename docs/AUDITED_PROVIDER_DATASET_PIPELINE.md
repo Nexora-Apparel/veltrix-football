@@ -31,7 +31,7 @@ python scripts/assemble_audited_provider_dataset.py \
   --output audited_dataset_report.json
 ```
 
-The trust JSON is an out-of-band allowlist. The signing key ARN embedded in either registry is not trusted unless it appears in this environment-provided allowlist. The command uses KMS only to verify signed settlement-source, canonical team, canonical season and feature-source registries. It makes no provider HTTP requests.
+The trust JSON is an out-of-band allowlist. A signing key ARN embedded in any signed registry is not trusted unless it appears in this environment-provided allowlist. The command uses KMS only to verify signed settlement-source, canonical team, canonical season and feature-source registries. It makes no provider HTTP requests.
 
 Inputs:
 - `records`: array of normalized provider acquisition records retaining their raw source-evidence payloads.
