@@ -77,10 +77,15 @@ def assemble_audited_provider_dataset(
     team_crosswalk_as_of: str | None = None,
 ) -> dict:
     """Audit all records, then assemble features from admitted originals only."""
+    if not isinstance(team_crosswalk_registry, dict):
+        raise ProviderDatasetPipelineError("team_crosswalk_registry_required")
+    if not isinstance(team_crosswalk_as_of, str) or not team_crosswalk_as_of:
+        raise ProviderDatasetPipelineError("team_crosswalk_as_of_required")
     audit = audit_provider_acquisition_eligibility(
         acquisition_records=acquisition_records,
         settlement_timestamp_packages=settlement_timestamp_packages,
         trusted_kms_clients=trusted_kms_clients,
+        team_crosswalk_registry=team_crosswalk_registry,
     )
     unsigned_audit = dict(audit)
     supplied_digest = unsigned_audit.pop("report_sha256", None)
@@ -155,6 +160,7 @@ def assemble_audited_provider_dataset(
             acquisition_records=selected_records,
             settlement_timestamp_packages=selected_packages,
             trusted_kms_clients=trusted_kms_clients,
+            team_crosswalk_registry=team_crosswalk_registry,
             split_policy=split_policy,
             cutoff_hours=cutoff_hours,
             form_window=form_window,
