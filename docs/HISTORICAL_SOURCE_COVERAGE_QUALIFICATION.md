@@ -25,6 +25,27 @@ The normalized acquisition record already retains a provider-reported `season` v
 
 A future qualification step must bind each provider/competition/source-season label to a canonical season ID, with source provenance and review evidence. Until that crosswalk exists, `season_crosswalk_unverified` blocks source qualification.
 
+## Signed canonical season crosswalk
+
+`app/canonical_season_crosswalk.py` defines a KMS-signed registry for exact
+provider + competition ID + source-season label mappings to canonical season
+IDs. Each mapping binds evidence SHA-256 digests, reviewer, review timestamp,
+validity interval and optional revocation timestamp. The registry signature is
+verified only through explicitly injected out-of-band KMS clients. A key ARN
+inside the signed registry cannot introduce a trust anchor.
+
+The coverage builder accepts the registry, trusted clients and an explicit
+evaluation timestamp. Every accepted record must resolve using its exact
+provider, competition and unmodified source-season label. Missing, ambiguous,
+expired, revoked or out-of-scope mappings remain unverified. A signed registry
+does not make the underlying evidence factually correct; reviewer evidence
+still requires independent governance review.
+
+The audited dataset pipeline can pass this registry into coverage reporting.
+Without it, source-reported season labels remain unverified. Synthetic fake-KMS
+tests validate the contract only; no production season crosswalk or signing key
+has been configured.
+
 ## Screening thresholds
 
 Defaults are 100 settlement-eligible fixtures per competition, 16 distinct teams per competition and 95% feature-cell coverage. They are configurable screening thresholds only. They are not model-training sample-size guarantees, market certification criteria, or evidence of predictive performance.
