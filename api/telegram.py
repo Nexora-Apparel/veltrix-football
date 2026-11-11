@@ -14,7 +14,10 @@ from fastapi import FastAPI, Header, HTTPException, Request as FastAPIRequest
 from fastapi.responses import HTMLResponse, JSONResponse
 
 from app.telegram_commands import handle_command
-from app.independent_report_contract import is_publishable_independent_report
+from app.independent_report_contract import (
+    is_publishable_independent_report,
+    is_value_betting_authorized_report,
+)
 from app.report_artifacts import load_latest_report, load_dashboard_snapshot, load_paper_ledger, load_model_validation_report
 from app.telegram_security import telegram_webhook_secret_token
 
@@ -643,17 +646,25 @@ def dashboard_data() -> dict:
             "status": "NOT_REPORTED", "markets": [], "compatible_forecasts": 0,
             "applied_forecasts": 0,
         },
-        "value_bet_screen": report.get("value_bet_screen") or {
-            "status": "NOT_REPORTED", "model_validated": False,
+        "value_bet_screen": (
+            report.get("value_bet_screen") or {
+                "status": "NOT_REPORTED", "model_validated": False,
+                "markets": ["1X2", "BTTS", "OVER_UNDER_1_5", "OVER_UNDER_2_5", "OVER_UNDER_3_5"],
+                "candidate_count": 0,
+            }
+        ) if is_value_betting_authorized_report(report) else {
+            "status": "LOCKED_UNVALIDATED", "model_validated": False,
             "markets": ["1X2", "BTTS", "OVER_UNDER_1_5", "OVER_UNDER_2_5", "OVER_UNDER_3_5"],
             "candidate_count": 0,
         },
-        "value_validation_certificate": report.get("value_validation_certificate") or {
+        "value_validation_certificate": (
+            report.get("value_validation_certificate") or {}
+        ) if is_value_betting_authorized_report(report) else {
             "status": "LOCKED_INSUFFICIENT_EVIDENCE",
             "approved_markets": [],
             "alerts_enabled": False,
             "market_diagnostics": {},
-            "note": "No current evidence-backed certificate is published; value alerts remain disabled.",
+            "note": "No separately verified market-specific value authorization is published.",
         },
         "paper_tracking": paper_tracking,
         "warning": "Predictions are evidence-weighted estimates. Value-bet verdicts are shown only when supported by the available evidence. The report may not be the latest live run.",
