@@ -425,7 +425,9 @@ def test_goal_markets_use_explicit_market_probabilities_independent_of_expected_
     reply = handle_command("/overunder", report=authorized_report(report))
     assert "O/U 2.5" in reply
     assert "Expected goals:" not in reply
-    assert "NO USABLE GOAL-MARKET ESTIMATES" in handle_command("/btts", report=authorized_report(report))
+    btts_reply = handle_command("/btts", report=authorized_report(report))
+    assert "BTTS: Yes 62%" in btts_reply
+    assert "Expected goals:" not in btts_reply
 
 
 def test_odds_command_reads_saved_multisource_btts_and_totals_prices():
