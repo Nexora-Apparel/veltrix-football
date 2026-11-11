@@ -99,7 +99,7 @@ class AcquisitionDatasetBridgeTests(unittest.TestCase):
         }
         record = normalize_striker_game(
             payload, competition_key="soccer", endpoint="list_games",
-            retrieved_at=retrieved_at, run_id="run-1",
+            retrieved_at=retrieved_at, run_id="run-1", season="2025/26",
         )
         record["source_evidence"] = build_source_evidence(
             provider="strikerapi", payload=payload, normalized_record=record,
