@@ -4,7 +4,6 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from math import isfinite
-from typing import Sequence
 
 
 def _utc(value: datetime, name: str) -> datetime:
@@ -29,7 +28,6 @@ class FeatureValue:
         if not self.name.strip():
             raise ValueError("feature name is required")
         computed = _utc(self.computed_at_utc, "computed_at_utc")
-        object.__setattr__(self, "features", tuple(self.features))
         cutoff = _utc(self.cutoff_utc, "cutoff_utc")
         object.__setattr__(self, "computed_at_utc", computed)
         object.__setattr__(self, "cutoff_utc", cutoff)
@@ -62,6 +60,7 @@ class FeatureSnapshot:
     features: tuple[FeatureValue, ...]
 
     def __post_init__(self) -> None:
+        object.__setattr__(self, "features", tuple(self.features))
         cutoff = _utc(self.cutoff_utc, "cutoff_utc")
         object.__setattr__(self, "cutoff_utc", cutoff)
         if not self.fixture_provider or not self.fixture_provider_id or not self.feature_set_version:
