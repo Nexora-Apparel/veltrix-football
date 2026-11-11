@@ -100,7 +100,7 @@ def test_odds_command_fails_closed_when_only_stale_prices_returned():
         "home_team": "Past FC", "away_team": "Done FC", "date": yesterday,
         "time": "10:00", "bookmaker": "Example Book",
         "odds": {"home": 2.0, "draw": 3.0, "away": 4.0},
-    }]}))
+    }]})
     assert "NO UPCOMING FIXTURES" in reply
     assert "Past FC" not in reply
 
