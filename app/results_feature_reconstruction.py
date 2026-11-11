@@ -332,9 +332,7 @@ def reconstruct_pre_match_features(*, historical_matches: list[dict],
         "home_defence_conceded_rate": home_defence,
         "away_attack_goals_rate": away_attack,
         "away_defence_conceded_rate": away_defence,
-        "elo_difference_home": (
-            elo.get(home_id, DEFAULT_ELO) - elo.get(away_id, DEFAULT_ELO)
-        ),
+        "elo_difference_home": elo[home_id] - elo[away_id],
         "home_form_points_rate": home_form,
         "away_form_points_rate": away_form,
         "home_rest_days": home_rest,
