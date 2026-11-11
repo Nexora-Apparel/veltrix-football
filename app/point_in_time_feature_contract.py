@@ -217,7 +217,7 @@ def build_point_in_time_feature_snapshot(*, fixture_id: str,
     if season_identity_evidence is not None:
         required_season_fields = {
             "provider", "competition_id", "source_season", "canonical_season_id",
-            "registry_sha256", "signing_key_arn", "verified_at", "source_verified_at",
+            "registry_sha256", "signing_key_arn", "verified_at",
             "evidence_sha256", "reviewer", "reviewed_at",
         }
         if not isinstance(season_identity_evidence, dict) or set(season_identity_evidence) != required_season_fields:
@@ -256,7 +256,7 @@ def validate_point_in_time_feature_snapshot(snapshot: Any) -> dict:
             "home_mapping_evidence_sha256", "away_mapping_evidence_sha256",
             "home_mapping_reviewer", "away_mapping_reviewer",
             "home_mapping_reviewed_at", "away_mapping_reviewed_at",
-            "registry_sha256", "signing_key_arn", "verified_at",
+            "registry_sha256", "signing_key_arn", "verified_at", "source_verified_at",
         }
         if not isinstance(team, dict) or set(team) != required_team_fields:
             raise PointInTimeFeatureError("snapshot_team_identity_evidence_shape_invalid")
