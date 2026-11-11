@@ -62,11 +62,17 @@ def test_stale_observation_is_rejected():
         payload_sha256="d" * 64, schema_version="1",
         rights_approval_id="approval-epl-fixtures", values={},
     )
-    assert decide(obs=stale).reason == "observation_stale_at_forecast_cutoff"
+    assert decide(
+        obs=stale,
+        approvals=(approval(valid_from_utc=old - timedelta(days=1)),),
+    ).reason == "observation_stale_at_forecast_cutoff"
 
 
 def test_expired_approval_is_rejected():
-    assert decide(approvals=(approval(valid_until_utc=T),)).reason == "approval_expired_at_cutoff"
+    assert decide(
+        approvals=(approval(valid_until_utc=T + timedelta(hours=1)),),
+        cutoff=T + timedelta(hours=2),
+    ).reason == "approval_expired_at_cutoff"
 
 
 
