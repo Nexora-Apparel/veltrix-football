@@ -327,16 +327,14 @@ def reconstruct_pre_match_features(*, historical_matches: list[dict],
         target_fixture["competition_id"], competition_history, cutoff
     )
     elo = _elo_ratings(competition_history, cutoff)
-    home_elo = elo[home_id]
-    away_elo = elo[away_id]
     features = {
-        "home_team_elo": home_elo,
-        "away_team_elo": away_elo,
         "home_attack_goals_rate": home_attack,
         "home_defence_conceded_rate": home_defence,
         "away_attack_goals_rate": away_attack,
         "away_defence_conceded_rate": away_defence,
-        "elo_difference_home": home_elo - away_elo,
+        "elo_difference_home": (
+            elo.get(home_id, DEFAULT_ELO) - elo.get(away_id, DEFAULT_ELO)
+        ),
         "home_form_points_rate": home_form,
         "away_form_points_rate": away_form,
         "home_rest_days": home_rest,
