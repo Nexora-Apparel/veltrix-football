@@ -91,6 +91,16 @@ def publish(path: str, local_file: Path, repo: str, token: str) -> None:
     if normalized_path in {"daily_predictions.json", "dashboard_snapshot.json"}:
         if not is_publishable_independent_report(parsed):
             raise ValueError("LEGACY_OR_UNCERTIFIED_REPORT_PUBLICATION_BLOCKED")
+        if not is_value_betting_authorized_report(parsed):
+            parsed.pop("value_bet_screen", None)
+            parsed.pop("value_validation_certificate", None)
+            rows = parsed.get("predictions")
+            if isinstance(rows, list):
+                parsed["predictions"] = [
+                    {key: value for key, value in row.items() if key != "value_bet_screen"}
+                    if isinstance(row, dict) else row
+                    for row in rows
+                ]
     elif normalized_path == "paper_tracking_ledger.json" and not is_independent_paper_ledger(parsed):
         raise ValueError("LEGACY_PAPER_LEDGER_PUBLICATION_BLOCKED")
     elif normalized_path == "model_validation_report.json" and not is_independent_model_validation(parsed):
