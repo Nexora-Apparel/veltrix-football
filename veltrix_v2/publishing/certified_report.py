@@ -88,6 +88,8 @@ class CertifiedDailyReport:
             raise ValueError("REPORT_DEADLINE_MUST_BE_0600_WAT")
         if generated >= deadline:
             raise ValueError("REPORT_GENERATED_AFTER_0600_WAT_DEADLINE")
+        if generated.astimezone(WAT).date() != self.report_date_wat:
+            raise ValueError("REPORT_GENERATION_DATE_WAT_MISMATCH")
         rows = tuple(self.fixtures)
         object.__setattr__(self, "fixtures", rows)
         if len(rows) > MAX_DAILY_FIXTURES:
@@ -97,6 +99,8 @@ class CertifiedDailyReport:
             raise ValueError("REPORT_DUPLICATE_FIXTURE_IDS")
         if any(row.kickoff_utc <= generated for row in rows):
             raise ValueError("REPORT_CONTAINS_STARTED_OR_PAST_FIXTURE")
+        if any(row.kickoff_utc.astimezone(WAT).date() != self.report_date_wat for row in rows):
+            raise ValueError("REPORT_FIXTURE_OUTSIDE_WAT_REPORT_DATE")
         if tuple(sorted(rows, key=lambda row: (row.kickoff_utc, row.fixture_id))) != rows:
             raise ValueError("REPORT_FIXTURES_MUST_BE_CHRONOLOGICALLY_SORTED")
 
