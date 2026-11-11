@@ -128,6 +128,8 @@ def report_input():
         canonical = {"team-a": "canonical-a", "team-b": "canonical-b", "team-c": "canonical-c"}
         record["home_team_source_id"] = home_source
         record["away_team_source_id"] = away_source
+        record["home_team_id"] = canonical[home_source]
+        record["away_team_id"] = canonical[away_source]
         record["team_identity_evidence"] = {
             "home_source_team_id": home_source,
             "away_source_team_id": away_source,
