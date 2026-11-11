@@ -222,10 +222,10 @@ def compare_existing(candidate_records: list[dict], existing: dict[tuple[str, st
             conflicts.append({"kind": "provider_id_competition_identity_conflict", "provider_fixture_id": key[1]})
         if stored["status"] != "FINISHED":
             conflicts.append({"kind": "provider_id_status_conflict", "provider_fixture_id": key[1]})
-        if stored["home_score"] is not None and (
-            int(stored["home_score"]) != candidate["home_score"]
-            or int(stored["away_score"]) != candidate["away_score"]
-        ):
+        if stored["home_score"] is None or stored["away_score"] is None:
+            conflicts.append({"kind": "provider_id_missing_existing_result", "provider_fixture_id": key[1]})
+        elif (int(stored["home_score"]) != candidate["home_score"]
+              or int(stored["away_score"]) != candidate["away_score"]):
             conflicts.append({"kind": "provider_id_score_conflict", "provider_fixture_id": key[1]})
     return conflicts
 
