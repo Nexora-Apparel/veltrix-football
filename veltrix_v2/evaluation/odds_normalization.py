@@ -87,7 +87,7 @@ def normalize_bookmaker_market(
     if book_sum <= Decimal("0"):
         raise ValueError("ODDS_MARKET_INVALID_IMPLIED_SUM")
     overround = book_sum - Decimal("1")
-    ordered = sorted(by_selection.items())
+    ordered = list(by_selection.items())
     normalized: dict[str, Decimal] = {}
     running_total = Decimal("0")
     for index, (selection, _) in enumerate(ordered):
