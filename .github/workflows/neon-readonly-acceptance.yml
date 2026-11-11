@@ -2,6 +2,12 @@ name: Neon Read-only Acceptance
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - phase-3/strikerapi-readonly-qualification
+    paths:
+      - scripts/neon_acceptance.py
+      - .github/workflows/neon-readonly-acceptance.yml
 
 permissions:
   contents: read
