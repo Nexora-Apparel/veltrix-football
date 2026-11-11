@@ -51,7 +51,7 @@ def _reply(body: str) -> str:
 
 
 def _report_predictions(report: dict[str, Any] | None) -> list[dict[str, Any]]:
-    if not is_publishable_independent_report(report):
+    if not isinstance(report, dict) or not is_publishable_independent_report(report):
         return []
     report_date = report.get("as_of_date")
     if report_date:
