@@ -23,6 +23,7 @@ class IndependentReportContractTests(unittest.TestCase):
                 "model_portfolio_id": MODEL_PORTFOLIO_ID,
             },
             "predictions": [],
+            "as_of_date": "2026-11-11",
         }
 
     def test_valid_independent_report_requires_release_authorization(self):
