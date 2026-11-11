@@ -268,3 +268,36 @@ The existing repository's legacy tests may remain temporarily as archival regres
 | Legacy model/provider/value pipeline | `scripts/audit_historical_model.py`, `scripts/audit_historical_coverage.py`, `scripts/backfill_history_gaps.py`, `scripts/build_value_certificate.py`, `scripts/build_value_certificate_runtime.py`, `scripts/build_value_certificate_runtime_v2.py`, `scripts/enrich_oddspapi_odds.py`, `scripts/evaluate_paper_predictions.py`, `scripts/filter_report_for_delivery.py`, `scripts/rebuild_value_screen.py`, `scripts/reconcile_value_evidence_recovery.py`, `scripts/run_backtest.py`, `scripts/run_daily_predictions.py`, `scripts/run_paper_tracking.py`, `scripts/send_telegram_report.py`, `scripts/update_value_evidence_ledger.py`, `scripts/verify_multi_source_integration.py` | Retire or replace with V2 equivalents. Do not patch or import their legacy prediction, calibration, odds-selection, value-bet, settlement or paper-tracking logic. For `send_telegram_report.py`, only the generic Telegram HTTP transport may be considered for reuse after review. |
 
 The script inventory confirms that the legacy daily prediction path is not a V2 adapter. The current V2 historical runner and provider verification harness are the only scripts approved for V2 data qualification; neither publishes predictions or writes production records.
+
+
+## 16. Phase 1 sign-off and Phase 2 blocker — 2026-11-11
+
+### Phase 1 — repository audit and core defect correction
+
+<badge color="success">Complete</badge>
+
+Audit scope completed for the code and release-critical surfaces: 53 V2 Python modules, five V2 operational scripts, 48 V2 test modules, all 33 repository Python scripts, all 33 `app/` Python modules, all 28 GitHub workflow files, and the four production API route files.
+
+Acceptance evidence:
+- 869 full-repository tests passed.
+- 371 V2 foundation tests passed, including the expanded no-`app.*` import guard over both `veltrix_v2/` and `scripts/veltrix_v2/`.
+- No V2 test skip/skipif/xfail markers or unimplemented placeholders were found in the audited V2 source/scripts.
+- No active workflow `schedule` trigger was found; the legacy daily prediction and watchdog jobs remain disabled.
+- Legacy model/provider/value scripts and production API integration boundaries have been classified for replacement. No legacy prediction code was imported into V2.
+- Provider workflows are manual-only, and the 5Dollar read-only workflows share one concurrency group to protect the provider's hourly and per-minute limits.
+- PR #51 remains draft/unmerged. No production deployment, Neon production write, Telegram activation or daily schedule was performed.
+
+Phase 1 is signed off for the audited code/CI-critical surface. Legacy production integration remains intentionally untouched until the validated V2 replacement is ready.
+
+### Phase 2 — provider and historical-data qualification
+
+<badge color="warning">In progress — manual account action pending</badge>
+
+- The active 5Dollar account is confirmed as Free with five top-European competitions and a three-month history limit.
+- Community Access is the no-cost route to a 12-month window plus one country pack. The provider's current 12-month data-quality counts make Argentina the strongest candidate if both Liga Profesional and Nacional B are selectable (1,174 combined finished matches, versus Brazil's 783).
+- The user must activate Community Access from https://5dollarfootballapi.com/community and select the country pack. V2 will not assume the plan changed: the historical runner checks `/v1/status` before requesting rows.
+- The Odds API key is authenticated, with 46 soccer competitions and 298 credits remaining at the last check. Its optional BTTS probe covers the top five plus Argentina and Brazil and is capped at eight odds credits; it remains manual-only.
+- After the provider's hourly request allowance resets, run the provider verification workflow on branch `veltrix-2.0-architecture-blueprint` with `probe_odds_markets=true`, then run the historical walk-forward workflow. These workflows share a concurrency group and must not overlap.
+- For the current Free plan, use `days=90`, `min_history_days=60`. After verified Community activation, use `days=365`, `min_history_days=300`. Both use `max_requests=30`; the 1,000 held-out-match gate remains mandatory.
+
+No model certification, value-bet unlock, public prediction release or 06:00 WAT schedule is authorized by this sign-off.
