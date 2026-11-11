@@ -12,7 +12,6 @@ from veltrix_v2.contracts import ProviderObservation
 def stable_payload_sha256(payload: Mapping[str, object]) -> str:
     encoded = json.dumps(
         payload, sort_keys=True, separators=(",", ":"), ensure_ascii=False,
-        default=str,
     ).encode("utf-8")
     return hashlib.sha256(encoded).hexdigest()
 
