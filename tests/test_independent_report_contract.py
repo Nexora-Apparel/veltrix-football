@@ -26,8 +26,8 @@ class IndependentReportContractTests(unittest.TestCase):
             "as_of_date": "2026-11-11",
         }
 
-    def test_valid_independent_report_requires_release_authorization(self):
-        self.assertTrue(is_publishable_independent_report(self.valid_report()))
+    def test_report_stays_locked_even_with_release_metadata_until_code_gate_is_enabled(self):
+        self.assertFalse(is_publishable_independent_report(self.valid_report()))
 
     def test_forecast_rows_require_independent_portfolio_and_feature_provenance(self):
         report = self.valid_report()
@@ -38,7 +38,7 @@ class IndependentReportContractTests(unittest.TestCase):
             "feature_snapshot_sha256": "b" * 64,
             "model_versions": ["results_history_logistic"],
         }]
-        self.assertTrue(is_publishable_independent_report(report))
+        self.assertFalse(is_publishable_independent_report(report))
         report["predictions"][0]["model_portfolio_id"] = "legacy"
         self.assertFalse(is_publishable_independent_report(report))
 
@@ -77,7 +77,7 @@ class IndependentReportContractTests(unittest.TestCase):
             "signature_verified": True,
             "certificate_sha256": "b" * 64,
         }
-        self.assertTrue(is_value_betting_authorized_report(report))
+        self.assertFalse(is_value_betting_authorized_report(report))
 
     def test_value_betting_rejects_partial_or_unverified_certificate(self):
         report = self.valid_report()
