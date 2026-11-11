@@ -63,6 +63,8 @@ def compare_binary_to_bookmaker(
         raise ValueError("BINARY_BENCHMARK_SELECTION_DOES_NOT_MATCH_MARKET")
 
     book_by_fixture: dict[str, float] = {}
+    selections_by_fixture: dict[str, dict[str, NormalizedBookProbability]] = {}
+    expected_selections = {"BTTS": {"YES", "NO"}, "TOTALS": {"OVER", "UNDER"}, "OVER_UNDER": {"OVER", "UNDER"}}[market]
     for row in books:
         if (
             row.source_id != first.source_id
@@ -71,12 +73,17 @@ def compare_binary_to_bookmaker(
             or row.line != first.line
         ):
             raise ValueError("BINARY_BENCHMARK_MIXED_BOOKMAKER_MARKET_OR_LINE")
-        if row.fixture_id in book_by_fixture:
+        selections = selections_by_fixture.setdefault(row.fixture_id, {})
+        selection = row.selection.upper()
+        if selection in selections:
             raise ValueError("BINARY_BENCHMARK_DUPLICATE_FIXTURE_QUOTE")
-        if row.selection.upper() == affirmative_selection.upper():
-            book_by_fixture[row.fixture_id] = float(row.normalized_probability)
-    if len(book_by_fixture) != len(books):
-        raise ValueError("BINARY_BENCHMARK_AFFIRMATIVE_SELECTION_MISSING")
+        selections[selection] = row
+    for fixture_id, selections in selections_by_fixture.items():
+        if set(selections) != expected_selections:
+            raise ValueError("BINARY_BENCHMARK_INCOMPLETE_BOOKMAKER_MARKET")
+        book_by_fixture[fixture_id] = float(
+            selections[affirmative_selection.upper()].normalized_probability
+        )
 
     model_by_fixture = {row.fixture_id: row for row in models}
     outcome_by_fixture = {row.fixture_id: row for row in settled}
