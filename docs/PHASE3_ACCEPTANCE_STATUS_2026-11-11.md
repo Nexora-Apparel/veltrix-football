@@ -164,3 +164,11 @@ Full Phase 3 sign-off remains withheld until both Python workflows execute and p
 - The latest pull-request CI run for the provider import dry-run tests completed successfully: run [#42979471873](https://github.com/Nexora-Apparel/veltrix-football/actions/runs/42979471873), commit `55a3fa356c01165b52322fb952b6556fa03c4dce`.
 - GitHub Actions log confirms **7 passed, 0 failed** in `tests/test_provider_import_dry_run.py`, including the isolated Neon hostname allowlist and production/unknown-host rejection.
 - This is the offline validation suite only. It does not mean the provider-backed import workflow or Neon Python acceptance workflow executed.
+
+
+## 11. Production acceptance runner hardening — 2026-11-11
+
+- The Neon Python runner now allows only the verified production endpoint hostname (including its pooler) and rejects any other target before connecting.
+- It checks the 11-table schema baseline, 11 primary keys, 7 foreign keys, 5 unique constraints, 83 CHECK constraints, 22 indexes, one applied migration and one PASS reconciliation audit.
+- Every query runs inside an explicit PostgreSQL READ ONLY transaction; credentials and exception text are not printed.
+- This hardening does not change the actual execution status: the workflow has not yet reached the Python runner because the DATABASE_URL repository secret was missing in the previous preflight. No Python acceptance pass is claimed.
