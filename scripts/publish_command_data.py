@@ -87,6 +87,14 @@ def publish(path: str, local_file: Path, repo: str, token: str) -> None:
     parsed = json.loads(data.decode("utf-8"))
     if not isinstance(parsed, dict):
         raise ValueError(f"{path} must contain a JSON object.")
+    normalized_path = path.replace("\\", "/").rsplit("/", 1)[-1]
+    if normalized_path in {"daily_predictions.json", "dashboard_snapshot.json"}:
+        if not is_publishable_independent_report(parsed):
+            raise ValueError("LEGACY_OR_UNCERTIFIED_REPORT_PUBLICATION_BLOCKED")
+    elif normalized_path == "paper_tracking_ledger.json" and not is_independent_paper_ledger(parsed):
+        raise ValueError("LEGACY_PAPER_LEDGER_PUBLICATION_BLOCKED")
+    elif normalized_path == "model_validation_report.json" and not is_independent_model_validation(parsed):
+        raise ValueError("LEGACY_MODEL_VALIDATION_PUBLICATION_BLOCKED")
     if len(data) > 900_000:
         _publish_large_blob(path, data, repo, token)
     else:
@@ -138,6 +146,8 @@ def _valid_recent_cache(cache: object) -> bool:
 def _dashboard_snapshot(report: dict) -> dict:
     """Create a compact projection of the published report."""
     top_level = (
+        "report_schema", "model_portfolio_id", "legacy_model_dependency",
+        "publication_allowed", "release_certificate", "value_betting_authorized",
         "as_of_date", "generated_at_utc", "command_data_publication",
         "command_data_published_at_utc", "publication_status", "publication_notice",
         "primary_provider_request", "fixture_discovery", "multi_source_odds_sync",
@@ -150,7 +160,7 @@ def _dashboard_snapshot(report: dict) -> dict:
         "home_team", "away_team", "home_team_id", "away_team_id",
         "kickoff", "kickoff_local", "status", "fixture_phase",
         "fixture_visibility_note", "probabilities", "btts_yes", "over_2_5",
-        "expected_goals", "prediction_basis", "five_dollar_market_odds",
+        "expected_goals", "prediction_basis", "value_bet_screen", "five_dollar_market_odds",
         "the_odds_api_market_odds", "infer_sports_market_odds", "odds", "market_odds",
     )
     rows = report.get("predictions") if isinstance(report.get("predictions"), list) else []
@@ -178,6 +188,9 @@ def main() -> int:
     report = json.loads(report_path.read_text(encoding="utf-8"))
     if not isinstance(report, dict) or not isinstance(report.get("predictions"), list) or not report.get("as_of_date"):
         print("Publication refused: report failed structural validation.", file=sys.stderr)
+        return 2
+    if not is_publishable_independent_report(report):
+        print("Publication refused: legacy or uncertified independent report.", file=sys.stderr)
         return 2
 
     errors: list[str] = []
