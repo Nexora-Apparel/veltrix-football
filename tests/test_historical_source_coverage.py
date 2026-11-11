@@ -19,6 +19,33 @@ from app.historical_source_coverage import (
 def snapshot(fixture_id, kickoff, features):
     season_registry = signed_season_crosswalk()
     season_unsigned = {key: value for key, value in season_registry.items() if key != "signature"}
+    team_registry = signed_team_crosswalk()
+    team_unsigned = {key: value for key, value in team_registry.items() if key != "signature"}
+    team_mappings = {
+        item["source_team_id"]: item for item in team_unsigned["mappings"]
+    }
+    pair_sources = {
+        "provider:1": ("team-a", "team-b"),
+        "provider:2": ("team-b", "team-c"),
+    }
+    home_source, away_source = pair_sources[fixture_id]
+    home_mapping, away_mapping = team_mappings[home_source], team_mappings[away_source]
+    team_evidence = {
+        "home_source_team_id": home_source,
+        "away_source_team_id": away_source,
+        "home_canonical_team_id": home_mapping["canonical_team_id"],
+        "away_canonical_team_id": away_mapping["canonical_team_id"],
+        "team_scope": home_mapping["team_scope"],
+        "home_mapping_evidence_sha256": home_mapping["evidence_sha256"],
+        "away_mapping_evidence_sha256": away_mapping["evidence_sha256"],
+        "home_mapping_reviewer": home_mapping["reviewer"],
+        "away_mapping_reviewer": away_mapping["reviewer"],
+        "home_mapping_reviewed_at": home_mapping["reviewed_at"],
+        "away_mapping_reviewed_at": away_mapping["reviewed_at"],
+        "registry_sha256": canonical_sha256(team_unsigned),
+        "signing_key_arn": SEASON_KEY_ARN,
+        "verified_at": "2026-06-01T00:00:00Z",
+    }
     season_evidence = {
         "provider": "provider-a",
         "competition_id": "league-1",
@@ -35,6 +62,7 @@ def snapshot(fixture_id, kickoff, features):
         fixture_id=fixture_id,
         prediction_as_of=kickoff,
         season_identity_evidence=season_evidence,
+        team_identity_evidence=team_evidence,
         features=[{
             "name": name, "value": value, "source": "results-provider",
             "source_id": f"source-{fixture_id}-{name}",
@@ -152,6 +180,12 @@ def report_input():
             "home_canonical_team_id": canonical[home_source],
             "away_canonical_team_id": canonical[away_source],
             "team_scope": "men_first_team",
+            "home_mapping_evidence_sha256": ["b" * 64],
+            "away_mapping_evidence_sha256": ["b" * 64],
+            "home_mapping_reviewer": "team-identity-review",
+            "away_mapping_reviewer": "team-identity-review",
+            "home_mapping_reviewed_at": "2026-01-02T00:00:00Z",
+            "away_mapping_reviewed_at": "2026-01-02T00:00:00Z",
             "registry_sha256": registry_digest,
             "signing_key_arn": SEASON_KEY_ARN,
             "verified_at": "2026-06-01T00:00:00Z",
