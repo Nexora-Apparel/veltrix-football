@@ -19,8 +19,9 @@ Status: research-only; no new source is approved for import by this document.
 - No API key or credit quota.
 - Data is fixtures/results only; no bookmaker odds, lineups, shot locations or xG.
 - Timing fields are not guaranteed to be full timezone-aware kickoff timestamps. Any date-only or local-time records must not be fabricated into UTC. A conservative availability policy and explicit timestamp precision are required before they can enter point-in-time features.
-- Candidate use: independent historical/current fixtures-results supplement, not the sole production feed and not an xG/odds substitute.
-- Official sources: https://github.com/openfootball/football.json ; https://github.com/openfootball/world
+- **Freshness spot-check:** the public 2026/27 EPL JSON snapshot opened on 2026-11-11 contained Matchday 10 fixtures dated 2026-11-07 with no score fields. This confirms that the generated current-season file can be incomplete for recent results despite the daily generation process. It is not accepted as a current-results primary without overlap reconciliation and freshness checks.
+- Candidate use: independent historical results supplement and fixture cross-check, not the sole production feed and not an xG/odds substitute.
+- Official sources: https://github.com/openfootball/football.json ; https://github.com/openfootball/world ; inspected snapshot: https://raw.githubusercontent.com/openfootball/football.json/master/2026-27/en.1.json
 
 ### 2. football-data.org — possible free fixtures/results supplement, licensing clarification required
 - Free tier advertises 12 competitions, delayed scores/schedules, fixtures and tables, with 10 requests/minute.
@@ -57,7 +58,7 @@ Status: research-only; no new source is approved for import by this document.
 
 1. Keep 5DollarFootballAPI as the qualified bounded primary for its existing Free-plan scope only.
 2. Keep StrikerAPI as a targeted enrichment candidate when its monthly free credits refresh; do not assume its exhausted balance can be used now. Its official site advertises 500 free credits/month and paid tiers, but usage must be budgeted by endpoint credit cost.
-3. Qualify OpenFootball as a supplemental CC0 results source, beginning with read-only EPL reconciliation and then a separate Nigeria/Brazil coverage audit. Do not write to Neon during this qualification.
+3. Qualify OpenFootball only as a supplemental historical results source, beginning with read-only EPL reconciliation and then a separate Nigeria/Brazil coverage audit. Do not write to Neon during this qualification.
 4. Request written rights clarification from football-data.org before any production use.
 5. Keep all unqualified competitions and data types blocked. Never promote fixture/results-only qualification into xG, lineups, odds or shot-data approval.
 
