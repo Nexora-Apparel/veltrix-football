@@ -26,10 +26,18 @@ class HeldOutFold1X2:
             raise ValueError("fold_number must be a positive integer")
         if isinstance(self.test_fixture_count, bool) or not isinstance(self.test_fixture_count, int) or self.test_fixture_count < 0:
             raise ValueError("test_fixture_count must be a non-negative integer")
-        if len(self.forecasts) > self.test_fixture_count:
+        forecasts = tuple(self.forecasts)
+        outcomes = tuple(self.outcomes)
+        if any(not isinstance(row, Forecast1X2) for row in forecasts):
+            raise ValueError("held-out forecasts must be Forecast1X2 instances")
+        if any(not isinstance(row, SettledOutcome1X2) for row in outcomes):
+            raise ValueError("held-out outcomes must be SettledOutcome1X2 instances")
+        object.__setattr__(self, "forecasts", forecasts)
+        object.__setattr__(self, "outcomes", outcomes)
+        if len(forecasts) > self.test_fixture_count:
             raise ValueError("forecast_count cannot exceed test_fixture_count")
-        forecast_ids = [row.fixture_id for row in self.forecasts]
-        outcome_ids = [row.fixture_id for row in self.outcomes]
+        forecast_ids = [row.fixture_id for row in forecasts]
+        outcome_ids = [row.fixture_id for row in outcomes]
         if len(forecast_ids) != len(set(forecast_ids)) or len(outcome_ids) != len(set(outcome_ids)):
             raise ValueError("duplicate fixture IDs within held-out fold")
         if set(forecast_ids) != set(outcome_ids):
@@ -156,6 +164,8 @@ def diagnose_1x2_calibration(
     rows = tuple(folds)
     if not rows:
         raise ValueError("at least one held-out fold is required")
+    if any(not isinstance(row, HeldOutFold1X2) for row in rows):
+        raise ValueError("all inputs must be HeldOutFold1X2 instances")
     fold_numbers = [row.fold_number for row in rows]
     if len(fold_numbers) != len(set(fold_numbers)):
         raise ValueError("duplicate fold numbers")
