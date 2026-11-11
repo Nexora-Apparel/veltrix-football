@@ -101,3 +101,6 @@ jobs:
 
       - name: Run historical dataset admission profile tests
         run: python -m unittest discover -s tests -p 'test_historical_dataset_admission_report.py' -v
+
+      - name: Run historical source coverage qualification tests
+        run: python -m unittest discover -s tests -p 'test_historical_source_coverage.py' -v
