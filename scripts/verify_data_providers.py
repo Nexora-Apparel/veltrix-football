@@ -108,6 +108,7 @@ def check_fivedollar() -> str:
             return "AUTH_OK"
         coverage = {"1X2": 0, "BTTS": 0, "TOTALS_2_5": 0}
         samples = 0
+        odds_headers = {}
         for fixture in selected_fixtures:
             fixture_id = fixture.get("id") or fixture.get("fixture_id")
             if fixture_id is None:
