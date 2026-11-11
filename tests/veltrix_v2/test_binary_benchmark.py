@@ -104,3 +104,27 @@ def test_duplicate_bookmaker_fixture_quote_rejected():
             eligible_fixture_ids=["f1"],
             affirmative_selection="YES",
         )
+
+
+def test_quote_pair_must_share_exact_capture_timestamp():
+    yes = quote("f1", "YES", 0.5)
+    no = replace(quote("f1", "NO", 0.5), captured_at=yes.captured_at - timedelta(minutes=1))
+    with pytest.raises(ValueError, match="TIMESTAMPS_MISMATCH"):
+        compare_binary_to_bookmaker(
+            [BinaryForecast("f1", 0.6)],
+            [yes, no],
+            [SettledBinaryOutcome("f1", "YES")],
+            eligible_fixture_ids=["f1"],
+            affirmative_selection="YES",
+        )
+
+
+def test_outcome_outside_eligible_universe_is_rejected():
+    with pytest.raises(ValueError, match="OUTSIDE_ELIGIBLE"):
+        compare_binary_to_bookmaker(
+            [BinaryForecast("f1", 0.6)],
+            [quote("f1", "YES", 0.5), quote("f1", "NO", 0.5)],
+            [SettledBinaryOutcome("f1", "YES"), SettledBinaryOutcome("f2", "NO")],
+            eligible_fixture_ids=["f1"],
+            affirmative_selection="YES",
+        )
