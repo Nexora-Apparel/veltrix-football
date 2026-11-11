@@ -264,3 +264,13 @@ No source is approved for model training solely because it has a public endpoint
 - If both divisions are included in the Community country pack, Argentina yields 391 more finished matches in the last 12 months than Brazil and is the stronger no-cost choice for historical sample volume and daily fixture supply. This is a data-volume comparison, not a prediction-quality claim.
 - Recommendation: prioritize Argentina for the single Community pack if its Liga Profesional and Nacional B are both selectable. Verify the actual selectable leagues and `/v1/status` entitlement before changing the historical runner. Brazil remains a strong second choice; Nigeria is a lower-volume domestic option (207 finished matches in the same 12-month snapshot).
 - Official reference: https://5dollarfootballapi.com/docs/data-quality
+
+
+#### V2 historical runner entitlement enforcement — 2026-11-11
+
+- The historical runner now calls the provider's documented `GET /v1/status` before listing competitions or downloading match rows.
+- It reads `data.plan` from the provider response and enforces a 90-day maximum for `free`, and a 365-day maximum for `community`, `education`, `pro`, `ultra` and `business`. Unknown/missing plan values fail closed.
+- A Free account requesting more than 90 days receives `BLOCKED_PLAN_HISTORY_LIMIT` after the single status request; no fixture-history pages are downloaded.
+- A lookback above 90 days requires a minimum observed history span of at least 300 days. The 1,000 held-out-match certification gate remains unchanged.
+- The manual GitHub Actions workflow now accepts up to 365 days, but the runner enforces the actual account plan. No Community activation or provider request was performed during this code change.
+- Official reference: https://5dollarfootballapi.com/docs/status
