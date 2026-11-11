@@ -181,6 +181,46 @@ def build_historical_source_coverage_report(
         if not meets_teams:
             threshold_failures.append(f"{competition}:insufficient_team_coverage")
 
+    feature_domains = {
+        "team_strength_and_form": [
+            "home_team_elo", "away_team_elo", "elo_difference_home",
+            "home_attack_goals_rate", "home_defence_conceded_rate",
+            "away_attack_goals_rate", "away_defence_conceded_rate",
+            "home_form_points_rate", "away_form_points_rate",
+        ],
+        "expected_goals": [
+            "home_rolling_xg_for", "home_rolling_xg_against",
+            "away_rolling_xg_for", "away_rolling_xg_against",
+        ],
+        "lineups": ["home_lineup_strength", "away_lineup_strength"],
+        "fatigue_and_travel": [
+            "home_rest_days", "away_rest_days", "home_travel_km", "away_travel_km",
+        ],
+        "market_odds": [
+            "odds_home_decimal", "odds_draw_decimal", "odds_away_decimal",
+            "odds_btts_yes_decimal", "odds_over_2_5_decimal",
+        ],
+    }
+    domain_coverage = {}
+    for domain, names in feature_domains.items():
+        available = [name for name in names if name in FEATURE_CATALOGUE]
+        cells = sum(feature_counts[name] for name in available)
+        denominator = len(rows) * len(available)
+        domain_coverage[domain] = {
+            "catalogue_feature_count": len(available),
+            "features_present": [name for name in available if feature_counts[name] > 0],
+            "features_absent": [name for name in available if feature_counts[name] == 0],
+            "feature_cell_coverage_rate": cells / denominator if denominator else 0.0,
+        }
+    for domain in ("injury_availability", "pressing_intensity_ppda"):
+        domain_coverage[domain] = {
+            "catalogue_feature_count": 0,
+            "features_present": [],
+            "features_absent": [],
+            "feature_cell_coverage_rate": 0.0,
+            "status": "not_in_feature_catalogue",
+        }
+
     feature_report = {
         name: {
             "dataset_rows_with_feature": feature_counts[name],
@@ -209,6 +249,8 @@ def build_historical_source_coverage_report(
         threshold_failures.append("historical_feature_availability_unproven")
     if not competition_report:
         threshold_failures.append("no_competition_coverage")
+    elif any(item["season_coverage"]["status"] != "verified" for item in competition_report.values()):
+        threshold_failures.append("season_coverage_unavailable")
 
     report = {
         "schema_version": 1,
@@ -235,6 +277,7 @@ def build_historical_source_coverage_report(
             "by_feature": feature_report,
             "features_absent": absent_features,
             "features_below_threshold": below_threshold_features,
+            "by_data_domain": domain_coverage,
             "feature_source_record_counts": dict(sorted(feature_source_counts.items())),
             "distinct_feature_source_id_count": len(feature_source_ids),
         },
@@ -248,6 +291,7 @@ def build_historical_source_coverage_report(
                 reason.endswith("insufficient_fixtures")
                 or reason.endswith("insufficient_team_coverage")
                 or reason == "feature_coverage_below_threshold"
+                or reason == "season_coverage_unavailable"
                 for reason in threshold_failures
             ),
             "source_coverage_qualified": not threshold_failures,
