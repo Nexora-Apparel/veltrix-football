@@ -180,13 +180,33 @@ def build_historical_source_coverage_report(
         team_appearances[competition][home] += 1
         team_appearances[competition][away] += 1
         if team_crosswalk_verified is not None:
-            for source_team_id in (home, away):
+            identity_evidence = record.get("team_identity_evidence")
+            if (not isinstance(identity_evidence, dict)
+                    or identity_evidence.get("registry_sha256") != team_crosswalk_verified["registry_sha256"]
+                    or identity_evidence.get("signing_key_arn") != team_crosswalk_verified["signing_key_arn"]):
+                raise HistoricalSourceCoverageError(
+                    f"accepted_record_team_identity_registry_mismatch:{fixture_id}"
+                )
+            source_ids = (
+                record.get("home_team_source_id"),
+                record.get("away_team_source_id"),
+            )
+            if source_ids != (
+                identity_evidence.get("home_source_team_id"),
+                identity_evidence.get("away_source_team_id"),
+            ):
+                raise HistoricalSourceCoverageError(
+                    f"accepted_record_team_source_identity_mismatch:{fixture_id}"
+                )
+            for source_team_id, canonical_id in zip(source_ids, (home, away)):
                 identity = (provider, competition, source_team_id)
                 mapping = team_crosswalk_verified["mappings"].get(identity)
-                if mapping is None:
-                    team_mapping_failures[competition] += 1
-                    continue
-                canonical_id = mapping["canonical_team_id"]
+                if (mapping is None
+                        or mapping.get("canonical_team_id") != canonical_id
+                        or mapping.get("team_scope") != identity_evidence.get("team_scope")):
+                    raise HistoricalSourceCoverageError(
+                        f"accepted_record_team_crosswalk_binding_invalid:{fixture_id}"
+                    )
                 scope = mapping["team_scope"]
                 prior_scope = team_scope_by_canonical_id.get(canonical_id)
                 if prior_scope is not None and prior_scope != scope:
