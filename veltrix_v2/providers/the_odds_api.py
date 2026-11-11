@@ -98,13 +98,16 @@ def parse_event_btts_odds(
     matching = [
         row for row in rows
         if isinstance(row, dict)
-        and (not row.get("id") or str(row.get("id")) == str(provider_event_id))
+        and isinstance(row.get("id"), str)
+        and str(row.get("id")) == str(provider_event_id)
     ]
     if not matching:
         raise ValueError("THE_ODDS_EVENT_NOT_FOUND_IN_RESPONSE")
     event = matching[0]
     event_kickoff = _parse_time(event.get("commence_time"))
-    if event_kickoff is not None and event_kickoff != kickoff:
+    if event_kickoff is None:
+        raise ValueError("THE_ODDS_EVENT_KICKOFF_TIMESTAMP_MISSING")
+    if event_kickoff != kickoff:
         raise ValueError("THE_ODDS_EVENT_KICKOFF_MISMATCH")
 
     snapshots: list[OddsSnapshot] = []
@@ -128,6 +131,11 @@ def parse_event_btts_odds(
             missing.append(bookmaker_id)
             continue
         quote_at = _parse_time(btts_market.get("last_update"))
+        if quote_at is None:
+            missing.append(bookmaker_id)
+            continue
+        if quote_at > captured:
+            raise ValueError("THE_ODDS_QUOTE_TIMESTAMP_AFTER_CAPTURE")
         prices: dict[str, Decimal] = {}
         for outcome in btts_market.get("outcomes") or []:
             if not isinstance(outcome, dict):
@@ -151,7 +159,7 @@ def parse_event_btts_odds(
                 decimal_odds=prices[selection],
                 captured_at=captured,
                 kickoff_at=kickoff,
-                provider_quote_at=quote_at if quote_at is not None and quote_at <= captured else None,
+                provider_quote_at=quote_at,
                 provider_event_id=str(provider_event_id),
             ))
     if not seen_bookmakers:

@@ -97,6 +97,11 @@ def compare_binary_to_bookmaker(
     for fixture_id, selections in selections_by_fixture.items():
         if set(selections) != expected_selections:
             raise ValueError("BINARY_BENCHMARK_INCOMPLETE_BOOKMAKER_MARKET")
+        probability_sum = sum(
+            (row.normalized_probability for row in selections.values()), Decimal("0")
+        )
+        if abs(probability_sum - Decimal("1")) > Decimal("0.000000001"):
+            raise ValueError("BINARY_BENCHMARK_NORMALIZED_SELECTIONS_MUST_SUM_TO_ONE")
         book_by_fixture[fixture_id] = float(
             selections[affirmative_selection.upper()].normalized_probability
         )

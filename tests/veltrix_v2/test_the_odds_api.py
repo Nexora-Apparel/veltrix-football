@@ -137,3 +137,40 @@ def test_client_maps_quota_limit_without_retrying():
     assert caught.value.status_code == 429
     assert caught.value.code == "THE_ODDS_QUOTA_OR_RATE_LIMIT"
     assert caught.value.retry_after == "60"
+
+
+
+def test_parser_rejects_missing_or_mismatched_event_identity_and_kickoff():
+    missing_id = dict(EVENT)
+    missing_id.pop("id")
+    with pytest.raises(ValueError, match="EVENT_NOT_FOUND"):
+        parse_event_btts_odds(
+            missing_id, fixture_id="fixture-1", provider_event_id="event-123",
+            sport_key="soccer_epl", kickoff_at=KICKOFF, captured_at=CAPTURE,
+        )
+    missing_kickoff = dict(EVENT)
+    missing_kickoff.pop("commence_time")
+    with pytest.raises(ValueError, match="KICKOFF_TIMESTAMP_MISSING"):
+        parse_event_btts_odds(
+            missing_kickoff, fixture_id="fixture-1", provider_event_id="event-123",
+            sport_key="soccer_epl", kickoff_at=KICKOFF, captured_at=CAPTURE,
+        )
+
+
+def test_parser_rejects_quote_timestamp_after_capture():
+    future_quote = {
+        **EVENT,
+        "bookmakers": [{
+            "key": "bet365",
+            "markets": [{
+                "key": "btts",
+                "last_update": "2026-11-12T05:01:00Z",
+                "outcomes": [{"name": "Yes", "price": 1.85}, {"name": "No", "price": 1.95}],
+            }],
+        }],
+    }
+    with pytest.raises(ValueError, match="QUOTE_TIMESTAMP_AFTER_CAPTURE"):
+        parse_event_btts_odds(
+            future_quote, fixture_id="fixture-1", provider_event_id="event-123",
+            sport_key="soccer_epl", kickoff_at=KICKOFF, captured_at=CAPTURE,
+        )
