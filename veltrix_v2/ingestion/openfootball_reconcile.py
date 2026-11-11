@@ -7,6 +7,7 @@ crosswalk; fuzzy identity guessing is intentionally absent.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import date
 from typing import Mapping, Sequence
 
 from .openfootball import OpenFootballMatch
@@ -21,6 +22,24 @@ class ReferenceFixture:
     home_score: int | None
     away_score: int | None
     status: str
+
+    def __post_init__(self) -> None:
+        for field in ("fixture_id", "match_date", "home_team_id", "away_team_id", "status"):
+            value = getattr(self, field)
+            if not isinstance(value, str) or not value.strip():
+                raise ValueError(f"REFERENCE_FIXTURE_{field.upper()}_REQUIRED")
+        try:
+            date.fromisoformat(self.match_date)
+        except ValueError:
+            raise ValueError("REFERENCE_FIXTURE_MATCH_DATE_MUST_BE_ISO_DATE") from None
+        if self.home_team_id == self.away_team_id:
+            raise ValueError("REFERENCE_FIXTURE_TEAMS_MUST_DIFFER")
+        for field in ("home_score", "away_score"):
+            value = getattr(self, field)
+            if value is not None and (type(value) is not int or value < 0):
+                raise ValueError(f"REFERENCE_FIXTURE_{field.upper()}_INVALID")
+        if (self.home_score is None) != (self.away_score is None):
+            raise ValueError("REFERENCE_FIXTURE_SCORE_PAIR_INCOMPLETE")
 
 
 @dataclass(frozen=True, slots=True)
@@ -80,6 +99,7 @@ def reconcile_openfootball(
             source_keys[key] = row
 
     reference_keys: dict[tuple[str, str, str], ReferenceFixture] = {}
+    reference_dates_by_teams: dict[tuple[str, str], list[date]] = {}
     reference_duplicates = 0
     for row in reference_rows:
         if row.status.lower() not in {"finished", "ft", "final"}:
@@ -87,6 +107,9 @@ def reconcile_openfootball(
         if row.home_score is None or row.away_score is None:
             continue
         key = _key(row.match_date, row.home_team_id, row.away_team_id)
+        reference_dates_by_teams.setdefault((row.home_team_id, row.away_team_id), []).append(
+            date.fromisoformat(row.match_date)
+        )
         if key in reference_keys:
             reference_duplicates += 1
         else:
@@ -95,10 +118,15 @@ def reconcile_openfootball(
     matched = 0
     unmatched = 0
     score_conflicts = 0
+    date_conflicts = 0
     for key, source in source_keys.items():
         reference = reference_keys.get(key)
         if reference is None:
             unmatched += 1
+            source_date = date.fromisoformat(key[0])
+            candidate_dates = reference_dates_by_teams.get((key[1], key[2]), [])
+            if any(abs((candidate - source_date).days) == 1 for candidate in candidate_dates):
+                date_conflicts += 1
             continue
         if (source.full_time_home, source.full_time_away) != (reference.home_score, reference.away_score):
             score_conflicts += 1
@@ -116,5 +144,5 @@ def reconcile_openfootball(
         duplicate_reference_keys=reference_duplicates,
         score_conflicts=score_conflicts,
         identity_conflicts=identity_conflicts,
-        date_conflicts=0,
+        date_conflicts=date_conflicts,
     )
