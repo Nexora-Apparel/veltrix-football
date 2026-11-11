@@ -44,7 +44,8 @@ def snapshot(fixture_id, kickoff, features):
         "away_mapping_reviewed_at": away_mapping["reviewed_at"],
         "registry_sha256": canonical_sha256(team_unsigned),
         "signing_key_arn": SEASON_KEY_ARN,
-        "verified_at": "2026-06-01T00:00:00Z",
+        "verified_at": kickoff,
+        "source_verified_at": "2026-06-01T00:00:00Z",
     }
     season_evidence = {
         "provider": "provider-a",
