@@ -24,7 +24,7 @@ def build(**overrides):
         available_at_utc=AVAILABLE,
         payload_sha256=HASH,
         schema_version="player-match-v1",
-        rights_approval_id="openplay-cc-by-4.0-approved",
+        rights_approval_id="test-only-not-a-production-approval",
         stats={"minutes_played": 90, "goals": 1, "assists": 0, "xg": 0.72, "xa": 0.13},
         started=True,
         xg_model_id="openplay-noah-bair-v1",
