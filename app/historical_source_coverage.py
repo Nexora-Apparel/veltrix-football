@@ -22,6 +22,10 @@ from app.canonical_season_crosswalk import (
 from app.canonical_team_crosswalk import (
     TeamCrosswalkError, verify_team_crosswalk_registry,
 )
+from app.feature_source_qualification import (
+    FeatureSourceQualificationError, verify_feature_source_qualification_registry,
+    validate_feature_source,
+)
 
 
 class HistoricalSourceCoverageError(ValueError):
@@ -60,6 +64,7 @@ def build_historical_source_coverage_report(
     season_crosswalk_as_of: str | None = None,
     team_crosswalk_registry: dict | None = None,
     team_crosswalk_as_of: str | None = None,
+    feature_source_qualification_registry: dict | None = None,
 ) -> dict:
     """Measure admitted source coverage; never infer missing season identity."""
     if not isinstance(pipeline_report, dict):
@@ -221,6 +226,77 @@ def build_historical_source_coverage_report(
             source_seasons[competition][source_season.strip()] += 1
         else:
             missing_season_counts[competition] += 1
+
+    feature_source_qualification = {
+        "verified": False, "registry_sha256": None, "signing_key_arn": None,
+        "qualified_feature_cells": 0, "source_feature_counts": {},
+        "rejected_feature_cells": 0, "status": "unverified",
+    }
+    if feature_source_qualification_registry is not None:
+        if not isinstance(trusted_kms_clients, dict) or not trusted_kms_clients:
+            raise HistoricalSourceCoverageError("feature_source_trusted_keys_required")
+        source_feature_counts = Counter()
+        qualified_cells = 0
+        for index, snapshot in enumerate(snapshots):
+            if not isinstance(snapshot, dict):
+                raise HistoricalSourceCoverageError(f"feature_snapshot_invalid:{index}")
+            fixture_id = snapshot.get("fixture_id")
+            prediction_as_of = snapshot.get("prediction_as_of")
+            accepted_record = accepted_by_id.get(fixture_id)
+            if accepted_record is None:
+                raise HistoricalSourceCoverageError(
+                    f"feature_snapshot_fixture_not_admitted:{fixture_id}"
+                )
+            try:
+                verified_source_registry = verify_feature_source_qualification_registry(
+                    registry=feature_source_qualification_registry,
+                    trusted_kms_clients=trusted_kms_clients,
+                    as_of=prediction_as_of,
+                )
+            except FeatureSourceQualificationError as exc:
+                raise HistoricalSourceCoverageError(
+                    f"feature_source_registry_rejected:{exc}"
+                ) from None
+            for feature in snapshot.get("features", []):
+                qualification = feature.get("source_qualification") if isinstance(feature, dict) else None
+                if not isinstance(qualification, dict):
+                    raise HistoricalSourceCoverageError(
+                        f"feature_source_qualification_missing:{fixture_id}"
+                    )
+                try:
+                    expected = validate_feature_source(
+                        verified_registry=verified_source_registry,
+                        source=feature.get("source"),
+                        feature_name=feature.get("name"),
+                        competition_id=accepted_record["competition_id"],
+                    )
+                except FeatureSourceQualificationError as exc:
+                    raise HistoricalSourceCoverageError(
+                        f"feature_source_not_qualified:{fixture_id}:{exc}"
+                    ) from None
+                if qualification != expected:
+                    raise HistoricalSourceCoverageError(
+                        f"feature_source_qualification_binding_mismatch:{fixture_id}"
+                    )
+                source_feature_counts[feature["source"]] += 1
+                qualified_cells += 1
+            if feature_source_qualification["registry_sha256"] not in (
+                None, verified_source_registry["registry_sha256"]
+            ):
+                raise HistoricalSourceCoverageError("feature_source_registry_changed_across_snapshots")
+            feature_source_qualification["registry_sha256"] = verified_source_registry["registry_sha256"]
+            feature_source_qualification["signing_key_arn"] = verified_source_registry["signing_key_arn"]
+        feature_source_qualification.update({
+            "verified": bool(snapshots),
+            "qualified_feature_cells": qualified_cells,
+            "source_feature_counts": dict(sorted(source_feature_counts.items())),
+            "status": "verified" if snapshots else "no_feature_snapshots",
+        })
+    elif snapshots:
+        feature_source_qualification["rejected_feature_cells"] = sum(
+            len(item.get("features", [])) for item in snapshots if isinstance(item, dict)
+        )
+        threshold_failures_placeholder = True
 
     rejected_records = eligibility.get("rejected_records", [])
     if not isinstance(rejected_records, list):
@@ -483,6 +559,8 @@ def build_historical_source_coverage_report(
     historical_availability = pipeline_report.get("historical_availability_proven") is True
     if not historical_availability:
         threshold_failures.append("historical_feature_availability_unproven")
+    if not feature_source_qualification["verified"]:
+        threshold_failures.append("feature_source_qualification_unverified")
     if not competition_report:
         threshold_failures.append("no_competition_coverage")
     elif any(item["season_coverage"]["status"] != "verified" for item in competition_report.values()):
@@ -537,6 +615,7 @@ def build_historical_source_coverage_report(
             }
             for competition, counts in sorted(team_appearances.items())
         },
+        "feature_source_qualification": feature_source_qualification,
         "feature_coverage": {
             "dataset_row_denominator": len(rows),
             "minimum_coverage_rate": minimum_feature_coverage_rate,
