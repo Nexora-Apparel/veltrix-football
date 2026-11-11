@@ -32,7 +32,8 @@ def fixture(fixture_id, home, away, kickoff):
         "away_team_id": away,
         "kickoff_at": kickoff,
         "settled_at": "2026-09-01T13:00:00Z",
-        "settlement_source_id": "final-whistle-source",\n        "source_season": "2025/26",
+        "settlement_source_id": "final-whistle-source",
+        "source_season": "2025/26",
     }
 
 
@@ -76,7 +77,8 @@ class HistoricalSourceCoverageTests(unittest.TestCase):
         self.assertEqual(league["settlement_eligible_fixtures"], 2)
         self.assertEqual(league["distinct_teams"], 3)
         self.assertEqual(league["dataset_rows"], 2)
-        self.assertEqual(league["season_coverage"]["status"], "source_reported_crosswalk_unverified")\n        self.assertFalse(league["season_coverage"]["canonical_season_crosswalk_verified"])
+        self.assertEqual(league["season_coverage"]["status"], "source_reported_crosswalk_unverified")
+        self.assertFalse(league["season_coverage"]["canonical_season_crosswalk_verified"])
         self.assertEqual(result["feature_coverage"]["by_feature"]["home_team_elo"]["coverage_rate"], 1.0)
         self.assertFalse(result["historical_availability"]["proven"])
         self.assertFalse(result["qualification"]["source_coverage_qualified"])
