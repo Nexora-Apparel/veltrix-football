@@ -1,0 +1,98 @@
+name: VELTRIX 2.0 Historical Multi-Market Walk-Forward
+
+on:
+  workflow_dispatch:
+    inputs:
+      days:
+        description: "Historical lookback days (300-365)"
+        required: true
+        default: "365"
+        type: string
+      max_requests:
+        description: "Hard provider request budget (1-60)"
+        required: true
+        default: "50"
+        type: string
+      max_pages:
+        description: "Maximum pages per competition (1-5)"
+        required: true
+        default: "5"
+        type: string
+      min_history_days:
+        description: "Minimum observed history span"
+        required: true
+        default: "300"
+        type: string
+      min_test_sample:
+        description: "Minimum walk-forward forecasts per market"
+        required: true
+        default: "1000"
+        type: string
+      max_iterations:
+        description: "Maximum optimizer iterations per fold"
+        required: true
+        default: "6000"
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: veltrix-v2-historical-walk-forward
+  cancel-in-progress: false
+
+jobs:
+  historical-evaluation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      FIVEDOLLARFOOTBALL_API_KEY: ${{ secrets.FIVEDOLLARFOOTBALL_API_KEY }}
+      DAYS: ${{ inputs.days }}
+      MAX_REQUESTS: ${{ inputs.max_requests }}
+      MAX_PAGES: ${{ inputs.max_pages }}
+      MIN_HISTORY_DAYS: ${{ inputs.min_history_days }}
+      MIN_TEST_SAMPLE: ${{ inputs.min_test_sample }}
+      MAX_ITERATIONS: ${{ inputs.max_iterations }}
+    steps:
+      - name: Check out VELTRIX 2.0 architecture branch
+        uses: actions/checkout@v4
+        with:
+          ref: veltrix-2.0-architecture-blueprint
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Validate bounded inputs
+        run: |
+          python -c "import os; assert 300 <= int(os.environ['DAYS']) <= 365"
+          python -c "import os; assert 1 <= int(os.environ['MAX_REQUESTS']) <= 60"
+          python -c "import os; assert 1 <= int(os.environ['MAX_PAGES']) <= 5"
+          python -c "import os; assert 300 <= int(os.environ['MIN_HISTORY_DAYS']) <= int(os.environ['DAYS'])"
+          python -c "import os; assert int(os.environ['MIN_TEST_SAMPLE']) >= 1"
+          python -c "import os; assert 100 <= int(os.environ['MAX_ITERATIONS']) <= 20000"
+
+      - name: Compile V2 code and operational runner
+        run: |
+          python -m compileall -q veltrix_v2 scripts/veltrix_v2
+
+      - name: Run historical multi-market walk-forward
+        run: |
+          python scripts/veltrix_v2/run_fivedollar_historical_walk_forward.py \
+            --days "$DAYS" \
+            --max-requests "$MAX_REQUESTS" \
+            --max-pages "$MAX_PAGES" \
+            --min-history-days "$MIN_HISTORY_DAYS" \
+            --min-test-sample "$MIN_TEST_SAMPLE" \
+            --max-iterations "$MAX_ITERATIONS" \
+            --output v2_historical_walk_forward_summary.json
+
+      - name: Upload aggregate-only evaluation report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: veltrix-v2-historical-walk-forward-summary
+          path: v2_historical_walk_forward_summary.json
+          if-no-files-found: error
+          retention-days: 7
