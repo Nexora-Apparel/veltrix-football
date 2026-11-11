@@ -42,6 +42,8 @@ def _finalize_report(
     trusted_kms_clients: dict,
     season_crosswalk_registry: dict | None = None,
     season_crosswalk_as_of: str | None = None,
+    team_crosswalk_registry: dict | None = None,
+    team_crosswalk_as_of: str | None = None,
 ) -> dict:
     result["admission_profile"] = build_historical_dataset_admission_report(result)
     result["source_coverage"] = build_historical_source_coverage_report(
@@ -49,6 +51,8 @@ def _finalize_report(
         season_crosswalk_registry=season_crosswalk_registry,
         trusted_kms_clients=trusted_kms_clients if season_crosswalk_registry is not None else None,
         season_crosswalk_as_of=season_crosswalk_as_of,
+        team_crosswalk_registry=team_crosswalk_registry,
+        team_crosswalk_as_of=team_crosswalk_as_of,
     )
     result["pipeline_report_sha256"] = _canonical_sha256(result)
     return result
@@ -65,6 +69,8 @@ def assemble_audited_provider_dataset(
     minimum_team_matches: int = 3,
     season_crosswalk_registry: dict | None = None,
     season_crosswalk_as_of: str | None = None,
+    team_crosswalk_registry: dict | None = None,
+    team_crosswalk_as_of: str | None = None,
 ) -> dict:
     """Audit all records, then assemble features from admitted originals only."""
     audit = audit_provider_acquisition_eligibility(
@@ -136,6 +142,8 @@ def assemble_audited_provider_dataset(
             result, trusted_kms_clients=trusted_kms_clients,
             season_crosswalk_registry=season_crosswalk_registry,
             season_crosswalk_as_of=season_crosswalk_as_of,
+            team_crosswalk_registry=team_crosswalk_registry,
+            team_crosswalk_as_of=team_crosswalk_as_of,
         )
 
     try:
@@ -184,4 +192,6 @@ def assemble_audited_provider_dataset(
         result, trusted_kms_clients=trusted_kms_clients,
         season_crosswalk_registry=season_crosswalk_registry,
         season_crosswalk_as_of=season_crosswalk_as_of,
+        team_crosswalk_registry=team_crosswalk_registry,
+        team_crosswalk_as_of=team_crosswalk_as_of,
     )
