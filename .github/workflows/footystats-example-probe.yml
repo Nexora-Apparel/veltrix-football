@@ -76,7 +76,11 @@ jobs:
           def get(path):
               request = Request(
                   BASE + path,
-                  headers={"Accept": "application/json", "User-Agent": "VELTRIX-2.0-provider-qualification/1.0"},
+                  headers={
+                    "Accept": "application/json",
+                    "Authorization": "Bearer of_demo_openfootapi_docs",
+                    "User-Agent": "VELTRIX-2.0-provider-qualification/1.0",
+                },
               )
               with urlopen(request, timeout=20) as response:
                   payload = json.loads(response.read().decode("utf-8"))
