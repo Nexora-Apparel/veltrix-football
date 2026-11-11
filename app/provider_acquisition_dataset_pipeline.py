@@ -14,6 +14,7 @@ from app.provider_acquisition_eligibility_audit import (
     audit_provider_acquisition_eligibility,
 )
 from app.historical_dataset_admission_report import build_historical_dataset_admission_report
+from app.historical_source_coverage import build_historical_source_coverage_report
 from app.provider_acquisition_dataset_bridge import (
     AcquisitionDatasetBridgeError,
     assemble_provider_acquisition_dataset,
@@ -37,6 +38,7 @@ def _canonical_sha256(value: Any) -> str:
 
 def _finalize_report(result: dict) -> dict:
     result["admission_profile"] = build_historical_dataset_admission_report(result)
+    result["source_coverage"] = build_historical_source_coverage_report(result)
     result["pipeline_report_sha256"] = _canonical_sha256(result)
     return result
 
