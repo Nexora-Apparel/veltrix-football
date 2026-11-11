@@ -287,6 +287,7 @@ class HistoricalSourceCoverageTests(unittest.TestCase):
         self.assertEqual(season_detail["settlement_eligible_fixtures"], 2)
         self.assertEqual(season_detail["distinct_canonical_teams"], 3)
         self.assertEqual(season_detail["distinct_kickoff_wat_dates"], 2)
+        self.assertEqual(season_detail["feature_snapshot_identity_verified"], 2)
         self.assertTrue(season_detail["thresholds"]["fixtures_met"])
         self.assertTrue(season_detail["thresholds"]["teams_met"])
         self.assertEqual(season_detail["feature_coverage_by_feature"]["home_team_elo"], 1.0)
