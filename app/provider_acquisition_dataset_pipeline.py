@@ -36,9 +36,20 @@ def _canonical_sha256(value: Any) -> str:
     return hashlib.sha256(payload).hexdigest()
 
 
-def _finalize_report(result: dict) -> dict:
+def _finalize_report(
+    result: dict,
+    *,
+    trusted_kms_clients: dict,
+    season_crosswalk_registry: dict | None = None,
+    season_crosswalk_as_of: str | None = None,
+) -> dict:
     result["admission_profile"] = build_historical_dataset_admission_report(result)
-    result["source_coverage"] = build_historical_source_coverage_report(result)
+    result["source_coverage"] = build_historical_source_coverage_report(
+        result,
+        season_crosswalk_registry=season_crosswalk_registry,
+        trusted_kms_clients=trusted_kms_clients if season_crosswalk_registry is not None else None,
+        season_crosswalk_as_of=season_crosswalk_as_of,
+    )
     result["pipeline_report_sha256"] = _canonical_sha256(result)
     return result
 
@@ -52,6 +63,8 @@ def assemble_audited_provider_dataset(
     cutoff_hours: int = 6,
     form_window: int = 10,
     minimum_team_matches: int = 3,
+    season_crosswalk_registry: dict | None = None,
+    season_crosswalk_as_of: str | None = None,
 ) -> dict:
     """Audit all records, then assemble features from admitted originals only."""
     audit = audit_provider_acquisition_eligibility(
@@ -119,7 +132,11 @@ def assemble_audited_provider_dataset(
             "value_betting_enabled": False,
             "publication_allowed": False,
         }
-        return _finalize_report(result)
+        return _finalize_report(
+            result, trusted_kms_clients=trusted_kms_clients,
+            season_crosswalk_registry=season_crosswalk_registry,
+            season_crosswalk_as_of=season_crosswalk_as_of,
+        )
 
     try:
         assembled = assemble_provider_acquisition_dataset(
@@ -163,4 +180,8 @@ def assemble_audited_provider_dataset(
         "value_betting_enabled": False,
         "publication_allowed": False,
     }
-    return _finalize_report(result)
+    return _finalize_report(
+        result, trusted_kms_clients=trusted_kms_clients,
+        season_crosswalk_registry=season_crosswalk_registry,
+        season_crosswalk_as_of=season_crosswalk_as_of,
+    )
