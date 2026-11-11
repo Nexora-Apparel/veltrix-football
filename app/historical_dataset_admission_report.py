@@ -166,6 +166,15 @@ def build_historical_dataset_admission_report(pipeline_report: Any) -> dict:
         "feature_cell_coverage_rate": 0.0,
         "status": "not_in_feature_catalogue",
     }
+    domain_coverage["odds_movement_and_clv"] = {
+        "catalogue_feature_count": 0,
+        "features_present_in_dataset": [],
+        "features_absent_from_dataset": [],
+        "feature_cell_coverage_rate": 0.0,
+        "status": "evaluation_evidence_not_in_feature_catalogue",
+        "evaluation_only": True,
+        "reason": "CLV and odds movement require a separate timestamped quote ledger and benchmark; closing prices are evaluation evidence, not pre-match predictors.",
+    }
     market_counts = {
         market: {
             split: dict(sorted(outcomes.get(split, {}).items()))
