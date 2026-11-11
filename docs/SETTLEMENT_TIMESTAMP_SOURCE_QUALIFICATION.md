@@ -142,3 +142,96 @@ out-of-band ARN-to-region signing allowlist. A caller cannot ask the signing
 helper to create a registry under an arbitrary KMS key and treat that action
 as trusted issuance. Verification and signing use separate explicit trust
 inputs, and both fail closed on unknown keys or region mismatches.
+
+
+## Genius Sports public-documentation review — 2026-11-11
+
+**Decision: candidate only; not qualified, not activated, and no spend or vendor request has been made.**
+
+### Timestamp semantics
+
+The public LiveStats Football TV Feed documentation defines a `summary`
+message that is usually sent once at the end of a match. It exposes
+`timeEndActual` as the actual match end time in UTC. This is a materially
+stronger candidate than a generic `Finished` status.
+
+However, the same documentation describes this TV Feed as a TCP socket
+connection to the LiveStats software running at the venue (default port
+7677, configurable by the venue statistician). It does not establish that
+historical summary messages can be retrieved from a cloud archive or that
+the feed is available to a remote non-venue consumer. Therefore the field
+semantics are documented, but practical historical availability and licensed
+access are not.
+
+The Warehouse Football REST API documents historical and future match,
+player, team-statistics and match-action retrieval. Its public reference does
+not document a `timeEndActual` field or a timestamp contract for a
+`game/end` action. The existence of a `game/end` action type is not enough
+to qualify its event timestamp as final-whistle time. Do not substitute
+`eventStatusType=Finished`: Fixtures API v2 explicitly warns that this status
+is not set at the exact end and may take up to an hour to update.
+
+### Access, licensing and historical coverage
+
+- Warehouse REST API calls require an `x-api-key`; the key defines access
+  permissions and quota. The public response contract includes unauthorized
+  and not-authorized outcomes.
+- Fixtures API v2 requires an Auth0 client ID/secret and an API key supplied
+  by Genius Sports; the documentation directs customers to their integration
+  manager.
+- Genius Sports states that production exposes the content the customer is
+  licensed for; UAT may not expose all licensed content.
+- Public documentation does not establish a price, the user's eligibility,
+  the exact competitions covered by a prospective account, historical
+  `timeEndActual` archive retention, revision/correction semantics, or
+  rights to retain and use the data for model training/backtesting.
+
+### Potential feature domains (not yet qualified)
+
+Fixtures API v2 documents rosters and says fixture-specific lineups are
+supported only for Football and a limited number of competitions. The
+Warehouse Football REST API documents injury endpoints and match/team/person
+statistics. This suggests possible future injury, lineup and match-statistics
+coverage, but does not prove competition coverage, pre-kickoff availability,
+field completeness, or licensing for VELTRIX. The reviewed public reference
+does not explicitly establish xG or PPDA fields. Those must remain absent
+until a licensed field-level schema and timestamp semantics are confirmed.
+
+### Required vendor answers before any qualification
+
+1. Can the LiveStats `summary.timeEndActual` be retrieved historically for
+   completed football matches, including exact competition and season IDs?
+2. Is the TV Feed available outside venue-local TCP access, or is there a
+   licensed warehouse endpoint exposing the same immutable timestamp?
+3. Are `timeEndActual` values corrected or revised after publication? How
+   are abandoned, postponed, replayed, extra-time and penalty matches handled?
+4. What are historical retention, pagination, rate limits, correction logs,
+   and source-side observation/publication timestamps?
+5. Which competitions, seasons, women's/reserve/youth scopes, injury records,
+   lineups and statistics are licensed to the customer?
+6. What are the permitted retention, storage, derived-feature, backtesting,
+   model-training and redistribution rights, and the commercial price?
+
+Until those questions are answered with written documentation and a
+competition-level sample, Genius Sports is **not** a qualified settlement
+source. No timestamp may enter the signed settlement registry. No KMS
+qualification, credentials, API requests, credits or purchase are authorized
+by this research.
+
+### Public references reviewed
+
+- Genius Sports Developer Centre — Warehouse REST API covers past and future
+  match/player/statistics data; API is split by sport:
+  https://developer.geniussports.com/
+- Football Warehouse REST API — authentication, x-api-key permissions and
+  quota, historical match/action/statistics endpoints, injury endpoints:
+  https://developer.geniussports.com/warehouse/rest/index_football.html
+- LiveStats Football TV Feed — venue TCP feed and summary `timeEndActual`
+  semantics:
+  https://developer.geniussports.com/livestats/tvfeed/index_football.html
+- Genius Sports Live Sports Data Integration — Pull/Push model, historical
+  pull limitations and production content subject to customer licence:
+  https://geniussports.atlassian.net/wiki/spaces/BID/pages/3990454273/Genius+Sports+Live+Sports+Data+Integration
+- Fixtures API v2 — Auth0/API-key access, limited football lineup support,
+  licensing and delayed `Finished` status semantics:
+  https://geniussports.atlassian.net/wiki/spaces/BID/pages/5570035737/Fixtures+API+V2
