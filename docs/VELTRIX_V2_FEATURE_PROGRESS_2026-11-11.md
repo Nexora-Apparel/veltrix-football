@@ -38,7 +38,7 @@ Branch: `veltrix-2.0-architecture-blueprint`
 - Exposes ratings and Elo expected score as descriptive features, not calibrated match probabilities.
 - Cold-start teams remain explicitly missing; no fabricated 1500 rating is emitted for a team with no eligible appearances.
 - Duplicate fixture/source identities and invalid timestamps/parameters fail closed.
-- Seven focused tests added; CI verification for this newest module is pending.
+- Seven focused tests included in the verified suite.
 
 ## Evaluation foundation added
 
@@ -52,12 +52,11 @@ Branch: `veltrix-2.0-architecture-blueprint`
 
 - Foundation suite including venue context: **38 passed, 0 failed**; legacy-import boundary check passed on PR merge commit for head `ee90b575edeb3ff6a769333389469f5eab6a73ca`. [GitHub Actions run #42984863222](https://github.com/Nexora-Apparel/veltrix-football/actions/runs/42984863222).
 - Corrected walk-forward suite: **45 passed, 0 failed**, including all seven walk-forward tests; legacy-import boundary check passed. [GitHub Actions run #42987573786](https://github.com/Nexora-Apparel/veltrix-football/actions/runs/42987573786).
-- Elo feature and seven new tests were committed after that successful run. They are not yet included in a verified CI result.
+- Latest suite including Elo: **52 passed, 0 failed**; legacy-import boundary check passed. [GitHub Actions run #42988271363](https://github.com/Nexora-Apparel/veltrix-football/actions/runs/42988271363).
 - No model fitting, calibration, prediction publication, provider ingestion or production activation has been performed.
 
 ## Next gate
 
-1. Verify the Elo module and tests in CI.
-2. Continue deterministic, evidence-backed feature contracts only while StrikerAPI is credit-blocked.
-3. Resume the provider dry-run only after credit balance/entitlement is restored.
-4. Sign Phase 3 only after the provider dry-run completes with complete accounting, zero unresolved identity/score conflicts and unchanged database counts.
+1. Continue deterministic, evidence-backed feature contracts only while StrikerAPI is credit-blocked.
+2. Resume the provider dry-run only after credit balance/entitlement is restored.
+3. Sign Phase 3 only after the provider dry-run completes with complete accounting, zero unresolved identity/score conflicts and unchanged database counts.
