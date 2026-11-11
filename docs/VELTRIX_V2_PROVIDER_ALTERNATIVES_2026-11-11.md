@@ -100,3 +100,23 @@ No currently verified existing API fully replaces StrikerAPI's qualified histori
 5. Keep Argentina/Brazil and all other unqualified competition/data-type combinations blocked until a source passes coverage, rights, identity and reconciliation gates.
 
 The prior StrikerAPI HTTP 402 indicates exhausted credits, not invalid credentials. The existing evidence does not provide a supported way to refill those credits from this repository. Retry only after the account balance/monthly allowance is restored; never spend credits on exploratory probes before defining the bounded acceptance sample.
+
+
+## OpenFootball qualification implementation update (2026-11-11)
+
+Owner decision: proceed with OpenFootball as the selected no-cost supplemental historical-results source instead of waiting for StrikerAPI credits. This is a source-selection decision, not production data approval.
+
+Implemented on the VELTRIX 2.0 branch:
+- `veltrix_v2/ingestion/openfootball.py`: strict JSON parser for fixture date, optional local clock time, team names and half/full-time scores.
+- Timestamp precision is explicit: `date_only` or `local_datetime_unzoned`. The parser never invents UTC offsets or kickoff times.
+- Invalid dates, malformed score arrays, negative/non-integer goals, missing team identities and malformed dataset rows fail closed.
+- `veltrix_v2/ingestion/openfootball_reconcile.py`: read-only, in-memory reconciliation against a supplied reference snapshot. Exact team-ID crosswalk is mandatory; no fuzzy name matching. Missing OpenFootball scores are counted separately. Duplicate identities, unmatched rows, unknown teams and score conflicts block pass status.
+- Unit tests cover timestamp precision, malformed data, exact identity mapping, missing scores and score conflicts.
+
+CI evidence:
+- Foundation test run #42999675419: 91 passed, 0 failed.
+- Reconciliation follow-up runs #42999792932 and #42999796260: 94 passed, 0 failed on each run; legacy-import boundary step succeeded.
+
+**Qualification status: implementation and unit-test gates passed; live paired-snapshot reconciliation remains pending.** The next execution must retrieve a pinned OpenFootball EPL snapshot and a same-window 5Dollar reference snapshot, record both payload hashes and source retrieval times, provide an approved exact team crosswalk, then run the comparator without writing to Neon. A successful unit test is not a live data reconciliation and must not be represented as one.
+
+No production source approval, provider import, Neon write, model training, deployment or Telegram activation has occurred.
