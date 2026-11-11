@@ -22,16 +22,16 @@ def _text(value: Any) -> str:
     return str(value).strip() if value is not None else ""
 
 
-def _utc_timestamp(value: Any) -> str:
+def _utc_timestamp(value: Any, field: str) -> str:
     raw = _text(value)
     if not raw:
-        raise ValueError("missing_kickoff")
+        raise ValueError(f"missing_{field}")
     try:
         parsed = datetime.fromisoformat(raw.replace("Z", "+00:00"))
     except ValueError:
-        raise ValueError("invalid_kickoff") from None
+        raise ValueError(f"invalid_{field}") from None
     if parsed.tzinfo is None or parsed.utcoffset() is None:
-        raise ValueError("kickoff_timezone_missing")
+        raise ValueError(f"{field}_timezone_missing")
     return parsed.astimezone(timezone.utc).isoformat().replace("+00:00", "Z")
 
 
@@ -71,8 +71,8 @@ def _base_record(provider: str, source_id: Any, competition_key: Any,
         raise ValueError("home_away_team_id_collision")
     if not _text(endpoint) or not _text(run_id):
         raise ValueError("missing_endpoint_or_run_id")
-    retrieved = _utc_timestamp(retrieved_at)
-    kickoff_utc = _utc_timestamp(kickoff)
+    retrieved = _utc_timestamp(retrieved_at, "retrieved_at")
+    kickoff_utc = _utc_timestamp(kickoff, "kickoff")
     status = _text(source_status).casefold()
     if not status:
         raise ValueError("missing_status")
