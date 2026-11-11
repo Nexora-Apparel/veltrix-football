@@ -2,6 +2,10 @@ name: Verify StrikerAPI Read-Only Coverage
 
 on:
   workflow_dispatch:
+  push:
+    paths:
+      - "scripts/veltrix_v2/verify_strikerapi_readonly.py"
+      - ".github/workflows/verify-strikerapi.yml"
 
 permissions:
   contents: read
@@ -17,17 +21,15 @@ jobs:
     env:
       STRIKERAPI_API_KEY: ${{ secrets.STRIKERAPI_API_KEY }}
     steps:
-      - name: Check out qualification branch
+      - name: Check out current V2 branch
         uses: actions/checkout@v4
-        with:
-          ref: phase-3/strikerapi-readonly-qualification
 
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
 
-      - name: Run StrikerAPI verifier unit tests
+      - name: Compile read-only verifier
         run: python -m py_compile scripts/veltrix_v2/verify_strikerapi_readonly.py
 
       - name: Run bounded read-only qualification
