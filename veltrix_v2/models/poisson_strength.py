@@ -45,7 +45,7 @@ class TrainingMatch:
             raise ValueError("POISSON_TRAIN_INVALID_SCORE")
         if self.available_at_utc < self.kickoff_utc:
             raise ValueError("POISSON_TRAIN_RESULT_AVAILABLE_BEFORE_KICKOFF")
-        if self.availability_basis not in {"unspecified", "source_timestamp", "verified_published_timestamp", "date_only_conservative_4d"}:
+        if self.availability_basis not in {"unspecified", "source_timestamp", "verified_published_timestamp", "date_only_conservative_4d", "provider_finished_status_conservative_4d"}:
             raise ValueError("POISSON_TRAIN_AVAILABILITY_BASIS_INVALID")
 
 
