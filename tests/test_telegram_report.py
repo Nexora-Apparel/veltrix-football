@@ -349,19 +349,19 @@ def test_telegram_report_includes_value_screen_status_and_only_supplied_candidat
     assert "· approved" not in message
 
 
-def test_telegram_report_labels_competition_prior_forecast_basis():
+def test_telegram_report_labels_independent_feature_basis():
     report = sample_report()
     report["predictions"][0]["prediction_basis"] = (
-        "competition-level historical goal-rate prior; team-specific history below minimum"
+        "verified pre-kickoff team strength, recent form and opponent-adjusted performance"
     )
     message = format_report(report)
-    assert "WHY THIS VERDICT: competition-level historical goal-rate prior; team-specific history below minimum" in message
+    assert "WHY THIS VERDICT: verified pre-kickoff team strength, recent form and opponent-adjusted performance" in message
 
 
 def test_telegram_report_discloses_reference_prices_for_all_three_markets():
     report = sample_report()
     item = report["predictions"][0]
-    item["prediction_basis"] = "competition-level historical goal-rate prior; team-specific history below minimum"
+    item["prediction_basis"] = "verified pre-kickoff team strength, recent form and opponent-adjusted performance"
     item["the_odds_api_market_odds"] = {"markets": {
         "h2h": [{"bookmaker": "Book A", "outcomes": [
             {"name": "Alpha FC", "price": 2.10},
@@ -377,7 +377,7 @@ def test_telegram_report_discloses_reference_prices_for_all_three_markets():
         ]}],
     }}
     message = format_report(report)
-    assert "WHY THIS VERDICT: competition-level historical goal-rate prior" in message
+    assert "WHY THIS VERDICT: verified pre-kickoff team strength" in message
     assert "REFERENCE BOOKMAKER PRICES — NOT VALUE PICKS" in message
     assert "1X2 · Book A: Alpha FC 2.10 / Draw 3.20 / Beta FC 3.60" in message
     assert "BTTS · Book B: Yes 1.85 / No 1.95" in message
