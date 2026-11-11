@@ -192,3 +192,43 @@ Added `veltrix_v2/features/team_form.py` and `tests/veltrix_v2/test_team_form.py
 - Explicit low-sample state; zero-history features are missing with a reason, never replaced by a generic prior.
 - No provider requests, database writes, model fitting, prediction generation or legacy imports.
 - The new feature builder is isolated to the v2 architecture branch and is not wired to production or publication.
+
+
+## 13. Repository and integration audit — 2026-11-11
+
+### V2 implementation audit
+
+- Audited all 53 Python source files under `veltrix_v2/`, all five operational scripts under `scripts/veltrix_v2/`, and all 48 V2 test modules.
+- Static scan found no TODO/FIXME/NotImplemented/placeholder markers in the V2 source modules or operational scripts. The only `pass` statement in those scripts is the body of the `ProbeError` exception class.
+- V2 test files contain no pytest skip, skipif or xfail markers.
+- Latest verified V2 foundation suite: 371 passed. Latest verified full repository suite: 869 passed. The legacy-import boundary test passed.
+- The feature snapshot cutoff contradiction, direct certified-report construction bypass, Python invalid-escape warning, and historical runner entitlement mismatch have been corrected with regression tests.
+- The historical runner now checks `GET /v1/status` before downloading data: Free is capped at 90 days; Community/approved paid tiers may request up to 365 days; unknown plans fail closed. Lookbacks above 90 days require at least 300 observed history days. Default request budget is 30; the 1,000 held-out-match gate is unchanged.
+- The Community country-pack filter supports Argentina, Brazil and Nigeria. No country pack has been activated or assumed.
+
+### Existing production integration boundary — not yet migrated
+
+The website/API/Telegram infrastructure is retained, but its data path is still legacy and must not be treated as V2:
+
+- `api/dashboard.py`, `api/dashboard_data.py` and `api/index.py` route into `api/telegram.py`.
+- `api/telegram.py` still imports `app.telegram_commands`, `app.report_artifacts` and `app.telegram_security`. Its dashboard payload and Telegram output still read legacy report artifacts.
+- `scripts/run_daily_predictions.py` imports `app.live_predictions`, legacy provider adapters and legacy value-intelligence/runtime modules. It is not a V2 runner and must remain disabled.
+- The current website/Telegram renderer still contains legacy statuses such as `EXPERIMENTAL_ONLY` and `EXPERIMENTAL_LOW_DATA`. Remove those labels when the V2 publication adapter replaces the legacy report payload; do not merely rename legacy forecasts.
+- V2 has a certified-report renderer and Telegram delivery-receipt validator, but neither is connected to the production API, website, Telegram transport or Neon persistence yet. No V2 prospective paper ledger or production orchestrator has been verified.
+
+### Workflow and release safety
+
+- All 28 workflow files were checked. None currently has an active `schedule` trigger. The daily prediction job and daily watchdog job are disabled with `if: false`; recent PR pushes show the daily prediction workflow skipped.
+- Provider verification is now manual-only. Its optional BTTS probe is opt-in and capped at eight The Odds API credits across the top-five leagues plus Argentina and Brazil. No live odds-market probe has been run.
+- The latest provider smoke check confirmed 5Dollar Free access to the top five leagues and sampled five EPL fixtures (1X2 5/5, BTTS 3/5, O/U 2.5 5/5). The Odds API key is authenticated with 46 soccer sports and 298 remaining credits at the time of the check. These are provider access/coverage observations, not model-performance evidence.
+- PR #51 remains draft and unmerged. No Vercel deployment was attempted; the Vercel check reports its external build-rate limit.
+
+### Remaining gates
+
+1. Finish the full legacy/integration inventory and preserve only required website/API/Telegram infrastructure; do not reuse legacy prediction logic.
+2. Complete provider rights and account qualification. Community Access is a manual account action; Argentina is the strongest one-country-pack candidate by the provider's current 12-month match counts, but entitlement must be confirmed from `/v1/status`.
+3. Run the plan-appropriate historical diagnostic and inspect its artifact. Historical 5Dollar availability uses a conservative four-day proxy and is not point-in-time certifiable.
+4. Build prospective, timestamped odds and settled-selection evidence; do not claim CLV or ROI certification from historical closing fields.
+5. Complete model validation and publication gating before website/Telegram integration.
+6. Connect the same immutable V2 report to website, API and Telegram; verify delivery receipt and 06:00 WAT timing before enabling any schedule.
+7. Complete controlled production acceptance. No merge, deployment, Neon production writes, Telegram activation or daily schedule before all gates pass.
