@@ -265,6 +265,7 @@ class AcquisitionDatasetBridgeTests(unittest.TestCase):
             acquisition_record_to_history_row(
                 self.provider_record(), settlement_timestamp_package=package,
                 trusted_kms_clients={KEY_ARN: KMS},
+                team_crosswalk_registry=signed_team_crosswalk_registry(),
             )
 
     def test_untrusted_registry_signer_is_rejected(self):
@@ -282,6 +283,7 @@ class AcquisitionDatasetBridgeTests(unittest.TestCase):
             acquisition_record_to_history_row(
                 self.provider_record(), settlement_timestamp_package=package,
                 trusted_kms_clients={KEY_ARN: KMS},
+                team_crosswalk_registry=signed_team_crosswalk_registry(),
             )
 
     def test_settlement_fixture_mapping_must_match_provider_record(self):
@@ -305,6 +307,7 @@ class AcquisitionDatasetBridgeTests(unittest.TestCase):
             acquisition_record_to_history_row(
                 self.provider_record(), settlement_timestamp_package=package,
                 trusted_kms_clients={KEY_ARN: KMS},
+                team_crosswalk_registry=signed_team_crosswalk_registry(),
             )
 
     def test_unbound_raw_payload_cannot_enter_training_history(self):
