@@ -6,8 +6,21 @@ from app.independent_report_contract import MODEL_PORTFOLIO_ID, REPORT_SCHEMA
 
 
 def authorized_report(report):
+    predictions = [
+        {
+            **row,
+            "model_portfolio_id": MODEL_PORTFOLIO_ID,
+            "legacy_model_dependency": False,
+            **({
+                "feature_snapshot_sha256": "b" * 64,
+                "model_versions": ["results_history_logistic"],
+            } if any(key in row for key in ("probabilities", "btts_yes", "over_1_5", "over_2_5", "over_3_5")) else {}),
+        } if isinstance(row, dict) else row
+        for row in report.get("predictions", [])
+    ]
     return {
         **report,
+        "predictions": predictions,
         "as_of_date": report.get("as_of_date") or "2026-11-11",
         "report_schema": REPORT_SCHEMA,
         "model_portfolio_id": MODEL_PORTFOLIO_ID,
