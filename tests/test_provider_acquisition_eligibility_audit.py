@@ -11,6 +11,9 @@ from app.source_qualification_registry import (
 from app.provider_acquisition_eligibility_audit import (
     SCHEMA_VERSION, audit_provider_acquisition_eligibility,
 )
+from app.canonical_team_crosswalk import (
+    SCHEMA as TEAM_CROSSWALK_SCHEMA, sign_team_crosswalk_registry,
+)
 
 
 KEY_ARN = "arn:aws:kms:eu-west-1:123456789012:key/veltrix-test-key"
@@ -25,6 +28,30 @@ class FakeKms:
 
 
 KMS = FakeKms()
+
+
+def team_registry():
+    mappings = []
+    for source_id, canonical_id in (("h", "team-home"), ("a", "team-away")):
+        mappings.append({
+            "provider": "strikerapi", "competition_id": "soccer",
+            "source_team_id": source_id, "canonical_team_id": canonical_id,
+            "team_scope": "men_first_team", "evidence_sha256": ["b" * 64],
+            "reviewer": "identity-review", "reviewed_at": "2026-01-01T00:00:00Z",
+            "valid_from": "2026-01-02T00:00:00Z",
+            "valid_until": "2027-01-01T00:00:00Z", "revoked_at": None,
+        })
+    return sign_team_crosswalk_registry(
+        kms_client=KMS, key_arn=KEY_ARN,
+        trusted_key_regions={KEY_ARN: "eu-west-1"},
+        registry={
+            "schema": TEAM_CROSSWALK_SCHEMA,
+            "issued_at": "2026-01-01T00:00:00Z",
+            "expires_at": "2027-01-01T00:00:00Z", "mappings": mappings,
+        },
+    )
+
+
 QUALIFICATION_RECORD = {
     "source_id": "qualified-source-a",
     "qualification_status": "qualified",
@@ -109,6 +136,7 @@ class ProviderAcquisitionEligibilityAuditTests(unittest.TestCase):
             acquisition_records=records,
             settlement_timestamp_packages=packages or {},
             trusted_kms_clients=trusted if trusted is not None else {KEY_ARN: KMS},
+            team_crosswalk_registry=team_registry(),
         )
 
     def test_valid_record_is_admitted_with_sanitized_provenance(self):
@@ -121,6 +149,10 @@ class ProviderAcquisitionEligibilityAuditTests(unittest.TestCase):
         self.assertEqual(report["rejected_count"], 0)
         accepted = report["accepted_records"][0]
         self.assertEqual(accepted["fixture_id"], "strikerapi:g-1")
+        self.assertEqual(accepted["home_team_id"], "team-home")
+        self.assertEqual(accepted["away_team_id"], "team-away")
+        self.assertEqual(accepted["home_team_source_id"], "h")
+        self.assertEqual(accepted["team_identity_evidence"]["team_scope"], "men_first_team")
         self.assertEqual(accepted["settlement_source_id"], "qualified-source-a")
         self.assertEqual(accepted["source_season"], "2025/26")
         self.assertEqual(accepted["retrieved_at"], "2026-11-02T00:00:00Z")
