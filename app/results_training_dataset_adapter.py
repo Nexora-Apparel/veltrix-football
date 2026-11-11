@@ -25,6 +25,9 @@ from app.results_feature_reconstruction import (
 from app.canonical_team_crosswalk import (
     TeamCrosswalkError, verify_team_crosswalk_registry,
 )
+from app.canonical_season_crosswalk import (
+    SeasonCrosswalkError, verify_season_crosswalk_registry,
+)
 from datetime import datetime, timedelta
 
 
@@ -39,7 +42,8 @@ def build_results_history_snapshot(*, historical_matches: list[dict],
                                    minimum_team_matches: int = 3,
                                    feature_source_qualification_registry: dict | None = None,
                                    trusted_kms_clients: dict | None = None,
-                                   team_crosswalk_registry: dict | None = None) -> dict:
+                                   team_crosswalk_registry: dict | None = None,
+                                   season_crosswalk_registry: dict | None = None) -> dict:
     # A target is also one of the admitted historical rows. Remove that row
     # before reconstruction; otherwise the target leaks into its own history
     # and the reconstruction contract correctly rejects the duplicate fixture.
@@ -105,6 +109,58 @@ def build_results_history_snapshot(*, historical_matches: list[dict],
             )
         target_history = [row for row in target_history if pair_is_valid(row)]
 
+    if not isinstance(season_crosswalk_registry, dict):
+        raise ResultsTrainingAdapterError("season_crosswalk_registry_required")
+    if not isinstance(trusted_kms_clients, dict) or not trusted_kms_clients:
+        raise ResultsTrainingAdapterError("season_crosswalk_trusted_kms_clients_required")
+    try:
+        feature_as_of = (kickoff - timedelta(hours=cutoff_hours)).isoformat()
+        verified_season_registry = verify_season_crosswalk_registry(
+            registry=season_crosswalk_registry,
+            trusted_kms_clients=trusted_kms_clients,
+            as_of=feature_as_of,
+        )
+    except (SeasonCrosswalkError, KeyError, TypeError, ValueError) as exc:
+        raise ResultsTrainingAdapterError(
+            f"season_crosswalk_registry_rejected_at_feature_cutoff:{exc}"
+        ) from None
+
+    if target_row is None:
+        raise ResultsTrainingAdapterError("target_season_identity_row_missing")
+    target_provider = target_fixture.get("provider", target_row.get("provider"))
+    target_source_season = target_fixture.get("source_season", target_row.get("source_season"))
+    target_season_identity = (
+        target_provider, target_fixture.get("competition_id"), target_source_season
+    )
+    target_season_mapping = verified_season_registry["mappings"].get(target_season_identity)
+    if target_season_mapping is None:
+        raise ResultsTrainingAdapterError("target_canonical_season_mapping_not_valid_at_feature_cutoff")
+
+    same_season_history = []
+    for row in target_history:
+        if not isinstance(row, dict):
+            continue
+        identity = (
+            row.get("provider"), row.get("competition_id"), row.get("source_season")
+        )
+        mapping = verified_season_registry["mappings"].get(identity)
+        if mapping is not None and mapping["canonical_season_id"] == target_season_mapping["canonical_season_id"]:
+            same_season_history.append(row)
+    target_history = same_season_history
+
+    canonical_season_evidence = {
+        "provider": target_provider,
+        "competition_id": target_fixture.get("competition_id"),
+        "source_season": target_source_season,
+        "canonical_season_id": target_season_mapping["canonical_season_id"],
+        "registry_sha256": verified_season_registry["registry_sha256"],
+        "signing_key_arn": verified_season_registry["signing_key_arn"],
+        "verified_at": verified_season_registry["verified_at"],
+        "evidence_sha256": target_season_mapping["evidence_sha256"],
+        "reviewer": target_season_mapping["reviewer"],
+        "reviewed_at": target_season_mapping["reviewed_at"],
+    }
+
     reconstructed = reconstruct_pre_match_features(
         historical_matches=target_history,
         target_fixture=target_fixture,
@@ -145,6 +201,7 @@ def build_results_history_snapshot(*, historical_matches: list[dict],
         features=snapshot_features,
         verified_source_registry=verified_source_registry,
         competition_id=reconstructed["competition_id"],
+        season_identity_evidence=canonical_season_evidence,
     )
 
 
@@ -157,7 +214,8 @@ def assemble_results_history_dataset(*, historical_matches: list[dict],
                                       minimum_team_matches: int = 3,
                                       feature_source_qualification_registry: dict | None = None,
                                       trusted_kms_clients: dict | None = None,
-                                      team_crosswalk_registry: dict | None = None) -> dict:
+                                      team_crosswalk_registry: dict | None = None,
+                                      season_crosswalk_registry: dict | None = None) -> dict:
     if not isinstance(target_fixtures, list) or not isinstance(settled_labels, list):
         raise ResultsTrainingAdapterError("targets_and_labels_must_be_arrays")
     snapshots = []
@@ -173,6 +231,7 @@ def assemble_results_history_dataset(*, historical_matches: list[dict],
                 feature_source_qualification_registry=feature_source_qualification_registry,
                 trusted_kms_clients=trusted_kms_clients,
                 team_crosswalk_registry=team_crosswalk_registry,
+                season_crosswalk_registry=season_crosswalk_registry,
             )
             snapshots.append(snapshot)
         except (FeatureReconstructionError, ValueError, KeyError) as exc:
