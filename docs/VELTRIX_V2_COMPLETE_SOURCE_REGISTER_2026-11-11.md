@@ -242,3 +242,15 @@ No source is approved for model training solely because it has a public endpoint
 - The 207-match rolling-12-month sample is below VELTRIX's 1,000 held-out-match certification threshold per market. Community Access only supplies the last 12 months, so it cannot by itself provide a certifiable NPFL walk-forward sample. The 13-season archive is advertised in the Pro coverage data-quality page, but is not an entitlement of Community. Do not certify NPFL markets using only Community history.
 - The Free account cannot access Nigeria merely because the Pro coverage table lists it. Do not add the NPFL to the current Free workflow or treat a Pro league ID as an entitlement.
 - Official references: https://5dollarfootballapi.com/docs/league-coverage ; https://5dollarfootballapi.com/docs/data-quality ; https://5dollarfootballapi.com/community
+
+
+#### The Odds API — current/prospective odds qualification refresh
+
+- Official Terms last updated 2026-08-31 explicitly permit indefinite storage, public display in websites/apps (including commercial use), derived analytics and statistical/ML model training. Raw odds-feed resale or redistribution as a standalone data product is prohibited. Attribution is optional.
+- The free Starter plan includes 500 credits/month and does not include historical odds. Current odds are available on Free.
+- Current `/odds` responses include market-level `last_update` timestamps. The endpoint returns only events for which bookmakers currently offer odds and does not return completed events. This is suitable for prospective timestamped collection, not historical backfill.
+- Historical snapshots are paid-only: featured markets are available from 2020-06-06 at 10-minute intervals, improving to 5-minute intervals from September 2022. Historical endpoint cost is 10 credits per region per market per snapshot. Additional historical event markets are available from 2023-05-03.
+- Budget estimate: one daily snapshot for five top-European competitions, one bookmaker region and three markets (1X2, totals, BTTS where supported) costs up to 15 credits/day or about 450 credits per 30-day month. This leaves little margin under the 500-credit Free plan and assumes all three markets are supported for every queried competition. A second daily snapshot or additional regions/bookmakers exceeds the free budget quickly.
+- Use The Odds API as the secondary prospective odds/time-stamp lane, not as the fixtures/results source. Store request time, returned snapshot time/market `last_update`, bookmaker, region, market and fixture mapping. Never infer a capture timestamp from the daily report time.
+- The API key was previously authenticated and listed 46 soccer competitions. No new live call was made during this documentation audit, so current remaining credits and current market-by-market coverage remain unverified.
+- Official references: https://the-odds-api.com/terms-and-conditions.html ; https://the-odds-api.com/historical-odds-data/ ; https://the-odds-api.com/liveapi/guides/v4/ ; https://the-odds-api.com/
