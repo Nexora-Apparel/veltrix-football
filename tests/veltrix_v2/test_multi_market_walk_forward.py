@@ -78,6 +78,10 @@ def test_all_three_markets_share_same_forecast_coverage(monkeypatch):
     assert fold.btts_report.coverage == fold.totals_report.coverage == 1.0
     assert fold.btts_report.eligible_fixture_count == 2
     assert fold.totals_report.eligible_fixture_count == 2
+    assert fold.coverage_1x2.coverage == 1.0
+    assert fold.coverage_btts.coverage == 1.0
+    assert fold.coverage_totals.coverage == 1.0
+    assert result.aggregate_coverage_1x2.forecast_count == 2
 
 
 def test_unknown_team_abstention_counts_against_every_market(monkeypatch):
@@ -126,6 +130,13 @@ def test_unknown_team_abstention_counts_against_every_market(monkeypatch):
     assert result.aggregate_btts is None
     assert result.aggregate_totals is None
     assert result.folds[0].abstained_fixture_ids == ("test-1",)
+    assert result.folds[0].coverage_1x2.eligible_fixture_count == 1
+    assert result.folds[0].coverage_1x2.forecast_count == 0
+    assert result.folds[0].coverage_1x2.abstention_count == 1
+    assert result.folds[0].coverage_1x2.coverage == 0.0
+    assert result.folds[0].coverage_btts.coverage == 0.0
+    assert result.folds[0].coverage_totals.coverage == 0.0
+    assert result.aggregate_coverage_1x2.coverage == 0.0
 
 
 def test_integer_totals_line_is_rejected():
