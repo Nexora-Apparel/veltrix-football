@@ -45,6 +45,31 @@ def attach_evidence(row):
     return row
 
 
+
+def season_registry(*, source_season="2025/26", canonical_season_id="league:2025-2026"):
+    unsigned = {
+        "schema": SEASON_SCHEMA,
+        "issued_at": "2026-01-01T00:00:00Z",
+        "expires_at": "2027-01-01T00:00:00Z",
+        "mappings": [{
+            "provider": "fivedollar",
+            "competition_id": "4160026622",
+            "source_season": source_season,
+            "canonical_season_id": canonical_season_id,
+            "evidence_sha256": ["d" * 64],
+            "reviewer": "season-review",
+            "reviewed_at": "2026-01-02T00:00:00Z",
+            "valid_from": "2026-01-03T00:00:00Z",
+            "valid_until": "2026-12-31T00:00:00Z",
+            "revoked_at": None,
+        }],
+    }
+    return sign_season_crosswalk_registry(
+        kms_client=KMS, key_arn=SEASON_KEY_ARN,
+        trusted_key_regions={SEASON_KEY_ARN: "eu-west-1"},
+        registry=unsigned,
+    )
+
 def history_rows():
     pairings = [
         [("A", "B"), ("C", "D")],
@@ -66,6 +91,7 @@ def history_rows():
                 "provider": "fivedollar",
                 "source_id": fixture_id,
                 "competition_id": "4160026622",
+                "source_season": "2025/26",
                 "kickoff_at": f"{day.isoformat()}T{hour:02d}:00:00Z",
                 "settled_at": f"{day.isoformat()}T{hour + 2:02d}:00:00Z",
                 "home_team_id": home,
@@ -83,6 +109,8 @@ def history_rows():
 
 TARGET = {
     "fixture_id": "target-2026-09-01",
+    "provider": "fivedollar",
+    "source_season": "2025/26",
     "competition_id": "4160026622",
     "kickoff_at": "2026-09-01T18:00:00Z",
     "home_team_id": "A",
@@ -114,6 +142,8 @@ class ResultsTrainingDatasetAdapterTests(unittest.TestCase):
     def test_builds_pit_snapshot_with_reconstruction_source_provenance(self):
         snapshot = build_results_history_snapshot(
             historical_matches=history_rows(), target_fixture=TARGET,
+            season_crosswalk_registry=season_registry(),
+            trusted_kms_clients={SEASON_KEY_ARN: KMS},
         )
         self.assertEqual(snapshot["fixture_id"], TARGET["fixture_id"])
         self.assertEqual(snapshot["feature_count"], 11)
@@ -148,6 +178,8 @@ class ResultsTrainingDatasetAdapterTests(unittest.TestCase):
         history.append(target_row)
         snapshot = build_results_history_snapshot(
             historical_matches=history, target_fixture=TARGET,
+            season_crosswalk_registry=season_registry(),
+            trusted_kms_clients={SEASON_KEY_ARN: KMS},
         )
         self.assertEqual(snapshot["fixture_id"], TARGET["fixture_id"])
         self.assertEqual(snapshot["feature_count"], 11)
@@ -158,6 +190,10 @@ class ResultsTrainingDatasetAdapterTests(unittest.TestCase):
             target_fixtures=[TARGET],
             settled_labels=[LABEL],
             split_policy=POLICY,
+            season_crosswalk_registry=season_registry(),
+            trusted_kms_clients={SEASON_KEY_ARN: KMS},
+            season_crosswalk_registry=season_registry(),
+            trusted_kms_clients={SEASON_KEY_ARN: KMS},
         )
         self.assertEqual(result["feature_reconstruction"]["snapshot_count"], 1)
         self.assertEqual(result["dataset"]["quality"]["included_fixture_count"], 1)
