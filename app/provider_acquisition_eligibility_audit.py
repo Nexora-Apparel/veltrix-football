@@ -51,6 +51,7 @@ def audit_provider_acquisition_eligibility(
     acquisition_records: list[dict],
     settlement_timestamp_packages: dict,
     trusted_kms_clients: dict,
+    team_crosswalk_registry: dict,
 ) -> dict:
     """Audit all records independently and report every admission decision.
 
@@ -112,6 +113,7 @@ def audit_provider_acquisition_eligibility(
                 record,
                 settlement_timestamp_package=package,
                 trusted_kms_clients=trusted_kms_clients,
+                team_crosswalk_registry=team_crosswalk_registry,
             )
         except AcquisitionDatasetBridgeError as exc:
             rejected.append({
@@ -130,6 +132,9 @@ def audit_provider_acquisition_eligibility(
             "source_season": record.get("season"),
             "home_team_id": row["home_team_id"],
             "away_team_id": row["away_team_id"],
+            "home_team_source_id": row["home_team_source_id"],
+            "away_team_source_id": row["away_team_source_id"],
+            "team_identity_evidence": row["team_identity_evidence"],
             "kickoff_at": row["kickoff_at"],
             "settled_at": row["settled_at"],
             "retrieved_at": row["retrieved_at"],
