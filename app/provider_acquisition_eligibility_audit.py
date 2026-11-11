@@ -132,6 +132,7 @@ def audit_provider_acquisition_eligibility(
             "away_team_id": row["away_team_id"],
             "kickoff_at": row["kickoff_at"],
             "settled_at": row["settled_at"],
+            "retrieved_at": row["retrieved_at"],
             "payload_sha256": row["payload_sha256"],
             "settlement_source_id": row["settlement_source_id"],
             "settlement_qualification_digest": row["settlement_qualification_digest"],
