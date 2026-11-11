@@ -196,3 +196,13 @@ No source is approved for model training solely because it has a public endpoint
 - The Terms warn that betting platforms and mass-media distribution may require additional rights-holder licences. No explicit ML model-training or indefinite-retention grant was found.
 - The prior Argentina/Brazil technical probes remain valid evidence of endpoint access only. Keep GOAL records out of training and public display pending written clarification of model-training, retention and upstream rights.
 - Official reference: https://goal-api.com/terms
+
+
+#### FootyStats public example-key response inspection — 2026-11-11
+
+- The official documented sample match endpoint returned a 2019/20 EPL match record with stable match/team IDs, Unix kickoff, final score, shot counts, possession, actual match xG, pre-match xG fields, lineups/bench, event timings, H2H and a multi-book odds comparison.
+- The response confirms that the example key exposes rich historical match fields for test data. It does not prove a real account's Free-plan access or production entitlement.
+- The response contains both current aggregates (`home_ppg`, `away_ppg`) and explicitly pre-match fields (`pre_match_home_ppg`, `pre_match_away_ppg`). Current aggregates must never be used as historical pre-match features. The pre-match fields still require a bounded `max_time` cutoff test before they are accepted as point-in-time features.
+- Actual `team_a_xg` / `team_b_xg` are post-match values and are not valid pre-match features. The `*_xg_prematch` fields are candidate pre-match fields only; their generation timestamp, model version and cutoff behaviour remain unverified.
+- The sample's odds comparison contains bookmaker prices but no per-quote capture timestamps. It cannot satisfy VELTRIX's timestamped-odds/CLV certification gate. Do not treat the presence of historical odds as proof of captured_at provenance.
+- The sample response includes a provider Terms URL in its message; usage remains bound to the official Terms of Use and raw-data redistribution remains prohibited.
