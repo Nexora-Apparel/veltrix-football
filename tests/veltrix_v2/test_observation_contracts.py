@@ -50,3 +50,14 @@ def test_fixture_identity_requires_distinct_teams_and_aware_kickoff():
         FixtureIdentity("strikerapi", "1", "EPL", "2026", "7", "7", NOW)
     with pytest.raises(ValueError, match="timezone-aware"):
         FixtureIdentity("strikerapi", "1", "EPL", "2026", "7", "8", datetime(2026, 11, 11))
+
+
+def test_observation_values_are_deeply_immutable():
+    source = {"score": {"home": 2}, "events": [1, 2]}
+    item = observation(values=source)
+    source["score"]["home"] = 9
+    source["events"].append(3)
+    assert item.values["score"]["home"] == 2
+    assert item.values["events"] == (1, 2)
+    with pytest.raises(TypeError):
+        item.values["score"]["home"] = 7
