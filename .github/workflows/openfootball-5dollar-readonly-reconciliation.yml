@@ -6,6 +6,8 @@ on:
     paths:
       - '.github/workflows/openfootball-5dollar-readonly-reconciliation.yml'
       - 'scripts/veltrix_v2/fetch_openfootball_5dollar_snapshots.py'
+      - 'scripts/veltrix_v2/reconcile_openfootball_5dollar_snapshots.py'
+      - 'tests/test_reconcile_openfootball_5dollar_snapshots.py'
   workflow_dispatch:
     inputs:
       start_date:
