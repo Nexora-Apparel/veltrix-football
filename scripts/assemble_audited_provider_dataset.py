@@ -32,6 +32,7 @@ def main() -> int:
     parser.add_argument("--settlement-packages", required=True, help="JSON object keyed by provider:source_id")
     parser.add_argument("--team-crosswalk-registry", required=True, help="KMS-signed canonical team crosswalk registry JSON")
     parser.add_argument("--team-crosswalk-as-of", required=True, help="Timezone-aware ISO-8601 coverage verification time")
+    parser.add_argument("--feature-source-qualification-registry", required=True, help="KMS-signed feature-source qualification registry JSON")
     parser.add_argument("--split-policy", required=True, help="Chronological train/validation/test split policy JSON")
     parser.add_argument("--output", default="audited_provider_dataset_report.json")
     parser.add_argument("--cutoff-hours", type=int, default=6)
@@ -49,9 +50,12 @@ def main() -> int:
         records = _read_json(args.records)
         packages = _read_json(args.settlement_packages)
         team_registry = _read_json(args.team_crosswalk_registry)
+        feature_source_registry = _read_json(args.feature_source_qualification_registry)
         split_policy = _read_json(args.split_policy)
         if (not isinstance(records, list) or not isinstance(packages, dict)
-                or not isinstance(team_registry, dict) or not isinstance(split_policy, dict)):
+                or not isinstance(team_registry, dict)
+                or not isinstance(feature_source_registry, dict)
+                or not isinstance(split_policy, dict)):
             raise ValueError("input_json_top_level_shape_invalid")
         trusted_clients = build_trusted_kms_clients(registry_json=trusted_registry)
         report = assemble_audited_provider_dataset(
@@ -60,6 +64,7 @@ def main() -> int:
             trusted_kms_clients=trusted_clients,
             team_crosswalk_registry=team_registry,
             team_crosswalk_as_of=args.team_crosswalk_as_of,
+            feature_source_qualification_registry=feature_source_registry,
             split_policy=split_policy,
             cutoff_hours=args.cutoff_hours,
             form_window=args.form_window,
