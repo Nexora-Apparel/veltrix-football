@@ -1,8 +1,8 @@
 """Certified-only daily report contract for website and Telegram adapters.
 
-This module defines the boundary, not a transport integration. Existing website
-and Telegram infrastructure may consume its payload only after the V2 release
-certification gate passes. No schedule or network delivery is performed here.
+This module defines the boundary, not a transport integration. Prediction
+publication and value-bet activation have separate certification gates. No
+schedule or network delivery is performed here.
 """
 from __future__ import annotations
 

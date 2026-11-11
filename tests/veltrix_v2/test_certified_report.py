@@ -95,14 +95,13 @@ def test_certified_report_serializes_for_website_and_telegram():
 
 def test_uncertified_report_cannot_be_published():
     cert = certify_prediction_publication([
-        [
             PredictionMarketEvidence(
                 market=market, walk_forward_matches=0,
                 source_approved=False, point_in_time_validated=False,
                 leakage_tests_passed=False, calibration_passed=False,
             )
             for market in ("1X2", "BTTS", "TOTALS")
-        ])
+    ])
     with pytest.raises(ValueError, match="CERTIFICATION_REQUIRED"):
         build_certified_daily_report(
             report_date_wat=date(2026, 11, 12),
