@@ -86,3 +86,12 @@ def test_zero_minutes_produces_missing_per90_not_infinity():
     result = build_player_form([row], player_id="p1", cutoff_utc=BASE + timedelta(days=10))
     assert result.goals_per90 is None
     assert result.xg_per90 is None
+
+
+
+def test_player_match_result_cannot_be_available_before_kickoff():
+    with pytest.raises(ValueError, match="RESULT_AVAILABLE_BEFORE_KICKOFF"):
+        evidence(
+            0,
+            available_at_utc=BASE - timedelta(minutes=1),
+        )

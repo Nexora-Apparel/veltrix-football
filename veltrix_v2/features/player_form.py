@@ -42,6 +42,10 @@ class PlayerMatchEvidence:
             raise ValueError("PLAYER_FORM_IDENTITY_REQUIRED")
         object.__setattr__(self, "kickoff_utc", _utc(self.kickoff_utc, "KICKOFF"))
         object.__setattr__(self, "available_at_utc", _utc(self.available_at_utc, "AVAILABILITY"))
+        if self.available_at_utc < self.kickoff_utc:
+            raise ValueError("PLAYER_FORM_RESULT_AVAILABLE_BEFORE_KICKOFF")
+        if not isinstance(self.quality_state, str) or not self.quality_state.strip():
+            raise ValueError("PLAYER_FORM_QUALITY_STATE_REQUIRED")
         copied = dict(self.metrics)
         unknown = set(copied) - set(_METRICS)
         if unknown:
