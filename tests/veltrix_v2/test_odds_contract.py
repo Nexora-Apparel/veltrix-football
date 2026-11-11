@@ -33,17 +33,17 @@ def test_provider_quote_timestamp_is_preserved_separately():
 
 
 def test_provider_quote_timestamp_must_be_aware():
-    with pytest.raises(ValueError, match="MUST_BE_AWARE"):
+    with pytest.raises(ValueError, match="timezone-aware"):
         snapshot(provider_quote_at=datetime(2026, 11, 12, 4, 0))
 
 
 def test_provider_quote_timestamp_must_precede_kickoff():
-    with pytest.raises(ValueError, match="NOT_PREMATCH"):
+    with pytest.raises(ValueError, match="strictly before kickoff"):
         snapshot(provider_quote_at=KICKOFF)
 
 
 def test_provider_quote_timestamp_cannot_be_after_capture():
-    with pytest.raises(ValueError, match="AFTER_CAPTURE"):
+    with pytest.raises(ValueError, match="cannot be after captured_at"):
         snapshot(provider_quote_at=CAPTURE + timedelta(seconds=1))
 
 
