@@ -102,6 +102,9 @@ jobs:
       - name: Run historical dataset admission profile tests
         run: python -m unittest discover -s tests -p 'test_historical_dataset_admission_report.py' -v
 
+      - name: Run signed canonical team crosswalk tests
+        run: python -m unittest discover -s tests -p 'test_canonical_team_crosswalk.py' -v
+
       - name: Run signed canonical season crosswalk tests
         run: python -m unittest discover -s tests -p 'test_canonical_season_crosswalk.py' -v
 
