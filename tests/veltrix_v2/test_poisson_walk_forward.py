@@ -59,7 +59,7 @@ def test_unknown_teams_are_abstained_without_fallback():
     assert "unknown" in result.folds[0].abstained_fixture_ids
 
 
-def test_integer_total_lines_and_unsupported_rho_are_rejected():
+def test_integer_total_lines_are_rejected_and_valid_negative_rho_is_supported():
     args = dict(
         matches=dataset(), competition_key="league", season="2024/25",
         first_test_start_utc=BASE + timedelta(days=84),
@@ -71,8 +71,5 @@ def test_integer_total_lines_and_unsupported_rho_are_rejected():
         assert False, "integer line must be rejected"
     except ValueError as exc:
         assert "HALF_GOAL" in str(exc)
-    try:
-        run_poisson_walk_forward(**args, rho=-0.2)
-        assert False, "negative rho not in research range"
-    except ValueError as exc:
-        assert "RHO_OUT_OF_RESEARCH_RANGE" in str(exc)
+    result = run_poisson_walk_forward(**args, rho=-0.05)
+    assert result.total_test_fixtures == 6
