@@ -78,6 +78,9 @@ def build_historical_dataset_admission_report(pipeline_report: Any) -> dict:
         if not isinstance(row, dict):
             raise HistoricalAdmissionReportError(f"dataset_row_invalid:{index}")
         split, competition = row.get("split"), row.get("competition_key")
+        predictors, targets = row.get("predictors"), row.get("targets")
+        if not isinstance(predictors, dict) or not isinstance(targets, dict):
+            raise HistoricalAdmissionReportError(f"dataset_row_features_invalid:{index}")
         snapshot = snapshots_by_fixture.get(row.get("fixture_id"))
         if (snapshot is None
                 or snapshot.get("snapshot_sha256") != row.get("feature_snapshot_sha256")):
@@ -85,7 +88,6 @@ def build_historical_dataset_admission_report(pipeline_report: Any) -> dict:
         snapshot_values = {item["name"]: item["value"] for item in snapshot["features"]}
         if snapshot_values != row.get("predictors"):
             raise HistoricalAdmissionReportError(f"dataset_snapshot_predictor_mismatch:{index}")
-        predictors, targets = row.get("predictors"), row.get("targets")
         if split not in {"train", "validation", "test"} or not isinstance(competition, str) or not competition:
             raise HistoricalAdmissionReportError(f"dataset_row_scope_invalid:{index}")
         if not isinstance(predictors, dict) or not isinstance(targets, dict):
@@ -99,7 +101,8 @@ def build_historical_dataset_admission_report(pipeline_report: Any) -> dict:
     expected_snapshot_count = reconstruction.get("snapshot_count", 0)
     expected_withheld_count = reconstruction.get("withheld_count", len(withheld))
     if (isinstance(expected_snapshot_count, bool) or not isinstance(expected_snapshot_count, int)
-            or expected_snapshot_count < 0 or expected_snapshot_count > len(accepted)):
+            or expected_snapshot_count < 0 or expected_snapshot_count != len(snapshots)
+            or expected_snapshot_count > len(accepted)):
         raise HistoricalAdmissionReportError("feature_snapshot_count_invalid")
     if (isinstance(expected_withheld_count, bool) or not isinstance(expected_withheld_count, int)
             or expected_withheld_count != len(withheld)):
