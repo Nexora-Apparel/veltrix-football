@@ -10,7 +10,8 @@ from math import isfinite, log
 from typing import Iterable, Literal
 
 Outcome1X2 = Literal["HOME", "DRAW", "AWAY"]
-_CLASS_ORDER: tuple[Outcome1X2, ...] = ("HOME", "DRAW", "AWAY")
+# Ordered by home goal difference: away win < draw < home win.
+_CLASS_ORDER: tuple[Outcome1X2, ...] = ("AWAY", "DRAW", "HOME")
 
 
 @dataclass(frozen=True, slots=True)
@@ -59,8 +60,7 @@ def score_1x2(
     """Score one-to-one matched out-of-sample 1X2 forecasts and results.
 
     Brier is the mean sum of the three class-wise squared errors.
-    RPS is the mean squared cumulative-distribution error over the ordered
-    HOME/DRAW/AWAY classes, divided by the number of cumulative cut points.
+    RPS follows the ordinal home-goal-difference order AWAY/DRAW/HOME.
     """
     forecast_rows = tuple(forecasts)
     outcome_rows = tuple(outcomes)
@@ -81,7 +81,7 @@ def score_1x2(
     rps_total = 0.0
     for forecast in forecast_rows:
         actual = outcome_by_id[forecast.fixture_id]
-        probabilities = (forecast.p_home, forecast.p_draw, forecast.p_away)
+        probabilities = (forecast.p_away, forecast.p_draw, forecast.p_home)
         observed = tuple(1.0 if actual == label else 0.0 for label in _CLASS_ORDER)
         brier_total += sum((p - y) ** 2 for p, y in zip(probabilities, observed))
         log_loss_total -= log(probabilities[_CLASS_ORDER.index(actual)])
