@@ -67,6 +67,27 @@ def verified_feature_registry():
     )
 
 
+def valid_team_identity_evidence(**overrides):
+    value = {
+        "home_source_team_id": "source-home",
+        "away_source_team_id": "source-away",
+        "home_canonical_team_id": "canonical-home",
+        "away_canonical_team_id": "canonical-away",
+        "team_scope": "men_first_team",
+        "home_mapping_evidence_sha256": ["b" * 64],
+        "away_mapping_evidence_sha256": ["c" * 64],
+        "home_mapping_reviewer": "identity-reviewer",
+        "away_mapping_reviewer": "identity-reviewer",
+        "home_mapping_reviewed_at": "2026-10-01T00:00:00Z",
+        "away_mapping_reviewed_at": "2026-10-01T00:00:00Z",
+        "registry_sha256": "d" * 64,
+        "signing_key_arn": "arn:aws:kms:eu-west-1:123456789012:key/team-test",
+        "verified_at": "2026-11-09T00:00:00Z",
+    }
+    value.update(overrides)
+    return value
+
+
 class PointInTimeFeatureContractTests(unittest.TestCase):
     def test_valid_snapshot_is_deterministic_and_target_is_separate(self):
         first = build_point_in_time_feature_snapshot(
@@ -78,6 +99,28 @@ class PointInTimeFeatureContractTests(unittest.TestCase):
         self.assertEqual(first["snapshot_sha256"], second["snapshot_sha256"])
         self.assertTrue(validate_point_in_time_feature_snapshot(first)["valid"])
         self.assertFalse(first["model_training_certified"])
+
+    def test_team_identity_evidence_is_bound_into_snapshot_digest(self):
+        snapshot = build_point_in_time_feature_snapshot(
+            fixture_id="fixture-team", prediction_as_of=CUTOFF, features=[BASE],
+            team_identity_evidence=valid_team_identity_evidence(),
+        )
+        self.assertTrue(validate_point_in_time_feature_snapshot(snapshot)["valid"])
+        self.assertEqual(snapshot["team_identity_evidence"]["team_scope"], "men_first_team")
+        tampered = dict(snapshot)
+        tampered["team_identity_evidence"] = dict(snapshot["team_identity_evidence"])
+        tampered["team_identity_evidence"]["team_scope"] = "women_first_team"
+        with self.assertRaises(PointInTimeFeatureError):
+            validate_point_in_time_feature_snapshot(tampered)
+
+    def test_team_identity_verified_after_cutoff_is_rejected(self):
+        with self.assertRaisesRegex(PointInTimeFeatureError, "team_identity_verified_after_cutoff"):
+            build_point_in_time_feature_snapshot(
+                fixture_id="fixture-team", prediction_as_of=CUTOFF, features=[BASE],
+                team_identity_evidence=valid_team_identity_evidence(
+                    verified_at="2026-11-10T05:00:01Z"
+                ),
+            )
 
     def test_future_observation_availability_and_retrieval_are_rejected(self):
         for field, value in (
