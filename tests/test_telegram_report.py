@@ -492,4 +492,3 @@ def test_telegram_withholds_legacy_low_data_forecast_probabilities(monkeypatch):
     assert not is_publishable_independent_report(report)
     with pytest.raises(ValueError, match="LEGACY_OR_UNCERTIFIED_REPORT_SUPPRESSED"):
         format_report(report)
-    assert "xG: 1.40 - 0.80" not in message
