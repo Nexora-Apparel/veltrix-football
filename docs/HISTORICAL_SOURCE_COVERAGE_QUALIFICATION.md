@@ -46,6 +46,27 @@ Without it, source-reported season labels remain unverified. Synthetic fake-KMS
 tests validate the contract only; no production season crosswalk or signing key
 has been configured.
 
+## Signed canonical team identity crosswalk
+
+`app/canonical_team_crosswalk.py` defines a separate KMS-signed registry
+mapping exact provider + competition + source-team IDs to canonical team IDs.
+Each mapping carries a reviewed evidence digest, reviewer, review timestamp,
+validity interval, revocation timestamp and an explicit team scope:
+men's first team, women's first team, men's reserve, women's reserve, men's
+youth, women's youth or other.
+
+The registry rejects duplicate source identities and any canonical team ID
+reused across incompatible team scopes. The coverage report distinguishes
+source-team IDs from canonical teams. It does not report a verified distinct
+team count or pass the team-coverage threshold until every accepted home/away
+team identity in that competition resolves through the trusted crosswalk.
+Unknown aliases, missing IDs and incomplete mappings remain unverified.
+
+The crosswalk signature is checked against out-of-band KMS clients. The
+signature establishes registry integrity and trusted issuance, not the truth
+of a team's identity; mapping evidence and reviewer decisions still require
+independent review. Synthetic fake-KMS tests do not qualify real team IDs.
+
 ## Screening thresholds
 
 Defaults are 100 settlement-eligible fixtures per competition, 16 distinct teams per competition and 95% feature-cell coverage. They are configurable screening thresholds only. They are not model-training sample-size guarantees, market certification criteria, or evidence of predictive performance.
