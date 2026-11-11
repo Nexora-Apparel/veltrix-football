@@ -580,7 +580,7 @@ def run(args) -> dict:
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--days", type=int, default=90)
-    parser.add_argument("--max-requests", type=int, default=50)
+    parser.add_argument("--max-requests", type=int, default=30)
     parser.add_argument("--max-pages", type=int, default=5)
     parser.add_argument("--min-history-days", type=int, default=60)
     parser.add_argument("--min-training-rows", type=int, default=200)
