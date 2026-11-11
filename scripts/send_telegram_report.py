@@ -18,6 +18,12 @@ from urllib.request import Request, urlopen
 
 import requests
 
+from app.independent_report_contract import (
+    is_publishable_independent_report,
+    is_value_betting_authorized_report,
+    is_independent_paper_ledger,
+)
+
 
 MAX_MESSAGE_LENGTH = 3900
 MESSAGE_PREFIX = "🔔 🆕 NEW VELTRIX UPDATE  •  MESSAGE 999/999"
@@ -207,6 +213,21 @@ def _format_recent_form(team_form: Any) -> str:
 
 
 def format_report_messages(report: dict[str, Any], ledger: dict[str, Any] | None = None) -> list[str]:
+    if not is_publishable_independent_report(report):
+        raise ValueError("LEGACY_OR_UNCERTIFIED_REPORT_SUPPRESSED")
+    report = dict(report)
+    if not is_value_betting_authorized_report(report):
+        report.pop("value_bet_screen", None)
+        report.pop("value_validation_certificate", None)
+        rows = report.get("predictions")
+        if isinstance(rows, list):
+            report["predictions"] = [
+                {key: value for key, value in row.items() if key != "value_bet_screen"}
+                if isinstance(row, dict) else row
+                for row in rows
+            ]
+    if not is_independent_paper_ledger(ledger):
+        ledger = None
     """Send concise match verdicts and evidence-based explanations to Telegram."""
     day = str(report.get("as_of_date", "unknown date"))
     timezone_name = str(report.get("timezone", "Africa/Lagos"))
