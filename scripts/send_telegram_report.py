@@ -216,7 +216,8 @@ def format_report_messages(report: dict[str, Any], ledger: dict[str, Any] | None
     if not is_publishable_independent_report(report):
         raise ValueError("LEGACY_OR_UNCERTIFIED_REPORT_SUPPRESSED")
     report = dict(report)
-    if not is_value_betting_authorized_report(report):
+    value_betting_authorized = is_value_betting_authorized_report(report)
+    if not value_betting_authorized:
         report.pop("value_bet_screen", None)
         report.pop("value_validation_certificate", None)
         rows = report.get("predictions")
@@ -288,41 +289,42 @@ def format_report_messages(report: dict[str, Any], ledger: dict[str, Any] | None
         prediction_basis = str(item.get("prediction_basis") or "").strip()
         if prediction_basis:
             block.append("WHY THIS VERDICT: " + prediction_basis)
-        value_screen = item.get("value_bet_screen") if isinstance(item.get("value_bet_screen"), dict) else {}
-        certificate = report.get("value_validation_certificate")
-        certificate = certificate if isinstance(certificate, dict) else {}
-        certificate_status = str(certificate.get("status") or "").upper()
-        approved_markets = certificate.get("approved_markets") or []
-        if not isinstance(approved_markets, list):
-            approved_markets = []
-        certificate_releases = certificate_status in {"PASSED", "CERTIFIED", "APPROVED"}
-        for market, result in (value_screen.get("markets") or {}).items():
-            raw_candidates = (result.get("candidates") or [])[:2]
-            market_approved = certificate_releases and market in approved_markets
-            released = raw_candidates if market_approved else []
-            shadow = ((result.get("paper_candidates") or []) + ([] if market_approved else raw_candidates))[:2]
-            for candidate in released:
-                block.append(
-                    "VALUE BET VERDICT: {} {} @ {:.2f} · estimated edge {:.1f}pp · expected return {:.1f}% · approved".format(
-                        market, candidate.get("selection"), float(candidate.get("decimal_odds")),
-                        float(candidate.get("edge_percentage_points")),
-                        float(candidate.get("expected_return_per_unit")) * 100.0,
+        if value_betting_authorized:
+            value_screen = item.get("value_bet_screen") if isinstance(item.get("value_bet_screen"), dict) else {}
+            certificate = report.get("value_validation_certificate")
+            certificate = certificate if isinstance(certificate, dict) else {}
+            certificate_status = str(certificate.get("status") or "").upper()
+            approved_markets = certificate.get("approved_markets") or []
+            if not isinstance(approved_markets, list):
+                approved_markets = []
+            certificate_releases = certificate_status in {"PASSED", "CERTIFIED", "APPROVED"}
+            for market, result in (value_screen.get("markets") or {}).items():
+                raw_candidates = (result.get("candidates") or [])[:2]
+                market_approved = certificate_releases and market in approved_markets
+                released = raw_candidates if market_approved else []
+                shadow = ((result.get("paper_candidates") or []) + ([] if market_approved else raw_candidates))[:2]
+                for candidate in released:
+                    block.append(
+                        "VALUE BET VERDICT: {} {} @ {:.2f} · estimated edge {:.1f}pp · expected return {:.1f}% · approved".format(
+                            market, candidate.get("selection"), float(candidate.get("decimal_odds")),
+                            float(candidate.get("edge_percentage_points")),
+                            float(candidate.get("expected_return_per_unit")) * 100.0,
+                        )
                     )
-                )
-            for candidate in shadow:
-                block.append(
-                    "VALUE BET VERDICT: Potential edge under review · {} {} @ {:.2f} · edge {:.1f}pp · expected return {:.1f}% · not approved".format(
-                        market, candidate.get("selection"), float(candidate.get("decimal_odds")),
-                        float(candidate.get("edge_percentage_points")),
-                        float(candidate.get("expected_return_per_unit")) * 100.0,
+                for candidate in shadow:
+                    block.append(
+                        "VALUE BET VERDICT: Potential edge under review · {} {} @ {:.2f} · edge {:.1f}pp · expected return {:.1f}% · not approved".format(
+                            market, candidate.get("selection"), float(candidate.get("decimal_odds")),
+                            float(candidate.get("edge_percentage_points")),
+                            float(candidate.get("expected_return_per_unit")) * 100.0,
+                        )
                     )
-                )
-        if not any(
-            (result.get("candidates") or []) or (result.get("paper_candidates") or [])
-            for result in (value_screen.get("markets") or {}).values()
-            if isinstance(result, dict)
-        ):
-            block.append("VALUE BET VERDICT: No qualifying value bet at the available prices.")
+            if not any(
+                (result.get("candidates") or []) or (result.get("paper_candidates") or [])
+                for result in (value_screen.get("markets") or {}).values()
+                if isinstance(result, dict)
+            ):
+                block.append("VALUE BET VERDICT: No qualifying value bet at the available prices.")
         reference_lines = _reference_market_lines(item)
         if reference_lines:
             block.append("REFERENCE BOOKMAKER PRICES — NOT VALUE PICKS")
