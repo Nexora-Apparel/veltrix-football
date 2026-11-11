@@ -74,6 +74,9 @@ def test_optional_top_five_btts_probe_is_bounded_to_five_odds_credits(monkeypatc
         "soccer_germany_bundesliga",
         "soccer_italy_serie_a",
         "soccer_spain_la_liga",
+        "soccer_argentina_primera_division",
+        "soccer_brazil_campeonato",
+        "soccer_brazil_serie_b",
     ]
     calls = []
     def fake_request(url, headers=None):
@@ -105,6 +108,6 @@ def test_optional_top_five_btts_probe_is_bounded_to_five_odds_credits(monkeypatc
     assert providers.main() == 0
     output = capsys.readouterr().out
     assert "plan=community" in output
-    assert len(calls) == 5
-    assert "leagues_probed=5" in output
-    assert "maximum_odds_credits=5" in output
+    assert len(calls) == 8
+    assert "leagues_probed=8" in output
+    assert "maximum_odds_credits=8" in output
