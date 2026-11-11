@@ -90,6 +90,8 @@ def audit_provider_acquisition_eligibility(
         if identity_counts[fixture_id] > 1:
             rejected.append({
                 "fixture_id": fixture_id,
+                "provider": provider,
+                "source_id": source_id,
                 "reason": "duplicate_provider_source_identity",
             })
             continue
@@ -98,6 +100,8 @@ def audit_provider_acquisition_eligibility(
         if package is None:
             rejected.append({
                 "fixture_id": fixture_id,
+                "provider": provider,
+                "source_id": source_id,
                 "reason": "settlement_timestamp_unavailable",
             })
             continue
@@ -112,6 +116,8 @@ def audit_provider_acquisition_eligibility(
         except AcquisitionDatasetBridgeError as exc:
             rejected.append({
                 "fixture_id": fixture_id,
+                "provider": provider,
+                "source_id": source_id,
                 "reason": str(exc)[:200],
             })
             continue
