@@ -231,26 +231,35 @@ jobs:
                   continue
               completed = sum(1 for match in matches if match.get("matchResults"))
               utc_times = sum(1 for match in matches if match.get("matchDateTimeUTC"))
+              update_times = sum(1 for match in matches if match.get("lastUpdateDateTime"))
               sample = matches[0] if matches else {}
               print("CURRENT_" + shortcut + "=" + json.dumps({
                   "rows": len(matches),
                   "with_results": completed,
                   "with_utc_kickoff": utc_times,
+                  "with_last_update": update_times,
                   "sample_fields": sorted(sample.keys()) if isinstance(sample, dict) else [],
+                  "sample_kickoff_utc": sample.get("matchDateTimeUTC") if isinstance(sample, dict) else None,
+                  "sample_last_update": sample.get("lastUpdateDateTime") if isinstance(sample, dict) else None,
+                  "sample_finished": sample.get("matchIsFinished") if isinstance(sample, dict) else None,
               }, sort_keys=True))
 
           for shortcut in ("bl1", "la1"):
-              try:
-                  matches = get(f"/getmatchdata/{shortcut}/2010")
-              except Exception as exc:
-                  print("HISTORICAL_" + shortcut + "_2010=ERROR:" + str(exc))
-                  continue
-              if not isinstance(matches, list):
-                  print("HISTORICAL_" + shortcut + "_2010=INVALID_RESPONSE")
-                  continue
-              completed = sum(1 for match in matches if match.get("matchResults"))
-              print("HISTORICAL_" + shortcut + "_2010=" + json.dumps({
-                  "rows": len(matches), "with_results": completed,
-              }, sort_keys=True))
+              for season in (2010, 2015, 2020, 2025):
+                  try:
+                      matches = get(f"/getmatchdata/{shortcut}/{season}")
+                  except Exception as exc:
+                      print("HISTORICAL_" + shortcut + "_" + str(season) + "=ERROR:" + str(exc))
+                      continue
+                  if not isinstance(matches, list):
+                      print("HISTORICAL_" + shortcut + "_" + str(season) + "=INVALID_RESPONSE")
+                      continue
+                  completed = sum(1 for match in matches if match.get("matchResults"))
+                  utc_times = sum(1 for match in matches if match.get("matchDateTimeUTC"))
+                  update_times = sum(1 for match in matches if match.get("lastUpdateDateTime"))
+                  print("HISTORICAL_" + shortcut + "_" + str(season) + "=" + json.dumps({
+                      "rows": len(matches), "with_results": completed,
+                      "with_utc_kickoff": utc_times, "with_last_update": update_times,
+                  }, sort_keys=True))
           print("RIGHTS_NOTE=OpenLigaDB data is ODbL-1.0; attribute publicly and comply with share-alike if redistributing a modified database. User-entered records have no editorial review or immutable historical snapshots.")
           PY
