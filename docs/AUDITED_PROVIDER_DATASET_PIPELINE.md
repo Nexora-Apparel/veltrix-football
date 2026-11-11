@@ -34,7 +34,7 @@ python scripts/assemble_audited_provider_dataset.py \
 The trust JSON is an out-of-band allowlist. A signing key ARN embedded in any signed registry is not trusted unless it appears in this environment-provided allowlist. The command uses KMS only to verify signed settlement-source, canonical team, canonical season and feature-source registries. It makes no provider HTTP requests.
 
 Inputs:
-- `records`: array of normalized provider acquisition records retaining their raw source-evidence payloads.
+- `records`: array of normalized provider acquisition records retaining their raw source-evidence payloads. Provider retrieval timestamps are mandatory, timezone-aware and must not precede independently qualified settlement.
 - `settlement-packages`: object keyed by exact `provider:source_id`, containing signed settlement registry, source contract, fixture identity, timestamp payload and timestamp evidence.
 - `team-crosswalk-registry`: KMS-signed canonical identity registry. Exact `(provider, competition, source_team_id)` mappings bind canonical team IDs and explicit men's/women's/reserve/youth scope.
 - `team-crosswalk-as-of`: timezone-aware timestamp used by the coverage report; each acquired record is independently resolved at its own provider retrieval timestamp and revalidated at each target's feature cutoff.
@@ -44,7 +44,7 @@ Inputs:
 - `split-policy`: explicit chronological train/validation/test policy accepted by the existing dataset adapter.
 
 Output:
-- Per-record settlement eligibility decisions and rejection reasons.
+- Per-record settlement eligibility decisions and rejection reasons, including mixed-cause batches, duplicate provider/source identities, malformed or partial provider identities, missing timestamp evidence and retrieval/settlement chronology failures.
 - Feature snapshot and withheld counts, including point-in-time reconstruction reasons.
 - Dataset and source-evidence manifests when eligible snapshots exist.
 - Separate team identity evidence: original provider IDs, canonical IDs, team scope, signed registry digest, signer ARN and verification timestamp. Raw provider payloads and their original provider-ID normalization remain unchanged and independently hash-verifiable.
