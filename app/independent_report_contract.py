@@ -10,6 +10,9 @@ from typing import Any
 
 REPORT_SCHEMA = "VELTRIX_INDEPENDENT_PREDICTION_REPORT_V1"
 MODEL_PORTFOLIO_ID = "veltrix-independent-market-portfolio-v1"
+# Remains false until real-data qualification, formal certification and explicit release approval.
+INDEPENDENT_REPORT_PUBLICATION_ENABLED = False
+VALUE_BETTING_AUTHORIZATION_ENABLED = False
 _CERTIFICATE_DIGEST = re.compile(r"^[0-9a-f]{64}$")
 
 
@@ -54,6 +57,8 @@ def is_publishable_independent_report(report: Any) -> bool:
                 or any(any(marker in version.casefold() for marker in ("experimental", "legacy", "fallback_prior")) for version in model_versions)
             ):
                 return False
+    if not INDEPENDENT_REPORT_PUBLICATION_ENABLED:
+        return False
     certificate = report.get("release_certificate")
     if not isinstance(certificate, dict):
         return False
@@ -70,6 +75,8 @@ def is_publishable_independent_report(report: Any) -> bool:
 
 def is_value_betting_authorized_report(report: Any) -> bool:
     """Require a separate signed, market-specific value-betting authorization."""
+    if not VALUE_BETTING_AUTHORIZATION_ENABLED:
+        return False
     if not is_publishable_independent_report(report):
         return False
     if report.get("value_betting_authorized") is not True:
