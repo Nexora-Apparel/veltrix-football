@@ -27,7 +27,7 @@ from typing import Any
 from app.provider_adapters import FiveDollarFootballClient, ProviderAPIError, LEAGUE_CODES
 from app.recent_results import extract_completed_results
 from scripts.publish_command_data import publish
-from app.live_predictions import _name_key
+from app.fixture_history_utils import _name_key
 
 
 def _mapped_league_division(league: dict[str, Any]) -> str | None:
