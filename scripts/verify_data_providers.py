@@ -85,14 +85,14 @@ def check_fivedollar() -> str:
             f"5DollarFootballAPI: AUTH_OK; accessible_leagues={len(league_names)}; "
             f"leagues={'; '.join(league_names[:12])}; requests_remaining={remaining}"
         )
-        selected_fixture = None
+        selected_fixtures = None
         selected_league = None
         for league in leagues[:8]:
             if not isinstance(league, dict) or league.get("id") is None:
                 continue
             league_id = quote(str(league["id"]), safe="")
             fixtures_url = base + f"/leagues/{league_id}/fixtures?" + urlencode({
-                "status": "scheduled", "per_page": 1,
+                "status": "scheduled", "per_page": 5,
             })
             try:
                 _, _, fixture_payload = request_json(fixtures_url, headers)
@@ -100,12 +100,55 @@ def check_fivedollar() -> str:
                 continue
             fixture_rows = fixture_payload.get("data") if isinstance(fixture_payload, dict) else None
             if isinstance(fixture_rows, list) and fixture_rows:
-                selected_fixture = fixture_rows[0]
+                selected_fixtures = fixture_rows[:5]
                 selected_league = league
                 break
-        if selected_fixture is None:
+        if not selected_fixtures:
             print("5DollarFootballAPI ODDS_SAMPLE: SKIPPED_NO_SCHEDULED_FIXTURE_IN_ACCESSIBLE_LEAGUES")
             return "AUTH_OK"
+        coverage = {"1X2": 0, "BTTS": 0, "TOTALS_2_5": 0}
+        samples = 0
+        for fixture in selected_fixtures:
+            fixture_id = fixture.get("id") or fixture.get("fixture_id")
+            if fixture_id is None:
+                continue
+            odds_url = base + f"/fixtures/{quote(str(fixture_id), safe='')}/odds"
+            try:
+                _, odds_headers, odds_payload = request_json(odds_url, headers)
+                odds_data = odds_payload.get("data") if isinstance(odds_payload, dict) else None
+                bookmakers = odds_data.get("bookmakers") if isinstance(odds_data, dict) else None
+                bet365 = next(
+                    (item for item in bookmakers or [] if isinstance(item, dict) and item.get("slug") == "bet365"),
+                    None,
+                )
+                markets = bet365.get("odds") if isinstance(bet365, dict) else None
+                markets = markets if isinstance(markets, dict) else {}
+                one_x_two = markets.get("1x2")
+                btts = markets.get("btts")
+                fixed_lines = markets.get("goal_line_fixed")
+                total25 = next(
+                    (item for item in fixed_lines or [] if isinstance(item, dict) and str(item.get("line")) == "2.5"),
+                    None,
+                )
+                def complete(stage, keys):
+                    return isinstance(stage, dict) and all(stage.get(key) not in (None, "", 0, "0") for key in keys)
+                available = {
+                    "1X2": complete(one_x_two.get("closing") if isinstance(one_x_two, dict) else None, ("home", "draw", "away")),
+                    "BTTS": complete(btts.get("closing") if isinstance(btts, dict) else None, ("yes", "no")),
+                    "TOTALS_2_5": complete(total25.get("closing") if isinstance(total25, dict) else None, ("over", "under")),
+                }
+                for market, present in available.items():
+                    coverage[market] += int(present)
+                samples += 1
+            except ProviderCheckError as exc:
+                print(f"5DollarFootballAPI ODDS_SAMPLE: fixture_id={safe_id(fixture_id)} failed ({exc})")
+        print(
+            "5DollarFootballAPI ODDS_SAMPLE: "
+            f"league={safe_id(selected_league.get('id'))}; fixtures={samples}; "
+            + "; ".join(f"{market}={count}/{samples}" for market, count in coverage.items())
+            + f"; requests_remaining={odds_headers.get('X-RateLimit-Remaining', 'not supplied')}"
+        )
+        return "AUTH_OK"
         fixture_id = selected_fixture.get("id") or selected_fixture.get("fixture_id")
         if fixture_id is None:
             print("5DollarFootballAPI ODDS_SAMPLE: FIXTURE_ID_MISSING")
