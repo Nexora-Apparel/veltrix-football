@@ -31,13 +31,23 @@ Branch: `veltrix-2.0-architecture-blueprint`
 - Does not infer venue from the nominal home-team designation.
 - Multiple eligible observations fail closed pending upstream correction resolution.
 
+## Evaluation foundation added
+
+- Expanding-window walk-forward fold builder partitions fixtures into disjoint chronological test windows.
+- A training fixture is eligible only if its kickoff precedes the test window and its outcome settlement timestamp is no later than the training-label cutoff.
+- Supports a configurable embargo, minimum training sample and number/duration of folds.
+- Rejects duplicate fixture IDs, naive timestamps, invalid windows, empty test folds and insufficient training samples.
+- This is evaluation infrastructure only; it does not fit models or calculate performance metrics.
+
 ## Verification state
 
-- Foundation suite including venue context: **38 passed, 0 failed**; legacy-import boundary check passed on the PR merge commit for head `ee90b575edeb3ff6a769333389469f5eab6a73ca`. [GitHub Actions run #42984863222](https://github.com/Nexora-Apparel/veltrix-football/actions/runs/42984863222).
-- No model fitting, calibration, walk-forward evaluation, prediction publication, provider ingestion or production activation has been performed.
+- Foundation suite including venue context: **38 passed, 0 failed**; legacy-import boundary check passed on PR merge commit for head `ee90b575edeb3ff6a769333389469f5eab6a73ca`. [GitHub Actions run #42984863222](https://github.com/Nexora-Apparel/veltrix-football/actions/runs/42984863222).
+- Seven new walk-forward tests have been added. Their CI result is pending; do not count them as passed until a run against the latest PR head is inspected.
+- No model fitting, calibration, prediction publication, provider ingestion or production activation has been performed.
 
 ## Next gate
 
-1. Continue deterministic, evidence-backed feature contracts only while StrikerAPI is credit-blocked.
-2. Resume the provider dry-run only after credit balance/entitlement is restored.
-3. Sign Phase 3 only after the provider dry-run completes with complete accounting, zero unresolved identity/score conflicts and unchanged database counts.
+1. Verify the new walk-forward tests in CI.
+2. Continue deterministic, evidence-backed feature contracts only while StrikerAPI is credit-blocked.
+3. Resume the provider dry-run only after credit balance/entitlement is restored.
+4. Sign Phase 3 only after the provider dry-run completes with complete accounting, zero unresolved identity/score conflicts and unchanged database counts.
