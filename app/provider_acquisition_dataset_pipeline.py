@@ -103,6 +103,7 @@ def assemble_audited_provider_dataset(
             "feature_reconstruction": {
                 "target_fixture_count": 0,
                 "snapshot_count": 0,
+                "snapshots": [],
                 "withheld_count": 0,
                 "withheld_by_reason": {},
                 "withheld": [],
