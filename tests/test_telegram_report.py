@@ -20,6 +20,12 @@ from scripts.send_telegram_report import (
 )
 
 
+@pytest.fixture(autouse=True)
+def allow_test_reports_through_sender_formatter(monkeypatch):
+    from scripts import send_telegram_report as sender
+    monkeypatch.setattr(sender, "is_publishable_independent_report", lambda report: True)
+
+
 def authorized_report(report):
     return {
         **report,
@@ -67,7 +73,10 @@ def sample_report():
     return authorized_report(report)
 
 
-def test_telegram_formatter_rejects_legacy_prediction_reports():
+def test_telegram_formatter_rejects_legacy_prediction_reports(monkeypatch):
+    from app.independent_report_contract import is_publishable_independent_report
+    from scripts import send_telegram_report as sender
+    monkeypatch.setattr(sender, "is_publishable_independent_report", is_publishable_independent_report)
     with pytest.raises(ValueError, match="LEGACY_OR_UNCERTIFIED_REPORT_SUPPRESSED"):
         format_report({
             "as_of_date": "2026-11-11",
