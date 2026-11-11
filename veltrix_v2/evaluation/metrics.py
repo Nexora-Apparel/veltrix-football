@@ -7,6 +7,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from math import isfinite, log
+from numbers import Real
 from typing import Iterable, Literal
 
 Outcome1X2 = Literal["HOME", "DRAW", "AWAY"]
@@ -25,6 +26,8 @@ class Forecast1X2:
         if not self.fixture_id or not self.fixture_id.strip():
             raise ValueError("fixture_id is required")
         values = (self.p_home, self.p_draw, self.p_away)
+        if any(isinstance(value, bool) or not isinstance(value, Real) for value in values):
+            raise ValueError("1X2 probabilities must be real numbers")
         if any(not isfinite(float(value)) for value in values):
             raise ValueError("1X2 probabilities must be finite")
         if any(value <= 0.0 or value > 1.0 for value in values):
@@ -51,6 +54,18 @@ class ScoreReport1X2:
     multiclass_brier: float
     log_loss: float
     ranked_probability_score: float
+
+
+@dataclass(frozen=True, slots=True)
+class BenchmarkComparison1X2:
+    sample_size: int
+    model_report: ScoreReport1X2
+    benchmark_report: ScoreReport1X2
+    brier_delta: float
+    log_loss_delta: float
+    ranked_probability_score_delta: float
+    model_beats_brier: bool
+    model_beats_log_loss: bool
 
 
 def score_1x2(
@@ -98,4 +113,34 @@ def score_1x2(
         multiclass_brier=brier_total / count,
         log_loss=log_loss_total / count,
         ranked_probability_score=rps_total / count,
+    )
+
+
+def compare_1x2_forecasts(
+    model_forecasts: Iterable[Forecast1X2],
+    benchmark_forecasts: Iterable[Forecast1X2],
+    outcomes: Iterable[SettledOutcome1X2],
+) -> BenchmarkComparison1X2:
+    """Compare model and benchmark on exactly the same settled fixtures.
+
+    Deltas are model minus benchmark; negative values indicate lower (better)
+    scoring loss. Both reports are scored against the same outcome set.
+    """
+    settled = tuple(outcomes)
+    model_report = score_1x2(model_forecasts, settled)
+    benchmark_report = score_1x2(benchmark_forecasts, settled)
+    if model_report.sample_size != benchmark_report.sample_size:
+        raise ValueError("model and benchmark sample sizes must match")
+    brier_delta = model_report.multiclass_brier - benchmark_report.multiclass_brier
+    log_loss_delta = model_report.log_loss - benchmark_report.log_loss
+    rps_delta = model_report.ranked_probability_score - benchmark_report.ranked_probability_score
+    return BenchmarkComparison1X2(
+        sample_size=model_report.sample_size,
+        model_report=model_report,
+        benchmark_report=benchmark_report,
+        brier_delta=brier_delta,
+        log_loss_delta=log_loss_delta,
+        ranked_probability_score_delta=rps_delta,
+        model_beats_brier=brier_delta < 0.0,
+        model_beats_log_loss=log_loss_delta < 0.0,
     )
