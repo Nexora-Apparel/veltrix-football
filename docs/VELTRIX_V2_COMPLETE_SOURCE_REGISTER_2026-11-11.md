@@ -247,10 +247,11 @@ No source is approved for model training solely because it has a public endpoint
 #### The Odds API — current/prospective odds qualification refresh
 
 - Official Terms last updated 2026-08-31 explicitly permit indefinite storage, public display in websites/apps (including commercial use), derived analytics and statistical/ML model training. Raw odds-feed resale or redistribution as a standalone data product is prohibited. Attribution is optional.
-- The free Starter plan includes 500 credits/month and does not include historical odds. Current odds are available on Free.
+- Current odds are available on Free; historical odds are paid-only. The user's live key returned `x-requests-remaining=298` on 2026-11-11 after two provider-authentication smoke checks. This is the account-observed quota and takes precedence over any generic plan estimate; budget conservatively on 300 credits/month until the account billing page confirms the exact monthly allocation.
 - Current `/odds` responses include market-level `last_update` timestamps. The endpoint returns only events for which bookmakers currently offer odds and does not return completed events. This is suitable for prospective timestamped collection, not historical backfill.
 - Historical snapshots are paid-only: featured markets are available from 2020-06-06 at 10-minute intervals, improving to 5-minute intervals from September 2022. Historical endpoint cost is 10 credits per region per market per snapshot. Additional historical event markets are available from 2023-05-03.
-- Budget estimate: one daily snapshot for five top-European competitions, one bookmaker region and three markets (1X2, totals, BTTS where supported) costs up to 15 credits/day or about 450 credits per 30-day month. This leaves little margin under the 500-credit Free plan and assumes all three markets are supported for every queried competition. A second daily snapshot or additional regions/bookmakers exceeds the free budget quickly.
+- A daily snapshot for five top-European competitions, one bookmaker region and three markets (1X2, totals, BTTS where supported) costs up to 15 credits/day or about 450 credits per 30-day month. That exceeds the user's observed 300-credit allowance. Do not use this as a full-market daily snapshot plan.
+- The live 5Dollar sample found 1X2 5/5 and O/U 2.5 5/5, but BTTS only 3/5 across five EPL fixtures. The Odds API should therefore be reserved for missing BTTS quotes, not duplicated 1X2/totals. At a 40% BTTS gap and the full 25-fixture daily cap, this could cost up to 10 credits/day or 300 per 30-day month, leaving no reserve. Enforce a monthly fallback budget and stop querying when the remaining-credit reserve is reached.
 - Use The Odds API as the secondary prospective odds/time-stamp lane, not as the fixtures/results source. Store request time, returned snapshot time/market `last_update`, bookmaker, region, market and fixture mapping. Never infer a capture timestamp from the daily report time.
 - The API key was previously authenticated and listed 46 soccer competitions. No new live call was made during this documentation audit, so current remaining credits and current market-by-market coverage remain unverified.
 - Official references: https://the-odds-api.com/terms-and-conditions.html ; https://the-odds-api.com/historical-odds-data/ ; https://the-odds-api.com/liveapi/guides/v4/ ; https://the-odds-api.com/
@@ -286,3 +287,16 @@ No source is approved for model training solely because it has a public endpoint
 - Daily snapshots can support a prospective, timestamped pre-match movement measure by comparing the report-time quote with the latest later snapshot before kickoff. This is a daily-snapshot CLV proxy, not true closing-line/tick-level CLV; report it as such unless a final near-kickoff timestamp is captured.
 - The Odds API historical snapshot endpoint remains paid-only, so no free historical odds backfill is approved. Historical 1X2/bookmaker benchmark data must not be fabricated from untimestamped closing fields.
 - Official references: https://5dollarfootballapi.com/docs/odds ; https://5dollarfootballapi.com/docs/odds-history ; https://the-odds-api.com/liveapi/guides/v4/ ; https://the-odds-api.com/historical-odds-data/
+
+
+#### Live provider smoke evidence — 2026-11-11
+
+- GitHub Actions provider verification run 43085699452: https://github.com/Nexora-Apparel/veltrix-football/actions/runs/43085699452
+  - 5Dollar `/status` returned `plan=free`; accessible league catalogue contained exactly five competitions: England Premier League, France Ligue 1, Germany Bundesliga I, Italy Serie A and Spain La Liga.
+  - The bounded odds sample selected five EPL fixtures: 1X2 5/5, BTTS 3/5, O/U 2.5 5/5.
+  - The Odds API `/sports` accepted the key and returned 46 active soccer sports; `x-requests-remaining=298`. This endpoint does not consume odds-market credits.
+- Second provider verification run 43085743691: https://github.com/Nexora-Apparel/veltrix-football/actions/runs/43085743691
+  - Reconfirmed the same plan, competition list, five-fixture EPL market sample and 298 Odds API credits remaining.
+  - 5Dollar reported 36 requests remaining in its hourly window after the two smoke runs. Stop further 5Dollar probes until the hourly allowance resets.
+- Neither run performed The Odds API BTTS market requests. The optional top-five BTTS probe is now manual-only and capped at five odds credits; it has not yet been run.
+- The provider verification workflow is manual-only to prevent code pushes from consuming API quotas. The opt-in input `probe_odds_markets` defaults to false.
