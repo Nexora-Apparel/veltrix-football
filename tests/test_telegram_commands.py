@@ -16,6 +16,18 @@ def authorized_report(report):
     predictions = [
         {
             **row,
+            **({
+                "markets": {
+                    "btts": {"yes": 0.62, "no": 0.38},
+                    "totals": {
+                        "0.5": {"over": 0.97, "under": 0.03},
+                        "1.5": {"over": 0.85, "under": 0.15},
+                        "2.5": {"over": 0.65, "under": 0.35},
+                        "3.5": {"over": 0.42, "under": 0.58},
+                        "4.5": {"over": 0.25, "under": 0.75},
+                    },
+                },
+            } if "probabilities" in row else {}),
             "model_portfolio_id": MODEL_PORTFOLIO_ID,
             "legacy_model_dependency": False,
             **({
@@ -162,7 +174,7 @@ def test_legacy_report_predictions_are_suppressed(monkeypatch):
             "home_team": "Legacy FC",
             "away_team": "Old Model United",
             "kickoff_local": (datetime.now(ZoneInfo("Africa/Lagos")) + timedelta(hours=3)).isoformat(),
-            "status": "EXPERIMENTAL_ONLY",
+            "status": "INDEPENDENT_FORECAST",
             "probabilities": {"home_win": 0.6, "draw": 0.2, "away_win": 0.2},
         }]
     }
@@ -179,7 +191,7 @@ def test_match_lookup_uses_supplied_report_only():
             "away_team": "Chelsea",
             "league": "Premier League",
             "kickoff_local": future_kickoff,
-            "status": "EXPERIMENTAL_ONLY",
+            "status": "INDEPENDENT_FORECAST",
             "probabilities": {"home_win": 0.5, "draw": 0.25, "away_win": 0.25},
         }]
     }
@@ -195,7 +207,7 @@ def test_today_discloses_gapped_historical_data():
             "away_team": "Model FC",
             "league": "Test League",
             "kickoff_local": future_kickoff,
-            "status": "EXPERIMENTAL_ONLY",
+            "status": "INDEPENDENT_FORECAST",
             "probabilities": {"home_win": 0.5, "draw": 0.3, "away_win": 0.2},
         }],
         "recent_results_sync": {
@@ -235,7 +247,7 @@ def test_today_excludes_withheld_fixtures_and_only_shows_real_forecasts():
                 "away_team": "Model FC",
                 "league": "Test League",
                 "kickoff_local": future_kickoff,
-                "status": "EXPERIMENTAL_ONLY",
+                "status": "INDEPENDENT_FORECAST",
                 "probabilities": {"home_win": 0.5, "draw": 0.3, "away_win": 0.2},
             },
             {
@@ -244,7 +256,7 @@ def test_today_excludes_withheld_fixtures_and_only_shows_real_forecasts():
                 "away_team": "Unknown United",
                 "league": "Unmapped Senior League",
                 "kickoff_local": future_kickoff,
-                "status": "EXPERIMENTAL_LOW_DATA",
+                "status": "INSUFFICIENT_HISTORY",
                 "prediction_basis": "licensed global goal-rate prior only",
                 "probabilities": {"home_win": 0.45, "draw": 0.28, "away_win": 0.27},
                 "btts_yes": 0.51,
@@ -303,7 +315,7 @@ def test_match_with_nan_probabilities_is_withheld():
     future = (now + timedelta(hours=2)).isoformat()
     report = {"predictions": [{
         "home_team": "NaN FC", "away_team": "Example FC", "league": "Test",
-        "kickoff_local": future, "status": "EXPERIMENTAL_ONLY",
+        "kickoff_local": future, "status": "INDEPENDENT_FORECAST",
         "probabilities": {"home_win": float("nan"), "draw": 0.3, "away_win": 0.7},
     }]}
     reply = handle_command("/match NaN FC vs Example FC", report=authorized_report(report))
@@ -325,7 +337,7 @@ def test_paper_tracking_is_on_website_not_in_telegram_keyboard():
     assert BUTTON_COMMANDS["btts"] == "/btts"
 
 
-def test_overunder_command_returns_experimental_goal_line_probabilities():
+def test_overunder_command_uses_explicit_independent_goal_market_probabilities():
     now = datetime.now(ZoneInfo("Africa/Lagos"))
     future_kickoff = (now + timedelta(hours=3)).isoformat()
     report = {
@@ -334,7 +346,7 @@ def test_overunder_command_returns_experimental_goal_line_probabilities():
             "away_team": "Score United",
             "league": "Test League",
             "kickoff_local": future_kickoff,
-            "status": "EXPERIMENTAL_ONLY",
+            "status": "INDEPENDENT_FORECAST",
             "probabilities": {"home_win": 0.45, "draw": 0.25, "away_win": 0.30},
             "expected_goals": {"home": 1.5, "away": 1.2},
         }],
@@ -346,7 +358,7 @@ def test_overunder_command_returns_experimental_goal_line_probabilities():
     assert "Prices are reference data only" in reply
 
 
-def test_btts_command_returns_yes_no_probability_from_expected_goals():
+def test_btts_command_uses_explicit_independent_market_probabilities():
     now = datetime.now(ZoneInfo("Africa/Lagos"))
     future_kickoff = (now + timedelta(hours=3)).isoformat()
     report = {
@@ -355,7 +367,7 @@ def test_btts_command_returns_yes_no_probability_from_expected_goals():
             "away_team": "Score United",
             "league": "Test League",
             "kickoff_local": future_kickoff,
-            "status": "EXPERIMENTAL_ONLY",
+            "status": "INDEPENDENT_FORECAST",
             "probabilities": {"home_win": 0.45, "draw": 0.25, "away_win": 0.30},
             "expected_goals": {"home": 1.5, "away": 1.2},
         }],
@@ -366,7 +378,7 @@ def test_btts_command_returns_yes_no_probability_from_expected_goals():
     assert "Kick-off times: WAT" in reply
     assert "REFERENCE BOOKMAKER PRICES" not in reply
     assert "━━━━━━━━━━━━━━━━━━━━" in reply
-    assert "independent-Poisson estimates" in reply
+    assert "explicit market probabilities supplied by the independent model portfolio" in reply
 
 
 def test_goal_market_command_formats_ten_matches_as_separate_readable_cards():
@@ -381,7 +393,7 @@ def test_goal_market_command_formats_ten_matches_as_separate_readable_cards():
             "away_team": f"Away {index}",
             "league": "Test League",
             "kickoff_local": kickoff,
-            "status": "EXPERIMENTAL_ONLY",
+            "status": "INDEPENDENT_FORECAST",
             "probabilities": {"home_win": 0.45, "draw": 0.25, "away_win": 0.30},
             "expected_goals": {"home": 1.5, "away": 1.2},
         })
@@ -405,7 +417,7 @@ def test_goal_markets_withhold_invalid_expected_goals():
             "away_team": "Input United",
             "league": "Test League",
             "kickoff_local": future_kickoff,
-            "status": "EXPERIMENTAL_ONLY",
+            "status": "INDEPENDENT_FORECAST",
             "probabilities": {"home_win": 0.45, "draw": 0.25, "away_win": 0.30},
             "expected_goals": {"home": float("nan"), "away": -1},
         }],
@@ -420,7 +432,7 @@ def test_odds_command_reads_saved_multisource_btts_and_totals_prices():
     report = {
         "predictions": [{
             "home_team": "Arsenal", "away_team": "Chelsea", "league": "Premier League",
-            "kickoff_local": kickoff, "status": "EXPERIMENTAL_ONLY",
+            "kickoff_local": kickoff, "status": "INDEPENDENT_FORECAST",
             "probabilities": {"home_win": 0.5, "draw": 0.25, "away_win": 0.25},
             "five_dollar_market_odds": {"bookmakers": [{
                 "bookmaker": "Bet365", "btts": {"yes": 1.8, "no": 2.0},
@@ -448,7 +460,7 @@ def test_1x2_command_displays_home_draw_away_and_real_h2h_prices():
     report = {"predictions": [{
         "home_team": "Arsenal", "away_team": "Chelsea", "league": "Premier League",
         "kickoff_local": (now + timedelta(hours=3)).isoformat(),
-        "status": "EXPERIMENTAL_ONLY",
+        "status": "INDEPENDENT_FORECAST",
         "prediction_basis": "competition-level historical goal-rate prior; team-specific history below minimum",
         "probabilities": {"home_win": 0.55, "draw": 0.25, "away_win": 0.20},
         "the_odds_api_market_odds": {"markets": {"h2h": [{
@@ -487,7 +499,7 @@ def test_odds_command_includes_1x2_h2h_prices():
     report = {"predictions": [{
         "home_team": "Arsenal", "away_team": "Chelsea", "league": "Premier League",
         "kickoff_local": (now + timedelta(hours=3)).isoformat(),
-        "status": "EXPERIMENTAL_ONLY",
+        "status": "INDEPENDENT_FORECAST",
         "probabilities": {"home_win": 0.5, "draw": 0.25, "away_win": 0.25},
         "the_odds_api_market_odds": {"markets": {"h2h": [{
             "bookmaker": "Bookmaker A",
@@ -527,7 +539,7 @@ def test_value_command_hides_paper_candidates_without_separate_authorization():
         "value_bet_screen": {"status": "PAPER_ONLY_CANDIDATES", "candidate_count": 0, "paper_candidate_count": 1},
         "predictions": [{
             "home_team": "Arsenal", "away_team": "Chelsea",
-            "kickoff_local": kickoff, "status": "EXPERIMENTAL_ONLY",
+            "kickoff_local": kickoff, "status": "INDEPENDENT_FORECAST",
             "value_bet_screen": {"markets": {
                 "1X2": {"paper_candidates": [{
                     "selection": "home", "model_probability": 0.56,
