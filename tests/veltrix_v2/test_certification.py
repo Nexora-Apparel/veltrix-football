@@ -163,3 +163,29 @@ def test_prediction_publication_gate_rejects_missing_model_quality_evidence():
     assert "PREDICTION_POINT_IN_TIME_VALIDATION_MISSING" in btts.failed_gates
     assert "PREDICTION_LEAKAGE_TESTS_FAILED" in btts.failed_gates
     assert "PREDICTION_CALIBRATION_NOT_PASSED" in btts.failed_gates
+
+
+
+def test_certification_objects_reject_internally_conflicting_pass_flags():
+    from veltrix_v2.evaluation.certification import (
+        CertificationResult, PredictionReleaseCertification, ReleaseCertification,
+    )
+
+    good = tuple(CertificationResult(market, True, ()) for market in ("1X2", "BTTS", "TOTALS"))
+    with pytest.raises(ValueError, match="BRIER_FAILURE_NOT_RECORDED"):
+        ReleaseCertification(
+            passed=True, markets=good,
+            one_x_two_beats_bookmaker_brier=False,
+            one_x_two_beats_bookmaker_log_loss=True,
+            global_failures=(),
+        )
+    bad_market = CertificationResult("BTTS", False, ("PREDICTION_CALIBRATION_NOT_PASSED",))
+    with pytest.raises(ValueError, match="STATUS_CONFLICTS_WITH_EVIDENCE"):
+        PredictionReleaseCertification(
+            passed=True,
+            markets=(
+                CertificationResult("1X2", True, ()),
+                bad_market,
+                CertificationResult("TOTALS", True, ()),
+            ),
+        )

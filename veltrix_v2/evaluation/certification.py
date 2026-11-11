@@ -57,6 +57,18 @@ class CertificationResult:
     passed: bool
     failed_gates: tuple[str, ...]
 
+    def __post_init__(self) -> None:
+        if self.market not in REQUIRED_MARKETS:
+            raise ValueError("CERTIFICATION_RESULT_UNSUPPORTED_MARKET")
+        if type(self.passed) is not bool:
+            raise ValueError("CERTIFICATION_RESULT_PASSED_MUST_BE_BOOLEAN")
+        gates = tuple(self.failed_gates)
+        if any(not isinstance(gate, str) or not gate.strip() for gate in gates):
+            raise ValueError("CERTIFICATION_RESULT_FAILURE_CODES_INVALID")
+        object.__setattr__(self, "failed_gates", gates)
+        if self.passed != (not gates):
+            raise ValueError("CERTIFICATION_RESULT_STATUS_CONFLICTS_WITH_FAILURES")
+
 
 @dataclass(frozen=True, slots=True)
 class ReleaseCertification:
@@ -65,6 +77,33 @@ class ReleaseCertification:
     one_x_two_beats_bookmaker_brier: bool
     one_x_two_beats_bookmaker_log_loss: bool
     global_failures: tuple[str, ...]
+
+    def __post_init__(self) -> None:
+        if type(self.passed) is not bool:
+            raise ValueError("RELEASE_CERTIFICATION_STATUS_MUST_BE_BOOLEAN")
+        if type(self.one_x_two_beats_bookmaker_brier) is not bool or type(self.one_x_two_beats_bookmaker_log_loss) is not bool:
+            raise ValueError("RELEASE_CERTIFICATION_BENCHMARK_FLAGS_MUST_BE_BOOLEAN")
+        markets = tuple(self.markets)
+        if any(not isinstance(row, CertificationResult) for row in markets):
+            raise ValueError("RELEASE_CERTIFICATION_MARKET_RESULT_TYPE_INVALID")
+        if len(markets) != len(REQUIRED_MARKETS) or {row.market for row in markets} != set(REQUIRED_MARKETS):
+            raise ValueError("RELEASE_CERTIFICATION_REQUIRES_EXACTLY_1X2_BTTS_TOTALS")
+        failures = tuple(self.global_failures)
+        if any(not isinstance(item, str) or not item.strip() for item in failures):
+            raise ValueError("RELEASE_CERTIFICATION_GLOBAL_FAILURES_INVALID")
+        object.__setattr__(self, "markets", markets)
+        object.__setattr__(self, "global_failures", failures)
+        if not self.one_x_two_beats_bookmaker_brier and "1X2_DOES_NOT_BEAT_BOOKMAKER_BRIER" not in failures:
+            raise ValueError("RELEASE_CERTIFICATION_BRIER_FAILURE_NOT_RECORDED")
+        if self.one_x_two_beats_bookmaker_brier and "1X2_DOES_NOT_BEAT_BOOKMAKER_BRIER" in failures:
+            raise ValueError("RELEASE_CERTIFICATION_BRIER_FAILURE_CONFLICT")
+        if not self.one_x_two_beats_bookmaker_log_loss and "1X2_DOES_NOT_BEAT_BOOKMAKER_LOG_LOSS" not in failures:
+            raise ValueError("RELEASE_CERTIFICATION_LOG_LOSS_FAILURE_NOT_RECORDED")
+        if self.one_x_two_beats_bookmaker_log_loss and "1X2_DOES_NOT_BEAT_BOOKMAKER_LOG_LOSS" in failures:
+            raise ValueError("RELEASE_CERTIFICATION_LOG_LOSS_FAILURE_CONFLICT")
+        expected_pass = all(row.passed for row in markets) and not failures
+        if self.passed != expected_pass:
+            raise ValueError("RELEASE_CERTIFICATION_STATUS_CONFLICTS_WITH_EVIDENCE")
 
 
 def certify_release(
@@ -159,6 +198,18 @@ class PredictionMarketEvidence:
 class PredictionReleaseCertification:
     passed: bool
     markets: tuple[CertificationResult, ...]
+
+    def __post_init__(self) -> None:
+        if type(self.passed) is not bool:
+            raise ValueError("PREDICTION_RELEASE_STATUS_MUST_BE_BOOLEAN")
+        markets = tuple(self.markets)
+        if any(not isinstance(row, CertificationResult) for row in markets):
+            raise ValueError("PREDICTION_RELEASE_MARKET_RESULT_TYPE_INVALID")
+        if len(markets) != len(REQUIRED_MARKETS) or {row.market for row in markets} != set(REQUIRED_MARKETS):
+            raise ValueError("PREDICTION_RELEASE_REQUIRES_EXACTLY_1X2_BTTS_TOTALS")
+        object.__setattr__(self, "markets", markets)
+        if self.passed != all(row.passed for row in markets):
+            raise ValueError("PREDICTION_RELEASE_STATUS_CONFLICTS_WITH_EVIDENCE")
 
 
 def certify_prediction_publication(
