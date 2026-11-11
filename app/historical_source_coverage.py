@@ -743,6 +743,15 @@ def build_historical_source_coverage_report(
             "feature_cell_coverage_rate": 0.0,
             "status": "not_in_feature_catalogue",
         }
+    domain_coverage["odds_movement_and_clv"] = {
+        "catalogue_feature_count": 0,
+        "features_present": [],
+        "features_absent": [],
+        "feature_cell_coverage_rate": 0.0,
+        "status": "evaluation_evidence_not_in_feature_catalogue",
+        "evaluation_only": True,
+        "reason": "Closing-line value and odds movement require a separate timestamped quote ledger and benchmark; post-cutoff prices must never enter pre-match predictors.",
+    }
 
     feature_report = {
         name: {
