@@ -46,6 +46,7 @@ The scope does not assume that every listed competition is currently accessible 
 | OpenPlay data-v0.1.0 | Historical big-five/UEFA and selected international competition tables; release declares CC BY 4.0. | Large player/match/lineup/shot history and useful technical coverage. | Maintainer discloses WhoScored/Opta/Stats Perform upstream; upstream rights chain is not independently verified. Scraped-at values do not prove pre-kickoff availability. | Quarantined historical research candidate. No production training until upstream rights and point-in-time availability are proven. |
 | Football-Data.co.uk | Historical results and odds snapshots for selected competitions. | Useful for manual historical coverage audits and source reconciliation. | Personal/academic-use restrictions; manual or light automated access no more than twice weekly. Official terms explicitly say the service is not intended for data-training projects using automated bots/scrapers/AI. | Audit/reconciliation only. No V2 model training or automated feed use without explicit written permission from the provider. |
 | OpenFootball | CC0 historical fixtures/results supplement. | Open licence and simple structured data. | Prior 90-day EPL reconciliation: 45/100 exact score agreements, 6 date conflicts, 49 missing scores. | Supplemental cross-check only; never authoritative primary results. |
+| The Odds API | Existing repository key was verified live on 2026-10-28; a bounded probe used 3 credits and reported 497 remaining at that time. H2H, totals and event-specific BTTS markets were confirmed. | Multi-bookmaker odds snapshots and broad soccer sport list; existing VELTRIX adapter already supports h2h, totals and bounded BTTS event requests. | Free monthly quota is limited; the old pipeline capped BTTS to 3 events per report. Current remaining balance must be re-probed. | Secondary odds cross-check only. Do not rely on it for full 25-fixture daily timestamp coverage without a fresh quota and coverage audit. |
 | FootballAPI.org | Complimentary plan: current-season Premier League only, 50 calls/day; paid plan documented at $29/month for 68 competitions. | Documented 40-endpoint API and stable match/team IDs. | Free plan too narrow for VELTRIX target and no budget approval for paid plan. | Not selected for current architecture. |
 
 ## 3. Important provider findings
@@ -58,6 +59,12 @@ The Free plan's 3-month historical window means it cannot by itself provide the 
 
 Free/Community/Education public-facing output must visibly attribute: "Football data by 5DollarFootballAPI" and link to https://5dollarfootballapi.com. Raw data feed resale/redistribution is prohibited.
 
+### 5DollarFootballAPI odds capture
+
+The current docs confirm that the per-fixture `GET /v1/fixtures/{id}/odds` endpoint is available on Free and returns Bet365 1X2, BTTS, goal lines and other supported markets. Fixture-list `include=odds` is not available on Free, and full tick history requires Ultra. The Free/Community rate windows are 60/hour (Free) and 300/hour (Community), both with a 20/minute burst. For V2 prospective capture, fetch one per-fixture odds payload per selected fixture, record the V2 retrieval time as `captured_at`, preserve any provider-supplied `opened_at`, and reject quotes captured at/after kickoff. This supports 25 fixtures/day within the documented hourly quota if requests are batched safely. It does not create historical quote timestamps retroactively.
+
+The Community Access plan is the strongest no-cost expansion path: top five leagues plus one country pack, 12 months of results/odds, 300 requests/hour, renewable every 12 months. The user appears eligible as an early-career developer building without a budget. A single country pack must be chosen; Argentina or Brazil are the first candidates, subject to the account's available pack list. Free/Community public-facing outputs require linked attribution.
+
 ### StrikerAPI
 
 The current public docs advertise 500 free credits every month and 17 competitions. Published endpoint costs range from 2 credits for basic fixtures/standings to 5 credits for team stats/odds and 10 credits for events/shot maps. The user's earlier HTTP 402 remains a valid historical account observation and means the prior request was credit-blocked; it does not prove the current monthly balance. A read-only account probe is needed before any planned usage.
@@ -68,7 +75,9 @@ Its published xG is explicitly not point-in-time: the provider says its location
 
 ### GOAL API
 
-The user confirms the key is active. The existing VELTRIX probe targets `https://api.goal-api.com/v1` and sends `Authorization: Bearer ...`, which matches the current official documentation. A different project named GoalAPI.com uses a different hostname and an `X-AUTH-APIKEY` header; do not conflate those products or change the VELTRIX header based on the unrelated documentation.
+StrikerAPI's terms explicitly allow storing pulled data while the account is open, deriving values, research/backtesting, training your own models and commercial apps. They prohibit raw/bulk feed redistribution and do not require attribution. Its data atlas lists the Premier League, MLS, La Liga, Serie A, Bundesliga, Ligue 1, Champions League, Championship, NWSL, Liga MX, Europa League, Conference League, Eredivisie, Primeira Liga, Scottish Premiership, Brazil and Argentina. The odds archive has 1X2, handicaps and totals with actual archived captured_at times from June 2020 for 16 competitions; it does not establish BTTS coverage across the full cohort.
+
+The user confirms the GOAL API key is active. The existing VELTRIX probe targets `https://api.goal-api.com/v1` and sends `Authorization: Bearer ...`, which matches the current official documentation. A different project named GoalAPI.com uses a different hostname and an `X-AUTH-APIKEY` header; do not conflate those products or change the VELTRIX header based on the unrelated documentation.
 
 The prior 403 therefore remains unexplained and should be investigated through account/key scope, endpoint permission, request path, plan entitlements, provider-side restrictions and the complete sanitized error body/request ID. The current GOAL API documentation lists 401 for missing/invalid key, 429 for rate limits/plan quota and 500 for server errors but does not document 403. Public pages advertise 1,000+ competitions, but per-competition endpoint coverage, free quota and historical completeness must be verified against the account and sample data.
 
@@ -100,9 +109,9 @@ For chronological training, the source's actual availability time must be no lat
 
 ## 6. Next qualification execution
 
-1. Probe 5Dollar account status and the exact five permitted league IDs; capture quotas and current plan response.
-2. Probe StrikerAPI monthly credit balance and one fixture/results request; if still 402, defer until balance refresh. Keep event/shot calls targeted because 500 monthly credits cannot support daily full event enrichment for 25 fixtures.
-3. Probe GOAL API with the documented Authorization: Bearer header on a documented read-only endpoint; capture the sanitized 403 response and request/correlation ID.
+1. Probe 5Dollar account status and the exact five permitted league IDs; capture quotas and current plan response. Evaluate the free Community Access option for top-five plus one country pack; if enabled, capture one per-fixture odds snapshot per selected fixture and timestamp the V2 retrieval time.
+2. Probe StrikerAPI monthly credit balance and one fixture/results request; if still 402, defer until balance refresh. Use it for bulk historical results and targeted shot-map enrichment; 500 monthly credits cannot support daily full event enrichment for 25 fixtures.
+3. Probe The Odds API current quota and supported sports/markets; retain it as a secondary benchmark source. Probe GOAL API with the documented Authorization: Bearer header on a documented read-only endpoint; capture the sanitized 403 response and request/correlation ID.
 4. Build a per-competition coverage snapshot for current and previous seasons, then perform 100-fixture cross-source reconciliation.
 5. Only after acceptance, stage immutable observations in the isolated Neon branch. Do not write production Neon.
 
