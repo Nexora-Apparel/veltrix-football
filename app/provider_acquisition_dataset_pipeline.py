@@ -82,6 +82,8 @@ def assemble_audited_provider_dataset(
     """Audit all records, then assemble features from admitted originals only."""
     if not isinstance(team_crosswalk_registry, dict):
         raise ProviderDatasetPipelineError("team_crosswalk_registry_required")
+    if not isinstance(season_crosswalk_registry, dict):
+        raise ProviderDatasetPipelineError("season_crosswalk_registry_required")
     if not isinstance(team_crosswalk_as_of, str) or not team_crosswalk_as_of:
         raise ProviderDatasetPipelineError("team_crosswalk_as_of_required")
     if not isinstance(feature_source_qualification_registry, dict):
@@ -167,6 +169,7 @@ def assemble_audited_provider_dataset(
             settlement_timestamp_packages=selected_packages,
             trusted_kms_clients=trusted_kms_clients,
             team_crosswalk_registry=team_crosswalk_registry,
+            season_crosswalk_registry=season_crosswalk_registry,
             feature_source_qualification_registry=feature_source_qualification_registry,
             split_policy=split_policy,
             cutoff_hours=cutoff_hours,
