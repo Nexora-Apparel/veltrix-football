@@ -15,6 +15,9 @@ from app.chronological_training_dataset import (
 from app.point_in_time_feature_contract import (
     build_point_in_time_feature_snapshot,
 )
+from app.feature_source_qualification import (
+    FeatureSourceQualificationError, verify_feature_source_qualification_registry,
+)
 from app.results_feature_reconstruction import (
     FeatureReconstructionError,
     reconstruct_pre_match_features,
@@ -29,7 +32,9 @@ def build_results_history_snapshot(*, historical_matches: list[dict],
                                    target_fixture: dict,
                                    cutoff_hours: int = 6,
                                    form_window: int = 10,
-                                   minimum_team_matches: int = 3) -> dict:
+                                   minimum_team_matches: int = 3,
+                                   feature_source_qualification_registry: dict | None = None,
+                                   trusted_kms_clients: dict | None = None) -> dict:
     reconstructed = reconstruct_pre_match_features(
         historical_matches=historical_matches,
         target_fixture=target_fixture,
@@ -50,10 +55,26 @@ def build_results_history_snapshot(*, historical_matches: list[dict],
             "retrieved_at": source["retrieved_at"],
             "payload_sha256": source["payload_sha256"],
         })
+    verified_source_registry = None
+    if feature_source_qualification_registry is not None:
+        if not isinstance(trusted_kms_clients, dict) or not trusted_kms_clients:
+            raise ResultsTrainingAdapterError("feature_source_trusted_kms_clients_required")
+        try:
+            verified_source_registry = verify_feature_source_qualification_registry(
+                registry=feature_source_qualification_registry,
+                trusted_kms_clients=trusted_kms_clients,
+                as_of=reconstructed["feature_as_of"],
+            )
+        except FeatureSourceQualificationError as exc:
+            raise ResultsTrainingAdapterError(
+                f"feature_source_registry_rejected:{exc}"
+            ) from None
     return build_point_in_time_feature_snapshot(
         fixture_id=reconstructed["fixture_id"],
         prediction_as_of=reconstructed["feature_as_of"],
         features=snapshot_features,
+        verified_source_registry=verified_source_registry,
+        competition_id=reconstructed["competition_id"],
     )
 
 
@@ -63,7 +84,9 @@ def assemble_results_history_dataset(*, historical_matches: list[dict],
                                       split_policy: dict,
                                       cutoff_hours: int = 6,
                                       form_window: int = 10,
-                                      minimum_team_matches: int = 3) -> dict:
+                                      minimum_team_matches: int = 3,
+                                      feature_source_qualification_registry: dict | None = None,
+                                      trusted_kms_clients: dict | None = None) -> dict:
     if not isinstance(target_fixtures, list) or not isinstance(settled_labels, list):
         raise ResultsTrainingAdapterError("targets_and_labels_must_be_arrays")
     snapshots = []
@@ -76,6 +99,8 @@ def assemble_results_history_dataset(*, historical_matches: list[dict],
                 cutoff_hours=cutoff_hours,
                 form_window=form_window,
                 minimum_team_matches=minimum_team_matches,
+                feature_source_qualification_registry=feature_source_qualification_registry,
+                trusted_kms_clients=trusted_kms_clients,
             )
             snapshots.append(snapshot)
         except (FeatureReconstructionError, ValueError, KeyError) as exc:
