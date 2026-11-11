@@ -60,3 +60,52 @@ def test_schedule_selector_can_evaluate_actual_three_month_provider_window():
     assert window.days < 30
     assert splits >= 3
     assert scheduled > 0
+
+
+
+def test_history_entitlement_is_read_from_supported_provider_plan():
+    assert RUNNER._history_limit_for_plan("free") == 90
+    assert RUNNER._history_limit_for_plan("community") == 365
+    assert RUNNER._history_limit_for_plan("pro") == 365
+
+
+def test_unknown_provider_plan_fails_closed():
+    import pytest
+
+    with pytest.raises(RuntimeError, match="ACCOUNT_PLAN_UNRECOGNIZED"):
+        RUNNER._history_limit_for_plan("trial-unknown")
+
+
+def test_free_plan_cannot_request_12_month_history(monkeypatch):
+    from types import SimpleNamespace
+
+    calls = []
+
+    class FakeBudget:
+        actual = 0
+        remaining_header = 59
+
+        def __init__(self, maximum, api_key):
+            self.maximum = maximum
+            self.api_key = api_key
+
+        def get(self, endpoint, params):
+            calls.append(endpoint)
+            self.actual += 1
+            return {"success": 1, "data": {"plan": "free"}} if endpoint == "status" else {}
+
+    monkeypatch.setenv("FIVEDOLLARFOOTBALL_API_KEY", "test-key")
+    monkeypatch.setattr(RUNNER, "RequestBudget", FakeBudget)
+    report = RUNNER.run(SimpleNamespace(
+        days=365,
+        max_requests=50,
+        max_pages=5,
+        min_history_days=300,
+        min_training_rows=200,
+        min_test_sample=1000,
+        max_iterations=6000,
+    ))
+    assert report["status"] == "BLOCKED_PLAN_HISTORY_LIMIT"
+    assert report["provider_plan"] == "free"
+    assert report["plan_history_limit_days"] == 90
+    assert calls == ["status"]
