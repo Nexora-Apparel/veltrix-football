@@ -60,3 +60,23 @@ def is_value_betting_authorized_report(report: Any) -> bool:
         and bool(approved)
         and set(approved).issubset(allowed_markets)
     )
+
+
+def is_independent_paper_ledger(value: Any) -> bool:
+    return (
+        isinstance(value, dict)
+        and value.get("ledger_schema") == "VELTRIX_INDEPENDENT_PAPER_LEDGER_V1"
+        and value.get("model_portfolio_id") == MODEL_PORTFOLIO_ID
+        and value.get("legacy_model_dependency") is False
+        and value.get("model_status") == "PAPER_TRACKING_ONLY"
+    )
+
+
+def is_independent_model_validation(value: Any) -> bool:
+    return (
+        isinstance(value, dict)
+        and value.get("validation_schema") == "VELTRIX_INDEPENDENT_MODEL_VALIDATION_V1"
+        and value.get("model_portfolio_id") == MODEL_PORTFOLIO_ID
+        and value.get("legacy_model_dependency") is False
+        and isinstance(value.get("dataset"), dict)
+    )
