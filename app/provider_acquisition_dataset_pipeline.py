@@ -134,11 +134,13 @@ def assemble_audited_provider_dataset(
     if not isinstance(dataset, dict) or not isinstance(reconstruction, dict):
         raise ProviderDatasetPipelineError("dataset_assembly_contract_invalid")
 
-    fixture_count = int(reconstruction.get("snapshot_count", 0))
+    snapshot_count = int(reconstruction.get("snapshot_count", 0))
+    included_count = int(dataset.get("quality", {}).get("included_fixture_count", 0))
     result = {
         **assembled,
-        "dataset_assembled": fixture_count > 0,
-        "dataset_fixture_count": fixture_count,
+        "dataset_assembled": included_count > 0,
+        "dataset_fixture_count": included_count,
+        "feature_snapshot_count": snapshot_count,
         "acquisition_eligibility": audit,
         "feature_reconstruction": reconstruction,
         "training_authorized": False,
