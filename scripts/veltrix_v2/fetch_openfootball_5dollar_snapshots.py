@@ -117,29 +117,76 @@ def fetch_5dollar(out: Path, start: date, end_exclusive: date, manifest: dict) -
         raise SafeFetchError("MISSING_FIVEDOLLARFOOTBALL_API_KEY")
     auth = {"Authorization": f"Bearer {key}"}
 
+    # Prefer the documented country filter. Search fallback handles provider
+    # catalogue changes without guessing an ID or weakening exact identity checks.
     league_rows: list[dict] = []
     league_pages = 0
-    for page in range(1, 11):
-        query = urlencode({"page": page, "per_page": 100})
-        payload, _, _ = get_json(f"{API}/leagues?{query}", auth)
-        if not isinstance(payload, dict) or payload.get("success") != 1 or not isinstance(payload.get("data"), list):
-            raise SafeFetchError("FIVEDOLLAR_LEAGUE_SCHEMA_INVALID")
-        league_rows.extend(x for x in payload["data"] if isinstance(x, dict))
-        league_pages += 1
-        if not (payload.get("pagination") or {}).get("has_more"):
-            break
-    else:
-        raise SafeFetchError("FIVEDOLLAR_LEAGUE_PAGINATION_LIMIT")
+    discovery_queries = [
+        {"country": "GB-ENG", "per_page": 50},
+        {"search": "Premier League", "per_page": 50},
+        {"popular": 1, "per_page": 50},
+    ]
+    discovery_evidence: list[dict] = []
+    seen_league_ids: set[str] = set()
+    for discovery in discovery_queries:
+        query_rows: list[dict] = []
+        for page in range(1, 11):
+            params = {**discovery, "page": page}
+            payload, _, _ = get_json(f"{API}/leagues?{urlencode(params)}", auth)
+            if not isinstance(payload, dict) or payload.get("success") != 1 or not isinstance(payload.get("data"), list):
+                raise SafeFetchError("FIVEDOLLAR_LEAGUE_SCHEMA_INVALID")
+            page_rows = [x for x in payload["data"] if isinstance(x, dict)]
+            query_rows.extend(page_rows)
+            league_pages += 1
+            if not (payload.get("pagination") or {}).get("has_more"):
+                break
+            time.sleep(3.1)
+        else:
+            raise SafeFetchError("FIVEDOLLAR_LEAGUE_PAGINATION_LIMIT")
 
-    candidates = []
-    for row in league_rows:
-        country = row.get("country") or {}
-        if (
-            str(row.get("name", "")).strip().casefold() == "premier league"
-            and str(country.get("code", "")).strip().upper() == "GB-ENG"
-        ):
-            candidates.append(row)
+        for row in query_rows:
+            identity = str(row.get("id", ""))
+            if identity and identity not in seen_league_ids:
+                seen_league_ids.add(identity)
+                league_rows.append(row)
+
+        candidates = []
+        for row in query_rows:
+            country = row.get("country") or {}
+            name = str(row.get("name", "")).strip().casefold()
+            short_name = str(row.get("short_name", "")).strip().casefold()
+            country_code = str(country.get("code", "")).strip().upper()
+            country_name = str(country.get("name", "")).strip().casefold()
+            exact_name = name == "premier league"
+            exact_country = country_code == "GB-ENG" or country_name == "england"
+            exact_short_name = short_name == "epl"
+            if exact_name and (exact_country or exact_short_name):
+                candidates.append(row)
+
+        discovery_evidence.append({
+            "query": discovery,
+            "rows": len(query_rows),
+            "candidate_count": len(candidates),
+        })
+        if len(candidates) == 1:
+            break
+
     if len(candidates) != 1:
+        diagnostic = [
+            {
+                "id": str(row.get("id", "")),
+                "name": row.get("name"),
+                "short_name": row.get("short_name"),
+                "country_code": (row.get("country") or {}).get("code"),
+                "country_name": (row.get("country") or {}).get("name"),
+            }
+            for row in league_rows[:100]
+        ]
+        manifest["fivedollar_discovery"] = {
+            "queries": discovery_evidence,
+            "catalogue_rows": len(league_rows),
+            "catalogue_preview": diagnostic,
+        }
         raise SafeFetchError(f"FIVEDOLLAR_EPL_LEAGUE_IDENTITY_COUNT_{len(candidates)}")
     league = candidates[0]
     league_id = league.get("id")
