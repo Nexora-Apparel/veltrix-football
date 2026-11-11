@@ -1,0 +1,45 @@
+# VELTRIX FOOTBALL 2.0 — Feature Foundation Progress
+Date: 2026-11-11
+Branch: `veltrix-2.0-architecture-blueprint`
+
+## Data qualification gate
+
+- Neon production read-only acceptance: PASS. The workflow verified the intended `veltrix-football` database, PostgreSQL 18.6, 11 public tables, 11 primary keys, 7 foreign keys, 5 unique constraints, 83 CHECK constraints, 22 indexes, one migration and one PASS reconciliation audit. The transaction was explicitly read-only.
+- Isolated provider-backed dry-run: BLOCKED. The isolated Neon connection and database identity checks passed, but the first StrikerAPI fixture request returned HTTP 402. The account owner confirmed the StrikerAPI credit balance is exhausted.
+- No provider import or database write occurred. Do not retry provider calls until credits/entitlement are restored and the account is confirmed usable.
+- Phase 3 remains unsigned. The bounded source scope and NWSL exclusion remain unchanged.
+
+## Independent feature modules implemented
+
+### Team form
+- Recency-weighted goals for, goals against and points per match.
+- Strict provider, competition and season scope.
+- Results must be final, kicked off before cutoff and available by cutoff.
+- Missing history remains missing; small samples are explicitly marked.
+
+### Team schedule load
+- Rest days since last match.
+- Match counts over rolling 7/14/30-day windows across competitions.
+- Uses only settled, point-in-time-available matches.
+- Rejects duplicate fixture and source-observation identities.
+
+### Venue context
+- Reads only explicit provider venue observations for the exact fixture.
+- Encodes neutral-ground status only when the provider explicitly supplies a boolean.
+- Records whether a venue identity is actually available.
+- Future observations are excluded; missing or unknown neutral status remains missing.
+- Does not infer venue from the nominal home-team designation.
+- Multiple eligible observations fail closed pending upstream correction resolution.
+
+## Verification state
+
+- Previously recorded foundation suite: 31 passed, 0 failed, including the legacy-import boundary check, on commit `73c49a933d2448f1f2d52076c0378c79f6af18de`.
+- Venue-context tests have now been added to the same isolated foundation suite. A new CI run is required before treating the new module as verified.
+- No model fitting, calibration, walk-forward evaluation, prediction publication, provider ingestion or production activation has been performed.
+
+## Next gate
+
+1. Run and inspect the v2 foundation CI after the venue-context addition.
+2. Continue deterministic, evidence-backed feature contracts only while StrikerAPI is credit-blocked.
+3. Resume the provider dry-run only after credit balance/entitlement is restored.
+4. Sign Phase 3 only after the provider dry-run completes with complete accounting, zero unresolved identity/score conflicts and unchanged database counts.
