@@ -10,6 +10,8 @@ def isolate_dashboard_data_source(monkeypatch):
     import api.telegram
 
     monkeypatch.setattr(api.telegram, "load_dashboard_snapshot", lambda: None)
+    # Existing dashboard rendering tests model a report that has passed the new release gate.
+    monkeypatch.setattr(api.telegram, "is_publishable_independent_report", lambda report: True)
 
 
 
@@ -68,6 +70,35 @@ def test_tracking_history_renderer_is_safe_and_keeps_complete_fixture_history():
     assert 'for row in (ledger.get("scored_matches") or [])[-12:]' not in open(
         "api/telegram.py", encoding="utf-8"
     ).read()
+
+
+def test_dashboard_suppresses_legacy_prediction_reports(monkeypatch):
+    import api.telegram
+    from app.independent_report_contract import is_publishable_independent_report
+
+    monkeypatch.setattr(api.telegram, "is_publishable_independent_report", is_publishable_independent_report)
+    monkeypatch.setattr(api.telegram, "load_latest_report", lambda: {
+        "as_of_date": "2026-11-11",
+        "status": "PUBLISHED",
+        "predictions": [{
+            "fixture_id": "legacy-1",
+            "home_team": "Legacy FC",
+            "away_team": "Old Model United",
+            "status": "EXPERIMENTAL_ONLY",
+            "probabilities": {"home_win": 0.6, "draw": 0.2, "away_win": 0.2},
+        }],
+        "value_validation_certificate": {"status": "PARTIALLY_VALIDATED", "alerts_enabled": True},
+    })
+    monkeypatch.setattr(api.telegram, "load_paper_ledger", lambda: {
+        "model_status": "PAPER_TRACKING_ONLY", "scored_matches": []
+    })
+    payload = get_dashboard_data()
+    assert payload["status"] == "LOCKED"
+    assert payload["publication_status"] == "LOCKED_NO_CERTIFIED_INDEPENDENT_REPORT"
+    assert payload["predictions"] == []
+    assert payload["available_forecasts"] == 0
+    assert payload["value_validation_certificate"]["alerts_enabled"] is False
+    assert payload["paper_tracking"] is None
 
 
 def test_dashboard_data_handler_returns_json(monkeypatch):
