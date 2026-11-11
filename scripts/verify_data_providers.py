@@ -9,7 +9,7 @@ import os
 import re
 import sys
 from urllib.error import HTTPError, URLError
-from urllib.parse import urlencode
+from urllib.parse import urlencode, quote
 from urllib.request import Request, urlopen
 
 TIMEOUT = 20
@@ -59,11 +59,11 @@ def check_fivedollar() -> str:
     if not key:
         print("5DollarFootballAPI: MISSING_SECRET (FIVEDOLLARFOOTBALL_API_KEY)")
         return "MISSING_SECRET"
-    url = "https://api.5dollarfootballapi.com/v1/fixtures?" + urlencode(
-        {"status": "scheduled", "per_page": 1}
-    )
+    headers = {"Authorization": f"Bearer {key}"}
+    base = "https://api.5dollarfootballapi.com/v1"
+    url = base + "/fixtures?" + urlencode({"status": "scheduled", "per_page": 1})
     try:
-        status, headers, payload = request_json(url, {"Authorization": f"Bearer {key}"})
+        status, response_headers, payload = request_json(url, headers)
         if status != 200 or not isinstance(payload, dict) or payload.get("success") != 1:
             print("5DollarFootballAPI: UNEXPECTED_RESPONSE")
             return "FAILED"
@@ -71,8 +71,49 @@ def check_fivedollar() -> str:
         if not isinstance(data, list):
             print("5DollarFootballAPI: AUTH_OK_BUT_SCHEMA_UNEXPECTED")
             return "FAILED"
-        remaining = headers.get("X-RateLimit-Remaining", "not supplied")
+        remaining = response_headers.get("X-RateLimit-Remaining", "not supplied")
         print(f"5DollarFootballAPI: AUTH_OK; scheduled fixture sample={len(data)}; requests_remaining={remaining}")
+        if not data:
+            print("5DollarFootballAPI ODDS_SAMPLE: SKIPPED_NO_SCHEDULED_FIXTURE")
+            return "AUTH_OK"
+        fixture = data[0]
+        fixture_id = fixture.get("id") or fixture.get("fixture_id")
+        if fixture_id is None:
+            print("5DollarFootballAPI ODDS_SAMPLE: FIXTURE_ID_MISSING")
+            return "AUTH_OK"
+        odds_url = base + f"/fixtures/{quote(str(fixture_id), safe='')}/odds"
+        try:
+            odds_status, odds_headers, odds_payload = request_json(odds_url, headers)
+            odds_data = odds_payload.get("data") if isinstance(odds_payload, dict) else None
+            bookmakers = odds_data.get("bookmakers") if isinstance(odds_data, dict) else None
+            bet365 = next(
+                (item for item in bookmakers or [] if isinstance(item, dict) and item.get("slug") == "bet365"),
+                None,
+            )
+            markets = bet365.get("odds") if isinstance(bet365, dict) else None
+            markets = markets if isinstance(markets, dict) else {}
+            one_x_two = markets.get("1x2")
+            btts = markets.get("btts")
+            fixed_lines = markets.get("goal_line_fixed")
+            total25 = next(
+                (item for item in fixed_lines or [] if isinstance(item, dict) and str(item.get("line")) == "2.5"),
+                None,
+            )
+            def complete(stage, keys):
+                return isinstance(stage, dict) and all(stage.get(key) not in (None, "", 0, "0") for key in keys)
+            available = {
+                "1X2": complete(one_x_two.get("closing") if isinstance(one_x_two, dict) else None, ("home", "draw", "away")),
+                "BTTS": complete(btts.get("closing") if isinstance(btts, dict) else None, ("yes", "no")),
+                "TOTALS_2_5": complete(total25.get("closing") if isinstance(total25, dict) else None, ("over", "under")),
+            }
+            print(
+                "5DollarFootballAPI ODDS_SAMPLE: "
+                f"fixture_id={safe_id(fixture_id)}; "
+                + "; ".join(f"{market}={'available' if present else 'missing'}" for market, present in available.items())
+                + f"; requests_remaining={odds_headers.get('X-RateLimit-Remaining', 'not supplied')}"
+            )
+        except ProviderCheckError as exc:
+            print(f"5DollarFootballAPI ODDS_SAMPLE: FAILED ({exc})")
         return "AUTH_OK"
     except ProviderCheckError as exc:
         if str(exc) == "HTTP 429":
@@ -80,6 +121,12 @@ def check_fivedollar() -> str:
             return "RATE_LIMITED"
         print(f"5DollarFootballAPI: FAILED ({exc})")
         return "FAILED"
+
+
+def safe_id(value: object) -> str:
+    if isinstance(value, (str, int)) and not isinstance(value, bool):
+        return re.sub(r"[^A-Za-z0-9_-]", "", str(value))[:48] or "not reported"
+    return "not reported"
 
 
 def check_odds_api() -> str:
