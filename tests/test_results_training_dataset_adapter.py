@@ -1,3 +1,4 @@
+import copy
 import unittest
 from datetime import date, timedelta
 
@@ -297,6 +298,19 @@ class ResultsTrainingDatasetAdapterTests(unittest.TestCase):
                 target_fixture=TARGET,
                 season_crosswalk_registry=season_registry(),
                 trusted_kms_clients=trusted_clients(),
+            )
+
+    def test_tampered_target_team_pair_evidence_is_rejected(self):
+        history = history_with_target()
+        target_row = next(row for row in history if row["fixture_id"] == TARGET["fixture_id"])
+        target_row["team_identity_evidence"]["home_canonical_team_id"] = "tampered-team"
+        with self.assertRaisesRegex(ValueError, "target_team_identity_not_valid_at_feature_cutoff"):
+            build_results_history_snapshot(
+                historical_matches=history,
+                target_fixture=TARGET,
+                season_crosswalk_registry=season_registry(),
+                trusted_kms_clients=trusted_clients(),
+                team_crosswalk_registry=TEAM_REGISTRY,
             )
 
     def test_target_without_admitted_team_pair_row_is_rejected(self):
