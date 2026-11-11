@@ -52,7 +52,11 @@ class AuditedProviderDatasetPipelineTests(unittest.TestCase):
         return report
 
     def test_only_audit_admitted_original_records_reach_dataset_assembly(self):
-        admitted = {"fixture_id": "provider:good", "provider": "provider", "source_id": "good",\n                    "competition_id": "league-a", "home_team_id": "home-1",\n                    "away_team_id": "away-1", "kickoff_at": "2026-09-01T13:00:00Z",\n                    "settled_at": "2026-09-01T14:00:00Z",\n                    "settlement_source_id": "final-whistle"}
+        admitted = {"fixture_id": "provider:good", "provider": "provider", "source_id": "good",
+                    "competition_id": "league-a", "home_team_id": "home-1",
+                    "away_team_id": "away-1", "kickoff_at": "2026-09-01T13:00:00Z",
+                    "settled_at": "2026-09-01T14:00:00Z",
+                    "settlement_source_id": "final-whistle"}
         records = [
             {"provider": "provider", "source_id": "good", "raw": "retained"},
             {"provider": "provider", "source_id": "bad", "raw": "must-not-pass"},
