@@ -116,3 +116,8 @@ def test_invalid_coverage_and_sample_types_are_rejected():
         evidence("1X2", timestamped_odds_coverage=Decimal("1.01"))
     with pytest.raises(ValueError, match="WALK_FORWARD_SAMPLE"):
         evidence("1X2", walk_forward_matches=True)
+
+
+def test_source_approval_flags_must_be_boolean():
+    with pytest.raises(ValueError, match="MUST_BE_BOOLEAN"):
+        evidence("1X2", source_approved="yes")
