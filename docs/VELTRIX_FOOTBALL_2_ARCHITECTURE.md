@@ -232,3 +232,25 @@ The website/API/Telegram infrastructure is retained, but its data path is still 
 5. Complete model validation and publication gating before website/Telegram integration.
 6. Connect the same immutable V2 report to website, API and Telegram; verify delivery receipt and 06:00 WAT timing before enabling any schedule.
 7. Complete controlled production acceptance. No merge, deployment, Neon production writes, Telegram activation or daily schedule before all gates pass.
+
+
+## 14. Legacy repository disposition map — 2026-11-11
+
+The following classification is an integration/retirement plan, not permission to delete production files before the V2 replacement is accepted.
+
+| Existing surface/module | Disposition | Migration rule |
+|---|---|---|
+| `api/index.py`, `api/dashboard.py`, `api/dashboard_data.py` | Preserve as routing surfaces | Keep endpoint URLs and authentication/session compatibility; replace only the report-data source after V2 acceptance. |
+| `api/telegram.py` | Preserve transport and UI shell; replace legacy data backend | Keep FastAPI routes, webhook verification, dashboard navigation and delivery transport. Remove legacy report loaders/status logic and render only a validated V2 report. |
+| `app/telegram_security.py` | Preserve security behavior | Keep webhook secret-token validation and regression tests. |
+| `app/telegram_commands.py` | Preserve command interface only | Keep command names/UX where useful; rewrite handlers to call the V2 report and tracking services. Do not reuse legacy prediction selection logic. |
+| `app/report_artifacts.py` | Preserve storage/transport pattern only | Version the payload schema and store immutable V2 report artifacts; do not expose legacy report JSON as V2. |
+| `app/config.py` | Review and selectively preserve configuration | Reuse only generic environment/config parsing; remove credentials and provider settings for retired sources. |
+| `app/live_predictions.py`, `app/prediction.py`, `app/advanced_models.py`, `app/poisson_dc_head.py`, `app/team_form.py`, `app/calibration.py`, `app/goal_market_calibration.py`, `app/backtest_engine.py`, `app/bias_audit.py` | Retire legacy prediction/model logic | No imports, wrappers, model reuse, fallback reuse or silent feature reuse in V2. |
+| `app/provider_adapters.py`, `app/recent_results.py`, `app/football_api.py`, `app/api_football_odds.py`, `app/oddspapi_odds.py`, `app/bookmaker_odds.py`, `app/live_odds.py` | Retire legacy provider/odds logic | Replace with qualified V2 provider adapters and immutable observations. Exclude suspended or unlicensed providers. |
+| `app/fixture_identity.py`, `app/historical_data.py`, `app/market_evidence.py`, `app/research_evidence.py`, `app/research_verification.py` | Audit individually; do not import into V2 | Preserve raw historical records only when source rights and provenance pass. Rebuild identity, feature and benchmark logic inside V2 contracts. |
+| `app/paper_tracking.py`, `app/value_bets.py`, `app/value_bets_runtime.py`, `app/value_intelligence.py`, `app/value_intelligence_runtime.py`, `app/value_evidence_ledger.py`, `app/value_paper.py` | Retire legacy value/paper logic | Rebuild settlement, prospective ledger, ROI and CLV using V2 contracts and certification evidence. Value betting remains locked until every release gate passes. |
+| `scripts/run_daily_predictions.py`, `scripts/backfill_history_gaps.py`, `scripts/filter_report_for_delivery.py`, `scripts/audit_historical_model.py`, `scripts/run_paper_tracking.py`, `scripts/send_telegram_report.py` | Keep disabled; replace with V2 orchestration | Do not reactivate or patch the legacy daily pipeline. Replace with one V2 orchestration path only after provider, model and publication acceptance. |
+| Legacy daily prediction/watchdog workflows | Keep disabled until replacement | No schedule or Telegram delivery is re-enabled before the V2 controlled-release gate. Remove obsolete workflows after V2 replacement is verified. |
+
+The existing repository's legacy tests may remain temporarily as archival regression tests for preserved infrastructure, but passing legacy-model tests do not qualify any legacy model for V2 reuse. The V2 import guard now rejects any `app.*` dependency from both `veltrix_v2/` and `scripts/veltrix_v2/`.
