@@ -40,6 +40,7 @@ def fixture(fixture_id, home, away, kickoff):
         "away_team_id": away,
         "kickoff_at": kickoff,
         "settled_at": "2026-09-01T13:00:00Z",
+        "retrieved_at": "2026-09-01T13:05:00Z",
         "settlement_source_id": "final-whistle-source",
         "source_season": "2025/26",
     }
@@ -192,6 +193,34 @@ class HistoricalSourceCoverageTests(unittest.TestCase):
         self.assertEqual(quality["rejected_records"], 1)
         self.assertAlmostEqual(quality["acceptance_rate"], 2 / 3)
         self.assertEqual(quality["rejection_reasons"], {"no_settlement": 1})
+
+    def test_reports_provider_settlement_retrieval_chronology(self):
+        result = build_historical_source_coverage_report(
+            report_input(),
+            minimum_fixtures_per_competition=2,
+            minimum_distinct_teams_per_competition=3,
+            minimum_feature_coverage_rate=0.9,
+        )
+        quality = result["settlement_source_coverage"]["provider_quality"]["provider-a"]
+        self.assertEqual(
+            quality["settlement_timestamp_provenance"]["settlement_timestamp_present"], 2
+        )
+        self.assertEqual(
+            quality["settlement_timestamp_provenance"]["retrieval_timestamp_present"], 2
+        )
+        self.assertEqual(
+            quality["settlement_timestamp_provenance"]["retrieval_after_settlement"], 2
+        )
+
+    def test_rejects_provider_retrieval_timestamp_before_settlement(self):
+        value = report_input()
+        value["acquisition_eligibility"]["accepted_records"][0]["retrieved_at"] = (
+            "2026-09-01T12:59:59Z"
+        )
+        with self.assertRaisesRegex(
+            HistoricalSourceCoverageError, "provider_retrieval_precedes_settlement"
+        ):
+            build_historical_source_coverage_report(value)
 
     def test_signed_crosswalk_verifies_canonical_season_identity(self):
         result = build_historical_source_coverage_report(
