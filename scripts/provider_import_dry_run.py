@@ -147,6 +147,46 @@ def read_database_snapshot(dsn: str) -> dict[str, int]:
     return snapshot
 
 
+def read_existing_fixtures(dsn: str) -> dict[tuple[str, str], dict[str, Any]]:
+    query = """
+        SELECT f.provider, f.provider_fixture_id, f.kickoff_at, f.status,
+               ht.provider_team_id AS home_provider_team_id,
+               at.provider_team_id AS away_provider_team_id,
+               ht.name AS home_name, at.name AS away_name,
+               r.home_score, r.away_score
+        FROM public.fixtures f
+        JOIN public.teams ht ON ht.id = f.home_team_id
+        JOIN public.teams at ON at.id = f.away_team_id
+        LEFT JOIN public.fixture_results r ON r.fixture_id = f.id
+    """
+    with psycopg.connect(dsn, connect_timeout=10, row_factory=dict_row) as conn:
+        with conn.transaction():
+            conn.execute("SET TRANSACTION READ ONLY")
+            rows = conn.execute(query).fetchall()
+    return {(row["provider"], row["provider_fixture_id"]): dict(row) for row in rows}
+
+
+def compare_existing(candidate_records: list[dict], existing: dict[tuple[str, str], dict]) -> list[dict]:
+    conflicts = []
+    for candidate in candidate_records:
+        key = (candidate["provider"], candidate["provider_fixture_id"])
+        stored = existing.get(key)
+        if stored is None:
+            continue
+        stored_kickoff = stored["kickoff_at"].astimezone(timezone.utc)
+        incoming_kickoff = utc_timestamp(candidate["kickoff_utc"])
+        if stored_kickoff != incoming_kickoff:
+            conflicts.append({"kind": "provider_id_kickoff_conflict", "provider_fixture_id": key[1]})
+        if str(stored["home_provider_team_id"]) != candidate["home_provider_team_id"] or str(stored["away_provider_team_id"]) != candidate["away_provider_team_id"]:
+            conflicts.append({"kind": "provider_id_team_identity_conflict", "provider_fixture_id": key[1]})
+        if stored["home_score"] is not None and (
+            int(stored["home_score"]) != candidate["home_score"]
+            or int(stored["away_score"]) != candidate["away_score"]
+        ):
+            conflicts.append({"kind": "provider_id_score_conflict", "provider_fixture_id": key[1]})
+    return conflicts
+
+
 def main() -> int:
     key = os.getenv("STRIKERAPI_API_KEY", "").strip()
     dsn = os.getenv("DRY_RUN_DATABASE_URL", "").strip()
@@ -164,6 +204,7 @@ def main() -> int:
     start = (now.date() - timedelta(days=WINDOW_DAYS)).isoformat()
     end = now.date().isoformat()
     before = read_database_snapshot(dsn)
+    existing = read_existing_fixtures(dsn)
     report: dict[str, Any] = {
         "mode": "provider_backed_import_dry_run",
         "retrieved_at_utc": now.isoformat(),
@@ -176,11 +217,13 @@ def main() -> int:
     }
     total_calls = 0
     all_issues = []
+    candidate_records: list[dict] = []
     for league, code, rights_id in SCOPES:
         rows, calls, truncated = fetch_scope(key, league, start, end)
         total_calls += calls
         result = inspect_rows(rows, league, rights_id)
         all_issues.extend({"competition": code, **issue} for issue in result["issues"])
+        candidate_records.extend(result["records"])
         report["approved_scopes"].append({
             "competition": code,
             "provider": "StrikerAPI",
@@ -193,6 +236,7 @@ def main() -> int:
         })
         if truncated:
             all_issues.append({"competition": code, "kind": "pagination_truncated"})
+    all_issues.extend(compare_existing(candidate_records, existing))
     after = read_database_snapshot(dsn)
     report["database_after"] = after
     report["database_unchanged"] = before == after
