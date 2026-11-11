@@ -176,7 +176,8 @@ def website_report_payload(report: CertifiedDailyReport) -> dict[str, Any]:
         "fixture_count": len(report.fixtures),
         "fixtures": [
             {
-                **{key: value for key, value in asdict(row).items() if key != "forecasts"},
+                **{key: value for key, value in asdict(row).items() if key not in {"forecasts", "source_provider_ids"}},
+                "source_provider_ids": list(row.source_provider_ids),
                 "kickoff_utc": row.kickoff_utc.isoformat(),
                 "kickoff_wat": row.kickoff_utc.astimezone(WAT).isoformat(),
                 "forecasts": {
