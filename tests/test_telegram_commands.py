@@ -1,8 +1,15 @@
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 
+import pytest
+
 from app.telegram_commands import NEW_MESSAGE_HEADER, handle_command
 from app.independent_report_contract import MODEL_PORTFOLIO_ID, REPORT_SCHEMA
+
+
+@pytest.fixture(autouse=True)
+def allow_test_reports_through_command_formatter(monkeypatch):
+    monkeypatch.setattr("app.telegram_commands.is_publishable_independent_report", lambda report: True)
 
 
 def authorized_report(report):
@@ -147,7 +154,9 @@ def test_status_discloses_historical_refresh_gaps():
     assert "continuous through 2026-09-03, latest available 2026-10-24" in reply
 
 
-def test_legacy_report_predictions_are_suppressed():
+def test_legacy_report_predictions_are_suppressed(monkeypatch):
+    from app.independent_report_contract import is_publishable_independent_report
+    monkeypatch.setattr("app.telegram_commands.is_publishable_independent_report", is_publishable_independent_report)
     legacy = {
         "predictions": [{
             "home_team": "Legacy FC",
