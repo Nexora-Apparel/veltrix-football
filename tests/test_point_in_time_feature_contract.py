@@ -89,6 +89,23 @@ def valid_team_identity_evidence(**overrides):
     return value
 
 
+def valid_season_identity_evidence(**overrides):
+    value = {
+        "provider": "provider-x",
+        "competition_id": "league-a",
+        "source_season": "2025/26",
+        "canonical_season_id": "league-a:2025-2026",
+        "registry_sha256": "e" * 64,
+        "signing_key_arn": "arn:aws:kms:eu-west-1:123456789012:key/season-test",
+        "verified_at": CUTOFF,
+        "evidence_sha256": ["f" * 64],
+        "reviewer": "season-reviewer",
+        "reviewed_at": "2026-10-01T00:00:00Z",
+    }
+    value.update(overrides)
+    return value
+
+
 class PointInTimeFeatureContractTests(unittest.TestCase):
     def test_valid_snapshot_is_deterministic_and_target_is_separate(self):
         first = build_point_in_time_feature_snapshot(
@@ -100,6 +117,22 @@ class PointInTimeFeatureContractTests(unittest.TestCase):
         self.assertEqual(first["snapshot_sha256"], second["snapshot_sha256"])
         self.assertTrue(validate_point_in_time_feature_snapshot(first)["valid"])
         self.assertFalse(first["model_training_certified"])
+
+    def test_season_identity_requires_registry_verification_at_exact_cutoff(self):
+        snapshot = build_point_in_time_feature_snapshot(
+            fixture_id="fixture-season", prediction_as_of=CUTOFF, features=[BASE],
+            season_identity_evidence=valid_season_identity_evidence(),
+        )
+        self.assertTrue(validate_point_in_time_feature_snapshot(snapshot)["valid"])
+        with self.assertRaisesRegex(
+            PointInTimeFeatureError, "season_identity_registry_not_verified_at_feature_cutoff"
+        ):
+            build_point_in_time_feature_snapshot(
+                fixture_id="fixture-season", prediction_as_of=CUTOFF, features=[BASE],
+                season_identity_evidence=valid_season_identity_evidence(
+                    verified_at="2026-11-10T04:59:00Z"
+                ),
+            )
 
     def test_team_identity_evidence_is_bound_into_snapshot_digest(self):
         snapshot = build_point_in_time_feature_snapshot(
