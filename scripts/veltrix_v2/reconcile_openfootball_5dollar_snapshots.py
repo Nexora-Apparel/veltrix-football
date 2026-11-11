@@ -158,6 +158,7 @@ def reconcile(
     missing_openfootball_scores = []
     date_conflicts = []
     unmatched_reference = []
+    matched_source_keys: set[tuple[str, str, str]] = set()
     duplicate_reference_keys = sum(1 for rows in reference_index.values() if len(rows) > 1)
     for key, refs in reference_index.items():
         if len(refs) != 1:
@@ -165,6 +166,7 @@ def reconcile(
         source_matches = source_index.get(key, [])
         ref = refs[0]
         if len(source_matches) == 1:
+            matched_source_keys.add(key)
             exact_date_team_matches += 1
             source_score = _ft_score(source_matches[0])
             reference_score = _fd_score(ref)
@@ -190,6 +192,8 @@ def reconcile(
             pair_matches = source_pair_index.get((key[1], key[2]), [])
             if len(pair_matches) == 1:
                 source_row = pair_matches[0]
+                source_match_day = date.fromisoformat(str(source_row.get("date")))
+                matched_source_keys.add((source_match_day.isoformat(), key[1], key[2]))
                 date_conflicts.append({
                     "home": key[1], "away": key[2],
                     "fivedollar_date": key[0],
@@ -209,7 +213,7 @@ def reconcile(
     reference_keys = set(reference_index)
     unmatched_openfootball = [
         {"date": key[0], "home": key[1], "away": key[2]}
-        for key in sorted(exact_source_keys - reference_keys)
+        for key in sorted(exact_source_keys - reference_keys - matched_source_keys)
     ]
 
     reference_count = len(reference_index)
