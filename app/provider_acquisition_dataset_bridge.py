@@ -288,6 +288,7 @@ def assemble_provider_acquisition_dataset(*, acquisition_records: list[dict],
             minimum_team_matches=minimum_team_matches,
             feature_source_qualification_registry=feature_source_qualification_registry,
             trusted_kms_clients=trusted_kms_clients,
+            team_crosswalk_registry=team_crosswalk_registry,
         )
     except (ResultsTrainingAdapterError, ValueError, KeyError) as exc:
         raise AcquisitionDatasetBridgeError(str(exc)) from None
