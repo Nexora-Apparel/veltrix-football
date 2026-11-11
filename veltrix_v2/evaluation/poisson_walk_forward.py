@@ -62,8 +62,8 @@ def run_poisson_walk_forward(
     rows = tuple(matches)
     if not rows:
         raise ValueError("WALK_FORWARD_MATCH_DATA_REQUIRED")
-    if not 0 <= rho <= 0.5:
-        raise ValueError("WALK_FORWARD_RHO_OUT_OF_RESEARCH_RANGE")
+    if isinstance(rho, bool) or not isinstance(rho, (int, float)):
+        raise ValueError("WALK_FORWARD_RHO_MUST_BE_NUMERIC")
     if abs((total_line % 1.0) - 0.5) > 1e-9 or total_line < 0:
         raise ValueError("WALK_FORWARD_TOTAL_LINE_MUST_BE_HALF_GOAL")
     eval_fixtures = tuple(
