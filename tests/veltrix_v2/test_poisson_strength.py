@@ -178,3 +178,24 @@ def test_unapproved_source_cannot_enter_model_training():
             training_cutoff_utc=BASE + timedelta(days=150),
             minimum_matches=30, minimum_team_matches=10,
         )
+
+
+
+def test_single_prior_match_team_is_accepted_without_generic_fallback():
+    rows = build_rows()
+    kickoff = BASE + timedelta(days=80)
+    rows.append(TrainingMatch(
+        "rare-team-one-match", "league", "2024/25", kickoff,
+        kickoff + timedelta(hours=4), "RARE", "A", 1, 0,
+        "obs-rare-team", availability_basis="source_timestamp",
+        source_training_approved=True,
+    ))
+    model = fit_poisson_strength_model(
+        rows, competition_key="league", season="2024/25",
+        training_cutoff_utc=BASE + timedelta(days=150),
+        minimum_matches=30, max_iterations=4000,
+    )
+    assert model.training_match_count == 55
+    assert model.expected_goals("RARE", "A")[0] > 0
+    with pytest.raises(ValueError, match="TEAM_NOT_IN_TRAINING"):
+        model.expected_goals("A", "NO_HISTORY")

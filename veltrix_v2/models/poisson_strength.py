@@ -133,7 +133,7 @@ def fit_poisson_strength_model(
     season: str,
     training_cutoff_utc: datetime,
     minimum_matches: int = 40,
-    minimum_team_matches: int = 3,
+    minimum_team_matches: int = 1,
     recency_half_life_days: float = 180.0,
     ridge: float = 0.05,
     learning_rate: float = 0.025,

@@ -89,7 +89,7 @@ def run_multi_market_walk_forward(
     n_splits: int,
     embargo: timedelta = timedelta(0),
     minimum_training_matches: int = 40,
-    minimum_team_matches: int = 3,
+    minimum_team_matches: int = 1,
     max_iterations: int = 6000,
     recency_half_life_days: float = 180.0,
     ridge: float = 0.05,
