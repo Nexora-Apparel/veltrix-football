@@ -57,6 +57,42 @@ def test_daily_report_archive_path_rejects_invalid_report_date():
         _archive_report_path({"as_of_date": "not-a-date"}, datetime.now(timezone.utc))
 
 
+def test_publisher_removes_unapproved_value_fields_from_published_bytes(tmp_path, monkeypatch):
+    import base64
+    import json
+    from scripts import publish_command_data as publisher
+
+    report = authorized_report({
+        "as_of_date": "2026-11-11",
+        "value_bet_screen": {"candidate_count": 99},
+        "value_validation_certificate": {"status": "CERTIFIED"},
+        "predictions": [{
+            "home_team": "Home FC",
+            "value_bet_screen": {"paper_candidates": [{"selection": "away"}]},
+            "probabilities": {"home": 0.4, "draw": 0.3, "away": 0.3},
+        }],
+    })
+    target = tmp_path / "daily_predictions.json"
+    target.write_text(json.dumps(report), encoding="utf-8")
+    captured = {}
+
+    def fake_github_json(url, token, method="GET", body=None):
+        if method == "GET":
+            return {}
+        captured["body"] = body
+        return {"content": {"sha": "published"}}
+
+    monkeypatch.setattr(publisher, "_github_json", fake_github_json)
+    monkeypatch.setattr(publisher, "is_publishable_independent_report", lambda value: True)
+    monkeypatch.setattr(publisher, "is_value_betting_authorized_report", lambda value: False)
+
+    publisher.publish("public-data/daily_predictions.json", target, "owner/repo", "token")
+    published = json.loads(base64.b64decode(captured["body"]["content"]).decode("utf-8"))
+    assert "value_bet_screen" not in published
+    assert "value_validation_certificate" not in published
+    assert "value_bet_screen" not in published["predictions"][0]
+
+
 def test_publisher_refuses_legacy_daily_prediction_artifacts(tmp_path):
     import json
     import pytest
