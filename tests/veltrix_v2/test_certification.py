@@ -195,3 +195,25 @@ def test_certification_objects_reject_internally_conflicting_pass_flags():
                 PredictionMarketEvidence("TOTALS", 1000, True, True, True, True),
             ),
         )
+
+
+
+def test_certification_objects_cannot_be_forged_without_gate_evidence():
+    from veltrix_v2.evaluation.certification import (
+        CertificationResult, PredictionReleaseCertification, ReleaseCertification,
+    )
+
+    claimed_pass = tuple(
+        CertificationResult(market, True, ())
+        for market in ("1X2", "BTTS", "TOTALS")
+    )
+    with pytest.raises(ValueError, match="REQUIRES_COMPLETE_MARKET_EVIDENCE"):
+        PredictionReleaseCertification(passed=True, markets=claimed_pass)
+    with pytest.raises(ValueError, match="REQUIRES_COMPLETE_MARKET_EVIDENCE"):
+        ReleaseCertification(
+            passed=True,
+            markets=claimed_pass,
+            one_x_two_beats_bookmaker_brier=True,
+            one_x_two_beats_bookmaker_log_loss=True,
+            global_failures=(),
+        )
