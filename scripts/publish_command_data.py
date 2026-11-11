@@ -108,6 +108,11 @@ def publish(path: str, local_file: Path, repo: str, token: str) -> None:
                     if isinstance(row, dict) else row
                     for row in rows
                 ]
+            # Publish the sanitized object, not the original source bytes.
+            data = (
+                json.dumps(parsed, indent=2, sort_keys=True, ensure_ascii=False, allow_nan=False)
+                + "\\n"
+            ).encode("utf-8")
     elif normalized_path == "paper_tracking_ledger.json" and not is_independent_paper_ledger(parsed):
         raise ValueError("LEGACY_PAPER_LEDGER_PUBLICATION_BLOCKED")
     elif normalized_path == "model_validation_report.json" and not is_independent_model_validation(parsed):
