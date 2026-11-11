@@ -114,10 +114,10 @@ def run_poisson_walk_forward(
         forecasts = []
         outcomes = []
         abstained = []
+        total_tests += len(test_rows)
         if not model.converged:
             abstained.extend(row.fixture_id for row in test_rows)
         for row in (() if not model.converged else sorted(test_rows, key=lambda item: (item.kickoff_utc, item.fixture_id))):
-            total_tests += 1
             try:
                 expected_home, expected_away = model.expected_goals(row.home_team_id, row.away_team_id)
                 joint = build_dixon_coles_forecast(
