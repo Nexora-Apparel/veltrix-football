@@ -11,7 +11,7 @@ Use a layered, source-specific architecture rather than trying to force one free
 1. **GitHub Actions** for controlled, reproducible Python ingestion, validation and scheduled jobs after explicit activation.
 2. **OpenFootball** for CC0 fixtures/results and the current paired-snapshot qualification.
 3. **OpenPlay** as the leading historical event/player-statistics dataset candidate: 2014/15–2025/26, big-five European leagues and selected international competitions, with lineups, player-match statistics, team-match statistics, shots and shot-level xG. Data is CC BY 4.0; attribution is required.
-4. **FPL public API** as an EPL-only player-statistics and availability candidate (minutes, goals, assists, xG/xA, player status), but it is undocumented and has no upstream compatibility guarantee. Treat as a limited research candidate until terms and live responses are checked.
+4. **FPL public API** is excluded from VELTRIX automated ingestion and production use. Its published terms prohibit automated systems from accessing/extracting game data and prohibit commercial exploitation unless expressly permitted. A one-time read-only probe was captured for schema research only; its data is quarantined and must not enter features, model training, persistence or public outputs.
 5. **PitchAPI** as the leading current-data API candidate to probe for player stats, shots/xG, lineups, events and advanced metrics. Its docs claim 77 leagues and free access, but no discoverable terms, privacy policy or upstream data provenance were found in this research. It is **not approved** for persistence, model training or public product use until the provider clarifies rights and lineage.
 6. **5DollarFootballAPI** remains the qualified bounded EPL fixture/results reference. Its published statistics endpoint provides team-level attacks, dangerous attacks, shots and possession; it does not provide the player-level, lineup or injury coverage required for the full intelligence layer.
 7. **Neon** for structured accepted records and metadata; **Cloudflare R2** is the preferred optional object store for larger immutable raw snapshots and Parquet datasets.
@@ -46,7 +46,7 @@ Limitations:
 - No broad African domestic league coverage.
 - It is a static research dataset, not current injury, lineup or fixture intelligence.
 
-### B. FPL public API — EPL-only player and availability candidate
+### B. FPL public API — excluded after terms review
 
 Base URL: https://fantasy.premierleague.com/api/
 
@@ -65,7 +65,7 @@ Qualification caveats:
 - It only covers the Premier League and FPL-defined player metrics.
 - Confirm the applicable Premier League/FPL terms for the intended use before commercial display, long-term retention or model-training use.
 
-Decision: test read-only for EPL research; do not make it a required dependency or use it to fill data for other competitions.
+Decision: **DO NOT USE** for VELTRIX automated data collection or commercial prediction. The terms prohibit automated extraction and commercial exploitation absent express permission. The one-time probe artifact is quarantined and will expire; no further requests will be made.
 
 ### C. PitchAPI — high-priority live API candidate, rights gate unresolved
 
@@ -136,11 +136,11 @@ Every provider must be qualified independently for each competition and season. 
 | Data domain | Required fields | Best free candidate(s) | Current decision |
 |---|---|---|---|
 | Fixtures/results | Stable match ID, teams, competition, kickoff, status, FT/HT score | 5Dollar EPL; OpenFootball CC0 | Paired reconciliation pending |
-| Player match stats | Minutes, starts, goals, assists, shots, passes, tackles, cards, goalkeeper saves | OpenPlay historical; FPL EPL; PitchAPI probe | Historical candidate; live candidate pending |
+| Player match stats | Minutes, starts, goals, assists, shots, passes, tackles, cards, goalkeeper saves | OpenPlay historical; PitchAPI rights-gated probe | Historical candidate; live candidate pending |
 | xG / xA | Shot-level xG, xA, model/version, penalty flag, shot coordinates | OpenPlay historical; PitchAPI probe; FPL EPL aggregate | Must preserve provider/model identity |
 | Shots | Attempts, on-target, blocked, shot location, body part, situation | OpenPlay historical; PitchAPI probe | Pending live qualification |
 | Lineups | Starting XI, bench, formation, confirmed/predicted flag, publication timestamp | OpenPlay historical; PitchAPI probe; TheSportsDB spot checks | Pending |
-| Injuries/availability | Player, status, reason, effective time, last update, confidence | FPL EPL status; PitchAPI provider confirmation required | EPL candidate only; other leagues missing |
+| Injuries/availability | Player, status, reason, effective time, last update, confidence | PitchAPI provider confirmation required; other rights-cleared sources to research | No approved free source yet |
 | Match events | Goals, cards, substitutions, penalties, event timestamps | OpenPlay historical; StatsBomb research; 5Dollar events; PitchAPI probe | Source-specific qualification required |
 | Team style | PPDA, field tilt, possession, pressing, build-up, transitions | OpenPlay derived; PitchAPI probe | Do not accept undocumented derived metrics |
 | Odds | Bookmaker, market, line, price, quote time, source timestamp | The Odds API / existing 5Dollar Bet365 feed | Separate odds pipeline; no model contamination |
@@ -246,7 +246,7 @@ Separate VELTRIX_V2 model/evaluation/publication gates
 ## Immediate execution status
 
 - Added `.github/workflows/openfootball-5dollar-readonly-reconciliation.yml` on the repository default branch. It is manual-only; it has no schedule trigger and no deployment step.
-- Added `scripts/veltrix_v2/fetch_openfootball_5dollar_snapshots.py`. It uses the existing GitHub secret `FIVEDOLLARFOOTBALL_API_KEY` without printing it, pins the OpenFootball file to a source commit, downloads a 90-day EPL reference window, and captures the public FPL player/fixture snapshots. It records hashes and retrieval metadata and uploads an audit artifact.
+- Added `scripts/veltrix_v2/fetch_openfootball_5dollar_snapshots.py`. It uses the existing GitHub secret `FIVEDOLLARFOOTBALL_API_KEY` without printing it, pins the OpenFootball file to a source commit and downloads a 90-day EPL reference window. FPL automated retrieval was removed after terms review; no FPL data enters VELTRIX.
 - The script does not import legacy prediction modules, access Neon or modify predictions.
 - **Live acquisition has not yet run.** A repository user with write access must manually trigger the workflow from the Actions tab because no workflow-dispatch action is exposed in the connected GitHub toolset.
 - After the artifact is available, implement and run exact fixture-level reconciliation with an explicit team-ID crosswalk. Do not claim a pass based on successful downloads alone.
