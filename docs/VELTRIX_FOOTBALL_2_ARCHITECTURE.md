@@ -274,7 +274,7 @@ The script inventory confirms that the legacy daily prediction path is not a V2 
 
 ### Phase 1 — repository audit and core defect correction
 
-<badge color="success">Complete</badge>
+**Complete**
 
 Audit scope completed for the code and release-critical surfaces: 53 V2 Python modules, five V2 operational scripts, 48 V2 test modules, all 33 repository Python scripts, all 33 `app/` Python modules, all 28 GitHub workflow files, and the four production API route files.
 
@@ -291,7 +291,7 @@ Phase 1 is signed off for the audited code/CI-critical surface. Legacy productio
 
 ### Phase 2 — provider and historical-data qualification
 
-<badge color="warning">In progress — manual account action pending</badge>
+**In progress — manual account action pending**
 
 - The active 5Dollar account is confirmed as Free with five top-European competitions and a three-month history limit.
 - Community Access is the no-cost route to a 12-month window plus one country pack. The provider's current 12-month data-quality counts make Argentina the strongest candidate if both Liga Profesional and Nacional B are selectable (1,174 combined finished matches, versus Brazil's 783).
