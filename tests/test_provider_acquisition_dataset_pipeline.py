@@ -13,12 +13,16 @@ from app.canonical_team_crosswalk import (
     SCHEMA as TEAM_CROSSWALK_SCHEMA, canonical_sha256,
     sign_team_crosswalk_registry,
 )
+from app.canonical_season_crosswalk import (
+    SCHEMA as SEASON_CROSSWALK_SCHEMA, sign_season_crosswalk_registry,
+)
 from app.feature_source_qualification import (
     SCHEMA as FEATURE_SOURCE_SCHEMA, sign_feature_source_qualification_registry,
     verify_feature_source_qualification_registry,
 )
 
 TEAM_KEY_ARN = "arn:aws:kms:eu-west-1:123456789012:key/team-pipeline-test"
+SEASON_KEY_ARN = "arn:aws:kms:eu-west-1:123456789012:key/season-pipeline-test"
 class FakeTeamKms:
     def sign(self, **kwargs):
         return {"Signature": kwargs["Message"]}
@@ -76,6 +80,26 @@ def team_registry():
 
 
 
+
+def season_registry():
+    return sign_season_crosswalk_registry(
+        kms_client=TEAM_KMS, key_arn=SEASON_KEY_ARN,
+        trusted_key_regions={SEASON_KEY_ARN: "eu-west-1"},
+        registry={
+            "schema": SEASON_CROSSWALK_SCHEMA,
+            "issued_at": "2026-01-01T00:00:00Z",
+            "expires_at": "2027-01-01T00:00:00Z",
+            "mappings": [{
+                "provider": "provider", "competition_id": "league-a",
+                "source_season": "2025/26", "canonical_season_id": "league-a:2025-2026",
+                "evidence_sha256": ["d" * 64], "reviewer": "season-review",
+                "reviewed_at": "2026-01-02T00:00:00Z",
+                "valid_from": "2026-01-03T00:00:00Z",
+                "valid_until": "2026-12-31T00:00:00Z", "revoked_at": None,
+            }],
+        },
+    )
+
 def make_snapshot(fixture_id, predictors):
     registry = feature_source_registry()
     verified = verify_feature_source_qualification_registry(
@@ -126,7 +150,8 @@ class AuditedProviderDatasetPipelineTests(unittest.TestCase):
     def test_only_audit_admitted_original_records_reach_dataset_assembly(self):
         registry, registry_digest = team_registry()
         admitted = {"fixture_id": "provider:good", "provider": "provider", "source_id": "good",
-                    "competition_id": "league-a", "home_team_id": "home-1",
+                    "competition_id": "league-a", "source_season": "2025/26",
+                    "home_team_id": "home-1",
                     "away_team_id": "away-1", "home_team_source_id": "home-src",
                     "away_team_source_id": "away-src",
                     "team_identity_evidence": {
@@ -175,6 +200,8 @@ class AuditedProviderDatasetPipelineTests(unittest.TestCase):
                 settlement_timestamp_packages=packages,
                 trusted_kms_clients={TEAM_KEY_ARN: TEAM_KMS},
                 team_crosswalk_registry=team_registry()[0],
+                season_crosswalk_registry=season_registry(),
+                season_crosswalk_as_of="2026-09-01T12:00:00Z",
 
                 team_crosswalk_as_of="2026-09-01T12:00:00Z",
                 feature_source_qualification_registry=feature_source_registry(),
