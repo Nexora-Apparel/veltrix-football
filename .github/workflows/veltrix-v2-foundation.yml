@@ -8,6 +8,7 @@ on:
       - veltrix-2.0-architecture-blueprint
     paths:
       - "veltrix_v2/**"
+      - "scripts/veltrix_v2/**"
       - "tests/veltrix_v2/**"
       - "scripts/veltrix_v2/**"
       - ".github/workflows/veltrix-v2-foundation.yml"
