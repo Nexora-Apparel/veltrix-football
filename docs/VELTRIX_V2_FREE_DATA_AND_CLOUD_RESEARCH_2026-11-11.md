@@ -193,7 +193,6 @@ Supabase Free Edge Functions have a 150-second wall-clock limit and 2 seconds CP
 Public / approved data providers
   ├─ OpenFootball (CC0 fixtures/results)
   ├─ OpenPlay (CC BY 4.0 historical events/player stats/xG)
-  ├─ FPL public API (EPL player metrics; terms/API stability gate)
   ├─ PitchAPI (live API candidate; provenance/rights gate)
   └─ 5DollarFootballAPI (qualified EPL results reference)
               |
