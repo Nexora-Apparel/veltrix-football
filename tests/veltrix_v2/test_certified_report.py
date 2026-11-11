@@ -129,3 +129,8 @@ def test_empty_day_report_is_valid_but_does_not_force_fixtures():
     report = build([])
     assert report.fixtures == ()
     assert "No fixtures passed the publication gate today." in telegram_report_text(report)
+
+
+def test_report_rejects_fixtures_outside_wat_report_date():
+    with pytest.raises(ValueError, match="OUTSIDE_WAT_REPORT_DATE"):
+        build([fixture("tomorrow", datetime(2026, 11, 12, 23, 30, tzinfo=UTC))])
