@@ -2,7 +2,8 @@ import hashlib
 import json
 import unittest
 
-from app.point_in_time_feature_contract import build_point_in_time_feature_snapshot\nfrom app.historical_dataset_admission_report import (
+from app.point_in_time_feature_contract import build_point_in_time_feature_snapshot
+from app.historical_dataset_admission_report import (
     HistoricalAdmissionReportError,
     build_historical_dataset_admission_report,
 )
@@ -41,6 +42,7 @@ def pipeline():
         "feature_reconstruction": {
             "target_fixture_count": 3,
             "snapshot_count": 2,
+            "snapshots": [first_snapshot, second_snapshot],
             "withheld_count": 1,
             "withheld_by_reason": {"insufficient_team_history": 1},
             "withheld": [{"fixture_id": "p:3", "reason": "insufficient_team_history"}],
@@ -49,12 +51,14 @@ def pipeline():
             "rows": [
                 {
                     "fixture_id": "p:1", "competition_key": "league-a", "split": "train",
-                    "predictors": first_predictors,\n                    "feature_snapshot_sha256": first_snapshot["snapshot_sha256"],
+                    "predictors": first_predictors,
+                    "feature_snapshot_sha256": first_snapshot["snapshot_sha256"],
                     "targets": {"1x2": "home", "btts": "yes", "over_2_5": "yes"},
                 },
                 {
                     "fixture_id": "p:2", "competition_key": "league-a", "split": "test",
-                    "predictors": second_predictors,\n                    "feature_snapshot_sha256": second_snapshot["snapshot_sha256"],
+                    "predictors": second_predictors,
+                    "feature_snapshot_sha256": second_snapshot["snapshot_sha256"],
                     "targets": {"1x2": "draw", "btts": "no", "over_2_5": "no"},
                 },
             ],
@@ -82,7 +86,7 @@ class HistoricalDatasetAdmissionReportTests(unittest.TestCase):
             report["feature_coverage"]["by_data_domain"]["pressing_intensity_ppda"]["status"],
             "not_in_feature_catalogue",
         )
-        self.assertFalse(
+        self.assertTrue(
             report["feature_coverage"]["feature_level_source_timestamps_and_source_ids_in_rows"]
         )
         self.assertEqual(len(report["report_sha256"]), 64)
