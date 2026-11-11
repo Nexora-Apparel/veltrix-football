@@ -261,5 +261,22 @@ jobs:
                       "rows": len(matches), "with_results": completed,
                       "with_utc_kickoff": utc_times, "with_last_update": update_times,
                   }, sort_keys=True))
+          for season, group in ((2026, 1), (2010, 1)):
+              try:
+                  changed = get(f"/getlastchangedate/bl1/{season}/{group}")
+                  from datetime import datetime
+                  raw = changed if isinstance(changed, str) else json.dumps(changed, sort_keys=True)
+                  parsed = None
+                  if isinstance(changed, str):
+                      try:
+                          parsed = datetime.fromisoformat(changed.replace("Z", "+00:00"))
+                      except ValueError:
+                          parsed = None
+                  print("LAST_CHANGED_bl1_" + str(season) + "_group_" + str(group) + "=" + json.dumps({
+                      "raw": raw,
+                      "offset_aware": bool(parsed and parsed.tzinfo and parsed.utcoffset() is not None),
+                  }, sort_keys=True))
+              except Exception as exc:
+                  print("LAST_CHANGED_bl1_" + str(season) + "_group_" + str(group) + "=ERROR:" + str(exc))
           print("RIGHTS_NOTE=OpenLigaDB data is ODbL-1.0; attribute publicly and comply with share-alike if redistributing a modified database. User-entered records have no editorial review or immutable historical snapshots.")
           PY
