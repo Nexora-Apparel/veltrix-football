@@ -4,14 +4,14 @@ This contract is intentionally stricter than the existing aggregate report/ledge
 
 ## Artifact row schemas
 
-- `walk_forward_rows`: `rows[]` with `fixture_id`, `market`, `kickoff`, `prediction_at`, `feature_max_observed_at`, `model_version`, `split` (`full` or `recent_holdout`), `outcome`, and probability maps. For 1X2, both `model_probabilities` and de-vigged `bookmaker_probabilities` must contain home/draw/away. Other markets use yes/no or over/under.
+- `walk_forward_rows`: `rows[]` with `fixture_id`, `market`, `kickoff`, `prediction_at`, `features[]` (each with a unique name, value, timezone-aware `observed_at` and rights-approved `source_id`), `model_version`, `split` (`full` or `recent_holdout`), `outcome`, and probability maps. For 1X2, both `model_probabilities` and de-vigged `bookmaker_probabilities` must contain home/draw/away. Other markets use yes/no or over/under.
 - `prospective_ledger`: `rows[]` with unique fixture/market, selection, kickoff, quote timestamps, odds snapshot ID, settlement ID, model version, outcome, won, stake, decimal odds, fees and recorded net profit.
 - `odds_snapshots`: `rows[]` with unique snapshot ID, fixture, market, observed timestamp and quote-updated timestamp.
 - `settlement_records`: `rows[]` with unique settlement ID, fixture ID, source ID, settlement timestamp, outcome and model version.
 - `model_manifest`: object with immutable `model_version`.
-- `coverage_audit`: retained and hash-bound as source/coverage evidence; summary values are not trusted by the raw metric calculator.
+- `coverage_audit`: must explicitly declare `rights_status: APPROVED_FOR_INTENDED_USE`, `commercial_use_eligible: true`, and the exact `approved_source_ids` used by feature, quote and settlement rows. Summary metric values are not trusted by the raw metric calculator.
 
-All timestamps must be timezone-aware. Prediction time and latest feature-observation time must precede kickoff. Quotes must be ordered quote-update ≤ snapshot-observed ≤ kickoff and no older than 24 hours. Settlement joins must match exact fixture and version references.
+All timestamps must be timezone-aware. Prediction time and latest feature-observation time must precede kickoff. Quotes must be ordered quote-update ≤ snapshot-observed ≤ kickoff and no older than 24 hours. Settlement joins must match exact fixture and version references. Every feature, odds and settlement source ID must be included in the approved source list.
 
 ## Recomputed metrics
 
