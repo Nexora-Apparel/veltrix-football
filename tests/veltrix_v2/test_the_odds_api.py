@@ -118,7 +118,7 @@ def test_client_uses_event_btts_endpoint_and_records_quota_headers():
         fixture_id="fixture-1",
         kickoff_at=KICKOFF,
         captured_at=CAPTURE,
-            source_observation_id="obs-odds-api-event-123",
+        source_observation_id="obs-odds-api-event-123",
         opener=opener,
     )
     assert "/sports/soccer_epl/events/event-123/odds" in seen["url"]
@@ -138,6 +138,7 @@ def test_client_maps_quota_limit_without_retrying():
             api_key="key", sport_key="soccer_epl", event_id="event-123",
             fixture_id="fixture-1", kickoff_at=KICKOFF,
             captured_at=CAPTURE, opener=opener,
+            source_observation_id="obs-odds-api-event-123",
         )
     assert caught.value.status_code == 429
     assert caught.value.code == "THE_ODDS_QUOTA_OR_RATE_LIMIT"
