@@ -73,7 +73,7 @@ def _settled_outcome(market: str, settlement: Mapping[str, Any]) -> str:
 
 
 def _contains_secret_key(value: Any) -> bool:
-    forbidden = {"authorization", "api_key", "apikey", "access_token", "token", "password", "secret", "credential"}
+    forbidden = {"authorization", "api_key", "api-key", "apikey", "access_token", "token", "password", "secret", "credential", "key"}
     if isinstance(value, dict):
         return any(str(key).casefold() in forbidden or _contains_secret_key(item) for key, item in value.items())
     if isinstance(value, list):
@@ -84,9 +84,11 @@ def _contains_secret_key(value: Any) -> bool:
 def _request_fingerprint(descriptor: Any) -> str:
     if not isinstance(descriptor, dict) or not isinstance(descriptor.get("method"), str) or not isinstance(descriptor.get("endpoint"), str):
         raise EvidenceIntegrityError("Source request descriptor must include method and endpoint.")
+    if "?" in descriptor["endpoint"] or "#" in descriptor["endpoint"]:
+        raise EvidenceIntegrityError("Source request endpoint must exclude query strings and fragments.")
     if _contains_secret_key(descriptor):
         raise EvidenceIntegrityError("Source request descriptor must not contain credentials or secret fields.")
-    canonical = json.dumps(descriptor, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
+    canonical = json.dumps(descriptor, sort_keys=True, separators=(",", ":"), ensure_ascii=False, allow_nan=False).encode("utf-8")
     return hashlib.sha256(canonical).hexdigest()
 
 
@@ -97,6 +99,8 @@ def _json_pointer(document: Any, pointer: Any) -> Any:
     if not pointer:
         return value
     for raw_part in pointer[1:].split("/"):
+        if "~" in raw_part.replace("~0", "").replace("~1", ""):
+            raise EvidenceIntegrityError("Source record pointer contains an invalid RFC 6901 escape.")
         part = raw_part.replace("~1", "/").replace("~0", "~")
         if isinstance(value, dict) and part in value:
             value = value[part]
