@@ -25,6 +25,7 @@ jobs:
       FIVEDOLLARFOOTBALL_API_KEY: ${{ secrets.FIVEDOLLARFOOTBALL_API_KEY }}
       DATABASE_URL: ${{ secrets.VELTRIX_STAGING_DATABASE_URL }}
       VELTRIX_EXPECTED_DATABASE: veltrix_football_staging
+      VELTRIX_EXPECTED_DATABASE_HOST: ep-ancient-block-bcb439pk.c-16.us-east-1.aws.neon.tech
       VELTRIX_ENABLE_STAGING_IMPORT: "YES"
       PYTHONUNBUFFERED: "1"
     steps:
