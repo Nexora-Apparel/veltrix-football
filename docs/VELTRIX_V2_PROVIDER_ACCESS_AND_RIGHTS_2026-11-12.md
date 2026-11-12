@@ -285,3 +285,12 @@ Official references:
 | GOAL API | Yes | No verified shot-event feed | No blanket grant | No blanket grant | Technical-only; blocked |
 | Wyscout 2019 open dataset | Historical match/event data | Historical shot events | CC BY 4.0; train own xG | Attribution required | Approved historical research/training source |
 | OpenPlay v0.1.0 | Historical only | Shot events and xG | CC BY 4.0 declared; upstream chain unresolved | Attribution required; upstream review open | Quarantined research candidate |
+
+
+The StrikerAPI read-only qualification harness is capped at 48 calls / 96
+documented credits across its eight rolling-window checks and four NWSL
+season/stage diagnostics. Each window is capped at four pages of 50 games.
+Unit tests assert the hard global budget, pagination truncation and missing-key
+fail-closed behaviour. The workflow remains manual-only; do not dispatch it
+while the account balance is exhausted. A successful probe is coverage
+evidence only, not a rights approval or historical import authorization.
