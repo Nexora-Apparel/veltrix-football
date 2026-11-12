@@ -11,7 +11,7 @@ import time
 from collections import Counter
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from urllib.parse import urlencode, urlparse
+from urllib.parse import parse_qs, urlencode, urlparse
 
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
@@ -48,6 +48,9 @@ def _preflight(database_url: str, expected_database: str) -> None:
         raise RuntimeError("STAGING_EXPECTED_HOST_CONFIGURATION_MISMATCH")
     if actual_host != EXPECTED_DATABASE_HOST:
         raise RuntimeError("STAGING_DATABASE_HOST_ALLOWLIST_MISMATCH")
+    sslmode = parse_qs(urlparse(database_url).query).get("sslmode", [""])[0].casefold()
+    if sslmode not in {"require", "verify-ca", "verify-full"}:
+        raise RuntimeError("STAGING_DATABASE_TLS_REQUIRED")
     import psycopg
 
     with psycopg.connect(database_url) as conn:
