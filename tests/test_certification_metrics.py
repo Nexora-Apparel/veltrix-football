@@ -194,7 +194,7 @@ def test_raw_certification_rejects_overlapping_walk_forward_folds(tmp_path):
     model["walk_forward_folds"] = [
         {
             "fold_id": "fold-1", "order": 1,
-            "training_data_cutoff": "2025-12-01T00:00:00+00:00",
+            "training_data_cutoff": "2025-12-31T00:00:00+00:00",
             "test_start": "2026-01-01T00:00:00+00:00",
             "test_end": "2026-01-10T23:59:59+00:00",
         },
