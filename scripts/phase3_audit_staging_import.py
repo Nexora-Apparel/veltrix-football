@@ -241,11 +241,16 @@ def run_audit(database_url: str) -> dict:
             """)
             completed_runs, import_manifest_sha256 = cur.fetchone()
             import_manifest_sha256 = import_manifest_sha256.strip() if import_manifest_sha256 else None
+            cur.execute("SELECT count(*) FROM import_runs")
+            total_import_runs = cur.fetchone()[0]
             cur.execute("""
-                SELECT count(*) FROM import_checkpoints
-                WHERE status='COMPLETED'
+                SELECT count(*) FROM import_checkpoints cp
+                JOIN import_runs ir ON ir.id=cp.import_run_id
+                WHERE cp.status='COMPLETED' AND ir.status='COMPLETED'
             """)
             completed_checkpoints = cur.fetchone()[0]
+            cur.execute("SELECT count(*) FROM import_checkpoints")
+            total_checkpoints = cur.fetchone()[0]
             cur.execute("SELECT count(*) FROM ingestion_quarantine WHERE resolved_at IS NULL")
             open_quarantine = cur.fetchone()[0]
 
@@ -270,8 +275,10 @@ def run_audit(database_url: str) -> dict:
                 "unsettled_or_unresulted_fixtures": unsettled_or_unresulted_fixtures,
                 "active_entitlement_snapshots": entitlement_snapshots,
                 "completed_import_runs": completed_runs,
+                "total_import_runs": total_import_runs,
                 "import_manifest_sha256": import_manifest_sha256,
                 "completed_checkpoints": completed_checkpoints,
+                "total_checkpoints": total_checkpoints,
                 "open_quarantine_records": open_quarantine,
             })
             if response_hash_failures:
@@ -296,8 +303,8 @@ def run_audit(database_url: str) -> dict:
                 failures.append("EMPTY_STAGING_IMPORT")
             if entitlement_snapshots < 1:
                 failures.append("ACTIVE_ENTITLEMENT_SNAPSHOT_MISSING")
-            if completed_runs < 1 or completed_checkpoints < 1:
-                failures.append("COMPLETED_IMPORT_ACCOUNTING_MISSING")
+            if completed_runs != 1 or total_import_runs != 1 or completed_checkpoints != 1 or total_checkpoints != 1:
+                failures.append("SINGLE_IMPORT_ACCOUNTING_MISMATCH")
             report["failures"] = sorted(set(failures))
             report["status"] = "PASS" if not report["failures"] else "FAIL"
             material = json.dumps(report, sort_keys=True, separators=(",", ":"), default=str).encode()
