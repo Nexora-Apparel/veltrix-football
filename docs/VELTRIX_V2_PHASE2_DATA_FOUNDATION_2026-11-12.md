@@ -105,7 +105,7 @@ The existing 11-table schema is extended additively by `0002_historical_provenan
 
 - `source_approvals`: versioned source/competition/data-type rights evidence, permitted uses, commercial status, attribution and validity.
 - `provider_responses`: exact raw response bytes, request parameters, safe response headers, request ID, quota headers and response SHA-256. Authentication headers and secrets are prohibited.
-- `provider_entitlement_observations`: append-only plan, rate-limit, country-pack and competition-access snapshots.
+- `provider_entitlement_observations`: append-only plan, rate-limit, country-pack and competition-access snapshots. Every fixture page must be evaluated against the latest entitlement snapshot available at that response timestamp; absent, inactive or suspended entitlement is quarantined, as is any competition outside the snapshot's exact competition-ID set. The snapshot must reference a successful provider response from the same provider/source and cannot post-date its check time.
 - `source_observations`: append-only per-entity payload, provider response link, source event time, retrieval time, availability basis, rights approval and point-in-time certification flag.
 - `fixture_result_versions`: append-only score versions tied to exact source observations and rights approval.
 - `sync_watermarks`: compare-and-set incremental sync cursor/version.
@@ -129,6 +129,7 @@ This is an explicitly labelled conservative proxy, not a verified provider publi
 - PostgreSQL writer targeting the existing `public` schema; writes are disabled by default, require an explicit expected database name, and hard-reject the production database names. Raw responses and observations are append-only; fixture identity conflicts and result conflicts are quarantined.
 - Manual 365-day read-only workflow; 40-request hard cap, 4-second pacing, exact seven-competition allowlist, no database writes, sanitized report artifact.
 - PostgreSQL 16/18 migration and append-only trigger acceptance.
+- PostgreSQL writer acceptance also exercises entitlement provenance, exact competition allowlisting, and immediate quarantine after a simulated provider suspension.
 
 ## 7. Phase 2 acceptance gates
 
