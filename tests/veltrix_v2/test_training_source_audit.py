@@ -41,12 +41,12 @@ def _match(fixture_id, day, home, away, goals):
     )
 
 
-def _observation(*, available_at, approval_id="approval-1", event_at=None, provider_entity_id="provider-match-1"):
+def _observation(*, available_at, approval_id="approval-1", event_at=None, provider_entity_id="provider-match-1", entity_type="match_result"):
     event_at = event_at or datetime(2026, 1, 1, 15, tzinfo=UTC)
     return ProviderObservation(
         provider="provider-a",
         endpoint="/matches/result",
-        entity_type="match_result",
+        entity_type=entity_type,
         provider_entity_id=provider_entity_id,
         competition_key="league-a",
         season="2025-26",
@@ -60,12 +60,12 @@ def _observation(*, available_at, approval_id="approval-1", event_at=None, provi
     )
 
 
-def _approval(*, permitted_uses=("collection", "storage", "model_training", "benchmarking")):
+def _approval(*, permitted_uses=("collection", "storage", "model_training", "benchmarking"), data_type="match_result"):
     return SourceApproval(
         approval_id="approval-1",
         provider="provider-a",
         competition_key="league-a",
-        data_type="match_result",
+        data_type=data_type,
         status="approved",
         valid_from_utc=datetime(2025, 1, 1, tzinfo=UTC),
         permitted_uses=permitted_uses,
@@ -87,6 +87,15 @@ def _source_records(training_available_at=None):
                 available_at=datetime(2026, 1, 10, 17, tzinfo=UTC),
                 event_at=datetime(2026, 1, 10, 15, tzinfo=UTC),
                 provider_entity_id="provider-heldout-result",
+            ),
+        ),
+        TrainingObservationEvidence(
+            "obs-odds-1",
+            _observation(
+                available_at=datetime(2026, 1, 10, 14, 54, tzinfo=UTC),
+                event_at=datetime(2026, 1, 10, 14, 54, tzinfo=UTC),
+                provider_entity_id="provider-odds-feed",
+                entity_type="odds_quote",
             ),
         ),
     )
@@ -250,9 +259,9 @@ def test_prediction_publication_certification_fails_when_source_rights_are_missi
 
 
 
-def _odds_snapshot(source_observation_id="obs-test-1", source_id="provider-a", captured_offset=5):
+def _odds_snapshot(source_observation_id="obs-odds-1", source_id="provider-a"):
     kickoff = datetime(2026, 1, 10, 15, tzinfo=UTC)
-    captured = kickoff + timedelta(hours=captured_offset)
+    captured = kickoff - timedelta(minutes=5)
     return OddsSnapshot(
         snapshot_id="odds-test-1",
         fixture_id="test-1",
@@ -274,7 +283,7 @@ def test_odds_source_audit_requires_quote_source_record_and_benchmark_rights(mon
         report,
         (_odds_snapshot(),),
         _source_records(),
-        (_approval(),),
+        (_approval(data_type="odds_quote"),),
     )
     assert audit.passed
     assert audit.approved_snapshot_ids == ("odds-test-1",)
@@ -286,7 +295,7 @@ def test_odds_source_audit_rejects_missing_source_observation_binding(monkeypatc
         report,
         (_odds_snapshot(source_observation_id=None),),
         _source_records(),
-        (_approval(),),
+        (_approval(data_type="odds_quote"),),
     )
     assert not audit.passed
     assert "odds_source_observation_id_missing" in {
@@ -300,7 +309,7 @@ def test_odds_source_audit_rejects_provider_mismatch(monkeypatch):
         report,
         (_odds_snapshot(source_id="other-provider"),),
         _source_records(),
-        (_approval(),),
+        (_approval(data_type="odds_quote"),),
     )
     assert not audit.passed
     assert "odds_source_provider_mismatch" in {
