@@ -296,6 +296,22 @@ class PostgresHistoryStore:
         conn = self._connect_for_write()
         try:
             cur = conn.cursor()
+            if provider_response_id is None:
+                raise ValueError("ENTITLEMENT_PROVIDER_RESPONSE_REQUIRED")
+            cur.execute(
+                """SELECT provider,source_id,http_status,fetched_at
+                   FROM provider_responses WHERE id=%s""",
+                (provider_response_id,),
+            )
+            response_row = cur.fetchone()
+            if (
+                not response_row
+                or tuple(response_row[:3]) != (provider, source_id, 200)
+                or response_row[3] > checked_at_utc
+            ):
+                raise ValueError("ENTITLEMENT_RESPONSE_PROVENANCE_MISMATCH")
+            if any(not isinstance(item, str) or not item.strip() for item in competition_ids):
+                raise ValueError("ENTITLEMENT_COMPETITION_IDS_INVALID")
             cur.execute(
                 """INSERT INTO provider_entitlement_observations(
                     provider,source_id,plan_code,entitlement_status,country_pack_code,
@@ -384,9 +400,34 @@ class PostgresHistoryStore:
         try:
             cur = conn.cursor()
             response_id = self._persist_provider_response(cur, response)
+            cur.execute(
+                """SELECT entitlement_status,competition_ids
+                   FROM provider_entitlement_observations
+                   WHERE provider=%s AND source_id=%s AND checked_at<=%s
+                   ORDER BY checked_at DESC,id DESC LIMIT 1""",
+                (response.provider, response.source_id, response.fetched_at_utc),
+            )
+            entitlement = cur.fetchone()
+            entitlement_active = bool(entitlement and str(entitlement[0]).upper() == "ACTIVE")
+            entitled_competitions = set(map(str, entitlement[1] or [])) if entitlement_active else set()
             for fixture in rows:
                 if fixture.provider != response.provider or fixture.source_id != response.source_id:
                     raise ValueError("FIXTURE_PROVIDER_RESPONSE_MISMATCH")
+                if not entitlement_active:
+                    self._quarantine(
+                        cur, fixture, import_run_id, "PROVIDER_ENTITLEMENT_NOT_VERIFIED",
+                        {"provider": response.provider, "source_id": response.source_id},
+                    )
+                    conflicts += 1
+                    continue
+                if fixture.provider_competition_id not in entitled_competitions:
+                    self._quarantine(
+                        cur, fixture, import_run_id, "PROVIDER_COMPETITION_NOT_ENTITLED",
+                        {"competition_id": fixture.provider_competition_id,
+                         "entitled_competitions": sorted(entitled_competitions)},
+                    )
+                    conflicts += 1
+                    continue
                 decision = evaluate_fixture_import(
                     fixture, approval, evaluated_at_utc=response.fetched_at_utc
                 )
