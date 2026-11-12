@@ -63,6 +63,13 @@ def _latest_complete_quote_group_per_fixture(
             if set(group) == {"HOME", "DRAW", "AWAY"}
         ]
         if not complete:
+            selections_across_groups = {
+                selection
+                for group in groups.values()
+                for selection in group
+            }
+            if selections_across_groups == {"HOME", "DRAW", "AWAY"} and len(groups) > 1:
+                raise ValueError("1X2_BENCHMARK_SELECTION_TIMESTAMPS_OR_PROVENANCE_MISMATCH")
             raise ValueError("1X2_BENCHMARK_INCOMPLETE_MARKET")
         ranked = [
             (
