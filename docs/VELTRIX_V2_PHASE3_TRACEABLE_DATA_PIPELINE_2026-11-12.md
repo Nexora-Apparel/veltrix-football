@@ -52,7 +52,7 @@ The production Neon database remains on migration 0001 and has no fixture/result
 
 A separate database named veltrix_football_staging was created inside the non-default Neon child branch veltrix-phase3-import-dry-run (branch ID br-silent-violet-bc5de88s; project ID withered-sky-75161174). All three migrations were applied there and their SHA-256 checksums match the repository migration files exactly. Read-only verification returned 18 expected public tables, six append-only evidence triggers, and zero fixture, result, source-observation, provider-response or approval-event rows. The original veltrix-football database on that child branch remains on migration 0001 and unchanged.
 
-The PostgreSQL 16 and 18 acceptance workflow uses an ephemeral veltrix_football_test database only. It applies migrations twice to prove idempotency, runs the schema acceptance and exercises the writer. Both versions passed the latest Phase 3 CI run: 30 focused data-foundation tests, 18 tables, 42 indexes, three migrations, writer acceptance and append-only checks. It must not use a Neon production connection string.
+The PostgreSQL 16 and 18 acceptance workflow uses an ephemeral veltrix_football_test database only. It applies migrations twice to prove idempotency, runs the schema acceptance and exercises the writer. Both versions passed the latest Phase 3 CI run: 34 focused data-foundation tests, 18 tables, 42 indexes, three migrations, writer acceptance, exact raw-response byte/hash linkage, duplicate-page quarantine and append-only checks. It must not use a Neon production connection string.
 
 ## 4. Current acquisition limits
 
