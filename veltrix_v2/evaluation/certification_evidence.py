@@ -258,6 +258,15 @@ def audit_walk_forward_training_sources(
         scope = (scope_report.competition_key, scope_report.season)
         for fold in scope_report.folds:
             cutoff = ForecastCutoff(fold.training_label_cutoff_utc)
+            training_provenance = {
+                observation_id: (fixture_id, kickoff)
+                for fixture_id, observation_id, kickoff in fold.training_observation_provenance
+            }
+            if (
+                set(training_provenance) != set(fold.training_observation_ids)
+                or {fixture_id for fixture_id, _ in training_provenance.values()} != set(fold.training_fixture_ids)
+            ):
+                rejected.append(("*", "training_fixture_observation_provenance_mismatch"))
             for observation_id in fold.training_observation_ids:
                 required_ids.add(observation_id)
                 observation = by_id.get(observation_id)
@@ -266,6 +275,18 @@ def audit_walk_forward_training_sources(
                     continue
                 if (observation.competition_key, observation.season) != scope:
                     rejected.append((observation_id, "training_observation_scope_mismatch"))
+                    continue
+                provenance = training_provenance.get(observation_id)
+                if provenance is None:
+                    rejected.append((observation_id, "training_observation_fixture_link_missing"))
+                    continue
+                fixture_id, kickoff = provenance
+                if observation.available_at_utc <= kickoff:
+                    rejected.append((observation_id, "training_result_not_available_after_kickoff"))
+                    continue
+                observed_fixture_id = observation.values.get("fixture_id")
+                if observed_fixture_id is not None and observed_fixture_id != fixture_id:
+                    rejected.append((observation_id, "training_observation_fixture_id_mismatch"))
                     continue
                 decision = evaluate_observation(
                     observation,
@@ -371,8 +392,19 @@ def audit_walk_forward_integrity(
             test_ids = tuple(fold.eligible_fixture_ids)
             training_observation_ids = tuple(fold.training_observation_ids)
             test_observation_ids = tuple(fold.test_observation_ids)
-            if not train_ids or len(train_ids) != len(set(train_ids)):
-                failures.append("TRAINING_FIXTURE_IDENTITIES_INVALID")
+            training_provenance = tuple(fold.training_observation_provenance)
+            training_provenance_fixture_ids = {fixture_id for fixture_id, _, _ in training_provenance}
+            training_provenance_observation_ids = {observation_id for _, observation_id, _ in training_provenance}
+            if (
+                not train_ids
+                or len(train_ids) != len(set(train_ids))
+                or training_provenance_fixture_ids != set(train_ids)
+                or training_provenance_observation_ids != set(training_observation_ids)
+                or len(training_provenance) != len(train_ids)
+            ):
+                failures.append("TRAINING_FIXTURE_OBSERVATION_PROVENANCE_INVALID")
+            if any(kickoff >= fold.training_label_cutoff_utc for _, _, kickoff in training_provenance):
+                failures.append("TRAINING_FIXTURE_NOT_BEFORE_LABEL_CUTOFF")
             if not test_ids or len(test_ids) != len(set(test_ids)):
                 failures.append("HELD_OUT_FIXTURE_IDENTITIES_INVALID")
             if set(train_ids) & set(test_ids):
