@@ -130,29 +130,35 @@ def test_dashboard_data_exposes_value_screen_status_and_market_coverage(monkeypa
     monkeypatch.setattr(telegram, "load_latest_report", lambda: report)
     monkeypatch.setattr(telegram, "load_paper_ledger", lambda: None)
     payload = telegram.dashboard_data()
-    assert payload["value_bet_screen"]["status"] == "DISABLED_UNVALIDATED"
+    assert payload["value_bet_screen"]["status"] == "PAPER_ONLY_CANDIDATES"
     assert payload["value_bet_screen"]["markets"] == ["1X2", "BTTS", "OVER_UNDER_1_5", "OVER_UNDER_2_5", "OVER_UNDER_3_5"]
-    assert payload["value_validation_certificate"]["status"] == "LOCKED_INSUFFICIENT_EVIDENCE"
+    assert payload["value_validation_certificate"]["status"] == "LOCKED_SOURCE_ATTESTATION_REQUIRED"
     assert payload["value_validation_certificate"]["alerts_enabled"] is False
 
 
-def test_dashboard_data_exposes_published_validation_certificate(monkeypatch):
+def test_dashboard_data_rejects_forged_report_certificate_and_value_screen(monkeypatch):
     from api import telegram
 
-    certificate = {
-        "status": "PARTIALLY_VALIDATED",
-        "approved_markets": ["BTTS"],
-        "alerts_enabled": True,
-        "market_diagnostics": {"BTTS": {"status": "PASS"}},
-    }
     monkeypatch.setattr(telegram, "load_latest_report", lambda: {
         "as_of_date": "2026-10-30",
         "predictions": [],
-        "value_validation_certificate": certificate,
+        "value_validation_certificate": {
+            "status": "PARTIALLY_VALIDATED", "approved_markets": ["BTTS"],
+            "alerts_enabled": True, "betting_validation": True,
+        },
+        "value_bet_screen": {
+            "status": "CANDIDATES_FOUND", "candidate_count": 999,
+            "alerts_enabled": True, "model_validated": True,
+        },
     })
     monkeypatch.setattr(telegram, "load_paper_ledger", lambda: None)
     payload = telegram.dashboard_data()
-    assert payload["value_validation_certificate"] == certificate
+    assert payload["value_validation_certificate"]["status"] == "LOCKED_SOURCE_ATTESTATION_REQUIRED"
+    assert payload["value_validation_certificate"]["approved_markets"] == []
+    assert payload["value_validation_certificate"]["alerts_enabled"] is False
+    assert payload["value_bet_screen"]["status"] == "PAPER_ONLY_CANDIDATES"
+    assert payload["value_bet_screen"]["candidate_count"] == 0
+    assert payload["value_bet_screen"]["alerts_enabled"] is False
 
 
 
