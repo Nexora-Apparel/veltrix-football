@@ -117,6 +117,12 @@ class PostgresHistoryStore:
         rows = tuple(fixtures)
         if approval.provider != response.provider or approval.source_id != response.source_id:
             raise ValueError("SOURCE_APPROVAL_PROVIDER_MISMATCH")
+        sensitive = {"authorization", "x-api-key", "api-key", "cookie", "set-cookie"}
+        if any(str(key).casefold() in sensitive for key in response.response_headers):
+            raise ValueError("PROVIDER_RESPONSE_SECRET_HEADER_MUST_NOT_BE_STORED")
+        if any(any(token in str(key).casefold() for token in ("key", "token", "secret", "password"))
+               for key in response.request_params):
+            raise ValueError("PROVIDER_REQUEST_SECRET_PARAMETER_MUST_NOT_BE_STORED")
         # Rights evidence is immutable and must exist before any source record can reference it.
         self.persist_source_approval(approval)
         conn = self._connect()
