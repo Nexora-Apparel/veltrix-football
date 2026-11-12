@@ -211,22 +211,13 @@ def test_batch_request_budget_is_hard_capped():
                              request_count=41, request_budget=40)
 
 
-class _FakeConnection:
-    def __init__(self):
-        self.rolled_back = False
-        self.closed = False
-    def cursor(self):
-        return object()
-    def rollback(self):
-        self.rolled_back = True
-    def commit(self):
-        raise AssertionError("must not commit rejected secret headers")
-    def close(self):
-        self.closed = True
-
-
 def test_postgres_writer_refuses_to_persist_secret_response_headers():
-    conn = _FakeConnection()
+    connection_requested = False
+
+    def connection_factory():
+        nonlocal connection_requested
+        connection_requested = True
+        raise AssertionError("must reject secret headers before opening a database connection")
     response = ProviderResponse(
         provider="5DollarFootballAPI", source_id="5dollarfootballapi",
         endpoint="/leagues/1/fixtures", request_id="req-1",
@@ -236,5 +227,5 @@ def test_postgres_writer_refuses_to_persist_secret_response_headers():
         fetched_at_utc=NOW,
     )
     with pytest.raises(ValueError, match="PROVIDER_RESPONSE_SECRET_HEADER_MUST_NOT_BE_STORED"):
-        PostgresHistoryStore(lambda: conn).persist_page(response, [], approval())
-    assert conn.rolled_back and conn.closed
+        PostgresHistoryStore(connection_factory).persist_page(response, [], approval())
+    assert not connection_requested
