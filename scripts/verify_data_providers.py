@@ -344,11 +344,19 @@ def probe_odds_api_historical_access(api_key: str) -> str:
         print("The Odds API HISTORICAL_ODDS: INVALID_RESPONSE; maximum_credits=10")
         return "FAILED"
     rows = payload["data"]
-    quote_markets = sum(
-        len(bookmaker.get("markets", []))
-        for event in rows if isinstance(event, dict)
-        for bookmaker in event.get("bookmakers", []) if isinstance(bookmaker, dict)
-    )
+    quote_markets = 0
+    for event in rows:
+        if not isinstance(event, dict):
+            continue
+        bookmakers = event.get("bookmakers")
+        if not isinstance(bookmakers, list):
+            continue
+        for bookmaker in bookmakers:
+            if not isinstance(bookmaker, dict):
+                continue
+            markets = bookmaker.get("markets")
+            if isinstance(markets, list):
+                quote_markets += len(markets)
     remaining = headers.get("x-requests-remaining", "not supplied")
     print(
         "The Odds API HISTORICAL_ODDS: ACCESS_CONFIRMED; "
