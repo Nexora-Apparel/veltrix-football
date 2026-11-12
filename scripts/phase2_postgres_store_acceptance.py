@@ -194,6 +194,32 @@ def main() -> dict:
     )
     assert unauthorized["quarantined_or_conflicting"] == 1
 
+    revoked_status_response = replace(
+        response("phase2-ci-status-revoked", (2, 1)),
+        endpoint="/status",
+        request_params={"operation": "account_status"},
+        fetched_at_utc=now + timedelta(seconds=1),
+    )
+    revoked_status_record = store.persist_page(revoked_status_response, [], approval)
+    store.record_entitlement_observation(
+        provider="5DollarFootballAPI", source_id="5dollarfootballapi",
+        plan_code="community", entitlement_status="SUSPENDED",
+        country_pack_code=None,
+        competition_ids=sorted(["3118717965","522514093","4160026622","3614399544","686337048","3405541143","4212821298"]),
+        rate_limit_hour=300, rate_limit_minute=20, quota_remaining=0,
+        provider_response_id=revoked_status_record["provider_response_id"],
+        evidence_sha256=hashlib.sha256(b"phase2-ci-suspended-entitlement").hexdigest(),
+        checked_at_utc=now + timedelta(seconds=1),
+    )
+    suspended = store.persist_page(
+        replace(
+            response("phase2-ci-page-after-suspension", (2, 1)),
+            fetched_at_utc=now + timedelta(seconds=2),
+        ),
+        [fixture], approval,
+    )
+    assert suspended["quarantined_or_conflicting"] == 1
+
     manifest = hashlib.sha256(
         "\n".join(sorted([fixture.payload_sha256, conflicting_fixture.payload_sha256])).encode()
     ).hexdigest()
@@ -242,7 +268,9 @@ def main() -> dict:
             quarantined = cur.fetchone()[0]
             cur.execute("SELECT count(*) FROM ingestion_quarantine WHERE provider_entity_id='987654322' AND reason_code='PROVIDER_COMPETITION_NOT_ENTITLED'")
             entitlement_quarantined = cur.fetchone()[0]
-            cur.execute("SELECT count(*) FROM provider_responses WHERE request_id IN ('phase2-ci-status','phase2-ci-page-1','phase2-ci-page-2','phase2-ci-not-entitled')")
+            cur.execute("SELECT count(*) FROM ingestion_quarantine WHERE provider_entity_id='987654321' AND reason_code='PROVIDER_ENTITLEMENT_NOT_VERIFIED'")
+            suspended_quarantined = cur.fetchone()[0]
+            cur.execute("SELECT count(*) FROM provider_responses WHERE request_id IN ('phase2-ci-status','phase2-ci-page-1','phase2-ci-page-2','phase2-ci-not-entitled','phase2-ci-status-revoked','phase2-ci-page-after-suspension')")
             responses = cur.fetchone()[0]
             cur.execute("SELECT status,requests_used,records_seen,records_inserted,records_quarantined FROM import_runs WHERE id=%s", (run_id,))
             run_state = cur.fetchone()
@@ -260,11 +288,12 @@ def main() -> dict:
     assert canonical_score == (2, 1), canonical_score
     assert versions == 2, versions
     assert quarantined == 1, quarantined
-    assert responses == 4, responses
+    assert responses == 6, responses
     assert entitlement_quarantined == 1, entitlement_quarantined
+    assert suspended_quarantined == 1, suspended_quarantined
+    assert entitlement_count == 2, entitlement_count
     assert run_state == ("COMPLETED", 2, 2, 1, 1), run_state
     assert checkpoint_state == ("COMPLETED", 2, 1, 1, 2), checkpoint_state
-    assert entitlement_count == 1, entitlement_count
     assert watermark_v1 == 1 and watermark_v2 == 2
     assert stale_watermark_rejected
     assert watermark[0] == "page=2" and watermark[1] == 2
@@ -301,6 +330,7 @@ def main() -> dict:
         "import_checkpoint": list(checkpoint_state),
         "entitlement_snapshots": entitlement_count,
         "unentitled_competition_quarantined": entitlement_quarantined,
+        "suspended_provider_quarantined": suspended_quarantined,
         "sync_watermark_version": watermark[1],
         "stale_sync_writer_rejected": stale_watermark_rejected,
     }
