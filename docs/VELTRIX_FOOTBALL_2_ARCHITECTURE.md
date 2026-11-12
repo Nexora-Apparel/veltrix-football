@@ -333,3 +333,22 @@ A further review of `evaluation/certification.py` found that the ROI sub-evidenc
 These values are validated for type/range and internally consistent pass/fail status, but they are not yet cryptographically or structurally bound to the underlying walk-forward forecasts, `PaperLedger`, timestamped `OddsSnapshot` groups and benchmark comparison. Therefore **no release certificate produced by manually constructing these evidence dataclasses may be treated as a real qualification result**.
 
 Next core defect to close before certification: replace those scalar/boolean fields with typed evaluator outputs; derive sample counts and distinct dates from the actual walk-forward report and prospective paper ledger; derive timestamped odds coverage from complete source-timestamped market quote sets; and derive 1X2 benchmark gates from the exact common-sample bookmaker comparison. The prediction publication certificate needs equivalent binding to actual calibration and leakage evidence. Value betting remains locked and prediction release remains blocked until this work and real-data validation pass.
+
+
+## 18. Certification evidence-chain hardening — 2026-11-12
+
+The section 17 finding is resolved for the public certification APIs:
+
+- `certify_prediction_publication` accepts a typed multi-competition walk-forward report, immutable provider observations and scoped source approvals. It derives per-market held-out counts from evaluator aggregates, recomputes calibration from held-out fold forecasts/outcomes, and retains the actual source and temporal-integrity audit reports.
+- `certify_release` accepts the typed walk-forward report, immutable paper ledger, raw timestamped odds snapshots, provider observations, source approvals and an explicit benchmark source/bookmaker. It recomputes prospective counts, distinct settled dates, date-block-bootstrap ROI, complete quote coverage and same-sample 1X2 bookmaker comparisons.
+- Certification result constructors remain factory-sealed. Scalar/boolean evidence dataclasses and the derived-evidence factory are internal implementation details and are not exported from the evaluation package; callers must use the record-derived public entry points.
+- Source audit now requires an explicit canonical `fixture_id` in each underlying provider observation used for training labels, held-out results, benchmark odds, paper-forecast inputs, paper odds, settlement results and source-backed match dates. Missing fixture links no longer pass merely because the fold or ledger supplied a separate fixture association.
+- Regression tests cover absent fixture bindings for training, held-out, odds and paper-ledger source observations. The binary benchmark fixtures now include provider quote timestamps and source-observation IDs; the 1X2 benchmark distinguishes a genuinely incomplete market from selections split across different quote/provenance groups.
+
+Verification on exact PR #51 head `f4f1d0d70b396bd480e7600c8ebb20be8a80a577`:
+- VELTRIX 2.0 Foundation Tests run `43206723495`: passed.
+- Repository Unit Tests run `43206723423`: passed; live provider probes skipped by design.
+- Daily Fixture Predictions run `43206723470`: skipped; production schedule remains disabled.
+- Vercel status is a build-rate-limit failure, not a Python test failure. No additional deployment was attempted to preserve quota.
+
+This resolves the code/CI evidence-binding defect. It does not constitute real-data model qualification, provider-rights sign-off, production deployment approval or permission to reactivate Telegram/scheduling. Phase 2 provider entitlement and rights work remains the next sequential phase after the Phase 1 repository/code audit is closed.
