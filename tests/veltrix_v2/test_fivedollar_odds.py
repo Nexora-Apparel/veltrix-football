@@ -39,7 +39,9 @@ def payload():
 def test_parser_emits_complete_timestamped_1x2_btts_and_totals():
     result = parse_fivedollar_fixture_odds(
         payload(), fixture_id="fixture-123", kickoff_at=KICKOFF, captured_at=CAPTURE
-    )
+    ,
+            source_observation_id="obs-5dollar-payload-123",
+        )
     assert result.missing_markets == ()
     assert len(result.snapshots) == 7
     assert {row.market for row in result.snapshots} == {"1X2", "BTTS", "TOTALS"}
@@ -55,7 +57,9 @@ def test_missing_btts_is_reported_not_fabricated():
     del body["data"]["bookmakers"][0]["odds"]["btts"]
     result = parse_fivedollar_fixture_odds(
         body, fixture_id="fixture-123", kickoff_at=KICKOFF, captured_at=CAPTURE
-    )
+    ,
+            source_observation_id="obs-5dollar-payload-123",
+        )
     assert "BTTS" in result.missing_markets
     assert not any(row.market == "BTTS" for row in result.snapshots)
 
@@ -64,11 +68,15 @@ def test_wrong_fixture_and_bookmaker_are_rejected():
     with pytest.raises(ValueError, match="FIXTURE_ID_MISMATCH"):
         parse_fivedollar_fixture_odds(
             payload(), fixture_id="another-fixture", kickoff_at=KICKOFF, captured_at=CAPTURE
+        ,
+            source_observation_id="obs-5dollar-payload-123",
         )
     with pytest.raises(ValueError, match="BOOKMAKER_MISSING"):
         parse_fivedollar_fixture_odds(
             payload(), fixture_id="fixture-123", kickoff_at=KICKOFF,
             captured_at=CAPTURE, bookmaker_slug="pinnacle"
+        ,
+            source_observation_id="obs-5dollar-payload-123",
         )
 
 
@@ -77,7 +85,9 @@ def test_invalid_or_inplay_price_is_not_emitted():
     body["data"]["bookmakers"][0]["odds"]["1x2"]["closing"]["home"] = 1.0
     result = parse_fivedollar_fixture_odds(
         body, fixture_id="fixture-123", kickoff_at=KICKOFF, captured_at=CAPTURE
-    )
+    ,
+            source_observation_id="obs-5dollar-payload-123",
+        )
     assert "1X2" in result.missing_markets
     assert not any(row.market == "1X2" for row in result.snapshots)
 
@@ -87,6 +97,8 @@ def test_capture_at_or_after_kickoff_fails_through_contract():
         parse_fivedollar_fixture_odds(
             payload(), fixture_id="fixture-123", kickoff_at=KICKOFF,
             captured_at=KICKOFF + timedelta(seconds=1)
+        ,
+            source_observation_id="obs-5dollar-payload-123",
         )
 
 
@@ -95,6 +107,8 @@ def test_integer_total_line_is_rejected():
         parse_fivedollar_fixture_odds(
             payload(), fixture_id="fixture-123", kickoff_at=KICKOFF,
             captured_at=CAPTURE, total_line=Decimal("2.0")
+        ,
+            source_observation_id="obs-5dollar-payload-123",
         )
 
 
@@ -103,7 +117,9 @@ def test_partial_market_is_reported_and_no_partial_rows_are_emitted():
     body["data"]["bookmakers"][0]["odds"]["1x2"]["closing"]["away"] = None
     result = parse_fivedollar_fixture_odds(
         body, fixture_id="fixture-123", kickoff_at=KICKOFF, captured_at=CAPTURE
-    )
+    ,
+            source_observation_id="obs-5dollar-payload-123",
+        )
     assert "1X2" in result.missing_markets
     assert not any(row.market == "1X2" for row in result.snapshots)
 
@@ -119,6 +135,8 @@ def test_capture_after_kickoff_is_rejected_even_when_no_markets_exist():
             fixture_id="fx-1",
             kickoff_at=KICKOFF,
             captured_at=KICKOFF + timedelta(seconds=1),
+        
+            source_observation_id="obs-5dollar-payload-123",
         )
 
 
