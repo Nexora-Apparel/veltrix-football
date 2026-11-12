@@ -294,3 +294,24 @@ Unit tests assert the hard global budget, pagination truncation and missing-key
 fail-closed behaviour. The workflow remains manual-only; do not dispatch it
 while the account balance is exhausted. A successful probe is coverage
 evidence only, not a rights approval or historical import authorization.
+
+
+### OpenMatchday — excluded from commercial V2
+
+**Decision:** exclude from the VELTRIX commercial training and publication corpus.
+
+The repository offers 2026/27 fixtures, results and selected match statistics across 75 competitions, but its own README labels the dataset "Free for non-commercial use" and states that the data is free for informational, non-commercial use. This is not a commercial-use grant. Do not ingest it into the commercial model-training corpus, retain it as a production source, or publish it through VELTRIX unless the maintainer grants separate written commercial permission.
+
+Official repository:
+- https://github.com/oladeeayo/open-matchday
+
+### American Soccer Analysis (ASA) — MLS-only share-alike candidate
+
+**Decision:** conditional MLS research candidate; not approved as a production training source until the share-alike consequences for model weights and derivative predictions are clarified.
+
+The official API documentation states that returned data is licensed CC BY-SA 4.0 and exposes MLS games, shots, xGoals, team/player xGoals and related analytics. Commercial reuse is not categorically prohibited by CC BY-SA, but adaptations must comply with the same licence and attribution requirements. Whether a VELTRIX-trained model, model weights or prediction outputs constitute an adapted/derived database or other adapted material requires explicit legal review; do not silently treat CC BY-SA as equivalent to CC BY.
+
+Official API documentation:
+- https://app.americansocceranalysis.com/api/v1/__docs__/
+- https://creativecommons.org/licenses/by-sa/4.0/
+
