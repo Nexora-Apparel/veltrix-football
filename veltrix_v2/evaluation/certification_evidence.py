@@ -540,7 +540,7 @@ def audit_odds_snapshot_sources(
             cutoff=ForecastCutoff(snapshot.captured_at),
             approvals=approval_rows,
             max_age=timedelta.max,
-            required_uses=("collection", "storage", "benchmarking"),
+            required_uses=("collection", "storage", "benchmarking", "commercial_use"),
         )
         if not decision.eligible:
             rejected.append((snapshot.snapshot_id, decision.reason))
@@ -615,7 +615,7 @@ def audit_paper_ledger_sources(
                 cutoff=ForecastCutoff(selection.forecast_generated_at_utc),
                 approvals=approval_rows,
                 max_age=timedelta.max,
-                required_uses=("collection", "storage", "model_training"),
+                required_uses=("collection", "storage", "model_training", "public_display", "commercial_use"),
             )
             if not decision.eligible:
                 rejected.append((observation_id, decision.reason))
@@ -654,7 +654,7 @@ def audit_paper_ledger_sources(
             cutoff=ForecastCutoff(odds.captured_at),
             approvals=approval_rows,
             max_age=timedelta.max,
-            required_uses=("collection", "storage", "benchmarking"),
+            required_uses=("collection", "storage", "benchmarking", "commercial_use"),
         )
         if not odds_decision.eligible:
             rejected.append((odds_observation_id, odds_decision.reason))
@@ -693,7 +693,7 @@ def audit_paper_ledger_sources(
             cutoff=ForecastCutoff(event.result_observed_at_utc),
             approvals=approval_rows,
             max_age=timedelta.max,
-            required_uses=("collection", "storage", "benchmarking"),
+            required_uses=("collection", "storage", "benchmarking", "commercial_use"),
         )
         if not decision.eligible:
             rejected.append((observation_id, decision.reason))
@@ -719,7 +719,7 @@ def audit_paper_ledger_sources(
                     cutoff=ForecastCutoff(event.result_observed_at_utc),
                     approvals=approval_rows,
                     max_age=timedelta.max,
-                    required_uses=("collection", "storage", "benchmarking"),
+                    required_uses=("collection", "storage", "benchmarking", "commercial_use"),
                 )
                 if not date_decision.eligible:
                     rejected.append((date_observation_id, date_decision.reason))
