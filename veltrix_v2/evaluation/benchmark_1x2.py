@@ -70,8 +70,13 @@ def compare_1x2_to_bookmaker(
             raise ValueError("1X2_BENCHMARK_DUPLICATE_SELECTION")
         if group:
             prior = next(iter(group.values()))
-            if prior.captured_at != row.captured_at or prior.kickoff_at != row.kickoff_at:
-                raise ValueError("1X2_BENCHMARK_SELECTION_TIMESTAMPS_MISMATCH")
+            if (
+                prior.captured_at != row.captured_at
+                or prior.kickoff_at != row.kickoff_at
+                or prior.provider_quote_at != row.provider_quote_at
+                or prior.source_observation_id != row.source_observation_id
+            ):
+                raise ValueError("1X2_BENCHMARK_SELECTION_TIMESTAMPS_OR_PROVENANCE_MISMATCH")
         group[selection] = row
 
     book_by_fixture: dict[str, Forecast1X2] = {}
