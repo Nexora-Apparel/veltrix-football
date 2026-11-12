@@ -99,7 +99,8 @@ def test_runtime_1x2_screen_uses_poisson_alternative_when_elo_is_primary():
     fixture["poisson_probabilities"] = {"home_win": 0.70, "draw": 0.18, "away_win": 0.12}
     result = screen_fixture_value_bets(fixture, validation_certificate=_certificate())
     assert result["markets"]["1X2"]["candidates"] == []
-    assert result["markets"]["1X2"]["status"] == "DISABLED_UNVALIDATED"
+    assert result["markets"]["1X2"]["status"] == "PAPER_ONLY_CANDIDATES"
+    assert result["paper_candidate_count"] >= 1
     assert result["model_validated"] is False
 
 
