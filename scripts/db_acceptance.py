@@ -14,11 +14,17 @@ EXPECTED_TABLES = {
     "schema_migrations", "provider_accounts", "countries", "competitions",
     "teams", "fixtures", "fixture_results", "source_observations",
     "import_runs", "import_checkpoints", "reconciliation_audits",
+    "source_approvals", "provider_responses", "provider_entitlement_observations",
+    "fixture_result_versions", "sync_watermarks", "ingestion_quarantine",
 }
 EXPECTED_INDEXES = {
     "fixtures_kickoff_idx", "fixtures_competition_kickoff_idx",
     "fixtures_home_kickoff_idx", "fixtures_away_kickoff_idx",
     "source_observations_lookup_idx", "import_checkpoints_status_idx",
+    "source_approvals_version_idx", "provider_responses_provider_time_idx",
+    "provider_entitlement_history_idx", "source_observations_source_lookup_idx",
+    "fixtures_provider_kickoff_idx", "fixture_result_versions_fixture_time_idx",
+    "ingestion_quarantine_open_idx",
 }
 
 
@@ -72,6 +78,50 @@ def run_acceptance() -> dict:
             cur.execute("SELECT indexname FROM pg_indexes WHERE schemaname='public'")
             actual_indexes = {r[0] for r in cur.fetchall()}
             assert EXPECTED_INDEXES <= actual_indexes, sorted(EXPECTED_INDEXES - actual_indexes)
+
+            cur.execute("""
+                SELECT tgname FROM pg_trigger
+                WHERE NOT tgisinternal
+                  AND tgrelid IN (
+                    'source_observations'::regclass,
+                    'provider_responses'::regclass,
+                    'source_approvals'::regclass,
+                    'provider_entitlement_observations'::regclass,
+                    'fixture_result_versions'::regclass
+                  )
+            """)
+            immutable_triggers = {row[0] for row in cur.fetchall()}
+            expected_triggers = {
+                "source_observations_append_only",
+                "provider_responses_append_only",
+                "source_approvals_append_only",
+                "provider_entitlement_append_only",
+                "fixture_result_versions_append_only",
+            }
+            assert expected_triggers <= immutable_triggers, sorted(expected_triggers - immutable_triggers)
+
+            # The append-only guard must reject mutations without changing the source row.
+            cur.execute("SAVEPOINT immutable_probe")
+            cur.execute("""
+                INSERT INTO source_approvals (
+                    approval_id, provider, source_id, competition_scope, data_type,
+                    status, rights_basis, terms_url, terms_version, evidence_uri,
+                    evidence_sha256, reviewed_at, reviewer_id, valid_from,
+                    permitted_uses, commercial_use_allowed
+                ) VALUES (
+                    '__acceptance_immutable_probe__', 'probe', 'probe', '*', 'fixture_result',
+                    'APPROVED', 'TERMS', 'https://example.invalid/terms', 'test',
+                    'https://example.invalid/evidence', repeat('a',64), NOW(), 'acceptance',
+                    NOW(), '["STORAGE"]'::jsonb, TRUE
+                )
+            """)
+            mutation_rejected = False
+            try:
+                cur.execute("UPDATE source_approvals SET status='REVOKED' WHERE approval_id='__acceptance_immutable_probe__'")
+            except psycopg.errors.RaiseException:
+                mutation_rejected = True
+                cur.execute("ROLLBACK TO SAVEPOINT immutable_probe")
+            assert mutation_rejected, "source approval append-only trigger did not reject UPDATE"
 
             # Prove rollback semantics without leaving a probe row behind.
             cur.execute("SAVEPOINT acceptance_rollback_probe")
