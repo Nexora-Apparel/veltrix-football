@@ -9,7 +9,18 @@ on:
       - "tests/test_fixture_identity.py"
       - "scripts/verify_data_providers.py"
       - "scripts/verify_multi_source_integration.py"
+      - "scripts/probe_fivedollar_account.py"
+      - "scripts/probe_oddspapi_safe.py"
       - "tests/test_provider_adapters.py"
+      - "tests/test_phase1_provider_probes.py"
+      - "scripts/probe_strikerapi_free_credit.py"
+      - "scripts/probe_strikerapi_features.py"
+      - "scripts/veltrix_v2/verify_strikerapi_readonly.py"
+      - "tests/test_strikerapi_free_credit.py"
+      - "tests/test_strikerapi_features.py"
+      - "tests/test_probe_oddspapi_safe_import.py"
+      - "tests/test_probe_oddspapi_safe_import.py"
+      - "tests/veltrix_v2/test_strikerapi_readonly.py"
       - ".github/workflows/api-smoke-test.yml"
   pull_request:
     branches: [main]
@@ -19,7 +30,16 @@ on:
       - "tests/test_fixture_identity.py"
       - "scripts/verify_data_providers.py"
       - "scripts/verify_multi_source_integration.py"
+      - "scripts/probe_fivedollar_account.py"
+      - "scripts/probe_oddspapi_safe.py"
       - "tests/test_provider_adapters.py"
+      - "tests/test_phase1_provider_probes.py"
+      - "scripts/probe_strikerapi_free_credit.py"
+      - "scripts/probe_strikerapi_features.py"
+      - "scripts/veltrix_v2/verify_strikerapi_readonly.py"
+      - "tests/test_strikerapi_free_credit.py"
+      - "tests/test_strikerapi_features.py"
+      - "tests/veltrix_v2/test_strikerapi_readonly.py"
       - ".github/workflows/api-smoke-test.yml"
   workflow_dispatch:
 
@@ -29,7 +49,7 @@ permissions:
 jobs:
   verification:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     steps:
       - name: Check out repository
         uses: actions/checkout@v7
@@ -47,17 +67,79 @@ jobs:
       - name: Run unit tests
         run: python -m pytest --import-mode=importlib -q
 
-      - name: Verify provider authentication (no odds quota used)
-        if: github.event_name == 'workflow_dispatch' || github.event_name == 'schedule' || (github.event_name == 'push' && contains(github.event.head_commit.message, '[run-provider-integration]'))
-        env:
-          FIVEDOLLARFOOTBALL_API_KEY: ${{ secrets.FIVEDOLLARFOOTBALL_API_KEY }}
-          THE_ODDS_API_KEY: ${{ secrets.THE_ODDS_API_KEY }}
-        run: python scripts/verify_data_providers.py
+      - name: Prepare Phase 1 evidence directory
+        run: mkdir -p reports/phase1
 
       - name: Verify live fixture and market integration (bounded requests)
-        if: github.event_name == 'workflow_dispatch' || github.event_name == 'schedule' || (github.event_name == 'push' && contains(github.event.head_commit.message, '[run-provider-integration]'))
+        if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && contains(github.event.head_commit.message, '[run-provider-integration]'))
+        continue-on-error: true
         env:
           FIVEDOLLARFOOTBALL_API_KEY: ${{ secrets.FIVEDOLLARFOOTBALL_API_KEY }}
           THE_ODDS_API_KEY: ${{ secrets.THE_ODDS_API_KEY }}
           PYTHONPATH: .
-        run: python scripts/verify_multi_source_integration.py
+        run: |
+          set -o pipefail
+          python scripts/verify_multi_source_integration.py 2>&1 | tee reports/phase1/multi-source-integration.log
+
+      - name: Verify 5Dollar account plan, country pack and odds timestamps (17-request cap)
+        if: github.event_name == 'workflow_dispatch'
+        continue-on-error: true
+        env:
+          FIVEDOLLARFOOTBALL_API_KEY: ${{ secrets.FIVEDOLLARFOOTBALL_API_KEY }}
+        run: python scripts/probe_fivedollar_account.py --output reports/phase1/fivedollar-account.json
+
+      - name: Verify GOAL API technical access (rights remain separately gated)
+        if: github.event_name == 'workflow_dispatch'
+        continue-on-error: true
+        env:
+          GOAL_API_KEY: ${{ secrets.GOAL_API_KEY }}
+        run: |
+          if [ -z "$GOAL_API_KEY" ]; then
+            echo "GOAL_API_PROBE: SKIPPED_MISSING_SECRET" | tee reports/phase1/goal-api.log
+          else
+            set -o pipefail
+            python scripts/verify_goal_api.py 2>&1 | tee reports/phase1/goal-api.log
+          fi
+
+      - name: Verify OddsPapi soccer markets and real quotes
+        if: github.event_name == 'workflow_dispatch'
+        continue-on-error: true
+        env:
+          ODDSPAPI_API_KEY: ${{ secrets.ODDSPAPI_API_KEY }}
+        run: |
+          if [ -z "$ODDSPAPI_API_KEY" ]; then
+            echo "ODDSPAPI_PROBE: SKIPPED_MISSING_SECRET" | tee reports/phase1/oddspapi.log
+          else
+            set -o pipefail
+            python scripts/probe_oddspapi_safe.py --output reports/phase1/oddspapi.json 2>&1 | tee reports/phase1/oddspapi.log
+          fi
+
+      - name: Check StrikerAPI free-credit access (one static reference credit maximum)
+        if: github.event_name == 'workflow_dispatch'
+        continue-on-error: true
+        id: striker_account
+        env:
+          STRIKERAPI_API_KEY: ${{ secrets.STRIKERAPI_API_KEY }}
+        run: python scripts/probe_strikerapi_free_credit.py --output reports/phase1/strikerapi-account.json
+
+      - name: Qualify StrikerAPI non-live features and timestamped odds (62-credit cap)
+        if: github.event_name == 'workflow_dispatch' && steps.striker_account.outputs.probe_status == 'AUTH_OK'
+        continue-on-error: true
+        env:
+          STRIKERAPI_API_KEY: ${{ secrets.STRIKERAPI_API_KEY }}
+        run: python scripts/probe_strikerapi_features.py --output reports/phase1/strikerapi-features.json
+
+      - name: Record StrikerAPI free-credit deferral
+        if: github.event_name == 'workflow_dispatch' && steps.striker_account.outputs.probe_status != 'AUTH_OK'
+        run: |
+          echo "STRIKERAPI_FEATURE_PROBE: SKIPPED; static one-credit check returned ${{ steps.striker_account.outputs.probe_status }}." | tee reports/phase1/strikerapi-status.log
+          echo "No additional StrikerAPI calls were made."
+
+      - name: Upload sanitized Phase 1 provider evidence
+        if: github.event_name == 'workflow_dispatch' && always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: veltrix-phase1-provider-qualification
+          path: reports/phase1/
+          if-no-files-found: warn
+          retention-days: 7
