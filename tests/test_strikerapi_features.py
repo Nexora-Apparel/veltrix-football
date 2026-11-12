@@ -26,8 +26,10 @@ class StrikerAPIFeatureProbeTests(unittest.TestCase):
             if tool == "get_team_stats":
                 return 200, {"data": {"teams": [{"xg_for": 1.5, "xg_against": 0.8}]}}, {}
             if tool == "get_odds":
-                return 200, {"data": {"games": [{"books": [{"captured_at": "2026-11-01T11:00:00Z",
-                    "home_ml_open": 100, "total_close": 2.5, "over_odds": -110}]}]}}, {}
+                return 200, {"data": {"games": [{"books": [{"captured_at": "2026-11-01T11:00:00Z", "source": "archive",
+                    "home_ml_open": 100, "total_close": 2.5, "over_odds": -110},
+                    {"captured_at": "2026-11-12T11:00:00Z", "source": "final",
+                     "home_ml_close": -110}]}]}}, {}
             if tool == "get_market_odds":
                 return 200, {"data": {"books": [{"opening_captured_at": "2026-11-01T11:00:00Z",
                     "closing_captured_at": "2026-11-01T11:50:00Z", "opening": [{"price": 1.9}],
@@ -39,10 +41,18 @@ class StrikerAPIFeatureProbeTests(unittest.TestCase):
         validate_report(report)
         self.assertEqual(report["status"], "ALL_FEATURE_ENDPOINTS_RESPONDED")
         self.assertEqual(report["credits_spent_estimate"], 62)
-        self.assertEqual(report["calls"][4]["xg_for_rows"], 1)
-        self.assertEqual(report["calls"][6]["timestamped_open_close_rows"], 1)
-        self.assertEqual(report["calls"][7]["timestamped_snapshot_rows"], 1)
+        self.assertEqual(report["calls"][5]["xg_for_rows"], 1)
+        self.assertEqual(report["calls"][6]["timestamped_archive_book_rows"], 1)
+        self.assertEqual(report["calls"][6]["final_rows_with_ingest_timestamp"], 1)
+        self.assertEqual(report["calls"][7]["timestamped_open_close_rows"], 1)
+        self.assertEqual(report["calls"][8]["timestamped_snapshot_rows"], 1)
         self.assertNotIn("not-a-real-key", str(report))
+
+    def test_missing_secret_returns_integrity_checked_report(self):
+        report = probe("", lambda *args: (_ for _ in ()).throw(AssertionError("no network")), sleep=lambda _: None)
+        validate_report(report)
+        self.assertEqual(report["status"], "MISSING_SECRET")
+        self.assertEqual(report["credits_spent_estimate"], 0)
 
     def test_402_stops_probe_without_spending_remaining_endpoint_credits(self):
         def fake_send(key, tool, params):
