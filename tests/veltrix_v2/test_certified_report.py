@@ -9,7 +9,7 @@ from veltrix_v2.evaluation.roi import MarketPerformance, evaluate_roi
 from veltrix_v2.evaluation.settlement import MarketBet, MatchResult, settle_market_bet
 from veltrix_v2.evaluation.certification import (
     MarketCertificationEvidence, PredictionMarketEvidence,
-    _certify_prediction_publication_from_derived_evidence, certify_release,
+    _certify_prediction_publication_from_derived_evidence, _certify_release_from_derived_evidence,
 )
 from veltrix_v2.publishing.certified_report import (
     MarketForecasts,
@@ -83,7 +83,7 @@ def passing_value_bet_certification():
         )
         for market in ("1X2", "BTTS", "TOTALS")
     ]
-    return certify_release(
+    return _certify_release_from_derived_evidence(
         rows,
         one_x_two_beats_bookmaker_brier=True,
         one_x_two_beats_bookmaker_log_loss=True,
