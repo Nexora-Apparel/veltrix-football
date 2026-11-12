@@ -13,6 +13,13 @@ from pathlib import Path
 from urllib.error import HTTPError, URLError
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
+import sys
+
+# Direct execution sets sys.path[0] to scripts/, not the repository root.
+# Add the checkout root so the sibling veltrix_v2 package resolves in CI.
+REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
+if str(REPOSITORY_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPOSITORY_ROOT))
 
 from veltrix_v2.data.batch import assess_history_batch
 from veltrix_v2.data.contracts import ApprovalStatus, DataUsePurpose, SourceApproval
