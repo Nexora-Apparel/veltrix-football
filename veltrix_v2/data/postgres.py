@@ -156,6 +156,7 @@ class PostgresHistoryStore:
                         fixture.rights_approval_id, response_id,
                     ),
                 )
+                observation_inserted = cur.rowcount == 1
                 cur.execute(
                     """SELECT id,payload_sha256,rights_approval_id,provider_response_id
                        FROM source_observations
@@ -172,7 +173,7 @@ class PostgresHistoryStore:
                 if observation[2] != fixture.rights_approval_id:
                     raise ValueError("SOURCE_OBSERVATION_RIGHTS_APPROVAL_CONFLICT")
                 observation_id = int(observation[0])
-                if cur.rowcount:
+                if observation_inserted:
                     inserted_observations += 1
 
                 cur.execute(
