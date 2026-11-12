@@ -331,3 +331,55 @@ def test_historical_odds_entitlement_probe_does_not_run_by_default(monkeypatch, 
     assert providers.main() == 0
     assert not any("/historical/" in url for url in calls)
     assert "HISTORICAL_ODDS" not in capsys.readouterr().out
+
+
+def test_community_smoke_uses_finished_fixture_fallback_within_twenty_request_burst(monkeypatch, capsys):
+    monkeypatch.setenv("FIVEDOLLARFOOTBALL_API_KEY", "fake-primary")
+    monkeypatch.setenv("FIVEDOLLAR_REQUIRED_PLAN", "community")
+    leagues = [
+        {"id": 1, "name": "Premier League", "country": {"code": "GB-ENG"}},
+        {"id": 2, "name": "La Liga", "country": {"code": "ES"}},
+        {"id": 3, "name": "Serie A", "country": {"code": "IT"}},
+        {"id": 4, "name": "Bundesliga", "country": {"code": "DE"}},
+        {"id": 5, "name": "Ligue 1", "country": {"code": "FR"}},
+        {"id": 6, "name": "Argentina Liga Profesional", "country": {"code": "AR"}},
+    ]
+    calls = []
+
+    def fake_request(url, headers=None):
+        calls.append(url)
+        if "/status" in url:
+            return 200, {}, {"success": 1, "data": {"plan": "community"}}
+        if "/leagues?per_page=100" in url:
+            return 200, {}, {"success": 1, "data": leagues}
+        if "/leagues/" in url and "status=scheduled" in url:
+            return 200, {}, {"success": 1, "data": []}
+        if "/leagues/" in url and "status=finished" in url:
+            league_id = url.split("/leagues/")[1].split("/")[0]
+            return 200, {}, {"success": 1, "data": [{"id": f"finished-{league_id}"}]}
+        if "/fixtures/finished-" in url and url.endswith("/odds"):
+            return 200, {}, {
+                "success": 1,
+                "data": {
+                    "bookmakers": [{
+                        "slug": "bet365",
+                        "odds": {
+                            "1x2": {"closing": {"home": 1.9, "draw": 3.2, "away": 4.0}},
+                            "btts": {"closing": {"yes": 1.8, "no": 2.0}},
+                            "goal_line_fixed": [{
+                                "line": 2.5,
+                                "closing": {"over": 1.9, "under": 1.9},
+                            }],
+                        },
+                    }],
+                },
+            }
+        raise AssertionError(f"Unexpected request: {url}")
+
+    monkeypatch.setattr(providers, "request_json", fake_request)
+    assert providers.check_fivedollar() == "AUTH_OK"
+    output = capsys.readouterr().out
+    assert "leagues_probed=6; fixtures=6" in output
+    assert "1X2=6/6" in output
+    assert len(calls) == 20
+    assert len(calls) <= 20
