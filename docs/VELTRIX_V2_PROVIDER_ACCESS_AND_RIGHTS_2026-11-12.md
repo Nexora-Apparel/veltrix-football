@@ -193,6 +193,9 @@ The Community acceptance workflow now fails unless the account reports
 `plan=community` and exposes at least six competitions (the five top leagues
 plus at least one country-pack competition). It probes one scheduled fixture
 per accessible league, bounded to eight fixture/odds pairs. A five-league
-Free-plan catalogue cannot pass. The Odds API adapter also requires a nonblank
+Free-plan catalogue cannot pass. Both the 5Dollar and The Odds API odds adapters require a nonblank
 source-observation ID for every parsed or fetched quote; missing lineage is
-rejected before a snapshot can be produced.
+rejected before a snapshot can be produced. The Odds API now has separate
+1X2 (h2h) and totals parsers/fetchers, with same-bookmaker selection groups,
+exact total-line identity, provider quote timestamps, and request-quota headers
+preserved for benchmark and CLV evidence.
