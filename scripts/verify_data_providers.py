@@ -100,6 +100,17 @@ def check_fivedollar() -> str:
             str(item.get("name") or item.get("short_name") or "unknown")
             for item in leagues if isinstance(item, dict)
         ]
+        try:
+            minimum_leagues = int(os.getenv("FIVEDOLLAR_MIN_ACCESSIBLE_LEAGUES", "6"))
+        except ValueError:
+            print("5DollarFootballAPI: MIN_ACCESSIBLE_LEAGUES_CONFIGURATION_INVALID")
+            return "FAILED"
+        if minimum_leagues < 6 or len(league_names) < minimum_leagues:
+            print(
+                "5DollarFootballAPI: COMPETITION_COVERAGE_INCOMPLETE "
+                f"(minimum={minimum_leagues}; actual={len(league_names)})"
+            )
+            return "COMPETITION_COVERAGE_INCOMPLETE"
         remaining = response_headers.get("X-RateLimit-Remaining", "not supplied")
         print(
             f"5DollarFootballAPI: AUTH_OK; plan={plan.strip().casefold()}; "
