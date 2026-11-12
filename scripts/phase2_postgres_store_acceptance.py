@@ -168,6 +168,29 @@ def main() -> dict:
         requests_used=2, records_seen=2, records_inserted=1,
         records_rejected=0, records_quarantined=1, manifest_sha256=manifest,
     )
+    watermark_v1 = store.advance_sync_watermark(
+        provider="5DollarFootballAPI", data_class="fixture_result",
+        scope="community-seven-competitions", cursor_value="page=1",
+        expected_version=0, updated_at_utc=now,
+    )
+    watermark_v2 = store.advance_sync_watermark(
+        provider="5DollarFootballAPI", data_class="fixture_result",
+        scope="community-seven-competitions", cursor_value="page=2",
+        expected_version=1, updated_at_utc=now,
+    )
+    stale_watermark_rejected = False
+    try:
+        store.advance_sync_watermark(
+            provider="5DollarFootballAPI", data_class="fixture_result",
+            scope="community-seven-competitions", cursor_value="page=stale",
+            expected_version=1, updated_at_utc=now,
+        )
+    except ValueError as exc:
+        stale_watermark_rejected = str(exc) == "SYNC_WATERMARK_VERSION_CONFLICT"
+    watermark = store.get_sync_watermark(
+        provider="5DollarFootballAPI", data_class="fixture_result",
+        scope="community-seven-competitions",
+    )
 
     with psycopg.connect(database_url) as conn:
         with conn.cursor() as cur:
@@ -199,6 +222,9 @@ def main() -> dict:
     assert run_state == ("COMPLETED", 2, 2, 1, 1), run_state
     assert checkpoint_state == ("COMPLETED", 2, 1, 1, 2), checkpoint_state
     assert entitlement_count == 1, entitlement_count
+    assert watermark_v1 == 1 and watermark_v2 == 2
+    assert stale_watermark_rejected
+    assert watermark[0] == "page=2" and watermark[1] == 2
 
     # Each raw evidence store must reject mutation at the database layer.
     with psycopg.connect(database_url) as conn:
@@ -231,6 +257,8 @@ def main() -> dict:
         "import_run": list(run_state),
         "import_checkpoint": list(checkpoint_state),
         "entitlement_snapshots": entitlement_count,
+        "sync_watermark_version": watermark[1],
+        "stale_sync_writer_rejected": stale_watermark_rejected,
     }
 
 
