@@ -16,7 +16,7 @@ For Free and Community Access, public-facing products (website, app, bot or publ
 
 **Football data by 5DollarFootballAPI** — https://5dollarfootballapi.com
 
-Attribution is optional for private/internal use and for Pro, Ultra and Business. The provider supplies data as-is and disclaims a guarantee of accuracy or suitability for betting decisions.
+Attribution is optional for private/internal use and for Pro, Ultra and Business. The provider supplies data as-is and disclaims a guarantee of accuracy or suitability for betting decisions. The terms do not specify a fixed raw-response retention duration or disclose the upstream data supplier. The VELTRIX interpretation is that internal storage/cache and use in proprietary models are permitted by Section 4; this is a recorded terms interpretation, not legal advice or an upstream data warranty. Raw response bytes remain internal and must never be resold or redistributed. Reconfirm retention rights with the provider before any public raw-data archive or bulk export.
 
 ## Account-specific evidence
 
@@ -41,6 +41,8 @@ Not approved:
 - treating provider results as source-timestamp-certified before the provider supplies a publication timestamp;
 - using the provider's odds as a historical quote archive when no valid quote timestamp exists;
 - using any competition outside the observed account entitlement.
+
+The provider's upstream data supplier and underlying data-rights chain are not identified in the public terms; VELTRIX relies on the provider's direct Section 4 grant and keeps that provenance limitation visible.
 
 For historical result-derived features, the API does not expose the original result-publication timestamp. VELTRIX therefore stores a four-day post-kickoff availability proxy with `point_in_time_certifiable=false`. It must not be represented as exact source publication time. This limitation does not change the use of settled scores as target labels.
 
