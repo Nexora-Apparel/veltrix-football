@@ -194,9 +194,15 @@ def main() -> dict:
         payload=unauthorized_payload,
         payload_sha256=hashlib.sha256(unauthorized_raw).hexdigest(),
     )
+    unauthorized_body = json.dumps({
+        "success": 1, "data": [unauthorized_payload],
+        "pagination": {"page": 1, "per_page": 100, "has_more": False},
+    }, sort_keys=True, separators=(",", ":")).encode()
+    unauthorized_response = replace(
+        response("phase2-ci-not-entitled", (2, 1)), raw_body=unauthorized_body
+    )
     unauthorized = store.persist_page(
-        response("phase2-ci-not-entitled", (2, 1)),
-        [unauthorized_fixture], approval,
+        unauthorized_response, [unauthorized_fixture], approval,
     )
     assert unauthorized["quarantined_or_conflicting"] == 1
 
