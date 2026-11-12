@@ -6,7 +6,6 @@ import json
 import sys
 
 from app.certification_metrics import recompute_raw_certification
-from app.certification_evidence import EvidenceIntegrityError
 
 
 def main() -> int:
