@@ -27,7 +27,7 @@ def approval(**changes):
         approval_id="approval-test",
         provider="5DollarFootballAPI",
         source_id="5dollarfootballapi",
-        competition_scope="*",
+        competition_scope="4160026622,3118717965",
         data_type="fixture_result",
         status=ApprovalStatus.APPROVED,
         permitted_uses=frozenset({
@@ -161,6 +161,19 @@ def test_finished_fixture_with_invalid_score_is_not_treated_as_settled():
                                 retrieved_at_utc=NOW, rights_approval_id="approval-test")
     assert parsed.fixtures[0].status is FixtureStatus.UNKNOWN
     assert parsed.fixtures[0].home_score is None
+
+
+def test_wildcard_and_out_of_scope_competitions_are_quarantined():
+    wildcard = approval(competition_scope="*")
+    decision = evaluate_fixture_import(fixture("105"), wildcard, evaluated_at_utc=NOW)
+    assert decision.status is ImportOutcomeStatus.QUARANTINED
+    assert decision.reason_code == "COMPETITION_OUTSIDE_SOURCE_APPROVAL"
+
+    scoped = approval(competition_scope="3118717965")
+    decision = evaluate_fixture_import(fixture("106", competition_id="4160026622"), scoped,
+                                       evaluated_at_utc=NOW)
+    assert decision.status is ImportOutcomeStatus.QUARANTINED
+    assert decision.reason_code == "COMPETITION_OUTSIDE_SOURCE_APPROVAL"
 
 
 def test_history_batch_imports_only_approved_settled_rows_and_reconciles_manifest():
