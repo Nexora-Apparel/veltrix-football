@@ -162,12 +162,19 @@ def _summarize(tool: str, data: dict) -> dict:
         books = [book for game in games if isinstance(game, dict)
                  for book in (game.get("books") or []) if isinstance(book, dict)]
         timestamps = sum(1 for book in books if _valid_timestamp(book.get("captured_at")))
+        archive = [book for book in books if str(book.get("source", "")).casefold() == "archive"]
+        final_rows = [book for book in books if str(book.get("source", "")).casefold() == "final"]
+        timestamped_archive = sum(1 for book in archive if _valid_timestamp(book.get("captured_at")))
+        timestamped_final = sum(1 for book in final_rows if _valid_timestamp(book.get("captured_at")))
         return {
             "status": "OK" if books else "OK_EMPTY",
             "game_rows": len(games),
             "book_rows": len(books),
-            "timestamped_book_rows": timestamps,
-            "timestamped_book_fraction": timestamps / len(books) if books else None,
+            "archive_book_rows": len(archive),
+            "timestamped_archive_book_rows": timestamped_archive,
+            "qualified_archive_timestamp_fraction": timestamped_archive / len(archive) if archive else None,
+            "final_book_rows": len(final_rows),
+            "final_rows_with_ingest_timestamp": timestamped_final,
             "rows_with_1x2": sum(1 for b in books if any(_number(b.get(k)) for k in ("home_ml_open", "home_ml_close", "draw_ml_open", "away_ml_close"))),
             "rows_with_totals": sum(1 for b in books if any(_number(b.get(k)) for k in ("total_open", "total_close", "over_odds", "under_odds"))),
         }
@@ -202,12 +209,26 @@ def _summarize(tool: str, data: dict) -> dict:
 
 def probe(api_key: str, send=_send, sleep=time.sleep) -> dict:
     if not api_key.strip():
-        return {
-            "schema_version": 1, "provider": "StrikerAPI",
+        report = {
+            "schema_version": 1,
+            "provider": "StrikerAPI",
             "mode": "bounded_non_live_feature_and_odds_qualification",
-            "status": "MISSING_SECRET", "calls": [], "credits_spent_estimate": 0,
+            "checked_at_utc": datetime.now(timezone.utc).isoformat(),
+            "status": "MISSING_SECRET",
+            "sample_game": {"game_id": None, "competition": None, "season": None},
+            "calls": [],
+            "credits_spent_estimate": 0,
             "maximum_credits": MAX_CREDITS,
+            "side_effects": {
+                "database_writes": 0,
+                "imports": 0,
+                "prediction_changes": 0,
+                "telegram_messages": 0,
+                "deployments": 0,
+            },
         }
+        report["report_sha256"] = _hash(report)
+        return report
 
     calls = []
     credits_spent = 0
@@ -235,7 +256,7 @@ def probe(api_key: str, send=_send, sleep=time.sleep) -> dict:
         })
         return data, True
 
-    end = date.today()
+    end = datetime.now(timezone.utc).date()
     start = end - timedelta(days=90)
     games_data, ok = call("list_games", {
         "league": "soccer",
