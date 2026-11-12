@@ -358,3 +358,22 @@ def test_postgres_writer_refuses_nested_secret_request_parameters():
     with pytest.raises(ValueError, match="PROVIDER_REQUEST_SECRET_PARAMETER_MUST_NOT_BE_STORED"):
         PostgresHistoryStore(connection_factory).persist_page(response, [], approval())
     assert not connection_requested
+
+
+
+def test_postgres_history_writer_is_read_only_by_default():
+    connection_requested = False
+
+    def connection_factory():
+        nonlocal connection_requested
+        connection_requested = True
+        raise AssertionError("default writer must not connect")
+
+    with pytest.raises(RuntimeError, match="HISTORY_DATABASE_WRITES_DISABLED"):
+        PostgresHistoryStore(connection_factory).persist_source_approval(approval())
+    assert not connection_requested
+
+
+def test_postgres_history_writer_requires_explicit_expected_database():
+    with pytest.raises(ValueError, match="EXPECTED_HISTORY_WRITE_DATABASE_REQUIRED"):
+        PostgresHistoryStore(lambda: None, allow_writes=True)
