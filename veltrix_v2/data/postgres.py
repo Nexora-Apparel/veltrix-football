@@ -152,6 +152,9 @@ class PostgresHistoryStore:
             raise ValueError("IMPORT_RUN_FINISH_TIME_MUST_BE_TIMEZONE_AWARE")
         if min(requests_used, records_seen, records_inserted, records_rejected, records_quarantined) < 0:
             raise ValueError("IMPORT_RUN_COUNTS_INVALID")
+        terminal_count = records_inserted + records_rejected + records_quarantined
+        if status == "COMPLETED" and terminal_count != records_seen:
+            raise ValueError("COMPLETED_IMPORT_RUN_HAS_UNACCOUNTED_RECORDS")
         conn = self._connect()
         try:
             cur = conn.cursor()
@@ -159,10 +162,10 @@ class PostgresHistoryStore:
                 """UPDATE import_runs SET status=%s,finished_at=%s,requests_used=%s,
                     records_seen=%s,records_inserted=%s,records_rejected=%s,
                     records_quarantined=%s,manifest_sha256=%s,reason_code=%s
-                   WHERE id=%s AND status='RUNNING'""",
+                   WHERE id=%s AND status='RUNNING' AND request_budget >= %s""",
                 (status, finished_at_utc, requests_used, records_seen, records_inserted,
                  records_rejected, records_quarantined, manifest_sha256, reason_code,
-                 import_run_id),
+                 import_run_id, requests_used),
             )
             if cur.rowcount != 1:
                 raise ValueError("IMPORT_RUN_NOT_RUNNING_OR_NOT_FOUND")
@@ -183,7 +186,7 @@ class PostgresHistoryStore:
     ) -> int:
         if checked_at_utc.tzinfo is None:
             raise ValueError("ENTITLEMENT_CHECK_TIME_MUST_BE_TIMEZONE_AWARE")
-        if len(evidence_sha256) != 64:
+        if len(evidence_sha256) != 64 or any(ch not in "0123456789abcdef" for ch in evidence_sha256.casefold()):
             raise ValueError("ENTITLEMENT_EVIDENCE_HASH_INVALID")
         conn = self._connect()
         try:
@@ -194,12 +197,20 @@ class PostgresHistoryStore:
                     competition_ids,rate_limit_hour,rate_limit_minute,quota_remaining,
                     provider_response_id,evidence_sha256,checked_at
                 ) VALUES (%s,%s,%s,%s,%s,%s::jsonb,%s,%s,%s,%s,%s,%s)
+                ON CONFLICT(provider,source_id,checked_at,evidence_sha256) DO NOTHING
                 RETURNING id""",
                 (provider, source_id, plan_code, entitlement_status, country_pack_code,
                  json.dumps(sorted(competition_ids)), rate_limit_hour, rate_limit_minute,
                  quota_remaining, provider_response_id, evidence_sha256, checked_at_utc),
             )
             row = cur.fetchone()
+            if not row:
+                cur.execute(
+                    """SELECT id FROM provider_entitlement_observations
+                       WHERE provider=%s AND source_id=%s AND checked_at=%s AND evidence_sha256=%s""",
+                    (provider, source_id, checked_at_utc, evidence_sha256),
+                )
+                row = cur.fetchone()
             if not row:
                 raise ValueError("ENTITLEMENT_OBSERVATION_INSERT_FAILED")
             conn.commit()
