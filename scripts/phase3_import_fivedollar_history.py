@@ -99,6 +99,8 @@ def run_import(database_url: str, api_key: str, *, days: int = 365,
     run_id = None
     status = "FAILED"
     failure_reason = None
+    watermark_advanced = False
+    watermark_error = None
 
     def call(path: str):
         nonlocal request_count, last_headers
@@ -290,20 +292,24 @@ def run_import(database_url: str, api_key: str, *, days: int = 365,
             records_quarantined=total_quarantined,
             manifest_sha256=manifest_sha256,
         )
-        watermark = store.get_sync_watermark(
-            provider=provider.PROVIDER,
-            data_class="fixture_result",
-            scope="community-seven-competitions",
-        )
-        expected_version = int(watermark[1]) if watermark else 0
-        store.advance_sync_watermark(
-            provider=provider.PROVIDER,
-            data_class="fixture_result",
-            scope="community-seven-competitions",
-            cursor_value=checked_at.isoformat(),
-            expected_version=expected_version,
-            updated_at_utc=datetime.now(timezone.utc),
-        )
+        try:
+            watermark = store.get_sync_watermark(
+                provider=provider.PROVIDER,
+                data_class="fixture_result",
+                scope="community-seven-competitions",
+            )
+            expected_version = int(watermark[1]) if watermark else 0
+            store.advance_sync_watermark(
+                provider=provider.PROVIDER,
+                data_class="fixture_result",
+                scope="community-seven-competitions",
+                cursor_value=checked_at.isoformat(),
+                expected_version=expected_version,
+                updated_at_utc=datetime.now(timezone.utc),
+            )
+            watermark_advanced = True
+        except Exception as exc:
+            watermark_error = type(exc).__name__ + ":" + str(exc)[:120]
         status = "COMPLETED"
         failure_reason = None
     except Exception as exc:
@@ -356,6 +362,8 @@ def run_import(database_url: str, api_key: str, *, days: int = 365,
         "request_budget": REQUEST_BUDGET,
         "competition_fixture_counts": dict(fixture_count_by_competition),
         "manifest_sha256": manifest_sha256,
+        "watermark_advanced": watermark_advanced,
+        "watermark_error": watermark_error,
         "raw_provider_responses_archived": len(response_hashes),
         "availability_basis": "provider_finished_status_conservative_4d",
         "point_in_time_certifiable": False,
