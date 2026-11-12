@@ -218,7 +218,7 @@ def test_value_bets_unlock_only_after_full_value_bet_certification():
 
 
 def test_failed_value_bet_certification_does_not_block_prediction_publication():
-    failed_value_cert = certify_release(
+    failed_value_cert = _certify_release_from_derived_evidence(
         [
             MarketCertificationEvidence(
                 market=market, walk_forward_matches=1000,
