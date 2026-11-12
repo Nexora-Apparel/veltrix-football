@@ -31,6 +31,8 @@ class NormalizedBookProbability:
     line: Decimal | None
     captured_at: datetime
     kickoff_at: datetime
+    provider_quote_at: datetime
+    source_observation_id: str
     snapshot_id: str
     decimal_odds: Decimal
     raw_implied_probability: Decimal
@@ -47,6 +49,15 @@ class NormalizedBookProbability:
             if not isinstance(value, datetime) or value.tzinfo is None or value.utcoffset() is None:
                 raise ValueError(f"NORMALIZED_ODDS_{field.upper()}_MUST_BE_AWARE")
             object.__setattr__(self, field, value.astimezone(timezone.utc))
+        provider_quote_at = self.provider_quote_at
+        if not isinstance(provider_quote_at, datetime) or provider_quote_at.tzinfo is None or provider_quote_at.utcoffset() is None:
+            raise ValueError("NORMALIZED_ODDS_PROVIDER_QUOTE_TIMESTAMP_REQUIRED")
+        provider_quote_at = provider_quote_at.astimezone(timezone.utc)
+        if provider_quote_at >= self.kickoff_at or provider_quote_at > self.captured_at:
+            raise ValueError("NORMALIZED_ODDS_PROVIDER_QUOTE_TIMESTAMP_INVALID")
+        object.__setattr__(self, "provider_quote_at", provider_quote_at)
+        if not isinstance(self.source_observation_id, str) or not self.source_observation_id.strip():
+            raise ValueError("NORMALIZED_ODDS_SOURCE_OBSERVATION_ID_REQUIRED")
         if self.captured_at >= self.kickoff_at:
             raise ValueError("NORMALIZED_ODDS_CAPTURE_MUST_PRECEDE_KICKOFF")
         for field in ("decimal_odds", "raw_implied_probability", "normalized_probability", "overround"):
@@ -81,6 +92,7 @@ def normalize_bookmaker_market(
     group_key = (
         first.fixture_id, first.source_id, first.bookmaker_id, first.market.upper(),
         first.line, first.captured_at, first.kickoff_at,
+        first.provider_quote_at, first.source_observation_id,
     )
     seen_ids: set[str] = set()
     by_selection: dict[str, OddsSnapshot] = {}
@@ -88,6 +100,7 @@ def normalize_bookmaker_market(
         key = (
             row.fixture_id, row.source_id, row.bookmaker_id, row.market.upper(),
             row.line, row.captured_at, row.kickoff_at,
+            row.provider_quote_at, row.source_observation_id,
         )
         if key != group_key:
             raise ValueError("ODDS_MARKET_GROUP_MISMATCH")
@@ -134,6 +147,8 @@ def normalize_bookmaker_market(
             line=row.line,
             captured_at=row.captured_at,
             kickoff_at=row.kickoff_at,
+            provider_quote_at=row.provider_quote_at,
+            source_observation_id=row.source_observation_id,
             snapshot_id=row.snapshot_id,
             decimal_odds=row.decimal_odds,
             raw_implied_probability=raw[selection],
