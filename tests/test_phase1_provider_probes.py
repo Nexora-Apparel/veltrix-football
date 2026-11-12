@@ -20,6 +20,10 @@ class AccountProbeTests(unittest.TestCase):
                          "pagination": {"has_more": False}}, {"X-RateLimit-Limit": "300"})
             if path.startswith("/leagues/"):
                 return ({"data": [{"id": "fx-1"}]}, {})
+            if path.endswith("/odds/history?market=btts"):
+                return ({"data": {"ticks": [
+                    {"recorded_at": "2026-11-10T10:00:00Z", "home": 1.8, "away": 2.0}
+                ]}}, {})
             if path.startswith("/fixtures/"):
                 return ({"data": {"bookmakers": [{"odds": {
                     "1x2": {"opening": {"opened_at": "2026-11-10T10:00:00Z"},
@@ -32,7 +36,9 @@ class AccountProbeTests(unittest.TestCase):
         self.assertEqual(report["plan"], "community")
         self.assertEqual(report["competition_count_page_1"], 1)
         self.assertFalse(report["pagination"]["has_more"])
-        self.assertEqual(report["request_count"], 4)
+        self.assertEqual(report["request_count"], 5)
+        self.assertEqual(report["odds_history_endpoint_probe"]["status"], "OK_WITH_TIMESTAMPED_TICKS")
+        self.assertEqual(report["odds_history_endpoint_probe"]["timestamped_ticks"], 1)
         self.assertTrue(report["odds_samples"][0]["one_x_two_opened_at"])
         self.assertEqual(report["odds_timestamped_market_blocks_sampled"], 1)
         self.assertNotIn("not-a-real-secret", str(report))
