@@ -20,6 +20,11 @@ PROVIDER_ATTRIBUTION_RULES = {
     "5dollarfootballapi": "Football data by 5DollarFootballAPI — https://5dollarfootballapi.com",
     "openligadb": "Data by OpenLigaDB (ODbL 1.0) — https://www.openligadb.de",
     "openfootball": None,
+    "wyscout_open_data": (
+        "Shot-event training data: Pappalardo et al. (2019), Wyscout Soccer Match Event Dataset, "
+        "CC BY 4.0 — https://doi.org/10.1038/s41597-019-0247-7 "
+        "(adapted for the VELTRIX xG model)."
+    ),
 }
 
 
