@@ -187,3 +187,12 @@ predates public availability. The internal rights approval identity is
 `approval-wyscout-open-data-cc-by-4.0`; the corresponding source approval must
 carry collection, storage, model-training, benchmarking, public-display and
 commercial-use permissions with the CC BY 4.0 attribution.
+
+
+The Community acceptance workflow now fails unless the account reports
+`plan=community` and exposes at least six competitions (the five top leagues
+plus at least one country-pack competition). It probes one scheduled fixture
+per accessible league, bounded to eight fixture/odds pairs. A five-league
+Free-plan catalogue cannot pass. The Odds API adapter also requires a nonblank
+source-observation ID for every parsed or fetched quote; missing lineage is
+rejected before a snapshot can be produced.
