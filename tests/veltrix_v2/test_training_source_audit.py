@@ -514,3 +514,37 @@ def test_value_bet_certification_derives_metrics_and_benchmark_from_records(monk
     assert "SOURCE_NOT_APPROVED" not in result.markets[0].failed_gates
     assert "TIMESTAMPED_ODDS_COVERAGE_BELOW_98_PERCENT" in result.markets[1].failed_gates
     assert result.evidence[0].timestamped_odds_coverage == Decimal("1")
+
+
+
+def test_prediction_source_audit_requires_public_display_and_commercial_rights(monkeypatch):
+    report = _walk_forward(monkeypatch)
+    audit = audit_walk_forward_training_sources(
+        report,
+        _source_records(),
+        (_approval(permitted_uses=("collection", "storage", "model_training")),),
+    )
+    assert not audit.passed
+    assert any(
+        "public_display,commercial_use" in reason
+        for _, reason in audit.rejected_observations
+    )
+
+
+def test_odds_source_audit_requires_commercial_benchmarking_rights(monkeypatch):
+    report = _walk_forward(monkeypatch)
+    audit = audit_odds_snapshot_sources(
+        report,
+        (_odds_snapshot(),),
+        _source_records(),
+        (_approval(
+            data_type="odds_quote",
+            approval_id="approval-odds",
+            permitted_uses=("collection", "storage", "benchmarking"),
+        ),),
+    )
+    assert not audit.passed
+    assert any(
+        "commercial_use" in reason
+        for _, reason in audit.rejected_snapshots
+    )
