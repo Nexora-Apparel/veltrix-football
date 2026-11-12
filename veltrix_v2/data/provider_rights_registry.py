@@ -10,7 +10,6 @@ from veltrix_v2.data.contracts import ApprovalStatus, DataUsePurpose, SourceAppr
 
 REVIEWER_ID = "VELTRIX_PHASE2_RIGHTS_REVIEW_2026_11_12"
 REPOSITORY = "Nexora-Apparel/veltrix-football"
-BRANCH = "phase2/provider-rights-access"
 
 
 def _approval(
@@ -37,11 +36,7 @@ def _approval(
     evidence_file = root / evidence_path
     evidence_bytes = evidence_file.read_bytes()
     evidence_sha256 = hashlib.sha256(evidence_bytes).hexdigest()
-    evidence_ref = (
-        f"https://github.com/{REPOSITORY}/blob/"
-        f"{'main' if evidence_path != 'docs/legal/the-odds-api-terms-review-2026-11-12.md' else BRANCH}/"
-        f"{evidence_path}"
-    )
+    evidence_ref = f"https://github.com/{REPOSITORY}/blob/main/{evidence_path}"
     return SourceApproval(
         approval_id=approval_id,
         provider=provider,
