@@ -57,11 +57,16 @@ def parse_fivedollar_fixture_odds(
     captured_at: datetime,
     bookmaker_slug: str = "bet365",
     total_line: Decimal = Decimal("2.5"),
+    source_observation_id: str | None = None,
 ) -> FiveDollarOddsCapture:
     if not isinstance(payload, dict) or payload.get("success") != 1:
         raise ValueError("FIVEDOLLAR_ODDS_RESPONSE_NOT_SUCCESS")
     if not fixture_id or not fixture_id.strip():
         raise ValueError("FIVEDOLLAR_ODDS_FIXTURE_ID_REQUIRED")
+    if source_observation_id is not None and (
+        not isinstance(source_observation_id, str) or not source_observation_id.strip()
+    ):
+        raise ValueError("FIVEDOLLAR_ODDS_SOURCE_OBSERVATION_ID_INVALID")
     if kickoff_at.tzinfo is None or kickoff_at.utcoffset() is None:
         raise ValueError("FIVEDOLLAR_ODDS_KICKOFF_MUST_BE_AWARE")
     if captured_at.tzinfo is None or captured_at.utcoffset() is None:
@@ -114,6 +119,7 @@ def parse_fivedollar_fixture_odds(
                 captured_at=capture,
                 kickoff_at=kickoff,
                 line=line,
+                source_observation_id=source_observation_id,
             ))
         present.add(market)
 
