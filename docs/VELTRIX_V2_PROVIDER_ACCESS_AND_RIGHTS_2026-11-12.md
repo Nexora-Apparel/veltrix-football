@@ -145,3 +145,23 @@ The public repository describes the data as available for research and genuine i
 Official reference:
 - https://github.com/hudl/open-data
 - https://raw.githubusercontent.com/hudl/open-data/master/LICENSE.pdf
+
+
+### Wyscout Soccer Match Event Dataset (Pappalardo et al. 2019) — historical shot-event training
+
+<badge color="success">Approved for historical model training with attribution</badge>
+
+**Decision:** approved as a historical shot-event dataset for building VELTRIX's own xG model, subject to retaining the CC BY 4.0 attribution and change notice. It is not a live data provider and does not supply current-season shot events.
+
+The peer-reviewed data descriptor states that the seven datasets are released under CC BY 4.0. The dataset contains 1,941 matches across the 2017/18 Spanish, Italian, English, German and French first divisions, the 2018 FIFA World Cup and UEFA Euro 2016. The processed event files contain shot events, event tags, player/team identifiers, event times and pitch positions.
+
+VELTRIX must train its own xG estimator from shot locations and event context. The dataset does not provide a ready-made xG target. Do not describe a derived VELTRIX xG value as an official Wyscout xG value. Retain original source metadata, payload hashes, license and attribution. Do not use the dataset as a current-season feature feed or claim current lineups, player availability or match statistics from it.
+
+Required attribution:
+**Shot-event training data: Pappalardo et al. (2019), “A public data set of spatio-temporal match events in soccer competitions”, CC BY 4.0. Adapted to train the VELTRIX xG model.**
+
+Official references:
+- https://www.nature.com/articles/s41597-019-0247-7
+- https://figshare.com/collections/Soccer_match_event_dataset/4415000
+- https://creativecommons.org/licenses/by/4.0/
+- https://github.com/koenvo/wyscout-soccer-match-event-dataset (processed mirror; the Figshare collection remains the canonical source)
