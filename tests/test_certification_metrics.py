@@ -95,7 +95,7 @@ def test_raw_certification_recomputes_profit_and_rejects_fabricated_roi(tmp_path
     settlements = [{
         "settlement_id": "settlement-1", "fixture_id": "fixture-1",
         "source_id": "source-a", "settled_at": "2026-01-01T20:00:00+00:00",
-        "status": "FT", "settlement_version": "settlement-v1", "outcome": "home",
+        "status": "FT", "settlement_version": "settlement-v1", "home_goals": 2, "away_goals": 1,
     }]
     manifest = _write_bundle(tmp_path, [], paper, odds, settlements)
     result = recompute_raw_certification(manifest, min_walk_forward=0, min_prospective=0, min_dates=0)
