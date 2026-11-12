@@ -22,6 +22,7 @@ The previous runtime predicate `app.value_bets._certificate_allows` accepted a m
 - Added `.github/workflows/certification-evidence-attestation.yml`; it can attest only a manifest that passes raw statistical gates on `main`. It has not been dispatched because no qualifying evidence bundle exists.
 - Added a dedicated GitHub Actions certification workflow. The focused certification/release-consumer suite passed on run 21; the full repository regression suite is still running.
 - The daily prediction workflow was triggered by PR activity but its prediction job was skipped. No production schedule, database write, Telegram delivery or Vercel deployment was activated.
+- A prior full regression run passed 555 tests; subsequent source-response and signer-hardening changes are awaiting a fresh current-head run.
 
 ## Remaining Phase 1 acceptance work
 
