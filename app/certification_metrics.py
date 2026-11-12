@@ -14,6 +14,7 @@ import random
 from collections import defaultdict
 from datetime import datetime
 from pathlib import Path
+from zoneinfo import ZoneInfo
 from typing import Any, Mapping
 
 from app.certification_evidence import verify_evidence_manifest, EvidenceIntegrityError
@@ -173,10 +174,17 @@ def _score(rows: list[dict[str, Any]], market: str, probability_key: str) -> dic
     return {"matches": len(selected), "brier_score": brier / len(selected), "log_loss": loss / len(selected)}
 
 
+def _match_date(value: Any) -> str:
+    parsed = _time(value)
+    if not parsed:
+        raise EvidenceIntegrityError("Match kickoff must be a timezone-aware timestamp.")
+    return parsed.astimezone(ZoneInfo("Africa/Lagos")).date().isoformat()
+
+
 def _cluster_lower_bound(rows: list[dict[str, Any]], iterations: int = 4000) -> float | None:
     groups: dict[str, list[dict[str, Any]]] = defaultdict(list)
     for row in rows:
-        groups[row["kickoff"][:10]].append(row)
+        groups[_match_date(row["kickoff"])].append(row)
     dates = sorted(groups)
     if len(dates) < 2:
         return None
@@ -217,6 +225,34 @@ def recompute_raw_certification(manifest_path: str | Path, *, min_walk_forward: 
     training_cutoff = _time(model_manifest.get("training_data_cutoff"))
     if not training_cutoff or not model_manifest.get("feature_schema_version"):
         raise EvidenceIntegrityError("model_manifest must pin timezone-aware training cutoff and feature schema version.")
+    fold_rows = model_manifest.get("walk_forward_folds", [])
+    if not isinstance(fold_rows, list):
+        raise EvidenceIntegrityError("model_manifest walk_forward_folds must be a list.")
+    fold_by_id: dict[str, dict[str, Any]] = {}
+    fold_orders: set[int] = set()
+    for fold in fold_rows:
+        if not isinstance(fold, dict):
+            raise EvidenceIntegrityError("Every walk-forward fold manifest entry must be an object.")
+        fold_id, order = fold.get("fold_id"), fold.get("order")
+        cutoff, test_start, test_end = (
+            _time(fold.get("training_data_cutoff")),
+            _time(fold.get("test_start")),
+            _time(fold.get("test_end")),
+        )
+        if not isinstance(fold_id, str) or not fold_id or fold_id in fold_by_id:
+            raise EvidenceIntegrityError("Walk-forward fold IDs must be non-empty and unique.")
+        if not isinstance(order, int) or isinstance(order, bool) or order < 0 or order in fold_orders:
+            raise EvidenceIntegrityError("Walk-forward fold order values must be unique non-negative integers.")
+        if not cutoff or not test_start or not test_end or not (training_cutoff <= cutoff < test_start <= test_end):
+            raise EvidenceIntegrityError("Walk-forward fold training/test windows are invalid or non-chronological.")
+        fold_by_id[fold_id] = {**fold, "_cutoff": cutoff, "_test_start": test_start, "_test_end": test_end}
+        fold_orders.add(order)
+    ordered_folds = sorted(fold_by_id.values(), key=lambda item: item["order"])
+    for previous, current in zip(ordered_folds, ordered_folds[1:]):
+        if current["_cutoff"] < previous["_cutoff"] or current["_test_start"] <= previous["_test_end"]:
+            raise EvidenceIntegrityError("Walk-forward fold windows overlap or training cutoffs move backwards.")
+    if walk and not fold_by_id:
+        raise EvidenceIntegrityError("Non-empty walk-forward rows require a pinned fold manifest.")
     if not isinstance(data["coverage_audit"], dict):
         raise EvidenceIntegrityError("coverage_audit must be a structured object.")
     if data["coverage_audit"].get("rights_status") != "APPROVED_FOR_INTENDED_USE" or data["coverage_audit"].get("commercial_use_eligible") is not True:
@@ -339,11 +375,18 @@ def recompute_raw_certification(manifest_path: str | Path, *, min_walk_forward: 
         if any(not isinstance(name, str) or not name for name in feature_names) or len(set(feature_names)) != len(feature_names):
             failures[market].append("walk-forward feature names are missing or duplicated")
             continue
+        fold = fold_by_id.get(str(row.get("fold_id") or ""))
+        if not fold or row.get("fold_order") != fold.get("order"):
+            failures[market].append("walk-forward row is not bound to a pinned chronological fold")
+            continue
+        if not (fold["_cutoff"] < predicted and fold["_test_start"] <= predicted <= fold["_test_end"]):
+            failures[market].append("walk-forward prediction falls outside its fold's point-in-time window")
+            continue
         if row.get("model_version") != model_manifest.get("model_version") or row.get("model_commit") != code_commit:
             failures[market].append("walk-forward model version or code commit mismatch")
             continue
-        if training_cutoff >= predicted:
-            failures[market].append("model training cutoff is not strictly before prediction time")
+        if fold["_cutoff"] < training_cutoff or fold["_cutoff"] >= predicted:
+            failures[market].append("fold training cutoff is not strictly before prediction time")
             continue
         if row.get("feature_schema_version") != model_manifest.get("feature_schema_version"):
             failures[market].append("walk-forward feature schema version mismatch")
@@ -482,6 +525,10 @@ def recompute_raw_certification(manifest_path: str | Path, *, min_walk_forward: 
 
     market_results: dict[str, Any] = {}
     for market in MARKETS:
+        ordered_rows = sorted(walk_by_market[market], key=lambda row: _time(row["prediction_at"]))
+        observed_fold_orders = [int(fold_by_id[row["fold_id"]]["order"]) for row in ordered_rows]
+        if any(current < previous for previous, current in zip(observed_fold_orders, observed_fold_orders[1:])):
+            failures[market].append("walk-forward prediction chronology moves backwards across folds")
         full = [row for row in walk_by_market[market] if row.get("split") == "full"]
         holdout = [row for row in walk_by_market[market] if row.get("split") == "recent_holdout"]
         # Count unique fixture IDs; duplicate split rows cannot inflate the sample.
@@ -503,7 +550,7 @@ def recompute_raw_certification(manifest_path: str | Path, *, min_walk_forward: 
                 elif model_scope["brier_score"] >= market_scope["brier_score"] or model_scope["log_loss"] >= market_scope["log_loss"]:
                     failures[market].append(f"{scope} 1X2 model does not beat de-vigged bookmaker Brier and log loss")
         selections = paper_by_market[market]
-        dates = {row["kickoff"][:10] for row in selections}
+        dates = {_match_date(row["kickoff"]) for row in selections}
         stake = sum(row["stake"] for row in selections)
         profit = sum(row["profit"] for row in selections)
         roi = profit / stake if stake else None
