@@ -24,6 +24,7 @@ if str(ROOT) not in sys.path:
 from app.value_bets import build_value_validation_certificate, attach_value_bet_screens
 from app.goal_market_calibration import apply_goal_market_calibration
 from app.certification_metrics import recompute_raw_certification
+from app.certification_evidence import verify_github_artifact_attestation
 
 API_ROOT = "https://api.github.com"
 
@@ -119,6 +120,10 @@ def build(report_path: str, ledger_path: str, certificate_path: str, *, backtest
         # Raw recomputation is diagnostic only until source authenticity and
         # signed rights/provenance attestation are independently established.
         certificate["raw_evidence_audit"] = recompute_raw_certification(evidence_manifest_path)
+        certificate["evidence_attestation"] = verify_github_artifact_attestation(
+            evidence_manifest_path, repository=repo or os.getenv("GITHUB_REPOSITORY") or "Nexora-Apparel/veltrix-football",
+            token=token or os.getenv("GH_TOKEN") or os.getenv("GITHUB_TOKEN"),
+        )
         certificate["status"] = "LOCKED_SOURCE_ATTESTATION_REQUIRED"
         certificate["approved_markets"] = []
         certificate["betting_validation"] = False
