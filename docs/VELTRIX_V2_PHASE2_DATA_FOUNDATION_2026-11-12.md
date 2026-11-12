@@ -126,7 +126,7 @@ This is an explicitly labelled conservative proxy, not a verified provider publi
 - Source-approval and rights-evaluation contracts that fail closed.
 - Strict 5Dollar fixture/result parser requiring complete pagination metadata, stable provider IDs, timezone-aware kickoff and integer settled scores.
 - Batch assessment, duplicate detection, explicit rejected/quarantined outcomes and SHA-256 source manifest.
-- PostgreSQL writer targeting the existing `public` schema; raw responses and observations are append-only, fixture identity conflicts and result conflicts are quarantined.
+- PostgreSQL writer targeting the existing `public` schema; writes are disabled by default, require an explicit expected database name, and hard-reject the production database names. Raw responses and observations are append-only; fixture identity conflicts and result conflicts are quarantined.
 - Manual 365-day read-only workflow; 40-request hard cap, 4-second pacing, exact seven-competition allowlist, no database writes, sanitized report artifact.
 - PostgreSQL 16/18 migration and append-only trigger acceptance.
 
