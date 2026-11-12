@@ -79,6 +79,11 @@ def _approval(*, permitted_uses=("collection", "storage", "model_training", "ben
         status="approved",
         valid_from_utc=datetime(2025, 1, 1, tzinfo=UTC),
         permitted_uses=permitted_uses,
+        evidence_uri="https://example.test/provider-terms",
+        evidence_sha256="b" * 64,
+        reviewed_at_utc=datetime(2025, 1, 2, tzinfo=UTC),
+        reviewer_id="test-rights-reviewer",
+        rights_basis="terms",
     )
 
 
@@ -433,21 +438,49 @@ def _paper_ledger_and_records():
     )
     approvals = (
         SourceApproval(
-            "approval-team", "provider-a", "league-a", "team_stats", "approved",
-            datetime(2025, 1, 1, tzinfo=UTC),
-            ("collection", "storage", "model_training", "public_display", "commercial_use"),
+            approval_id="approval-team",
+            provider="provider-a",
+            competition_key="league-a",
+            data_type="team_stats",
+            status="approved",
+            valid_from_utc=datetime(2025, 1, 1, tzinfo=UTC),
+            permitted_uses=("collection", "storage", "model_training", "public_display", "commercial_use"),
+            evidence_uri="https://example.test/team-terms",
+            evidence_sha256="c" * 64,
+            reviewed_at_utc=datetime(2025, 1, 2, tzinfo=UTC),
+            reviewer_id="test-rights-reviewer",
+            rights_basis="terms",
         ),
         SourceApproval(
-            "approval-odds", "provider-a", "league-a", "odds_quote", "approved",
-            datetime(2025, 1, 1, tzinfo=UTC),
-            ("collection", "storage", "benchmarking", "commercial_use"),
+            approval_id="approval-odds",
+            provider="provider-a",
+            competition_key="league-a",
+            data_type="odds_quote",
+            status="approved",
+            valid_from_utc=datetime(2025, 1, 1, tzinfo=UTC),
+            permitted_uses=("collection", "storage", "benchmarking", "commercial_use"),
+            evidence_uri="https://example.test/odds-terms",
+            evidence_sha256="d" * 64,
+            reviewed_at_utc=datetime(2025, 1, 2, tzinfo=UTC),
+            reviewer_id="test-rights-reviewer",
+            rights_basis="terms",
         ),
         SourceApproval(
-            "approval-result", "provider-a", "league-a", "match_result", "approved",
-            datetime(2025, 1, 1, tzinfo=UTC),
-            ("collection", "storage", "benchmarking", "model_training", "public_display", "commercial_use"),
+            approval_id="approval-result",
+            provider="provider-a",
+            competition_key="league-a",
+            data_type="match_result",
+            status="approved",
+            valid_from_utc=datetime(2025, 1, 1, tzinfo=UTC),
+            permitted_uses=("collection", "storage", "benchmarking", "model_training", "public_display", "commercial_use"),
+            evidence_uri="https://example.test/results-terms",
+            evidence_sha256="e" * 64,
+            reviewed_at_utc=datetime(2025, 1, 2, tzinfo=UTC),
+            reviewer_id="test-rights-reviewer",
+            rights_basis="terms",
         ),
     )
+
     return ledger, records, approvals
 
 
