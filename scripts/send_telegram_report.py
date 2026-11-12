@@ -218,6 +218,7 @@ def format_report_messages(report: dict[str, Any], ledger: dict[str, Any] | None
         DIVIDER,
         f"⚽ VELTRIX FOOTBALL AI · DAILY INTELLIGENCE",
         f"📅 {day} · Kick-off times: WAT",
+        "Football data by 5DollarFootballAPI · https://5dollarfootballapi.com",
         "",
     ]
     blocks: list[list[str]] = []
