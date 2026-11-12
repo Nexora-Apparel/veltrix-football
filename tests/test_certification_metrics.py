@@ -135,3 +135,25 @@ def test_raw_certification_rejects_unapproved_rights(tmp_path):
     manifest.write_text(json.dumps(manifest_payload), encoding="utf-8")
     with pytest.raises(EvidenceIntegrityError, match="approved rights"):
         recompute_raw_certification(manifest)
+
+
+
+def test_raw_certification_rejects_altered_provider_response_bytes(tmp_path):
+    body = base64.b64encode(b'{"events":[]}').decode("ascii")
+    response = {
+        "response_id": "raw-1", "source_id": "source-a",
+        "fetched_at": "2026-01-01T17:00:00+00:00", "http_status": 200,
+        "request_fingerprint": "b" * 64,
+        "response_sha256": hashlib.sha256(base64.b64decode(body)).hexdigest(),
+        "body_base64": body,
+    }
+    manifest = _write_bundle(tmp_path, [], [], [], [], [response])
+    response["body_base64"] = base64.b64encode(b'{"events":[{"tampered":true}]}').decode("ascii")
+    (tmp_path / "source_responses.json").write_text(json.dumps({"rows": [response]}), encoding="utf-8")
+    payload = json.loads(manifest.read_text(encoding="utf-8"))
+    for artifact in payload["artifacts"]:
+        if artifact["role"] == "source_responses":
+            artifact["sha256"] = hashlib.sha256((tmp_path / artifact["path"]).read_bytes()).hexdigest()
+    manifest.write_text(json.dumps(payload), encoding="utf-8")
+    with pytest.raises(EvidenceIntegrityError, match="response body SHA-256 mismatch"):
+        recompute_raw_certification(manifest)
