@@ -24,6 +24,7 @@ class BookmakerComparison1X2:
     model_coverage: float
     bookmaker_coverage: float
     common_sample_size: int
+    common_fixture_ids: tuple[str, ...]
     comparison: BenchmarkComparison1X2
 
 
@@ -120,5 +121,6 @@ def compare_1x2_to_bookmaker(
         model_coverage=len(model_by_fixture) / len(eligible),
         bookmaker_coverage=len(book_by_fixture) / len(eligible),
         common_sample_size=len(common),
+        common_fixture_ids=common,
         comparison=comparison,
     )
