@@ -141,8 +141,8 @@ def test_training_source_audit_uses_recorded_fold_cutoff_and_rights(monkeypatch)
         (_approval(),),
     )
     assert audit.passed
-    assert audit.observation_count == 1
-    assert audit.approved_observation_ids == ("obs-train-1",)
+    assert audit.observation_count == 2
+    assert audit.approved_observation_ids == ("obs-test-1", "obs-train-1")
     assert audit.rejected_observations == ()
 
 
