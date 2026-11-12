@@ -112,7 +112,11 @@ def main() -> dict:
             fetched_at_utc=now,
         )
 
-    store = PostgresHistoryStore(lambda: psycopg.connect(database_url))
+    store = PostgresHistoryStore(
+        lambda: psycopg.connect(database_url),
+        allow_writes=True,
+        expected_database=expected_db,
+    )
     store.persist_source_approval(approval)
     run_id = store.start_import_run(
         provider="5DollarFootballAPI", import_type="historical_fixture_results",
