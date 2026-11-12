@@ -766,3 +766,49 @@ class ReleaseSourceAuditBundle:
     @property
     def point_in_time_validated(self) -> bool:
         return self.walk_forward_integrity.passed and self.source_approved
+
+
+@dataclass(frozen=True, slots=True)
+class PredictionAuditBundle:
+    """Actual provenance, leakage and held-out calibration reports retained."""
+
+    source_audit: TrainingSourceAudit
+    integrity_audit: WalkForwardIntegrityAudit
+    calibration_1x2: "CalibrationReport1X2 | None"
+    calibration_btts: "BinaryCalibrationReport | None"
+    calibration_totals: "BinaryCalibrationReport | None"
+    calibration_gates: tuple["CalibrationGateResult", ...]
+
+    def __post_init__(self) -> None:
+        from veltrix_v2.evaluation.binary_calibration import BinaryCalibrationReport
+        from veltrix_v2.evaluation.calibration import CalibrationReport1X2
+        from veltrix_v2.evaluation.calibration_gate import CalibrationGateResult
+        if not isinstance(self.source_audit, TrainingSourceAudit):
+            raise ValueError("PREDICTION_AUDIT_SOURCE_REPORT_REQUIRED")
+        if not isinstance(self.integrity_audit, WalkForwardIntegrityAudit):
+            raise ValueError("PREDICTION_AUDIT_INTEGRITY_REPORT_REQUIRED")
+        if self.calibration_1x2 is not None and not isinstance(self.calibration_1x2, CalibrationReport1X2):
+            raise ValueError("PREDICTION_AUDIT_1X2_CALIBRATION_REPORT_INVALID")
+        if self.calibration_btts is not None and not isinstance(self.calibration_btts, BinaryCalibrationReport):
+            raise ValueError("PREDICTION_AUDIT_BTTS_CALIBRATION_REPORT_INVALID")
+        if self.calibration_totals is not None and not isinstance(self.calibration_totals, BinaryCalibrationReport):
+            raise ValueError("PREDICTION_AUDIT_TOTALS_CALIBRATION_REPORT_INVALID")
+        gates = tuple(self.calibration_gates)
+        if any(not isinstance(row, CalibrationGateResult) for row in gates):
+            raise ValueError("PREDICTION_AUDIT_CALIBRATION_GATE_RESULT_INVALID")
+        object.__setattr__(self, "calibration_gates", gates)
+
+    def calibration_passed(self, market: str) -> bool:
+        if market == "1X2":
+            rows = tuple(row for row in self.calibration_gates if row.market.startswith("1X2:"))
+            return len(rows) == 3 and all(row.passed for row in rows)
+        rows = tuple(row for row in self.calibration_gates if row.market == market)
+        return len(rows) == 1 and rows[0].passed
+
+    @property
+    def source_approved(self) -> bool:
+        return self.source_audit.passed
+
+    @property
+    def point_in_time_validated(self) -> bool:
+        return self.integrity_audit.passed and self.source_audit.passed
