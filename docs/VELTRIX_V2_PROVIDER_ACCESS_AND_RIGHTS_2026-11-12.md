@@ -27,6 +27,9 @@ Preferred country-pack candidate: Argentina, subject to its availability in the 
 
 The API does not supply xG, player statistics, injuries, transfers or confirmed lineups. Do not infer these fields from scores or odds.
 
+**Timestamp limitation for odds certification:** the documented Community-access odds endpoint returns an `opened_at` timestamp for the Bet365 1X2 opening quote, but the documented closing quote and most other market-stage objects do not carry a provider quote timestamp. The full tick-history endpoint, which returns per-tick `recorded_at`, requires Ultra. Therefore Community-access 5Dollar odds may be used for bounded market-availability checks and only for quote rows whose actual provider timestamp is present; they must not be assumed to satisfy the 98% timestamped-odds certification gate. The Odds API remains the preferred certification benchmark source. The 5Dollar smoke workflow's market counts are not timestamp-coverage evidence.
+
+
 Official references:
 - https://5dollarfootballapi.com/terms
 - https://5dollarfootballapi.com/community
