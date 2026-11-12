@@ -151,6 +151,26 @@ def main() -> dict:
     repeated = store.persist_page(first_response, [fixture], approval, import_run_id=run_id)
     assert first["source_observations"] == 1 and first["fixtures_inserted"] == 1
     assert first["result_versions_inserted"] == 1 and first["results_inserted"] == 1
+    with psycopg.connect(database_url) as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT response_sha256,raw_body FROM provider_responses WHERE request_id='phase2-ci-page-1'"
+            )
+            stored_response_hash, stored_response_body = cur.fetchone()
+            cur.execute(
+                """SELECT so.payload_sha256,so.provider_response_id,pr.response_sha256
+                   FROM source_observations so
+                   JOIN provider_responses pr ON pr.id=so.provider_response_id
+                   WHERE so.provider_entity_id='987654321'"""
+            )
+            stored_observation = cur.fetchone()
+    assert stored_response_body == first_response.raw_body
+    assert stored_response_hash.strip() == hashlib.sha256(stored_response_body).hexdigest()
+    assert stored_response_hash.strip() == first_response.response_sha256
+    assert stored_observation[0] == fixture.payload_sha256
+    assert stored_observation[2].strip() == first_response.response_sha256
+    raw_evidence_link_verified = stored_observation[1] is not None
+    assert raw_evidence_link_verified
     assert repeated["source_observations"] == 0 and repeated["fixtures_inserted"] == 0
     assert repeated["result_versions_inserted"] == 0 and repeated["results_inserted"] == 0
 
@@ -395,6 +415,7 @@ def main() -> dict:
         "terminal_checkpoint_rewrite_rejected": checkpoint_terminal_rewrite_rejected,
         "revoked_source_quarantined": revoked_quarantined,
         "duplicate_fixture_quarantined": duplicate_quarantined,
+        "raw_response_bytes_and_provenance_link_verified": raw_evidence_link_verified,
     }
 
 
