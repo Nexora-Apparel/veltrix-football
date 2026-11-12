@@ -66,7 +66,7 @@ def _observation(*, available_at, approval_id="approval-1", event_at=None, provi
     )
 
 
-def _approval(*, permitted_uses=("collection", "storage", "model_training", "benchmarking"), data_type="match_result", approval_id="approval-result"):
+def _approval(*, permitted_uses=("collection", "storage", "model_training", "benchmarking", "public_display", "commercial_use"), data_type="match_result", approval_id="approval-result"):
     return SourceApproval(
         approval_id=approval_id,
         provider="provider-a",
@@ -423,17 +423,17 @@ def _paper_ledger_and_records():
         SourceApproval(
             "approval-team", "provider-a", "league-a", "team_stats", "approved",
             datetime(2025, 1, 1, tzinfo=UTC),
-            ("collection", "storage", "model_training"),
+            ("collection", "storage", "model_training", "public_display", "commercial_use"),
         ),
         SourceApproval(
             "approval-odds", "provider-a", "league-a", "odds_quote", "approved",
             datetime(2025, 1, 1, tzinfo=UTC),
-            ("collection", "storage", "benchmarking"),
+            ("collection", "storage", "benchmarking", "commercial_use"),
         ),
         SourceApproval(
             "approval-result", "provider-a", "league-a", "match_result", "approved",
             datetime(2025, 1, 1, tzinfo=UTC),
-            ("collection", "storage", "benchmarking", "model_training"),
+            ("collection", "storage", "benchmarking", "model_training", "public_display", "commercial_use"),
         ),
     )
     return ledger, records, approvals
