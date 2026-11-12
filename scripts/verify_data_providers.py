@@ -109,7 +109,10 @@ def check_fivedollar() -> str:
             item for item in leagues
             if league_country_code(item)
             and league_country_code(item) not in top_five_country_codes
-            and league_country_code(item) not in {"WORLD", "EUROPE", "AFRICA", "ASIA", "AMERICAS", "OCEANIA"}
+            and league_country_code(item) not in {
+                "WORLD", "EUROPE", "AFRICA", "ASIA", "AMERICAS", "OCEANIA",
+                "UEFA", "FIFA", "CONCACAF", "CONMEBOL", "CAF", "AFC",
+            }
         ]
         top_five_leagues = {
             code: next(
