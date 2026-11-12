@@ -196,3 +196,96 @@ def derive_market_evidence(
         roi_performance=performance,
     )
 
+
+
+@dataclass(frozen=True, slots=True)
+class TrainingObservationEvidence:
+    """Database observation identity joined to its immutable provider record."""
+
+    observation_id: str
+    observation: "ProviderObservation"
+
+    def __post_init__(self) -> None:
+        from veltrix_v2.contracts import ProviderObservation
+        if not isinstance(self.observation_id, str) or not self.observation_id.strip():
+            raise ValueError("CERTIFICATION_TRAINING_OBSERVATION_ID_REQUIRED")
+        if not isinstance(self.observation, ProviderObservation):
+            raise ValueError("CERTIFICATION_PROVIDER_OBSERVATION_REQUIRED")
+
+
+@dataclass(frozen=True, slots=True)
+class TrainingSourceAudit:
+    """Record-derived source and point-in-time audit for walk-forward training."""
+
+    observation_count: int
+    approved_observation_ids: tuple[str, ...]
+    rejected_observations: tuple[tuple[str, str], ...]
+    passed: bool
+
+
+def audit_walk_forward_training_sources(
+    walk_forward: MultiCompetitionWalkForwardEvaluation,
+    observations: Iterable[TrainingObservationEvidence],
+    approvals: Iterable["SourceApproval"],
+) -> TrainingSourceAudit:
+    """Revalidate each training observation against source rights and fold cutoff.
+
+    Each observation must exist, match its competition/season, be available by
+    the fold's recorded training-label cutoff, and have explicit collection,
+    storage and model-training rights. Caller-supplied approval booleans are
+    never accepted.
+    """
+    from datetime import timedelta
+    from veltrix_v2.contracts import ForecastCutoff
+    from veltrix_v2.quality.eligibility import SourceApproval, evaluate_observation
+
+    if not isinstance(walk_forward, MultiCompetitionWalkForwardEvaluation):
+        raise ValueError("CERTIFICATION_WALK_FORWARD_REPORT_REQUIRED")
+    observation_rows = tuple(observations)
+    approval_rows = tuple(approvals)
+    if any(not isinstance(row, TrainingObservationEvidence) for row in observation_rows):
+        raise ValueError("CERTIFICATION_TRAINING_OBSERVATION_EVIDENCE_TYPE_INVALID")
+    if any(not isinstance(row, SourceApproval) for row in approval_rows):
+        raise ValueError("CERTIFICATION_SOURCE_APPROVAL_TYPE_INVALID")
+    by_id = {row.observation_id: row.observation for row in observation_rows}
+    if len(by_id) != len(observation_rows):
+        raise ValueError("CERTIFICATION_DUPLICATE_TRAINING_OBSERVATION_ID")
+
+    approved: set[str] = set()
+    rejected: list[tuple[str, str]] = []
+    required_ids: set[str] = set()
+    for scope_report in walk_forward.scope_reports:
+        scope = (scope_report.competition_key, scope_report.season)
+        for fold in scope_report.folds:
+            cutoff = ForecastCutoff(fold.training_label_cutoff_utc)
+            for observation_id in fold.training_observation_ids:
+                required_ids.add(observation_id)
+                observation = by_id.get(observation_id)
+                if observation is None:
+                    rejected.append((observation_id, "training_observation_missing"))
+                    continue
+                if (observation.competition_key, observation.season) != scope:
+                    rejected.append((observation_id, "training_observation_scope_mismatch"))
+                    continue
+                decision = evaluate_observation(
+                    observation,
+                    data_type=observation.entity_type,
+                    cutoff=cutoff,
+                    approvals=approval_rows,
+                    max_age=timedelta.max,
+                    required_uses=("collection", "storage", "model_training"),
+                )
+                if not decision.eligible:
+                    rejected.append((observation_id, decision.reason))
+                else:
+                    approved.add(observation_id)
+
+    if not required_ids:
+        rejected.append(("*", "walk_forward_has_no_training_provenance"))
+    failures = tuple(sorted(set(rejected)))
+    return TrainingSourceAudit(
+        observation_count=len(required_ids),
+        approved_observation_ids=tuple(sorted(approved)),
+        rejected_observations=failures,
+        passed=bool(required_ids) and not failures and approved == required_ids,
+    )
