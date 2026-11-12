@@ -8,6 +8,8 @@ on:
       - "scripts/db_migrate.py"
       - "scripts/db_acceptance.py"
       - "scripts/phase2_postgres_store_acceptance.py"
+      - "scripts/phase3_import_fivedollar_history.py"
+      - "veltrix_v2/data/**"
       - "tests/test_db_migrations.py"
       - "tests/test_phase2_data_foundation.py"
       - ".github/workflows/postgres16-acceptance.yml"
