@@ -4,10 +4,10 @@ This contract is intentionally stricter than the existing aggregate report/ledge
 
 ## Artifact row schemas
 
-- `walk_forward_rows`: `rows[]` with `fixture_id`, `market`, `kickoff`, `prediction_at`, `features[]` (each with a unique name, value, timezone-aware `observed_at` and rights-approved `source_id`), `model_version`, `split` (`full` or `recent_holdout`), `outcome`, and probability maps. For 1X2, both `model_probabilities` and de-vigged `bookmaker_probabilities` must contain home/draw/away. Other markets use yes/no or over/under.
+- `walk_forward_rows`: `rows[]` with `fixture_id`, `market`, `kickoff`, `prediction_at`, `features[]` (each with a unique name, value, timezone-aware `observed_at` and rights-approved `source_id`), `model_version`, `split` (`full` or `recent_holdout`), `outcome`, and probability maps. For every market, `model_probabilities` must contain the complete outcome set. For 1X2, raw `bookmaker_odds` must contain decimal home/draw/away prices; the verifier derives proportional de-vigged probabilities itself. Other markets use yes/no or over/under.
 - `prospective_ledger`: `rows[]` with unique fixture/market, selection, kickoff, quote timestamps, odds snapshot ID, settlement ID, model version, outcome, won, stake, decimal odds, fees and recorded net profit.
-- `odds_snapshots`: `rows[]` with unique snapshot ID, fixture, market, observed timestamp and quote-updated timestamp.
-- `settlement_records`: `rows[]` with unique settlement ID, fixture ID, source ID, settlement timestamp, outcome and model version.
+- `odds_snapshots`: `rows[]` with unique snapshot ID, fixture, market, bookmaker, rights-approved source ID, kickoff, observed timestamp, quote-updated timestamp and exact decimal odds.
+- `settlement_records`: `rows[]` with unique settlement ID, fixture ID, rights-approved source ID, settlement timestamp, outcome, model version and (for goal markets) calibration version.
 - `model_manifest`: object with immutable `model_version`.
 - `coverage_audit`: must explicitly declare `rights_status: APPROVED_FOR_INTENDED_USE`, `commercial_use_eligible: true`, and the exact `approved_source_ids` used by feature, quote and settlement rows. Summary metric values are not trusted by the raw metric calculator.
 
@@ -18,3 +18,4 @@ All timestamps must be timezone-aware. Prediction time and latest feature-observ
 The verifier derives unique walk-forward fixture counts, same-fixture full/recent 1X2 Brier and log-loss comparisons, prospective selection count, distinct kickoff dates, timestamped-odds join coverage, net ROI after fees, and a deterministic 4,000-draw date-clustered percentile lower bound.
 
 A statistical pass is only diagnostic. It is not proof of provider rights, source authenticity, cryptographic signing, deployment equivalence, or operational safety. Runtime release remains fail-closed.
+\n\n## Execution\n\nRun `python scripts/verify_certification_evidence.py --manifest PATH` to recompute the raw evidence diagnostics. `scripts/build_value_certificate.py --evidence-manifest PATH` attaches the diagnostic audit while keeping all release markets locked.\n
