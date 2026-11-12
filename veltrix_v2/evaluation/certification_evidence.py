@@ -453,7 +453,13 @@ def audit_odds_snapshot_sources(
     approved: set[str] = set()
     rejected: list[tuple[str, str]] = []
     seen_snapshot_ids: set[str] = set()
+    audited_snapshot_ids: set[str] = set()
     for snapshot in snapshot_rows:
+        if snapshot.fixture_id not in fixture_scopes:
+            # Prospective paper-ledger odds are audited separately against
+            # their own forecast and selection records.
+            continue
+        audited_snapshot_ids.add(snapshot.snapshot_id)
         if snapshot.snapshot_id in seen_snapshot_ids:
             rejected.append((snapshot.snapshot_id, "duplicate_odds_snapshot_id"))
             continue
@@ -497,10 +503,10 @@ def audit_odds_snapshot_sources(
 
     failures = tuple(sorted(set(rejected)))
     return OddsSourceAudit(
-        snapshot_count=len(snapshot_rows),
+        snapshot_count=len(audited_snapshot_ids),
         approved_snapshot_ids=tuple(sorted(approved)),
         rejected_snapshots=failures,
-        passed=bool(snapshot_rows) and not failures and len(approved) == len(snapshot_rows),
+        passed=bool(audited_snapshot_ids) and not failures and len(approved) == len(audited_snapshot_ids),
     )
 
 
