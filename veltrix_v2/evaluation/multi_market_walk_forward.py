@@ -47,6 +47,7 @@ class MultiMarketFoldEvaluation:
     test_start_utc: datetime
     test_end_utc: datetime
     test_observation_ids: tuple[str, ...]
+    test_fixture_kickoffs: tuple[tuple[str, datetime], ...]
     test_fixture_count: int
     forecast_count: int
     abstained_fixture_ids: tuple[str, ...]
@@ -271,6 +272,9 @@ def run_multi_market_walk_forward(
             test_start_utc=fold.test_start_utc,
             test_end_utc=fold.test_end_utc,
             test_observation_ids=tuple(sorted(row.source_observation_id for row in test_rows)),
+            test_fixture_kickoffs=tuple(sorted(
+                (row.source_observation_id, row.kickoff_utc) for row in test_rows
+            )),
             test_fixture_count=len(test_rows),
             forecast_count=len(forecasts_1x2),
             abstained_fixture_ids=tuple(abstained),
