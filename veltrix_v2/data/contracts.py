@@ -171,6 +171,10 @@ class HistoricalFixture:
             _aware(value, field)
         if self.available_at_utc is not None:
             _aware(self.available_at_utc, "available_at_utc")
+            if self.available_at_utc < self.kickoff_at_utc:
+                raise ValueError("FIXTURE_RESULT_AVAILABILITY_PRECEDES_KICKOFF")
+        if self.source_event_time_utc != self.kickoff_at_utc:
+            raise ValueError("FIXTURE_SOURCE_EVENT_TIME_MUST_MATCH_KICKOFF")
         if len(self.payload_sha256) != 64 or any(
             ch not in "0123456789abcdef" for ch in self.payload_sha256.casefold()
         ):
