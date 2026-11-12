@@ -11,6 +11,7 @@ from veltrix_v2.evaluation.certification import (
     MarketCertificationEvidence,
     PredictionMarketEvidence,
     certify_prediction_publication,
+    certify_release,
     _certify_release_from_derived_evidence,
 )
 
@@ -236,3 +237,17 @@ def test_roi_certification_requires_market_matched_computed_performance():
         evidence("1X2", roi_performance=roi_performance("BTTS"))
     with pytest.raises(ValueError, match="SETTLED_COUNT_MISMATCH"):
         evidence("1X2", prospective_settled_selections=299)
+
+
+
+def test_value_bet_public_api_rejects_caller_supplied_metrics_and_boolean_claims():
+    with pytest.raises(ValueError, match="WALK_FORWARD_REPORT_REQUIRED"):
+        certify_release(
+            [evidence("1X2"), evidence("BTTS"), evidence("TOTALS")],
+            None,
+            (),
+            (),
+            (),
+            benchmark_source_id="odds-provider",
+            benchmark_bookmaker_id="sharp-book",
+        )
