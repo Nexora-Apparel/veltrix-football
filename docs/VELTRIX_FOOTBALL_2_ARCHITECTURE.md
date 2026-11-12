@@ -311,3 +311,12 @@ No model certification, value-bet unlock, public prediction release or 06:00 WAT
 - Regression tests cover the ROI-evidence binding, empty prospective ROI evidence, invalid 1X2 probability triplets, quarantined held-out records and unapproved held-out sources.
 - Latest verified at head `07513b3a1cb2a58a3e4409f9b8da3d1262f15a3f`: V2 foundation suite **376 passed**; full repository suite **874 passed**. Provider live probes were skipped by design. Daily prediction workflow remained skipped.
 - The latest follow-up benchmark probability-sum patch is at head `24a83eacd8c2f1c5f3ee9e5fc4ff54e51dd5bc58`; foundation suite **374 passed** and full repository suite **871 passed** at that head. Subsequent held-out-source changes have their own CI verification above. Re-run both suites after any further edits before treating the branch as green.
+
+
+## 16. Granular provider-use rights gate — 2026-11-12
+
+- `SourceApproval` now carries an explicit `permitted_uses` set: collection, storage, model training, benchmarking, public display and commercial use.
+- `evaluate_observation` requires the requested use scope (default: collection + storage + model training) to be explicitly approved. A generic provider approval no longer implies permission for every downstream use.
+- A source approved for internal model training but not public display/commercial use is rejected when those uses are requested. Provisional/revoked approvals and missing permissions remain fail-closed.
+- This is a stricter contract and regression-test improvement. It is not yet an end-to-end provider-rights integration: the production ingestion path must populate these permissions from reviewed terms before observations are accepted, and publication must request the public-display/commercial-use scope.
+- Latest verified head before this documentation update: `0ed39bf7308cf4a9d32226fdcb683f7a6eb61a98`; V2 foundation suite **379 passed**; full repository suite **877 passed**. Provider live probes were skipped by design. Daily prediction workflow remained skipped.
