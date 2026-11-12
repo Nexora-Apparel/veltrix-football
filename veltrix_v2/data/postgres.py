@@ -109,8 +109,59 @@ class PostgresHistoryStore:
             )
             if stored != expected:
                 raise ValueError("SOURCE_APPROVAL_IDEMPOTENCY_CONFLICT")
+            if approval.status is ApprovalStatus.APPROVED:
+                cur.execute(
+                    """INSERT INTO source_approval_status_events(
+                        approval_id,status,evidence_uri,evidence_sha256,effective_at,reason_code
+                    ) VALUES (%s,'APPROVED',%s,%s,%s,'APPROVAL_CREATED')
+                    ON CONFLICT(approval_id,status,evidence_sha256) DO NOTHING""",
+                    (approval.approval_id, approval.evidence_uri,
+                     approval.evidence_sha256, approval.valid_from_utc),
+                )
             conn.commit()
             return approval.approval_id
+        except Exception:
+            conn.rollback()
+            raise
+        finally:
+            conn.close()
+
+    def revoke_source_approval(
+        self, *, approval_id: str, evidence_uri: str, evidence_sha256: str,
+        effective_at_utc: datetime, reason_code: str,
+    ) -> None:
+        """Append a revocation event; never mutate the original approval record."""
+        if not approval_id.strip() or not evidence_uri.strip() or not reason_code.strip():
+            raise ValueError("SOURCE_APPROVAL_REVOCATION_EVIDENCE_REQUIRED")
+        if effective_at_utc.tzinfo is None or effective_at_utc.utcoffset() is None:
+            raise ValueError("SOURCE_APPROVAL_REVOCATION_TIME_MUST_BE_TIMEZONE_AWARE")
+        if len(evidence_sha256) != 64 or any(
+            ch not in "0123456789abcdef" for ch in evidence_sha256.casefold()
+        ):
+            raise ValueError("SOURCE_APPROVAL_REVOCATION_HASH_INVALID")
+        conn = self._connect_for_write()
+        try:
+            cur = conn.cursor()
+            cur.execute("SELECT 1 FROM source_approvals WHERE approval_id=%s", (approval_id,))
+            if not cur.fetchone():
+                raise ValueError("SOURCE_APPROVAL_NOT_FOUND")
+            cur.execute(
+                """INSERT INTO source_approval_status_events(
+                    approval_id,status,evidence_uri,evidence_sha256,effective_at,reason_code
+                ) VALUES (%s,'REVOKED',%s,%s,%s,%s)
+                ON CONFLICT(approval_id,status,evidence_sha256) DO NOTHING""",
+                (approval_id, evidence_uri, evidence_sha256, effective_at_utc, reason_code),
+            )
+            cur.execute(
+                """SELECT status,evidence_uri,effective_at,reason_code
+                   FROM source_approval_status_events
+                   WHERE approval_id=%s AND status='REVOKED' AND evidence_sha256=%s""",
+                (approval_id, evidence_sha256),
+            )
+            row = cur.fetchone()
+            if not row or tuple(row) != ('REVOKED', evidence_uri, effective_at_utc, reason_code):
+                raise ValueError("SOURCE_APPROVAL_REVOCATION_IDEMPOTENCY_CONFLICT")
+            conn.commit()
         except Exception:
             conn.rollback()
             raise
