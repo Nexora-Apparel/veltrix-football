@@ -557,3 +557,42 @@ def test_odds_source_audit_requires_commercial_benchmarking_rights(monkeypatch):
         "commercial_use" in reason
         for _, reason in audit.rejected_snapshots
     )
+
+
+
+def test_walk_forward_integrity_recomputes_aggregate_metrics_from_fold_records(monkeypatch):
+    report = _walk_forward(monkeypatch)
+    assert report.aggregate_1x2 is not None
+    forged_aggregate = replace(report.aggregate_1x2, sample_size=1000)
+    forged_report = replace(report, aggregate_1x2=forged_aggregate)
+
+    audit = audit_walk_forward_integrity(forged_report)
+
+    assert not audit.passed
+    assert "MULTI_COMPETITION_AGGREGATES_DO_NOT_MATCH_FOLD_RECORDS" in audit.failures
+
+
+def test_walk_forward_integrity_recomputes_scope_metrics_from_fold_records(monkeypatch):
+    report = _walk_forward(monkeypatch)
+    scope = report.scope_reports[0]
+    assert scope.aggregate_1x2 is not None
+    forged_scope = replace(
+        scope,
+        aggregate_1x2=replace(scope.aggregate_1x2, sample_size=1000),
+    )
+    forged_report = replace(report, scope_reports=(forged_scope,))
+
+    audit = audit_walk_forward_integrity(forged_report)
+
+    assert not audit.passed
+    assert "SCOPE_AGGREGATE_REPORT_DOES_NOT_MATCH_FOLD_RECORDS" in audit.failures
+
+
+def test_walk_forward_integrity_recomputes_report_counts_from_fold_records(monkeypatch):
+    report = _walk_forward(monkeypatch)
+    forged_report = replace(report, total_forecasts=1000)
+
+    audit = audit_walk_forward_integrity(forged_report)
+
+    assert not audit.passed
+    assert "MULTI_COMPETITION_COUNTS_DO_NOT_MATCH_FOLD_RECORDS" in audit.failures
