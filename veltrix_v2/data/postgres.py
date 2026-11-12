@@ -186,11 +186,20 @@ class PostgresHistoryStore:
                     updated_at=NOW(),records_rejected=EXCLUDED.records_rejected,
                     records_quarantined=EXCLUDED.records_quarantined,
                     requests_used=EXCLUDED.requests_used,response_sha256=EXCLUDED.response_sha256,
-                    last_error_code=EXCLUDED.last_error_code""",
+                    last_error_code=EXCLUDED.last_error_code
+                WHERE import_checkpoints.status NOT IN ('COMPLETED','FAILED')
+                  AND (import_checkpoints.status <> 'RUNNING' OR EXCLUDED.status <> 'PENDING')
+                  AND EXCLUDED.records_seen >= import_checkpoints.records_seen
+                  AND EXCLUDED.records_inserted >= import_checkpoints.records_inserted
+                  AND EXCLUDED.records_rejected >= import_checkpoints.records_rejected
+                  AND EXCLUDED.records_quarantined >= import_checkpoints.records_quarantined
+                  AND EXCLUDED.requests_used >= import_checkpoints.requests_used""",
                 (import_run_id, window_start, window_end, cursor_value, status,
                  records_seen, records_inserted, records_rejected, records_quarantined,
                  requests_used, response_sha256, last_error_code),
             )
+            if cur.rowcount != 1:
+                raise ValueError("IMPORT_CHECKPOINT_TERMINAL_OR_REGRESSION")
             conn.commit()
         except Exception:
             conn.rollback()
