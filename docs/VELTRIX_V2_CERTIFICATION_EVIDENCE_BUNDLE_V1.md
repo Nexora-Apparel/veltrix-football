@@ -24,7 +24,8 @@ Required roles (exactly one artifact per role):
 3. `prospective_ledger` — append-only prospective selection, quote reference, stake, settlement and payout records.
 4. `odds_snapshots` — raw bookmaker quote snapshots with provider, bookmaker, market, selection, decimal price, observed timestamp and fixture kickoff.
 5. `settlement_records` — source-attested final scores/results with source identifiers, observation timestamps and correction/version lineage.
-6. `source_responses` — raw provider response bodies encoded as base64, with source IDs, fetch timestamps, request fingerprints and recomputed response SHA-256 hashes. Feature, quote and settlement rows point to the exact retained response and JSON record pointer.\n7. `model_manifest` — immutable model code commit, model family/version, feature schema, calibration version and training-data cutoff.
+6. `source_responses` — raw provider response bodies encoded as base64, with source IDs, fetch timestamps, request fingerprints and recomputed response SHA-256 hashes. Feature, quote and settlement rows point to the exact retained response and JSON record pointer.
+7. `model_manifest` — immutable model code commit, model family/version, feature schema, calibration version and training-data cutoff.
 
 Artifact paths must be unique, relative, traversal-free, non-symlink files. Missing roles, duplicate roles, malformed hashes, path escape, unreadable files and hash mismatches invalidate the bundle.
 
