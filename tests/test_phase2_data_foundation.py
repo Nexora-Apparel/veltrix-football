@@ -1,0 +1,240 @@
+from __future__ import annotations
+
+import hashlib
+import json
+from datetime import datetime, timedelta, timezone
+
+import pytest
+
+from veltrix_v2.data.batch import assess_history_batch, reconcile_source_manifest
+from veltrix_v2.data.contracts import (
+    ApprovalStatus, DataUsePurpose, FixtureStatus, HistoricalFixture,
+    ImportOutcomeStatus, ProviderResponse, SourceApproval,
+)
+from veltrix_v2.data.fivedollar import (
+    AVAILABILITY_BASIS, FixturePageError, parse_fixture_page,
+)
+from veltrix_v2.data.postgres import PostgresHistoryStore
+from veltrix_v2.data.rights import evaluate_fixture_import, evaluate_source_use
+
+NOW = datetime(2026, 11, 12, 12, tzinfo=timezone.utc)
+KICKOFF = NOW - timedelta(days=30)
+
+
+def approval(**changes):
+    values = dict(
+        approval_id="approval-test",
+        provider="5DollarFootballAPI",
+        source_id="5dollarfootballapi",
+        competition_scope="*",
+        data_type="fixture_result",
+        status=ApprovalStatus.APPROVED,
+        permitted_uses=frozenset({
+            DataUsePurpose.COLLECTION, DataUsePurpose.STORAGE,
+            DataUsePurpose.HISTORICAL_IMPORT, DataUsePurpose.MODEL_TRAINING,
+            DataUsePurpose.CACHE, DataUsePurpose.PUBLIC_DISPLAY,
+        }),
+        commercial_use_allowed=True,
+        terms_url="https://5dollarfootballapi.com/terms",
+        terms_version="October 2026",
+        evidence_uri="https://example.test/rights-review.md",
+        evidence_sha256="a" * 64,
+        rights_basis="TERMS",
+        reviewed_at_utc=NOW - timedelta(days=1),
+        reviewer_id="test-review",
+        valid_from_utc=NOW - timedelta(days=1),
+        attribution_required=True,
+        attribution_text="Football data by 5DollarFootballAPI",
+        attribution_url="https://5dollarfootballapi.com",
+        raw_redistribution_allowed=False,
+    )
+    values.update(changes)
+    return SourceApproval(**values)
+
+
+def fixture(fixture_id="101", competition_id="4160026622", status=FixtureStatus.FINISHED,
+            home_score=2, away_score=1, payload_hash=None, approval_id="approval-test"):
+    payload = {
+        "id": int(fixture_id), "league": {"id": int(competition_id), "name": "England Premier League"},
+        "teams": {"home": {"id": 11, "name": "Home"}, "away": {"id": 12, "name": "Away"}},
+        "kickoff_utc": KICKOFF.isoformat(), "status": status.value.lower(),
+        "goals": {"home": home_score, "away": away_score},
+    }
+    raw = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode()
+    return HistoricalFixture(
+        provider="5DollarFootballAPI", source_id="5dollarfootballapi",
+        provider_fixture_id=fixture_id, provider_competition_id=competition_id,
+        provider_home_team_id="11", provider_away_team_id="12",
+        competition_name="England Premier League", home_team_name="Home", away_team_name="Away",
+        kickoff_at_utc=KICKOFF, season_key="2025/2026", status=status,
+        home_score=home_score if status is FixtureStatus.FINISHED else None,
+        away_score=away_score if status is FixtureStatus.FINISHED else None,
+        payload=payload, payload_sha256=payload_hash or hashlib.sha256(raw).hexdigest(),
+        retrieved_at_utc=NOW, source_event_time_utc=KICKOFF,
+        available_at_utc=KICKOFF + timedelta(days=4) if status is FixtureStatus.FINISHED else None,
+        availability_basis=AVAILABILITY_BASIS if status is FixtureStatus.FINISHED else "not_settled",
+        point_in_time_certifiable=False, rights_approval_id=approval_id,
+    )
+
+
+def provider_page(rows=None, pagination=None):
+    body = {
+        "success": 1,
+        "data": rows if rows is not None else [{
+            "id": 101,
+            "league": {"id": 4160026622, "name": "England Premier League", "season": "2025/2026"},
+            "teams": {"home": {"id": 11, "name": "Home"}, "away": {"id": 12, "name": "Away"}},
+            "kickoff_utc": KICKOFF.isoformat().replace("+00:00", "Z"),
+            "kickoff_ts": int(KICKOFF.timestamp()),
+            "status": "finished",
+            "goals": {"home": 2, "away": 1},
+        }],
+        "pagination": pagination or {"page": 1, "per_page": 100, "has_more": False},
+    }
+    return json.dumps(body, sort_keys=True, separators=(",", ":")).encode()
+
+
+def test_source_approval_requires_complete_evidence():
+    with pytest.raises(ValueError, match="APPROVED_SOURCE_REQUIRES_COMPLETE_RIGHTS_EVIDENCE"):
+        approval(evidence_sha256=None)
+
+
+def test_rights_gate_requires_each_use_and_public_attribution():
+    rights = approval()
+    assert evaluate_source_use(rights, DataUsePurpose.MODEL_TRAINING, at_utc=NOW, commercial=True).allowed
+    public = evaluate_source_use(
+        rights, DataUsePurpose.PUBLIC_DISPLAY, at_utc=NOW, commercial=True, public_facing=True
+    )
+    assert public.allowed and public.attribution_text == "Football data by 5DollarFootballAPI"
+    raw = evaluate_source_use(rights, DataUsePurpose.RAW_REDISTRIBUTION, at_utc=NOW)
+    assert not raw.allowed and raw.reason_code == "RAW_REDISTRIBUTION_PROHIBITED"
+
+
+def test_rights_expiry_and_provisional_status_fail_closed():
+    expired = approval(valid_until_utc=NOW - timedelta(seconds=1))
+    decision = evaluate_source_use(expired, DataUsePurpose.HISTORICAL_IMPORT, at_utc=NOW)
+    assert not decision.allowed and decision.reason_code == "SOURCE_APPROVAL_EXPIRED"
+    provisional = approval(status=ApprovalStatus.PROVISIONAL)
+    decision = evaluate_source_use(provisional, DataUsePurpose.HISTORICAL_IMPORT, at_utc=NOW)
+    assert not decision.allowed and decision.reason_code == "SOURCE_RIGHTS_NOT_APPROVED"
+
+
+def test_parse_fixture_page_preserves_raw_hash_and_four_day_availability_proxy():
+    raw = provider_page()
+    parsed = parse_fixture_page(
+        raw, headers={"X-RateLimit-Remaining": "250"},
+        retrieved_at_utc=NOW, rights_approval_id="approval-test",
+    )
+    assert len(parsed.fixtures) == 1
+    row = parsed.fixtures[0]
+    assert parsed.response_sha256 == hashlib.sha256(raw).hexdigest()
+    assert row.provider_fixture_id == "101"
+    assert row.home_score == 2 and row.away_score == 1
+    assert row.available_at_utc == KICKOFF + timedelta(days=4)
+    assert row.availability_basis == AVAILABILITY_BASIS
+    assert row.point_in_time_certifiable is False
+    assert parsed.quota_remaining == 250
+
+
+def test_parse_rejects_missing_pagination_metadata():
+    raw = provider_page(pagination={"page": 1, "per_page": 100})
+    with pytest.raises(FixturePageError, match="PAGINATION_METADATA_INCOMPLETE"):
+        parse_fixture_page(raw, headers={}, retrieved_at_utc=NOW, rights_approval_id="approval-test")
+
+
+def test_parse_rejects_naive_kickoff_and_duplicate_ids():
+    row = json.loads(provider_page())["data"][0]
+    row["kickoff_utc"] = "2026-10-13T12:00:00"
+    raw = provider_page(rows=[row])
+    with pytest.raises(FixturePageError, match="FIXTURE_KICKOFF_NOT_TIMEZONE_AWARE"):
+        parse_fixture_page(raw, headers={}, retrieved_at_utc=NOW, rights_approval_id="approval-test")
+    with pytest.raises(FixturePageError, match="DUPLICATE_FIXTURE_ID_IN_PAGE"):
+        parse_fixture_page(provider_page(rows=[json.loads(provider_page())["data"][0]] * 2),
+                           headers={}, retrieved_at_utc=NOW, rights_approval_id="approval-test")
+
+
+def test_finished_fixture_with_invalid_score_is_not_treated_as_settled():
+    row = json.loads(provider_page())["data"][0]
+    row["goals"] = {"home": True, "away": 1}
+    parsed = parse_fixture_page(provider_page(rows=[row]), headers={},
+                                retrieved_at_utc=NOW, rights_approval_id="approval-test")
+    assert parsed.fixtures[0].status is FixtureStatus.UNKNOWN
+    assert parsed.fixtures[0].home_score is None
+
+
+def test_history_batch_imports_only_approved_settled_rows_and_reconciles_manifest():
+    rights = approval()
+    rows = [fixture("101"), fixture("102")]
+    assessed = assess_history_batch(
+        rows, rights, evaluated_at_utc=NOW, request_count=3, request_budget=40
+    )
+    assert assessed.report.status == "COMPLETE"
+    assert assessed.report.importable_count == 2
+    assert assessed.report.rejected_count == 0
+    assert assessed.report.quarantined_count == 0
+    reconciliation = reconcile_source_manifest(
+        ["101", "102"], assessed.decisions
+    )
+    assert reconciliation.complete
+    assert reconciliation.expected_count == 2
+    assert reconciliation.manifest_sha256
+
+
+def test_duplicate_fixture_ids_are_quarantined_and_reported():
+    assessed = assess_history_batch(
+        [fixture("101"), fixture("101")], approval(),
+        evaluated_at_utc=NOW, request_count=2, request_budget=40,
+    )
+    assert assessed.report.quarantined_count == 1
+    assert assessed.report.duplicate_provider_fixture_ids == ("101",)
+    reconciliation = reconcile_source_manifest(["101"], assessed.decisions)
+    assert not reconciliation.complete
+    assert reconciliation.duplicate_outcome_ids == ("101",)
+
+
+def test_unsettled_or_unapproved_records_never_enter_import_batch():
+    unsettled = fixture("101", status=FixtureStatus.SCHEDULED, home_score=None, away_score=None)
+    assessed = assess_history_batch(
+        [unsettled], approval(), evaluated_at_utc=NOW, request_count=1, request_budget=40
+    )
+    assert assessed.report.rejected_count == 1
+    no_rights = assess_history_batch(
+        [fixture("102")], approval(status=ApprovalStatus.PROVISIONAL),
+        evaluated_at_utc=NOW, request_count=1, request_budget=40,
+    )
+    assert no_rights.report.quarantined_count == 1
+
+
+def test_batch_request_budget_is_hard_capped():
+    with pytest.raises(ValueError, match="HISTORY_REQUEST_BUDGET_INVALID"):
+        assess_history_batch([fixture()], approval(), evaluated_at_utc=NOW,
+                             request_count=41, request_budget=40)
+
+
+class _FakeConnection:
+    def __init__(self):
+        self.rolled_back = False
+        self.closed = False
+    def cursor(self):
+        return object()
+    def rollback(self):
+        self.rolled_back = True
+    def commit(self):
+        raise AssertionError("must not commit rejected secret headers")
+    def close(self):
+        self.closed = True
+
+
+def test_postgres_writer_refuses_to_persist_secret_response_headers():
+    conn = _FakeConnection()
+    response = ProviderResponse(
+        provider="5DollarFootballAPI", source_id="5dollarfootballapi",
+        endpoint="/leagues/1/fixtures", request_id="req-1",
+        request_params={"league_id": 1}, http_status=200,
+        raw_body=b'{"success":1,"data":[]}',
+        response_headers={"Authorization": "Bearer secret"},
+        fetched_at_utc=NOW,
+    )
+    with pytest.raises(ValueError, match="PROVIDER_RESPONSE_SECRET_HEADER_MUST_NOT_BE_STORED"):
+        PostgresHistoryStore(lambda: conn).persist_page(response, [], approval())
+    assert conn.rolled_back and conn.closed
