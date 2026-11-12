@@ -280,11 +280,12 @@ def main() -> dict:
             observation_id = cur.fetchone()[0]
             cur.execute("SELECT id FROM provider_responses WHERE request_id='phase2-ci-page-1'")
             response_id = cur.fetchone()[0]
-            cur.execute("SELECT id FROM provider_entitlement_observations WHERE provider='5DollarFootballAPI' AND source_id='5dollarfootballapi'")
-            entitlement_id = cur.fetchone()[0]
+            cur.execute("SELECT id FROM provider_entitlement_observations WHERE provider='5DollarFootballAPI' AND source_id='5dollarfootballapi' ORDER BY id")
+            entitlement_ids = [row[0] for row in cur.fetchall()]
+            entitlement_id = entitlement_ids[0]
+            entitlement_count = len(entitlement_ids)
             cur.execute("SELECT id FROM fixture_result_versions WHERE fixture_id=(SELECT id FROM fixtures WHERE provider_fixture_id='987654321') ORDER BY id LIMIT 1")
             version_id = cur.fetchone()[0]
-            entitlement_count = 1
     assert canonical_score == (2, 1), canonical_score
     assert versions == 2, versions
     assert quarantined == 1, quarantined
