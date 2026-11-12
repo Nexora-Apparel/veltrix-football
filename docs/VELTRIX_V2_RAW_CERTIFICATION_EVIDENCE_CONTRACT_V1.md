@@ -8,10 +8,10 @@ This contract is intentionally stricter than the existing aggregate report/ledge
 - `prospective_ledger`: `rows[]` with unique fixture/market, selection, kickoff, quote timestamps, odds snapshot ID, settlement ID, model version, outcome, won, stake, decimal odds, fees and recorded net profit.
 - `odds_snapshots`: `rows[]` with unique snapshot ID, fixture, market, bookmaker, rights-approved source ID, kickoff, observed timestamp, quote-updated timestamp and exact decimal odds.
 - `settlement_records`: `rows[]` with unique settlement ID, fixture ID, rights-approved source ID, settlement timestamp, outcome, model version and (for goal markets) calibration version.
-- `model_manifest`: object with immutable `model_version`.
+- `model_manifest`: object with immutable `model_version`, full Git `code_commit`, timezone-aware `training_data_cutoff`, `feature_schema_version` and the allowed `calibration_versions` list.
 - `coverage_audit`: must explicitly declare `rights_status: APPROVED_FOR_INTENDED_USE`, `commercial_use_eligible: true`, and the exact `approved_source_ids` used by feature, quote and settlement rows. Summary metric values are not trusted by the raw metric calculator.
 
-All timestamps must be timezone-aware. Prediction time and latest feature-observation time must precede kickoff. Quotes must be ordered quote-update ≤ snapshot-observed ≤ kickoff and no older than 24 hours. Settlement joins must match exact fixture and version references. Every feature, odds and settlement source ID must be included in the approved source list.
+All timestamps must be timezone-aware. Training-data cutoff and every feature observation must precede prediction time; prediction time must precede kickoff. Model code commit and feature schema must match the pinned model manifest. Quotes must be ordered quote-update ≤ snapshot-observed ≤ kickoff and no older than 24 hours. Settlement joins must match exact fixture and version references. Every feature, odds and settlement source ID must be included in the approved source list.
 
 ## Recomputed metrics
 
