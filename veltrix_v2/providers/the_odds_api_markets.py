@@ -238,3 +238,123 @@ def parse_event_totals_odds(
                     source_observation_id=source_observation_id,
                 ))
     return tuple(output)
+
+
+@dataclass(frozen=True, slots=True)
+class TheOddsMarketCapture:
+    fixture_id: str
+    provider_event_id: str
+    market: str
+    captured_at: datetime
+    snapshots: tuple[OddsSnapshot, ...]
+    requests_remaining: int | None
+    requests_used: int | None
+    last_request_cost: int | None
+
+
+def fetch_event_market_odds(
+    *,
+    api_key: str,
+    sport_key: str,
+    event_id: str,
+    fixture_id: str,
+    market: str,
+    kickoff_at: datetime,
+    captured_at: datetime,
+    source_observation_id: str,
+    regions: str = "uk",
+    timeout_seconds: float = 15.0,
+    opener=None,
+) -> TheOddsMarketCapture:
+    """Fetch one market for one event; one market per request bounds quota cost."""
+    import json
+    from urllib.error import HTTPError, URLError
+    from urllib.parse import urlencode, quote
+    from urllib.request import Request, urlopen
+
+    from veltrix_v2.providers.the_odds_api import BASE_URL, TheOddsProviderError
+
+    market_key = {"1X2": "h2h", "TOTALS": "totals"}.get(market)
+    if market_key is None:
+        raise ValueError("THE_ODDS_MARKET_UNSUPPORTED")
+    if not isinstance(api_key, str) or not api_key.strip():
+        raise ValueError("THE_ODDS_API_KEY_REQUIRED")
+    if not isinstance(sport_key, str) or not sport_key.strip():
+        raise ValueError("THE_ODDS_SPORT_KEY_REQUIRED")
+    if not isinstance(event_id, str) or not event_id.strip():
+        raise ValueError("THE_ODDS_PROVIDER_EVENT_ID_REQUIRED")
+    if not isinstance(source_observation_id, str) or not source_observation_id.strip():
+        raise ValueError("THE_ODDS_SOURCE_OBSERVATION_ID_REQUIRED")
+    kickoff = _utc(kickoff_at, "kickoff")
+    captured = _utc(captured_at, "capture")
+    if captured >= kickoff:
+        raise ValueError("THE_ODDS_CAPTURE_MUST_PRECEDE_KICKOFF")
+    query = urlencode({
+        "apiKey": api_key,
+        "regions": regions,
+        "markets": market_key,
+        "oddsFormat": "decimal",
+        "dateFormat": "iso",
+    })
+    url = (
+        f"{BASE_URL}/sports/{quote(sport_key, safe='')}/events/"
+        f"{quote(event_id, safe='')}/odds?{query}"
+    )
+    request = Request(
+        url,
+        headers={"Accept": "application/json", "User-Agent": "VELTRIX-FOOTBALL/2.0"},
+        method="GET",
+    )
+    opener = opener or urlopen
+    try:
+        with opener(request, timeout=timeout_seconds) as response:
+            body = response.read()
+            headers = response.headers
+    except HTTPError as error:
+        retry_after = error.headers.get("Retry-After") if error.headers else None
+        code = {
+            401: "THE_ODDS_AUTHENTICATION_FAILED",
+            429: "THE_ODDS_QUOTA_OR_RATE_LIMIT",
+        }.get(error.code, "THE_ODDS_HTTP_ERROR")
+        raise TheOddsProviderError(error.code, code, retry_after) from None
+    except URLError:
+        raise TheOddsProviderError(None, "THE_ODDS_NETWORK_ERROR") from None
+    try:
+        payload = json.loads(body.decode("utf-8"))
+    except (UnicodeDecodeError, json.JSONDecodeError):
+        raise TheOddsProviderError(None, "THE_ODDS_INVALID_JSON") from None
+
+    parser = parse_event_1x2_odds if market == "1X2" else parse_event_totals_odds
+    snapshots = parser(
+        payload,
+        fixture_id=fixture_id,
+        provider_event_id=event_id,
+        kickoff_at=kickoff,
+        captured_at=captured,
+        source_observation_id=source_observation_id,
+    )
+
+    def header_int(name: str) -> int | None:
+        try:
+            return int(headers.get(name))
+        except (TypeError, ValueError):
+            return None
+
+    return TheOddsMarketCapture(
+        fixture_id=fixture_id,
+        provider_event_id=event_id,
+        market=market,
+        captured_at=captured,
+        snapshots=snapshots,
+        requests_remaining=header_int("x-requests-remaining"),
+        requests_used=header_int("x-requests-used"),
+        last_request_cost=header_int("x-requests-last"),
+    )
+
+
+def fetch_event_1x2_odds(**kwargs) -> TheOddsMarketCapture:
+    return fetch_event_market_odds(market="1X2", **kwargs)
+
+
+def fetch_event_totals_odds(**kwargs) -> TheOddsMarketCapture:
+    return fetch_event_market_odds(market="TOTALS", **kwargs)
