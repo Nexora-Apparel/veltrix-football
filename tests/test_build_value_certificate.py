@@ -13,10 +13,6 @@ def test_certificate_builder_fails_closed_without_paper_ledger(tmp_path):
         "recent_holdout": {"historical_odds_subset": {"models_compared_on_same_matches": {}}},
         "dataset_provenance": {"rows_loaded": 1234},
     }
-    monkeypatch.setattr(
-        "scripts.build_value_certificate.verify_github_artifact_attestation",
-        lambda *args, **kwargs: {"attestation_status": "GITHUB_ATTESTATION_VERIFIED", "sha256": "a" * 64},
-    )
     backtest_path = tmp_path / "backtest.json"
     backtest_path.write_text(json.dumps(backtest), encoding="utf-8")
     report_path = tmp_path / "daily.json"
@@ -77,6 +73,10 @@ def test_certificate_builder_attaches_raw_audit_but_never_unlocks(monkeypatch, t
         "artifacts": artifacts,
     }), encoding="utf-8")
 
+    monkeypatch.setattr(
+        "scripts.build_value_certificate.verify_github_artifact_attestation",
+        lambda *args, **kwargs: {"attestation_status": "GITHUB_ATTESTATION_VERIFIED", "sha256": "a" * 64},
+    )
     backtest_path = tmp_path / "backtest.json"
     backtest_path.write_text(json.dumps({"live_pipeline": {}, "dataset_provenance": {}}), encoding="utf-8")
     report_path = tmp_path / "daily.json"
