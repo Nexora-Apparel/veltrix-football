@@ -24,6 +24,8 @@ def quote(selection, odds, *, market="1X2", line=None, bookmaker="book-a",
         decimal_odds=Decimal(str(odds)),
         captured_at=captured,
         kickoff_at=KICKOFF,
+        provider_quote_at=captured - timedelta(seconds=1),
+        source_observation_id="obs-normalization-" + fixture,
         line=None if line is None else Decimal(str(line)),
     )
 
@@ -129,3 +131,25 @@ def test_normalized_quote_contract_rejects_probability_price_mismatch():
     ])[0]
     with pytest.raises(ValueError, match="RAW_PROBABILITY_DOES_NOT_MATCH_PRICE"):
         replace(row, raw_implied_probability=Decimal("0.9"))
+
+
+
+def test_mixed_provider_quote_timestamps_are_rejected():
+    with pytest.raises(ValueError, match="GROUP_MISMATCH"):
+        normalize_bookmaker_market([
+            quote("YES", "1.8", market="BTTS"),
+            quote("NO", "2.0", market="BTTS", captured=CAPTURED),
+        ])
+
+
+def test_missing_provider_quote_timestamp_is_rejected():
+    from dataclasses import replace
+
+    rows = [
+        quote("HOME", "2.0"),
+        quote("DRAW", "3.5"),
+        quote("AWAY", "4.0"),
+    ]
+    rows[1] = replace(rows[1], provider_quote_at=None)
+    with pytest.raises(ValueError, match="GROUP_MISMATCH|PROVIDER_QUOTE_TIMESTAMP_REQUIRED"):
+        normalize_bookmaker_market(rows)
