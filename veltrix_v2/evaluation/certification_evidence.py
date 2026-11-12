@@ -533,7 +533,7 @@ def audit_walk_forward_integrity(
         scope_forecasts_btts.extend(scope_btts_forecasts)
         scope_outcomes_btts.extend(scope_btts_outcomes)
         scope_forecasts_totals.extend(scope_totals_forecasts)
-        scope_outcomes_totals.extend(scope_totals_outcomes
+        scope_outcomes_totals.extend(scope_totals_outcomes)
 
     if not held_out_ids or len(held_out_ids) != len(set(held_out_ids)):
         failures.append("HELD_OUT_FIXTURES_MISSING_OR_REPEATED_ACROSS_FOLDS")
