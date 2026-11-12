@@ -507,6 +507,10 @@ def test_value_bet_certification_derives_metrics_and_benchmark_from_records(monk
         benchmark_bookmaker_id="bookmaker-a",
     )
     assert not result.passed
+    assert result.source_audit_bundle is not None
+    assert result.source_audit_bundle.source_approved
+    assert result.source_audit_bundle.point_in_time_validated
+    assert result.bookmaker_comparison.common_fixture_ids == ("test-1",)
     assert all(
         "WALK_FORWARD_SAMPLE_BELOW_1000" in market.failed_gates
         for market in result.markets
