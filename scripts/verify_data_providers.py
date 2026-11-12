@@ -72,6 +72,7 @@ def check_fivedollar() -> str:
         status, _, account_payload = request_json(base + "/status", headers)
         account_data = account_payload.get("data") if isinstance(account_payload, dict) else None
         plan = account_data.get("plan") if isinstance(account_data, dict) else None
+        required_plan = os.getenv("FIVEDOLLAR_REQUIRED_PLAN", "").strip().casefold()
         if (
             status != 200
             or not isinstance(account_payload, dict)
@@ -81,6 +82,12 @@ def check_fivedollar() -> str:
         ):
             print("5DollarFootballAPI: ACCOUNT_STATUS_UNAVAILABLE")
             return "FAILED"
+        if required_plan and plan.strip().casefold() != required_plan:
+            print(
+                "5DollarFootballAPI: PLAN_MISMATCH "
+                f"(expected={required_plan}; actual={plan.strip().casefold()})"
+            )
+            return "PLAN_MISMATCH"
         status, response_headers, payload = request_json(base + "/leagues?per_page=100", headers)
         if status != 200 or not isinstance(payload, dict) or payload.get("success") != 1:
             print("5DollarFootballAPI: UNEXPECTED_RESPONSE")
