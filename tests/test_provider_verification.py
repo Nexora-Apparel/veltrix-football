@@ -122,7 +122,14 @@ def test_optional_top_five_and_south_american_btts_probe_is_bounded_to_eight_cre
 
 def test_fivedollar_smoke_probes_one_fixture_per_accessible_league_within_burst(monkeypatch, capsys):
     monkeypatch.setenv("FIVEDOLLARFOOTBALL_API_KEY", "fake-primary")
-    leagues = [{"id": index, "name": f"League {index}"} for index in range(1, 7)]
+    leagues = [
+        {"id": 1, "name": "Premier League", "country": {"code": "GB-ENG"}},
+        {"id": 2, "name": "La Liga", "country": {"code": "ES"}},
+        {"id": 3, "name": "Serie A", "country": {"code": "IT"}},
+        {"id": 4, "name": "Bundesliga", "country": {"code": "DE"}},
+        {"id": 5, "name": "Ligue 1", "country": {"code": "FR"}},
+        {"id": 6, "name": "Argentina Liga Profesional", "country": {"code": "AR"}},
+    ]
     calls = []
 
     def fake_request(url, headers=None):
@@ -208,3 +215,49 @@ def test_fivedollar_community_acceptance_rejects_top_five_without_country_pack(m
     assert providers.check_fivedollar() == "COMPETITION_COVERAGE_INCOMPLETE"
     output = capsys.readouterr().out
     assert "minimum=6; actual=5" in output
+
+
+def test_community_acceptance_rejects_six_leagues_without_country_pack_identity(monkeypatch, capsys):
+    monkeypatch.setenv("FIVEDOLLARFOOTBALL_API_KEY", "fake-primary")
+    monkeypatch.setenv("FIVEDOLLAR_REQUIRED_PLAN", "community")
+    monkeypatch.setenv("FIVEDOLLAR_MIN_ACCESSIBLE_LEAGUES", "6")
+
+    def fake_request(url, headers=None):
+        if "/status" in url:
+            return 200, {}, {"success": 1, "data": {"plan": "community"}}
+        if "/leagues?per_page=100" in url:
+            return 200, {}, {
+                "success": 1,
+                "data": [{"id": index, "name": f"League {index}"} for index in range(1, 7)],
+            }
+        raise AssertionError(f"Unexpected request: {url}")
+
+    monkeypatch.setattr(providers, "request_json", fake_request)
+    assert providers.check_fivedollar() == "COUNTRY_PACK_NOT_VERIFIED"
+    assert "COUNTRY_PACK_NOT_VERIFIED" in capsys.readouterr().out
+
+
+def test_community_acceptance_can_require_a_specific_country_pack(monkeypatch, capsys):
+    monkeypatch.setenv("FIVEDOLLARFOOTBALL_API_KEY", "fake-primary")
+    monkeypatch.setenv("FIVEDOLLAR_REQUIRED_PLAN", "community")
+    monkeypatch.setenv("FIVEDOLLAR_REQUIRED_COUNTRY_CODE", "AR")
+
+    leagues = [
+        {"id": 1, "name": "Premier League", "country": {"code": "GB-ENG"}},
+        {"id": 2, "name": "La Liga", "country": {"code": "ES"}},
+        {"id": 3, "name": "Serie A", "country": {"code": "IT"}},
+        {"id": 4, "name": "Bundesliga", "country": {"code": "DE"}},
+        {"id": 5, "name": "Ligue 1", "country": {"code": "FR"}},
+        {"id": 6, "name": "Brazil Serie A", "country": {"code": "BR"}},
+    ]
+
+    def fake_request(url, headers=None):
+        if "/status" in url:
+            return 200, {}, {"success": 1, "data": {"plan": "community"}}
+        if "/leagues?per_page=100" in url:
+            return 200, {}, {"success": 1, "data": leagues}
+        raise AssertionError(f"Unexpected request: {url}")
+
+    monkeypatch.setattr(providers, "request_json", fake_request)
+    assert providers.check_fivedollar() == "REQUIRED_COUNTRY_PACK_MISSING"
+    assert "expected=AR" in capsys.readouterr().out
