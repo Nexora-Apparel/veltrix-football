@@ -223,12 +223,13 @@ def main() -> dict:
         evidence_sha256=hashlib.sha256(b"phase2-ci-suspended-entitlement").hexdigest(),
         checked_at_utc=now + timedelta(seconds=1),
     )
+    suspended_fixture = replace(fixture, retrieved_at_utc=now + timedelta(seconds=2))
     suspended = store.persist_page(
         replace(
             response("phase2-ci-page-after-suspension", (2, 1)),
             fetched_at_utc=now + timedelta(seconds=2),
         ),
-        [fixture], approval,
+        [suspended_fixture], approval,
     )
     assert suspended["quarantined_or_conflicting"] == 1
 
@@ -239,10 +240,11 @@ def main() -> dict:
         effective_at_utc=now + timedelta(seconds=3),
         reason_code="RIGHTS_WITHDRAWN",
     )
+    revoked_fixture = replace(fixture, retrieved_at_utc=now + timedelta(seconds=4))
     revoked_result = store.persist_page(
         replace(response("phase2-ci-page-after-rights-revocation", (2, 1)),
                 fetched_at_utc=now + timedelta(seconds=4)),
-        [fixture], approval,
+        [revoked_fixture], approval,
     )
     assert revoked_result["quarantined_or_conflicting"] == 1
     with psycopg.connect(database_url) as conn:
