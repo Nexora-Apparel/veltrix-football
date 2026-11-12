@@ -18,6 +18,7 @@ from veltrix_v2.data.postgres import PostgresHistoryStore
 from veltrix_v2.data.rights import evaluate_fixture_import, evaluate_source_use
 from scripts import phase2_fivedollar_history_dry_run as history_probe
 from scripts import phase3_import_fivedollar_history as phase3_import
+from scripts import phase3_audit_staging_import as phase3_audit
 
 NOW = datetime(2026, 11, 12, 12, tzinfo=timezone.utc)
 KICKOFF = NOW - timedelta(days=30)
@@ -116,6 +117,26 @@ def test_phase3_import_pins_the_exact_staging_neon_endpoint(monkeypatch):
             "postgresql://neondb_owner:fake@ep-wrong.c-16.us-east-1.aws.neon.tech/veltrix_football_staging",
             "veltrix_football_staging",
         )
+
+
+def test_phase3_audit_requires_explicit_staging_enable(monkeypatch):
+    monkeypatch.delenv("VELTRIX_ENABLE_STAGING_IMPORT", raising=False)
+    with pytest.raises(RuntimeError, match="STAGING_AUDIT_EXPLICIT_ENABLE_REQUIRED"):
+        phase3_audit.run_audit("not-a-real-database-url")
+
+
+def test_phase3_audit_rejects_non_staging_neon_endpoint(monkeypatch):
+    monkeypatch.setenv("VELTRIX_ENABLE_STAGING_IMPORT", "YES")
+    with pytest.raises(RuntimeError, match="STAGING_DATABASE_HOST_ALLOWLIST_MISMATCH"):
+        phase3_audit.run_audit(
+            "postgresql://neondb_owner:fake@ep-wrong.c-16.us-east-1.aws.neon.tech/veltrix_football_staging"
+        )
+
+
+def test_phase3_audit_recursively_rejects_secret_metadata():
+    assert not phase3_audit._safe_key_scan({"headers": {"Authorization": "Bearer fake"}})
+    assert not phase3_audit._safe_key_scan({"request": [{"api-key": "fake"}]})
+    assert phase3_audit._safe_key_scan({"headers": {"x-ratelimit-remaining": "12"}})
 
 
 def test_phase3_import_window_and_api_key_are_bounded():
