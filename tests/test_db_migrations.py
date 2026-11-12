@@ -25,3 +25,17 @@ def test_manifest_rejects_duplicate_versions_not_possible_from_filesystem(tmp_pa
     # enforced by the migration-history primary key at database level.
     (tmp_path / "0001_first.sql").write_text("SELECT 1;")
     assert len(load_manifest(tmp_path)) == 1
+
+
+
+def test_phase2_migration_is_additive_and_enforces_append_only_evidence():
+    migration = Path("db/migrations/0002_historical_provenance.sql").read_text(encoding="utf-8").upper()
+    assert "DROP TABLE" not in migration
+    assert "TRUNCATE" not in migration
+    assert "DELETE FROM" not in migration
+    assert "CREATE TABLE SOURCE_APPROVALS" in migration
+    assert "CREATE TABLE PROVIDER_RESPONSES" in migration
+    assert "CREATE TABLE FIXTURE_RESULT_VERSIONS" in migration
+    assert "CREATE TABLE SYNC_WATERMARKS" in migration
+    assert "CREATE TABLE INGESTION_QUARANTINE" in migration
+    assert migration.count("BEFORE UPDATE OR DELETE") == 5
