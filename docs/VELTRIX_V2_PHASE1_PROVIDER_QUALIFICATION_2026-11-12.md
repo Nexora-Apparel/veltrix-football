@@ -48,6 +48,8 @@ Run [#43269388120 — seven-competition qualification](https://github.com/Nexora
 
 This qualifies fixture retrieval and identity fields for the observed window. It does not establish full-season coverage or advanced-stat completeness.
 
+The provider's public 12-month data-quality table separately reports the following finished-match counts and coverage for these same competitions: England Premier League 370; Spain La Liga 381; Italy Serie A 380; France Ligue 1 284; Germany Bundesliga I 299; Brazil Serie A 391; Brazil Serie B 390. Reported odds and live-stat coverage is 100% for each of these seven rows; events are 99.7% for La Liga and 100% for the others. This is provider-reported aggregate coverage, not an independent fixture-by-fixture audit, and it does not establish timestamp coverage for each market. The table labels these competitions Pro, while the user's two keys returned 300/hour limits and the live fixture probe returned seven competitions; the account's `/v1/status` response and actual accessible catalogue are therefore the authority for this account's entitlement. See [measured data quality by competition](https://5dollarfootballapi.com/docs/data-quality).
+
 ### 3.3 Statistics endpoint qualification
 
 Run [#43272673240 — statistics capability probe](https://github.com/Nexora-Apparel/veltrix-football/actions/runs/43272673240) passed:
