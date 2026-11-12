@@ -17,7 +17,7 @@ def _write_bundle(tmp_path, walk, paper, odds, settlements):
         "prospective_ledger": {"rows": paper},
         "odds_snapshots": {"rows": odds},
         "settlement_records": {"rows": settlements},
-        "model_manifest": {"model_version": "model-v1"},
+        "model_manifest": {"model_version": "model-v1", "code_commit": "a" * 40, "training_data_cutoff": "2025-12-31T00:00:00+00:00", "feature_schema_version": "features-v1", "calibration_versions": []},
     }
     entries = []
     for role, payload in payloads.items():
@@ -41,7 +41,7 @@ def test_raw_certification_rejects_probability_leakage_and_missing_fixture_prove
     walk = [{
         "fixture_id": "f1", "market": "1X2", "kickoff": "2026-01-01T18:00:00+00:00",
         "prediction_at": "2026-01-01T17:00:00+00:00", "features": [{"name": "form", "value": 0.5, "observed_at": "2026-01-01T18:00:00+00:00", "source_id": "source-a"}],
-        "model_version": "model-v1", "split": "full", "outcome": "home",
+        "model_version": "model-v1", "model_commit": "a" * 40, "feature_schema_version": "features-v1", "split": "full", "outcome": "home",
         "model_probabilities": {"home": .6, "draw": .2, "away": .2},
         "bookmaker_probabilities": {"home": .5, "draw": .3, "away": .2},
     }]
