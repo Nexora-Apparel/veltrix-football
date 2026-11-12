@@ -405,3 +405,100 @@ def audit_walk_forward_integrity(
         passed=bool(held_out_ids) and not unique_failures,
         failures=unique_failures,
     )
+
+
+@dataclass(frozen=True, slots=True)
+class OddsSourceAudit:
+    snapshot_count: int
+    approved_snapshot_ids: tuple[str, ...]
+    rejected_snapshots: tuple[tuple[str, str], ...]
+    passed: bool
+
+
+def audit_odds_snapshot_sources(
+    walk_forward: MultiCompetitionWalkForwardEvaluation,
+    snapshots: Iterable[OddsSnapshot],
+    observations: Iterable[TrainingObservationEvidence],
+    approvals: Iterable["SourceApproval"],
+) -> OddsSourceAudit:
+    """Verify quote-to-source lineage, point-in-time capture and benchmark rights."""
+    from datetime import timedelta
+    from veltrix_v2.contracts import ForecastCutoff
+    from veltrix_v2.quality.eligibility import SourceApproval, evaluate_observation
+
+    if not isinstance(walk_forward, MultiCompetitionWalkForwardEvaluation):
+        raise ValueError("CERTIFICATION_WALK_FORWARD_REPORT_REQUIRED")
+    snapshot_rows = tuple(snapshots)
+    observation_rows = tuple(observations)
+    approval_rows = tuple(approvals)
+    if any(not isinstance(row, OddsSnapshot) for row in snapshot_rows):
+        raise ValueError("CERTIFICATION_ODDS_SNAPSHOT_TYPE_INVALID")
+    if any(not isinstance(row, TrainingObservationEvidence) for row in observation_rows):
+        raise ValueError("CERTIFICATION_TRAINING_OBSERVATION_EVIDENCE_TYPE_INVALID")
+    if any(not isinstance(row, SourceApproval) for row in approval_rows):
+        raise ValueError("CERTIFICATION_SOURCE_APPROVAL_TYPE_INVALID")
+
+    observation_by_id = {row.observation_id: row.observation for row in observation_rows}
+    if len(observation_by_id) != len(observation_rows):
+        raise ValueError("CERTIFICATION_DUPLICATE_SOURCE_OBSERVATION_ID")
+    fixture_scopes = {}
+    for scope_report in walk_forward.scope_reports:
+        scope = (scope_report.competition_key, scope_report.season)
+        for fold in scope_report.folds:
+            for fixture_id in fold.eligible_fixture_ids:
+                prior = fixture_scopes.setdefault(fixture_id, scope)
+                if prior != scope:
+                    raise ValueError("CERTIFICATION_FIXTURE_SCOPE_CONFLICT")
+
+    approved: set[str] = set()
+    rejected: list[tuple[str, str]] = []
+    seen_snapshot_ids: set[str] = set()
+    for snapshot in snapshot_rows:
+        if snapshot.snapshot_id in seen_snapshot_ids:
+            rejected.append((snapshot.snapshot_id, "duplicate_odds_snapshot_id"))
+            continue
+        seen_snapshot_ids.add(snapshot.snapshot_id)
+        observation_id = snapshot.source_observation_id
+        if not observation_id:
+            rejected.append((snapshot.snapshot_id, "odds_source_observation_id_missing"))
+            continue
+        observation = observation_by_id.get(observation_id)
+        if observation is None:
+            rejected.append((snapshot.snapshot_id, "odds_source_observation_missing"))
+            continue
+        scope = fixture_scopes.get(snapshot.fixture_id)
+        if scope is None or (observation.competition_key, observation.season) != scope:
+            rejected.append((snapshot.snapshot_id, "odds_source_observation_scope_mismatch"))
+            continue
+        if observation.provider != snapshot.source_id:
+            rejected.append((snapshot.snapshot_id, "odds_source_provider_mismatch"))
+            continue
+        if observation.available_at_utc > snapshot.captured_at:
+            rejected.append((snapshot.snapshot_id, "odds_source_observation_after_capture"))
+            continue
+        if snapshot.provider_quote_at is None or not (
+            snapshot.provider_quote_at < snapshot.kickoff_at
+            and snapshot.provider_quote_at <= snapshot.captured_at
+        ):
+            rejected.append((snapshot.snapshot_id, "odds_provider_quote_timestamp_invalid"))
+            continue
+        decision = evaluate_observation(
+            observation,
+            data_type=observation.entity_type,
+            cutoff=ForecastCutoff(snapshot.captured_at),
+            approvals=approval_rows,
+            max_age=timedelta.max,
+            required_uses=("collection", "storage", "benchmarking"),
+        )
+        if not decision.eligible:
+            rejected.append((snapshot.snapshot_id, decision.reason))
+        else:
+            approved.add(snapshot.snapshot_id)
+
+    failures = tuple(sorted(set(rejected)))
+    return OddsSourceAudit(
+        snapshot_count=len(snapshot_rows),
+        approved_snapshot_ids=tuple(sorted(approved)),
+        rejected_snapshots=failures,
+        passed=bool(snapshot_rows) and not failures and len(approved) == len(snapshot_rows),
+    )
