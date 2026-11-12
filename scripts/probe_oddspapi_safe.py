@@ -76,7 +76,7 @@ def probe(client, now=None) -> dict:
     ou_quotes = 0
     bookmakers_seen = set()
     market_ids_seen = set()
-    for fixture in candidates[:3]:
+    for fixture in candidates[:1]:
         odds = client.get("odds", {"fixtureId": fixture["fixtureId"], "verbosity": 3})
         requests += 1
         boards = odds.get("bookmakerOdds", {}) if isinstance(odds, dict) else {}
@@ -123,6 +123,81 @@ def probe(client, now=None) -> dict:
             "over_under_active_prices": fixture_ou,
         })
 
+    # One bounded historical sample verifies whether this account can retrieve
+    # stored prices with source-created timestamps. The API documents a 5s
+    # endpoint cooldown; this workflow makes at most one historical-odds call.
+    historical_status = "NO_FINISHED_FIXTURE_SAMPLE"
+    historical_rows = 0
+    historical_timestamped_rows = 0
+    historical_bookmakers = 0
+    historical_created_at_min = None
+    historical_created_at_max = None
+    history_fixtures = client.get("fixtures", {
+        "sportId": 10,
+        "from": (now - timedelta(days=30)).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "to": now.strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "hasOdds": "true",
+    })
+    requests += 1
+    if isinstance(history_fixtures, list):
+        past = []
+        for row in history_fixtures:
+            if not isinstance(row, dict) or row.get("fixtureId") is None:
+                continue
+            raw_start = str(row.get("startTime") or "")
+            try:
+                kickoff = datetime.fromisoformat(raw_start.replace("Z", "+00:00"))
+            except ValueError:
+                continue
+            if kickoff.tzinfo is not None and kickoff <= now:
+                past.append((kickoff, row))
+        past.sort(key=lambda item: item[0], reverse=True)
+        if past:
+            historical_fixture = past[0][1]
+            try:
+                historical = client.get("historical-odds", {"fixtureId": historical_fixture["fixtureId"]})
+                requests += 1
+                books = historical.get("bookmakers", {}) if isinstance(historical, dict) else {}
+                if isinstance(books, dict):
+                    historical_bookmakers = len(books)
+                    for board in books.values():
+                        if not isinstance(board, dict):
+                            continue
+                        market_map = board.get("markets") or {}
+                        if not isinstance(market_map, dict):
+                            continue
+                        for market in market_map.values():
+                            if not isinstance(market, dict):
+                                continue
+                            outcomes = market.get("outcomes") or {}
+                            if not isinstance(outcomes, dict):
+                                continue
+                            for outcome in outcomes.values():
+                                if not isinstance(outcome, dict):
+                                    continue
+                                players = outcome.get("players") or {}
+                                if not isinstance(players, dict):
+                                    continue
+                                for player_rows in players.values():
+                                    rows = player_rows if isinstance(player_rows, list) else [player_rows]
+                                    for item in rows:
+                                        if not isinstance(item, dict):
+                                            continue
+                                        price = item.get("price")
+                                        if isinstance(price, (int, float)) and not isinstance(price, bool) and price > 1:
+                                            historical_rows += 1
+                                            created = item.get("createdAt")
+                                            if isinstance(created, str) and created.strip():
+                                                historical_timestamped_rows += 1
+                                                historical_created_at_min = min(historical_created_at_min, created) if historical_created_at_min else created
+                                                historical_created_at_max = max(historical_created_at_max, created) if historical_created_at_max else created
+                    historical_status = "OK_WITH_TIMESTAMPED_ROWS" if historical_timestamped_rows else ("OK_NO_TIMESTAMPED_ROWS" if historical_rows else "OK_EMPTY")
+                else:
+                    historical_status = "INVALID_RESPONSE_SHAPE"
+            except OddsPapiError:
+                requests += 1
+                historical_status = "HISTORICAL_ENDPOINT_ERROR"
+
     report = {
         "schema_version": 1,
         "provider": "OddsPapi",
@@ -140,6 +215,15 @@ def probe(client, now=None) -> dict:
         "over_under_active_price_count": ou_quotes,
         "bookmakers_seen": sorted(bookmakers_seen),
         "market_ids_with_prices": sorted(market_ids_seen),
+        "historical_odds": {
+            "status": historical_status,
+            "fixture_id": str(past[0][1].get("fixtureId")) if isinstance(history_fixtures, list) and past else None,
+            "bookmaker_count": historical_bookmakers,
+            "price_rows": historical_rows,
+            "timestamped_price_rows": historical_timestamped_rows,
+            "created_at_min": historical_created_at_min,
+            "created_at_max": historical_created_at_max,
+        },
         "request_count": requests,
         "side_effects": {
             "database_writes": 0,
@@ -186,6 +270,8 @@ def main() -> int:
         f"soccer_fixtures={report['soccer_fixtures_next_36h']} "
         f"btts_prices={report['btts_active_price_count']} "
         f"ou_prices={report['over_under_active_price_count']} "
+        f"historical={report['historical_odds']['status']} "
+        f"historical_timestamped={report['historical_odds']['timestamped_price_rows']} "
         f"requests={report['request_count']} "
         f"sha256={report['report_sha256']}"
     )
