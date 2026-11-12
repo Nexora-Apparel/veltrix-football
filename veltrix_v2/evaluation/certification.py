@@ -255,7 +255,7 @@ class PredictionReleaseCertification:
             raise ValueError("PREDICTION_RELEASE_STATUS_CONFLICTS_WITH_EVIDENCE")
 
 
-def certify_prediction_publication(
+def _certify_prediction_publication_from_derived_evidence(
     evidence: Iterable[PredictionMarketEvidence],
 ) -> PredictionReleaseCertification:
     """Gate forecast publication independently from value-bet certification.
@@ -298,3 +298,109 @@ def certify_prediction_publication(
         markets=tuple(results),
         evidence=rows,
     )
+
+
+def certify_prediction_publication(
+    walk_forward: "MultiCompetitionWalkForwardEvaluation",
+    observations: Iterable["TrainingObservationEvidence"],
+    approvals: Iterable["SourceApproval"],
+) -> PredictionReleaseCertification:
+    """Certify prediction publication only from evaluator and source records.
+
+    Sample sizes are read from the walk-forward aggregates. Source rights and
+    availability are rechecked against every fold cutoff. Leakage is audited
+    from fold identities and time windows. Calibration diagnostics are
+    recomputed directly from each fold's held-out forecasts and outcomes.
+    No caller-supplied metric counts or pass/fail flags are accepted.
+    """
+    from veltrix_v2.evaluation.binary_calibration import (
+        HeldOutBinaryFold, diagnose_binary_calibration,
+    )
+    from veltrix_v2.evaluation.calibration import (
+        HeldOutFold1X2, diagnose_1x2_calibration,
+    )
+    from veltrix_v2.evaluation.calibration_gate import evaluate_calibration_gate
+    from veltrix_v2.evaluation.certification_evidence import (
+        TrainingObservationEvidence,
+        audit_walk_forward_integrity,
+        audit_walk_forward_training_sources,
+    )
+    from veltrix_v2.evaluation.multi_competition_walk_forward import (
+        MultiCompetitionWalkForwardEvaluation,
+    )
+    from veltrix_v2.quality.eligibility import SourceApproval
+
+    if not isinstance(walk_forward, MultiCompetitionWalkForwardEvaluation):
+        raise ValueError("PREDICTION_CERTIFICATION_WALK_FORWARD_REPORT_REQUIRED")
+    observation_rows = tuple(observations)
+    approval_rows = tuple(approvals)
+    if any(not isinstance(row, TrainingObservationEvidence) for row in observation_rows):
+        raise ValueError("PREDICTION_CERTIFICATION_SOURCE_RECORDS_REQUIRED")
+    if any(not isinstance(row, SourceApproval) for row in approval_rows):
+        raise ValueError("PREDICTION_CERTIFICATION_APPROVAL_RECORDS_REQUIRED")
+
+    source_audit = audit_walk_forward_training_sources(
+        walk_forward, observation_rows, approval_rows
+    )
+    integrity_audit = audit_walk_forward_integrity(walk_forward)
+
+    folds_1x2 = []
+    folds_btts = []
+    folds_totals = []
+    fold_number = 0
+    for scope_report in walk_forward.scope_reports:
+        for fold in scope_report.folds:
+            fold_number += 1
+            folds_1x2.append(HeldOutFold1X2(
+                fold_number=fold_number,
+                test_fixture_count=fold.test_fixture_count,
+                forecasts=fold.forecasts_1x2,
+                outcomes=fold.outcomes_1x2,
+            ))
+            folds_btts.append(HeldOutBinaryFold(
+                fold_number=fold_number,
+                market="BTTS",
+                test_fixture_count=fold.test_fixture_count,
+                forecasts=fold.btts_forecasts,
+                outcomes=fold.btts_outcomes,
+            ))
+            folds_totals.append(HeldOutBinaryFold(
+                fold_number=fold_number,
+                market="TOTALS",
+                test_fixture_count=fold.test_fixture_count,
+                forecasts=fold.totals_forecasts,
+                outcomes=fold.totals_outcomes,
+            ))
+
+    calibration_pass = {"1X2": False, "BTTS": False, "TOTALS": False}
+    try:
+        one_x_two_report = diagnose_1x2_calibration(folds_1x2)
+        one_x_two_gates = evaluate_calibration_gate(one_x_two_report)
+        calibration_pass["1X2"] = bool(one_x_two_gates) and all(row.passed for row in one_x_two_gates)
+    except ValueError:
+        pass
+    for market, folds in (("BTTS", folds_btts), ("TOTALS", folds_totals)):
+        try:
+            report = diagnose_binary_calibration(folds)
+            gates = evaluate_calibration_gate(report)
+            calibration_pass[market] = len(gates) == 1 and gates[0].passed
+        except ValueError:
+            pass
+
+    aggregate_samples = {
+        "1X2": walk_forward.aggregate_1x2.sample_size if walk_forward.aggregate_1x2 else 0,
+        "BTTS": walk_forward.aggregate_btts.sample_size if walk_forward.aggregate_btts else 0,
+        "TOTALS": walk_forward.aggregate_totals.sample_size if walk_forward.aggregate_totals else 0,
+    }
+    derived = tuple(
+        PredictionMarketEvidence(
+            market=market,
+            walk_forward_matches=aggregate_samples[market],
+            source_approved=source_audit.passed,
+            point_in_time_validated=source_audit.passed,
+            leakage_tests_passed=integrity_audit.passed and source_audit.passed,
+            calibration_passed=calibration_pass[market],
+        )
+        for market in REQUIRED_MARKETS
+    )
+    return _certify_prediction_publication_from_derived_evidence(derived)
