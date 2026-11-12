@@ -129,13 +129,70 @@ ALTER TABLE import_runs
     ADD COLUMN records_rejected INTEGER NOT NULL DEFAULT 0 CHECK (records_rejected >= 0),
     ADD COLUMN records_quarantined INTEGER NOT NULL DEFAULT 0 CHECK (records_quarantined >= 0),
     ADD COLUMN rights_approval_id TEXT REFERENCES source_approvals(approval_id) ON DELETE RESTRICT,
-    ADD COLUMN reason_code TEXT;
+    ADD COLUMN reason_code TEXT,
+    ADD CONSTRAINT import_runs_request_budget_check CHECK (requests_used <= request_budget),
+    ADD CONSTRAINT import_runs_terminal_count_check CHECK (
+        records_seen >= records_inserted + records_rejected + records_quarantined
+    );
 ALTER TABLE import_checkpoints
     ADD COLUMN records_rejected INTEGER NOT NULL DEFAULT 0 CHECK (records_rejected >= 0),
     ADD COLUMN records_quarantined INTEGER NOT NULL DEFAULT 0 CHECK (records_quarantined >= 0),
     ADD COLUMN requests_used INTEGER NOT NULL DEFAULT 0 CHECK (requests_used >= 0),
-    ADD COLUMN response_sha256 CHAR(64) CHECK (response_sha256 IS NULL OR response_sha256 ~ '^[0-9a-f]{64}$'),
-    ADD COLUMN last_error_code TEXT;
+    ADD COLUMN response_sha256 CHAR(64) CHECK (response_sha256 IS NULL OR response_sha256 ~ '^[0-9a-f]{64}
+
+CREATE TABLE sync_watermarks (
+    provider TEXT NOT NULL,
+    data_class TEXT NOT NULL,
+    scope TEXT NOT NULL,
+    cursor_value TEXT,
+    version BIGINT NOT NULL DEFAULT 0 CHECK (version >= 0),
+    updated_at TIMESTAMPTZ NOT NULL,
+    PRIMARY KEY(provider, data_class, scope)
+);
+
+CREATE TABLE ingestion_quarantine (
+    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    provider TEXT NOT NULL,
+    source_id TEXT NOT NULL,
+    provider_entity_id TEXT NOT NULL,
+    source_observation_id BIGINT REFERENCES source_observations(id) ON DELETE RESTRICT,
+    import_run_id BIGINT REFERENCES import_runs(id) ON DELETE RESTRICT,
+    reason_code TEXT NOT NULL,
+    details JSONB NOT NULL DEFAULT '{}'::jsonb,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    resolved_at TIMESTAMPTZ,
+    resolution_evidence TEXT
+);
+CREATE INDEX ingestion_quarantine_open_idx
+    ON ingestion_quarantine(provider, created_at DESC) WHERE resolved_at IS NULL;
+
+CREATE OR REPLACE FUNCTION reject_immutable_history_mutation()
+RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+    RAISE EXCEPTION 'IMMUTABLE_HISTORY_RECORD: % is append-only', TG_TABLE_NAME;
+END;
+$$;
+
+CREATE TRIGGER source_observations_append_only
+    BEFORE UPDATE OR DELETE ON source_observations
+    FOR EACH ROW EXECUTE FUNCTION reject_immutable_history_mutation();
+CREATE TRIGGER provider_responses_append_only
+    BEFORE UPDATE OR DELETE ON provider_responses
+    FOR EACH ROW EXECUTE FUNCTION reject_immutable_history_mutation();
+CREATE TRIGGER source_approvals_append_only
+    BEFORE UPDATE OR DELETE ON source_approvals
+    FOR EACH ROW EXECUTE FUNCTION reject_immutable_history_mutation();
+CREATE TRIGGER provider_entitlement_append_only
+    BEFORE UPDATE OR DELETE ON provider_entitlement_observations
+    FOR EACH ROW EXECUTE FUNCTION reject_immutable_history_mutation();
+CREATE TRIGGER fixture_result_versions_append_only
+    BEFORE UPDATE OR DELETE ON fixture_result_versions
+    FOR EACH ROW EXECUTE FUNCTION reject_immutable_history_mutation();
+),
+    ADD COLUMN last_error_code TEXT,
+    ADD CONSTRAINT import_checkpoints_terminal_count_check CHECK (
+        records_seen >= records_inserted + records_rejected + records_quarantined
+    );
 
 CREATE TABLE sync_watermarks (
     provider TEXT NOT NULL,
