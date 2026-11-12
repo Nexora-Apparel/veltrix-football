@@ -369,3 +369,37 @@ def test_report_constructor_rechecks_required_provider_attribution():
             source_attributions=(),
             fixtures=(fixture("f-direct", datetime(2026, 11, 12, 6, tzinfo=UTC)),),
         )
+
+
+
+def test_wyscout_cc_by_training_attribution_is_required_for_public_report():
+    row = replace(
+        fixture("f-wyscout", datetime(2026, 11, 12, 6, tzinfo=UTC)),
+        source_provider_ids=("wyscout_open_data",),
+    )
+    with pytest.raises(
+        ValueError,
+        match="REPORT_REQUIRED_PROVIDER_ATTRIBUTION_MISSING:wyscout_open_data",
+    ):
+        build_certified_daily_report(
+            report_date_wat=date(2026, 11, 12),
+            generated_at_utc=datetime(2026, 11, 12, 4, 30, tzinfo=UTC),
+            certification=passing_prediction_certification(),
+            certification_id="cert-wyscout-001",
+            fixtures=(row,),
+        )
+
+    attribution = (
+        "Shot-event training data: Pappalardo et al. (2019), Wyscout Soccer Match Event Dataset, "
+        "CC BY 4.0 — https://doi.org/10.1038/s41597-019-0247-7 "
+        "(adapted for the VELTRIX xG model)."
+    )
+    report = build_certified_daily_report(
+        report_date_wat=date(2026, 11, 12),
+        generated_at_utc=datetime(2026, 11, 12, 4, 30, tzinfo=UTC),
+        certification=passing_prediction_certification(),
+        certification_id="cert-wyscout-001",
+        fixtures=(row,),
+        source_attributions=(attribution,),
+    )
+    assert attribution in telegram_report_text(report)
