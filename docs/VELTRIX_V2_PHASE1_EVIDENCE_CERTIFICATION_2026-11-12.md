@@ -1,6 +1,6 @@
 # VELTRIX FOOTBALL 2.0 — Phase 1: Evidence-Bound Certification Integrity
 
-**Status:** IMPLEMENTATION COMPLETE; FINAL CURRENT-HEAD CI VERIFICATION IN PROGRESS. No value market is certified or unlocked; a real source-qualified evidence bundle and its signed attestation remain downstream data dependencies for Phases 2–3.
+**Status:** COMPLETE — final certification/release-consumer CI passed 105 tests and the full repository regression suite passed 568 tests on code commit `31886f1992007d1b0d86bc67a50981064518dc61` (run #139). A documentation-only update followed. No value market is certified or unlocked. No value market is certified or unlocked; a real source-qualified evidence bundle and its signed attestation remain downstream data dependencies for Phases 2–3.
 
 ## Objective
 
@@ -20,9 +20,9 @@ The previous runtime predicate `app.value_bets._certificate_allows` accepted a m
 - Added a raw-row recomputation engine for walk-forward metrics, point-in-time feature observations, ordered non-overlapping walk-forward fold manifests, WAT date clusters, approved source IDs, retained provider response bytes, canonical redacted request fingerprints, JSON-pointer value checks, exact quote/settlement joins, model/calibration versions, duplicate fixture-market selections, score-derived outcomes, net profit after explicit fees, date-clustered ROI confidence bounds, timestamped-odds coverage, and same-fixture 1X2 bookmaker comparisons.
 - Added `scripts/verify_certification_evidence.py`, optional raw-audit attachment to `scripts/build_value_certificate.py`, and `gh attestation verify` integration pinned to the repository, signer workflow and `refs/heads/main`. A raw statistical pass or valid artifact attestation still cannot authorize release by itself.
 - Added `.github/workflows/certification-evidence-attestation.yml`; it can attest only a manifest that passes raw statistical gates on `main`. It has not been dispatched because no qualifying evidence bundle exists.
-- Added a dedicated GitHub Actions certification workflow. The focused certification/release-consumer suite passed on run 21; the full repository regression suite is still running.
+- Added a dedicated GitHub Actions certification workflow. The focused certification/release-consumer suite passed on run #139 (105 tests); the full repository regression suite passed on the same run (568 tests in 39.43 seconds).
 - The daily prediction workflow was triggered by PR activity but its prediction job was skipped. No production schedule, database write, Telegram delivery or Vercel deployment was activated.
-- Previous verified current-head CI run #108 passed 561 tests. Subsequent hardening added raw bookmaker benchmark provenance, fixture identity provenance, dashboard/Telegram release-consumer sanitization and normalized-path duplicate rejection; final CI is being rerun on the updated head.
+- Final CI run #139 passed after raw bookmaker benchmark provenance, fixture identity provenance, dashboard/Telegram release-consumer sanitization and normalized-path duplicate rejection were added. The 568-test run is the verification baseline for Phase 1.
 - Daily prediction workflow remained skipped during PR validation. No production deployment, database write, Telegram delivery or schedule activation occurred.
 
 ## Deferred evidence production (not a Phase 1 implementation blocker)
