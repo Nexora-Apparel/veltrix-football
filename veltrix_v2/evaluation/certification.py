@@ -82,6 +82,7 @@ class ReleaseCertification:
     global_failures: tuple[str, ...]
     evidence: tuple[MarketCertificationEvidence, ...] = ()
     bookmaker_comparison: "BookmakerComparison1X2 | None" = None
+    source_audit_bundle: "ReleaseSourceAuditBundle | None" = None
 
     def __init__(
         self,
@@ -92,6 +93,7 @@ class ReleaseCertification:
         global_failures: tuple[str, ...],
         evidence: tuple[MarketCertificationEvidence, ...] = (),
         bookmaker_comparison: "BookmakerComparison1X2 | None" = None,
+        source_audit_bundle: "ReleaseSourceAuditBundle | None" = None,
         *,
         _seal: object | None = None,
     ) -> None:
@@ -105,6 +107,7 @@ class ReleaseCertification:
             ("global_failures", global_failures),
             ("evidence", evidence),
             ("bookmaker_comparison", bookmaker_comparison),
+            ("source_audit_bundle", source_audit_bundle),
         ):
             object.__setattr__(self, name, value)
         self.__post_init__()
@@ -142,6 +145,16 @@ class ReleaseCertification:
                 or comparison.comparison.model_beats_log_loss != self.one_x_two_beats_bookmaker_log_loss
             ):
                 raise ValueError("RELEASE_CERTIFICATION_BOOKMAKER_COMPARISON_CONFLICT")
+        if self.source_audit_bundle is not None:
+            from veltrix_v2.evaluation.certification_evidence import ReleaseSourceAuditBundle
+            if not isinstance(self.source_audit_bundle, ReleaseSourceAuditBundle):
+                raise ValueError("RELEASE_CERTIFICATION_SOURCE_AUDIT_BUNDLE_TYPE_INVALID")
+            if any(
+                row.source_approved != self.source_audit_bundle.source_approved
+                or row.point_in_time_validated != self.source_audit_bundle.point_in_time_validated
+                for row in evidence
+            ):
+                raise ValueError("RELEASE_CERTIFICATION_SOURCE_AUDIT_EVIDENCE_CONFLICT")
         expected_by_market = {}
         for row in evidence:
             failed = []
@@ -176,6 +189,7 @@ def _certify_release_from_derived_evidence(
     one_x_two_beats_bookmaker_brier: bool,
     one_x_two_beats_bookmaker_log_loss: bool,
     bookmaker_comparison: "BookmakerComparison1X2 | None" = None,
+    source_audit_bundle: "ReleaseSourceAuditBundle | None" = None,
 ) -> ReleaseCertification:
     if type(one_x_two_beats_bookmaker_brier) is not bool or type(one_x_two_beats_bookmaker_log_loss) is not bool:
         raise ValueError("CERTIFICATION_BENCHMARK_FLAGS_MUST_BE_BOOLEAN")
@@ -230,6 +244,7 @@ def _certify_release_from_derived_evidence(
         global_failures=tuple(global_failures),
         evidence=rows,
         bookmaker_comparison=bookmaker_comparison,
+        source_audit_bundle=source_audit_bundle,
         _seal=_CERTIFICATION_SEAL,
     )
 
@@ -492,6 +507,7 @@ def certify_release(
     from veltrix_v2.evaluation.benchmark_1x2 import compare_1x2_to_bookmaker
     from veltrix_v2.evaluation.certification_evidence import (
         TrainingObservationEvidence,
+        ReleaseSourceAuditBundle,
         audit_odds_snapshot_sources,
         audit_paper_ledger_sources,
         audit_walk_forward_integrity,
@@ -533,10 +549,14 @@ def certify_release(
     ledger_audit = audit_paper_ledger_sources(
         walk_forward, paper_ledger, observation_rows, approval_rows
     )
-    sources_pass = (
-        training_audit.passed and odds_audit.passed and ledger_audit.passed
+    source_audit_bundle = ReleaseSourceAuditBundle(
+        training_sources=training_audit,
+        walk_forward_integrity=integrity_audit,
+        odds_sources=odds_audit,
+        paper_ledger_sources=ledger_audit,
     )
-    point_in_time_pass = integrity_audit.passed and sources_pass
+    sources_pass = source_audit_bundle.source_approved
+    point_in_time_pass = source_audit_bundle.point_in_time_validated
 
     eligible_ids = tuple(
         fixture_id
@@ -619,4 +639,5 @@ def certify_release(
         one_x_two_beats_bookmaker_brier=comparison.comparison.model_beats_brier,
         one_x_two_beats_bookmaker_log_loss=comparison.comparison.model_beats_log_loss,
         bookmaker_comparison=comparison,
+        source_audit_bundle=source_audit_bundle,
     )
