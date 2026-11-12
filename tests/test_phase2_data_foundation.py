@@ -17,6 +17,7 @@ from veltrix_v2.data.fivedollar import (
 from veltrix_v2.data.postgres import PostgresHistoryStore
 from veltrix_v2.data.rights import evaluate_fixture_import, evaluate_source_use
 from scripts import phase2_fivedollar_history_dry_run as history_probe
+from scripts import phase3_import_fivedollar_history as phase3_import
 
 NOW = datetime(2026, 11, 12, 12, tzinfo=timezone.utc)
 KICKOFF = NOW - timedelta(days=30)
@@ -93,6 +94,25 @@ def provider_page(rows=None, pagination=None):
         "pagination": pagination or {"page": 1, "per_page": 100, "has_more": False},
     }
     return json.dumps(body, sort_keys=True, separators=(",", ":")).encode()
+
+
+def test_phase3_import_requires_explicit_staging_enable(monkeypatch):
+    monkeypatch.delenv("VELTRIX_ENABLE_STAGING_IMPORT", raising=False)
+    with pytest.raises(RuntimeError, match="STAGING_IMPORT_EXPLICIT_ENABLE_REQUIRED"):
+        phase3_import._preflight("not-a-real-database-url", "veltrix_football_staging")
+
+
+def test_phase3_import_rejects_non_staging_database_before_connecting(monkeypatch):
+    monkeypatch.setenv("VELTRIX_ENABLE_STAGING_IMPORT", "YES")
+    with pytest.raises(RuntimeError, match="STAGING_IMPORT_DATABASE_ALLOWLIST_MISMATCH"):
+        phase3_import._preflight("not-a-real-database-url", "veltrix-football")
+
+
+def test_phase3_import_window_and_api_key_are_bounded():
+    with pytest.raises(ValueError, match="HISTORY_WINDOW_MUST_BE_1_TO_365_DAYS"):
+        phase3_import.run_import("unused", "key", days=366)
+    with pytest.raises(RuntimeError, match="FIVEDOLLAR_API_KEY_REQUIRED"):
+        phase3_import.run_import("unused", "", days=30)
 
 
 def test_source_approval_requires_complete_evidence():
