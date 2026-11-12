@@ -338,3 +338,16 @@ The automated work is prepared, but provider qualification cannot be signed off 
 6. **OpenPlay / ASA review.** OpenPlay remains quarantined until upstream source lineage is documented. ASA remains conditional until the CC BY-SA 4.0 implications for model weights and public prediction outputs are resolved.
 
 No manual action above authorizes production writes, a production deployment, Telegram delivery, daily scheduling or value-bet activation. Those remain Phase 7 release-gate decisions.
+
+
+### The Odds API — timestamp semantics and historical-plan constraint
+
+The current odds response exposes `last_update` at market level; preserve that value as the provider quote timestamp and keep the local retrieval time separately as `captured_at`. Do not substitute the retrieval time for a missing provider quote timestamp.
+
+Historical odds are served as timestamped snapshots with an explicit response `timestamp` (the closest snapshot at or before the requested time): 10-minute intervals from 2020-06-06 and 5-minute intervals from September 2022. The historical odds endpoints are available only on paid usage plans. The historical events/markets discovery endpoints are available on all plans, but they do not return historical prices.
+
+**Release implication:** verify the actual account's historical-odds entitlement before planning 1X2 bookmaker benchmarking across the 1,000-match walk-forward sample. If the account lacks historical-odds access, do not synthesize bookmaker prices from current lines or use local retrieval time as quote time. Keep the value-betting lane locked until an approved timestamped historical benchmark source is available. Prospective current-odds collection can still accumulate timestamped records for future qualification.
+
+Official references:
+- https://the-odds-api.com/liveapi/guides/v4/
+- https://the-odds-api.com/historical-odds-data/
