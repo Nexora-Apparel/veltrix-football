@@ -65,7 +65,8 @@ def probe(api_key: str, send=_send) -> dict:
     else:
         status, payload, headers = send(api_key)
         if status == 200 and isinstance(payload, dict):
-            teams = payload.get("teams")
+            data = payload.get("data", payload)
+            teams = data.get("teams") if isinstance(data, dict) else None
             probe_status = "AUTH_OK" if isinstance(teams, list) and teams else "AUTH_OK_EMPTY_TEAMS"
         elif status == 402:
             probe_status = "HTTP_402_CREDITS_EXHAUSTED"
@@ -85,7 +86,9 @@ def probe(api_key: str, send=_send) -> dict:
         "http_status": status,
         "credits_used": used,
         "credits_remaining": remaining,
-        "team_count": len(payload.get("teams", [])) if isinstance(payload, dict) and isinstance(payload.get("teams"), list) else 0,
+        "team_count": len((payload.get("data", payload).get("teams") or []))
+        if isinstance(payload, dict) and isinstance(payload.get("data", payload), dict)
+        and isinstance(payload.get("data", payload).get("teams"), list) else 0,
         "request_count": 1 if api_key.strip() else 0,
         "maximum_credits_spent": 1,
         "side_effects": {
