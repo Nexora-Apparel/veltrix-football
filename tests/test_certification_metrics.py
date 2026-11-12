@@ -13,7 +13,7 @@ ROLES = ("walk_forward_rows", "coverage_audit", "prospective_ledger", "odds_snap
 def _write_bundle(tmp_path, walk, paper, odds, settlements):
     payloads = {
         "walk_forward_rows": {"rows": walk},
-        "coverage_audit": {"rights_status": "APPROVED_FOR_INTENDED_USE", "commercial_use_eligible": True, "rows": []},
+        "coverage_audit": {"rights_status": "APPROVED_FOR_INTENDED_USE", "commercial_use_eligible": True, "approved_source_ids": ["source-a"], "rows": []},
         "prospective_ledger": {"rows": paper},
         "odds_snapshots": {"rows": odds},
         "settlement_records": {"rows": settlements},
@@ -40,7 +40,7 @@ def test_raw_certification_rejects_empty_unverifiable_evidence(tmp_path):
 def test_raw_certification_rejects_probability_leakage_and_missing_fixture_provenance(tmp_path):
     walk = [{
         "fixture_id": "f1", "market": "1X2", "kickoff": "2026-01-01T18:00:00+00:00",
-        "prediction_at": "2026-01-01T19:00:00+00:00", "feature_max_observed_at": "2026-01-01T19:00:00+00:00",
+        "prediction_at": "2026-01-01T17:00:00+00:00", "features": [{"name": "form", "value": 0.5, "observed_at": "2026-01-01T18:00:00+00:00", "source_id": "source-a"}],
         "model_version": "model-v1", "split": "full", "outcome": "home",
         "model_probabilities": {"home": .6, "draw": .2, "away": .2},
         "bookmaker_probabilities": {"home": .5, "draw": .3, "away": .2},
