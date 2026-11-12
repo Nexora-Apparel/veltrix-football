@@ -19,7 +19,8 @@ def observation():
 def approval(**overrides):
     values = dict(approval_id="approval-epl-fixtures", provider="strikerapi",
                   competition_key="EPL", data_type="fixtures_results", status="approved",
-                  valid_from_utc=T - timedelta(days=1))
+                  valid_from_utc=T - timedelta(days=1),
+                  permitted_uses=("collection", "storage", "model_training", "benchmarking", "public_display", "commercial_use"))
     values.update(overrides)
     return SourceApproval(**values)
 
@@ -97,3 +98,35 @@ def test_negative_max_age_is_rejected():
             cutoff=ForecastCutoff(T), approvals=(approval(),),
             max_age=-timedelta(seconds=1),
         )
+
+
+def test_model_training_permission_does_not_implicitly_grant_public_display():
+    restricted = approval(permitted_uses=("collection", "storage", "model_training"))
+    assert decide(approvals=(restricted,)).eligible
+    public = evaluate_observation(
+        observation(), data_type="fixtures_results",
+        cutoff=ForecastCutoff(T), approvals=(restricted,),
+        max_age=timedelta(days=2),
+        required_uses=("collection", "storage", "model_training", "public_display", "commercial_use"),
+    )
+    assert not public.eligible
+    assert public.reason == "required_source_use_not_approved:public_display,commercial_use"
+
+
+def test_source_without_model_training_permission_is_not_training_eligible():
+    restricted = approval(permitted_uses=("collection", "storage", "public_display"))
+    decision = decide(approvals=(restricted,))
+    assert not decision.eligible
+    assert decision.reason == "required_source_use_not_approved:model_training"
+
+
+def test_unknown_or_duplicate_required_uses_are_rejected():
+    import pytest
+    with pytest.raises(ValueError, match="REQUIRED_USES_INVALID"):
+        evaluate_observation(
+            observation(), data_type="fixtures_results",
+            cutoff=ForecastCutoff(T), approvals=(approval(),),
+            max_age=timedelta(days=2), required_uses=("model_training", "model_training"),
+        )
+    with pytest.raises(ValueError, match="invalid or duplicate source permission"):
+        approval(permitted_uses=("model_training", "not_a_real_permission"))
