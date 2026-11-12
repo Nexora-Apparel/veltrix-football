@@ -21,6 +21,7 @@ jobs:
     timeout-minutes: 5
     env:
       FIVEDOLLARFOOTBALL_API_KEY: ${{ secrets.FIVEDOLLARFOOTBALL_API_KEY }}
+      FIVEDOLLAR_REQUIRED_PLAN: community
       THE_ODDS_API_KEY: ${{ secrets.THE_ODDS_API_KEY }}
       PROBE_THE_ODDS_API_MARKETS: ${{ github.event_name == 'workflow_dispatch' && inputs.probe_odds_markets || false }}
     steps:
