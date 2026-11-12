@@ -383,3 +383,16 @@ def test_postgres_history_writer_requires_explicit_expected_database():
 def test_postgres_history_writer_hard_blocks_production_database_name():
     with pytest.raises(RuntimeError, match="PRODUCTION_DATABASE_WRITES_DISABLED"):
         PostgresHistoryStore(lambda: None, allow_writes=True, expected_database="veltrix-football")
+
+
+
+def test_finished_fixture_availability_cannot_precede_kickoff():
+    with pytest.raises(ValueError, match="FIXTURE_RESULT_AVAILABILITY_PRECEDES_KICKOFF"):
+        fixture("104").__class__(
+            **{
+                field: getattr(fixture("104"), field)
+                for field in fixture("104").__dataclass_fields__
+                if field != "available_at_utc"
+            },
+            available_at_utc=KICKOFF - timedelta(seconds=1),
+        )
