@@ -63,9 +63,9 @@ def _observation(*, available_at, approval_id="approval-1", event_at=None, provi
     )
 
 
-def _approval(*, permitted_uses=("collection", "storage", "model_training", "benchmarking"), data_type="match_result"):
+def _approval(*, permitted_uses=("collection", "storage", "model_training", "benchmarking"), data_type="match_result", approval_id="approval-result"):
     return SourceApproval(
-        approval_id="approval-1",
+        approval_id=approval_id,
         provider="provider-a",
         competition_key="league-a",
         data_type=data_type,
@@ -289,7 +289,7 @@ def test_odds_source_audit_requires_quote_source_record_and_benchmark_rights(mon
         report,
         (_odds_snapshot(),),
         _source_records(),
-        (_approval(data_type="odds_quote"),),
+        (_approval(data_type="odds_quote", approval_id="approval-odds"),),
     )
     assert audit.passed
     assert audit.approved_snapshot_ids == ("odds-test-1",)
@@ -301,7 +301,7 @@ def test_odds_source_audit_rejects_missing_source_observation_binding(monkeypatc
         report,
         (_odds_snapshot(source_observation_id=None),),
         _source_records(),
-        (_approval(data_type="odds_quote"),),
+        (_approval(data_type="odds_quote", approval_id="approval-odds"),),
     )
     assert not audit.passed
     assert "odds_source_observation_id_missing" in {
@@ -315,7 +315,7 @@ def test_odds_source_audit_rejects_provider_mismatch(monkeypatch):
         report,
         (_odds_snapshot(source_id="other-provider"),),
         _source_records(),
-        (_approval(data_type="odds_quote"),),
+        (_approval(data_type="odds_quote", approval_id="approval-odds"),),
     )
     assert not audit.passed
     assert "odds_source_provider_mismatch" in {
