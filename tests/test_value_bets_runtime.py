@@ -98,9 +98,9 @@ def test_runtime_1x2_screen_uses_poisson_alternative_when_elo_is_primary():
     fixture["probabilities"] = {"home_win": 0.99, "draw": 0.005, "away_win": 0.005}
     fixture["poisson_probabilities"] = {"home_win": 0.70, "draw": 0.18, "away_win": 0.12}
     result = screen_fixture_value_bets(fixture, validation_certificate=_certificate())
-    candidate = result["markets"]["1X2"]["candidates"][0]
-    assert candidate["model"] == "experimental_recent_goals_poisson"
-    assert candidate["model_probability"] == 0.70
+    assert result["markets"]["1X2"]["candidates"] == []
+    assert result["markets"]["1X2"]["status"] == "DISABLED_UNVALIDATED"
+    assert result["model_validated"] is False
 
 
 def test_runtime_1x2_screen_does_not_use_an_uncertified_model_family():
@@ -109,7 +109,7 @@ def test_runtime_1x2_screen_does_not_use_an_uncertified_model_family():
     fixture["goal_markets_model"] = "experimental_competition_prior_poisson"
     result = screen_fixture_value_bets(fixture, validation_certificate=_certificate())
     assert result["markets"]["1X2"]["candidates"] == []
-    assert result["markets"]["1X2"]["status"] == "NO_QUALIFYING_VALUE"
+    assert result["markets"]["1X2"]["status"] == "DISABLED_UNVALIDATED"
 
     
 def test_paper_candidates_require_prospective_goal_market_calibration():
