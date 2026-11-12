@@ -2,7 +2,7 @@ name: Phase 2 — PostgreSQL 16 and 18 Historical Data Foundation Acceptance
 
 on:
   pull_request:
-    branches: [main]
+    branches: [main, phase2/provider-rights-access-20261112]
     paths:
       - "db/**"
       - "scripts/db_migrate.py"
