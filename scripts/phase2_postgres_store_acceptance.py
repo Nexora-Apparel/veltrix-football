@@ -236,7 +236,7 @@ def main() -> dict:
     revoked_result = store.persist_page(
         replace(response("phase2-ci-page-after-rights-revocation", (2, 1)),
                 fetched_at_utc=now + timedelta(seconds=4)),
-        [fixture], approval, import_run_id=run_id,
+        [fixture], approval,
     )
     assert revoked_result["quarantined_or_conflicting"] == 1
     with psycopg.connect(database_url) as conn:
