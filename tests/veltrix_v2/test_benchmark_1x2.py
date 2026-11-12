@@ -89,3 +89,13 @@ def test_no_common_sample_is_rejected():
             [SettledOutcome1X2("f1", "HOME"), SettledOutcome1X2("f2", "AWAY")],
             eligible_fixture_ids=["f1", "f2"],
         )
+
+
+def test_1x2_benchmark_rejects_non_normalized_probability_triplet():
+    with pytest.raises(ValueError, match="NORMALIZED_SELECTIONS_MUST_SUM_TO_ONE"):
+        compare_1x2_to_bookmaker(
+            [Forecast1X2("f1", 0.4, 0.3, 0.3)],
+            [quote("f1", "HOME", 0.4), quote("f1", "DRAW", 0.4), quote("f1", "AWAY", 0.4)],
+            [SettledOutcome1X2("f1", "HOME")],
+            eligible_fixture_ids=["f1"],
+        )
