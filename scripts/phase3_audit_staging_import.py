@@ -254,14 +254,26 @@ def run_audit(database_url: str) -> dict:
             """, (json.dumps(sorted(COMPETITIONS)),))
             entitlement_snapshots = cur.fetchone()[0]
             cur.execute("""
-                SELECT count(*),max(manifest_sha256) FROM import_runs
+                SELECT count(*),max(id),max(manifest_sha256),max(request_budget),
+                       max(requests_used),max(records_seen),max(records_inserted),
+                       max(records_rejected),max(records_quarantined)
+                FROM import_runs
                 WHERE provider='5DollarFootballAPI' AND status='COMPLETED'
                   AND requests_used<=request_budget
                   AND records_seen=records_inserted+records_rejected+records_quarantined
                   AND manifest_sha256 IS NOT NULL
             """)
-            completed_runs, import_manifest_sha256 = cur.fetchone()
+            (completed_runs, completed_run_id, import_manifest_sha256, request_budget,
+             requests_used, records_seen, records_inserted, records_rejected,
+             records_quarantined) = cur.fetchone()
             import_manifest_sha256 = import_manifest_sha256.strip() if import_manifest_sha256 else None
+            cur.execute("SELECT count(*) FROM provider_responses")
+            archived_response_count = cur.fetchone()[0]
+            cur.execute(
+                "SELECT count(*) FROM ingestion_quarantine WHERE import_run_id=%s",
+                (completed_run_id,),
+            )
+            quarantine_row_count = cur.fetchone()[0] if completed_run_id is not None else 0
             cur.execute("SELECT count(*) FROM import_runs")
             total_import_runs = cur.fetchone()[0]
             cur.execute("""
@@ -298,6 +310,14 @@ def run_audit(database_url: str) -> dict:
                 "completed_import_runs": completed_runs,
                 "total_import_runs": total_import_runs,
                 "import_manifest_sha256": import_manifest_sha256,
+                "request_budget": request_budget,
+                "requests_used": requests_used,
+                "archived_response_count": archived_response_count,
+                "records_seen": records_seen,
+                "records_inserted": records_inserted,
+                "records_rejected": records_rejected,
+                "records_quarantined": records_quarantined,
+                "quarantine_row_count": quarantine_row_count,
                 "completed_checkpoints": completed_checkpoints,
                 "total_checkpoints": total_checkpoints,
                 "open_quarantine_records": open_quarantine,
@@ -326,6 +346,14 @@ def run_audit(database_url: str) -> dict:
                 failures.append("ACTIVE_ENTITLEMENT_SNAPSHOT_MISSING")
             if completed_runs != 1 or total_import_runs != 1 or completed_checkpoints != 1 or total_checkpoints != 1:
                 failures.append("SINGLE_IMPORT_ACCOUNTING_MISMATCH")
+            if (
+                request_budget != 40 or requests_used is None or requests_used < 3
+                or requests_used != archived_response_count
+                or records_inserted != len(observations)
+                or records_rejected is None or records_quarantined is None
+                or records_rejected + records_quarantined != quarantine_row_count
+            ):
+                failures.append("REQUEST_OR_RECORD_ACCOUNTING_MISMATCH")
             report["failures"] = sorted(set(failures))
             report["status"] = "PASS" if not report["failures"] else "FAIL"
             material = json.dumps(report, sort_keys=True, separators=(",", ":"), default=str).encode()
