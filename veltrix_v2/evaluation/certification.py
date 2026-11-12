@@ -9,6 +9,8 @@ from dataclasses import dataclass
 from decimal import Decimal
 from typing import Iterable
 
+from veltrix_v2.evaluation.roi import MarketPerformance
+
 REQUIRED_MARKETS = ("1X2", "BTTS", "TOTALS")
 MIN_WALK_FORWARD_MATCHES = 1000
 MIN_PROSPECTIVE_SETTLED = 300
@@ -24,9 +26,7 @@ class MarketCertificationEvidence:
     prospective_settled_selections: int
     distinct_dates: int
     timestamped_odds_coverage: Decimal
-    net_roi: Decimal
-    roi_ci95_lower: Decimal
-    roi_ci_method: str
+    roi_performance: MarketPerformance
     source_approved: bool
     point_in_time_validated: bool
 
@@ -39,16 +39,20 @@ class MarketCertificationEvidence:
             value = getattr(self, field)
             if isinstance(value, bool) or not isinstance(value, int) or value < 0:
                 raise ValueError(f"CERTIFICATION_INVALID_{field.upper()}")
-        for field in ("timestamped_odds_coverage", "net_roi", "roi_ci95_lower"):
-            value = getattr(self, field)
-            if not isinstance(value, Decimal) or not value.is_finite():
-                raise ValueError(f"CERTIFICATION_INVALID_{field.upper()}")
+        if not isinstance(self.timestamped_odds_coverage, Decimal) or not self.timestamped_odds_coverage.is_finite():
+            raise ValueError("CERTIFICATION_INVALID_TIMESTAMPED_ODDS_COVERAGE")
         if not ZERO <= self.timestamped_odds_coverage <= Decimal("1"):
             raise ValueError("CERTIFICATION_ODDS_COVERAGE_OUT_OF_RANGE")
         if type(self.source_approved) is not bool or type(self.point_in_time_validated) is not bool:
             raise ValueError("CERTIFICATION_SOURCE_AND_POINT_IN_TIME_FLAGS_MUST_BE_BOOLEAN")
-        if not isinstance(self.roi_ci_method, str) or not self.roi_ci_method.strip():
-            raise ValueError("CERTIFICATION_ROI_CI_METHOD_REQUIRED")
+        if not isinstance(self.roi_performance, MarketPerformance):
+            raise ValueError("CERTIFICATION_ROI_PERFORMANCE_EVIDENCE_REQUIRED")
+        if self.roi_performance.market != self.market:
+            raise ValueError("CERTIFICATION_ROI_PERFORMANCE_MARKET_MISMATCH")
+        if self.roi_performance.settled_bets != self.prospective_settled_selections:
+            raise ValueError("CERTIFICATION_ROI_SETTLED_COUNT_MISMATCH")
+        if self.roi_performance.roi is None or self.roi_performance.roi_ci_95 is None:
+            raise ValueError("CERTIFICATION_ROI_PERFORMANCE_INTERVAL_REQUIRED")
 
 
 @dataclass(frozen=True, slots=True)
@@ -107,9 +111,9 @@ class ReleaseCertification:
             if row.prospective_settled_selections < MIN_PROSPECTIVE_SETTLED: failed.append("PROSPECTIVE_SAMPLE_BELOW_300")
             if row.distinct_dates < MIN_DISTINCT_DATES: failed.append("DISTINCT_DATES_BELOW_90")
             if row.timestamped_odds_coverage < MIN_ODDS_COVERAGE: failed.append("TIMESTAMPED_ODDS_COVERAGE_BELOW_98_PERCENT")
-            if row.net_roi <= ZERO: failed.append("NET_ROI_NOT_POSITIVE")
-            if row.roi_ci95_lower <= ZERO: failed.append("ROI_LOWER_95_PERCENT_BOUND_NOT_POSITIVE")
-            if row.roi_ci_method != "date_block_bootstrap_by_match_date": failed.append("ROI_INTERVAL_NOT_DATE_BLOCK_BOOTSTRAP")
+            if row.roi_performance.roi is None or row.roi_performance.roi <= ZERO: failed.append("NET_ROI_NOT_POSITIVE")
+            if row.roi_performance.roi_ci_95 is None or row.roi_performance.roi_ci_95[0] <= ZERO: failed.append("ROI_LOWER_95_PERCENT_BOUND_NOT_POSITIVE")
+            if row.roi_performance.roi_ci_method != "date_block_bootstrap_by_match_date": failed.append("ROI_INTERVAL_NOT_DATE_BLOCK_BOOTSTRAP")
             if not row.source_approved: failed.append("SOURCE_NOT_APPROVED")
             if not row.point_in_time_validated: failed.append("POINT_IN_TIME_VALIDATION_MISSING")
             expected_by_market[row.market] = CertificationResult(row.market, not failed, tuple(failed))
@@ -157,11 +161,11 @@ def certify_release(
             failures.append("DISTINCT_DATES_BELOW_90")
         if row.timestamped_odds_coverage < MIN_ODDS_COVERAGE:
             failures.append("TIMESTAMPED_ODDS_COVERAGE_BELOW_98_PERCENT")
-        if row.net_roi <= ZERO:
+        if row.roi_performance.roi is None or row.roi_performance.roi <= ZERO:
             failures.append("NET_ROI_NOT_POSITIVE")
-        if row.roi_ci95_lower <= ZERO:
+        if row.roi_performance.roi_ci_95 is None or row.roi_performance.roi_ci_95[0] <= ZERO:
             failures.append("ROI_LOWER_95_PERCENT_BOUND_NOT_POSITIVE")
-        if row.roi_ci_method != "date_block_bootstrap_by_match_date":
+        if row.roi_performance.roi_ci_method != "date_block_bootstrap_by_match_date":
             failures.append("ROI_INTERVAL_NOT_DATE_BLOCK_BOOTSTRAP")
         if not row.source_approved:
             failures.append("SOURCE_NOT_APPROVED")
