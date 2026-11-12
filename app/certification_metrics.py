@@ -208,6 +208,8 @@ def recompute_raw_certification(manifest_path: str | Path, *, min_walk_forward: 
             raise EvidenceIntegrityError("Settlement IDs must be present and unique.")
         if not result.get("source_id") or not _time(result.get("settled_at")):
             raise EvidenceIntegrityError("Settlement record lacks source provenance or timestamp.")
+        if result.get("status") not in {"FT", "AET", "PEN"} or not result.get("settlement_version"):
+            raise EvidenceIntegrityError("Settlement record must identify a final status and immutable settlement version.")
         settlement_by_id[settlement_id] = result
 
     paper_by_market: dict[str, list[dict[str, Any]]] = defaultdict(list)
@@ -251,11 +253,8 @@ def recompute_raw_certification(manifest_path: str | Path, *, min_walk_forward: 
         if settlement.get("source_id") not in approved_sources:
             failures[market].append("settlement source is not rights-approved")
             continue
-        if settlement.get("model_version") != row.get("model_version") or row.get("model_commit") != code_commit:
-            failures[market].append("settlement/model provenance mismatch")
-            continue
-        if market != "1X2" and settlement.get("calibration_version") != row.get("calibration_version"):
-            failures[market].append("settlement/calibration provenance mismatch")
+        if row.get("model_commit") != code_commit:
+            failures[market].append("prospective model commit provenance mismatch")
             continue
         if _time(settlement.get("settled_at")) <= kickoff:
             failures[market].append("settlement timestamp is not after kickoff")
