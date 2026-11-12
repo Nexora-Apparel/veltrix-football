@@ -107,8 +107,13 @@ def probe(client, now=None) -> dict:
                                 players = {str(i): value for i, value in enumerate(players)}
                             if isinstance(players, dict):
                                 for player in players.values():
-                                    if isinstance(player, dict) and player.get("active") and player.get("price") is not None:
-                                        active_prices.append(player.get("price"))
+                                    if isinstance(player, dict) and player.get("active"):
+                                        try:
+                                            price_value = float(player.get("price"))
+                                        except (TypeError, ValueError, OverflowError):
+                                            continue
+                                        if 1 < price_value < 1000:
+                                            active_prices.append(price_value)
                     if active_prices:
                         market_ids_seen.add(str(market_id))
                         if str(market_id) in btts_ids:
@@ -198,9 +203,14 @@ def probe(client, now=None) -> dict:
                                             historical_rows += 1
                                             created = item.get("createdAt")
                                             if isinstance(created, str) and created.strip():
-                                                historical_timestamped_rows += 1
-                                                historical_created_at_min = min(historical_created_at_min, created) if historical_created_at_min else created
-                                                historical_created_at_max = max(historical_created_at_max, created) if historical_created_at_max else created
+                                                try:
+                                                    parsed_created = datetime.fromisoformat(created.replace("Z", "+00:00"))
+                                                except ValueError:
+                                                    parsed_created = None
+                                                if parsed_created is not None and parsed_created.tzinfo is not None:
+                                                    historical_timestamped_rows += 1
+                                                    historical_created_at_min = min(historical_created_at_min, created) if historical_created_at_min else created
+                                                    historical_created_at_max = max(historical_created_at_max, created) if historical_created_at_max else created
                     historical_status = "OK_WITH_TIMESTAMPED_ROWS" if historical_timestamped_rows else ("OK_NO_TIMESTAMPED_ROWS" if historical_rows else "OK_EMPTY")
                 else:
                     historical_status = "INVALID_RESPONSE_SHAPE"
