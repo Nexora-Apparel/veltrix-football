@@ -254,7 +254,7 @@ class PostgresHistoryStore:
         provider_response_id: int | None, evidence_sha256: str,
         checked_at_utc: datetime,
     ) -> int:
-        if checked_at_utc.tzinfo is None:
+        if checked_at_utc.tzinfo is None or checked_at_utc.utcoffset() is None:
             raise ValueError("ENTITLEMENT_CHECK_TIME_MUST_BE_TIMEZONE_AWARE")
         if len(evidence_sha256) != 64 or any(ch not in "0123456789abcdef" for ch in evidence_sha256.casefold()):
             raise ValueError("ENTITLEMENT_EVIDENCE_HASH_INVALID")
