@@ -29,7 +29,9 @@ on:
       - "app/certification_evidence.py"
       - "app/certification_metrics.py"
       - "app/value_bets.py"
+      - "app/telegram_commands.py"
       - "scripts/build_value_certificate.py"
+      - "scripts/send_telegram_report.py"
       - "scripts/verify_certification_evidence.py"
       - "tests/test_certification_evidence.py"
       - "tests/test_certification_metrics.py"
@@ -37,6 +39,8 @@ on:
       - "tests/test_value_bets_runtime.py"
       - "tests/test_build_value_certificate.py"
       - "tests/test_telegram_report.py"
+      - "tests/test_telegram_commands.py"
+      - "docs/VELTRIX_V2_PHASE2_PROVIDER_RIGHTS_ACCESS_2026-11-12.md"
       - ".github/workflows/certification-evidence-tests.yml"
       - ".github/workflows/certification-evidence-attestation.yml"
 
