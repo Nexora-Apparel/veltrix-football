@@ -172,11 +172,16 @@ def derive_market_evidence(
         None,
     )
     if performance is None:
-        # An empty ledger still yields an explicit zero-sample market report.
-        performance = next(row for row in evaluate_roi(
-            _empty_market_settlement_placeholder(), bootstrap_draws=bootstrap_draws,
-            bootstrap_seed=bootstrap_seed,
-        ).markets if row.market == canonical)
+        # An empty ledger is explicit zero evidence, not a missing report.
+        performance = MarketPerformance(
+            market=canonical,
+            total_bets=0, wins=0, losses=0, pushes=0, voids=0,
+            decisive_bets=0, settled_bets=0,
+            win_rate=None, win_rate_ci_95=None,
+            settled_turnover=Decimal("0"), gross_return=Decimal("0"),
+            net_profit=Decimal("0"), roi=None, roi_ci_95=None,
+            roi_ci_method="unavailable_insufficient_match_dates",
+        )
     odds = derive_timestamped_odds_coverage(
         eligible_ids, odds_snapshots, market=canonical
     )
@@ -189,7 +194,3 @@ def derive_market_evidence(
         roi_performance=performance,
     )
 
-
-def _empty_market_settlement_placeholder():
-    """No settlement rows are needed to represent a zero-evidence market."""
-    return ()
