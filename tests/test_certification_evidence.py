@@ -1,9 +1,10 @@
 import hashlib
 import json
+from types import SimpleNamespace
 
 import pytest
 
-from app.certification_evidence import EvidenceIntegrityError, verify_evidence_manifest
+from app.certification_evidence import EvidenceIntegrityError, verify_evidence_manifest, verify_github_artifact_attestation
 
 
 ROLES = (
@@ -83,3 +84,61 @@ def test_manifest_rejects_unrecognized_artifact_role(tmp_path):
     manifest.write_text(json.dumps(payload), encoding="utf-8")
     with pytest.raises(EvidenceIntegrityError, match="recognized"):
         verify_evidence_manifest(manifest)
+
+
+
+def test_github_attestation_requires_pinned_signer_and_exact_manifest_digest(monkeypatch, tmp_path):
+    import app.certification_evidence as evidence
+
+    artifact = tmp_path / "manifest.json"
+    artifact.write_text('{"evidence": "immutable"}', encoding="utf-8")
+    digest = hashlib.sha256(artifact.read_bytes()).hexdigest()
+    payload = [{
+        "verificationResult": {
+            "statement": {
+                "predicateType": "https://slsa.dev/provenance/v1",
+                "subject": [{"digest": {"sha256": digest}}],
+            },
+            "verifiedTimestamps": [{"timestamp": "2026-11-12T00:00:00Z"}],
+            "signature": {"certificate": {"subjectAlternativeName": "trusted-workflow"}},
+        }
+    }]
+    captured = {}
+    monkeypatch.setattr(evidence.shutil, "which", lambda name: "/usr/bin/gh")
+    def fake_run(command, **kwargs):
+        captured["command"] = command
+        captured["env"] = kwargs["env"]
+        return SimpleNamespace(returncode=0, stdout=json.dumps(payload), stderr="")
+    monkeypatch.setattr(evidence.subprocess, "run", fake_run)
+
+    result = verify_github_artifact_attestation(artifact, token="test-token")
+    assert result["attestation_status"] == "GITHUB_ATTESTATION_VERIFIED"
+    assert result["sha256"] == digest
+    assert "--signer-workflow" in captured["command"]
+    assert "Nexora-Apparel/veltrix-football/.github/workflows/certification-evidence-attestation.yml" in captured["command"]
+    assert "--source-ref" in captured["command"]
+    assert captured["env"]["GH_TOKEN"] == "test-token"
+
+
+def test_github_attestation_rejects_wrong_manifest_digest(monkeypatch, tmp_path):
+    import app.certification_evidence as evidence
+
+    artifact = tmp_path / "manifest.json"
+    artifact.write_text('{"evidence": "immutable"}', encoding="utf-8")
+    payload = [{
+        "verificationResult": {
+            "statement": {
+                "predicateType": "https://slsa.dev/provenance/v1",
+                "subject": [{"digest": {"sha256": "0" * 64}}],
+            },
+            "verifiedTimestamps": [{"timestamp": "2026-11-12T00:00:00Z"}],
+            "signature": {"certificate": {"subjectAlternativeName": "trusted-workflow"}},
+        }
+    }]
+    monkeypatch.setattr(evidence.shutil, "which", lambda name: "/usr/bin/gh")
+    monkeypatch.setattr(
+        evidence.subprocess, "run",
+        lambda *args, **kwargs: SimpleNamespace(returncode=0, stdout=json.dumps(payload), stderr=""),
+    )
+    with pytest.raises(EvidenceIntegrityError, match="exact evidence manifest digest"):
+        verify_github_artifact_attestation(artifact, token="test-token")
