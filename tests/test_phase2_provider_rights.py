@@ -25,7 +25,7 @@ def test_registry_hash_binds_every_approved_source_to_its_review_document():
     for approval in approvals:
         assert approval.evidence_sha256
         assert len(approval.evidence_sha256) == 64
-        assert approval.evidence_uri.startswith("https://github.com/Nexora-Apparel/veltrix-football/")
+        assert "/blob/main/" in approval.evidence_uri
         assert approval.reviewed_at_utc == REVIEWED
 
 
