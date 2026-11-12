@@ -9,7 +9,7 @@ from veltrix_v2.evaluation.roi import MarketPerformance, evaluate_roi
 from veltrix_v2.evaluation.settlement import MarketBet, MatchResult, settle_market_bet
 from veltrix_v2.evaluation.certification import (
     MarketCertificationEvidence, PredictionMarketEvidence,
-    certify_prediction_publication, certify_release,
+    _certify_prediction_publication_from_derived_evidence, certify_release,
 )
 from veltrix_v2.publishing.certified_report import (
     MarketForecasts,
@@ -23,7 +23,7 @@ UTC = timezone.utc
 
 
 def passing_prediction_certification():
-    return certify_prediction_publication([
+    return _certify_prediction_publication_from_derived_evidence([
         PredictionMarketEvidence(
             market=market, walk_forward_matches=1000,
             source_approved=True, point_in_time_validated=True,
