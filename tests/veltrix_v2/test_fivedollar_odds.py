@@ -120,3 +120,29 @@ def test_capture_after_kickoff_is_rejected_even_when_no_markets_exist():
             kickoff_at=KICKOFF,
             captured_at=KICKOFF + timedelta(seconds=1),
         )
+
+
+
+def test_source_observation_id_is_propagated_to_every_odds_selection():
+    result = parse_fivedollar_fixture_odds(
+        payload(),
+        fixture_id="fixture-123",
+        kickoff_at=KICKOFF,
+        captured_at=CAPTURE,
+        source_observation_id="obs-5dollar-payload-123",
+    )
+    assert len(result.snapshots) == 7
+    assert {
+        row.source_observation_id for row in result.snapshots
+    } == {"obs-5dollar-payload-123"}
+
+
+def test_invalid_source_observation_id_is_rejected():
+    with pytest.raises(ValueError, match="SOURCE_OBSERVATION_ID_INVALID"):
+        parse_fivedollar_fixture_odds(
+            payload(),
+            fixture_id="fixture-123",
+            kickoff_at=KICKOFF,
+            captured_at=CAPTURE,
+            source_observation_id="   ",
+        )
