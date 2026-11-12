@@ -34,3 +34,15 @@ Positive probability-points CLV means the selection's implied probability rose f
 - Exact-head CI and independent review.
 
 No Neon writes, model training, calibration, production forecasts, deployment, or Telegram activation are authorized by these contracts.
+
+
+## Certification provenance
+
+Every odds snapshot intended for certification must carry a non-empty
+`source_observation_id` resolving to an immutable provider observation. The
+observation provider must match the quote source, its competition/season scope
+must match the fixture, and it must have been available no later than quote
+capture. The source approval must explicitly permit collection, storage,
+benchmarking and commercial use. Quotes without this binding may still be
+inspected in isolated normalization tests, but they cannot contribute to a
+passing release certification.
