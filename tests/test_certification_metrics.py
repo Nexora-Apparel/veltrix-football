@@ -1,3 +1,4 @@
+import base64
 import hashlib
 import json
 
@@ -10,14 +11,14 @@ from app.certification_evidence import EvidenceIntegrityError
 ROLES = ("walk_forward_rows", "coverage_audit", "prospective_ledger", "odds_snapshots", "settlement_records", "model_manifest")
 
 
-def _write_bundle(tmp_path, walk, paper, odds, settlements):
+def _write_bundle(tmp_path, walk, paper, odds, settlements, source_responses=None):
     payloads = {
         "walk_forward_rows": {"rows": walk},
         "coverage_audit": {"rights_status": "APPROVED_FOR_INTENDED_USE", "commercial_use_eligible": True, "approved_source_ids": ["source-a"], "rows": []},
         "prospective_ledger": {"rows": paper},
         "odds_snapshots": {"rows": odds},
         "settlement_records": {"rows": settlements},
-        "source_responses": {"rows": []},
+        "source_responses": {"rows": source_responses or []},
         "model_manifest": {"model_version": "model-v1", "code_commit": "a" * 40, "training_data_cutoff": "2025-12-31T00:00:00+00:00", "feature_schema_version": "features-v1", "calibration_versions": []},
     }
     entries = []
@@ -89,16 +90,34 @@ def test_raw_certification_recomputes_profit_and_rejects_fabricated_roi(tmp_path
     }]
     odds = [{
         "snapshot_id": "quote-1", "fixture_id": "fixture-1", "market": "1X2",
-        "source_id": "source-a", "observed_at": "2026-01-01T17:00:00+00:00",
+        "source_id": "source-a", "source_response_id": "quote-response",
+        "source_pointer": "/events/0",
+        "observed_at": "2026-01-01T17:00:00+00:00",
         "quote_updated_at": "2026-01-01T16:55:00+00:00", "kickoff": kickoff,
         "bookmaker": "Book A", "decimal_odds": 2.5,
     }]
     settlements = [{
         "settlement_id": "settlement-1", "fixture_id": "fixture-1",
-        "source_id": "source-a", "settled_at": "2026-01-01T20:00:00+00:00",
+        "source_id": "source-a", "source_response_id": "settlement-response",
+        "source_pointer": "/events/0",
+        "settled_at": "2026-01-01T20:00:00+00:00",
         "status": "FT", "settlement_version": "settlement-v1", "home_goals": 2, "away_goals": 1,
     }]
-    manifest = _write_bundle(tmp_path, [], paper, odds, settlements)
+    body = base64.b64encode(b'{"events":[]}').decode("ascii")
+    body_hash = hashlib.sha256(base64.b64decode(body)).hexdigest()
+    source_responses = [
+        {
+            "response_id": "quote-response", "source_id": "source-a",
+            "fetched_at": "2026-01-01T17:00:00+00:00", "http_status": 200,
+            "request_fingerprint": "b" * 64, "response_sha256": body_hash, "body_base64": body,
+        },
+        {
+            "response_id": "settlement-response", "source_id": "source-a",
+            "fetched_at": "2026-01-01T20:05:00+00:00", "http_status": 200,
+            "request_fingerprint": "c" * 64, "response_sha256": body_hash, "body_base64": body,
+        },
+    ]
+    manifest = _write_bundle(tmp_path, [], paper, odds, settlements, source_responses)
     result = recompute_raw_certification(manifest, min_walk_forward=0, min_prospective=0, min_dates=0)
     assert any("recorded net profit" in reason for reason in result["markets"]["1X2"]["failures"])
     assert result["markets"]["1X2"]["prospective_joined_selections"] == 0
