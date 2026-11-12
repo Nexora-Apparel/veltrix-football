@@ -21,6 +21,13 @@ from veltrix_v2.evaluation.settlement import Settlement
 ZERO = Decimal("0")
 ONE = Decimal("1")
 VALID_STATUSES = {"WIN", "LOSS", "PUSH", "VOID"}
+VALID_MARKET_SELECTIONS = {
+    "1X2": {"HOME", "DRAW", "AWAY"},
+    "BTTS": {"YES", "NO"},
+    "TOTALS": {"OVER", "UNDER"},
+    "OVER_UNDER": {"OVER", "UNDER"},
+}
+VALID_PERIODS = {"REGULATION", "INCLUDING_EXTRA_TIME"}
 
 
 def _decimal(value: Decimal, field: str) -> Decimal:
@@ -183,6 +190,12 @@ def evaluate_roi(
             raise ValueError("all rows must be Settlement instances")
         if row.status not in VALID_STATUSES:
             raise ValueError("unsupported settlement status")
+        if row.market not in VALID_MARKET_SELECTIONS:
+            raise ValueError("unsupported settlement market")
+        if row.selection not in VALID_MARKET_SELECTIONS[row.market]:
+            raise ValueError("unsupported settlement selection for market")
+        if row.period not in VALID_PERIODS:
+            raise ValueError("unsupported settlement period")
         identity_fields = (row.fixture_id, row.market, row.selection, row.period)
         if any(not isinstance(value, str) or not value.strip() for value in identity_fields):
             raise ValueError("settlement identity fields are required")
