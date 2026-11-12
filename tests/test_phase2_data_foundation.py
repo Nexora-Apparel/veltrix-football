@@ -103,6 +103,24 @@ def test_phase3_import_requires_explicit_staging_enable(monkeypatch):
         phase3_import._preflight("not-a-real-database-url", "veltrix_football_staging")
 
 
+def test_phase3_import_requires_all_staging_tables_empty():
+    phase3_import._require_empty_staging_database((0, 0, 0, 0, 0, 0))
+
+
+@pytest.mark.parametrize("counts", [
+    (1, 0, 0, 0, 0, 0),
+    (0, 1, 0, 0, 0, 0),
+    (0, 0, 1, 0, 0, 0),
+    (0, 0, 0, 1, 0, 0),
+    (0, 0, 0, 0, 1, 0),
+    (0, 0, 0, 0, 0, 1),
+    (0, 0, 0, 0, 0),
+])
+def test_phase3_import_rejects_nonempty_or_incomplete_staging_counts(counts):
+    with pytest.raises(RuntimeError, match="STAGING_IMPORT_REQUIRES_EMPTY_DEDICATED_DATABASE"):
+        phase3_import._require_empty_staging_database(counts)
+
+
 def test_phase3_import_rejects_non_staging_database_before_connecting(monkeypatch):
     monkeypatch.setenv("VELTRIX_ENABLE_STAGING_IMPORT", "YES")
     with pytest.raises(RuntimeError, match="STAGING_IMPORT_DATABASE_ALLOWLIST_MISMATCH"):
