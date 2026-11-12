@@ -111,3 +111,13 @@ Official references:
 7. Keep PitchAPI and GOAL API excluded from training/publication until their written rights conditions are satisfied.
 
 No production database imports, model training, publication or schedule activation are authorized by a provider smoke test alone.
+
+
+The provider acceptance workflow now sets `FIVEDOLLAR_REQUIRED_PLAN=community`.
+It fails closed if the account still reports Free. Its bounded probe requests
+one scheduled fixture from each of up to eight accessible leagues, then checks
+the complete 1X2, BTTS and 2.5 totals market groups for each returned fixture.
+The maximum primary-provider smoke sequence is 18 requests (status + league
+catalogue + up to eight fixture requests + up to eight odds requests), below
+the 20/minute burst ceiling. The optional The Odds API market probe remains
+off by default and can consume up to eight additional odds credits.
