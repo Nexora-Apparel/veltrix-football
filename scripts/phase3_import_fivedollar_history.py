@@ -35,6 +35,11 @@ MIGRATION_CHECKSUMS = {
 }
 
 
+def _require_empty_staging_database(counts: tuple[int, ...]) -> None:
+    if len(counts) != 6 or any(int(value) != 0 for value in counts):
+        raise RuntimeError("STAGING_IMPORT_REQUIRES_EMPTY_DEDICATED_DATABASE")
+
+
 def _preflight(database_url: str, expected_database: str) -> None:
     if os.getenv("VELTRIX_ENABLE_STAGING_IMPORT") != "YES":
         raise RuntimeError("STAGING_IMPORT_EXPLICIT_ENABLE_REQUIRED")
@@ -75,8 +80,7 @@ def _preflight(database_url: str, expected_database: str) -> None:
                     (SELECT count(*) FROM provider_entitlement_observations)
             """)
             counts = cur.fetchone()
-            if any(counts):
-                raise RuntimeError("STAGING_IMPORT_REQUIRES_EMPTY_DEDICATED_DATABASE")
+            _require_empty_staging_database(counts)
 
 
 def _provider_response(endpoint: str, request_id: str, params: dict, raw: bytes,
