@@ -228,7 +228,14 @@ def test_community_acceptance_rejects_six_leagues_without_country_pack_identity(
         if "/leagues?per_page=100" in url:
             return 200, {}, {
                 "success": 1,
-                "data": [{"id": index, "name": f"League {index}"} for index in range(1, 7)],
+                "data": [
+                    {"id": 1, "name": "Premier League", "country": {"code": "GB-ENG"}},
+                    {"id": 2, "name": "La Liga", "country": {"code": "ES"}},
+                    {"id": 3, "name": "Serie A", "country": {"code": "IT"}},
+                    {"id": 4, "name": "Bundesliga", "country": {"code": "DE"}},
+                    {"id": 5, "name": "Ligue 1", "country": {"code": "FR"}},
+                    {"id": 6, "name": "Unidentified pack league"},
+                ],
             }
         raise AssertionError(f"Unexpected request: {url}")
 
