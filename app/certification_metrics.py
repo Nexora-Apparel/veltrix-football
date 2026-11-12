@@ -1,0 +1,272 @@
+"""Raw-row recomputation for VELTRIX value certification.
+
+The input contract is intentionally stricter than existing aggregate reports.
+A passing statistical audit is still not a release authorization: rights,
+source authenticity and signed provenance must be verified independently.
+"""
+from __future__ import annotations
+
+import json
+import math
+import random
+from collections import defaultdict
+from datetime import datetime
+from pathlib import Path
+from typing import Any, Mapping
+
+from app.certification_evidence import verify_evidence_manifest, EvidenceIntegrityError
+
+MARKETS = ("1X2", "BTTS", "OVER_UNDER_1_5", "OVER_UNDER_2_5", "OVER_UNDER_3_5")
+OUTCOMES = {
+    "1X2": ("home", "draw", "away"),
+    "BTTS": ("yes", "no"),
+    "OVER_UNDER_1_5": ("over", "under"),
+    "OVER_UNDER_2_5": ("over", "under"),
+    "OVER_UNDER_3_5": ("over", "under"),
+}
+
+
+def _time(value: Any) -> datetime | None:
+    if not isinstance(value, str) or not value.strip():
+        return None
+    try:
+        result = datetime.fromisoformat(value.strip().replace("Z", "+00:00"))
+        return result if result.tzinfo else None
+    except (TypeError, ValueError, OverflowError):
+        return None
+
+
+def _number(value: Any) -> float | None:
+    try:
+        result = float(value)
+    except (TypeError, ValueError, OverflowError):
+        return None
+    return result if math.isfinite(result) else None
+
+
+def _rows(payload: Any, role: str) -> list[dict[str, Any]]:
+    values = payload if isinstance(payload, list) else payload.get("rows") if isinstance(payload, dict) else None
+    if not isinstance(values, list) or any(not isinstance(row, dict) for row in values):
+        raise EvidenceIntegrityError(f"{role} must be a JSON array or an object containing rows[].")
+    return values
+
+
+def _load_role(root: Path, verified: list[dict[str, Any]], role: str) -> Any:
+    item = next(row for row in verified if row["role"] == role)
+    return json.loads((root / item["path"]).read_text(encoding="utf-8"))
+
+
+def _score(rows: list[dict[str, Any]], market: str, probability_key: str) -> dict[str, Any]:
+    outcomes = OUTCOMES[market]
+    selected = [row for row in rows if row.get("market") == market]
+    if not selected:
+        return {"matches": 0, "brier_score": None, "log_loss": None}
+    brier = loss = 0.0
+    for row in selected:
+        probs = row.get(probability_key)
+        actual = row.get("outcome")
+        if not isinstance(probs, dict) or set(outcomes) - set(probs) or actual not in outcomes:
+            raise EvidenceIntegrityError(f"Invalid {probability_key} or outcome in {market} walk-forward row.")
+        values = {key: _number(probs.get(key)) for key in outcomes}
+        if any(value is None or value < 0 or value > 1 for value in values.values()):
+            raise EvidenceIntegrityError(f"Invalid probability in {market} walk-forward row.")
+        if abs(sum(values.values()) - 1.0) > 1e-6:
+            raise EvidenceIntegrityError(f"Probabilities do not sum to one in {market} walk-forward row.")
+        brier += sum((values[key] - float(key == actual)) ** 2 for key in outcomes)
+        loss -= math.log(max(1e-15, values[actual]))
+    return {"matches": len(selected), "brier_score": brier / len(selected), "log_loss": loss / len(selected)}
+
+
+def _cluster_lower_bound(rows: list[dict[str, Any]], iterations: int = 4000) -> float | None:
+    groups: dict[str, list[dict[str, Any]]] = defaultdict(list)
+    for row in rows:
+        groups[row["kickoff"][:10]].append(row)
+    dates = sorted(groups)
+    if len(dates) < 2:
+        return None
+    rng = random.Random(20261112)
+    samples: list[float] = []
+    for _ in range(iterations):
+        chosen = [dates[rng.randrange(len(dates))] for _ in dates]
+        stake = sum(float(item["stake"]) for day in chosen for item in groups[day])
+        profit = sum(float(item["profit"]) for day in chosen for item in groups[day])
+        if stake > 0:
+            samples.append(profit / stake)
+    samples.sort()
+    return samples[math.floor(0.025 * (len(samples) - 1))] if samples else None
+
+
+def recompute_raw_certification(manifest_path: str | Path, *, min_walk_forward: int = 1000,
+                                min_prospective: int = 300, min_dates: int = 90,
+                                min_odds_coverage: float = 0.98) -> dict[str, Any]:
+    """Recompute metrics from fixture-level rows; never trusts supplied summaries."""
+    integrity = verify_evidence_manifest(manifest_path)
+    root = Path(manifest_path).resolve(strict=True).parent
+    verified = integrity["verified_artifacts"]
+    data = {role: _load_role(root, verified, role) for role in (
+        "walk_forward_rows", "coverage_audit", "prospective_ledger",
+        "odds_snapshots", "settlement_records", "model_manifest",
+    )}
+    walk = _rows(data["walk_forward_rows"], "walk_forward_rows")
+    paper = _rows(data["prospective_ledger"], "prospective_ledger")
+    odds = _rows(data["odds_snapshots"], "odds_snapshots")
+    settlements = _rows(data["settlement_records"], "settlement_records")
+    model_manifest = data["model_manifest"]
+    if not isinstance(model_manifest, dict) or not model_manifest.get("model_version"):
+        raise EvidenceIntegrityError("model_manifest must identify an immutable model_version.")
+
+    failures: dict[str, list[str]] = {market: [] for market in MARKETS}
+    walk_by_market: dict[str, list[dict[str, Any]]] = defaultdict(list)
+    seen_walk: set[tuple[str, str, str]] = set()
+    for row in walk:
+        market = row.get("market")
+        if market not in MARKETS:
+            continue
+        fixture = str(row.get("fixture_id") or "").strip()
+        kickoff, predicted = _time(row.get("kickoff")), _time(row.get("prediction_at"))
+        feature_time = _time(row.get("feature_max_observed_at"))
+        if not fixture or not kickoff or not predicted or not feature_time:
+            failures[market].append("walk-forward row missing fixture or point-in-time timestamps")
+            continue
+        if predicted >= kickoff or feature_time > predicted:
+            failures[market].append("walk-forward feature leakage or prediction after kickoff")
+            continue
+        if row.get("model_version") != model_manifest.get("model_version"):
+            failures[market].append("walk-forward model version mismatch")
+            continue
+        key = (fixture, market, str(row.get("split") or "full"))
+        if key in seen_walk:
+            failures[market].append("duplicate fixture-market walk-forward row")
+            continue
+        seen_walk.add(key)
+        if row.get("split") not in {"full", "recent_holdout"}:
+            failures[market].append("walk-forward split must be full or recent_holdout")
+            continue
+        walk_by_market[market].append(row)
+
+    odds_by_id: dict[str, dict[str, Any]] = {}
+    for quote in odds:
+        quote_id = str(quote.get("snapshot_id") or "").strip()
+        if not quote_id or quote_id in odds_by_id:
+            raise EvidenceIntegrityError("Odds snapshot IDs must be present and unique.")
+        odds_by_id[quote_id] = quote
+
+    settlement_by_id: dict[str, dict[str, Any]] = {}
+    for result in settlements:
+        settlement_id = str(result.get("settlement_id") or "").strip()
+        if not settlement_id or settlement_id in settlement_by_id:
+            raise EvidenceIntegrityError("Settlement IDs must be present and unique.")
+        if not result.get("source_id") or not _time(result.get("settled_at")):
+            raise EvidenceIntegrityError("Settlement record lacks source provenance or timestamp.")
+        settlement_by_id[settlement_id] = result
+
+    paper_by_market: dict[str, list[dict[str, Any]]] = defaultdict(list)
+    seen_paper: set[tuple[str, str]] = set()
+    for row in paper:
+        market = row.get("market")
+        if market not in MARKETS:
+            continue
+        fixture = str(row.get("fixture_id") or "").strip()
+        key = (fixture, market)
+        if not fixture or key in seen_paper:
+            failures[market].append("missing fixture ID or duplicate fixture-market prospective selection")
+            continue
+        seen_paper.add(key)
+        kickoff = _time(row.get("kickoff"))
+        fetched = _time(row.get("odds_fetched_at"))
+        quote_time = _time(row.get("quote_updated_at"))
+        if not kickoff or not fetched or not quote_time or not (quote_time <= fetched < kickoff):
+            failures[market].append("prospective odds are missing, stale-order invalid, or post-kickoff")
+            continue
+        if (kickoff - quote_time).total_seconds() > 24 * 3600:
+            failures[market].append("prospective bookmaker quote exceeds 24-hour maximum age")
+            continue
+        quote = odds_by_id.get(str(row.get("odds_snapshot_id") or ""))
+        if not quote or str(quote.get("fixture_id")) != fixture or quote.get("market") != market:
+            failures[market].append("prospective row does not join to its exact odds snapshot")
+            continue
+        if _time(quote.get("observed_at")) != fetched or _time(quote.get("quote_updated_at")) != quote_time:
+            failures[market].append("odds snapshot timestamps do not match prospective row")
+            continue
+        settlement = settlement_by_id.get(str(row.get("settlement_id") or ""))
+        if not settlement or str(settlement.get("fixture_id")) != fixture:
+            failures[market].append("prospective row does not join to its exact settlement")
+            continue
+        if settlement.get("model_version") != row.get("model_version"):
+            failures[market].append("settlement/model provenance mismatch")
+            continue
+        if _time(settlement.get("settled_at")) <= kickoff:
+            failures[market].append("settlement timestamp is not after kickoff")
+            continue
+        if row.get("outcome") != settlement.get("outcome"):
+            failures[market].append("prospective outcome disagrees with source settlement")
+            continue
+        if row.get("model_version") != model_manifest.get("model_version"):
+            failures[market].append("prospective model version mismatch")
+            continue
+        stake, price = _number(row.get("stake")), _number(row.get("decimal_odds"))
+        if stake is None or stake <= 0 or price is None or price <= 1:
+            failures[market].append("invalid stake or decimal odds")
+            continue
+        won = row.get("won")
+        if not isinstance(won, bool):
+            failures[market].append("prospective settlement requires boolean won")
+            continue
+        fee = _number(row.get("fees")) or 0.0
+        profit = stake * (price - 1.0) - fee if won else -stake - fee
+        if _number(row.get("recorded_profit")) is None or abs(float(row["recorded_profit"]) - profit) > 1e-6:
+            failures[market].append("recorded net profit does not match stake, price, result and fees")
+            continue
+        paper_by_market[market].append({**row, "stake": stake, "profit": profit, "kickoff": kickoff.isoformat()})
+
+    market_results: dict[str, Any] = {}
+    for market in MARKETS:
+        full = [row for row in walk_by_market[market] if row.get("split") == "full"]
+        holdout = [row for row in walk_by_market[market] if row.get("split") == "recent_holdout"]
+        # Count unique fixture IDs; duplicate split rows cannot inflate the sample.
+        full_ids = {str(row["fixture_id"]) for row in full}
+        if len(full_ids) < min_walk_forward:
+            failures[market].append("insufficient unique walk-forward fixtures")
+        if market == "1X2":
+            for scope, scope_rows in (("full", full), ("recent_holdout", holdout)):
+                model_metrics = _score(scope_rows, market, "model_probabilities")
+                market_metrics = _score(scope_rows, market, "bookmaker_probabilities")
+                if not scope_rows or model_metrics["matches"] != market_metrics["matches"]:
+                    failures[market].append(f"{scope} bookmaker comparison does not use identical fixtures")
+                elif model_metrics["brier_score"] >= market_metrics["brier_score"] or model_metrics["log_loss"] >= market_metrics["log_loss"]:
+                    failures[market].append(f"{scope} 1X2 model does not beat de-vigged bookmaker Brier and log loss")
+        selections = paper_by_market[market]
+        dates = {row["kickoff"][:10] for row in selections}
+        stake = sum(row["stake"] for row in selections)
+        profit = sum(row["profit"] for row in selections)
+        roi = profit / stake if stake else None
+        lower = _cluster_lower_bound(selections)
+        quote_coverage = len(selections) / len([row for row in paper if row.get("market") == market]) if any(row.get("market") == market for row in paper) else 0.0
+        if len(selections) < min_prospective:
+            failures[market].append("insufficient source-joined prospective settled selections")
+        if len(dates) < min_dates:
+            failures[market].append("insufficient distinct prospective match dates")
+        if quote_coverage < min_odds_coverage:
+            failures[market].append("timestamped odds coverage below required threshold")
+        if roi is None or roi <= 0:
+            failures[market].append("recomputed prospective net ROI is not positive")
+        if lower is None or lower <= 0:
+            failures[market].append("date-clustered 95% ROI lower confidence bound is not positive")
+        market_results[market] = {
+            "walk_forward_unique_fixtures": len(full_ids),
+            "prospective_joined_selections": len(selections),
+            "distinct_match_dates": len(dates),
+            "timestamped_odds_coverage": quote_coverage,
+            "net_roi": roi,
+            "date_clustered_roi_lower_95": lower,
+            "failures": failures[market],
+            "diagnostic_pass": not failures[market],
+        }
+
+    return {
+        "integrity_status": integrity["integrity_status"],
+        "statistical_status": "RAW_EVIDENCE_THRESHOLDS_MET" if all(not rows for rows in failures.values()) else "RAW_EVIDENCE_INCOMPLETE",
+        "release_authorized": False,
+        "markets": market_results,
+        "blocking_note": "Raw statistical recomputation is not source authenticity, licensing approval or signed attestation. Runtime release remains disabled.",
+    }
