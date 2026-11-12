@@ -1,6 +1,11 @@
+from dataclasses import replace
+from datetime import date, timedelta
 from decimal import Decimal
 
 import pytest
+
+from veltrix_v2.evaluation.roi import evaluate_roi
+from veltrix_v2.evaluation.settlement import MarketBet, MatchResult, settle_market_bet
 
 from veltrix_v2.evaluation.certification import (
     MarketCertificationEvidence,
@@ -10,6 +15,33 @@ from veltrix_v2.evaluation.certification import (
 )
 
 
+def roi_performance(market):
+    rows = []
+    for index in range(300):
+        fixture_id = f"{market.lower()}-{index}"
+        match_day = date(2026, 1, 1) + timedelta(days=index % 90)
+        if market == "1X2":
+            selection, line, home, away = "HOME", None, 2, 0
+        elif market == "BTTS":
+            selection, line, home, away = "YES", None, 2, 1
+        else:
+            selection, line, home, away = "OVER", Decimal("2.5"), 2, 1
+        bet = MarketBet(
+            fixture_id=fixture_id, market=market, selection=selection,
+            decimal_odds=Decimal("2.0"), stake=Decimal("1"),
+            line=line,
+        )
+        result = MatchResult(
+            fixture_id=fixture_id, status="COMPLETED",
+            home_goals_regulation=home, away_goals_regulation=away,
+            match_date=match_day,
+            match_date_source_observation_id=f"obs-{fixture_id}",
+        )
+        rows.append(settle_market_bet(bet, result))
+    report = evaluate_roi(rows, bootstrap_draws=100)
+    return next(item for item in report.markets if item.market == market)
+
+
 def evidence(market, **overrides):
     values = dict(
         market=market,
@@ -17,9 +49,7 @@ def evidence(market, **overrides):
         prospective_settled_selections=300,
         distinct_dates=90,
         timestamped_odds_coverage=Decimal("0.98"),
-        net_roi=Decimal("0.04"),
-        roi_ci95_lower=Decimal("0.01"),
-        roi_ci_method="date_block_bootstrap_by_match_date",
+        roi_performance=roi_performance(market),
         source_approved=True,
         point_in_time_validated=True,
     )
@@ -56,7 +86,7 @@ def test_each_market_has_independent_failure_reasons():
 
 def test_nonpositive_roi_lower_bound_blocks_certification():
     result = certify_release(
-        [evidence("1X2", roi_ci95_lower=Decimal("-0.001")),
+        [evidence("1X2", roi_performance=replace(roi_performance("1X2"), roi_ci_95=(Decimal("-0.001"), Decimal("0.05")))),
          evidence("BTTS"), evidence("TOTALS")],
         one_x_two_beats_bookmaker_brier=True,
         one_x_two_beats_bookmaker_log_loss=True,
@@ -67,7 +97,7 @@ def test_nonpositive_roi_lower_bound_blocks_certification():
 
 def test_iid_bootstrap_is_not_accepted_for_release():
     result = certify_release(
-        [evidence("1X2", roi_ci_method="iid_bet_row_bootstrap"),
+        [evidence("1X2", roi_performance=replace(roi_performance("1X2"), roi_ci_method="iid_bet_row_bootstrap")),
          evidence("BTTS"), evidence("TOTALS")],
         one_x_two_beats_bookmaker_brier=True,
         one_x_two_beats_bookmaker_log_loss=True,
@@ -217,3 +247,10 @@ def test_certification_objects_cannot_be_forged_without_gate_evidence():
             one_x_two_beats_bookmaker_log_loss=True,
             global_failures=(),
         )
+
+
+def test_roi_certification_requires_market_matched_computed_performance():
+    with pytest.raises(ValueError, match="PERFORMANCE_MARKET_MISMATCH"):
+        evidence("1X2", roi_performance=roi_performance("BTTS"))
+    with pytest.raises(ValueError, match="SETTLED_COUNT_MISMATCH"):
+        evidence("1X2", prospective_settled_selections=299)
