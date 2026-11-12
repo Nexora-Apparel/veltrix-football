@@ -11,7 +11,7 @@ import time
 from collections import Counter
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from urllib.parse import urlencode
+from urllib.parse import urlencode, urlparse
 
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
@@ -41,14 +41,20 @@ def _preflight(database_url: str, expected_database: str) -> None:
         raise RuntimeError("STAGING_IMPORT_DATABASE_ALLOWLIST_MISMATCH")
     if not database_url:
         raise RuntimeError("STAGING_DATABASE_URL_REQUIRED")
+    expected_host = os.getenv("VELTRIX_EXPECTED_DATABASE_HOST", "").strip().casefold()
+    actual_host = (urlparse(database_url).hostname or "").casefold()
+    if not expected_host or actual_host != expected_host:
+        raise RuntimeError("STAGING_DATABASE_HOST_ALLOWLIST_MISMATCH")
     import psycopg
 
     with psycopg.connect(database_url) as conn:
         with conn.cursor() as cur:
-            cur.execute("SELECT current_database()")
-            actual = cur.fetchone()[0]
+            cur.execute("SELECT current_database(),current_user")
+            actual, role = cur.fetchone()
             if actual != EXPECTED_DATABASE:
                 raise RuntimeError("STAGING_DATABASE_TARGET_MISMATCH")
+            if role != "neondb_owner":
+                raise RuntimeError("STAGING_DATABASE_ROLE_MISMATCH")
             cur.execute("SELECT version,checksum FROM schema_migrations ORDER BY version")
             observed = {version: checksum.strip() for version, checksum in cur.fetchall()}
             if observed != MIGRATION_CHECKSUMS:
