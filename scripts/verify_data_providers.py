@@ -100,6 +100,18 @@ def check_fivedollar() -> str:
             str(item.get("name") or item.get("short_name") or "unknown")
             for item in leagues if isinstance(item, dict)
         ]
+        top_five_country_codes = {"GB-ENG", "ES", "IT", "DE", "FR"}
+        def league_country_code(item):
+            country = item.get("country") if isinstance(item, dict) else None
+            code = country.get("code") if isinstance(country, dict) else None
+            return str(code).strip().upper() if code else ""
+        country_pack_leagues = [
+            item for item in leagues
+            if league_country_code(item)
+            and league_country_code(item) not in top_five_country_codes
+            and league_country_code(item) not in {"WORLD", "EUROPE", "AFRICA", "ASIA", "AMERICAS", "OCEANIA"}
+        ]
+        required_country_code = os.getenv("FIVEDOLLAR_REQUIRED_COUNTRY_CODE", "").strip().upper()
         try:
             minimum_leagues = int(os.getenv("FIVEDOLLAR_MIN_ACCESSIBLE_LEAGUES", "6"))
         except ValueError:
@@ -111,16 +123,36 @@ def check_fivedollar() -> str:
                 f"(minimum={minimum_leagues}; actual={len(league_names)})"
             )
             return "COMPETITION_COVERAGE_INCOMPLETE"
+        if required_plan and not country_pack_leagues:
+            print("5DollarFootballAPI: COUNTRY_PACK_NOT_VERIFIED")
+            return "COUNTRY_PACK_NOT_VERIFIED"
+        if required_country_code and not any(
+            league_country_code(item) == required_country_code for item in country_pack_leagues
+        ):
+            print(
+                "5DollarFootballAPI: REQUIRED_COUNTRY_PACK_MISSING "
+                f"(expected={required_country_code})"
+            )
+            return "REQUIRED_COUNTRY_PACK_MISSING"
         remaining = response_headers.get("X-RateLimit-Remaining", "not supplied")
         print(
             f"5DollarFootballAPI: AUTH_OK; plan={plan.strip().casefold()}; "
             f"accessible_leagues={len(league_names)}; leagues={'; '.join(league_names[:12])}; "
+            f"country_pack_codes={';'.join(sorted({league_country_code(item) for item in country_pack_leagues}))}; "
             f"requests_remaining={remaining}"
         )
         # One scheduled fixture per accessible league verifies both the top-five
         # and any activated country pack without exceeding the 20/minute burst.
         selected_fixtures = []
-        for league in leagues[:8]:
+        ordered_leagues = sorted(
+            (item for item in leagues if isinstance(item, dict)),
+            key=lambda item: (
+                0 if league_country_code(item) in top_five_country_codes else
+                1 if item in country_pack_leagues else 2,
+                str(item.get("name") or ""),
+            ),
+        )
+        for league in ordered_leagues[:8]:
             if not isinstance(league, dict) or league.get("id") is None:
                 continue
             league_id = quote(str(league["id"]), safe="")
