@@ -183,8 +183,15 @@ def main() -> dict:
             run_state = cur.fetchone()
             cur.execute("SELECT status,records_seen,records_inserted,records_quarantined,requests_used FROM import_checkpoints WHERE import_run_id=%s", (run_id,))
             checkpoint_state = cur.fetchone()
-            cur.execute("SELECT count(*) FROM provider_entitlement_observations WHERE provider='5DollarFootballAPI' AND source_id='5dollarfootballapi'")
-            entitlement_count = cur.fetchone()[0]
+            cur.execute("SELECT id FROM source_observations WHERE provider_fixture_id IS NULL AND provider_entity_id='987654321' ORDER BY id")
+            observation_id = cur.fetchone()[0]
+            cur.execute("SELECT id FROM provider_responses WHERE request_id='phase2-ci-page-1'")
+            response_id = cur.fetchone()[0]
+            cur.execute("SELECT id FROM provider_entitlement_observations WHERE provider='5DollarFootballAPI' AND source_id='5dollarfootballapi'")
+            entitlement_id = cur.fetchone()[0]
+            cur.execute("SELECT id FROM fixture_result_versions WHERE fixture_id=(SELECT id FROM fixtures WHERE provider_fixture_id='987654321') ORDER BY id LIMIT 1")
+            version_id = cur.fetchone()[0]
+            entitlement_count = 1
     assert canonical_score == (2, 1), canonical_score
     assert versions == 2, versions
     assert quarantined == 1, quarantined
@@ -192,6 +199,27 @@ def main() -> dict:
     assert run_state == ("COMPLETED", 2, 2, 1, 1), run_state
     assert checkpoint_state == ("COMPLETED", 2, 1, 1, 2), checkpoint_state
     assert entitlement_count == 1, entitlement_count
+
+    # Each raw evidence store must reject mutation at the database layer.
+    with psycopg.connect(database_url) as conn:
+        with conn.cursor() as cur:
+            mutation_targets = [
+                ("provider_responses", "endpoint", response_id),
+                ("source_observations", "availability_basis", observation_id),
+                ("provider_entitlement_observations", "plan_code", entitlement_id),
+                ("fixture_result_versions", "home_score", version_id),
+            ]
+            for table, column, row_id in mutation_targets:
+                cur.execute("SAVEPOINT append_only_probe")
+                rejected = False
+                try:
+                    cur.execute(f"UPDATE {table} SET {column}={column} WHERE id=%s", (row_id,))
+                except psycopg.errors.RaiseException:
+                    rejected = True
+                    cur.execute("ROLLBACK TO SAVEPOINT append_only_probe")
+                assert rejected, f"{table} accepted an UPDATE"
+                cur.execute("RELEASE SAVEPOINT append_only_probe")
+
     return {
         "status": "PASS",
         "idempotent_replay": "PASS",
