@@ -126,6 +126,12 @@ def recompute_raw_certification(manifest_path: str | Path, *, min_walk_forward: 
     model_manifest = data["model_manifest"]
     if not isinstance(model_manifest, dict) or not model_manifest.get("model_version"):
         raise EvidenceIntegrityError("model_manifest must identify an immutable model_version.")
+    code_commit = model_manifest.get("code_commit")
+    if not isinstance(code_commit, str) or len(code_commit) not in {40, 64} or any(ch not in "0123456789abcdef" for ch in code_commit.lower()):
+        raise EvidenceIntegrityError("model_manifest must pin a full immutable Git commit SHA.")
+    training_cutoff = _time(model_manifest.get("training_data_cutoff"))
+    if not training_cutoff or not model_manifest.get("feature_schema_version"):
+        raise EvidenceIntegrityError("model_manifest must pin timezone-aware training cutoff and feature schema version.")
     if not isinstance(data["coverage_audit"], dict):
         raise EvidenceIntegrityError("coverage_audit must be a structured object.")
     if data["coverage_audit"].get("rights_status") != "APPROVED_FOR_INTENDED_USE" or data["coverage_audit"].get("commercial_use_eligible") is not True:
@@ -166,8 +172,14 @@ def recompute_raw_certification(manifest_path: str | Path, *, min_walk_forward: 
         if predicted >= kickoff or any(value > predicted for value in feature_times):
             failures[market].append("walk-forward feature leakage or prediction after kickoff")
             continue
-        if row.get("model_version") != model_manifest.get("model_version"):
-            failures[market].append("walk-forward model version mismatch")
+        if row.get("model_version") != model_manifest.get("model_version") or row.get("model_commit") != code_commit:
+            failures[market].append("walk-forward model version or code commit mismatch")
+            continue
+        if training_cutoff >= predicted:
+            failures[market].append("model training cutoff is not strictly before prediction time")
+            continue
+        if row.get("feature_schema_version") != model_manifest.get("feature_schema_version"):
+            failures[market].append("walk-forward feature schema version mismatch")
             continue
         if market != "1X2" and (not row.get("calibration_version") or row.get("calibration_version") not in calibration_versions):
             failures[market].append("walk-forward calibration version is missing or not in model manifest")
@@ -239,7 +251,7 @@ def recompute_raw_certification(manifest_path: str | Path, *, min_walk_forward: 
         if settlement.get("source_id") not in approved_sources:
             failures[market].append("settlement source is not rights-approved")
             continue
-        if settlement.get("model_version") != row.get("model_version"):
+        if settlement.get("model_version") != row.get("model_version") or row.get("model_commit") != code_commit:
             failures[market].append("settlement/model provenance mismatch")
             continue
         if market != "1X2" and settlement.get("calibration_version") != row.get("calibration_version"):
@@ -251,8 +263,8 @@ def recompute_raw_certification(manifest_path: str | Path, *, min_walk_forward: 
         if row.get("outcome") != settlement.get("outcome"):
             failures[market].append("prospective outcome disagrees with source settlement")
             continue
-        if row.get("model_version") != model_manifest.get("model_version"):
-            failures[market].append("prospective model version mismatch")
+        if row.get("model_version") != model_manifest.get("model_version") or row.get("model_commit") != code_commit:
+            failures[market].append("prospective model version or code commit mismatch")
             continue
         if market != "1X2" and row.get("calibration_version") not in calibration_versions:
             failures[market].append("prospective calibration version is missing or not in model manifest")
@@ -274,9 +286,9 @@ def recompute_raw_certification(manifest_path: str | Path, *, min_walk_forward: 
         if snapshot_price is None or abs(snapshot_price - price) > 1e-6:
             failures[market].append("prospective odds do not match the exact snapshot price")
             continue
-        fee = _number(row.get("fees")) or 0.0
-        if fee < 0:
-            failures[market].append("fees cannot be negative")
+        fee = _number(row.get("fees"))
+        if fee is None or fee < 0:
+            failures[market].append("explicit non-negative fees are required")
             continue
         profit = stake * (price - 1.0) - fee if won else -stake - fee
         if _number(row.get("recorded_profit")) is None or abs(float(row["recorded_profit"]) - profit) > 1e-6:
