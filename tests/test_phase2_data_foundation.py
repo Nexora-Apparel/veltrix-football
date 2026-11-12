@@ -229,3 +229,11 @@ def test_postgres_writer_refuses_to_persist_secret_response_headers():
     with pytest.raises(ValueError, match="PROVIDER_RESPONSE_SECRET_HEADER_MUST_NOT_BE_STORED"):
         PostgresHistoryStore(connection_factory).persist_page(response, [], approval())
     assert not connection_requested
+
+
+
+def test_fixture_cannot_reference_a_different_rights_approval():
+    row = fixture("103", approval_id="another-approval")
+    decision = evaluate_fixture_import(row, approval(), evaluated_at_utc=NOW)
+    assert decision.status is ImportOutcomeStatus.QUARANTINED
+    assert decision.reason_code == "RIGHTS_APPROVAL_REFERENCE_MISMATCH"
