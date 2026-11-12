@@ -35,13 +35,13 @@ def _match(fixture_id, day, home, away, goals):
     )
 
 
-def _observation(*, available_at, approval_id="approval-1"):
-    event_at = datetime(2026, 1, 1, 15, tzinfo=UTC)
+def _observation(*, available_at, approval_id="approval-1", event_at=None, provider_entity_id="provider-match-1"):
+    event_at = event_at or datetime(2026, 1, 1, 15, tzinfo=UTC)
     return ProviderObservation(
         provider="provider-a",
         endpoint="/matches/result",
         entity_type="match_result",
-        provider_entity_id="provider-match-1",
+        provider_entity_id=provider_entity_id,
         competition_key="league-a",
         season="2025-26",
         retrieved_at_utc=available_at + timedelta(minutes=1),
@@ -54,7 +54,7 @@ def _observation(*, available_at, approval_id="approval-1"):
     )
 
 
-def _approval(*, permitted_uses=("collection", "storage", "model_training")):
+def _approval(*, permitted_uses=("collection", "storage", "model_training", "benchmarking")):
     return SourceApproval(
         approval_id="approval-1",
         provider="provider-a",
@@ -63,6 +63,26 @@ def _approval(*, permitted_uses=("collection", "storage", "model_training")):
         status="approved",
         valid_from_utc=datetime(2025, 1, 1, tzinfo=UTC),
         permitted_uses=permitted_uses,
+    )
+
+
+def _source_records(training_available_at=None):
+    return (
+        TrainingObservationEvidence(
+            "obs-train-1",
+            _observation(
+                available_at=training_available_at or datetime(2026, 1, 1, 17, tzinfo=UTC),
+                provider_entity_id="provider-training-result",
+            ),
+        ),
+        TrainingObservationEvidence(
+            "obs-test-1",
+            _observation(
+                available_at=datetime(2026, 1, 10, 17, tzinfo=UTC),
+                event_at=datetime(2026, 1, 10, 15, tzinfo=UTC),
+                provider_entity_id="provider-heldout-result",
+            ),
+        ),
     )
 
 
@@ -117,7 +137,7 @@ def test_training_source_audit_uses_recorded_fold_cutoff_and_rights(monkeypatch)
     )
     audit = audit_walk_forward_training_sources(
         report,
-        (TrainingObservationEvidence("obs-train-1", observation),),
+        _source_records(),
         (_approval(),),
     )
     assert audit.passed
@@ -133,7 +153,7 @@ def test_training_source_audit_rejects_observation_available_after_fold_cutoff(m
     )
     audit = audit_walk_forward_training_sources(
         report,
-        (TrainingObservationEvidence("obs-train-1", observation),),
+        _source_records(datetime(2026, 1, 10, 17, tzinfo=UTC)),
         (_approval(),),
     )
     assert not audit.passed
@@ -149,8 +169,8 @@ def test_training_source_audit_rejects_missing_model_training_rights(monkeypatch
     )
     audit = audit_walk_forward_training_sources(
         report,
-        (TrainingObservationEvidence("obs-train-1", observation),),
-        (_approval(permitted_uses=("collection", "storage")),),
+        _source_records(),
+        (_approval(permitted_uses=("collection", "storage", "benchmarking")),),
     )
     assert not audit.passed
     assert any("model_training" in reason for _, reason in audit.rejected_observations)
@@ -158,6 +178,6 @@ def test_training_source_audit_rejects_missing_model_training_rights(monkeypatch
 
 def test_training_source_audit_rejects_missing_observation_record(monkeypatch):
     report = _walk_forward(monkeypatch)
-    audit = audit_walk_forward_training_sources(report, (), (_approval(),))
+    audit = audit_walk_forward_training_sources(report, _source_records()[1:], (_approval(),))
     assert not audit.passed
     assert ("obs-train-1", "training_observation_missing") in audit.rejected_observations
