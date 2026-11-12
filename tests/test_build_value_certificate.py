@@ -13,6 +13,10 @@ def test_certificate_builder_fails_closed_without_paper_ledger(tmp_path):
         "recent_holdout": {"historical_odds_subset": {"models_compared_on_same_matches": {}}},
         "dataset_provenance": {"rows_loaded": 1234},
     }
+    monkeypatch.setattr(
+        "scripts.build_value_certificate.verify_github_artifact_attestation",
+        lambda *args, **kwargs: {"attestation_status": "GITHUB_ATTESTATION_VERIFIED", "sha256": "a" * 64},
+    )
     backtest_path = tmp_path / "backtest.json"
     backtest_path.write_text(json.dumps(backtest), encoding="utf-8")
     report_path = tmp_path / "daily.json"
@@ -37,7 +41,7 @@ def test_certificate_builder_fails_closed_without_paper_ledger(tmp_path):
 
 
 
-def test_certificate_builder_attaches_raw_audit_but_never_unlocks(tmp_path):
+def test_certificate_builder_attaches_raw_audit_but_never_unlocks(monkeypatch, tmp_path):
     roles = {
         "walk_forward_rows": {"rows": []},
         "coverage_audit": {
@@ -89,3 +93,4 @@ def test_certificate_builder_attaches_raw_audit_but_never_unlocks(tmp_path):
     assert certificate["alerts_enabled"] is False
     assert certificate["raw_evidence_audit"]["release_authorized"] is False
     assert certificate["raw_evidence_audit"]["statistical_status"] == "RAW_EVIDENCE_INCOMPLETE"
+    assert certificate["evidence_attestation"]["attestation_status"] == "GITHUB_ATTESTATION_VERIFIED"
