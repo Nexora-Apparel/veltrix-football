@@ -4,9 +4,12 @@ from zoneinfo import ZoneInfo
 from app.telegram_commands import NEW_MESSAGE_HEADER, handle_command
 
 
-def test_every_reply_has_new_message_header():
+def test_every_reply_has_new_message_header_and_required_provider_attribution():
     for command in ("/help", "/status", "/today", "/bttsvalue", "/10odds", "/slipcheck 1.8 2.0"):
-        assert handle_command(command).startswith(NEW_MESSAGE_HEADER)
+        reply = handle_command(command)
+        assert reply.startswith(NEW_MESSAGE_HEADER)
+        assert "Football data by 5DollarFootballAPI" in reply
+        assert "https://5dollarfootballapi.com" in reply
 
 
 def test_help_lists_requested_commands():
