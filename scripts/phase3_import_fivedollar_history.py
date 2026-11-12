@@ -36,7 +36,7 @@ MIGRATION_CHECKSUMS = {
 
 
 def _require_empty_staging_database(counts: tuple[int, ...]) -> None:
-    if len(counts) != 6 or any(int(value) != 0 for value in counts):
+    if len(counts) != 11 or any(int(value) != 0 for value in counts):
         raise RuntimeError("STAGING_IMPORT_REQUIRES_EMPTY_DEDICATED_DATABASE")
 
 
@@ -77,7 +77,12 @@ def _preflight(database_url: str, expected_database: str) -> None:
                     (SELECT count(*) FROM source_observations),
                     (SELECT count(*) FROM fixtures),
                     (SELECT count(*) FROM fixture_results),
-                    (SELECT count(*) FROM provider_entitlement_observations)
+                    (SELECT count(*) FROM provider_entitlement_observations),
+                    (SELECT count(*) FROM source_approvals),
+                    (SELECT count(*) FROM source_approval_status_events),
+                    (SELECT count(*) FROM reconciliation_audits),
+                    (SELECT count(*) FROM sync_watermarks),
+                    (SELECT count(*) FROM import_checkpoints)
             """)
             counts = cur.fetchone()
             _require_empty_staging_database(counts)
