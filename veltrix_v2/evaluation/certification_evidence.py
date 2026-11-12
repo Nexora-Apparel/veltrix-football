@@ -502,3 +502,174 @@ def audit_odds_snapshot_sources(
         rejected_snapshots=failures,
         passed=bool(snapshot_rows) and not failures and len(approved) == len(snapshot_rows),
     )
+
+
+@dataclass(frozen=True, slots=True)
+class PaperLedgerSourceAudit:
+    selection_count: int
+    settlement_count: int
+    approved_observation_ids: tuple[str, ...]
+    rejected_observations: tuple[tuple[str, str], ...]
+    passed: bool
+
+
+def audit_paper_ledger_sources(
+    walk_forward: MultiCompetitionWalkForwardEvaluation,
+    paper_ledger: PaperLedger,
+    observations: Iterable[TrainingObservationEvidence],
+    approvals: Iterable["SourceApproval"],
+) -> PaperLedgerSourceAudit:
+    """Verify forecast inputs, odds quotes and settled results in the paper ledger."""
+    from datetime import timedelta
+    from veltrix_v2.contracts import ForecastCutoff
+    from veltrix_v2.quality.eligibility import SourceApproval, evaluate_observation
+
+    if not isinstance(walk_forward, MultiCompetitionWalkForwardEvaluation):
+        raise ValueError("CERTIFICATION_WALK_FORWARD_REPORT_REQUIRED")
+    if not isinstance(paper_ledger, PaperLedger):
+        raise ValueError("CERTIFICATION_PAPER_LEDGER_REQUIRED")
+    observation_rows = tuple(observations)
+    approval_rows = tuple(approvals)
+    if any(not isinstance(row, TrainingObservationEvidence) for row in observation_rows):
+        raise ValueError("CERTIFICATION_TRAINING_OBSERVATION_EVIDENCE_TYPE_INVALID")
+    if any(not isinstance(row, SourceApproval) for row in approval_rows):
+        raise ValueError("CERTIFICATION_SOURCE_APPROVAL_TYPE_INVALID")
+    by_id = {row.observation_id: row.observation for row in observation_rows}
+    if len(by_id) != len(observation_rows):
+        raise ValueError("CERTIFICATION_DUPLICATE_SOURCE_OBSERVATION_ID")
+
+    fixture_scopes = {
+        fixture_id: (scope_report.competition_key, scope_report.season)
+        for scope_report in walk_forward.scope_reports
+        for fold in scope_report.folds
+        for fixture_id in fold.eligible_fixture_ids
+    }
+    selection_by_id = {row.selection_id: row for row in paper_ledger.selections}
+    approved: set[str] = set()
+    rejected: list[tuple[str, str]] = []
+    required_ids: set[str] = set()
+
+    for selection in paper_ledger.selections:
+        scope = fixture_scopes.get(selection.bet.fixture_id)
+        if scope is None:
+            rejected.append((selection.selection_id, "paper_selection_fixture_outside_walk_forward"))
+            continue
+        for observation_id in selection.forecast_source_observation_ids:
+            required_ids.add(observation_id)
+            observation = by_id.get(observation_id)
+            if observation is None:
+                rejected.append((observation_id, "paper_forecast_source_observation_missing"))
+                continue
+            if (observation.competition_key, observation.season) != scope:
+                rejected.append((observation_id, "paper_forecast_source_scope_mismatch"))
+                continue
+            decision = evaluate_observation(
+                observation,
+                data_type=observation.entity_type,
+                cutoff=ForecastCutoff(selection.forecast_generated_at_utc),
+                approvals=approval_rows,
+                max_age=timedelta.max,
+                required_uses=("collection", "storage", "model_training"),
+            )
+            if not decision.eligible:
+                rejected.append((observation_id, decision.reason))
+            else:
+                approved.add(observation_id)
+
+        odds = selection.odds_snapshot
+        odds_observation_id = odds.source_observation_id
+        if not odds_observation_id:
+            rejected.append((selection.selection_id, "paper_odds_source_observation_id_missing"))
+            continue
+        required_ids.add(odds_observation_id)
+        odds_observation = by_id.get(odds_observation_id)
+        if odds_observation is None:
+            rejected.append((odds_observation_id, "paper_odds_source_observation_missing"))
+            continue
+        if (
+            odds_observation.provider != odds.source_id
+            or (odds_observation.competition_key, odds_observation.season) != scope
+            or odds_observation.available_at_utc > odds.captured_at
+        ):
+            rejected.append((odds_observation_id, "paper_odds_source_provenance_mismatch"))
+            continue
+        odds_decision = evaluate_observation(
+            odds_observation,
+            data_type=odds_observation.entity_type,
+            cutoff=ForecastCutoff(odds.captured_at),
+            approvals=approval_rows,
+            max_age=timedelta.max,
+            required_uses=("collection", "storage", "benchmarking"),
+        )
+        if not odds_decision.eligible:
+            rejected.append((odds_observation_id, odds_decision.reason))
+        else:
+            approved.add(odds_observation_id)
+
+    if not paper_ledger.selections or not paper_ledger.settlements:
+        rejected.append(("*", "paper_ledger_has_no_prospective_settled_evidence"))
+
+    for event in paper_ledger.settlements:
+        selection = selection_by_id[event.selection_id]
+        scope = fixture_scopes.get(selection.bet.fixture_id)
+        observation_id = event.result_source_observation_id
+        required_ids.add(observation_id)
+        observation = by_id.get(observation_id)
+        if observation is None:
+            rejected.append((observation_id, "paper_result_source_observation_missing"))
+            continue
+        if (observation.competition_key, observation.season) != scope:
+            rejected.append((observation_id, "paper_result_source_scope_mismatch"))
+            continue
+        if (
+            observation.available_at_utc <= selection.odds_snapshot.kickoff_at
+            or observation.available_at_utc > event.result_observed_at_utc
+        ):
+            rejected.append((observation_id, "paper_result_source_time_invalid"))
+            continue
+        decision = evaluate_observation(
+            observation,
+            data_type=observation.entity_type,
+            cutoff=ForecastCutoff(event.result_observed_at_utc),
+            approvals=approval_rows,
+            max_age=timedelta.max,
+            required_uses=("collection", "storage", "benchmarking"),
+        )
+        if not decision.eligible:
+            rejected.append((observation_id, decision.reason))
+        else:
+            approved.add(observation_id)
+
+        date_observation_id = event.settlement.match_date_source_observation_id
+        if date_observation_id:
+            required_ids.add(date_observation_id)
+            date_observation = by_id.get(date_observation_id)
+            if date_observation is None:
+                rejected.append((date_observation_id, "paper_match_date_source_observation_missing"))
+            elif (
+                (date_observation.competition_key, date_observation.season) != scope
+                or date_observation.available_at_utc > event.result_observed_at_utc
+            ):
+                rejected.append((date_observation_id, "paper_match_date_source_provenance_mismatch"))
+            else:
+                date_decision = evaluate_observation(
+                    date_observation,
+                    data_type=date_observation.entity_type,
+                    cutoff=ForecastCutoff(event.result_observed_at_utc),
+                    approvals=approval_rows,
+                    max_age=timedelta.max,
+                    required_uses=("collection", "storage", "benchmarking"),
+                )
+                if not date_decision.eligible:
+                    rejected.append((date_observation_id, date_decision.reason))
+                else:
+                    approved.add(date_observation_id)
+
+    failures = tuple(sorted(set(rejected)))
+    return PaperLedgerSourceAudit(
+        selection_count=len(paper_ledger.selections),
+        settlement_count=len(paper_ledger.settlements),
+        approved_observation_ids=tuple(sorted(approved)),
+        rejected_observations=failures,
+        passed=bool(required_ids) and not failures and approved == required_ids,
+    )
