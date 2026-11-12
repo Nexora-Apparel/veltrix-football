@@ -58,10 +58,13 @@ def _kickoff(row: dict) -> datetime:
     timestamp = row.get("kickoff_ts")
     parsed = _aware_utc(text_value, "FIXTURE_KICKOFF") if text_value else None
     if timestamp is not None:
-        if isinstance(timestamp, bool) or not isinstance(timestamp, int):
+        if isinstance(timestamp, bool) or not (
+            isinstance(timestamp, int)
+            or (isinstance(timestamp, str) and timestamp.strip().isdigit())
+        ):
             raise FixturePageError("FIXTURE_KICKOFF_EPOCH_INVALID")
         try:
-            epoch = datetime.fromtimestamp(timestamp, timezone.utc)
+            epoch = datetime.fromtimestamp(int(timestamp), timezone.utc)
         except (OverflowError, OSError, ValueError) as exc:
             raise FixturePageError("FIXTURE_KICKOFF_EPOCH_INVALID") from exc
         if parsed is not None and abs((parsed - epoch).total_seconds()) > 1:
