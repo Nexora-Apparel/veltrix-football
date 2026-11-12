@@ -17,7 +17,7 @@ The previous runtime predicate `app.value_bets._certificate_allows` accepted a m
 - Telegram report formatting no longer treats report-supplied status labels as authority to release value candidates.
 - Both core and runtime value-screen consumers keep release candidates disabled; paper-only research candidates remain explicitly separate.
 - Added a SHA-256 evidence manifest verifier. It rejects altered bytes, unsafe paths, symlinks, duplicate/unknown roles, missing artifacts and malformed hashes.
-- Added a raw-row recomputation engine for walk-forward metrics, point-in-time feature observations, approved source IDs, exact quote/settlement joins, model/calibration versions, duplicate fixture-market selections, score-derived outcomes, net profit after explicit fees, date-clustered ROI confidence bounds, timestamped-odds coverage, and same-fixture 1X2 bookmaker comparisons.
+- Added a raw-row recomputation engine for walk-forward metrics, point-in-time feature observations, approved source IDs, retained provider response bytes, canonical redacted request fingerprints, JSON-pointer value checks, exact quote/settlement joins, model/calibration versions, duplicate fixture-market selections, score-derived outcomes, net profit after explicit fees, date-clustered ROI confidence bounds, timestamped-odds coverage, and same-fixture 1X2 bookmaker comparisons.
 - Added `scripts/verify_certification_evidence.py`, optional raw-audit attachment to `scripts/build_value_certificate.py`, and `gh attestation verify` integration pinned to the repository, signer workflow and `refs/heads/main`. A raw statistical pass or valid artifact attestation still cannot authorize release by itself.
 - Added `.github/workflows/certification-evidence-attestation.yml`; it can attest only a manifest that passes raw statistical gates on `main`. It has not been dispatched because no qualifying evidence bundle exists.
 - Added a dedicated GitHub Actions certification workflow. The focused certification/release-consumer suite passed on run 21; the full repository regression suite is still running.
@@ -25,12 +25,11 @@ The previous runtime predicate `app.value_bets._certificate_allows` accepted a m
 
 ## Remaining Phase 1 acceptance work
 
-1. Complete source-response byte capture and bind every feature, odds quote and settlement row to exact response hashes and source-observation identifiers.
-2. Produce a real evidence bundle from rights-approved, point-in-time source records. Existing aggregate backtest summaries and the current paper ledger do not satisfy the raw contract.
-3. Dispatch the main-only attestation workflow against that bundle and verify the resulting signature, signer identity, source ref, transparency timestamp and exact manifest digest.
-4. Prove the verifier rejects forged source identities, altered response bodies, missing response links, stale/post-kickoff quotes, mismatched fixture joins, model/calibration mismatch and cross-market evidence reuse.
-5. Run the complete repository regression suite and verify all website, runtime and Telegram consumers use the same verified decision.
-6. Only after those checks pass, implement the signed-attestation release token path. Keep runtime and Telegram locked until then.
+1. Produce a real evidence bundle from rights-approved, point-in-time source records. Existing aggregate backtest summaries and the current paper ledger do not satisfy the raw contract.
+2. Dispatch the main-only attestation workflow against that bundle and verify the resulting signature, signer identity, source ref, transparency timestamp and exact manifest digest.
+3. Prove the verifier rejects forged source identities, altered response bodies, missing response links, stale/post-kickoff quotes, mismatched fixture joins, model/calibration mismatch and cross-market evidence reuse against real provider-shaped artifacts.
+4. Run the complete repository regression suite against the final code and verify all website, runtime and Telegram consumers use the same verified decision.
+5. Only after those checks pass, implement the signed-attestation release token path. Keep runtime and Telegram locked until then.
 
 ## Mandatory thresholds
 
