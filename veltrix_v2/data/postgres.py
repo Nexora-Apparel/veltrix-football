@@ -293,9 +293,29 @@ class PostgresHistoryStore:
             raise ValueError("ENTITLEMENT_CHECK_TIME_MUST_BE_TIMEZONE_AWARE")
         if len(evidence_sha256) != 64 or any(ch not in "0123456789abcdef" for ch in evidence_sha256.casefold()):
             raise ValueError("ENTITLEMENT_EVIDENCE_HASH_INVALID")
+        if not provider.strip() or not source_id.strip() or not plan_code.strip() or not entitlement_status.strip():
+            raise ValueError("ENTITLEMENT_IDENTITY_REQUIRED")
+        if len(set(competition_ids)) != len(competition_ids):
+            raise ValueError("ENTITLEMENT_COMPETITION_IDS_DUPLICATED")
         conn = self._connect_for_write()
         try:
             cur = conn.cursor()
+            if provider_response_id is None:
+                raise ValueError("ENTITLEMENT_PROVIDER_RESPONSE_REQUIRED")
+            cur.execute(
+                """SELECT provider,source_id,http_status,fetched_at
+                   FROM provider_responses WHERE id=%s""",
+                (provider_response_id,),
+            )
+            response_row = cur.fetchone()
+            if (
+                not response_row
+                or tuple(response_row[:3]) != (provider, source_id, 200)
+                or response_row[3] > checked_at_utc
+            ):
+                raise ValueError("ENTITLEMENT_RESPONSE_PROVENANCE_MISMATCH")
+            if any(not isinstance(item, str) or not item.strip() for item in competition_ids):
+                raise ValueError("ENTITLEMENT_COMPETITION_IDS_INVALID")
             cur.execute(
                 """INSERT INTO provider_entitlement_observations(
                     provider,source_id,plan_code,entitlement_status,country_pack_code,
@@ -384,9 +404,37 @@ class PostgresHistoryStore:
         try:
             cur = conn.cursor()
             response_id = self._persist_provider_response(cur, response)
+            cur.execute(
+                """SELECT e.entitlement_status,e.competition_ids
+                   FROM provider_entitlement_observations e
+                   JOIN provider_responses r ON r.id=e.provider_response_id
+                   WHERE e.provider=%s AND e.source_id=%s AND e.checked_at<=%s
+                     AND r.provider=e.provider AND r.source_id=e.source_id
+                     AND r.http_status=200 AND r.fetched_at<=e.checked_at
+                   ORDER BY e.checked_at DESC,e.id DESC LIMIT 1""",
+                (response.provider, response.source_id, response.fetched_at_utc),
+            )
+            entitlement = cur.fetchone()
+            entitlement_active = bool(entitlement and str(entitlement[0]).upper() == "ACTIVE")
+            entitled_competitions = set(map(str, entitlement[1] or [])) if entitlement_active else set()
             for fixture in rows:
                 if fixture.provider != response.provider or fixture.source_id != response.source_id:
                     raise ValueError("FIXTURE_PROVIDER_RESPONSE_MISMATCH")
+                if not entitlement_active:
+                    self._quarantine(
+                        cur, fixture, import_run_id, "PROVIDER_ENTITLEMENT_NOT_VERIFIED",
+                        {"provider": response.provider, "source_id": response.source_id},
+                    )
+                    conflicts += 1
+                    continue
+                if fixture.provider_competition_id not in entitled_competitions:
+                    self._quarantine(
+                        cur, fixture, import_run_id, "PROVIDER_COMPETITION_NOT_ENTITLED",
+                        {"competition_id": fixture.provider_competition_id,
+                         "entitled_competitions": sorted(entitled_competitions)},
+                    )
+                    conflicts += 1
+                    continue
                 decision = evaluate_fixture_import(
                     fixture, approval, evaluated_at_utc=response.fetched_at_utc
                 )

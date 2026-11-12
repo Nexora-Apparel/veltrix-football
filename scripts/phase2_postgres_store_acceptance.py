@@ -124,6 +124,22 @@ def main() -> dict:
         importer_version="phase2.1", rights_approval_id=approval.approval_id,
         started_at_utc=now,
     )
+    status_response = replace(
+        response("phase2-ci-status", (2, 1)),
+        endpoint="/status",
+        request_params={"operation": "account_status"},
+    )
+    status_record = store.persist_page(status_response, [], approval)
+    store.record_entitlement_observation(
+        provider="5DollarFootballAPI", source_id="5dollarfootballapi",
+        plan_code="community", entitlement_status="ACTIVE",
+        country_pack_code=None,
+        competition_ids=sorted(["3118717965","522514093","4160026622","3614399544","686337048","3405541143","4212821298"]),
+        rate_limit_hour=300, rate_limit_minute=20, quota_remaining=250,
+        provider_response_id=status_record["provider_response_id"],
+        evidence_sha256=hashlib.sha256(b"phase2-ci-entitlement-evidence").hexdigest(),
+        checked_at_utc=now,
+    )
     first_response = response("phase2-ci-page-1", (2, 1))
     first = store.persist_page(first_response, [fixture], approval, import_run_id=run_id)
     repeated = store.persist_page(first_response, [fixture], approval, import_run_id=run_id)
@@ -148,16 +164,62 @@ def main() -> dict:
     assert conflict["results_inserted"] == 0
     assert conflict["quarantined_or_conflicting"] == 1
 
+    unauthorized_payload = dict(payload)
+    unauthorized_payload["id"] = 987654322
+    unauthorized_payload["league"] = {
+        "id": 999999, "name": "Unentitled Competition", "season": "2025/2026"
+    }
+    unauthorized_payload["teams"] = {
+        "home": {"id": 990003, "name": "Unauthorized Home"},
+        "away": {"id": 990004, "name": "Unauthorized Away"},
+    }
+    unauthorized_raw = json.dumps(
+        unauthorized_payload, sort_keys=True, separators=(",", ":")
+    ).encode()
+    unauthorized_fixture = replace(
+        fixture,
+        provider_fixture_id="987654322",
+        provider_competition_id="999999",
+        provider_home_team_id="990003",
+        provider_away_team_id="990004",
+        competition_name="Unentitled Competition",
+        home_team_name="Unauthorized Home",
+        away_team_name="Unauthorized Away",
+        payload=unauthorized_payload,
+        payload_sha256=hashlib.sha256(unauthorized_raw).hexdigest(),
+    )
+    unauthorized = store.persist_page(
+        response("phase2-ci-not-entitled", (2, 1)),
+        [unauthorized_fixture], approval,
+    )
+    assert unauthorized["quarantined_or_conflicting"] == 1
+
+    revoked_status_response = replace(
+        response("phase2-ci-status-revoked", (2, 1)),
+        endpoint="/status",
+        request_params={"operation": "account_status"},
+        fetched_at_utc=now + timedelta(seconds=1),
+    )
+    revoked_status_record = store.persist_page(revoked_status_response, [], approval)
     store.record_entitlement_observation(
         provider="5DollarFootballAPI", source_id="5dollarfootballapi",
-        plan_code="community", entitlement_status="ACTIVE",
+        plan_code="community", entitlement_status="SUSPENDED",
         country_pack_code=None,
         competition_ids=sorted(["3118717965","522514093","4160026622","3614399544","686337048","3405541143","4212821298"]),
-        rate_limit_hour=300, rate_limit_minute=20, quota_remaining=250,
-        provider_response_id=first["provider_response_id"],
-        evidence_sha256=hashlib.sha256(b"phase2-ci-entitlement-evidence").hexdigest(),
-        checked_at_utc=now,
+        rate_limit_hour=300, rate_limit_minute=20, quota_remaining=0,
+        provider_response_id=revoked_status_record["provider_response_id"],
+        evidence_sha256=hashlib.sha256(b"phase2-ci-suspended-entitlement").hexdigest(),
+        checked_at_utc=now + timedelta(seconds=1),
     )
+    suspended = store.persist_page(
+        replace(
+            response("phase2-ci-page-after-suspension", (2, 1)),
+            fetched_at_utc=now + timedelta(seconds=2),
+        ),
+        [fixture], approval,
+    )
+    assert suspended["quarantined_or_conflicting"] == 1
+
     manifest = hashlib.sha256(
         "\n".join(sorted([fixture.payload_sha256, conflicting_fixture.payload_sha256])).encode()
     ).hexdigest()
@@ -204,7 +266,11 @@ def main() -> dict:
             versions = cur.fetchone()[0]
             cur.execute("SELECT count(*) FROM ingestion_quarantine WHERE provider_entity_id='987654321' AND reason_code='SETTLED_RESULT_CONFLICT'")
             quarantined = cur.fetchone()[0]
-            cur.execute("SELECT count(*) FROM provider_responses WHERE request_id IN ('phase2-ci-page-1','phase2-ci-page-2')")
+            cur.execute("SELECT count(*) FROM ingestion_quarantine WHERE provider_entity_id='987654322' AND reason_code='PROVIDER_COMPETITION_NOT_ENTITLED'")
+            entitlement_quarantined = cur.fetchone()[0]
+            cur.execute("SELECT count(*) FROM ingestion_quarantine WHERE provider_entity_id='987654321' AND reason_code='PROVIDER_ENTITLEMENT_NOT_VERIFIED'")
+            suspended_quarantined = cur.fetchone()[0]
+            cur.execute("SELECT count(*) FROM provider_responses WHERE request_id IN ('phase2-ci-status','phase2-ci-page-1','phase2-ci-page-2','phase2-ci-not-entitled','phase2-ci-status-revoked','phase2-ci-page-after-suspension')")
             responses = cur.fetchone()[0]
             cur.execute("SELECT status,requests_used,records_seen,records_inserted,records_quarantined FROM import_runs WHERE id=%s", (run_id,))
             run_state = cur.fetchone()
@@ -214,18 +280,21 @@ def main() -> dict:
             observation_id = cur.fetchone()[0]
             cur.execute("SELECT id FROM provider_responses WHERE request_id='phase2-ci-page-1'")
             response_id = cur.fetchone()[0]
-            cur.execute("SELECT id FROM provider_entitlement_observations WHERE provider='5DollarFootballAPI' AND source_id='5dollarfootballapi'")
-            entitlement_id = cur.fetchone()[0]
+            cur.execute("SELECT id FROM provider_entitlement_observations WHERE provider='5DollarFootballAPI' AND source_id='5dollarfootballapi' ORDER BY id")
+            entitlement_ids = [row[0] for row in cur.fetchall()]
+            entitlement_id = entitlement_ids[0]
+            entitlement_count = len(entitlement_ids)
             cur.execute("SELECT id FROM fixture_result_versions WHERE fixture_id=(SELECT id FROM fixtures WHERE provider_fixture_id='987654321') ORDER BY id LIMIT 1")
             version_id = cur.fetchone()[0]
-            entitlement_count = 1
     assert canonical_score == (2, 1), canonical_score
     assert versions == 2, versions
     assert quarantined == 1, quarantined
-    assert responses == 2, responses
+    assert responses == 6, responses
+    assert entitlement_quarantined == 1, entitlement_quarantined
+    assert suspended_quarantined == 1, suspended_quarantined
+    assert entitlement_count == 2, entitlement_count
     assert run_state == ("COMPLETED", 2, 2, 1, 1), run_state
     assert checkpoint_state == ("COMPLETED", 2, 1, 1, 2), checkpoint_state
-    assert entitlement_count == 1, entitlement_count
     assert watermark_v1 == 1 and watermark_v2 == 2
     assert stale_watermark_rejected
     assert watermark[0] == "page=2" and watermark[1] == 2
@@ -261,6 +330,8 @@ def main() -> dict:
         "import_run": list(run_state),
         "import_checkpoint": list(checkpoint_state),
         "entitlement_snapshots": entitlement_count,
+        "unentitled_competition_quarantined": entitlement_quarantined,
+        "suspended_provider_quarantined": suspended_quarantined,
         "sync_watermark_version": watermark[1],
         "stale_sync_writer_rejected": stale_watermark_rejected,
     }
