@@ -161,3 +161,22 @@ def test_fivedollar_smoke_probes_one_fixture_per_accessible_league_within_burst(
     assert "TOTALS_2_5=6/6" in output
     assert len(calls) == 14
     assert len(calls) <= 20
+
+
+
+def test_community_acceptance_fails_closed_while_account_remains_on_free_plan(monkeypatch, capsys):
+    monkeypatch.setenv("FIVEDOLLARFOOTBALL_API_KEY", "fake-primary")
+    monkeypatch.setenv("FIVEDOLLAR_REQUIRED_PLAN", "community")
+    calls = []
+
+    def fake_request(url, headers=None):
+        calls.append(url)
+        return 200, {}, {"success": 1, "data": {"plan": "free"}}
+
+    monkeypatch.setattr(providers, "request_json", fake_request)
+    assert providers.check_fivedollar() == "PLAN_MISMATCH"
+    output = capsys.readouterr().out
+    assert "PLAN_MISMATCH" in output
+    assert "expected=community" in output
+    assert "actual=free" in output
+    assert len(calls) == 1
