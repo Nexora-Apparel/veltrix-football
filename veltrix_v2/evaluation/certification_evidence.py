@@ -303,7 +303,7 @@ def audit_walk_forward_training_sources(
                     rejected.append((observation_id, "held_out_result_kickoff_missing"))
                     continue
                 _, kickoff = fixture
-                if observation.available_at_utc < kickoff or observation.source_event_time_utc < kickoff:
+                if observation.available_at_utc <= kickoff:
                     rejected.append((observation_id, "held_out_result_observed_before_kickoff"))
                     continue
                 decision = evaluate_observation(
@@ -379,11 +379,22 @@ def audit_walk_forward_integrity(
                 failures.append("TRAINING_AND_HELD_OUT_FIXTURES_OVERLAP")
             if not training_observation_ids or len(training_observation_ids) != len(set(training_observation_ids)):
                 failures.append("TRAINING_OBSERVATION_IDENTITIES_INVALID")
+            kickoff_rows = tuple(fold.test_fixture_kickoffs)
+            kickoff_fixture_ids = {fixture_id for fixture_id, _, _ in kickoff_rows}
+            kickoff_observation_ids = {observation_id for _, observation_id, _ in kickoff_rows}
             if (
                 len(test_observation_ids) != len(test_ids)
                 or len(test_observation_ids) != len(set(test_observation_ids))
+                or kickoff_observation_ids != set(test_observation_ids)
+                or kickoff_fixture_ids != set(test_ids)
+                or len(kickoff_rows) != len(test_ids)
             ):
                 failures.append("HELD_OUT_RESULT_PROVENANCE_INVALID")
+            for fixture_id, _, kickoff in kickoff_rows:
+                if not (
+                    fold.test_start_utc <= kickoff < fold.test_end_utc
+                ):
+                    failures.append("HELD_OUT_FIXTURE_KICKOFF_OUTSIDE_TEST_WINDOW")
             held_out_ids.extend(test_ids)
     if not held_out_ids or len(held_out_ids) != len(set(held_out_ids)):
         failures.append("HELD_OUT_FIXTURES_MISSING_OR_REPEATED_ACROSS_FOLDS")
