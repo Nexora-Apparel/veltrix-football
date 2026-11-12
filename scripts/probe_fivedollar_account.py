@@ -129,7 +129,7 @@ def probe(key: str, request=_request, sleep=time.sleep) -> dict:
         # The account has a 20-requests/minute burst ceiling. The preceding
         # multi-source check can use up to four calls; pace this 16-call probe.
         if request_count:
-            sleep(2.5)
+            sleep(4.0)
         payload, headers = request(path, key)
         request_count += 1
         return payload, headers
@@ -161,6 +161,7 @@ def probe(key: str, request=_request, sleep=time.sleep) -> dict:
         })
 
     odds_samples = []
+    odds_history_probe = {"status": "NOT_TESTED_NO_FINISHED_FIXTURE", "ticks": 0, "timestamped_ticks": 0}
     for competition in competitions[:7]:
         league_id = competition["id"]
         fixtures_payload, _ = call(
@@ -185,6 +186,33 @@ def probe(key: str, request=_request, sleep=time.sleep) -> dict:
             continue
         odds_payload, _ = call(f"/fixtures/{fixture_id}/odds")
         summary = _odds_summary(odds_payload)
+        if odds_history_probe["status"] == "NOT_TESTED_NO_FINISHED_FIXTURE":
+            try:
+                history_payload, _ = call(
+                    f"/fixtures/{fixture_id}/odds/history?" + urlencode({"market": "btts"})
+                )
+                history_data = history_payload.get("data") if isinstance(history_payload, dict) else None
+                ticks = history_data.get("ticks") if isinstance(history_data, dict) else None
+                if isinstance(ticks, list):
+                    timestamped = sum(
+                        1 for tick in ticks
+                        if isinstance(tick, dict) and _valid_timestamp(tick.get("recorded_at"))
+                    )
+                    odds_history_probe = {
+                        "status": "OK_WITH_TIMESTAMPED_TICKS" if timestamped else ("OK_EMPTY" if not ticks else "OK_NO_VALID_TIMESTAMPS"),
+                        "ticks": len(ticks),
+                        "timestamped_ticks": timestamped,
+                        "market": "btts",
+                    }
+                else:
+                    odds_history_probe = {"status": "INVALID_SCHEMA", "ticks": 0, "timestamped_ticks": 0, "market": "btts"}
+            except ProbeError as exc:
+                odds_history_probe = {
+                    "status": str(exc),
+                    "ticks": 0,
+                    "timestamped_ticks": 0,
+                    "market": "btts",
+                }
         odds_samples.append({
             "league_id": league_id,
             "league": competition["name"],
@@ -215,6 +243,7 @@ def probe(key: str, request=_request, sleep=time.sleep) -> dict:
             "has_more": (leagues_payload.get("pagination") or {}).get("has_more"),
         },
         "odds_samples": odds_samples,
+        "odds_history_endpoint_probe": odds_history_probe,
         "odds_market_blocks_sampled": total_markets,
         "odds_timestamped_market_blocks_sampled": timestamped_markets,
         "odds_timestamped_market_fraction_sampled": (
@@ -227,7 +256,7 @@ def probe(key: str, request=_request, sleep=time.sleep) -> dict:
             "catalogue_remaining": league_headers.get("X-RateLimit-Remaining"),
         },
         "request_count": request_count,
-        "request_budget": 16,
+        "request_budget": 17,
         "side_effects": {
             "database_writes": 0,
             "imports": 0,
@@ -245,9 +274,9 @@ def validate_report(report: dict) -> None:
         raise ValueError("provider_invalid")
     if report.get("mode") != "read_only_plan_competition_and_odds_timestamp_probe":
         raise ValueError("mode_invalid")
-    if not 2 <= report.get("request_count", 0) <= 16:
+    if not 2 <= report.get("request_count", 0) <= 17:
         raise ValueError("request_count_invalid")
-    if report.get("request_budget") != 16:
+    if report.get("request_budget") != 17:
         raise ValueError("request_budget_invalid")
     if report.get("side_effects", {}).get("database_writes") != 0:
         raise ValueError("side_effects_invalid")
@@ -276,7 +305,9 @@ def main() -> int:
         f"competitions={report['competition_count_page_1']} "
         f"odds_samples={len(report['odds_samples'])} "
         f"timestamped_market_fraction={report['odds_timestamped_market_fraction_sampled']} "
-        f"requests={report['request_count']}/16 "
+        f"tick_history={report['odds_history_endpoint_probe']['status']} "
+        f"tick_timestamps={report['odds_history_endpoint_probe']['timestamped_ticks']} "
+        f"requests={report['request_count']}/17 "
         f"sha256={report['report_sha256']}"
     )
     return 0
