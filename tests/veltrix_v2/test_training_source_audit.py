@@ -47,7 +47,7 @@ def _match(fixture_id, day, home, away, goals):
     )
 
 
-def _observation(*, available_at, approval_id="approval-1", event_at=None, provider_entity_id="provider-match-1", entity_type="match_result"):
+def _observation(*, available_at, approval_id="approval-1", event_at=None, provider_entity_id="provider-match-1", entity_type="match_result", fixture_id=None):
     event_at = event_at or datetime(2026, 1, 1, 15, tzinfo=UTC)
     return ProviderObservation(
         provider="provider-a",
@@ -62,7 +62,11 @@ def _observation(*, available_at, approval_id="approval-1", event_at=None, provi
         payload_sha256="a" * 64,
         schema_version="1",
         rights_approval_id=approval_id,
-        values={"home_goals": 2, "away_goals": 0},
+        values={
+            "home_goals": 2,
+            "away_goals": 0,
+            **({"fixture_id": fixture_id} if fixture_id else {}),
+        },
     )
 
 
@@ -86,6 +90,7 @@ def _source_records(training_available_at=None):
                 available_at=training_available_at or datetime(2026, 1, 1, 17, tzinfo=UTC),
                 provider_entity_id="provider-training-result",
                 approval_id="approval-result",
+                fixture_id="train-1",
             ),
         ),
         TrainingObservationEvidence(
@@ -95,6 +100,7 @@ def _source_records(training_available_at=None):
                 event_at=datetime(2026, 1, 10, 15, tzinfo=UTC),
                 provider_entity_id="provider-heldout-result",
                 approval_id="approval-result",
+                fixture_id="test-1",
             ),
         ),
         TrainingObservationEvidence(
@@ -105,6 +111,7 @@ def _source_records(training_available_at=None):
                 provider_entity_id="provider-odds-feed",
                 entity_type="odds_quote",
                 approval_id="approval-odds",
+                fixture_id="test-1",
             ),
         ),
     )
