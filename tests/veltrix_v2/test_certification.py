@@ -11,7 +11,7 @@ from veltrix_v2.evaluation.certification import (
     MarketCertificationEvidence,
     PredictionMarketEvidence,
     certify_prediction_publication,
-    certify_release,
+    _certify_release_from_derived_evidence,
 )
 
 
@@ -58,7 +58,7 @@ def evidence(market, **overrides):
 
 
 def test_all_gates_pass_only_with_complete_evidence():
-    result = certify_release(
+    result = _certify_release_from_derived_evidence(
         [evidence("1X2"), evidence("BTTS"), evidence("TOTALS")],
         one_x_two_beats_bookmaker_brier=True,
         one_x_two_beats_bookmaker_log_loss=True,
