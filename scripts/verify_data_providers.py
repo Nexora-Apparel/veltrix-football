@@ -307,6 +307,61 @@ def probe_odds_api_btts(soccer_sports: list[dict], api_key: str) -> None:
     print(f"The Odds API BTTS_PROBE_SUMMARY: leagues_probed={probed}; complete_bookmaker_quotes={quoted}; maximum_odds_credits=8")
 
 
+def probe_odds_api_historical_access(api_key: str) -> str:
+    """Optional one-call paid-entitlement check; never runs unless explicitly enabled."""
+    requested_at = os.getenv("THE_ODDS_API_HISTORICAL_PROBE_AT", "").strip()
+    if not requested_at:
+        requested_at = (
+            datetime.now(timezone.utc).replace(hour=12, minute=0, second=0, microsecond=0)
+            - timedelta(days=4)
+        ).isoformat().replace("+00:00", "Z")
+    url = (
+        "https://api.the-odds-api.com/v4/historical/sports/soccer_epl/odds/?"
+        + urlencode({
+            "apiKey": api_key,
+            "regions": "uk",
+            "markets": "h2h",
+            "date": requested_at,
+        })
+    )
+    try:
+        status, headers, payload = request_json(url)
+    except ProviderCheckError as exc:
+        if str(exc) in {"HTTP 401", "HTTP 403"}:
+            print(
+                "The Odds API HISTORICAL_ODDS: NOT_ENTITLED "
+                f"({safe_id(str(exc))}); maximum_credits=10"
+            )
+            return "NOT_ENTITLED"
+        print(f"The Odds API HISTORICAL_ODDS: FAILED ({safe_id(str(exc))})")
+        return "FAILED"
+    if (
+        status != 200
+        or not isinstance(payload, dict)
+        or not isinstance(payload.get("timestamp"), str)
+        or not isinstance(payload.get("data"), list)
+    ):
+        print("The Odds API HISTORICAL_ODDS: INVALID_RESPONSE; maximum_credits=10")
+        return "FAILED"
+    rows = payload["data"]
+    quote_markets = sum(
+        len(bookmaker.get("markets", []))
+        for event in rows if isinstance(event, dict)
+        for bookmaker in event.get("bookmakers", []) if isinstance(bookmaker, dict)
+    )
+    remaining = headers.get("x-requests-remaining", "not supplied")
+    print(
+        "The Odds API HISTORICAL_ODDS: ACCESS_CONFIRMED; "
+        f"snapshot_timestamp={safe_id(payload['timestamp'])}; events={len(rows)}; "
+        f"market_quotes={quote_markets}; requests_remaining={remaining}; "
+        "maximum_credits=10"
+    )
+    if not rows:
+        print("The Odds API HISTORICAL_ODDS: ACCESS_ONLY_NO_SAMPLE; no benchmark coverage inferred")
+        return "ACCESS_CONFIRMED_EMPTY"
+    return "ACCESS_CONFIRMED"
+
+
 def check_odds_api() -> str:
     key = os.getenv("THE_ODDS_API_KEY", "").strip()
     if not key:
@@ -335,6 +390,8 @@ def check_odds_api() -> str:
                 [item for item in payload if isinstance(item, dict) and str(item.get("key", "")).startswith("soccer_")],
                 key,
             )
+        if os.getenv("PROBE_THE_ODDS_API_HISTORICAL", "false").strip().casefold() in {"1", "true", "yes"}:
+            probe_odds_api_historical_access(key)
         return "KEY_ACCEPTED"
     except ProviderCheckError as exc:
         print(f"The Odds API: FAILED ({exc})")
