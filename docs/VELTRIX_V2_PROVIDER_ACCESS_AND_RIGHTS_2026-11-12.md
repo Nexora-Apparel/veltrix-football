@@ -321,3 +321,17 @@ Official API documentation:
 - https://app.americansocceranalysis.com/api/v1/__docs__/
 - https://creativecommons.org/licenses/by-sa/4.0/
 
+
+
+## Phase 2 acceptance checklist and manual blockers
+
+The automated work is prepared, but provider qualification cannot be signed off until these external actions are completed and their outputs are retained.
+
+1. **5Dollar Community activation (account owner action).** Sign in to the existing account, select Community Access and choose the Argentina country pack only if it is offered and covers the intended Argentina competitions. Do not buy Pro or any paid tier. Community is a $0 self-attested access path, not an API feature that can be enabled by code. After activation, the existing read-only workflow requires `plan=community`, at least six accessible competitions (five top leagues plus at least one country-pack competition), and a bounded fixture/odds smoke test. Maximum expected primary-provider requests: 18.
+2. **5Dollar verification dispatch (manual GitHub action).** Dispatch `Verify Data Providers` on `veltrix-2.0-architecture-blueprint`. Do not dispatch the daily prediction workflow. Retain the workflow artifact/log showing plan, competition IDs and market coverage. A Free-plan response is a hard failure.
+3. **StrikerAPI free-credit refresh and dispatch.** The prior account probe returned HTTP 402 because the 500-credit allowance was exhausted. Wait until the account's free credits have replenished, then manually dispatch `Verify StrikerAPI Read-Only Coverage`. The verifier is capped at 48 calls / 96 credits and writes nothing. Do not raise the cap. Its result is coverage-only; it does not approve provider xG or upstream rights.
+4. **PitchAPI written rights response.** Obtain explicit written answers on upstream providers, commercial sublicense authority, retention, model training, evaluation, public display, and attribution. Store the dated response and its SHA-256; only then can a reviewer create an approved `SourceApproval`.
+5. **GOAL API written rights response.** Obtain upstream source identity and rights for historical storage, model training, benchmarking, commercial derivative outputs and public display. The active API key and successful endpoint calls do not substitute for this approval.
+6. **OpenPlay / ASA review.** OpenPlay remains quarantined until upstream source lineage is documented. ASA remains conditional until the CC BY-SA 4.0 implications for model weights and public prediction outputs are resolved.
+
+No manual action above authorizes production writes, a production deployment, Telegram delivery, daily scheduling or value-bet activation. Those remain Phase 7 release-gate decisions.
