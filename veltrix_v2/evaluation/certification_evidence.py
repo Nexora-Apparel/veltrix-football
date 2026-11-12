@@ -289,3 +289,69 @@ def audit_walk_forward_training_sources(
         rejected_observations=failures,
         passed=bool(required_ids) and not failures and approved == required_ids,
     )
+
+
+@dataclass(frozen=True, slots=True)
+class WalkForwardIntegrityAudit:
+    fold_count: int
+    held_out_fixture_ids: tuple[str, ...]
+    passed: bool
+    failures: tuple[str, ...]
+
+
+def audit_walk_forward_integrity(
+    walk_forward: MultiCompetitionWalkForwardEvaluation,
+) -> WalkForwardIntegrityAudit:
+    """Recheck fold identity, temporal boundaries and held-out isolation."""
+    if not isinstance(walk_forward, MultiCompetitionWalkForwardEvaluation):
+        raise ValueError("CERTIFICATION_WALK_FORWARD_REPORT_REQUIRED")
+    failures: list[str] = []
+    held_out_ids: list[str] = []
+    for scope_report in walk_forward.scope_reports:
+        previous_end = None
+        fold_numbers: set[int] = set()
+        for fold in scope_report.folds:
+            if fold.fold_number in fold_numbers:
+                failures.append("DUPLICATE_FOLD_NUMBER")
+            fold_numbers.add(fold.fold_number)
+            if not (
+                fold.training_label_cutoff_utc.tzinfo is not None
+                and fold.test_start_utc.tzinfo is not None
+                and fold.test_end_utc.tzinfo is not None
+            ):
+                failures.append("FOLD_TEMPORAL_BOUNDARY_NOT_TIMEZONE_AWARE")
+                continue
+            if not (
+                fold.training_label_cutoff_utc < fold.test_start_utc < fold.test_end_utc
+            ):
+                failures.append("TRAINING_CUTOFF_OR_TEST_WINDOW_ORDER_INVALID")
+            if previous_end is not None and fold.test_start_utc < previous_end:
+                failures.append("HELD_OUT_TEST_WINDOWS_OVERLAP_OR_REVERSE")
+            previous_end = fold.test_end_utc
+            train_ids = tuple(fold.training_fixture_ids)
+            test_ids = tuple(fold.eligible_fixture_ids)
+            training_observation_ids = tuple(fold.training_observation_ids)
+            test_observation_ids = tuple(fold.test_observation_ids)
+            if not train_ids or len(train_ids) != len(set(train_ids)):
+                failures.append("TRAINING_FIXTURE_IDENTITIES_INVALID")
+            if not test_ids or len(test_ids) != len(set(test_ids)):
+                failures.append("HELD_OUT_FIXTURE_IDENTITIES_INVALID")
+            if set(train_ids) & set(test_ids):
+                failures.append("TRAINING_AND_HELD_OUT_FIXTURES_OVERLAP")
+            if not training_observation_ids or len(training_observation_ids) != len(set(training_observation_ids)):
+                failures.append("TRAINING_OBSERVATION_IDENTITIES_INVALID")
+            if (
+                len(test_observation_ids) != len(test_ids)
+                or len(test_observation_ids) != len(set(test_observation_ids))
+            ):
+                failures.append("HELD_OUT_RESULT_PROVENANCE_INVALID")
+            held_out_ids.extend(test_ids)
+    if not held_out_ids or len(held_out_ids) != len(set(held_out_ids)):
+        failures.append("HELD_OUT_FIXTURES_MISSING_OR_REPEATED_ACROSS_FOLDS")
+    unique_failures = tuple(sorted(set(failures)))
+    return WalkForwardIntegrityAudit(
+        fold_count=sum(len(scope.folds) for scope in walk_forward.scope_reports),
+        held_out_fixture_ids=tuple(held_out_ids),
+        passed=bool(held_out_ids) and not unique_failures,
+        failures=unique_failures,
+    )
