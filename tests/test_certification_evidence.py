@@ -143,3 +143,14 @@ def test_github_attestation_rejects_wrong_manifest_digest(monkeypatch, tmp_path)
     )
     with pytest.raises(EvidenceIntegrityError, match="exact evidence manifest digest"):
         verify_github_artifact_attestation(artifact, token="test-token")
+
+
+
+def test_manifest_rejects_duplicate_paths_after_normalization(tmp_path):
+    manifest, _ = _bundle(tmp_path)
+    payload = json.loads(manifest.read_text(encoding="utf-8"))
+    payload["artifacts"][1]["path"] = "./" + payload["artifacts"][0]["path"]
+    payload["artifacts"][1]["sha256"] = payload["artifacts"][0]["sha256"]
+    manifest.write_text(json.dumps(payload), encoding="utf-8")
+    with pytest.raises(EvidenceIntegrityError, match="unique after path normalization"):
+        verify_evidence_manifest(manifest)
