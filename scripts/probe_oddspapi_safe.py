@@ -6,8 +6,15 @@ import argparse
 import hashlib
 import json
 import os
+import sys
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
+
+# Direct execution sets sys.path[0] to scripts/, not the repository root.
+# Add the root explicitly so the app package resolves in GitHub Actions too.
+_REPO_ROOT = Path(__file__).resolve().parents[1]
+if str(_REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(_REPO_ROOT))
 
 from app.oddspapi_odds import OddsPapiClient, OddsPapiError
 
