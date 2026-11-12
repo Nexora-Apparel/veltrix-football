@@ -8,6 +8,9 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
+import shutil
+import subprocess
 from pathlib import Path, PurePosixPath
 from typing import Any
 
@@ -119,3 +122,78 @@ def verify_evidence_manifest(manifest_path: str | Path) -> dict[str, Any]:
         ],
         "note": "Byte integrity is necessary but not sufficient for certification.",
     }
+
+
+
+def verify_github_artifact_attestation(
+    artifact_path: str | Path,
+    *,
+    repository: str = "Nexora-Apparel/veltrix-football",
+    signer_workflow: str = "Nexora-Apparel/veltrix-football/.github/workflows/certification-evidence-attestation.yml",
+    token: str | None = None,
+) -> dict[str, Any]:
+    """Verify a GitHub/Sigstore SLSA attestation from the pinned main-branch workflow.
+
+    The GitHub CLI verifies the cryptographic signature, OIDC issuer, repository
+    identity, signer workflow and source ref. The returned subject digest is
+    additionally matched to the exact local manifest bytes.
+    """
+    path = Path(artifact_path).resolve(strict=True)
+    gh = shutil.which("gh")
+    if not gh:
+        raise EvidenceIntegrityError("GitHub CLI is required to verify signed artifact attestations.")
+    env = os.environ.copy()
+    credential = token or env.get("GH_TOKEN") or env.get("GITHUB_TOKEN")
+    if not credential:
+        raise EvidenceIntegrityError("GH_TOKEN/GITHUB_TOKEN is required for online attestation verification.")
+    env["GH_TOKEN"] = credential
+    command = [
+        gh, "attestation", "verify", str(path),
+        "--repo", repository,
+        "--signer-repo", repository,
+        "--signer-workflow", signer_workflow,
+        "--source-ref", "refs/heads/main",
+        "--predicate-type", "https://slsa.dev/provenance/v1",
+        "--format", "json",
+    ]
+    try:
+        completed = subprocess.run(
+            command, capture_output=True, text=True, timeout=90, check=False, env=env
+        )
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        raise EvidenceIntegrityError("GitHub artifact attestation verification could not run.") from exc
+    if completed.returncode != 0:
+        detail = (completed.stderr or completed.stdout or "no verifier detail").strip()
+        raise EvidenceIntegrityError("GitHub artifact attestation verification failed: " + detail[:500])
+    try:
+        payload = json.loads(completed.stdout)
+    except json.JSONDecodeError as exc:
+        raise EvidenceIntegrityError("GitHub attestation verifier returned invalid JSON.") from exc
+    if not isinstance(payload, list):
+        raise EvidenceIntegrityError("GitHub attestation verifier returned an unexpected result.")
+    expected_digest = sha256_file(path)
+    for item in payload:
+        if not isinstance(item, dict):
+            continue
+        verification = item.get("verificationResult") or {}
+        statement = verification.get("statement") or {}
+        if statement.get("predicateType") != "https://slsa.dev/provenance/v1":
+            continue
+        subjects = statement.get("subject") or []
+        digest_matches = any(
+            isinstance(subject, dict)
+            and str(((subject.get("digest") or {}).get("sha256") or "")).lower() == expected_digest
+            for subject in subjects
+        )
+        timestamps = verification.get("verifiedTimestamps") or []
+        certificate = ((verification.get("signature") or {}).get("certificate") or {})
+        if digest_matches and timestamps and certificate:
+            return {
+                "attestation_status": "GITHUB_ATTESTATION_VERIFIED",
+                "sha256": expected_digest,
+                "repository": repository,
+                "signer_workflow": signer_workflow,
+                "source_ref": "refs/heads/main",
+                "verified_timestamp_count": len(timestamps),
+            }
+    raise EvidenceIntegrityError("No verified attestation matched the exact evidence manifest digest.")
