@@ -58,7 +58,8 @@ def test_telegram_report_is_predictions_only_and_keeps_new_update_alert():
     assert "PAPER TRACKING" not in message
     assert "DATA NOTICE" not in message
     assert "MULTI-SOURCE REFERENCE PRICES" not in message
-    assert "Football data by 5DollarFootballAPI" not in message
+    assert "Football data by 5DollarFootballAPI" in message
+    assert "https://5dollarfootballapi.com" in message
 
 
 def test_predictions_alert_is_short_when_no_usable_forecasts():
