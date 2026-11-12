@@ -1,9 +1,13 @@
 from datetime import datetime, timezone
 from decimal import Decimal
+from email.message import Message
+import json
 
 import pytest
 
 from veltrix_v2.providers.the_odds_api_markets import (
+    fetch_event_1x2_odds,
+    fetch_event_totals_odds,
     parse_event_1x2_odds,
     parse_event_totals_odds,
 )
@@ -204,3 +208,99 @@ def test_parsers_reject_provider_quote_timestamp_after_capture():
             kickoff_at=KICKOFF, captured_at=CAPTURE,
             source_observation_id=SOURCE_OBSERVATION,
         )
+
+
+
+class FakeResponse:
+    def __init__(self, body, headers):
+        self.body = body
+        self.headers = headers
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *args):
+        return False
+
+    def read(self):
+        return self.body
+
+
+@pytest.mark.parametrize(
+    ("fetcher", "market_key", "payload", "expected_market", "expected_rows"),
+    [
+        (
+            fetch_event_1x2_odds,
+            "h2h",
+            {
+                **COMMON,
+                "bookmakers": [{
+                    "key": "pinnacle",
+                    "markets": [{
+                        "key": "h2h",
+                        "last_update": "2026-11-12T04:59:00Z",
+                        "outcomes": [
+                            {"name": "Arsenal", "price": 2.1},
+                            {"name": "Draw", "price": 3.4},
+                            {"name": "Chelsea", "price": 3.6},
+                        ],
+                    }],
+                }],
+            },
+            "1X2",
+            3,
+        ),
+        (
+            fetch_event_totals_odds,
+            "totals",
+            {
+                **COMMON,
+                "bookmakers": [{
+                    "key": "pinnacle",
+                    "markets": [{
+                        "key": "totals",
+                        "last_update": "2026-11-12T04:59:00Z",
+                        "outcomes": [
+                            {"name": "Over", "point": 2.5, "price": 1.9},
+                            {"name": "Under", "point": 2.5, "price": 1.9},
+                        ],
+                    }],
+                }],
+            },
+            "TOTALS",
+            2,
+        ),
+    ],
+)
+def test_fetcher_requests_one_market_and_records_quota_headers(
+    fetcher, market_key, payload, expected_market, expected_rows
+):
+    seen = {}
+
+    def opener(request, timeout):
+        seen["url"] = request.full_url
+        seen["timeout"] = timeout
+        headers = Message()
+        headers["x-requests-remaining"] = "298"
+        headers["x-requests-used"] = "202"
+        headers["x-requests-last"] = "1"
+        return FakeResponse(json.dumps(payload).encode("utf-8"), headers)
+
+    result = fetcher(
+        api_key="secret",
+        sport_key="soccer_epl",
+        event_id="event-123",
+        fixture_id="fixture-1",
+        kickoff_at=KICKOFF,
+        captured_at=CAPTURE,
+        source_observation_id=SOURCE_OBSERVATION,
+        opener=opener,
+    )
+    assert f"markets={market_key}" in seen["url"]
+    assert "apiKey=secret" in seen["url"]
+    assert result.market == expected_market
+    assert len(result.snapshots) == expected_rows
+    assert result.requests_remaining == 298
+    assert result.requests_used == 202
+    assert result.last_request_cost == 1
+    assert all(row.source_observation_id == SOURCE_OBSERVATION for row in result.snapshots)
