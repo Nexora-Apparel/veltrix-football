@@ -301,3 +301,13 @@ Phase 1 is signed off for the audited code/CI-critical surface. Legacy productio
 - For the current Free plan, use `days=90`, `min_history_days=60`. After verified Community activation, use `days=365`, `min_history_days=300`. Both use `max_requests=30`; the 1,000 held-out-match gate remains mandatory.
 
 No model certification, value-bet unlock, public prediction release or 06:00 WAT schedule is authorized by this sign-off.
+
+
+## 15. Evaluation integrity corrections — 2026-11-12
+
+- Value-bet release evidence now carries the computed `MarketPerformance` result from the ROI evaluator instead of trusting a free-form `roi_ci_method` string plus caller-supplied ROI numbers. Certification verifies market identity, settled-selection count, positive net ROI, positive lower confidence bound, and the evaluator's date-block method. Missing ROI/interval evidence fails the gates; it does not throw an error that could accidentally block prediction-only publication.
+- 1X2 bookmaker benchmarking now verifies that the three normalized no-vig selection probabilities sum to one within the same numerical tolerance used by binary-market benchmarking. Directly constructed malformed normalized quote objects cannot produce a benchmark score.
+- Multi-market walk-forward now excludes quarantined/non-valid records from the evaluation universe. Every valid held-out label must have explicit source-use approval and a non-unspecified availability basis; otherwise evaluation fails closed. This prevents quarantined or unapproved scores from improving or degrading held-out metrics.
+- Regression tests cover the ROI-evidence binding, empty prospective ROI evidence, invalid 1X2 probability triplets, quarantined held-out records and unapproved held-out sources.
+- Latest verified at head `07513b3a1cb2a58a3e4409f9b8da3d1262f15a3f`: V2 foundation suite **376 passed**; full repository suite **874 passed**. Provider live probes were skipped by design. Daily prediction workflow remained skipped.
+- The latest follow-up benchmark probability-sum patch is at head `24a83eacd8c2f1c5f3ee9e5fc4ff54e51dd5bc58`; foundation suite **374 passed** and full repository suite **871 passed** at that head. Subsequent held-out-source changes have their own CI verification above. Re-run both suites after any further edits before treating the branch as green.
