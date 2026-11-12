@@ -316,3 +316,13 @@ Documentation: https://footballapi.org/documentation
 2. Request written PitchAPI confirmation covering upstream source lineage, data retention, commercial use, public display and model training. If confirmed, run a bounded read-only sample for EPL, Argentina and Brazil, then audit match-level xG/shot/player/lineup coverage and timestamps.
 3. Keep FootyStats as a rights-clear paid fallback; no purchase is authorized or assumed.
 4. Keep 5Dollar limited to its documented fixtures/results/odds capability. Its terms do not create xG or player-statistics coverage that the API does not provide.
+
+
+### GOAL API — November 2026 terms review
+
+- The current GOAL API Terms identify DEVARA SARL as the operator and state that football data is licensed from third-party providers and redistributed under their authorizations.
+- The same Terms explicitly say GOAL API grants no intellectual-property licence or representation over the underlying sports data. They place responsibility on the customer to obtain any third-party authorizations needed to use or publish the data in the relevant territories.
+- The Terms prohibit raw-feed resale/redistribution. They state that betting platforms, fantasy sports, broadcast and mass-media use may require additional rights-holder licences. Visual assets/logos are separately owned and not licensed merely because the API serves them.
+- The Terms do not expressly grant model-training, long-term retention or public commercial display rights for the underlying data. The general limited right to incorporate API responses into an application is not sufficient evidence for VELTRIX's intended model-training and public-prediction use.
+- Decision: GOAL API remains **technically reachable but NOT APPROVED** for V2 model training, persistent historical storage or public prediction display. The user's successful Argentina/Brazil technical probes and active key do not resolve these rights conditions. Obtain written confirmation from GOAL API covering upstream data licences, historical retention, model training/derivative analytics, commercial public display and betting-analysis use before ingestion.
+- Official references: https://goal-api.com/terms ; https://goal-api.com/privacy
