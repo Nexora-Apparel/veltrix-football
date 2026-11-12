@@ -162,3 +162,13 @@ def test_roi_method_never_claims_bootstrap_when_draws_are_insufficient():
     report = evaluate_roi(rows, bootstrap_draws=0)
     assert report.overall.roi_ci_95 is None
     assert report.overall.roi_ci_method == "unavailable_insufficient_bootstrap_draws"
+
+
+def test_roi_rejects_unknown_market_selection_and_period_contracts():
+    row = settled("f1", "1X2", "HOME")
+    with pytest.raises(ValueError, match="unsupported settlement market"):
+        evaluate_roi([replace(row, market="WINNER")])
+    with pytest.raises(ValueError, match="unsupported settlement selection"):
+        evaluate_roi([replace(row, selection="OVER")])
+    with pytest.raises(ValueError, match="unsupported settlement period"):
+        evaluate_roi([replace(row, period="FULL_TIME_PLUS_PENALTIES")])
