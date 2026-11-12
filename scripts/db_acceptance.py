@@ -145,13 +145,13 @@ def run_acceptance() -> dict:
                 INSERT INTO source_approval_status_events(
                     approval_id,status,evidence_uri,evidence_sha256,effective_at,reason_code
                 ) VALUES (
-                    '__acceptance_immutable_probe__','REVOKED',
+                    '__acceptance_status_event_probe__','REVOKED',
                     'https://example.invalid/revocation', repeat('b',64), NOW(), 'ACCEPTANCE_PROBE'
                 )
             """)
             status_event_mutation_rejected = False
             try:
-                cur.execute("UPDATE source_approval_status_events SET status='APPROVED' WHERE approval_id='__acceptance_immutable_probe__'")
+                cur.execute("UPDATE source_approval_status_events SET status='APPROVED' WHERE approval_id='__acceptance_status_event_probe__'")
             except psycopg.errors.RaiseException:
                 status_event_mutation_rejected = True
                 cur.execute("ROLLBACK TO SAVEPOINT rights_event_probe")
