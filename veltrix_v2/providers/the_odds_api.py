@@ -87,9 +87,14 @@ def parse_event_btts_odds(
     sport_key: str,
     kickoff_at: datetime,
     captured_at: datetime,
+    source_observation_id: str | None = None,
 ) -> TheOddsBTTSCapture:
     if not fixture_id or not fixture_id.strip() or not provider_event_id or not provider_event_id.strip():
         raise ValueError("THE_ODDS_FIXTURE_AND_EVENT_IDS_REQUIRED")
+    if source_observation_id is not None and (
+        not isinstance(source_observation_id, str) or not source_observation_id.strip()
+    ):
+        raise ValueError("THE_ODDS_SOURCE_OBSERVATION_ID_INVALID")
     kickoff = _aware(kickoff_at, "kickoff")
     captured = _aware(captured_at, "capture")
     if captured >= kickoff:
@@ -161,6 +166,7 @@ def parse_event_btts_odds(
                 kickoff_at=kickoff,
                 provider_quote_at=quote_at,
                 provider_event_id=str(provider_event_id),
+                source_observation_id=source_observation_id,
             ))
     if not seen_bookmakers:
         raise ValueError("THE_ODDS_EVENT_HAS_NO_BOOKMAKERS")
@@ -188,6 +194,7 @@ def fetch_event_btts_odds(
     regions: str = "uk",
     timeout_seconds: float = 15.0,
     opener: Callable = urlopen,
+    source_observation_id: str | None = None,
 ) -> TheOddsBTTSCapture:
     if not isinstance(api_key, str) or not api_key.strip():
         raise ValueError("THE_ODDS_API_KEY_REQUIRED")
@@ -234,6 +241,7 @@ def fetch_event_btts_odds(
         sport_key=sport_key,
         kickoff_at=kickoff,
         captured_at=captured,
+        source_observation_id=source_observation_id,
     )
     def header_int(name: str) -> int | None:
         try:
