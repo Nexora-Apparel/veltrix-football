@@ -7,6 +7,7 @@ source authenticity and signed provenance must be verified independently.
 from __future__ import annotations
 
 import base64
+import hashlib
 import json
 import math
 import random
