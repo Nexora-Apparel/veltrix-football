@@ -6,6 +6,7 @@ source authenticity and signed provenance must be verified independently.
 """
 from __future__ import annotations
 
+import base64
 import json
 import math
 import random
@@ -131,12 +132,13 @@ def recompute_raw_certification(manifest_path: str | Path, *, min_walk_forward: 
     verified = integrity["verified_artifacts"]
     data = {role: _load_role(root, verified, role) for role in (
         "walk_forward_rows", "coverage_audit", "prospective_ledger",
-        "odds_snapshots", "settlement_records", "model_manifest",
+        "odds_snapshots", "settlement_records", "source_responses", "model_manifest",
     )}
     walk = _rows(data["walk_forward_rows"], "walk_forward_rows")
     paper = _rows(data["prospective_ledger"], "prospective_ledger")
     odds = _rows(data["odds_snapshots"], "odds_snapshots")
     settlements = _rows(data["settlement_records"], "settlement_records")
+    source_responses = _rows(data["source_responses"], "source_responses")
     model_manifest = data["model_manifest"]
     if not isinstance(model_manifest, dict) or not model_manifest.get("model_version"):
         raise EvidenceIntegrityError("model_manifest must identify an immutable model_version.")
@@ -158,6 +160,37 @@ def recompute_raw_certification(manifest_path: str | Path, *, min_walk_forward: 
     if not isinstance(calibration_versions, list):
         raise EvidenceIntegrityError("model_manifest calibration_versions must be a list.")
 
+    response_by_id: dict[str, dict[str, Any]] = {}
+    for response in source_responses:
+        response_id = str(response.get("response_id") or "").strip()
+        source_id = response.get("source_id")
+        fetched_at = _time(response.get("fetched_at"))
+        request_fingerprint = response.get("request_fingerprint")
+        expected_hash = response.get("response_sha256")
+        encoded_body = response.get("body_base64")
+        if not response_id or response_id in response_by_id:
+            raise EvidenceIntegrityError("Source response IDs must be present and unique.")
+        if source_id not in approved_sources or not fetched_at:
+            raise EvidenceIntegrityError("Source response lacks rights-approved source ID or fetch timestamp.")
+        if response.get("http_status") != 200:
+            raise EvidenceIntegrityError("Only successful HTTP 200 source responses are certifiable.")
+        for label, digest in (("request fingerprint", request_fingerprint), ("response SHA-256", expected_hash)):
+            if not isinstance(digest, str) or len(digest) != 64 or any(ch not in "0123456789abcdef" for ch in digest):
+                raise EvidenceIntegrityError(f"Source response {label} is malformed.")
+        if not isinstance(encoded_body, str) or not encoded_body:
+            raise EvidenceIntegrityError("Source response body must be retained as base64 bytes.")
+        try:
+            body = base64.b64decode(encoded_body, validate=True)
+        except (ValueError, base64.binascii.Error) as exc:
+            raise EvidenceIntegrityError("Source response body is not valid base64.") from exc
+        if hashlib.sha256(body).hexdigest() != expected_hash:
+            raise EvidenceIntegrityError("Source response body SHA-256 mismatch.")
+        try:
+            json.loads(body.decode("utf-8"))
+        except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+            raise EvidenceIntegrityError("Source response body must be valid UTF-8 JSON.") from exc
+        response_by_id[response_id] = {**response, "_fetched_at": fetched_at}
+
     settlement_by_id: dict[str, dict[str, Any]] = {}
     for result in settlements:
         settlement_id = str(result.get("settlement_id") or "").strip()
@@ -165,6 +198,11 @@ def recompute_raw_certification(manifest_path: str | Path, *, min_walk_forward: 
             raise EvidenceIntegrityError("Settlement IDs must be present and unique.")
         if not result.get("source_id") or result.get("source_id") not in approved_sources or not _time(result.get("settled_at")):
             raise EvidenceIntegrityError("Settlement record lacks rights-approved source provenance or timestamp.")
+        response = response_by_id.get(str(result.get("source_response_id") or ""))
+        if not response or response.get("source_id") != result.get("source_id") or not result.get("source_pointer"):
+            raise EvidenceIntegrityError("Settlement record is not bound to its exact source response and record pointer.")
+        if response["_fetched_at"] < _time(result.get("settled_at")):
+            raise EvidenceIntegrityError("Settlement source response predates the recorded settlement.")
         if result.get("status") not in {"FT", "AET", "PEN"} or not result.get("settlement_version"):
             raise EvidenceIntegrityError("Settlement record must identify a final status and immutable settlement version.")
         if not str(result.get("fixture_id") or "").strip():
@@ -193,6 +231,20 @@ def recompute_raw_certification(manifest_path: str | Path, *, min_walk_forward: 
             continue
         if any(not isinstance(source, str) or source not in approved_sources for source in feature_sources):
             failures[market].append("walk-forward feature source is not rights-approved")
+            continue
+        feature_response_invalid = False
+        for feature in features:
+            response = response_by_id.get(str(feature.get("source_response_id") or ""))
+            observed = _time(feature.get("observed_at"))
+            if (
+                not response or response.get("source_id") != feature.get("source_id")
+                or not feature.get("source_pointer") or not observed
+                or observed > response["_fetched_at"] or response["_fetched_at"] > predicted
+            ):
+                feature_response_invalid = True
+                break
+        if feature_response_invalid:
+            failures[market].append("walk-forward feature is not bound to a point-in-time source response")
             continue
         if any(not isinstance(name, str) or not name for name in feature_names) or len(set(feature_names)) != len(feature_names):
             failures[market].append("walk-forward feature names are missing or duplicated")
@@ -266,6 +318,14 @@ def recompute_raw_certification(manifest_path: str | Path, *, min_walk_forward: 
             continue
         if quote.get("source_id") not in approved_sources:
             failures[market].append("odds snapshot source is not rights-approved")
+            continue
+        quote_response = response_by_id.get(str(quote.get("source_response_id") or ""))
+        if (
+            not quote_response or quote_response.get("source_id") != quote.get("source_id")
+            or not quote.get("source_pointer")
+            or quote_response["_fetched_at"] != _time(quote.get("observed_at"))
+        ):
+            failures[market].append("odds snapshot is not bound to its exact source response")
             continue
         if _time(quote.get("observed_at")) != fetched or _time(quote.get("quote_updated_at")) != quote_time:
             failures[market].append("odds snapshot timestamps do not match prospective row")
