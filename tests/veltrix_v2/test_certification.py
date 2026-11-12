@@ -70,7 +70,7 @@ def test_all_gates_pass_only_with_complete_evidence():
 
 
 def test_each_market_has_independent_failure_reasons():
-    result = certify_release(
+    result = _certify_release_from_derived_evidence(
         [
             evidence("1X2"),
             evidence("BTTS", walk_forward_matches=999),
@@ -86,7 +86,7 @@ def test_each_market_has_independent_failure_reasons():
 
 
 def test_nonpositive_roi_lower_bound_blocks_certification():
-    result = certify_release(
+    result = _certify_release_from_derived_evidence(
         [evidence("1X2", roi_performance=replace(roi_performance("1X2"), roi_ci_95=(Decimal("-0.001"), Decimal("0.05")))),
          evidence("BTTS"), evidence("TOTALS")],
         one_x_two_beats_bookmaker_brier=True,
@@ -97,7 +97,7 @@ def test_nonpositive_roi_lower_bound_blocks_certification():
 
 
 def test_iid_bootstrap_is_not_accepted_for_release():
-    result = certify_release(
+    result = _certify_release_from_derived_evidence(
         [evidence("1X2", roi_performance=replace(roi_performance("1X2"), roi_ci_method="iid_bet_row_bootstrap")),
          evidence("BTTS"), evidence("TOTALS")],
         one_x_two_beats_bookmaker_brier=True,
@@ -108,7 +108,7 @@ def test_iid_bootstrap_is_not_accepted_for_release():
 
 
 def test_bookmaker_brier_and_logloss_are_both_mandatory():
-    result = certify_release(
+    result = _certify_release_from_derived_evidence(
         [evidence("1X2"), evidence("BTTS"), evidence("TOTALS")],
         one_x_two_beats_bookmaker_brier=True,
         one_x_two_beats_bookmaker_log_loss=False,
@@ -119,13 +119,13 @@ def test_bookmaker_brier_and_logloss_are_both_mandatory():
 
 def test_duplicate_or_missing_market_evidence_is_rejected():
     with pytest.raises(ValueError, match="DUPLICATE_MARKET"):
-        certify_release(
+        _certify_release_from_derived_evidence(
             [evidence("1X2"), evidence("1X2"), evidence("TOTALS")],
             one_x_two_beats_bookmaker_brier=True,
             one_x_two_beats_bookmaker_log_loss=True,
         )
     with pytest.raises(ValueError, match="EXACTLY"):
-        certify_release(
+        _certify_release_from_derived_evidence(
             [evidence("1X2"), evidence("BTTS")],
             one_x_two_beats_bookmaker_brier=True,
             one_x_two_beats_bookmaker_log_loss=True,
@@ -133,7 +133,7 @@ def test_duplicate_or_missing_market_evidence_is_rejected():
 
 
 def test_unapproved_source_and_missing_point_in_time_validation_block():
-    result = certify_release(
+    result = _certify_release_from_derived_evidence(
         [evidence("1X2", source_approved=False, point_in_time_validated=False),
          evidence("BTTS"), evidence("TOTALS")],
         one_x_two_beats_bookmaker_brier=True,
