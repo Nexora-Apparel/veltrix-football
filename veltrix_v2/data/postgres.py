@@ -30,11 +30,31 @@ def _contains_sensitive_key(value) -> bool:
 
 
 class PostgresHistoryStore:
-    def __init__(self, connection_factory: Callable[[], object]):
+    def __init__(self, connection_factory: Callable[[], object], *, allow_writes: bool = False, expected_database: str | None = None):
         self._connect = connection_factory
+        self._allow_writes = allow_writes
+        self._expected_database = expected_database
+        if allow_writes and not expected_database:
+            raise ValueError("EXPECTED_HISTORY_WRITE_DATABASE_REQUIRED")
+
+    def _connect_for_write(self):
+        if not self._allow_writes:
+            raise RuntimeError("HISTORY_DATABASE_WRITES_DISABLED")
+        conn = self._connect_for_write()
+        try:
+            cur = conn.cursor()
+            cur.execute("SELECT current_database()")
+            row = cur.fetchone()
+            actual_database = row[0] if row else None
+            if actual_database != self._expected_database:
+                raise RuntimeError("HISTORY_WRITE_DATABASE_TARGET_MISMATCH")
+            return conn
+        except Exception:
+            conn.close()
+            raise
 
     def persist_source_approval(self, approval: SourceApproval) -> str:
-        conn = self._connect()
+        conn = self._connect_for_write()
         try:
             cur = conn.cursor()
             cur.execute(
@@ -93,7 +113,7 @@ class PostgresHistoryStore:
             raise ValueError("IMPORT_RUN_TIMESTAMPS_MUST_BE_TIMEZONE_AWARE")
         if boundary_end <= boundary_start or request_budget < 1:
             raise ValueError("IMPORT_RUN_BOUNDARY_OR_BUDGET_INVALID")
-        conn = self._connect()
+        conn = self._connect_for_write()
         try:
             cur = conn.cursor()
             cur.execute(
@@ -133,7 +153,7 @@ class PostgresHistoryStore:
             len(response_sha256) != 64 or any(ch not in "0123456789abcdef" for ch in response_sha256.casefold())
         ):
             raise ValueError("IMPORT_CHECKPOINT_RESPONSE_HASH_INVALID")
-        conn = self._connect()
+        conn = self._connect_for_write()
         try:
             cur = conn.cursor()
             cur.execute("SELECT request_budget FROM import_runs WHERE id=%s", (import_run_id,))
@@ -183,7 +203,7 @@ class PostgresHistoryStore:
             len(manifest_sha256) != 64 or any(ch not in "0123456789abcdef" for ch in manifest_sha256.casefold())
         ):
             raise ValueError("IMPORT_RUN_MANIFEST_HASH_INVALID")
-        conn = self._connect()
+        conn = self._connect_for_write()
         try:
             cur = conn.cursor()
             cur.execute(
@@ -212,7 +232,7 @@ class PostgresHistoryStore:
             raise ValueError("SYNC_WATERMARK_EXPECTED_VERSION_INVALID")
         if updated_at_utc.tzinfo is None or updated_at_utc.utcoffset() is None:
             raise ValueError("SYNC_WATERMARK_TIME_MUST_BE_TIMEZONE_AWARE")
-        conn = self._connect()
+        conn = self._connect_for_write()
         try:
             cur = conn.cursor()
             cur.execute(
@@ -271,7 +291,7 @@ class PostgresHistoryStore:
             raise ValueError("ENTITLEMENT_CHECK_TIME_MUST_BE_TIMEZONE_AWARE")
         if len(evidence_sha256) != 64 or any(ch not in "0123456789abcdef" for ch in evidence_sha256.casefold()):
             raise ValueError("ENTITLEMENT_EVIDENCE_HASH_INVALID")
-        conn = self._connect()
+        conn = self._connect_for_write()
         try:
             cur = conn.cursor()
             cur.execute(
@@ -357,7 +377,7 @@ class PostgresHistoryStore:
             raise ValueError("PROVIDER_REQUEST_SECRET_PARAMETER_MUST_NOT_BE_STORED")
         # Rights evidence is immutable and must exist before any source record can reference it.
         self.persist_source_approval(approval)
-        conn = self._connect()
+        conn = self._connect_for_write()
         inserted_observations = inserted_fixtures = refreshed_fixtures = inserted_results = inserted_versions = conflicts = 0
         try:
             cur = conn.cursor()
