@@ -50,7 +50,7 @@ def probe(client, now=None) -> dict:
     }
     ou_ids = {
         str(row.get("marketId")) for row in soccer_markets
-        if "over under" in str(row.get("marketName", "")).casefold()
+        if "over under" in str(row.get("marketName", "")).casefold().replace("/", " ")
         and not row.get("playerProp", False)
         and row.get("marketId") is not None
     }
@@ -155,7 +155,11 @@ def probe(client, now=None) -> dict:
         if past:
             historical_fixture = past[0][1]
             try:
-                historical = client.get("historical-odds", {"fixtureId": historical_fixture["fixtureId"]})
+                bookmaker_filter = ",".join(sorted(bookmakers_seen)[:3]) or "pinnacle,bet365"
+                historical = client.get("historical-odds", {
+                    "fixtureId": historical_fixture["fixtureId"],
+                    "bookmakers": bookmaker_filter,
+                })
                 requests += 1
                 books = historical.get("bookmakers", {}) if isinstance(historical, dict) else {}
                 if isinstance(books, dict):
