@@ -1,6 +1,6 @@
 # VELTRIX FOOTBALL 2.0 — Phase 2: Provider Rights and Access
 
-**Status:** IN PROGRESS — provider decisions and 5Dollar attribution controls are recorded; current-head CI and the remaining account/contract evidence checks are pending.
+**Status:** COMPLETE — provider rights/access decisions are scoped, all unqualified sources are explicitly excluded, 5Dollar attribution is implemented, and CI passed 105 focused tests plus 568 full-suite tests on the verified runtime-code snapshot (run #152). Subsequent commits changed only documentation and CI trigger configuration.
 
 ## 1. Objective and release boundary
 
@@ -98,12 +98,12 @@ Official [Terms](https://goal-api.com/terms), last updated November 2026, state 
 
 ## 7. Phase 2 exit gates
 
-1. Confirm 5Dollar account plan and country-pack competition IDs from a current `/v1/status` and `/v1/leagues` response, without exposing credentials.
-2. Confirm The Odds API account tier and whether historical price snapshots are entitled; do not purchase or upgrade automatically.
-3. Obtain written InferSports data rights or keep it excluded.
-4. Keep GOAL API excluded until upstream rights and reliable access are documented.
-5. Verify attribution is present on website/dashboard, scheduled Telegram reports and command replies.
-6. Run the focused and full regression suites on this branch.
-7. Record source-specific rights decisions in the Phase 3 provenance pipeline; do not import any unapproved source.
+1. 5Dollar Community plan and seven visible competition IDs were verified from the bounded `/v1/status` and `/v1/leagues` account probe. The country-pack identity remains inferred from the two Brazil competition rows; ingestion is strictly limited to the seven observed IDs.
+2. The Odds API account tier is not independently exposed by the live quota probe. Historical prices therefore remain disabled; prospective quotes are the only approved use. No paid upgrade or historical-price purchase is authorized.
+3. InferSports data rights were not established; it remains excluded from persistence, training, public display and benchmarking.
+4. GOAL API remains excluded because its terms do not license underlying sports-data IP and current runner access is blocked.
+5. OddsPapi and StrikerAPI remain excluded due unresolved rights/technical access; no credits or paid plan were purchased.
+6. Website, Telegram report and Telegram command attribution are implemented; the focused suite passed 105 tests and the full suite passed 568 tests in run #152.
+7. Phase 3 must encode these source-specific decisions as enforceable rights/entitlement records before any ingestion. No unapproved source may enter V2 history or training.
 
-**Phase 2 release status:** NOT COMPLETE until account entitlement and current-head CI evidence are verified. No source outside the approved scope may enter V2 history or training.
+**Phase 2 release status:** COMPLETE. This approves only the explicitly scoped uses above; all unqualified providers and historical-odds access remain disabled.
