@@ -109,12 +109,22 @@ def run_multi_market_walk_forward(
     if first_test_start_utc.tzinfo is None or first_test_start_utc.utcoffset() is None:
         raise ValueError("MULTI_MARKET_FIRST_TEST_START_MUST_BE_AWARE")
 
-    scoped = tuple(
+    scoped_rows = tuple(
         row for row in rows
         if row.competition_key == competition_key and row.season == season
     )
-    if not scoped:
+    if not scoped_rows:
         raise ValueError("MULTI_MARKET_SCOPE_HAS_NO_FIXTURES")
+    # Quarantined rows are outside the evaluation universe. A row marked
+    # valid must have explicit source-use approval and a point-in-time basis;
+    # otherwise its score could contaminate the held-out benchmark.
+    scoped = tuple(row for row in scoped_rows if row.quality_state == "valid")
+    if not scoped:
+        raise ValueError("MULTI_MARKET_SCOPE_HAS_NO_QUALITY_APPROVED_FIXTURES")
+    if any(row.availability_basis == "unspecified" for row in scoped):
+        raise ValueError("MULTI_MARKET_AVAILABILITY_BASIS_REQUIRED")
+    if any(not row.source_training_approved for row in scoped):
+        raise ValueError("MULTI_MARKET_SOURCE_NOT_APPROVED_FOR_EVALUATION")
     evaluation_fixtures = tuple(
         EvaluationFixture(row.fixture_id, row.kickoff_utc, row.available_at_utc)
         for row in scoped
