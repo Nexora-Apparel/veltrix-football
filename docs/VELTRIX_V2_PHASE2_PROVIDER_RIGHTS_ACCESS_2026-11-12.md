@@ -30,11 +30,11 @@ The account's live evidence records:
 - Plan: Community.
 - Rate limit: 300 requests/hour.
 - Burst: 20 requests/minute.
-- Competitions: five top European leagues plus Brazil Serie A and Brazil Serie B, observed as seven competition IDs. The account audit stored `country_pack_code=null`; Brazil is inferred from the catalogue, not an explicit entitlement field.
+- Competitions and provider IDs from the 12 November account artifact: Brazil Serie A `3118717965`; Brazil Serie B `522514093`; England Premier League `4160026622`; France Ligue 1 `3614399544`; Germany Bundesliga I `686337048`; Italy Serie A `3405541143`; Spain La Liga `4212821298`. Each catalogue row includes its country. Brazil is the only non-top-five country represented and is therefore the country-pack inference; the API evidence does not expose a separate `country_pack_code` field.
 - Historical results/odds plan window: last 12 months according to the current Community plan page.
 - Exact repository secret name: `FIVEDOLLARFOOTBALL_API_KEY`. Credential bytes must never appear in logs, artifacts, docs or client-side code.
 
-The 365-day read-only history run retrieved 2,496 finished fixtures across all seven observed competitions with 26 pages, 28/40 requests, zero duplicate/rejected/quarantined rows and no database writes. This verifies the bounded fixture/result acquisition, not source publication timestamps or historical odds completeness.
+The account probe reported plan `community`, rate limit 300/hour, burst 20/minute, 17/17 bounded requests and zero database writes/imports/deployments/Telegram sends. The 365-day read-only history run retrieved 2,496 finished fixtures across all seven observed competitions with 26 pages, 28/40 requests, zero duplicate/rejected/quarantined rows and no database writes. This verifies the bounded fixture/result acquisition, not source publication timestamps or historical odds completeness.
 
 ### 3.2 Data restrictions and attribution
 
