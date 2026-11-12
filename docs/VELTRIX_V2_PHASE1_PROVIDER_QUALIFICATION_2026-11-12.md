@@ -20,7 +20,7 @@ The project will not treat a successful HTTP response, an SDK licence, a public 
 | Odds and market benchmark | The Odds API | Approved supplemental benchmark | Current odds carry provider `last_update`; historical odds snapshots require a paid plan. Do not substitute local retrieval time for provider quote time. |
 | Historical shot events for xG research | Pappalardo et al. / Wyscout public event dataset | Approved under CC BY 4.0 with attribution | 1,941 matches across seven competitions; historical only. Train a VELTRIX-owned xG model; do not represent it as provider xG. |
 | Non-live player, lineup and shot-event enrichment | StrikerAPI | Preferred conditional candidate; not currently available to ingest | Free allowance is 500 credits/month; the last recorded account response was HTTP 402. Do not buy credits or spend more until the free balance refreshes. Confirm the applicable Terms version for the account. |
-| Supplemental odds | OddsPapi | Existing adapter; final live quote check pending | Optional only. Use sanitized bounded probe; no raw response payloads in logs. |
+| Supplemental odds | OddsPapi | Technical candidate; final live and historical quote check pending | API documents BTTS/totals and historical prices with per-price `createdAt` timestamps since January 2026. Its Terms prohibit raw-feed resale but do not expressly grant model-training, retention or commercial-display rights; keep excluded from model training/publication until clarified. |
 | InferSports | Not selected | Discovery/odds adapter exists, but previous probes found no usable quotes | Keep disabled unless a future bounded probe returns actual price rows with timestamps. |
 
 ## 3. Verified 5DollarFootballAPI evidence
