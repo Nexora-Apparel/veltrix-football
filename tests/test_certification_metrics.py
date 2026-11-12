@@ -115,17 +115,20 @@ def test_raw_certification_recomputes_profit_and_rejects_fabricated_roi(tmp_path
     }]}).encode("utf-8")
     quote_encoded = base64.b64encode(quote_body).decode("ascii")
     settlement_encoded = base64.b64encode(settlement_body).decode("ascii")
+    quote_request = {"method": "GET", "endpoint": "/v1/odds"}
+    settlement_request = {"method": "GET", "endpoint": "/v1/results"}
+    fingerprint = lambda item: hashlib.sha256(json.dumps(item, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
     source_responses = [
         {
             "response_id": "quote-response", "source_id": "source-a",
             "fetched_at": "2026-01-01T17:00:00+00:00", "http_status": 200,
-            "request_fingerprint": "b" * 64,
+            "request_descriptor": quote_request, "request_fingerprint": fingerprint(quote_request),
             "response_sha256": hashlib.sha256(quote_body).hexdigest(), "body_base64": quote_encoded,
         },
         {
             "response_id": "settlement-response", "source_id": "source-a",
             "fetched_at": "2026-01-01T20:05:00+00:00", "http_status": 200,
-            "request_fingerprint": "c" * 64,
+            "request_descriptor": settlement_request, "request_fingerprint": fingerprint(settlement_request),
             "response_sha256": hashlib.sha256(settlement_body).hexdigest(), "body_base64": settlement_encoded,
         },
     ]
@@ -155,7 +158,8 @@ def test_raw_certification_rejects_altered_provider_response_bytes(tmp_path):
     response = {
         "response_id": "raw-1", "source_id": "source-a",
         "fetched_at": "2026-01-01T17:00:00+00:00", "http_status": 200,
-        "request_fingerprint": "b" * 64,
+        "request_descriptor": {"method": "GET", "endpoint": "/v1/fixtures"},
+        "request_fingerprint": hashlib.sha256(json.dumps({"method": "GET", "endpoint": "/v1/fixtures"}, sort_keys=True, separators=(",", ":")).encode()).hexdigest(),
         "response_sha256": hashlib.sha256(base64.b64decode(body)).hexdigest(),
         "body_base64": body,
     }
