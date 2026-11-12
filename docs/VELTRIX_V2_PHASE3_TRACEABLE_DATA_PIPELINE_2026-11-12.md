@@ -1,6 +1,6 @@
 # VELTRIX FOOTBALL 2.0 — Phase 3: Traceable Data Pipeline
 
-**Status:** IN PROGRESS — provenance contracts, append-only source evidence, entitlement gates, explicit competition scoping, immutable approval revocation, monotonic checkpoints and PostgreSQL 16/18 acceptance are implemented and CI-verified. Migrations 0001–0003 are applied and checksum-verified in the isolated Neon staging database. The live provider import is prepared but has not run.
+**Status:** STAGING DATA PIPELINE AND RECONCILIATION PASSED (2026-11-13) — provenance contracts, append-only source evidence, entitlement gates, explicit competition scoping, immutable approval revocation, monotonic checkpoints, PostgreSQL 16/18 acceptance, bounded staging import, independent reconciliation and rights-evidence byte-hash verification are implemented and verified. The 2,496-record import is isolated in the dedicated Neon staging database. Historical point-in-time feature eligibility remains NOT PASSED; see the separate eligibility assessment.
 
 ## 1. Pipeline invariants
 
@@ -71,10 +71,10 @@ Phase 3 is not complete until all of the following are true:
 3. A sanitized run manifest can reconcile every requested provider page and every fixture ID into imported, rejected or quarantined outcomes without missing or duplicated records.
 4. The provider-response archive and parsed observations have verifiable hashes and linked source approval/entitlement records.
 5. A separate non-production Neon child branch and dedicated staging database are positively identified; migration 0001–0003 checksums and schema are verified. Production remains untouched. COMPLETE.
-6. A bounded live staging import is reconciled end-to-end; no missing page, fixture, result, quarantine, request or checkpoint accounting is accepted. PENDING: GitHub Actions needs the VELTRIX_STAGING_DATABASE_URL secret for the dedicated staging database.
-7. The historical feature availability limitation remains explicit and enforced.
+6. A bounded live staging import is reconciled end-to-end; no missing page, fixture, result, quarantine, request or checkpoint accounting is accepted. COMPLETE: 2,496/2,496 records accounted for; 28/28 raw responses archived; zero rejected/quarantined rows; one completed run and checkpoint; independent audit PASS.
+7. The historical feature availability limitation remains explicit and enforced. COMPLETE: all imported rows are marked point_in_time_certifiable=false; scores are eligible as target labels only, not as pre-match features. See docs/VELTRIX_V2_PHASE3_POINT_IN_TIME_ELIGIBILITY_2026-11-13.md.
 
-**No production migration, Neon write, live import, model training, prediction workflow, Telegram activation, schedule or deployment is authorized by this phase.**
+**Phase 3 staging gates are passed. This does not authorize production migration, prediction model training on uncertified features, prediction publication, Telegram activation, scheduling, value betting or deployment. Phase 4 requires independent point-in-time feature-source qualification before model construction.**
 
 
 ## 6. Staging import handoff
