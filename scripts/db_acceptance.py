@@ -15,7 +15,8 @@ EXPECTED_TABLES = {
     "teams", "fixtures", "fixture_results", "source_observations",
     "import_runs", "import_checkpoints", "reconciliation_audits",
     "source_approvals", "provider_responses", "provider_entitlement_observations",
-    "fixture_result_versions", "sync_watermarks", "ingestion_quarantine",\n    "source_approval_status_events",
+    "fixture_result_versions", "sync_watermarks", "ingestion_quarantine",
+    "source_approval_status_events",
 }
 EXPECTED_INDEXES = {
     "fixtures_kickoff_idx", "fixtures_competition_kickoff_idx",
@@ -96,7 +97,8 @@ def run_acceptance() -> dict:
                 "provider_responses_append_only",
                 "source_approvals_append_only",
                 "provider_entitlement_append_only",
-                "fixture_result_versions_append_only",\n                "source_approval_status_events_append_only",
+                "fixture_result_versions_append_only",
+                "source_approval_status_events_append_only",
             }
             assert expected_triggers <= immutable_triggers, sorted(expected_triggers - immutable_triggers)
 
