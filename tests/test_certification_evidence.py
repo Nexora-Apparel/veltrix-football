@@ -9,7 +9,7 @@ from app.certification_evidence import EvidenceIntegrityError, verify_evidence_m
 
 ROLES = (
     "walk_forward_rows", "coverage_audit", "prospective_ledger",
-    "odds_snapshots", "settlement_records", "model_manifest",
+    "odds_snapshots", "settlement_records", "source_responses", "model_manifest",
 )
 
 
