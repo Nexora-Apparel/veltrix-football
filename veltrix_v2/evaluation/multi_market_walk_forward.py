@@ -43,6 +43,7 @@ class MultiMarketFoldEvaluation:
     train_fixture_count: int
     training_fixture_ids: tuple[str, ...]
     training_observation_ids: tuple[str, ...]
+    training_observation_provenance: tuple[tuple[str, str, datetime], ...]
     training_label_cutoff_utc: datetime
     test_start_utc: datetime
     test_end_utc: datetime
@@ -268,6 +269,10 @@ def run_multi_market_walk_forward(
             train_fixture_count=len(training_rows),
             training_fixture_ids=tuple(getattr(model, "training_fixture_ids", tuple(sorted(train_ids)))),
             training_observation_ids=tuple(getattr(model, "training_observation_ids", tuple(sorted(row.source_observation_id for row in training_rows)))),
+            training_observation_provenance=tuple(sorted(
+                (row.fixture_id, row.source_observation_id, row.kickoff_utc)
+                for row in training_rows
+            )),
             training_label_cutoff_utc=fold.training_label_cutoff_utc,
             test_start_utc=fold.test_start_utc,
             test_end_utc=fold.test_end_utc,
