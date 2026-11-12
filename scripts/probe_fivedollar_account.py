@@ -130,8 +130,10 @@ def probe(key: str, request=_request, sleep=time.sleep) -> dict:
         # multi-source check can use up to four calls; pace this 16-call probe.
         if request_count:
             sleep(4.0)
-        payload, headers = request(path, key)
-        request_count += 1
+        try:
+            payload, headers = request(path, key)
+        finally:
+            request_count += 1
         return payload, headers
 
     status_payload, status_headers = call("/status")
