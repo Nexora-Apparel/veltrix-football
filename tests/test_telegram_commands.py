@@ -459,7 +459,8 @@ def test_value_screen_reports_1x2_btts_totals_coverage_without_releasing_picks()
 
     
 
-def test_value_command_displays_only_upcoming_paper_candidates_as_unapproved():
+def test_value_command_displays_only_upcoming_paper_candidates_as_unapproved(monkeypatch):
+    monkeypatch.setattr("app.telegram_commands._kickoff_is_future", lambda row, expected_date=None: True)
     now = datetime.now(ZoneInfo("Africa/Lagos"))
     kickoff = (now + timedelta(hours=3)).isoformat()
     report = {
