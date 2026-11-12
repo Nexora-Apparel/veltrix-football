@@ -22,6 +22,11 @@ def approval(**overrides):
                   valid_from_utc=T - timedelta(days=1),
                   permitted_uses=("collection", "storage", "model_training", "benchmarking", "public_display", "commercial_use"))
     values.update(overrides)
+    values.setdefault("evidence_uri", "https://example.test/provider-terms")
+    values.setdefault("evidence_sha256", "a" * 64)
+    values.setdefault("reviewed_at_utc", values["valid_from_utc"] + timedelta(minutes=1))
+    values.setdefault("reviewer_id", "test-rights-reviewer")
+    values.setdefault("rights_basis", "terms")
     return SourceApproval(**values)
 
 
@@ -130,3 +135,20 @@ def test_unknown_or_duplicate_required_uses_are_rejected():
         )
     with pytest.raises(ValueError, match="invalid or duplicate source permission"):
         approval(permitted_uses=("model_training", "not_a_real_permission"))
+
+
+
+def test_approved_source_requires_auditable_rights_document_and_review():
+    import pytest
+
+    values = {
+        "approval_id": "approval-unverified",
+        "provider": "provider-a",
+        "competition_key": "league-a",
+        "data_type": "match_result",
+        "status": "approved",
+        "valid_from_utc": T - timedelta(days=1),
+        "permitted_uses": ("collection", "storage", "model_training"),
+    }
+    with pytest.raises(ValueError, match="traceable rights evidence"):
+        SourceApproval(**values)
