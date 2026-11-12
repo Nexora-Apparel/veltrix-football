@@ -72,6 +72,52 @@ def _settled_outcome(market: str, settlement: Mapping[str, Any]) -> str:
     return "over" if home + away > line else "under"
 
 
+def _json_pointer(document: Any, pointer: Any) -> Any:
+    if not isinstance(pointer, str) or (pointer and not pointer.startswith("/")):
+        raise EvidenceIntegrityError("Source record pointer must be an RFC 6901 JSON pointer.")
+    value = document
+    if not pointer:
+        return value
+    for raw_part in pointer[1:].split("/"):
+        part = raw_part.replace("~1", "/").replace("~0", "~")
+        if isinstance(value, dict) and part in value:
+            value = value[part]
+        elif isinstance(value, list) and part.isdigit() and int(part) < len(value):
+            value = value[int(part)]
+        else:
+            raise EvidenceIntegrityError("Source record pointer does not resolve in retained response bytes.")
+    return value
+
+
+def _source_field(record: Mapping[str, Any], field: str) -> Any:
+    field_map = record.get("source_field_map") or {}
+    if not isinstance(field_map, dict):
+        raise EvidenceIntegrityError("source_field_map must be an object when provided.")
+    return field_map.get(field, field)
+
+
+def _assert_source_fields(record: Mapping[str, Any], response_record: Mapping[str, Any],
+                          fields: tuple[str, ...], *, timestamps: tuple[str, ...] = (),
+                          numbers: tuple[str, ...] = ()) -> None:
+    source = _json_pointer(response_record["_body_json"], record.get("source_pointer"))
+    if not isinstance(source, dict):
+        raise EvidenceIntegrityError("Source pointer must resolve to a JSON object.")
+    for field in fields:
+        source_key = _source_field(record, field)
+        if not isinstance(source_key, str) or source_key not in source:
+            raise EvidenceIntegrityError(f"Raw source response does not contain mapped field {field}.")
+        actual, expected = source[source_key], record.get(field)
+        if field in timestamps:
+            if _time(actual) != _time(expected):
+                raise EvidenceIntegrityError(f"Raw source timestamp does not match normalized field {field}.")
+        elif field in numbers:
+            left, right = _number(actual), _number(expected)
+            if left is None or right is None or abs(left - right) > 1e-9:
+                raise EvidenceIntegrityError(f"Raw source numeric value does not match normalized field {field}.")
+        elif str(actual) != str(expected):
+            raise EvidenceIntegrityError(f"Raw source value does not match normalized field {field}.")
+
+
 def _score(rows: list[dict[str, Any]], market: str, probability_key: str) -> dict[str, Any]:
     outcomes = OUTCOMES[market]
     selected = [row for row in rows if row.get("market") == market]
@@ -187,10 +233,10 @@ def recompute_raw_certification(manifest_path: str | Path, *, min_walk_forward: 
         if hashlib.sha256(body).hexdigest() != expected_hash:
             raise EvidenceIntegrityError("Source response body SHA-256 mismatch.")
         try:
-            json.loads(body.decode("utf-8"))
+            body_json = json.loads(body.decode("utf-8"))
         except (UnicodeDecodeError, json.JSONDecodeError) as exc:
             raise EvidenceIntegrityError("Source response body must be valid UTF-8 JSON.") from exc
-        response_by_id[response_id] = {**response, "_fetched_at": fetched_at}
+        response_by_id[response_id] = {**response, "_fetched_at": fetched_at, "_body_json": body_json}
 
     settlement_by_id: dict[str, dict[str, Any]] = {}
     for result in settlements:
@@ -200,10 +246,18 @@ def recompute_raw_certification(manifest_path: str | Path, *, min_walk_forward: 
         if not result.get("source_id") or result.get("source_id") not in approved_sources or not _time(result.get("settled_at")):
             raise EvidenceIntegrityError("Settlement record lacks rights-approved source provenance or timestamp.")
         response = response_by_id.get(str(result.get("source_response_id") or ""))
-        if not response or response.get("source_id") != result.get("source_id") or not result.get("source_pointer"):
-            raise EvidenceIntegrityError("Settlement record is not bound to its exact source response and record pointer.")
+        if not response or response.get("source_id") != result.get("source_id"):
+            raise EvidenceIntegrityError("Settlement record is not bound to its exact source response.")
         if response["_fetched_at"] < _time(result.get("settled_at")):
             raise EvidenceIntegrityError("Settlement source response predates the recorded settlement.")
+        try:
+            _assert_source_fields(
+                result, response,
+                ("fixture_id", "status", "home_goals", "away_goals", "settled_at", "settlement_version"),
+                timestamps=("settled_at",), numbers=("home_goals", "away_goals"),
+            )
+        except EvidenceIntegrityError as exc:
+            raise EvidenceIntegrityError("Settlement source response mismatch: " + str(exc)) from exc
         if result.get("status") not in {"FT", "AET", "PEN"} or not result.get("settlement_version"):
             raise EvidenceIntegrityError("Settlement record must identify a final status and immutable settlement version.")
         if not str(result.get("fixture_id") or "").strip():
@@ -242,9 +296,16 @@ def recompute_raw_certification(manifest_path: str | Path, *, min_walk_forward: 
             observed = _time(feature.get("observed_at"))
             if (
                 not response or response.get("source_id") != feature.get("source_id")
-                or not feature.get("source_pointer") or not observed
-                or observed > response["_fetched_at"] or response["_fetched_at"] > predicted
+                or not observed or observed > response["_fetched_at"] or response["_fetched_at"] > predicted
             ):
+                feature_response_invalid = True
+                break
+            try:
+                raw_feature_value = _json_pointer(response["_body_json"], feature.get("source_pointer"))
+            except EvidenceIntegrityError:
+                feature_response_invalid = True
+                break
+            if raw_feature_value != feature.get("value"):
                 feature_response_invalid = True
                 break
         if feature_response_invalid:
@@ -323,10 +384,18 @@ def recompute_raw_certification(manifest_path: str | Path, *, min_walk_forward: 
         quote_response = response_by_id.get(str(quote.get("source_response_id") or ""))
         if (
             not quote_response or quote_response.get("source_id") != quote.get("source_id")
-            or not quote.get("source_pointer")
             or quote_response["_fetched_at"] != _time(quote.get("observed_at"))
         ):
             failures[market].append("odds snapshot is not bound to its exact source response")
+            continue
+        try:
+            _assert_source_fields(
+                quote, quote_response,
+                ("fixture_id", "market", "bookmaker", "kickoff", "decimal_odds", "observed_at", "quote_updated_at"),
+                timestamps=("kickoff", "observed_at", "quote_updated_at"), numbers=("decimal_odds",),
+            )
+        except EvidenceIntegrityError as exc:
+            failures[market].append("odds snapshot source response mismatch: " + str(exc))
             continue
         if _time(quote.get("observed_at")) != fetched or _time(quote.get("quote_updated_at")) != quote_time:
             failures[market].append("odds snapshot timestamps do not match prospective row")
