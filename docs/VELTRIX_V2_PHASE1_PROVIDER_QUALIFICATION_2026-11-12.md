@@ -19,7 +19,7 @@ The project will not treat a successful HTTP response, an SDK licence, a public 
 | Fixtures and results | 5DollarFootballAPI | Primary, account/competition scoped | Seven competitions were live-qualified; the exact plan is checked again by the final workflow. Preserve provider IDs and UTC kickoff values. |
 | Odds and market benchmark | The Odds API | Approved supplemental benchmark | Current odds carry provider `last_update`; historical events/markets discovery is available on all plans at one credit per request but returns no prices. Historical odds snapshots require a paid plan and are charged by region/market. Do not substitute local retrieval time for provider quote time. |
 | Historical shot events for xG research | Pappalardo et al. / Wyscout public event dataset | Approved under CC BY 4.0 with attribution | 1,941 matches across seven competitions; historical only. Train a VELTRIX-owned xG model; do not represent it as provider xG. |
-| Non-live player, lineup and shot-event enrichment | StrikerAPI | Preferred conditional candidate; not currently available to ingest | Free allowance is 500 credits/month; the last recorded account response was HTTP 402. Do not buy credits or spend more until the free balance refreshes. Confirm the applicable Terms version for the account. |
+| Non-live player, lineup, shot-event and historical-odds enrichment | StrikerAPI | Preferred primary enrichment and timestamped-odds source; current credit access is being rechecked | 500 free credits/month, no card. The final workflow spends at most 1 credit to check access, then up to 62 more only if that check succeeds. A 402 stops the probe; no paid credits or wallet top-up. |
 | Supplemental odds | OddsPapi | Technical candidate; final live and historical quote check pending | API documents BTTS/totals and historical prices with per-price `createdAt` timestamps since January 2026. Its Terms prohibit raw-feed resale but do not expressly grant model-training, retention or commercial-display rights; keep excluded from model training/publication until clarified. |
 | InferSports | Not selected | Discovery/odds adapter exists, but previous probes found no usable quotes | Keep disabled unless a future bounded probe returns actual price rows with timestamps. |
 
@@ -77,11 +77,28 @@ Decision: use as an independent odds benchmark and prospective quote source. The
 
 ### StrikerAPI
 
-The provider documents 17 competitions, 500 free credits per month, daily refreshed match data and odds refreshed hourly for upcoming matches. It has no in-play/live match feed, which is aligned with VELTRIX's non-live analysis requirement. Its endpoints cover fixtures/results, lineups, box scores, events and shot locations. The provider's own xG is not point-in-time safe; if later approved, use raw shot locations to train a separate VELTRIX xG model.
+StrikerAPI is the strongest non-live enrichment candidate found. Its public data catalogue lists 17 competitions and documents fixtures/results, lineups, player match lines, team stats, shot locations/events, xG, and odds. It has no in-play/live match feed. Free accounts receive 500 credits per month without a card; credits refresh within three days of the account's monthly anniversary.
 
-The provider's published terms permit storage, research, backtesting, proprietary model training and commercial derived outputs while the account is open, and prohibit raw-feed resale. The provider does not publish a per-dataset upstream source list and does not grant league/club/player marks. The applicable Terms version also depends on when the account was created. Last recorded VELTRIX account response: HTTP 402 (monthly credits exhausted). The Phase 1 workflow deliberately does not call StrikerAPI or consume credits.
+Coverage is substantial but not uniform: fixtures/results are listed from 2001-02; lineups are available from 2001-02; full box scores and player stats are partial by league/season; full shot-event coverage starts in 2012-13 and shot locations are complete from 2013-14. Odds are listed from 2017-18, with opening/closing archive lines from June 2020 for 16 competitions. The data coverage page says odds archive coverage is partial by season and book count; actual selected-competition coverage must be measured.
 
-Decision: keep it as the preferred conditional enrichment source; do not ingest until the free balance is available and account Terms version/source-use conditions are documented. References: [official documentation](https://strikerapi.com/docs), [timing and rights](https://strikerapi.com/docs/timing-and-rights), [terms](https://strikerapi.com/terms).
+The documented endpoints directly match VELTRIX needs:
+- `get_game` (5 credits): match score, team box scores, each player's line and bookmaker line.
+- `get_lineups` (5 credits): starting XIs, benches, formations and substitutions.
+- `get_events` (10 credits) and `get_shot_map` (10 credits): shot locations, xG and event detail.
+- `get_team_stats` (5 credits): per-match goals, xG, shots, possession, passing and discipline.
+- `get_odds` (5 credits): 1X2, handicap and totals, with archived opening/closing lines and a `captured_at` field.
+- `get_market_odds` (10 credits): BTTS opening/closing lines with `opening_captured_at` and `closing_captured_at`, history from May 2023.
+- `get_line_movement` (10 credits): pre-kickoff sportsbook snapshots with `captured_at`, including hourly captures when requested.
+
+Timestamp interpretation is strict. For `get_odds`, only rows whose `source` is `archive` and whose `captured_at` is valid are counted as historical quote timestamps. Rows marked `final` may carry a later ingestion/update timestamp and must not be treated as the original quote time. For `get_market_odds`, opening/closing capture timestamps are counted separately. For `get_line_movement`, only valid `captured_at` snapshot rows count. This avoids inflating the 98% odds-coverage gate.
+
+The provider's own xG is not point-in-time safe because its model is fitted across seasons. VELTRIX must use raw shot locations to train and validate its own xG model. Confirmed lineups must be distinguished from predicted/unknown lineups; no lineup should be backfilled as if it were known at the 06:00 forecast cutoff.
+
+The current Terms permit storage, research, backtesting, proprietary model training and commercial app/derived-output use, while prohibiting redistribution of raw feeds or raw odds as a standalone product. The provider is not affiliated with leagues, clubs, players or sportsbooks and does not grant their marks. Third-party source-specific restrictions may apply and must be carried through. The applicable Terms version depends on the account's creation/acceptance date; confirm the account's accepted version before production ingestion.
+
+The last recorded VELTRIX account request returned HTTP 402 (insufficient credits). The final workflow now makes one static `list_teams` check (maximum one free credit); only if it succeeds does it run the bounded feature/timestamp probe (maximum 62 additional free credits). If the static check returns 402 or the key is missing, no further StrikerAPI calls occur. No paid credits or wallet top-up is authorized.
+
+Decision: select StrikerAPI as the preferred non-live enrichment and historical-odds source, conditional on the final free-credit probe and account Terms-version check. References: [official API/data coverage](https://strikerapi.com/docs), [timing and rights](https://strikerapi.com/docs/timing-and-rights), [terms](https://strikerapi.com/terms), [get_odds](https://strikerapi.com/docs/get-odds), [get_market_odds](https://strikerapi.com/docs/get-market-odds), [get_line_movement](https://strikerapi.com/docs/get-line-movement).
 
 ### GOAL API
 
@@ -117,7 +134,7 @@ No currently approved source provides the full current-season combination of xG,
 
 - 5Dollar covers fixtures/results and selected match/odds fields, but does not claim xG, injuries, transfers, player profiles or player-level statistics.
 - The Wyscout event dataset is historical (2017/18, World Cup 2018, Euro 2016).
-- StrikerAPI is the intended non-live enrichment candidate, but its account credits are exhausted and its applicable Terms version must be confirmed.
+- StrikerAPI is the preferred non-live enrichment source, subject to the one-credit account check, bounded 62-credit feature probe, competition coverage validation and applicable Terms-version confirmation.
 - The Odds API historical price archive requires a paid plan. Until adequate timestamped prices are available, bookmaker benchmark and value-bet certification remain incomplete.
 - Missing data must remain explicitly missing. Do not infer xG from odds, call a predicted lineup confirmed, or fabricate fatigue/travel values.
 
@@ -130,7 +147,7 @@ The branch updates the existing `Multi-Source Provider Verification` workflow an
 - the existing bounded The Odds API / InferSports integration checks;
 - the existing GOAL API read-only probe when its secret exists;
 - a machine-readable, SHA-256-checked provider report artifact;
-- an explicit StrikerAPI credit-safe deferral (zero requests).
+- a one-credit StrikerAPI static account check, followed by at most 62 free credits of feature/odds qualification only when the static check succeeds.
 
 Workflow dispatch is manual only. It does not write to the database, import historical data, train models, change predictions, publish command data, send Telegram messages, deploy Vercel, or schedule jobs.
 
