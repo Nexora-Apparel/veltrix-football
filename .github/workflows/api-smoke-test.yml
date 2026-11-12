@@ -19,6 +19,7 @@ on:
       - "tests/test_strikerapi_free_credit.py"
       - "tests/test_strikerapi_features.py"
       - "tests/test_probe_oddspapi_safe_import.py"
+      - "tests/test_probe_oddspapi_safe_import.py"
       - "tests/veltrix_v2/test_strikerapi_readonly.py"
       - ".github/workflows/api-smoke-test.yml"
   pull_request:
