@@ -5,7 +5,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from urllib.parse import urlparse
 
@@ -120,7 +120,7 @@ def run_audit(database_url: str) -> dict:
                        so.payload_sha256,so.payload,so.rights_approval_id,
                        so.provider_response_id,so.point_in_time_certifiable,
                        so.availability_basis,so.available_at,so.source_event_time,
-                       pr.fetched_at,sa.competition_scope,
+                       pr.fetched_at,sa.competition_scope,f.kickoff_at,
                        COALESCE((
                            SELECT ev.status FROM source_approval_status_events ev
                            WHERE ev.approval_id=so.rights_approval_id
@@ -130,6 +130,7 @@ def run_audit(database_url: str) -> dict:
                 FROM source_observations so
                 LEFT JOIN provider_responses pr ON pr.id=so.provider_response_id
                 LEFT JOIN source_approvals sa ON sa.approval_id=so.rights_approval_id
+                LEFT JOIN fixtures f ON f.source_observation_id=so.id
                 ORDER BY so.id
             """)
             observations = cur.fetchall()
@@ -137,11 +138,12 @@ def run_audit(database_url: str) -> dict:
             raw_link_failures = 0
             rights_failures = 0
             temporal_flag_failures = 0
+            availability_proxy_failures = 0
             for row in observations:
                 (obs_id, provider, source_id, data_type, entity_id, payload_hash,
                  payload, approval_id, response_id, point_in_time, availability_basis,
                  available_at, source_event_time, fetched_at, competition_scope,
-                 approval_status) = row
+                 fixture_kickoff, approval_status) = row
                 if not isinstance(payload, dict) or _canonical_hash(payload) != payload_hash.strip():
                     payload_hash_failures += 1
                 if response_id not in responses or (response_id, entity_id) not in raw_page_rows:
@@ -164,6 +166,12 @@ def run_audit(database_url: str) -> dict:
                     rights_failures += 1
                 if point_in_time is not False or availability_basis != "provider_finished_status_conservative_4d":
                     temporal_flag_failures += 1
+                if (
+                    fixture_kickoff is None
+                    or source_event_time != fixture_kickoff
+                    or available_at != fixture_kickoff + timedelta(days=4)
+                ):
+                    availability_proxy_failures += 1
 
             cur.execute("""
                 SELECT count(*) FROM fixture_result_versions v
@@ -250,6 +258,7 @@ def run_audit(database_url: str) -> dict:
                 "raw_response_link_failures": raw_link_failures,
                 "rights_provenance_failures": rights_failures,
                 "point_in_time_flag_failures": temporal_flag_failures,
+                "availability_proxy_failures": availability_proxy_failures,
                 "result_version_count": result_versions,
                 "linked_result_versions": linked_result_versions,
                 "unprovenanced_results": unprovenanced_results,
@@ -275,6 +284,8 @@ def run_audit(database_url: str) -> dict:
                 failures.append("RIGHTS_PROVENANCE_FAILURE")
             if temporal_flag_failures:
                 failures.append("POINT_IN_TIME_FLAG_FAILURE")
+            if availability_proxy_failures:
+                failures.append("AVAILABILITY_PROXY_RECONCILIATION_FAILURE")
             if linked_result_versions != result_versions:
                 failures.append("RESULT_VERSION_LINK_FAILURE")
             if unprovenanced_results or unprovenanced_fixtures or out_of_scope_fixtures or fixture_observation_mismatches or canonical_result_mismatches or unsettled_or_unresulted_fixtures:
