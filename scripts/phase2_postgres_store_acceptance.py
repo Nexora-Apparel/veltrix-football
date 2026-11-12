@@ -183,7 +183,7 @@ def main() -> dict:
             run_state = cur.fetchone()
             cur.execute("SELECT status,records_seen,records_inserted,records_quarantined,requests_used FROM import_checkpoints WHERE import_run_id=%s", (run_id,))
             checkpoint_state = cur.fetchone()
-            cur.execute("SELECT id FROM source_observations WHERE provider_fixture_id IS NULL AND provider_entity_id='987654321' ORDER BY id")
+            cur.execute("SELECT id FROM source_observations WHERE provider_entity_id='987654321' ORDER BY id")
             observation_id = cur.fetchone()[0]
             cur.execute("SELECT id FROM provider_responses WHERE request_id='phase2-ci-page-1'")
             response_id = cur.fetchone()[0]
