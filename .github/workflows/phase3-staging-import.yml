@@ -42,18 +42,24 @@ jobs:
           python -m pip install --disable-pip-version-check "psycopg[binary]>=3.2,<4"
       - name: Compile and test data pipeline
         run: |
-          python -m compileall -q veltrix_v2 scripts/phase3_import_fivedollar_history.py
+          python -m compileall -q veltrix_v2 scripts/phase3_import_fivedollar_history.py scripts/phase3_audit_staging_import.py
           python -m pytest -q tests/test_db_migrations.py tests/test_phase2_data_foundation.py
       - name: Import bounded history into isolated staging database
         run: >-
           python scripts/phase3_import_fivedollar_history.py
           --days "${{ inputs.days }}"
           --output reports/phase3/staging-import.json
-      - name: Upload sanitized staging import report
+      - name: Independent provenance and reconciliation audit
+        run: >-
+          python scripts/phase3_audit_staging_import.py
+          --output reports/phase3/staging-audit.json
+      - name: Upload sanitized staging import and audit reports
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: veltrix-phase3-staging-import
-          path: reports/phase3/staging-import.json
+          path: |
+            reports/phase3/staging-import.json
+            reports/phase3/staging-audit.json
           if-no-files-found: warn
           retention-days: 90
