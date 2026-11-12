@@ -139,7 +139,7 @@ ALTER TABLE import_runs
     ADD COLUMN records_quarantined INTEGER NOT NULL DEFAULT 0 CHECK (records_quarantined >= 0),
     ADD COLUMN rights_approval_id TEXT REFERENCES source_approvals(approval_id) ON DELETE RESTRICT,
     ADD COLUMN reason_code TEXT,
-    ADD CONSTRAINT import_runs_request_budget_check CHECK (requests_used <= request_budget),
+    ADD CONSTRAINT import_runs_requests_within_budget_check CHECK (requests_used <= request_budget),
     ADD CONSTRAINT import_runs_terminal_count_check CHECK (
         records_seen >= records_inserted + records_rejected + records_quarantined
     );
