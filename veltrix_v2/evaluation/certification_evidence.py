@@ -83,9 +83,10 @@ def derive_timestamped_odds_coverage(
     """Count fixtures with at least one complete, point-in-time quote group.
 
     A group is complete only when every market selection is present for the
-    same fixture, source, bookmaker, line, capture time and kickoff, and every
-    quote has a provider quote timestamp strictly before kickoff and no later
-    than local capture. Partial groups never count toward coverage.
+    same fixture, source, bookmaker, line, capture time, kickoff, provider
+    quote timestamp and immutable source-observation ID. Every quote timestamp
+    must be strictly before kickoff and no later than local capture. Partial or
+    mixed-provenance groups never count toward coverage.
     """
     canonical = "TOTALS" if market == "OVER_UNDER" else market
     expected = _EXPECTED_SELECTIONS.get(canonical)
@@ -108,13 +109,14 @@ def derive_timestamped_odds_coverage(
         if row.snapshot_id in seen_snapshot_ids:
             raise ValueError("CERTIFICATION_ODDS_DUPLICATE_SNAPSHOT_ID")
         seen_snapshot_ids.add(row.snapshot_id)
-        if row.provider_quote_at is None:
+        if row.provider_quote_at is None or not row.source_observation_id:
             continue
         if not (row.provider_quote_at < row.kickoff_at and row.provider_quote_at <= row.captured_at < row.kickoff_at):
             continue
         key = (
             row.fixture_id, row.source_id, row.bookmaker_id, row_market,
             row.line, row.captured_at, row.kickoff_at,
+            row.provider_quote_at, row.source_observation_id,
         )
         group = groups.setdefault(key, {})
         selection = row.selection.upper()
