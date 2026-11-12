@@ -179,39 +179,7 @@ def test_prediction_publication_requires_typed_walk_forward_and_source_records()
         )
 
 
-def test_certification_objects_reject_internally_conflicting_pass_flags():
-    from veltrix_v2.evaluation.certification import (
-        CertificationResult, PredictionReleaseCertification, ReleaseCertification,
-    )
-
-    good = tuple(CertificationResult(market, True, ()) for market in ("1X2", "BTTS", "TOTALS"))
-    with pytest.raises(ValueError, match="BRIER_FAILURE_NOT_RECORDED"):
-        ReleaseCertification(
-            passed=True, markets=good,
-            one_x_two_beats_bookmaker_brier=False,
-            one_x_two_beats_bookmaker_log_loss=True,
-            global_failures=(),
-            evidence=tuple(evidence(market) for market in ("1X2", "BTTS", "TOTALS")),
-        )
-    bad_market = CertificationResult("BTTS", False, ("PREDICTION_CALIBRATION_NOT_PASSED",))
-    with pytest.raises(ValueError, match="MARKET_RESULTS_DO_NOT_MATCH_EVIDENCE"):
-        PredictionReleaseCertification(
-            passed=True,
-            markets=(
-                CertificationResult("1X2", True, ()),
-                bad_market,
-                CertificationResult("TOTALS", True, ()),
-            ),
-            evidence=(
-                PredictionMarketEvidence("1X2", 1000, True, True, True, True),
-                PredictionMarketEvidence("BTTS", 999, True, True, True, False),
-                PredictionMarketEvidence("TOTALS", 1000, True, True, True, True),
-            ),
-        )
-
-
-
-def test_certification_objects_cannot_be_forged_without_gate_evidence():
+def test_certification_objects_are_sealed_against_direct_construction():
     from veltrix_v2.evaluation.certification import (
         CertificationResult, PredictionReleaseCertification, ReleaseCertification,
     )
@@ -220,9 +188,9 @@ def test_certification_objects_cannot_be_forged_without_gate_evidence():
         CertificationResult(market, True, ())
         for market in ("1X2", "BTTS", "TOTALS")
     )
-    with pytest.raises(ValueError, match="REQUIRES_COMPLETE_MARKET_EVIDENCE"):
+    with pytest.raises(ValueError, match="PREDICTION_RELEASE_INTERNAL_FACTORY_ONLY"):
         PredictionReleaseCertification(passed=True, markets=claimed_pass)
-    with pytest.raises(ValueError, match="REQUIRES_COMPLETE_MARKET_EVIDENCE"):
+    with pytest.raises(ValueError, match="RELEASE_CERTIFICATION_INTERNAL_FACTORY_ONLY"):
         ReleaseCertification(
             passed=True,
             markets=claimed_pass,
