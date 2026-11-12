@@ -149,7 +149,7 @@ Official reference:
 
 ### Wyscout Soccer Match Event Dataset (Pappalardo et al. 2019) — historical shot-event training
 
-<badge color="success">Approved for historical model training with attribution</badge>
+**Approved for historical model training with attribution.**
 
 **Decision:** approved as a historical shot-event dataset for building VELTRIX's own xG model, subject to retaining the CC BY 4.0 attribution and change notice. It is not a live data provider and does not supply current-season shot events.
 
