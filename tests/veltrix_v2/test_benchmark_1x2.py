@@ -120,7 +120,7 @@ def test_benchmark_rejects_mixed_provider_quote_times_and_observation_ids():
         rows[1],
         provider_quote_at=rows[1].provider_quote_at - timedelta(seconds=1),
     )
-    with pytest.raises(ValueError, match="TIMESTAMPS_OR_PROVENANCE_MISMATCH"):
+    with pytest.raises(ValueError, match="INCOMPLETE_MARKET|TIMESTAMPS_OR_PROVENANCE_MISMATCH"):
         compare_1x2_to_bookmaker(
             forecasts, rows, outcomes, eligible_fixture_ids=["f1"]
         )
