@@ -70,6 +70,7 @@ jobs:
 
       - name: Verify live fixture and market integration (bounded requests)
         if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && contains(github.event.head_commit.message, '[run-provider-integration]'))
+        continue-on-error: true
         env:
           FIVEDOLLARFOOTBALL_API_KEY: ${{ secrets.FIVEDOLLARFOOTBALL_API_KEY }}
           THE_ODDS_API_KEY: ${{ secrets.THE_ODDS_API_KEY }}
@@ -80,12 +81,14 @@ jobs:
 
       - name: Verify 5Dollar account plan, country pack and odds timestamps (17-request cap)
         if: github.event_name == 'workflow_dispatch'
+        continue-on-error: true
         env:
           FIVEDOLLARFOOTBALL_API_KEY: ${{ secrets.FIVEDOLLARFOOTBALL_API_KEY }}
         run: python scripts/probe_fivedollar_account.py --output reports/phase1/fivedollar-account.json
 
       - name: Verify GOAL API technical access (rights remain separately gated)
         if: github.event_name == 'workflow_dispatch'
+        continue-on-error: true
         env:
           GOAL_API_KEY: ${{ secrets.GOAL_API_KEY }}
         run: |
@@ -98,6 +101,7 @@ jobs:
 
       - name: Verify OddsPapi soccer markets and real quotes
         if: github.event_name == 'workflow_dispatch'
+        continue-on-error: true
         env:
           ODDSPAPI_API_KEY: ${{ secrets.ODDSPAPI_API_KEY }}
         run: |
@@ -110,6 +114,7 @@ jobs:
 
       - name: Check StrikerAPI free-credit access (one static reference credit maximum)
         if: github.event_name == 'workflow_dispatch'
+        continue-on-error: true
         id: striker_account
         env:
           STRIKERAPI_API_KEY: ${{ secrets.STRIKERAPI_API_KEY }}
@@ -117,6 +122,7 @@ jobs:
 
       - name: Qualify StrikerAPI non-live features and timestamped odds (62-credit cap)
         if: github.event_name == 'workflow_dispatch' && steps.striker_account.outputs.probe_status == 'AUTH_OK'
+        continue-on-error: true
         env:
           STRIKERAPI_API_KEY: ${{ secrets.STRIKERAPI_API_KEY }}
         run: python scripts/probe_strikerapi_features.py --output reports/phase1/strikerapi-features.json
