@@ -268,7 +268,9 @@ def format_report_messages(report: dict[str, Any], ledger: dict[str, Any] | None
         approved_markets = certificate.get("approved_markets") or []
         if not isinstance(approved_markets, list):
             approved_markets = []
-        certificate_releases = certificate_status in {"PASSED", "CERTIFIED", "APPROVED"}
+        # Report-supplied certificate labels are untrusted. Telegram must not
+        # release value alerts until the source-attested verifier is wired in.
+        certificate_releases = False
         for market, result in (value_screen.get("markets") or {}).items():
             raw_candidates = (result.get("candidates") or [])[:2]
             market_approved = certificate_releases and market in approved_markets
