@@ -6,14 +6,18 @@ import json
 import sys
 
 from app.certification_metrics import recompute_raw_certification
+from app.certification_evidence import verify_github_artifact_attestation
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--manifest", required=True, help="Path to the evidence manifest JSON")
+    parser.add_argument("--require-attestation", action="store_true", help="Require the pinned GitHub/Sigstore signer workflow.")
     args = parser.parse_args()
     try:
         result = recompute_raw_certification(args.manifest)
+        if args.require_attestation:
+            result["evidence_attestation"] = verify_github_artifact_attestation(args.manifest)
     except (OSError, ValueError, KeyError, TypeError, json.JSONDecodeError) as exc:
         print(f"Raw certification audit failed closed: {type(exc).__name__}: {exc}", file=sys.stderr)
         return 2
