@@ -154,9 +154,9 @@ def run_audit(database_url: str) -> dict:
                     or data_type != "fixture_result"
                     or approval_status != "APPROVED"
                     or not approval_id
-                    or not allowed
+                    or allowed != COMPETITIONS
                     or "*" in allowed
-                    or entity_id not in {str(payload.get("id"))}
+                    or entity_id != str(payload.get("id"))
                     or league_id not in allowed
                 ):
                     rights_failures += 1
@@ -183,6 +183,27 @@ def run_audit(database_url: str) -> dict:
             """)
             unprovenanced_fixtures = cur.fetchone()[0]
             cur.execute("""
+                SELECT count(*) FROM fixture_result_versions v
+                JOIN fixtures f ON f.id=v.fixture_id
+                JOIN source_observations so ON so.id=v.source_observation_id
+                WHERE f.provider_fixture_id<>so.provider_entity_id OR f.provider<>so.provider
+            """)
+            fixture_observation_mismatches = cur.fetchone()[0]
+            cur.execute("""
+                SELECT count(*) FROM fixture_results fr
+                JOIN fixture_result_versions v ON v.fixture_id=fr.fixture_id
+                WHERE fr.source_observation_id<>v.source_observation_id
+                   OR fr.home_score<>v.home_score OR fr.away_score<>v.away_score
+            """)
+            canonical_result_mismatches = cur.fetchone()[0]
+            cur.execute("""
+                SELECT count(*) FROM fixtures f
+                LEFT JOIN fixture_results fr ON fr.fixture_id=f.id
+                WHERE f.provider='5DollarFootballAPI'
+                  AND (f.status<>'FINISHED' OR fr.fixture_id IS NULL)
+            """)
+            unsettled_or_unresulted_fixtures = cur.fetchone()[0]
+            cur.execute("""
                 SELECT count(*) FROM fixtures f
                 JOIN competitions c ON c.id=f.competition_id
                 WHERE f.provider='5DollarFootballAPI'
@@ -197,7 +218,7 @@ def run_audit(database_url: str) -> dict:
                 WHERE provider='5DollarFootballAPI'
                   AND source_id='5dollarfootballapi'
                   AND entitlement_status='ACTIVE'
-                  AND competition_ids @> %s::jsonb
+                  AND competition_ids = %s::jsonb
             """, (json.dumps(sorted(COMPETITIONS)),))
             entitlement_snapshots = cur.fetchone()[0]
             cur.execute("""
@@ -231,6 +252,9 @@ def run_audit(database_url: str) -> dict:
                 "unprovenanced_results": unprovenanced_results,
                 "unprovenanced_fixtures": unprovenanced_fixtures,
                 "out_of_scope_fixtures": out_of_scope_fixtures,
+                "fixture_observation_mismatches": fixture_observation_mismatches,
+                "canonical_result_mismatches": canonical_result_mismatches,
+                "unsettled_or_unresulted_fixtures": unsettled_or_unresulted_fixtures,
                 "active_entitlement_snapshots": entitlement_snapshots,
                 "completed_import_runs": completed_runs,
                 "completed_checkpoints": completed_checkpoints,
@@ -250,8 +274,10 @@ def run_audit(database_url: str) -> dict:
                 failures.append("POINT_IN_TIME_FLAG_FAILURE")
             if linked_result_versions != result_versions:
                 failures.append("RESULT_VERSION_LINK_FAILURE")
-            if unprovenanced_results or unprovenanced_fixtures or out_of_scope_fixtures:
+            if unprovenanced_results or unprovenanced_fixtures or out_of_scope_fixtures or fixture_observation_mismatches or canonical_result_mismatches or unsettled_or_unresulted_fixtures:
                 failures.append("CANONICAL_RESULT_PROVENANCE_FAILURE")
+            if not observations or not result_versions or len(responses) < 3:
+                failures.append("EMPTY_STAGING_IMPORT")
             if entitlement_snapshots < 1:
                 failures.append("ACTIVE_ENTITLEMENT_SNAPSHOT_MISSING")
             if completed_runs < 1 or completed_checkpoints < 1:
