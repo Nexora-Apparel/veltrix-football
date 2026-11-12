@@ -165,3 +165,15 @@ Official references:
 - https://figshare.com/collections/Soccer_match_event_dataset/4415000
 - https://creativecommons.org/licenses/by/4.0/
 - https://github.com/koenvo/wyscout-soccer-match-event-dataset (processed mirror; the Figshare collection remains the canonical source)
+
+
+## Current xG feed status
+
+The Wyscout CC BY dataset provides licensed historical shot events for training
+an independent xG estimator, but it is not a current-season feed. 5Dollar and
+The Odds API do not supply shot-level xG inputs. PitchAPI and GOAL API remain
+excluded from model training/publication until their upstream rights are
+documented. Consequently, the V2 system may train and evaluate a historical
+xG model, but it must not claim live team xG or current shot-quality features
+until a rights-approved current shot-event source is connected. Missing live
+xG remains missing and cannot be imputed from bookmaker odds.
