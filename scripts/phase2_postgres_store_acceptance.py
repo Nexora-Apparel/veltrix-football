@@ -20,6 +20,31 @@ from veltrix_v2.data.postgres import PostgresHistoryStore
 def main() -> dict:
     database_url = os.environ["DATABASE_URL"]
     expected_db = os.environ["VELTRIX_EXPECTED_DATABASE"]
+    store.record_entitlement_observation(
+        provider="5DollarFootballAPI", source_id="5dollarfootballapi",
+        plan_code="community", entitlement_status="ACTIVE",
+        country_pack_code=None,
+        competition_ids=sorted(["3118717965","522514093","4160026622","3614399544","686337048","3405541143","4212821298"]),
+        rate_limit_hour=300, rate_limit_minute=20, quota_remaining=250,
+        provider_response_id=first["provider_response_id"],
+        evidence_sha256=hashlib.sha256(b"phase2-ci-entitlement-evidence").hexdigest(),
+        checked_at_utc=now,
+    )
+    manifest = hashlib.sha256(
+        "\n".join(sorted([fixture.payload_sha256, conflicting_fixture.payload_sha256])).encode()
+    ).hexdigest()
+    store.upsert_checkpoint(
+        import_run_id=run_id, window_start=kickoff, window_end=now,
+        cursor_value="page=2", status="COMPLETED", records_seen=2,
+        records_inserted=1, records_rejected=0, records_quarantined=1,
+        requests_used=2, response_sha256=second_response.response_sha256,
+    )
+    store.finish_import_run(
+        import_run_id=run_id, status="COMPLETED", finished_at_utc=now,
+        requests_used=2, records_seen=2, records_inserted=1,
+        records_rejected=0, records_quarantined=1, manifest_sha256=manifest,
+    )
+
     with psycopg.connect(database_url) as conn:
         with conn.cursor() as cur:
             cur.execute("SELECT current_database()")
@@ -113,9 +138,16 @@ def main() -> dict:
         )
 
     store = PostgresHistoryStore(lambda: psycopg.connect(database_url))
+    store.persist_source_approval(approval)
+    run_id = store.start_import_run(
+        provider="5DollarFootballAPI", import_type="historical_fixture_results",
+        boundary_start=kickoff, boundary_end=now, request_budget=5,
+        importer_version="phase2.1", rights_approval_id=approval.approval_id,
+        started_at_utc=now,
+    )
     first_response = response("phase2-ci-page-1", (2, 1))
-    first = store.persist_page(first_response, [fixture], approval)
-    repeated = store.persist_page(first_response, [fixture], approval)
+    first = store.persist_page(first_response, [fixture], approval, import_run_id=run_id)
+    repeated = store.persist_page(first_response, [fixture], approval, import_run_id=run_id)
     assert first["source_observations"] == 1 and first["fixtures_inserted"] == 1
     assert first["result_versions_inserted"] == 1 and first["results_inserted"] == 1
     assert repeated["source_observations"] == 0 and repeated["fixtures_inserted"] == 0
@@ -131,7 +163,8 @@ def main() -> dict:
         payload=changed_payload,
         payload_sha256=hashlib.sha256(changed_raw).hexdigest(),
     )
-    conflict = store.persist_page(response("phase2-ci-page-2", (3, 1)), [conflicting_fixture], approval)
+    second_response = response("phase2-ci-page-2", (3, 1))
+    conflict = store.persist_page(second_response, [conflicting_fixture], approval, import_run_id=run_id)
     assert conflict["result_versions_inserted"] == 1
     assert conflict["results_inserted"] == 0
     assert conflict["quarantined_or_conflicting"] == 1
@@ -146,10 +179,19 @@ def main() -> dict:
             quarantined = cur.fetchone()[0]
             cur.execute("SELECT count(*) FROM provider_responses WHERE request_id IN ('phase2-ci-page-1','phase2-ci-page-2')")
             responses = cur.fetchone()[0]
+            cur.execute("SELECT status,requests_used,records_seen,records_inserted,records_quarantined FROM import_runs WHERE id=%s", (run_id,))
+            run_state = cur.fetchone()
+            cur.execute("SELECT status,records_seen,records_inserted,records_quarantined,requests_used FROM import_checkpoints WHERE import_run_id=%s", (run_id,))
+            checkpoint_state = cur.fetchone()
+            cur.execute("SELECT count(*) FROM provider_entitlement_observations WHERE provider='5DollarFootballAPI' AND source_id='5dollarfootballapi'")
+            entitlement_count = cur.fetchone()[0]
     assert canonical_score == (2, 1), canonical_score
     assert versions == 2, versions
     assert quarantined == 1, quarantined
     assert responses == 2, responses
+    assert run_state == ("COMPLETED", 2, 2, 1, 1), run_state
+    assert checkpoint_state == ("COMPLETED", 2, 1, 1, 2), checkpoint_state
+    assert entitlement_count == 1, entitlement_count
     return {
         "status": "PASS",
         "idempotent_replay": "PASS",
@@ -158,6 +200,9 @@ def main() -> dict:
         "result_versions": versions,
         "quarantine_records": quarantined,
         "provider_response_records": responses,
+        "import_run": list(run_state),
+        "import_checkpoint": list(checkpoint_state),
+        "entitlement_snapshots": entitlement_count,
     }
 
 
