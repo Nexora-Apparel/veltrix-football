@@ -96,7 +96,7 @@ def test_period_offsets_are_applied_to_event_time():
     extra_time = event(id=2, matchPeriod="E1", eventSec=30)
     rows = parse([second_half, extra_time])
     assert rows[0].event_time_utc == datetime(2018, 6, 10, 20, 47, tzinfo=UTC)
-    assert rows[1].event_time_utc == datetime(2018, 6, 11, 21, 30, tzinfo=UTC)
+    assert rows[1].event_time_utc == datetime(2018, 6, 10, 21, 30, 30, tzinfo=UTC)
 
 
 def test_rejects_missing_observation_id_and_non_conservative_availability():
