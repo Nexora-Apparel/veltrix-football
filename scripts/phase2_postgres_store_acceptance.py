@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+from dataclasses import replace
 import os
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -123,14 +124,12 @@ def main() -> dict:
     changed_payload = dict(payload)
     changed_payload["goals"] = {"home": 3, "away": 1}
     changed_raw = json.dumps(changed_payload, sort_keys=True, separators=(",", ":")).encode()
-    conflicting_fixture = HistoricalFixture(
-        **{
-            **fixture.__dict__,
-            "home_score": 3,
-            "away_score": 1,
-            "payload": changed_payload,
-            "payload_sha256": hashlib.sha256(changed_raw).hexdigest(),
-        }
+    conflicting_fixture = replace(
+        fixture,
+        home_score=3,
+        away_score=1,
+        payload=changed_payload,
+        payload_sha256=hashlib.sha256(changed_raw).hexdigest(),
     )
     conflict = store.persist_page(response("phase2-ci-page-2", (3, 1)), [conflicting_fixture], approval)
     assert conflict["result_versions_inserted"] == 1
