@@ -21,6 +21,7 @@ REQUIRED_ROLES = {
     "prospective_ledger",
     "odds_snapshots",
     "settlement_records",
+    "source_responses",
     "model_manifest",
 }
 
