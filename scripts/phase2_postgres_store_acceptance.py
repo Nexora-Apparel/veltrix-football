@@ -161,7 +161,7 @@ def main() -> dict:
                 """SELECT so.payload_sha256,so.provider_response_id,pr.response_sha256
                    FROM source_observations so
                    JOIN provider_responses pr ON pr.id=so.provider_response_id
-                   WHERE so.provider_entity_id='987654321'"""
+                   WHERE so.provider_entity_id='987654321' AND pr.request_id='phase2-ci-page-1'"""
             )
             stored_observation = cur.fetchone()
     assert stored_response_body == first_response.raw_body
