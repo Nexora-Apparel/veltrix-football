@@ -2,13 +2,13 @@
 
 **Date:** 2026-11-12  
 **Working branch:** `phase1/provider-final-qualification`  
-**Phase status:** PROVIDER STRATEGY DEFINED; TWO TECHNICAL CHECKS REMAIN OPEN  
+**Phase status:** PROVIDER STRATEGY QUALIFIED; OFFLINE REGRESSION RECHECK PENDING  
 **Scope:** provider discovery, credential/endpoint access, competition coverage, data rights, historical depth, timestamps, and source selection.  
 **Safety:** read-only qualification only. No production imports, database writes, model changes, prediction publication, Telegram delivery, deployment, or scheduling.
 
 ## 1. Phase 1 exit decision
 
-The provider inventory is reconciled and a scoped initial source stack is identified. The consolidated workflow has run. Phase 1 remains open until the OddsPapi probe is rerun after its import correction and GOAL API access is resolved or explicitly excluded with a documented provider response. The 5Dollar Community account does not satisfy the 98% historical odds-timestamp gate; use The Odds API for prospective timestamped odds capture while preserving value betting as locked.
+The provider inventory is reconciled and a scoped source stack is identified. The consolidated workflow has run and its evidence is recorded in §3.5. The selected stack is 5DollarFootballAPI for fixtures/results, The Odds API for prospective timestamped bookmaker prices, and the licensed Wyscout public event dataset for historical xG research. InferSports remains a non-benchmark live 1X2/totals candidate. StrikerAPI, GOAL API, OddsPapi and other unapproved or inaccessible sources are explicitly excluded from ingestion. The 5Dollar Community account does not satisfy the 98% historical odds-timestamp gate; use prospective timestamped capture and keep value betting locked. The only remaining Phase 1 check is the offline regression suite after the OddsPapi entrypoint fix.
 
 The project will not treat a successful HTTP response, an SDK licence, a public dataset label, or an API key as blanket data-use permission. Approval is scoped by provider, endpoint, data type, competition, season, retention, model training, public display, and commercial use.
 
@@ -19,8 +19,8 @@ The project will not treat a successful HTTP response, an SDK licence, a public 
 | Fixtures and results | 5DollarFootballAPI | Primary, account/competition scoped | Seven competitions were live-qualified; the exact plan is checked again by the final workflow. Preserve provider IDs and UTC kickoff values. |
 | Odds and market benchmark | The Odds API | Approved supplemental benchmark | Current odds carry provider `last_update`; historical events/markets discovery is available on all plans at one credit per request but returns no prices. Historical odds snapshots require a paid plan and are charged by region/market. Do not substitute local retrieval time for provider quote time. |
 | Historical shot events for xG research | Pappalardo et al. / Wyscout public event dataset | Approved under CC BY 4.0 with attribution | 1,941 matches across seven competitions; historical only. Train a VELTRIX-owned xG model; do not represent it as provider xG. |
-| Non-live player, lineup, shot-event and historical-odds enrichment | StrikerAPI | Preferred primary enrichment and timestamped-odds source; current credit access is being rechecked | 500 free credits/month, no card. The final workflow spends at most 1 credit to check access, then up to 62 more only if that check succeeds. A 402 stops the probe; no paid credits or wallet top-up. |
-| Supplemental odds | OddsPapi | Technical candidate; final live and historical quote check pending | API documents BTTS/totals and historical prices with per-price `createdAt` timestamps since January 2026. Its Terms prohibit raw-feed resale but do not expressly grant model-training, retention or commercial-display rights; keep excluded from model training/publication until clarified. |
+| Non-live player, lineup, shot-event and historical-odds enrichment | No active source; StrikerAPI is conditional future candidate | Excluded from current ingestion | The live account check returned HTTP 402 with zero credits remaining. Do not buy credits. Reconsider only after free-credit refresh, a successful bounded capability probe and accepted Terms-version verification. |
+| Supplemental odds | OddsPapi | Excluded pending explicit rights clarification | Terms do not expressly grant model-training, retention or commercial-display rights. The first live probe was blocked by a local Python import-path defect before contacting the provider; the entrypoint is now corrected and regression-tested. No quote result is claimed. |
 | InferSports | Supplemental live-odds candidate; not selected as historical source | Current integration probe returned 63 same-day events and an available event-odds response with 1X2 and totals | No BTTS, no verified historical archive or source-created quote timestamps in this probe. Require timestamped sample and coverage measurement before selection. |
 
 ## 3. Verified 5DollarFootballAPI evidence
@@ -113,7 +113,7 @@ The current Terms permit storage, research, backtesting, proprietary model train
 
 The last recorded VELTRIX account request returned HTTP 402 (insufficient credits). The final workflow now makes one static `list_teams` check (maximum one free credit); only if it succeeds does it run the bounded feature/timestamp probe (maximum 62 additional free credits). If the static check returns 402 or the key is missing, no further StrikerAPI calls occur. No paid credits or wallet top-up is authorized.
 
-Decision: select StrikerAPI as the preferred non-live enrichment and historical-odds source, conditional on the final free-credit probe and account Terms-version check. References: [official API/data coverage](https://strikerapi.com/docs), [timing and rights](https://strikerapi.com/docs/timing-and-rights), [terms](https://strikerapi.com/terms), [get_odds](https://strikerapi.com/docs/get-odds), [get_market_odds](https://strikerapi.com/docs/get-market-odds), [get_line_movement](https://strikerapi.com/docs/get-line-movement).
+Decision: do not select StrikerAPI for the active stack until the free balance is restored and the account Terms version is confirmed. Its public endpoint catalogue makes it the first candidate to re-evaluate later, not a current dependency. References: [official API/data coverage](https://strikerapi.com/docs), [timing and rights](https://strikerapi.com/docs/timing-and-rights), [terms](https://strikerapi.com/terms), [get_odds](https://strikerapi.com/docs/get-odds), [get_market_odds](https://strikerapi.com/docs/get-market-odds), [get_line_movement](https://strikerapi.com/docs/get-line-movement).
 
 ### GOAL API
 
@@ -140,7 +140,7 @@ The v0.1.0 release reports 26,536 in-scope matches, 41.6 million events and 669,
 - **FPL public API:** excluded after terms review.
 - **API-Football/API-Sports:** do not depend on it; prior key suspensions.
 - **Highlightly:** excluded due limited coverage and rate-limit failures.
-- **InferSports:** previous bounded probes did not return usable quotes; not selected.
+- **InferSports:** the latest bounded probe returned 63 same-day events and an available event-odds response with 1X2 and totals. Keep as a supplemental discovery candidate only; no BTTS, historical archive, or quote-time coverage was verified, so it is not a historical benchmark or value-bet source.
 - **Club-Football-Match-Data:** do not admit into the training corpus until the exact upstream data rights and per-source licence are cleared.
 
 ## 5. Known data gaps
@@ -149,7 +149,7 @@ No currently approved source provides the full current-season combination of xG,
 
 - 5Dollar covers fixtures/results and selected match/odds fields, but does not claim xG, injuries, transfers, player profiles or player-level statistics.
 - The Wyscout event dataset is historical (2017/18, World Cup 2018, Euro 2016).
-- StrikerAPI is the preferred non-live enrichment source, subject to the one-credit account check, bounded 62-credit feature probe, competition coverage validation and applicable Terms-version confirmation.
+- No approved current-season source is selected for player-level statistics, confirmed lineups, injuries or broad shot-event enrichment. StrikerAPI remains conditional but the account returned HTTP 402; no paid credits are authorised.
 - The Odds API historical price archive requires a paid plan. Until adequate timestamped prices are available, bookmaker benchmark and value-bet certification remain incomplete.
 - Missing data must remain explicitly missing. Do not infer xG from odds, call a predicted lineup confirmed, or fabricate fatigue/travel values.
 
@@ -168,12 +168,15 @@ Workflow dispatch is manual only. It does not write to the database, import hist
 
 ## 7. Phase 1 acceptance gates
 
-Phase 1 can be marked complete only after:
+Phase 1 acceptance decision:
 
-1. The consolidated workflow passes its offline test suite.
-2. The manual run verifies the 5Dollar account plan and competition catalogue.
-3. The manual run captures current provider-authentication and market-quote results without leaking credentials.
-4. The provider matrix above is committed as the controlling source register, including explicit exclusions and known gaps.
-5. No unapproved source is admitted into the production training corpus.
+1. **Consolidated workflow:** run #43280026573 completed; its offline test step passed. Provider steps use `continue-on-error` to collect independent evidence, so the overall green conclusion is not interpreted as every candidate qualifying.
+2. **Primary account:** the manual run verified the 5Dollar Community plan, 300 requests/hour, 20/minute burst and seven-competition catalogue.
+3. **Selected provider connectivity:** the same run verified 5Dollar, The Odds API and InferSports response schemas; The Odds API returned BTTS/h2h/totals, and InferSports returned 1X2/totals quotes in its bounded sample.
+4. **Source register:** the selected stack, exclusions, rights constraints and missing-feature controls are documented in this file.
+5. **No unapproved ingestion:** the run performed zero imports/database writes; no unapproved source is admitted to the training corpus.
+6. **Regression correction:** the OddsPapi script's local import-path defect has been corrected and a regression test added. Run the offline suite once more on the corrected commit before Phase 1 is closed.
+
+The 5Dollar 9.09% sampled timestamp rate and HTTP 403 for tick history are explicit historical-odds limitations. They block the later 98% timestamp-coverage/value-betting gate, not fixture-provider qualification. The Odds API is the approved prospective timestamp source; the archive remains insufficient until measured data accumulates.
 
 The next phase is the historical data foundation. It must not begin until these Phase 1 gates are verified. No production deployment, Telegram activation or schedule is authorized by Phase 1 completion.
