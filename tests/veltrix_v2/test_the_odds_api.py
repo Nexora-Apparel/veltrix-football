@@ -174,3 +174,33 @@ def test_parser_rejects_quote_timestamp_after_capture():
             future_quote, fixture_id="fixture-1", provider_event_id="event-123",
             sport_key="soccer_epl", kickoff_at=KICKOFF, captured_at=CAPTURE,
         )
+
+
+
+def test_parser_propagates_source_observation_identity_to_each_quote():
+    result = parse_event_btts_odds(
+        [EVENT],
+        fixture_id="fixture-1",
+        provider_event_id="event-123",
+        sport_key="soccer_epl",
+        kickoff_at=KICKOFF,
+        captured_at=CAPTURE,
+        source_observation_id="obs-odds-api-event-123",
+    )
+    assert len(result.snapshots) == 4
+    assert {
+        row.source_observation_id for row in result.snapshots
+    } == {"obs-odds-api-event-123"}
+
+
+def test_parser_rejects_blank_source_observation_identity():
+    with pytest.raises(ValueError, match="SOURCE_OBSERVATION_ID_INVALID"):
+        parse_event_btts_odds(
+            [EVENT],
+            fixture_id="fixture-1",
+            provider_event_id="event-123",
+            sport_key="soccer_epl",
+            kickoff_at=KICKOFF,
+            captured_at=CAPTURE,
+            source_observation_id=" ",
+        )
