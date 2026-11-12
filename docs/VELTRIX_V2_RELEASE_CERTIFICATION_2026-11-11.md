@@ -38,3 +38,21 @@ The report builder accepts a passing prediction certification and independently 
 ## Release boundary
 
 No current VELTRIX market is certified by this file. The module does not activate forecasts, value bets, website publication, Neon writes, Vercel deployment or Telegram scheduling.
+
+
+## Record-derived value-bet certification API
+
+The public `certify_release` entry point now accepts the multi-competition
+walk-forward report, prospective paper ledger, raw odds snapshots, immutable
+source-observation records and source approvals. It derives per-market
+walk-forward counts, prospective settled counts, distinct match dates, odds
+coverage and ROI directly from those records. It revalidates source rights and
+point-in-time availability for training inputs, held-out results, bookmaker
+quotes, prospective forecast inputs, prospective odds and settlement results.
+
+The bookmaker benchmark is normalized from raw 1X2 quote groups for one
+explicitly selected source/bookmaker. Certification is blocked unless the
+comparison's exact common fixture IDs equal the model's complete 1X2
+walk-forward forecast fixture set. The public API does not accept caller
+supplied bookmaker superiority booleans, market counts, ROI values, or source
+approval flags.
