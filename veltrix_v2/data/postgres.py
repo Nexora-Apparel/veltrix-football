@@ -84,18 +84,30 @@ class PostgresHistoryStore:
             )
             cur.execute(
                 """SELECT provider,source_id,competition_scope,data_type,status,
-                    evidence_sha256,terms_version,permitted_uses
+                    rights_basis,terms_url,terms_version,evidence_uri,evidence_sha256,
+                    reviewed_at,reviewer_id,valid_from,valid_until,permitted_uses,
+                    commercial_use_allowed,attribution_required,attribution_text,
+                    attribution_url,raw_redistribution_allowed
                    FROM source_approvals WHERE approval_id=%s""",
                 (approval.approval_id,),
             )
             row = cur.fetchone()
             expected = (
                 approval.provider, approval.source_id, approval.competition_scope,
-                approval.data_type, approval.status.value, approval.evidence_sha256,
-                approval.terms_version,
-                json.dumps(sorted(item.value for item in approval.permitted_uses)),
+                approval.data_type, approval.status.value, approval.rights_basis,
+                approval.terms_url, approval.terms_version, approval.evidence_uri,
+                approval.evidence_sha256, approval.reviewed_at_utc, approval.reviewer_id,
+                approval.valid_from_utc, approval.valid_until_utc,
+                sorted(item.value for item in approval.permitted_uses),
+                approval.commercial_use_allowed, approval.attribution_required,
+                approval.attribution_text, approval.attribution_url,
+                approval.raw_redistribution_allowed,
             )
-            if not row or row[0:7] != expected[0:7] or json.dumps(row[7], sort_keys=True) != expected[7]:
+            stored = (
+                tuple(row[:14]) + (sorted(row[14] or []),) + tuple(row[15:])
+                if row else None
+            )
+            if stored != expected:
                 raise ValueError("SOURCE_APPROVAL_IDEMPOTENCY_CONFLICT")
             conn.commit()
             return approval.approval_id
