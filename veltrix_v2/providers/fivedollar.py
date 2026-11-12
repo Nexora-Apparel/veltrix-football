@@ -40,7 +40,8 @@ def fetch_fixture_odds(
     """Fetch one fixture's full Bet365 odds payload and timestamp retrieval.
 
     No retries are performed here. The caller controls pacing to respect the
-    provider's 20/minute burst and 60/hour Free-plan limits.
+    provider's 20/minute burst and the active plan's hourly request ceiling.
+    Every snapshot must be linked to the immutable response observation.
     """
     if not isinstance(api_key, str) or not api_key.strip():
         raise ValueError("FIVEDOLLAR_API_KEY_REQUIRED")
