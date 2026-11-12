@@ -186,3 +186,25 @@ def test_community_acceptance_fails_closed_while_account_remains_on_free_plan(mo
     assert "expected=community" in output
     assert "actual=free" in output
     assert len(calls) == 1
+
+
+
+def test_fivedollar_community_acceptance_rejects_top_five_without_country_pack(monkeypatch, capsys):
+    monkeypatch.setenv("FIVEDOLLARFOOTBALL_API_KEY", "fake-primary")
+    monkeypatch.setenv("FIVEDOLLAR_REQUIRED_PLAN", "community")
+    monkeypatch.setenv("FIVEDOLLAR_MIN_ACCESSIBLE_LEAGUES", "6")
+
+    def fake_request(url, headers=None):
+        if "/status" in url:
+            return 200, {}, {"success": 1, "data": {"plan": "community"}}
+        if "/leagues?per_page=100" in url:
+            return 200, {}, {
+                "success": 1,
+                "data": [{"id": index, "name": f"Top-five league {index}"} for index in range(1, 6)],
+            }
+        raise AssertionError(f"Unexpected request: {url}")
+
+    monkeypatch.setattr(providers, "request_json", fake_request)
+    assert providers.check_fivedollar() == "COMPETITION_COVERAGE_INCOMPLETE"
+    output = capsys.readouterr().out
+    assert "minimum=6; actual=5" in output
