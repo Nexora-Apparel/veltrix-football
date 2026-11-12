@@ -217,6 +217,9 @@ def recompute_raw_certification(manifest_path: str | Path, *, min_walk_forward: 
         if _time(quote.get("observed_at")) != fetched or _time(quote.get("quote_updated_at")) != quote_time:
             failures[market].append("odds snapshot timestamps do not match prospective row")
             continue
+        if _time(quote.get("kickoff")) != kickoff or quote.get("bookmaker") != row.get("bookmaker"):
+            failures[market].append("odds snapshot kickoff or bookmaker does not match prospective row")
+            continue
         settlement = settlement_by_id.get(str(row.get("settlement_id") or ""))
         if not settlement or str(settlement.get("fixture_id")) != fixture:
             failures[market].append("prospective row does not join to its exact settlement")
@@ -227,6 +230,9 @@ def recompute_raw_certification(manifest_path: str | Path, *, min_walk_forward: 
         if settlement.get("model_version") != row.get("model_version"):
             failures[market].append("settlement/model provenance mismatch")
             continue
+        if market != "1X2" and settlement.get("calibration_version") != row.get("calibration_version"):
+            failures[market].append("settlement/calibration provenance mismatch")
+            continue
         if _time(settlement.get("settled_at")) <= kickoff:
             failures[market].append("settlement timestamp is not after kickoff")
             continue
@@ -235,6 +241,9 @@ def recompute_raw_certification(manifest_path: str | Path, *, min_walk_forward: 
             continue
         if row.get("model_version") != model_manifest.get("model_version"):
             failures[market].append("prospective model version mismatch")
+            continue
+        if market != "1X2" and row.get("calibration_version") not in calibration_versions:
+            failures[market].append("prospective calibration version is missing or not in model manifest")
             continue
         stake, price = _number(row.get("stake")), _number(row.get("decimal_odds"))
         if stake is None or stake <= 0 or price is None or price <= 1:
@@ -277,7 +286,7 @@ def recompute_raw_certification(manifest_path: str | Path, *, min_walk_forward: 
         if market == "1X2":
             for scope, scope_rows in (("full", full), ("recent_holdout", holdout)):
                 model_scope = _score(scope_rows, market, "model_probabilities")
-                market_metrics = _score(scope_rows, market, "bookmaker_probabilities")
+                market_metrics = _score(scope_rows, market, "bookmaker_odds")
                 if not scope_rows or model_scope["matches"] != market_metrics["matches"]:
                     failures[market].append(f"{scope} bookmaker comparison does not use identical fixtures")
                 elif model_scope["brier_score"] >= market_metrics["brier_score"] or model_scope["log_loss"] >= market_metrics["log_loss"]:
