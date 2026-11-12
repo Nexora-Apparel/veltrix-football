@@ -121,3 +121,27 @@ The maximum primary-provider smoke sequence is 18 requests (status + league
 catalogue + up to eight fixture requests + up to eight odds requests), below
 the 20/minute burst ceiling. The optional The Odds API market probe remains
 off by default and can consume up to eight additional odds credits.
+
+
+### OpenFootAPI — per-competition fixture/result candidate
+
+**Decision:** conditional discovery candidate; no blanket model-training or commercial approval.
+
+Its current Terms require each response's source metadata to be carried into published outputs and state that the licence attached to each competition/source applies independently. The service cannot waive upstream source restrictions. The free Starter plan provides fixtures, results, standings and search across a 120-competition catalogue at 5,000 requests/month; xG shot maps and lineups require the Developer plan, currently advertised at $14/month.
+
+This may be useful for supplementary fixture/result discovery only where the exact competition's `/v1/competitions` licence metadata is permissive and source rights have been checked. Do not treat the API's own Terms as a blanket grant to train models on FotMob, ESPN or other upstream data. Do not use the paid xG tier under the current no-software-budget constraint.
+
+Official references:
+- https://openfootapi.com/terms
+- https://openfootapi.com/docs
+- https://openfootapi.com/pricing
+
+### StatsBomb Open Data — non-commercial research only
+
+**Decision:** excluded from the commercial VELTRIX prediction/training corpus unless a separate commercial agreement is obtained.
+
+The public repository describes the data as available for research and genuine interest in football analytics and requires StatsBomb attribution/logo. The Public Data User Agreement restricts commercial exploitation of the data and analysis derived from it. It remains suitable for isolated non-commercial research, not the commercial VELTRIX product.
+
+Official reference:
+- https://github.com/hudl/open-data
+- https://raw.githubusercontent.com/hudl/open-data/master/LICENSE.pdf
