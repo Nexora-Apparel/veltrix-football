@@ -18,6 +18,7 @@ concurrency:
 
 jobs:
   staging-import:
+    if: github.ref == 'refs/heads/phase3/traceable-data-pipeline-20261112'
     runs-on: ubuntu-latest
     timeout-minutes: 25
     env:
