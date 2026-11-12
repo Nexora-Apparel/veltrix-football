@@ -88,8 +88,13 @@ def compare_binary_to_bookmaker(
         selections = selections_by_fixture.setdefault(row.fixture_id, {})
         if selections:
             existing = next(iter(selections.values()))
-            if row.captured_at != existing.captured_at or row.kickoff_at != existing.kickoff_at:
-                raise ValueError("BINARY_BENCHMARK_SELECTION_TIMESTAMPS_MISMATCH")
+            if (
+                row.captured_at != existing.captured_at
+                or row.kickoff_at != existing.kickoff_at
+                or row.provider_quote_at != existing.provider_quote_at
+                or row.source_observation_id != existing.source_observation_id
+            ):
+                raise ValueError("BINARY_BENCHMARK_SELECTION_TIMESTAMPS_OR_PROVENANCE_MISMATCH")
         selection = row.selection.upper()
         if selection in selections:
             raise ValueError("BINARY_BENCHMARK_DUPLICATE_FIXTURE_QUOTE")
