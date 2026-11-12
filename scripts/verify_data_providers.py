@@ -180,7 +180,7 @@ def check_fivedollar() -> str:
 
 
 def probe_odds_api_btts(soccer_sports: list[dict], api_key: str) -> None:
-    """Optional five-credit BTTS spot-check, one upcoming event per top-five league."""
+    """Optional bounded BTTS spot-check, one upcoming event per selected league (max eight credits)."""
     from veltrix_v2.providers.the_odds_api import (
         TheOddsProviderError, fetch_event_btts_odds,
     )
@@ -245,6 +245,9 @@ def probe_odds_api_btts(soccer_sports: list[dict], api_key: str) -> None:
                 kickoff_at=kickoff,
                 captured_at=captured,
                 regions="uk",
+                source_observation_id=(
+                    f"provider-probe:{sport_key}:{event['id']}:{captured.isoformat()}"
+                ),
             )
         except (TheOddsProviderError, ValueError) as exc:
             print(f"The Odds API BTTS_PROBE: sport={sport_key}; odds_lookup=FAILED ({getattr(exc, 'code', str(exc))})")
