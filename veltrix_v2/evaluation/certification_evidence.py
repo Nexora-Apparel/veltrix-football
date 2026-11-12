@@ -538,31 +538,21 @@ def audit_paper_ledger_sources(
     if len(by_id) != len(observation_rows):
         raise ValueError("CERTIFICATION_DUPLICATE_SOURCE_OBSERVATION_ID")
 
-    fixture_scopes = {
-        fixture_id: (scope_report.competition_key, scope_report.season)
-        for scope_report in walk_forward.scope_reports
-        for fold in scope_report.folds
-        for fixture_id in fold.eligible_fixture_ids
-    }
     selection_by_id = {row.selection_id: row for row in paper_ledger.selections}
     approved: set[str] = set()
     rejected: list[tuple[str, str]] = []
     required_ids: set[str] = set()
 
+    selection_scopes = {}
     for selection in paper_ledger.selections:
-        scope = fixture_scopes.get(selection.bet.fixture_id)
-        if scope is None:
-            rejected.append((selection.selection_id, "paper_selection_fixture_outside_walk_forward"))
-            continue
+        forecast_scope_rows = set()
         for observation_id in selection.forecast_source_observation_ids:
             required_ids.add(observation_id)
             observation = by_id.get(observation_id)
             if observation is None:
                 rejected.append((observation_id, "paper_forecast_source_observation_missing"))
                 continue
-            if (observation.competition_key, observation.season) != scope:
-                rejected.append((observation_id, "paper_forecast_source_scope_mismatch"))
-                continue
+            forecast_scope_rows.add((observation.competition_key, observation.season))
             decision = evaluate_observation(
                 observation,
                 data_type=observation.entity_type,
@@ -575,6 +565,12 @@ def audit_paper_ledger_sources(
                 rejected.append((observation_id, decision.reason))
             else:
                 approved.add(observation_id)
+        if len(forecast_scope_rows) != 1:
+            rejected.append((selection.selection_id, "paper_forecast_source_scope_missing_or_conflicting"))
+            scope = None
+        else:
+            scope = next(iter(forecast_scope_rows))
+        selection_scopes[selection.selection_id] = scope
 
         odds = selection.odds_snapshot
         odds_observation_id = odds.source_observation_id
@@ -587,7 +583,8 @@ def audit_paper_ledger_sources(
             rejected.append((odds_observation_id, "paper_odds_source_observation_missing"))
             continue
         if (
-            odds_observation.provider != odds.source_id
+            scope is None
+            or odds_observation.provider != odds.source_id
             or (odds_observation.competition_key, odds_observation.season) != scope
             or odds_observation.available_at_utc > odds.captured_at
         ):
@@ -611,14 +608,14 @@ def audit_paper_ledger_sources(
 
     for event in paper_ledger.settlements:
         selection = selection_by_id[event.selection_id]
-        scope = fixture_scopes.get(selection.bet.fixture_id)
+        scope = selection_scopes.get(selection.selection_id)
         observation_id = event.result_source_observation_id
         required_ids.add(observation_id)
         observation = by_id.get(observation_id)
         if observation is None:
             rejected.append((observation_id, "paper_result_source_observation_missing"))
             continue
-        if (observation.competition_key, observation.season) != scope:
+        if scope is None or (observation.competition_key, observation.season) != scope:
             rejected.append((observation_id, "paper_result_source_scope_mismatch"))
             continue
         if (
@@ -647,7 +644,8 @@ def audit_paper_ledger_sources(
             if date_observation is None:
                 rejected.append((date_observation_id, "paper_match_date_source_observation_missing"))
             elif (
-                (date_observation.competition_key, date_observation.season) != scope
+                scope is None
+                or (date_observation.competition_key, date_observation.season) != scope
                 or date_observation.available_at_utc > event.result_observed_at_utc
             ):
                 rejected.append((date_observation_id, "paper_match_date_source_provenance_mismatch"))
