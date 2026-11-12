@@ -1,6 +1,6 @@
 # VELTRIX FOOTBALL 2.0 — Phase 1: Evidence-Bound Certification Integrity
 
-**Status:** COMPLETE — the evidence-integrity implementation and its release-consumer regressions passed the full CI suite. No value market is certified or unlocked; a real source-qualified evidence bundle and its signed attestation remain downstream data dependencies for Phases 2–3.
+**Status:** IMPLEMENTATION COMPLETE; FINAL CURRENT-HEAD CI VERIFICATION IN PROGRESS. No value market is certified or unlocked; a real source-qualified evidence bundle and its signed attestation remain downstream data dependencies for Phases 2–3.
 
 ## Objective
 
@@ -22,7 +22,7 @@ The previous runtime predicate `app.value_bets._certificate_allows` accepted a m
 - Added `.github/workflows/certification-evidence-attestation.yml`; it can attest only a manifest that passes raw statistical gates on `main`. It has not been dispatched because no qualifying evidence bundle exists.
 - Added a dedicated GitHub Actions certification workflow. The focused certification/release-consumer suite passed on run 21; the full repository regression suite is still running.
 - The daily prediction workflow was triggered by PR activity but its prediction job was skipped. No production schedule, database write, Telegram delivery or Vercel deployment was activated.
-- Final current-head CI run #108 passed: 561 tests in 39.39 seconds, including the focused certification/release-consumer suite and full repository regression suite.
+- Previous verified current-head CI run #108 passed 561 tests. Subsequent hardening added raw bookmaker benchmark provenance, fixture identity provenance, dashboard/Telegram release-consumer sanitization and normalized-path duplicate rejection; final CI is being rerun on the updated head.
 - Daily prediction workflow remained skipped during PR validation. No production deployment, database write, Telegram delivery or schedule activation occurred.
 
 ## Deferred evidence production (not a Phase 1 implementation blocker)
