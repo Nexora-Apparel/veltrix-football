@@ -15,6 +15,7 @@ from typing import Iterable, Mapping
 
 SOURCE_PROVIDER_ID = "wyscout_open_data"
 SOURCE_LICENSE_ID = "cc-by-4.0-pappalardo-2019"
+SOURCE_APPROVAL_ID = "approval-wyscout-open-data-cc-by-4.0"
 SOURCE_LICENSE_URL = "https://creativecommons.org/licenses/by/4.0/"
 SOURCE_PUBLICATION_DATE = datetime(2019, 10, 28, tzinfo=timezone.utc).date()
 CONSERVATIVE_AVAILABLE_AT_UTC = datetime(2019, 11, 1, tzinfo=timezone.utc)
@@ -95,6 +96,7 @@ class WyscoutShotTrainingExample:
     source_provider_id: str = SOURCE_PROVIDER_ID
     source_license_id: str = SOURCE_LICENSE_ID
     source_license_url: str = SOURCE_LICENSE_URL
+    rights_approval_id: str = SOURCE_APPROVAL_ID
 
     def __post_init__(self) -> None:
         for field in ("match_id", "event_id", "competition_key", "season", "team_id", "source_observation_id"):
@@ -122,7 +124,11 @@ class WyscoutShotTrainingExample:
             "is_penalty", "is_direct_free_kick", "is_counterattack", "is_opportunity", "is_blocked",
         )):
             raise ValueError("WYSCOUT_SHOT_FLAGS_MUST_BE_BOOLEAN")
-        if self.source_provider_id != SOURCE_PROVIDER_ID or self.source_license_id != SOURCE_LICENSE_ID:
+        if (
+            self.source_provider_id != SOURCE_PROVIDER_ID
+            or self.source_license_id != SOURCE_LICENSE_ID
+            or self.rights_approval_id != SOURCE_APPROVAL_ID
+        ):
             raise ValueError("WYSCOUT_SOURCE_LICENSE_IDENTITY_MISMATCH")
         object.__setattr__(self, "raw_tag_ids", tuple(self.raw_tag_ids))
 
