@@ -44,6 +44,7 @@ def test_parser_emits_complete_btts_quotes_with_provider_timestamps():
     result = parse_event_btts_odds(
         [EVENT], fixture_id="fixture-1", provider_event_id="event-123",
         sport_key="soccer_epl", kickoff_at=KICKOFF, captured_at=CAPTURE,
+            source_observation_id="obs-odds-api-event-123",
     )
     assert len(result.snapshots) == 4
     assert {row.bookmaker_id for row in result.snapshots} == {"bet365", "pinnacle"}
@@ -66,6 +67,7 @@ def test_parser_skips_incomplete_bookmaker_market():
     result = parse_event_btts_odds(
         body, fixture_id="fixture-1", provider_event_id="event-123",
         sport_key="soccer_epl", kickoff_at=KICKOFF, captured_at=CAPTURE,
+            source_observation_id="obs-odds-api-event-123",
     )
     assert result.snapshots == ()
     assert result.missing_bookmakers == ("bet365",)
@@ -76,12 +78,14 @@ def test_parser_rejects_wrong_event_and_kickoff():
         parse_event_btts_odds(
             [], fixture_id="fixture-1", provider_event_id="event-123",
             sport_key="soccer_epl", kickoff_at=KICKOFF, captured_at=CAPTURE,
+            source_observation_id="obs-odds-api-event-123",
         )
     wrong = dict(EVENT, commence_time="2026-11-12T20:00:00Z")
     with pytest.raises(ValueError, match="KICKOFF_MISMATCH"):
         parse_event_btts_odds(
             wrong, fixture_id="fixture-1", provider_event_id="event-123",
             sport_key="soccer_epl", kickoff_at=KICKOFF, captured_at=CAPTURE,
+            source_observation_id="obs-odds-api-event-123",
         )
 
 
@@ -114,6 +118,7 @@ def test_client_uses_event_btts_endpoint_and_records_quota_headers():
         fixture_id="fixture-1",
         kickoff_at=KICKOFF,
         captured_at=CAPTURE,
+            source_observation_id="obs-odds-api-event-123",
         opener=opener,
     )
     assert "/sports/soccer_epl/events/event-123/odds" in seen["url"]
@@ -147,6 +152,7 @@ def test_parser_rejects_missing_or_mismatched_event_identity_and_kickoff():
         parse_event_btts_odds(
             missing_id, fixture_id="fixture-1", provider_event_id="event-123",
             sport_key="soccer_epl", kickoff_at=KICKOFF, captured_at=CAPTURE,
+            source_observation_id="obs-odds-api-event-123",
         )
     missing_kickoff = dict(EVENT)
     missing_kickoff.pop("commence_time")
@@ -154,6 +160,7 @@ def test_parser_rejects_missing_or_mismatched_event_identity_and_kickoff():
         parse_event_btts_odds(
             missing_kickoff, fixture_id="fixture-1", provider_event_id="event-123",
             sport_key="soccer_epl", kickoff_at=KICKOFF, captured_at=CAPTURE,
+            source_observation_id="obs-odds-api-event-123",
         )
 
 
@@ -173,6 +180,7 @@ def test_parser_rejects_quote_timestamp_after_capture():
         parse_event_btts_odds(
             future_quote, fixture_id="fixture-1", provider_event_id="event-123",
             sport_key="soccer_epl", kickoff_at=KICKOFF, captured_at=CAPTURE,
+            source_observation_id="obs-odds-api-event-123",
         )
 
 
@@ -194,7 +202,7 @@ def test_parser_propagates_source_observation_identity_to_each_quote():
 
 
 def test_parser_rejects_blank_source_observation_identity():
-    with pytest.raises(ValueError, match="SOURCE_OBSERVATION_ID_INVALID"):
+    with pytest.raises(ValueError, match="SOURCE_OBSERVATION_ID_REQUIRED"):
         parse_event_btts_odds(
             [EVENT],
             fixture_id="fixture-1",
