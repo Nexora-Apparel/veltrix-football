@@ -43,3 +43,18 @@ multi-market orchestration remain separate implementation work.
 This is an offline evaluation component only. It does not approve model
 training on unqualified sources, production forecasts, value-bet publication,
 Neon writes, deployment, or Telegram delivery.
+
+
+## Release gate policy
+
+The release gate is implemented separately in
+`veltrix_v2/evaluation/calibration_gate.py`. For each market it requires at
+least 1,000 held-out forecasts, expected calibration error (ECE) no greater
+than 0.05, and maximum reliability-bin gap no greater than 0.15. The 1X2 gate
+applies independently to AWAY, DRAW and HOME; BTTS and totals each have their
+own binary report. Missing or non-finite metrics fail closed. The thresholds
+are constants in the gate module and cannot be weakened by caller arguments.
+
+These are operational release tolerances, not claims of guaranteed future
+calibration. The full reliability bins, sample coverage and per-fold reports
+remain part of the audit record.
