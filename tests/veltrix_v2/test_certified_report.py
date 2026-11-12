@@ -1,8 +1,12 @@
+from dataclasses import replace
 from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal
+from functools import lru_cache
 
 import pytest
 
+from veltrix_v2.evaluation.roi import MarketPerformance, evaluate_roi
+from veltrix_v2.evaluation.settlement import MarketBet, MatchResult, settle_market_bet
 from veltrix_v2.evaluation.certification import (
     MarketCertificationEvidence, PredictionMarketEvidence,
     certify_prediction_publication, certify_release,
@@ -29,6 +33,42 @@ def passing_prediction_certification():
     ])
 
 
+@lru_cache(maxsize=None)
+def computed_roi_performance(market):
+    settlements = []
+    for index in range(300):
+        fixture_id = f"cert-{market.lower()}-{index}"
+        match_day = date(2026, 1, 1) + timedelta(days=index % 90)
+        selection, line, home, away = {
+            "1X2": ("HOME", None, 2, 0),
+            "BTTS": ("YES", None, 2, 1),
+            "TOTALS": ("OVER", Decimal("2.5"), 2, 1),
+        }[market]
+        bet = MarketBet(
+            fixture_id=fixture_id, market=market, selection=selection,
+            decimal_odds=Decimal("2.0"), stake=Decimal("1"), line=line,
+        )
+        result = MatchResult(
+            fixture_id=fixture_id, status="COMPLETED",
+            home_goals_regulation=home, away_goals_regulation=away,
+            match_date=match_day,
+            match_date_source_observation_id=f"obs-{fixture_id}",
+        )
+        settlements.append(settle_market_bet(bet, result))
+    report = evaluate_roi(settlements, bootstrap_draws=100)
+    return next(row for row in report.markets if row.market == market)
+
+
+def empty_roi_performance(market):
+    return MarketPerformance(
+        market=market, total_bets=0, wins=0, losses=0, pushes=0, voids=0,
+        decisive_bets=0, settled_bets=0, win_rate=None, win_rate_ci_95=None,
+        settled_turnover=Decimal("0"), gross_return=Decimal("0"),
+        net_profit=Decimal("0"), roi=None, roi_ci_95=None,
+        roi_ci_method="unavailable_insufficient_match_dates",
+    )
+
+
 def passing_value_bet_certification():
     rows = [
         MarketCertificationEvidence(
@@ -37,9 +77,7 @@ def passing_value_bet_certification():
             prospective_settled_selections=300,
             distinct_dates=90,
             timestamped_odds_coverage=Decimal("0.99"),
-            net_roi=Decimal("0.03"),
-            roi_ci95_lower=Decimal("0.01"),
-            roi_ci_method="date_block_bootstrap_by_match_date",
+            roi_performance=computed_roi_performance(market),
             source_approved=True,
             point_in_time_validated=True,
         )
@@ -186,8 +224,7 @@ def test_failed_value_bet_certification_does_not_block_prediction_publication():
                 market=market, walk_forward_matches=1000,
                 prospective_settled_selections=0, distinct_dates=90,
                 timestamped_odds_coverage=Decimal("0.99"),
-                net_roi=Decimal("0.02"), roi_ci95_lower=Decimal("0.01"),
-                roi_ci_method="date_block_bootstrap_by_match_date",
+                roi_performance=empty_roi_performance(market),
                 source_approved=True, point_in_time_validated=True,
             )
             for market in ("1X2", "BTTS", "TOTALS")
