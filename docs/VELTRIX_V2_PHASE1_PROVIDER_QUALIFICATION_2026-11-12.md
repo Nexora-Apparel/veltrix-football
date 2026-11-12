@@ -2,7 +2,7 @@
 
 **Date:** 2026-11-12  
 **Working branch:** `phase1/provider-final-qualification`  
-**Phase status:** PROVIDER STRATEGY QUALIFIED; OFFLINE REGRESSION RECHECK PENDING  
+**Phase status:** COMPLETE — PROVIDER STRATEGY VERIFIED AND MERGED  
 **Scope:** provider discovery, credential/endpoint access, competition coverage, data rights, historical depth, timestamps, and source selection.  
 **Safety:** read-only qualification only. No production imports, database writes, model changes, prediction publication, Telegram delivery, deployment, or scheduling.
 
@@ -175,7 +175,7 @@ Phase 1 acceptance decision:
 3. **Selected provider connectivity:** the same run verified 5Dollar, The Odds API and InferSports response schemas; The Odds API returned BTTS/h2h/totals, and InferSports returned 1X2/totals quotes in its bounded sample.
 4. **Source register:** the selected stack, exclusions, rights constraints and missing-feature controls are documented in this file.
 5. **No unapproved ingestion:** the run performed zero imports/database writes; no unapproved source is admitted to the training corpus.
-6. **Regression correction:** the OddsPapi script's local import-path defect has been corrected and a regression test added. Run the offline suite once more on the corrected commit before Phase 1 is closed.
+6. **Regression correction:** the OddsPapi script's local import-path defect was corrected and a direct-execution regression test was added. PR #57 merged as commit `cd500d0beb4d9f41bbabf80022a52a25947dd1f8`; all three PR checks (`unit-tests`, `foundation`, `verification`) completed successfully.
 
 The 5Dollar 9.09% sampled timestamp rate and HTTP 403 for tick history are explicit historical-odds limitations. They block the later 98% timestamp-coverage/value-betting gate, not fixture-provider qualification. The Odds API is the approved prospective timestamp source; the archive remains insufficient until measured data accumulates.
 
