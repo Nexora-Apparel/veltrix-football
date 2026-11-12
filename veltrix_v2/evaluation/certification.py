@@ -130,7 +130,7 @@ class ReleaseCertification:
             raise ValueError("RELEASE_CERTIFICATION_STATUS_CONFLICTS_WITH_EVIDENCE")
 
 
-def certify_release(
+def _certify_release_from_derived_evidence(
     evidence: Iterable[MarketCertificationEvidence],
     *,
     one_x_two_beats_bookmaker_brier: bool,
@@ -404,3 +404,156 @@ def certify_prediction_publication(
         for market in REQUIRED_MARKETS
     )
     return _certify_prediction_publication_from_derived_evidence(derived)
+
+
+def certify_release(
+    walk_forward: "MultiCompetitionWalkForwardEvaluation",
+    paper_ledger: "PaperLedger",
+    odds_snapshots: Iterable["OddsSnapshot"],
+    observations: Iterable["TrainingObservationEvidence"],
+    approvals: Iterable["SourceApproval"],
+    *,
+    benchmark_source_id: str,
+    benchmark_bookmaker_id: str,
+) -> ReleaseCertification:
+    """Certify value betting exclusively from evaluator, odds and ledger records.
+
+    Market counts, ROI, odds coverage and source/point-in-time decisions are
+    recomputed from the supplied immutable records. The bookmaker comparison is
+    regenerated from raw 1X2 OddsSnapshot rows and must cover exactly the same
+    fixture IDs as the model's 1X2 walk-forward sample.
+    """
+    from collections import defaultdict
+    from decimal import Decimal
+
+    from veltrix_v2.contracts.odds import OddsSnapshot
+    from veltrix_v2.evaluation.benchmark_1x2 import compare_1x2_to_bookmaker
+    from veltrix_v2.evaluation.certification_evidence import (
+        TrainingObservationEvidence,
+        audit_odds_snapshot_sources,
+        audit_paper_ledger_sources,
+        audit_walk_forward_integrity,
+        audit_walk_forward_training_sources,
+        derive_market_evidence,
+    )
+    from veltrix_v2.evaluation.multi_competition_walk_forward import (
+        MultiCompetitionWalkForwardEvaluation,
+    )
+    from veltrix_v2.evaluation.odds_normalization import normalize_bookmaker_market
+    from veltrix_v2.evaluation.paper_ledger import PaperLedger
+    from veltrix_v2.quality.eligibility import SourceApproval
+
+    if not isinstance(walk_forward, MultiCompetitionWalkForwardEvaluation):
+        raise ValueError("CERTIFICATION_WALK_FORWARD_REPORT_REQUIRED")
+    if not isinstance(paper_ledger, PaperLedger):
+        raise ValueError("CERTIFICATION_PAPER_LEDGER_REQUIRED")
+    if not isinstance(benchmark_source_id, str) or not benchmark_source_id.strip():
+        raise ValueError("CERTIFICATION_BENCHMARK_SOURCE_REQUIRED")
+    if not isinstance(benchmark_bookmaker_id, str) or not benchmark_bookmaker_id.strip():
+        raise ValueError("CERTIFICATION_BENCHMARK_BOOKMAKER_REQUIRED")
+    snapshot_rows = tuple(odds_snapshots)
+    observation_rows = tuple(observations)
+    approval_rows = tuple(approvals)
+    if any(not isinstance(row, OddsSnapshot) for row in snapshot_rows):
+        raise ValueError("CERTIFICATION_ODDS_SNAPSHOT_TYPE_INVALID")
+    if any(not isinstance(row, TrainingObservationEvidence) for row in observation_rows):
+        raise ValueError("CERTIFICATION_SOURCE_OBSERVATION_RECORDS_REQUIRED")
+    if any(not isinstance(row, SourceApproval) for row in approval_rows):
+        raise ValueError("CERTIFICATION_SOURCE_APPROVAL_RECORDS_REQUIRED")
+
+    training_audit = audit_walk_forward_training_sources(
+        walk_forward, observation_rows, approval_rows
+    )
+    integrity_audit = audit_walk_forward_integrity(walk_forward)
+    odds_audit = audit_odds_snapshot_sources(
+        walk_forward, snapshot_rows, observation_rows, approval_rows
+    )
+    ledger_audit = audit_paper_ledger_sources(
+        walk_forward, paper_ledger, observation_rows, approval_rows
+    )
+    sources_pass = (
+        training_audit.passed and odds_audit.passed and ledger_audit.passed
+    )
+    point_in_time_pass = integrity_audit.passed and sources_pass
+
+    eligible_ids = tuple(
+        fixture_id
+        for scope_report in walk_forward.scope_reports
+        for fold in scope_report.folds
+        for fixture_id in fold.eligible_fixture_ids
+    )
+    model_forecasts = tuple(
+        forecast
+        for scope_report in walk_forward.scope_reports
+        for fold in scope_report.folds
+        for forecast in fold.forecasts_1x2
+    )
+    model_outcomes = tuple(
+        outcome
+        for scope_report in walk_forward.scope_reports
+        for fold in scope_report.folds
+        for outcome in fold.outcomes_1x2
+    )
+    if not model_forecasts or not model_outcomes:
+        raise ValueError("CERTIFICATION_1X2_WALK_FORWARD_FORECASTS_REQUIRED")
+    model_fixture_ids = tuple(sorted(row.fixture_id for row in model_forecasts))
+
+    bookmaker_groups = defaultdict(list)
+    for snapshot in snapshot_rows:
+        if (
+            snapshot.source_id == benchmark_source_id
+            and snapshot.bookmaker_id == benchmark_bookmaker_id
+            and snapshot.market.upper() == "1X2"
+        ):
+            key = (
+                snapshot.fixture_id, snapshot.source_id, snapshot.bookmaker_id,
+                snapshot.market.upper(), snapshot.line, snapshot.captured_at,
+                snapshot.kickoff_at,
+            )
+            bookmaker_groups[key].append(snapshot)
+    normalized_bookmaker_rows = []
+    for group in bookmaker_groups.values():
+        try:
+            normalized_bookmaker_rows.extend(normalize_bookmaker_market(group))
+        except ValueError as exc:
+            if "INCOMPLETE_SELECTION_SET" in str(exc):
+                continue
+            raise
+    comparison = compare_1x2_to_bookmaker(
+        model_forecasts,
+        normalized_bookmaker_rows,
+        model_outcomes,
+        eligible_fixture_ids=eligible_ids,
+    )
+    if comparison.common_fixture_ids != model_fixture_ids:
+        raise ValueError("CERTIFICATION_BOOKMAKER_SAMPLE_MUST_MATCH_MODEL_FIXTURES_EXACTLY")
+    if comparison.common_sample_size != walk_forward.aggregate_1x2.sample_size:
+        raise ValueError("CERTIFICATION_BOOKMAKER_SAMPLE_SIZE_MISMATCH")
+
+    derived_rows = tuple(
+        derive_market_evidence(
+            walk_forward,
+            paper_ledger,
+            snapshot_rows,
+            market=market,
+        )
+        for market in REQUIRED_MARKETS
+    )
+    market_evidence = tuple(
+        MarketCertificationEvidence(
+            market=row.market,
+            walk_forward_matches=row.walk_forward_matches,
+            prospective_settled_selections=row.prospective_settled_selections,
+            distinct_dates=row.distinct_dates,
+            timestamped_odds_coverage=row.timestamped_odds.coverage or Decimal("0"),
+            roi_performance=row.roi_performance,
+            source_approved=sources_pass,
+            point_in_time_validated=point_in_time_pass,
+        )
+        for row in derived_rows
+    )
+    return _certify_release_from_derived_evidence(
+        market_evidence,
+        one_x_two_beats_bookmaker_brier=comparison.comparison.model_beats_brier,
+        one_x_two_beats_bookmaker_log_loss=comparison.comparison.model_beats_log_loss,
+    )
