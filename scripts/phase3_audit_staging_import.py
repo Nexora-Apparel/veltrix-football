@@ -120,7 +120,8 @@ def run_audit(database_url: str) -> dict:
                        so.payload_sha256,so.payload,so.rights_approval_id,
                        so.provider_response_id,so.point_in_time_certifiable,
                        so.availability_basis,so.available_at,so.source_event_time,
-                       pr.fetched_at,sa.competition_scope,f.kickoff_at,
+                       pr.fetched_at,sa.competition_scope,f.kickoff_at,sa.provider,sa.source_id,sa.data_type,
+                       sa.status,sa.valid_from,sa.valid_until,sa.permitted_uses,sa.commercial_use_allowed,
                        COALESCE((
                            SELECT ev.status FROM source_approval_status_events ev
                            WHERE ev.approval_id=so.rights_approval_id
@@ -143,7 +144,9 @@ def run_audit(database_url: str) -> dict:
                 (obs_id, provider, source_id, data_type, entity_id, payload_hash,
                  payload, approval_id, response_id, point_in_time, availability_basis,
                  available_at, source_event_time, fetched_at, competition_scope,
-                 fixture_kickoff, approval_status) = row
+                 fixture_kickoff, approval_provider, approval_source_id, approval_data_type,
+                 approval_record_status, approval_valid_from, approval_valid_until,
+                 permitted_uses, commercial_use_allowed, approval_status) = row
                 if not isinstance(payload, dict) or _canonical_hash(payload) != payload_hash.strip():
                     payload_hash_failures += 1
                 if response_id not in responses or (response_id, entity_id) not in raw_page_rows:
@@ -155,9 +158,19 @@ def run_audit(database_url: str) -> dict:
                 league_id = str(league.get("id")) if isinstance(league, dict) else ""
                 if (
                     provider != "5DollarFootballAPI"
+                    or source_id != "5dollarfootballapi"
                     or data_type != "fixture_result"
+                    or approval_provider != "5DollarFootballAPI"
+                    or approval_source_id != "5dollarfootballapi"
+                    or approval_data_type != "fixture_result"
+                    or approval_record_status != "APPROVED"
                     or approval_status != "APPROVED"
                     or not approval_id
+                    or approval_valid_from is None
+                    or approval_valid_from > fetched_at
+                    or (approval_valid_until is not None and approval_valid_until < fetched_at)
+                    or not {"COLLECTION", "STORAGE", "HISTORICAL_IMPORT", "MODEL_TRAINING"} <= set(permitted_uses or [])
+                    or commercial_use_allowed is not True
                     or allowed != COMPETITIONS
                     or "*" in allowed
                     or entity_id != str(payload.get("id"))
