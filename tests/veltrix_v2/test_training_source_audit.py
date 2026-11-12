@@ -6,7 +6,10 @@ import pytest
 
 from veltrix_v2.contracts import ProviderObservation
 from veltrix_v2.contracts.odds import OddsSnapshot
-from veltrix_v2.evaluation.certification import certify_prediction_publication
+from veltrix_v2.evaluation.certification import (
+    certify_prediction_publication,
+    certify_release,
+)
 from veltrix_v2.evaluation.paper_ledger import PaperLedger, PaperSelection
 from veltrix_v2.evaluation.settlement import MarketBet, MatchResult
 from veltrix_v2.evaluation.certification_evidence import (
@@ -459,3 +462,48 @@ def test_paper_ledger_source_audit_rejects_missing_training_rights(monkeypatch):
     audit = audit_paper_ledger_sources(report, ledger, records, approvals)
     assert not audit.passed
     assert any("model_training" in reason for _, reason in audit.rejected_observations)
+
+
+
+def _complete_benchmark_odds():
+    kickoff = datetime(2026, 1, 10, 15, tzinfo=UTC)
+    captured = kickoff - timedelta(minutes=5)
+    return tuple(
+        OddsSnapshot(
+            snapshot_id=f"benchmark-{selection.lower()}",
+            fixture_id="test-1",
+            source_id="provider-a",
+            bookmaker_id="bookmaker-a",
+            market="1X2",
+            selection=selection,
+            decimal_odds=Decimal("2.5"),
+            captured_at=captured,
+            kickoff_at=kickoff,
+            provider_quote_at=captured - timedelta(seconds=1),
+            source_observation_id="obs-odds-1",
+        )
+        for selection in ("HOME", "DRAW", "AWAY")
+    )
+
+
+def test_value_bet_certification_derives_metrics_and_benchmark_from_records(monkeypatch):
+    report = _walk_forward(monkeypatch)
+    ledger, ledger_records, ledger_approvals = _paper_ledger_and_records()
+    observations = _source_records() + ledger_records
+    result = certify_release(
+        report,
+        ledger,
+        _complete_benchmark_odds(),
+        observations,
+        ledger_approvals,
+        benchmark_source_id="provider-a",
+        benchmark_bookmaker_id="bookmaker-a",
+    )
+    assert not result.passed
+    assert all(
+        "WALK_FORWARD_SAMPLE_BELOW_1000" in market.failed_gates
+        for market in result.markets
+    )
+    assert "SOURCE_NOT_APPROVED" not in result.markets[0].failed_gates
+    assert "TIMESTAMPED_ODDS_COVERAGE_BELOW_98_PERCENT" in result.markets[1].failed_gates
+    assert result.evidence[0].timestamped_odds_coverage == Decimal("1")
