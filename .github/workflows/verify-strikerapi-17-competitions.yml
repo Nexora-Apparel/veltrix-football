@@ -2,6 +2,15 @@ name: Verify StrikerAPI 17-Competition Coverage
 
 on:
   workflow_dispatch:
+    inputs:
+      remaining_credits:
+        description: "Observed remaining StrikerAPI credits from the account dashboard"
+        required: true
+        type: number
+      approved_max_credits:
+        description: "Maximum credits explicitly approved for this single run"
+        required: true
+        type: number
 
 permissions:
   contents: read
@@ -16,22 +25,27 @@ jobs:
     timeout-minutes: 20
     env:
       STRIKERAPI_API_KEY: ${{ secrets.STRIKERAPI_API_KEY }}
+      STRIKERAPI_REMAINING_CREDITS: ${{ inputs.remaining_credits }}
+      STRIKERAPI_APPROVED_MAX_CREDITS: ${{ inputs.approved_max_credits }}
     steps:
-      - name: Check out qualification branch
+      - name: Check out selected qualification branch
         uses: actions/checkout@v4
         with:
-          ref: phase-3/strikerapi-readonly-qualification
+          ref: ${{ github.ref }}
 
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
 
-      - name: Run 17-competition verifier tests
-        run: python -m unittest discover -s tests -p 'test_strikerapi_17_competitions.py' -v
+      - name: Run budget, verifier, and acquisition tests
+        run: |
+          python -m unittest discover -s tests -p 'test_provider_request_budget.py' -v
+          python -m unittest discover -s tests -p 'test_budgeted_strikerapi_17.py' -v
+          python -m unittest discover -s tests -p 'test_strikerapi_17_competitions.py' -v
 
-      - name: Run bounded 17-competition read-only qualification
-        run: python scripts/verify_strikerapi_17_competitions.py
+      - name: Run credit-preflighted 17-competition read-only qualification
+        run: python scripts/run_budgeted_strikerapi_17.py
 
       - name: Upload sanitized 17-competition coverage report
         uses: actions/upload-artifact@v4

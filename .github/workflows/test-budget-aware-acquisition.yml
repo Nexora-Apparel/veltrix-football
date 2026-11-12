@@ -1,0 +1,130 @@
+name: Test Budget-Aware Provider Acquisition
+
+on:
+  push:
+    branches:
+      - phase-3/budget-aware-acquisition-contract
+  pull_request:
+    branches:
+      - phase-3/strikerapi-readonly-qualification
+
+permissions:
+  contents: read
+
+jobs:
+  unit-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Run request-budget unit tests
+        run: python -m unittest discover -s tests -p 'test_provider_request_budget.py' -v
+
+      - name: Run budgeted StrikerAPI wrapper tests
+        run: python -m unittest discover -s tests -p 'test_budgeted_strikerapi_17.py' -v
+
+      - name: Run provider fixture normalizer tests
+        run: python -m unittest discover -s tests -p 'test_provider_fixture_normalizer.py' -v
+
+      - name: Run fixture batch deduplication and quarantine tests
+        run: python -m unittest discover -s tests -p 'test_provider_fixture_batch.py' -v
+
+      - name: Run acquisition audit report tests
+        run: python -m unittest discover -s tests -p 'test_provider_acquisition_report.py' -v
+
+      - name: Run 5Dollar qualification report tests
+        run: python -m unittest discover -s tests -p 'test_fivedollar_qualification_report.py' -v
+
+      - name: Run 5Dollar qualification runner tests
+        run: python -m unittest discover -s tests -p 'test_qualify_fivedollar_competitions.py' -v
+
+      - name: Run 5Dollar signed registry review tests
+        run: python -m unittest discover -s tests -p 'test_fivedollar_qualification_review.py' -v
+
+      - name: Run acquisition artifact integrity tests
+        run: python -m unittest discover -s tests -p 'test_provider_acquisition_artifact.py' -v
+
+      - name: Run provider acquisition adapter tests
+        run: python -m unittest discover -s tests -p 'test_provider_acquisition_adapters.py' -v
+
+      - name: Run qualified 5Dollar historical batch tests
+        run: python -m unittest discover -s tests -p 'test_fivedollar_history_batch.py' -v
+
+      - name: Run strict historical batch artifact tests
+        run: python -m unittest discover -s tests -p 'test_fivedollar_history_artifact.py' -v
+
+      - name: Run historical archive assembly tests
+        run: python -m unittest discover -s tests -p 'test_provider_historical_archive.py' -v
+
+      - name: Run historical coverage profiling tests
+        run: python -m unittest discover -s tests -p 'test_provider_historical_coverage.py' -v
+
+      - name: Run point-in-time feature contract tests
+        run: python -m unittest discover -s tests -p 'test_point_in_time_feature_contract.py' -v
+
+      - name: Run rolling-hour provider quota ledger tests
+        run: python -m unittest discover -s tests -p 'test_provider_hourly_quota_ledger.py' -v
+
+      - name: Run chronological dataset assembly tests
+        run: python -m unittest discover -s tests -p 'test_chronological_training_dataset.py' -v
+
+      - name: Run value-bet certification gate tests
+        run: python -m unittest discover -s tests -p 'test_value_bet_certification.py' -v
+
+      - name: Run new pre-match prediction engine tests
+        run: python -m unittest discover -s tests -p 'test_pre_match_prediction_engine.py' -v
+
+      - name: Run end-to-end read-only fixture pipeline tests
+        run: python -m unittest discover -s tests -p 'test_provider_fixture_pipeline.py' -v
+
+      - name: Run qualified daily fixture selection tests
+        run: python -m unittest discover -s tests -p 'test_daily_fixture_selection.py' -v
+
+      - name: Run evidence-gated selection artifact tests
+        run: python -m unittest discover -s tests -p 'test_daily_fixture_selection_artifact.py' -v
+
+      - name: Run provider qualification evidence review tests
+        run: python -m unittest discover -s tests -p 'test_provider_qualification_evidence.py' -v
+
+      - name: Run qualification artifact extraction security tests
+        run: python -m unittest discover -s tests -p 'test_provider_qualification_artifact_extraction.py' -v
+
+      - name: Validate offline qualification reviewer CLI without network access
+        run: python scripts/review_provider_qualification.py --help
+
+      - name: Validate manual acquisition CLI without network access
+        run: python scripts/acquire_fivedollar_day.py --help
+
+      - name: Validate historical acquisition CLI without network access
+        run: python scripts/acquire_fivedollar_history_batch.py --help
+
+      - name: Validate offline historical archive CLI without network access
+        run: python scripts/assemble_fivedollar_history_archive.py --help
+
+      - name: Validate historical coverage profiling CLI without network access
+        run: python scripts/profile_fivedollar_historical_coverage.py --help
+
+      - name: Validate hourly quota management CLI without network access
+        run: python scripts/manage_fivedollar_hourly_quota.py --help
+
+      - name: Validate 5Dollar qualification CLI without network access
+        run: python scripts/qualify_fivedollar_competitions.py --help
+
+      - name: Validate 5Dollar offline review CLI without network access
+        run: python scripts/review_fivedollar_qualification.py --help
+
+      - name: Validate offline artifact verifier CLI
+        run: python scripts/verify_acquisition_artifact.py --help
+
+      - name: Validate daily selection CLI without network access
+        run: python scripts/select_daily_fixtures.py --help
+
+      - name: Run existing 17-competition verifier tests
+        run: python -m unittest discover -s tests -p 'test_strikerapi_17_competitions.py' -v
