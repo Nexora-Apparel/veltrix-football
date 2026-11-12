@@ -8,7 +8,7 @@ from app.certification_metrics import recompute_raw_certification
 from app.certification_evidence import EvidenceIntegrityError
 
 
-ROLES = ("walk_forward_rows", "coverage_audit", "prospective_ledger", "odds_snapshots", "settlement_records", "model_manifest")
+ROLES = ("walk_forward_rows", "coverage_audit", "prospective_ledger", "odds_snapshots", "settlement_records", "source_responses", "model_manifest")
 
 
 def _write_bundle(tmp_path, walk, paper, odds, settlements, source_responses=None):
