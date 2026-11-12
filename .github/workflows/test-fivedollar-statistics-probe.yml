@@ -1,0 +1,23 @@
+name: Test 5Dollar Statistics Probe
+
+on:
+  pull_request:
+    paths:
+      - "scripts/probe_fivedollar_statistics.py"
+      - "tests/test_probe_fivedollar_statistics.py"
+      - ".github/workflows/test-fivedollar-statistics-probe.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  offline-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Run isolated offline tests
+        run: python -m unittest discover -s tests -p 'test_probe_fivedollar_statistics.py' -v
