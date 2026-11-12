@@ -2,13 +2,13 @@
 
 **Date:** 2026-11-12  
 **Working branch:** `phase1/provider-final-qualification`  
-**Phase status:** FINAL MANUAL VERIFICATION PENDING  
+**Phase status:** PROVIDER STRATEGY DEFINED; TWO TECHNICAL CHECKS REMAIN OPEN  
 **Scope:** provider discovery, credential/endpoint access, competition coverage, data rights, historical depth, timestamps, and source selection.  
 **Safety:** read-only qualification only. No production imports, database writes, model changes, prediction publication, Telegram delivery, deployment, or scheduling.
 
 ## 1. Phase 1 exit decision
 
-The provider inventory is reconciled and a usable initial source stack is identified. Phase 1 is **not yet marked complete** because the consolidated final qualification workflow has not been manually dispatched against the current repository secrets. The workflow is on this branch and is designed to run once.
+The provider inventory is reconciled and a scoped initial source stack is identified. The consolidated workflow has run. Phase 1 remains open until the OddsPapi probe is rerun after its import correction and GOAL API access is resolved or explicitly excluded with a documented provider response. The 5Dollar Community account does not satisfy the 98% historical odds-timestamp gate; use The Odds API for prospective timestamped odds capture while preserving value betting as locked.
 
 The project will not treat a successful HTTP response, an SDK licence, a public dataset label, or an API key as blanket data-use permission. Approval is scoped by provider, endpoint, data type, competition, season, retention, model training, public display, and commercial use.
 
@@ -21,7 +21,7 @@ The project will not treat a successful HTTP response, an SDK licence, a public 
 | Historical shot events for xG research | Pappalardo et al. / Wyscout public event dataset | Approved under CC BY 4.0 with attribution | 1,941 matches across seven competitions; historical only. Train a VELTRIX-owned xG model; do not represent it as provider xG. |
 | Non-live player, lineup, shot-event and historical-odds enrichment | StrikerAPI | Preferred primary enrichment and timestamped-odds source; current credit access is being rechecked | 500 free credits/month, no card. The final workflow spends at most 1 credit to check access, then up to 62 more only if that check succeeds. A 402 stops the probe; no paid credits or wallet top-up. |
 | Supplemental odds | OddsPapi | Technical candidate; final live and historical quote check pending | API documents BTTS/totals and historical prices with per-price `createdAt` timestamps since January 2026. Its Terms prohibit raw-feed resale but do not expressly grant model-training, retention or commercial-display rights; keep excluded from model training/publication until clarified. |
-| InferSports | Not selected | Discovery/odds adapter exists, but previous probes found no usable quotes | Keep disabled unless a future bounded probe returns actual price rows with timestamps. |
+| InferSports | Supplemental live-odds candidate; not selected as historical source | Current integration probe returned 63 same-day events and an available event-odds response with 1X2 and totals | No BTTS, no verified historical archive or source-created quote timestamps in this probe. Require timestamped sample and coverage measurement before selection. |
 
 ## 3. Verified 5DollarFootballAPI evidence
 
@@ -66,6 +66,21 @@ The official endpoint is explicitly documented as **live match statistics**: att
 The October 2026 Terms permit use in the customer's own commercial websites, apps, models and internal tools, including caching and end-user display. Free and Community public-facing products must visibly include linked attribution: **Football data by 5DollarFootballAPI**. Raw-feed resale or redistribution as a competing feed is prohibited. See [Terms](https://5dollarfootballapi.com/terms).
 
 Community includes 12 months of Bet365 odds history with opening, closing and in-play prices, but the public plan matrix reserves full tick history for higher tiers. The fixture-odds response documents `opened_at` for 1X2 opening; it does not show a timestamp on every market's opening/closing object. Therefore, Community access alone does not prove the required 98% timestamped coverage for every selected market. The final Phase 1 probe samples one finished fixture per competition and counts timestamped market blocks. Preserve actual provider quote timestamps when present; never substitute local retrieval time. The dedicated `/v1/fixtures/{id}/odds/history` endpoint returns per-price `recorded_at` ticks but explicitly requires Ultra or above; Free and Pro receive HTTP 403. Community is not listed as an eligible tier, so the final probe makes one BTTS history request to verify the actual account response. The full per-price movement history is not assumed available on Community.
+
+## 3.5 Consolidated live qualification — run #43280026573
+
+The final manual workflow completed on branch `phase1/provider-final-qualification` at commit `fd34a68d34bf72d04eab02b216128878f1bcf501`. GitHub reports the job and unit-test step as successful. The provider steps were deliberately configured with `continue-on-error` so independent checks could finish; therefore the overall green workflow is not a provider-qualification pass. Artifact: [veltrix-phase1-provider-qualification](https://github.com/Nexora-Apparel/veltrix-football/actions/runs/43280026573).
+
+Observed results:
+
+- **Multi-source integration:** 3/3 providers authenticated and returned valid response schemas. 5Dollar returned one Lagos-today fixture and 12 market keys; The Odds API returned 46 active soccer sports, 20 EPL events and BTTS/h2h/totals; InferSports returned 63 Lagos-today events and an available event-odds response with 1X2 and totals. These are point-in-time connectivity checks, not season coverage.
+- **5Dollar account:** `/v1/status` reports Community, 300 requests/hour and 20/minute burst; seven competitions are visible. The 17-request sample returned 77 market blocks across seven finished fixtures, but only 7/77 (9.09%) contained a market timestamp. The 1X2 opening timestamp was present for each sample; the other sampled market blocks lacked timestamps. A BTTS tick-history request returned HTTP 403. Thus this account does not currently satisfy the 98% timestamped-market coverage requirement.
+- **GOAL API:** one request returned HTTP 403. Cloudflare's response explicitly says the site owner blocked access based on the request's browser signature. This is not evidence that the user's key is invalid; technical access remains unresolved. Its data rights are separately unresolved.
+- **OddsPapi:** the first attempt did not reach the provider; direct script execution failed with `ModuleNotFoundError: No module named 'app'`. The entrypoint has since been corrected to add the repository root to `sys.path`, and a regression test has been added. No live OddsPapi result exists yet; do not count it as qualified.
+- **StrikerAPI:** the static one-credit account check returned HTTP 402 with zero credits remaining. The feature and historical-odds probe was correctly skipped; no additional credits were spent.
+- **Side effects:** the run performed zero database writes, imports, prediction changes, Telegram messages or deployments.
+
+The next consolidated run must re-test OddsPapi after the import fix. It should not repeat the 5Dollar 17-request sample or spend additional StrikerAPI credits. GOAL API needs provider-side/browser-signature resolution before another call is justified.
 
 ## 4. Other provider decisions
 
