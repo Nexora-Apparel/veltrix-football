@@ -228,12 +228,12 @@ def audit_walk_forward_training_sources(
     observations: Iterable[TrainingObservationEvidence],
     approvals: Iterable["SourceApproval"],
 ) -> TrainingSourceAudit:
-    """Revalidate each training observation against source rights and fold cutoff.
+    """Audit model-training and held-out result records against source rights.
 
-    Each observation must exist, match its competition/season, be available by
-    the fold's recorded training-label cutoff, and have explicit collection,
-    storage and model-training rights. Caller-supplied approval booleans are
-    never accepted.
+    Training observations must be available by the fold's training-label
+    cutoff and explicitly licensed for model training. Held-out result
+    observations must be post-kickoff and licensed for benchmarking. Every
+    referenced source observation must resolve to an immutable provider record.
     """
     from datetime import timedelta
     from veltrix_v2.contracts import ForecastCutoff
@@ -280,8 +280,47 @@ def audit_walk_forward_training_sources(
                 else:
                     approved.add(observation_id)
 
+            kickoff_by_observation = {
+                observation_id: (fixture_id, kickoff)
+                for fixture_id, observation_id, kickoff in fold.test_fixture_kickoffs
+            }
+            if (
+                set(kickoff_by_observation) != set(fold.test_observation_ids)
+                or {fixture for fixture, _ in kickoff_by_observation.values()} != set(fold.eligible_fixture_ids)
+            ):
+                rejected.append(("*", "held_out_result_fixture_provenance_mismatch"))
+            for observation_id in fold.test_observation_ids:
+                required_ids.add(observation_id)
+                observation = by_id.get(observation_id)
+                if observation is None:
+                    rejected.append((observation_id, "held_out_result_observation_missing"))
+                    continue
+                if (observation.competition_key, observation.season) != scope:
+                    rejected.append((observation_id, "held_out_result_scope_mismatch"))
+                    continue
+                fixture = kickoff_by_observation.get(observation_id)
+                if fixture is None:
+                    rejected.append((observation_id, "held_out_result_kickoff_missing"))
+                    continue
+                _, kickoff = fixture
+                if observation.available_at_utc < kickoff or observation.source_event_time_utc < kickoff:
+                    rejected.append((observation_id, "held_out_result_observed_before_kickoff"))
+                    continue
+                decision = evaluate_observation(
+                    observation,
+                    data_type=observation.entity_type,
+                    cutoff=ForecastCutoff(observation.retrieved_at_utc),
+                    approvals=approval_rows,
+                    max_age=timedelta.max,
+                    required_uses=("collection", "storage", "benchmarking"),
+                )
+                if not decision.eligible:
+                    rejected.append((observation_id, decision.reason))
+                else:
+                    approved.add(observation_id)
+
     if not required_ids:
-        rejected.append(("*", "walk_forward_has_no_training_provenance"))
+        rejected.append(("*", "walk_forward_has_no_source_provenance"))
     failures = tuple(sorted(set(rejected)))
     return TrainingSourceAudit(
         observation_count=len(required_ids),
