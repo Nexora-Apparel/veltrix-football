@@ -102,3 +102,31 @@ def test_1x2_benchmark_rejects_non_normalized_probability_triplet():
             [SettledOutcome1X2("f1", "HOME")],
             eligible_fixture_ids=["f1"],
         )
+
+
+
+def test_benchmark_rejects_mixed_provider_quote_times_and_observation_ids():
+    from dataclasses import replace
+
+    forecasts = [Forecast1X2("f1", 0.4, 0.3, 0.3)]
+    outcomes = [SettledOutcome1X2("f1", "HOME")]
+    rows = [
+        quote("f1", "HOME", 0.4),
+        quote("f1", "DRAW", 0.3),
+        quote("f1", "AWAY", 0.3),
+    ]
+    rows[1] = replace(
+        rows[1],
+        provider_quote_at=rows[1].provider_quote_at - timedelta(seconds=1),
+    )
+    with pytest.raises(ValueError, match="TIMESTAMPS_OR_PROVENANCE_MISMATCH"):
+        compare_1x2_to_bookmaker(
+            forecasts, rows, outcomes, eligible_fixture_ids=["f1"]
+        )
+
+    rows[1] = replace(rows[1], provider_quote_at=rows[0].provider_quote_at)
+    rows[1] = replace(rows[1], source_observation_id="different-observation")
+    with pytest.raises(ValueError, match="TIMESTAMPS_OR_PROVENANCE_MISMATCH"):
+        compare_1x2_to_bookmaker(
+            forecasts, rows, outcomes, eligible_fixture_ids=["f1"]
+        )
