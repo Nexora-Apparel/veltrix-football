@@ -1,14 +1,17 @@
 from dataclasses import replace
 from datetime import datetime, timedelta, timezone
+from decimal import Decimal
 
 import pytest
 
 from veltrix_v2.contracts import ProviderObservation
+from veltrix_v2.contracts.odds import OddsSnapshot
 from veltrix_v2.evaluation.certification import certify_prediction_publication
 from veltrix_v2.evaluation.certification_evidence import (
     TrainingObservationEvidence,
     audit_walk_forward_training_sources,
     audit_walk_forward_integrity,
+    audit_odds_snapshot_sources,
 )
 from veltrix_v2.evaluation.multi_competition_walk_forward import (
     run_multi_competition_walk_forward,
@@ -244,3 +247,62 @@ def test_prediction_publication_certification_fails_when_source_rights_are_missi
         "PREDICTION_SOURCE_NOT_APPROVED" in row.failed_gates
         for row in certification.markets
     )
+
+
+
+def _odds_snapshot(source_observation_id="obs-test-1", source_id="provider-a", captured_offset=5):
+    kickoff = datetime(2026, 1, 10, 15, tzinfo=UTC)
+    captured = kickoff + timedelta(hours=captured_offset)
+    return OddsSnapshot(
+        snapshot_id="odds-test-1",
+        fixture_id="test-1",
+        source_id=source_id,
+        bookmaker_id="bookmaker-a",
+        market="1X2",
+        selection="HOME",
+        decimal_odds=Decimal("2.5"),
+        captured_at=captured,
+        kickoff_at=kickoff,
+        provider_quote_at=captured - timedelta(seconds=1),
+        source_observation_id=source_observation_id,
+    )
+
+
+def test_odds_source_audit_requires_quote_source_record_and_benchmark_rights(monkeypatch):
+    report = _walk_forward(monkeypatch)
+    audit = audit_odds_snapshot_sources(
+        report,
+        (_odds_snapshot(),),
+        _source_records(),
+        (_approval(),),
+    )
+    assert audit.passed
+    assert audit.approved_snapshot_ids == ("odds-test-1",)
+
+
+def test_odds_source_audit_rejects_missing_source_observation_binding(monkeypatch):
+    report = _walk_forward(monkeypatch)
+    audit = audit_odds_snapshot_sources(
+        report,
+        (_odds_snapshot(source_observation_id=None),),
+        _source_records(),
+        (_approval(),),
+    )
+    assert not audit.passed
+    assert "odds_source_observation_id_missing" in {
+        reason for _, reason in audit.rejected_snapshots
+    }
+
+
+def test_odds_source_audit_rejects_provider_mismatch(monkeypatch):
+    report = _walk_forward(monkeypatch)
+    audit = audit_odds_snapshot_sources(
+        report,
+        (_odds_snapshot(source_id="other-provider"),),
+        _source_records(),
+        (_approval(),),
+    )
+    assert not audit.passed
+    assert "odds_source_provider_mismatch" in {
+        reason for _, reason in audit.rejected_snapshots
+    }
