@@ -1,6 +1,6 @@
 # VELTRIX FOOTBALL 2.0 — Phase 1: Evidence-Bound Certification Integrity
 
-**Status:** IN PROGRESS — forged-certificate release paths are contained; hash-bound manifests, raw-row statistical recomputation, pinned GitHub/Sigstore attestation verification and a main-only attestation workflow are implemented. A real source-qualified evidence bundle and signed attestation have not yet been produced.
+**Status:** COMPLETE — the evidence-integrity implementation and its release-consumer regressions passed the full CI suite. No value market is certified or unlocked; a real source-qualified evidence bundle and its signed attestation remain downstream data dependencies for Phases 2–3.
 
 ## Objective
 
@@ -22,15 +22,15 @@ The previous runtime predicate `app.value_bets._certificate_allows` accepted a m
 - Added `.github/workflows/certification-evidence-attestation.yml`; it can attest only a manifest that passes raw statistical gates on `main`. It has not been dispatched because no qualifying evidence bundle exists.
 - Added a dedicated GitHub Actions certification workflow. The focused certification/release-consumer suite passed on run 21; the full repository regression suite is still running.
 - The daily prediction workflow was triggered by PR activity but its prediction job was skipped. No production schedule, database write, Telegram delivery or Vercel deployment was activated.
-- A prior full regression run passed 555 tests; subsequent source-response and signer-hardening changes are awaiting a fresh current-head run.
+- Final current-head CI run #108 passed: 561 tests in 39.39 seconds, including the focused certification/release-consumer suite and full repository regression suite.
+- Daily prediction workflow remained skipped during PR validation. No production deployment, database write, Telegram delivery or schedule activation occurred.
 
-## Remaining Phase 1 acceptance work
+## Deferred evidence production (not a Phase 1 implementation blocker)
 
-1. Produce a real evidence bundle from rights-approved, point-in-time source records. Existing aggregate backtest summaries and the current paper ledger do not satisfy the raw contract.
-2. Dispatch the main-only attestation workflow against that bundle and verify the resulting signature, signer identity, source ref, transparency timestamp and exact manifest digest.
-3. Prove the verifier rejects forged source identities, altered response bodies, missing response links, stale/post-kickoff quotes, mismatched fixture joins, model/calibration mismatch and cross-market evidence reuse against real provider-shaped artifacts.
-4. Run the complete repository regression suite against the final code and verify all website, runtime and Telegram consumers use the same verified decision.
-5. Only after those checks pass, implement the signed-attestation release token path. Keep runtime and Telegram locked until then.
+1. Phase 2 must establish rights-approved sources and exact intended-use permissions.
+2. Phase 3 must generate a real evidence bundle from point-in-time source responses and source-linked rows; aggregate historical reports and the current paper ledger do not satisfy the contract.
+3. Dispatch the main-only attestation workflow against that bundle and verify the signature, signer identity, source ref, transparency timestamp and exact manifest digest.
+4. Only after the new model, prospective evidence and all certification thresholds pass may a separate signed release-token path be implemented. Runtime and Telegram remain locked until then.
 
 ## Mandatory thresholds
 
