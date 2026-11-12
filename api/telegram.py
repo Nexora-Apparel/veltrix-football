@@ -499,6 +499,35 @@ def dashboard_data() -> dict:
             for bookmaker in bookmakers
         )
 
+    # Never expose report-supplied candidate arrays as releasable dashboard cards.
+    for row in upcoming:
+        raw_screen = row.get("value_bet_screen")
+        if not isinstance(raw_screen, dict):
+            continue
+        raw_markets = raw_screen.get("markets")
+        safe_markets = {}
+        if isinstance(raw_markets, dict):
+            for market, details in raw_markets.items():
+                if market not in {"1X2", "BTTS", "OVER_UNDER_1_5", "OVER_UNDER_2_5", "OVER_UNDER_3_5"}:
+                    continue
+                if not isinstance(details, dict):
+                    continue
+                safe_markets[market] = {
+                    "status": "DISABLED_UNVALIDATED",
+                    "candidates": [],
+                    "paper_candidates": [],
+                    "candidate_count": 0,
+                    "paper_candidate_count": 0,
+                }
+        row["value_bet_screen"] = {
+            "status": "PAPER_ONLY_CANDIDATES",
+            "model_validated": False,
+            "alerts_enabled": False,
+            "candidate_count": 0,
+            "paper_candidate_count": 0,
+            "markets": safe_markets,
+        }
+
     matched_odds_rows = sum(1 for row in upcoming if has_matched_market_odds(row))
     live_odds = report.get("live_odds_sync") if isinstance(report.get("live_odds_sync"), dict) else {}
     report_odds_count = report.get("fixtures_with_market_odds")
