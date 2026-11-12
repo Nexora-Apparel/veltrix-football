@@ -137,6 +137,53 @@ def test_parse_fixture_page_preserves_raw_hash_and_four_day_availability_proxy()
     assert parsed.quota_remaining == 250
 
 
+def test_historical_fixture_rejects_payload_hash_not_matching_content():
+    with pytest.raises(ValueError, match="HISTORICAL_FIXTURE_PAYLOAD_HASH_MISMATCH"):
+        fixture("109", payload_hash="b" * 64)
+
+
+def test_postgres_writer_binds_parsed_rows_to_exact_raw_response_before_connecting():
+    connection_requested = False
+    def connection_factory():
+        nonlocal connection_requested
+        connection_requested = True
+        raise AssertionError("raw-response mismatch must fail before connecting")
+    response = ProviderResponse(
+        provider="5DollarFootballAPI", source_id="5dollarfootballapi",
+        endpoint="/leagues/4160026622/fixtures", request_id="raw-bind-1",
+        request_params={"league_id": 4160026622}, http_status=200,
+        raw_body=provider_page(), response_headers={}, fetched_at_utc=NOW,
+    )
+    store = PostgresHistoryStore(connection_factory)
+    with pytest.raises(ValueError, match="PROVIDER_RESPONSE_FIXTURE_SET_MISMATCH"):
+        store.persist_page(response, [fixture("110")], approval())
+    assert not connection_requested
+
+
+def test_postgres_writer_rechecks_mutable_fixture_payload_and_fetch_timestamp():
+    row = fixture("101")
+    row.payload["goals"]["home"] = 9
+    response = ProviderResponse(
+        provider="5DollarFootballAPI", source_id="5dollarfootballapi",
+        endpoint="/leagues/4160026622/fixtures", request_id="raw-bind-2",
+        request_params={"league_id": 4160026622}, http_status=200,
+        raw_body=provider_page(), response_headers={}, fetched_at_utc=NOW,
+    )
+    store = PostgresHistoryStore(lambda: (_ for _ in ()).throw(AssertionError("must not connect")))
+    with pytest.raises(ValueError, match="FIXTURE_PAYLOAD_NOT_BOUND_TO_RAW_PROVIDER_RESPONSE"):
+        store.persist_page(response, [row], approval())
+
+    valid = fixture("101")
+    later_response = ProviderResponse(
+        provider="5DollarFootballAPI", source_id="5dollarfootballapi",
+        endpoint="/leagues/4160026622/fixtures", request_id="raw-bind-3",
+        request_params={"league_id": 4160026622}, http_status=200,
+        raw_body=provider_page(), response_headers={}, fetched_at_utc=NOW + timedelta(seconds=1),
+    )
+    with pytest.raises(ValueError, match="FIXTURE_RESPONSE_RETRIEVAL_TIME_MISMATCH"):
+        store.persist_page(later_response, [valid], approval())
+
+
 def test_parse_rejects_missing_pagination_metadata():
     raw = provider_page(pagination={"page": 1, "per_page": 100})
     with pytest.raises(FixturePageError, match="PAGINATION_METADATA_INCOMPLETE"):
