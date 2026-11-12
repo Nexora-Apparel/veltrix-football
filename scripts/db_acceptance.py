@@ -121,7 +121,7 @@ def run_acceptance() -> dict:
             """)
             mutation_rejected = False
             try:
-                cur.execute("UPDATE source_approvals SET status='REVOKED' WHERE approval_id='__acceptance_status_event_probe__'")
+                cur.execute("UPDATE source_approvals SET status='REVOKED' WHERE approval_id='__acceptance_immutable_probe__'")
             except psycopg.errors.RaiseException:
                 mutation_rejected = True
                 cur.execute("ROLLBACK TO SAVEPOINT immutable_probe")
