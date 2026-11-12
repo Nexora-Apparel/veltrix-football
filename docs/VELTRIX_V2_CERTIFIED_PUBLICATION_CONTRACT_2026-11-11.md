@@ -55,3 +55,12 @@ record-derived certification factories can create a `PredictionReleaseCertificat
 or `ReleaseCertification` accepted by the report boundary. Internal test
 factories remain private to the evaluation module; synthetic flags are not a
 production certification route.
+
+
+The resulting prediction certification retains its source audit, fold-integrity
+audit, 1X2 calibration report, BTTS calibration report, totals calibration
+report and the individual calibration-gate results. Value-bet certification
+retains its complete source-audit bundle, date-block ROI evidence and exact
+bookmaker comparison report including the common fixture IDs. The report
+boundary therefore carries the evidence used to reach each certification
+decision rather than only a pass/fail flag.
