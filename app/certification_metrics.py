@@ -105,7 +105,7 @@ def _json_pointer(document: Any, pointer: Any) -> Any:
         part = raw_part.replace("~1", "/").replace("~0", "~")
         if isinstance(value, dict) and part in value:
             value = value[part]
-        elif isinstance(value, list) and part.isdigit() and int(part) < len(value):
+        elif isinstance(value, list) and part.isdigit() and (part == "0" or not part.startswith("0")) and int(part) < len(value):
             value = value[int(part)]
         else:
             raise EvidenceIntegrityError("Source record pointer does not resolve in retained response bytes.")
