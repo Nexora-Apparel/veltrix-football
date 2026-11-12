@@ -372,8 +372,22 @@ def audit_walk_forward_integrity(
     """Recheck fold identity, temporal boundaries and held-out isolation."""
     if not isinstance(walk_forward, MultiCompetitionWalkForwardEvaluation):
         raise ValueError("CERTIFICATION_WALK_FORWARD_REPORT_REQUIRED")
+    from veltrix_v2.evaluation.binary_metrics import score_binary_market
+    from veltrix_v2.evaluation.metrics import score_1x2
+
     failures: list[str] = []
     held_out_ids: list[str] = []
+    scope_eligible_ids: list[str] = []
+    scope_forecasts_1x2 = []
+    scope_outcomes_1x2 = []
+    scope_forecasts_btts = []
+    scope_outcomes_btts = []
+    scope_forecasts_totals = []
+    scope_outcomes_totals = []
+    recomputed_test_count = 0
+    recomputed_fold_count = 0
+    recomputed_forecast_count = 0
+
     for scope_report in walk_forward.scope_reports:
         previous_end = None
         fold_numbers: set[int] = set()
@@ -438,8 +452,116 @@ def audit_walk_forward_integrity(
                 ):
                     failures.append("HELD_OUT_FIXTURE_KICKOFF_OUTSIDE_TEST_WINDOW")
             held_out_ids.extend(test_ids)
+            scope_eligible_ids.extend(test_ids)
+            recomputed_test_count += fold.test_fixture_count
+            recomputed_forecast_count += len(fold.forecasts_1x2)
+            recomputed_fold_count += 1
+
+            fold_1x2 = score_1x2(fold.forecasts_1x2, fold.outcomes_1x2) if fold.forecasts_1x2 else None
+            fold_btts = (
+                score_binary_market(
+                    fold.btts_forecasts, fold.btts_outcomes,
+                    eligible_fixture_ids=test_ids,
+                )
+                if fold.btts_forecasts else None
+            )
+            fold_totals = (
+                score_binary_market(
+                    fold.totals_forecasts, fold.totals_outcomes,
+                    eligible_fixture_ids=test_ids,
+                )
+                if fold.totals_forecasts else None
+            )
+            if (
+                fold.score_1x2 != fold_1x2
+                or fold.btts_report != fold_btts
+                or fold.totals_report != fold_totals
+            ):
+                failures.append("FOLD_SCORE_REPORT_DOES_NOT_MATCH_HELD_OUT_RECORDS")
+            if (
+                fold.forecast_count != len(fold.forecasts_1x2)
+                or fold.coverage_1x2.forecast_count != len(fold.forecasts_1x2)
+                or fold.coverage_btts.forecast_count != len(fold.btts_forecasts)
+                or fold.coverage_totals.forecast_count != len(fold.totals_forecasts)
+                or fold.coverage_1x2.eligible_fixture_count != fold.test_fixture_count
+                or fold.coverage_btts.eligible_fixture_count != fold.test_fixture_count
+                or fold.coverage_totals.eligible_fixture_count != fold.test_fixture_count
+            ):
+                failures.append("FOLD_MARKET_COVERAGE_DOES_NOT_MATCH_HELD_OUT_RECORDS")
+
+        scope_eligible = tuple(
+            fixture_id
+            for fold in scope_report.folds
+            for fixture_id in fold.eligible_fixture_ids
+        )
+        scope_folds = scope_report.folds
+        scope_1x2_forecasts = tuple(row for fold in scope_folds for row in fold.forecasts_1x2)
+        scope_1x2_outcomes = tuple(row for fold in scope_folds for row in fold.outcomes_1x2)
+        scope_btts_forecasts = tuple(row for fold in scope_folds for row in fold.btts_forecasts)
+        scope_btts_outcomes = tuple(row for fold in scope_folds for row in fold.btts_outcomes)
+        scope_totals_forecasts = tuple(row for fold in scope_folds for row in fold.totals_forecasts)
+        scope_totals_outcomes = tuple(row for fold in scope_folds for row in fold.totals_outcomes)
+        expected_scope_1x2 = score_1x2(scope_1x2_forecasts, scope_1x2_outcomes) if scope_1x2_forecasts else None
+        expected_scope_btts = (
+            score_binary_market(scope_btts_forecasts, scope_btts_outcomes, eligible_fixture_ids=scope_eligible)
+            if scope_btts_forecasts else None
+        )
+        expected_scope_totals = (
+            score_binary_market(scope_totals_forecasts, scope_totals_outcomes, eligible_fixture_ids=scope_eligible)
+            if scope_totals_forecasts else None
+        )
+        if (
+            scope_report.aggregate_1x2 != expected_scope_1x2
+            or scope_report.aggregate_btts != expected_scope_btts
+            or scope_report.aggregate_totals != expected_scope_totals
+        ):
+            failures.append("SCOPE_AGGREGATE_REPORT_DOES_NOT_MATCH_FOLD_RECORDS")
+        expected_scope_test_count = sum(fold.test_fixture_count for fold in scope_folds)
+        expected_scope_forecast_count = len(scope_1x2_forecasts)
+        if (
+            scope_report.total_test_fixtures != expected_scope_test_count
+            or scope_report.total_forecasts != expected_scope_forecast_count
+            or scope_report.total_abstentions != expected_scope_test_count - expected_scope_forecast_count
+            or scope_report.aggregate_coverage_1x2.eligible_fixture_count != expected_scope_test_count
+            or scope_report.aggregate_coverage_btts.eligible_fixture_count != expected_scope_test_count
+            or scope_report.aggregate_coverage_totals.eligible_fixture_count != expected_scope_test_count
+        ):
+            failures.append("SCOPE_COUNTS_DO_NOT_MATCH_FOLD_RECORDS")
+
+        scope_forecasts_1x2.extend(scope_1x2_forecasts)
+        scope_outcomes_1x2.extend(scope_1x2_outcomes)
+        scope_forecasts_btts.extend(scope_btts_forecasts)
+        scope_outcomes_btts.extend(scope_btts_outcomes)
+        scope_forecasts_totals.extend(scope_totals_forecasts)
+        scope_outcomes_totals.extend(scope_totals_outcomes
+
     if not held_out_ids or len(held_out_ids) != len(set(held_out_ids)):
         failures.append("HELD_OUT_FIXTURES_MISSING_OR_REPEATED_ACROSS_FOLDS")
+    expected_aggregate_1x2 = score_1x2(scope_forecasts_1x2, scope_outcomes_1x2) if scope_forecasts_1x2 else None
+    expected_aggregate_btts = (
+        score_binary_market(scope_forecasts_btts, scope_outcomes_btts, eligible_fixture_ids=scope_eligible_ids)
+        if scope_forecasts_btts else None
+    )
+    expected_aggregate_totals = (
+        score_binary_market(scope_forecasts_totals, scope_outcomes_totals, eligible_fixture_ids=scope_eligible_ids)
+        if scope_forecasts_totals else None
+    )
+    if (
+        walk_forward.aggregate_1x2 != expected_aggregate_1x2
+        or walk_forward.aggregate_btts != expected_aggregate_btts
+        or walk_forward.aggregate_totals != expected_aggregate_totals
+    ):
+        failures.append("MULTI_COMPETITION_AGGREGATES_DO_NOT_MATCH_FOLD_RECORDS")
+    if (
+        walk_forward.total_test_fixtures != recomputed_test_count
+        or walk_forward.total_forecasts != recomputed_forecast_count
+        or walk_forward.total_abstentions != recomputed_test_count - recomputed_forecast_count
+        or walk_forward.total_folds != recomputed_fold_count
+        or walk_forward.coverage_1x2.eligible_fixture_count != recomputed_test_count
+        or walk_forward.coverage_btts.eligible_fixture_count != recomputed_test_count
+        or walk_forward.coverage_totals.eligible_fixture_count != recomputed_test_count
+    ):
+        failures.append("MULTI_COMPETITION_COUNTS_DO_NOT_MATCH_FOLD_RECORDS")
     unique_failures = tuple(sorted(set(failures)))
     return WalkForwardIntegrityAudit(
         fold_count=sum(len(scope.folds) for scope in walk_forward.scope_reports),
