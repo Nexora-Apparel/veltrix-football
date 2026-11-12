@@ -117,8 +117,10 @@ class PostgresHistoryStore:
         rows = tuple(fixtures)
         if approval.provider != response.provider or approval.source_id != response.source_id:
             raise ValueError("SOURCE_APPROVAL_PROVIDER_MISMATCH")
+        # Rights evidence is immutable and must exist before any source record can reference it.
+        self.persist_source_approval(approval)
         conn = self._connect()
-        inserted_observations = inserted_fixtures = inserted_results = conflicts = 0
+        inserted_observations = inserted_fixtures = refreshed_fixtures = inserted_results = inserted_versions = conflicts = 0
         try:
             cur = conn.cursor()
             response_id = self._persist_provider_response(cur, response)
@@ -167,8 +169,11 @@ class PostgresHistoryStore:
                 observation = cur.fetchone()
                 if not observation or observation[1].strip() != fixture.payload_sha256:
                     raise ValueError("SOURCE_OBSERVATION_IDEMPOTENCY_CONFLICT")
+                if observation[2] != fixture.rights_approval_id:
+                    raise ValueError("SOURCE_OBSERVATION_RIGHTS_APPROVAL_CONFLICT")
                 observation_id = int(observation[0])
-                inserted_observations += 1
+                if cur.rowcount:
+                    inserted_observations += 1
 
                 cur.execute(
                     """INSERT INTO competitions(provider,provider_competition_id,name,season,observed_at)
@@ -220,6 +225,7 @@ class PostgresHistoryStore:
                         fixture.season_key, observation_id,
                     ),
                 )
+                fixture_inserted = cur.rowcount == 1
                 cur.execute(
                     """SELECT id,competition_id,home_team_id,away_team_id,kickoff_at
                        FROM fixtures WHERE provider=%s AND provider_fixture_id=%s""",
@@ -248,7 +254,10 @@ class PostgresHistoryStore:
                         fixture.retrieved_at_utc,
                     ),
                 )
-                inserted_fixtures += 1
+                if fixture_inserted:
+                    inserted_fixtures += 1
+                elif cur.rowcount:
+                    refreshed_fixtures += 1
 
                 cur.execute(
                     """INSERT INTO fixture_result_versions(
@@ -262,6 +271,8 @@ class PostgresHistoryStore:
                         fixture.rights_approval_id,
                     ),
                 )
+                if cur.rowcount:
+                    inserted_versions += 1
                 cur.execute(
                     "SELECT home_score,away_score,fixture_id FROM fixture_result_versions WHERE source_observation_id=%s",
                     (observation_id,),
@@ -303,8 +314,10 @@ class PostgresHistoryStore:
             return {
                 "provider_response_id": response_id,
                 "source_observations": inserted_observations,
-                "fixtures": inserted_fixtures,
-                "results": inserted_results,
+                "fixtures_inserted": inserted_fixtures,
+                "fixtures_refreshed": refreshed_fixtures,
+                "result_versions_inserted": inserted_versions,
+                "results_inserted": inserted_results,
                 "quarantined_or_conflicting": conflicts,
             }
         except Exception:
