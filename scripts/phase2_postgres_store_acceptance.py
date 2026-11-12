@@ -20,31 +20,6 @@ from veltrix_v2.data.postgres import PostgresHistoryStore
 def main() -> dict:
     database_url = os.environ["DATABASE_URL"]
     expected_db = os.environ["VELTRIX_EXPECTED_DATABASE"]
-    store.record_entitlement_observation(
-        provider="5DollarFootballAPI", source_id="5dollarfootballapi",
-        plan_code="community", entitlement_status="ACTIVE",
-        country_pack_code=None,
-        competition_ids=sorted(["3118717965","522514093","4160026622","3614399544","686337048","3405541143","4212821298"]),
-        rate_limit_hour=300, rate_limit_minute=20, quota_remaining=250,
-        provider_response_id=first["provider_response_id"],
-        evidence_sha256=hashlib.sha256(b"phase2-ci-entitlement-evidence").hexdigest(),
-        checked_at_utc=now,
-    )
-    manifest = hashlib.sha256(
-        "\n".join(sorted([fixture.payload_sha256, conflicting_fixture.payload_sha256])).encode()
-    ).hexdigest()
-    store.upsert_checkpoint(
-        import_run_id=run_id, window_start=kickoff, window_end=now,
-        cursor_value="page=2", status="COMPLETED", records_seen=2,
-        records_inserted=1, records_rejected=0, records_quarantined=1,
-        requests_used=2, response_sha256=second_response.response_sha256,
-    )
-    store.finish_import_run(
-        import_run_id=run_id, status="COMPLETED", finished_at_utc=now,
-        requests_used=2, records_seen=2, records_inserted=1,
-        records_rejected=0, records_quarantined=1, manifest_sha256=manifest,
-    )
-
     with psycopg.connect(database_url) as conn:
         with conn.cursor() as cur:
             cur.execute("SELECT current_database()")
@@ -168,6 +143,31 @@ def main() -> dict:
     assert conflict["result_versions_inserted"] == 1
     assert conflict["results_inserted"] == 0
     assert conflict["quarantined_or_conflicting"] == 1
+
+    store.record_entitlement_observation(
+        provider="5DollarFootballAPI", source_id="5dollarfootballapi",
+        plan_code="community", entitlement_status="ACTIVE",
+        country_pack_code=None,
+        competition_ids=sorted(["3118717965","522514093","4160026622","3614399544","686337048","3405541143","4212821298"]),
+        rate_limit_hour=300, rate_limit_minute=20, quota_remaining=250,
+        provider_response_id=first["provider_response_id"],
+        evidence_sha256=hashlib.sha256(b"phase2-ci-entitlement-evidence").hexdigest(),
+        checked_at_utc=now,
+    )
+    manifest = hashlib.sha256(
+        "\n".join(sorted([fixture.payload_sha256, conflicting_fixture.payload_sha256])).encode()
+    ).hexdigest()
+    store.upsert_checkpoint(
+        import_run_id=run_id, window_start=kickoff, window_end=now,
+        cursor_value="page=2", status="COMPLETED", records_seen=2,
+        records_inserted=1, records_rejected=0, records_quarantined=1,
+        requests_used=2, response_sha256=second_response.response_sha256,
+    )
+    store.finish_import_run(
+        import_run_id=run_id, status="COMPLETED", finished_at_utc=now,
+        requests_used=2, records_seen=2, records_inserted=1,
+        records_rejected=0, records_quarantined=1, manifest_sha256=manifest,
+    )
 
     with psycopg.connect(database_url) as conn:
         with conn.cursor() as cur:
