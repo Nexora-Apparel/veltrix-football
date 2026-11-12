@@ -1,14 +1,16 @@
 #!/usr/bin/env python3
-"""Read-only 5Dollar account-plan and competition catalogue check for Phase 1."""
+"""Read-only 5Dollar plan, competition, and timestamped-odds sample for Phase 1."""
 from __future__ import annotations
 
 import argparse
 import hashlib
 import json
 import os
+import time
 from datetime import datetime, timezone
 from pathlib import Path
 from urllib.error import HTTPError, URLError
+from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 
 BASE = "https://api.5dollarfootballapi.com/v1"
@@ -43,6 +45,16 @@ def _request(path: str, key: str):
     return payload, headers
 
 
+def _valid_timestamp(value) -> bool:
+    if not isinstance(value, str) or not value.strip():
+        return False
+    try:
+        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError:
+        return False
+    return parsed.tzinfo is not None
+
+
 def _hash(report: dict) -> str:
     body = dict(report)
     body.pop("report_sha256", None)
@@ -50,11 +62,80 @@ def _hash(report: dict) -> str:
     return hashlib.sha256(raw.encode("utf-8")).hexdigest()
 
 
-def probe(key: str, request=_request) -> dict:
+def _odds_summary(payload: dict) -> dict:
+    data = payload.get("data")
+    if not isinstance(data, dict):
+        return {"status": "INVALID_SCHEMA", "bookmakers": 0, "markets": 0,
+                "timestamped_markets": 0, "btts": False, "goal_line": False,
+                "one_x_two_opened_at": False}
+    books = data.get("bookmakers") or []
+    if not isinstance(books, list):
+        return {"status": "INVALID_SCHEMA", "bookmakers": 0, "markets": 0,
+                "timestamped_markets": 0, "btts": False, "goal_line": False,
+                "one_x_two_opened_at": False}
+    market_count = 0
+    timestamped_markets = 0
+    btts = False
+    goal_line = False
+    one_x_two_opened_at = False
+    for book in books:
+        if not isinstance(book, dict):
+            continue
+        odds = book.get("odds") or {}
+        if not isinstance(odds, dict):
+            continue
+        for market_name, block in odds.items():
+            if not isinstance(block, dict):
+                continue
+            market_count += 1
+            if market_name == "btts":
+                btts = True
+            if market_name in {"goal_line", "goal_line_fixed"}:
+                goal_line = True
+            opening = block.get("opening") or {}
+            closing = block.get("closing") or {}
+            if not isinstance(opening, dict):
+                opening = {}
+            if not isinstance(closing, dict):
+                closing = {}
+            has_timestamp = any(_valid_timestamp(value) for value in (
+                opening.get("opened_at"), opening.get("at"),
+                closing.get("closed_at"), closing.get("at"),
+                block.get("opened_at"), block.get("closed_at"),
+            ))
+            if has_timestamp:
+                timestamped_markets += 1
+            if market_name == "1x2" and _valid_timestamp(opening.get("opened_at")):
+                one_x_two_opened_at = True
+    return {
+        "status": "OK" if books else "NO_BOOKMAKER_ODDS",
+        "bookmakers": len(books),
+        "markets": market_count,
+        "timestamped_markets": timestamped_markets,
+        "timestamped_market_fraction": (timestamped_markets / market_count) if market_count else None,
+        "btts": btts,
+        "goal_line": goal_line,
+        "one_x_two_opened_at": one_x_two_opened_at,
+    }
+
+
+def probe(key: str, request=_request, sleep=time.sleep) -> dict:
     if not key.strip():
         raise ProbeError("MISSING_SECRET")
-    status_payload, status_headers = request("/status", key)
-    leagues_payload, league_headers = request("/leagues", key)
+    request_count = 0
+
+    def call(path: str):
+        nonlocal request_count
+        # The account has a 20-requests/minute burst ceiling. The preceding
+        # multi-source check can use up to four calls; pace this 16-call probe.
+        if request_count:
+            sleep(2.5)
+        payload, headers = request(path, key)
+        request_count += 1
+        return payload, headers
+
+    status_payload, status_headers = call("/status")
+    leagues_payload, league_headers = call("/leagues")
     if not isinstance(status_payload, dict) or not isinstance(status_payload.get("data"), dict):
         raise ProbeError("STATUS_SCHEMA_INVALID")
     if not isinstance(leagues_payload, dict):
@@ -79,12 +160,46 @@ def probe(key: str, request=_request) -> dict:
             "country": str(country or "not_reported")[:60],
         })
 
+    odds_samples = []
+    for competition in competitions[:7]:
+        league_id = competition["id"]
+        fixtures_payload, _ = call(
+            f"/leagues/{league_id}/fixtures?" + urlencode({"status": "finished", "per_page": 1})
+        )
+        rows = fixtures_payload.get("data") if isinstance(fixtures_payload, dict) else None
+        if not isinstance(rows, list) or not rows:
+            odds_samples.append({
+                "league_id": league_id,
+                "league": competition["name"],
+                "status": "NO_FINISHED_FIXTURE",
+            })
+            continue
+        fixture = rows[0]
+        fixture_id = fixture.get("id") or fixture.get("fixture_id")
+        if fixture_id is None:
+            odds_samples.append({
+                "league_id": league_id,
+                "league": competition["name"],
+                "status": "FIXTURE_ID_MISSING",
+            })
+            continue
+        odds_payload, _ = call(f"/fixtures/{fixture_id}/odds")
+        summary = _odds_summary(odds_payload)
+        odds_samples.append({
+            "league_id": league_id,
+            "league": competition["name"],
+            "fixture_id": str(fixture_id),
+            **summary,
+        })
+
     limits = status_data.get("limits") if isinstance(status_data.get("limits"), dict) else {}
     usage = status_data.get("usage") if isinstance(status_data.get("usage"), dict) else {}
+    total_markets = sum(int(row.get("markets", 0) or 0) for row in odds_samples)
+    timestamped_markets = sum(int(row.get("timestamped_markets", 0) or 0) for row in odds_samples)
     report = {
         "schema_version": 1,
         "provider": "5DollarFootballAPI",
-        "mode": "read_only_account_plan_and_catalogue_check",
+        "mode": "read_only_plan_competition_and_odds_timestamp_probe",
         "checked_at_utc": datetime.now(timezone.utc).isoformat(),
         "status": "OK",
         "plan": str(status_data.get("plan") or "not_reported"),
@@ -99,13 +214,20 @@ def probe(key: str, request=_request) -> dict:
         "pagination": {
             "has_more": (leagues_payload.get("pagination") or {}).get("has_more"),
         },
+        "odds_samples": odds_samples,
+        "odds_market_blocks_sampled": total_markets,
+        "odds_timestamped_market_blocks_sampled": timestamped_markets,
+        "odds_timestamped_market_fraction_sampled": (
+            timestamped_markets / total_markets if total_markets else None
+        ),
         "quota_headers": {
             "status_limit": status_headers.get("X-RateLimit-Limit"),
             "status_remaining": status_headers.get("X-RateLimit-Remaining"),
             "catalogue_limit": league_headers.get("X-RateLimit-Limit"),
             "catalogue_remaining": league_headers.get("X-RateLimit-Remaining"),
         },
-        "request_count": 2,
+        "request_count": request_count,
+        "request_budget": 16,
         "side_effects": {
             "database_writes": 0,
             "imports": 0,
@@ -121,10 +243,12 @@ def probe(key: str, request=_request) -> dict:
 def validate_report(report: dict) -> None:
     if not isinstance(report, dict) or report.get("provider") != "5DollarFootballAPI":
         raise ValueError("provider_invalid")
-    if report.get("mode") != "read_only_account_plan_and_catalogue_check":
+    if report.get("mode") != "read_only_plan_competition_and_odds_timestamp_probe":
         raise ValueError("mode_invalid")
-    if report.get("request_count") != 2:
+    if not 2 <= report.get("request_count", 0) <= 16:
         raise ValueError("request_count_invalid")
+    if report.get("request_budget") != 16:
+        raise ValueError("request_budget_invalid")
     if report.get("side_effects", {}).get("database_writes") != 0:
         raise ValueError("side_effects_invalid")
     if report.get("report_sha256") != _hash(report):
@@ -150,6 +274,9 @@ def main() -> int:
         f"rate_limit={report['limits']['rate_limit']} "
         f"burst={report['limits']['burst_per_minute']} "
         f"competitions={report['competition_count_page_1']} "
+        f"odds_samples={len(report['odds_samples'])} "
+        f"timestamped_market_fraction={report['odds_timestamped_market_fraction_sampled']} "
+        f"requests={report['request_count']}/16 "
         f"sha256={report['report_sha256']}"
     )
     return 0
