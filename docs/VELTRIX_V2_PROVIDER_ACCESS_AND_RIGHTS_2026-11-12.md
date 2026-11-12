@@ -171,11 +171,17 @@ Official references:
 
 The Wyscout CC BY dataset provides licensed historical shot events for training
 an independent xG estimator, but it is not a current-season feed. 5Dollar and
-The Odds API do not supply shot-level xG inputs. PitchAPI and GOAL API remain
-excluded from model training/publication until their upstream rights are
-documented. Consequently, the V2 system may train and evaluate a historical
-xG model, but it must not claim live team xG or current shot-quality features
-until a rights-approved current shot-event source is connected. Missing live
+The Odds API do not supply shot-level xG inputs. StrikerAPI exposes shot events
+and locations, but its 500-credit free allowance is limited, its current
+provider xG is not point-in-time safe, and the upstream source list is not
+published per dataset; it remains conditional pending credit refresh and
+written source-lineage clarification. OpenFootAPI's xG shot maps require the
+$14/month Developer plan and inherit a separate licence for each upstream
+competition. PitchAPI remains excluded pending written data rights, while
+GOAL API remains excluded pending upstream rights. Consequently, the V2
+system may train and evaluate a historical xG model, but it must not claim
+live team xG or current shot-quality features until a rights-approved,
+operationally sufficient current shot-event source is connected. Missing live
 xG remains missing and cannot be imputed from bookmaker odds.
 
 
