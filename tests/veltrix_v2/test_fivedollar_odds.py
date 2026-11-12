@@ -138,7 +138,7 @@ def test_source_observation_id_is_propagated_to_every_odds_selection():
 
 
 def test_invalid_source_observation_id_is_rejected():
-    with pytest.raises(ValueError, match="SOURCE_OBSERVATION_ID_INVALID"):
+    with pytest.raises(ValueError, match="SOURCE_OBSERVATION_ID_REQUIRED"):
         parse_fivedollar_fixture_odds(
             payload(),
             fixture_id="fixture-123",
