@@ -233,6 +233,9 @@ def recompute_raw_certification(manifest_path: str | Path, *, min_walk_forward: 
         if any(not isinstance(source, str) or source not in approved_sources for source in feature_sources):
             failures[market].append("walk-forward feature source is not rights-approved")
             continue
+        if predicted >= kickoff or any(value > predicted for value in feature_times):
+            failures[market].append("walk-forward feature leakage or prediction after kickoff")
+            continue
         feature_response_invalid = False
         for feature in features:
             response = response_by_id.get(str(feature.get("source_response_id") or ""))
@@ -249,9 +252,6 @@ def recompute_raw_certification(manifest_path: str | Path, *, min_walk_forward: 
             continue
         if any(not isinstance(name, str) or not name for name in feature_names) or len(set(feature_names)) != len(feature_names):
             failures[market].append("walk-forward feature names are missing or duplicated")
-            continue
-        if predicted >= kickoff or any(value > predicted for value in feature_times):
-            failures[market].append("walk-forward feature leakage or prediction after kickoff")
             continue
         if row.get("model_version") != model_manifest.get("model_version") or row.get("model_commit") != code_commit:
             failures[market].append("walk-forward model version or code commit mismatch")
