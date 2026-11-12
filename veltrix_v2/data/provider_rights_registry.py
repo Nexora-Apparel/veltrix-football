@@ -75,7 +75,7 @@ def load_provider_rights_registry(
     root = Path(repository_root).resolve(strict=True)
     reviewed = reviewed_at_utc or datetime.now(timezone.utc)
     if reviewed.tzinfo is None or reviewed.utcoffset() is None:
-        raise ValueError("RIGHTS_REVIEW_TIME_MUST_BE_TIMEZONE_AWARE")
+        raise ValueError("Rights review timestamp must be timezone-aware.")
 
     five_dollar_uses = frozenset({
         DataUsePurpose.COLLECTION,
