@@ -24,7 +24,8 @@ The VELTRIX Community account was read-only checked on 2026-11-12:
 - Plan: Community
 - Rate limit: 300 requests/hour
 - Burst limit: 20 requests/minute
-- Seven visible competitions: Brazil Serie A, Brazil Serie B, England Premier League, France Ligue 1, Germany Bundesliga I, Italy Serie A, Spain La Liga
+- Seven visible competitions and provider IDs: Brazil Serie A `3118717965`, Brazil Serie B `522514093`, England Premier League `4160026622`, France Ligue 1 `3614399544`, Germany Bundesliga I `686337048`, Italy Serie A `3405541143`, Spain La Liga `4212821298`.
+- The provider catalogue returned a country label for each competition. Brazil is the only country outside the top-five European leagues and is inferred as the selected country pack; the account response did not expose a separate `country_pack_code` field.
 - Account response evidence: GitHub Actions run 43280026573, artifact `veltrix-phase1-provider-qualification`, file `fivedollar-account.json`
 - No API key or credential value is included in this review record.
 
