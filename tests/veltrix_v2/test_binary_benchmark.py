@@ -111,7 +111,7 @@ def test_duplicate_bookmaker_fixture_quote_rejected():
 def test_quote_pair_must_share_exact_capture_timestamp():
     yes = quote("f1", "YES", 0.5)
     no = replace(quote("f1", "NO", 0.5), captured_at=yes.captured_at - timedelta(minutes=1))
-    with pytest.raises(ValueError, match="TIMESTAMPS_MISMATCH"):
+    with pytest.raises(ValueError, match="TIMESTAMPS_OR_PROVENANCE_MISMATCH"):
         compare_binary_to_bookmaker(
             [BinaryForecast("f1", 0.6)],
             [yes, no],
