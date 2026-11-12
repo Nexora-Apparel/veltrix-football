@@ -734,3 +734,35 @@ def audit_paper_ledger_sources(
         rejected_observations=failures,
         passed=bool(required_ids) and not failures and approved == required_ids,
     )
+
+
+@dataclass(frozen=True, slots=True)
+class ReleaseSourceAuditBundle:
+    """Complete provenance audit retained with a value-bet certification."""
+
+    training_sources: TrainingSourceAudit
+    walk_forward_integrity: WalkForwardIntegrityAudit
+    odds_sources: OddsSourceAudit
+    paper_ledger_sources: PaperLedgerSourceAudit
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.training_sources, TrainingSourceAudit):
+            raise ValueError("CERTIFICATION_TRAINING_SOURCE_AUDIT_REQUIRED")
+        if not isinstance(self.walk_forward_integrity, WalkForwardIntegrityAudit):
+            raise ValueError("CERTIFICATION_WALK_FORWARD_INTEGRITY_AUDIT_REQUIRED")
+        if not isinstance(self.odds_sources, OddsSourceAudit):
+            raise ValueError("CERTIFICATION_ODDS_SOURCE_AUDIT_REQUIRED")
+        if not isinstance(self.paper_ledger_sources, PaperLedgerSourceAudit):
+            raise ValueError("CERTIFICATION_PAPER_LEDGER_SOURCE_AUDIT_REQUIRED")
+
+    @property
+    def source_approved(self) -> bool:
+        return (
+            self.training_sources.passed
+            and self.odds_sources.passed
+            and self.paper_ledger_sources.passed
+        )
+
+    @property
+    def point_in_time_validated(self) -> bool:
+        return self.walk_forward_integrity.passed and self.source_approved
