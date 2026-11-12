@@ -198,7 +198,7 @@ def run_probe(api_key: str, *, now: datetime | None = None, request_fn=_request,
             if status_summary["rate_limit_hour"] != 300 or status_summary["burst_per_minute"] != 20:
                 raise ProbeFailure("ACCOUNT_QUOTA_PROFILE_MISMATCH")
             remaining = _integer(status_summary["quota_headers"].get("x-ratelimit-remaining"))
-            if remaining is not None and remaining < 20:
+            if remaining is None or remaining < REQUEST_BUDGET + 2:
                 raise ProbeFailure("INSUFFICIENT_REMAINING_QUOTA_FOR_BOUNDED_PROBE")
 
             leagues_payload, league_headers, leagues_raw = call("/leagues")
@@ -279,8 +279,7 @@ def run_probe(api_key: str, *, now: datetime | None = None, request_fn=_request,
                     raise ProbeFailure(f"NO_HISTORICAL_FIXTURES:{competition_id}")
         except ProbeFailure as exc:
             failure = exc.code
-            if failure == "REQUEST_BUDGET_EXHAUSTED":
-                pagination_complete = False
+            pagination_complete = False
         except FixturePageError as exc:
             failure = str(exc)
             pagination_complete = False
