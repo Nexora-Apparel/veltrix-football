@@ -63,7 +63,7 @@ The official endpoint is explicitly documented as **live match statistics**: att
 
 The October 2026 Terms permit use in the customer's own commercial websites, apps, models and internal tools, including caching and end-user display. Free and Community public-facing products must visibly include linked attribution: **Football data by 5DollarFootballAPI**. Raw-feed resale or redistribution as a competing feed is prohibited. See [Terms](https://5dollarfootballapi.com/terms).
 
-Community includes 12 months of Bet365 odds history with opening, closing and in-play prices, but the public plan matrix reserves full tick history for higher tiers. The fixture-odds response documents `opened_at` for 1X2 opening; it does not show a timestamp on every market's opening/closing object. Therefore, Community access alone does not prove the required 98% timestamped coverage for every selected market. The final Phase 1 probe samples one finished fixture per competition and counts timestamped market blocks. Preserve actual provider quote timestamps when present; never substitute local retrieval time. The full per-price movement history is not assumed available on Community.
+Community includes 12 months of Bet365 odds history with opening, closing and in-play prices, but the public plan matrix reserves full tick history for higher tiers. The fixture-odds response documents `opened_at` for 1X2 opening; it does not show a timestamp on every market's opening/closing object. Therefore, Community access alone does not prove the required 98% timestamped coverage for every selected market. The final Phase 1 probe samples one finished fixture per competition and counts timestamped market blocks. Preserve actual provider quote timestamps when present; never substitute local retrieval time. The dedicated `/v1/fixtures/{id}/odds/history` endpoint returns per-price `recorded_at` ticks but explicitly requires Ultra or above; Free and Pro receive HTTP 403. Community is not listed as an eligible tier, so the final probe makes one BTTS history request to verify the actual account response. The full per-price movement history is not assumed available on Community.
 
 ## 4. Other provider decisions
 
@@ -123,7 +123,7 @@ No currently approved source provides the full current-season combination of xG,
 
 The branch updates the existing `Multi-Source Provider Verification` workflow and adds:
 
-- a read-only 5Dollar `/status` + `/leagues` plan/country-pack check, plus at most one finished-fixture odds/timestamp sample per competition (16-request cap and 2.5-second pacing);
+- a read-only 5Dollar `/status` + `/leagues` plan/country-pack check, plus at most one finished-fixture odds/timestamp sample per competition and one BTTS tick-history entitlement check (17-request cap, 4-second pacing);
 - a sanitized OddsPapi soccer-market/quote probe;
 - the existing bounded The Odds API / InferSports integration checks;
 - the existing GOAL API read-only probe when its secret exists;
