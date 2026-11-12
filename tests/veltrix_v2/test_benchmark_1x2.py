@@ -22,6 +22,8 @@ def quote(fixture, selection, probability):
         line=None,
         captured_at=kickoff - timedelta(minutes=10),
         kickoff_at=kickoff,
+        provider_quote_at=kickoff - timedelta(minutes=11),
+        source_observation_id=f"obs-{fixture}",
         snapshot_id=f"{fixture}-{selection}",
         decimal_odds=Decimal("2"),
         raw_implied_probability=Decimal("0.5"),
