@@ -111,6 +111,13 @@ def check_fivedollar() -> str:
             and league_country_code(item) not in top_five_country_codes
             and league_country_code(item) not in {"WORLD", "EUROPE", "AFRICA", "ASIA", "AMERICAS", "OCEANIA"}
         ]
+        top_five_leagues = {
+            code: next(
+                (item for item in leagues if league_country_code(item) == code),
+                None,
+            )
+            for code in sorted(top_five_country_codes)
+        }
         required_country_code = os.getenv("FIVEDOLLAR_REQUIRED_COUNTRY_CODE", "").strip().upper()
         try:
             minimum_leagues = int(os.getenv("FIVEDOLLAR_MIN_ACCESSIBLE_LEAGUES", "6"))
@@ -123,6 +130,13 @@ def check_fivedollar() -> str:
                 f"(minimum={minimum_leagues}; actual={len(league_names)})"
             )
             return "COMPETITION_COVERAGE_INCOMPLETE"
+        if required_plan and any(item is None for item in top_five_leagues.values()):
+            missing = sorted(code for code, item in top_five_leagues.items() if item is None)
+            print(
+                "5DollarFootballAPI: TOP_FIVE_COVERAGE_INCOMPLETE "
+                f"(missing_country_codes={','.join(missing)})"
+            )
+            return "TOP_FIVE_COVERAGE_INCOMPLETE"
         if required_plan and not country_pack_leagues:
             print("5DollarFootballAPI: COUNTRY_PACK_NOT_VERIFIED")
             return "COUNTRY_PACK_NOT_VERIFIED"
@@ -152,7 +166,12 @@ def check_fivedollar() -> str:
                 str(item.get("name") or ""),
             ),
         )
-        for league in ordered_leagues[:8]:
+        if required_plan:
+            selected_leagues = [top_five_leagues[code] for code in sorted(top_five_country_codes)]
+            selected_leagues.append(country_pack_leagues[0])
+        else:
+            selected_leagues = ordered_leagues[:8]
+        for league in selected_leagues:
             if not isinstance(league, dict) or league.get("id") is None:
                 continue
             league_id = quote(str(league["id"]), safe="")
@@ -162,12 +181,29 @@ def check_fivedollar() -> str:
             try:
                 _, _, fixture_payload = request_json(fixtures_url, headers)
             except ProviderCheckError:
-                continue
+                fixture_payload = {}
             fixture_rows = fixture_payload.get("data") if isinstance(fixture_payload, dict) else None
+            if not isinstance(fixture_rows, list) or not fixture_rows:
+                # Community includes 12 months of history. A recent finished
+                # fixture is a bounded fallback when a league has no upcoming game.
+                finished_url = base + f"/leagues/{league_id}/fixtures?" + urlencode({
+                    "status": "finished", "per_page": 1,
+                })
+                try:
+                    _, _, fixture_payload = request_json(finished_url, headers)
+                except ProviderCheckError:
+                    fixture_payload = {}
+                fixture_rows = fixture_payload.get("data") if isinstance(fixture_payload, dict) else None
             if isinstance(fixture_rows, list) and fixture_rows:
                 selected_fixtures.append((league, fixture_rows[0]))
+        if required_plan and len(selected_fixtures) != 6:
+            print(
+                "5DollarFootballAPI FIXTURE_SAMPLE_INCOMPLETE "
+                f"(expected=6; actual={len(selected_fixtures)})"
+            )
+            return "FIXTURE_SAMPLE_INCOMPLETE"
         if not selected_fixtures:
-            print("5DollarFootballAPI ODDS_SAMPLE: SKIPPED_NO_SCHEDULED_FIXTURE_IN_ACCESSIBLE_LEAGUES")
+            print("5DollarFootballAPI ODDS_SAMPLE: SKIPPED_NO_FIXTURE_SAMPLE")
             return "AUTH_OK"
         coverage = {"1X2": 0, "BTTS": 0, "TOTALS_2_5": 0}
         samples = 0
