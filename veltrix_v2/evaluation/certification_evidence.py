@@ -375,6 +375,15 @@ def audit_walk_forward_integrity(
     from veltrix_v2.evaluation.binary_metrics import score_binary_market
     from veltrix_v2.evaluation.metrics import score_1x2
 
+    def coverage_matches(coverage, eligible_count: int, forecast_count: int) -> bool:
+        expected = forecast_count / eligible_count if eligible_count else None
+        return (
+            coverage.eligible_fixture_count == eligible_count
+            and coverage.forecast_count == forecast_count
+            and coverage.abstention_count == eligible_count - forecast_count
+            and coverage.coverage == expected
+        )
+
     failures: list[str] = []
     held_out_ids: list[str] = []
     scope_eligible_ids: list[str] = []
@@ -480,12 +489,11 @@ def audit_walk_forward_integrity(
                 failures.append("FOLD_SCORE_REPORT_DOES_NOT_MATCH_HELD_OUT_RECORDS")
             if (
                 fold.forecast_count != len(fold.forecasts_1x2)
-                or fold.coverage_1x2.forecast_count != len(fold.forecasts_1x2)
-                or fold.coverage_btts.forecast_count != len(fold.btts_forecasts)
-                or fold.coverage_totals.forecast_count != len(fold.totals_forecasts)
-                or fold.coverage_1x2.eligible_fixture_count != fold.test_fixture_count
-                or fold.coverage_btts.eligible_fixture_count != fold.test_fixture_count
-                or fold.coverage_totals.eligible_fixture_count != fold.test_fixture_count
+                or not coverage_matches(fold.coverage_1x2, fold.test_fixture_count, len(fold.forecasts_1x2))
+                or not coverage_matches(fold.coverage_btts, fold.test_fixture_count, len(fold.btts_forecasts))
+                or not coverage_matches(fold.coverage_totals, fold.test_fixture_count, len(fold.totals_forecasts))
+                or set(fold.abstained_fixture_ids) != set(test_ids) - {row.fixture_id for row in fold.forecasts_1x2}
+                or len(fold.abstained_fixture_ids) != len(set(fold.abstained_fixture_ids))
             ):
                 failures.append("FOLD_MARKET_COVERAGE_DOES_NOT_MATCH_HELD_OUT_RECORDS")
 
@@ -522,9 +530,9 @@ def audit_walk_forward_integrity(
             scope_report.total_test_fixtures != expected_scope_test_count
             or scope_report.total_forecasts != expected_scope_forecast_count
             or scope_report.total_abstentions != expected_scope_test_count - expected_scope_forecast_count
-            or scope_report.aggregate_coverage_1x2.eligible_fixture_count != expected_scope_test_count
-            or scope_report.aggregate_coverage_btts.eligible_fixture_count != expected_scope_test_count
-            or scope_report.aggregate_coverage_totals.eligible_fixture_count != expected_scope_test_count
+            or not coverage_matches(scope_report.aggregate_coverage_1x2, expected_scope_test_count, len(scope_1x2_forecasts))
+            or not coverage_matches(scope_report.aggregate_coverage_btts, expected_scope_test_count, len(scope_btts_forecasts))
+            or not coverage_matches(scope_report.aggregate_coverage_totals, expected_scope_test_count, len(scope_totals_forecasts))
         ):
             failures.append("SCOPE_COUNTS_DO_NOT_MATCH_FOLD_RECORDS")
 
@@ -557,9 +565,9 @@ def audit_walk_forward_integrity(
         or walk_forward.total_forecasts != recomputed_forecast_count
         or walk_forward.total_abstentions != recomputed_test_count - recomputed_forecast_count
         or walk_forward.total_folds != recomputed_fold_count
-        or walk_forward.coverage_1x2.eligible_fixture_count != recomputed_test_count
-        or walk_forward.coverage_btts.eligible_fixture_count != recomputed_test_count
-        or walk_forward.coverage_totals.eligible_fixture_count != recomputed_test_count
+        or not coverage_matches(walk_forward.coverage_1x2, recomputed_test_count, len(scope_forecasts_1x2))
+        or not coverage_matches(walk_forward.coverage_btts, recomputed_test_count, len(scope_forecasts_btts))
+        or not coverage_matches(walk_forward.coverage_totals, recomputed_test_count, len(scope_forecasts_totals))
     ):
         failures.append("MULTI_COMPETITION_COUNTS_DO_NOT_MATCH_FOLD_RECORDS")
     unique_failures = tuple(sorted(set(failures)))
