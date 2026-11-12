@@ -209,3 +209,11 @@ groups. When multiple complete 1X2 quote captures exist for one fixture, the
 benchmark selects the latest provider quote timestamp (then latest capture);
 ambiguous ties fail closed. This preserves historical odds movement records
 without double-counting one fixture in the bookmaker comparison.
+
+
+The source approval contract now refuses `status=approved` unless the record
+contains a rights-evidence URI, SHA-256 digest of the reviewed document,
+timezone-aware review timestamp, reviewer identity and a declared legal basis
+(`terms`, `written_permission`, `open_license` or `contract`). Provisional
+records may remain incomplete but cannot pass source eligibility. A provider
+key, successful HTTP response or a bare approval boolean is not sufficient.
