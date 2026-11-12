@@ -82,6 +82,7 @@ def _source_records(training_available_at=None):
             _observation(
                 available_at=training_available_at or datetime(2026, 1, 1, 17, tzinfo=UTC),
                 provider_entity_id="provider-training-result",
+                approval_id="approval-result",
             ),
         ),
         TrainingObservationEvidence(
@@ -90,6 +91,7 @@ def _source_records(training_available_at=None):
                 available_at=datetime(2026, 1, 10, 17, tzinfo=UTC),
                 event_at=datetime(2026, 1, 10, 15, tzinfo=UTC),
                 provider_entity_id="provider-heldout-result",
+                approval_id="approval-result",
             ),
         ),
         TrainingObservationEvidence(
@@ -99,6 +101,7 @@ def _source_records(training_available_at=None):
                 event_at=datetime(2026, 1, 10, 14, 54, tzinfo=UTC),
                 provider_entity_id="provider-odds-feed",
                 entity_type="odds_quote",
+                approval_id="approval-odds",
             ),
         ),
     )
@@ -427,7 +430,7 @@ def _paper_ledger_and_records():
         SourceApproval(
             "approval-result", "provider-a", "league-a", "match_result", "approved",
             datetime(2025, 1, 1, tzinfo=UTC),
-            ("collection", "storage", "benchmarking"),
+            ("collection", "storage", "benchmarking", "model_training"),
         ),
     )
     return ledger, records, approvals
