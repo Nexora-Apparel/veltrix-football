@@ -52,6 +52,7 @@ def probe(client, now=None) -> dict:
         str(row.get("marketId")) for row in soccer_markets
         if "over under" in str(row.get("marketName", "")).casefold().replace("/", " ")
         and not row.get("playerProp", False)
+        and str(row.get("period", "")).casefold() in {"", "fulltime", "ft", "full_time"}
         and row.get("marketId") is not None
     }
 
