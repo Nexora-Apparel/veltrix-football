@@ -149,7 +149,15 @@ def run_audit(database_url: str) -> dict:
                  permitted_uses, commercial_use_allowed, approval_status) = row
                 if not isinstance(payload, dict) or _canonical_hash(payload) != payload_hash.strip():
                     payload_hash_failures += 1
-                if response_id not in responses or (response_id, entity_id) not in raw_page_rows:
+                response_meta = responses.get(response_id)
+                if (
+                    response_meta is None
+                    or response_meta["provider"] != provider
+                    or response_meta["source_id"] != source_id
+                    or not response_meta["endpoint"].endswith("/fixtures")
+                    or response_meta["fetched_at"] != fetched_at
+                    or (response_id, entity_id) not in raw_page_rows
+                ):
                     raw_link_failures += 1
                 elif raw_page_rows[(response_id, entity_id)] != payload_hash.strip():
                     raw_link_failures += 1
