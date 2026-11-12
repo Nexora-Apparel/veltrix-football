@@ -52,6 +52,7 @@ def test_certificate_builder_attaches_raw_audit_but_never_unlocks(monkeypatch, t
         "prospective_ledger": {"rows": []},
         "odds_snapshots": {"rows": []},
         "settlement_records": {"rows": []},
+        "source_responses": {"rows": []},
         "model_manifest": {
             "model_version": "model-v1",
             "code_commit": "a" * 40,
