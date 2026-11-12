@@ -36,6 +36,8 @@ class PostgresHistoryStore:
         self._expected_database = expected_database
         if allow_writes and not expected_database:
             raise ValueError("EXPECTED_HISTORY_WRITE_DATABASE_REQUIRED")
+        if allow_writes and expected_database in {"veltrix-football", "veltrix_football"}:
+            raise RuntimeError("PRODUCTION_DATABASE_WRITES_DISABLED")
 
     def _connect_for_write(self):
         if not self._allow_writes:
