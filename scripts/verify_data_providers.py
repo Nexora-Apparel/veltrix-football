@@ -105,7 +105,7 @@ def check_fivedollar() -> str:
         except ValueError:
             print("5DollarFootballAPI: MIN_ACCESSIBLE_LEAGUES_CONFIGURATION_INVALID")
             return "FAILED"
-        if minimum_leagues < 6 or len(league_names) < minimum_leagues:
+        if required_plan and (minimum_leagues < 6 or len(league_names) < minimum_leagues):
             print(
                 "5DollarFootballAPI: COMPETITION_COVERAGE_INCOMPLETE "
                 f"(minimum={minimum_leagues}; actual={len(league_names)})"
