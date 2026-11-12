@@ -4,6 +4,7 @@ from datetime import datetime, timedelta, timezone
 import pytest
 
 from veltrix_v2.contracts import ProviderObservation
+from veltrix_v2.evaluation.certification import certify_prediction_publication
 from veltrix_v2.evaluation.certification_evidence import (
     TrainingObservationEvidence,
     audit_walk_forward_training_sources,
@@ -214,3 +215,32 @@ def test_walk_forward_integrity_rejects_unbound_heldout_result_observation(monke
     audit = audit_walk_forward_integrity(invalid_report)
     assert not audit.passed
     assert "HELD_OUT_RESULT_PROVENANCE_INVALID" in audit.failures
+
+
+
+def test_prediction_publication_certification_derives_samples_and_quality_from_reports(monkeypatch):
+    report = _walk_forward(monkeypatch)
+    certification = certify_prediction_publication(
+        report,
+        _source_records(),
+        (_approval(),),
+    )
+    assert not certification.passed
+    failures = {row.market: row.failed_gates for row in certification.markets}
+    for market in ("1X2", "BTTS", "TOTALS"):
+        assert "PREDICTION_WALK_FORWARD_SAMPLE_BELOW_1000" in failures[market]
+        assert "PREDICTION_CALIBRATION_NOT_PASSED" in failures[market]
+
+
+def test_prediction_publication_certification_fails_when_source_rights_are_missing(monkeypatch):
+    report = _walk_forward(monkeypatch)
+    certification = certify_prediction_publication(
+        report,
+        _source_records(),
+        (_approval(permitted_uses=("collection", "storage", "benchmarking")),),
+    )
+    assert not certification.passed
+    assert all(
+        "PREDICTION_SOURCE_NOT_APPROVED" in row.failed_gates
+        for row in certification.markets
+    )
