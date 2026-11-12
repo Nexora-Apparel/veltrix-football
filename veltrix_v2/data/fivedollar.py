@@ -58,7 +58,7 @@ def _kickoff(row: dict) -> datetime:
     timestamp = row.get("kickoff_ts")
     parsed = _aware_utc(text_value, "FIXTURE_KICKOFF") if text_value else None
     if timestamp is not None:
-        if isinstance(timestamp, bool) or not isinstance(timestamp, (int, float)):
+        if isinstance(timestamp, bool) or not isinstance(timestamp, int):
             raise FixturePageError("FIXTURE_KICKOFF_EPOCH_INVALID")
         try:
             epoch = datetime.fromtimestamp(timestamp, timezone.utc)
@@ -155,6 +155,11 @@ def parse_fixture_page(
         away_id = _positive_id(away.get("id"), "AWAY_TEAM_ID")
         if home_id == away_id:
             raise FixturePageError(f"HOME_AWAY_TEAM_ID_COLLISION:{fixture_id}")
+        competition_name = str(league.get("name") or "").strip()
+        home_name = str(home.get("name") or "").strip()
+        away_name = str(away.get("name") or "").strip()
+        if not competition_name or not home_name or not away_name:
+            raise FixturePageError(f"FIXTURE_TEAM_OR_COMPETITION_NAME_MISSING:{fixture_id}")
         kickoff = _kickoff(row)
         raw_status = str(row.get("status") or "unknown").casefold()
         status_map = {
@@ -180,9 +185,9 @@ def parse_fixture_page(
             provider_competition_id=competition_id,
             provider_home_team_id=home_id,
             provider_away_team_id=away_id,
-            competition_name=str(league.get("name") or "unknown")[:160],
-            home_team_name=str(home.get("name") or "unknown")[:160],
-            away_team_name=str(away.get("name") or "unknown")[:160],
+            competition_name=competition_name[:160],
+            home_team_name=home_name[:160],
+            away_team_name=away_name[:160],
             kickoff_at_utc=kickoff,
             season_key=str(season)[:40] if season is not None else None,
             status=status,
