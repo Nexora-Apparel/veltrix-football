@@ -19,13 +19,13 @@ A UTF-8 JSON manifest is stored beside its evidence files:
 
 Required roles (exactly one artifact per role):
 
-1. `walk_forward_rows` — fixture-level, chronological out-of-sample predictions, outcomes, market probabilities, model/calibration versions, fold and cutoff timestamps.
+1. `walk_forward_rows` — fixture-level, chronological out-of-sample predictions, outcomes, market probabilities, model/calibration versions, explicit fold IDs/orders, non-overlapping test windows and per-fold training cutoffs.
 2. `coverage_audit` — source and row coverage audit, including excluded/rejected rows and dataset fingerprint, approved source IDs and explicit intended-use rights approval.
 3. `prospective_ledger` — append-only prospective selection, quote reference, stake, settlement and payout records.
 4. `odds_snapshots` — raw bookmaker quote snapshots with provider, bookmaker, market, selection, decimal price, observed timestamp and fixture kickoff.
 5. `settlement_records` — source-attested final scores/results with source identifiers, observation timestamps and correction/version lineage.
 6. `source_responses` — raw provider response bodies encoded as base64, with source IDs, fetch timestamps, request fingerprints and recomputed response SHA-256 hashes. Feature, quote and settlement rows point to the exact retained response and JSON record pointer.
-7. `model_manifest` — immutable model code commit, model family/version, feature schema, calibration version and training-data cutoff.
+7. `model_manifest` — immutable model code commit, model family/version, feature schema, calibration versions, initial training-data cutoff and ordered fold manifests with training cutoffs and test windows.
 
 Artifact paths must be unique, relative, traversal-free, non-symlink files. Missing roles, duplicate roles, malformed hashes, path escape, unreadable files and hash mismatches invalidate the bundle.
 
