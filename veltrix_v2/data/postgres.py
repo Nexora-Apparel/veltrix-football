@@ -506,9 +506,12 @@ class PostgresHistoryStore:
         approval: SourceApproval,
         *,
         import_run_id: int | None = None,
+        duplicate_fixture_ids: frozenset[str] = frozenset(),
     ) -> dict:
         """Persist one page atomically; caller must use an isolated staging database."""
         rows = tuple(fixtures)
+        if not duplicate_fixture_ids <= {row.provider_fixture_id for row in rows}:
+            raise ValueError("DUPLICATE_FIXTURE_MARKER_NOT_IN_PROVIDER_PAGE")
         if approval.provider != response.provider or approval.source_id != response.source_id:
             raise ValueError("SOURCE_APPROVAL_PROVIDER_MISMATCH")
         if _contains_sensitive_key(dict(response.response_headers)):
@@ -547,6 +550,13 @@ class PostgresHistoryStore:
             for fixture in rows:
                 if fixture.provider != response.provider or fixture.source_id != response.source_id:
                     raise ValueError("FIXTURE_PROVIDER_RESPONSE_MISMATCH")
+                if fixture.provider_fixture_id in duplicate_fixture_ids:
+                    self._quarantine(
+                        cur, fixture, import_run_id, "DUPLICATE_PROVIDER_FIXTURE_ID_ACROSS_PAGES",
+                        {"provider_fixture_id": fixture.provider_fixture_id},
+                    )
+                    conflicts += 1
+                    continue
                 if not approval_active:
                     self._quarantine(
                         cur, fixture, import_run_id, "SOURCE_APPROVAL_REVOKED_OR_UNVERIFIED",
