@@ -124,9 +124,13 @@ def parse_fixture_page(
     if not isinstance(rows, list):
         raise FixturePageError("FIXTURE_DATA_NOT_LIST")
     pagination = body.get("pagination") if isinstance(body.get("pagination"), dict) else {}
+    if not {"page", "per_page", "has_more"} <= set(pagination):
+        raise FixturePageError("PAGINATION_METADATA_INCOMPLETE")
+    if not isinstance(pagination.get("has_more"), bool):
+        raise FixturePageError("PAGINATION_HAS_MORE_INVALID")
     try:
-        page = int(pagination.get("page", 1))
-        per_page = int(pagination.get("per_page", len(rows) or 1))
+        page = int(pagination["page"])
+        per_page = int(pagination["per_page"])
     except (TypeError, ValueError) as exc:
         raise FixturePageError("PAGINATION_METADATA_INVALID") from exc
     if page < 1 or per_page < 1 or len(rows) > per_page:
@@ -197,7 +201,7 @@ def parse_fixture_page(
         fixtures=tuple(fixtures),
         page=page,
         per_page=per_page,
-        has_more=bool(pagination.get("has_more", False)),
+        has_more=pagination["has_more"],
         response_sha256=hashlib.sha256(raw_body).hexdigest(),
         quota_limit=_integer_header(headers, "X-RateLimit-Limit"),
         quota_remaining=_integer_header(headers, "X-RateLimit-Remaining"),
