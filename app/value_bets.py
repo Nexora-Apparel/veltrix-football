@@ -13,14 +13,14 @@ from typing import Mapping, Any
 
 
 def _certificate_allows(certificate: Any, market: str) -> bool:
-    """Require an evidence-backed, market-specific validation certificate."""
-    return (
-        isinstance(certificate, Mapping)
-        and certificate.get("status") in {"VALIDATED", "PARTIALLY_VALIDATED"}
-        and certificate.get("schema_version") == 1
-        and market in (certificate.get("approved_markets") or [])
-        and certificate.get("betting_validation") is True
-    )
+    """Fail closed until a source-attested certificate verifier is implemented.
+
+    A caller-supplied JSON object, status string, market list or boolean is not
+    proof that the referenced backtest and prospective ledger are authentic.
+    The current evidence builder is diagnostic only; it cannot authorize live
+    value-bet release. This guard intentionally rejects every external object.
+    """
+    return False
 
 
 def build_value_validation_certificate(
