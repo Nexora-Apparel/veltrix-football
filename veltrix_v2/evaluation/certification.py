@@ -17,6 +17,7 @@ MIN_PROSPECTIVE_SETTLED = 300
 MIN_DISTINCT_DATES = 90
 MIN_ODDS_COVERAGE = Decimal("0.98")
 ZERO = Decimal("0")
+_CERTIFICATION_SEAL = object()
 
 
 @dataclass(frozen=True, slots=True)
@@ -72,7 +73,7 @@ class CertificationResult:
             raise ValueError("CERTIFICATION_RESULT_STATUS_CONFLICTS_WITH_FAILURES")
 
 
-@dataclass(frozen=True, slots=True)
+@dataclass(frozen=True, slots=True, init=False)
 class ReleaseCertification:
     passed: bool
     markets: tuple[CertificationResult, ...]
@@ -80,6 +81,30 @@ class ReleaseCertification:
     one_x_two_beats_bookmaker_log_loss: bool
     global_failures: tuple[str, ...]
     evidence: tuple[MarketCertificationEvidence, ...] = ()
+
+    def __init__(
+        self,
+        passed: bool,
+        markets: tuple[CertificationResult, ...],
+        one_x_two_beats_bookmaker_brier: bool,
+        one_x_two_beats_bookmaker_log_loss: bool,
+        global_failures: tuple[str, ...],
+        evidence: tuple[MarketCertificationEvidence, ...] = (),
+        *,
+        _seal: object | None = None,
+    ) -> None:
+        if _seal is not _CERTIFICATION_SEAL:
+            raise ValueError("RELEASE_CERTIFICATION_INTERNAL_FACTORY_ONLY")
+        for name, value in (
+            ("passed", passed),
+            ("markets", markets),
+            ("one_x_two_beats_bookmaker_brier", one_x_two_beats_bookmaker_brier),
+            ("one_x_two_beats_bookmaker_log_loss", one_x_two_beats_bookmaker_log_loss),
+            ("global_failures", global_failures),
+            ("evidence", evidence),
+        ):
+            object.__setattr__(self, name, value)
+        self.__post_init__()
 
     def __post_init__(self) -> None:
         if type(self.passed) is not bool:
@@ -187,7 +212,8 @@ def _certify_release_from_derived_evidence(
         one_x_two_beats_bookmaker_brier=bool(one_x_two_beats_bookmaker_brier),
         one_x_two_beats_bookmaker_log_loss=bool(one_x_two_beats_bookmaker_log_loss),
         global_failures=tuple(global_failures),
-        evidence=rows,
+        evidence=rows,,
+        _seal=_CERTIFICATION_SEAL
     )
 
 
@@ -219,11 +245,29 @@ class PredictionMarketEvidence:
                 raise ValueError("PREDICTION_CERTIFICATION_FLAGS_MUST_BE_BOOLEAN")
 
 
-@dataclass(frozen=True, slots=True)
+@dataclass(frozen=True, slots=True, init=False)
 class PredictionReleaseCertification:
     passed: bool
     markets: tuple[CertificationResult, ...]
     evidence: tuple["PredictionMarketEvidence", ...] = ()
+
+    def __init__(
+        self,
+        passed: bool,
+        markets: tuple[CertificationResult, ...],
+        evidence: tuple["PredictionMarketEvidence", ...] = (),
+        *,
+        _seal: object | None = None,
+    ) -> None:
+        if _seal is not _CERTIFICATION_SEAL:
+            raise ValueError("PREDICTION_RELEASE_INTERNAL_FACTORY_ONLY")
+        for name, value in (
+            ("passed", passed),
+            ("markets", markets),
+            ("evidence", evidence),
+        ):
+            object.__setattr__(self, name, value)
+        self.__post_init__()
 
     def __post_init__(self) -> None:
         if type(self.passed) is not bool:
@@ -296,7 +340,8 @@ def _certify_prediction_publication_from_derived_evidence(
     return PredictionReleaseCertification(
         passed=all(item.passed for item in results),
         markets=tuple(results),
-        evidence=rows,
+        evidence=rows,,
+        _seal=_CERTIFICATION_SEAL
     )
 
 
