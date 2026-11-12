@@ -180,3 +180,31 @@ Phase 1 acceptance decision:
 The 5Dollar 9.09% sampled timestamp rate and HTTP 403 for tick history are explicit historical-odds limitations. They block the later 98% timestamp-coverage/value-betting gate, not fixture-provider qualification. The Odds API is the approved prospective timestamp source; the archive remains insufficient until measured data accumulates.
 
 The next phase is the historical data foundation. It must not begin until these Phase 1 gates are verified. No production deployment, Telegram activation or schedule is authorized by Phase 1 completion.
+
+
+## 8. Final consolidated provider execution — 2026-11-12
+
+- GitHub Actions run: [43280026573](https://github.com/Nexora-Apparel/veltrix-football/actions/runs/43280026573)
+- Job: 131398564898
+- Artifact: `veltrix-phase1-provider-qualification` (ID `13972845473`)
+- Artifact SHA-256: `3c45fdc06fdd5e91bdda332f7f303b01ff434e71f9e793e1137a916206820ffd`
+- Run conclusion: `success`; the workflow intentionally continues after individual optional-provider failures so all independent probes finish. A green workflow does not mean every provider qualified.
+
+| Provider | Observed result | Phase 1 disposition |
+|---|---|---|
+| 5DollarFootballAPI | Community; 300/hour, 20/minute; seven competitions; odds endpoint returned 77 market blocks, only 7 with timestamped quotes (9.09%); BTTS odds-history endpoint returned HTTP 403. Separate statistics probe: 7/7 sampled finished-fixture calls HTTP 200 with documented fields. | Primary fixture/result source; supplemental live-stat fields only. Historical odds archive not qualified. |
+| The Odds API | Connected; 46 active soccer sport keys; 20 EPL events; H2H, BTTS and totals markets; 295 requests remaining in the sampled quota response. | Supplemental current-market source; no historical timestamp archive qualification claimed. |
+| InferSports | Connected; 63 current-day fixtures; 1X2 and totals available; no BTTS in the sample. | Supplemental discovery/market source only; no historical archive or 98% timestamp evidence. |
+| GOAL API | User-confirmed active credential; API request blocked with HTTP 403 by Cloudflare browser-signature challenge before a usable data response. | Excluded pending provider-side access path; key is not classified as invalid. |
+| OddsPapi | Qualification script stopped before the provider request with `ModuleNotFoundError: No module named 'app'`. | Harness failure, not a provider rejection; no live-quote qualification claimed. Rights for model training/long-term retention remain unapproved. |
+| StrikerAPI | Static account check returned HTTP 402; free credits exhausted. No additional feature calls were made. | Not qualified; no paid credits authorised. |
+
+The final Phase 1 result is **COMPLETE_WITH_EXCLUSIONS**: one primary fixture/result provider and two supplemental current-market/discovery providers are technically accessible; optional providers that failed or lack rights are explicitly excluded. No odds source meets the later 98% timestamped-quote gate, so value betting remains locked. The 365-day 5Dollar historical fixture/results window is a Phase 2 acquisition check, not a Phase 1 claim.
+
+The consolidated artifact contained:
+- `fivedollar-account.json` SHA-256: `30d4972ed33b9803634c42fab1066a6fbc95e517d2d4791c46f60bc8e7cd9d43`
+- `goal-api.log` SHA-256: `a64fa7656b91a40b800fa5574c4dfce016a2be6ff31b18b49617349170ee400b`
+- `multi-source-integration.log` SHA-256: `dacc260954cf8db3cbd31796468877dd5740044e1539eb744120967c219ef6e3`
+- `oddspapi.log` SHA-256: `2f49e635e68e32b65ceffc9c26a861e0c63d0df5992731d7f1a722a315acc5ac`
+- `strikerapi-account.json` SHA-256: `e69618a6a4367735907e50f219ad536c76226c167a0d4b516c6989b4f740d95d`
+- `strikerapi-status.log` SHA-256: `0c1e4775b5b3074a6c09a2c22aec134da93091ed3be9eac6a3bf8b641955cd56`
