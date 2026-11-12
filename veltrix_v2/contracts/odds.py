@@ -44,6 +44,7 @@ class OddsSnapshot:
     provider_quote_at: Optional[datetime] = None
     provider_event_id: Optional[str] = None
     schema_version: int = 1
+    source_observation_id: Optional[str] = None
 
     def __post_init__(self) -> None:
         for field in ("snapshot_id", "fixture_id", "source_id", "bookmaker_id", "market", "selection"):
@@ -69,6 +70,11 @@ class OddsSnapshot:
         provider_event_id = self.provider_event_id
         if provider_event_id is not None and (not isinstance(provider_event_id, str) or not provider_event_id.strip()):
             raise ValueError("provider_event_id must be a non-empty string when supplied")
+        source_observation_id = self.source_observation_id
+        if source_observation_id is not None and (
+            not isinstance(source_observation_id, str) or not source_observation_id.strip()
+        ):
+            raise ValueError("source_observation_id must be a non-empty string when supplied")
         if self.schema_version != 1:
             raise ValueError("unsupported odds snapshot schema_version")
 
@@ -78,3 +84,4 @@ class OddsSnapshot:
         object.__setattr__(self, "line", line)
         object.__setattr__(self, "provider_quote_at", provider_quote)
         object.__setattr__(self, "provider_event_id", provider_event_id)
+        object.__setattr__(self, "source_observation_id", source_observation_id)
