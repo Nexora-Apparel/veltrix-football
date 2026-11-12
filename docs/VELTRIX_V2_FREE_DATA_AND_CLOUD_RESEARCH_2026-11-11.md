@@ -280,3 +280,39 @@ Documentation: https://footballapi.org/documentation
 - OpenPlay is the strongest audited historical player/lineup/xG dataset candidate, but upstream rights review is still required before training/production approval.
 - No rights-cleared, free, current-season, multi-competition player-statistics and confirmed-lineup provider has yet passed qualification.
 - PitchAPI remains a high-potential API candidate, but its data lineage and commercial storage/training permissions remain unverified.
+
+
+## Provider rights and capability refresh — 2026-11-12
+
+### 5DollarFootballAPI — usage rights now verified from current terms
+
+- The provider's current Terms of Service (updated October 2026) explicitly allow using its data in commercial websites, applications, models and internal tools; displaying scores/statistics/odds to end users; and caching API responses.
+- Raw data cannot be resold or redistributed as a competing data feed. On Free and Community Access, public-facing products (including a Telegram bot or published dataset) must show the linked attribution **“Football data by 5DollarFootballAPI”**. Private/internal use does not require attribution.
+- Community Access is an actual no-cost entitlement, not a waitlist: eligible users include students, researchers, early-career developers and anyone for whom US$5/month is a meaningful expense. The provider states that no proof or paperwork is required; the user selects an eligibility line and one country pack, and activation is immediate for 12 months.
+- This resolves the public contractual permission question for the provider's API data, subject to the selected account plan, source provenance and attribution. It does not prove the provider's upstream data ownership or guarantee betting accuracy.
+- The provider's status page explicitly says it does **not** provide injuries, transfers, player profiles, player-level statistics or xG. Keep 5Dollar in the fixtures/results/odds lane; do not treat it as the player-intelligence/xG solution.
+- Official sources: https://5dollarfootballapi.com/terms ; https://5dollarfootballapi.com/community ; https://5dollarfootballapi.com/status
+
+### PitchAPI — capability confirmed; rights and lineage still block approval
+
+- Current public documentation (checked 2026-11-12) describes a free API with no paid tier, 77 leagues, all endpoints accessible and match history back to 2021.
+- Documented endpoints cover fixtures/results, shot-level xG and xG-on-target, shot coordinates, player-match statistics, lineups, events, team statistics, PPDA, field tilt, xG timelines, player/ team advanced analytics and heatmaps.
+- Lineups carry an explicit `confirmed` flag. Predicted lineups can appear up to 48 hours before kickoff; confirmed lineups appear near kickoff. Preserve that distinction and never use a predicted XI as confirmed.
+- Match timestamps are documented as RFC 3339 UTC; calendar dates are YYYY-MM-DD. Stable opaque match/team/player IDs are documented. Some matches return `ANALYTICS_UNAVAILABLE`; coverage is not universal. A September 2026 changelog says 26 reinstated leagues carry played-match analytics from 2024 onward, but this does not establish full coverage across all 77 leagues.
+- **No discoverable Terms of Service, privacy policy, upstream data-provider lineage, caching/retention grant, public display licence or explicit AI/model-training permission was found on the public documentation page.** The docs claim free access and broad technical capability, not legal permission.
+- Decision: PitchAPI is now the highest-priority technical candidate for V2's xG/player/lineup intelligence lane, but remains **NOT APPROVED** for persistent ingestion, model training, public display or production use. Obtain written confirmation of source lineage, rights to store historical payloads, commercial/public display, derivative analytics and model training before the API key is used for a production data import.
+- Official documentation: https://pitchapi.dev/
+
+### FootyStats API — AI/ML permission confirmed; free production entitlement not established
+
+- Its API FAQ explicitly permits using API-retrieved data with AI/ML models and prediction systems, storing it in a database, and retaining retrieved data after subscription cancellation. Raw API data resale/redistribution is prohibited; no attribution is required.
+- The API setup guide says users subscribe, then select the leagues included in their package. Its public example key is limited to EPL 2018/19 endpoint testing; this is not a free current-season production entitlement.
+- Decision: legally clearer than PitchAPI for AI/ML, but not approved as a no-budget live provider until an account's actual league entitlement, price and current-season coverage are confirmed. Do not use the website itself for automated scraping; use only the API.
+- Official sources: https://footystats.org/api/documentations/faq ; https://footystats.org/api/documentations/setup-the-api ; https://footystats.org/terms-and-conditions
+
+### Source qualification order
+
+1. Complete the user's 5Dollar Community Access activation and verify `GET /v1/status` plus the exact selectable country-pack league list. Argentina remains the best volume candidate from the existing comparison; do not assume the account has changed until the API confirms it.
+2. Request written PitchAPI confirmation covering upstream source lineage, data retention, commercial use, public display and model training. If confirmed, run a bounded read-only sample for EPL, Argentina and Brazil, then audit match-level xG/shot/player/lineup coverage and timestamps.
+3. Keep FootyStats as a rights-clear paid fallback; no purchase is authorized or assumed.
+4. Keep 5Dollar limited to its documented fixtures/results/odds capability. Its terms do not create xG or player-statistics coverage that the API does not provide.
