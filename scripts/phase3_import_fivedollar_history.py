@@ -265,6 +265,8 @@ def run_import(database_url: str, api_key: str, *, days: int = 365,
                 if not parsed.fixtures:
                     raise RuntimeError("EMPTY_PAGE_WITH_MORE_RESULTS")
                 page += 1
+            if fixture_count_by_competition[competition_id] == 0:
+                raise RuntimeError(f"NO_HISTORICAL_FIXTURES:{competition_id}")
 
         manifest_material = "\n".join(sorted(response_hashes + manifest_parts)).encode("utf-8")
         manifest_sha256 = hashlib.sha256(manifest_material).hexdigest()
