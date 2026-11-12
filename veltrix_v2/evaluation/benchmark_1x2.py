@@ -28,6 +28,47 @@ class BookmakerComparison1X2:
     comparison: BenchmarkComparison1X2
 
 
+def _latest_complete_quote_group_per_fixture(
+    rows: tuple[NormalizedBookProbability, ...],
+) -> tuple[NormalizedBookProbability, ...]:
+    """Select the latest complete pre-match bookmaker quote group per fixture."""
+    by_fixture: dict[str, dict[tuple[object, ...], dict[str, NormalizedBookProbability]]] = {}
+    for row in rows:
+        key = (
+            row.source_id, row.bookmaker_id, row.market.upper(), row.line,
+            row.captured_at, row.kickoff_at, row.provider_quote_at,
+            row.source_observation_id,
+        )
+        group = by_fixture.setdefault(row.fixture_id, {}).setdefault(key, {})
+        selection = row.selection.upper()
+        if selection in group:
+            raise ValueError("1X2_BENCHMARK_DUPLICATE_SELECTION")
+        group[selection] = row
+
+    selected: list[NormalizedBookProbability] = []
+    for fixture_id, groups in by_fixture.items():
+        complete = [
+            (key, group) for key, group in groups.items()
+            if set(group) == {"HOME", "DRAW", "AWAY"}
+        ]
+        if not complete:
+            raise ValueError("1X2_BENCHMARK_INCOMPLETE_MARKET")
+        ranked = [
+            (
+                (key[6], key[4]),  # provider quote time, then local capture time
+                key,
+                group,
+            )
+            for key, group in complete
+        ]
+        best_rank = max(row[0] for row in ranked)
+        best = [(key, group) for rank, key, group in ranked if rank == best_rank]
+        if len(best) != 1:
+            raise ValueError("1X2_BENCHMARK_LATEST_QUOTE_GROUP_AMBIGUOUS")
+        selected.extend(best[0][1][selection] for selection in ("HOME", "DRAW", "AWAY"))
+    return tuple(selected)
+
+
 def compare_1x2_to_bookmaker(
     model_forecasts: Iterable[Forecast1X2],
     bookmaker_probabilities: Iterable[NormalizedBookProbability],
@@ -47,6 +88,8 @@ def compare_1x2_to_bookmaker(
     if first.market.upper() != "1X2" or first.line is not None:
         raise ValueError("1X2_BENCHMARK_MARKET_OR_LINE_INVALID")
 
+    books = _latest_complete_quote_group_per_fixture(books)
+    first = books[0]
     groups: dict[str, dict[str, NormalizedBookProbability]] = {}
     seen_snapshots: set[str] = set()
     for row in books:
