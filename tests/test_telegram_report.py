@@ -137,7 +137,8 @@ def test_report_splits_without_dropping_fixtures_or_exceeding_limit():
     messages = format_report_messages(report)
     assert len(messages) > 1
     assert all(len(message) <= MAX_MESSAGE_LENGTH for message in messages)
-    assert all("Football data by 5DollarFootballAPI" not in message for message in messages)
+    assert all("Football data by 5DollarFootballAPI" in message for message in messages)
+    assert all("https://5dollarfootballapi.com" in message for message in messages)
     combined = "\n".join(messages)
     for index in range(30):
         assert f"Home Team {index:02d} vs Away Team {index:02d}" in combined
