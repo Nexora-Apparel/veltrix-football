@@ -77,8 +77,11 @@ def verify_evidence_manifest(manifest_path: str | Path) -> dict[str, Any]:
         pure = PurePosixPath(relative)
         if pure.is_absolute() or ".." in pure.parts or "\\" in relative:
             raise EvidenceIntegrityError(f"Unsafe artifact path for role {role}.")
-        if relative in seen_paths:
-            raise EvidenceIntegrityError("Artifact paths must be unique.")
+        canonical_relative = pure.as_posix()
+        if not canonical_relative or canonical_relative in {".", ""}:
+            raise EvidenceIntegrityError(f"Invalid artifact path for role {role}.")
+        if canonical_relative in seen_paths:
+            raise EvidenceIntegrityError("Artifact paths must be unique after path normalization.")
         if not isinstance(expected, str) or len(expected) != 64 or any(c not in "0123456789abcdef" for c in expected):
             raise EvidenceIntegrityError(f"Invalid SHA-256 for role {role}.")
 
@@ -100,7 +103,7 @@ def verify_evidence_manifest(manifest_path: str | Path) -> dict[str, Any]:
             raise EvidenceIntegrityError(f"SHA-256 mismatch for role {role}.")
 
         seen_roles.add(role)
-        seen_paths.add(relative)
+        seen_paths.add(canonical_relative)
         verified.append({"role": role, "path": relative, "sha256": actual, "bytes": resolved.stat().st_size})
 
     missing = sorted(REQUIRED_ROLES - seen_roles)
