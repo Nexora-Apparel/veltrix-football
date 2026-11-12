@@ -293,6 +293,10 @@ class PostgresHistoryStore:
             raise ValueError("ENTITLEMENT_CHECK_TIME_MUST_BE_TIMEZONE_AWARE")
         if len(evidence_sha256) != 64 or any(ch not in "0123456789abcdef" for ch in evidence_sha256.casefold()):
             raise ValueError("ENTITLEMENT_EVIDENCE_HASH_INVALID")
+        if not provider.strip() or not source_id.strip() or not plan_code.strip() or not entitlement_status.strip():
+            raise ValueError("ENTITLEMENT_IDENTITY_REQUIRED")
+        if len(set(competition_ids)) != len(competition_ids):
+            raise ValueError("ENTITLEMENT_COMPETITION_IDS_DUPLICATED")
         conn = self._connect_for_write()
         try:
             cur = conn.cursor()
@@ -401,10 +405,13 @@ class PostgresHistoryStore:
             cur = conn.cursor()
             response_id = self._persist_provider_response(cur, response)
             cur.execute(
-                """SELECT entitlement_status,competition_ids
-                   FROM provider_entitlement_observations
-                   WHERE provider=%s AND source_id=%s AND checked_at<=%s
-                   ORDER BY checked_at DESC,id DESC LIMIT 1""",
+                """SELECT e.entitlement_status,e.competition_ids
+                   FROM provider_entitlement_observations e
+                   JOIN provider_responses r ON r.id=e.provider_response_id
+                   WHERE e.provider=%s AND e.source_id=%s AND e.checked_at<=%s
+                     AND r.provider=e.provider AND r.source_id=e.source_id
+                     AND r.http_status=200 AND r.fetched_at<=e.checked_at
+                   ORDER BY e.checked_at DESC,e.id DESC LIMIT 1""",
                 (response.provider, response.source_id, response.fetched_at_utc),
             )
             entitlement = cur.fetchone()
