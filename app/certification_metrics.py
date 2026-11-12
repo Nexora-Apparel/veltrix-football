@@ -114,6 +114,13 @@ def recompute_raw_certification(manifest_path: str | Path, *, min_walk_forward: 
     model_manifest = data["model_manifest"]
     if not isinstance(model_manifest, dict) or not model_manifest.get("model_version"):
         raise EvidenceIntegrityError("model_manifest must identify an immutable model_version.")
+    if not isinstance(data["coverage_audit"], dict):
+        raise EvidenceIntegrityError("coverage_audit must be a structured object.")
+    if data["coverage_audit"].get("rights_status") != "APPROVED_FOR_INTENDED_USE" or data["coverage_audit"].get("commercial_use_eligible") is not True:
+        raise EvidenceIntegrityError("coverage_audit does not prove approved rights for intended commercial use.")
+    calibration_versions = model_manifest.get("calibration_versions", [])
+    if not isinstance(calibration_versions, list):
+        raise EvidenceIntegrityError("model_manifest calibration_versions must be a list.")
 
     failures: dict[str, list[str]] = {market: [] for market in MARKETS}
     walk_by_market: dict[str, list[dict[str, Any]]] = defaultdict(list)
@@ -133,6 +140,9 @@ def recompute_raw_certification(manifest_path: str | Path, *, min_walk_forward: 
             continue
         if row.get("model_version") != model_manifest.get("model_version"):
             failures[market].append("walk-forward model version mismatch")
+            continue
+        if market != "1X2" and (not row.get("calibration_version") or row.get("calibration_version") not in calibration_versions):
+            failures[market].append("walk-forward calibration version is missing or not in model manifest")
             continue
         key = (fixture, market, str(row.get("split") or "full"))
         if key in seen_walk:
@@ -212,7 +222,19 @@ def recompute_raw_certification(manifest_path: str | Path, *, min_walk_forward: 
         if not isinstance(won, bool):
             failures[market].append("prospective settlement requires boolean won")
             continue
+        selection = str(row.get("selection") or "").casefold()
+        outcome = str(row.get("outcome") or "").casefold()
+        if selection not in OUTCOMES[market] or outcome not in OUTCOMES[market] or won != (selection == outcome):
+            failures[market].append("selection result does not agree with source settlement outcome")
+            continue
+        snapshot_price = _number(quote.get("decimal_odds"))
+        if snapshot_price is None or abs(snapshot_price - price if (price := _number(row.get("decimal_odds"))) is not None else 999) > 1e-6:
+            failures[market].append("prospective odds do not match the exact snapshot price")
+            continue
         fee = _number(row.get("fees")) or 0.0
+        if fee < 0:
+            failures[market].append("fees cannot be negative")
+            continue
         profit = stake * (price - 1.0) - fee if won else -stake - fee
         if _number(row.get("recorded_profit")) is None or abs(float(row["recorded_profit"]) - profit) > 1e-6:
             failures[market].append("recorded net profit does not match stake, price, result and fees")
@@ -227,13 +249,16 @@ def recompute_raw_certification(manifest_path: str | Path, *, min_walk_forward: 
         full_ids = {str(row["fixture_id"]) for row in full}
         if len(full_ids) < min_walk_forward:
             failures[market].append("insufficient unique walk-forward fixtures")
+        model_metrics = _score(full, market, "model_probabilities")
+        if model_metrics["matches"] < min_walk_forward:
+            failures[market].append("walk-forward probability rows are incomplete")
         if market == "1X2":
             for scope, scope_rows in (("full", full), ("recent_holdout", holdout)):
-                model_metrics = _score(scope_rows, market, "model_probabilities")
+                model_scope = _score(scope_rows, market, "model_probabilities")
                 market_metrics = _score(scope_rows, market, "bookmaker_probabilities")
-                if not scope_rows or model_metrics["matches"] != market_metrics["matches"]:
+                if not scope_rows or model_scope["matches"] != market_metrics["matches"]:
                     failures[market].append(f"{scope} bookmaker comparison does not use identical fixtures")
-                elif model_metrics["brier_score"] >= market_metrics["brier_score"] or model_metrics["log_loss"] >= market_metrics["log_loss"]:
+                elif model_scope["brier_score"] >= market_metrics["brier_score"] or model_scope["log_loss"] >= market_metrics["log_loss"]:
                     failures[market].append(f"{scope} 1X2 model does not beat de-vigged bookmaker Brier and log loss")
         selections = paper_by_market[market]
         dates = {row["kickoff"][:10] for row in selections}
@@ -254,6 +279,7 @@ def recompute_raw_certification(manifest_path: str | Path, *, min_walk_forward: 
             failures[market].append("date-clustered 95% ROI lower confidence bound is not positive")
         market_results[market] = {
             "walk_forward_unique_fixtures": len(full_ids),
+            "walk_forward_metrics": model_metrics,
             "prospective_joined_selections": len(selections),
             "distinct_match_dates": len(dates),
             "timestamped_odds_coverage": quote_coverage,
