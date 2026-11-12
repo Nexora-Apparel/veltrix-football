@@ -49,6 +49,7 @@ def test_1x2_benchmark_uses_exact_common_fixture_set():
         models, books, outcomes, eligible_fixture_ids=["f1", "f2", "f3", "f4"]
     )
     assert result.common_sample_size == 2
+    assert result.common_fixture_ids == ("f1", "f2")
     assert result.model_coverage == 0.75
     assert result.bookmaker_coverage == 0.5
     assert result.comparison.sample_size == 2
