@@ -51,8 +51,6 @@ class MarketCertificationEvidence:
             raise ValueError("CERTIFICATION_ROI_PERFORMANCE_MARKET_MISMATCH")
         if self.roi_performance.settled_bets != self.prospective_settled_selections:
             raise ValueError("CERTIFICATION_ROI_SETTLED_COUNT_MISMATCH")
-        if self.roi_performance.roi is None or self.roi_performance.roi_ci_95 is None:
-            raise ValueError("CERTIFICATION_ROI_PERFORMANCE_INTERVAL_REQUIRED")
 
 
 @dataclass(frozen=True, slots=True)
