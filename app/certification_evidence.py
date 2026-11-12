@@ -71,7 +71,7 @@ def verify_evidence_manifest(manifest_path: str | Path) -> dict[str, Any]:
         if not isinstance(relative, str) or not relative:
             raise EvidenceIntegrityError(f"Artifact path missing for role {role}.")
         pure = PurePosixPath(relative)
-        if pure.is_absolute() or ".." in pure.parts or "\\\\" in relative:
+        if pure.is_absolute() or ".." in pure.parts or "\\" in relative:
             raise EvidenceIntegrityError(f"Unsafe artifact path for role {role}.")
         if relative in seen_paths:
             raise EvidenceIntegrityError("Artifact paths must be unique.")
