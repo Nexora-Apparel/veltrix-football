@@ -191,6 +191,61 @@ class PostgresHistoryStore:
         finally:
             conn.close()
 
+    def advance_sync_watermark(
+        self, *, provider: str, data_class: str, scope: str,
+        cursor_value: str | None, expected_version: int, updated_at_utc: datetime,
+    ) -> int:
+        if expected_version < 0:
+            raise ValueError("SYNC_WATERMARK_EXPECTED_VERSION_INVALID")
+        if updated_at_utc.tzinfo is None or updated_at_utc.utcoffset() is None:
+            raise ValueError("SYNC_WATERMARK_TIME_MUST_BE_TIMEZONE_AWARE")
+        conn = self._connect()
+        try:
+            cur = conn.cursor()
+            cur.execute(
+                """INSERT INTO sync_watermarks(provider,data_class,scope,cursor_value,version,updated_at)
+                   VALUES (%s,%s,%s,NULL,0,%s)
+                   ON CONFLICT(provider,data_class,scope) DO NOTHING""",
+                (provider, data_class, scope, updated_at_utc),
+            )
+            cur.execute(
+                """SELECT version FROM sync_watermarks
+                   WHERE provider=%s AND data_class=%s AND scope=%s FOR UPDATE""",
+                (provider, data_class, scope),
+            )
+            row = cur.fetchone()
+            if not row or int(row[0]) != expected_version:
+                raise ValueError("SYNC_WATERMARK_VERSION_CONFLICT")
+            cur.execute(
+                """UPDATE sync_watermarks SET cursor_value=%s,version=version+1,updated_at=%s
+                   WHERE provider=%s AND data_class=%s AND scope=%s
+                   RETURNING version""",
+                (cursor_value, updated_at_utc, provider, data_class, scope),
+            )
+            updated = cur.fetchone()
+            if not updated:
+                raise ValueError("SYNC_WATERMARK_ADVANCE_FAILED")
+            conn.commit()
+            return int(updated[0])
+        except Exception:
+            conn.rollback()
+            raise
+        finally:
+            conn.close()
+
+    def get_sync_watermark(self, *, provider: str, data_class: str, scope: str):
+        conn = self._connect()
+        try:
+            cur = conn.cursor()
+            cur.execute(
+                """SELECT cursor_value,version,updated_at FROM sync_watermarks
+                   WHERE provider=%s AND data_class=%s AND scope=%s""",
+                (provider, data_class, scope),
+            )
+            return cur.fetchone()
+        finally:
+            conn.close()
+
     def record_entitlement_observation(
         self, *, provider: str, source_id: str, plan_code: str,
         entitlement_status: str, country_pack_code: str | None,
