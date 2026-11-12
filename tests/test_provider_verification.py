@@ -383,3 +383,28 @@ def test_community_smoke_uses_finished_fixture_fallback_within_twenty_request_bu
     assert "1X2=6/6" in output
     assert len(calls) == 20
     assert len(calls) <= 20
+
+
+def test_historical_odds_probe_is_only_called_after_explicit_opt_in(monkeypatch, capsys):
+    monkeypatch.setenv("THE_ODDS_API_KEY", "fake-odds")
+    monkeypatch.setenv("PROBE_THE_ODDS_API_HISTORICAL", "true")
+    calls = []
+
+    def fake_request(url, headers=None):
+        calls.append(url)
+        if "/v4/sports/?" in url:
+            return 200, {}, [{"key": "soccer_england_premier_league", "active": True}]
+        if "/historical/sports/soccer_epl/odds/" in url:
+            return 200, {"x-requests-remaining": "490"}, {
+                "timestamp": "2026-11-08T11:55:00Z",
+                "data": [],
+            }
+        raise AssertionError(f"Unexpected request: {url}")
+
+    monkeypatch.setattr(providers, "request_json", fake_request)
+    assert providers.check_odds_api() == "KEY_ACCEPTED"
+    output = capsys.readouterr().out
+    assert any("/historical/" in url for url in calls)
+    assert "ACCESS_CONFIRMED_EMPTY" not in output
+    assert "ACCESS_ONLY_NO_SAMPLE" in output
+    assert "maximum_credits=10" in output
