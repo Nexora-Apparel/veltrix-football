@@ -80,7 +80,7 @@ Observed results:
 - **StrikerAPI:** the static one-credit account check returned HTTP 402 with zero credits remaining. The feature and historical-odds probe was correctly skipped; no additional credits were spent.
 - **Side effects:** the run performed zero database writes, imports, prediction changes, Telegram messages or deployments.
 
-The next consolidated run must re-test OddsPapi after the import fix. It should not repeat the 5Dollar 17-request sample or spend additional StrikerAPI credits. GOAL API needs provider-side/browser-signature resolution before another call is justified.
+OddsPapi remains excluded because its data-use rights are not expressly granted; the corrected entrypoint is retained for a future rights-cleared probe, but another live request is not required for the selected source stack. Do not repeat the 5Dollar 17-request sample or spend additional StrikerAPI credits. GOAL API remains excluded; its latest 403 was a Cloudflare browser-signature block, not proof of an invalid key.
 
 ## 4. Other provider decisions
 
@@ -117,7 +117,7 @@ Decision: do not select StrikerAPI for the active stack until the free balance i
 
 ### GOAL API
 
-The 2026-11-11 bounded read-only probe passed for Argentina Liga Profesional and Brazil Serie A fixtures/results using Bearer authentication. This verifies technical access only. The provider's Terms do not grant the underlying sports-data IP rights and place third-party rights clearance on the customer.
+The 2026-11-11 bounded read-only probe passed for Argentina Liga Profesional and Brazil Serie A fixtures/results using Bearer authentication. The 2026-11-12 consolidated probe returned HTTP 403 with a Cloudflare message that the request was blocked based on its browser signature. This does not establish that the key is invalid; it establishes that the current runner cannot reach the endpoint with its present request fingerprint. The provider's Terms do not grant the underlying sports-data IP rights and place third-party rights clearance on the customer.
 
 Decision: preserve the credential, but exclude GOAL API from V2 training, persistent history and public display until upstream rights and permitted uses are documented. References: [documentation](https://goal-api.com/documentation), [Terms](https://goal-api.com/terms).
 
