@@ -336,3 +336,25 @@ def test_365_day_probe_stops_at_request_budget_without_claiming_complete_paginat
     assert report["failure_reason"] == "REQUEST_BUDGET_EXHAUSTED"
     assert report["request_count"] == 3
     assert report["pagination_complete"] is False
+
+
+
+def test_postgres_writer_refuses_nested_secret_request_parameters():
+    connection_requested = False
+
+    def connection_factory():
+        nonlocal connection_requested
+        connection_requested = True
+        raise AssertionError("must reject nested secret parameters before connecting")
+
+    response = ProviderResponse(
+        provider="5DollarFootballAPI", source_id="5dollarfootballapi",
+        endpoint="/leagues/1/fixtures", request_id="req-secret",
+        request_params={"filters": {"api_key": "must-never-persist"}},
+        http_status=200, raw_body=b'{"success":1,"data":[]}',
+        response_headers={"X-RateLimit-Remaining": "200"},
+        fetched_at_utc=NOW,
+    )
+    with pytest.raises(ValueError, match="PROVIDER_REQUEST_SECRET_PARAMETER_MUST_NOT_BE_STORED"):
+        PostgresHistoryStore(connection_factory).persist_page(response, [], approval())
+    assert not connection_requested
