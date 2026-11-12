@@ -111,7 +111,7 @@ def test_phase3_import_rejects_non_staging_database_before_connecting(monkeypatc
 
 def test_phase3_import_pins_the_exact_staging_neon_endpoint(monkeypatch):
     monkeypatch.setenv("VELTRIX_ENABLE_STAGING_IMPORT", "YES")
-    monkeypatch.setenv("VELTRIX_EXPECTED_DATABASE_HOST", "ep-allowed.c-16.us-east-1.aws.neon.tech")
+    monkeypatch.setenv("VELTRIX_EXPECTED_DATABASE_HOST", phase3_import.EXPECTED_DATABASE_HOST)
     with pytest.raises(RuntimeError, match="STAGING_DATABASE_HOST_ALLOWLIST_MISMATCH"):
         phase3_import._preflight(
             "postgresql://neondb_owner:fake@ep-wrong.c-16.us-east-1.aws.neon.tech/veltrix_football_staging",
@@ -137,6 +137,16 @@ def test_phase3_audit_recursively_rejects_secret_metadata():
     assert not phase3_audit._safe_key_scan({"headers": {"Authorization": "Bearer fake"}})
     assert not phase3_audit._safe_key_scan({"request": [{"api-key": "fake"}]})
     assert phase3_audit._safe_key_scan({"headers": {"x-ratelimit-remaining": "12"}})
+
+
+def test_phase3_import_rejects_modified_expected_host_configuration(monkeypatch):
+    monkeypatch.setenv("VELTRIX_ENABLE_STAGING_IMPORT", "YES")
+    monkeypatch.setenv("VELTRIX_EXPECTED_DATABASE_HOST", "ep-production.c-16.us-east-1.aws.neon.tech")
+    with pytest.raises(RuntimeError, match="STAGING_EXPECTED_HOST_CONFIGURATION_MISMATCH"):
+        phase3_import._preflight(
+            "postgresql://neondb_owner:fake@ep-production.c-16.us-east-1.aws.neon.tech/veltrix_football_staging",
+            "veltrix_football_staging",
+        )
 
 
 def test_phase3_import_window_and_api_key_are_bounded():
