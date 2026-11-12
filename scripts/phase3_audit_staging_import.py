@@ -233,13 +233,14 @@ def run_audit(database_url: str) -> dict:
             """, (json.dumps(sorted(COMPETITIONS)),))
             entitlement_snapshots = cur.fetchone()[0]
             cur.execute("""
-                SELECT count(*) FROM import_runs
+                SELECT count(*),max(manifest_sha256) FROM import_runs
                 WHERE provider='5DollarFootballAPI' AND status='COMPLETED'
                   AND requests_used<=request_budget
                   AND records_seen=records_inserted+records_rejected+records_quarantined
                   AND manifest_sha256 IS NOT NULL
             """)
-            completed_runs = cur.fetchone()[0]
+            completed_runs, import_manifest_sha256 = cur.fetchone()
+            import_manifest_sha256 = import_manifest_sha256.strip() if import_manifest_sha256 else None
             cur.execute("""
                 SELECT count(*) FROM import_checkpoints
                 WHERE status='COMPLETED'
@@ -269,6 +270,7 @@ def run_audit(database_url: str) -> dict:
                 "unsettled_or_unresulted_fixtures": unsettled_or_unresulted_fixtures,
                 "active_entitlement_snapshots": entitlement_snapshots,
                 "completed_import_runs": completed_runs,
+                "import_manifest_sha256": import_manifest_sha256,
                 "completed_checkpoints": completed_checkpoints,
                 "open_quarantine_records": open_quarantine,
             })
@@ -305,7 +307,7 @@ def run_audit(database_url: str) -> dict:
                     manifest_sha256,expected_migrations,applied_migrations,status,details,checked_at
                 ) VALUES (%s,3,%s,%s,%s::jsonb,%s)
             """, (
-                hashlib.sha256(material).hexdigest(),
+                import_manifest_sha256 or hashlib.sha256(material).hexdigest(),
                 len(observed_migrations),
                 report["status"],
                 json.dumps(report, sort_keys=True, default=str),
