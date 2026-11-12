@@ -332,15 +332,18 @@ def recompute_raw_certification(manifest_path: str | Path, *, min_walk_forward: 
         if len(full_ids) < min_walk_forward:
             failures[market].append("insufficient unique walk-forward fixtures")
         model_metrics = _score(full, market, "model_probabilities")
+        holdout_model_metrics = _score(holdout, market, "model_probabilities")
+        benchmark_metrics: dict[str, Any] = {}
         if model_metrics["matches"] < min_walk_forward:
             failures[market].append("walk-forward probability rows are incomplete")
         if market == "1X2":
             for scope, scope_rows in (("full", full), ("recent_holdout", holdout)):
                 model_scope = _score(scope_rows, market, "model_probabilities")
-                market_metrics = _score(scope_rows, market, "bookmaker_odds")
-                if not scope_rows or model_scope["matches"] != market_metrics["matches"]:
+                market_scope = _score(scope_rows, market, "bookmaker_odds")
+                benchmark_metrics[scope] = {"model": model_scope, "bookmaker": market_scope}
+                if not scope_rows or model_scope["matches"] != market_scope["matches"]:
                     failures[market].append(f"{scope} bookmaker comparison does not use identical fixtures")
-                elif model_scope["brier_score"] >= market_metrics["brier_score"] or model_scope["log_loss"] >= market_metrics["log_loss"]:
+                elif model_scope["brier_score"] >= market_scope["brier_score"] or model_scope["log_loss"] >= market_scope["log_loss"]:
                     failures[market].append(f"{scope} 1X2 model does not beat de-vigged bookmaker Brier and log loss")
         selections = paper_by_market[market]
         dates = {row["kickoff"][:10] for row in selections}
@@ -362,6 +365,8 @@ def recompute_raw_certification(manifest_path: str | Path, *, min_walk_forward: 
         market_results[market] = {
             "walk_forward_unique_fixtures": len(full_ids),
             "walk_forward_metrics": model_metrics,
+            "recent_holdout_metrics": holdout_model_metrics,
+            "bookmaker_comparisons": benchmark_metrics,
             "prospective_joined_selections": len(selections),
             "distinct_match_dates": len(dates),
             "timestamped_odds_coverage": quote_coverage,
