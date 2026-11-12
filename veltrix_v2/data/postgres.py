@@ -70,6 +70,146 @@ class PostgresHistoryStore:
         finally:
             conn.close()
 
+    def start_import_run(
+        self, *, provider: str, import_type: str, boundary_start: datetime,
+        boundary_end: datetime, request_budget: int, importer_version: str,
+        rights_approval_id: str, started_at_utc: datetime,
+    ) -> int:
+        if boundary_start.tzinfo is None or boundary_end.tzinfo is None or started_at_utc.tzinfo is None:
+            raise ValueError("IMPORT_RUN_TIMESTAMPS_MUST_BE_TIMEZONE_AWARE")
+        if boundary_end <= boundary_start or request_budget < 1:
+            raise ValueError("IMPORT_RUN_BOUNDARY_OR_BUDGET_INVALID")
+        conn = self._connect()
+        try:
+            cur = conn.cursor()
+            cur.execute(
+                """INSERT INTO import_runs(
+                    provider,import_type,boundary_start,boundary_end,status,started_at,
+                    importer_version,request_budget,rights_approval_id
+                ) VALUES (%s,%s,%s,%s,'RUNNING',%s,%s,%s,%s) RETURNING id""",
+                (provider, import_type, boundary_start, boundary_end, started_at_utc,
+                 importer_version, request_budget, rights_approval_id),
+            )
+            row = cur.fetchone()
+            if not row:
+                raise ValueError("IMPORT_RUN_INSERT_FAILED")
+            conn.commit()
+            return int(row[0])
+        except Exception:
+            conn.rollback()
+            raise
+        finally:
+            conn.close()
+
+    def upsert_checkpoint(
+        self, *, import_run_id: int, window_start: datetime, window_end: datetime,
+        cursor_value: str | None, status: str, records_seen: int,
+        records_inserted: int, records_rejected: int, records_quarantined: int,
+        requests_used: int, response_sha256: str | None, last_error_code: str | None = None,
+    ) -> None:
+        if status not in {"PENDING", "RUNNING", "COMPLETED", "FAILED"}:
+            raise ValueError("IMPORT_CHECKPOINT_STATUS_INVALID")
+        if min(records_seen, records_inserted, records_rejected, records_quarantined, requests_used) < 0:
+            raise ValueError("IMPORT_CHECKPOINT_COUNTS_INVALID")
+        if window_start.tzinfo is None or window_end.tzinfo is None or window_end <= window_start:
+            raise ValueError("IMPORT_CHECKPOINT_WINDOW_INVALID")
+        conn = self._connect()
+        try:
+            cur = conn.cursor()
+            cur.execute(
+                """INSERT INTO import_checkpoints(
+                    import_run_id,window_start,window_end,cursor_value,status,records_seen,
+                    records_inserted,updated_at,records_rejected,records_quarantined,
+                    requests_used,response_sha256,last_error_code
+                ) VALUES (%s,%s,%s,%s,%s,%s,%s,NOW(),%s,%s,%s,%s,%s)
+                ON CONFLICT(import_run_id,window_start,window_end) DO UPDATE SET
+                    cursor_value=EXCLUDED.cursor_value,status=EXCLUDED.status,
+                    records_seen=EXCLUDED.records_seen,records_inserted=EXCLUDED.records_inserted,
+                    updated_at=NOW(),records_rejected=EXCLUDED.records_rejected,
+                    records_quarantined=EXCLUDED.records_quarantined,
+                    requests_used=EXCLUDED.requests_used,response_sha256=EXCLUDED.response_sha256,
+                    last_error_code=EXCLUDED.last_error_code""",
+                (import_run_id, window_start, window_end, cursor_value, status,
+                 records_seen, records_inserted, records_rejected, records_quarantined,
+                 requests_used, response_sha256, last_error_code),
+            )
+            conn.commit()
+        except Exception:
+            conn.rollback()
+            raise
+        finally:
+            conn.close()
+
+    def finish_import_run(
+        self, *, import_run_id: int, status: str, finished_at_utc: datetime,
+        requests_used: int, records_seen: int, records_inserted: int,
+        records_rejected: int, records_quarantined: int,
+        manifest_sha256: str | None, reason_code: str | None = None,
+    ) -> None:
+        if status not in {"COMPLETED", "FAILED", "PAUSED"}:
+            raise ValueError("IMPORT_RUN_TERMINAL_STATUS_INVALID")
+        if finished_at_utc.tzinfo is None:
+            raise ValueError("IMPORT_RUN_FINISH_TIME_MUST_BE_TIMEZONE_AWARE")
+        if min(requests_used, records_seen, records_inserted, records_rejected, records_quarantined) < 0:
+            raise ValueError("IMPORT_RUN_COUNTS_INVALID")
+        conn = self._connect()
+        try:
+            cur = conn.cursor()
+            cur.execute(
+                """UPDATE import_runs SET status=%s,finished_at=%s,requests_used=%s,
+                    records_seen=%s,records_inserted=%s,records_rejected=%s,
+                    records_quarantined=%s,manifest_sha256=%s,reason_code=%s
+                   WHERE id=%s AND status='RUNNING'""",
+                (status, finished_at_utc, requests_used, records_seen, records_inserted,
+                 records_rejected, records_quarantined, manifest_sha256, reason_code,
+                 import_run_id),
+            )
+            if cur.rowcount != 1:
+                raise ValueError("IMPORT_RUN_NOT_RUNNING_OR_NOT_FOUND")
+            conn.commit()
+        except Exception:
+            conn.rollback()
+            raise
+        finally:
+            conn.close()
+
+    def record_entitlement_observation(
+        self, *, provider: str, source_id: str, plan_code: str,
+        entitlement_status: str, country_pack_code: str | None,
+        competition_ids: list[str], rate_limit_hour: int | None,
+        rate_limit_minute: int | None, quota_remaining: int | None,
+        provider_response_id: int | None, evidence_sha256: str,
+        checked_at_utc: datetime,
+    ) -> int:
+        if checked_at_utc.tzinfo is None:
+            raise ValueError("ENTITLEMENT_CHECK_TIME_MUST_BE_TIMEZONE_AWARE")
+        if len(evidence_sha256) != 64:
+            raise ValueError("ENTITLEMENT_EVIDENCE_HASH_INVALID")
+        conn = self._connect()
+        try:
+            cur = conn.cursor()
+            cur.execute(
+                """INSERT INTO provider_entitlement_observations(
+                    provider,source_id,plan_code,entitlement_status,country_pack_code,
+                    competition_ids,rate_limit_hour,rate_limit_minute,quota_remaining,
+                    provider_response_id,evidence_sha256,checked_at
+                ) VALUES (%s,%s,%s,%s,%s,%s::jsonb,%s,%s,%s,%s,%s,%s)
+                RETURNING id""",
+                (provider, source_id, plan_code, entitlement_status, country_pack_code,
+                 json.dumps(sorted(competition_ids)), rate_limit_hour, rate_limit_minute,
+                 quota_remaining, provider_response_id, evidence_sha256, checked_at_utc),
+            )
+            row = cur.fetchone()
+            if not row:
+                raise ValueError("ENTITLEMENT_OBSERVATION_INSERT_FAILED")
+            conn.commit()
+            return int(row[0])
+        except Exception:
+            conn.rollback()
+            raise
+        finally:
+            conn.close()
+
     def _persist_provider_response(self, cur, response: ProviderResponse) -> int:
         sensitive = {"authorization", "x-api-key", "api-key", "cookie", "set-cookie"}
         if any(str(key).casefold() in sensitive for key in response.response_headers):
