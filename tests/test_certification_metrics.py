@@ -304,3 +304,33 @@ def test_walk_forward_bookmaker_benchmark_supports_explicit_provider_field_mappi
         "_body_json": {"matches": [raw]},
     }}
     _verify_walk_forward_bookmaker_odds(row, responses, {"source-a"})
+
+
+
+def test_walk_forward_fixture_identity_requires_pre_prediction_raw_source():
+    from datetime import datetime
+    from app.certification_metrics import _verify_fixture_identity_source
+
+    row = {
+        "fixture_id": "fixture-3", "kickoff": "2026-01-03T18:00:00+00:00",
+        "prediction_at": "2026-01-03T17:00:00+00:00",
+        "fixture_source_id": "source-a",
+        "fixture_source_response_id": "fixture-response",
+        "fixture_source_pointer": "/fixtures/0",
+    }
+    raw = {"fixture_id": "fixture-3", "kickoff": row["kickoff"]}
+    responses = {"fixture-response": {
+        "source_id": "source-a",
+        "_fetched_at": datetime.fromisoformat("2026-01-03T16:00:00+00:00"),
+        "_body_json": {"fixtures": [raw]},
+    }}
+    _verify_fixture_identity_source(row, responses, {"source-a"})
+
+    forged = dict(row)
+    forged["kickoff"] = "2026-01-03T19:00:00+00:00"
+    with pytest.raises(EvidenceIntegrityError, match="does not match kickoff"):
+        _verify_fixture_identity_source(forged, responses, {"source-a"})
+
+    responses["fixture-response"]["_fetched_at"] = datetime.fromisoformat("2026-01-03T17:30:00+00:00")
+    with pytest.raises(EvidenceIntegrityError, match="pre-prediction"):
+        _verify_fixture_identity_source(row, responses, {"source-a"})
