@@ -13,7 +13,8 @@ CAPTURED = KICKOFF - timedelta(hours=1)
 
 
 def quote(selection, odds, *, market="1X2", line=None, bookmaker="book-a",
-          captured=CAPTURED, source="source-a", fixture="fixture-a", snapshot_id=None):
+          captured=CAPTURED, source="source-a", fixture="fixture-a", snapshot_id=None,
+          provider_quote_at=None):
     return OddsSnapshot(
         snapshot_id=snapshot_id or f"{market}-{selection}-{odds}",
         fixture_id=fixture,
@@ -24,7 +25,7 @@ def quote(selection, odds, *, market="1X2", line=None, bookmaker="book-a",
         decimal_odds=Decimal(str(odds)),
         captured_at=captured,
         kickoff_at=KICKOFF,
-        provider_quote_at=captured - timedelta(seconds=1),
+        provider_quote_at=provider_quote_at or captured - timedelta(seconds=1),
         source_observation_id="obs-normalization-" + fixture,
         line=None if line is None else Decimal(str(line)),
     )
@@ -138,7 +139,10 @@ def test_mixed_provider_quote_timestamps_are_rejected():
     with pytest.raises(ValueError, match="GROUP_MISMATCH"):
         normalize_bookmaker_market([
             quote("YES", "1.8", market="BTTS"),
-            quote("NO", "2.0", market="BTTS", captured=CAPTURED),
+            quote(
+                "NO", "2.0", market="BTTS", captured=CAPTURED,
+                provider_quote_at=CAPTURED - timedelta(seconds=2),
+            ),
         ])
 
 
