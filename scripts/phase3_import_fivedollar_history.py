@@ -27,6 +27,7 @@ REQUEST_BUDGET = 40
 PER_PAGE = 100
 PACE_SECONDS = 4.0
 EXPECTED_DATABASE = "veltrix_football_staging"
+EXPECTED_DATABASE_HOST = "ep-ancient-block-bcb439pk.c-16.us-east-1.aws.neon.tech"
 MIGRATION_CHECKSUMS = {
     "0001_persistent_foundation": "b5f6f1b5dbe6d7587c4876578f50d8327711f7fd26d03410f31a04db659d267c",
     "0002_historical_provenance": "619c556674e409ad5cd3a9ddc9ae578455207545d3435b9ece4e91a953fef49a",
@@ -43,7 +44,9 @@ def _preflight(database_url: str, expected_database: str) -> None:
         raise RuntimeError("STAGING_DATABASE_URL_REQUIRED")
     expected_host = os.getenv("VELTRIX_EXPECTED_DATABASE_HOST", "").strip().casefold()
     actual_host = (urlparse(database_url).hostname or "").casefold()
-    if not expected_host or actual_host != expected_host:
+    if expected_host != EXPECTED_DATABASE_HOST:
+        raise RuntimeError("STAGING_EXPECTED_HOST_CONFIGURATION_MISMATCH")
+    if actual_host != EXPECTED_DATABASE_HOST:
         raise RuntimeError("STAGING_DATABASE_HOST_ALLOWLIST_MISMATCH")
     import psycopg
 
