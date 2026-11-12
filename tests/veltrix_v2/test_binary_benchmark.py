@@ -142,3 +142,20 @@ def test_binary_benchmark_rejects_non_normalized_selection_pair():
             eligible_fixture_ids=["f1"],
             affirmative_selection="YES",
         )
+
+
+
+def test_binary_benchmark_rejects_mixed_provider_quote_provenance():
+    rows = [quote("f1", "YES", 0.5), quote("f1", "NO", 0.5)]
+    rows[1] = replace(
+        rows[1],
+        provider_quote_at=rows[1].provider_quote_at - timedelta(seconds=1),
+    )
+    with pytest.raises(ValueError, match="TIMESTAMPS_OR_PROVENANCE_MISMATCH"):
+        compare_binary_to_bookmaker(
+            [BinaryForecast("f1", 0.6)],
+            rows,
+            [SettledBinaryOutcome("f1", "YES")],
+            eligible_fixture_ids=["f1"],
+            affirmative_selection="YES",
+        )
