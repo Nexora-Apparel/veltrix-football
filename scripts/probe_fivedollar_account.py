@@ -40,7 +40,7 @@ def _request(path: str, key: str):
         raise ProbeError("INVALID_JSON") from None
     if status != 200 or not isinstance(payload, dict) or payload.get("success") not in (1, True):
         raise ProbeError("UNSUCCESSFUL_RESPONSE")
-    return payload.get("data"), headers
+    return payload, headers
 
 
 def _hash(report: dict) -> str:
@@ -53,15 +53,18 @@ def _hash(report: dict) -> str:
 def probe(key: str, request=_request) -> dict:
     if not key.strip():
         raise ProbeError("MISSING_SECRET")
-    status_data, status_headers = request("/status", key)
-    leagues_data, league_headers = request("/leagues", key)
-    if not isinstance(status_data, dict):
+    status_payload, status_headers = request("/status", key)
+    leagues_payload, league_headers = request("/leagues", key)
+    if not isinstance(status_payload, dict) or not isinstance(status_payload.get("data"), dict):
         raise ProbeError("STATUS_SCHEMA_INVALID")
+    if not isinstance(leagues_payload, dict):
+        raise ProbeError("LEAGUE_CATALOGUE_SCHEMA_INVALID")
+    status_data = status_payload["data"]
+    leagues_data = leagues_payload.get("data")
+    if isinstance(leagues_data, dict) and isinstance(leagues_data.get("leagues"), list):
+        leagues_data = leagues_data["leagues"]
     if not isinstance(leagues_data, list):
-        if isinstance(leagues_data, dict) and isinstance(leagues_data.get("leagues"), list):
-            leagues_data = leagues_data["leagues"]
-        else:
-            raise ProbeError("LEAGUE_CATALOGUE_SCHEMA_INVALID")
+        raise ProbeError("LEAGUE_CATALOGUE_SCHEMA_INVALID")
 
     competitions = []
     for row in leagues_data:
@@ -94,8 +97,7 @@ def probe(key: str, request=_request) -> dict:
         "competition_count_page_1": len(competitions),
         "competitions": competitions,
         "pagination": {
-            "has_more": (leagues_data.get("pagination") or {}).get("has_more")
-            if isinstance(leagues_data, dict) else None,
+            "has_more": (leagues_payload.get("pagination") or {}).get("has_more"),
         },
         "quota_headers": {
             "status_limit": status_headers.get("X-RateLimit-Limit"),
