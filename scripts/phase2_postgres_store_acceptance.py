@@ -226,6 +226,27 @@ def main() -> dict:
     )
     assert suspended["quarantined_or_conflicting"] == 1
 
+    store.revoke_source_approval(
+        approval_id=approval.approval_id,
+        evidence_uri="https://example.invalid/revocation-evidence",
+        evidence_sha256=hashlib.sha256(b"rights-withdrawal-evidence").hexdigest(),
+        effective_at_utc=now + timedelta(seconds=3),
+        reason_code="RIGHTS_WITHDRAWN",
+    )
+    revoked_result = store.persist_page(
+        replace(response("phase2-ci-page-after-rights-revocation", (2, 1)),
+                fetched_at_utc=now + timedelta(seconds=4)),
+        [fixture], approval, import_run_id=run_id,
+    )
+    assert revoked_result["quarantined_or_conflicting"] == 1
+    with psycopg.connect(database_url) as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT count(*) FROM ingestion_quarantine WHERE provider_entity_id='987654321' AND reason_code='SOURCE_APPROVAL_REVOKED_OR_UNVERIFIED'"
+            )
+            revoked_quarantined = cur.fetchone()[0]
+    assert revoked_quarantined == 1
+
     manifest = hashlib.sha256(
         "\n".join(sorted([fixture.payload_sha256, conflicting_fixture.payload_sha256])).encode()
     ).hexdigest()
@@ -353,6 +374,7 @@ def main() -> dict:
         "stale_sync_writer_rejected": stale_watermark_rejected,
         "altered_approval_replay_rejected": approval_conflict_rejected,
         "terminal_checkpoint_rewrite_rejected": checkpoint_terminal_rewrite_rejected,
+        "revoked_source_quarantined": revoked_quarantined,
     }
 
 
