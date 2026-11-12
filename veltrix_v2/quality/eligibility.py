@@ -29,6 +29,11 @@ class SourceApproval:
     valid_from_utc: datetime
     permitted_uses: tuple[str, ...] = ()
     valid_until_utc: datetime | None = None
+    evidence_uri: str | None = None
+    evidence_sha256: str | None = None
+    reviewed_at_utc: datetime | None = None
+    reviewer_id: str | None = None
+    rights_basis: str | None = None
 
     def __post_init__(self) -> None:
         if not all((self.approval_id, self.provider, self.competition_key, self.data_type)):
@@ -47,6 +52,24 @@ class SourceApproval:
             object.__setattr__(self, "valid_until_utc", _utc(self.valid_until_utc, "valid_until_utc"))
             if self.valid_until_utc <= self.valid_from_utc:
                 raise ValueError("approval validity interval is empty")
+        if self.status == "approved":
+            if not all((
+                isinstance(self.evidence_uri, str) and self.evidence_uri.strip(),
+                isinstance(self.evidence_sha256, str)
+                and len(self.evidence_sha256) == 64
+                and all(char in "0123456789abcdef" for char in self.evidence_sha256.casefold()),
+                isinstance(self.reviewer_id, str) and self.reviewer_id.strip(),
+                self.rights_basis in {"terms", "written_permission", "open_license", "contract"},
+            )):
+                raise ValueError("approved source requires traceable rights evidence")
+            if not isinstance(self.reviewed_at_utc, datetime):
+                raise ValueError("approved source requires review timestamp")
+            reviewed = _utc(self.reviewed_at_utc, "reviewed_at_utc")
+            if reviewed < self.valid_from_utc:
+                raise ValueError("source rights review precedes approval validity")
+            object.__setattr__(self, "reviewed_at_utc", reviewed)
+        elif self.reviewed_at_utc is not None:
+            object.__setattr__(self, "reviewed_at_utc", _utc(self.reviewed_at_utc, "reviewed_at_utc"))
 
 
 @dataclass(frozen=True, slots=True)
