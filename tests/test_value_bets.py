@@ -126,10 +126,11 @@ def test_fixture_value_screen_can_rank_1x2_candidates_after_explicit_validation(
     }
     result = screen_fixture_value_bets(prediction, validation_certificate=certificate)
     candidates = result["markets"]["1X2"]["candidates"]
-    assert candidates
-    assert candidates[0]["selection"] == "home_win"
-    assert candidates[0]["market"] == "1X2"
-    assert candidates[0]["provider"] == "The Odds API"
+    assert candidates == []
+    assert result["markets"]["1X2"]["status"] == "DISABLED_UNVALIDATED"
+    assert result["status"] == "DISABLED_UNVALIDATED"
+    assert result["model_validated"] is False
+    assert result["candidate_count"] == 0
 
 
 def test_attach_value_screen_writes_report_level_validation_gate():
