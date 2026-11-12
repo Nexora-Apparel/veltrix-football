@@ -88,7 +88,8 @@ def run_acceptance() -> dict:
                     'provider_responses'::regclass,
                     'source_approvals'::regclass,
                     'provider_entitlement_observations'::regclass,
-                    'fixture_result_versions'::regclass
+                    'fixture_result_versions'::regclass,
+                    'source_approval_status_events'::regclass
                   )
             """)
             immutable_triggers = {row[0] for row in cur.fetchall()}
