@@ -320,3 +320,16 @@ No model certification, value-bet unlock, public prediction release or 06:00 WAT
 - A source approved for internal model training but not public display/commercial use is rejected when those uses are requested. Provisional/revoked approvals and missing permissions remain fail-closed.
 - This is a stricter contract and regression-test improvement. It is not yet an end-to-end provider-rights integration: the production ingestion path must populate these permissions from reviewed terms before observations are accepted, and publication must request the public-display/commercial-use scope.
 - Latest verified head before this documentation update: `0ed39bf7308cf4a9d32226fdcb683f7a6eb61a98`; V2 foundation suite **379 passed**; full repository suite **877 passed**. Provider live probes were skipped by design. Daily prediction workflow remained skipped.
+
+
+## 17. Remaining certification evidence-binding defect — 2026-11-12
+
+A further review of `evaluation/certification.py` found that the ROI sub-evidence is now typed, but the overall certificate is not yet a complete evidence chain:
+
+- `MarketCertificationEvidence` still accepts caller-supplied walk-forward sample counts, prospective selection counts, distinct-date counts, timestamped-odds coverage and source/point-in-time booleans.
+- `ReleaseCertification` still accepts caller-supplied bookmaker-superiority booleans rather than the actual common-sample `BookmakerComparison1X2` result.
+- `PredictionMarketEvidence` likewise accepts a sample count and source/leakage/calibration booleans rather than typed outputs from the relevant evaluation, provenance, leakage and calibration reports.
+
+These values are validated for type/range and internally consistent pass/fail status, but they are not yet cryptographically or structurally bound to the underlying walk-forward forecasts, `PaperLedger`, timestamped `OddsSnapshot` groups and benchmark comparison. Therefore **no release certificate produced by manually constructing these evidence dataclasses may be treated as a real qualification result**.
+
+Next core defect to close before certification: replace those scalar/boolean fields with typed evaluator outputs; derive sample counts and distinct dates from the actual walk-forward report and prospective paper ledger; derive timestamped odds coverage from complete source-timestamped market quote sets; and derive 1X2 benchmark gates from the exact common-sample bookmaker comparison. The prediction publication certificate needs equivalent binding to actual calibration and leakage evidence. Value betting remains locked and prediction release remains blocked until this work and real-data validation pass.
