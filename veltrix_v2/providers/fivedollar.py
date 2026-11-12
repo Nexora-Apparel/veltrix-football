@@ -35,7 +35,7 @@ def fetch_fixture_odds(
     timeout_seconds: float = 15.0,
     opener: Callable = urlopen,
     captured_at: datetime | None = None,
-    source_observation_id: str | None = None,
+    source_observation_id: str,
 ) -> FiveDollarOddsCapture:
     """Fetch one fixture's full Bet365 odds payload and timestamp retrieval.
 
