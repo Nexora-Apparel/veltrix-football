@@ -69,6 +69,8 @@ def run_audit(database_url: str) -> dict:
                 failures.append("DATABASE_NAME_MISMATCH")
             if role != EXPECTED_ROLE:
                 failures.append("DATABASE_ROLE_MISMATCH")
+            if role != EXPECTED_ROLE:
+                failures.append("DATABASE_ROLE_MISMATCH")
 
             cur.execute("SELECT version,checksum FROM schema_migrations ORDER BY version")
             observed_migrations = {v: h.strip() for v, h in cur.fetchall()}
@@ -191,8 +193,9 @@ def run_audit(database_url: str) -> dict:
             fixture_observation_mismatches = cur.fetchone()[0]
             cur.execute("""
                 SELECT count(*) FROM fixture_results fr
-                JOIN fixture_result_versions v ON v.fixture_id=fr.fixture_id
-                WHERE fr.source_observation_id<>v.source_observation_id
+                LEFT JOIN fixture_result_versions v ON v.fixture_id=fr.fixture_id
+                WHERE v.fixture_id IS NULL
+                   OR fr.source_observation_id<>v.source_observation_id
                    OR fr.home_score<>v.home_score OR fr.away_score<>v.away_score
             """)
             canonical_result_mismatches = cur.fetchone()[0]
