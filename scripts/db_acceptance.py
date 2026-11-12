@@ -101,6 +101,7 @@ def run_acceptance() -> dict:
             assert expected_triggers <= immutable_triggers, sorted(expected_triggers - immutable_triggers)
 
             # The append-only guard must reject mutations without changing the source row.
+            cur.execute("SAVEPOINT immutable_probe")
             cur.execute("""
                 INSERT INTO source_approvals (
                     approval_id, provider, source_id, competition_scope, data_type,
@@ -114,7 +115,6 @@ def run_acceptance() -> dict:
                     NOW(), '["STORAGE"]'::jsonb, TRUE
                 )
             """)
-            cur.execute("SAVEPOINT immutable_probe")
             mutation_rejected = False
             try:
                 cur.execute("UPDATE source_approvals SET status='REVOKED' WHERE approval_id='__acceptance_immutable_probe__'")
@@ -122,8 +122,6 @@ def run_acceptance() -> dict:
                 mutation_rejected = True
                 cur.execute("ROLLBACK TO SAVEPOINT immutable_probe")
             assert mutation_rejected, "source approval append-only trigger did not reject UPDATE"
-            cur.execute("ROLLBACK TO SAVEPOINT immutable_probe")
-            cur.execute("DELETE FROM source_approvals WHERE approval_id='__acceptance_immutable_probe__'")
 
             # Prove rollback semantics without leaving a probe row behind.
             cur.execute("SAVEPOINT acceptance_rollback_probe")
