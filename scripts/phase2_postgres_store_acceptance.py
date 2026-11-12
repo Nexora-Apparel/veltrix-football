@@ -154,6 +154,12 @@ def main() -> dict:
     assert repeated["source_observations"] == 0 and repeated["fixtures_inserted"] == 0
     assert repeated["result_versions_inserted"] == 0 and repeated["results_inserted"] == 0
 
+    duplicate_page = store.persist_page(
+        response("phase2-ci-duplicate-page", (2, 1)), [fixture], approval,
+        duplicate_fixture_ids=frozenset({fixture.provider_fixture_id}),
+    )
+    assert duplicate_page["quarantined_or_conflicting"] == 1
+
     changed_payload = dict(payload)
     changed_payload["goals"] = {"home": 3, "away": 1}
     changed_raw = json.dumps(changed_payload, sort_keys=True, separators=(",", ":")).encode()
@@ -253,7 +259,12 @@ def main() -> dict:
                 "SELECT count(*) FROM ingestion_quarantine WHERE provider_entity_id='987654321' AND reason_code='SOURCE_APPROVAL_REVOKED_OR_UNVERIFIED'"
             )
             revoked_quarantined = cur.fetchone()[0]
+            cur.execute(
+                "SELECT count(*) FROM ingestion_quarantine WHERE provider_entity_id='987654321' AND reason_code='DUPLICATE_PROVIDER_FIXTURE_ID_ACROSS_PAGES'"
+            )
+            duplicate_quarantined = cur.fetchone()[0]
     assert revoked_quarantined == 1
+    assert duplicate_quarantined == 1
 
     manifest = hashlib.sha256(
         "\n".join(sorted([fixture.payload_sha256, conflicting_fixture.payload_sha256])).encode()
@@ -316,7 +327,7 @@ def main() -> dict:
             entitlement_quarantined = cur.fetchone()[0]
             cur.execute("SELECT count(*) FROM ingestion_quarantine WHERE provider_entity_id='987654321' AND reason_code='PROVIDER_ENTITLEMENT_NOT_VERIFIED'")
             suspended_quarantined = cur.fetchone()[0]
-            cur.execute("SELECT count(*) FROM provider_responses WHERE request_id IN ('phase2-ci-status','phase2-ci-page-1','phase2-ci-page-2','phase2-ci-not-entitled','phase2-ci-status-revoked','phase2-ci-page-after-suspension')")
+            cur.execute("SELECT count(*) FROM provider_responses WHERE request_id IN ('phase2-ci-status','phase2-ci-page-1','phase2-ci-page-2','phase2-ci-not-entitled','phase2-ci-status-revoked','phase2-ci-page-after-suspension','phase2-ci-duplicate-page')")
             responses = cur.fetchone()[0]
             cur.execute("SELECT status,requests_used,records_seen,records_inserted,records_quarantined FROM import_runs WHERE id=%s", (run_id,))
             run_state = cur.fetchone()
@@ -335,7 +346,7 @@ def main() -> dict:
     assert canonical_score == (2, 1), canonical_score
     assert versions == 2, versions
     assert quarantined == 1, quarantined
-    assert responses == 6, responses
+    assert responses == 7, responses
     assert entitlement_quarantined == 1, entitlement_quarantined
     assert suspended_quarantined == 1, suspended_quarantined
     assert entitlement_count == 2, entitlement_count
@@ -383,6 +394,7 @@ def main() -> dict:
         "altered_approval_replay_rejected": approval_conflict_rejected,
         "terminal_checkpoint_rewrite_rejected": checkpoint_terminal_rewrite_rejected,
         "revoked_source_quarantined": revoked_quarantined,
+        "duplicate_fixture_quarantined": duplicate_quarantined,
     }
 
 
