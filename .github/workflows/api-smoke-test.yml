@@ -9,7 +9,10 @@ on:
       - "tests/test_fixture_identity.py"
       - "scripts/verify_data_providers.py"
       - "scripts/verify_multi_source_integration.py"
+      - "scripts/probe_fivedollar_account.py"
+      - "scripts/probe_oddspapi_safe.py"
       - "tests/test_provider_adapters.py"
+      - "tests/test_phase1_provider_probes.py"
       - ".github/workflows/api-smoke-test.yml"
   pull_request:
     branches: [main]
@@ -19,7 +22,10 @@ on:
       - "tests/test_fixture_identity.py"
       - "scripts/verify_data_providers.py"
       - "scripts/verify_multi_source_integration.py"
+      - "scripts/probe_fivedollar_account.py"
+      - "scripts/probe_oddspapi_safe.py"
       - "tests/test_provider_adapters.py"
+      - "tests/test_phase1_provider_probes.py"
       - ".github/workflows/api-smoke-test.yml"
   workflow_dispatch:
 
@@ -29,7 +35,7 @@ permissions:
 jobs:
   verification:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     steps:
       - name: Check out repository
         uses: actions/checkout@v7
@@ -47,17 +53,70 @@ jobs:
       - name: Run unit tests
         run: python -m pytest --import-mode=importlib -q
 
+      - name: Prepare Phase 1 evidence directory
+        if: github.event_name == 'workflow_dispatch'
+        run: mkdir -p reports/phase1
+
       - name: Verify provider authentication (no odds quota used)
-        if: github.event_name == 'workflow_dispatch' || github.event_name == 'schedule' || (github.event_name == 'push' && contains(github.event.head_commit.message, '[run-provider-integration]'))
+        if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && contains(github.event.head_commit.message, '[run-provider-integration]'))
         env:
           FIVEDOLLARFOOTBALL_API_KEY: ${{ secrets.FIVEDOLLARFOOTBALL_API_KEY }}
           THE_ODDS_API_KEY: ${{ secrets.THE_ODDS_API_KEY }}
-        run: python scripts/verify_data_providers.py
+        run: |
+          set -o pipefail
+          python scripts/verify_data_providers.py 2>&1 | tee reports/phase1/provider-authentication.log
 
       - name: Verify live fixture and market integration (bounded requests)
-        if: github.event_name == 'workflow_dispatch' || github.event_name == 'schedule' || (github.event_name == 'push' && contains(github.event.head_commit.message, '[run-provider-integration]'))
+        if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && contains(github.event.head_commit.message, '[run-provider-integration]'))
         env:
           FIVEDOLLARFOOTBALL_API_KEY: ${{ secrets.FIVEDOLLARFOOTBALL_API_KEY }}
           THE_ODDS_API_KEY: ${{ secrets.THE_ODDS_API_KEY }}
           PYTHONPATH: .
-        run: python scripts/verify_multi_source_integration.py
+        run: |
+          set -o pipefail
+          python scripts/verify_multi_source_integration.py 2>&1 | tee reports/phase1/multi-source-integration.log
+
+      - name: Verify 5Dollar account plan, limits and country pack
+        if: github.event_name == 'workflow_dispatch'
+        env:
+          FIVEDOLLARFOOTBALL_API_KEY: ${{ secrets.FIVEDOLLARFOOTBALL_API_KEY }}
+        run: python scripts/probe_fivedollar_account.py --output reports/phase1/fivedollar-account.json
+
+      - name: Verify GOAL API technical access (rights remain separately gated)
+        if: github.event_name == 'workflow_dispatch'
+        env:
+          GOAL_API_KEY: ${{ secrets.GOAL_API_KEY }}
+        run: |
+          if [ -z "$GOAL_API_KEY" ]; then
+            echo "GOAL_API_PROBE: SKIPPED_MISSING_SECRET" | tee reports/phase1/goal-api.log
+          else
+            set -o pipefail
+            python scripts/verify_goal_api.py 2>&1 | tee reports/phase1/goal-api.log
+          fi
+
+      - name: Verify OddsPapi soccer markets and real quotes
+        if: github.event_name == 'workflow_dispatch'
+        env:
+          ODDSPAPI_API_KEY: ${{ secrets.ODDSPAPI_API_KEY }}
+        run: |
+          if [ -z "$ODDSPAPI_API_KEY" ]; then
+            echo "ODDSPAPI_PROBE: SKIPPED_MISSING_SECRET" | tee reports/phase1/oddspapi.log
+          else
+            set -o pipefail
+            python scripts/probe_oddspapi_safe.py --output reports/phase1/oddspapi.json 2>&1 | tee reports/phase1/oddspapi.log
+          fi
+
+      - name: Record StrikerAPI credit-safe deferral
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          echo "STRIKERAPI_PROBE: DEFERRED; last recorded account response was HTTP 402 (monthly credits exhausted)." | tee reports/phase1/strikerapi-status.log
+          echo "No StrikerAPI requests were made and no credits were consumed by this workflow."
+
+      - name: Upload sanitized Phase 1 provider evidence
+        if: github.event_name == 'workflow_dispatch' && always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: veltrix-phase1-provider-qualification
+          path: reports/phase1/
+          if-no-files-found: warn
+          retention-days: 7
