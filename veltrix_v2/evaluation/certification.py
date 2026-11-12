@@ -282,12 +282,14 @@ class PredictionReleaseCertification:
     passed: bool
     markets: tuple[CertificationResult, ...]
     evidence: tuple["PredictionMarketEvidence", ...] = ()
+    audit_bundle: "PredictionAuditBundle | None" = None
 
     def __init__(
         self,
         passed: bool,
         markets: tuple[CertificationResult, ...],
         evidence: tuple["PredictionMarketEvidence", ...] = (),
+        audit_bundle: "PredictionAuditBundle | None" = None,
         *,
         _seal: object | None = None,
     ) -> None:
@@ -297,6 +299,7 @@ class PredictionReleaseCertification:
             ("passed", passed),
             ("markets", markets),
             ("evidence", evidence),
+            ("audit_bundle", audit_bundle),
         ):
             object.__setattr__(self, name, value)
         self.__post_init__()
@@ -316,6 +319,20 @@ class PredictionReleaseCertification:
         if len(evidence) != len(REQUIRED_MARKETS) or {row.market for row in evidence} != set(REQUIRED_MARKETS):
             raise ValueError("PREDICTION_RELEASE_REQUIRES_COMPLETE_MARKET_EVIDENCE")
         object.__setattr__(self, "evidence", evidence)
+        if self.audit_bundle is not None:
+            from veltrix_v2.evaluation.certification_evidence import PredictionAuditBundle
+            if not isinstance(self.audit_bundle, PredictionAuditBundle):
+                raise ValueError("PREDICTION_RELEASE_AUDIT_BUNDLE_TYPE_INVALID")
+            if any(
+                row.source_approved != self.audit_bundle.source_approved
+                or row.point_in_time_validated != self.audit_bundle.point_in_time_validated
+                or row.leakage_tests_passed != (
+                    self.audit_bundle.integrity_audit.passed and self.audit_bundle.source_audit.passed
+                )
+                or row.calibration_passed != self.audit_bundle.calibration_passed(row.market)
+                for row in evidence
+            ):
+                raise ValueError("PREDICTION_RELEASE_AUDIT_EVIDENCE_CONFLICT")
         expected_by_market = {}
         for row in evidence:
             failed = []
@@ -333,6 +350,8 @@ class PredictionReleaseCertification:
 
 def _certify_prediction_publication_from_derived_evidence(
     evidence: Iterable[PredictionMarketEvidence],
+    *,
+    audit_bundle: "PredictionAuditBundle | None" = None,
 ) -> PredictionReleaseCertification:
     """Gate forecast publication independently from value-bet certification.
 
@@ -373,6 +392,7 @@ def _certify_prediction_publication_from_derived_evidence(
         passed=all(item.passed for item in results),
         markets=tuple(results),
         evidence=rows,
+        audit_bundle=audit_bundle,
         _seal=_CERTIFICATION_SEAL,
     )
 
@@ -399,6 +419,7 @@ def certify_prediction_publication(
     from veltrix_v2.evaluation.calibration_gate import evaluate_calibration_gate
     from veltrix_v2.evaluation.certification_evidence import (
         TrainingObservationEvidence,
+        PredictionAuditBundle,
         audit_walk_forward_integrity,
         audit_walk_forward_training_sources,
     )
@@ -450,9 +471,14 @@ def certify_prediction_publication(
             ))
 
     calibration_pass = {"1X2": False, "BTTS": False, "TOTALS": False}
+    one_x_two_report = None
+    btts_report = None
+    totals_report = None
+    calibration_gates = []
     try:
         one_x_two_report = diagnose_1x2_calibration(folds_1x2)
         one_x_two_gates = evaluate_calibration_gate(one_x_two_report)
+        calibration_gates.extend(one_x_two_gates)
         calibration_pass["1X2"] = bool(one_x_two_gates) and all(row.passed for row in one_x_two_gates)
     except ValueError:
         pass
@@ -460,6 +486,11 @@ def certify_prediction_publication(
         try:
             report = diagnose_binary_calibration(folds)
             gates = evaluate_calibration_gate(report)
+            calibration_gates.extend(gates)
+            if market == "BTTS":
+                btts_report = report
+            else:
+                totals_report = report
             calibration_pass[market] = len(gates) == 1 and gates[0].passed
         except ValueError:
             pass
@@ -480,7 +511,18 @@ def certify_prediction_publication(
         )
         for market in REQUIRED_MARKETS
     )
-    return _certify_prediction_publication_from_derived_evidence(derived)
+    audit_bundle = PredictionAuditBundle(
+        source_audit=source_audit,
+        integrity_audit=integrity_audit,
+        calibration_1x2=one_x_two_report,
+        calibration_btts=btts_report,
+        calibration_totals=totals_report,
+        calibration_gates=tuple(calibration_gates),
+    )
+    return _certify_prediction_publication_from_derived_evidence(
+        derived,
+        audit_bundle=audit_bundle,
+    )
 
 
 def certify_release(
