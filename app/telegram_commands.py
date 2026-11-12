@@ -722,14 +722,12 @@ def handle_command(
                     if isinstance(candidate, dict):
                         candidates.append((row, market, candidate))
 
-        certificate = (report or {}).get("value_validation_certificate") or {}
-        summary = (report or {}).get("value_bet_screen") or {}
         lines = [
             f"{command.upper()} — VALUE RESEARCH",
-            "Release certificate: " + str(certificate.get("status") or "LOCKED_INSUFFICIENT_EVIDENCE"),
-            "Approved markets: " + (", ".join(certificate.get("approved_markets") or []) or "none"),
+            "Release certificate: LOCKED_SOURCE_ATTESTATION_REQUIRED",
+            "Approved markets: none",
             f"Upcoming paper-only candidates: {len(candidates)}",
-            f"Release-approved candidates: {summary.get('candidate_count', 0)}",
+            "Release-approved candidates: 0",
         ]
         if candidates:
             lines.append("")
