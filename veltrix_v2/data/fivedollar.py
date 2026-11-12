@@ -170,6 +170,9 @@ def parse_fixture_page(
             "live": FixtureStatus.LIVE,
             "in_play": FixtureStatus.LIVE,
             "finished": FixtureStatus.FINISHED,
+            "postponed": FixtureStatus.POSTPONED,
+            "cancelled": FixtureStatus.CANCELLED,
+            "abandoned": FixtureStatus.ABANDONED,
         }
         status = status_map.get(raw_status, FixtureStatus.UNKNOWN)
         home_score = away_score = None
