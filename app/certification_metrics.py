@@ -56,6 +56,20 @@ def _load_role(root: Path, verified: list[dict[str, Any]], role: str) -> Any:
     return json.loads((root / item["path"]).read_text(encoding="utf-8"))
 
 
+def _settled_outcome(market: str, settlement: Mapping[str, Any]) -> str:
+    home, away = settlement.get("home_goals"), settlement.get("away_goals")
+    if not isinstance(home, int) or isinstance(home, bool) or home < 0:
+        raise EvidenceIntegrityError("Settlement home_goals must be a non-negative integer.")
+    if not isinstance(away, int) or isinstance(away, bool) or away < 0:
+        raise EvidenceIntegrityError("Settlement away_goals must be a non-negative integer.")
+    if market == "1X2":
+        return "home" if home > away else "away" if home < away else "draw"
+    if market == "BTTS":
+        return "yes" if home > 0 and away > 0 else "no"
+    line = float(market.removeprefix("OVER_UNDER_").replace("_", "."))
+    return "over" if home + away > line else "under"
+
+
 def _score(rows: list[dict[str, Any]], market: str, probability_key: str) -> dict[str, Any]:
     outcomes = OUTCOMES[market]
     selected = [row for row in rows if row.get("market") == market]
@@ -144,6 +158,20 @@ def recompute_raw_certification(manifest_path: str | Path, *, min_walk_forward: 
     if not isinstance(calibration_versions, list):
         raise EvidenceIntegrityError("model_manifest calibration_versions must be a list.")
 
+    settlement_by_id: dict[str, dict[str, Any]] = {}
+    for result in settlements:
+        settlement_id = str(result.get("settlement_id") or "").strip()
+        if not settlement_id or settlement_id in settlement_by_id:
+            raise EvidenceIntegrityError("Settlement IDs must be present and unique.")
+        if not result.get("source_id") or result.get("source_id") not in approved_sources or not _time(result.get("settled_at")):
+            raise EvidenceIntegrityError("Settlement record lacks rights-approved source provenance or timestamp.")
+        if result.get("status") not in {"FT", "AET", "PEN"} or not result.get("settlement_version"):
+            raise EvidenceIntegrityError("Settlement record must identify a final status and immutable settlement version.")
+        if not str(result.get("fixture_id") or "").strip():
+            raise EvidenceIntegrityError("Settlement record must identify a fixture.")
+        _settled_outcome("1X2", result)  # Validate both source score fields once.
+        settlement_by_id[settlement_id] = result
+
     failures: dict[str, list[str]] = {market: [] for market in MARKETS}
     walk_by_market: dict[str, list[dict[str, Any]]] = defaultdict(list)
     seen_walk: set[tuple[str, str, str]] = set()
@@ -184,6 +212,16 @@ def recompute_raw_certification(manifest_path: str | Path, *, min_walk_forward: 
         if market != "1X2" and (not row.get("calibration_version") or row.get("calibration_version") not in calibration_versions):
             failures[market].append("walk-forward calibration version is missing or not in model manifest")
             continue
+        settlement = settlement_by_id.get(str(row.get("settlement_id") or ""))
+        if not settlement or str(settlement.get("fixture_id")) != fixture:
+            failures[market].append("walk-forward outcome does not join to its exact source settlement")
+            continue
+        if _time(settlement.get("settled_at")) <= kickoff:
+            failures[market].append("walk-forward settlement timestamp is not after kickoff")
+            continue
+        if row.get("outcome") != _settled_outcome(market, settlement):
+            failures[market].append("walk-forward outcome disagrees with source settlement score")
+            continue
         key = (fixture, market, str(row.get("split") or "full"))
         if key in seen_walk:
             failures[market].append("duplicate fixture-market walk-forward row")
@@ -200,17 +238,6 @@ def recompute_raw_certification(manifest_path: str | Path, *, min_walk_forward: 
         if not quote_id or quote_id in odds_by_id:
             raise EvidenceIntegrityError("Odds snapshot IDs must be present and unique.")
         odds_by_id[quote_id] = quote
-
-    settlement_by_id: dict[str, dict[str, Any]] = {}
-    for result in settlements:
-        settlement_id = str(result.get("settlement_id") or "").strip()
-        if not settlement_id or settlement_id in settlement_by_id:
-            raise EvidenceIntegrityError("Settlement IDs must be present and unique.")
-        if not result.get("source_id") or not _time(result.get("settled_at")):
-            raise EvidenceIntegrityError("Settlement record lacks source provenance or timestamp.")
-        if result.get("status") not in {"FT", "AET", "PEN"} or not result.get("settlement_version"):
-            raise EvidenceIntegrityError("Settlement record must identify a final status and immutable settlement version.")
-        settlement_by_id[settlement_id] = result
 
     paper_by_market: dict[str, list[dict[str, Any]]] = defaultdict(list)
     seen_paper: set[tuple[str, str]] = set()
@@ -259,8 +286,9 @@ def recompute_raw_certification(manifest_path: str | Path, *, min_walk_forward: 
         if _time(settlement.get("settled_at")) <= kickoff:
             failures[market].append("settlement timestamp is not after kickoff")
             continue
-        if row.get("outcome") != settlement.get("outcome"):
-            failures[market].append("prospective outcome disagrees with source settlement")
+        settled_outcome = _settled_outcome(market, settlement)
+        if row.get("outcome") != settled_outcome:
+            failures[market].append("prospective outcome disagrees with source settlement score")
             continue
         if row.get("model_version") != model_manifest.get("model_version") or row.get("model_commit") != code_commit:
             failures[market].append("prospective model version or code commit mismatch")
@@ -278,7 +306,7 @@ def recompute_raw_certification(manifest_path: str | Path, *, min_walk_forward: 
             continue
         selection = str(row.get("selection") or "").casefold()
         outcome = str(row.get("outcome") or "").casefold()
-        if selection not in OUTCOMES[market] or outcome not in OUTCOMES[market] or won != (selection == outcome):
+        if selection not in OUTCOMES[market] or outcome != settled_outcome or won != (selection == settled_outcome):
             failures[market].append("selection result does not agree with source settlement outcome")
             continue
         snapshot_price = _number(quote.get("decimal_odds"))
