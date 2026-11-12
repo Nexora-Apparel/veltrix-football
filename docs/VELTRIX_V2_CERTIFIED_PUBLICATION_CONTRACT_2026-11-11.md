@@ -29,3 +29,22 @@ The renderer uses the required header `🔔 🆕 NEW VELTRIX UPDATE`, followed b
 ## Release boundary
 
 The prediction publication gate and the value-bet certification gate are independent. A controlled predictions-only release is allowed after the prediction gate and data-quality requirements pass; value betting must remain locked until the full prospective certification contract passes. Do not wire this renderer into the live schedule, website route or Telegram sender until source qualification, historical evaluation, the appropriate release gate and transport integration tests pass.
+
+
+## Record-derived certification API
+
+The public `certify_prediction_publication` entry point now accepts only the
+multi-competition walk-forward report, immutable source-observation records
+and source-approval records. It derives each market's sample size from the
+aggregate evaluator report, rechecks training and held-out result provenance,
+validates every fold cutoff/window and fixture identity, and recomputes
+calibration diagnostics from the report's actual held-out forecasts/outcomes.
+Caller-supplied counts and approval, point-in-time, leakage or calibration
+booleans are not accepted by this public API.
+
+Source audit requires collection, storage and model-training rights for
+training observations; held-out result observations require collection,
+storage and benchmarking rights and must become available after kickoff.
+The calibration thresholds are ECE <= 0.05, maximum reliability-bin gap <=
+0.15 and at least 1,000 held-out forecasts per market (all three 1X2 classes
+are checked independently).
