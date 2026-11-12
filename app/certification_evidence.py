@@ -66,8 +66,8 @@ def verify_evidence_manifest(manifest_path: str | Path) -> dict[str, Any]:
             raise EvidenceIntegrityError("Every artifact entry must be an object.")
         role, relative = item.get("role"), item.get("path")
         expected = item.get("sha256")
-        if not isinstance(role, str) or not role or role in seen_roles:
-            raise EvidenceIntegrityError("Artifact roles must be non-empty and unique.")
+        if not isinstance(role, str) or role not in REQUIRED_ROLES or role in seen_roles:
+            raise EvidenceIntegrityError("Artifact roles must be recognized, non-empty and unique.")
         if not isinstance(relative, str) or not relative:
             raise EvidenceIntegrityError(f"Artifact path missing for role {role}.")
         pure = PurePosixPath(relative)
@@ -102,6 +102,8 @@ def verify_evidence_manifest(manifest_path: str | Path) -> dict[str, Any]:
     missing = sorted(REQUIRED_ROLES - seen_roles)
     if missing:
         raise EvidenceIntegrityError("Missing required evidence roles: " + ", ".join(missing))
+    if seen_roles != REQUIRED_ROLES:
+        raise EvidenceIntegrityError("Evidence manifest must contain exactly the required artifact roles.")
 
     return {
         "integrity_status": "BYTE_INTEGRITY_VERIFIED",
