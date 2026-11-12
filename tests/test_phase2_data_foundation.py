@@ -156,6 +156,23 @@ def test_phase3_audit_rejects_non_staging_neon_endpoint(monkeypatch):
         )
 
 
+def test_phase3_audit_accepts_exact_request_and_record_accounting():
+    assert phase3_audit._request_accounting_valid(
+        40, 9, 9, 7, 7, 1, 2, 3,
+    )
+
+
+@pytest.mark.parametrize("values", [
+    (40, 41, 41, 7, 7, 1, 2, 3),
+    (40, 9, 8, 7, 7, 1, 2, 3),
+    (40, 9, 9, 6, 7, 1, 2, 3),
+    (40, 9, 9, 7, 7, 1, 2, 4),
+    (39, 9, 9, 7, 7, 1, 2, 3),
+])
+def test_phase3_audit_rejects_request_or_record_accounting_mismatch(values):
+    assert not phase3_audit._request_accounting_valid(*values)
+
+
 def test_phase3_audit_recursively_rejects_secret_metadata():
     assert not phase3_audit._safe_key_scan({"headers": {"Authorization": "Bearer fake"}})
     assert not phase3_audit._safe_key_scan({"request": [{"api-key": "fake"}]})
