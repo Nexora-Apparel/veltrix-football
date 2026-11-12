@@ -88,6 +88,41 @@ def run_audit(database_url: str) -> dict:
             if role != EXPECTED_ROLE:
                 failures.append("DATABASE_ROLE_MISMATCH")
 
+            # Verify the rights-review evidence against the exact checked-out file bytes.
+            # The URI is pinned to one canonical repository path; arbitrary URLs are rejected.
+            evidence_path = Path(__file__).resolve().parents[1] / "docs/legal/5dollar-terms-review-2026-11-12.md"
+            expected_evidence_uri = "https://github.com/Nexora-Apparel/veltrix-football/blob/main/docs/legal/5dollar-terms-review-2026-11-12.md"
+            evidence_count = 0
+            evidence_hash_failures = 0
+            evidence_details = []
+            cur.execute("""
+                SELECT approval_id,provider,source_id,evidence_uri,evidence_sha256
+                FROM source_approvals ORDER BY approval_id
+            """)
+            approval_evidence_rows = cur.fetchall()
+            for approval_id, provider_name, source_name, evidence_uri, evidence_sha in approval_evidence_rows:
+                evidence_count += 1
+                valid_identity = (provider_name == "5DollarFootballAPI" and source_name == "5dollarfootballapi")
+                valid_uri = evidence_uri == expected_evidence_uri
+                try:
+                    actual_evidence_sha = hashlib.sha256(evidence_path.read_bytes()).hexdigest()
+                except OSError:
+                    actual_evidence_sha = None
+                matches = bool(valid_identity and valid_uri and actual_evidence_sha and actual_evidence_sha == str(evidence_sha).strip())
+                if not matches:
+                    evidence_hash_failures += 1
+                evidence_details.append({
+                    "approval_id": approval_id,
+                    "canonical_uri_match": valid_uri,
+                    "provider_source_identity_match": valid_identity,
+                    "evidence_file_present": actual_evidence_sha is not None,
+                    "stored_sha256": str(evidence_sha).strip() if evidence_sha else None,
+                    "checked_out_file_sha256": actual_evidence_sha,
+                    "sha256_match": bool(actual_evidence_sha and actual_evidence_sha == str(evidence_sha).strip()),
+                })
+            if evidence_count != 1 or evidence_hash_failures:
+                failures.append("RIGHTS_EVIDENCE_DOCUMENT_HASH_FAILURE")
+
             cur.execute("SELECT version,checksum FROM schema_migrations ORDER BY version")
             observed_migrations = {v: h.strip() for v, h in cur.fetchall()}
             if observed_migrations != MIGRATIONS:
@@ -304,6 +339,9 @@ def run_audit(database_url: str) -> dict:
             open_quarantine = cur.fetchone()[0]
 
             report.update({
+                "rights_evidence_document_count": evidence_count,
+                "rights_evidence_document_hash_failures": evidence_hash_failures,
+                "rights_evidence_documents": evidence_details,
                 "migration_count": len(observed_migrations),
                 "provider_response_count": len(responses),
                 "raw_response_hash_failures": response_hash_failures,
