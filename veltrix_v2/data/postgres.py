@@ -7,6 +7,7 @@ fixture rows are updated only after provider identity consistency is verified.
 from __future__ import annotations
 
 import json
+from hashlib import sha256
 from datetime import datetime, timezone
 from typing import Callable, Iterable
 
@@ -27,6 +28,51 @@ def _contains_sensitive_key(value) -> bool:
     elif isinstance(value, (list, tuple)):
         return any(_contains_sensitive_key(item) for item in value)
     return False
+
+
+def _verify_response_fixture_binding(response: ProviderResponse, fixtures: tuple[HistoricalFixture, ...]) -> None:
+    """Prove every parsed fixture is present, unchanged, in its exact raw response."""
+    if not fixtures:
+        return
+    try:
+        body = json.loads(response.raw_body.decode("utf-8"))
+    except (UnicodeDecodeError, json.JSONDecodeError):
+        raise ValueError("PROVIDER_RESPONSE_FIXTURE_BODY_INVALID") from None
+    if not isinstance(body, dict) or body.get("success") not in (1, True):
+        raise ValueError("PROVIDER_RESPONSE_FIXTURE_BODY_UNSUCCESSFUL")
+    raw_rows = body.get("data")
+    if not isinstance(raw_rows, list):
+        raise ValueError("PROVIDER_RESPONSE_FIXTURE_DATA_NOT_LIST")
+    by_id = {}
+    for raw_row in raw_rows:
+        if not isinstance(raw_row, dict):
+            raise ValueError("PROVIDER_RESPONSE_FIXTURE_ROW_INVALID")
+        raw_id = raw_row.get("id")
+        if isinstance(raw_id, bool) or not (
+            isinstance(raw_id, int) and raw_id > 0
+            or isinstance(raw_id, str) and raw_id.strip().isdigit() and int(raw_id.strip()) > 0
+        ):
+            raise ValueError("PROVIDER_RESPONSE_FIXTURE_ID_INVALID")
+        fixture_id = str(int(raw_id))
+        if fixture_id in by_id:
+            raise ValueError("DUPLICATE_FIXTURE_ID_IN_PROVIDER_RESPONSE")
+        try:
+            canonical = json.dumps(
+                raw_row, sort_keys=True, separators=(",", ":"),
+                ensure_ascii=False, allow_nan=False,
+            ).encode("utf-8")
+        except (TypeError, ValueError):
+            raise ValueError("PROVIDER_RESPONSE_FIXTURE_NOT_CANONICAL_JSON") from None
+        by_id[fixture_id] = (raw_row, sha256(canonical).hexdigest())
+    supplied_ids = [fixture.provider_fixture_id for fixture in fixtures]
+    if len(supplied_ids) != len(set(supplied_ids)) or set(supplied_ids) != set(by_id):
+        raise ValueError("PROVIDER_RESPONSE_FIXTURE_SET_MISMATCH")
+    for fixture in fixtures:
+        raw_row, raw_hash = by_id[fixture.provider_fixture_id]
+        if fixture.retrieved_at_utc != response.fetched_at_utc:
+            raise ValueError("FIXTURE_RESPONSE_RETRIEVAL_TIME_MISMATCH")
+        if dict(fixture.payload) != raw_row or fixture.payload_sha256 != raw_hash:
+            raise ValueError("FIXTURE_PAYLOAD_NOT_BOUND_TO_RAW_PROVIDER_RESPONSE")
 
 
 class PostgresHistoryStore:
@@ -469,6 +515,7 @@ class PostgresHistoryStore:
             raise ValueError("PROVIDER_RESPONSE_SECRET_HEADER_MUST_NOT_BE_STORED")
         if _contains_sensitive_key(dict(response.request_params)):
             raise ValueError("PROVIDER_REQUEST_SECRET_PARAMETER_MUST_NOT_BE_STORED")
+        _verify_response_fixture_binding(response, rows)
         # Rights evidence is immutable and must exist before any source record can reference it.
         self.persist_source_approval(approval)
         conn = self._connect_for_write()
