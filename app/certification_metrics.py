@@ -72,6 +72,24 @@ def _settled_outcome(market: str, settlement: Mapping[str, Any]) -> str:
     return "over" if home + away > line else "under"
 
 
+def _contains_secret_key(value: Any) -> bool:
+    forbidden = {"authorization", "api_key", "apikey", "access_token", "token", "password", "secret", "credential"}
+    if isinstance(value, dict):
+        return any(str(key).casefold() in forbidden or _contains_secret_key(item) for key, item in value.items())
+    if isinstance(value, list):
+        return any(_contains_secret_key(item) for item in value)
+    return False
+
+
+def _request_fingerprint(descriptor: Any) -> str:
+    if not isinstance(descriptor, dict) or not isinstance(descriptor.get("method"), str) or not isinstance(descriptor.get("endpoint"), str):
+        raise EvidenceIntegrityError("Source request descriptor must include method and endpoint.")
+    if _contains_secret_key(descriptor):
+        raise EvidenceIntegrityError("Source request descriptor must not contain credentials or secret fields.")
+    canonical = json.dumps(descriptor, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
+    return hashlib.sha256(canonical).hexdigest()
+
+
 def _json_pointer(document: Any, pointer: Any) -> Any:
     if not isinstance(pointer, str) or (pointer and not pointer.startswith("/")):
         raise EvidenceIntegrityError("Source record pointer must be an RFC 6901 JSON pointer.")
@@ -213,6 +231,7 @@ def recompute_raw_certification(manifest_path: str | Path, *, min_walk_forward: 
         source_id = response.get("source_id")
         fetched_at = _time(response.get("fetched_at"))
         request_fingerprint = response.get("request_fingerprint")
+        request_descriptor = response.get("request_descriptor")
         expected_hash = response.get("response_sha256")
         encoded_body = response.get("body_base64")
         if not response_id or response_id in response_by_id:
@@ -224,6 +243,8 @@ def recompute_raw_certification(manifest_path: str | Path, *, min_walk_forward: 
         for label, digest in (("request fingerprint", request_fingerprint), ("response SHA-256", expected_hash)):
             if not isinstance(digest, str) or len(digest) != 64 or any(ch not in "0123456789abcdef" for ch in digest):
                 raise EvidenceIntegrityError(f"Source response {label} is malformed.")
+        if _request_fingerprint(request_descriptor) != request_fingerprint:
+            raise EvidenceIntegrityError("Source request fingerprint does not match canonical redacted request metadata.")
         if not isinstance(encoded_body, str) or not encoded_body:
             raise EvidenceIntegrityError("Source response body must be retained as base64 bytes.")
         try:
