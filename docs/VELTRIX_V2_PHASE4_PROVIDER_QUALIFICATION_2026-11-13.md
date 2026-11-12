@@ -4,106 +4,115 @@
 **Branch:** `phase4/provider-qualification-20261113`  
 **Purpose:** qualify independent, rights-approved, point-in-time feature sources before any new prediction-engine implementation.
 
-## 1. Non-negotiable qualification policy
+## 1. Governing rule
 
-A provider is not production-approved by virtue of marketing claims, a successful API response, or broad historical coverage. Approval requires evidence for the exact account, endpoint, competition, field and intended use.
+Phase 1's merged provider qualification is the authoritative baseline. This Phase 4 register extends it; it does not silently reverse prior decisions. Every provider is scoped by endpoint, competition, season, data type, retention, model training, display and commercial use.
 
-Every acquired observation must retain exact raw response bytes and SHA-256, provider/product/endpoint identity, request parameters with secrets redacted, HTTP status, retrieval timestamp, source event/publication timestamp where supplied, stable entity identifiers, rights evidence, and immutable revision history.
+A provider is not approved by a successful HTTP response or a marketing claim. Each observation must retain exact raw response bytes and SHA-256, provider/product/endpoint identity, redacted request parameters, HTTP status, retrieval timestamp, source event/publication timestamp where supplied, stable entity identifiers, rights evidence and immutable revision history.
 
-A pre-match feature is eligible for a fixture only when its source availability is provably no later than the frozen prediction cutoff. A post-match statistic (including xG, shots and lineups published after kickoff) is a label/retrospective descriptor only, not a pre-match feature. Current pages and inferred timestamps cannot repair missing historical publication times.
+A pre-match feature is eligible only when source availability is provably no later than the frozen prediction cutoff. Post-match xG, shots, lineups and other statistics are retrospective descriptors/labels, not pre-match features. Missing timestamps cannot be repaired by inference or current web pages.
 
-No source is approved for commercial storage, model training, redistribution or public display until the relevant rights are reviewed separately for each use.
+## 2. Existing authoritative source decisions
 
-## 2. Preliminary provider register
+| Data lane | Existing decision | Verified limitations |
+|---|---|---|
+| Fixtures/results | 5DollarFootballAPI Community — qualified primary for the seven observed competitions | Account reports 300 requests/hour and 20/minute burst. The seven qualified competitions are Brazil Serie A, Brazil Serie B, Italy Serie A, France Ligue 1, England Premier League, Spain La Liga and Germany Bundesliga I. The 786-fixture qualification covered 2026-08-14 to 2026-11-12, not complete historical seasons. Later staging import has 2,496 traceable settled-result labels, not point-in-time feature snapshots. |
+| Prospective odds / bookmaker benchmark | The Odds API — approved supplemental source | Current odds response has provider `last_update`; historical odds are paid-plan snapshots (10-minute cadence from June 2020, 5-minute cadence since September 2022). Historical event/market discovery on free plans returns no prices. The source is selected for prospective timestamped capture, but 98% timestamp coverage has not been achieved. |
+| Historical shot events / xG research | Pappalardo et al. / Wyscout public event dataset — approved under CC BY 4.0 with attribution | Approximately 1,941 matches across seven competitions. Historical research data only, not a current-season feed. Train a VELTRIX-owned xG model from raw shot events; do not present it as provider-supplied xG. |
+| Non-live enrichment | No active provider selected; StrikerAPI is conditional future candidate | The VELTRIX account's last recorded check returned HTTP 402 with zero credits. Do not buy credits. Reconsider only after free-credit refresh, a successful bounded probe and accepted Terms-version verification. |
+| OddsPapi | Excluded pending explicit rights clarification | Terms do not expressly grant model-training, retention or commercial-display rights. A local script issue was corrected, but this does not change the rights decision. |
+| InferSports | Supplemental live-odds discovery candidate only | Bounded probe returned 63 same-day events and 1X2/totals. No BTTS, historical archive or source-created quote timestamps were verified. Not a historical benchmark or value-bet source. |
+| GOAL API | Excluded from V2 training, persistent history and public display pending rights clearance | Latest HTTP 403 was a Cloudflare browser-signature block, not proof of an invalid key. Underlying sports-data rights remain unresolved. |
 
-Statuses:
-- **Candidate — documentation reviewed:** potentially useful; no account-level qualification yet.
-- **Conditional candidate:** useful for a narrow role, with important limitations.
-- **Not approved:** required evidence is missing.
-- **Approved:** none at this stage.
+The seven 5Dollar competitions were measured in the prior qualification: Brazil Serie A 124, Brazil Serie B 161, Italy Serie A 110, France Ligue 1 90, England Premier League 100, Spain La Liga 120 and Germany Bundesliga I 81 fixtures in the bounded qualification window. Do not mistake those counts for full-season completeness.
 
-| Provider | Potential role | Publicly documented facts | Blocking evidence / risks | Preliminary status |
+The 5Dollar Community sample returned 77 market blocks across seven finished fixtures, but only 7/77 (9.09%) contained a market timestamp. BTTS tick-history returned HTTP 403. The Community account therefore does not meet the 98% timestamped-odds gate. Its 4-day availability proxy in the Phase 3 import is not a publication timestamp.
+
+## 3. New provider candidates — not approved
+
+| Provider | Potential role | Public documentation evidence | Qualification blockers | Status |
 |---|---|---|---|---|
-| 5DollarFootballAPI | Fixture/result identity and settled labels; possibly odds history | Current docs describe historical results from 2014 for major competitions, plan-dependent depth, and tick-stored odds. The existing Community account staging import has seven entitled competition IDs and 2,496 traceable settled-result labels. | Existing import has no certified pre-kickoff feature snapshots. The exact account entitlement, historical odds depth, per-competition completeness, source publication timestamps, retention/training/display rights and stable-ID migration behavior must be evidenced from the account and contract. Do not infer that public docs describe this account's plan. | Conditional candidate for fixture/label continuity only; not approved as feature or odds-history source |
-| Sportmonks Football API | Team/player stats, match statistics, lineups, injuries, xG, fixtures | Public plans start at €29/month for five leagues, €99 for 30, €249 for 120; historical data older than three seasons is an add-on from €29 one-time for non-Enterprise plans. xG is an add-on; xG is documented from 2024 onward. | Must verify coverage for the exact seven entitled competitions, historical depth by competition/field, timestamp semantics and whether historic lineups/injuries/stats were available before kickoff. xG published after match completion is not a pre-match feature. Rights and commercial training/storage terms require written review. | Candidate — documentation reviewed; not approved |
-| The Odds API | Historical bookmaker benchmark and price movement | Historical snapshots available on paid plans; featured markets from 2020-06-06, every 10 minutes initially and every 5 minutes since September 2022. Historical endpoint returns closest snapshot at or before requested time. | Football league/bookmaker/market coverage must be checked event-by-event. Snapshot cadence is not continuous tick history and may miss quotes; establish timestamp meaning, quote coverage, bookmaker identity, market mapping and plan cost. Rights for storage/training/display require review. | Candidate for odds archive; not approved |
-| Goalserve | Historical results, detailed stats, lineups/injuries and odds | Public pricing lists Soccer Live Stats from $200/month, Fixtures/Results from $150/month, Pregame Odds from $250/month and Full Stats package from $300/month. Provider advertises results back to 2006 and detailed player/team stats from 2016, with historical lineups and injury lists. | Marketing claims do not prove exact seven-competition completeness, point-in-time publication timestamps, xG coverage, historical odds snapshot granularity or rights. Full stats package price is material; request a sample export and contract before any spend. | Candidate — documentation reviewed; not approved |
-| StrikerAPI | Historical team/player performance, xG, odds movement | Public docs list team stats including goals, xG, shots and possession; event/shot-map data; sportsbook odds; line movement; market odds history from May 2023. | Public documentation reviewed does not establish all seven competition coverage, historic feature depth, publication timestamps for each statistic, source licensing or commercial model-training rights. Validate account plan and API semantics before use. | Candidate — documentation reviewed; not approved |
-| football-data.org | Fixtures/results, lineups, cards, shots and basic match statistics for supported competitions | Pricing lists €29/month ML Pack Light with ten seasons of history; €29/month Free + Deep Data with lineups/subs; €49 Standard for 30 competitions; odds add-on €15/month and statistics add-on €15/month. API supports season-specific match retrieval. | Coverage is limited to listed competitions; no documented xG feed in the reviewed plan matrix. Historical records are not proof of historical as-of availability. Validate exact competition availability and rights. | Conditional candidate for fixtures/basic stats; not approved |
+| Sportmonks Football API | Structured team/player stats, lineups, injuries, xG and fixture metadata | Public plans list €29/month for five leagues, €99 for 30 and €249 for 120. Historical data older than three seasons is a one-time add-on from €29 for non-Enterprise plans. xG is an add-on; public FAQ says xG starts from 2024. | Exact seven-competition coverage, historical depth per field, publication timestamps, revision behavior and rights for storage/model training/display are unverified. Post-match xG is not a pre-match feature. Obtain sample/coverage export and written terms before any subscription. | Candidate — docs reviewed; not approved |
+| Goalserve | Historical results, team/player stats, lineups/injuries and odds | Public pricing lists Soccer Live Stats from $200/month, Fixtures/Results from $150/month, Pregame Odds from $250/month and Full Stats from $300/month. Provider advertises results back to 2006 and more detailed player/team stats from 2016. | Exact seven-competition completeness, source publication timestamps, xG coverage, historical odds granularity, revision behavior and rights are unverified. Price is material; request written quote and sample export before spend. | Candidate — docs reviewed; not approved |
+| football-data.org | Fixture/result and basic match-stat supplement | Public pricing lists €29/month ML Pack Light with ten seasons of history; €29/month Free + Deep Data with lineups/subs; €49 Standard for 30 competitions; odds and statistics add-ons are separately priced. Season-specific match retrieval is documented. | Exact coverage of the seven competitions and data-use rights need confirmation. No xG feed is documented in the reviewed plan matrix. Historical records do not prove as-of publication time. | Conditional candidate for basic data; not approved |
 
-## 3. Competition qualification matrix
+### StrikerAPI — previously evaluated; do not re-probe or spend
 
-The exact seven competition IDs from the 5DollarFootballAPI account approval are the baseline. Do not substitute competition names or assume coverage from a provider's generic league count.
+Phase 1's detailed review found relevant non-live endpoints: team stats (goals, xG, shots, possession), match/player lines, lineups, shot events/maps and sportsbook odds movement. Coverage is non-uniform by league and season; full shot events begin in 2012-13, shot locations are documented as complete from 2013-14, and odds archives are partial by season/bookmaker. The provider's own xG model is not point-in-time safe because it is fitted across seasons; VELTRIX would need to build its own xG model from eligible raw shot locations.
 
-For every candidate, obtain a machine-readable coverage export and map:
-- provider competition ID and canonical name;
-- country/region and gender/age category where applicable;
-- season start/end and match counts;
-- fixture IDs and team IDs;
-- available fields per season;
-- missingness/completeness by field;
-- historical start date per field;
-- whether the record has a source publication/availability timestamp;
-- whether corrections are versioned or overwrite prior values.
+The account returned HTTP 402 with zero credits. Its current Terms version also needs confirmation against the account's accepted version and upstream source restrictions. The Phase 1 workflow already protects the account: one static free-credit check first, and no feature probe if it returns 402. Do not top up or repeat paid requests.
 
-The seven-ID mapping must be reviewed explicitly before any provider is used as a feature source. A provider's coverage of a competition's men's first team does not establish coverage of its women's, reserve, youth or lower-division counterpart.
+Decision: technically promising but currently excluded from ingestion. Reconsider only if the account's free balance refreshes and the accepted rights version is confirmed.
 
-## 4. Field-level point-in-time requirements
+## 4. Historical dataset rights and quarantine
+
+- **Wyscout / Pappalardo et al.:** approved historical research dataset under CC BY 4.0 with attribution and change notices. Use raw shot events to train a VELTRIX-owned xG model. Its 1,941-match, seven-competition scope is historical and does not provide current-season features.
+- **OpenPlay:** repository reports 26,536 matches, 41.6 million events and 669,404 shots with xG under CC BY 4.0. However, upstream WhoScored/Opta/Stats Perform lineage is not independently established. Keep quarantined from production training and display until upstream rights are confirmed.
+- **StatsBomb Open Data:** research-only under its published agreement; no blanket commercial training approval.
+- **OpenFootball:** supplemental fixtures/results only; prior comparison had poor exact-score/date agreement. Not accepted as primary results.
+- **OpenMatchday** and **Football-Data.co.uk:** excluded from commercial training/publication due their stated use restrictions.
+- **OpenFootAPI:** upstream source-specific licence controls; samples labelled FotMob Unlicensed-Beta are not approved.
+- **PitchAPI** and **Club-Football-Match-Data:** no ingestion until upstream data lineage and rights are cleared.
+
+## 5. Field-level point-in-time requirements
 
 | Feature family | Minimum evidence |
 |---|---|
-| Team form / results | Match kickoff and final-result publication/availability timestamps; historical corrections retained; only results settled before cutoff enter rolling form |
-| xG / shots / PPDA | Match-level and team/player field definitions, event timestamps, publication timestamps, historical depth, and proof the value existed before cutoff; post-match aggregates are excluded from pre-match features |
-| Lineups / injuries / player availability | First publication timestamp, subsequent update history, confirmed vs predicted status, source provenance and player/team IDs |
-| Odds | Bookmaker, market, selection, line, decimal price, exact snapshot timestamp, event ID, quote availability before cutoff, and coverage denominator |
+| Team form / results | Kickoff and final-result publication/availability timestamps; corrections retained; only results settled before cutoff enter rolling form |
+| xG / shots / PPDA | Definitions, event timestamps, publication timestamps, historical depth and proof the value existed before cutoff; post-match aggregates excluded from pre-match features |
+| Lineups / injuries / player availability | First publication timestamp, update history, confirmed vs predicted status, source provenance and player/team IDs |
+| Odds | Bookmaker, market, selection, line, decimal price, exact quote/snapshot timestamp, event ID, pre-cutoff availability and coverage denominator |
 | Team / fixture identity | Stable provider IDs, canonical mapping history, competition/season identifiers, kickoff revisions and ambiguity quarantine |
 
-## 5. Mandatory provider evidence pack
+For The Odds API, retain the provider's snapshot/quote timestamp. Do not substitute local retrieval time. Five-minute historical snapshots are not continuous ticks; measure actual event/bookmaker/market coverage before claiming 98%.
 
-Before a provider can pass qualification, archive:
+## 6. Mandatory evidence pack for new sources
+
+Before approval, archive:
 1. Current product documentation and exact endpoint reference.
-2. Account plan/entitlement export and dated coverage report for the seven competitions.
-3. Representative raw API responses for every required field family.
+2. Account plan/entitlement export and dated coverage report for all seven competitions.
+3. Representative raw API responses for each selected field family.
 4. Historical samples spanning at least three seasons where available, including timestamps and revisions.
-5. Written rights evidence covering collection, retention, internal analysis, model training, derived outputs, public display, attribution and redistribution.
+5. Written rights covering collection, retention, internal analysis, model training, derived outputs, public display, attribution and redistribution.
 6. Rate limits, quotas, request costs, SLA/uptime, support and price quotation.
 7. Deterministic identity crosswalk and measured match/team join rates.
 8. A point-in-time audit proving no selected feature was published after its intended prediction cutoff.
 
-Missing evidence is recorded as **UNKNOWN**, never assumed PASS.
+Missing evidence is **UNKNOWN**, never PASS.
 
-## 6. Initial source strategy
+## 7. Initial qualification order
 
-- Keep 5DollarFootballAPI as the existing fixture/label archive reference only; do not elevate it to feature-source status based on its historical result import.
-- Run a low-cost, no-commitment coverage/sample qualification of Sportmonks first for structured team/player statistics, lineups, injuries and xG. Do not subscribe until the exact seven-competition coverage and rights are confirmed.
-- Qualify The Odds API separately for timestamped historical bookmaker snapshots. A five-minute cadence is potentially useful but must be measured against the required 98% odds timestamp coverage.
-- Request a sample and written terms from StrikerAPI and Goalserve before comparing cost-per-qualified-match. Goalserve's advertised full-stats monthly price is not justified until timestamp and rights questions are answered.
-- Use football-data.org only as a potential low-cost fixture/basic-stat supplement, not as an assumed xG or comprehensive feature source.
-- Prefer independent providers for feature families where feasible; preserve provider disagreement rather than silently overwriting one source with another.
+1. Preserve the existing approved 5Dollar fixture/result role and The Odds API prospective odds role; do not requalify them by assumption.
+2. Qualify Wyscout historical shot-event ingestion and xG research strictly within its CC BY 4.0 scope and dataset limitations.
+3. Request Sportmonks sample coverage, exact seven-competition availability and written rights; no subscription until evidence is reviewed.
+4. Request Goalserve sample export, timestamp semantics, coverage and written terms; no spend until evaluated against cost-per-qualified-match.
+5. Keep StrikerAPI dormant until free credits refresh and accepted Terms are verified.
+6. Keep OpenPlay quarantined pending upstream rights.
+7. Use football-data.org only if it materially improves exact competition/season coverage and rights are confirmed.
 
-## 7. Phase 4 entry gate
+## 8. Phase 4 entry gate
 
-Phase 4 model architecture work remains blocked until:
-- at least one source is qualified for each feature family actually selected;
-- exact competition/season coverage is measured;
-- rights are approved for collection, retention and model training;
-- point-in-time availability is demonstrated;
-- identity mapping is deterministic and audited;
-- a capture schema preserves raw evidence and immutable revisions.
+Model architecture work remains blocked until selected feature families have at least one qualified source, exact competition/season coverage is measured, rights are approved for collection/retention/training, point-in-time availability is demonstrated, identity mapping is deterministic and audited, and the capture schema preserves raw evidence and immutable revisions.
 
-The provider register is an evidence ledger, not a declaration that any provider is approved. No legacy prediction code, features, priors, calibration or decision rules may be reused.
+No legacy prediction code, features, priors, calibration or decision rules may be reused. No provider is newly approved by this register. No production deployment, prediction publication, Telegram activation, scheduling or value-bet unlock is authorized.
 
-## 8. Public documentation reviewed
+## 9. Public documentation reviewed
 
 - 5DollarFootballAPI docs: https://5dollarfootballapi.com/docs
-- Sportmonks plans and pricing: https://www.sportmonks.com/football-api/plans-pricing/
-- Sportmonks xG documentation: https://docs.sportmonks.com/v3/endpoints-and-entities/endpoints/expected-xg
-- Sportmonks xG availability FAQ: https://www.sportmonks.com/faq/
+- 5Dollar Community plan: https://5dollarfootballapi.com/community
+- 5Dollar data quality: https://5dollarfootballapi.com/docs/data-quality
+- 5Dollar Terms: https://5dollarfootballapi.com/terms
 - The Odds API historical data: https://the-odds-api.com/historical-odds-data/
 - The Odds API v4 documentation: https://the-odds-api.com/liveapi/guides/v4/
-- Goalserve football API pricing and coverage: https://goalserve.com/en/sport-data-feeds/football-api/prices
-- StrikerAPI documentation: https://strikerapi.com/docs
+- Sportmonks plans and pricing: https://www.sportmonks.com/football-api/plans-pricing/
+- Sportmonks xG documentation: https://docs.sportmonks.com/v3/endpoints-and-entities/endpoints/expected-xg
+- Sportmonks FAQ: https://www.sportmonks.com/faq/
+- Goalserve football API pricing: https://goalserve.com/en/sport-data-feeds/football-api/prices
+- StrikerAPI docs: https://strikerapi.com/docs
+- StrikerAPI timing and rights: https://strikerapi.com/docs/timing-and-rights
 - football-data.org pricing: https://www.football-data.org/pricing
 - football-data.org API reference: https://www.football-data.org/documentation/api
+- Wyscout dataset paper: https://www.nature.com/articles/s41597-019-0247-7
+- OpenPlay releases: https://github.com/nlbair/openplay/releases
 
-**Evidence limitation:** public web documentation is discovery evidence only. Account-specific entitlements, current contracts, exact competition coverage, data availability timestamps and legal rights remain unverified.
+**Evidence limitation:** public documentation is discovery evidence only. Account-specific entitlements, exact field-level coverage, current contracts, publication timestamps and legal rights remain unverified unless explicitly identified above as previously tested in Phase 1.
