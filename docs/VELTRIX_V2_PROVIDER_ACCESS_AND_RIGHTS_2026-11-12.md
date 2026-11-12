@@ -217,3 +217,71 @@ timezone-aware review timestamp, reviewer identity and a declared legal basis
 (`terms`, `written_permission`, `open_license` or `contract`). Provisional
 records may remain incomplete but cannot pass source eligibility. A provider
 key, successful HTTP response or a bare approval boolean is not sufficient.
+
+
+## Provider requalification update — official terms checked 2026-11-12
+
+### StrikerAPI — conditional commercial shot-event candidate
+
+**Updated decision:** conditional candidate for fixtures/results, lineups, shot locations and event-derived features; not yet fully cleared for production model training because the provider does not publish a source list per dataset and expressly disclaims granting league rights.
+
+Official Terms last updated 2026-11-12 (effective 2026-10-17; for accounts created before 2026-10-17, the new version applies from 2026-12-16). The terms expressly allow commercial apps, websites and tools, storage, deriving values, research and training proprietary models. They prohibit reselling/repackaging the raw data as a feed, file, dataset or API, and prohibit redistributing odds as a raw/bulk feed. No attribution is required. The provider states that it is not the original producer of sports facts, that third-party sources can impose restrictions, and that league/team/player marks are not licensed.
+
+The official timing/rights guide states:
+- Free accounts receive up to 500 credits monthly; failed/empty requests may be refunded under the terms.
+- `get_events` costs 10 credits per request (up to 50 such requests from 500 credits before any other calls).
+- Events and box scores refresh daily at 10:00 UTC and can be refetched for about 1.5 days after full time; each refresh replaces the current record.
+- No per-record revision history or revision ID is retained.
+- Provider xG is **not as-of**: its location model is fitted using later seasons and refitted, which revalues prior shots. Do not use StrikerAPI xG as a historical point-in-time feature. If approved, retrieve shot locations and train a separate VELTRIX-owned xG model.
+- The provider's terms permit use while the account is open; after account closure, retained data is limited to internal research/backtesting and cannot continue powering a customer-facing product.
+
+**Integration constraints:** retain each retrieval as a new immutable observation; never overwrite an earlier response; store the exact retrieval timestamp and payload hash; do not backdate corrected events; use only source-backed shot coordinates to train VELTRIX xG; exclude provider xG from model features and evaluation targets unless a separately documented research comparison is explicitly isolated. The provider's source list is not published per dataset, and it does not grant league rights. Request written source-lineage and sublicense clarification before approving all competition datasets for public commercial use. Verify which Terms version applies to the account before activation.
+
+Official references:
+- https://strikerapi.com/terms
+- https://strikerapi.com/docs/timing-and-rights
+- https://strikerapi.com/docs/get-events
+- https://strikerapi.com/pricing
+
+### OpenFootAPI — conditional fixtures/results and paid xG candidate
+
+**Decision:** free Starter may be tested for fixtures/results/standings; xG, shot maps, lineups and live events are not in the free Starter plan. Developer is currently advertised at $14/month, outside the present no-software-budget constraint.
+
+The official Terms (effective 2026-09-07) permit indefinite caching/retention and internal statistical research, model training, evaluation and validation for data lawfully received. They do not grant blanket rights over upstream feeds. Every response includes source metadata; each competition entry exposes the applicable source licence. Attribution and any share-alike or redistribution restriction from that upstream licence attach independently and cannot be waived by OpenFootAPI. Raw feed redistribution is not granted.
+
+Current plan details:
+- Starter: $0, 5,000 requests/month, 60 requests/minute; fixtures, scores, schedules, standings and search.
+- Developer: $14/month, 250,000 requests/month; adds live events, confirmed lineups, shot maps and xG for supported competitions (top five European leagues for xG).
+- xG is upstream-sourced from FotMob and not guaranteed for every match; a missing shot map is an explicit unavailable state, not zero xG.
+
+**Integration constraints:** inspect `meta.sources` and the competition's licence metadata for every source/competition/data type before ingestion. Store the licence and attribution with each observation. Do not assume a single OpenFootAPI permission covers every upstream competition. Starter may serve as a fixture/results discovery fallback after its own account/key and source metadata are verified; Developer is not activated under the current budget.
+
+Official references:
+- https://openfootapi.com/terms
+- https://openfootapi.com/docs
+- https://openfootapi.com/pricing
+
+### OpenPlay dataset — expanded coverage, upstream review still open
+
+The v0.1.0 preview declares CC BY 4.0 and reports 26,536 matches with event data, 41.6 million events and approximately 669,404 shots with xG, covering major European leagues, UEFA competitions and selected international tournaments through 2025/26. It also publishes checksums, coverage, known gaps and data-issue files. It is a static snapshot, not a current-season feed. Its xG is the dataset author's model; do not relabel it as VELTRIX xG.
+
+**Decision:** retain as a research candidate, not yet part of the production training corpus, until upstream source lineage and rights authority are confirmed. The repository's CC BY 4.0 declaration is necessary evidence but the current source documentation does not establish a complete upstream sublicensing chain for every event record. Any later approval must retain attribution to "openplay (Noah Bair)", preserve the licence, and exclude rows listed in known gaps/data issues.
+
+Official references:
+- https://github.com/nlbair/openplay
+- https://github.com/nlbair/openplay/releases
+- https://creativecommons.org/licenses/by/4.0/
+
+### Updated source decision matrix
+
+| Source | Fixtures/results | Shot events / xG | Commercial model training | Public product use | Current decision |
+|---|---|---|---|---|---|
+| 5DollarFootballAPI | Yes, account/competition scoped | No shot-level xG | Only within documented data rights and approved scope | Attribution and plan terms apply | Primary fixtures/results after Community activation |
+| The Odds API | No core result feed | Odds only | Benchmarking/value lane only | Subject to its terms; no raw feed resale | Preferred odds benchmark |
+| StrikerAPI | Yes | Shot events/locations; vendor xG is not PIT | Provider terms expressly permit training; upstream rights still need written confirmation | Provider terms permit commercial derived outputs while account remains open; third-party limits may apply | Conditional shot-event candidate |
+| OpenFootAPI Starter | Yes | No xG | Terms allow internal training on lawfully received data; source licence per competition | Per-source licence/attribution controls | Fixture/results fallback candidate |
+| OpenFootAPI Developer | Yes | xG/shot maps on supported competitions | Same source-specific restrictions | Per-source licence/attribution controls | $14/month; not activated |
+| PitchAPI | Yes | Yes | No published rights chain verified | No published commercial/public-display grant verified | Technical-only; blocked |
+| GOAL API | Yes | No verified shot-event feed | No blanket grant | No blanket grant | Technical-only; blocked |
+| Wyscout 2019 open dataset | Historical match/event data | Historical shot events | CC BY 4.0; train own xG | Attribution required | Approved historical research/training source |
+| OpenPlay v0.1.0 | Historical only | Shot events and xG | CC BY 4.0 declared; upstream chain unresolved | Attribution required; upstream review open | Quarantined research candidate |
