@@ -48,7 +48,7 @@ class StatisticsProbeTests(unittest.TestCase):
         report = probe("test-key", 10, 90, "test-run")
         validate_report(report)
         self.assertEqual(report["request_budget"]["actual_requests"], 5)
-        self.assertEqual(report["samples"][0]["statistics_status"], "OK_EMPTY")
+        self.assertEqual(report["samples"][1]["statistics_status"], "OK_EMPTY")
         row = next(x for x in report["samples"] if x["fixture_id"] == "100")
         self.assertEqual(row["statistics_status"], "OK_WITH_FIELDS")
         self.assertEqual(set(row["available_fields"]), {"attacks", "shots_on_target", "possession", "first_half"})
@@ -82,7 +82,7 @@ class StatisticsProbeTests(unittest.TestCase):
         mocked.side_effect = response_for
         report = probe("test-key", 3, 90, "test-run")
         self.assertEqual(report["request_budget"]["actual_requests"], 3)
-        self.assertTrue(any(x["statistics_status"] == "REQUEST_BUDGET_EXHAUSTED"
+        self.assertTrue(any(x["fixture_lookup_status"] == "REQUEST_BUDGET_EXHAUSTED"
                             for x in report["samples"]))
         validate_report(report)
 
