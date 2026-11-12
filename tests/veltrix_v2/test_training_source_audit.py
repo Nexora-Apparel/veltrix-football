@@ -188,7 +188,7 @@ def test_training_source_audit_rejects_observation_available_after_fold_cutoff(m
         (_approval(),),
     )
     assert not audit.passed
-    assert "observation_not_available_at_forecast_cutoff" in {
+    assert "training_result_availability_provenance_invalid" in {
         reason for _, reason in audit.rejected_observations
     }
 
