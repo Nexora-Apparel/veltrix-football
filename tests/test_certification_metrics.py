@@ -13,7 +13,7 @@ ROLES = ("walk_forward_rows", "coverage_audit", "prospective_ledger", "odds_snap
 def _write_bundle(tmp_path, walk, paper, odds, settlements):
     payloads = {
         "walk_forward_rows": {"rows": walk},
-        "coverage_audit": {"rows": []},
+        "coverage_audit": {"rights_status": "APPROVED_FOR_INTENDED_USE", "commercial_use_eligible": True, "rows": []},
         "prospective_ledger": {"rows": paper},
         "odds_snapshots": {"rows": odds},
         "settlement_records": {"rows": settlements},
