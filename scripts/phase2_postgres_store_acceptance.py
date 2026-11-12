@@ -118,6 +118,12 @@ def main() -> dict:
         expected_database=expected_db,
     )
     store.persist_source_approval(approval)
+    approval_conflict_rejected = False
+    try:
+        store.persist_source_approval(replace(approval, commercial_use_allowed=False))
+    except ValueError as exc:
+        approval_conflict_rejected = str(exc) == "SOURCE_APPROVAL_IDEMPOTENCY_CONFLICT"
+    assert approval_conflict_rejected, "approval ID replay accepted altered rights fields"
     run_id = store.start_import_run(
         provider="5DollarFootballAPI", import_type="historical_fixture_results",
         boundary_start=kickoff, boundary_end=now, request_budget=5,
@@ -334,6 +340,7 @@ def main() -> dict:
         "suspended_provider_quarantined": suspended_quarantined,
         "sync_watermark_version": watermark[1],
         "stale_sync_writer_rejected": stale_watermark_rejected,
+        "altered_approval_replay_rejected": approval_conflict_rejected,
     }
 
 
