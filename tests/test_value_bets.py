@@ -239,13 +239,14 @@ def test_value_validation_certificate_can_release_only_markets_with_complete_evi
     assert set(certificate["approved_markets"]) == {
         "1X2", "BTTS", "OVER_UNDER_1_5", "OVER_UNDER_2_5", "OVER_UNDER_3_5"
     }
-    assert _certificate_allows(certificate, "1X2")
-    assert _certificate_allows(certificate, "BTTS")
+    # Evidence-shaped JSON is diagnostic only until source attestation exists.
+    assert not _certificate_allows(certificate, "1X2")
+    assert not _certificate_allows(certificate, "BTTS")
 
     del paper["markets"]["OVER_UNDER_1_5"]
     partial = build_value_validation_certificate(backtest, paper)
     assert partial["status"] == "PARTIALLY_VALIDATED"
-    assert _certificate_allows(partial, "BTTS")
+    assert not _certificate_allows(partial, "BTTS")
     assert not _certificate_allows(partial, "OVER_UNDER_1_5")
 
 
@@ -345,3 +346,32 @@ def test_1x2_certificate_uses_its_own_model_evidence_without_goal_calibration():
     assert certificate["approved_markets"] == ["1X2"]
     assert certificate["market_diagnostics"]["1X2"]["status"] == "PASS"
     assert certificate["market_diagnostics"]["BTTS"]["status"] == "LOCKED"
+
+
+
+def test_value_release_rejects_forged_status_boolean_and_market_list():
+    from app.value_bets import _certificate_allows
+
+    forged = {
+        "schema_version": 1,
+        "status": "VALIDATED",
+        "betting_validation": True,
+        "approved_markets": ["1X2", "BTTS", "OVER_UNDER_2_5"],
+        "alerts_enabled": True,
+        "evidence": {"roi": 999, "sample_size": 999999},
+    }
+    for market in ("1X2", "BTTS", "OVER_UNDER_2_5"):
+        assert _certificate_allows(forged, market) is False
+
+
+def test_value_release_rejects_partial_certificate_with_forged_boolean():
+    from app.value_bets import _certificate_allows
+
+    forged = {
+        "schema_version": 1,
+        "status": "PARTIALLY_VALIDATED",
+        "betting_validation": True,
+        "approved_markets": ["1X2"],
+        "alerts_enabled": True,
+    }
+    assert _certificate_allows(forged, "1X2") is False
