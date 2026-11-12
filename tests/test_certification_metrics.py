@@ -103,18 +103,30 @@ def test_raw_certification_recomputes_profit_and_rejects_fabricated_roi(tmp_path
         "settled_at": "2026-01-01T20:00:00+00:00",
         "status": "FT", "settlement_version": "settlement-v1", "home_goals": 2, "away_goals": 1,
     }]
-    body = base64.b64encode(b'{"events":[]}').decode("ascii")
-    body_hash = hashlib.sha256(base64.b64decode(body)).hexdigest()
+    quote_body = json.dumps({"events": [{
+        "fixture_id": "fixture-1", "market": "1X2", "bookmaker": "Book A",
+        "kickoff": kickoff, "decimal_odds": 2.5,
+        "observed_at": "2026-01-01T17:00:00+00:00",
+        "quote_updated_at": "2026-01-01T16:55:00+00:00",
+    }]}).encode("utf-8")
+    settlement_body = json.dumps({"events": [{
+        "fixture_id": "fixture-1", "status": "FT", "home_goals": 2, "away_goals": 1,
+        "settled_at": "2026-01-01T20:00:00+00:00", "settlement_version": "settlement-v1",
+    }]}).encode("utf-8")
+    quote_encoded = base64.b64encode(quote_body).decode("ascii")
+    settlement_encoded = base64.b64encode(settlement_body).decode("ascii")
     source_responses = [
         {
             "response_id": "quote-response", "source_id": "source-a",
             "fetched_at": "2026-01-01T17:00:00+00:00", "http_status": 200,
-            "request_fingerprint": "b" * 64, "response_sha256": body_hash, "body_base64": body,
+            "request_fingerprint": "b" * 64,
+            "response_sha256": hashlib.sha256(quote_body).hexdigest(), "body_base64": quote_encoded,
         },
         {
             "response_id": "settlement-response", "source_id": "source-a",
             "fetched_at": "2026-01-01T20:05:00+00:00", "http_status": 200,
-            "request_fingerprint": "c" * 64, "response_sha256": body_hash, "body_base64": body,
+            "request_fingerprint": "c" * 64,
+            "response_sha256": hashlib.sha256(settlement_body).hexdigest(), "body_base64": settlement_encoded,
         },
     ]
     manifest = _write_bundle(tmp_path, [], paper, odds, settlements, source_responses)
