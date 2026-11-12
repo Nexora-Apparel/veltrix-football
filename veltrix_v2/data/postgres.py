@@ -40,7 +40,7 @@ class PostgresHistoryStore:
     def _connect_for_write(self):
         if not self._allow_writes:
             raise RuntimeError("HISTORY_DATABASE_WRITES_DISABLED")
-        conn = self._connect_for_write()
+        conn = self._connect()
         try:
             cur = conn.cursor()
             cur.execute("SELECT current_database()")
