@@ -48,3 +48,10 @@ storage and benchmarking rights and must become available after kickoff.
 The calibration thresholds are ECE <= 0.05, maximum reliability-bin gap <=
 0.15 and at least 1,000 held-out forecasts per market (all three 1X2 classes
 are checked independently).
+
+
+Certification result objects are sealed against direct construction. Only the
+record-derived certification factories can create a `PredictionReleaseCertification`
+or `ReleaseCertification` accepted by the report boundary. Internal test
+factories remain private to the evaluation module; synthetic flags are not a
+production certification route.
