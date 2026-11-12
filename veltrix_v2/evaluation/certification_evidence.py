@@ -273,7 +273,7 @@ def audit_walk_forward_training_sources(
                     cutoff=cutoff,
                     approvals=approval_rows,
                     max_age=timedelta.max,
-                    required_uses=("collection", "storage", "model_training"),
+                    required_uses=("collection", "storage", "model_training", "public_display", "commercial_use"),
                 )
                 if not decision.eligible:
                     rejected.append((observation_id, decision.reason))
@@ -312,7 +312,7 @@ def audit_walk_forward_training_sources(
                     cutoff=ForecastCutoff(observation.retrieved_at_utc),
                     approvals=approval_rows,
                     max_age=timedelta.max,
-                    required_uses=("collection", "storage", "benchmarking"),
+                    required_uses=("collection", "storage", "benchmarking", "commercial_use"),
                 )
                 if not decision.eligible:
                     rejected.append((observation_id, decision.reason))
