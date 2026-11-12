@@ -261,3 +261,66 @@ def test_community_acceptance_can_require_a_specific_country_pack(monkeypatch, c
     monkeypatch.setattr(providers, "request_json", fake_request)
     assert providers.check_fivedollar() == "REQUIRED_COUNTRY_PACK_MISSING"
     assert "expected=AR" in capsys.readouterr().out
+
+
+def test_historical_odds_entitlement_probe_preserves_provider_snapshot_timestamp(monkeypatch, capsys):
+    calls = []
+
+    def fake_request(url, headers=None):
+        calls.append(url)
+        assert "/historical/sports/soccer_epl/odds/" in url
+        assert "regions=uk" in url
+        assert "markets=h2h" in url
+        return 200, {"x-requests-remaining": "490"}, {
+            "timestamp": "2026-11-08T11:55:00Z",
+            "data": [{
+                "id": "event-1",
+                "bookmakers": [{
+                    "key": "bet365",
+                    "markets": [{"key": "h2h", "last_update": "2026-11-08T11:54:12Z"}],
+                }],
+            }],
+        }
+
+    monkeypatch.setattr(providers, "request_json", fake_request)
+    assert providers.probe_odds_api_historical_access("fake-odds") == "ACCESS_CONFIRMED"
+    output = capsys.readouterr().out
+    assert "ACCESS_CONFIRMED" in output
+    assert "snapshot_timestamp=2026-11-08T11:55:00Z" in output
+    assert "market_quotes=1" in output
+    assert "maximum_credits=10" in output
+    assert len(calls) == 1
+
+
+def test_historical_odds_entitlement_probe_fails_closed_on_free_plan_403(monkeypatch, capsys):
+    def fake_request(url, headers=None):
+        raise providers.ProviderCheckError("HTTP 403")
+
+    monkeypatch.setattr(providers, "request_json", fake_request)
+    assert providers.probe_odds_api_historical_access("fake-odds") == "NOT_ENTITLED"
+    output = capsys.readouterr().out
+    assert "HISTORICAL_ODDS: NOT_ENTITLED" in output
+    assert "maximum_credits=10" in output
+    assert "ACCESS_CONFIRMED" not in output
+
+
+def test_historical_odds_entitlement_probe_does_not_run_by_default(monkeypatch, capsys):
+    monkeypatch.setenv("FIVEDOLLARFOOTBALL_API_KEY", "fake-primary")
+    monkeypatch.setenv("THE_ODDS_API_KEY", "fake-odds")
+    monkeypatch.delenv("PROBE_THE_ODDS_API_HISTORICAL", raising=False)
+    calls = []
+
+    def fake_request(url, headers=None):
+        calls.append(url)
+        if "/status" in url:
+            return 200, {}, {"success": 1, "data": {"plan": "free"}}
+        if "/leagues?" in url:
+            return 200, {}, {"success": 1, "data": []}
+        if "/v4/sports/?" in url:
+            return 200, {}, [{"key": "soccer_england_premier_league", "active": True}]
+        raise AssertionError(f"Unexpected request: {url}")
+
+    monkeypatch.setattr(providers, "request_json", fake_request)
+    assert providers.main() == 0
+    assert not any("/historical/" in url for url in calls)
+    assert "HISTORICAL_ODDS" not in capsys.readouterr().out
