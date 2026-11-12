@@ -73,3 +73,13 @@ def test_manifest_rejects_duplicate_roles(tmp_path):
     manifest.write_text(json.dumps(payload), encoding="utf-8")
     with pytest.raises(EvidenceIntegrityError, match="unique"):
         verify_evidence_manifest(manifest)
+
+
+
+def test_manifest_rejects_unrecognized_artifact_role(tmp_path):
+    manifest, _ = _bundle(tmp_path)
+    payload = json.loads(manifest.read_text(encoding="utf-8"))
+    payload["artifacts"][0]["role"] = "caller_supplied_summary"
+    manifest.write_text(json.dumps(payload), encoding="utf-8")
+    with pytest.raises(EvidenceIntegrityError, match="recognized"):
+        verify_evidence_manifest(manifest)
