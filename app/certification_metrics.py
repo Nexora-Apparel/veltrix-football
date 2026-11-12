@@ -141,6 +141,62 @@ def _assert_source_fields(record: Mapping[str, Any], response_record: Mapping[st
             raise EvidenceIntegrityError(f"Raw source value does not match normalized field {field}.")
 
 
+def _verify_walk_forward_bookmaker_odds(
+    row: Mapping[str, Any], response_by_id: Mapping[str, Mapping[str, Any]],
+    approved_sources: set[str],
+) -> None:
+    """Bind 1X2 benchmark prices to the exact retained pre-kickoff provider response."""
+    odds = row.get("bookmaker_odds")
+    if not isinstance(odds, dict) or set(odds) != set(OUTCOMES["1X2"]):
+        raise EvidenceIntegrityError("1X2 benchmark requires complete raw bookmaker decimal odds.")
+    source_id = row.get("bookmaker_odds_source_id")
+    response_id = row.get("bookmaker_odds_source_response_id")
+    observed = _time(row.get("bookmaker_odds_observed_at"))
+    updated = _time(row.get("bookmaker_odds_updated_at"))
+    kickoff = _time(row.get("kickoff"))
+    predicted = _time(row.get("prediction_at"))
+    response = response_by_id.get(str(response_id or ""))
+    if (
+        source_id not in approved_sources or not response or response.get("source_id") != source_id
+        or not observed or not updated or not kickoff or not predicted
+        or response["_fetched_at"] != observed or updated > observed or observed > predicted
+        or predicted >= kickoff or (kickoff - updated).total_seconds() > 24 * 3600
+    ):
+        raise EvidenceIntegrityError("1X2 benchmark odds lack rights-approved point-in-time source provenance.")
+    raw = _json_pointer(response["_body_json"], row.get("bookmaker_odds_source_pointer"))
+    if not isinstance(raw, dict):
+        raise EvidenceIntegrityError("1X2 bookmaker odds source pointer must resolve to an object.")
+    metadata_map = row.get("bookmaker_odds_metadata_field_map") or {}
+    price_map = row.get("bookmaker_odds_field_map") or {}
+    if not isinstance(metadata_map, dict) or not isinstance(price_map, dict):
+        raise EvidenceIntegrityError("1X2 bookmaker odds source field maps must be objects.")
+    metadata = {
+        "fixture_id": row.get("fixture_id"),
+        "bookmaker": row.get("bookmaker"),
+        "kickoff": row.get("kickoff"),
+        "observed_at": row.get("bookmaker_odds_observed_at"),
+        "quote_updated_at": row.get("bookmaker_odds_updated_at"),
+    }
+    for field, expected in metadata.items():
+        source_key = metadata_map.get(field, field)
+        if not isinstance(source_key, str) or source_key not in raw:
+            raise EvidenceIntegrityError(f"Raw 1X2 bookmaker response is missing {field}.")
+        actual = raw[source_key]
+        if field in {"kickoff", "observed_at", "quote_updated_at"}:
+            matches = _time(actual) == _time(expected)
+        else:
+            matches = str(actual) == str(expected)
+        if not matches:
+            raise EvidenceIntegrityError(f"Raw 1X2 bookmaker response does not match {field}.")
+    for outcome in OUTCOMES["1X2"]:
+        source_key = price_map.get(outcome, outcome)
+        if not isinstance(source_key, str) or source_key not in raw:
+            raise EvidenceIntegrityError(f"Raw 1X2 bookmaker response is missing {outcome} odds.")
+        actual, expected = _number(raw[source_key]), _number(odds.get(outcome))
+        if actual is None or expected is None or actual <= 1.0 or abs(actual - expected) > 1e-9:
+            raise EvidenceIntegrityError(f"Raw 1X2 bookmaker response does not match {outcome} odds.")
+
+
 def _score(rows: list[dict[str, Any]], market: str, probability_key: str) -> dict[str, Any]:
     outcomes = OUTCOMES[market]
     selected = [row for row in rows if row.get("market") == market]
@@ -394,6 +450,12 @@ def recompute_raw_certification(manifest_path: str | Path, *, min_walk_forward: 
         if market != "1X2" and (not row.get("calibration_version") or row.get("calibration_version") not in calibration_versions):
             failures[market].append("walk-forward calibration version is missing or not in model manifest")
             continue
+        if market == "1X2":
+            try:
+                _verify_walk_forward_bookmaker_odds(row, response_by_id, approved_sources)
+            except EvidenceIntegrityError as exc:
+                failures[market].append("1X2 bookmaker benchmark source mismatch: " + str(exc))
+                continue
         settlement = settlement_by_id.get(str(row.get("settlement_id") or ""))
         if not settlement or str(settlement.get("fixture_id")) != fixture:
             failures[market].append("walk-forward outcome does not join to its exact source settlement")
