@@ -73,6 +73,8 @@ def test_client_rejects_missing_key():
         fetch_fixture_odds(
             api_key="", fixture_id="fixture-123",
             kickoff_at=KICKOFF, opener=lambda *a, **k: None,
+        
+            source_observation_id="obs-5dollar-payload-123",
         )
 
 
@@ -85,6 +87,8 @@ def test_client_maps_rate_limit_without_retrying():
         fetch_fixture_odds(
             api_key="key", fixture_id="fixture-123",
             kickoff_at=KICKOFF, opener=opener,
+        
+            source_observation_id="obs-5dollar-payload-123",
         )
     assert caught.value.status_code == 429
     assert caught.value.code == "FIVEDOLLAR_RATE_LIMITED"
@@ -99,6 +103,8 @@ def test_client_maps_permission_denial_without_leaking_body():
         fetch_fixture_odds(
             api_key="key", fixture_id="fixture-123",
             kickoff_at=KICKOFF, opener=opener,
+        
+            source_observation_id="obs-5dollar-payload-123",
         )
     assert caught.value.code == "FIVEDOLLAR_PLAN_OR_PERMISSION_DENIED"
     assert "secret response" not in str(caught.value)
