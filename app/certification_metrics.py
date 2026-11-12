@@ -118,6 +118,10 @@ def recompute_raw_certification(manifest_path: str | Path, *, min_walk_forward: 
         raise EvidenceIntegrityError("coverage_audit must be a structured object.")
     if data["coverage_audit"].get("rights_status") != "APPROVED_FOR_INTENDED_USE" or data["coverage_audit"].get("commercial_use_eligible") is not True:
         raise EvidenceIntegrityError("coverage_audit does not prove approved rights for intended commercial use.")
+    approved_sources = data["coverage_audit"].get("approved_source_ids")
+    if not isinstance(approved_sources, list) or not approved_sources or any(not isinstance(item, str) or not item for item in approved_sources):
+        raise EvidenceIntegrityError("coverage_audit must enumerate approved source IDs.")
+    approved_sources = set(approved_sources)
     calibration_versions = model_manifest.get("calibration_versions", [])
     if not isinstance(calibration_versions, list):
         raise EvidenceIntegrityError("model_manifest calibration_versions must be a list.")
@@ -131,11 +135,23 @@ def recompute_raw_certification(manifest_path: str | Path, *, min_walk_forward: 
             continue
         fixture = str(row.get("fixture_id") or "").strip()
         kickoff, predicted = _time(row.get("kickoff")), _time(row.get("prediction_at"))
-        feature_time = _time(row.get("feature_max_observed_at"))
-        if not fixture or not kickoff or not predicted or not feature_time:
-            failures[market].append("walk-forward row missing fixture or point-in-time timestamps")
+        features = row.get("features")
+        if not fixture or not kickoff or not predicted or not isinstance(features, list) or not features:
+            failures[market].append("walk-forward row missing fixture, prediction timestamp or raw feature observations")
             continue
-        if predicted >= kickoff or feature_time > predicted:
+        feature_times = [_time(feature.get("observed_at")) for feature in features if isinstance(feature, dict)]
+        feature_sources = [feature.get("source_id") for feature in features if isinstance(feature, dict)]
+        feature_names = [feature.get("name") for feature in features if isinstance(feature, dict)]
+        if len(feature_times) != len(features) or any(value is None for value in feature_times):
+            failures[market].append("walk-forward feature observation timestamps are incomplete")
+            continue
+        if any(not isinstance(source, str) or source not in approved_sources for source in feature_sources):
+            failures[market].append("walk-forward feature source is not rights-approved")
+            continue
+        if any(not isinstance(name, str) or not name for name in feature_names) or len(set(feature_names)) != len(feature_names):
+            failures[market].append("walk-forward feature names are missing or duplicated")
+            continue
+        if predicted >= kickoff or any(value > predicted for value in feature_times):
             failures[market].append("walk-forward feature leakage or prediction after kickoff")
             continue
         if row.get("model_version") != model_manifest.get("model_version"):
@@ -195,12 +211,18 @@ def recompute_raw_certification(manifest_path: str | Path, *, min_walk_forward: 
         if not quote or str(quote.get("fixture_id")) != fixture or quote.get("market") != market:
             failures[market].append("prospective row does not join to its exact odds snapshot")
             continue
+        if quote.get("source_id") not in approved_sources:
+            failures[market].append("odds snapshot source is not rights-approved")
+            continue
         if _time(quote.get("observed_at")) != fetched or _time(quote.get("quote_updated_at")) != quote_time:
             failures[market].append("odds snapshot timestamps do not match prospective row")
             continue
         settlement = settlement_by_id.get(str(row.get("settlement_id") or ""))
         if not settlement or str(settlement.get("fixture_id")) != fixture:
             failures[market].append("prospective row does not join to its exact settlement")
+            continue
+        if settlement.get("source_id") not in approved_sources:
+            failures[market].append("settlement source is not rights-approved")
             continue
         if settlement.get("model_version") != row.get("model_version"):
             failures[market].append("settlement/model provenance mismatch")
@@ -228,7 +250,7 @@ def recompute_raw_certification(manifest_path: str | Path, *, min_walk_forward: 
             failures[market].append("selection result does not agree with source settlement outcome")
             continue
         snapshot_price = _number(quote.get("decimal_odds"))
-        if snapshot_price is None or abs(snapshot_price - price if (price := _number(row.get("decimal_odds"))) is not None else 999) > 1e-6:
+        if snapshot_price is None or abs(snapshot_price - price) > 1e-6:
             failures[market].append("prospective odds do not match the exact snapshot price")
             continue
         fee = _number(row.get("fees")) or 0.0
