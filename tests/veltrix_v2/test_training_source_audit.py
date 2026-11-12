@@ -254,6 +254,11 @@ def test_prediction_publication_certification_derives_samples_and_quality_from_r
         (_approval(),),
     )
     assert not certification.passed
+    assert certification.audit_bundle is not None
+    assert certification.audit_bundle.calibration_1x2 is not None
+    assert certification.audit_bundle.calibration_btts is not None
+    assert certification.audit_bundle.calibration_totals is not None
+    assert len(certification.audit_bundle.calibration_gates) == 5
     failures = {row.market: row.failed_gates for row in certification.markets}
     for market in ("1X2", "BTTS", "TOTALS"):
         assert "PREDICTION_WALK_FORWARD_SAMPLE_BELOW_1000" in failures[market]
