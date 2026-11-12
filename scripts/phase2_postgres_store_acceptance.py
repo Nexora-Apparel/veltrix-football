@@ -35,7 +35,7 @@ def main() -> dict:
         approval_id="phase2-ci-5dollar-approval",
         provider="5DollarFootballAPI",
         source_id="5dollarfootballapi",
-        competition_scope="*",
+        competition_scope="3118717965,522514093,4160026622,3614399544,686337048,3405541143,4212821298",
         data_type="fixture_result",
         status=ApprovalStatus.APPROVED,
         permitted_uses=frozenset({
