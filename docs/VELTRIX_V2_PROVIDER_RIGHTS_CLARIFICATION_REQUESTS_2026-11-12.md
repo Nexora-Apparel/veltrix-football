@@ -53,3 +53,52 @@ For each provider response, preserve:
 - The internal approval ID and the person/date who reviewed the grant.
 
 A marketing page, API key, successful HTTP response, SDK license or informal statement that the data is "free" is not sufficient evidence of rights.
+
+
+## StrikerAPI — shot-event upstream rights and account terms
+
+Please confirm in writing:
+
+1. Which upstream source(s) provide the `get_events` shot locations and event records for each competition, including the exact source used for EPL, La Liga, Serie A, Bundesliga, Ligue 1, Argentina, Brazil and NWSL.
+2. Whether OWSH Unlimited LLC has authority to sublicense those underlying shot-event records for commercial model training, historical retention, evaluation and commercial display of derived VELTRIX probabilities and insights.
+3. Whether any source-specific restrictions attach to ESPN-derived events, shot coordinates, player identities, lineups or match statistics, and how those restrictions are communicated per competition.
+4. Whether VELTRIX may retain immutable historical response snapshots and payload hashes after each daily refresh overwrites the provider's current record.
+5. Whether the new Terms effective 2026-10-17 apply to this account now or only from 2026-12-16 (if the account was created before 2026-10-17).
+6. Confirm that the provider's xG values are not point-in-time safe and that the raw shot-location/event fields may be used to train a separate customer-owned xG model.
+
+The provider's public Terms permit commercial apps, storage and model training, but state that it is not the original producer of sports facts, does not grant league rights and does not publish a per-dataset source list. This request is intended to resolve the remaining upstream chain-of-rights uncertainty.
+
+Official references:
+- https://strikerapi.com/terms
+- https://strikerapi.com/docs/timing-and-rights
+
+## OpenFootAPI — competition-specific source rights
+
+Please confirm for every competition/source pair VELTRIX intends to consume:
+
+1. The exact upstream rights holder and source licence exposed in `meta.sources` and `/v1/competitions`.
+2. Whether that licence permits commercial caching, historical retention, model training, benchmarking, public display and publication of model-derived probabilities/insights.
+3. Any attribution, share-alike, redistribution, territory, or retention requirements.
+4. Whether the Developer plan's FotMob-sourced xG shot maps are covered by the same per-competition licence metadata and whether VELTRIX may train its own xG model from the shot coordinates and outcomes.
+5. Whether rights continue for lawfully retained data and trained models after cancellation, consistent with the current Terms.
+
+Official references:
+- https://openfootapi.com/terms
+- https://openfootapi.com/docs
+- https://openfootapi.com/pricing
+
+## American Soccer Analysis — CC BY-SA 4.0 derivative scope
+
+Please clarify whether training a proprietary prediction model on ASA's CC BY-SA 4.0 data, then publishing only model parameters, probabilities and match insights, is treated as an adaptation subject to share-alike. Also clarify whether the API's underlying data is a database subject to additional rights beyond the copyright licence.
+
+Official references:
+- https://app.americansocceranalysis.com/api/v1/__docs__/
+- https://creativecommons.org/licenses/by-sa/4.0/
+
+## OpenPlay — upstream data lineage
+
+Please identify the upstream provider(s), contractual rights and sublicensing authority for the event records, shot locations, player/lineup data and xG fields in the v0.1.0 release. Confirm that the CC BY 4.0 declaration applies to every included record and that commercial model training, retention, derivative models and public display are permitted. Please also identify the scope and provenance of the 58 flagged data-issue matches and 39 known gaps.
+
+Official references:
+- https://github.com/nlbair/openplay
+- https://github.com/nlbair/openplay/releases
