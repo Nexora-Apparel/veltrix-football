@@ -42,7 +42,7 @@ class AccountProbeTests(unittest.TestCase):
         self.assertTrue(report["odds_samples"][0]["one_x_two_opened_at"])
         self.assertEqual(report["odds_timestamped_market_blocks_sampled"], 1)
         self.assertNotIn("not-a-real-secret", str(report))
-        self.assertEqual(len(calls), 2)
+        self.assertEqual(len(calls), 5)
 
     def test_account_schema_failure_is_fail_closed(self):
         def fake_request(path, key):
