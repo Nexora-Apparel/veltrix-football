@@ -99,14 +99,15 @@ def check_fivedollar() -> str:
             f"accessible_leagues={len(league_names)}; leagues={'; '.join(league_names[:12])}; "
             f"requests_remaining={remaining}"
         )
-        selected_fixtures = None
-        selected_league = None
+        # One scheduled fixture per accessible league verifies both the top-five
+        # and any activated country pack without exceeding the 20/minute burst.
+        selected_fixtures = []
         for league in leagues[:8]:
             if not isinstance(league, dict) or league.get("id") is None:
                 continue
             league_id = quote(str(league["id"]), safe="")
             fixtures_url = base + f"/leagues/{league_id}/fixtures?" + urlencode({
-                "status": "scheduled", "per_page": 5,
+                "status": "scheduled", "per_page": 1,
             })
             try:
                 _, _, fixture_payload = request_json(fixtures_url, headers)
@@ -114,16 +115,14 @@ def check_fivedollar() -> str:
                 continue
             fixture_rows = fixture_payload.get("data") if isinstance(fixture_payload, dict) else None
             if isinstance(fixture_rows, list) and fixture_rows:
-                selected_fixtures = fixture_rows[:5]
-                selected_league = league
-                break
+                selected_fixtures.append((league, fixture_rows[0]))
         if not selected_fixtures:
             print("5DollarFootballAPI ODDS_SAMPLE: SKIPPED_NO_SCHEDULED_FIXTURE_IN_ACCESSIBLE_LEAGUES")
             return "AUTH_OK"
         coverage = {"1X2": 0, "BTTS": 0, "TOTALS_2_5": 0}
         samples = 0
         odds_headers = {}
-        for fixture in selected_fixtures:
+        for selected_league, fixture in selected_fixtures:
             fixture_id = fixture.get("id") or fixture.get("fixture_id")
             if fixture_id is None:
                 continue
@@ -159,7 +158,7 @@ def check_fivedollar() -> str:
                 print(f"5DollarFootballAPI ODDS_SAMPLE: fixture_id={safe_id(fixture_id)} failed ({exc})")
         print(
             "5DollarFootballAPI ODDS_SAMPLE: "
-            f"league={safe_id(selected_league.get('id'))}; fixtures={samples}; "
+            f"leagues_probed={len(selected_fixtures)}; fixtures={samples}; "
             + "; ".join(f"{market}={count}/{samples}" for market, count in coverage.items())
             + f"; requests_remaining={odds_headers.get('X-RateLimit-Remaining', 'not supplied')}"
         )
