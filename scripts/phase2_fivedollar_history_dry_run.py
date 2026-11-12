@@ -185,8 +185,8 @@ def run_probe(api_key: str, *, now: datetime | None = None, request_fn=_request,
             limits = status_data.get("limits") if isinstance(status_data.get("limits"), dict) else {}
             status_summary = {
                 "plan": str(status_data.get("plan") or "not_reported").casefold(),
-                "rate_limit_hour": limits.get("rate_limit"),
-                "burst_per_minute": limits.get("burst_per_minute"),
+                "rate_limit_hour": _integer(limits.get("rate_limit")),
+                "burst_per_minute": _integer(limits.get("burst_per_minute")),
                 "usage_today": (status_data.get("usage") or {}).get("today")
                     if isinstance(status_data.get("usage"), dict) else None,
                 "country_pack_code": _country_pack(status_data),
@@ -213,13 +213,29 @@ def run_probe(api_key: str, *, now: datetime | None = None, request_fn=_request,
             if league_pagination["has_more"]:
                 raise ProbeFailure("LEAGUE_CATALOGUE_HAS_UNQUALIFIED_EXTRA_PAGES")
             observed = {}
+            observed_countries = {}
             for row in league_rows:
                 if isinstance(row, dict) and row.get("id") is not None:
-                    observed[str(row["id"])] = str(row.get("name") or "unknown")
+                    competition_id = str(row["id"])
+                    observed[competition_id] = str(row.get("name") or "unknown")
+                    country = row.get("country")
+                    if isinstance(country, dict):
+                        country = country.get("name") or country.get("code")
+                    observed_countries[competition_id] = str(country or "not_reported")
             if observed != EXPECTED_COMPETITIONS:
                 raise ProbeFailure("ACCOUNT_COMPETITION_ALLOWLIST_CHANGED")
+            core_countries = {"England", "France", "Germany", "Italy", "Spain"}
+            extra_countries = sorted({
+                country for country in observed_countries.values()
+                if country not in core_countries and country != "not_reported"
+            })
             status_summary["catalogue_sha256"] = hashlib.sha256(leagues_raw).hexdigest()
             status_summary["catalogue_count"] = len(observed)
+            status_summary["competition_countries"] = observed_countries
+            status_summary["country_pack_country_inferred"] = extra_countries
+            status_summary["country_pack_inference_basis"] = (
+                "country values outside the five named top-league countries; not a status-endpoint entitlement field"
+            )
             status_summary["catalogue_quota_headers"] = _safe_headers(league_headers)
 
             start_epoch, end_epoch = int(start.timestamp()), int(end.timestamp())
