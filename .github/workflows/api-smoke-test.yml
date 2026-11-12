@@ -66,7 +66,7 @@ jobs:
           set -o pipefail
           python scripts/verify_multi_source_integration.py 2>&1 | tee reports/phase1/multi-source-integration.log
 
-      - name: Verify 5Dollar account plan, country pack and odds timestamps (16-request cap)
+      - name: Verify 5Dollar account plan, country pack and odds timestamps (17-request cap)
         if: github.event_name == 'workflow_dispatch'
         env:
           FIVEDOLLARFOOTBALL_API_KEY: ${{ secrets.FIVEDOLLARFOOTBALL_API_KEY }}
