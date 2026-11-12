@@ -19,7 +19,7 @@ def _write_bundle(tmp_path, walk, paper, odds, settlements, source_responses=Non
         "odds_snapshots": {"rows": odds},
         "settlement_records": {"rows": settlements},
         "source_responses": {"rows": source_responses or []},
-        "model_manifest": {"model_version": "model-v1", "code_commit": "a" * 40, "training_data_cutoff": "2025-12-31T00:00:00+00:00", "feature_schema_version": "features-v1", "calibration_versions": []},
+        "model_manifest": {"model_version": "model-v1", "code_commit": "a" * 40, "training_data_cutoff": "2025-12-31T00:00:00+00:00", "feature_schema_version": "features-v1", "calibration_versions": [], "walk_forward_folds": [{"fold_id": "fold-1", "order": 1, "training_data_cutoff": "2025-12-31T00:00:00+00:00", "test_start": "2026-01-01T00:00:00+00:00", "test_end": "2026-01-31T23:59:59+00:00"}]},
     }
     entries = []
     for role, payload in payloads.items():
@@ -184,3 +184,38 @@ def test_source_request_fingerprint_rejects_credentials():
             "method": "GET", "endpoint": "/v1/results",
             "headers": {"Authorization": "Bearer do-not-store"},
         })
+
+
+
+def test_raw_certification_rejects_overlapping_walk_forward_folds(tmp_path):
+    manifest = _write_bundle(tmp_path, [], [], [], [])
+    model_path = tmp_path / "model_manifest.json"
+    model = json.loads(model_path.read_text(encoding="utf-8"))
+    model["walk_forward_folds"] = [
+        {
+            "fold_id": "fold-1", "order": 1,
+            "training_data_cutoff": "2025-12-01T00:00:00+00:00",
+            "test_start": "2026-01-01T00:00:00+00:00",
+            "test_end": "2026-01-10T23:59:59+00:00",
+        },
+        {
+            "fold_id": "fold-2", "order": 2,
+            "training_data_cutoff": "2025-12-31T00:00:00+00:00",
+            "test_start": "2026-01-10T00:00:00+00:00",
+            "test_end": "2026-01-20T23:59:59+00:00",
+        },
+    ]
+    model_path.write_text(json.dumps(model), encoding="utf-8")
+    payload = json.loads(manifest.read_text(encoding="utf-8"))
+    for artifact in payload["artifacts"]:
+        if artifact["role"] == "model_manifest":
+            artifact["sha256"] = hashlib.sha256(model_path.read_bytes()).hexdigest()
+    manifest.write_text(json.dumps(payload), encoding="utf-8")
+    with pytest.raises(EvidenceIntegrityError, match="overlap"):
+        recompute_raw_certification(manifest)
+
+
+def test_match_date_clusters_use_west_africa_time():
+    from app.certification_metrics import _match_date
+
+    assert _match_date("2026-01-01T23:30:00+00:00") == "2026-01-02"
