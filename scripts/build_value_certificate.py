@@ -23,6 +23,7 @@ if str(ROOT) not in sys.path:
 
 from app.value_bets import build_value_validation_certificate, attach_value_bet_screens
 from app.goal_market_calibration import apply_goal_market_calibration
+from app.certification_metrics import recompute_raw_certification
 
 API_ROOT = "https://api.github.com"
 
@@ -78,7 +79,7 @@ def latest_backtest_report(repo: str, token: str) -> tuple[dict[str, Any], dict[
 
 
 def build(report_path: str, ledger_path: str, certificate_path: str, *, backtest_path: str | None = None,
-          repo: str | None = None, token: str | None = None) -> dict[str, Any]:
+          repo: str | None = None, token: str | None = None, evidence_manifest_path: str | None = None) -> dict[str, Any]:
     if backtest_path:
         backtest = json.loads(Path(backtest_path).read_text(encoding="utf-8"))
         provenance = {"source": "local_artifact", "dataset_provenance": backtest.get("dataset_provenance")}
@@ -114,6 +115,14 @@ def build(report_path: str, ledger_path: str, certificate_path: str, *, backtest
         }
     certificate = build_value_validation_certificate(certificate_backtest, ledger)
     certificate["generated_at_utc"] = datetime.now(timezone.utc).isoformat()
+    if evidence_manifest_path:
+        # Raw recomputation is diagnostic only until source authenticity and
+        # signed rights/provenance attestation are independently established.
+        certificate["raw_evidence_audit"] = recompute_raw_certification(evidence_manifest_path)
+        certificate["status"] = "LOCKED_SOURCE_ATTESTATION_REQUIRED"
+        certificate["approved_markets"] = []
+        certificate["betting_validation"] = False
+        certificate["alerts_enabled"] = False
     certificate["backtest_provenance"] = provenance
     certificate["paper_ledger_present"] = ledger_file.exists()
     certificate["paper_ledger_dates"] = ledger.get("evaluated_report_dates", 0)
@@ -133,9 +142,10 @@ def main() -> int:
     parser.add_argument("--ledger", default="reports/paper_tracking_ledger.json")
     parser.add_argument("--backtest", default=None, help="Optional local backtest JSON; otherwise fetch latest successful artifact.")
     parser.add_argument("--output", default="reports/value_validation_certificate.json")
+    parser.add_argument("--evidence-manifest", default=None, help="Optional SHA-256-bound raw evidence manifest for diagnostic recomputation.")
     args = parser.parse_args()
     try:
-        certificate = build(args.report, args.ledger, args.output, backtest_path=args.backtest)
+        certificate = build(args.report, args.ledger, args.output, backtest_path=args.backtest, evidence_manifest_path=args.evidence_manifest)
     except (OSError, ValueError, RuntimeError, requests.RequestException, zipfile.BadZipFile) as exc:
         print(f"Certificate generation failed closed: {type(exc).__name__}: {exc}", file=sys.stderr)
         return 2
