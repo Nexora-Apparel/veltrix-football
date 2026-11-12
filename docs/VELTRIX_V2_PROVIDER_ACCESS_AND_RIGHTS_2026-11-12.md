@@ -118,11 +118,13 @@ No production database imports, model training, publication or schedule activati
 
 The provider acceptance workflow now sets `FIVEDOLLAR_REQUIRED_PLAN=community`.
 It fails closed if the account still reports Free. Its bounded probe requests
-one scheduled fixture from each of up to eight accessible leagues, then checks
-the complete 1X2, BTTS and 2.5 totals market groups for each returned fixture.
-The maximum primary-provider smoke sequence is 18 requests (status + league
-catalogue + up to eight fixture requests + up to eight odds requests), below
-the 20/minute burst ceiling. The optional The Odds API market probe remains
+one fixture from each of the five top-five country codes plus one identifiable
+country-pack league. It tries a scheduled fixture first and falls back to one
+finished fixture when no upcoming game exists. It then checks the complete
+1X2, BTTS and 2.5 totals market groups for each returned fixture. The hard
+maximum primary-provider smoke sequence is 20 requests (status + league
+catalogue + six scheduled lookups + six finished fallbacks + six odds lookups),
+within the 20/minute burst ceiling. The optional The Odds API market probe remains
 off by default and can consume up to eight additional odds credits.
 
 
@@ -199,10 +201,12 @@ commercial-use permissions with the CC BY 4.0 attribution.
 
 
 The Community acceptance workflow now fails unless the account reports
-`plan=community` and exposes at least six competitions (the five top leagues
-plus at least one country-pack competition). It probes one scheduled fixture
-per accessible league, bounded to eight fixture/odds pairs. A five-league
-Free-plan catalogue cannot pass. Both the 5Dollar and The Odds API odds adapters require a nonblank
+`plan=community`, exposes all five top-five country codes (GB-ENG, ES, IT,
+DE, FR), and exposes at least one additional non-top-five country code for the
+selected country pack. It probes one fixture in each top-five country plus
+one country-pack fixture, using a recent finished fixture if no scheduled
+fixture exists. The entire sequence is capped at 20 requests. A five-league
+Free-plan catalogue or an unidentified country pack cannot pass. Both the 5Dollar and The Odds API odds adapters require a nonblank
 source-observation ID for every parsed or fetched quote; missing lineage is
 rejected before a snapshot can be produced. The Odds API now has separate
 1X2 (h2h) and totals parsers/fetchers, with same-bookmaker selection groups,
@@ -330,7 +334,7 @@ Official API documentation:
 
 The automated work is prepared, but provider qualification cannot be signed off until these external actions are completed and their outputs are retained.
 
-1. **5Dollar Community activation (account owner action).** Sign in to the existing account, select Community Access and choose the Argentina country pack only if it is offered and covers the intended Argentina competitions. Do not buy Pro or any paid tier. Community is a $0 self-attested access path, not an API feature that can be enabled by code. After activation, the existing read-only workflow requires `plan=community`, at least six accessible competitions and an identifiable non-top-five country code (five top leagues plus at least one country-pack competition), and a bounded fixture/odds smoke test. Maximum expected primary-provider requests: 18.
+1. **5Dollar Community activation (account owner action).** Sign in to the existing account, select Community Access and choose the Argentina country pack only if it is offered and covers the intended Argentina competitions. Do not buy Pro or any paid tier. Community is a $0 self-attested access path, not an API feature that can be enabled by code. After activation, the existing read-only workflow requires `plan=community`, all five top-five country codes (GB-ENG, ES, IT, DE, FR) plus at least one identifiable non-top-five country code, and a bounded fixture/odds smoke test. Maximum primary-provider requests: 20 (including one finished-fixture fallback per league).
 2. **5Dollar verification dispatch (manual GitHub action).** Dispatch `Verify Data Providers` on `veltrix-2.0-architecture-blueprint`. Do not dispatch the daily prediction workflow. If Argentina was selected, set the workflow's `required_country_code` input to `AR`; otherwise leave it blank and verify the returned non-top-five country code. Leave `probe_historical_odds` false unless deliberately spending up to 10 additional Odds API credits to check paid historical access; leave `probe_odds_markets` false unless deliberately spending up to 8 credits. Retain the workflow artifact/log showing plan, competition IDs, country-pack identity and market coverage. A Free-plan response is a hard failure.
 3. **StrikerAPI free-credit refresh and dispatch.** The prior account probe returned HTTP 402 because the 500-credit allowance was exhausted. Wait until the account's free credits have replenished, then manually dispatch `Verify StrikerAPI Read-Only Coverage`. The verifier is capped at 48 calls / 96 credits and writes nothing. Do not raise the cap. Its result is coverage-only; it does not approve provider xG or upstream rights.
 4. **PitchAPI written rights response.** Obtain explicit written answers on upstream providers, commercial sublicense authority, retention, model training, evaluation, public display, and attribution. Store the dated response and its SHA-256; only then can a reviewer create an approved `SourceApproval`.
