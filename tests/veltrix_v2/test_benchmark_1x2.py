@@ -130,3 +130,45 @@ def test_benchmark_rejects_mixed_provider_quote_times_and_observation_ids():
         compare_1x2_to_bookmaker(
             forecasts, rows, outcomes, eligible_fixture_ids=["f1"]
         )
+
+
+
+def test_benchmark_selects_latest_complete_provider_quote_group_per_fixture():
+    from veltrix_v2.evaluation.benchmark_1x2 import _latest_complete_quote_group_per_fixture
+
+    older = [
+        quote("f1", "HOME", 0.4),
+        quote("f1", "DRAW", 0.3),
+        quote("f1", "AWAY", 0.3),
+    ]
+    newer = [
+        replace(
+            row,
+            snapshot_id="new-" + row.snapshot_id,
+            captured_at=row.captured_at + timedelta(minutes=2),
+            provider_quote_at=row.provider_quote_at + timedelta(minutes=2),
+            source_observation_id="obs-new-f1",
+        )
+        for row in older
+    ]
+    selected = _latest_complete_quote_group_per_fixture(tuple(older + newer))
+    assert {row.snapshot_id for row in selected} == {
+        "new-f1-HOME", "new-f1-DRAW", "new-f1-AWAY"
+    }
+    assert {row.source_observation_id for row in selected} == {"obs-new-f1"}
+
+
+def test_benchmark_rejects_ambiguous_latest_quote_groups():
+    from veltrix_v2.evaluation.benchmark_1x2 import _latest_complete_quote_group_per_fixture
+
+    first_group = [
+        quote("f1", "HOME", 0.4),
+        quote("f1", "DRAW", 0.3),
+        quote("f1", "AWAY", 0.3),
+    ]
+    second_group = [
+        replace(row, source_observation_id="obs-other")
+        for row in first_group
+    ]
+    with pytest.raises(ValueError, match="LATEST_QUOTE_GROUP_AMBIGUOUS"):
+        _latest_complete_quote_group_per_fixture(tuple(first_group + second_group))
