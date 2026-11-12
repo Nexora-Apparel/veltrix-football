@@ -117,6 +117,7 @@ def test_github_attestation_requires_pinned_signer_and_exact_manifest_digest(mon
     assert "--signer-workflow" in captured["command"]
     assert "Nexora-Apparel/veltrix-football/.github/workflows/certification-evidence-attestation.yml" in captured["command"]
     assert "--source-ref" in captured["command"]
+    assert "--deny-self-hosted-runners" in captured["command"]
     assert captured["env"]["GH_TOKEN"] == "test-token"
 
 
