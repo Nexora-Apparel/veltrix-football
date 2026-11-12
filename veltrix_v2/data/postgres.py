@@ -75,7 +75,8 @@ class PostgresHistoryStore:
         boundary_end: datetime, request_budget: int, importer_version: str,
         rights_approval_id: str, started_at_utc: datetime,
     ) -> int:
-        if boundary_start.tzinfo is None or boundary_end.tzinfo is None or started_at_utc.tzinfo is None:
+        if any(value.tzinfo is None or value.utcoffset() is None
+               for value in (boundary_start, boundary_end, started_at_utc)):
             raise ValueError("IMPORT_RUN_TIMESTAMPS_MUST_BE_TIMEZONE_AWARE")
         if boundary_end <= boundary_start or request_budget < 1:
             raise ValueError("IMPORT_RUN_BOUNDARY_OR_BUDGET_INVALID")
@@ -111,11 +112,21 @@ class PostgresHistoryStore:
             raise ValueError("IMPORT_CHECKPOINT_STATUS_INVALID")
         if min(records_seen, records_inserted, records_rejected, records_quarantined, requests_used) < 0:
             raise ValueError("IMPORT_CHECKPOINT_COUNTS_INVALID")
-        if window_start.tzinfo is None or window_end.tzinfo is None or window_end <= window_start:
+        if window_start.tzinfo is None or window_start.utcoffset() is None or window_end.tzinfo is None or window_end.utcoffset() is None or window_end <= window_start:
             raise ValueError("IMPORT_CHECKPOINT_WINDOW_INVALID")
+        if status == "COMPLETED" and records_seen != records_inserted + records_rejected + records_quarantined:
+            raise ValueError("COMPLETED_CHECKPOINT_HAS_UNACCOUNTED_RECORDS")
+        if response_sha256 is not None and (
+            len(response_sha256) != 64 or any(ch not in "0123456789abcdef" for ch in response_sha256.casefold())
+        ):
+            raise ValueError("IMPORT_CHECKPOINT_RESPONSE_HASH_INVALID")
         conn = self._connect()
         try:
             cur = conn.cursor()
+            cur.execute("SELECT request_budget FROM import_runs WHERE id=%s", (import_run_id,))
+            run_row = cur.fetchone()
+            if not run_row or requests_used > int(run_row[0]):
+                raise ValueError("IMPORT_CHECKPOINT_REQUEST_BUDGET_EXCEEDED")
             cur.execute(
                 """INSERT INTO import_checkpoints(
                     import_run_id,window_start,window_end,cursor_value,status,records_seen,
@@ -148,13 +159,17 @@ class PostgresHistoryStore:
     ) -> None:
         if status not in {"COMPLETED", "FAILED", "PAUSED"}:
             raise ValueError("IMPORT_RUN_TERMINAL_STATUS_INVALID")
-        if finished_at_utc.tzinfo is None:
+        if finished_at_utc.tzinfo is None or finished_at_utc.utcoffset() is None:
             raise ValueError("IMPORT_RUN_FINISH_TIME_MUST_BE_TIMEZONE_AWARE")
         if min(requests_used, records_seen, records_inserted, records_rejected, records_quarantined) < 0:
             raise ValueError("IMPORT_RUN_COUNTS_INVALID")
         terminal_count = records_inserted + records_rejected + records_quarantined
         if status == "COMPLETED" and terminal_count != records_seen:
             raise ValueError("COMPLETED_IMPORT_RUN_HAS_UNACCOUNTED_RECORDS")
+        if manifest_sha256 is not None and (
+            len(manifest_sha256) != 64 or any(ch not in "0123456789abcdef" for ch in manifest_sha256.casefold())
+        ):
+            raise ValueError("IMPORT_RUN_MANIFEST_HASH_INVALID")
         conn = self._connect()
         try:
             cur = conn.cursor()
