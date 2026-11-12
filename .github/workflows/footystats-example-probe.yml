@@ -1,0 +1,282 @@
+name: Public Football Data Probes (FootyStats, OpenFootAPI and OpenLigaDB)
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [veltrix-2.0-architecture-blueprint]
+    paths:
+      - ".github/workflows/footystats-example-probe.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  example-api-probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Probe official example key and historical match schema
+        run: |
+          python - <<'PY'
+          import json
+          from urllib.parse import urlencode
+          from urllib.request import Request, urlopen
+
+          BASE = "https://api.football-data-api.com/league-matches"
+          COMMON = {"key": "example", "season_id": "12325", "max_per_page": "10"}
+
+          def fetch(max_time=None):
+              params = dict(COMMON)
+              if max_time is not None:
+                  params["max_time"] = str(max_time)
+              url = BASE + "?" + urlencode(params)
+              request = Request(url, headers={"User-Agent": "VELTRIX-2.0-provider-qualification/1.0"})
+              with urlopen(request, timeout=20) as response:
+                  payload = json.loads(response.read().decode("utf-8"))
+              if not isinstance(payload, dict) or payload.get("success") not in (True, 1):
+                  raise SystemExit("FOOTYSTATS_EXAMPLE_API_UNSUCCESSFUL_RESPONSE")
+              rows = payload.get("data")
+              if not isinstance(rows, list) or not rows:
+                  raise SystemExit("FOOTYSTATS_EXAMPLE_API_EMPTY_MATCH_DATA")
+              return payload, rows
+
+          baseline, rows = fetch()
+          cutoff_early = 1735689600  # 2025-01-01T00:00:00Z
+          cutoff_late = 1740787200   # 2025-03-01T00:00:00Z
+          early_payload, early_rows = fetch(cutoff_early)
+          late_payload, late_rows = fetch(cutoff_late)
+
+          fields = sorted({key for row in rows if isinstance(row, dict) for key in row})
+          required = ("id", "date_unix", "status", "homeID", "awayID", "homeGoalCount", "awayGoalCount")
+          missing = [key for key in required if key not in fields]
+          if missing:
+              raise SystemExit("FOOTYSTATS_EXAMPLE_REQUIRED_FIELDS_MISSING:" + ",".join(missing))
+
+          xg_fields = [key for key in fields if "xg" in key.lower() or "expected_goal" in key.lower()]
+          print("FOOTYSTATS_EXAMPLE_API=PASS")
+          print("SEASON_ID=12325")
+          print("BASELINE_ROWS=" + str(len(rows)))
+          print("EARLY_MAX_TIME_ROWS=" + str(len(early_rows)))
+          print("LATE_MAX_TIME_ROWS=" + str(len(late_rows)))
+          print("REQUIRED_FIXTURE_FIELDS=PASS")
+          print("XG_FIELDS=" + (",".join(xg_fields) if xg_fields else "NOT_PRESENT_IN_LEAGUE_MATCHES_RESPONSE"))
+          print("SAMPLE_FIELD_NAMES=" + ",".join(fields))
+          print("RIGHTS_NOTE=Example key only; no account entitlement, production coverage, or timestamp rights inferred.")
+          PY
+
+      - name: Probe OpenFootAPI public preview and source-license metadata
+        run: |
+          python - <<'PY'
+          import json
+          from urllib.parse import urlencode
+          from urllib.request import Request, urlopen
+
+          BASE = "https://openfootapi.com/v1"
+
+          def get(path):
+              request = Request(
+                  BASE + path,
+                  headers={
+                    "Accept": "application/json",
+                    "Authorization": "Bearer of_demo_openfootapi_docs",
+                    "User-Agent": "VELTRIX-2.0-provider-qualification/1.0",
+                },
+              )
+              with urlopen(request, timeout=20) as response:
+                  payload = json.loads(response.read().decode("utf-8"))
+              if not isinstance(payload, dict) or payload.get("error"):
+                  raise SystemExit("OPENFOOTAPI_UNSUCCESSFUL_RESPONSE:" + str(payload.get("error")))
+              return payload
+
+          competitions = get("/competitions")
+          competition_rows = competitions.get("data")
+          if not isinstance(competition_rows, list) or not competition_rows:
+              raise SystemExit("OPENFOOTAPI_COMPETITION_CATALOGUE_EMPTY")
+
+          top_five = [
+              row for row in competition_rows
+              if row.get("id") in {
+                  "comp_premier_league_eng", "comp_laliga_es",
+                  "comp_serie_a_it", "comp_bundesliga_de", "comp_ligue_1_fr",
+              }
+          ]
+          if not top_five:
+              top_five = competition_rows[:5]
+          for row in top_five:
+              source = row.get("source") or {}
+              if not all(source.get(key) for key in ("name", "license", "url", "mode")):
+                  raise SystemExit("OPENFOOTAPI_COMPETITION_SOURCE_LICENSE_METADATA_MISSING")
+          print("OPENFOOTAPI_COMPETITIONS=PASS")
+          print("COMPETITION_COUNT=" + str(len(competition_rows)))
+          from collections import Counter
+          license_counts = Counter(
+              ((row.get("source") or {}).get("name", "UNKNOWN"),
+               (row.get("source") or {}).get("license", "UNKNOWN"))
+              for row in competition_rows
+          )
+          print("SOURCE_LICENSE_DISTRIBUTION=" + json.dumps([
+              {"source": key[0], "license": key[1], "competitions": count}
+              for key, count in sorted(license_counts.items())
+          ], sort_keys=True))
+          cc0_rows = [
+              row for row in competition_rows
+              if "CC0" in ((row.get("source") or {}).get("license", "").upper())
+          ]
+          odbl_rows = [
+              row for row in competition_rows
+              if "ODBL" in ((row.get("source") or {}).get("license", "").upper())
+          ]
+          print("CC0_COMPETITION_CANDIDATES=" + json.dumps([
+              {"id": row.get("id"), "name": row.get("name"),
+               "seasons": len(row.get("availableSeasons") or []),
+               "source": (row.get("source") or {}).get("name"),
+               "license": (row.get("source") or {}).get("license")}
+              for row in cc0_rows
+          ], sort_keys=True))
+          print("ODBL_COMPETITION_CANDIDATES=" + json.dumps([
+              {"id": row.get("id"), "name": row.get("name"),
+               "seasons": len(row.get("availableSeasons") or []),
+               "source": (row.get("source") or {}).get("name"),
+               "license": (row.get("source") or {}).get("license")}
+              for row in odbl_rows
+          ], sort_keys=True))
+          print("COMPETITION_LICENSES=" + json.dumps([
+              {
+                  "id": row.get("id"), "name": row.get("name"),
+                  "seasons": len(row.get("availableSeasons") or []),
+                  "source": (row.get("source") or {}).get("name"),
+                  "license": (row.get("source") or {}).get("license"),
+                  "mode": (row.get("source") or {}).get("mode"),
+              }
+              for row in top_five
+          ], sort_keys=True))
+
+          recent = get("/matches?" + urlencode({"date": "2026-08-28"}))
+          recent_rows = recent.get("data") or []
+          recent_meta = recent.get("meta") or {}
+          print("OPENFOOTAPI_PUBLIC_MATCHES=" + str(len(recent_rows)))
+          if recent_rows:
+              sample = recent_rows[0]
+              required = ("id", "competitionId", "season", "kickoffAt", "status", "updatedAt", "sourceRefs")
+              missing = [key for key in required if key not in sample]
+              if missing:
+                  raise SystemExit("OPENFOOTAPI_MATCH_PROVENANCE_FIELDS_MISSING:" + ",".join(missing))
+              print("MATCH_PROVENANCE_FIELDS=PASS")
+              print("MATCH_SAMPLE=" + json.dumps({
+                  "id": sample.get("id"),
+                  "competitionId": sample.get("competitionId"),
+                  "season": sample.get("season"),
+                  "kickoffAt": sample.get("kickoffAt"),
+                  "status": sample.get("status"),
+                  "updatedAt": sample.get("updatedAt"),
+                  "sourceRefs": sample.get("sourceRefs"),
+                  "sources": recent_meta.get("sources"),
+              }, sort_keys=True))
+          else:
+              print("MATCH_PROVENANCE_FIELDS=NOT_VERIFIED_NO_PUBLIC_MATCHES_FOR_DATE")
+
+          historical = get("/matches?" + urlencode({
+              "competition": "comp_premier_league_eng",
+              "season": "2010/11",
+          }))
+          historical_rows = historical.get("data") or []
+          print("OPENFOOTAPI_EPL_2010_11_PREVIEW_ROWS=" + str(len(historical_rows)))
+          print("HISTORICAL_META_SOURCES=" + json.dumps((historical.get("meta") or {}).get("sources") or [], sort_keys=True))
+          print("RIGHTS_NOTE=Public preview only; each competition source license must be checked before model training or public use.")
+          PY
+
+      - name: Probe OpenLigaDB ODbL current and historical match coverage
+        run: |
+          python - <<'PY'
+          import json
+          from urllib.request import Request, urlopen
+
+          BASE = "https://api.openligadb.de"
+
+          def get(path):
+              request = Request(
+                  BASE + path,
+                  headers={
+                      "Accept": "application/json",
+                      "User-Agent": "VELTRIX-2.0-provider-qualification/1.0 (+https://github.com/Nexora-Apparel/veltrix-football)",
+                  },
+              )
+              with urlopen(request, timeout=20) as response:
+                  return json.loads(response.read().decode("utf-8"))
+
+          leagues = get("/getavailableleagues/2026")
+          if not isinstance(leagues, list):
+              raise SystemExit("OPENLIGADB_LEAGUE_CATALOGUE_INVALID")
+          wanted = ("bl1", "bl2", "bl3", "dfb", "ucl", "la1", "pl1")
+          catalog = {
+              row.get("leagueShortcut"): row
+              for row in leagues if isinstance(row, dict)
+          }
+          print("OPENLIGADB_CATALOGUE_2026=" + str(len(leagues)))
+          for shortcut in wanted:
+              row = catalog.get(shortcut)
+              if row is None:
+                  print("LEAGUE_" + shortcut + "=NOT_IN_2026_CATALOGUE")
+                  continue
+              print("LEAGUE_META_" + shortcut + "=" + json.dumps(row, sort_keys=True))
+
+          for shortcut in ("bl1", "bl2", "bl3", "dfb", "ucl", "la1", "pl1"):
+              try:
+                  matches = get(f"/getmatchdata/{shortcut}/2026")
+              except Exception as exc:
+                  print("CURRENT_" + shortcut + "=ERROR:" + str(exc))
+                  continue
+              if not isinstance(matches, list):
+                  print("CURRENT_" + shortcut + "=INVALID_RESPONSE")
+                  continue
+              completed = sum(1 for match in matches if match.get("matchResults"))
+              utc_times = sum(1 for match in matches if match.get("matchDateTimeUTC"))
+              update_times = sum(1 for match in matches if match.get("lastUpdateDateTime"))
+              sample = matches[0] if matches else {}
+              print("CURRENT_" + shortcut + "=" + json.dumps({
+                  "rows": len(matches),
+                  "with_results": completed,
+                  "with_utc_kickoff": utc_times,
+                  "with_last_update": update_times,
+                  "sample_fields": sorted(sample.keys()) if isinstance(sample, dict) else [],
+                  "sample_kickoff_utc": sample.get("matchDateTimeUTC") if isinstance(sample, dict) else None,
+                  "sample_last_update": sample.get("lastUpdateDateTime") if isinstance(sample, dict) else None,
+                  "sample_finished": sample.get("matchIsFinished") if isinstance(sample, dict) else None,
+              }, sort_keys=True))
+
+          for shortcut in ("bl1", "la1"):
+              for season in (2010, 2015, 2020, 2025):
+                  try:
+                      matches = get(f"/getmatchdata/{shortcut}/{season}")
+                  except Exception as exc:
+                      print("HISTORICAL_" + shortcut + "_" + str(season) + "=ERROR:" + str(exc))
+                      continue
+                  if not isinstance(matches, list):
+                      print("HISTORICAL_" + shortcut + "_" + str(season) + "=INVALID_RESPONSE")
+                      continue
+                  completed = sum(1 for match in matches if match.get("matchResults"))
+                  utc_times = sum(1 for match in matches if match.get("matchDateTimeUTC"))
+                  update_times = sum(1 for match in matches if match.get("lastUpdateDateTime"))
+                  print("HISTORICAL_" + shortcut + "_" + str(season) + "=" + json.dumps({
+                      "rows": len(matches), "with_results": completed,
+                      "with_utc_kickoff": utc_times, "with_last_update": update_times,
+                  }, sort_keys=True))
+          for season, group in ((2026, 1), (2010, 1)):
+              try:
+                  changed = get(f"/getlastchangedate/bl1/{season}/{group}")
+                  from datetime import datetime
+                  raw = changed if isinstance(changed, str) else json.dumps(changed, sort_keys=True)
+                  parsed = None
+                  if isinstance(changed, str):
+                      try:
+                          parsed = datetime.fromisoformat(changed.replace("Z", "+00:00"))
+                      except ValueError:
+                          parsed = None
+                  print("LAST_CHANGED_bl1_" + str(season) + "_group_" + str(group) + "=" + json.dumps({
+                      "raw": raw,
+                      "offset_aware": bool(parsed and parsed.tzinfo and parsed.utcoffset() is not None),
+                  }, sort_keys=True))
+              except Exception as exc:
+                  print("LAST_CHANGED_bl1_" + str(season) + "_group_" + str(group) + "=ERROR:" + str(exc))
+          print("RIGHTS_NOTE=OpenLigaDB data is ODbL-1.0; attribute publicly and comply with share-alike if redistributing a modified database. User-entered records have no editorial review or immutable historical snapshots.")
+          PY

@@ -8,12 +8,14 @@ on:
       - veltrix-2.0-architecture-blueprint
     paths:
       - "veltrix_v2/**"
-      - "tests/veltrix_v2/**"
       - "scripts/veltrix_v2/**"
+      - "tests/veltrix_v2/**"
       - ".github/workflows/veltrix-v2-foundation.yml"
+      - ".github/workflows/veltrix-v2-historical-walk-forward.yml"
   pull_request:
     paths:
       - "veltrix_v2/**"
+      - "scripts/veltrix_v2/**"
       - "tests/veltrix_v2/**"
       - ".github/workflows/veltrix-v2-foundation.yml"
   workflow_dispatch:
@@ -36,7 +38,7 @@ jobs:
         run: python -m pytest --import-mode=importlib -q tests/veltrix_v2
       - name: Enforce no legacy prediction imports in v2
         run: |
-          if grep -R -n -E "from app\.(live_predictions|prediction|advanced_models|calibration|backtest_engine)|import app\.(live_predictions|prediction|advanced_models|calibration|backtest_engine)" veltrix_v2; then
-            echo "Legacy prediction dependency found in veltrix_v2."
+          if grep -R -n -E "from app\.|import app\." veltrix_v2 scripts/veltrix_v2; then
+            echo "Legacy app dependency found in the V2 package or its operational scripts."
             exit 1
           fi

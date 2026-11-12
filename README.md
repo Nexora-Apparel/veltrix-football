@@ -1,8 +1,79 @@
-# VELTRIX FOOTBALL AI
+# VELTRIX FOOTBALL 2.0
 
-Football intelligence, analytics and experimental prediction platform. The production fixture/result source is **5DollarFootballAPI**; matched bookmaker prices currently come from **The Odds API**, with optional OddsPapi enrichment. The 5Dollar odds endpoint is queried but has not returned usable matched prices in the latest live report. Historical records, model code, Telegram command centre, dashboard, and paper-tracking ledger are preserved.
+VELTRIX 2.0 is a ground-up rebuild of the prediction and evaluation system. The existing website, API endpoints, Telegram bot infrastructure, historical records and credentials are retained where appropriate. Legacy prediction models, fallback probabilities, calibration rules and paper-betting logic are not part of the V2 prediction path.
 
-## Active multi-source architecture
+## V2 current status — 2026-11-12
+
+- **Repository:** `Nexora-Apparel/veltrix-football`
+- **Working branch:** `veltrix-2.0-architecture-blueprint`
+- **Pull request:** [#51 — open, draft, unmerged](https://github.com/Nexora-Apparel/veltrix-football/pull/51)
+- **Latest verified code commit:** `0ed39bf7308cf4a9d32226fdcb683f7a6eb61a98` (subsequent documentation commit: `ada9106df700bccffcbf94ff960d1749a1294a71`)
+- **CI:** 379 V2 foundation tests passed; 877 full repository tests passed. These validate code contracts, not real-world model accuracy or production readiness.
+- **Release safety:** no production database writes, Vercel deployment, PR merge, Telegram activation or daily report schedule has occurred.
+
+### V2 architecture
+- Independent Poisson team-strength and Dixon–Coles scoreline models.
+- Point-in-time feature snapshots, team/player form, Elo, schedule load and venue context.
+- Provenance-aware provider observations and chronological walk-forward evaluation.
+- 1X2, BTTS and half-goal totals derived from coherent scoreline probabilities.
+- Match-date block-bootstrap ROI evidence tied to source match dates and observation IDs.
+- Separate prediction-publication and value-bet certification gates.
+- Unknown teams without eligible history abstain; teams with one eligible prior match can be included with regularized estimates. No generic fallback probabilities.
+
+### Current provider qualification
+- **5DollarFootballAPI:** live authentication passed; five top European leagues accessible. Bounded EPL sample: 1X2 5/5, O/U 2.5 5/5, BTTS 3/5. October 2026 Terms explicitly permit commercial app/model use and caching; Free/Community public products require linked attribution and raw-feed redistribution is prohibited. Free history is three months. The current four-day availability proxy is conservative but not yet point-in-time-certifiable. Community Access offers 12 months plus one country pack at $0, but the user's account still reports Free until Community is manually activated and `/v1/status` confirms it.
+- **The Odds API:** key accepted; 46 soccer competitions listed. No odds-market quota was consumed by the catalogue check.
+- **FootyStats:** API FAQ permits storage, model use and website/app display; raw-data redistribution is prohibited. The public example key is limited to EPL 2018/19 testing; a general free current-season production entitlement has not been verified. Account subscription/league entitlement and full history/pagination remain unresolved.
+- **GOAL API:** Argentina/Brazil technical probes passed. November 2026 terms say the underlying data is licensed from third parties but grant no underlying sports-data IP rights; customers must obtain required rights-holder permissions. Model-training, long-term retention and public prediction-display permissions are not expressly granted. Keep it out of V2 ingestion/training until written clarification.
+- **OpenFootAPI:** Free Starter catalogue reports 120 competitions and 5,000 requests/month, but live source metadata shows top-five historical data is FotMob “Unlicensed-Beta”; only three competitions are ODbL and have two seasons each. Do not use unlicensed upstream data for training or public display.
+- **OpenLigaDB:** direct ODbL API returned current Bundesliga/2. Bundesliga/3. Liga/DFB Pokal/UCL/LaLiga fixtures and four full Bundesliga historical seasons (2010/2015/2020/2025). Its update timestamps are timezone-naive, so they are not yet valid for point-in-time certification; logos need separate rights.
+- **PitchAPI:** rich free-plan documentation, but no verified terms, upstream lineage or data-use rights.
+- **OpenPlay/StatsBomb:** historical data is technically available; upstream/licensing restrictions remain unresolved for production training.
+
+See [the complete source register](docs/VELTRIX_V2_COMPLETE_SOURCE_REGISTER_2026-11-11.md) for provider coverage, rights, timestamps and evidence.
+
+
+
+### Latest V2 safeguards
+- ROI certification now consumes computed `MarketPerformance` evidence rather than a caller-supplied method-name string.
+- The 1X2 bookmaker benchmark rejects no-vig probability triplets that do not sum to one.
+- Walk-forward evaluation excludes quarantined rows and fails closed on unapproved or unspecified held-out source records.
+- Source approvals now separate collection, storage, model training, benchmarking, public display and commercial-use permissions. This contract still needs integration into the ingestion and publication paths.
+- **Certification is not release-ready:** walk-forward counts, prospective counts, date counts, odds coverage and bookmaker benchmark booleans are still accepted as caller-supplied scalar evidence. These must be bound to actual walk-forward, paper-ledger, timestamped-odds and bookmaker-comparison reports before any certificate can authorize release.
+
+### Publication and betting release
+- Predictions can be published only after each market has at least 1,000 chronological walk-forward matches, approved sources, point-in-time validation, passing leakage tests and passing calibration.
+- Value betting remains **LOCKED** until full certification also proves at least 300 prospective settled selections per market, at least 90 distinct dates, at least 98% timestamped odds coverage, positive net ROI with a positive lower 95% date-block-bootstrap bound, and 1X2 superiority to bookmaker Brier score and log loss.
+- The report renderer forces value-bet verdicts to `LOCKED — NOT CERTIFIED` unless the separate value-bet certification passes.
+- Provider attribution is carried into website and Telegram report payloads.
+
+### Workflow and integration state
+- All 27 repository workflow definitions were audited; no active cron schedule remains.
+- Daily fixture publication, daily watchdog, legacy backtests, legacy paper-tracking recovery, Telegram delivery recovery and the legacy dashboard snapshot publisher are disabled.
+- The website and Telegram transport still read legacy report artifacts. V2 report integration and end-to-end delivery verification are not complete.
+- Do not enable a schedule or value betting until the relevant release gates and transport checks pass.
+
+### Next execution sequence
+1. Complete the remaining repository audit and core defects.
+2. Qualify provider rights, live historical coverage and point-in-time availability.
+3. Run real-data chronological model evaluation and calibration.
+4. Connect the validated V2 report to the existing website and Telegram transports.
+5. Complete controlled production testing, rollback checks and release acceptance.
+
+Reference documents:
+- [Accuracy and model standard](docs/VELTRIX_V2_ACCURACY_AND_MODEL_STANDARD_2026-11-11.md)
+- [Certified publication contract](docs/VELTRIX_V2_CERTIFIED_PUBLICATION_CONTRACT_2026-11-11.md)
+- [Value-bet certification contract](docs/VELTRIX_V2_RELEASE_CERTIFICATION_2026-11-11.md)
+- [Complete provider source register](docs/VELTRIX_V2_COMPLETE_SOURCE_REGISTER_2026-11-11.md)
+
+---
+
+## V1 historical record (archived — not active)
+
+The sections below preserve historical V1 implementation notes, provider diagnostics, archived backtests and former operating instructions. They are retained for audit/history only. They do not describe the active V2 runtime, and their old schedules, prediction scripts, fallback rules and paper ledgers must not be re-enabled.
+
+## V1 archived provider architecture
+
 
 - **5DollarFootballAPI** — primary same-day fixtures and incremental recent results, normalized into Veltrix's existing fixture schema. Its odds endpoint exposes market keys, but the latest live report found no usable matched 5Dollar prices. The API is authenticated through the repository secret `FIVEDOLLARFOOTBALL_API_KEY`.
 - **The Odds API** — supplemental bookmaker prices. The scheduled pipeline requests head-to-head and Over/Under markets only for relevant supported competitions, then checks event-specific BTTS markets for at most three events per report to control the monthly credit budget. The secret is `THE_ODDS_API_KEY`.

@@ -2,10 +2,22 @@ name: Verify Multi-Source Football Providers
 
 on:
   workflow_dispatch:
-  push:
-    paths:
-      - "scripts/verify_data_providers.py"
-      - ".github/workflows/verify-data-providers.yml"
+    inputs:
+      probe_odds_markets:
+        description: "Probe one upcoming BTTS quote per top-five, Argentina and Brazil league (up to 8 Odds API credits)"
+        required: false
+        default: false
+        type: boolean
+      probe_historical_odds:
+        description: "Check paid historical-odds entitlement (one request, up to 10 Odds API credits)"
+        required: false
+        default: false
+        type: boolean
+      required_country_code:
+        description: "Expected Community country-pack code (e.g. AR); leave blank if not selected"
+        required: false
+        default: ""
+        type: string
 
 permissions:
   contents: read
@@ -19,7 +31,12 @@ jobs:
     timeout-minutes: 5
     env:
       FIVEDOLLARFOOTBALL_API_KEY: ${{ secrets.FIVEDOLLARFOOTBALL_API_KEY }}
+      FIVEDOLLAR_REQUIRED_PLAN: community
+      FIVEDOLLAR_MIN_ACCESSIBLE_LEAGUES: "6"
+      FIVEDOLLAR_REQUIRED_COUNTRY_CODE: ${{ github.event_name == 'workflow_dispatch' && inputs.required_country_code || '' }}
       THE_ODDS_API_KEY: ${{ secrets.THE_ODDS_API_KEY }}
+      PROBE_THE_ODDS_API_MARKETS: ${{ github.event_name == 'workflow_dispatch' && inputs.probe_odds_markets || false }}
+      PROBE_THE_ODDS_API_HISTORICAL: ${{ github.event_name == 'workflow_dispatch' && inputs.probe_historical_odds || false }}
     steps:
       - name: Check out repository
         uses: actions/checkout@v4

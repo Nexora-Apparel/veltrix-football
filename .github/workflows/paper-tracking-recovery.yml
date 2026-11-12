@@ -28,6 +28,8 @@ concurrency:
 
 jobs:
   recover-paper-ledger:
+    # DISABLED: legacy paper ledger must not be regenerated from the retired prediction pipeline.
+    if: false
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:

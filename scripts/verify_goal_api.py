@@ -23,52 +23,76 @@ class ProbeError(RuntimeError):
     pass
 
 
+def _safe_http_error(status, headers, body_text="") -> ProbeError:
+    safe = [f"HTTP {status}"]
+    for key, label in (
+        ("X-RateLimit-Limit", "limit"),
+        ("X-RateLimit-Remaining", "remaining"),
+        ("X-RateLimit-Reset", "reset"),
+        ("X-RateLimit-Type", "window"),
+        ("WWW-Authenticate", "www_authenticate"),
+        ("CF-Ray", "cf_ray"),
+        ("X-Request-Id", "request_id"),
+        ("Content-Type", "content_type"),
+        ("Server", "server"),
+    ):
+        if headers.get(key):
+            safe.append(f"{label}={re.sub(r'[^A-Za-z0-9 _./:+-]', '', str(headers[key]))[:100]}")
+    try:
+        parsed = json.loads(body_text[:2048]) if body_text else {}
+        if isinstance(parsed, dict):
+            detail = parsed.get("message") or parsed.get("error") or parsed.get("detail") or parsed.get("code")
+        else:
+            detail = body_text
+        if isinstance(detail, (str, int, float)):
+            detail = re.sub(r"[^A-Za-z0-9 _.,:;()/-]", "", str(detail))[:240]
+            if detail:
+                safe.append(f"detail={detail}")
+    except (UnicodeDecodeError, json.JSONDecodeError):
+        pass
+    return ProbeError("; ".join(safe))
+
+
 def get(path: str, params: dict[str, object] | None = None):
     url = BASE + path + (("?" + urlencode(params)) if params else "")
-    req = Request(
-        url,
-        headers={
-            "Accept": "application/json",
-            "Authorization": f"Bearer {os.environ['GOAL_API_KEY'].strip()}",
-        },
-        method="GET",
-    )
+    headers = {
+        "Accept": "application/json, text/plain, */*",
+        "Accept-Language": "en-US,en;q=0.9",
+        "Authorization": f"Bearer {os.environ['GOAL_API_KEY'].strip()}",
+        "User-Agent": (
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+            "AppleWebKit/537.36 (KHTML, like Gecko) "
+            "Chrome/131.0.0.0 Safari/537.36"
+        ),
+        "Origin": "https://goal-api.com",
+        "Referer": "https://goal-api.com/",
+    }
+    # Cloudflare explicitly rejected the default Python urllib signature on the
+    # previous probe. Prefer a Chrome TLS/browser impersonation when available.
     try:
+        from curl_cffi import requests as browser_requests
+        response = browser_requests.get(
+            url, headers=headers, timeout=TIMEOUT, impersonate="chrome"
+        )
+        if response.status_code >= 400:
+            raise _safe_http_error(response.status_code, response.headers, response.text)
+        try:
+            return response.status_code, response.headers, response.json()
+        except ValueError:
+            raise ProbeError("invalid JSON response") from None
+    except ImportError:
+        pass
+    try:
+        req = Request(url, headers=headers, method="GET")
         with urlopen(req, timeout=TIMEOUT) as response:
             body = json.loads(response.read().decode("utf-8"))
             return response.status, response.headers, body
     except HTTPError as exc:
-        headers = exc.headers or {}
-        safe = [f"HTTP {exc.code}"]
-        for key, label in (
-            ("X-RateLimit-Limit", "limit"),
-            ("X-RateLimit-Remaining", "remaining"),
-            ("X-RateLimit-Reset", "reset"),
-            ("X-RateLimit-Type", "window"),
-            ("WWW-Authenticate", "www_authenticate"),
-            ("CF-Ray", "cf_ray"),
-            ("X-Request-Id", "request_id"),
-            ("Content-Type", "content_type"),
-            ("Server", "server"),
-        ):
-            if headers.get(key):
-                safe.append(f"{label}={re.sub(r'[^A-Za-z0-9 _./:+-]', '', str(headers[key]))[:100]}")
-        # Capture only a bounded, sanitized error description. Never print request
-        # headers, credentials, or an arbitrary upstream response payload.
         try:
             raw = exc.read(2048).decode("utf-8", errors="replace")
-            parsed = json.loads(raw) if raw else {}
-            if isinstance(parsed, dict):
-                detail = parsed.get("message") or parsed.get("error") or parsed.get("detail") or parsed.get("code")
-            else:
-                detail = raw
-            if isinstance(detail, (str, int, float)):
-                detail = re.sub(r"[^A-Za-z0-9 _.,:;()/-]", "", str(detail))[:240]
-                if detail:
-                    safe.append(f"detail={detail}")
-        except (OSError, UnicodeDecodeError, json.JSONDecodeError):
-            pass
-        raise ProbeError("; ".join(safe)) from None
+        except (OSError, UnicodeDecodeError):
+            raw = ""
+        raise _safe_http_error(exc.code, exc.headers or {}, raw) from None
     except (URLError, TimeoutError, OSError):
         raise ProbeError("network request failed") from None
     except (UnicodeDecodeError, json.JSONDecodeError):
