@@ -57,16 +57,18 @@ def _certificate():
 
 def test_runtime_screen_covers_1x2_btts_and_all_full_time_totals_lines():
     result = screen_fixture_value_bets(_fixture(), validation_certificate=_certificate())
-    assert result["status"] == "CANDIDATES_FOUND"
+    assert result["status"] == "PAPER_ONLY_CANDIDATES"
+    assert result["candidate_count"] == 0
     assert set(result["markets"]) == {
         "1X2", "BTTS", "OVER_UNDER_1_5", "OVER_UNDER_2_5", "OVER_UNDER_3_5"
     }
     assert all(result["markets"][market]["bookmaker_price_sets"] == 1 for market in result["markets"])
-    assert result["candidate_count"] >= 5
+    assert result["paper_candidate_count"] >= 1
+    assert all(not market["candidates"] for market in result["markets"].values())
     assert all(
-        candidate["status"] == "CANDIDATE_NOT_GUARANTEED"
+        candidate["status"] == "PAPER_ONLY_NOT_APPROVED"
         for market in result["markets"].values()
-        for candidate in market["candidates"]
+        for candidate in market["paper_candidates"]
     )
 
 
