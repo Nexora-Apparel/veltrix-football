@@ -120,7 +120,7 @@ def run_acceptance() -> dict:
             """)
             mutation_rejected = False
             try:
-                cur.execute("UPDATE source_approvals SET status='REVOKED' WHERE approval_id='__acceptance_immutable_probe__'")
+                cur.execute("UPDATE source_approvals SET status='REVOKED' WHERE approval_id='__acceptance_status_event_probe__'")
             except psycopg.errors.RaiseException:
                 mutation_rejected = True
                 cur.execute("ROLLBACK TO SAVEPOINT immutable_probe")
@@ -128,6 +128,19 @@ def run_acceptance() -> dict:
 
             # Approval revocation is an append-only event, never an UPDATE to the original approval.
             cur.execute("SAVEPOINT rights_event_probe")
+            cur.execute("""
+                INSERT INTO source_approvals (
+                    approval_id, provider, source_id, competition_scope, data_type,
+                    status, rights_basis, terms_url, terms_version, evidence_uri,
+                    evidence_sha256, reviewed_at, reviewer_id, valid_from,
+                    permitted_uses, commercial_use_allowed
+                ) VALUES (
+                    '__acceptance_status_event_probe__', 'probe', 'probe', '4160026622', 'fixture_result',
+                    'APPROVED', 'TERMS', 'https://example.invalid/terms', 'test',
+                    'https://example.invalid/evidence', repeat('c',64), NOW(), 'acceptance',
+                    NOW(), '["STORAGE"]'::jsonb, TRUE
+                )
+            """)
             cur.execute("""
                 INSERT INTO source_approval_status_events(
                     approval_id,status,evidence_uri,evidence_sha256,effective_at,reason_code
