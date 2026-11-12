@@ -477,6 +477,14 @@ class PostgresHistoryStore:
             cur = conn.cursor()
             response_id = self._persist_provider_response(cur, response)
             cur.execute(
+                """SELECT status FROM source_approval_status_events
+                   WHERE approval_id=%s AND effective_at<=%s
+                   ORDER BY effective_at DESC,event_id DESC LIMIT 1""",
+                (approval.approval_id, response.fetched_at_utc),
+            )
+            approval_event = cur.fetchone()
+            approval_active = bool(approval_event and approval_event[0] == "APPROVED")
+            cur.execute(
                 """SELECT e.entitlement_status,e.competition_ids
                    FROM provider_entitlement_observations e
                    JOIN provider_responses r ON r.id=e.provider_response_id
@@ -492,6 +500,13 @@ class PostgresHistoryStore:
             for fixture in rows:
                 if fixture.provider != response.provider or fixture.source_id != response.source_id:
                     raise ValueError("FIXTURE_PROVIDER_RESPONSE_MISMATCH")
+                if not approval_active:
+                    self._quarantine(
+                        cur, fixture, import_run_id, "SOURCE_APPROVAL_REVOKED_OR_UNVERIFIED",
+                        {"approval_id": approval.approval_id},
+                    )
+                    conflicts += 1
+                    continue
                 if not entitlement_active:
                     self._quarantine(
                         cur, fixture, import_run_id, "PROVIDER_ENTITLEMENT_NOT_VERIFIED",
