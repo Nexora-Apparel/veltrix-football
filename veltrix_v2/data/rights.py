@@ -64,6 +64,11 @@ def evaluate_fixture_import(
             ImportOutcomeStatus.QUARANTINED, "DATA_TYPE_OUTSIDE_SOURCE_APPROVAL",
             fixture.provider_fixture_id,
         )
+    if fixture.rights_approval_id != approval.approval_id:
+        return FixtureImportDecision(
+            ImportOutcomeStatus.QUARANTINED, "RIGHTS_APPROVAL_REFERENCE_MISMATCH",
+            fixture.provider_fixture_id,
+        )
     purposes = (
         DataUsePurpose.COLLECTION,
         DataUsePurpose.STORAGE,
