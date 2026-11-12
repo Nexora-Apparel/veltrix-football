@@ -25,7 +25,7 @@ def test_certificate_builder_fails_closed_without_paper_ledger(tmp_path):
         backtest_path=str(backtest_path),
     )
 
-    assert certificate["status"] == "LOCKED_INSUFFICIENT_EVIDENCE"
+    assert certificate["status"] == "LOCKED_SOURCE_ATTESTATION_REQUIRED"
     assert certificate["approved_markets"] == []
     assert certificate["alerts_enabled"] is False
     assert certificate["paper_ledger_present"] is False
