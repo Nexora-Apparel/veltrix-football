@@ -161,9 +161,9 @@ def main():
     standard = output["credentials"].get("STANDARD_KEY", {})
     community = output["credentials"].get("COMMUNITY_KEY", {})
     if standard.get("status") != "PROBED" or community.get("status") != "PROBED":
-        print("COMPARISON: INCOMPLETE_MISSING_OR_FAILED_CREDENTIAL")
+        print("COMPARISON: INCOMPLETE_MISSING_OR_FAILED_CREDENTIAL", file=sys.stderr)
         return 1
-    print("COMPARISON: EVIDENCE_CAPTURED; review endpoint scope and quota headers; no key is promoted automatically")
+    print("COMPARISON: EVIDENCE_CAPTURED; review endpoint scope and quota headers; no key is promoted automatically", file=sys.stderr)
     return 0
 
 
