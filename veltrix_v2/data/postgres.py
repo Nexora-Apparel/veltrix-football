@@ -17,7 +17,7 @@ from veltrix_v2.data.rights import evaluate_fixture_import
 
 
 def _contains_sensitive_key(value) -> bool:
-    sensitive_tokens = ("authorization", "api-key", "apikey", "token", "secret", "password", "cookie")
+    sensitive_tokens = ("authorization", "api-key", "api_key", "apikey", "access_key", "token", "secret", "password", "cookie")
     if isinstance(value, dict):
         for key, nested in value.items():
             if any(token in str(key).casefold() for token in sensitive_tokens):
