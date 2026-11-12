@@ -17,6 +17,7 @@ def _write_bundle(tmp_path, walk, paper, odds, settlements):
         "prospective_ledger": {"rows": paper},
         "odds_snapshots": {"rows": odds},
         "settlement_records": {"rows": settlements},
+        "source_responses": {"rows": []},
         "model_manifest": {"model_version": "model-v1", "code_commit": "a" * 40, "training_data_cutoff": "2025-12-31T00:00:00+00:00", "feature_schema_version": "features-v1", "calibration_versions": []},
     }
     entries = []
