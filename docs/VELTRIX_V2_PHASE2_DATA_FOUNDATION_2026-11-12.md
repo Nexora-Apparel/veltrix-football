@@ -82,7 +82,7 @@ The Community account was verified on 2026-11-12:
 
 The VELTRIX terms review is recorded in [5Dollar terms review](legal/5dollar-terms-review-2026-11-12.md). Community public display must include **Football data by 5DollarFootballAPI** linked to https://5dollarfootballapi.com.
 
-The Phase 1 90-day qualification verified 786 finished fixtures across the seven competitions. It did not establish the full 365-day account history. The Phase 2 workflow therefore runs one bounded 365-day, read-only history probe with a 40-request cap and 4-second pacing. It does not write to Neon or any production database.
+The Phase 1 90-day qualification verified 786 finished fixtures across the seven competitions. The Phase 2 365-day read-only qualification completed successfully on 2026-11-12 (GitHub Actions run [#43299701499](https://github.com/Nexora-Apparel/veltrix-football/actions/runs/43299701499), commit `b7cf7c1e938adaedb410e06faf1f2c746413ea75`). It returned 2,496 finished fixtures with valid scores across all seven entitled competitions, complete pagination (26 pages), 28/40 requests, zero duplicates, zero rejected/quarantined records and no provider failure. Evidence artifact: `veltrix-phase2-historical-data-dry-run` (artifact ID `13979804952`); report SHA-256 `34e2c0bf512757aa89326ebf6277f3be2ae87dc62ac593f6fe698d80b4f7ecdb`. The workflow performed no database writes, imports, deployments, prediction changes or Telegram messages.
 
 ### 3.2 Wyscout open event dataset — historical shot-event source
 
@@ -138,9 +138,11 @@ Phase 2 is not complete until all of the following are verified:
 1. Migration 0002 applies cleanly after migration 0001 on PostgreSQL 16 and 18; rerunning is idempotent.
 2. Database acceptance confirms the exact expected tables/indexes, foreign keys, checksums and five append-only triggers.
 3. Unit tests prove rights fail-closed, strict fixture parsing, timezone/score checks, complete pagination, duplicate detection, source-manifest reconciliation, request caps and secret-header rejection.
-4. The manual 365-day workflow returns complete pagination for all seven allowlisted competitions, with no duplicate fixture IDs, no missing required identity, valid settled scores and a complete SHA-256 source manifest within 40 requests.
+4. **PASS —** run #43299701499 returned complete pagination for all seven allowlisted competitions (26 pages), 2,496 valid settled fixtures, no duplicate IDs, no rejected/quarantined records, a SHA-256 report/source manifest and 28 requests within the 40-request cap. The sanitized evidence artifact is retained for 30 days.
 5. The historical CSV remains quarantined; no unapproved source is imported.
 6. The PostgreSQL writer is exercised against an isolated PostgreSQL test database or Neon child branch, proving idempotency, atomicity, append-only evidence and conflict quarantine.
-7. The primary Neon branch remains unchanged by Phase 2 data import. No production history rows are inserted before the final release gates.
+7. **PASS —** the primary Neon branch remains unchanged; the qualification workflow reported zero database writes and zero imports. No production history rows were inserted.
+
+**Phase 2 acceptance:** COMPLETE. The historical target labels use the conservative `kickoff + 4 days` availability proxy and remain `point_in_time_certifiable=false`; this qualification establishes historical fixture/result coverage only, not pre-match feature availability. The 5Dollar historical odds endpoint remains unavailable on Community (HTTP 403), and sampled timestamp coverage remains 9.09%; this does not pass or relax the later 98% odds gate.
 
 **Safety:** no prediction model or probability code, no production data import, no Vercel deployment, no Telegram delivery, no schedule activation and no value-bet unlocking.
