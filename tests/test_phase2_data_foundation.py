@@ -377,3 +377,9 @@ def test_postgres_history_writer_is_read_only_by_default():
 def test_postgres_history_writer_requires_explicit_expected_database():
     with pytest.raises(ValueError, match="EXPECTED_HISTORY_WRITE_DATABASE_REQUIRED"):
         PostgresHistoryStore(lambda: None, allow_writes=True)
+
+
+
+def test_postgres_history_writer_hard_blocks_production_database_name():
+    with pytest.raises(RuntimeError, match="PRODUCTION_DATABASE_WRITES_DISABLED"):
+        PostgresHistoryStore(lambda: None, allow_writes=True, expected_database="veltrix-football")
