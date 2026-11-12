@@ -38,4 +38,4 @@ def test_phase2_migration_is_additive_and_enforces_append_only_evidence():
     assert "CREATE TABLE FIXTURE_RESULT_VERSIONS" in migration
     assert "CREATE TABLE SYNC_WATERMARKS" in migration
     assert "CREATE TABLE INGESTION_QUARANTINE" in migration
-    assert migration.count("BEFORE UPDATE OR DELETE") == 5
+    assert migration.count("CREATE TRIGGER") == 5
