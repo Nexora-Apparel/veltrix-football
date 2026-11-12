@@ -241,7 +241,6 @@ def run_import(database_url: str, api_key: str, *, days: int = 365,
                 total_quarantined += page_quarantined
                 page_count += 1
                 fixture_count_by_competition[competition_id] += len(parsed.fixtures)
-                response_hashes.append(parsed.response_sha256)
                 manifest_parts.extend(
                     f"{row.provider}|{row.source_id}|{row.provider_fixture_id}|{row.provider_competition_id}|{row.payload_sha256}"
                     for row in parsed.fixtures
@@ -290,6 +289,20 @@ def run_import(database_url: str, api_key: str, *, days: int = 365,
             records_rejected=total_rejected,
             records_quarantined=total_quarantined,
             manifest_sha256=manifest_sha256,
+        )
+        watermark = store.get_sync_watermark(
+            provider=provider.PROVIDER,
+            data_class="fixture_result",
+            scope="community-seven-competitions",
+        )
+        expected_version = int(watermark[1]) if watermark else 0
+        store.advance_sync_watermark(
+            provider=provider.PROVIDER,
+            data_class="fixture_result",
+            scope="community-seven-competitions",
+            cursor_value=checked_at.isoformat(),
+            expected_version=expected_version,
+            updated_at_utc=datetime.now(timezone.utc),
         )
         status = "COMPLETED"
         failure_reason = None
