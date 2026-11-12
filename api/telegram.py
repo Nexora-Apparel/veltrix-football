@@ -605,17 +605,24 @@ def dashboard_data() -> dict:
             "status": "NOT_REPORTED", "markets": [], "compatible_forecasts": 0,
             "applied_forecasts": 0,
         },
-        "value_bet_screen": report.get("value_bet_screen") or {
-            "status": "NOT_REPORTED", "model_validated": False,
+        "value_bet_screen": {
+            "status": "PAPER_ONLY_CANDIDATES",
+            "model_validated": False,
+            "alerts_enabled": False,
             "markets": ["1X2", "BTTS", "OVER_UNDER_1_5", "OVER_UNDER_2_5", "OVER_UNDER_3_5"],
             "candidate_count": 0,
+            "paper_candidate_count": 0,
         },
-        "value_validation_certificate": report.get("value_validation_certificate") or {
-            "status": "LOCKED_INSUFFICIENT_EVIDENCE",
+        # Published report JSON is not a trusted certificate. The dashboard API
+        # exposes a fixed locked state until the signed release-token verifier
+        # is wired into this read path.
+        "value_validation_certificate": {
+            "status": "LOCKED_SOURCE_ATTESTATION_REQUIRED",
             "approved_markets": [],
+            "betting_validation": False,
             "alerts_enabled": False,
             "market_diagnostics": {},
-            "note": "No current evidence-backed certificate is published; value alerts remain disabled.",
+            "note": "Report-supplied certificate fields are untrusted; value alerts remain disabled.",
         },
         "paper_tracking": paper_tracking,
         "warning": "Predictions are evidence-weighted estimates. Value-bet verdicts are shown only when supported by the available evidence. The report may not be the latest live run.",
