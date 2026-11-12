@@ -131,15 +131,22 @@ def build_value_validation_certificate(
         approved.append("1X2")
 
     required = ["1X2", *goal_markets.keys()]
-    passed = len(approved) == len(required)
-    any_passed = bool(approved)
+    diagnostic_passes = list(approved)
+    # Aggregate JSON metrics are diagnostic only. No source-attested raw-row
+    # verifier has authorized this bundle, so none of these summaries can
+    # produce a VALIDATED/PARTIALLY_VALIDATED release status.
     return {
-        "schema_version": 1,
-        "status": "VALIDATED" if passed else "PARTIALLY_VALIDATED" if any_passed else "LOCKED_INSUFFICIENT_EVIDENCE",
-        "betting_validation": any_passed,
-        "approved_markets": approved,
+        "schema_version": 2,
+        "status": "LOCKED_SOURCE_ATTESTATION_REQUIRED",
+        "diagnostic_markets": diagnostic_passes,
+        "betting_validation": False,
+        "approved_markets": [],
         "market_diagnostics": {
-            market: {"status": "PASS" if market in approved else "LOCKED", "failures": failures.get(market, [])}
+            market: {
+                "status": "LOCKED",
+                "diagnostic_status": "SUMMARY_THRESHOLDS_MET" if market in diagnostic_passes else "DIAGNOSTIC_FAIL",
+                "failures": failures.get(market, []) + ["source-attested raw evidence has not been verified"],
+            }
             for market in required
         },
         "requirements": {
@@ -153,8 +160,8 @@ def build_value_validation_certificate(
             "paper_evidence_must_match_deployed_calibration_version": True,
             "1x2_paper_evidence_must_match_benchmarked_model_version": True,
         },
-        "alerts_enabled": any_passed,
-        "note": "Missing, incomplete or failing evidence keeps every market locked. Calibration alone does not prove profitability.",
+        "alerts_enabled": False,
+        "note": "Summary metrics are diagnostic only. Every market remains locked until source-attested raw evidence is independently verified.",
     }
 
 
