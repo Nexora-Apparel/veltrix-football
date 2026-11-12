@@ -32,6 +32,17 @@ def _latest_complete_quote_group_per_fixture(
     rows: tuple[NormalizedBookProbability, ...],
 ) -> tuple[NormalizedBookProbability, ...]:
     """Select the latest complete pre-match bookmaker quote group per fixture."""
+    first = rows[0]
+    if first.market.upper() != "1X2" or first.line is not None:
+        raise ValueError("1X2_BENCHMARK_MARKET_OR_LINE_INVALID")
+    if any(
+        row.source_id != first.source_id
+        or row.bookmaker_id != first.bookmaker_id
+        or row.market.upper() != "1X2"
+        or row.line is not None
+        for row in rows
+    ):
+        raise ValueError("1X2_BENCHMARK_MIXED_BOOKMAKER_MARKET")
     by_fixture: dict[str, dict[tuple[object, ...], dict[str, NormalizedBookProbability]]] = {}
     for row in rows:
         key = (
