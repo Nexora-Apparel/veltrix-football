@@ -7,7 +7,9 @@ on:
       - "app/certification_evidence.py"
       - "app/certification_metrics.py"
       - "app/value_bets.py"
+      - "app/telegram_commands.py"
       - "scripts/build_value_certificate.py"
+      - "scripts/send_telegram_report.py"
       - "scripts/verify_certification_evidence.py"
       - "tests/test_certification_evidence.py"
       - "tests/test_certification_metrics.py"
@@ -18,10 +20,11 @@ on:
       - "tests/test_telegram_commands.py"
       - "docs/VELTRIX_V2_CERTIFICATION_EVIDENCE_BUNDLE_V1.md"
       - "docs/VELTRIX_V2_RAW_CERTIFICATION_EVIDENCE_CONTRACT_V1.md"
+      - "docs/VELTRIX_V2_PHASE2_PROVIDER_RIGHTS_ACCESS_2026-11-12.md"
       - ".github/workflows/certification-evidence-tests.yml"
       - ".github/workflows/certification-evidence-attestation.yml"
   push:
-    branches: ["phase1/evidence-bound-certificate-lockdown"]
+    branches: ["phase1/evidence-bound-certificate-lockdown", "phase2/provider-rights-access-20261112"]
     paths:
       - "app/certification_evidence.py"
       - "app/certification_metrics.py"
