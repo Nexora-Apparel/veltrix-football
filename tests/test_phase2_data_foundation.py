@@ -16,6 +16,7 @@ from veltrix_v2.data.fivedollar import (
 )
 from veltrix_v2.data.postgres import PostgresHistoryStore
 from veltrix_v2.data.rights import evaluate_fixture_import, evaluate_source_use
+from scripts import phase2_fivedollar_history_dry_run as history_probe
 
 NOW = datetime(2026, 11, 12, 12, tzinfo=timezone.utc)
 KICKOFF = NOW - timedelta(days=30)
@@ -237,3 +238,101 @@ def test_fixture_cannot_reference_a_different_rights_approval():
     decision = evaluate_fixture_import(row, approval(), evaluated_at_utc=NOW)
     assert decision.status is ImportOutcomeStatus.QUARANTINED
     assert decision.reason_code == "RIGHTS_APPROVAL_REFERENCE_MISMATCH"
+
+
+
+def _fake_365_day_provider():
+    def request(path, key):
+        if path == "/status":
+            body = {
+                "success": 1,
+                "data": {
+                    "plan": "community",
+                    "limits": {"rate_limit": 300, "burst_per_minute": 20},
+                    "usage": {"today": 34},
+                },
+            }
+            headers = {"X-RateLimit-Limit": "300", "X-RateLimit-Remaining": "250"}
+        elif path == "/leagues":
+            rows = []
+            country_by_name = {
+                "Brazil Serie A": "Brazil", "Brazil Serie B": "Brazil",
+                "England Premier League": "England", "France Ligue 1": "France",
+                "Germany Bundesliga I": "Germany", "Italy Serie A": "Italy",
+                "Spain La Liga": "Spain",
+            }
+            for league_id, name in history_probe.EXPECTED_COMPETITIONS.items():
+                rows.append({"id": int(league_id), "name": name, "country": country_by_name[name]})
+            body = {"success": 1, "data": rows, "pagination": {"has_more": False}}
+            headers = {"X-RateLimit-Limit": "300", "X-RateLimit-Remaining": "249"}
+        else:
+            from urllib.parse import urlparse
+            from datetime import datetime, timezone
+            league_id = path.split("/")[2]
+            name = history_probe.EXPECTED_COMPETITIONS[league_id]
+            kickoff = datetime(2026, 10, 10, 12, tzinfo=timezone.utc)
+            row = {
+                "id": 100000 + int(league_id) % 100000,
+                "league": {"id": int(league_id), "name": name, "season": "2025/2026"},
+                "teams": {
+                    "home": {"id": 200000 + int(league_id) % 100000, "name": "Home " + name},
+                    "away": {"id": 300000 + int(league_id) % 100000, "name": "Away " + name},
+                },
+                "kickoff_utc": kickoff.isoformat().replace("+00:00", "Z"),
+                "kickoff_ts": int(kickoff.timestamp()),
+                "status": "finished",
+                "goals": {"home": 2, "away": 1},
+            }
+            body = {"success": 1, "data": [row],
+                    "pagination": {"page": 1, "per_page": 100, "has_more": False}}
+            headers = {"X-RateLimit-Limit": "300", "X-RateLimit-Remaining": "248"}
+        return 200, json.dumps(body, sort_keys=True, separators=(",", ":")).encode(), headers
+    return request
+
+
+def test_365_day_history_probe_qualifies_all_seven_allowlisted_competitions():
+    report = history_probe.run_probe(
+        "not-a-real-key",
+        now=NOW,
+        request_fn=_fake_365_day_provider(),
+        sleep=lambda _: None,
+    )
+    history_probe.validate_report(report)
+    assert report["status"] == "QUALIFIED"
+    assert report["fixture_count"] == 7
+    assert report["importable_count"] == 7
+    assert report["pagination_complete"] is True
+    assert report["request_count"] == 9
+    assert report["account"]["country_pack_country_inferred"] == ["Brazil"]
+    assert report["side_effects"]["database_writes"] == 0
+    assert "not-a-real-key" not in str(report)
+
+
+def test_365_day_probe_fails_closed_when_quota_is_insufficient():
+    request = _fake_365_day_provider()
+    def low_quota(path, key):
+        status, raw, headers = request(path, key)
+        if path == "/status":
+            headers["X-RateLimit-Remaining"] = "10"
+        return status, raw, headers
+    report = history_probe.run_probe(
+        "not-a-real-key", now=NOW, request_fn=low_quota, sleep=lambda _: None
+    )
+    assert report["status"] == "NOT_QUALIFIED"
+    assert report["failure_reason"] == "INSUFFICIENT_REMAINING_QUOTA_FOR_BOUNDED_PROBE"
+    assert report["request_count"] == 1
+    assert report["fixture_count"] == 0
+
+
+def test_365_day_probe_stops_at_request_budget_without_claiming_complete_pagination(monkeypatch):
+    monkeypatch.setattr(history_probe, "REQUEST_BUDGET", 3)
+    report = history_probe.run_probe(
+        "not-a-real-key",
+        now=NOW,
+        request_fn=_fake_365_day_provider(),
+        sleep=lambda _: None,
+    )
+    assert report["status"] == "NOT_QUALIFIED"
+    assert report["failure_reason"] == "REQUEST_BUDGET_EXHAUSTED"
+    assert report["request_count"] == 3
+    assert report["pagination_complete"] is False
