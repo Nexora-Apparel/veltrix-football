@@ -199,3 +199,13 @@ rejected before a snapshot can be produced. The Odds API now has separate
 1X2 (h2h) and totals parsers/fetchers, with same-bookmaker selection groups,
 exact total-line identity, provider quote timestamps, and request-quota headers
 preserved for benchmark and CLV evidence.
+
+
+The V2 odds normalization and certification path now require all selections in
+a bookmaker market group to share the exact provider quote timestamp and
+immutable source-observation ID, in addition to fixture, source, bookmaker,
+line, local capture time and kickoff. Coverage ignores incomplete or mixed
+groups. When multiple complete 1X2 quote captures exist for one fixture, the
+benchmark selects the latest provider quote timestamp (then latest capture);
+ambiguous ties fail closed. This preserves historical odds movement records
+without double-counting one fixture in the bookmaker comparison.
