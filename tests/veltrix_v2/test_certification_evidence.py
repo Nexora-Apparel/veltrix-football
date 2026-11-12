@@ -26,6 +26,7 @@ def quote(fixture_id, selection, *, market="1X2", snapshot_id=None, quote_at=Tru
         kickoff_at=kickoff,
         line=Decimal("2.5") if market == "TOTALS" else None,
         provider_quote_at=captured - timedelta(seconds=1) if quote_at else None,
+        source_observation_id=f"obs-{fixture_id}",
     )
 
 
@@ -75,3 +76,30 @@ def test_binary_market_coverage_requires_complete_selection_set(market, selectio
 def test_timestamped_coverage_rejects_duplicate_eligible_fixture_ids():
     with pytest.raises(ValueError, match="ELIGIBLE_FIXTURES_INVALID"):
         derive_timestamped_odds_coverage(("f1", "f1"), (), market="1X2")
+
+
+
+def test_timestamped_coverage_does_not_combine_quotes_from_different_provider_updates():
+    home = quote("f1", "HOME")
+    draw = quote("f1", "DRAW")
+    away = quote("f1", "AWAY")
+    from dataclasses import replace
+    draw = replace(draw, provider_quote_at=draw.provider_quote_at - timedelta(seconds=1))
+    report = derive_timestamped_odds_coverage(
+        ("f1",), (home, draw, away), market="1X2"
+    )
+    assert report.covered_fixture_ids == ()
+    assert report.coverage == Decimal("0")
+
+
+def test_timestamped_coverage_does_not_combine_distinct_source_observations():
+    rows = [
+        quote("f1", "HOME"),
+        quote("f1", "DRAW"),
+        quote("f1", "AWAY"),
+    ]
+    from dataclasses import replace
+    rows[2] = replace(rows[2], source_observation_id="obs-another-response")
+    report = derive_timestamped_odds_coverage(("f1",), rows, market="1X2")
+    assert report.covered_fixture_ids == ()
+    assert report.coverage == Decimal("0")
