@@ -82,11 +82,11 @@ Phase 3 is not complete until all of the following are true:
 The repository workflow expects one additional GitHub Actions secret:
 
 - Name: VELTRIX_STAGING_DATABASE_URL
-- Target: Neon project withered-sky-75161174, child branch br-silent-violet-bc5de88s, database veltrix_football_staging, role neondb_owner.
+- Target: Neon project withered-sky-75161174, child branch br-silent-violet-bc5de88s, database veltrix_football_staging, role neondb_owner, direct endpoint host ep-ancient-block-bcb439pk.c-16.us-east-1.aws.neon.tech.
 - Value: the connection string copied from Neon for that exact branch/database. Keep it in GitHub Actions Secrets; never place it in repository files, workflow YAML, logs or chat.
 - Existing provider secret: FIVEDOLLARFOOTBALL_API_KEY.
 
-After the secret is set, run the manual workflow Phase 3 — Bounded 5Dollar Staging Import from branch phase3/traceable-data-pipeline-20261112. It is capped at 40 requests, paced at four seconds, and defaults to 365 days. It is not scheduled and cannot run from main. The importer will write only to veltrix_football_staging.
+After the secret is set, run the manual workflow Phase 3 — Bounded 5Dollar Staging Import from branch phase3/traceable-data-pipeline-20261112. It is capped at 40 requests, paced at four seconds, and defaults to 365 days. It is not scheduled and cannot run from main. The importer will write only to veltrix_football_staging. It rejects any connection string whose hostname differs from the exact staging endpoint and requires the neondb_owner role; a same-named database on another endpoint is rejected.
 
 ### Current staging state
 
