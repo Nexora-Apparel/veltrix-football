@@ -296,7 +296,7 @@ def recompute_raw_certification(manifest_path: str | Path, *, min_walk_forward: 
     for row in walk:
         market = row.get("market")
         if market not in MARKETS:
-            continue
+            raise EvidenceIntegrityError("Walk-forward evidence contains an unsupported market.")
         fixture = str(row.get("fixture_id") or "").strip()
         kickoff, predicted = _time(row.get("kickoff")), _time(row.get("prediction_at"))
         features = row.get("features")
@@ -374,6 +374,8 @@ def recompute_raw_certification(manifest_path: str | Path, *, min_walk_forward: 
     odds_by_id: dict[str, dict[str, Any]] = {}
     for quote in odds:
         quote_id = str(quote.get("snapshot_id") or "").strip()
+        if quote.get("market") not in MARKETS:
+            raise EvidenceIntegrityError("Odds evidence contains an unsupported market.")
         if not quote_id or quote_id in odds_by_id:
             raise EvidenceIntegrityError("Odds snapshot IDs must be present and unique.")
         odds_by_id[quote_id] = quote
@@ -383,7 +385,7 @@ def recompute_raw_certification(manifest_path: str | Path, *, min_walk_forward: 
     for row in paper:
         market = row.get("market")
         if market not in MARKETS:
-            continue
+            raise EvidenceIntegrityError("Prospective ledger contains an unsupported market.")
         fixture = str(row.get("fixture_id") or "").strip()
         key = (fixture, market)
         if not fixture or key in seen_paper:
