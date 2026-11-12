@@ -9,6 +9,7 @@ on:
       - "app/value_bets.py"
       - "scripts/build_value_certificate.py"
       - "scripts/verify_certification_evidence.py"
+      - "scripts/verify_certification_evidence.py"
       - "tests/test_certification_evidence.py"
       - "tests/test_certification_metrics.py"
       - "tests/test_value_bets.py"
@@ -19,6 +20,7 @@ on:
       - "docs/VELTRIX_V2_CERTIFICATION_EVIDENCE_BUNDLE_V1.md"
       - "docs/VELTRIX_V2_RAW_CERTIFICATION_EVIDENCE_CONTRACT_V1.md"
       - ".github/workflows/certification-evidence-tests.yml"
+      - ".github/workflows/certification-evidence-attestation.yml"
   push:
     branches: ["phase1/evidence-bound-certificate-lockdown"]
     paths:
