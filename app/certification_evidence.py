@@ -1,8 +1,8 @@
-"""Verify byte-level integrity of a VELTRIX certification evidence bundle.
+"""Verify byte-level integrity and trusted GitHub provenance for VELTRIX evidence.
 
-This module verifies artifact identity only. It deliberately does not issue a
-release certificate: raw-row recomputation and provenance checks are separate
-mandatory gates in the certification pipeline.
+Manifest hashes and Sigstore attestations establish artifact identity and signer
+provenance. Raw-row recomputation and source-rights checks remain separate
+mandatory gates; this module never issues a release certificate.
 """
 from __future__ import annotations
 
@@ -154,6 +154,7 @@ def verify_github_artifact_attestation(
         "--signer-repo", repository,
         "--signer-workflow", signer_workflow,
         "--source-ref", "refs/heads/main",
+        "--deny-self-hosted-runners",
         "--predicate-type", "https://slsa.dev/provenance/v1",
         "--format", "json",
     ]
