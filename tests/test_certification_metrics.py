@@ -261,3 +261,46 @@ def test_walk_forward_bookmaker_benchmark_requires_exact_raw_quote():
     raw["observed_at"] = post_kickoff["bookmaker_odds_observed_at"]
     with pytest.raises(EvidenceIntegrityError, match="point-in-time"):
         _verify_walk_forward_bookmaker_odds(post_kickoff, responses, {"source-a"})
+
+
+
+def test_json_pointer_rejects_noncanonical_array_index():
+    from app.certification_metrics import _json_pointer
+
+    with pytest.raises(EvidenceIntegrityError, match="does not resolve"):
+        _json_pointer({"events": [{"fixture_id": "f1"}]}, "/events/00")
+
+
+def test_walk_forward_bookmaker_benchmark_supports_explicit_provider_field_mapping():
+    from datetime import datetime
+    from app.certification_metrics import _verify_walk_forward_bookmaker_odds
+
+    raw = {
+        "match_id": "fixture-2", "operator": "Book B",
+        "start_time": "2026-01-02T18:00:00+00:00",
+        "captured": "2026-01-02T17:00:00+00:00",
+        "last_change": "2026-01-02T16:58:00+00:00",
+        "h": 2.2, "d": 3.4, "a": 3.1,
+    }
+    row = {
+        "fixture_id": "fixture-2", "bookmaker": "Book B",
+        "kickoff": raw["start_time"], "prediction_at": "2026-01-02T17:05:00+00:00",
+        "bookmaker_odds": {"home": 2.2, "draw": 3.4, "away": 3.1},
+        "bookmaker_odds_source_id": "source-a",
+        "bookmaker_odds_source_response_id": "benchmark-response",
+        "bookmaker_odds_source_pointer": "/matches/0",
+        "bookmaker_odds_observed_at": raw["captured"],
+        "bookmaker_odds_updated_at": raw["last_change"],
+        "bookmaker_odds_metadata_field_map": {
+            "fixture_id": "match_id", "bookmaker": "operator",
+            "kickoff": "start_time", "observed_at": "captured",
+            "quote_updated_at": "last_change",
+        },
+        "bookmaker_odds_field_map": {"home": "h", "draw": "d", "away": "a"},
+    }
+    responses = {"benchmark-response": {
+        "source_id": "source-a",
+        "_fetched_at": datetime.fromisoformat(raw["captured"]),
+        "_body_json": {"matches": [raw]},
+    }}
+    _verify_walk_forward_bookmaker_odds(row, responses, {"source-a"})
