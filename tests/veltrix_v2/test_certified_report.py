@@ -134,7 +134,7 @@ def test_certified_report_serializes_for_website_and_telegram():
 
 
 def test_uncertified_report_cannot_be_published():
-    cert = certify_prediction_publication([
+    cert = _certify_prediction_publication_from_derived_evidence([
             PredictionMarketEvidence(
                 market=market, walk_forward_matches=0,
                 source_approved=False, point_in_time_validated=False,
