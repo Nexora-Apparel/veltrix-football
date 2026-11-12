@@ -141,6 +141,38 @@ def _assert_source_fields(record: Mapping[str, Any], response_record: Mapping[st
             raise EvidenceIntegrityError(f"Raw source value does not match normalized field {field}.")
 
 
+def _verify_fixture_identity_source(
+    row: Mapping[str, Any], response_by_id: Mapping[str, Mapping[str, Any]],
+    approved_sources: set[str],
+) -> None:
+    """Bind fixture identity and kickoff to a retained pre-prediction source record."""
+    source_id = row.get("fixture_source_id")
+    response_id = row.get("fixture_source_response_id")
+    response = response_by_id.get(str(response_id or ""))
+    predicted = _time(row.get("prediction_at"))
+    if (
+        source_id not in approved_sources or not response or response.get("source_id") != source_id
+        or not predicted or response["_fetched_at"] > predicted
+    ):
+        raise EvidenceIntegrityError("Fixture identity lacks rights-approved pre-prediction source provenance.")
+    raw = _json_pointer(response["_body_json"], row.get("fixture_source_pointer"))
+    if not isinstance(raw, dict):
+        raise EvidenceIntegrityError("Fixture source pointer must resolve to an object.")
+    field_map = row.get("fixture_source_field_map") or {}
+    if not isinstance(field_map, dict):
+        raise EvidenceIntegrityError("fixture_source_field_map must be an object.")
+    for field in ("fixture_id", "kickoff"):
+        source_key = field_map.get(field, field)
+        if not isinstance(source_key, str) or source_key not in raw:
+            raise EvidenceIntegrityError(f"Raw fixture source response is missing {field}.")
+        if field == "kickoff":
+            matches = _time(raw[source_key]) == _time(row.get(field))
+        else:
+            matches = str(raw[source_key]) == str(row.get(field))
+        if not matches:
+            raise EvidenceIntegrityError(f"Raw fixture source response does not match {field}.")
+
+
 def _verify_walk_forward_bookmaker_odds(
     row: Mapping[str, Any], response_by_id: Mapping[str, Mapping[str, Any]],
     approved_sources: set[str],
@@ -406,6 +438,11 @@ def recompute_raw_certification(manifest_path: str | Path, *, min_walk_forward: 
             continue
         if predicted >= kickoff or any(value > predicted for value in feature_times):
             failures[market].append("walk-forward feature leakage or prediction after kickoff")
+            continue
+        try:
+            _verify_fixture_identity_source(row, response_by_id, approved_sources)
+        except EvidenceIntegrityError as exc:
+            failures[market].append("walk-forward fixture identity source mismatch: " + str(exc))
             continue
         feature_response_invalid = False
         for feature in features:
