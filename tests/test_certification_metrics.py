@@ -70,3 +70,48 @@ def test_raw_certification_rejects_missing_settlement_and_odds_join(tmp_path):
     manifest = _write_bundle(tmp_path, [], paper, [], [])
     result = recompute_raw_certification(manifest, min_walk_forward=0, min_prospective=0, min_dates=0)
     assert any("odds snapshot" in reason for reason in result["markets"]["1X2"]["failures"])
+
+
+
+def test_raw_certification_recomputes_profit_and_rejects_fabricated_roi(tmp_path):
+    kickoff = "2026-01-01T18:00:00+00:00"
+    paper = [{
+        "fixture_id": "fixture-1", "market": "1X2", "kickoff": kickoff,
+        "odds_fetched_at": "2026-01-01T17:00:00+00:00",
+        "quote_updated_at": "2026-01-01T16:55:00+00:00",
+        "odds_snapshot_id": "quote-1", "settlement_id": "settlement-1",
+        "bookmaker": "Book A", "decimal_odds": 2.5,
+        "model_version": "model-v1", "model_commit": "a" * 40,
+        "selection": "home", "outcome": "home", "won": True,
+        "stake": 1.0, "fees": 0.0, "recorded_profit": 999999.0,
+        "summary": {"net_roi": 999999.0, "roi_lower_95_ci": 999999.0},
+    }]
+    odds = [{
+        "snapshot_id": "quote-1", "fixture_id": "fixture-1", "market": "1X2",
+        "source_id": "source-a", "observed_at": "2026-01-01T17:00:00+00:00",
+        "quote_updated_at": "2026-01-01T16:55:00+00:00", "kickoff": kickoff,
+        "bookmaker": "Book A", "decimal_odds": 2.5,
+    }]
+    settlements = [{
+        "settlement_id": "settlement-1", "fixture_id": "fixture-1",
+        "source_id": "source-a", "settled_at": "2026-01-01T20:00:00+00:00",
+        "status": "FT", "settlement_version": "settlement-v1", "outcome": "home",
+    }]
+    manifest = _write_bundle(tmp_path, [], paper, odds, settlements)
+    result = recompute_raw_certification(manifest, min_walk_forward=0, min_prospective=0, min_dates=0)
+    assert any("recorded net profit" in reason for reason in result["markets"]["1X2"]["failures"])
+    assert result["markets"]["1X2"]["prospective_joined_selections"] == 0
+
+
+def test_raw_certification_rejects_unapproved_rights(tmp_path):
+    manifest = _write_bundle(tmp_path, [], [], [], [])
+    payload = json.loads((tmp_path / "coverage_audit.json").read_text(encoding="utf-8"))
+    payload["rights_status"] = "UNVERIFIED"
+    (tmp_path / "coverage_audit.json").write_text(json.dumps(payload), encoding="utf-8")
+    manifest_payload = json.loads(manifest.read_text(encoding="utf-8"))
+    for artifact in manifest_payload["artifacts"]:
+        if artifact["role"] == "coverage_audit":
+            artifact["sha256"] = hashlib.sha256((tmp_path / artifact["path"]).read_bytes()).hexdigest()
+    manifest.write_text(json.dumps(manifest_payload), encoding="utf-8")
+    with pytest.raises(EvidenceIntegrityError, match="approved rights"):
+        recompute_raw_certification(manifest)
