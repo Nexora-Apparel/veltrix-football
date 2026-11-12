@@ -167,7 +167,7 @@ def test_totals_parser_rejects_duplicate_selection_for_a_line():
         ),
         (
             parse_event_totals_odds,
-            COMMON,
+            {"id": "event-123", "bookmakers": []},
             {"source_observation_id": SOURCE_OBSERVATION},
             "EVENT_KICKOFF_TIMESTAMP_MISSING",
         ),
