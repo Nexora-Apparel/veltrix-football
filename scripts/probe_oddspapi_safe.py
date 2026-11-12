@@ -132,13 +132,18 @@ def probe(client, now=None) -> dict:
     historical_bookmakers = 0
     historical_created_at_min = None
     historical_created_at_max = None
-    history_fixtures = client.get("fixtures", {
-        "sportId": 10,
-        "from": (now - timedelta(days=30)).strftime("%Y-%m-%dT%H:%M:%SZ"),
-        "to": now.strftime("%Y-%m-%dT%H:%M:%SZ"),
-        "hasOdds": "true",
-    })
-    requests += 1
+    try:
+        history_fixtures = client.get("fixtures", {
+            "sportId": 10,
+            "from": (now - timedelta(days=30)).strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "to": now.strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "hasOdds": "true",
+        })
+        requests += 1
+    except OddsPapiError:
+        requests += 1
+        history_fixtures = []
+        historical_status = "HISTORICAL_FIXTURE_LOOKUP_ERROR"
     if isinstance(history_fixtures, list):
         past = []
         for row in history_fixtures:
