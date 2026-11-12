@@ -7,6 +7,7 @@ outcome exist. Coverage against the complete eligible test universe is kept.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from decimal import Decimal
 from typing import Iterable
 
 from veltrix_v2.evaluation.metrics import (
