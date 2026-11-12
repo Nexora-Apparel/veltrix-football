@@ -56,3 +56,10 @@ comparison's exact common fixture IDs equal the model's complete 1X2
 walk-forward forecast fixture set. The public API does not accept caller
 supplied bookmaker superiority booleans, market counts, ROI values, or source
 approval flags.
+
+
+Training and forecast-input source approvals must explicitly include
+`collection`, `storage`, `model_training`, `public_display` and
+`commercial_use`. Held-out result and odds evidence must include
+`collection`, `storage`, `benchmarking` and `commercial_use`. Missing
+permissions fail closed; a generic provider-approved flag is not accepted.
