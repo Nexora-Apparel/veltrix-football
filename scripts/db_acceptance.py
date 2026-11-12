@@ -1,4 +1,5 @@
 """PostgreSQL 16 schema, constraint, checksum and idempotency acceptance."""
+# Includes migration 0003 append-only source-rights status-event invariants.
 from __future__ import annotations
 
 import hashlib
