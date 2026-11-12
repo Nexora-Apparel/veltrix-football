@@ -1,0 +1,75 @@
+name: PostgreSQL 16 and 18 Persistent Foundation Acceptance
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "db/**"
+      - "scripts/db_migrate.py"
+      - "scripts/db_acceptance.py"
+      - "tests/test_db_migrations.py"
+      - ".github/workflows/postgres16-acceptance.yml"
+      - "requirements.txt"
+  workflow_dispatch:
+
+jobs:
+  postgres-acceptance:
+    name: PostgreSQL ${{ matrix.postgres-version }} acceptance
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        postgres-version: ["16", "18"]
+    services:
+      postgres:
+        image: postgres:${{ matrix.postgres-version }}
+        env:
+          POSTGRES_DB: veltrix_football_test
+          POSTGRES_USER: veltrix_test
+          POSTGRES_PASSWORD: acceptance_only
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U veltrix_test -d veltrix_football_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql://veltrix_test:acceptance_only@localhost:5432/veltrix_football_test
+      VELTRIX_EXPECTED_DATABASE: veltrix_football_test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install --disable-pip-version-check -r requirements.txt
+      - run: python -m pip install --disable-pip-version-check "psycopg[binary]>=3.2,<4"
+      - run: python -m pytest -q tests/test_db_migrations.py
+      - name: Apply migrations and verify idempotency
+        run: |
+          python scripts/db_migrate.py
+          python scripts/db_migrate.py
+          python scripts/db_migrate.py --dry-run
+      - name: Run schema and reconciliation acceptance
+        run: python -m scripts.db_acceptance
+      - name: Verify PostgreSQL catalog invariants
+        run: |
+          python - <<'PY'
+          import os, psycopg
+          with psycopg.connect(os.environ["DATABASE_URL"]) as c:
+              with c.cursor() as q:
+                  q.execute("SELECT current_setting('server_version_num')")
+                  version_num = int(q.fetchone()[0])
+                  assert version_num >= 160000
+                  q.execute("SELECT count(*) FROM information_schema.tables WHERE table_schema='public'")
+                  assert q.fetchone()[0] >= 11
+                  q.execute("SELECT count(*) FROM pg_indexes WHERE schemaname='public'")
+                  assert q.fetchone()[0] >= 6
+                  q.execute("SELECT count(*) FROM schema_migrations")
+                  assert q.fetchone()[0] == 1
+                  q.execute("SAVEPOINT rollback_probe")
+                  q.execute("INSERT INTO provider_accounts(provider) VALUES ('rollback-probe')")
+                  q.execute("ROLLBACK TO SAVEPOINT rollback_probe")
+                  q.execute("SELECT count(*) FROM provider_accounts WHERE provider='rollback-probe'")
+                  assert q.fetchone()[0] == 0
+          PY
