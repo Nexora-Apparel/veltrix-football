@@ -177,3 +177,13 @@ documented. Consequently, the V2 system may train and evaluate a historical
 xG model, but it must not claim live team xG or current shot-quality features
 until a rights-approved current shot-event source is connected. Missing live
 xG remains missing and cannot be imputed from bookmaker odds.
+
+
+The ingestion adapter records the dataset publication date (2019-10-28) and
+uses a conservative availability cutoff of 2019-11-01 00:00 UTC (four days
+after the date-only publication record). This prevents the 2017/18 and 2018
+shot events from appearing in historical training folds whose forecast cutoff
+predates public availability. The internal rights approval identity is
+`approval-wyscout-open-data-cc-by-4.0`; the corresponding source approval must
+carry collection, storage, model-training, benchmarking, public-display and
+commercial-use permissions with the CC BY 4.0 attribution.
