@@ -7,11 +7,14 @@ import pytest
 from veltrix_v2.contracts import ProviderObservation
 from veltrix_v2.contracts.odds import OddsSnapshot
 from veltrix_v2.evaluation.certification import certify_prediction_publication
+from veltrix_v2.evaluation.paper_ledger import PaperLedger, PaperSelection
+from veltrix_v2.evaluation.settlement import MarketBet, MatchResult
 from veltrix_v2.evaluation.certification_evidence import (
     TrainingObservationEvidence,
     audit_walk_forward_training_sources,
     audit_walk_forward_integrity,
     audit_odds_snapshot_sources,
+    audit_paper_ledger_sources,
 )
 from veltrix_v2.evaluation.multi_competition_walk_forward import (
     run_multi_competition_walk_forward,
@@ -315,3 +318,141 @@ def test_odds_source_audit_rejects_provider_mismatch(monkeypatch):
     assert "odds_source_provider_mismatch" in {
         reason for _, reason in audit.rejected_snapshots
     }
+
+
+
+def _ledger_source_record(observation_id, entity_type, available_at, *, approval_id):
+    return TrainingObservationEvidence(
+        observation_id,
+        ProviderObservation(
+            provider="provider-a",
+            endpoint=f"/{entity_type}",
+            entity_type=entity_type,
+            provider_entity_id=f"provider-{observation_id}",
+            competition_key="league-a",
+            season="2025-26",
+            retrieved_at_utc=available_at + timedelta(seconds=10),
+            source_event_time_utc=available_at,
+            available_at_utc=available_at,
+            payload_sha256="b" * 64,
+            schema_version="1",
+            rights_approval_id=approval_id,
+            values={"fixture_id": "test-1"},
+        ),
+    )
+
+
+def _paper_ledger_and_records():
+    kickoff = datetime(2026, 1, 10, 15, tzinfo=UTC)
+    forecast_at = datetime(2026, 1, 10, 14, tzinfo=UTC)
+    selected_at = datetime(2026, 1, 10, 14, 56, tzinfo=UTC)
+    odds_captured = datetime(2026, 1, 10, 14, 55, tzinfo=UTC)
+    odds = OddsSnapshot(
+        snapshot_id="ledger-odds-1",
+        fixture_id="test-1",
+        source_id="provider-a",
+        bookmaker_id="bookmaker-a",
+        market="1X2",
+        selection="HOME",
+        decimal_odds=Decimal("2.5"),
+        captured_at=odds_captured,
+        kickoff_at=kickoff,
+        provider_quote_at=odds_captured - timedelta(seconds=1),
+        source_observation_id="obs-ledger-odds",
+    )
+    selection = PaperSelection(
+        selection_id="selection-1",
+        report_id="report-1",
+        forecast_id="forecast-1",
+        prediction_certification_id="prediction-cert-1",
+        bet=MarketBet(
+            fixture_id="test-1",
+            market="1X2",
+            selection="HOME",
+            decimal_odds=Decimal("2.5"),
+            stake=Decimal("1"),
+        ),
+        odds_snapshot=odds,
+        model_probability=Decimal("0.6"),
+        model_version="v2-test",
+        forecast_generated_at_utc=forecast_at,
+        selected_at_utc=selected_at,
+        forecast_source_observation_ids=("obs-ledger-feature",),
+    )
+    ledger = PaperLedger().record_selection(selection)
+    result = MatchResult(
+        fixture_id="test-1",
+        status="COMPLETED",
+        home_goals_regulation=2,
+        away_goals_regulation=0,
+        match_date=datetime(2026, 1, 10).date(),
+        match_date_source_observation_id="obs-ledger-result",
+    )
+    ledger = ledger.settle_selection(
+        "selection-1",
+        result,
+        event_id="settlement-event-1",
+        result_observed_at_utc=datetime(2026, 1, 10, 17, 5, tzinfo=UTC),
+        result_source_observation_id="obs-ledger-result",
+        settled_at_utc=datetime(2026, 1, 10, 17, 6, tzinfo=UTC),
+    )
+    records = (
+        _ledger_source_record(
+            "obs-ledger-feature", "team_stats",
+            datetime(2026, 1, 10, 13, 30, tzinfo=UTC),
+            approval_id="approval-team",
+        ),
+        _ledger_source_record(
+            "obs-ledger-odds", "odds_quote",
+            datetime(2026, 1, 10, 14, 54, tzinfo=UTC),
+            approval_id="approval-odds",
+        ),
+        _ledger_source_record(
+            "obs-ledger-result", "match_result",
+            datetime(2026, 1, 10, 17, 0, tzinfo=UTC),
+            approval_id="approval-result",
+        ),
+    )
+    approvals = (
+        SourceApproval(
+            "approval-team", "provider-a", "league-a", "team_stats", "approved",
+            datetime(2025, 1, 1, tzinfo=UTC),
+            ("collection", "storage", "model_training"),
+        ),
+        SourceApproval(
+            "approval-odds", "provider-a", "league-a", "odds_quote", "approved",
+            datetime(2025, 1, 1, tzinfo=UTC),
+            ("collection", "storage", "benchmarking"),
+        ),
+        SourceApproval(
+            "approval-result", "provider-a", "league-a", "match_result", "approved",
+            datetime(2025, 1, 1, tzinfo=UTC),
+            ("collection", "storage", "benchmarking"),
+        ),
+    )
+    return ledger, records, approvals
+
+
+def test_paper_ledger_source_audit_checks_forecast_odds_and_result_records(monkeypatch):
+    report = _walk_forward(monkeypatch)
+    ledger, records, approvals = _paper_ledger_and_records()
+    audit = audit_paper_ledger_sources(report, ledger, records, approvals)
+    assert audit.passed
+    assert audit.selection_count == 1
+    assert audit.settlement_count == 1
+    assert set(audit.approved_observation_ids) == {
+        "obs-ledger-feature", "obs-ledger-odds", "obs-ledger-result"
+    }
+
+
+def test_paper_ledger_source_audit_rejects_missing_training_rights(monkeypatch):
+    report = _walk_forward(monkeypatch)
+    ledger, records, approvals = _paper_ledger_and_records()
+    approvals = tuple(
+        replace(row, permitted_uses=("collection", "storage", "benchmarking"))
+        if row.approval_id == "approval-team" else row
+        for row in approvals
+    )
+    audit = audit_paper_ledger_sources(report, ledger, records, approvals)
+    assert not audit.passed
+    assert any("model_training" in reason for _, reason in audit.rejected_observations)
