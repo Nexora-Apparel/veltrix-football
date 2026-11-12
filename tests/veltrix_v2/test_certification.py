@@ -156,44 +156,26 @@ def test_source_approval_flags_must_be_boolean():
 
 
 
-def test_prediction_publication_gate_does_not_require_value_bet_evidence():
-    result = certify_prediction_publication([
+def test_prediction_publication_rejects_caller_supplied_market_flags():
+    forged = [
         PredictionMarketEvidence(
             market=market, walk_forward_matches=1000,
             source_approved=True, point_in_time_validated=True,
             leakage_tests_passed=True, calibration_passed=True,
         )
         for market in ("1X2", "BTTS", "TOTALS")
-    ])
-    assert result.passed
-    assert all(item.passed for item in result.markets)
+    ]
+    with pytest.raises(ValueError, match="WALK_FORWARD_REPORT_REQUIRED"):
+        certify_prediction_publication(forged, (), ())
 
 
-def test_prediction_publication_gate_rejects_missing_model_quality_evidence():
-    result = certify_prediction_publication([
-        PredictionMarketEvidence(
-            market="1X2", walk_forward_matches=1000,
-            source_approved=True, point_in_time_validated=True,
-            leakage_tests_passed=True, calibration_passed=True,
-        ),
-        PredictionMarketEvidence(
-            market="BTTS", walk_forward_matches=999,
-            source_approved=True, point_in_time_validated=False,
-            leakage_tests_passed=False, calibration_passed=False,
-        ),
-        PredictionMarketEvidence(
-            market="TOTALS", walk_forward_matches=1000,
-            source_approved=True, point_in_time_validated=True,
-            leakage_tests_passed=True, calibration_passed=True,
-        ),
-    ])
-    assert not result.passed
-    btts = next(item for item in result.markets if item.market == "BTTS")
-    assert "PREDICTION_WALK_FORWARD_SAMPLE_BELOW_1000" in btts.failed_gates
-    assert "PREDICTION_POINT_IN_TIME_VALIDATION_MISSING" in btts.failed_gates
-    assert "PREDICTION_LEAKAGE_TESTS_FAILED" in btts.failed_gates
-    assert "PREDICTION_CALIBRATION_NOT_PASSED" in btts.failed_gates
-
+def test_prediction_publication_requires_typed_walk_forward_and_source_records():
+    with pytest.raises(ValueError, match="WALK_FORWARD_REPORT_REQUIRED"):
+        certify_prediction_publication(
+            {"aggregate_1x2": {"sample_size": 1000}},
+            (),
+            (),
+        )
 
 
 def test_certification_objects_reject_internally_conflicting_pass_flags():
