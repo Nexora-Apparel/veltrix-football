@@ -596,3 +596,62 @@ def test_walk_forward_integrity_recomputes_report_counts_from_fold_records(monke
 
     assert not audit.passed
     assert "MULTI_COMPETITION_COUNTS_DO_NOT_MATCH_FOLD_RECORDS" in audit.failures
+
+
+def test_training_source_audit_rejects_source_record_without_fixture_binding(monkeypatch):
+    report = _walk_forward(monkeypatch)
+    rows = list(_source_records())
+    rows[0] = replace(
+        rows[0],
+        observation=replace(
+            rows[0].observation,
+            values={"home_goals": 2, "away_goals": 0},
+        ),
+    )
+    audit = audit_walk_forward_training_sources(report, rows, (_approval(),))
+    assert not audit.passed
+    assert (
+        "obs-train-1",
+        "training_observation_fixture_id_missing_or_mismatched",
+    ) in audit.rejected_observations
+
+
+def test_heldout_source_audit_rejects_result_without_fixture_binding(monkeypatch):
+    report = _walk_forward(monkeypatch)
+    rows = list(_source_records())
+    rows[1] = replace(
+        rows[1],
+        observation=replace(
+            rows[1].observation,
+            values={"home_goals": 2, "away_goals": 0},
+        ),
+    )
+    audit = audit_walk_forward_training_sources(report, rows, (_approval(),))
+    assert not audit.passed
+    assert (
+        "obs-test-1",
+        "held_out_result_fixture_id_missing_or_mismatched",
+    ) in audit.rejected_observations
+
+
+def test_odds_source_audit_rejects_source_record_without_fixture_binding(monkeypatch):
+    report = _walk_forward(monkeypatch)
+    rows = list(_source_records())
+    rows[2] = replace(
+        rows[2],
+        observation=replace(
+            rows[2].observation,
+            values={},
+        ),
+    )
+    audit = audit_odds_snapshot_sources(
+        report,
+        (_odds_snapshot(),),
+        rows,
+        (_approval(data_type="odds_quote", approval_id="approval-odds"),),
+    )
+    assert not audit.passed
+    assert (
+        "odds-test-1",
+        "odds_source_fixture_id_missing_or_mismatched",
+    ) in audit.rejected_snapshots
