@@ -81,6 +81,7 @@ class ReleaseCertification:
     one_x_two_beats_bookmaker_log_loss: bool
     global_failures: tuple[str, ...]
     evidence: tuple[MarketCertificationEvidence, ...] = ()
+    bookmaker_comparison: "BookmakerComparison1X2 | None" = None
 
     def __init__(
         self,
@@ -90,6 +91,7 @@ class ReleaseCertification:
         one_x_two_beats_bookmaker_log_loss: bool,
         global_failures: tuple[str, ...],
         evidence: tuple[MarketCertificationEvidence, ...] = (),
+        bookmaker_comparison: "BookmakerComparison1X2 | None" = None,
         *,
         _seal: object | None = None,
     ) -> None:
@@ -102,6 +104,7 @@ class ReleaseCertification:
             ("one_x_two_beats_bookmaker_log_loss", one_x_two_beats_bookmaker_log_loss),
             ("global_failures", global_failures),
             ("evidence", evidence),
+            ("bookmaker_comparison", bookmaker_comparison),
         ):
             object.__setattr__(self, name, value)
         self.__post_init__()
@@ -127,6 +130,18 @@ class ReleaseCertification:
         if len(evidence) != len(REQUIRED_MARKETS) or {row.market for row in evidence} != set(REQUIRED_MARKETS):
             raise ValueError("RELEASE_CERTIFICATION_REQUIRES_COMPLETE_MARKET_EVIDENCE")
         object.__setattr__(self, "evidence", evidence)
+        if self.bookmaker_comparison is not None:
+            from veltrix_v2.evaluation.benchmark_1x2 import BookmakerComparison1X2
+            comparison = self.bookmaker_comparison
+            if not isinstance(comparison, BookmakerComparison1X2):
+                raise ValueError("RELEASE_CERTIFICATION_BOOKMAKER_COMPARISON_TYPE_INVALID")
+            if (
+                comparison.common_sample_size != len(comparison.common_fixture_ids)
+                or comparison.comparison.sample_size != comparison.common_sample_size
+                or comparison.comparison.model_beats_brier != self.one_x_two_beats_bookmaker_brier
+                or comparison.comparison.model_beats_log_loss != self.one_x_two_beats_bookmaker_log_loss
+            ):
+                raise ValueError("RELEASE_CERTIFICATION_BOOKMAKER_COMPARISON_CONFLICT")
         expected_by_market = {}
         for row in evidence:
             failed = []
@@ -160,6 +175,7 @@ def _certify_release_from_derived_evidence(
     *,
     one_x_two_beats_bookmaker_brier: bool,
     one_x_two_beats_bookmaker_log_loss: bool,
+    bookmaker_comparison: "BookmakerComparison1X2 | None" = None,
 ) -> ReleaseCertification:
     if type(one_x_two_beats_bookmaker_brier) is not bool or type(one_x_two_beats_bookmaker_log_loss) is not bool:
         raise ValueError("CERTIFICATION_BENCHMARK_FLAGS_MUST_BE_BOOLEAN")
@@ -213,6 +229,7 @@ def _certify_release_from_derived_evidence(
         one_x_two_beats_bookmaker_log_loss=bool(one_x_two_beats_bookmaker_log_loss),
         global_failures=tuple(global_failures),
         evidence=rows,
+        bookmaker_comparison=bookmaker_comparison,
         _seal=_CERTIFICATION_SEAL,
     )
 
@@ -601,4 +618,5 @@ def certify_release(
         market_evidence,
         one_x_two_beats_bookmaker_brier=comparison.comparison.model_beats_brier,
         one_x_two_beats_bookmaker_log_loss=comparison.comparison.model_beats_log_loss,
+        bookmaker_comparison=comparison,
     )
