@@ -1,8 +1,9 @@
 """Bounded, read-only StrikerAPI coverage qualification for VELTRIX FOOTBALL 2.0.
 
-Eight competition/status checks, at most six pages each, with a 48-call hard
-cap (96 documented credits). No database access, imports, artifact uploads or secrets
-in logs. This is a coverage probe, not a complete historical export.
+Eight competition/status windows plus four NWSL season/stage diagnostics,
+at most four pages each, with a 48-call hard cap (96 documented credits).
+No database access, data imports, artifact uploads or secrets in logs. This
+is a bounded coverage probe, not a complete historical export.
 """
 from __future__ import annotations
 
@@ -18,7 +19,7 @@ from urllib.request import Request, urlopen
 BASE = "https://mcp.strikerapi.com/v1/list_games"
 TIMEOUT = 25
 LIMIT = 50
-MAX_PAGES_PER_CHECK = 6
+MAX_PAGES_PER_CHECK = 4
 MAX_CALLS = 48
 WINDOW_DAYS = 90
 FUTURE_DAYS = 180
