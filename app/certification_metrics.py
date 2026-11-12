@@ -65,9 +65,21 @@ def _score(rows: list[dict[str, Any]], market: str, probability_key: str) -> dic
     for row in selected:
         probs = row.get(probability_key)
         actual = row.get("outcome")
-        if not isinstance(probs, dict) or set(outcomes) - set(probs) or actual not in outcomes:
-            raise EvidenceIntegrityError(f"Invalid {probability_key} or outcome in {market} walk-forward row.")
-        values = {key: _number(probs.get(key)) for key in outcomes}
+        if actual not in outcomes:
+            raise EvidenceIntegrityError(f"Invalid outcome in {market} walk-forward row.")
+        if probability_key == "bookmaker_odds":
+            if not isinstance(probs, dict) or set(outcomes) - set(probs):
+                raise EvidenceIntegrityError(f"Raw bookmaker odds are incomplete in {market} walk-forward row.")
+            prices = {key: _number(probs.get(key)) for key in outcomes}
+            if any(value is None or value <= 1.0 for value in prices.values()):
+                raise EvidenceIntegrityError(f"Invalid raw bookmaker odds in {market} walk-forward row.")
+            inverse = {key: 1.0 / float(value) for key, value in prices.items()}
+            total = sum(inverse.values())
+            values = {key: value / total for key, value in inverse.items()}
+        else:
+            if not isinstance(probs, dict) or set(outcomes) - set(probs):
+                raise EvidenceIntegrityError(f"Invalid {probability_key} in {market} walk-forward row.")
+            values = {key: _number(probs.get(key)) for key in outcomes}
         if any(value is None or value < 0 or value > 1 for value in values.values()):
             raise EvidenceIntegrityError(f"Invalid probability in {market} walk-forward row.")
         if abs(sum(values.values()) - 1.0) > 1e-6:
