@@ -10,7 +10,7 @@ from veltrix_v2.models.poisson_strength import TrainingMatch
 UTC = timezone.utc
 
 
-def match(fixture, day, home, away, home_goals, away_goals):
+def match(fixture, day, home, away, home_goals, away_goals, *, quality_state="valid", approved=True, availability_basis="source_timestamp"):
     kickoff = datetime(2026, 1, day, 15, tzinfo=UTC)
     return TrainingMatch(
         fixture_id=fixture,
@@ -23,8 +23,9 @@ def match(fixture, day, home, away, home_goals, away_goals):
         home_goals=home_goals,
         away_goals=away_goals,
         source_observation_id=f"obs-{fixture}",
-        availability_basis="source_timestamp",
-        source_training_approved=True,
+        quality_state=quality_state,
+        availability_basis=availability_basis,
+        source_training_approved=approved,
     )
 
 
@@ -207,3 +208,64 @@ def test_nonconverged_model_abstains_from_all_markets(monkeypatch):
     assert fold.coverage_1x2.coverage == 0.0
     assert fold.coverage_btts.coverage == 0.0
     assert fold.coverage_totals.coverage == 0.0
+
+
+def test_quarantined_test_fixture_is_excluded_from_evaluation_universe(monkeypatch):
+    rows = [
+        match("train-1", 1, "A", "B", 2, 0),
+        match("test-valid", 10, "A", "B", 1, 0),
+        match("test-quarantined", 11, "B", "A", 99, 0, quality_state="quarantined"),
+    ]
+
+    class FakeModel:
+        objective = 1.0
+        converged = True
+
+        def expected_goals(self, home_team_id, away_team_id):
+            return (1.4, 1.0)
+
+    def fake_folds(fixtures, **kwargs):
+        fixture_ids = {row.fixture_id for row in fixtures}
+        assert "test-quarantined" not in fixture_ids
+        return (WalkForwardFold(
+            fold_number=1,
+            train_fixture_ids=("train-1",),
+            test_fixture_ids=("test-valid",),
+            test_start_utc=datetime(2026, 1, 10, tzinfo=UTC),
+            test_end_utc=datetime(2026, 1, 17, tzinfo=UTC),
+            training_label_cutoff_utc=datetime(2026, 1, 9, tzinfo=UTC),
+        ),)
+
+    monkeypatch.setattr(
+        "veltrix_v2.evaluation.multi_market_walk_forward.build_expanding_walk_forward_folds",
+        fake_folds,
+    )
+    monkeypatch.setattr(
+        "veltrix_v2.evaluation.multi_market_walk_forward.fit_poisson_strength_model",
+        lambda *args, **kwargs: FakeModel(),
+    )
+    result = run_multi_market_walk_forward(
+        rows,
+        competition_key="league-a", season="2025-26",
+        first_test_start_utc=datetime(2026, 1, 10, tzinfo=UTC),
+        test_window=timedelta(days=7), n_splits=1,
+        minimum_training_matches=1,
+    )
+    assert result.total_test_fixtures == 1
+    assert result.folds[0].eligible_fixture_ids == ("test-valid",)
+
+
+def test_unapproved_held_out_result_source_fails_closed():
+    rows = [
+        match("train-1", 1, "A", "B", 2, 0),
+        match("test-unapproved", 10, "A", "B", 1, 0, approved=False),
+    ]
+    import pytest
+    with pytest.raises(ValueError, match="SOURCE_NOT_APPROVED_FOR_EVALUATION"):
+        run_multi_market_walk_forward(
+            rows,
+            competition_key="league-a", season="2025-26",
+            first_test_start_utc=datetime(2026, 1, 10, tzinfo=UTC),
+            test_window=timedelta(days=7), n_splits=1,
+            minimum_training_matches=1,
+        )
