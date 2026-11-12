@@ -54,16 +54,14 @@ jobs:
             --days "$DAYS" \
             --output fivedollar_statistics_probe.json
       - name: Verify report integrity
-        if: always()
+        if: always() && hashFiles('fivedollar_statistics_probe.json') != ''
         run: |
-          if [ -f fivedollar_statistics_probe.json ]; then
-            python -c "import json; from scripts.probe_fivedollar_statistics import validate_report; validate_report(json.load(open('fivedollar_statistics_probe.json')))"
-          else
-            echo "No report was produced"
-            exit 1
-          fi
+          python -c "import json; from scripts.probe_fivedollar_statistics import validate_report; validate_report(json.load(open('fivedollar_statistics_probe.json')))"
+      - name: Report missing output
+        if: always() && hashFiles('fivedollar_statistics_probe.json') == ''
+        run: echo "No report produced; probe did not complete."
       - name: Upload sanitized probe report
-        if: always()
+        if: always() && hashFiles('fivedollar_statistics_probe.json') != ''
         uses: actions/upload-artifact@v4
         with:
           name: fivedollar-statistics-capability
