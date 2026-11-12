@@ -15,14 +15,26 @@ class AccountProbeTests(unittest.TestCase):
             if path == "/status":
                 return ({"data": {"plan": "community", "limits": {"rate_limit": 300, "burst_per_minute": 20},
                                   "usage": {"today": 12}}}, {"X-RateLimit-Limit": "300"})
-            return ({"data": [{"id": 1, "name": "Premier League", "country": {"name": "England"}}],
-                     "pagination": {"has_more": False}}, {"X-RateLimit-Limit": "300"})
-        report = probe_account("not-a-real-secret", fake_request)
+            if path == "/leagues":
+                return ({"data": [{"id": 1, "name": "Premier League", "country": {"name": "England"}}],
+                         "pagination": {"has_more": False}}, {"X-RateLimit-Limit": "300"})
+            if path.startswith("/leagues/"):
+                return ({"data": [{"id": "fx-1"}]}, {})
+            if path.startswith("/fixtures/"):
+                return ({"data": {"bookmakers": [{"odds": {
+                    "1x2": {"opening": {"opened_at": "2026-11-10T10:00:00Z"},
+                            "closing": {"home": 1.8, "draw": 3.5, "away": 4.5}},
+                    "btts": {"opening": {"yes": 1.9, "no": 1.9}},
+                }}]}}, {})
+            raise AssertionError(path)
+        report = probe_account("not-a-real-secret", fake_request, sleep=lambda _: None)
         validate_report(report)
         self.assertEqual(report["plan"], "community")
         self.assertEqual(report["competition_count_page_1"], 1)
         self.assertFalse(report["pagination"]["has_more"])
-        self.assertEqual(report["request_count"], 2)
+        self.assertEqual(report["request_count"], 4)
+        self.assertTrue(report["odds_samples"][0]["one_x_two_opened_at"])
+        self.assertEqual(report["odds_timestamped_market_blocks_sampled"], 1)
         self.assertNotIn("not-a-real-secret", str(report))
         self.assertEqual(len(calls), 2)
 
