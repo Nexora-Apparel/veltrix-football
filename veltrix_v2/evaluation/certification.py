@@ -212,8 +212,8 @@ def _certify_release_from_derived_evidence(
         one_x_two_beats_bookmaker_brier=bool(one_x_two_beats_bookmaker_brier),
         one_x_two_beats_bookmaker_log_loss=bool(one_x_two_beats_bookmaker_log_loss),
         global_failures=tuple(global_failures),
-        evidence=rows,,
-        _seal=_CERTIFICATION_SEAL
+        evidence=rows,
+        _seal=_CERTIFICATION_SEAL,
     )
 
 
@@ -340,8 +340,8 @@ def _certify_prediction_publication_from_derived_evidence(
     return PredictionReleaseCertification(
         passed=all(item.passed for item in results),
         markets=tuple(results),
-        evidence=rows,,
-        _seal=_CERTIFICATION_SEAL
+        evidence=rows,
+        _seal=_CERTIFICATION_SEAL,
     )
 
 
