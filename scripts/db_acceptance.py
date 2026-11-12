@@ -15,7 +15,7 @@ EXPECTED_TABLES = {
     "teams", "fixtures", "fixture_results", "source_observations",
     "import_runs", "import_checkpoints", "reconciliation_audits",
     "source_approvals", "provider_responses", "provider_entitlement_observations",
-    "fixture_result_versions", "sync_watermarks", "ingestion_quarantine",
+    "fixture_result_versions", "sync_watermarks", "ingestion_quarantine",\n    "source_approval_status_events",
 }
 EXPECTED_INDEXES = {
     "fixtures_kickoff_idx", "fixtures_competition_kickoff_idx",
@@ -24,7 +24,7 @@ EXPECTED_INDEXES = {
     "source_approvals_version_idx", "provider_responses_provider_time_idx",
     "provider_entitlement_history_idx", "source_observations_source_lookup_idx",
     "fixtures_provider_kickoff_idx", "fixture_result_versions_fixture_time_idx",
-    "ingestion_quarantine_open_idx",
+    "ingestion_quarantine_open_idx", "source_approval_status_latest_idx",
 }
 
 
@@ -96,7 +96,7 @@ def run_acceptance() -> dict:
                 "provider_responses_append_only",
                 "source_approvals_append_only",
                 "provider_entitlement_append_only",
-                "fixture_result_versions_append_only",
+                "fixture_result_versions_append_only",\n                "source_approval_status_events_append_only",
             }
             assert expected_triggers <= immutable_triggers, sorted(expected_triggers - immutable_triggers)
 
@@ -122,6 +122,25 @@ def run_acceptance() -> dict:
                 mutation_rejected = True
                 cur.execute("ROLLBACK TO SAVEPOINT immutable_probe")
             assert mutation_rejected, "source approval append-only trigger did not reject UPDATE"
+
+            # Approval revocation is an append-only event, never an UPDATE to the original approval.
+            cur.execute("SAVEPOINT rights_event_probe")
+            cur.execute("""
+                INSERT INTO source_approval_status_events(
+                    approval_id,status,evidence_uri,evidence_sha256,effective_at,reason_code
+                ) VALUES (
+                    '__acceptance_immutable_probe__','REVOKED',
+                    'https://example.invalid/revocation', repeat('b',64), NOW(), 'ACCEPTANCE_PROBE'
+                )
+            """)
+            status_event_mutation_rejected = False
+            try:
+                cur.execute("UPDATE source_approval_status_events SET status='APPROVED' WHERE approval_id='__acceptance_immutable_probe__'")
+            except psycopg.errors.RaiseException:
+                status_event_mutation_rejected = True
+                cur.execute("ROLLBACK TO SAVEPOINT rights_event_probe")
+            assert status_event_mutation_rejected, "source approval status event accepted UPDATE"
+            cur.execute("RELEASE SAVEPOINT rights_event_probe")
 
             # Prove rollback semantics without leaving a probe row behind.
             cur.execute("SAVEPOINT acceptance_rollback_probe")
