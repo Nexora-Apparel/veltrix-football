@@ -65,6 +65,18 @@ def _preflight(database_url: str, expected_database: str) -> None:
             observed = {version: checksum.strip() for version, checksum in cur.fetchall()}
             if observed != MIGRATION_CHECKSUMS:
                 raise RuntimeError("STAGING_MIGRATION_MANIFEST_MISMATCH")
+            cur.execute("""
+                SELECT
+                    (SELECT count(*) FROM import_runs),
+                    (SELECT count(*) FROM provider_responses),
+                    (SELECT count(*) FROM source_observations),
+                    (SELECT count(*) FROM fixtures),
+                    (SELECT count(*) FROM fixture_results),
+                    (SELECT count(*) FROM provider_entitlement_observations)
+            """)
+            counts = cur.fetchone()
+            if any(counts):
+                raise RuntimeError("STAGING_IMPORT_REQUIRES_EMPTY_DEDICATED_DATABASE")
 
 
 def _provider_response(endpoint: str, request_id: str, params: dict, raw: bytes,
