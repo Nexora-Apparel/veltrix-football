@@ -1,3 +1,4 @@
+from dataclasses import replace
 from datetime import datetime, timedelta, timezone
 
 import pytest
@@ -6,6 +7,7 @@ from veltrix_v2.contracts import ProviderObservation
 from veltrix_v2.evaluation.certification_evidence import (
     TrainingObservationEvidence,
     audit_walk_forward_training_sources,
+    audit_walk_forward_integrity,
 )
 from veltrix_v2.evaluation.multi_competition_walk_forward import (
     run_multi_competition_walk_forward,
@@ -181,3 +183,34 @@ def test_training_source_audit_rejects_missing_observation_record(monkeypatch):
     audit = audit_walk_forward_training_sources(report, _source_records()[1:], (_approval(),))
     assert not audit.passed
     assert ("obs-train-1", "training_observation_missing") in audit.rejected_observations
+
+
+def test_walk_forward_integrity_audits_temporal_windows_and_identity_isolation(monkeypatch):
+    report = _walk_forward(monkeypatch)
+    audit = audit_walk_forward_integrity(report)
+    assert audit.passed
+    assert audit.fold_count == 1
+    assert audit.held_out_fixture_ids == ("test-1",)
+
+
+def test_walk_forward_integrity_rejects_training_cutoff_at_test_start(monkeypatch):
+    report = _walk_forward(monkeypatch)
+    scope = report.scope_reports[0]
+    fold = scope.folds[0]
+    invalid_fold = replace(fold, training_label_cutoff_utc=fold.test_start_utc)
+    invalid_scope = replace(scope, folds=(invalid_fold,))
+    invalid_report = replace(report, scope_reports=(invalid_scope,))
+    audit = audit_walk_forward_integrity(invalid_report)
+    assert not audit.passed
+    assert "TRAINING_CUTOFF_OR_TEST_WINDOW_ORDER_INVALID" in audit.failures
+
+
+def test_walk_forward_integrity_rejects_unbound_heldout_result_observation(monkeypatch):
+    report = _walk_forward(monkeypatch)
+    scope = report.scope_reports[0]
+    fold = scope.folds[0]
+    invalid_fold = replace(fold, test_fixture_kickoffs=())
+    invalid_report = replace(report, scope_reports=(replace(scope, folds=(invalid_fold,)),))
+    audit = audit_walk_forward_integrity(invalid_report)
+    assert not audit.passed
+    assert "HELD_OUT_RESULT_PROVENANCE_INVALID" in audit.failures
