@@ -655,3 +655,26 @@ def test_odds_source_audit_rejects_source_record_without_fixture_binding(monkeyp
         "odds-test-1",
         "odds_source_fixture_id_missing_or_mismatched",
     ) in audit.rejected_snapshots
+
+
+@pytest.mark.parametrize(
+    ("record_index", "reason"),
+    [
+        (0, "paper_forecast_fixture_id_missing_or_mismatched"),
+        (1, "paper_odds_source_provenance_or_fixture_binding_mismatch"),
+        (2, "paper_result_source_scope_or_fixture_binding_mismatch"),
+    ],
+)
+def test_paper_ledger_source_audit_requires_fixture_binding_for_every_record(
+    monkeypatch, record_index, reason
+):
+    report = _walk_forward(monkeypatch)
+    ledger, records, approvals = _paper_ledger_and_records()
+    rows = list(records)
+    rows[record_index] = replace(
+        rows[record_index],
+        observation=replace(rows[record_index].observation, values={}),
+    )
+    audit = audit_paper_ledger_sources(report, ledger, rows, approvals)
+    assert not audit.passed
+    assert any(reason in rejected_reason for _, rejected_reason in audit.rejected_observations)
