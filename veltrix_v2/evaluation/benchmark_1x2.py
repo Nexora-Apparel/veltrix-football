@@ -76,6 +76,11 @@ def compare_1x2_to_bookmaker(
     for fixture_id, group in groups.items():
         if set(group) != {"HOME", "DRAW", "AWAY"}:
             raise ValueError("1X2_BENCHMARK_INCOMPLETE_MARKET")
+        probability_sum = sum(
+            (row.normalized_probability for row in group.values()), Decimal("0")
+        )
+        if abs(probability_sum - Decimal("1")) > Decimal("0.000000001"):
+            raise ValueError("1X2_BENCHMARK_NORMALIZED_SELECTIONS_MUST_SUM_TO_ONE")
         book_by_fixture[fixture_id] = Forecast1X2(
             fixture_id,
             float(group["HOME"].normalized_probability),
