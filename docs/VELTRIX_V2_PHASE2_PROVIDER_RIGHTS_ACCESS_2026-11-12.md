@@ -68,7 +68,7 @@ Official [Terms and Conditions](https://the-odds-api.com/terms-and-conditions.ht
 - displaying derived values;
 - using data to train statistical and machine-learning models.
 
-They prohibit resale/repackaging/redistribution of raw data as a standalone feed. Attribution is not required. API keys must remain private.
+They prohibit resale/repackaging/redistribution of raw data as a standalone feed. Attribution is not required. API keys must remain private. The provider also places responsibility for local gambling-promotion compliance on the customer and recommends responsible-gambling messaging (for example, 18+ / Gamble Responsibly) if the product promotes bookmakers or gambling services. VELTRIX must complete a target-market review and add suitable messaging before adding bookmaker promotion, affiliate links or wagering calls to action.
 
 VELTRIX will use The Odds API as the supplemental prospective quote and bookmaker benchmark source. Store the source's event ID, bookmaker, market, outcome, decimal price, provider `last_update`, local fetch time, request/response fingerprints and exact response bytes. Certification uses the provider's quote timestamp, not local fetch time.
 
