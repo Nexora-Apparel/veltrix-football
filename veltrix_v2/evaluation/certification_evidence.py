@@ -290,8 +290,8 @@ def audit_walk_forward_training_sources(
                     rejected.append((observation_id, "training_result_availability_provenance_invalid"))
                     continue
                 observed_fixture_id = observation.values.get("fixture_id")
-                if observed_fixture_id is not None and observed_fixture_id != fixture_id:
-                    rejected.append((observation_id, "training_observation_fixture_id_mismatch"))
+                if observed_fixture_id != fixture_id:
+                    rejected.append((observation_id, "training_observation_fixture_id_missing_or_mismatched"))
                     continue
                 decision = evaluate_observation(
                     observation,
@@ -333,8 +333,8 @@ def audit_walk_forward_training_sources(
                     rejected.append((observation_id, "held_out_result_observed_before_kickoff"))
                     continue
                 observed_fixture_id = observation.values.get("fixture_id")
-                if observed_fixture_id is not None and observed_fixture_id != fixture_id:
-                    rejected.append((observation_id, "held_out_result_fixture_id_mismatch"))
+                if observed_fixture_id != fixture_id:
+                    rejected.append((observation_id, "held_out_result_fixture_id_missing_or_mismatched"))
                     continue
                 decision = evaluate_observation(
                     observation,
@@ -654,8 +654,8 @@ def audit_odds_snapshot_sources(
             rejected.append((snapshot.snapshot_id, "odds_source_provider_mismatch"))
             continue
         observed_fixture_id = observation.values.get("fixture_id")
-        if observed_fixture_id is not None and observed_fixture_id != snapshot.fixture_id:
-            rejected.append((snapshot.snapshot_id, "odds_source_fixture_id_mismatch"))
+        if observed_fixture_id != snapshot.fixture_id:
+            rejected.append((snapshot.snapshot_id, "odds_source_fixture_id_missing_or_mismatched"))
             continue
         if observation.available_at_utc > snapshot.captured_at:
             rejected.append((snapshot.snapshot_id, "odds_source_observation_after_capture"))
@@ -738,8 +738,8 @@ def audit_paper_ledger_sources(
                 continue
             forecast_scope_rows.add((observation.competition_key, observation.season))
             observed_fixture_id = observation.values.get("fixture_id")
-            if observed_fixture_id is not None and observed_fixture_id != selection.bet.fixture_id:
-                rejected.append((observation_id, "paper_forecast_fixture_id_mismatch"))
+            if observed_fixture_id != selection.bet.fixture_id:
+                rejected.append((observation_id, "paper_forecast_fixture_id_missing_or_mismatched"))
                 continue
             decision = evaluate_observation(
                 observation,
@@ -776,9 +776,9 @@ def audit_paper_ledger_sources(
             or odds_observation.provider != odds.source_id
             or (odds_observation.competition_key, odds_observation.season) != scope
             or odds_observation.available_at_utc > odds.captured_at
-            or (observed_odds_fixture_id is not None and observed_odds_fixture_id != selection.bet.fixture_id)
+            or observed_odds_fixture_id != selection.bet.fixture_id
         ):
-            rejected.append((odds_observation_id, "paper_odds_source_provenance_mismatch"))
+            rejected.append((odds_observation_id, "paper_odds_source_provenance_or_fixture_binding_mismatch"))
             continue
         odds_decision = evaluate_observation(
             odds_observation,
@@ -809,9 +809,9 @@ def audit_paper_ledger_sources(
         if (
             scope is None
             or (observation.competition_key, observation.season) != scope
-            or (observed_result_fixture_id is not None and observed_result_fixture_id != selection.bet.fixture_id)
+            or observed_result_fixture_id != selection.bet.fixture_id
         ):
-            rejected.append((observation_id, "paper_result_source_scope_or_fixture_mismatch"))
+            rejected.append((observation_id, "paper_result_source_scope_or_fixture_binding_mismatch"))
             continue
         if (
             observation.available_at_utc <= selection.odds_snapshot.kickoff_at
@@ -842,8 +842,9 @@ def audit_paper_ledger_sources(
                 scope is None
                 or (date_observation.competition_key, date_observation.season) != scope
                 or date_observation.available_at_utc > event.result_observed_at_utc
+                or date_observation.values.get("fixture_id") != selection.bet.fixture_id
             ):
-                rejected.append((date_observation_id, "paper_match_date_source_provenance_mismatch"))
+                rejected.append((date_observation_id, "paper_match_date_source_provenance_or_fixture_binding_mismatch"))
             else:
                 date_decision = evaluate_observation(
                     date_observation,
