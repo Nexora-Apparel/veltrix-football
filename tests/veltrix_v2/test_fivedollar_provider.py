@@ -58,6 +58,7 @@ def test_client_uses_bearer_auth_and_returns_captured_odds():
         api_key="secret-test-key",
         fixture_id="fixture-123",
         kickoff_at=KICKOFF,
+        source_observation_id="obs-5dollar-payload-123",
         captured_at=CAPTURE,
         opener=opener,
     )
