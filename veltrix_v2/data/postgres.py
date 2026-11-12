@@ -16,6 +16,19 @@ from veltrix_v2.data.contracts import (
 from veltrix_v2.data.rights import evaluate_fixture_import
 
 
+def _contains_sensitive_key(value) -> bool:
+    sensitive_tokens = ("authorization", "api-key", "apikey", "token", "secret", "password", "cookie")
+    if isinstance(value, dict):
+        for key, nested in value.items():
+            if any(token in str(key).casefold() for token in sensitive_tokens):
+                return True
+            if _contains_sensitive_key(nested):
+                return True
+    elif isinstance(value, (list, tuple)):
+        return any(_contains_sensitive_key(item) for item in value)
+    return False
+
+
 class PostgresHistoryStore:
     def __init__(self, connection_factory: Callable[[], object]):
         self._connect = connection_factory
@@ -338,11 +351,9 @@ class PostgresHistoryStore:
         rows = tuple(fixtures)
         if approval.provider != response.provider or approval.source_id != response.source_id:
             raise ValueError("SOURCE_APPROVAL_PROVIDER_MISMATCH")
-        sensitive = {"authorization", "x-api-key", "api-key", "cookie", "set-cookie"}
-        if any(str(key).casefold() in sensitive for key in response.response_headers):
+        if _contains_sensitive_key(dict(response.response_headers)):
             raise ValueError("PROVIDER_RESPONSE_SECRET_HEADER_MUST_NOT_BE_STORED")
-        if any(any(token in str(key).casefold() for token in ("key", "token", "secret", "password"))
-               for key in response.request_params):
+        if _contains_sensitive_key(dict(response.request_params)):
             raise ValueError("PROVIDER_REQUEST_SECRET_PARAMETER_MUST_NOT_BE_STORED")
         # Rights evidence is immutable and must exist before any source record can reference it.
         self.persist_source_approval(approval)
