@@ -39,6 +39,7 @@ See [the complete source register](docs/VELTRIX_V2_COMPLETE_SOURCE_REGISTER_2026
 - The 1X2 bookmaker benchmark rejects no-vig probability triplets that do not sum to one.
 - Walk-forward evaluation excludes quarantined rows and fails closed on unapproved or unspecified held-out source records.
 - Source approvals now separate collection, storage, model training, benchmarking, public display and commercial-use permissions. This contract still needs integration into the ingestion and publication paths.
+- **Certification is not release-ready:** walk-forward counts, prospective counts, date counts, odds coverage and bookmaker benchmark booleans are still accepted as caller-supplied scalar evidence. These must be bound to actual walk-forward, paper-ledger, timestamped-odds and bookmaker-comparison reports before any certificate can authorize release.
 
 ### Publication and betting release
 - Predictions can be published only after each market has at least 1,000 chronological walk-forward matches, approved sources, point-in-time validation, passing leakage tests and passing calibration.
