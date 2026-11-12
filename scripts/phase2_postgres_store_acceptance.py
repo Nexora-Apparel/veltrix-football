@@ -235,6 +235,17 @@ def main() -> dict:
         records_inserted=1, records_rejected=0, records_quarantined=1,
         requests_used=2, response_sha256=second_response.response_sha256,
     )
+    checkpoint_terminal_rewrite_rejected = False
+    try:
+        store.upsert_checkpoint(
+            import_run_id=run_id, window_start=kickoff, window_end=now,
+            cursor_value="page=rewind", status="RUNNING", records_seen=2,
+            records_inserted=1, records_rejected=0, records_quarantined=1,
+            requests_used=2, response_sha256=second_response.response_sha256,
+        )
+    except ValueError as exc:
+        checkpoint_terminal_rewrite_rejected = str(exc) == "IMPORT_CHECKPOINT_TERMINAL_OR_REGRESSION"
+    assert checkpoint_terminal_rewrite_rejected, "terminal checkpoint accepted a rewrite"
     store.finish_import_run(
         import_run_id=run_id, status="COMPLETED", finished_at_utc=now,
         requests_used=2, records_seen=2, records_inserted=1,
@@ -341,6 +352,7 @@ def main() -> dict:
         "sync_watermark_version": watermark[1],
         "stale_sync_writer_rejected": stale_watermark_rejected,
         "altered_approval_replay_rejected": approval_conflict_rejected,
+        "terminal_checkpoint_rewrite_rejected": checkpoint_terminal_rewrite_rejected,
     }
 
 
