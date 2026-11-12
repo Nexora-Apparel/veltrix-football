@@ -173,3 +173,14 @@ def test_raw_certification_rejects_altered_provider_response_bytes(tmp_path):
     manifest.write_text(json.dumps(payload), encoding="utf-8")
     with pytest.raises(EvidenceIntegrityError, match="response body SHA-256 mismatch"):
         recompute_raw_certification(manifest)
+
+
+
+def test_source_request_fingerprint_rejects_credentials():
+    from app.certification_metrics import _request_fingerprint
+
+    with pytest.raises(EvidenceIntegrityError, match="credentials"):
+        _request_fingerprint({
+            "method": "GET", "endpoint": "/v1/results",
+            "headers": {"Authorization": "Bearer do-not-store"},
+        })
