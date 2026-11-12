@@ -63,7 +63,7 @@ class StatisticsProbeTests(unittest.TestCase):
     def test_hash_tampering_is_rejected(self, mocked):
         mocked.side_effect = response_for
         report = probe("test-key", 10, 90, "test-run")
-        report["samples"][0]["statistics_status"] = "OK_WITH_FIELDS"
+        report["samples"][0]["statistics_status"] = "HTTP_403"
         with self.assertRaisesRegex(ValueError, "report_hash_invalid"):
             validate_report(report)
 
@@ -87,7 +87,7 @@ class StatisticsProbeTests(unittest.TestCase):
         mocked.side_effect = response_for
         report = probe("test-key", 3, 90, "test-run")
         self.assertEqual(report["request_budget"]["actual_requests"], 3)
-        self.assertTrue(any(x["fixture_lookup_status"] == "REQUEST_BUDGET_EXHAUSTED"
+        self.assertTrue(any(x["statistics_status"] == "REQUEST_BUDGET_EXHAUSTED"
                             for x in report["samples"]))
         validate_report(report)
 
