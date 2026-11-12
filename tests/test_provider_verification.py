@@ -79,6 +79,7 @@ def test_optional_top_five_and_south_american_btts_probe_is_bounded_to_eight_cre
         "soccer_brazil_serie_b",
     ]
     calls = []
+    fake_fetch_calls = []
     def fake_request(url, headers=None):
         if "/status" in url:
             return 200, {}, {"success": 1, "data": {"plan": "community"}}
@@ -97,6 +98,7 @@ def test_optional_top_five_and_south_american_btts_probe_is_bounded_to_eight_cre
 
     def fake_fetch(**kwargs):
         calls.append(kwargs["sport_key"])
+        fake_fetch_calls.append(kwargs)
         return SimpleNamespace(
             snapshots=(object(), object()),
             missing_bookmakers=(),
@@ -109,6 +111,10 @@ def test_optional_top_five_and_south_american_btts_probe_is_bounded_to_eight_cre
     output = capsys.readouterr().out
     assert "plan=community" in output
     assert len(calls) == 8
+    probe_observation_ids = [row["source_observation_id"] for row in fake_fetch_calls]
+    assert len(probe_observation_ids) == 8
+    assert len(set(probe_observation_ids)) == 8
+    assert all(value.startswith("provider-probe:") for value in probe_observation_ids)
     assert "leagues_probed=8" in output
     assert "maximum_odds_credits=8" in output
 
