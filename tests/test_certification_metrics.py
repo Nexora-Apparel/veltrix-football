@@ -219,3 +219,45 @@ def test_match_date_clusters_use_west_africa_time():
     from app.certification_metrics import _match_date
 
     assert _match_date("2026-01-01T23:30:00+00:00") == "2026-01-02"
+
+
+
+def test_walk_forward_bookmaker_benchmark_requires_exact_raw_quote():
+    from datetime import datetime
+    from app.certification_metrics import _verify_walk_forward_bookmaker_odds
+
+    raw = {
+        "fixture_id": "fixture-1", "bookmaker": "Book A",
+        "kickoff": "2026-01-01T18:00:00+00:00",
+        "observed_at": "2026-01-01T17:00:00+00:00",
+        "quote_updated_at": "2026-01-01T16:55:00+00:00",
+        "home": 2.5, "draw": 3.2, "away": 2.9,
+    }
+    row = {
+        "fixture_id": "fixture-1", "bookmaker": "Book A",
+        "kickoff": raw["kickoff"], "prediction_at": "2026-01-01T17:10:00+00:00",
+        "bookmaker_odds": {"home": 2.5, "draw": 3.2, "away": 2.9},
+        "bookmaker_odds_source_id": "source-a",
+        "bookmaker_odds_source_response_id": "benchmark-response",
+        "bookmaker_odds_source_pointer": "/events/0",
+        "bookmaker_odds_observed_at": raw["observed_at"],
+        "bookmaker_odds_updated_at": raw["quote_updated_at"],
+    }
+    responses = {"benchmark-response": {
+        "source_id": "source-a",
+        "_fetched_at": datetime.fromisoformat(raw["observed_at"]),
+        "_body_json": {"events": [raw]},
+    }}
+    _verify_walk_forward_bookmaker_odds(row, responses, {"source-a"})
+
+    forged = dict(row)
+    forged["bookmaker_odds"] = {"home": 2.51, "draw": 3.2, "away": 2.9}
+    with pytest.raises(EvidenceIntegrityError, match="does not match home odds"):
+        _verify_walk_forward_bookmaker_odds(forged, responses, {"source-a"})
+
+    post_kickoff = dict(row)
+    post_kickoff["bookmaker_odds_observed_at"] = "2026-01-01T18:01:00+00:00"
+    responses["benchmark-response"]["_fetched_at"] = datetime.fromisoformat(post_kickoff["bookmaker_odds_observed_at"])
+    raw["observed_at"] = post_kickoff["bookmaker_odds_observed_at"]
+    with pytest.raises(EvidenceIntegrityError, match="point-in-time"):
+        _verify_walk_forward_bookmaker_odds(post_kickoff, responses, {"source-a"})
