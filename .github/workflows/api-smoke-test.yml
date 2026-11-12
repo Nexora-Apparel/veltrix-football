@@ -13,6 +13,12 @@ on:
       - "scripts/probe_oddspapi_safe.py"
       - "tests/test_provider_adapters.py"
       - "tests/test_phase1_provider_probes.py"
+      - "scripts/probe_strikerapi_free_credit.py"
+      - "scripts/probe_strikerapi_features.py"
+      - "scripts/veltrix_v2/verify_strikerapi_readonly.py"
+      - "tests/test_strikerapi_free_credit.py"
+      - "tests/test_strikerapi_features.py"
+      - "tests/veltrix_v2/test_strikerapi_readonly.py"
       - ".github/workflows/api-smoke-test.yml"
   pull_request:
     branches: [main]
@@ -26,6 +32,12 @@ on:
       - "scripts/probe_oddspapi_safe.py"
       - "tests/test_provider_adapters.py"
       - "tests/test_phase1_provider_probes.py"
+      - "scripts/probe_strikerapi_free_credit.py"
+      - "scripts/probe_strikerapi_features.py"
+      - "scripts/veltrix_v2/verify_strikerapi_readonly.py"
+      - "tests/test_strikerapi_free_credit.py"
+      - "tests/test_strikerapi_features.py"
+      - "tests/veltrix_v2/test_strikerapi_readonly.py"
       - ".github/workflows/api-smoke-test.yml"
   workflow_dispatch:
 
@@ -96,11 +108,24 @@ jobs:
             python scripts/probe_oddspapi_safe.py --output reports/phase1/oddspapi.json 2>&1 | tee reports/phase1/oddspapi.log
           fi
 
-      - name: Record StrikerAPI credit-safe deferral
+      - name: Check StrikerAPI free-credit access (one static reference credit maximum)
         if: github.event_name == 'workflow_dispatch'
+        id: striker_account
+        env:
+          STRIKERAPI_API_KEY: ${{ secrets.STRIKERAPI_API_KEY }}
+        run: python scripts/probe_strikerapi_free_credit.py --output reports/phase1/strikerapi-account.json
+
+      - name: Qualify StrikerAPI non-live features and timestamped odds (62-credit cap)
+        if: github.event_name == 'workflow_dispatch' && steps.striker_account.outputs.probe_status == 'AUTH_OK'
+        env:
+          STRIKERAPI_API_KEY: ${{ secrets.STRIKERAPI_API_KEY }}
+        run: python scripts/probe_strikerapi_features.py --output reports/phase1/strikerapi-features.json
+
+      - name: Record StrikerAPI free-credit deferral
+        if: github.event_name == 'workflow_dispatch' && steps.striker_account.outputs.probe_status != 'AUTH_OK'
         run: |
-          echo "STRIKERAPI_PROBE: DEFERRED; last recorded account response was HTTP 402 (monthly credits exhausted)." | tee reports/phase1/strikerapi-status.log
-          echo "No StrikerAPI requests were made and no credits were consumed by this workflow."
+          echo "STRIKERAPI_FEATURE_PROBE: SKIPPED; static one-credit check returned ${{ steps.striker_account.outputs.probe_status }}." | tee reports/phase1/strikerapi-status.log
+          echo "No additional StrikerAPI calls were made."
 
       - name: Upload sanitized Phase 1 provider evidence
         if: github.event_name == 'workflow_dispatch' && always()
