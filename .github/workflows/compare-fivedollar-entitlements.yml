@@ -1,0 +1,60 @@
+name: Manual 5Dollar Credential Entitlement Comparison
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: fivedollar-entitlement-comparison
+  cancel-in-progress: false
+
+jobs:
+  compare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      FIVEDOLLARFOOTBALL_API_KEY: ${{ secrets.FIVEDOLLARFOOTBALL_API_KEY }}
+      FIVEDOLLARFOOTBALL_COMMUNITY_API_KEY: ${{ secrets.FIVEDOLLARFOOTBALL_COMMUNITY_API_KEY }}
+    steps:
+      - name: Check out selected branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Static validation
+        run: python -m py_compile scripts/compare_fivedollar_entitlements.py
+      - name: Run bounded read-only comparison
+        run: python scripts/compare_fivedollar_entitlements.py > fivedollar_entitlement_comparison.json
+      - name: Print sanitized comparison summary
+        if: always()
+        run: |
+          if [ -f fivedollar_entitlement_comparison.json ]; then
+            python - <<'PY'
+          import json
+          p=json.load(open("fivedollar_entitlement_comparison.json"))
+          for alias, result in p.get("credentials", {}).items():
+              print(alias, "status=", result.get("status"),
+                    "requests=", result.get("request_count"),
+                    "quota=", result.get("quota_headers"),
+                    "competitions=", (result.get("competition_catalogue") or {}).get("rows_on_page_1"),
+                    "history=", (result.get("historical_fixtures") or {}).get("access"),
+                    "odds=", (result.get("fixture_odds") or {}).get("access"),
+                    "statistics=", (result.get("team_match_statistics") or {}).get("access"))
+          PY
+          else
+            echo "No comparison report produced"
+            exit 1
+          fi
+      - name: Upload comparison evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fivedollar-entitlement-comparison
+          path: fivedollar_entitlement_comparison.json
+          if-no-files-found: error
+          retention-days: 7
