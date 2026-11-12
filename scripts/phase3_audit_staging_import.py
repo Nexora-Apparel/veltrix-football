@@ -44,6 +44,22 @@ def _safe_key_scan(value) -> bool:
     return True
 
 
+def _request_accounting_valid(
+    request_budget: int | None, requests_used: int | None,
+    archived_response_count: int, records_inserted: int | None,
+    observation_count: int, records_rejected: int | None,
+    records_quarantined: int | None, quarantine_row_count: int,
+) -> bool:
+    return (
+        request_budget == 40
+        and requests_used is not None and 3 <= requests_used <= request_budget
+        and requests_used == archived_response_count
+        and records_inserted == observation_count
+        and records_rejected is not None and records_quarantined is not None
+        and records_rejected + records_quarantined == quarantine_row_count
+    )
+
+
 def run_audit(database_url: str) -> dict:
     if os.getenv("VELTRIX_ENABLE_STAGING_IMPORT") != "YES":
         raise RuntimeError("STAGING_AUDIT_EXPLICIT_ENABLE_REQUIRED")
@@ -346,12 +362,10 @@ def run_audit(database_url: str) -> dict:
                 failures.append("ACTIVE_ENTITLEMENT_SNAPSHOT_MISSING")
             if completed_runs != 1 or total_import_runs != 1 or completed_checkpoints != 1 or total_checkpoints != 1:
                 failures.append("SINGLE_IMPORT_ACCOUNTING_MISMATCH")
-            if (
-                request_budget != 40 or requests_used is None or requests_used < 3
-                or requests_used != archived_response_count
-                or records_inserted != len(observations)
-                or records_rejected is None or records_quarantined is None
-                or records_rejected + records_quarantined != quarantine_row_count
+            if not _request_accounting_valid(
+                request_budget, requests_used, archived_response_count,
+                records_inserted, len(observations), records_rejected,
+                records_quarantined, quarantine_row_count,
             ):
                 failures.append("REQUEST_OR_RECORD_ACCOUNTING_MISMATCH")
             report["failures"] = sorted(set(failures))
