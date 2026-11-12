@@ -5,6 +5,7 @@ import pytest
 from veltrix_v2.providers.wyscout_open_data import (
     CONSERVATIVE_AVAILABLE_AT_UTC,
     SOURCE_LICENSE_ID,
+    SOURCE_APPROVAL_ID,
     WyscoutShotTrainingExample,
     parse_wyscout_shot_events,
 )
@@ -58,6 +59,7 @@ def test_parses_shot_outcome_context_and_cc_by_provenance():
     assert result.is_opportunity is True
     assert result.source_observation_id == "obs-wyscout-9001"
     assert result.source_license_id == SOURCE_LICENSE_ID
+    assert result.rights_approval_id == SOURCE_APPROVAL_ID
     assert result.event_time_utc == datetime(2018, 6, 10, 20, 0, 31, 250000, tzinfo=UTC)
 
 
