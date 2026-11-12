@@ -24,6 +24,8 @@ def match(fixture, comp, day, home, away, hg, ag):
         home_goals=hg,
         away_goals=ag,
         source_observation_id=f"obs-{fixture}",
+        availability_basis="source_timestamp",
+        source_training_approved=True,
     )
 
 
