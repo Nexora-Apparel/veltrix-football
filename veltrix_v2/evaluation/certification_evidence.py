@@ -6,7 +6,7 @@ This module intentionally does not accept caller-supplied counts or pass flags.
 """
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from decimal import Decimal
 from typing import Iterable
 
@@ -182,6 +182,8 @@ def derive_market_evidence(
             net_profit=Decimal("0"), roi=None, roi_ci_95=None,
             roi_ci_method="unavailable_insufficient_match_dates",
         )
+    elif performance.market != canonical:
+        performance = replace(performance, market=canonical)
     odds = derive_timestamped_odds_coverage(
         eligible_ids, odds_snapshots, market=canonical
     )
