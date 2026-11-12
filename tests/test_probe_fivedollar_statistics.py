@@ -20,7 +20,11 @@ class FakeResponse:
         return self.payload
 
 
-def response_for(url):
+def response_for(request, timeout=20):
+    """Mirror urllib.request.urlopen(Request, timeout=...) call signature."""
+    if timeout != 20:
+        raise AssertionError(f"unexpected timeout: {timeout}")
+    url = request.full_url
     if url.endswith("/leagues?page=1&per_page=100"):
         return FakeResponse({"success": 1, "data": [
             {"id": 10, "name": "League A"}, {"id": 20, "name": "League B"}
@@ -53,6 +57,7 @@ class StatisticsProbeTests(unittest.TestCase):
         self.assertEqual(row["statistics_status"], "OK_WITH_FIELDS")
         self.assertEqual(set(row["available_fields"]), {"attacks", "shots_on_target", "possession", "first_half"})
         self.assertEqual(report["side_effects"]["database_writes"], 0)
+        self.assertTrue(all(call.kwargs.get("timeout") == 20 for call in mocked.call_args_list))
 
     @patch("scripts.probe_fivedollar_statistics.urlopen")
     def test_hash_tampering_is_rejected(self, mocked):
@@ -69,7 +74,7 @@ class StatisticsProbeTests(unittest.TestCase):
         def forbidden(request, timeout=20):
             if request.full_url.endswith("/fixtures/100/statistics"):
                 raise HTTPError(request.full_url, 403, "Forbidden", {}, None)
-            return response_for(request.full_url)
+            return response_for(request, timeout=timeout)
 
         mocked.side_effect = forbidden
         report = probe("test-key", 10, 90, "test-run")
