@@ -54,6 +54,8 @@ def plan_request(request: PlannedRequest, budget: CreditBudget) -> BudgetDecisio
                 budget.per_run_hard_cap, budget.month_committed, budget.run_committed)
     if any(not _valid_nonnegative(v) for v in required):
         return BudgetDecision(False, None, None, None, "BUDGET_INPUT_INVALID")
+    if budget.monthly_allowance == 0 or budget.monthly_hard_cap == 0 or budget.per_run_hard_cap == 0:
+        return BudgetDecision(False, None, None, None, "BUDGET_LIMIT_MUST_BE_POSITIVE")
     if budget.provider_remaining is not None and not _valid_nonnegative(budget.provider_remaining):
         return BudgetDecision(False, None, None, None, "PROVIDER_REMAINING_INVALID")
     if budget.month_committed > budget.monthly_allowance or budget.month_committed > budget.monthly_hard_cap or budget.run_committed > budget.per_run_hard_cap:
@@ -63,7 +65,8 @@ def plan_request(request: PlannedRequest, budget: CreditBudget) -> BudgetDecisio
     if request.endpoint_class in {"sports_discovery", "events_discovery"}:
         estimate = 0
     elif request.endpoint_class in {"bulk_odds", "event_odds"}:
-        if not request.sport_key or not request.markets or any(not isinstance(m, str) or not m for m in request.markets):
+        if (not request.sport_key or not isinstance(request.markets, tuple) or not request.markets
+                or any(not isinstance(m, str) or not m for m in request.markets)):
             return BudgetDecision(False, None, None, None, "REQUEST_SHAPE_INVALID")
         estimate = len(set(request.markets)) * request.regions
     else:
