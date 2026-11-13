@@ -65,7 +65,6 @@ CREATE TABLE provider_credit_reservation_events (
     occurred_at TIMESTAMPTZ NOT NULL,
     recorded_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     UNIQUE (reservation_key, event_sequence),
-    UNIQUE (provider, provider_account_ref, billing_period_start, request_key, attempt_number),
     CHECK (billing_period_end > billing_period_start),
     CHECK (
         (event_type IN ('RECONCILED','OVERRUN') AND actual_credits IS NOT NULL)
@@ -73,6 +72,11 @@ CREATE TABLE provider_credit_reservation_events (
         (event_type NOT IN ('RECONCILED','OVERRUN') AND actual_credits IS NULL)
     )
 );
+
+CREATE UNIQUE INDEX provider_credit_reservation_attempt_uq
+ON provider_credit_reservation_events(
+    provider, provider_account_ref, billing_period_start, request_key, attempt_number
+) WHERE event_sequence = 1;
 
 CREATE INDEX provider_credit_reservation_period_idx
 ON provider_credit_reservation_events
