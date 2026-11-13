@@ -160,7 +160,7 @@ Proposed columns:
 - `created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()`
 
 Constraints/indexes:
-- hash format; unique `(fixture_id, prediction_cutoff_at, feature_schema_version, selector_version)`
+- hash format; unique `(fixture_id, prediction_cutoff_at, feature_schema_version, model_build_id, selector_version, feature_set_sha256)`; distinct model builds or exact feature payloads remain independently auditable
 - index `(fixture_id, prediction_cutoff_at DESC)`
 - snapshot is inserted once with frozen cutoff and schema/selector identity. Eligibility is derived from an append-only `feature_snapshot_eligibility_events` relation (defined below); never rewrite the frozen feature definition or cutoff.
 
