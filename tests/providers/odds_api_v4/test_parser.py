@@ -82,3 +82,10 @@ def test_duplicate_identical_rows_are_diagnosed():
     parsed = parse_bulk_odds(body([market]), sport_key="soccer", retrieved_at=NOW)
     assert len(parsed.observations) == 2
     assert "DUPLICATE_QUOTE_ROW" in {d.code for d in parsed.diagnostics}
+
+
+def test_non_string_market_key_is_diagnosed_without_crashing():
+    parsed = parse_bulk_odds(body([{"key": ["h2h"], "last_update": "2026-11-13T11:00:00Z", "outcomes": []}]),
+                             sport_key="soccer", retrieved_at=NOW)
+    assert not parsed.observations
+    assert "MARKET_KEY_INVALID" in {d.code for d in parsed.diagnostics}
