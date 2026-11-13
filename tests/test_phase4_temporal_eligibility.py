@@ -42,11 +42,14 @@ BASE = {
 }
 
 
-def decision(row=None, rights=None, cutoff=CUTOFF, **kwargs):
+_DEFAULT_RIGHTS = object()
+
+
+def decision(row=None, rights=_DEFAULT_RIGHTS, cutoff=CUTOFF, **kwargs):
     return evaluate_observation(
         row or deepcopy(BASE),
         cutoff,
-        RIGHTS if rights is None else rights,
+        RIGHTS if rights is _DEFAULT_RIGHTS else rights,
         **kwargs,
     )
 
