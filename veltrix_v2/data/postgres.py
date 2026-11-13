@@ -599,9 +599,9 @@ class PostgresHistoryStore:
                 )
                 stored = cur.fetchone()
                 expected = (
-                    provider_response_id, response.provider, response.source_id,
-                    provider_account_ref, billing_period_start, billing_period_end,
-                    retrieved_at, json.dumps(dict(raw_quota_headers), sort_keys=True),
+                    response.provider, response.source_id, provider_account_ref,
+                    billing_period_start, billing_period_end, retrieved_at,
+                    json.dumps(dict(raw_quota_headers), sort_keys=True),
                     quota_evidence.requests_used, quota_evidence.requests_remaining,
                     quota_evidence.requests_last, quota_hash,
                 )
