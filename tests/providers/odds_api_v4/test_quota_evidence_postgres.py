@@ -186,7 +186,7 @@ def test_overrun_and_cross_account_or_raw_header_injection_are_rejected():
             conn, now=now + timedelta(seconds=8), request_id="wrong-account",
             used=110, remaining=890, last=4, account="other"
         )
-        with pytest.raises(psycopg.Error, match="FOREIGN KEY"):
+        with pytest.raises(psycopg.Error, match="SNAPSHOT_SCOPE_OR_TIME_INVALID"):
             add_event(conn, reservation_event_id=reservation, before_id=before,
                       after_id=wrong_account, status="UNKNOWN",
                       now=now + timedelta(seconds=9))
