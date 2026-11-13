@@ -121,6 +121,43 @@ CREATE INDEX entity_crosswalk_canonical_idx
 CREATE INDEX entity_crosswalk_provider_entity_idx
     ON entity_crosswalk_versions(provider, source_id, entity_type, provider_entity_id, mapping_version DESC);
 
+-- Serialize overlapping resolved-identity checks per provider entity. This closes
+-- the concurrent-insert race that a plain NOT EXISTS check would leave open.
+CREATE OR REPLACE FUNCTION reject_overlapping_resolved_crosswalk()
+RETURNS trigger LANGUAGE plpgsql AS $
+BEGIN
+    IF NEW.mapping_status = 'RESOLVED' THEN
+        PERFORM pg_advisory_xact_lock(
+            hashtextextended(
+                jsonb_build_array(
+                    NEW.provider, NEW.source_id, NEW.entity_type, NEW.provider_entity_id
+                )::text,
+                0
+            )
+        );
+
+        IF EXISTS (
+            SELECT 1
+            FROM entity_crosswalk_versions existing
+            WHERE existing.provider = NEW.provider
+              AND existing.source_id = NEW.source_id
+              AND existing.entity_type = NEW.entity_type
+              AND existing.provider_entity_id = NEW.provider_entity_id
+              AND existing.mapping_status = 'RESOLVED'
+              AND existing.valid_from < COALESCE(NEW.valid_until, 'infinity'::timestamptz)
+              AND COALESCE(existing.valid_until, 'infinity'::timestamptz) > NEW.valid_from
+        ) THEN
+            RAISE EXCEPTION 'CROSSWALK_RESOLVED_VALIDITY_OVERLAP';
+        END IF;
+    END IF;
+    RETURN NEW;
+END;
+$;
+
+CREATE TRIGGER entity_crosswalk_no_resolved_overlap
+    BEFORE INSERT ON entity_crosswalk_versions
+    FOR EACH ROW EXECUTE FUNCTION reject_overlapping_resolved_crosswalk();
+
 CREATE TABLE feature_snapshots (
     feature_snapshot_id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     snapshot_key TEXT NOT NULL UNIQUE CHECK (snapshot_key <> ''),
