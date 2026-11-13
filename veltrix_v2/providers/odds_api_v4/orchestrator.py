@@ -130,16 +130,17 @@ def build_manifest(request: CaptureRequest) -> RequestManifest:
     if not request.fixture_boundaries:
         if request.endpoint_class not in {"sports_discovery", "events_discovery"}:
             raise ValueError("FIXTURE_BOUNDARIES_REQUIRED")
-    if len(set(request.markets)) != len(request.markets) or any(not isinstance(x, str) or not x for x in request.markets):
+    if any(not isinstance(x, str) or not x for x in request.markets) or len(set(request.markets)) != len(request.markets):
         raise ValueError("MARKET_SCOPE_INVALID")
-    if len(set(request.regions)) != len(request.regions) or any(not isinstance(x, str) or not x for x in request.regions):
+    if any(not isinstance(x, str) or not x for x in request.regions) or len(set(request.regions)) != len(request.regions):
         raise ValueError("REGION_SCOPE_INVALID")
     fixture_ids: list[str] = []
     event_ids: list[str] = []
     cutoffs: list[tuple[str, str]] = []
     kickoffs: list[tuple[str, str]] = []
     for item in request.fixture_boundaries:
-        if not isinstance(item, FixtureBoundary) or not item.fixture_id or not item.provider_event_id:
+        if (not isinstance(item, FixtureBoundary) or not isinstance(item.fixture_id, str)
+                or not item.fixture_id or not isinstance(item.provider_event_id, str) or not item.provider_event_id):
             raise ValueError("FIXTURE_IDENTITY_INVALID")
         cutoff, kickoff = _utc(item.prediction_cutoff_at, "PREDICTION_CUTOFF_AT"), _utc(item.kickoff_at, "KICKOFF_AT")
         if cutoff >= kickoff:
@@ -228,8 +229,8 @@ def evaluate_preflight(
     if rights is None or not isinstance(rights, RightsEvidence):
         reasons.append("RIGHTS_EVIDENCE_MISSING")
     else:
-        evaluated = datetime.fromisoformat(manifest.rights_evaluated_at.replace("Z", "+00:00"))
         try:
+            evaluated = _utc(datetime.fromisoformat(manifest.rights_evaluated_at.replace("Z", "+00:00")), "RIGHTS_EVALUATED_AT")
             effective = _utc(rights.effective_at, "RIGHTS_EFFECTIVE_AT")
             recorded = _utc(rights.recorded_at, "RIGHTS_RECORDED_AT")
             expiry = _utc(rights.valid_until, "RIGHTS_VALID_UNTIL") if rights.valid_until else None
