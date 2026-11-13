@@ -94,3 +94,12 @@ def test_unknown_provider_and_invalid_hashes_are_rejected():
     assert authorize_dispatch(
         replace(BASE, manifest_sha256="bad")
     ).reason_code == "MANIFEST_HASH_INVALID"
+
+def test_truthy_non_boolean_gate_values_and_duplicate_query_keys_are_rejected():
+    assert authorize_dispatch(
+        replace(BASE, operator_dispatch_enabled="true")
+    ).reason_code == "DISPATCH_BOOLEAN_EVIDENCE_INVALID"
+    assert authorize_dispatch(
+        replace(BASE, endpoint_url=BASE.endpoint_url + "&regions=us")
+    ).reason_code == "ENDPOINT_URL_NOT_ALLOWLISTED"
+
