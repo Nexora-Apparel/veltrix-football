@@ -168,7 +168,9 @@ CREATE TABLE feature_snapshots (
     feature_set_sha256 CHAR(64) NOT NULL CHECK (feature_set_sha256 ~ '^[0-9a-f]{64}$'),
     selector_version TEXT NOT NULL CHECK (selector_version <> ''),
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    UNIQUE (fixture_id, prediction_cutoff_at, feature_schema_version, selector_version)
+        -- Snapshot identity includes the immutable model and exact feature payload.
+    UNIQUE (fixture_id, prediction_cutoff_at, feature_schema_version,
+            model_build_id, selector_version, feature_set_sha256)
 );
 CREATE INDEX feature_snapshots_fixture_cutoff_idx
     ON feature_snapshots(fixture_id, prediction_cutoff_at DESC);
