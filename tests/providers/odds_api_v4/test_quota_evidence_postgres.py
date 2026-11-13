@@ -25,9 +25,19 @@ def setup_db():
                 id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
                 provider TEXT NOT NULL,
                 source_id TEXT NOT NULL,
+                endpoint TEXT NOT NULL,
+                request_id TEXT NOT NULL,
+                request_params JSONB NOT NULL,
+                http_status INTEGER NOT NULL,
                 response_sha256 CHAR(64) NOT NULL,
                 raw_body BYTEA NOT NULL,
-                UNIQUE (id, provider, source_id)
+                response_headers JSONB NOT NULL,
+                quota_limit INTEGER,
+                quota_remaining INTEGER,
+                quota_reset_at TIMESTAMPTZ,
+                fetched_at TIMESTAMPTZ NOT NULL,
+                UNIQUE (id, provider, source_id),
+                UNIQUE (provider, source_id, request_id, response_sha256)
             )
         """)
         conn.execute("""
@@ -70,10 +80,16 @@ def setup_db():
 def add_response_and_snapshot(conn, *, now, request_id, used, remaining, last,
                               account="account-1", raw_headers=None):
     response_id = conn.execute("""
-        INSERT INTO provider_responses(provider,source_id,response_sha256,raw_body)
-        VALUES ('the_odds_api','odds_api_v4',%s,%s)
+        INSERT INTO provider_responses(
+            provider,source_id,endpoint,request_id,request_params,http_status,
+            response_sha256,raw_body,response_headers,fetched_at
+        )
+        VALUES (
+            'the_odds_api','odds_api_v4','/v4/sports',%s,'{}'::jsonb,200,
+            %s,%s,'{}'::jsonb,%s
+        )
         RETURNING id
-    """, ("f" * 64, request_id.encode())).fetchone()[0]
+    """, (request_id, "f" * 64, request_id.encode(), now)).fetchone()[0]
     headers = raw_headers or {
         "x-requests-used": str(used),
         "x-requests-remaining": str(remaining),
