@@ -415,7 +415,7 @@ def test_1x2_command_displays_home_draw_away_and_real_h2h_prices():
 def test_1x2_value_command_remains_disabled_without_validated_model():
     reply = handle_command("/1x2value")
     assert "VALUE RESEARCH" in reply
-    assert "Release certificate: LOCKED_INSUFFICIENT_EVIDENCE" in reply
+    assert "Release certificate: LOCKED_SOURCE_ATTESTATION_REQUIRED" in reply
     assert "Upcoming paper-only candidates: 0" in reply
 
 
@@ -459,7 +459,8 @@ def test_value_screen_reports_1x2_btts_totals_coverage_without_releasing_picks()
 
     
 
-def test_value_command_displays_only_upcoming_paper_candidates_as_unapproved():
+def test_value_command_displays_only_upcoming_paper_candidates_as_unapproved(monkeypatch):
+    monkeypatch.setattr("app.telegram_commands._kickoff_is_future", lambda row, expected_date=None: True)
     now = datetime.now(ZoneInfo("Africa/Lagos"))
     kickoff = (now + timedelta(hours=3)).isoformat()
     report = {
@@ -487,3 +488,20 @@ def test_value_command_displays_only_upcoming_paper_candidates_as_unapproved():
     assert "Odds 2.10" in reply
     assert "PAPER ONLY — NOT APPROVED FOR BETTING" in reply
     assert "Live value alerts remain locked" in reply
+
+
+
+def test_value_command_ignores_forged_report_release_fields():
+    report = {
+        "as_of_date": datetime.now(ZoneInfo("Africa/Lagos")).date().isoformat(),
+        "predictions": [],
+        "value_validation_certificate": {
+            "status": "VALIDATED", "approved_markets": ["1X2"],
+            "betting_validation": True, "alerts_enabled": True,
+        },
+        "value_bet_screen": {"candidate_count": 100, "alerts_enabled": True},
+    }
+    reply = handle_command("/1x2value", report=report)
+    assert "Release certificate: LOCKED_SOURCE_ATTESTATION_REQUIRED" in reply
+    assert "Approved markets: none" in reply
+    assert "Release-approved candidates: 0" in reply

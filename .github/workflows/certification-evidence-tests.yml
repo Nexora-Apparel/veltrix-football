@@ -1,0 +1,81 @@
+name: VELTRIX Certification Evidence Integrity
+
+on:
+  pull_request:
+    branches: [main, phase1/evidence-bound-certificate-lockdown]
+    paths:
+      - "app/certification_evidence.py"
+      - "app/certification_metrics.py"
+      - "app/value_bets.py"
+      - "app/telegram_commands.py"
+      - "scripts/build_value_certificate.py"
+      - "scripts/send_telegram_report.py"
+      - "scripts/verify_certification_evidence.py"
+      - "tests/test_certification_evidence.py"
+      - "tests/test_certification_metrics.py"
+      - "tests/test_value_bets.py"
+      - "tests/test_value_bets_runtime.py"
+      - "tests/test_build_value_certificate.py"
+      - "tests/test_telegram_report.py"
+      - "tests/test_telegram_commands.py"
+      - "docs/VELTRIX_V2_PHASE2_PROVIDER_RIGHTS_ACCESS_2026-11-12.md"
+      - "tests/test_telegram_commands.py"
+      - "docs/VELTRIX_V2_CERTIFICATION_EVIDENCE_BUNDLE_V1.md"
+      - "docs/VELTRIX_V2_RAW_CERTIFICATION_EVIDENCE_CONTRACT_V1.md"
+      - ".github/workflows/certification-evidence-tests.yml"
+      - ".github/workflows/certification-evidence-attestation.yml"
+  push:
+    branches: ["phase1/evidence-bound-certificate-lockdown"]
+    paths:
+      - "app/certification_evidence.py"
+      - "app/certification_metrics.py"
+      - "app/value_bets.py"
+      - "scripts/build_value_certificate.py"
+      - "scripts/verify_certification_evidence.py"
+      - "tests/test_certification_evidence.py"
+      - "tests/test_certification_metrics.py"
+      - "tests/test_value_bets.py"
+      - "tests/test_value_bets_runtime.py"
+      - "tests/test_build_value_certificate.py"
+      - "tests/test_telegram_report.py"
+      - ".github/workflows/certification-evidence-tests.yml"
+      - ".github/workflows/certification-evidence-attestation.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: veltrix-certification-evidence-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  certification-evidence:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+      - name: Install project dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      - name: Compile certification modules
+        run: |
+          python -m compileall -q app/certification_evidence.py app/certification_metrics.py app/value_bets.py
+          python -m compileall -q scripts/build_value_certificate.py scripts/verify_certification_evidence.py
+          python -m compileall -q tests/test_certification_evidence.py tests/test_certification_metrics.py
+      - name: Run certification and release-consumer tests
+        run: |
+          python -m pytest --import-mode=importlib -q \
+            tests/test_certification_evidence.py \
+            tests/test_certification_metrics.py \
+            tests/test_value_bets.py \
+            tests/test_value_bets_runtime.py \
+            tests/test_build_value_certificate.py \
+            tests/test_telegram_report.py \
+            tests/test_telegram_commands.py
+      - name: Run complete regression suite
+        run: python -m pytest --import-mode=importlib -q

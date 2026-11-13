@@ -126,10 +126,11 @@ def test_fixture_value_screen_can_rank_1x2_candidates_after_explicit_validation(
     }
     result = screen_fixture_value_bets(prediction, validation_certificate=certificate)
     candidates = result["markets"]["1X2"]["candidates"]
-    assert candidates
-    assert candidates[0]["selection"] == "home_win"
-    assert candidates[0]["market"] == "1X2"
-    assert candidates[0]["provider"] == "The Odds API"
+    assert candidates == []
+    assert result["markets"]["1X2"]["status"] == "DISABLED_UNVALIDATED"
+    assert result["status"] == "DISABLED_UNVALIDATED"
+    assert result["model_validated"] is False
+    assert result["candidate_count"] == 0
 
 
 def test_attach_value_screen_writes_report_level_validation_gate():
@@ -146,7 +147,7 @@ def test_value_validation_certificate_fails_closed_without_backtest_and_paper_ev
     from app.value_bets import build_value_validation_certificate
 
     certificate = build_value_validation_certificate({}, {})
-    assert certificate["status"] == "LOCKED_INSUFFICIENT_EVIDENCE"
+    assert certificate["status"] == "LOCKED_SOURCE_ATTESTATION_REQUIRED"
     assert certificate["betting_validation"] is False
     assert certificate["approved_markets"] == []
     assert certificate["alerts_enabled"] is False
@@ -235,17 +236,20 @@ def test_value_validation_certificate_can_release_only_markets_with_complete_evi
         }
     }
     certificate = build_value_validation_certificate(backtest, paper)
-    assert certificate["status"] == "VALIDATED"
-    assert set(certificate["approved_markets"]) == {
+    assert certificate["status"] == "LOCKED_SOURCE_ATTESTATION_REQUIRED"
+    assert certificate["approved_markets"] == []
+    assert set(certificate["diagnostic_markets"]) == {
         "1X2", "BTTS", "OVER_UNDER_1_5", "OVER_UNDER_2_5", "OVER_UNDER_3_5"
     }
-    assert _certificate_allows(certificate, "1X2")
-    assert _certificate_allows(certificate, "BTTS")
+    assert certificate["alerts_enabled"] is False
+    # Evidence-shaped JSON is diagnostic only until source attestation exists.
+    assert not _certificate_allows(certificate, "1X2")
+    assert not _certificate_allows(certificate, "BTTS")
 
     del paper["markets"]["OVER_UNDER_1_5"]
     partial = build_value_validation_certificate(backtest, paper)
-    assert partial["status"] == "PARTIALLY_VALIDATED"
-    assert _certificate_allows(partial, "BTTS")
+    assert partial["status"] == "LOCKED_SOURCE_ATTESTATION_REQUIRED"
+    assert not _certificate_allows(partial, "BTTS")
     assert not _certificate_allows(partial, "OVER_UNDER_1_5")
 
 
@@ -342,6 +346,37 @@ def test_1x2_certificate_uses_its_own_model_evidence_without_goal_calibration():
         },
     }
     certificate = build_value_validation_certificate(backtest, paper)
-    assert certificate["approved_markets"] == ["1X2"]
-    assert certificate["market_diagnostics"]["1X2"]["status"] == "PASS"
+    assert certificate["approved_markets"] == []
+    assert certificate["diagnostic_markets"] == ["1X2"]
+    assert certificate["market_diagnostics"]["1X2"]["status"] == "LOCKED"
+    assert certificate["market_diagnostics"]["1X2"]["diagnostic_status"] == "SUMMARY_THRESHOLDS_MET"
     assert certificate["market_diagnostics"]["BTTS"]["status"] == "LOCKED"
+
+
+
+def test_value_release_rejects_forged_status_boolean_and_market_list():
+    from app.value_bets import _certificate_allows
+
+    forged = {
+        "schema_version": 1,
+        "status": "VALIDATED",
+        "betting_validation": True,
+        "approved_markets": ["1X2", "BTTS", "OVER_UNDER_2_5"],
+        "alerts_enabled": True,
+        "evidence": {"roi": 999, "sample_size": 999999},
+    }
+    for market in ("1X2", "BTTS", "OVER_UNDER_2_5"):
+        assert _certificate_allows(forged, market) is False
+
+
+def test_value_release_rejects_partial_certificate_with_forged_boolean():
+    from app.value_bets import _certificate_allows
+
+    forged = {
+        "schema_version": 1,
+        "status": "PARTIALLY_VALIDATED",
+        "betting_validation": True,
+        "approved_markets": ["1X2"],
+        "alerts_enabled": True,
+    }
+    assert _certificate_allows(forged, "1X2") is False
