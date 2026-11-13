@@ -24,6 +24,8 @@ def test_independent_limits_and_unknowns_are_fail_closed():
         assert column in SQL
     assert "CREDIT_RESERVATION_CAPACITY_EXCEEDED" in SQL
     assert "CREDIT_BUDGET_SNAPSHOT_MISMATCH_OR_STALE" in SQL
+    assert "valid_until TIMESTAMPTZ NOT NULL" in SQL
+    assert "p_occurred_at > b.valid_until" in SQL
 
 
 def test_idempotency_is_bound_to_full_immutable_request_identity():
