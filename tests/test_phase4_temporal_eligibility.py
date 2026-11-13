@@ -1,5 +1,4 @@
 from copy import deepcopy
-from datetime import datetime, timezone
 
 import pytest
 
@@ -11,6 +10,7 @@ from veltrix_v2.data.temporal_eligibility import (
 
 
 CUTOFF = "2026-11-20T12:00:00Z"
+RIGHTS_TIME = "2026-11-20T15:00:00Z"
 RIGHTS = {
     "status": "APPROVED",
     "permitted_purposes": ["model_training"],
@@ -50,6 +50,17 @@ def decision(row=None, rights=_DEFAULT_RIGHTS, cutoff=CUTOFF, **kwargs):
         row or deepcopy(BASE),
         cutoff,
         RIGHTS if rights is _DEFAULT_RIGHTS else rights,
+        rights_evaluated_at=kwargs.pop("rights_evaluated_at", RIGHTS_TIME),
+        **kwargs,
+    )
+
+
+def select(rows, cutoff=CUTOFF, rights=RIGHTS, **kwargs):
+    return select_as_of(
+        rows,
+        cutoff,
+        rights,
+        rights_evaluated_at=kwargs.pop("rights_evaluated_at", RIGHTS_TIME),
         **kwargs,
     )
 
@@ -113,6 +124,15 @@ def test_unknown_timestamp_basis_rejected(basis):
     assert "SOURCE_TIMESTAMP_UNTRUSTED" in decision(row).reason_codes
 
 
+def test_documented_guarantee_requires_hash_bound_evidence():
+    row = deepcopy(BASE)
+    row["source_timestamp_basis"] = "documented_guarantee"
+    assert "SOURCE_TIMESTAMP_UNTRUSTED" in decision(row).reason_codes
+    row["timestamp_guarantee_evidence_id"] = "terms-v3"
+    row["timestamp_guarantee_evidence_sha256"] = "a" * 64
+    assert decision(row).eligible
+
+
 def test_retrieval_after_cutoff_requires_verified_archival_proof():
     row = deepcopy(BASE)
     row.update(
@@ -143,23 +163,57 @@ def test_forecast_effective_after_fixture_kickoff_rejected():
     assert "FIELD_SEMANTICS_UNVERIFIED" in decision(row).reason_codes
 
 
+def test_missing_semantics_and_revision_completeness_fail_closed():
+    row = deepcopy(BASE)
+    row.pop("temporal_semantics")
+    assert "FIELD_SEMANTICS_UNVERIFIED" in decision(row).reason_codes
+    row = deepcopy(BASE)
+    row.pop("revision_history_complete")
+    assert "REVISION_HISTORY_INCOMPLETE" in decision(row).reason_codes
+
+
 def test_rights_missing_wrong_scope_expired_or_revoked_rejected():
     assert "RIGHTS_NOT_APPROVED" in decision(rights=None).reason_codes
     wrong_scope = deepcopy(RIGHTS)
     wrong_scope["scope"]["provider"] = "other"
     assert "RIGHTS_NOT_APPROVED" in decision(rights=wrong_scope).reason_codes
     expired = deepcopy(RIGHTS)
-    expired["expires_at"] = "2026-11-20T11:59:59Z"
+    expired["expires_at"] = "2026-11-20T14:59:59Z"
     assert "RIGHTS_NOT_APPROVED" in decision(rights=expired).reason_codes
     revoked = deepcopy(RIGHTS)
-    revoked["revoked_at"] = "2026-11-20T11:00:00Z"
+    revoked["revoked_at"] = "2026-11-20T14:00:00Z"
     assert "RIGHTS_NOT_APPROVED" in decision(rights=revoked).reason_codes
+
+
+@pytest.mark.parametrize("missing_key", ["provider", "product", "endpoint", "field_family", "competition", "season"])
+def test_missing_observation_scope_dimension_is_not_treated_as_wildcard(missing_key):
+    row = deepcopy(BASE)
+    row.pop(missing_key)
+    assert "RIGHTS_NOT_APPROVED" in decision(row).reason_codes
+
+
+def test_revocation_after_prediction_cutoff_still_blocks_new_downstream_use():
+    rights = deepcopy(RIGHTS)
+    rights["revoked_at"] = "2026-11-20T13:00:00Z"
+    # The source was available at noon, but the current downstream use is at 15:00.
+    assert "RIGHTS_NOT_APPROVED" in decision(rights=rights).reason_codes
+
+
+def test_rights_expiry_is_checked_at_use_time_not_historical_cutoff():
+    rights = deepcopy(RIGHTS)
+    rights["expires_at"] = "2026-11-20T13:00:00Z"
+    assert "RIGHTS_NOT_APPROVED" in decision(rights=rights).reason_codes
+    assert decision(rights=rights, rights_evaluated_at="2026-11-20T12:30:00Z").eligible
 
 
 def test_rights_must_explicitly_permit_training():
     rights = deepcopy(RIGHTS)
     rights["permitted_purposes"] = ["internal_analysis"]
     assert "RIGHTS_NOT_APPROVED" in decision(rights=rights).reason_codes
+
+
+def test_missing_rights_evaluation_time_fails_closed():
+    assert "RIGHTS_EVALUATION_TIMESTAMP_UNTRUSTED" in decision(rights_evaluated_at=None).reason_codes
 
 
 def test_naive_or_missing_cutoff_is_rejected():
@@ -176,8 +230,8 @@ def test_later_correction_does_not_change_earlier_cutoff_selection():
         retrieved_at="2026-11-20T14:01:00Z",
         source_effective_at="2026-11-20T14:00:00Z",
     )
-    selected_before = select_as_of([original], CUTOFF, RIGHTS)
-    selected_after_adding_future_correction = select_as_of([original, corrected], CUTOFF, RIGHTS)
+    selected_before = select([original])
+    selected_after_adding_future_correction = select([original, corrected])
     assert selected_before == selected_after_adding_future_correction == original
 
 
@@ -189,7 +243,26 @@ def test_correction_published_before_cutoff_supersedes_older_value():
         source_published_at="2026-11-20T11:30:00Z",
         retrieved_at="2026-11-20T11:31:00Z",
     )
-    assert select_as_of([first, corrected], CUTOFF, RIGHTS) == corrected
+    assert select([first, corrected]) == corrected
+
+
+def test_same_publication_time_requires_explicit_revision_order():
+    first = deepcopy(BASE)
+    second = deepcopy(BASE)
+    second["observation_id"] = "obs-z"
+    assert select([first, second]) is None
+    first["source_revision_order"] = 1
+    second["source_revision_order"] = 2
+    assert select([first, second]) == second
+
+
+def test_duplicate_revision_order_is_ambiguous_and_rejected():
+    first = deepcopy(BASE)
+    second = deepcopy(BASE)
+    second["observation_id"] = "obs-2"
+    first["source_revision_order"] = 3
+    second["source_revision_order"] = 3
+    assert select([first, second]) is None
 
 
 def test_incomplete_revision_history_is_rejected():
@@ -210,7 +283,7 @@ def test_moving_cutoff_earlier_never_selects_later_publication():
         rows.append(row)
     for hour in range(8, 13):
         cutoff = f"2026-11-20T{hour:02d}:30:00Z"
-        selected = select_as_of(rows, cutoff, RIGHTS)
+        selected = select(rows, cutoff)
         assert selected is None or selected["source_published_at"] <= cutoff
 
 
@@ -224,21 +297,21 @@ def test_post_cutoff_additions_never_change_selected_value_for_prior_cutoff():
             retrieved_at=f"2026-11-20T{hour:02d}:01:00Z",
         )
         rows.append(row)
-    before = select_as_of(rows, CUTOFF, RIGHTS)
+    before = select(rows)
     late = deepcopy(BASE)
     late.update(
         observation_id="late",
         source_published_at="2026-11-20T12:00:00.001Z",
         retrieved_at="2026-11-20T12:01:00Z",
     )
-    assert select_as_of(rows + [late], CUTOFF, RIGHTS) == before
+    assert select(rows + [late]) == before
 
 
 def test_cutoff_input_is_not_mutated_and_feature_hash_is_replay_stable():
     row = deepcopy(BASE)
     frozen = deepcopy(row)
-    first = evaluate_observation(row, CUTOFF, RIGHTS)
-    second = evaluate_observation(row, CUTOFF, RIGHTS)
+    first = decision(row)
+    second = decision(row)
     assert row == frozen
     assert first == second
     payload = {"team_state": {"rating": 1420}, "missing_lineup": None}
