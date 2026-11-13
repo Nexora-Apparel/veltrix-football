@@ -30,6 +30,7 @@ def test_independent_limits_and_unknowns_are_fail_closed():
 
 def test_idempotency_is_bound_to_full_immutable_request_identity():
     assert "CREDIT_RESERVATION_IDEMPOTENCY_CONFLICT" in SQL
+    assert "WHERE event_sequence = 1" in SQL
     for column in ("request_fingerprint", "capture_manifest_id", "attempt_number",
                    "budget_snapshot_id", "estimated_credits", "run_key"):
         assert column in SQL
