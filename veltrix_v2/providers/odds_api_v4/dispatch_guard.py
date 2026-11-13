@@ -1,7 +1,7 @@
 """Final offline authorization gate for a future provider dispatcher."""
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import datetime
 import re
 from urllib.parse import parse_qsl, urlsplit
@@ -23,6 +23,7 @@ _ALLOWED_PATHS = (
 @dataclass(frozen=True)
 class DispatchContext:
     provider: str
+    provider_account_ref: str
     endpoint_url: str
     manifest_sha256: str
     request_fingerprint: str
@@ -81,6 +82,8 @@ def authorize_dispatch(context: DispatchContext) -> DispatchDecision:
         return DispatchDecision(False, "DISPATCH_BOOLEAN_EVIDENCE_INVALID")
     if not isinstance(context.provider, str) or context.provider != "the_odds_api":
         return DispatchDecision(False, "PROVIDER_NOT_ALLOWLISTED")
+    if not isinstance(context.provider_account_ref, str) or not context.provider_account_ref.strip():
+        return DispatchDecision(False, "PROVIDER_ACCOUNT_REFERENCE_MISSING")
     if not _valid_url(context.endpoint_url):
         return DispatchDecision(False, "ENDPOINT_URL_NOT_ALLOWLISTED")
     if not _SHA256.fullmatch(context.manifest_sha256 or ""):
@@ -122,3 +125,54 @@ def authorize_dispatch(context: DispatchContext) -> DispatchDecision:
     if context.attempt_number > 1 and not context.previous_attempt_reconciled:
         return DispatchDecision(False, "PREVIOUS_ATTEMPT_NOT_RECONCILED")
     return DispatchDecision(True, "DISPATCH_AUTHORIZED")
+
+def authorize_dispatch_with_activation_evidence(
+    context: DispatchContext,
+    *,
+    terms,
+    rights,
+    budget,
+    scope,
+) -> DispatchDecision:
+    """Verify account evidence and bind it to this exact reserved request before dispatch."""
+    from veltrix_v2.providers.odds_api_v4.activation_gate import evaluate_activation_gate
+
+    if not isinstance(context, DispatchContext):
+        return DispatchDecision(False, "DISPATCH_CONTEXT_INVALID")
+    if (context.provider != getattr(scope, "provider", None)
+            or context.provider_account_ref != getattr(scope, "provider_account_ref", None)):
+        return DispatchDecision(False, "ACTIVATION_ACCOUNT_BINDING_MISMATCH")
+    fingerprint = getattr(scope, "request_fingerprint", None)
+    if (context.request_fingerprint != fingerprint
+            or context.reservation_fingerprint != fingerprint):
+        return DispatchDecision(False, "ACTIVATION_REQUEST_FINGERPRINT_MISMATCH")
+    if (not isinstance(context.now, datetime) or context.now.tzinfo is None
+            or context.now.utcoffset() is None
+            or not isinstance(getattr(scope, "dispatch_at", None), datetime)
+            or scope.dispatch_at.tzinfo is None or scope.dispatch_at.utcoffset() is None
+            or scope.dispatch_at != context.now):
+        return DispatchDecision(False, "ACTIVATION_DISPATCH_TIME_BINDING_MISMATCH")
+    budget_valid_until = getattr(budget, "valid_until", None)
+    if (not isinstance(context.budget_valid_until, datetime)
+            or context.budget_valid_until.tzinfo is None
+            or context.budget_valid_until.utcoffset() is None
+            or not isinstance(budget_valid_until, datetime)
+            or budget_valid_until != context.budget_valid_until):
+        return DispatchDecision(False, "ACTIVATION_BUDGET_EXPIRY_BINDING_MISMATCH")
+
+    gate = evaluate_activation_gate(
+        terms=terms, rights=rights, budget=budget, scope=scope
+    )
+    if not gate.allowed:
+        return DispatchDecision(
+            False, gate.reason_codes[0] if gate.reason_codes else "ACTIVATION_EVIDENCE_BLOCKED"
+        )
+
+    verified_context = replace(
+        context,
+        terms_acceptance_verified=True,
+        rights_approved=True,
+        budget_evidence_fresh=True,
+    )
+    return authorize_dispatch(verified_context)
+

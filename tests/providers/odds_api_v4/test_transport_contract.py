@@ -2,6 +2,10 @@ from dataclasses import replace
 from datetime import datetime, timedelta, timezone
 import hashlib
 
+from veltrix_v2.providers.odds_api_v4.activation_gate import (
+    AccountTermsEvidence, ActivationScope, ProviderBudgetEvidence,
+    RightsApprovalEvidence,
+)
 from veltrix_v2.providers.odds_api_v4.dispatch_guard import DispatchContext
 from veltrix_v2.providers.odds_api_v4.transport_contract import (
     RawTransportResponse, TransportPolicy, execute_with_injected_transport,
@@ -12,6 +16,7 @@ from veltrix_v2.providers.odds_api_v4.transport_contract import (
 NOW = datetime(2026, 11, 13, 12, tzinfo=timezone.utc)
 CONTEXT = DispatchContext(
     provider="the_odds_api",
+    provider_account_ref="acct-1",
     endpoint_url="https://api.the-odds-api.com/v4/sports",
     manifest_sha256="a" * 64,
     request_fingerprint="b" * 64,
@@ -31,6 +36,28 @@ CONTEXT = DispatchContext(
     budget_valid_until=NOW + timedelta(minutes=5),
     now=NOW,
 )
+
+TERMS = AccountTermsEvidence(
+    "the_odds_api","acct-1","terms-v1","evidence://terms","a"*64,
+    NOW-timedelta(days=3),NOW-timedelta(days=2),
+)
+RIGHTS = RightsApprovalEvidence(
+    "the_odds_api","odds_api_v4","acct-1","approval-1","APPROVED","terms-v1",
+    ("EPL",),("h2h","totals"),("uk",),("derived_features",),
+    NOW-timedelta(days=2),NOW-timedelta(days=1),NOW+timedelta(days=10),
+    "evidence://rights","b"*64,
+)
+BUDGET = ProviderBudgetEvidence(
+    "the_odds_api","acct-1",datetime(2026,11,1).date(),datetime(2026,12,1).date(),
+    1000,800,900,100,50,NOW-timedelta(minutes=1),NOW+timedelta(minutes=5),
+    "evidence://budget","c"*64,
+)
+SCOPE = ActivationScope(
+    "the_odds_api","odds_api_v4","acct-1","b"*64,"terms-v1",
+    ("EPL",),("h2h",),("uk",),"derived_features",
+    NOW-timedelta(seconds=30),NOW,10,100,20,50,3,
+)
+EVIDENCE = dict(terms=TERMS,rights=RIGHTS,budget=BUDGET,scope=SCOPE)
 
 
 def test_raw_body_hash_and_allowlisted_headers_are_preserved_exactly():
@@ -103,6 +130,7 @@ def test_injected_transport_receives_strict_policy_and_never_retries():
 
     result = execute_with_injected_transport(
         context=CONTEXT,
+        **EVIDENCE,
         send=fake_send,
     )
     assert result.accepted
@@ -119,6 +147,7 @@ def test_transport_exceptions_remain_uncertain_and_are_not_retried():
 
     result = execute_with_injected_transport(
         context=CONTEXT,
+        **EVIDENCE,
         send=broken_send,
     )
     assert result.reason_code == "TRANSPORT_OUTCOME_UNCERTAIN"
@@ -129,6 +158,7 @@ def test_unauthorized_dispatch_never_calls_transport():
     calls = []
     result = execute_with_injected_transport(
         context=replace(CONTEXT, operator_dispatch_enabled=False),
+        **EVIDENCE,
         send=lambda url, policy: calls.append(url),
     )
     assert result.reason_code == "OPERATOR_DISPATCH_DISABLED"
@@ -148,3 +178,34 @@ def test_malformed_quota_counter_is_retained_but_never_interpreted_as_zero():
     assert result.accepted
     assert result.envelope.quota_evidence.requests_used is None
     assert "X_REQUESTS_USED_MALFORMED" in result.envelope.quota_evidence.reason_codes
+
+def test_injected_transport_requires_matching_account_activation_evidence():
+    calls = []
+    result = execute_with_injected_transport(
+        context=CONTEXT,
+        terms=replace(TERMS, accepted_terms_version="wrong-version"),
+        rights=RIGHTS,
+        budget=BUDGET,
+        scope=SCOPE,
+        send=lambda url, policy: calls.append(url),
+    )
+    assert result.reason_code == "ACCOUNT_TERMS_VERSION_MISMATCH"
+    assert calls == []
+
+
+def test_verified_evidence_supersedes_untrusted_boolean_claims():
+    calls = []
+    result = execute_with_injected_transport(
+        context=replace(
+            CONTEXT,
+            terms_acceptance_verified=False,
+            rights_approved=False,
+            budget_evidence_fresh=False,
+        ),
+        **EVIDENCE,
+        send=lambda url, policy: (
+            calls.append(url) or RawTransportResponse(200, {}, b"ok", NOW)
+        ),
+    )
+    assert result.accepted
+    assert len(calls) == 1
