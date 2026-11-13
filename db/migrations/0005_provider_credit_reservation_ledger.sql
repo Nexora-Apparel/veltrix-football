@@ -206,33 +206,27 @@ BEGIN
     INTO month_used, run_used, active_requests
     FROM latest;
 
-    WITH first_events AS (
+    WITH latest AS (
         SELECT DISTINCT ON (reservation_key) *
         FROM provider_credit_reservation_events
         WHERE provider = p_provider
           AND provider_account_ref = p_account_ref
           AND billing_period_start = p_period_start
           AND billing_period_end = p_period_end
-        ORDER BY reservation_key, event_sequence ASC
-    ),
-    eligible AS (
-        SELECT reservation_key
-        FROM first_events
-        WHERE recorded_at > b.observed_at
-    ),
-    latest_after_snapshot AS (
-        SELECT DISTINCT ON (e.reservation_key) e.*
-        FROM provider_credit_reservation_events e
-        JOIN eligible x USING (reservation_key)
-        ORDER BY e.reservation_key, e.event_sequence DESC
+        ORDER BY reservation_key, event_sequence DESC
     )
     SELECT COALESCE(SUM(CASE
-        WHEN event_type IN ('RECONCILED','OVERRUN') THEN actual_credits
+        -- Reconciled consumption before the snapshot is already reflected in
+        -- provider_remaining. Consumption after it must be subtracted.
+        WHEN event_type IN ('RECONCILED','OVERRUN') AND recorded_at > b.observed_at
+            THEN actual_credits
+        -- Open holds are always deducted, including reservations created
+        -- before the snapshot but not yet authoritatively reconciled.
         WHEN event_type IN ('RESERVED','DISPATCH_CONFIRMED','OUTCOME_UNCERTAIN','RETAINED')
             THEN reserved_credits
         ELSE 0 END), 0)
     INTO post_snapshot_used
-    FROM latest_after_snapshot;
+    FROM latest;
 
     IF LEAST(b.monthly_allowance, b.monthly_hard_cap) - month_used < p_estimate
        OR b.per_run_hard_cap - run_used < p_estimate
