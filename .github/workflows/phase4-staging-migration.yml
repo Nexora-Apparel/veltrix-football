@@ -1,0 +1,55 @@
+name: Phase 4 — Guarded Neon Staging Migration
+
+on:
+  workflow_dispatch:
+    inputs:
+      apply:
+        description: Apply migration 0004 (otherwise run a read-only dry run)
+        required: true
+        default: false
+        type: boolean
+      confirmation:
+        description: Type APPLY_PHASE4_0004_TO_STAGING only when apply is true
+        required: false
+        default: ""
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: veltrix-phase4-staging-migration
+  cancel-in-progress: false
+
+jobs:
+  staging-migration:
+    if: github.ref == 'refs/heads/phase4/provider-qualification-20261113'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      DATABASE_URL: ${{ secrets.VELTRIX_STAGING_DATABASE_URL }}
+      VELTRIX_EXPECTED_DATABASE: veltrix_football_staging
+      VELTRIX_EXPECTED_DATABASE_HOST: ep-ancient-block-bcb439pk.c-16.us-east-1.aws.neon.tech
+      VELTRIX_EXPECTED_DATABASE_ROLE: neondb_owner
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install PostgreSQL driver
+        run: python -m pip install --disable-pip-version-check "psycopg[binary]>=3.2,<4"
+      - name: Verify exact staging target and migration checksums (read-only)
+        run: python -m scripts.phase4_staging_migration
+      - name: Reject incomplete apply confirmation
+        if: ${{ inputs.apply && inputs.confirmation != 'APPLY_PHASE4_0004_TO_STAGING' }}
+        run: |
+          echo "Apply was requested without the exact confirmation phrase."
+          exit 1
+      - name: Apply exactly migration 0004 and verify preserved staging data
+        if: ${{ inputs.apply && inputs.confirmation == 'APPLY_PHASE4_0004_TO_STAGING' }}
+        env:
+          VELTRIX_ENABLE_PHASE4_STAGING_MIGRATION: "YES"
+        run: python -m scripts.phase4_staging_migration --apply
