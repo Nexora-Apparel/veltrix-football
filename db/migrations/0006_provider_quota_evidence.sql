@@ -150,6 +150,10 @@ BEGIN
             RAISE EXCEPTION 'QUOTA_COUNTER_DELTA_NOT_EXACT';
         END IF;
 
+        IF NEW.actual_credits <> after_q.requests_last THEN
+            RAISE EXCEPTION 'QUOTA_ACTUAL_CREDITS_DO_NOT_MATCH_LAST_REQUEST';
+        END IF;
+
         IF NEW.status = 'RECONCILED'
            AND (NEW.actual_credits > r.reserved_credits
                 OR NEW.releasable_credits <> r.reserved_credits - NEW.actual_credits)
