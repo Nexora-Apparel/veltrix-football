@@ -18,6 +18,18 @@ CREATE TABLE provider_quota_snapshots (
         AND raw_quota_headers - ARRAY[
             'x-requests-used','x-requests-remaining','x-requests-last'
         ] = '{}'::jsonb
+        AND (
+            NOT raw_quota_headers ? 'x-requests-used'
+            OR jsonb_typeof(raw_quota_headers->'x-requests-used') = 'string'
+        )
+        AND (
+            NOT raw_quota_headers ? 'x-requests-remaining'
+            OR jsonb_typeof(raw_quota_headers->'x-requests-remaining') = 'string'
+        )
+        AND (
+            NOT raw_quota_headers ? 'x-requests-last'
+            OR jsonb_typeof(raw_quota_headers->'x-requests-last') = 'string'
+        )
     ),
     requests_used INTEGER CHECK (requests_used IS NULL OR requests_used >= 0),
     requests_remaining INTEGER CHECK (requests_remaining IS NULL OR requests_remaining >= 0),
