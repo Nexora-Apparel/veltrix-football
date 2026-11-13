@@ -25,7 +25,7 @@ on:
       - ".github/workflows/certification-evidence-tests.yml"
       - ".github/workflows/certification-evidence-attestation.yml"
   push:
-    branches: ["phase1/evidence-bound-certificate-lockdown"]
+    branches: ["phase1/evidence-bound-certificate-lockdown", "phase2/provider-rights-access-20261112"]
     paths:
       - "app/certification_evidence.py"
       - "app/certification_metrics.py"

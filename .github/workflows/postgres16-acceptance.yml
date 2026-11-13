@@ -2,12 +2,15 @@ name: Phase 2 — PostgreSQL 16 and 18 Historical Data Foundation Acceptance
 
 on:
   pull_request:
-    branches: [main]
+    branches: [main, phase2/provider-rights-access-20261112]
     paths:
       - "db/**"
       - "scripts/db_migrate.py"
       - "scripts/db_acceptance.py"
       - "scripts/phase2_postgres_store_acceptance.py"
+      - "scripts/phase3_import_fivedollar_history.py"
+      - "scripts/phase3_audit_staging_import.py"
+      - "veltrix_v2/data/**"
       - "tests/test_db_migrations.py"
       - "tests/test_phase2_data_foundation.py"
       - ".github/workflows/postgres16-acceptance.yml"
@@ -66,11 +69,11 @@ jobs:
                   version_num = int(q.fetchone()[0])
                   assert version_num >= 160000
                   q.execute("SELECT count(*) FROM information_schema.tables WHERE table_schema='public'")
-                  assert q.fetchone()[0] >= 17
+                  assert q.fetchone()[0] >= 18
                   q.execute("SELECT count(*) FROM pg_indexes WHERE schemaname='public'")
                   assert q.fetchone()[0] >= 13
                   q.execute("SELECT count(*) FROM schema_migrations")
-                  assert q.fetchone()[0] == 2
+                  assert q.fetchone()[0] == 3
                   q.execute("SAVEPOINT rollback_probe")
                   q.execute("INSERT INTO provider_accounts(provider) VALUES ('rollback-probe')")
                   q.execute("ROLLBACK TO SAVEPOINT rollback_probe")

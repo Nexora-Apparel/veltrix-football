@@ -42,7 +42,8 @@ NEW_MESSAGE_HEADER = "🔔 🆕 NEW VELTRIX UPDATE\n━━━━━━━━━�
 
 
 def _reply(body: str) -> str:
-    return f"{NEW_MESSAGE_HEADER}\n{body.strip()}"
+    attribution = "Football data by 5DollarFootballAPI · https://5dollarfootballapi.com"
+    return f"{NEW_MESSAGE_HEADER}\n{body.strip()}\n\n{attribution}"
 
 
 def _report_predictions(report: dict[str, Any] | None) -> list[dict[str, Any]]:

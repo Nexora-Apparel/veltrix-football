@@ -125,7 +125,7 @@ def _source_approval(now: datetime) -> SourceApproval:
         approval_id="approval-5dollar-community-fixture-result-2026-11",
         provider=PROVIDER,
         source_id=SOURCE_ID,
-        competition_scope="*",
+        competition_scope=",".join(sorted(EXPECTED_COMPETITIONS)),
         data_type="fixture_result",
         status=ApprovalStatus.APPROVED,
         permitted_uses=frozenset({
