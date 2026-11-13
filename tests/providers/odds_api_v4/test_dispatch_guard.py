@@ -9,6 +9,7 @@ from veltrix_v2.providers.odds_api_v4.dispatch_guard import (
 NOW = datetime(2026, 11, 13, 12, tzinfo=timezone.utc)
 BASE = DispatchContext(
     provider="the_odds_api",
+    provider_account_ref="acct-1",
     endpoint_url="https://api.the-odds-api.com/v4/sports/soccer_epl/odds?regions=uk&markets=h2h",
     manifest_sha256="a" * 64,
     request_fingerprint="b" * 64,
