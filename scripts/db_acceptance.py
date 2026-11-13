@@ -163,6 +163,62 @@ def run_acceptance() -> dict:
                 WHERE h.provider='phase4-acceptance' AND h.provider_team_id='home'
                   AND a.provider='phase4-acceptance' AND a.provider_team_id='away'
             """)
+            crosswalk_body = b"phase4-crosswalk-acceptance"
+            crosswalk_hash = hashlib.sha256(crosswalk_body).hexdigest()
+            cur.execute("""
+                INSERT INTO provider_responses(
+                    provider,source_id,endpoint,request_id,request_params,http_status,
+                    response_sha256,raw_body,fetched_at
+                ) VALUES (
+                    'phase4-acceptance','phase4-acceptance','/crosswalk-probe',
+                    'phase4-crosswalk-probe','{}'::jsonb,200,%s,%s,NOW()
+                )
+                RETURNING id
+            """, (crosswalk_hash, crosswalk_body))
+            crosswalk_response_id = cur.fetchone()[0]
+            cur.execute("""
+                INSERT INTO source_observations(
+                    provider,endpoint,entity_type,provider_entity_id,payload_sha256,
+                    retrieved_at,payload,source_id,data_type,provider_response_id
+                ) VALUES (
+                    'phase4-acceptance','/crosswalk-probe','TEAM','provider-team-1',
+                    %s,NOW(),'{}'::jsonb,'phase4-acceptance','team_metadata',%s
+                )
+                RETURNING id
+            """, (crosswalk_hash, crosswalk_response_id))
+            crosswalk_observation_id = cur.fetchone()[0]
+            cur.execute("""
+                INSERT INTO entity_crosswalk_versions(
+                    entity_type,provider,source_id,provider_entity_id,canonical_entity_key,
+                    mapping_version,mapping_status,mapping_method,valid_from,valid_until,
+                    evidence_observation_id,decision_reason
+                ) VALUES (
+                    'TEAM','phase4-acceptance','phase4-acceptance','provider-team-1',
+                    'team:phase4-acceptance:home',1,'RESOLVED','EXACT_PROVIDER_ID',
+                    NOW(),NOW()+INTERVAL '2 days',%s,'exact provider identity acceptance probe'
+                )
+            """, (crosswalk_observation_id,))
+            cur.execute("SAVEPOINT crosswalk_overlap_probe")
+            crosswalk_overlap_rejected = False
+            try:
+                cur.execute("""
+                    INSERT INTO entity_crosswalk_versions(
+                        entity_type,provider,source_id,provider_entity_id,canonical_entity_key,
+                        mapping_version,mapping_status,mapping_method,valid_from,valid_until,
+                        evidence_observation_id,decision_reason
+                    ) VALUES (
+                        'TEAM','phase4-acceptance','phase4-acceptance','provider-team-1',
+                        'team:phase4-acceptance:renamed',2,'RESOLVED','EXACT_PROVIDER_ID',
+                        NOW()+INTERVAL '1 day',NOW()+INTERVAL '3 days',%s,
+                        'overlap must be rejected'
+                    )
+                """, (crosswalk_observation_id,))
+            except psycopg.errors.RaiseException:
+                crosswalk_overlap_rejected = True
+                cur.execute("ROLLBACK TO SAVEPOINT crosswalk_overlap_probe")
+            assert crosswalk_overlap_rejected, "overlapping RESOLVED crosswalk validity interval was accepted"
+            cur.execute("RELEASE SAVEPOINT crosswalk_overlap_probe")
+
             cur.execute("""
                 INSERT INTO feature_snapshots(
                     snapshot_key,fixture_id,prediction_cutoff_at,feature_schema_version,
