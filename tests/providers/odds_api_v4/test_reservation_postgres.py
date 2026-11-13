@@ -4,6 +4,16 @@ import os
 from pathlib import Path
 
 import psycopg
+
+from veltrix_v2.data.credit_reservations import (
+    BudgetSnapshotEvidence,
+    PostgresCreditReservationStore,
+    ReservationEvent,
+)
+from veltrix_v2.providers.odds_api_v4.reservations import (
+    ReservationBudget,
+    ReservationRequest,
+)
 import pytest
 
 
@@ -139,3 +149,94 @@ def test_concurrent_reservations_cannot_exceed_per_run_cap():
             WHERE event_sequence=1 AND event_type='RESERVED'
         """).fetchone()[0]
         assert count == 5
+
+
+
+def test_postgres_store_adapter_persists_budget_reserves_and_reconciles():
+    manifest_id, budget_id, now = fresh_database(remaining=100, per_run_cap=50)
+    budget = ReservationBudget(
+        provider="the_odds_api",
+        account_ref="test-account",
+        period_start=date(2026, 11, 1),
+        period_end=date(2026, 12, 1),
+        monthly_allowance=100,
+        provider_remaining=100,
+        monthly_hard_cap=100,
+        per_run_hard_cap=50,
+        request_count_cap=100,
+        observed_at=now - timedelta(seconds=1),
+        valid_until=now + timedelta(minutes=10),
+        evidence_sha256="a" * 64,
+    )
+    store = PostgresCreditReservationStore(
+        lambda: psycopg.connect(DATABASE_URL),
+        allow_writes=True,
+        expected_database="veltrix_reservation_test",
+    )
+    snapshot_id = store.persist_budget_snapshot(
+        BudgetSnapshotEvidence(
+            budget=budget,
+            evidence_uri="test://quota-evidence",
+            terms_version="terms-test-v1",
+            terms_acceptance_evidence_uri="test://terms-acceptance",
+            terms_acceptance_evidence_sha256="c" * 64,
+            rights_approval_ids=("approval-test",),
+        )
+    )
+    assert snapshot_id == budget_id
+
+    request = ReservationRequest(
+        reservation_key="adapter-run:adapter-request:1",
+        provider="the_odds_api",
+        account_ref="test-account",
+        period_start=date(2026, 11, 1),
+        period_end=date(2026, 12, 1),
+        run_key="adapter-run",
+        manifest_id=manifest_id,
+        request_key="adapter-request",
+        attempt_number=1,
+        request_fingerprint="f" * 64,
+        estimated_credits=10,
+        requested_at=now,
+    )
+    reservation_id = store.reserve(
+        request, budget, budget_snapshot_id=snapshot_id,
+        actor="postgres-adapter-test", now=now,
+    )
+    assert reservation_id > 0
+
+    dispatch_event_id = store.append_event(ReservationEvent(
+        reservation_key=request.reservation_key,
+        event_type="DISPATCH_CONFIRMED",
+        reserved_credits=10,
+        actual_credits=None,
+        reason_code="DISPATCH_CONFIRMED",
+        evidence_sha256="d" * 64,
+        actor="postgres-adapter-test",
+        occurred_at=now + timedelta(seconds=1),
+    ))
+    reconcile_event_id = store.append_event(ReservationEvent(
+        reservation_key=request.reservation_key,
+        event_type="RECONCILED",
+        reserved_credits=10,
+        actual_credits=7,
+        reason_code="QUOTA_RECONCILED",
+        evidence_sha256="e" * 64,
+        actor="postgres-adapter-test",
+        occurred_at=now + timedelta(seconds=2),
+    ))
+    assert dispatch_event_id > 0
+    assert reconcile_event_id > 0
+
+    with psycopg.connect(DATABASE_URL) as conn:
+        rows = conn.execute(
+            """SELECT event_sequence,event_type,reserved_credits,actual_credits
+               FROM provider_credit_reservation_events
+               WHERE reservation_key=%s ORDER BY event_sequence""",
+            (request.reservation_key,),
+        ).fetchall()
+    assert rows == [
+        (1, "RESERVED", 10, None),
+        (2, "DISPATCH_CONFIRMED", 10, None),
+        (3, "RECONCILED", 10, 7),
+    ]
