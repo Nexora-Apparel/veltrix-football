@@ -7,6 +7,7 @@ fixture rows are updated only after provider identity consistency is verified.
 from __future__ import annotations
 
 import json
+from hashlib import sha256
 from datetime import datetime, timezone
 from typing import Callable, Iterable
 
@@ -27,6 +28,51 @@ def _contains_sensitive_key(value) -> bool:
     elif isinstance(value, (list, tuple)):
         return any(_contains_sensitive_key(item) for item in value)
     return False
+
+
+def _verify_response_fixture_binding(response: ProviderResponse, fixtures: tuple[HistoricalFixture, ...]) -> None:
+    """Prove every parsed fixture is present, unchanged, in its exact raw response."""
+    if not fixtures:
+        return
+    try:
+        body = json.loads(response.raw_body.decode("utf-8"))
+    except (UnicodeDecodeError, json.JSONDecodeError):
+        raise ValueError("PROVIDER_RESPONSE_FIXTURE_BODY_INVALID") from None
+    if not isinstance(body, dict) or body.get("success") not in (1, True):
+        raise ValueError("PROVIDER_RESPONSE_FIXTURE_BODY_UNSUCCESSFUL")
+    raw_rows = body.get("data")
+    if not isinstance(raw_rows, list):
+        raise ValueError("PROVIDER_RESPONSE_FIXTURE_DATA_NOT_LIST")
+    by_id = {}
+    for raw_row in raw_rows:
+        if not isinstance(raw_row, dict):
+            raise ValueError("PROVIDER_RESPONSE_FIXTURE_ROW_INVALID")
+        raw_id = raw_row.get("id")
+        if isinstance(raw_id, bool) or not (
+            isinstance(raw_id, int) and raw_id > 0
+            or isinstance(raw_id, str) and raw_id.strip().isdigit() and int(raw_id.strip()) > 0
+        ):
+            raise ValueError("PROVIDER_RESPONSE_FIXTURE_ID_INVALID")
+        fixture_id = str(int(raw_id))
+        if fixture_id in by_id:
+            raise ValueError("DUPLICATE_FIXTURE_ID_IN_PROVIDER_RESPONSE")
+        try:
+            canonical = json.dumps(
+                raw_row, sort_keys=True, separators=(",", ":"),
+                ensure_ascii=False, allow_nan=False,
+            ).encode("utf-8")
+        except (TypeError, ValueError):
+            raise ValueError("PROVIDER_RESPONSE_FIXTURE_NOT_CANONICAL_JSON") from None
+        by_id[fixture_id] = (raw_row, sha256(canonical).hexdigest())
+    supplied_ids = [fixture.provider_fixture_id for fixture in fixtures]
+    if len(supplied_ids) != len(set(supplied_ids)) or set(supplied_ids) != set(by_id):
+        raise ValueError("PROVIDER_RESPONSE_FIXTURE_SET_MISMATCH")
+    for fixture in fixtures:
+        raw_row, raw_hash = by_id[fixture.provider_fixture_id]
+        if fixture.retrieved_at_utc != response.fetched_at_utc:
+            raise ValueError("FIXTURE_RESPONSE_RETRIEVAL_TIME_MISMATCH")
+        if dict(fixture.payload) != raw_row or fixture.payload_sha256 != raw_hash:
+            raise ValueError("FIXTURE_PAYLOAD_NOT_BOUND_TO_RAW_PROVIDER_RESPONSE")
 
 
 class PostgresHistoryStore:
@@ -84,21 +130,84 @@ class PostgresHistoryStore:
             )
             cur.execute(
                 """SELECT provider,source_id,competition_scope,data_type,status,
-                    evidence_sha256,terms_version,permitted_uses
+                    rights_basis,terms_url,terms_version,evidence_uri,evidence_sha256,
+                    reviewed_at,reviewer_id,valid_from,valid_until,permitted_uses,
+                    commercial_use_allowed,attribution_required,attribution_text,
+                    attribution_url,raw_redistribution_allowed
                    FROM source_approvals WHERE approval_id=%s""",
                 (approval.approval_id,),
             )
             row = cur.fetchone()
             expected = (
                 approval.provider, approval.source_id, approval.competition_scope,
-                approval.data_type, approval.status.value, approval.evidence_sha256,
-                approval.terms_version,
-                json.dumps(sorted(item.value for item in approval.permitted_uses)),
+                approval.data_type, approval.status.value, approval.rights_basis,
+                approval.terms_url, approval.terms_version, approval.evidence_uri,
+                approval.evidence_sha256, approval.reviewed_at_utc, approval.reviewer_id,
+                approval.valid_from_utc, approval.valid_until_utc,
+                sorted(item.value for item in approval.permitted_uses),
+                approval.commercial_use_allowed, approval.attribution_required,
+                approval.attribution_text, approval.attribution_url,
+                approval.raw_redistribution_allowed,
             )
-            if not row or row[0:7] != expected[0:7] or json.dumps(row[7], sort_keys=True) != expected[7]:
+            stored = (
+                tuple(row[:14]) + (sorted(row[14] or []),) + tuple(row[15:])
+                if row else None
+            )
+            if stored != expected:
                 raise ValueError("SOURCE_APPROVAL_IDEMPOTENCY_CONFLICT")
+            if approval.status is ApprovalStatus.APPROVED:
+                cur.execute(
+                    """INSERT INTO source_approval_status_events(
+                        approval_id,status,evidence_uri,evidence_sha256,effective_at,reason_code
+                    ) VALUES (%s,'APPROVED',%s,%s,%s,'APPROVAL_CREATED')
+                    ON CONFLICT(approval_id,status,evidence_sha256) DO NOTHING""",
+                    (approval.approval_id, approval.evidence_uri,
+                     approval.evidence_sha256, approval.valid_from_utc),
+                )
             conn.commit()
             return approval.approval_id
+        except Exception:
+            conn.rollback()
+            raise
+        finally:
+            conn.close()
+
+    def revoke_source_approval(
+        self, *, approval_id: str, evidence_uri: str, evidence_sha256: str,
+        effective_at_utc: datetime, reason_code: str,
+    ) -> None:
+        """Append a revocation event; never mutate the original approval record."""
+        if not approval_id.strip() or not evidence_uri.strip() or not reason_code.strip():
+            raise ValueError("SOURCE_APPROVAL_REVOCATION_EVIDENCE_REQUIRED")
+        if effective_at_utc.tzinfo is None or effective_at_utc.utcoffset() is None:
+            raise ValueError("SOURCE_APPROVAL_REVOCATION_TIME_MUST_BE_TIMEZONE_AWARE")
+        if len(evidence_sha256) != 64 or any(
+            ch not in "0123456789abcdef" for ch in evidence_sha256.casefold()
+        ):
+            raise ValueError("SOURCE_APPROVAL_REVOCATION_HASH_INVALID")
+        conn = self._connect_for_write()
+        try:
+            cur = conn.cursor()
+            cur.execute("SELECT 1 FROM source_approvals WHERE approval_id=%s", (approval_id,))
+            if not cur.fetchone():
+                raise ValueError("SOURCE_APPROVAL_NOT_FOUND")
+            cur.execute(
+                """INSERT INTO source_approval_status_events(
+                    approval_id,status,evidence_uri,evidence_sha256,effective_at,reason_code
+                ) VALUES (%s,'REVOKED',%s,%s,%s,%s)
+                ON CONFLICT(approval_id,status,evidence_sha256) DO NOTHING""",
+                (approval_id, evidence_uri, evidence_sha256, effective_at_utc, reason_code),
+            )
+            cur.execute(
+                """SELECT status,evidence_uri,effective_at,reason_code
+                   FROM source_approval_status_events
+                   WHERE approval_id=%s AND status='REVOKED' AND evidence_sha256=%s""",
+                (approval_id, evidence_sha256),
+            )
+            row = cur.fetchone()
+            if not row or tuple(row) != ('REVOKED', evidence_uri, effective_at_utc, reason_code):
+                raise ValueError("SOURCE_APPROVAL_REVOCATION_IDEMPOTENCY_CONFLICT")
+            conn.commit()
         except Exception:
             conn.rollback()
             raise
@@ -174,11 +283,20 @@ class PostgresHistoryStore:
                     updated_at=NOW(),records_rejected=EXCLUDED.records_rejected,
                     records_quarantined=EXCLUDED.records_quarantined,
                     requests_used=EXCLUDED.requests_used,response_sha256=EXCLUDED.response_sha256,
-                    last_error_code=EXCLUDED.last_error_code""",
+                    last_error_code=EXCLUDED.last_error_code
+                WHERE import_checkpoints.status NOT IN ('COMPLETED','FAILED')
+                  AND (import_checkpoints.status <> 'RUNNING' OR EXCLUDED.status <> 'PENDING')
+                  AND EXCLUDED.records_seen >= import_checkpoints.records_seen
+                  AND EXCLUDED.records_inserted >= import_checkpoints.records_inserted
+                  AND EXCLUDED.records_rejected >= import_checkpoints.records_rejected
+                  AND EXCLUDED.records_quarantined >= import_checkpoints.records_quarantined
+                  AND EXCLUDED.requests_used >= import_checkpoints.requests_used""",
                 (import_run_id, window_start, window_end, cursor_value, status,
                  records_seen, records_inserted, records_rejected, records_quarantined,
                  requests_used, response_sha256, last_error_code),
             )
+            if cur.rowcount != 1:
+                raise ValueError("IMPORT_CHECKPOINT_TERMINAL_OR_REGRESSION")
             conn.commit()
         except Exception:
             conn.rollback()
@@ -388,15 +506,19 @@ class PostgresHistoryStore:
         approval: SourceApproval,
         *,
         import_run_id: int | None = None,
+        duplicate_fixture_ids: frozenset[str] = frozenset(),
     ) -> dict:
         """Persist one page atomically; caller must use an isolated staging database."""
         rows = tuple(fixtures)
+        if not duplicate_fixture_ids <= {row.provider_fixture_id for row in rows}:
+            raise ValueError("DUPLICATE_FIXTURE_MARKER_NOT_IN_PROVIDER_PAGE")
         if approval.provider != response.provider or approval.source_id != response.source_id:
             raise ValueError("SOURCE_APPROVAL_PROVIDER_MISMATCH")
         if _contains_sensitive_key(dict(response.response_headers)):
             raise ValueError("PROVIDER_RESPONSE_SECRET_HEADER_MUST_NOT_BE_STORED")
         if _contains_sensitive_key(dict(response.request_params)):
             raise ValueError("PROVIDER_REQUEST_SECRET_PARAMETER_MUST_NOT_BE_STORED")
+        _verify_response_fixture_binding(response, rows)
         # Rights evidence is immutable and must exist before any source record can reference it.
         self.persist_source_approval(approval)
         conn = self._connect_for_write()
@@ -404,6 +526,14 @@ class PostgresHistoryStore:
         try:
             cur = conn.cursor()
             response_id = self._persist_provider_response(cur, response)
+            cur.execute(
+                """SELECT status FROM source_approval_status_events
+                   WHERE approval_id=%s AND effective_at<=%s
+                   ORDER BY effective_at DESC,event_id DESC LIMIT 1""",
+                (approval.approval_id, response.fetched_at_utc),
+            )
+            approval_event = cur.fetchone()
+            approval_active = bool(approval_event and approval_event[0] == "APPROVED")
             cur.execute(
                 """SELECT e.entitlement_status,e.competition_ids
                    FROM provider_entitlement_observations e
@@ -420,6 +550,20 @@ class PostgresHistoryStore:
             for fixture in rows:
                 if fixture.provider != response.provider or fixture.source_id != response.source_id:
                     raise ValueError("FIXTURE_PROVIDER_RESPONSE_MISMATCH")
+                if fixture.provider_fixture_id in duplicate_fixture_ids:
+                    self._quarantine(
+                        cur, fixture, import_run_id, "DUPLICATE_PROVIDER_FIXTURE_ID_ACROSS_PAGES",
+                        {"provider_fixture_id": fixture.provider_fixture_id},
+                    )
+                    conflicts += 1
+                    continue
+                if not approval_active:
+                    self._quarantine(
+                        cur, fixture, import_run_id, "SOURCE_APPROVAL_REVOKED_OR_UNVERIFIED",
+                        {"approval_id": approval.approval_id},
+                    )
+                    conflicts += 1
+                    continue
                 if not entitlement_active:
                     self._quarantine(
                         cur, fixture, import_run_id, "PROVIDER_ENTITLEMENT_NOT_VERIFIED",

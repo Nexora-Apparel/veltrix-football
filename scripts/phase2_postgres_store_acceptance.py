@@ -35,7 +35,7 @@ def main() -> dict:
         approval_id="phase2-ci-5dollar-approval",
         provider="5DollarFootballAPI",
         source_id="5dollarfootballapi",
-        competition_scope="*",
+        competition_scope="3118717965,522514093,4160026622,3614399544,686337048,3405541143,4212821298",
         data_type="fixture_result",
         status=ApprovalStatus.APPROVED,
         permitted_uses=frozenset({
@@ -118,6 +118,12 @@ def main() -> dict:
         expected_database=expected_db,
     )
     store.persist_source_approval(approval)
+    approval_conflict_rejected = False
+    try:
+        store.persist_source_approval(replace(approval, commercial_use_allowed=False))
+    except ValueError as exc:
+        approval_conflict_rejected = str(exc) == "SOURCE_APPROVAL_IDEMPOTENCY_CONFLICT"
+    assert approval_conflict_rejected, "approval ID replay accepted altered rights fields"
     run_id = store.start_import_run(
         provider="5DollarFootballAPI", import_type="historical_fixture_results",
         boundary_start=kickoff, boundary_end=now, request_budget=5,
@@ -145,8 +151,34 @@ def main() -> dict:
     repeated = store.persist_page(first_response, [fixture], approval, import_run_id=run_id)
     assert first["source_observations"] == 1 and first["fixtures_inserted"] == 1
     assert first["result_versions_inserted"] == 1 and first["results_inserted"] == 1
+    with psycopg.connect(database_url) as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT response_sha256,raw_body FROM provider_responses WHERE request_id='phase2-ci-page-1'"
+            )
+            stored_response_hash, stored_response_body = cur.fetchone()
+            cur.execute(
+                """SELECT so.payload_sha256,so.provider_response_id,pr.response_sha256
+                   FROM source_observations so
+                   JOIN provider_responses pr ON pr.id=so.provider_response_id
+                   WHERE so.provider_entity_id='987654321' AND pr.request_id='phase2-ci-page-1'"""
+            )
+            stored_observation = cur.fetchone()
+    assert stored_response_body == first_response.raw_body
+    assert stored_response_hash.strip() == hashlib.sha256(stored_response_body).hexdigest()
+    assert stored_response_hash.strip() == first_response.response_sha256
+    assert stored_observation[0] == fixture.payload_sha256
+    assert stored_observation[2].strip() == first_response.response_sha256
+    raw_evidence_link_verified = stored_observation[1] is not None
+    assert raw_evidence_link_verified
     assert repeated["source_observations"] == 0 and repeated["fixtures_inserted"] == 0
     assert repeated["result_versions_inserted"] == 0 and repeated["results_inserted"] == 0
+
+    duplicate_page = store.persist_page(
+        response("phase2-ci-duplicate-page", (2, 1)), [fixture], approval,
+        duplicate_fixture_ids=frozenset({fixture.provider_fixture_id}),
+    )
+    assert duplicate_page["quarantined_or_conflicting"] == 1
 
     changed_payload = dict(payload)
     changed_payload["goals"] = {"home": 3, "away": 1}
@@ -188,9 +220,15 @@ def main() -> dict:
         payload=unauthorized_payload,
         payload_sha256=hashlib.sha256(unauthorized_raw).hexdigest(),
     )
+    unauthorized_body = json.dumps({
+        "success": 1, "data": [unauthorized_payload],
+        "pagination": {"page": 1, "per_page": 100, "has_more": False},
+    }, sort_keys=True, separators=(",", ":")).encode()
+    unauthorized_response = replace(
+        response("phase2-ci-not-entitled", (2, 1)), raw_body=unauthorized_body
+    )
     unauthorized = store.persist_page(
-        response("phase2-ci-not-entitled", (2, 1)),
-        [unauthorized_fixture], approval,
+        unauthorized_response, [unauthorized_fixture], approval,
     )
     assert unauthorized["quarantined_or_conflicting"] == 1
 
@@ -211,14 +249,42 @@ def main() -> dict:
         evidence_sha256=hashlib.sha256(b"phase2-ci-suspended-entitlement").hexdigest(),
         checked_at_utc=now + timedelta(seconds=1),
     )
+    suspended_fixture = replace(fixture, retrieved_at_utc=now + timedelta(seconds=2))
     suspended = store.persist_page(
         replace(
             response("phase2-ci-page-after-suspension", (2, 1)),
             fetched_at_utc=now + timedelta(seconds=2),
         ),
-        [fixture], approval,
+        [suspended_fixture], approval,
     )
     assert suspended["quarantined_or_conflicting"] == 1
+
+    store.revoke_source_approval(
+        approval_id=approval.approval_id,
+        evidence_uri="https://example.invalid/revocation-evidence",
+        evidence_sha256=hashlib.sha256(b"rights-withdrawal-evidence").hexdigest(),
+        effective_at_utc=now + timedelta(seconds=3),
+        reason_code="RIGHTS_WITHDRAWN",
+    )
+    revoked_fixture = replace(fixture, retrieved_at_utc=now + timedelta(seconds=4))
+    revoked_result = store.persist_page(
+        replace(response("phase2-ci-page-after-rights-revocation", (2, 1)),
+                fetched_at_utc=now + timedelta(seconds=4)),
+        [revoked_fixture], approval,
+    )
+    assert revoked_result["quarantined_or_conflicting"] == 1
+    with psycopg.connect(database_url) as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT count(*) FROM ingestion_quarantine WHERE provider_entity_id='987654321' AND reason_code='SOURCE_APPROVAL_REVOKED_OR_UNVERIFIED'"
+            )
+            revoked_quarantined = cur.fetchone()[0]
+            cur.execute(
+                "SELECT count(*) FROM ingestion_quarantine WHERE provider_entity_id='987654321' AND reason_code='DUPLICATE_PROVIDER_FIXTURE_ID_ACROSS_PAGES'"
+            )
+            duplicate_quarantined = cur.fetchone()[0]
+    assert revoked_quarantined == 1
+    assert duplicate_quarantined == 1
 
     manifest = hashlib.sha256(
         "\n".join(sorted([fixture.payload_sha256, conflicting_fixture.payload_sha256])).encode()
@@ -229,6 +295,17 @@ def main() -> dict:
         records_inserted=1, records_rejected=0, records_quarantined=1,
         requests_used=2, response_sha256=second_response.response_sha256,
     )
+    checkpoint_terminal_rewrite_rejected = False
+    try:
+        store.upsert_checkpoint(
+            import_run_id=run_id, window_start=kickoff, window_end=now,
+            cursor_value="page=rewind", status="RUNNING", records_seen=2,
+            records_inserted=1, records_rejected=0, records_quarantined=1,
+            requests_used=2, response_sha256=second_response.response_sha256,
+        )
+    except ValueError as exc:
+        checkpoint_terminal_rewrite_rejected = str(exc) == "IMPORT_CHECKPOINT_TERMINAL_OR_REGRESSION"
+    assert checkpoint_terminal_rewrite_rejected, "terminal checkpoint accepted a rewrite"
     store.finish_import_run(
         import_run_id=run_id, status="COMPLETED", finished_at_utc=now,
         requests_used=2, records_seen=2, records_inserted=1,
@@ -270,7 +347,7 @@ def main() -> dict:
             entitlement_quarantined = cur.fetchone()[0]
             cur.execute("SELECT count(*) FROM ingestion_quarantine WHERE provider_entity_id='987654321' AND reason_code='PROVIDER_ENTITLEMENT_NOT_VERIFIED'")
             suspended_quarantined = cur.fetchone()[0]
-            cur.execute("SELECT count(*) FROM provider_responses WHERE request_id IN ('phase2-ci-status','phase2-ci-page-1','phase2-ci-page-2','phase2-ci-not-entitled','phase2-ci-status-revoked','phase2-ci-page-after-suspension')")
+            cur.execute("SELECT count(*) FROM provider_responses WHERE request_id IN ('phase2-ci-status','phase2-ci-page-1','phase2-ci-page-2','phase2-ci-not-entitled','phase2-ci-status-revoked','phase2-ci-page-after-suspension','phase2-ci-duplicate-page')")
             responses = cur.fetchone()[0]
             cur.execute("SELECT status,requests_used,records_seen,records_inserted,records_quarantined FROM import_runs WHERE id=%s", (run_id,))
             run_state = cur.fetchone()
@@ -289,7 +366,7 @@ def main() -> dict:
     assert canonical_score == (2, 1), canonical_score
     assert versions == 2, versions
     assert quarantined == 1, quarantined
-    assert responses == 6, responses
+    assert responses == 7, responses
     assert entitlement_quarantined == 1, entitlement_quarantined
     assert suspended_quarantined == 1, suspended_quarantined
     assert entitlement_count == 2, entitlement_count
@@ -334,6 +411,11 @@ def main() -> dict:
         "suspended_provider_quarantined": suspended_quarantined,
         "sync_watermark_version": watermark[1],
         "stale_sync_writer_rejected": stale_watermark_rejected,
+        "altered_approval_replay_rejected": approval_conflict_rejected,
+        "terminal_checkpoint_rewrite_rejected": checkpoint_terminal_rewrite_rejected,
+        "revoked_source_quarantined": revoked_quarantined,
+        "duplicate_fixture_quarantined": duplicate_quarantined,
+        "raw_response_bytes_and_provenance_link_verified": raw_evidence_link_verified,
     }
 
 

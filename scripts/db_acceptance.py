@@ -1,4 +1,5 @@
 """PostgreSQL 16 schema, constraint, checksum and idempotency acceptance."""
+# Includes migration 0003 append-only source-rights status-event invariants.
 from __future__ import annotations
 
 import hashlib
@@ -16,6 +17,7 @@ EXPECTED_TABLES = {
     "import_runs", "import_checkpoints", "reconciliation_audits",
     "source_approvals", "provider_responses", "provider_entitlement_observations",
     "fixture_result_versions", "sync_watermarks", "ingestion_quarantine",
+    "source_approval_status_events",
 }
 EXPECTED_INDEXES = {
     "fixtures_kickoff_idx", "fixtures_competition_kickoff_idx",
@@ -24,7 +26,7 @@ EXPECTED_INDEXES = {
     "source_approvals_version_idx", "provider_responses_provider_time_idx",
     "provider_entitlement_history_idx", "source_observations_source_lookup_idx",
     "fixtures_provider_kickoff_idx", "fixture_result_versions_fixture_time_idx",
-    "ingestion_quarantine_open_idx",
+    "ingestion_quarantine_open_idx", "source_approval_status_latest_idx",
 }
 
 
@@ -87,7 +89,8 @@ def run_acceptance() -> dict:
                     'provider_responses'::regclass,
                     'source_approvals'::regclass,
                     'provider_entitlement_observations'::regclass,
-                    'fixture_result_versions'::regclass
+                    'fixture_result_versions'::regclass,
+                    'source_approval_status_events'::regclass
                   )
             """)
             immutable_triggers = {row[0] for row in cur.fetchall()}
@@ -97,6 +100,7 @@ def run_acceptance() -> dict:
                 "source_approvals_append_only",
                 "provider_entitlement_append_only",
                 "fixture_result_versions_append_only",
+                "source_approval_status_events_append_only",
             }
             assert expected_triggers <= immutable_triggers, sorted(expected_triggers - immutable_triggers)
 
@@ -122,6 +126,38 @@ def run_acceptance() -> dict:
                 mutation_rejected = True
                 cur.execute("ROLLBACK TO SAVEPOINT immutable_probe")
             assert mutation_rejected, "source approval append-only trigger did not reject UPDATE"
+
+            # Approval revocation is an append-only event, never an UPDATE to the original approval.
+            cur.execute("SAVEPOINT rights_event_probe")
+            cur.execute("""
+                INSERT INTO source_approvals (
+                    approval_id, provider, source_id, competition_scope, data_type,
+                    status, rights_basis, terms_url, terms_version, evidence_uri,
+                    evidence_sha256, reviewed_at, reviewer_id, valid_from,
+                    permitted_uses, commercial_use_allowed
+                ) VALUES (
+                    '__acceptance_status_event_probe__', 'probe', 'probe', '4160026622', 'fixture_result',
+                    'APPROVED', 'TERMS', 'https://example.invalid/terms', 'test',
+                    'https://example.invalid/evidence', repeat('c',64), NOW(), 'acceptance',
+                    NOW(), '["STORAGE"]'::jsonb, TRUE
+                )
+            """)
+            cur.execute("""
+                INSERT INTO source_approval_status_events(
+                    approval_id,status,evidence_uri,evidence_sha256,effective_at,reason_code
+                ) VALUES (
+                    '__acceptance_status_event_probe__','REVOKED',
+                    'https://example.invalid/revocation', repeat('b',64), NOW(), 'ACCEPTANCE_PROBE'
+                )
+            """)
+            status_event_mutation_rejected = False
+            try:
+                cur.execute("UPDATE source_approval_status_events SET status='APPROVED' WHERE approval_id='__acceptance_status_event_probe__'")
+            except psycopg.errors.RaiseException:
+                status_event_mutation_rejected = True
+                cur.execute("ROLLBACK TO SAVEPOINT rights_event_probe")
+            assert status_event_mutation_rejected, "source approval status event accepted UPDATE"
+            cur.execute("RELEASE SAVEPOINT rights_event_probe")
 
             # Prove rollback semantics without leaving a probe row behind.
             cur.execute("SAVEPOINT acceptance_rollback_probe")

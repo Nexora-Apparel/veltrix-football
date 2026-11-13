@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import json
 from datetime import datetime
 from enum import StrEnum
 from hashlib import sha256
@@ -179,6 +180,15 @@ class HistoricalFixture:
             ch not in "0123456789abcdef" for ch in self.payload_sha256.casefold()
         ):
             raise ValueError("HISTORICAL_FIXTURE_PAYLOAD_HASH_INVALID")
+        try:
+            canonical_payload = json.dumps(
+                dict(self.payload), sort_keys=True, separators=(",", ":"),
+                ensure_ascii=False, allow_nan=False,
+            ).encode("utf-8")
+        except (TypeError, ValueError):
+            raise ValueError("HISTORICAL_FIXTURE_PAYLOAD_NOT_CANONICAL_JSON") from None
+        if sha256(canonical_payload).hexdigest() != self.payload_sha256:
+            raise ValueError("HISTORICAL_FIXTURE_PAYLOAD_HASH_MISMATCH")
         if self.status is FixtureStatus.FINISHED:
             if type(self.home_score) is not int or type(self.away_score) is not int:
                 raise ValueError("FINISHED_FIXTURE_REQUIRES_INTEGER_SCORES")

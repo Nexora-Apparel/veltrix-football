@@ -1,0 +1,44 @@
+name: Phase 3 — Independent Staging Audit
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: veltrix-phase3-staging-audit
+  cancel-in-progress: false
+
+jobs:
+  staging-audit:
+    if: github.ref == 'refs/heads/phase3/traceable-data-pipeline-20261112'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      DATABASE_URL: ${{ secrets.VELTRIX_STAGING_DATABASE_URL }}
+      VELTRIX_EXPECTED_DATABASE: veltrix_football_staging
+      VELTRIX_EXPECTED_DATABASE_HOST: ep-ancient-block-bcb439pk.c-16.us-east-1.aws.neon.tech
+      VELTRIX_ENABLE_STAGING_IMPORT: "YES"
+      PYTHONUNBUFFERED: "1"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install PostgreSQL driver
+        run: python -m pip install --disable-pip-version-check "psycopg[binary]>=3.2,<4"
+      - name: Independent provenance and reconciliation audit
+        run: >-
+          python scripts/phase3_audit_staging_import.py
+          --output reports/phase3/staging-audit.json
+      - name: Upload sanitized audit report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: veltrix-phase3-staging-audit
+          path: reports/phase3/staging-audit.json
+          if-no-files-found: warn
+          retention-days: 90
