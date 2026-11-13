@@ -6,6 +6,7 @@ from datetime import datetime
 import hashlib
 from typing import Callable, Mapping
 
+from veltrix_v2.providers.odds_api_v4.quota_headers import ParsedQuotaHeaders, parse_quota_headers
 from veltrix_v2.providers.odds_api_v4.dispatch_guard import (
     DispatchContext, authorize_dispatch,
 )
@@ -40,6 +41,7 @@ class ResponseEnvelope:
     response_sha256: str
     retrieved_at: datetime
     raw_quota_headers: tuple[tuple[str, str], ...]
+    quota_evidence: ParsedQuotaHeaders
 
 
 @dataclass(frozen=True)
@@ -71,22 +73,23 @@ def validate_transport_response(
     if not isinstance(response.headers, Mapping):
         return EnvelopeDecision(False, "RESPONSE_HEADERS_INVALID", None)
 
-    quota: dict[str, str] = {}
+    header_pairs = []
     for name, value in response.headers.items():
         if not isinstance(name, str) or not isinstance(value, str):
             return EnvelopeDecision(False, "RESPONSE_HEADER_TYPE_INVALID", None)
-        normalized = name.strip().lower()
-        if normalized in QUOTA_HEADERS:
-            if normalized in quota:
-                return EnvelopeDecision(False, "DUPLICATE_QUOTA_HEADER", None)
-            quota[normalized] = value
+        header_pairs.append((name, value))
+
+    quota_evidence = parse_quota_headers(header_pairs)
+    if any(code.endswith("_DUPLICATE") for code in quota_evidence.reason_codes):
+        return EnvelopeDecision(False, "DUPLICATE_QUOTA_HEADER", None)
 
     envelope = ResponseEnvelope(
         status_code=response.status_code,
         raw_body=response.body,
         response_sha256=hashlib.sha256(response.body).hexdigest(),
         retrieved_at=response.retrieved_at,
-        raw_quota_headers=tuple(sorted(quota.items())),
+        raw_quota_headers=quota_evidence.raw_headers,
+        quota_evidence=quota_evidence,
     )
     return EnvelopeDecision(True, "RAW_RESPONSE_ENVELOPE_ACCEPTED", envelope)
 
