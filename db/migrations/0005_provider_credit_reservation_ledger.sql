@@ -15,6 +15,7 @@ CREATE TABLE provider_credit_budget_snapshots (
     provider_used INTEGER CHECK (provider_used IS NULL OR provider_used >= 0),
     provider_last_cost INTEGER CHECK (provider_last_cost IS NULL OR provider_last_cost >= 0),
     observed_at TIMESTAMPTZ NOT NULL,
+    valid_until TIMESTAMPTZ NOT NULL,
     evidence_uri TEXT NOT NULL CHECK (evidence_uri <> ''),
     evidence_sha256 CHAR(64) NOT NULL CHECK (evidence_sha256 ~ '^[0-9a-f]{64}$'),
     terms_version TEXT NOT NULL CHECK (terms_version <> ''),
@@ -23,7 +24,8 @@ CREATE TABLE provider_credit_budget_snapshots (
         AND jsonb_array_length(rights_approval_ids) > 0
     ),
     recorded_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    CHECK (billing_period_end > billing_period_start)
+    CHECK (billing_period_end > billing_period_start),
+    CHECK (valid_until > observed_at)
 );
 
 CREATE INDEX provider_credit_budget_scope_idx
@@ -176,6 +178,7 @@ BEGIN
        OR b.billing_period_start <> p_period_start
        OR b.billing_period_end <> p_period_end
        OR p_occurred_at < b.observed_at
+       OR p_occurred_at > b.valid_until
     THEN
         RAISE EXCEPTION 'CREDIT_BUDGET_SNAPSHOT_MISMATCH_OR_STALE';
     END IF;
