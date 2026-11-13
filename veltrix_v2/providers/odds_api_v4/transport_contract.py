@@ -6,6 +6,10 @@ from datetime import datetime
 import hashlib
 from typing import Callable, Mapping
 
+from veltrix_v2.providers.odds_api_v4.dispatch_guard import (
+    DispatchContext, authorize_dispatch,
+)
+
 
 QUOTA_HEADERS = frozenset({
     "x-requests-used", "x-requests-remaining", "x-requests-last",
@@ -89,20 +93,20 @@ def validate_transport_response(
 
 def execute_with_injected_transport(
     *,
-    dispatch_allowed: bool,
-    request_url: str,
+    context: DispatchContext,
     send: Callable[[str, TransportPolicy], RawTransportResponse],
 ) -> EnvelopeDecision:
-    """Invoke only a caller-injected transport; never retries or loads credentials."""
-    if dispatch_allowed is not True:
-        return EnvelopeDecision(False, "DISPATCH_NOT_AUTHORIZED", None)
-    if not isinstance(request_url, str) or not request_url.startswith("https://"):
-        return EnvelopeDecision(False, "REQUEST_URL_INVALID", None)
+    """Invoke one injected transport only after the full dispatch guard passes."""
+    if not isinstance(context, DispatchContext):
+        return EnvelopeDecision(False, "DISPATCH_CONTEXT_INVALID", None)
+    authorization = authorize_dispatch(context)
+    if not authorization.allowed:
+        return EnvelopeDecision(False, authorization.reason_code, None)
     if not callable(send):
         return EnvelopeDecision(False, "TRANSPORT_NOT_INJECTED", None)
     policy = TransportPolicy()
     try:
-        response = send(request_url, policy)
+        response = send(context.endpoint_url, policy)
     except Exception:
         return EnvelopeDecision(False, "TRANSPORT_OUTCOME_UNCERTAIN", None)
     return validate_transport_response(response, max_response_bytes=policy.max_response_bytes)
