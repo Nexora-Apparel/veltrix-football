@@ -89,6 +89,7 @@ Use-scoped approval record:
 - Terms version/hash, accepted-at date, evidence file/hash, expiry/review date.
 - Approval state: pending, approved, suspended, revoked.
 - Revocation is append-only; ingestion and downstream use must fail closed when approval is absent or revoked.
+- Keep the frozen prediction cutoff separate from `rights_evaluated_at`, the timezone-aware timestamp at which the proposed downstream use is checked. A later revocation or expiry blocks new use even when the historical prediction cutoff predates it. Never rewrite the historical feature-availability decision to represent a later rights change.
 
 ### 3.6 `prediction_snapshot` and `prediction_feature_link`
 
@@ -171,7 +172,7 @@ A capture failure must produce an explicit missing-data record, not a synthetic 
 - A later correction does not alter an earlier cutoff's selected value.
 - A missing publication timestamp fails closed.
 - Ambiguous team/fixture mapping is quarantined.
-- Revoked rights approval blocks future selection and publication.
+- Rights revoked or expired by `rights_evaluated_at` block new selection and publication, even when the fixture cutoff is historical.
 - Odds quote timestamp is distinct from retrieval and kickoff timestamps.
 - Feature-set hash is stable for identical ordered observations and changes on any input/version change.
 - Chronological walk-forward query cannot select any observation published after its fold cutoff.

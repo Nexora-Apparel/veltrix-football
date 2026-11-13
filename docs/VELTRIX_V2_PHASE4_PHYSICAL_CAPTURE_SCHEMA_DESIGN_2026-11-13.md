@@ -15,7 +15,7 @@ The Phase 3 schema already contains the core provenance primitives. Phase 4 must
 | Immutable raw provider response bytes and SHA-256 | `provider_responses` | Reuse. Do not create a second raw-payload table. |
 | Parsed source observations and response linkage | `source_observations` | Reuse. It already carries source/data type, event/availability times, rights approval, schema version, response FK and the fail-closed `point_in_time_certifiable=false` default. |
 | Rights evidence and scope | `source_approvals` | Reuse. Do not duplicate approval records. |
-| Rights approval/revocation history | `source_approval_status_events` | Reuse. Evaluate effective status at the feature cutoff; never mutate the original approval. |
+| Rights approval/revocation history | `source_approval_status_events` | Reuse. Evaluate effective status at explicit downstream-use time (`rights_evaluated_at`), separately from the prediction cutoff; never mutate the original approval. |
 | Existing fixture/team/competition identities | `fixtures`, `teams`, `competitions` | Reuse as canonical history identities, but do not treat provider IDs as cross-provider identity proof. |
 | Import execution and checkpointing | `import_runs`, `import_checkpoints`, `sync_watermarks` | Reuse for ingestion progress. Do not overload them as model feature snapshots. |
 | Provider request attempt ledger | No dedicated request-attempt relation | Add `provider_capture_requests`. It links request intent, exact response, and capture batch. |
@@ -201,7 +201,7 @@ Constraints/indexes:
 - `PRESENT` requires value, source observation, crosswalk version where entity-bound, all three timestamps, rights approval and value hash.
 - `MISSING`/ `REJECTED` requires null value; no synthetic zero/default value.
 - index `(source_observation_id)`, `(rights_approval_id)`, `(feature_snapshot_id, feature_status)`.
-- eligibility validator must verify that source publication time is trusted and <= frozen cutoff, source effective time is valid for the feature semantics, retrieval time is recorded honestly, approval is active for the use/scope at cutoff, mapping is RESOLVED at cutoff, raw response hash linkage is intact, and the observation is not post-match.
+- eligibility validator must verify that source publication time is trusted and <= frozen cutoff, source effective time is valid for the feature semantics, retrieval time is recorded honestly, approval is active for the use/scope at `rights_evaluated_at`, mapping is RESOLVED at cutoff, raw response hash linkage is intact, and the observation is not post-match.
 - Store timestamp copies on the link as immutable selection evidence, but compare them against the referenced immutable source observation and provider response during validation. A copied timestamp alone is never proof.
 
 ## 4. Append-only and integrity policy
@@ -238,7 +238,7 @@ All foreign keys use `ON DELETE RESTRICT`; no cascading deletion of provenance. 
 7. Crosswalk version uniqueness, database-enforced non-overlapping RESOLVED validity intervals under concurrent inserts, ambiguous mapping exclusion, team gender/age/reserve separation, rename/merge, fixture collision, home/away order and effective-time boundary cases.
 8. Frozen cutoff immutability; source publication at cutoff accepted; one millisecond after cutoff rejected; missing/naive/untrusted timestamps rejected.
 9. Retrieval time never substituted for source publication time; event/effective time never substituted for publication time.
-10. Rights scope and effective revocation evaluated at cutoff; expired/revoked/unapproved use rejected.
+10. Rights scope and effective revocation evaluated at `rights_evaluated_at`; expired/revoked/unapproved use rejected independently of the frozen prediction cutoff.
 11. Explicit missing feature remains missing and is never coerced to zero.
 12. Adding a post-cutoff observation or later correction cannot alter an earlier snapshot; replay produces identical feature-set hash.
 13. Snapshot hash changes when any selected feature value, observation, crosswalk version, rights evidence, schema version or selector version changes.

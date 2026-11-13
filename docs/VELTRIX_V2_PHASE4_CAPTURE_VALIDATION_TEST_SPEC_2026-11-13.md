@@ -100,8 +100,10 @@ Required metric: deterministic fixture join rate and team join rate, each with n
 - No feature selection for training occurs without model-training rights.
 - No public display path uses a source without display/attribution rights.
 - Revoking/suspending approval blocks subsequent requests and downstream selection.
+- Rights state is evaluated at explicit `rights_evaluated_at`, the time of the downstream use, separately from the fixture's immutable prediction cutoff.
+- A licence valid at the historical cutoff but revoked before a later training run must fail that later use; a revocation effective after the rights-evaluation timestamp does not preempt use before its effective time.
 - A revoked approval does not erase historical audit evidence; it changes permitted future use.
-- Expired terms/approval blocks new ingestion until renewed evidence is recorded.
+- Expired terms/approval blocks new ingestion and downstream use until renewed evidence is recorded.
 - Rights scoped to one competition/season cannot authorize another.
 - Provider documentation alone cannot satisfy a contract/terms approval requirement.
 - Test logs must show a reason code without disclosing confidential contract text or secrets.
@@ -141,7 +143,7 @@ The certification denominator is frozen before evaluating provider response comp
 The production selector must be implemented as deterministic application/database logic and tested against a simple independent reference implementation.
 
 For a given canonical entity, field and cutoff:
-1. Restrict to active rights scope.
+1. Restrict to rights scope approved for the requested purpose and active at `rights_evaluated_at`; this is distinct from the prediction cutoff.
 2. Restrict to exact approved provider/product/endpoint/competition/season.
 3. Require valid entity mapping and complete raw provenance.
 4. Require trusted source availability timestamp `<= cutoff`.
