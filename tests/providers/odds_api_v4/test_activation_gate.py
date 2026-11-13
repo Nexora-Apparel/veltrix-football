@@ -25,7 +25,7 @@ BUDGET = ProviderBudgetEvidence(
     NOW + timedelta(minutes=10), "evidence://budget", "c" * 64,
 )
 SCOPE = ActivationScope(
-    "the_odds_api", "odds_api_v4", "acct-1", "terms-v1",
+    "the_odds_api", "odds_api_v4", "acct-1", "d" * 64, "terms-v1",
     ("EPL",), ("h2h", "btts"), ("uk",), "derived_features",
     NOW - timedelta(minutes=1), NOW, 10, 100, 20, 50, 3,
 )
