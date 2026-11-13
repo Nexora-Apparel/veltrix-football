@@ -114,3 +114,26 @@ def test_unknown_terms_or_budget_hashes_and_naive_timestamps_fail_closed():
     assert "ACCOUNT_TERMS_EVIDENCE_HASH_INVALID" in result.reason_codes
     assert "BUDGET_EVIDENCE_HASH_INVALID" in result.reason_codes
     assert "ACTIVATION_TIME_INVALID" in result.reason_codes
+
+def test_malformed_rights_scope_and_datetime_billing_period_fail_closed_without_crashing():
+    malformed = evaluate_activation_gate(
+        terms=TERMS, rights=replace(RIGHTS, competitions=None),
+        budget=replace(BUDGET, billing_period_start=NOW),
+        scope=SCOPE,
+    )
+    assert "RIGHTS_COMPETITION_SCOPE_INVALID" in malformed.reason_codes
+    assert "BUDGET_BILLING_PERIOD_INVALID" in malformed.reason_codes
+
+
+def test_terms_acceptance_and_rights_effective_ordering_are_enforced():
+    terms_result = evaluate_activation_gate(
+        terms=replace(TERMS, accepted_at=NOW, recorded_at=NOW-timedelta(seconds=1)),
+        rights=RIGHTS, budget=BUDGET, scope=SCOPE,
+    )
+    assert "ACCOUNT_TERMS_EVIDENCE_NOT_AVAILABLE_AS_OF_RIGHTS_CHECK" in terms_result.reason_codes
+    rights_result = evaluate_activation_gate(
+        terms=TERMS,
+        rights=replace(RIGHTS, effective_at=NOW, recorded_at=NOW-timedelta(seconds=1)),
+        budget=BUDGET, scope=SCOPE,
+    )
+    assert "RIGHTS_EVIDENCE_NOT_AVAILABLE_AS_OF_RIGHTS_CHECK" in rights_result.reason_codes
