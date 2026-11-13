@@ -264,3 +264,105 @@ REVOKE ALL ON FUNCTION reserve_provider_credits(
     TEXT,TEXT,TEXT,DATE,DATE,TEXT,BIGINT,TEXT,INTEGER,CHAR,INTEGER,BIGINT,
     TEXT,TIMESTAMPTZ,CHAR,CHAR
 ) FROM PUBLIC;
+
+-- Appends a reservation lifecycle event by copying immutable identity from the
+-- first event. This is the only supported path for post-reservation transitions.
+CREATE OR REPLACE FUNCTION append_provider_credit_reservation_event(
+    p_reservation_key TEXT,
+    p_event_type TEXT,
+    p_reserved_credits INTEGER,
+    p_actual_credits INTEGER,
+    p_reason_code TEXT,
+    p_evidence_hash CHAR(64),
+    p_event_hash CHAR(64),
+    p_actor TEXT,
+    p_occurred_at TIMESTAMPTZ
+) RETURNS BIGINT
+LANGUAGE plpgsql
+AS $function$
+DECLARE
+    prior provider_credit_reservation_events%ROWTYPE;
+    initial provider_credit_reservation_events%ROWTYPE;
+    next_sequence INTEGER;
+    new_id BIGINT;
+    allowed BOOLEAN := FALSE;
+BEGIN
+    IF COALESCE(p_reservation_key, '') = ''
+       OR COALESCE(p_event_type, '') = ''
+       OR COALESCE(p_reason_code, '') = ''
+       OR COALESCE(p_actor, '') = ''
+       OR p_reserved_credits IS NULL OR p_reserved_credits < 0
+       OR p_evidence_hash !~ '^[0-9a-f]{64}$'
+       OR p_event_hash !~ '^[0-9a-f]{64}$'
+       OR p_occurred_at IS NULL
+       OR (p_event_type IN ('RECONCILED','OVERRUN') AND (p_actual_credits IS NULL OR p_actual_credits < 0))
+       OR (p_event_type NOT IN ('RECONCILED','OVERRUN') AND p_actual_credits IS NOT NULL)
+    THEN
+        RAISE EXCEPTION 'CREDIT_RESERVATION_EVENT_INPUT_INVALID';
+    END IF;
+
+    SELECT * INTO initial
+    FROM provider_credit_reservation_events
+    WHERE reservation_key = p_reservation_key AND event_sequence = 1;
+
+    IF NOT FOUND THEN
+        RAISE EXCEPTION 'CREDIT_RESERVATION_NOT_FOUND';
+    END IF;
+
+    PERFORM pg_advisory_xact_lock(hashtextextended(
+        initial.provider || '|' || initial.provider_account_ref || '|'
+        || initial.billing_period_start::text || '|' || initial.billing_period_end::text, 0
+    ));
+
+    SELECT * INTO prior
+    FROM provider_credit_reservation_events
+    WHERE reservation_key = p_reservation_key
+    ORDER BY event_sequence DESC
+    LIMIT 1;
+
+    next_sequence := prior.event_sequence + 1;
+
+    allowed := CASE prior.event_type
+        WHEN 'RESERVED' THEN p_event_type IN (
+            'DISPATCH_CONFIRMED','OUTCOME_UNCERTAIN','RETAINED','RELEASED'
+        )
+        WHEN 'DISPATCH_CONFIRMED' THEN p_event_type IN (
+            'OUTCOME_UNCERTAIN','RECONCILED','RETAINED','RELEASED','OVERRUN'
+        )
+        WHEN 'OUTCOME_UNCERTAIN' THEN p_event_type IN (
+            'RECONCILED','RETAINED','RELEASED','OVERRUN'
+        )
+        WHEN 'RETAINED' THEN p_event_type IN ('RECONCILED','RELEASED','OVERRUN')
+        ELSE FALSE
+    END;
+
+    IF NOT allowed THEN
+        RAISE EXCEPTION 'CREDIT_RESERVATION_TRANSITION_NOT_ALLOWED';
+    END IF;
+
+    IF p_occurred_at < prior.occurred_at THEN
+        RAISE EXCEPTION 'CREDIT_RESERVATION_EVENT_TIME_NOT_MONOTONIC';
+    END IF;
+
+    INSERT INTO provider_credit_reservation_events (
+        reservation_key, event_sequence, event_type, provider, provider_account_ref,
+        billing_period_start, billing_period_end, run_key, capture_manifest_id,
+        request_key, attempt_number, request_fingerprint, estimated_credits,
+        reserved_credits, actual_credits, budget_snapshot_id, reason_code,
+        evidence_sha256, previous_event_sha256, event_sha256, actor, occurred_at
+    ) VALUES (
+        prior.reservation_key, next_sequence, p_event_type, prior.provider,
+        prior.provider_account_ref, prior.billing_period_start, prior.billing_period_end,
+        prior.run_key, prior.capture_manifest_id, prior.request_key, prior.attempt_number,
+        prior.request_fingerprint, prior.estimated_credits, p_reserved_credits,
+        p_actual_credits, prior.budget_snapshot_id, p_reason_code, p_evidence_hash,
+        prior.event_sha256, p_event_hash, p_actor, p_occurred_at
+    ) RETURNING reservation_event_id INTO new_id;
+
+    RETURN new_id;
+END;
+$function$;
+
+REVOKE ALL ON FUNCTION append_provider_credit_reservation_event(
+    TEXT,TEXT,INTEGER,INTEGER,TEXT,CHAR,CHAR,TEXT,TIMESTAMPTZ
+) FROM PUBLIC;
