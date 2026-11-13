@@ -59,7 +59,8 @@ def _valid_url(value: str) -> bool:
         if not any(pattern.fullmatch(parsed.path) for pattern in _ALLOWED_PATHS):
             return False
         query = parse_qsl(parsed.query, keep_blank_values=True)
-        if any(key not in _ALLOWED_QUERY or not item for key, item in query):
+        keys = [key for key, _ in query]
+        if len(keys) != len(set(keys)) or any(key not in _ALLOWED_QUERY or not item for key, item in query):
             return False
         return True
     except (TypeError, ValueError):
@@ -70,6 +71,14 @@ def authorize_dispatch(context: DispatchContext) -> DispatchDecision:
     """Return authorization only; never performs or schedules a provider request."""
     if not isinstance(context, DispatchContext):
         return DispatchDecision(False, "DISPATCH_CONTEXT_INVALID")
+    boolean_fields = (
+        context.preflight_approved, context.terms_acceptance_verified,
+        context.rights_approved, context.budget_evidence_fresh,
+        context.reservation_committed, context.operator_dispatch_enabled,
+        context.emergency_stop, context.previous_attempt_reconciled,
+    )
+    if any(type(value) is not bool for value in boolean_fields):
+        return DispatchDecision(False, "DISPATCH_BOOLEAN_EVIDENCE_INVALID")
     if not isinstance(context.provider, str) or context.provider != "the_odds_api":
         return DispatchDecision(False, "PROVIDER_NOT_ALLOWLISTED")
     if not _valid_url(context.endpoint_url):
