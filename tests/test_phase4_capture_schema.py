@@ -70,3 +70,12 @@ def test_resolved_crosswalk_validity_intervals_cannot_overlap():
     assert "PG_ADVISORY_XACT_LOCK" in sql
     assert "CROSSWALK_RESOLVED_VALIDITY_OVERLAP" in sql
     assert "CREATE TRIGGER ENTITY_CROSSWALK_NO_RESOLVED_OVERLAP" in sql
+
+
+def test_feature_snapshot_identity_includes_model_and_exact_feature_set():
+    sql = (MIGRATIONS / "0004_point_in_time_feature_capture.sql").read_text(encoding="utf-8").upper()
+    normalized = " ".join(sql.split())
+    assert (
+        "UNIQUE (FIXTURE_ID, PREDICTION_CUTOFF_AT, FEATURE_SCHEMA_VERSION, "
+        "MODEL_BUILD_ID, SELECTOR_VERSION, FEATURE_SET_SHA256)"
+    ) in normalized
