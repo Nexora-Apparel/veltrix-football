@@ -105,6 +105,14 @@ def _scope_values(values: object) -> bool:
     )
 
 
+def _approved_scope_values(values: object) -> bool:
+    return (
+        isinstance(values, tuple) and bool(values)
+        and all(_text(value) and value != "*" for value in values)
+        and len(set(values)) == len(values)
+    )
+
+
 def evaluate_activation_gate(
     *,
     terms: AccountTermsEvidence,
@@ -171,13 +179,19 @@ def evaluate_activation_gate(
             or not _aware(rights.effective_at)):
         pass
     else:
-        if terms.accepted_at > scope.rights_evaluated_at or terms.recorded_at > scope.rights_evaluated_at:
+        if (terms.accepted_at > terms.recorded_at
+                or terms.accepted_at > scope.rights_evaluated_at
+                or terms.recorded_at > scope.rights_evaluated_at):
             reasons.add("ACCOUNT_TERMS_EVIDENCE_NOT_AVAILABLE_AS_OF_RIGHTS_CHECK")
-        if rights.recorded_at > scope.rights_evaluated_at or rights.effective_at > scope.rights_evaluated_at:
+        if (rights.effective_at > rights.recorded_at
+                or rights.recorded_at > scope.rights_evaluated_at
+                or rights.effective_at > scope.rights_evaluated_at):
             reasons.add("RIGHTS_EVIDENCE_NOT_AVAILABLE_AS_OF_RIGHTS_CHECK")
         if rights.valid_until is not None:
             if not _aware(rights.valid_until) or rights.valid_until <= scope.rights_evaluated_at:
                 reasons.add("SOURCE_RIGHTS_EXPIRED")
+        if scope.rights_evaluated_at > scope.dispatch_at:
+            reasons.add("RIGHTS_CHECK_AFTER_DISPATCH")
 
     for values, code in (
         (scope.competition_keys, "REQUEST_COMPETITION_SCOPE_INVALID"),
@@ -192,15 +206,19 @@ def evaluate_activation_gate(
         (rights.regions, "RIGHTS_REGION_SCOPE_INVALID"),
         (rights.permitted_uses, "RIGHTS_PERMITTED_USE_SCOPE_INVALID"),
     ):
-        if not isinstance(values, tuple) or not all(_text(x) and x != "*" for x in values):
+        if not _approved_scope_values(values):
             reasons.add(code)
-    if _scope_values(scope.competition_keys) and not set(scope.competition_keys) <= set(rights.competitions):
+    if (_scope_values(scope.competition_keys) and _approved_scope_values(rights.competitions)
+            and not set(scope.competition_keys) <= set(rights.competitions)):
         reasons.add("COMPETITION_SCOPE_NOT_APPROVED")
-    if _scope_values(scope.markets) and not set(scope.markets) <= set(rights.markets):
+    if (_scope_values(scope.markets) and _approved_scope_values(rights.markets)
+            and not set(scope.markets) <= set(rights.markets)):
         reasons.add("MARKET_SCOPE_NOT_APPROVED")
-    if _scope_values(scope.regions) and not set(scope.regions) <= set(rights.regions):
+    if (_scope_values(scope.regions) and _approved_scope_values(rights.regions)
+            and not set(scope.regions) <= set(rights.regions)):
         reasons.add("REGION_SCOPE_NOT_APPROVED")
-    if scope.permitted_use not in rights.permitted_uses:
+    if (_approved_scope_values(rights.permitted_uses)
+            and scope.permitted_use not in rights.permitted_uses):
         reasons.add("PREDICTION_USE_NOT_APPROVED")
 
     if (not isinstance(scope.estimated_credits, int) or isinstance(scope.estimated_credits, bool)
@@ -239,7 +257,10 @@ def evaluate_activation_gate(
         if request_headroom < 1:
             reasons.add("REQUEST_COUNT_CAP_EXCEEDED")
 
-    if isinstance(budget.billing_period_start, date) and isinstance(budget.billing_period_end, date):
+    if (isinstance(budget.billing_period_start, date)
+            and not isinstance(budget.billing_period_start, datetime)
+            and isinstance(budget.billing_period_end, date)
+            and not isinstance(budget.billing_period_end, datetime)):
         if budget.billing_period_end <= budget.billing_period_start:
             reasons.add("BUDGET_BILLING_PERIOD_INVALID")
         elif _aware(scope.dispatch_at) and not (
@@ -250,7 +271,9 @@ def evaluate_activation_gate(
         reasons.add("BUDGET_BILLING_PERIOD_INVALID")
 
     if _aware(scope.dispatch_at) and _aware(budget.observed_at) and _aware(budget.valid_until):
-        if budget.observed_at > scope.dispatch_at or scope.dispatch_at >= budget.valid_until:
+        if (budget.valid_until <= budget.observed_at
+                or budget.observed_at > scope.dispatch_at
+                or scope.dispatch_at >= budget.valid_until):
             reasons.add("BUDGET_EVIDENCE_STALE_OR_EXPIRED")
 
     return ActivationGateDecision(
