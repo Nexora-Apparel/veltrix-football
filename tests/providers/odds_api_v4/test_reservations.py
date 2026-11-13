@@ -65,7 +65,7 @@ def test_zero_caps_and_stale_or_future_budget_evidence_fail():
 
 
 def test_expired_budget_snapshot_fails_closed():
-    expired = replace(BUDGET, observed_at=NOW.replace(minute=30, hour=11), valid_until=NOW.replace(minute=59))
+    expired = replace(BUDGET, observed_at=NOW.replace(minute=30, hour=11), valid_until=NOW.replace(hour=11, minute=59))
     result = validate_reservation(REQUEST, expired, now=NOW)
     assert result.reason_code == "BUDGET_EVIDENCE_STALE"
 
