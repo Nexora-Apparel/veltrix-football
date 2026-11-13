@@ -236,3 +236,19 @@ def test_reconciled_actual_must_match_provider_last_request_cost():
                       now=now + timedelta(seconds=6))
         conn.rollback()
 
+
+def test_quota_header_values_must_remain_raw_strings():
+    now, _ = setup_db()
+    with psycopg.connect(DATABASE_URL) as conn:
+        with pytest.raises(psycopg.Error, match="check constraint"):
+            add_response_and_snapshot(
+                conn, now=now, request_id="numeric-header",
+                used=100, remaining=900, last=0,
+                raw_headers={
+                    "x-requests-used": 100,
+                    "x-requests-remaining": "900",
+                    "x-requests-last": "0",
+                }
+            )
+        conn.rollback()
+
