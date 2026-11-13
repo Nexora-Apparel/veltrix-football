@@ -63,3 +63,10 @@ def test_phase4_feature_schema_fails_closed_for_missing_and_bad_features():
     assert "RIGHTS_APPROVAL_ID IS NOT NULL" in sql
     assert "PREDICTION_CUTOFF_AT TIMESTAMPTZ NOT NULL" in sql
     assert "FEATURE_SET_SHA256 CHAR(64) NOT NULL" in sql
+
+def test_resolved_crosswalk_validity_intervals_cannot_overlap():
+    sql = (MIGRATIONS / "0004_point_in_time_feature_capture.sql").read_text(encoding="utf-8").upper()
+    assert "CREATE OR REPLACE FUNCTION REJECT_OVERLAPPING_RESOLVED_CROSSWALK" in sql
+    assert "PG_ADVISORY_XACT_LOCK" in sql
+    assert "CROSSWALK_RESOLVED_VALIDITY_OVERLAP" in sql
+    assert "CREATE TRIGGER ENTITY_CROSSWALK_NO_RESOLVED_OVERLAP" in sql
