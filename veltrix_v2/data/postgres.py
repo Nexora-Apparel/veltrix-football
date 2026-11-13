@@ -499,6 +499,89 @@ class PostgresHistoryStore:
             raise ValueError("PROVIDER_RESPONSE_IDEMPOTENCY_CONFLICT")
         return int(stored[0])
 
+    def append_capture_state_event(
+        self,
+        capture_request_id: int,
+        event,
+    ) -> int:
+        """Append one hash-verified request-state event to the immutable ledger."""
+        from veltrix_v2.providers.odds_api_v4.state_machine import (
+            CaptureStateEvent, _event_integrity_valid,
+        )
+
+        if (not isinstance(capture_request_id, int)
+                or isinstance(capture_request_id, bool) or capture_request_id < 1):
+            raise ValueError("CAPTURE_REQUEST_ID_INVALID")
+        if not isinstance(event, CaptureStateEvent) or not _event_integrity_valid(event):
+            raise ValueError("CAPTURE_STATE_EVENT_HASH_INVALID")
+        try:
+            occurred_at = datetime.fromisoformat(event.occurred_at.replace("Z", "+00:00"))
+        except (AttributeError, TypeError, ValueError):
+            raise ValueError("CAPTURE_STATE_EVENT_TIME_INVALID") from None
+        if occurred_at.tzinfo is None or occurred_at.utcoffset() is None:
+            raise ValueError("CAPTURE_STATE_EVENT_TIME_INVALID")
+
+        conn = self._connect_for_write()
+        try:
+            cur = conn.cursor()
+            # Acquire the same per-request advisory lock as the INSERT trigger
+            # before checking for an exact replay. This makes idempotency safe
+            # under concurrent workers rather than relying on ON CONFLICT alone.
+            cur.execute(
+                "SELECT pg_advisory_xact_lock(hashtextextended(%s, 0))",
+                (str(capture_request_id),),
+            )
+            cur.execute(
+                """SELECT request_key FROM provider_capture_requests
+                   WHERE capture_request_id=%s""",
+                (capture_request_id,),
+            )
+            request_row = cur.fetchone()
+            if not request_row or request_row[0] != event.request_id:
+                raise ValueError("CAPTURE_STATE_REQUEST_IDENTITY_MISMATCH")
+
+            cur.execute(
+                """SELECT capture_state_event_id,from_state,to_state,occurred_at,actor,
+                          reason_code,evidence_sha256,previous_event_sha256,event_sha256
+                   FROM provider_capture_state_events
+                   WHERE capture_request_id=%s AND event_sequence=%s""",
+                (capture_request_id,event.sequence),
+            )
+            stored = cur.fetchone()
+            expected = (
+                event.from_state,event.to_state,occurred_at,event.actor,
+                event.reason_code,event.evidence_sha256,
+                event.previous_event_sha256,event.event_sha256,
+            )
+            if stored:
+                if tuple(stored[1:]) != expected:
+                    raise ValueError("CAPTURE_STATE_EVENT_IDEMPOTENCY_CONFLICT")
+                conn.commit()
+                return int(stored[0])
+
+            cur.execute(
+                """INSERT INTO provider_capture_state_events (
+                    capture_request_id,event_sequence,from_state,to_state,occurred_at,
+                    actor,reason_code,evidence_sha256,previous_event_sha256,event_sha256
+                ) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+                RETURNING capture_state_event_id""",
+                (
+                    capture_request_id,event.sequence,event.from_state,event.to_state,
+                    occurred_at,event.actor,event.reason_code,event.evidence_sha256,
+                    event.previous_event_sha256,event.event_sha256,
+                ),
+            )
+            row = cur.fetchone()
+            if not row:
+                raise ValueError("CAPTURE_STATE_EVENT_INSERT_FAILED")
+            conn.commit()
+            return int(row[0])
+        except Exception:
+            conn.rollback()
+            raise
+        finally:
+            conn.close()
+
     def persist_odds_api_quota_evidence(
         self,
         response: ProviderResponse,
