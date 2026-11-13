@@ -13,7 +13,7 @@ def test_credit_ledger_is_append_only_and_restricts_manifest_deletion():
 
 def test_reservation_function_serializes_account_period_not_snapshot_only():
     assert "pg_advisory_xact_lock" in SQL
-    assert "p_provider_account_ref" in SQL
+    assert "p_account_ref" in SQL
     assert "p_billing_period_start" in SQL
     assert "p_billing_period_end" in SQL
 
