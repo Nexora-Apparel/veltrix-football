@@ -66,6 +66,20 @@ def _hash(payload: dict[str, object]) -> str:
     return hashlib.sha256(raw).hexdigest()
 
 
+def _event_integrity_valid(event: CaptureStateEvent) -> bool:
+    try:
+        payload = {
+            "request_id": event.request_id, "sequence": event.sequence,
+            "from_state": event.from_state, "to_state": event.to_state,
+            "occurred_at": event.occurred_at, "actor": event.actor,
+            "reason_code": event.reason_code, "evidence_sha256": event.evidence_sha256,
+            "previous_event_sha256": event.previous_event_sha256,
+        }
+        return _hash(payload) == event.event_sha256
+    except (AttributeError, TypeError, ValueError):
+        return False
+
+
 def advance_state(
     *,
     request_id: str,
@@ -81,7 +95,7 @@ def advance_state(
     """Validate one state transition and return a hash-chained immutable event."""
     if not isinstance(request_id, str) or not request_id.strip():
         return TransitionDecision(False, "REQUEST_ID_INVALID", None)
-    if current_state not in STATES or target_state not in STATES:
+    if not isinstance(current_state, str) or not isinstance(target_state, str) or current_state not in STATES or target_state not in STATES:
         return TransitionDecision(False, "STATE_UNKNOWN", None)
     if target_state not in _ALLOWED[current_state]:
         return TransitionDecision(False, "TRANSITION_NOT_ALLOWED", None)
@@ -106,8 +120,16 @@ def advance_state(
         if (previous_event.request_id != request_id
                 or previous_event.to_state != current_state
                 or previous_event.sequence + 1 != sequence
-                or not _is_sha256(previous_event.event_sha256)):
+                or not _is_sha256(previous_event.event_sha256)
+                or not _event_integrity_valid(previous_event)):
             return TransitionDecision(False, "PREVIOUS_EVENT_CHAIN_MISMATCH", None)
+        try:
+            previous_time = datetime.fromisoformat(previous_event.occurred_at.replace("Z", "+00:00"))
+            current_time = datetime.fromisoformat(timestamp.replace("Z", "+00:00"))
+        except (AttributeError, ValueError):
+            return TransitionDecision(False, "PREVIOUS_EVENT_TIMESTAMP_INVALID", None)
+        if previous_time.tzinfo is None or current_time < previous_time:
+            return TransitionDecision(False, "EVENT_TIME_NOT_MONOTONIC", None)
         previous_hash = previous_event.event_sha256
 
     payload = {
