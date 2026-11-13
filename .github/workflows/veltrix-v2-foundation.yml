@@ -9,6 +9,7 @@ on:
     paths:
       - "veltrix_v2/**"
       - "tests/veltrix_v2/**"
+      - "tests/providers/odds_api_v4/**"
       - "scripts/veltrix_v2/**"
       - ".github/workflows/veltrix-v2-foundation.yml"
   pull_request:
@@ -40,6 +41,8 @@ jobs:
         run: python -m compileall -q veltrix_v2 scripts/phase2_fivedollar_history_dry_run.py scripts/phase3_import_fivedollar_history.py scripts/phase3_audit_staging_import.py
       - name: Test Phase 2 data contracts
         run: python -m pytest --import-mode=importlib -q tests/test_phase2_data_foundation.py
+      - name: Test offline Odds API parser and budget planner
+        run: python -m pytest --import-mode=importlib -q tests/providers/odds_api_v4
       - name: Enforce no legacy prediction imports in v2
         run: |
           if grep -R -n -E "from app\.(live_predictions|prediction|advanced_models|calibration|backtest_engine)|import app\.(live_predictions|prediction|advanced_models|calibration|backtest_engine)" veltrix_v2; then
