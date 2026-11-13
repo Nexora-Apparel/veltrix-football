@@ -52,16 +52,25 @@ def test_raw_body_hash_and_allowlisted_headers_are_preserved_exactly():
     assert result.envelope.raw_body == body
     assert result.envelope.response_sha256 == hashlib.sha256(body).hexdigest()
     assert result.envelope.raw_quota_headers == (
-        ("x-requests-last", "3"),
-        ("x-requests-remaining", "987"),
         ("x-requests-used", "00123"),
+        ("x-requests-remaining", "987"),
+        ("x-requests-last", "3"),
     )
+    assert result.envelope.quota_evidence.complete
+    assert result.envelope.quota_evidence.requests_used == 123
+    assert result.envelope.quota_evidence.requests_remaining == 987
+    assert result.envelope.quota_evidence.requests_last == 3
+    assert len(result.envelope.quota_evidence.evidence_sha256) == 64
 
 
 def test_missing_quota_headers_remain_missing_not_zero():
     result = validate_transport_response(RawTransportResponse(204, {}, b"", NOW))
     assert result.accepted
     assert result.envelope.raw_quota_headers == ()
+    assert result.envelope.quota_evidence.requests_used is None
+    assert result.envelope.quota_evidence.requests_remaining is None
+    assert result.envelope.quota_evidence.requests_last is None
+    assert not result.envelope.quota_evidence.complete
 
 
 def test_duplicate_quota_headers_are_rejected_case_insensitively():
@@ -124,3 +133,18 @@ def test_unauthorized_dispatch_never_calls_transport():
     )
     assert result.reason_code == "OPERATOR_DISPATCH_DISABLED"
     assert calls == []
+
+def test_malformed_quota_counter_is_retained_but_never_interpreted_as_zero():
+    result = validate_transport_response(RawTransportResponse(
+        200,
+        {
+            "x-requests-used": "unknown",
+            "x-requests-remaining": "987",
+            "x-requests-last": "3",
+        },
+        b"{}",
+        NOW,
+    ))
+    assert result.accepted
+    assert result.envelope.quota_evidence.requests_used is None
+    assert "X_REQUESTS_USED_MALFORMED" in result.envelope.quota_evidence.reason_codes

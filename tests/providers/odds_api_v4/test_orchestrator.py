@@ -146,3 +146,8 @@ def test_preflight_rejects_malformed_rights_scope_and_naive_rights_time():
     naive = replace(rights(), effective_at=datetime(2026, 11, 12, 12))
     result = evaluate_preflight(manifest, naive, budget(), {"fixture-1": "event-1"})
     assert "RIGHTS_TIMESTAMP_INVALID" in result.reason_codes
+
+def test_manifest_attempt_limit_matches_dispatch_guard_maximum():
+    with pytest.raises(ValueError, match="MAX_ATTEMPTS_OUT_OF_RANGE"):
+        build_manifest(request(max_attempts=3))
+    assert build_manifest(request(max_attempts=2)).max_attempts == 2

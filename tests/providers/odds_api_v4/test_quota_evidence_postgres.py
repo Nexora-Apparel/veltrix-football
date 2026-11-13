@@ -1,9 +1,15 @@
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 import os
 from pathlib import Path
 
 import psycopg
 import pytest
+
+from veltrix_v2.data.contracts import ProviderResponse
+from veltrix_v2.data.postgres import PostgresHistoryStore
+from veltrix_v2.providers.odds_api_v4.transport_contract import (
+    RawTransportResponse, validate_transport_response,
+)
 
 
 MIGRATION_5 = Path("db/migrations/0005_provider_credit_reservation_ledger.sql").read_text()
@@ -25,9 +31,19 @@ def setup_db():
                 id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
                 provider TEXT NOT NULL,
                 source_id TEXT NOT NULL,
+                endpoint TEXT NOT NULL,
+                request_id TEXT NOT NULL,
+                request_params JSONB NOT NULL,
+                http_status INTEGER NOT NULL,
                 response_sha256 CHAR(64) NOT NULL,
                 raw_body BYTEA NOT NULL,
-                UNIQUE (id, provider, source_id)
+                response_headers JSONB NOT NULL,
+                quota_limit INTEGER,
+                quota_remaining INTEGER,
+                quota_reset_at TIMESTAMPTZ,
+                fetched_at TIMESTAMPTZ NOT NULL,
+                UNIQUE (id, provider, source_id),
+                UNIQUE (provider, source_id, request_id, response_sha256)
             )
         """)
         conn.execute("""
@@ -70,10 +86,16 @@ def setup_db():
 def add_response_and_snapshot(conn, *, now, request_id, used, remaining, last,
                               account="account-1", raw_headers=None):
     response_id = conn.execute("""
-        INSERT INTO provider_responses(provider,source_id,response_sha256,raw_body)
-        VALUES ('the_odds_api','odds_api_v4',%s,%s)
+        INSERT INTO provider_responses(
+            provider,source_id,endpoint,request_id,request_params,http_status,
+            response_sha256,raw_body,response_headers,fetched_at
+        )
+        VALUES (
+            'the_odds_api','odds_api_v4','/v4/sports',%s,'{}'::jsonb,200,
+            %s,%s,'{}'::jsonb,%s
+        )
         RETURNING id
-    """, ("f" * 64, request_id.encode())).fetchone()[0]
+    """, (request_id, "f" * 64, request_id.encode(), now)).fetchone()[0]
     headers = raw_headers or {
         "x-requests-used": str(used),
         "x-requests-remaining": str(remaining),
@@ -252,3 +274,88 @@ def test_quota_header_values_must_remain_raw_strings():
             )
         conn.rollback()
 
+
+def test_store_atomically_persists_response_and_quota_snapshot_idempotently():
+    now, _ = setup_db()
+    body = b'{"data":[]}'
+    headers = {
+        "X-Requests-Used": "100",
+        "X-Requests-Remaining": "900",
+        "X-Requests-Last": "2",
+        "Authorization": "Bearer must-not-be-persisted",
+    }
+    envelope_result = validate_transport_response(
+        RawTransportResponse(200, headers, body, now)
+    )
+    assert envelope_result.accepted
+    response = ProviderResponse(
+        provider="the_odds_api",
+        source_id="odds_api_v4",
+        endpoint="/v4/sports",
+        request_id="odds-request-1",
+        request_params={},
+        http_status=200,
+        raw_body=body,
+        response_headers=headers,
+        fetched_at_utc=now,
+    )
+    store = PostgresHistoryStore(
+        lambda: psycopg.connect(DATABASE_URL),
+        allow_writes=True,
+        expected_database="veltrix_reservation_test",
+    )
+    first = store.persist_odds_api_quota_evidence(
+        response, envelope_result.envelope,
+        provider_account_ref="account-1",
+        billing_period_start=date(2026, 11, 1),
+        billing_period_end=date(2026, 12, 1),
+    )
+    second = store.persist_odds_api_quota_evidence(
+        response, envelope_result.envelope,
+        provider_account_ref="account-1",
+        billing_period_start=date(2026, 11, 1),
+        billing_period_end=date(2026, 12, 1),
+    )
+    assert first == second
+    with psycopg.connect(DATABASE_URL) as conn:
+        stored = conn.execute("""
+            SELECT r.raw_body,r.response_headers,q.raw_quota_headers,
+                   q.requests_used,q.requests_remaining,q.requests_last
+            FROM provider_responses r
+            JOIN provider_quota_snapshots q ON q.provider_response_id=r.id
+            WHERE r.id=%s
+        """, (first[0],)).fetchone()
+        assert bytes(stored[0]) == body
+        assert stored[1] == {
+            "x-requests-used": "100",
+            "x-requests-remaining": "900",
+            "x-requests-last": "2",
+        }
+        assert stored[2] == stored[1]
+        assert tuple(stored[3:]) == (100, 900, 2)
+
+
+def test_store_rejects_response_envelope_body_or_timestamp_mismatch_before_write():
+    now, _ = setup_db()
+    envelope = validate_transport_response(
+        RawTransportResponse(200, {}, b'{"data":[]}', now)
+    ).envelope
+    response = ProviderResponse(
+        provider="the_odds_api", source_id="odds_api_v4",
+        endpoint="/v4/sports", request_id="mismatch",
+        request_params={}, http_status=200, raw_body=b'{"other":[]}',
+        response_headers={}, fetched_at_utc=now,
+    )
+    store = PostgresHistoryStore(
+        lambda: psycopg.connect(DATABASE_URL),
+        allow_writes=True,
+        expected_database="veltrix_reservation_test",
+    )
+    with pytest.raises(ValueError, match="RESPONSE_BODY_BINDING_MISMATCH"):
+        store.persist_odds_api_quota_evidence(
+            response, envelope, provider_account_ref="account-1",
+            billing_period_start=date(2026, 11, 1),
+            billing_period_end=date(2026, 12, 1),
+        )
+    with psycopg.connect(DATABASE_URL) as conn:
+        assert conn.execute("SELECT COUNT(*) FROM provider_responses").fetchone()[0] == 0

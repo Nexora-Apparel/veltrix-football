@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import json
 from hashlib import sha256
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from typing import Callable, Iterable
 
 from veltrix_v2.data.contracts import (
@@ -498,6 +498,123 @@ class PostgresHistoryStore:
         if not stored or bytes(stored[1]) != response.raw_body or stored[2] != response.http_status:
             raise ValueError("PROVIDER_RESPONSE_IDEMPOTENCY_CONFLICT")
         return int(stored[0])
+
+    def persist_odds_api_quota_evidence(
+        self,
+        response: ProviderResponse,
+        envelope,
+        *,
+        provider_account_ref: str,
+        billing_period_start: date,
+        billing_period_end: date,
+    ) -> tuple[int, int]:
+        """Atomically persist one exact Odds API response and its quota snapshot.
+
+        This method stores only the allowlisted quota headers from the validated
+        response envelope. It performs no network request and requires the
+        existing explicit non-production write guard.
+        """
+        if response.provider != "the_odds_api" or response.source_id != "odds_api_v4":
+            raise ValueError("ODDS_API_RESPONSE_IDENTITY_INVALID")
+        if response.http_status != 200 or getattr(envelope, "status_code", None) != 200:
+            raise ValueError("ODDS_API_RESPONSE_STATUS_INVALID")
+        if not isinstance(provider_account_ref, str) or not provider_account_ref.strip():
+            raise ValueError("ODDS_API_ACCOUNT_REFERENCE_REQUIRED")
+        if (not isinstance(billing_period_start, date)
+                or isinstance(billing_period_start, datetime)
+                or not isinstance(billing_period_end, date)
+                or isinstance(billing_period_end, datetime)
+                or billing_period_end <= billing_period_start):
+            raise ValueError("ODDS_API_BILLING_PERIOD_INVALID")
+
+        raw_body = getattr(envelope, "raw_body", None)
+        response_hash = getattr(envelope, "response_sha256", None)
+        retrieved_at = getattr(envelope, "retrieved_at", None)
+        raw_quota_headers = getattr(envelope, "raw_quota_headers", None)
+        quota_evidence = getattr(envelope, "quota_evidence", None)
+        if not isinstance(raw_body, bytes) or raw_body != response.raw_body:
+            raise ValueError("ODDS_API_RESPONSE_BODY_BINDING_MISMATCH")
+        if response_hash != response.response_sha256:
+            raise ValueError("ODDS_API_RESPONSE_HASH_BINDING_MISMATCH")
+        if retrieved_at != response.fetched_at_utc:
+            raise ValueError("ODDS_API_RESPONSE_TIME_BINDING_MISMATCH")
+        if (not isinstance(raw_quota_headers, tuple)
+                or not quota_evidence
+                or getattr(quota_evidence, "raw_headers", None) != raw_quota_headers):
+            raise ValueError("ODDS_API_QUOTA_EVIDENCE_BINDING_MISMATCH")
+        quota_hash = getattr(quota_evidence, "evidence_sha256", "")
+        if (not isinstance(quota_hash, str) or len(quota_hash) != 64
+                or any(ch not in "0123456789abcdef" for ch in quota_hash)):
+            raise ValueError("ODDS_API_QUOTA_EVIDENCE_HASH_INVALID")
+        if any(
+            not isinstance(pair, tuple) or len(pair) != 2
+            or pair[0] not in {"x-requests-used", "x-requests-remaining", "x-requests-last"}
+            or not isinstance(pair[1], str)
+            for pair in raw_quota_headers
+        ):
+            raise ValueError("ODDS_API_QUOTA_HEADER_ALLOWLIST_VIOLATION")
+
+        safe_response = ProviderResponse(
+            provider=response.provider,
+            source_id=response.source_id,
+            endpoint=response.endpoint,
+            request_id=response.request_id,
+            request_params=response.request_params,
+            http_status=response.http_status,
+            raw_body=response.raw_body,
+            response_headers=dict(raw_quota_headers),
+            fetched_at_utc=response.fetched_at_utc,
+        )
+        conn = self._connect_for_write()
+        try:
+            cur = conn.cursor()
+            provider_response_id = self._persist_provider_response(cur, safe_response)
+            cur.execute(
+                """INSERT INTO provider_quota_snapshots (
+                    provider,source_id,provider_account_ref,billing_period_start,
+                    billing_period_end,provider_response_id,observed_at,raw_quota_headers,
+                    requests_used,requests_remaining,requests_last,evidence_sha256
+                ) VALUES (%s,%s,%s,%s,%s,%s,%s,%s::jsonb,%s,%s,%s,%s)
+                ON CONFLICT (provider_response_id) DO NOTHING
+                RETURNING quota_snapshot_id""",
+                (
+                    response.provider, response.source_id, provider_account_ref,
+                    billing_period_start, billing_period_end, provider_response_id,
+                    retrieved_at, json.dumps(dict(raw_quota_headers), sort_keys=True),
+                    quota_evidence.requests_used, quota_evidence.requests_remaining,
+                    quota_evidence.requests_last, quota_hash,
+                ),
+            )
+            row = cur.fetchone()
+            if row:
+                quota_snapshot_id = int(row[0])
+            else:
+                cur.execute(
+                    """SELECT quota_snapshot_id,provider,source_id,provider_account_ref,
+                              billing_period_start,billing_period_end,observed_at,
+                              raw_quota_headers,requests_used,requests_remaining,
+                              requests_last,evidence_sha256
+                       FROM provider_quota_snapshots WHERE provider_response_id=%s""",
+                    (provider_response_id,),
+                )
+                stored = cur.fetchone()
+                expected = (
+                    response.provider, response.source_id, provider_account_ref,
+                    billing_period_start, billing_period_end, retrieved_at,
+                    dict(raw_quota_headers),
+                    quota_evidence.requests_used, quota_evidence.requests_remaining,
+                    quota_evidence.requests_last, quota_hash,
+                )
+                if not stored or tuple(stored[1:]) != expected:
+                    raise ValueError("ODDS_API_QUOTA_SNAPSHOT_IDEMPOTENCY_CONFLICT")
+                quota_snapshot_id = int(stored[0])
+            conn.commit()
+            return provider_response_id, quota_snapshot_id
+        except Exception:
+            conn.rollback()
+            raise
+        finally:
+            conn.close()
 
     def persist_page(
         self,
