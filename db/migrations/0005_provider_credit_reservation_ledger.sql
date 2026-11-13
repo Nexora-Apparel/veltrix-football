@@ -340,6 +340,24 @@ BEGIN
         RAISE EXCEPTION 'CREDIT_RESERVATION_TRANSITION_NOT_ALLOWED';
     END IF;
 
+    IF p_reserved_credits <> prior.reserved_credits THEN
+        RAISE EXCEPTION 'CREDIT_RESERVATION_AMOUNT_IMMUTABLE';
+    END IF;
+
+    IF p_event_type = 'RECONCILED' AND p_actual_credits > prior.reserved_credits THEN
+        RAISE EXCEPTION 'CREDIT_RECONCILIATION_OVERRUN_MUST_BE_EXPLICIT';
+    END IF;
+
+    IF p_event_type = 'OVERRUN' AND p_actual_credits <= prior.reserved_credits THEN
+        RAISE EXCEPTION 'CREDIT_OVERRUN_AMOUNT_INVALID';
+    END IF;
+
+    IF p_event_type = 'RELEASED'
+       AND p_reason_code NOT IN ('PROVIDER_CONFIRMED_ZERO_USAGE','PRE_DISPATCH_NOT_STARTED_PROVEN')
+    THEN
+        RAISE EXCEPTION 'CREDIT_RELEASE_REQUIRES_ZERO_USAGE_EVIDENCE';
+    END IF;
+
     IF p_occurred_at < prior.occurred_at THEN
         RAISE EXCEPTION 'CREDIT_RESERVATION_EVENT_TIME_NOT_MONOTONIC';
     END IF;
