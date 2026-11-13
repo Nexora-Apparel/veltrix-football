@@ -21,6 +21,7 @@ class ReservationBudget:
     per_run_hard_cap: int | None
     request_count_cap: int | None
     observed_at: datetime | None
+    valid_until: datetime | None
     evidence_sha256: str | None
 
 
@@ -95,14 +96,19 @@ def validate_reservation(
     if any(v == 0 for v in (budget.monthly_allowance, budget.monthly_hard_cap,
                             budget.per_run_hard_cap, budget.request_count_cap)):
         return ReservationDecision(False, "BUDGET_LIMIT_NOT_POSITIVE")
-    if not _aware(budget.observed_at) or not _SHA256.fullmatch(budget.evidence_sha256 or ""):
+    if (not _aware(budget.observed_at) or not _aware(budget.valid_until)
+            or not _SHA256.fullmatch(budget.evidence_sha256 or "")):
         return ReservationDecision(False, "BUDGET_EVIDENCE_INVALID")
     if budget.period_end <= budget.period_start or not (
         budget.period_start <= request.requested_at.date() < budget.period_end
     ):
         return ReservationDecision(False, "BILLING_PERIOD_MISMATCH")
+    if budget.valid_until <= budget.observed_at:
+        return ReservationDecision(False, "BUDGET_EVIDENCE_VALIDITY_INVALID")
     if budget.observed_at > now or budget.observed_at > request.requested_at:
         return ReservationDecision(False, "BUDGET_EVIDENCE_FROM_FUTURE")
+    if now > budget.valid_until or request.requested_at > budget.valid_until:
+        return ReservationDecision(False, "BUDGET_EVIDENCE_STALE")
     if request.estimated_credits > min(
         budget.monthly_allowance, budget.provider_remaining,
         budget.monthly_hard_cap, budget.per_run_hard_cap,
