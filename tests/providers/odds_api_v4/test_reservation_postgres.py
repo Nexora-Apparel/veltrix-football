@@ -90,6 +90,7 @@ def test_append_only_event_lifecycle_and_zero_usage_release_guard():
     with psycopg.connect(DATABASE_URL) as conn:
         reserve(conn, key="reserve-two", manifest_id=manifest_id,
                 budget_id=budget_id, now=now)
+        conn.commit()
         with pytest.raises(psycopg.Error, match="ZERO_USAGE_EVIDENCE"):
             conn.execute("""
                 SELECT append_provider_credit_reservation_event(
