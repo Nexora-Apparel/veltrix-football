@@ -518,3 +518,34 @@ def test_duplicate_rights_status_event_id_fails_closed():
     assert "RIGHTS_STATUS_HISTORY_UNTRUSTED" in decision(
         rights=approved_rights(), rights_status_events=[event, duplicate]
     ).reason_codes
+
+
+def test_latest_recorded_event_wins_when_effective_times_match():
+    events = [
+        rights_event(1, "REVOKED", "2026-11-20T13:00:00Z", "2026-11-20T13:01:00Z"),
+        rights_event(2, "APPROVED", "2026-11-20T13:00:00Z", "2026-11-20T14:00:00Z"),
+    ]
+    assert decision(
+        rights=approved_rights(),
+        rights_status_events=events,
+    ).eligible
+
+
+def test_selector_materializes_rights_event_generator_once_for_all_rows():
+    rows = []
+    for index in range(3):
+        row = deepcopy(BASE)
+        row.update(
+            observation_id=f"rights-generator-{index}",
+            source_published_at=f"2026-11-20T{9 + index:02d}:00:00Z",
+            retrieved_at=f"2026-11-20T{9 + index:02d}:01:00Z",
+        )
+        rows.append(row)
+    event = rights_event(
+        1, "REVOKED", "2026-11-20T13:00:00Z", "2026-11-20T13:01:00Z"
+    )
+    assert select(
+        rows,
+        rights=approved_rights(),
+        rights_status_events=(item for item in [event]),
+    ) is None

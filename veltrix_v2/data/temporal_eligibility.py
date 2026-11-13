@@ -80,7 +80,7 @@ def resolve_rights_status(
         return RightsStatusResolution(None)
 
     approval_id = approval.get("approval_id")
-    applicable: list[tuple[datetime, int, str]] = []
+    applicable: list[tuple[datetime, datetime, int, str]] = []
     seen_event_ids: set[int] = set()
     for event in status_events:
         if not isinstance(event, Mapping):
@@ -118,12 +118,12 @@ def resolve_rights_status(
         # A backdated event recorded after the decision time was not yet known
         # to that downstream use and must not rewrite its historical state.
         if effective_at <= evaluated_at and recorded_at <= evaluated_at:
-            applicable.append((effective_at, event_id, status))
+            applicable.append((effective_at, recorded_at, event_id, status))
 
     if not applicable:
         return RightsStatusResolution(approval.get("status"))
-    applicable.sort(key=lambda item: (item[0], item[1]))
-    effective_at, event_id, status = applicable[-1]
+    applicable.sort(key=lambda item: (item[0], item[1], item[2]))
+    effective_at, recorded_at, event_id, status = applicable[-1]
     return RightsStatusResolution(status, latest_event_id=event_id)
 
 
@@ -280,6 +280,9 @@ def select_as_of(
 ) -> Mapping[str, Any] | None:
     """Select latest eligible source version; ambiguous equal-time versions fail closed."""
     candidates: list[tuple[datetime, Mapping[str, Any]]] = []
+    # Materialize once: callers may supply a generator, and every observation
+    # must be evaluated against the identical rights-event history.
+    status_events = tuple(rights_status_events)
     for row in observations:
         proof_id = row.get("archive_proof_id")
         decision = evaluate_observation(
@@ -289,7 +292,7 @@ def select_as_of(
             rights_evaluated_at=rights_evaluated_at,
             required_use=required_use,
             archive_proof_verified=bool(proof_id and proof_id in archive_proof_ids),
-            rights_status_events=rights_status_events,
+            rights_status_events=status_events,
         )
         if decision.eligible and decision.published_at is not None:
             candidates.append((decision.published_at, row))
