@@ -13,6 +13,7 @@ on:
       - "veltrix_v2/data/**"
       - "tests/test_db_migrations.py"
       - "tests/test_phase4_capture_schema.py"
+      - "tests/test_phase4_temporal_eligibility.py"
       - "tests/test_phase2_data_foundation.py"
       - ".github/workflows/postgres16-acceptance.yml"
       - "requirements.txt"
@@ -50,7 +51,7 @@ jobs:
           python-version: "3.12"
       - run: python -m pip install --disable-pip-version-check -r requirements.txt
       - run: python -m pip install --disable-pip-version-check "psycopg[binary]>=3.2,<4"
-      - run: python -m pytest -q tests/test_db_migrations.py tests/test_phase2_data_foundation.py tests/test_phase4_capture_schema.py
+      - run: python -m pytest -q tests/test_db_migrations.py tests/test_phase2_data_foundation.py tests/test_phase4_capture_schema.py tests/test_phase4_temporal_eligibility.py
       - name: Apply migrations and verify idempotency
         run: |
           python scripts/db_migrate.py
