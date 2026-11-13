@@ -72,11 +72,8 @@ Proposed columns:
 - `capture_scope JSONB NOT NULL` — provider, endpoint family, competition and time-window scope; no credentials
 - `created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()`
 - `requests_planned INTEGER NOT NULL CHECK (requests_planned >= 0)`
-- `requests_completed INTEGER NOT NULL CHECK (requests_completed >= 0)`
-- `coverage_summary JSONB NOT NULL DEFAULT '{}'::jsonb`
-- `created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()`
 
-Manifest metadata is insert-only. Lifecycle state and timestamps are derived from a separate append-only `capture_manifest_events` relation; never update a manifest row to mark it complete. Checks: hash format; completed requests cannot exceed planned requests.
+Manifest metadata is insert-only. Lifecycle state and timestamps are derived from a separate append-only `capture_manifest_events` relation; never update a manifest row to mark it complete. Checks: manifest hash format; request outcome counts and coverage are calculated from immutable request rows and captured in the terminal event.
 
 #### Capture manifest lifecycle events
 
@@ -87,6 +84,7 @@ Add `capture_manifest_events`:
 - `event_at TIMESTAMPTZ NOT NULL`
 - `reason_code TEXT NOT NULL`
 - `evidence_sha256 CHAR(64)`
+- `coverage_summary JSONB NOT NULL DEFAULT '{}'::jsonb`
 - `recorded_at TIMESTAMPTZ NOT NULL DEFAULT NOW()`
 
 Append-only trigger; index `(capture_manifest_id, event_at DESC, capture_manifest_event_id DESC)`. The latest event is the current state. Enforce legal transitions in a transactionally locked writer and tests (PLANNED → RUNNING → terminal; RUNNING may also end PARTIAL/FAILED). A terminal state cannot be reopened.
@@ -164,7 +162,6 @@ Proposed columns:
 Constraints/indexes:
 - hash format; unique `(fixture_id, prediction_cutoff_at, feature_schema_version, selector_version)`
 - index `(fixture_id, prediction_cutoff_at DESC)`
-- index `(eligibility_status, prediction_cutoff_at)`
 - snapshot is inserted once with frozen cutoff and schema/selector identity. Eligibility is derived from an append-only `feature_snapshot_eligibility_events` relation (defined below); never rewrite the frozen feature definition or cutoff.
 
 #### Snapshot eligibility events
