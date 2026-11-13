@@ -46,6 +46,10 @@ def _valid_nonnegative(value: object) -> bool:
 
 def plan_request(request: PlannedRequest, budget: CreditBudget) -> BudgetDecision:
     """Fail-closed estimate. Call before every individual network attempt."""
+    if not isinstance(request, PlannedRequest) or not isinstance(budget, CreditBudget):
+        return BudgetDecision(False, None, None, None, "REQUEST_OR_BUDGET_TYPE_INVALID")
+    if not isinstance(request.endpoint_class, str) or not request.endpoint_class:
+        return BudgetDecision(False, None, None, None, "REQUEST_SHAPE_INVALID")
     required = (budget.monthly_allowance, budget.monthly_hard_cap,
                 budget.per_run_hard_cap, budget.month_committed, budget.run_committed)
     if any(not _valid_nonnegative(v) for v in required):
@@ -54,7 +58,7 @@ def plan_request(request: PlannedRequest, budget: CreditBudget) -> BudgetDecisio
         return BudgetDecision(False, None, None, None, "PROVIDER_REMAINING_INVALID")
     if budget.month_committed > budget.monthly_allowance or budget.month_committed > budget.monthly_hard_cap or budget.run_committed > budget.per_run_hard_cap:
         return BudgetDecision(False, None, None, None, "BUDGET_STATE_INCONSISTENT")
-    if not isinstance(request, PlannedRequest) or not isinstance(request.regions, int) or isinstance(request.regions, bool) or request.regions < 1:
+    if not isinstance(request.regions, int) or isinstance(request.regions, bool) or request.regions < 1:
         return BudgetDecision(False, None, None, None, "REQUEST_SHAPE_INVALID")
     if request.endpoint_class in {"sports_discovery", "events_discovery"}:
         estimate = 0
@@ -83,13 +87,16 @@ def reconcile_quota_headers(headers: Mapping[str, str]) -> QuotaEvidence:
     """Read only the three documented quota headers; malformed stays unknown."""
     if not isinstance(headers, Mapping):
         return QuotaEvidence(None, None, None, False)
-    normalized = {str(k).casefold(): v for k, v in headers.items()}
+    normalized = {k.casefold(): v for k, v in headers.items() if isinstance(k, str)}
     def read(name: str) -> int | None:
         raw = normalized.get(name)
         if isinstance(raw, bool) or raw is None:
             return None
         try:
-            value = int(str(raw).strip())
+            text_value = str(raw).strip()
+            if not text_value.isascii() or not text_value.isdecimal():
+                return None
+            value = int(text_value)
         except (TypeError, ValueError):
             return None
         return value if value >= 0 else None
