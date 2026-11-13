@@ -124,7 +124,7 @@ def build_manifest(request: CaptureRequest) -> RequestManifest:
         raise ValueError("RIGHTS_EVALUATION_AFTER_MANIFEST_CREATION")
     if not isinstance(request.fixture_boundaries, tuple) or not isinstance(request.markets, tuple) or not isinstance(request.regions, tuple) or not isinstance(request.competition_keys, tuple):
         raise ValueError("REQUEST_SCOPE_SHAPE_INVALID")
-    if not isinstance(request.max_attempts, int) or isinstance(request.max_attempts, bool) or not 1 <= request.max_attempts <= 3:
+    if not isinstance(request.max_attempts, int) or isinstance(request.max_attempts, bool) or not 1 <= request.max_attempts <= 2:
         raise ValueError("MAX_ATTEMPTS_OUT_OF_RANGE")
     if not isinstance(request.timeout_seconds, int) or isinstance(request.timeout_seconds, bool) or not 1 <= request.timeout_seconds <= 30:
         raise ValueError("TIMEOUT_OUT_OF_RANGE")
