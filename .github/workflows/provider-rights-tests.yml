@@ -1,0 +1,59 @@
+name: VELTRIX Provider Rights and Access
+
+on:
+  pull_request:
+    branches: [phase1/evidence-bound-certificate-lockdown]
+    paths:
+      - "docs/legal/**"
+      - "docs/VELTRIX_V2_PHASE2_PROVIDER_RIGHTS_ACCESS_2026-11-12.md"
+      - "veltrix_v2/data/provider_rights_registry.py"
+      - "veltrix_v2/data/rights.py"
+      - "veltrix_v2/data/contracts.py"
+      - "tests/test_phase2_provider_rights.py"
+      - "tests/test_phase2_data_foundation.py"
+      - ".github/workflows/provider-rights-tests.yml"
+  push:
+    branches: ["phase2/provider-rights-access"]
+    paths:
+      - "docs/legal/**"
+      - "docs/VELTRIX_V2_PHASE2_PROVIDER_RIGHTS_ACCESS_2026-11-12.md"
+      - "veltrix_v2/data/provider_rights_registry.py"
+      - "veltrix_v2/data/rights.py"
+      - "veltrix_v2/data/contracts.py"
+      - "tests/test_phase2_provider_rights.py"
+      - "tests/test_phase2_data_foundation.py"
+      - ".github/workflows/provider-rights-tests.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: veltrix-provider-rights-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  provider-rights:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+      - name: Install project dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      - name: Compile rights contracts
+        run: |
+          python -m compileall -q veltrix_v2/data/contracts.py veltrix_v2/data/rights.py
+          python -m compileall -q veltrix_v2/data/provider_rights_registry.py
+          python -m compileall -q tests/test_phase2_provider_rights.py
+      - name: Run rights and historical data foundation tests
+        run: |
+          python -m pytest --import-mode=importlib -q \
+            tests/test_phase2_provider_rights.py \
+            tests/test_phase2_data_foundation.py
+      - name: Run complete regression suite
+        run: python -m pytest --import-mode=importlib -q
