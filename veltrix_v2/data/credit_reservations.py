@@ -153,6 +153,14 @@ class PostgresCreditReservationStore:
         conn = self._connect_for_write()
         try:
             cur = conn.cursor()
+            snapshot_lock_key = (
+                f"{budget.provider}|{budget.account_ref}|{budget.period_start}|"
+                f"{budget.period_end}|{budget.evidence_sha256}"
+            )
+            cur.execute(
+                "SELECT pg_advisory_xact_lock(hashtextextended(%s, 0))",
+                (snapshot_lock_key,),
+            )
             cur.execute(
                 """SELECT budget_snapshot_id,provider,provider_account_ref,
                           billing_period_start,billing_period_end,monthly_allowance,
