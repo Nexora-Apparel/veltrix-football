@@ -61,6 +61,7 @@ class ActivationScope:
     provider: str
     source_id: str
     provider_account_ref: str
+    request_fingerprint: str
     expected_terms_version: str
     competition_keys: tuple[str, ...]
     markets: tuple[str, ...]
@@ -145,6 +146,8 @@ def evaluate_activation_gate(
         budget.provider, budget.provider_account_ref, budget.evidence_uri,
     )):
         reasons.add("ACTIVATION_EVIDENCE_IDENTITY_INCOMPLETE")
+    if not _hash(scope.request_fingerprint):
+        reasons.add("REQUEST_FINGERPRINT_INVALID")
     if not _hash(terms.evidence_sha256):
         reasons.add("ACCOUNT_TERMS_EVIDENCE_HASH_INVALID")
     if not _hash(rights.evidence_sha256):
