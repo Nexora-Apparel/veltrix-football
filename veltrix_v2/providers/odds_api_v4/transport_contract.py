@@ -8,7 +8,7 @@ from typing import Callable, Mapping
 
 from veltrix_v2.providers.odds_api_v4.quota_headers import ParsedQuotaHeaders, parse_quota_headers
 from veltrix_v2.providers.odds_api_v4.dispatch_guard import (
-    DispatchContext, authorize_dispatch,
+    DispatchContext, authorize_dispatch_with_activation_evidence,
 )
 
 
@@ -97,12 +97,18 @@ def validate_transport_response(
 def execute_with_injected_transport(
     *,
     context: DispatchContext,
+    terms,
+    rights,
+    budget,
+    scope,
     send: Callable[[str, TransportPolicy], RawTransportResponse],
 ) -> EnvelopeDecision:
-    """Invoke one injected transport only after the full dispatch guard passes."""
+    """Invoke one injected transport only after account evidence and dispatch gates pass."""
     if not isinstance(context, DispatchContext):
         return EnvelopeDecision(False, "DISPATCH_CONTEXT_INVALID", None)
-    authorization = authorize_dispatch(context)
+    authorization = authorize_dispatch_with_activation_evidence(
+        context, terms=terms, rights=rights, budget=budget, scope=scope
+    )
     if not authorization.allowed:
         return EnvelopeDecision(False, authorization.reason_code, None)
     if not callable(send):
