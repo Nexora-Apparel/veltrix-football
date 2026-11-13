@@ -499,6 +499,217 @@ class PostgresHistoryStore:
             raise ValueError("PROVIDER_RESPONSE_IDEMPOTENCY_CONFLICT")
         return int(stored[0])
 
+    def persist_capture_manifest(self, manifest) -> int:
+        """Persist a deterministic, credential-free request manifest idempotently."""
+        from veltrix_v2.providers.odds_api_v4.orchestrator import (
+            RequestManifest, _manifest_integrity_valid,
+        )
+
+        if not isinstance(manifest, RequestManifest) or not _manifest_integrity_valid(manifest):
+            raise ValueError("CAPTURE_MANIFEST_INTEGRITY_INVALID")
+        try:
+            created_at = datetime.fromisoformat(manifest.created_at.replace("Z", "+00:00"))
+        except (AttributeError, TypeError, ValueError):
+            raise ValueError("CAPTURE_MANIFEST_CREATED_AT_INVALID") from None
+        if created_at.tzinfo is None or created_at.utcoffset() is None:
+            raise ValueError("CAPTURE_MANIFEST_CREATED_AT_INVALID")
+
+        scope = {
+            "run_id": manifest.run_id,
+            "provider": manifest.provider,
+            "api_version": manifest.api_version,
+            "endpoint_class": manifest.endpoint_class,
+            "sport_key": manifest.sport_key,
+            "competition_keys": list(manifest.competition_keys),
+            "fixture_ids": list(manifest.fixture_ids),
+            "provider_event_ids": list(manifest.provider_event_ids),
+            "markets": list(manifest.markets),
+            "regions": list(manifest.regions),
+            "prediction_cutoffs": [list(item) for item in manifest.prediction_cutoffs],
+            "fixture_kickoffs": [list(item) for item in manifest.fixture_kickoffs],
+            "rights_evaluated_at": manifest.rights_evaluated_at,
+            "prediction_use": manifest.prediction_use,
+            "expected_terms_version": manifest.expected_terms_version,
+            "created_at": manifest.created_at,
+            "max_attempts": manifest.max_attempts,
+            "timeout_seconds": manifest.timeout_seconds,
+            "request_fingerprint": manifest.request_fingerprint,
+        }
+        manifest_key = f"{manifest.run_id}:{manifest.request_id}"
+        scope_json = json.dumps(scope, sort_keys=True, separators=(",", ":"))
+        conn = self._connect_for_write()
+        try:
+            cur = conn.cursor()
+            cur.execute(
+                """INSERT INTO capture_manifests (
+                    manifest_key,manifest_sha256,capture_scope,requests_planned,created_at
+                ) VALUES (%s,%s,%s::jsonb,1,%s)
+                ON CONFLICT (manifest_key) DO NOTHING
+                RETURNING capture_manifest_id""",
+                (manifest_key,manifest.manifest_sha256,scope_json,created_at),
+            )
+            row = cur.fetchone()
+            if row:
+                manifest_id = int(row[0])
+            else:
+                cur.execute(
+                    """SELECT capture_manifest_id,manifest_sha256,capture_scope,
+                              requests_planned,created_at
+                       FROM capture_manifests WHERE manifest_key=%s""",
+                    (manifest_key,),
+                )
+                stored = cur.fetchone()
+                if (not stored or stored[1] != manifest.manifest_sha256
+                        or stored[2] != scope or stored[3] != 1
+                        or stored[4] != created_at):
+                    raise ValueError("CAPTURE_MANIFEST_IDEMPOTENCY_CONFLICT")
+                manifest_id = int(stored[0])
+            conn.commit()
+            return manifest_id
+        except Exception:
+            conn.rollback()
+            raise
+        finally:
+            conn.close()
+
+    def persist_capture_request(
+        self,
+        *,
+        capture_manifest_id: int,
+        manifest,
+        endpoint: str,
+        attempt_number: int,
+        requested_at: datetime,
+        outcome: str,
+        response_id: int | None = None,
+        error_code: str | None = None,
+    ) -> int:
+        """Persist one completed provider attempt against its exact manifest."""
+        from veltrix_v2.providers.odds_api_v4.orchestrator import (
+            RequestManifest, _manifest_integrity_valid,
+        )
+        from veltrix_v2.providers.odds_api_v4.dispatch_guard import _valid_url
+
+        if not isinstance(manifest, RequestManifest) or not _manifest_integrity_valid(manifest):
+            raise ValueError("CAPTURE_MANIFEST_INTEGRITY_INVALID")
+        if (not isinstance(capture_manifest_id, int)
+                or isinstance(capture_manifest_id, bool) or capture_manifest_id < 1):
+            raise ValueError("CAPTURE_MANIFEST_ID_INVALID")
+        if not _valid_url(endpoint):
+            raise ValueError("CAPTURE_REQUEST_ENDPOINT_NOT_ALLOWLISTED")
+        if (not isinstance(attempt_number, int) or isinstance(attempt_number, bool)
+                or not 1 <= attempt_number <= manifest.max_attempts):
+            raise ValueError("CAPTURE_REQUEST_ATTEMPT_INVALID")
+        if (not isinstance(requested_at, datetime) or requested_at.tzinfo is None
+                or requested_at.utcoffset() is None):
+            raise ValueError("CAPTURE_REQUEST_TIME_INVALID")
+        try:
+            manifest_created_at = datetime.fromisoformat(manifest.created_at.replace("Z", "+00:00"))
+        except (AttributeError, TypeError, ValueError):
+            raise ValueError("CAPTURE_MANIFEST_CREATED_AT_INVALID") from None
+        if requested_at < manifest_created_at:
+            raise ValueError("CAPTURE_REQUEST_PRECEDES_MANIFEST")
+        if outcome not in {"RESPONSE","TIMEOUT","NETWORK_ERROR","RATE_LIMITED","CANCELLED"}:
+            raise ValueError("CAPTURE_REQUEST_OUTCOME_INVALID")
+        if outcome == "RESPONSE":
+            if not isinstance(response_id, int) or isinstance(response_id, bool) or response_id < 1:
+                raise ValueError("CAPTURE_REQUEST_RESPONSE_ID_REQUIRED")
+            if error_code is not None:
+                raise ValueError("CAPTURE_REQUEST_RESPONSE_ERROR_CODE_FORBIDDEN")
+        elif response_id is not None:
+            raise ValueError("CAPTURE_REQUEST_NON_RESPONSE_HAS_RESPONSE_ID")
+        if error_code is not None and (
+            not isinstance(error_code, str) or not error_code.strip()
+        ):
+            raise ValueError("CAPTURE_REQUEST_ERROR_CODE_INVALID")
+
+        conn = self._connect_for_write()
+        try:
+            cur = conn.cursor()
+            cur.execute(
+                """SELECT manifest_sha256,manifest_key FROM capture_manifests
+                   WHERE capture_manifest_id=%s""",
+                (capture_manifest_id,),
+            )
+            manifest_row = cur.fetchone()
+            if (not manifest_row or manifest_row[0] != manifest.manifest_sha256
+                    or manifest_row[1] != f"{manifest.run_id}:{manifest.request_id}"):
+                raise ValueError("CAPTURE_REQUEST_MANIFEST_BINDING_MISMATCH")
+            if outcome == "RESPONSE":
+                cur.execute(
+                    """SELECT provider,source_id,request_id,fetched_at FROM provider_responses
+                       WHERE id=%s""",
+                    (response_id,),
+                )
+                response_row = cur.fetchone()
+                if (not response_row
+                        or tuple(response_row[:3]) != (
+                            "the_odds_api","odds_api_v4",manifest.request_id
+                        )
+                        or response_row[3] < requested_at):
+                    raise ValueError("CAPTURE_REQUEST_RESPONSE_PROVENANCE_MISMATCH")
+
+            if attempt_number > 1:
+                cur.execute(
+                    """SELECT capture_request_id FROM provider_capture_requests
+                       WHERE capture_manifest_id=%s AND request_key=%s
+                         AND attempt_number=%s""",
+                    (capture_manifest_id,manifest.request_id,attempt_number - 1),
+                )
+                previous_request = cur.fetchone()
+                if not previous_request:
+                    raise ValueError("CAPTURE_REQUEST_PREVIOUS_ATTEMPT_MISSING")
+                cur.execute(
+                    """SELECT to_state FROM provider_capture_state_events
+                       WHERE capture_request_id=%s
+                       ORDER BY event_sequence DESC LIMIT 1""",
+                    (previous_request[0],),
+                )
+                previous_state = cur.fetchone()
+                if not previous_state or previous_state[0] != "COMMITTED":
+                    raise ValueError("CAPTURE_REQUEST_PREVIOUS_ATTEMPT_NOT_RECONCILED")
+
+            cur.execute(
+                """INSERT INTO provider_capture_requests (
+                    capture_manifest_id,provider,source_id,endpoint,request_key,
+                    request_fingerprint,attempt_number,requested_at,response_id,
+                    outcome,error_code
+                ) VALUES (%s,'the_odds_api','odds_api_v4',%s,%s,%s,%s,%s,%s,%s,%s)
+                ON CONFLICT (capture_manifest_id,request_key,attempt_number) DO NOTHING
+                RETURNING capture_request_id""",
+                (
+                    capture_manifest_id,endpoint,manifest.request_id,
+                    manifest.request_fingerprint,attempt_number,requested_at,
+                    response_id,outcome,error_code,
+                ),
+            )
+            row = cur.fetchone()
+            if row:
+                capture_request_id = int(row[0])
+            else:
+                cur.execute(
+                    """SELECT capture_request_id,provider,source_id,endpoint,request_key,
+                              request_fingerprint,requested_at,response_id,outcome,error_code
+                       FROM provider_capture_requests
+                       WHERE capture_manifest_id=%s AND request_key=%s AND attempt_number=%s""",
+                    (capture_manifest_id,manifest.request_id,attempt_number),
+                )
+                stored = cur.fetchone()
+                expected = (
+                    "the_odds_api","odds_api_v4",endpoint,manifest.request_id,
+                    manifest.request_fingerprint,requested_at,response_id,outcome,error_code,
+                )
+                if not stored or tuple(stored[1:]) != expected:
+                    raise ValueError("CAPTURE_REQUEST_IDEMPOTENCY_CONFLICT")
+                capture_request_id = int(stored[0])
+            conn.commit()
+            return capture_request_id
+        except Exception:
+            conn.rollback()
+            raise
+        finally:
+            conn.close()
+
     def append_capture_state_event(
         self,
         capture_request_id: int,

@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta, timezone
+from concurrent.futures import ThreadPoolExecutor
 import os
 from pathlib import Path
 
@@ -152,3 +153,17 @@ def test_capture_state_event_history_is_append_only():
         with pytest.raises(psycopg.Error, match="IMMUTABLE_HISTORY_MUTATION_REJECTED"):
             conn.execute("DELETE FROM provider_capture_state_events")
         conn.rollback()
+
+def test_concurrent_exact_event_replays_serialize_to_one_ledger_row():
+    request_id = setup_db()
+    first = event(current="PLANNED", target="PREFLIGHT_APPROVED", sequence=1)
+    def append_once(_):
+        return store().append_capture_state_event(request_id, first)
+
+    with ThreadPoolExecutor(max_workers=8) as pool:
+        ids = list(pool.map(append_once, range(8)))
+    assert len(set(ids)) == 1
+    with psycopg.connect(DATABASE_URL) as conn:
+        assert conn.execute(
+            "SELECT COUNT(*) FROM provider_capture_state_events"
+        ).fetchone()[0] == 1
