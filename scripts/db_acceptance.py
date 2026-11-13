@@ -114,6 +114,7 @@ def run_acceptance() -> dict:
                 "capture_manifest_events_append_only",
                 "provider_capture_requests_append_only",
                 "entity_crosswalk_versions_append_only",
+                "entity_crosswalk_no_resolved_overlap",
                 "feature_snapshots_append_only",
                 "feature_snapshot_eligibility_events_append_only",
                 "feature_snapshot_links_append_only",
