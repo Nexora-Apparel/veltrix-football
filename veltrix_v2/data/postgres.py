@@ -605,7 +605,7 @@ class PostgresHistoryStore:
                     quota_evidence.requests_used, quota_evidence.requests_remaining,
                     quota_evidence.requests_last, quota_hash,
                 )
-                if not stored or tuple(stored[1:]) != expected[1:]:
+                if not stored or tuple(stored[1:]) != expected:
                     raise ValueError("ODDS_API_QUOTA_SNAPSHOT_IDEMPOTENCY_CONFLICT")
                 quota_snapshot_id = int(stored[0])
             conn.commit()
