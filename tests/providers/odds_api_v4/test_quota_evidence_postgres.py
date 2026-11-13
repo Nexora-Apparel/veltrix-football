@@ -53,8 +53,8 @@ def setup_db():
                 terms_acceptance_evidence_sha256, rights_approval_ids
             ) VALUES (
                 'the_odds_api','account-1',DATE '2026-11-01',DATE '2026-12-01',
-                100,100,100,50,100,%s,%s,'test://quota','a',
-                'terms-v1','test://terms','b','["approval-1"]'::jsonb
+                100,100,100,50,100,%s,%s,'test://quota',repeat('a',64),
+                'terms-v1','test://terms',repeat('b',64),'["approval-1"]'::jsonb
             ) RETURNING budget_snapshot_id
         """, (now - timedelta(seconds=1), now + timedelta(minutes=10))).fetchone()[0]
         reservation_event_id = conn.execute("""
@@ -107,7 +107,7 @@ def add_event(conn, *, reservation_event_id, before_id, after_id, status,
         ) VALUES (
             %s,'reservation-1',%s,'the_odds_api','odds_api_v4','account-1',
             DATE '2026-11-01',DATE '2026-12-01',%s,%s,%s,%s,%s,
-            'TEST_EVIDENCE','3'::char(64),%s,%s,'test',%s
+            'TEST_EVIDENCE',repeat('3',64),%s,%s,'test',%s
         ) RETURNING quota_reconciliation_event_id
     """, (reservation_event_id, sequence, before_id, after_id, status,
           actual, releasable, previous, event_hash, now)).fetchone()[0]
@@ -146,11 +146,15 @@ def test_unknown_can_be_resolved_later_but_terminal_state_cannot_be_rewritten():
         first = add_event(conn, reservation_event_id=reservation, before_id=before,
                           after_id=uncertain, status="UNKNOWN",
                           now=now + timedelta(seconds=6))
+        known_before = add_response_and_snapshot(
+            conn, now=now + timedelta(seconds=8), request_id="known-before",
+            used=100, remaining=900, last=0
+        )
         after = add_response_and_snapshot(
             conn, now=now + timedelta(seconds=10), request_id="reconciled",
             used=103, remaining=897, last=3
         )
-        add_event(conn, reservation_event_id=reservation, before_id=before,
+        add_event(conn, reservation_event_id=reservation, before_id=known_before,
                   after_id=after, status="RECONCILED", actual=3, releasable=2,
                   sequence=2, previous="2" * 64, event_hash="4" * 64,
                   now=now + timedelta(seconds=11))
@@ -178,11 +182,14 @@ def test_overrun_and_cross_account_or_raw_header_injection_are_rejected():
                   after_id=over, status="OVERRUN", actual=6, releasable=0,
                   now=now + timedelta(seconds=6))
         conn.commit()
+        wrong_account = add_response_and_snapshot(
+            conn, now=now + timedelta(seconds=8), request_id="wrong-account",
+            used=110, remaining=890, last=4, account="other"
+        )
         with pytest.raises(psycopg.Error, match="FOREIGN KEY"):
-            add_response_and_snapshot(
-                conn, now=now + timedelta(seconds=8), request_id="wrong-account",
-                used=110, remaining=890, last=4, account="other"
-            )
+            add_event(conn, reservation_event_id=reservation, before_id=before,
+                      after_id=wrong_account, status="UNKNOWN",
+                      now=now + timedelta(seconds=9))
         conn.rollback()
 
     now, reservation = setup_db()
