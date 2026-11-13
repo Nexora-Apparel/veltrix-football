@@ -242,17 +242,142 @@ def run_acceptance() -> dict:
                 )
                 SELECT feature_snapshot_id,'F01.form','MISSING',NULL,'SOURCE_NOT_CAPTURED'
                 FROM feature_snapshots WHERE snapshot_key='phase4-acceptance-snapshot'
+                RETURNING feature_snapshot_link_id
             """)
-            phase4_mutation_rejected = False
+            feature_link_id = cur.fetchone()[0]
+            cur.execute("""
+                INSERT INTO capture_manifests(
+                    manifest_key,manifest_sha256,capture_scope,requests_planned
+                ) VALUES (
+                    'phase4-acceptance-manifest',repeat('1',64),
+                    '{"provider":"phase4-acceptance","endpoint_family":"acceptance"}'::jsonb,1
+                )
+                RETURNING capture_manifest_id
+            """)
+            capture_manifest_id = cur.fetchone()[0]
+            cur.execute("""
+                INSERT INTO capture_manifest_events(
+                    capture_manifest_id,status,event_at,reason_code
+                ) VALUES (%s,'PLANNED',NOW(),'ACCEPTANCE_PROBE')
+                RETURNING capture_manifest_event_id
+            """, (capture_manifest_id,))
+            capture_manifest_event_id = cur.fetchone()[0]
+            cur.execute("""
+                INSERT INTO provider_capture_requests(
+                    capture_manifest_id,provider,source_id,endpoint,request_key,
+                    request_fingerprint,attempt_number,requested_at,outcome
+                ) VALUES (
+                    %s,'phase4-acceptance','phase4-acceptance','/acceptance',
+                    'phase4-acceptance-timeout',repeat('2',64),1,NOW(),'TIMEOUT'
+                )
+                RETURNING capture_request_id
+            """, (capture_manifest_id,))
+            capture_request_id = cur.fetchone()[0]
+            cur.execute("""
+                SELECT crosswalk_version_id FROM entity_crosswalk_versions
+                WHERE provider='phase4-acceptance'
+                  AND provider_entity_id='provider-team-1' AND mapping_version=1
+            """)
+            crosswalk_version_id = cur.fetchone()[0]
+            cur.execute("""
+                SELECT feature_snapshot_id FROM feature_snapshots
+                WHERE snapshot_key='phase4-acceptance-snapshot'
+            """)
+            feature_snapshot_id = cur.fetchone()[0]
+            cur.execute("""
+                SELECT eligibility_event_id FROM feature_snapshot_eligibility_events
+                WHERE feature_snapshot_id=%s
+            """, (feature_snapshot_id,))
+            eligibility_event_id = cur.fetchone()[0]
+
+            def assert_phase4_append_only(table_name, update_sql, update_params, delete_sql, delete_params):
+                for operation, statement, params in (
+                    ("update", update_sql, update_params),
+                    ("delete", delete_sql, delete_params),
+                ):
+                    savepoint = f"phase4_{table_name}_{operation}_probe"
+                    cur.execute(f"SAVEPOINT {savepoint}")
+                    rejected = False
+                    try:
+                        cur.execute(statement, params)
+                    except psycopg.errors.RaiseException:
+                        rejected = True
+                        cur.execute(f"ROLLBACK TO SAVEPOINT {savepoint}")
+                    assert rejected, f"Phase 4 {table_name} accepted {operation.upper()}"
+                    cur.execute(f"RELEASE SAVEPOINT {savepoint}")
+
+            phase4_immutable_probes = [
+                (
+                    "capture_manifests",
+                    "UPDATE capture_manifests SET manifest_sha256=repeat('0',64) WHERE capture_manifest_id=%s",
+                    (capture_manifest_id,),
+                    "DELETE FROM capture_manifests WHERE capture_manifest_id=%s",
+                    (capture_manifest_id,),
+                ),
+                (
+                    "capture_manifest_events",
+                    "UPDATE capture_manifest_events SET reason_code='MUTATED' WHERE capture_manifest_event_id=%s",
+                    (capture_manifest_event_id,),
+                    "DELETE FROM capture_manifest_events WHERE capture_manifest_event_id=%s",
+                    (capture_manifest_event_id,),
+                ),
+                (
+                    "provider_capture_requests",
+                    "UPDATE provider_capture_requests SET endpoint='/mutated' WHERE capture_request_id=%s",
+                    (capture_request_id,),
+                    "DELETE FROM provider_capture_requests WHERE capture_request_id=%s",
+                    (capture_request_id,),
+                ),
+                (
+                    "entity_crosswalk_versions",
+                    "UPDATE entity_crosswalk_versions SET canonical_entity_key='mutated' WHERE crosswalk_version_id=%s",
+                    (crosswalk_version_id,),
+                    "DELETE FROM entity_crosswalk_versions WHERE crosswalk_version_id=%s",
+                    (crosswalk_version_id,),
+                ),
+                (
+                    "feature_snapshots",
+                    "UPDATE feature_snapshots SET selector_version='mutated' WHERE feature_snapshot_id=%s",
+                    (feature_snapshot_id,),
+                    "DELETE FROM feature_snapshots WHERE feature_snapshot_id=%s",
+                    (feature_snapshot_id,),
+                ),
+                (
+                    "feature_snapshot_eligibility_events",
+                    "UPDATE feature_snapshot_eligibility_events SET eligibility_status='ELIGIBLE' WHERE eligibility_event_id=%s",
+                    (eligibility_event_id,),
+                    "DELETE FROM feature_snapshot_eligibility_events WHERE eligibility_event_id=%s",
+                    (eligibility_event_id,),
+                ),
+                (
+                    "feature_snapshot_links",
+                    "UPDATE feature_snapshot_links SET eligibility_reason_code='MUTATED' WHERE feature_snapshot_link_id=%s",
+                    (feature_link_id,),
+                    "DELETE FROM feature_snapshot_links WHERE feature_snapshot_link_id=%s",
+                    (feature_link_id,),
+                ),
+            ]
+            for probe in phase4_immutable_probes:
+                assert_phase4_append_only(*probe)
+
+            # Composite response FK must reject a response linked to a different provider/source.
+            cur.execute("SAVEPOINT phase4_response_scope_probe")
+            response_scope_mismatch_rejected = False
             try:
                 cur.execute("""
-                    UPDATE feature_snapshots SET selector_version='mutated'
-                    WHERE snapshot_key='phase4-acceptance-snapshot'
-                """)
-            except psycopg.errors.RaiseException:
-                phase4_mutation_rejected = True
-                cur.execute("ROLLBACK TO SAVEPOINT phase4_snapshot_probe")
-            assert phase4_mutation_rejected, "Phase 4 feature snapshot accepted UPDATE"
+                    INSERT INTO provider_capture_requests(
+                        capture_manifest_id,provider,source_id,endpoint,request_key,
+                        request_fingerprint,attempt_number,requested_at,response_id,outcome
+                    ) VALUES (
+                        %s,'wrong-provider','wrong-source','/acceptance',
+                        'phase4-response-scope-mismatch',repeat('3',64),1,NOW(),%s,'RESPONSE'
+                    )
+                """, (capture_manifest_id, crosswalk_response_id))
+            except psycopg.errors.ForeignKeyViolation:
+                response_scope_mismatch_rejected = True
+                cur.execute("ROLLBACK TO SAVEPOINT phase4_response_scope_probe")
+            assert response_scope_mismatch_rejected, "Provider response composite FK accepted a mismatched provider/source"
+            cur.execute("RELEASE SAVEPOINT phase4_response_scope_probe")
             cur.execute("RELEASE SAVEPOINT phase4_snapshot_probe")
 
             # The append-only guard must reject mutations without changing the source row.
@@ -335,7 +460,8 @@ def run_acceptance() -> dict:
     return {"database": expected_db, "postgres_version_num": int(version),
             "tables": len(actual_tables), "indexes": len(actual_indexes),
             "migration_count": len(actual_history), "manifest_sha256": manifest_hash,
-            "status": "PASS"}
+            "phase4_append_only_relations": 7, "phase4_append_only_operations": 14,
+            "provider_response_scope_mismatch_rejected": True, "status": "PASS"}
 
 
 if __name__ == "__main__":
