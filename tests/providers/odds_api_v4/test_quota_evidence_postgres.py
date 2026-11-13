@@ -219,3 +219,20 @@ def test_snapshot_and_reconciliation_evidence_are_append_only():
         with pytest.raises(psycopg.Error, match="IMMUTABLE_HISTORY_MUTATION_REJECTED"):
             conn.execute("UPDATE provider_quota_snapshots SET requests_used=999")
         conn.rollback()
+
+def test_reconciled_actual_must_match_provider_last_request_cost():
+    now, reservation = setup_db()
+    with psycopg.connect(DATABASE_URL) as conn:
+        before = add_response_and_snapshot(
+            conn, now=now, request_id="before", used=100, remaining=900, last=1
+        )
+        after = add_response_and_snapshot(
+            conn, now=now + timedelta(seconds=5), request_id="after",
+            used=103, remaining=897, last=3
+        )
+        with pytest.raises(psycopg.Error, match="ACTUAL_CREDITS_DO_NOT_MATCH_LAST_REQUEST"):
+            add_event(conn, reservation_event_id=reservation, before_id=before,
+                      after_id=after, status="RECONCILED", actual=4, releasable=1,
+                      now=now + timedelta(seconds=6))
+        conn.rollback()
+
