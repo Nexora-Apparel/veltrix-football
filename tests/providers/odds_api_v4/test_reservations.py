@@ -60,7 +60,7 @@ def test_zero_caps_and_stale_or_future_budget_evidence_fail():
         REQUEST, replace(BUDGET, request_count_cap=0), now=NOW
     ).reason_code == "BUDGET_LIMIT_NOT_POSITIVE"
     assert validate_reservation(
-        REQUEST, replace(BUDGET, observed_at=NOW.replace(year=2027)), now=NOW
+        REQUEST, replace(BUDGET, observed_at=NOW.replace(year=2027), valid_until=NOW.replace(year=2027, minute=15)), now=NOW
     ).reason_code == "BUDGET_EVIDENCE_FROM_FUTURE"
 
 
