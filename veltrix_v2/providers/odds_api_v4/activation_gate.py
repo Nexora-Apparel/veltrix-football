@@ -174,9 +174,9 @@ def evaluate_activation_gate(
         rights.recorded_at, budget.observed_at, budget.valid_until,
     )):
         reasons.add("ACTIVATION_EVIDENCE_TIME_INVALID")
-    if (not _aware(scope.rights_evaluated_at) or not _aware(terms.accepted_at)
-            or not _aware(terms.recorded_at) or not _aware(rights.recorded_at)
-            or not _aware(rights.effective_at)):
+    if (not _aware(scope.rights_evaluated_at) or not _aware(scope.dispatch_at)
+            or not _aware(terms.accepted_at) or not _aware(terms.recorded_at)
+            or not _aware(rights.recorded_at) or not _aware(rights.effective_at)):
         pass
     else:
         if (terms.accepted_at > terms.recorded_at
