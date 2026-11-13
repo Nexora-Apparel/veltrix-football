@@ -35,10 +35,11 @@ Inspected the exact Phase 3 base commit `1bc80cf96526dc4d328af869c16c9a15cdc5730
 - `scripts/db_migrate.py` — lexically sorted `NNNN_name.sql` manifest; SHA-256 is calculated over exact file bytes; previously applied checksum drift and migrations absent from the current manifest fail closed; each migration and history insert execute in one transaction.
 - `tests/test_db_migrations.py` — existing migration filename, checksum, additive-DDL and append-only checks.
 
-The Phase 3 objects are not interchangeable:
+The Phase 3 objects are not interchangeable, and the current `source_observations` table is not yet temporally complete:
 - `provider_responses.fetched_at` is retrieval time, not provider publication time.
 - `source_observations.source_event_time` is not a substitute for source publication time.
 - `source_observations.available_at` is only usable when its `availability_basis` is independently trusted and semantically appropriate.
+- Migration 0002 does **not** currently provide dedicated `source_published_at`, `source_effective_at` or `recorded_at` columns, nor a preserved original timestamp string. The proposed 0004 must add these columns explicitly; do not infer publication time from `available_at`, `source_event_time` or `retrieved_at`.
 - `source_observations.point_in_time_certifiable` remains false unless a future, explicit validation process proves every eligibility condition.
 - `source_approvals.status` is the original approval record; later changes are represented by `source_approval_status_events`.
 
@@ -47,6 +48,18 @@ The Phase 3 objects are not interchangeable:
 Proposed future filename: `0004_point_in_time_feature_capture.sql`.
 
 This is a design contract, not a migration file. It must not be applied to staging or production in this task.
+
+### 3.0 Required extension to existing `source_observations`
+
+Because migration 0002 lacks dedicated source-publication/effective/recorded timestamp columns, the future 0004 must include:
+
+- `source_published_at TIMESTAMPTZ` — nullable; null means the observation cannot pass retrospective point-in-time eligibility unless a documented archive/guarantee path is independently proven.
+- `source_effective_at TIMESTAMPTZ` — nullable; semantic effective time, never a substitute for publication time.
+- `recorded_at TIMESTAMPTZ NOT NULL DEFAULT NOW()` — database evidence-store commit time.
+- `source_timestamp_raw TEXT` — exact original source timestamp string, including original offset/precision; null only when no source timestamp was supplied.
+- `source_timestamp_basis TEXT NOT NULL DEFAULT 'unknown'` with controlled values `provider_timestamp`, `archival_snapshot_timestamp`, `documented_guarantee`, `unknown`.
+
+No backfill from `retrieved_at`, `source_event_time`, `available_at`, kickoff, or inferred date boundaries is permitted. Existing Phase 3 rows retain null publication/effective timestamps and remain ineligible. Existing append-only triggers continue to apply; DDL-added defaults are for new rows only.
 
 ### 3.1 `capture_manifests`
 
@@ -106,6 +119,9 @@ Proposed columns:
 - `mapping_status TEXT NOT NULL CHECK (mapping_status IN ('PENDING','RESOLVED','REJECTED','SUPERSEDED'))`
 - `valid_from TIMESTAMPTZ NOT NULL`, `valid_until TIMESTAMPTZ`
 - `evidence_observation_id BIGINT REFERENCES source_observations(id) ON DELETE RESTRICT`
+- `mapping_method TEXT NOT NULL` — exact provider ID, reviewed alias, authoritative cross-reference, etc.
+- `confidence NUMERIC(5,4)` with range check 0–1; informational only and never a substitute for review.
+- `reviewer_id TEXT` — required for RESOLVED mappings unless an explicitly approved deterministic exact-ID rule applies.
 - `decision_reason TEXT NOT NULL`
 - `recorded_at TIMESTAMPTZ NOT NULL DEFAULT NOW()`
 
@@ -128,6 +144,7 @@ Proposed columns:
 - `fixture_id BIGINT NOT NULL REFERENCES fixtures(id) ON DELETE RESTRICT`
 - `prediction_cutoff_at TIMESTAMPTZ NOT NULL` — frozen before feature selection
 - `feature_schema_version TEXT NOT NULL`
+- `model_build_id TEXT NOT NULL` — immutable model/artifact identifier; model may remain a non-production research build.
 - `feature_set_sha256 CHAR(64) NOT NULL`
 - `selector_version TEXT NOT NULL`
 - `eligibility_status TEXT NOT NULL CHECK (eligibility_status IN ('PENDING','ELIGIBLE','INELIGIBLE'))`
