@@ -69,7 +69,6 @@ def test_budget_inputs_reject_booleans_and_no_mutation():
 
 def test_invalid_request_object_and_non_string_endpoint_fail_closed():
     assert plan_request(object(), budget()).reason_code == "REQUEST_OR_BUDGET_TYPE_INVALID"
-    malformed = PlannedRequest("bulk_odds")
     malformed = PlannedRequest([], markets=("h2h",), sport_key="soccer")
     assert plan_request(malformed, budget()).reason_code == "REQUEST_SHAPE_INVALID"
 
@@ -78,3 +77,10 @@ def test_fractional_quota_header_is_unknown():
     evidence = reconcile_quota_headers({"x-requests-used": "1.5", "x-requests-remaining": "9", "x-requests-last": "1"})
     assert not evidence.valid
     assert evidence.requests_used is None
+
+
+def test_zero_hard_limits_and_malformed_market_container_fail_closed():
+    req = PlannedRequest("bulk_odds", markets=("h2h",), sport_key="soccer")
+    assert plan_request(req, budget(per_run_hard_cap=0)).reason_code == "BUDGET_LIMIT_MUST_BE_POSITIVE"
+    malformed = PlannedRequest("bulk_odds", markets="h2h", sport_key="soccer")
+    assert plan_request(malformed, budget()).reason_code == "REQUEST_SHAPE_INVALID"
