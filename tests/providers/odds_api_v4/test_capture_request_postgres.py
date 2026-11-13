@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta, timezone
+from concurrent.futures import ThreadPoolExecutor
 import os
 from pathlib import Path
 
@@ -191,3 +192,15 @@ def test_retry_attempt_is_blocked_until_previous_attempt_is_committed():
             attempt_number=2,requested_at=NOW+timedelta(seconds=5),
             outcome="TIMEOUT",error_code="second-timeout",
         )
+
+def test_concurrent_manifest_replays_return_one_canonical_record():
+    setup_db()
+    m = manifest()
+    def persist_once(_):
+        return store().persist_capture_manifest(m)
+
+    with ThreadPoolExecutor(max_workers=8) as pool:
+        ids = list(pool.map(persist_once, range(8)))
+    assert len(set(ids)) == 1
+    with psycopg.connect(DATABASE_URL) as conn:
+        assert conn.execute("SELECT COUNT(*) FROM capture_manifests").fetchone()[0] == 1
