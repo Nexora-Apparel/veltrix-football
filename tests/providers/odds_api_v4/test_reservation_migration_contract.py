@@ -14,8 +14,8 @@ def test_credit_ledger_is_append_only_and_restricts_manifest_deletion():
 def test_reservation_function_serializes_account_period_not_snapshot_only():
     assert "pg_advisory_xact_lock" in SQL
     assert "p_account_ref" in SQL
-    assert "p_billing_period_start" in SQL
-    assert "p_billing_period_end" in SQL
+    assert "p_period_start" in SQL
+    assert "p_period_end" in SQL
 
 
 def test_independent_limits_and_unknowns_are_fail_closed():
@@ -31,6 +31,8 @@ def test_independent_limits_and_unknowns_are_fail_closed():
 def test_idempotency_is_bound_to_full_immutable_request_identity():
     assert "CREDIT_RESERVATION_IDEMPOTENCY_CONFLICT" in SQL
     assert "WHERE event_sequence = 1" in SQL
+    assert SQL.count("CREATE TABLE provider_credit_") == 2
+    assert SQL.count("CREATE OR REPLACE FUNCTION") == 2
     for column in ("request_fingerprint", "capture_manifest_id", "attempt_number",
                    "budget_snapshot_id", "estimated_credits", "run_key"):
         assert column in SQL
