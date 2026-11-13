@@ -524,6 +524,13 @@ class PostgresHistoryStore:
         conn = self._connect_for_write()
         try:
             cur = conn.cursor()
+            # Acquire the same per-request advisory lock as the INSERT trigger
+            # before checking for an exact replay. This makes idempotency safe
+            # under concurrent workers rather than relying on ON CONFLICT alone.
+            cur.execute(
+                "SELECT pg_advisory_xact_lock(hashtextextended(%s, 0))",
+                (str(capture_request_id),),
+            )
             cur.execute(
                 """SELECT request_key FROM provider_capture_requests
                    WHERE capture_request_id=%s""",
@@ -532,12 +539,31 @@ class PostgresHistoryStore:
             request_row = cur.fetchone()
             if not request_row or request_row[0] != event.request_id:
                 raise ValueError("CAPTURE_STATE_REQUEST_IDENTITY_MISMATCH")
+
+            cur.execute(
+                """SELECT capture_state_event_id,from_state,to_state,occurred_at,actor,
+                          reason_code,evidence_sha256,previous_event_sha256,event_sha256
+                   FROM provider_capture_state_events
+                   WHERE capture_request_id=%s AND event_sequence=%s""",
+                (capture_request_id,event.sequence),
+            )
+            stored = cur.fetchone()
+            expected = (
+                event.from_state,event.to_state,occurred_at,event.actor,
+                event.reason_code,event.evidence_sha256,
+                event.previous_event_sha256,event.event_sha256,
+            )
+            if stored:
+                if tuple(stored[1:]) != expected:
+                    raise ValueError("CAPTURE_STATE_EVENT_IDEMPOTENCY_CONFLICT")
+                conn.commit()
+                return int(stored[0])
+
             cur.execute(
                 """INSERT INTO provider_capture_state_events (
                     capture_request_id,event_sequence,from_state,to_state,occurred_at,
                     actor,reason_code,evidence_sha256,previous_event_sha256,event_sha256
                 ) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
-                ON CONFLICT (capture_request_id,event_sequence) DO NOTHING
                 RETURNING capture_state_event_id""",
                 (
                     capture_request_id,event.sequence,event.from_state,event.to_state,
@@ -546,32 +572,10 @@ class PostgresHistoryStore:
                 ),
             )
             row = cur.fetchone()
-            if row:
-                event_id = int(row[0])
-            else:
-                cur.execute(
-                    """SELECT from_state,to_state,occurred_at,actor,reason_code,
-                              evidence_sha256,previous_event_sha256,event_sha256
-                       FROM provider_capture_state_events
-                       WHERE capture_request_id=%s AND event_sequence=%s""",
-                    (capture_request_id,event.sequence),
-                )
-                stored = cur.fetchone()
-                expected = (
-                    event.from_state,event.to_state,occurred_at,event.actor,
-                    event.reason_code,event.evidence_sha256,
-                    event.previous_event_sha256,event.event_sha256,
-                )
-                if not stored or tuple(stored) != expected:
-                    raise ValueError("CAPTURE_STATE_EVENT_IDEMPOTENCY_CONFLICT")
-                cur.execute(
-                    """SELECT capture_state_event_id FROM provider_capture_state_events
-                       WHERE capture_request_id=%s AND event_sequence=%s""",
-                    (capture_request_id,event.sequence),
-                )
-                event_id = int(cur.fetchone()[0])
+            if not row:
+                raise ValueError("CAPTURE_STATE_EVENT_INSERT_FAILED")
             conn.commit()
-            return event_id
+            return int(row[0])
         except Exception:
             conn.rollback()
             raise
