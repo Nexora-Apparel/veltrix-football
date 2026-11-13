@@ -321,3 +321,99 @@ def test_cutoff_input_is_not_mutated_and_feature_hash_is_replay_stable():
 
 def test_missing_feature_is_not_imputed_to_zero():
     assert feature_set_sha256({"lineup": None}) != feature_set_sha256({"lineup": 0})
+
+
+
+def test_archival_proof_id_must_be_in_verified_allowlist_for_selector():
+    archived = deepcopy(BASE)
+    archived.update(
+        source_timestamp_basis="archival_snapshot_timestamp",
+        retrieved_at="2026-11-21T10:00:00Z",
+        archive_proof_id="archive-proof-77",
+    )
+    assert select([archived]) is None
+    assert select([archived], archive_proof_ids=frozenset({"archive-proof-77"})) == archived
+
+
+def test_selector_is_independent_of_input_order():
+    from itertools import permutations
+
+    rows = []
+    for index, (hour, revision) in enumerate(((9, 1), (10, 1), (10, 2), (11, 1))):
+        row = deepcopy(BASE)
+        row.update(
+            observation_id=f"order-{index}",
+            source_published_at=f"2026-11-20T{hour:02d}:00:00Z",
+            retrieved_at=f"2026-11-20T{hour:02d}:01:00Z",
+            source_revision_order=revision,
+        )
+        rows.append(row)
+    expected = rows[-1]
+    for ordered in permutations(rows):
+        assert select(ordered) == expected
+
+
+def test_selector_matches_independent_reference_on_seeded_temporal_cases():
+    import random
+    from datetime import datetime, timedelta, timezone
+
+    rng = random.Random(20461113)
+    origin = datetime(2026, 11, 20, tzinfo=timezone.utc)
+    for case in range(60):
+        rows = []
+        for index in range(rng.randint(1, 18)):
+            published_minute = rng.randint(0, 900)
+            published = origin + timedelta(minutes=published_minute)
+            retrieved = published + timedelta(minutes=rng.randint(0, 4))
+            effective = origin + timedelta(minutes=rng.randint(0, 300))
+            row = deepcopy(BASE)
+            row.update(
+                observation_id=f"case-{case}-row-{index}",
+                source_published_at=published.isoformat(),
+                retrieved_at=retrieved.isoformat(),
+                source_effective_at=effective.isoformat(),
+                source_revision_order=index,
+            )
+            rows.append(row)
+
+        cutoff = origin + timedelta(minutes=rng.randint(120, 840))
+        selected = select(rows, cutoff.isoformat())
+
+        # Independent oracle: directly filter the temporal predicates, then
+        # order by source publication instant and explicit source revision.
+        eligible = []
+        for row in rows:
+            published = datetime.fromisoformat(row["source_published_at"])
+            retrieved = datetime.fromisoformat(row["retrieved_at"])
+            effective = datetime.fromisoformat(row["source_effective_at"])
+            if published <= cutoff and retrieved <= cutoff and effective <= cutoff:
+                eligible.append(row)
+        expected = max(
+            eligible,
+            key=lambda row: (
+                datetime.fromisoformat(row["source_published_at"]),
+                row["source_revision_order"],
+            ),
+        ) if eligible else None
+        assert selected == expected
+
+
+def test_future_revocation_does_not_preempt_rights_before_its_effective_time():
+    rights = deepcopy(RIGHTS)
+    rights["revoked_at"] = "2026-11-20T16:00:00Z"
+    assert decision(rights=rights, rights_evaluated_at="2026-11-20T15:00:00Z").eligible
+    assert "RIGHTS_NOT_APPROVED" in decision(
+        rights=rights, rights_evaluated_at="2026-11-20T16:00:00Z"
+    ).reason_codes
+
+
+def test_cutoff_and_rights_evaluation_are_distinct_immutable_inputs():
+    row = deepcopy(BASE)
+    first = decision(row, cutoff=CUTOFF, rights_evaluated_at=RIGHTS_TIME)
+    repeated = decision(row, cutoff=CUTOFF, rights_evaluated_at=RIGHTS_TIME)
+    later_rights_check = decision(
+        row, cutoff=CUTOFF, rights_evaluated_at="2026-11-20T16:00:00Z"
+    )
+    assert first == repeated
+    assert first.cutoff_at == repeated.cutoff_at
+    assert later_rights_check.cutoff_at == first.cutoff_at
