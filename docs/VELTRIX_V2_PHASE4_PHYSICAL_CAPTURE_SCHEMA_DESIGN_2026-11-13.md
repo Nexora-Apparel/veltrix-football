@@ -1,7 +1,7 @@
 # VELTRIX FOOTBALL 2.0 — Phase 4 Physical Capture Schema Design
 
 **Date:** 2026-11-13  
-**Status:** Design proposal only — not an executable migration and not approved for application  
+**Status:** Reviewed schema contract with candidate migration `0004_point_in_time_feature_capture.sql`; not yet approved or applied  
 **Branch:** `phase4/provider-qualification-20261113`  
 **Target PR:** #67  
 **Depends on:** Phase 3 PR #66 being merged before this branch is rebased or its migration is considered for application
@@ -47,7 +47,7 @@ The Phase 3 objects are not interchangeable, and the current `source_observation
 
 Proposed future filename: `0004_point_in_time_feature_capture.sql`.
 
-This is a design contract, not a migration file. It must not be applied to staging or production in this task.
+The candidate SQL now exists at `db/migrations/0004_point_in_time_feature_capture.sql`. It is unmerged and unapproved for staging or production application. PostgreSQL 16/18 ephemeral CI acceptance is required before any staging consideration.
 
 ### 3.0 Required extension to existing `source_observations`
 
@@ -225,7 +225,7 @@ All foreign keys use `ON DELETE RESTRICT`; no cascading deletion of provenance. 
 - Before staging application: Phase 3 PR #66 must be merged; Phase 4 branch must be rebased onto the merged Phase 3 commit; migration SQL must be reviewed, linted and tested against a fresh PostgreSQL 16 database and a copy of the Phase 3 schema.
 - Staging apply must use the exact dedicated staging database allowlist, direct connection string from GitHub secret, and a dry-run manifest first. Never use production credentials or production target.
 - **Do not rerun the Phase 3 importer.** It is clean-database-only and the staging dataset is already populated.
-- No migration application is authorized by this document.
+- No migration application is authorized by this document. The candidate SQL is for code review and ephemeral CI only until Phase 3 is merged, Phase 4 is rebased, and a separately reviewed staging change is approved.
 
 ## 6. Required tests before any migration application
 
