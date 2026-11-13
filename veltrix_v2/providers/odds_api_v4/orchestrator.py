@@ -2,6 +2,7 @@
 
 No HTTP, environment, secret-store, database, scheduling or prediction access.
 This module emits deterministic manifests and preflight decisions only.
+# Provider-specific tests are part of the pull-request foundation path filter.
 """
 from __future__ import annotations
 
