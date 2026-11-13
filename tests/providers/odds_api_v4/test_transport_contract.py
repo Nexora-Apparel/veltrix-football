@@ -1,6 +1,8 @@
-from datetime import datetime, timezone
+from dataclasses import replace
+from datetime import datetime, timedelta, timezone
 import hashlib
 
+from veltrix_v2.providers.odds_api_v4.dispatch_guard import DispatchContext
 from veltrix_v2.providers.odds_api_v4.transport_contract import (
     RawTransportResponse, TransportPolicy, execute_with_injected_transport,
     validate_transport_response,
@@ -8,6 +10,27 @@ from veltrix_v2.providers.odds_api_v4.transport_contract import (
 
 
 NOW = datetime(2026, 11, 13, 12, tzinfo=timezone.utc)
+CONTEXT = DispatchContext(
+    provider="the_odds_api",
+    endpoint_url="https://api.the-odds-api.com/v4/sports",
+    manifest_sha256="a" * 64,
+    request_fingerprint="b" * 64,
+    reservation_fingerprint="b" * 64,
+    reservation_key="reservation-1",
+    preflight_approved=True,
+    terms_acceptance_verified=True,
+    rights_approved=True,
+    budget_evidence_fresh=True,
+    reservation_committed=True,
+    capture_state="CREDIT_RESERVED",
+    operator_dispatch_enabled=True,
+    emergency_stop=False,
+    attempt_number=1,
+    max_attempts=1,
+    previous_attempt_reconciled=False,
+    budget_valid_until=NOW + timedelta(minutes=5),
+    now=NOW,
+)
 
 
 def test_raw_body_hash_and_allowlisted_headers_are_preserved_exactly():
@@ -70,8 +93,7 @@ def test_injected_transport_receives_strict_policy_and_never_retries():
         return RawTransportResponse(200, {}, b"ok", NOW)
 
     result = execute_with_injected_transport(
-        dispatch_allowed=True,
-        request_url="https://api.the-odds-api.com/v4/sports",
+        context=CONTEXT,
         send=fake_send,
     )
     assert result.accepted
@@ -87,8 +109,7 @@ def test_transport_exceptions_remain_uncertain_and_are_not_retried():
         raise TimeoutError("network timed out")
 
     result = execute_with_injected_transport(
-        dispatch_allowed=True,
-        request_url="https://api.the-odds-api.com/v4/sports",
+        context=CONTEXT,
         send=broken_send,
     )
     assert result.reason_code == "TRANSPORT_OUTCOME_UNCERTAIN"
@@ -98,8 +119,7 @@ def test_transport_exceptions_remain_uncertain_and_are_not_retried():
 def test_unauthorized_dispatch_never_calls_transport():
     calls = []
     result = execute_with_injected_transport(
-        dispatch_allowed=False,
-        request_url="https://api.the-odds-api.com/v4/sports",
+        context=replace(CONTEXT, operator_dispatch_enabled=False),
         send=lambda url, policy: calls.append(url),
     )
     assert result.reason_code == "DISPATCH_NOT_AUTHORIZED"
