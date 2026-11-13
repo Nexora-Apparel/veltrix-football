@@ -55,11 +55,11 @@ Because migration 0002 lacks dedicated source-publication/effective/recorded tim
 
 - `source_published_at TIMESTAMPTZ` — nullable; null means the observation cannot pass retrospective point-in-time eligibility unless a documented archive/guarantee path is independently proven.
 - `source_effective_at TIMESTAMPTZ` — nullable; semantic effective time, never a substitute for publication time.
-- `recorded_at TIMESTAMPTZ NOT NULL DEFAULT NOW()` — database evidence-store commit time.
+- `recorded_at TIMESTAMPTZ` — database evidence-store commit time. Add nullable first; do not fabricate historical commit times for existing rows. Enforce non-null for new writes with a `CHECK (recorded_at IS NOT NULL) NOT VALID` constraint plus writer validation, or a separately reviewed equivalent.
 - `source_timestamp_raw TEXT` — exact original source timestamp string, including original offset/precision; null only when no source timestamp was supplied.
 - `source_timestamp_basis TEXT NOT NULL DEFAULT 'unknown'` with controlled values `provider_timestamp`, `archival_snapshot_timestamp`, `documented_guarantee`, `unknown`.
 
-No backfill from `retrieved_at`, `source_event_time`, `available_at`, kickoff, or inferred date boundaries is permitted. Existing Phase 3 rows retain null publication/effective timestamps and remain ineligible. Existing append-only triggers continue to apply; DDL-added defaults are for new rows only.
+No backfill from `retrieved_at`, `source_event_time`, `available_at`, kickoff, or inferred date boundaries is permitted. Existing Phase 3 rows retain null publication/effective timestamps and null historical `recorded_at`; they remain ineligible. Do not backfill `recorded_at` with migration time. Existing append-only triggers continue to apply.
 
 ### 3.1 `capture_manifests`
 
@@ -70,14 +70,26 @@ Proposed columns:
 - `manifest_key TEXT NOT NULL UNIQUE` — caller-generated stable idempotency key
 - `manifest_sha256 CHAR(64) NOT NULL` — lowercase SHA-256 of canonical manifest bytes
 - `capture_scope JSONB NOT NULL` — provider, endpoint family, competition and time-window scope; no credentials
-- `started_at TIMESTAMPTZ NOT NULL`, `finished_at TIMESTAMPTZ`
-- `status TEXT NOT NULL CHECK (status IN ('PLANNED','RUNNING','COMPLETED','FAILED','PARTIAL'))`
+- `created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()`
 - `requests_planned INTEGER NOT NULL CHECK (requests_planned >= 0)`
 - `requests_completed INTEGER NOT NULL CHECK (requests_completed >= 0)`
 - `coverage_summary JSONB NOT NULL DEFAULT '{}'::jsonb`
 - `created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()`
 
-Checks: hash format; completed requests cannot exceed planned requests; finish cannot precede start. Manifest rows are append-only after terminal state. If lifecycle updates are required while RUNNING, use append-only manifest events or define a narrowly scoped state-transition procedure; do not permit arbitrary mutation of terminal evidence.
+Manifest metadata is insert-only. Lifecycle state and timestamps are derived from a separate append-only `capture_manifest_events` relation; never update a manifest row to mark it complete. Checks: hash format; completed requests cannot exceed planned requests.
+
+#### Capture manifest lifecycle events
+
+Add `capture_manifest_events`:
+- `capture_manifest_event_id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY`
+- `capture_manifest_id BIGINT NOT NULL REFERENCES capture_manifests(capture_manifest_id) ON DELETE RESTRICT`
+- `status TEXT NOT NULL CHECK (status IN ('PLANNED','RUNNING','COMPLETED','FAILED','PARTIAL'))`
+- `event_at TIMESTAMPTZ NOT NULL`
+- `reason_code TEXT NOT NULL`
+- `evidence_sha256 CHAR(64)`
+- `recorded_at TIMESTAMPTZ NOT NULL DEFAULT NOW()`
+
+Append-only trigger; index `(capture_manifest_id, event_at DESC, capture_manifest_event_id DESC)`. The latest event is the current state. Enforce legal transitions in a transactionally locked writer and tests (PLANNED → RUNNING → terminal; RUNNING may also end PARTIAL/FAILED). A terminal state cannot be reopened.
 
 ### 3.2 `provider_capture_requests`
 
@@ -147,15 +159,25 @@ Proposed columns:
 - `model_build_id TEXT NOT NULL` — immutable model/artifact identifier; model may remain a non-production research build.
 - `feature_set_sha256 CHAR(64) NOT NULL`
 - `selector_version TEXT NOT NULL`
-- `eligibility_status TEXT NOT NULL CHECK (eligibility_status IN ('PENDING','ELIGIBLE','INELIGIBLE'))`
-- `eligibility_reason_codes JSONB NOT NULL DEFAULT '[]'::jsonb CHECK (jsonb_typeof(eligibility_reason_codes) = 'array')`
 - `created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()`
 
 Constraints/indexes:
 - hash format; unique `(fixture_id, prediction_cutoff_at, feature_schema_version, selector_version)`
 - index `(fixture_id, prediction_cutoff_at DESC)`
 - index `(eligibility_status, prediction_cutoff_at)`
-- snapshot is inserted once with frozen cutoff and schema/selector identity. Eligibility is finalized through an append-only status-event relation if status transitions are required; never rewrite the frozen feature definition or cutoff.
+- snapshot is inserted once with frozen cutoff and schema/selector identity. Eligibility is derived from an append-only `feature_snapshot_eligibility_events` relation (defined below); never rewrite the frozen feature definition or cutoff.
+
+#### Snapshot eligibility events
+
+Add `feature_snapshot_eligibility_events`:
+- `eligibility_event_id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY`
+- `feature_snapshot_id BIGINT NOT NULL REFERENCES feature_snapshots(feature_snapshot_id) ON DELETE RESTRICT`
+- `eligibility_status TEXT NOT NULL CHECK (eligibility_status IN ('PENDING','ELIGIBLE','INELIGIBLE'))`
+- `reason_codes JSONB NOT NULL DEFAULT '[]'::jsonb CHECK (jsonb_typeof(reason_codes) = 'array')`
+- `evidence_sha256 CHAR(64) NOT NULL`
+- `recorded_at TIMESTAMPTZ NOT NULL DEFAULT NOW()`
+
+Append-only trigger; index `(feature_snapshot_id, recorded_at DESC, eligibility_event_id DESC)`. The latest event is the current decision. An ELIGIBLE event must be emitted only after every feature link has passed validation and the complete snapshot hash has been recomputed. A later revocation or discovered integrity defect is represented by a new INELIGIBLE event, never by editing prior evidence.
 
 ### 3.5 `feature_snapshot_links`
 
@@ -194,7 +216,7 @@ The eventual migration must add BEFORE UPDATE OR DELETE append-only triggers, re
 - `feature_snapshot_links`;
 - terminal `capture_manifests` (or append-only manifest events if mutable in-progress state is required).
 
-Prefer insert-only lifecycle: create a manifest as PLANNED, record request attempts and responses separately, and append a terminal manifest event. Avoid UPDATE-based lifecycle on evidence rows. If this pattern is selected, replace the simple manifest status field with a manifest event table and derive current status from the latest event.
+Use insert-only lifecycle: insert immutable manifest metadata, append PLANNED/RUNNING/terminal manifest events, insert each request attempt only after its outcome is known, insert the frozen feature snapshot and its links, then append the eligibility decision event. Derive current state from the latest event. No evidence row is updated.
 
 All foreign keys use `ON DELETE RESTRICT`; no cascading deletion of provenance. Hashes use lowercase SHA-256 hex checks. All timestamps are timezone-aware PostgreSQL `TIMESTAMPTZ`. No feature-selection query may use `NOW()` as its cutoff; it must use the frozen snapshot cutoff supplied by the prediction orchestration layer.
 
