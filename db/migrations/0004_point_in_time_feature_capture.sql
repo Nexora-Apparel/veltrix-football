@@ -124,7 +124,7 @@ CREATE INDEX entity_crosswalk_provider_entity_idx
 -- Serialize overlapping resolved-identity checks per provider entity. This closes
 -- the concurrent-insert race that a plain NOT EXISTS check would leave open.
 CREATE OR REPLACE FUNCTION reject_overlapping_resolved_crosswalk()
-RETURNS trigger LANGUAGE plpgsql AS $
+RETURNS trigger LANGUAGE plpgsql AS $func$
 BEGIN
     IF NEW.mapping_status = 'RESOLVED' THEN
         PERFORM pg_advisory_xact_lock(
@@ -152,7 +152,7 @@ BEGIN
     END IF;
     RETURN NEW;
 END;
-$;
+$func$;
 
 CREATE TRIGGER entity_crosswalk_no_resolved_overlap
     BEFORE INSERT ON entity_crosswalk_versions
