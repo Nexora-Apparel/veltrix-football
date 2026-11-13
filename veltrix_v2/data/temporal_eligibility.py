@@ -25,6 +25,13 @@ REQUIRED_RIGHTS_SCOPE = (
 
 
 @dataclass(frozen=True)
+class RightsStatusResolution:
+    status: str | None
+    latest_event_id: int | None = None
+    reason_code: str | None = None
+
+
+@dataclass(frozen=True)
 class EligibilityDecision:
     eligible: bool
     reason_codes: tuple[str, ...]
@@ -57,6 +64,67 @@ def parse_aware_timestamp(value: Any) -> datetime | None:
     if parsed.tzinfo is None or parsed.utcoffset() is None:
         return None
     return parsed.astimezone(timezone.utc)
+
+
+
+def resolve_rights_status(
+    approval: Mapping[str, Any] | None,
+    status_events: Iterable[Mapping[str, Any]],
+    rights_evaluated_at: str | datetime,
+) -> RightsStatusResolution:
+    """Resolve append-only approval events as known and effective at use time."""
+    evaluated_at = parse_aware_timestamp(rights_evaluated_at)
+    if evaluated_at is None:
+        return RightsStatusResolution(None, reason_code="RIGHTS_EVALUATION_TIMESTAMP_UNTRUSTED")
+    if not isinstance(approval, Mapping):
+        return RightsStatusResolution(None)
+
+    approval_id = approval.get("approval_id")
+    applicable: list[tuple[datetime, int, str]] = []
+    seen_event_ids: set[int] = set()
+    for event in status_events:
+        if not isinstance(event, Mapping):
+            return RightsStatusResolution(None, reason_code="RIGHTS_STATUS_HISTORY_UNTRUSTED")
+        event_id = event.get("event_id")
+        effective_at = parse_aware_timestamp(event.get("effective_at"))
+        recorded_at = parse_aware_timestamp(event.get("recorded_at"))
+        status = event.get("status")
+        evidence_uri = event.get("evidence_uri")
+        evidence_hash = event.get("evidence_sha256")
+        reason_code = event.get("reason_code")
+        if (
+            not approval_id
+            or event.get("approval_id") != approval_id
+            or isinstance(event_id, bool)
+            or not isinstance(event_id, int)
+            or event_id <= 0
+            or event_id in seen_event_ids
+            or effective_at is None
+            or recorded_at is None
+            or status not in ("APPROVED", "REVOKED")
+            or not isinstance(evidence_uri, str)
+            or not evidence_uri.strip()
+            or not isinstance(reason_code, str)
+            or not reason_code.strip()
+            or not isinstance(evidence_hash, str)
+            or len(evidence_hash) != 64
+        ):
+            return RightsStatusResolution(None, reason_code="RIGHTS_STATUS_HISTORY_UNTRUSTED")
+        try:
+            int(evidence_hash, 16)
+        except ValueError:
+            return RightsStatusResolution(None, reason_code="RIGHTS_STATUS_HISTORY_UNTRUSTED")
+        seen_event_ids.add(event_id)
+        # A backdated event recorded after the decision time was not yet known
+        # to that downstream use and must not rewrite its historical state.
+        if effective_at <= evaluated_at and recorded_at <= evaluated_at:
+            applicable.append((effective_at, event_id, status))
+
+    if not applicable:
+        return RightsStatusResolution(approval.get("status"))
+    applicable.sort(key=lambda item: (item[0], item[1]))
+    effective_at, event_id, status = applicable[-1]
+    return RightsStatusResolution(status, latest_event_id=event_id)
 
 
 def _scope_matches(approval: Mapping[str, Any], observation: Mapping[str, Any]) -> bool:
@@ -119,6 +187,7 @@ def evaluate_observation(
     rights_evaluated_at: str | datetime | None = None,
     required_use: str = "model_training",
     archive_proof_verified: bool = False,
+    rights_status_events: Iterable[Mapping[str, Any]] = (),
 ) -> EligibilityDecision:
     """Evaluate evidence as-of a frozen prediction cutoff and current rights state."""
     cutoff = parse_aware_timestamp(prediction_cutoff_at)
@@ -181,7 +250,17 @@ def evaluate_observation(
 
     if rights_time is None:
         reasons.append("RIGHTS_EVALUATION_TIMESTAMP_UNTRUSTED")
-    rights_reason = _rights_reason(rights_approval, observation, rights_time, required_use)
+    resolution = resolve_rights_status(rights_approval, rights_status_events, rights_time or "")
+    if resolution.reason_code:
+        reasons.append(resolution.reason_code)
+    resolved_approval = dict(rights_approval) if isinstance(rights_approval, Mapping) else None
+    if resolved_approval is not None and resolution.status is not None:
+        resolved_approval["status"] = resolution.status
+        if resolution.latest_event_id is not None and resolution.status == "APPROVED":
+            resolved_approval.pop("revoked_at", None)
+        elif resolution.status == "REVOKED":
+            resolved_approval["revoked_at"] = rights_time.isoformat() if rights_time else None
+    rights_reason = _rights_reason(resolved_approval, observation, rights_time, required_use)
     if rights_reason:
         reasons.append(rights_reason)
 
@@ -197,6 +276,7 @@ def select_as_of(
     rights_evaluated_at: str | datetime | None = None,
     required_use: str = "model_training",
     archive_proof_ids: frozenset[str] = frozenset(),
+    rights_status_events: Iterable[Mapping[str, Any]] = (),
 ) -> Mapping[str, Any] | None:
     """Select latest eligible source version; ambiguous equal-time versions fail closed."""
     candidates: list[tuple[datetime, Mapping[str, Any]]] = []
@@ -209,6 +289,7 @@ def select_as_of(
             rights_evaluated_at=rights_evaluated_at,
             required_use=required_use,
             archive_proof_verified=bool(proof_id and proof_id in archive_proof_ids),
+            rights_status_events=rights_status_events,
         )
         if decision.eligible and decision.published_at is not None:
             candidates.append((decision.published_at, row))

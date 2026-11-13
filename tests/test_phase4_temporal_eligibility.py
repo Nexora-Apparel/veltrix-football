@@ -417,3 +417,104 @@ def test_cutoff_and_rights_evaluation_are_distinct_immutable_inputs():
     assert first == repeated
     assert first.cutoff_at == repeated.cutoff_at
     assert later_rights_check.cutoff_at == first.cutoff_at
+
+
+
+def rights_event(event_id, status, effective_at, recorded_at, approval_id="approval-1"):
+    return {
+        "event_id": event_id,
+        "approval_id": approval_id,
+        "status": status,
+        "evidence_uri": f"https://evidence.invalid/{event_id}",
+        "evidence_sha256": f"{event_id:064x}",
+        "effective_at": effective_at,
+        "recorded_at": recorded_at,
+        "reason_code": f"TEST_{status}",
+    }
+
+
+def approved_rights():
+    rights = deepcopy(RIGHTS)
+    rights["approval_id"] = "approval-1"
+    return rights
+
+
+def test_append_only_revocation_event_blocks_use_after_effective_time():
+    event = rights_event(
+        1, "REVOKED", "2026-11-20T13:00:00Z", "2026-11-20T13:01:00Z"
+    )
+    assert "RIGHTS_NOT_APPROVED" in decision(
+        rights=approved_rights(), rights_status_events=[event]
+    ).reason_codes
+
+
+def test_future_effective_revocation_does_not_preempt_earlier_use():
+    event = rights_event(
+        1, "REVOKED", "2026-11-20T16:00:00Z", "2026-11-20T14:00:00Z"
+    )
+    assert decision(
+        rights=approved_rights(),
+        rights_status_events=[event],
+        rights_evaluated_at="2026-11-20T15:00:00Z",
+    ).eligible
+    assert "RIGHTS_NOT_APPROVED" in decision(
+        rights=approved_rights(),
+        rights_status_events=[event],
+        rights_evaluated_at="2026-11-20T16:00:00Z",
+    ).reason_codes
+
+
+def test_backdated_revocation_is_not_applied_before_it_was_recorded():
+    event = rights_event(
+        1, "REVOKED", "2026-11-20T11:00:00Z", "2026-11-20T15:30:00Z"
+    )
+    assert decision(
+        rights=approved_rights(),
+        rights_status_events=[event],
+        rights_evaluated_at="2026-11-20T15:00:00Z",
+    ).eligible
+    assert "RIGHTS_NOT_APPROVED" in decision(
+        rights=approved_rights(),
+        rights_status_events=[event],
+        rights_evaluated_at="2026-11-20T16:00:00Z",
+    ).reason_codes
+
+
+def test_later_approval_event_can_reinstate_after_revocation():
+    events = [
+        rights_event(1, "REVOKED", "2026-11-20T13:00:00Z", "2026-11-20T13:01:00Z"),
+        rights_event(2, "APPROVED", "2026-11-20T14:00:00Z", "2026-11-20T14:01:00Z"),
+    ]
+    assert decision(
+        rights=approved_rights(),
+        rights_status_events=events,
+    ).eligible
+
+
+@pytest.mark.parametrize("patch", [
+    {"event_id": 0},
+    {"effective_at": "2026-11-20T13:00:00"},
+    {"recorded_at": None},
+    {"status": "SUSPENDED"},
+    {"approval_id": "another-approval"},
+    {"evidence_sha256": "not-a-hash"},
+    {"reason_code": ""},
+])
+def test_malformed_rights_status_event_fails_closed(patch):
+    event = rights_event(
+        1, "REVOKED", "2026-11-20T13:00:00Z", "2026-11-20T13:01:00Z"
+    )
+    event.update(patch)
+    assert "RIGHTS_STATUS_HISTORY_UNTRUSTED" in decision(
+        rights=approved_rights(), rights_status_events=[event]
+    ).reason_codes
+
+
+def test_duplicate_rights_status_event_id_fails_closed():
+    event = rights_event(
+        1, "REVOKED", "2026-11-20T13:00:00Z", "2026-11-20T13:01:00Z"
+    )
+    duplicate = deepcopy(event)
+    assert "RIGHTS_STATUS_HISTORY_UNTRUSTED" in decision(
+        rights=approved_rights(), rights_status_events=[event, duplicate]
+    ).reason_codes
