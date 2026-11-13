@@ -1,7 +1,7 @@
 # VELTRIX FOOTBALL 2.0 — Phase 4 Physical Capture Schema Design
 
 **Date:** 2026-11-13  
-**Status:** Reviewed schema contract with candidate migration `0004_point_in_time_feature_capture.sql`; not yet approved or applied  
+**Status:** Reviewed, CI-accepted and applied to the dedicated Neon staging database on 2026-11-13; production remains untouched  
 **Branch:** `phase4/provider-qualification-20261113`  
 **Target PR:** #67  
 **Depends on:** Phase 3 PR #66 being merged before this branch is rebased or its migration is considered for application
@@ -222,10 +222,12 @@ All foreign keys use `ON DELETE RESTRICT`; no cascading deletion of provenance. 
 - Migration numbering is sequential after 0003; candidate name `0004_point_in_time_feature_capture.sql`.
 - The migration runner hashes exact UTF-8 file bytes and rejects checksum drift. Once applied anywhere, never edit 0004; corrections require a new forward-only migration.
 - DDL is transactional under the existing runner. No destructive down migration is defined. Rollback means disable new writers/readers and leave additive evidence tables intact; schema removal is not an accepted rollback strategy.
-- Before staging application: Phase 3 PR #66 must be merged; Phase 4 branch must be rebased onto the merged Phase 3 commit; migration SQL must be reviewed, linted and tested against a fresh PostgreSQL 16 database and a copy of the Phase 3 schema.
-- Staging apply must use the exact dedicated staging database allowlist, direct connection string from GitHub secret, and a dry-run manifest first. Never use production credentials or production target.
-- **Do not rerun the Phase 3 importer.** It is clean-database-only and the staging dataset is already populated.
-- No migration application is authorized by this document. The candidate SQL is for code review and ephemeral CI only until Phase 3 is merged, Phase 4 is rebased, and a separately reviewed staging change is approved.
+- Pre-application gates passed: Phase 3 PR #66 merged; Phase 4 synchronized onto the merged Phase 3 baseline; migration 0004 passed fresh PostgreSQL 16/18 installs and a Phase 3-to-Phase 4 upgrade test.
+- Migration 0004 was applied transactionally to the exact dedicated Neon staging target only: project `withered-sky-75161174`, branch `br-silent-violet-bc5de88s`, database `veltrix_football_staging`, role `neondb_owner`, PostgreSQL `18.7`.
+- Applied migration SHA-256: `74fe07102dd038f79da380744becdc596537fbc063ada4b70022b075af0a108d`. The migration history now contains 0001–0004 with exact repository checksums.
+- Post-apply verification: 25 public tables; seven Phase 4 evidence tables and seven append-only triggers; crosswalk overlap trigger present; feature snapshot uniqueness includes fixture, cutoff, schema, model build, selector and feature-set hash.
+- Imported staging records were preserved exactly: 2,496 fixtures, 2,496 result versions, 28 provider responses and 2,496 source observations. All 2,496 observations remain `point_in_time_certifiable=false`; publication, effective and historical recording timestamps remain NULL.
+- **Do not rerun the Phase 3 importer.** No production database or production schema was modified. The Phase 4 migration added schema only; it did not promote historical records into eligible features.
 
 ## 6. Required tests before any migration application
 
@@ -253,6 +255,6 @@ This design does not:
 - authorize historical point-in-time reconstruction from Phase 3 labels;
 - build, train, calibrate or publish prediction models;
 - unlock value bets, schedule the daily report, send Telegram messages or deploy the website;
-- alter production or staging data.
+- alter production data or enable staging feature ingestion; the only staging change is the additive schema migration 0004 recorded above.
 
 Provider/field/competition rights, source publication timestamps, raw provenance, deterministic identity, and feature semantics must all be qualified before a capture adapter can write model-eligible features. Every feature remains ineligible by default. The value-betting certification gates remain unchanged.
