@@ -603,6 +603,12 @@ class PostgresHistoryStore:
         if (not isinstance(requested_at, datetime) or requested_at.tzinfo is None
                 or requested_at.utcoffset() is None):
             raise ValueError("CAPTURE_REQUEST_TIME_INVALID")
+        try:
+            manifest_created_at = datetime.fromisoformat(manifest.created_at.replace("Z", "+00:00"))
+        except (AttributeError, TypeError, ValueError):
+            raise ValueError("CAPTURE_MANIFEST_CREATED_AT_INVALID") from None
+        if requested_at < manifest_created_at:
+            raise ValueError("CAPTURE_REQUEST_PRECEDES_MANIFEST")
         if outcome not in {"RESPONSE","TIMEOUT","NETWORK_ERROR","RATE_LIMITED","CANCELLED"}:
             raise ValueError("CAPTURE_REQUEST_OUTCOME_INVALID")
         if outcome == "RESPONSE":
@@ -631,15 +637,37 @@ class PostgresHistoryStore:
                 raise ValueError("CAPTURE_REQUEST_MANIFEST_BINDING_MISMATCH")
             if outcome == "RESPONSE":
                 cur.execute(
-                    """SELECT provider,source_id,fetched_at FROM provider_responses
+                    """SELECT provider,source_id,request_id,fetched_at FROM provider_responses
                        WHERE id=%s""",
                     (response_id,),
                 )
                 response_row = cur.fetchone()
                 if (not response_row
-                        or tuple(response_row[:2]) != ("the_odds_api","odds_api_v4")
-                        or response_row[2] < requested_at):
+                        or tuple(response_row[:3]) != (
+                            "the_odds_api","odds_api_v4",manifest.request_id
+                        )
+                        or response_row[3] < requested_at):
                     raise ValueError("CAPTURE_REQUEST_RESPONSE_PROVENANCE_MISMATCH")
+
+            if attempt_number > 1:
+                cur.execute(
+                    """SELECT capture_request_id FROM provider_capture_requests
+                       WHERE capture_manifest_id=%s AND request_key=%s
+                         AND attempt_number=%s""",
+                    (capture_manifest_id,manifest.request_id,attempt_number - 1),
+                )
+                previous_request = cur.fetchone()
+                if not previous_request:
+                    raise ValueError("CAPTURE_REQUEST_PREVIOUS_ATTEMPT_MISSING")
+                cur.execute(
+                    """SELECT to_state FROM provider_capture_state_events
+                       WHERE capture_request_id=%s
+                       ORDER BY event_sequence DESC LIMIT 1""",
+                    (previous_request[0],),
+                )
+                previous_state = cur.fetchone()
+                if not previous_state or previous_state[0] != "COMMITTED":
+                    raise ValueError("CAPTURE_REQUEST_PREVIOUS_ATTEMPT_NOT_RECONCILED")
 
             cur.execute(
                 """INSERT INTO provider_capture_requests (
