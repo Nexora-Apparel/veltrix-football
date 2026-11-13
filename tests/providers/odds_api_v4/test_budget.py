@@ -65,3 +65,16 @@ def test_budget_inputs_reject_booleans_and_no_mutation():
     assert not result.allowed
     assert result.reason_code == "BUDGET_INPUT_INVALID"
     assert original.run_committed == 2
+
+
+def test_invalid_request_object_and_non_string_endpoint_fail_closed():
+    assert plan_request(object(), budget()).reason_code == "REQUEST_OR_BUDGET_TYPE_INVALID"
+    malformed = PlannedRequest("bulk_odds")
+    malformed = PlannedRequest([], markets=("h2h",), sport_key="soccer")
+    assert plan_request(malformed, budget()).reason_code == "REQUEST_SHAPE_INVALID"
+
+
+def test_fractional_quota_header_is_unknown():
+    evidence = reconcile_quota_headers({"x-requests-used": "1.5", "x-requests-remaining": "9", "x-requests-last": "1"})
+    assert not evidence.valid
+    assert evidence.requests_used is None
