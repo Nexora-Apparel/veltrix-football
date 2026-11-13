@@ -117,3 +117,32 @@ def test_no_fixture_event_crosswalk_is_accepted_for_discovery_only():
     result = evaluate_preflight(manifest, rights(), budget(), {})
     assert result.allowed
     assert result.estimated_credits == 0
+
+
+
+def test_preflight_rejects_tampered_manifest_fields():
+    manifest = build_manifest(request())
+    altered = replace(manifest, markets=("btts",))
+    result = evaluate_preflight(altered, rights(), budget(), {"fixture-1": "event-1"})
+    assert not result.allowed
+    assert "MANIFEST_INTEGRITY_INVALID" in result.reason_codes
+
+
+def test_manifest_rejects_malformed_scope_and_event_odds_fanout():
+    with pytest.raises(ValueError, match="MARKET_SCOPE_INVALID"):
+        build_manifest(request(markets=(["h2h"],)))
+    second = FixtureBoundary("fixture-2", "event-2", NOW, NOW + timedelta(hours=3))
+    with pytest.raises(ValueError, match="EVENT_ODDS_REQUIRES_EXACTLY_ONE_EVENT"):
+        build_manifest(request(endpoint_class="event_odds", fixture_boundaries=(
+            request().fixture_boundaries[0], second
+        )))
+
+
+def test_preflight_rejects_malformed_rights_scope_and_naive_rights_time():
+    manifest = build_manifest(request())
+    malformed = replace(rights(), markets=(["h2h"],))
+    result = evaluate_preflight(manifest, malformed, budget(), {"fixture-1": "event-1"})
+    assert "RIGHTS_SCOPE_EVIDENCE_INVALID" in result.reason_codes
+    naive = replace(rights(), effective_at=datetime(2026, 11, 12, 12))
+    result = evaluate_preflight(manifest, naive, budget(), {"fixture-1": "event-1"})
+    assert "RIGHTS_TIMESTAMP_INVALID" in result.reason_codes
