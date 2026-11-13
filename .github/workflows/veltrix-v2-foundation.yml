@@ -16,6 +16,7 @@ on:
     paths:
       - "veltrix_v2/**"
       - "tests/veltrix_v2/**"
+      - "tests/providers/odds_api_v4/**"
       - "tests/test_phase2_data_foundation.py"
       - "scripts/phase2_fivedollar_history_dry_run.py"
       - "scripts/phase3_import_fivedollar_history.py"
