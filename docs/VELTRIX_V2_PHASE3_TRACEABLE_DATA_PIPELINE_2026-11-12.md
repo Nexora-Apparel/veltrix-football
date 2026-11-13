@@ -88,9 +88,11 @@ The repository workflow expects one additional GitHub Actions secret:
 
 After the secret is set, run the manual workflow Phase 3 — Bounded 5Dollar Staging Import from branch phase3/traceable-data-pipeline-20261112. It is capped at 40 requests, paced at four seconds, and defaults to 365 days. It is not scheduled and cannot run from main. The importer will write only to veltrix_football_staging. It rejects any connection string whose hostname differs from the exact staging endpoint and requires the neondb_owner role; a same-named database on another endpoint is rejected.
 
-### Current staging state
+### Current staging state — verified 2026-11-13
 
-- Dedicated staging database exists and contains only schema/migration metadata.
-- Migration checksums: 0001 b5f6f1b5dbe6d7587c4876578f50d8327711f7fd26d03410f31a04db659d267c; 0002 619c556674e409ad5cd3a9ddc9ae578455207545d3435b9ece4e91a953fef49a; 0003 8c70a8a1a060949a4fca924b1b0854d94e125b2cbf6f677049e7e70b4a836a19.
-- Original production branch and the original veltrix-football database on the child branch were not modified.
-- No live provider response or fixture data has yet been imported into the new staging database.
+- Dedicated staging database: Neon project `withered-sky-75161174`, child branch `br-silent-violet-bc5de88s`, database `veltrix_football_staging`, direct endpoint `ep-ancient-block-bcb439pk.c-16.us-east-1.aws.neon.tech`.
+- Migrations 0001–0003 were applied with repository-byte SHA-256 preflight. The staging import completed once: 2,496 fixtures accepted, 28 raw provider responses archived, 26 pages, zero rejected/quarantined records, one completed import/checkpoint.
+- Independent audit run #43329704552 returned `PASS` with zero failures; all 2,496 result records remain `point_in_time_certifiable=false` and are labels only.
+- Do not rerun the clean-database-only importer. Phase 4 migration 0004 has not been applied to Neon.
+- Production and the original child-branch database remain untouched.
+- This documentation refresh does not alter application runtime behavior or trigger any database write.
