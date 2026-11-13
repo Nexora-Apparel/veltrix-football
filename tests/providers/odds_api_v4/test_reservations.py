@@ -12,7 +12,8 @@ BUDGET = ReservationBudget(
     period_start=date(2026, 11, 1), period_end=date(2026, 12, 1),
     monthly_allowance=1000, provider_remaining=800,
     monthly_hard_cap=700, per_run_hard_cap=100, request_count_cap=500,
-    observed_at=NOW, evidence_sha256="a" * 64,
+    observed_at=NOW, valid_until=datetime(2026, 11, 13, 12, 15, tzinfo=timezone.utc),
+    evidence_sha256="a" * 64,
 )
 REQUEST = ReservationRequest(
     reservation_key="res-001", provider="the_odds_api", account_ref="acct-test",
@@ -61,6 +62,12 @@ def test_zero_caps_and_stale_or_future_budget_evidence_fail():
     assert validate_reservation(
         REQUEST, replace(BUDGET, observed_at=NOW.replace(year=2027)), now=NOW
     ).reason_code == "BUDGET_EVIDENCE_FROM_FUTURE"
+
+
+def test_expired_budget_snapshot_fails_closed():
+    expired = replace(BUDGET, valid_until=NOW.replace(minute=0) )
+    result = validate_reservation(REQUEST, expired, now=NOW)
+    assert result.reason_code == "BUDGET_EVIDENCE_STALE"
 
 
 def test_naive_timestamps_and_wrong_billing_period_fail():
