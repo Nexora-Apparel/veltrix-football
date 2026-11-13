@@ -1,5 +1,5 @@
 """PostgreSQL 16 schema, constraint, checksum and idempotency acceptance."""
-# Includes migration 0003 append-only source-rights status-event invariants.
+# Includes migration 0004 point-in-time capture and append-only feature evidence invariants.
 from __future__ import annotations
 
 import hashlib
@@ -17,7 +17,9 @@ EXPECTED_TABLES = {
     "import_runs", "import_checkpoints", "reconciliation_audits",
     "source_approvals", "provider_responses", "provider_entitlement_observations",
     "fixture_result_versions", "sync_watermarks", "ingestion_quarantine",
-    "source_approval_status_events",
+    "source_approval_status_events", "capture_manifests", "capture_manifest_events",
+    "provider_capture_requests", "entity_crosswalk_versions", "feature_snapshots",
+    "feature_snapshot_eligibility_events", "feature_snapshot_links",
 }
 EXPECTED_INDEXES = {
     "fixtures_kickoff_idx", "fixtures_competition_kickoff_idx",
@@ -90,7 +92,14 @@ def run_acceptance() -> dict:
                     'source_approvals'::regclass,
                     'provider_entitlement_observations'::regclass,
                     'fixture_result_versions'::regclass,
-                    'source_approval_status_events'::regclass
+                    'source_approval_status_events'::regclass,
+                    'capture_manifests'::regclass,
+                    'capture_manifest_events'::regclass,
+                    'provider_capture_requests'::regclass,
+                    'entity_crosswalk_versions'::regclass,
+                    'feature_snapshots'::regclass,
+                    'feature_snapshot_eligibility_events'::regclass,
+                    'feature_snapshot_links'::regclass
                   )
             """)
             immutable_triggers = {row[0] for row in cur.fetchall()}
@@ -101,8 +110,93 @@ def run_acceptance() -> dict:
                 "provider_entitlement_append_only",
                 "fixture_result_versions_append_only",
                 "source_approval_status_events_append_only",
+                "capture_manifests_append_only",
+                "capture_manifest_events_append_only",
+                "provider_capture_requests_append_only",
+                "entity_crosswalk_versions_append_only",
+                "feature_snapshots_append_only",
+                "feature_snapshot_eligibility_events_append_only",
+                "feature_snapshot_links_append_only",
             }
             assert expected_triggers <= immutable_triggers, sorted(expected_triggers - immutable_triggers)
+
+            # Phase 4 timestamp columns must not fabricate publication history.
+            cur.execute("""
+                SELECT column_name, is_nullable, column_default
+                FROM information_schema.columns
+                WHERE table_schema='public' AND table_name='source_observations'
+                  AND column_name IN (
+                    'source_published_at','source_effective_at','recorded_at',
+                    'source_timestamp_raw','source_timestamp_basis'
+                  )
+            """)
+            timestamp_columns = {row[0]: row[1:] for row in cur.fetchall()}
+            assert set(timestamp_columns) == {
+                'source_published_at','source_effective_at','recorded_at',
+                'source_timestamp_raw','source_timestamp_basis'
+            }
+            assert timestamp_columns['source_published_at'][0] == 'YES'
+            assert timestamp_columns['source_effective_at'][0] == 'YES'
+            assert timestamp_columns['recorded_at'][0] == 'YES'
+            assert timestamp_columns['recorded_at'][1] is not None
+
+            # New feature snapshots must reference a real fixture and remain append-only.
+            cur.execute("SAVEPOINT phase4_snapshot_probe")
+            cur.execute("""
+                INSERT INTO countries(country_code,country_name,source_provider,observed_at)
+                VALUES ('ZZ','Phase4 Test','phase4-acceptance',NOW())
+            """)
+            cur.execute("""
+                INSERT INTO teams(provider,provider_team_id,name,observed_at)
+                VALUES ('phase4-acceptance','home','Phase4 Home',NOW()),
+                       ('phase4-acceptance','away','Phase4 Away',NOW())
+            """)
+            cur.execute("""
+                INSERT INTO fixtures(
+                    provider,provider_fixture_id,home_team_id,away_team_id,
+                    kickoff_at,status,source_payload_sha256,retrieved_at
+                )
+                SELECT 'phase4-acceptance','fixture',h.id,a.id,NOW()+INTERVAL '1 day',
+                       'SCHEDULED',repeat('d',64),NOW()
+                FROM teams h,teams a
+                WHERE h.provider='phase4-acceptance' AND h.provider_team_id='home'
+                  AND a.provider='phase4-acceptance' AND a.provider_team_id='away'
+            """)
+            cur.execute("""
+                INSERT INTO feature_snapshots(
+                    snapshot_key,fixture_id,prediction_cutoff_at,feature_schema_version,
+                    model_build_id,feature_set_sha256,selector_version
+                )
+                SELECT 'phase4-acceptance-snapshot',id,NOW(),'test-v1','test-build',
+                       repeat('e',64),'selector-v1'
+                FROM fixtures WHERE provider_fixture_id='fixture'
+            """)
+            cur.execute("""
+                INSERT INTO feature_snapshot_eligibility_events(
+                    feature_snapshot_id,eligibility_status,reason_codes,evidence_sha256
+                )
+                SELECT feature_snapshot_id,'PENDING','[]'::jsonb,repeat('f',64)
+                FROM feature_snapshots WHERE snapshot_key='phase4-acceptance-snapshot'
+            """)
+            cur.execute("""
+                INSERT INTO feature_snapshot_links(
+                    feature_snapshot_id,feature_key,feature_status,feature_value,
+                    eligibility_reason_code
+                )
+                SELECT feature_snapshot_id,'F01.form','MISSING',NULL,'SOURCE_NOT_CAPTURED'
+                FROM feature_snapshots WHERE snapshot_key='phase4-acceptance-snapshot'
+            """)
+            phase4_mutation_rejected = False
+            try:
+                cur.execute("""
+                    UPDATE feature_snapshots SET selector_version='mutated'
+                    WHERE snapshot_key='phase4-acceptance-snapshot'
+                """)
+            except psycopg.errors.RaiseException:
+                phase4_mutation_rejected = True
+                cur.execute("ROLLBACK TO SAVEPOINT phase4_snapshot_probe")
+            assert phase4_mutation_rejected, "Phase 4 feature snapshot accepted UPDATE"
+            cur.execute("RELEASE SAVEPOINT phase4_snapshot_probe")
 
             # The append-only guard must reject mutations without changing the source row.
             cur.execute("SAVEPOINT immutable_probe")
