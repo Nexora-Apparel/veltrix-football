@@ -51,6 +51,7 @@ class CaptureRequest:
     markets: tuple[str, ...]
     regions: tuple[str, ...]
     prediction_use: str
+    expected_terms_version: str
     rights_evaluated_at: datetime
     created_at: datetime
     max_attempts: int
@@ -72,6 +73,8 @@ class RequestManifest:
     regions: tuple[str, ...]
     prediction_cutoffs: tuple[tuple[str, str], ...]
     rights_evaluated_at: str
+    prediction_use: str
+    expected_terms_version: str
     created_at: str
     max_attempts: int
     timeout_seconds: int
@@ -107,7 +110,7 @@ def build_manifest(request: CaptureRequest) -> RequestManifest:
     """Build a deterministic credential-free manifest; does not reserve or dispatch."""
     if not isinstance(request, CaptureRequest):
         raise TypeError("CAPTURE_REQUEST_TYPE_INVALID")
-    for name in ("request_id", "run_id", "provider", "api_version", "endpoint_class", "sport_key", "prediction_use"):
+    for name in ("request_id", "run_id", "provider", "api_version", "endpoint_class", "sport_key", "prediction_use", "expected_terms_version"):
         value = getattr(request, name)
         if not isinstance(value, str) or not value.strip():
             raise ValueError(f"{name.upper()}_REQUIRED")
@@ -153,7 +156,7 @@ def build_manifest(request: CaptureRequest) -> RequestManifest:
         "request_id": request.request_id, "run_id": request.run_id,
         **identity, "competition_keys": sorted(request.competition_keys),
         "fixture_ids": fixture_ids, "prediction_cutoffs": cutoffs,
-        "rights_evaluated_at": _iso(rights_at), "created_at": _iso(created),
+        "rights_evaluated_at": _iso(rights_at), "prediction_use": request.prediction_use,\n        "expected_terms_version": request.expected_terms_version, "created_at": _iso(created),
         "max_attempts": request.max_attempts, "timeout_seconds": request.timeout_seconds,
         "request_fingerprint": fingerprint,
     }
@@ -162,7 +165,7 @@ def build_manifest(request: CaptureRequest) -> RequestManifest:
         request.request_id, request.run_id, request.provider, request.api_version,
         request.endpoint_class, request.sport_key, tuple(sorted(request.competition_keys)),
         tuple(fixture_ids), tuple(event_ids), tuple(sorted(request.markets)),
-        tuple(sorted(request.regions)), tuple(cutoffs), _iso(rights_at), _iso(created),
+        tuple(sorted(request.regions)), tuple(cutoffs), _iso(rights_at), request.prediction_use, request.expected_terms_version, _iso(created),
         request.max_attempts, request.timeout_seconds, fingerprint, digest,
     )
 
