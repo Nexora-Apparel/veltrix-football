@@ -156,7 +156,8 @@ def build_manifest(request: CaptureRequest) -> RequestManifest:
         "request_id": request.request_id, "run_id": request.run_id,
         **identity, "competition_keys": sorted(request.competition_keys),
         "fixture_ids": fixture_ids, "prediction_cutoffs": cutoffs,
-        "rights_evaluated_at": _iso(rights_at), "prediction_use": request.prediction_use,\n        "expected_terms_version": request.expected_terms_version, "created_at": _iso(created),
+        "rights_evaluated_at": _iso(rights_at), "prediction_use": request.prediction_use,
+        "expected_terms_version": request.expected_terms_version, "created_at": _iso(created),
         "max_attempts": request.max_attempts, "timeout_seconds": request.timeout_seconds,
         "request_fingerprint": fingerprint,
     }
@@ -197,6 +198,8 @@ def evaluate_preflight(
                 reasons.append("RIGHTS_NOT_APPROVED")
             if not rights.accepted_terms_version or not rights.terms_evidence_id:
                 reasons.append("ACCOUNT_TERMS_EVIDENCE_MISSING")
+            elif rights.accepted_terms_version != manifest.expected_terms_version:
+                reasons.append("ACCOUNT_TERMS_VERSION_MISMATCH")
             if not rights.approval_evidence_id:
                 reasons.append("APPROVAL_EVIDENCE_ID_MISSING")
             if effective > evaluated or recorded > evaluated or (expiry is not None and expiry <= evaluated):
