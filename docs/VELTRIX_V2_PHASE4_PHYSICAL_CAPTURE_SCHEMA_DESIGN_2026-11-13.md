@@ -139,7 +139,7 @@ Constraints/indexes:
 - unique `(provider, source_id, entity_type, provider_entity_id, mapping_version)`
 - index `(entity_type, canonical_entity_key, recorded_at DESC)`
 - index `(provider, source_id, entity_type, provider_entity_id, mapping_version DESC)`
-- valid interval check; no overlapping active RESOLVED intervals for the same provider entity, enforced by an exclusion constraint only if `btree_gist` availability is explicitly established, otherwise by a transactionally locked writer plus adversarial tests.
+- valid interval check; a database trigger serializes inserts per provider identity with `pg_advisory_xact_lock` and rejects overlapping RESOLVED validity intervals, including concurrent insert attempts.
 - A RESOLVED mapping must have an evidence observation and reason. Pending/rejected mappings may be stored for audit but cannot satisfy feature-link eligibility.
 - Team/competition/fixture mapping must preserve gender, age group, reserve/youth status, country/competition context, home-away order and fixture time. Name similarity alone is insufficient.
 - The polymorphic canonical key intentionally avoids false foreign keys across four different canonical tables. A future typed identity registry may replace it only after a separately reviewed migration.
@@ -235,7 +235,7 @@ All foreign keys use `ON DELETE RESTRICT`; no cascading deletion of provenance. 
 4. Append-only UPDATE/DELETE rejection for all evidence tables.
 5. Request retry identity, timeout/rate-limit/network failure rows, and response-to-provider/source mismatch rejection.
 6. Raw response byte hash recomputation and request/response lineage verification.
-7. Crosswalk version uniqueness, ambiguous mapping exclusion, team gender/age/reserve separation, rename/merge, fixture collision, home/away order and effective-time boundary cases.
+7. Crosswalk version uniqueness, database-enforced non-overlapping RESOLVED validity intervals under concurrent inserts, ambiguous mapping exclusion, team gender/age/reserve separation, rename/merge, fixture collision, home/away order and effective-time boundary cases.
 8. Frozen cutoff immutability; source publication at cutoff accepted; one millisecond after cutoff rejected; missing/naive/untrusted timestamps rejected.
 9. Retrieval time never substituted for source publication time; event/effective time never substituted for publication time.
 10. Rights scope and effective revocation evaluated at cutoff; expired/revoked/unapproved use rejected.
