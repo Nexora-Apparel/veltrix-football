@@ -194,7 +194,7 @@ def test_overrun_and_cross_account_or_raw_header_injection_are_rejected():
 
     now, reservation = setup_db()
     with psycopg.connect(DATABASE_URL) as conn:
-        with pytest.raises(psycopg.Error, match="CHECK"):
+        with pytest.raises(psycopg.Error, match="check constraint"):
             add_response_and_snapshot(
                 conn, now=now, request_id="bad-header", used=1, remaining=99, last=1,
                 raw_headers={"x-api-key": "must-not-be-stored"}
