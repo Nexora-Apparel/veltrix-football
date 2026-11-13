@@ -46,7 +46,7 @@ jobs:
       - name: Test Phase 2 data contracts
         run: python -m pytest --import-mode=importlib -q tests/test_phase2_data_foundation.py
       - name: Test offline Odds API parser and budget planner
-        run: python -m pytest --import-mode=importlib -q tests/providers/odds_api_v4 --ignore=tests/providers/odds_api_v4/test_reservation_postgres.py --ignore=tests/providers/odds_api_v4/test_quota_evidence_postgres.py tests/providers/odds_api_v4/test_capture_state_postgres.py
+        run: python -m pytest --import-mode=importlib -q tests/providers/odds_api_v4 --ignore=tests/providers/odds_api_v4/test_reservation_postgres.py --ignore=tests/providers/odds_api_v4/test_quota_evidence_postgres.py
       - name: Enforce no legacy prediction imports in v2
         run: |
           if grep -R -n -E "from app\.(live_predictions|prediction|advanced_models|calibration|backtest_engine)|import app\.(live_predictions|prediction|advanced_models|calibration|backtest_engine)" veltrix_v2; then
@@ -85,4 +85,4 @@ jobs:
       - name: Install PostgreSQL test dependencies
         run: python -m pip install --upgrade pip && pip install pytest "psycopg[binary]"
       - name: Test credit reservation migration and concurrency
-        run: python -m pytest --import-mode=importlib -q tests/providers/odds_api_v4/test_reservation_postgres.py tests/providers/odds_api_v4/test_quota_evidence_postgres.py
+        run: python -m pytest --import-mode=importlib -q tests/providers/odds_api_v4/test_reservation_postgres.py tests/providers/odds_api_v4/test_quota_evidence_postgres.py tests/providers/odds_api_v4/test_capture_state_postgres.py
