@@ -122,5 +122,5 @@ def test_unauthorized_dispatch_never_calls_transport():
         context=replace(CONTEXT, operator_dispatch_enabled=False),
         send=lambda url, policy: calls.append(url),
     )
-    assert result.reason_code == "DISPATCH_NOT_AUTHORIZED"
+    assert result.reason_code == "OPERATOR_DISPATCH_DISABLED"
     assert calls == []
