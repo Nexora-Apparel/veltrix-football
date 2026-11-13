@@ -145,7 +145,9 @@ def _parse(
                     diagnostics.append(ParseDiagnostic("MARKET_SHAPE_INVALID", mp))
                     continue
                 market_key = market.get("key")
-                if market_key not in allowed_markets:
+                if not isinstance(market_key, str) or market_key not in allowed_markets:
+                    if market_key is not None and not isinstance(market_key, str):
+                        diagnostics.append(ParseDiagnostic("MARKET_KEY_INVALID", mp))
                     continue
                 published, raw_timestamp = _timestamp(market.get("last_update"))
                 if published is None:
