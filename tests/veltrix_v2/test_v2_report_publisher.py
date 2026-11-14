@@ -64,7 +64,7 @@ def test_publisher_writes_only_fixed_command_data_bundle_after_authorization():
     raw = public_bundle()
     client = FakeContentsClient()
     result = publish_v2_report_bundle(
-        raw, authorization_verifier=authorized, client=client
+        raw, expected_as_of_date="2026-11-14", authorization_verifier=authorized, client=client
     )
     assert result.status == "PUBLISHED"
     assert result.repository == PUBLICATION_REPOSITORY
@@ -81,7 +81,7 @@ def test_publisher_requires_verifier_before_any_github_access():
     client = FakeContentsClient()
     with pytest.raises(PermissionError, match="VERIFIER_REQUIRED"):
         publish_v2_report_bundle(
-            public_bundle(), authorization_verifier=None, client=client
+            public_bundle(), expected_as_of_date="2026-11-14", authorization_verifier=None, client=client
         )
     assert client.get_calls == []
     assert client.put_calls == []
@@ -91,7 +91,7 @@ def test_publisher_rejects_unauthorized_bundle_before_any_github_access():
     client = FakeContentsClient()
     with pytest.raises(PermissionError, match="AUTHORIZATION_NOT_VERIFIED"):
         publish_v2_report_bundle(
-            public_bundle(), authorization_verifier=lambda *_: False, client=client
+            public_bundle(), expected_as_of_date="2026-11-14", authorization_verifier=lambda *_: False, client=client
         )
     assert client.get_calls == []
     assert client.put_calls == []
@@ -101,7 +101,7 @@ def test_publisher_is_idempotent_for_same_report_identity_and_hash():
     raw = public_bundle()
     client = FakeContentsClient(ExistingContentsFile(raw, "existing-sha"))
     result = publish_v2_report_bundle(
-        raw, authorization_verifier=authorized, client=client
+        raw, expected_as_of_date="2026-11-14", authorization_verifier=authorized, client=client
     )
     assert result.status == "ALREADY_PUBLISHED"
     assert client.get_calls
@@ -114,7 +114,7 @@ def test_publisher_rejects_mutation_under_same_report_id():
     client = FakeContentsClient(ExistingContentsFile(prior, "existing-sha"))
     with pytest.raises(ValueError, match="IMMUTABILITY_CONFLICT"):
         publish_v2_report_bundle(
-            changed, authorization_verifier=authorized, client=client
+            changed, expected_as_of_date="2026-11-14", authorization_verifier=authorized, client=client
         )
     assert client.put_calls == []
 
@@ -125,7 +125,7 @@ def test_publisher_rejects_stale_report_replacement():
     client = FakeContentsClient(ExistingContentsFile(prior, "existing-sha"))
     with pytest.raises(ValueError, match="STALE_REPORT"):
         publish_v2_report_bundle(
-            older, authorization_verifier=authorized, client=client
+            older, expected_as_of_date="2026-11-14", authorization_verifier=authorized, client=client
         )
     assert client.put_calls == []
 
@@ -134,7 +134,7 @@ def test_publisher_rejects_corrupt_existing_bundle_without_overwrite():
     client = FakeContentsClient(ExistingContentsFile(b"{}", "existing-sha"))
     with pytest.raises(ValueError, match="EXISTING_REPORT_BUNDLE_INVALID"):
         publish_v2_report_bundle(
-            public_bundle(), authorization_verifier=authorized, client=client
+            public_bundle(), expected_as_of_date="2026-11-14", authorization_verifier=authorized, client=client
         )
     assert client.put_calls == []
 
@@ -144,7 +144,7 @@ def test_publisher_updates_existing_file_with_optimistic_sha():
     current = public_bundle(report_id="current-report", as_of_date="2026-11-14")
     client = FakeContentsClient(ExistingContentsFile(prior, "existing-sha"))
     result = publish_v2_report_bundle(
-        current, authorization_verifier=authorized, client=client
+        current, expected_as_of_date="2026-11-14", authorization_verifier=authorized, client=client
     )
     assert result.status == "PUBLISHED"
     assert client.put_calls[0][4] == "existing-sha"
@@ -156,7 +156,7 @@ def test_publisher_rejects_bundle_larger_than_website_limit_before_github_access
     with pytest.raises(ValueError, match="SIZE_OR_TYPE_INVALID"):
         publish_v2_report_bundle(
             b"x" * 8_000_001,
-            authorization_verifier=authorized,
+            expected_as_of_date="2026-11-14", authorization_verifier=authorized,
             client=client,
         )
     assert client.get_calls == []
@@ -257,3 +257,30 @@ def test_github_contents_client_treats_only_http_404_as_missing_file():
 
     client = GitHubContentsApiClient("test-token", opener=opener)
     assert client.get_file(PUBLICATION_REPOSITORY, PUBLICATION_BRANCH, PUBLICATION_PATH) is None
+
+
+
+def test_publisher_rejects_future_or_stale_report_date_before_github_access():
+    client = FakeContentsClient()
+    with pytest.raises(PermissionError, match="MUST_MATCH_PUBLICATION_DATE"):
+        publish_v2_report_bundle(
+            public_bundle(as_of_date="2026-11-15"),
+            expected_as_of_date="2026-11-14",
+            authorization_verifier=authorized,
+            client=client,
+        )
+    assert client.get_calls == []
+    assert client.put_calls == []
+
+
+def test_publisher_rejects_noncanonical_expected_publication_date():
+    client = FakeContentsClient()
+    with pytest.raises(ValueError, match="EXPECTED_PUBLICATION_DATE_INVALID"):
+        publish_v2_report_bundle(
+            public_bundle(),
+            expected_as_of_date="2026-11-14T00:00:00",
+            authorization_verifier=authorized,
+            client=client,
+        )
+    assert client.get_calls == []
+    assert client.put_calls == []
