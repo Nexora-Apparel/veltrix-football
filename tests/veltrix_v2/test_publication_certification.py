@@ -157,6 +157,10 @@ def test_attestation_and_rights_verifiers_are_mandatory_and_fail_closed():
     assert verify_publication_authorization(report, raw, attestation_ok, lambda *_: False, evidence_reader) is False
     assert verify_publication_authorization(report, raw, None, rights_ok, evidence_reader) is False
     assert verify_publication_authorization(report, raw, attestation_ok, None, evidence_reader) is False
+    assert verify_publication_authorization(report, raw, attestation_ok, rights_ok, None) is False
+    assert verify_publication_authorization(
+        report, raw, attestation_ok, rights_ok, lambda uri: b"tampered evidence"
+    ) is False
 
 
 def test_wrong_model_build_or_missing_market_evidence_denies_publication():
