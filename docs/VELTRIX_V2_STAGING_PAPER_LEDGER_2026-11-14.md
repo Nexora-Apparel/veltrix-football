@@ -6,9 +6,9 @@ Date: 2026-11-14
 
 The prospective paper ledger currently has an append-only JSONL adapter. A GitHub Actions runner is ephemeral, and the repository is public. Raw provider responses and individual shadow predictions must not be uploaded as public workflow artifacts. This migration provides a durable staging-only event store without exposing prediction records.
 
-## Migration 0005
+## Migration 0008
 
-`db/migrations/0005_prospective_paper_ledger.sql` creates `paper_ledger_events` with:
+`db/migrations/0008_prospective_paper_ledger.sql` creates `paper_ledger_events` with:
 
 - Per-ledger monotonic sequence.
 - Event types `PREDICTION`, `SHADOW_PREDICTION`, `SETTLEMENT`.
@@ -36,7 +36,7 @@ The database does not recompute the event hash; the application adapter reconstr
 
 ## Migration workflow
 
-`.github/workflows/phase5-staging-paper-ledger-migration.yml` is manual-only. Its `apply` input defaults to false. The script first requires migrations 0001–0004 applied and 0005 as the sole pending migration. An explicit apply additionally requires the internal guard variable and exact staging target.
+`.github/workflows/phase5-staging-paper-ledger-migration.yml` is manual-only. Its `apply` input defaults to false. The script first requires migrations 0001–0004 applied and migrations 0005–0008 as the exact pending sequence. Migrations 0005–0007 add the previously designed provider-credit reservation, quota-evidence and capture-state schemas; they do not dispatch providers or consume credits. An explicit apply additionally requires the internal guard variable and exact staging target.
 
 After apply, it verifies:
 - Full migration checksums.
@@ -48,4 +48,4 @@ No production database, website, Telegram, schedule or deployment is touched.
 
 ## Next integration
 
-The manual 5Dollar capture workflow will use this adapter when its `persist_staging` input is true. Before that workflow can run with staging persistence, migration 0005 must be reviewed and manually applied to staging. The capture workflow uploads only an aggregate summary; raw response bytes and individual predictions remain in the guarded staging store.
+The manual 5Dollar capture workflow will use this adapter when its `persist_staging` input is true. Before that workflow can run with staging persistence, migrations 0005–0008 must be reviewed and manually applied to staging. The capture workflow uploads only an aggregate summary; raw response bytes and individual predictions remain in the guarded staging store.
