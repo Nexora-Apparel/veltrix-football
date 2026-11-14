@@ -480,6 +480,25 @@ def _capture_page(
     return targets, page_info
 
 
+def _build_public_summary(summary: dict[str, object]) -> dict[str, object]:
+    """Explicit allowlist projection; never expose IDs, hashes, odds or probabilities."""
+    allowed = (
+        "status", "provider", "requests_used", "request_cap",
+        "crosswalk_registry", "captured_first_observed_rows",
+        "mapped_upcoming_targets", "forecast_count",
+        "admitted_shadow_predictions", "persisted_capture_pages",
+        "persisted_shadow_ledger_events", "paper_ledger_persisted_to_staging",
+        "evidence_persisted_to_staging", "publication_status",
+        "settlement_status", "database_writes",
+    )
+    return {
+        **{key: summary[key] for key in allowed if key in summary},
+        "telegram_delivery": False,
+        "schedule_activation": False,
+        "public_publication": False,
+    }
+
+
 def run_capture(
     *,
     api_key: str,
@@ -721,32 +740,7 @@ def run_capture(
     (out_dir / "summary.json").write_text(
         json.dumps(summary, indent=2, sort_keys=True), encoding="utf-8"
     )
-    public_summary = {
-        "status": summary["status"],
-        "provider": summary["provider"],
-        "requests_used": summary["requests_used"],
-        "request_cap": summary["request_cap"],
-        "crosswalk_registry": summary["crosswalk_registry"],
-        "captured_first_observed_rows": summary["captured_first_observed_rows"],
-        "mapped_upcoming_targets": summary["mapped_upcoming_targets"],
-        "forecast_count": summary["forecast_count"],
-        "admitted_shadow_predictions": summary["admitted_shadow_predictions"],
-        "persisted_capture_pages": summary["persisted_capture_pages"],
-        "persisted_shadow_ledger_events": summary["persisted_shadow_ledger_events"],
-        "paper_ledger_persisted_to_staging": summary["paper_ledger_persisted_to_staging"],
-        "evidence_persisted_to_staging": summary["evidence_persisted_to_staging"],
-        "paper_ledger_persisted_to_staging": summary["paper_ledger_persisted_to_staging"],
-        "paper_ledger_events_appended": (
-            summary["staging_paper_ledger"]["events_appended"]
-            if summary["staging_paper_ledger"] else 0
-        ),
-        "publication_status": summary["publication_status"],
-        "settlement_status": summary["settlement_status"],
-        "database_writes": summary["database_writes"],
-        "telegram_delivery": False,
-        "schedule_activation": False,
-        "public_publication": False,
-    }
+    public_summary = _build_public_summary(summary)
     (out_dir / "public_summary.json").write_text(
         json.dumps(public_summary, indent=2, sort_keys=True), encoding="utf-8"
     )
