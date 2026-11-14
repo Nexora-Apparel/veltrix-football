@@ -142,6 +142,7 @@ def test_observed_shadow_settlement_uses_collector_first_seen_not_provider_proxy
     assert event.payload["result_availability_basis"] == "collector_first_observed_v1"
     assert event.payload["result_available_at"] == fixture.retrieved_at_utc.isoformat()
     assert event.payload["result_retrieved_at"] == fixture.retrieved_at_utc.isoformat()
+    assert event.payload["settlement_delay_basis"] == fixture.availability_basis
     assert ledger.verify_chain()
 
 
@@ -156,7 +157,7 @@ def test_observed_shadow_settlement_still_requires_explicit_benchmarking_rights(
         )
 
 
-def test_observed_shadow_settlement_ignores_untrusted_four_day_proxy_if_not_yet_elapsed():
+def test_observed_shadow_settlement_waits_for_conservative_delay_boundary():
     ledger = ledger_with_observed_prediction()
     fixture = source_fixture()
     fixture = replace(
@@ -165,8 +166,8 @@ def test_observed_shadow_settlement_ignores_untrusted_four_day_proxy_if_not_yet_
         availability_basis="provider_finished_status_conservative_4d",
         point_in_time_certifiable=False,
     )
-    event = settle_from_verified_fixture(
-        ledger, fixture, approval(), recorded_at=fixture.retrieved_at_utc + timedelta(hours=1)
-    )
-    assert event.payload["result_availability_basis"] == "collector_first_observed_v1"
-    assert event.payload["result_available_at"] == fixture.retrieved_at_utc.isoformat()
+    with pytest.raises(ValueError, match="SETTLEMENT_FIRST_OBSERVED_TEMPORAL_ORDER_INVALID"):
+        settle_from_verified_fixture(
+            ledger, fixture, approval(),
+            recorded_at=fixture.retrieved_at_utc + timedelta(hours=1)
+        )
