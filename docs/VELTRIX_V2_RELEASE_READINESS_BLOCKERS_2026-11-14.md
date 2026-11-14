@@ -55,7 +55,7 @@ Latest fully validated code head at this snapshot: 36c831421bc1377f6eea4c79d58e0
 
 ## Hard release blockers
 
-1. **Certification evidence and wiring:** a pure V2 publication verifier now checks exact report identity, attested certification-manifest bytes, market thresholds and injected source-rights approval. No real certification manifest currently passes the gates, and the trusted attestation/rights callbacks are not yet wired into the website or Telegram runtime.
+1. **Certification evidence and wiring:** a pure V2 publication verifier now checks exact report identity, attested certification-manifest bytes, per-market thresholds, exact raw evidence bytes, rights evidence bytes and injected source-rights approval. No real certification manifest currently passes the gates, and the trusted attestation/rights callbacks are not yet wired into the website or Telegram runtime.
 2. **Surface wiring:** the actual scheduled workflow, dashboard refresh and Telegram runner do not yet consume the same generated V2 artifact. The new bundle adapters are not a substitute for wiring those real workflows.
 3. **Staging schema:** migrations 0005–0010 have not been applied to Neon staging. The manual-only staging guard must be reviewed and run only against the dedicated staging database.
 4. **Operator controls:** authenticated operator/reviewer identity and approved durable evidence-reader provisioning are not connected to the reconciliation writer.
