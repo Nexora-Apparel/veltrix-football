@@ -146,8 +146,11 @@ def build_fivedollar_crosswalk_registry(
         if not isinstance(payload, Mapping):
             raise ValueError("CROSSWALK_PAYLOAD_INVALID")
         payload_hash = _text(row.get("payload_sha256"), "PAYLOAD_HASH").lower()
-        if not _HASH.fullmatch(payload_hash) or _canonical_hash(payload) != payload_hash:
-            raise ValueError("CROSSWALK_PAYLOAD_HASH_MISMATCH")
+        # source_observations.payload_sha256 is the exact raw provider-response
+        # hash; payload is the normalized JSONB projection, so do not compare it
+        # with a re-serialized JSON hash.
+        if not _HASH.fullmatch(payload_hash):
+            raise ValueError("CROSSWALK_PAYLOAD_HASH_INVALID")
 
         provider_fixture = _id(payload.get("id"), "PROVIDER_FIXTURE_ID")
         league = payload.get("league")
