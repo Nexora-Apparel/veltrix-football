@@ -317,3 +317,24 @@ def test_store_rejects_unauthenticated_reviewer_before_evidence_or_database():
     with pytest.raises(PermissionError, match="REVIEWER_NOT_AUTHENTICATED"):
         store.record(unreviewed)
     assert reads == []
+
+
+
+def test_store_fails_closed_when_authentication_callback_raises():
+    store = PostgresTelegramReconciliationStore(
+        lambda: pytest.fail("database must not be opened"),
+        lambda uri: pytest.fail("evidence must not be read"),
+        lambda actor: (_ for _ in ()).throw(RuntimeError("identity provider unavailable")),
+    )
+    with pytest.raises(PermissionError, match="OPERATOR_NOT_AUTHENTICATED"):
+        store.record(event())
+
+
+def test_confirmed_not_sent_requires_reviewer_before_evidence_or_database():
+    store = PostgresTelegramReconciliationStore(
+        lambda: pytest.fail("database must not be opened"),
+        lambda uri: pytest.fail("evidence must not be read"),
+        lambda actor: True,
+    )
+    with pytest.raises(ValueError, match="REQUIRES_INDEPENDENT_REVIEWER"):
+        store.record(event(outcome="CONFIRMED_NOT_SENT", telegram_message_ids=[]))
