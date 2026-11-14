@@ -120,6 +120,19 @@ def verify_publication_authorization(
                 if record is None or record.get("model_build_id") != model_build_id:
                     return False
 
+                if record.get("walk_forward_method") != "EXPANDING_CHRONOLOGICAL":
+                    return False
+                if record.get("roi_basis") != "NET_AFTER_FEES_AND_SLIPPAGE":
+                    return False
+                if record.get("roi_ci95_method") != "DATE_CLUSTERED_BOOTSTRAP":
+                    return False
+                if record.get("point_in_time_certifiable") is not True:
+                    return False
+                if record.get("revision_history_complete") is not True:
+                    return False
+                if record.get("prospective_evidence") is not True:
+                    return False
+
                 integer_gates = (
                     ("walk_forward_matches", MIN_WALK_FORWARD_MATCHES),
                     ("prospective_settled_selections", MIN_PROSPECTIVE_SETTLED_SELECTIONS),
