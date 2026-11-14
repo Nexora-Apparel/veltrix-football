@@ -107,7 +107,7 @@ def _approval_from_rows(
     )
 
 
-def _read_staging_context(dsn: str, *, verified_at: datetime):
+def _read_staging_context(dsn: str):
     validate_staging_dsn_target(dsn)
     validate_read_only_coverage_sql()
     try:
@@ -129,19 +129,21 @@ def _read_staging_context(dsn: str, *, verified_at: datetime):
         if len(approval_rows) != 1:
             raise ValueError("FIVEDOLLAR_APPROVAL_RECORD_NOT_UNIQUE")
         event_rows = _rows_as_dicts(connection.execute(APPROVAL_EVENTS_SQL, (APPROVAL_ID,)))
+        rights_evaluated_at = datetime.now(timezone.utc)
         approval = _approval_from_rows(
-            approval_rows[0], event_rows, rights_evaluated_at=verified_at
+            approval_rows[0], event_rows, rights_evaluated_at=rights_evaluated_at
         )
         crosswalk_rows = _rows_as_dicts(
             connection.execute(FIVEDOLLAR_CROSSWALK_BOOTSTRAP_SQL)
         )
+        crosswalk_verified_at = datetime.now(timezone.utc)
         registry = build_fivedollar_crosswalk_registry(
-            crosswalk_rows, verified_at=verified_at
+            crosswalk_rows, verified_at=crosswalk_verified_at
         )
         return approval, registry
 
 
-def _refresh_approval(dsn: str, *, at: datetime) -> SourceApproval:
+def _refresh_approval(dsn: str) -> tuple[SourceApproval, datetime]:
     validate_staging_dsn_target(dsn)
     import psycopg
 
@@ -157,7 +159,11 @@ def _refresh_approval(dsn: str, *, at: datetime) -> SourceApproval:
         events = _rows_as_dicts(connection.execute(APPROVAL_EVENTS_SQL, (APPROVAL_ID,)))
         if len(rows) != 1:
             raise ValueError("FIVEDOLLAR_APPROVAL_RECORD_NOT_UNIQUE")
-        return _approval_from_rows(rows[0], events, rights_evaluated_at=at)
+        rights_evaluated_at = datetime.now(timezone.utc)
+        return (
+            _approval_from_rows(rows[0], events, rights_evaluated_at=rights_evaluated_at),
+            rights_evaluated_at,
+        )
 
 
 def _approved_competition_ids(approval: SourceApproval, registry) -> list[str]:
@@ -191,12 +197,14 @@ def _request_page(
     end_at: datetime,
     page: int,
     pacing_state: dict[str, float | None],
+    before_request,
 ) -> tuple[bytes, dict[str, str], datetime, datetime]:
     last_request_started = pacing_state.get("last_started")
     if last_request_started is not None:
         delay = MIN_REQUEST_INTERVAL_SECONDS - (time.monotonic() - last_request_started)
         if delay > 0:
             time.sleep(delay)
+    before_request()
     requested_at = datetime.now(timezone.utc)
     pacing_state["last_started"] = time.monotonic()
     params = {
@@ -277,7 +285,7 @@ def _capture_page(
 
     if status == "finished":
         recorded_at = datetime.now(timezone.utc)
-        current_approval = _refresh_approval(staging_dsn, at=recorded_at)
+        current_approval, recorded_at = _refresh_approval(staging_dsn)
         for purpose in (DataUsePurpose.STORAGE, DataUsePurpose.MODEL_TRAINING):
             decision = evaluate_source_use(
                 current_approval, purpose, at_utc=recorded_at, commercial=True
@@ -346,8 +354,8 @@ def run_capture(
     if not 1 <= max_fixtures <= 25:
         raise ValueError("MAX_FIXTURES_OUT_OF_RANGE")
 
+    approval, registry = _read_staging_context(staging_dsn)
     initial_time = datetime.now(timezone.utc)
-    approval, registry = _read_staging_context(staging_dsn, verified_at=initial_time)
     for purpose in (DataUsePurpose.COLLECTION, DataUsePurpose.CACHE, DataUsePurpose.MODEL_TRAINING):
         decision = evaluate_source_use(approval, purpose, at_utc=initial_time, commercial=True)
         if not decision.allowed:
@@ -370,13 +378,15 @@ def run_capture(
     for competition_id in competition_ids:
         if request_count >= MAX_REQUESTS:
             raise RuntimeError("FIVEDOLLAR_REQUEST_CAP_REACHED")
-        current_approval = _refresh_approval(staging_dsn, at=datetime.now(timezone.utc))
-        collection = evaluate_source_use(
-            current_approval, DataUsePurpose.COLLECTION,
-            at_utc=datetime.now(timezone.utc), commercial=True,
-        )
-        if not collection.allowed:
-            raise PermissionError(collection.reason_code)
+        def check_collection_rights():
+            current, evaluated_at = _refresh_approval(staging_dsn)
+            decision = evaluate_source_use(
+                current, DataUsePurpose.COLLECTION,
+                at_utc=evaluated_at, commercial=True,
+            )
+            if not decision.allowed:
+                raise PermissionError(decision.reason_code)
+            return evaluated_at
 
         request_id = f"{os.getenv('GITHUB_RUN_ID', 'manual')}-{competition_id}-finished-1"
         request_count += 1
@@ -385,6 +395,7 @@ def run_capture(
                 api_key, competition_id=competition_id, status="finished",
                 start_at=history_start, end_at=now, page=1,
                 pacing_state=pacing_state,
+                before_request=check_collection_rights,
             )
         except PermissionError as exc:
             if str(exc) == "FIVEDOLLAR_COMPETITION_NOT_ENTITLED":
@@ -407,13 +418,15 @@ def run_capture(
 
         if request_count >= MAX_REQUESTS:
             break
-        current_approval = _refresh_approval(staging_dsn, at=datetime.now(timezone.utc))
-        collection = evaluate_source_use(
-            current_approval, DataUsePurpose.COLLECTION,
-            at_utc=datetime.now(timezone.utc), commercial=True,
-        )
-        if not collection.allowed:
-            raise PermissionError(collection.reason_code)
+        def check_scheduled_collection_rights():
+            current, evaluated_at = _refresh_approval(staging_dsn)
+            decision = evaluate_source_use(
+                current, DataUsePurpose.COLLECTION,
+                at_utc=evaluated_at, commercial=True,
+            )
+            if not decision.allowed:
+                raise PermissionError(decision.reason_code)
+            return evaluated_at
         request_id = f"{os.getenv('GITHUB_RUN_ID', 'manual')}-{competition_id}-scheduled-1"
         request_count += 1
         try:
@@ -421,6 +434,7 @@ def run_capture(
                 api_key, competition_id=competition_id, status="scheduled",
                 start_at=now, end_at=upcoming_end, page=1,
                 pacing_state=pacing_state,
+                before_request=check_scheduled_collection_rights,
             )
         except PermissionError as exc:
             if str(exc) == "FIVEDOLLAR_COMPETITION_NOT_ENTITLED":
@@ -464,8 +478,7 @@ def run_capture(
         observations, targets, cutoff_at=cutoff_at, max_fixtures=max_fixtures
     )
     forecasted_at = datetime.now(timezone.utc)
-    recorded_at = forecasted_at + timedelta(seconds=1)
-    current_approval = _refresh_approval(staging_dsn, at=recorded_at)
+    current_approval, recorded_at = _refresh_approval(staging_dsn)
 
     model_hash = _hash_files((
         "veltrix_v2/models/poisson.py",
