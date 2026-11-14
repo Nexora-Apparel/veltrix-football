@@ -78,6 +78,8 @@ jobs:
         run: python -m pytest --import-mode=importlib -q tests/veltrix_v2/test_provider_registry.py
       - name: Test certified multi-provider observation merge
         run: python -m pytest --import-mode=importlib -q tests/veltrix_v2/test_provider_observation_merge.py
+      - name: Test competition-level evidence coverage auditor
+        run: python -m pytest --import-mode=importlib -q tests/veltrix_v2/test_competition_coverage.py
       - name: Test guarded staging evidence persistence
         run: python -m pytest --import-mode=importlib -q tests/veltrix_v2/test_evidence_persistence.py
       - name: Test StrikerAPI dataset freshness evidence
