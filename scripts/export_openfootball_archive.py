@@ -6,6 +6,11 @@ from datetime import datetime, timezone
 import hashlib
 import json
 from pathlib import Path
+import sys
+
+# Running a file under scripts/ places that directory, not the repository root,
+# at sys.path[0]. Add the project root for direct CLI execution.
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from veltrix_v2.providers.openfootball_archive import parse_archive
 
