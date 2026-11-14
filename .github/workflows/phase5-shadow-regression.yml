@@ -7,6 +7,8 @@ on:
     paths:
       - "scripts/phase5_collect_5dollar_shadow.py"
       - "tests/scripts/test_phase5_collect_5dollar_shadow.py"
+      - "veltrix_v2/data/provider_evidence_capture.py"
+      - "tests/veltrix_v2/test_provider_evidence_capture.py"
       - ".github/workflows/phase5-shadow-regression.yml"
   pull_request:
     paths:
@@ -42,5 +44,7 @@ jobs:
         run: |
           python -m compileall -q scripts/phase5_collect_5dollar_shadow.py
           python -m compileall -q tests/scripts/test_phase5_collect_5dollar_shadow.py
+          python -m compileall -q veltrix_v2/data/provider_evidence_capture.py
+          python -m compileall -q tests/veltrix_v2/test_provider_evidence_capture.py
       - name: Run focused regression
-        run: python -m pytest --import-mode=importlib -q tests/scripts/test_phase5_collect_5dollar_shadow.py
+        run: python -m pytest --import-mode=importlib -q tests/scripts/test_phase5_collect_5dollar_shadow.py tests/veltrix_v2/test_provider_evidence_capture.py
