@@ -141,3 +141,11 @@ Additional legacy containment: paused `historical-model-reconstruction.yml`, whi
 
 
 Regression coverage also asserts that the legacy daily-report watchdog and legacy historical backtest jobs remain disabled. This prevents a workflow_dispatch or code push from reviving old report/model pipelines during the V2 rebuild.
+
+
+## Latest workflow safety validation — 2026-11-14 15:13 UTC
+
+- Paused legacy paper-tracking recovery, legacy historical model reconstruction, GOAL API probe and StrikerAPI probe jobs.
+- Regression tests also assert the daily-report watchdog, historical model backtest, women's historical backtest, daily predictions, dashboard snapshot publisher and Telegram recovery remain disabled.
+- GitHub Actions run #1392 passed Foundation, PostgreSQL 16 and PostgreSQL 18 at commit `edc63ee60b619306d5b7687842168ff62b6f8ef9`.
+- No GOAL API, StrikerAPI, 5Dollar provider request, database migration/write, Telegram send, schedule activation or deployment was performed.
