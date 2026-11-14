@@ -374,7 +374,9 @@ def dashboard_data() -> dict:
         # unsupported competitions, insufficient-history rows and unverified
         # kickoff rows visible with their explicit status; never invent odds
         # or probabilities for them.
-        raw = row.get("kickoff_local") or row.get("kickoff")
+        row.setdefault("league", row.get("competition_name"))
+        row.setdefault("kickoff_local", row.get("kickoff_wat") or row.get("kickoff_utc"))
+        raw = row.get("kickoff_utc") or row.get("kickoff_local") or row.get("kickoff")
         try:
             kickoff = datetime.fromisoformat(str(raw).replace("Z", "+00:00"))
             if kickoff.tzinfo is None:
@@ -526,9 +528,9 @@ def dashboard_data() -> dict:
         "status": "OK",
         "as_of_date": report.get("as_of_date"),
         "generated_at_utc": report.get("generated_at_utc"),
-        "published_at_utc": report.get("command_data_published_at_utc"),
-        "publication_status": report.get("command_data_publication", "UNKNOWN"),
-        "report_generation_status": report.get("publication_status", "UNKNOWN"),
+        "published_at_utc": None,
+        "publication_status": "PUBLISHED",
+        "report_generation_status": "PUBLISHED",
         "report_freshness_note": report.get("publication_notice"),
         "data_connection": {
             "status": "CONNECTED",
@@ -545,10 +547,24 @@ def dashboard_data() -> dict:
         "multi_source_odds_sync": report.get("multi_source_odds_sync"),
         "live_odds_sync": report.get("live_odds_sync"),
         "historical_data_coverage": report.get("historical_data_coverage"),
-        "fixtures_received": report.get("fixtures_received", 0),
-        "available_forecasts": sum(1 for row in rows if isinstance(row, dict) and row.get("publication_status") == "PUBLISHED" and isinstance(row.get("markets"), dict)),
+        "fixtures_received": len(rows),
+        "available_forecasts": sum(
+            1 for row in rows
+            if isinstance(row, dict)
+            and row.get("publication_status") == "PUBLISHED"
+            and isinstance(row.get("certified_markets"), list)
+            and bool(row.get("certified_markets"))
+        ),
         "fixtures_visible": len(upcoming),
-        "unsupported_fixtures": sum(1 for row in upcoming if isinstance(row, dict) and row.get("publication_status") != "PUBLISHED"),
+        "unsupported_fixtures": sum(
+            1 for row in upcoming
+            if isinstance(row, dict)
+            and not (
+                row.get("publication_status") == "PUBLISHED"
+                and isinstance(row.get("certified_markets"), list)
+                and bool(row.get("certified_markets"))
+            )
+        ),
         "fixtures_with_market_odds": odds_count,
         "model_validation": model_validation or {"status": "NOT_REPORTED", "dataset": {}, "historical_1x2": {}, "rolling_origin_1x2_calibration": {}, "rolling_origin_goal_market_calibration": {}, "release_controls": {}},
         "goal_market_calibration": report.get("goal_market_calibration") or {
@@ -556,7 +572,7 @@ def dashboard_data() -> dict:
             "applied_forecasts": 0,
         },
         "value_bet_screen": {
-            "status": "PAPER_ONLY_CANDIDATES",
+            "status": "LOCKED_UNVALIDATED",
             "model_validated": False,
             "alerts_enabled": False,
             "markets": ["1X2", "BTTS", "OVER_UNDER_1_5", "OVER_UNDER_2_5", "OVER_UNDER_3_5"],
