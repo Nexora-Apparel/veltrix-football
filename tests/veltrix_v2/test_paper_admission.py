@@ -227,13 +227,13 @@ def test_rights_recheck_uses_explicit_provider_competition_id():
         APPROVAL, competition_scope="provider-comp-1"
     )
     provider_history = replace(
-        history()[0], provider_competition_id="provider-comp-1"
+        _fixture_set(certifiable=False)[2][0], provider_competition_id="provider-comp-1"
     )
     provider_target = replace(
-        target(), provider_competition_id="provider-comp-1"
+        _fixture_set(certifiable=False)[1], provider_competition_id="provider-comp-1"
     )
     admitted = admit_prospective_observed_shadow_forecasts(
-        forecast_report(),
+        _fixture_set(certifiable=False)[0],
         [provider_history],
         targets=[provider_target],
         source_approvals={provider_scope_approval.approval_id: provider_scope_approval},
@@ -247,7 +247,7 @@ def test_rights_recheck_uses_explicit_provider_competition_id():
     missing_provider_scope = replace(provider_history, provider_competition_id=None)
     try:
         admit_prospective_observed_shadow_forecasts(
-            forecast_report(),
+            _fixture_set(certifiable=False)[0],
             [missing_provider_scope],
             targets=[provider_target],
             source_approvals={provider_scope_approval.approval_id: provider_scope_approval},
@@ -271,16 +271,16 @@ def test_5dollar_shadow_admission_requires_raw_page_and_provider_scope_evidence(
         competition_scope="3118717965",
     )
     provider_history = replace(
-        history()[0], provider=provider, source_id=source,
+        _fixture_set(certifiable=False)[2][0], provider=provider, source_id=source,
         provider_competition_id="3118717965",
     )
-    original_report = forecast_report()
+    original_report = _fixture_set(certifiable=False)[0]
     provider_forecast = replace(
         original_report.forecasts[0], provider=provider, source_id=source
     )
     report = replace(original_report, forecasts=(provider_forecast,))
     provider_target = replace(
-        target(), provider=provider, source_id=source,
+        _fixture_set(certifiable=False)[1], provider=provider, source_id=source,
         provider_competition_id="3118717965",
         response_sha256="d" * 64,
         capture_manifest_sha256="e" * 64,
