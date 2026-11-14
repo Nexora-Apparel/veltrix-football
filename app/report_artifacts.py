@@ -13,6 +13,7 @@ import time
 from typing import Any
 from urllib.error import HTTPError, URLError
 
+from veltrix_v2.reporting.artifact_bundle import load_authorized_portable_report_surface_bundle
 from veltrix_v2.reporting.report_identity import (
     REPORT_SCHEMA,
     assert_website_projection,
@@ -208,3 +209,26 @@ def load_v2_report_bundle(
     except Exception:
         return None
     return {"report": report, "dashboard": dashboard, "identity": identity}
+
+
+
+def load_v2_portable_report_bundle(
+    portable_bundle_bytes: bytes,
+    authorization_verifier=None,
+) -> dict[str, Any] | None:
+    """Load website V2 data from the single portable artifact using the authoritative verifier."""
+    if not callable(authorization_verifier):
+        return None
+    try:
+        bundle = load_authorized_portable_report_surface_bundle(
+            portable_bundle_bytes, authorization_verifier
+        )
+    except Exception:
+        return None
+    return {
+        "report": bundle.canonical_report,
+        "dashboard": bundle.website_projection,
+        "scheduled": bundle.scheduled_report,
+        "telegram": bundle.telegram_report,
+        "identity": bundle.identity,
+    }
