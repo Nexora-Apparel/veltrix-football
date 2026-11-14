@@ -148,7 +148,7 @@ def _bookmaker_consensus(
         source = str(quote.get("source_provider", quote.get("provider", ""))).strip().casefold()
         if source.replace(" ", "") not in {"theoddsapi", "theoddsapi.com"}:
             continue
-        if quote.get("quote_timestamp_basis") != "SOURCE_CREATED_AT":
+        if quote.get("quote_timestamp_basis") != "PROVIDER_OBSERVED_AT":
             continue
         quote_at = _parse_aware(quote.get("quote_at"))
         kickoff = _parse_aware(fixture.kickoff_at)
@@ -240,7 +240,7 @@ def _roi_metrics(rows: list[Mapping[str, Any]], *, bootstrap_samples: int, seed:
         quote_at = _parse_aware(row.get("quote_at"))
         cutoff = _parse_aware(row.get("prediction_cutoff_at"))
         quote_valid = (
-            row.get("quote_timestamp_basis") == "SOURCE_CREATED_AT"
+            row.get("quote_timestamp_basis") == "PROVIDER_OBSERVED_AT"
             and str(row.get("quote_source", "")).strip().casefold().replace(" ", "") in {"theoddsapi", "theoddsapi.com"}
             and quote_at is not None
             and cutoff is not None

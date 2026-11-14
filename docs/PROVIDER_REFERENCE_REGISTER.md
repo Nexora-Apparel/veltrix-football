@@ -118,3 +118,11 @@ GOAL API and StrikerAPI remain blocked. The workflows are disabled in the reconc
 4. Do not treat fetched_at, retrieved_at, lastUpdated or lastUpdateDateTime as a source publication timestamp unless that provider explicitly defines it as such.
 5. Rights are checked per provider, competition, data domain, purpose and time of use. API connectivity does not imply permission to train or publish.
 6. No new provider calls, database writes, Telegram sends, schedule activation or deployments were part of this register reconciliation.
+
+
+### 5.3 Timestamp semantics for The Odds API
+
+The Odds API V4 documentation defines the market-level last_update as the time The Odds API system last saw odds for that market from the bookmaker. This is a provider-observed timestamp, not the bookmaker's original quote-creation timestamp. V2 evidence must therefore label it PROVIDER_OBSERVED_AT (or an equivalent explicit provider-observation basis), never SOURCE_CREATED_AT. The bookmaker quote must still be observed before the prediction cutoff and kickoff. A VELTRIX retrieval timestamp is recorded separately and cannot replace the provider-observed time.
+
+The 2026-11-12 The Odds API probe occurred after the published Terms update of 2026-08-31. The Terms state that continued use after a change constitutes acceptance. If that probe used the same active account/key, it is evidence of acceptance under the public Terms; the repository still lacks an account-specific acceptance receipt. The current quota/budget remains unverified because the last credit snapshot is stale.
+

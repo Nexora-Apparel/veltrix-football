@@ -99,7 +99,7 @@ def _quotes(walk_forward):
         "fixture_id": row.fixture_id,
         "competition_id": row.competition_id,
         "source_provider": "The Odds API",
-        "quote_timestamp_basis": "SOURCE_CREATED_AT",
+        "quote_timestamp_basis": "PROVIDER_OBSERVED_AT",
         "quote_at": (row.kickoff_at - timedelta(hours=3)).isoformat(),
         "bookmaker": "Bookmaker A",
         "odds": {"home": 3.0, "draw": 3.0, "away": 3.0},
@@ -124,7 +124,7 @@ def _selections():
                 "kickoff_at": kickoff.isoformat(),
                 "prediction_cutoff_at": (kickoff - timedelta(hours=2)).isoformat(),
                 "quote_at": (kickoff - timedelta(hours=3)).isoformat(),
-                "quote_timestamp_basis": "SOURCE_CREATED_AT",
+                "quote_timestamp_basis": "PROVIDER_OBSERVED_AT",
                 "quote_source": "The Odds API",
                 "quote_evidence_sha256": "a" * 64,
                 "stake": 1.0,
@@ -213,7 +213,7 @@ def test_builder_fails_closed_without_prospective_selections_and_rights_verifier
         assert "RIGHTS_VERIFIER_MISSING" in record["blockers"]
 
 
-def test_builder_rejects_non_source_timestamps_for_bookmaker_benchmark():
+def test_builder_rejects_non_provider_observed_timestamps_for_bookmaker_benchmark():
     report = _report()
     walk_forward = _walk_forward()
     quotes = _quotes(walk_forward)
