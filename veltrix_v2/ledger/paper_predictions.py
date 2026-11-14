@@ -34,6 +34,13 @@ class PaperPrediction:
     evidence_sha256: str
     point_in_time_certifiable: bool
     evidence_class: str = "PIT_CERTIFIED"
+    target_provider: str | None = None
+    target_source_id: str | None = None
+    target_source_fixture_id: str | None = None
+    target_provider_competition_id: str | None = None
+    target_payload_sha256: str | None = None
+    target_response_sha256: str | None = None
+    target_capture_manifest_sha256: str | None = None
 
 
 @dataclass(frozen=True)
@@ -109,6 +116,36 @@ class ProspectivePaperLedger:
                and e.fixture_id == prediction.fixture_id
                and e.model_version == prediction.model_version for e in self._events):
             raise ValueError("PAPER_PREDICTION_DUPLICATE")
+        target_fields = (
+            prediction.target_provider, prediction.target_source_id,
+            prediction.target_source_fixture_id, prediction.target_provider_competition_id,
+            prediction.target_payload_sha256, prediction.target_response_sha256,
+            prediction.target_capture_manifest_sha256,
+        )
+        if any(value is not None for value in target_fields):
+            if not all(isinstance(value, str) and value.strip() for value in (
+                prediction.target_provider, prediction.target_source_id,
+                prediction.target_source_fixture_id, prediction.target_payload_sha256,
+            )):
+                raise ValueError("PAPER_PREDICTION_TARGET_PROVENANCE_INCOMPLETE")
+            for value in (
+                prediction.target_payload_sha256,
+                prediction.target_response_sha256,
+                prediction.target_capture_manifest_sha256,
+            ):
+                if value is not None and (
+                    len(value) != 64
+                    or any(ch not in "0123456789abcdef" for ch in value.casefold())
+                ):
+                    raise ValueError("PAPER_PREDICTION_TARGET_HASH_INVALID")
+            if prediction.target_provider == "5DollarFootballAPI" and not all(
+                isinstance(value, str) and value.strip() for value in (
+                    prediction.target_provider_competition_id,
+                    prediction.target_response_sha256,
+                    prediction.target_capture_manifest_sha256,
+                )
+            ):
+                raise ValueError("PAPER_PREDICTION_TARGET_CAPTURE_EVIDENCE_MISSING")
 
         payload = {
             "fixture_id": prediction.fixture_id,
@@ -127,6 +164,16 @@ class ProspectivePaperLedger:
             "point_in_time_certifiable": prediction.point_in_time_certifiable,
             "evidence_class": prediction.evidence_class,
         }
+        if prediction.target_provider is not None:
+            payload.update({
+                "target_provider": prediction.target_provider,
+                "target_source_id": prediction.target_source_id,
+                "target_source_fixture_id": prediction.target_source_fixture_id,
+                "target_provider_competition_id": prediction.target_provider_competition_id,
+                "target_payload_sha256": prediction.target_payload_sha256,
+                "target_response_sha256": prediction.target_response_sha256,
+                "target_capture_manifest_sha256": prediction.target_capture_manifest_sha256,
+            })
         return self._append(event_type, prediction.fixture_id,
                             prediction.model_version, prediction.recorded_at, payload)
 
@@ -223,5 +270,33 @@ class ProspectivePaperLedger:
                 raise ValueError("PAPER_LEDGER_CHAIN_LINK_INVALID")
             if _event_hash(body) != event.event_sha256:
                 raise ValueError("PAPER_LEDGER_EVENT_HASH_INVALID")
+            if event.event_type in {"PREDICTION", "SHADOW_PREDICTION"}:
+                payload = event.payload
+                if (
+                    payload.get("fixture_id") != event.fixture_id
+                    or payload.get("model_version") != event.model_version
+                    or payload.get("recorded_at") != event.recorded_at
+                ):
+                    raise ValueError("PAPER_LEDGER_EVENT_IDENTITY_INVALID")
+                if payload.get("target_provider") == "5DollarFootballAPI":
+                    required_target_fields = (
+                        "target_source_id", "target_source_fixture_id",
+                        "target_provider_competition_id", "target_payload_sha256",
+                        "target_response_sha256", "target_capture_manifest_sha256",
+                    )
+                    if not all(
+                        isinstance(payload.get(key), str) and payload[key].strip()
+                        for key in required_target_fields
+                    ):
+                        raise ValueError("PAPER_LEDGER_TARGET_PROVENANCE_INCOMPLETE")
+                    if not all(
+                        len(payload[key]) == 64
+                        and all(ch in "0123456789abcdef" for ch in payload[key].casefold())
+                        for key in (
+                            "target_payload_sha256", "target_response_sha256",
+                            "target_capture_manifest_sha256",
+                        )
+                    ):
+                        raise ValueError("PAPER_LEDGER_TARGET_HASH_INVALID")
             previous = event.event_sha256
         return True

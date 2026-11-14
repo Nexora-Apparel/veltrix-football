@@ -26,7 +26,11 @@ from veltrix_v2.data.coverage_sql import (
 )
 from veltrix_v2.data.fivedollar import parse_fixture_page
 from veltrix_v2.data.provider_evidence_capture import capture_fivedollar_page_evidence
-from veltrix_v2.data.evidence_persistence import persist_provider_evidence_report
+from veltrix_v2.data.evidence_persistence import (
+    build_fixture_snapshot_manifest,
+    persist_fixture_snapshot_response,
+    persist_provider_evidence_report,
+)
 from veltrix_v2.data.rights import evaluate_source_use
 from veltrix_v2.data.temporal_eligibility import resolve_rights_status
 from veltrix_v2.ledger.admission import admit_prospective_observed_shadow_forecasts
@@ -198,6 +202,54 @@ def _hash_files(paths: tuple[str, ...]) -> str:
     return sha256(payload).hexdigest()
 
 
+def _persist_fixture_snapshot_to_staging(
+    dsn: str,
+    *,
+    request_id: str,
+    endpoint: str,
+    request_params: dict[str, object],
+    requested_at: datetime,
+    retrieved_at: datetime,
+    recorded_at: datetime,
+    raw_response: bytes,
+    response_headers: dict[str, str],
+    competition_id: str,
+    fixture_count: int,
+    approval: SourceApproval,
+) -> dict[str, str | int]:
+    validate_staging_dsn_target(dsn)
+    import psycopg
+
+    host = urlparse(dsn).hostname or ""
+    with psycopg.connect(dsn, autocommit=False) as connection:
+        identity = connection.execute(
+            "SELECT current_database(), current_user"
+        ).fetchone()
+        if identity != ("veltrix_football_staging", "neondb_owner"):
+            raise PermissionError("STAGING_DATABASE_ROLE_NOT_ALLOWLISTED")
+        return persist_fixture_snapshot_response(
+            connection,
+            provider="5DollarFootballAPI",
+            source_id="5dollarfootballapi",
+            endpoint=endpoint,
+            request_id=request_id,
+            request_params=request_params,
+            requested_at=requested_at,
+            retrieved_at=retrieved_at,
+            recorded_at=recorded_at,
+            raw_response=raw_response,
+            response_headers=response_headers,
+            competition_id=competition_id,
+            fixture_count=fixture_count,
+            rights_approval=approval,
+            write_enabled=True,
+            environment="staging",
+            database_name=identity[0],
+            host=host,
+            role=identity[1],
+        )
+
+
 def _persist_paper_predictions_to_staging(
     dsn: str, predictions: list
 ) -> dict[str, object]:
@@ -252,7 +304,7 @@ def _request_page(
     page: int,
     pacing_state: dict[str, float | None],
     before_request,
-) -> tuple[bytes, dict[str, str], datetime, datetime]:
+) -> tuple[bytes, dict[str, str], dict[str, object], datetime, datetime]:
     last_request_started = pacing_state.get("last_started")
     if last_request_started is not None:
         delay = MIN_REQUEST_INTERVAL_SECONDS - (time.monotonic() - last_request_started)
@@ -293,7 +345,7 @@ def _request_page(
     retrieved_at = datetime.now(timezone.utc)
     if not raw:
         raise RuntimeError("FIVEDOLLAR_EMPTY_RESPONSE")
-    return raw, headers, requested_at, retrieved_at
+    return raw, headers, params, requested_at, retrieved_at
 
 
 def _persist_capture_report_to_staging(dsn: str, capture_report) -> dict[str, int]:
@@ -327,6 +379,7 @@ def _capture_page(
     competition_id: str,
     status: str,
     request_id: str,
+    request_params: dict[str, object],
     requested_at: datetime,
     retrieved_at: datetime,
     registry,
@@ -347,6 +400,7 @@ def _capture_page(
         "status_filter": status,
         "request_id": request_id,
         "endpoint": f"/leagues/{competition_id}/fixtures",
+        "request_params": request_params,
         "requested_at": requested_at.isoformat(),
         "retrieved_at": retrieved_at.isoformat(),
         "raw_response_sha256": sha256(raw).hexdigest(),
@@ -425,15 +479,59 @@ def _capture_page(
         )
         if not decision.allowed:
             raise PermissionError(decision.reason_code)
+    snapshot_hashes = build_fixture_snapshot_manifest(
+        provider="5DollarFootballAPI",
+        source_id="5dollarfootballapi",
+        endpoint=page_info["endpoint"],
+        request_id=request_id,
+        request_params=request_params,
+        requested_at=requested_at,
+        retrieved_at=retrieved_at,
+        recorded_at=recorded_at,
+        raw_response=raw,
+        competition_id=competition_id,
+        fixture_count=len(parsed.fixtures),
+        rights_approval_id=current_approval.approval_id,
+        rights_evidence_sha256=current_approval.evidence_sha256 or "",
+    )
+    target_persistence = (
+        _persist_fixture_snapshot_to_staging(
+            staging_dsn,
+            request_id=request_id,
+            endpoint=page_info["endpoint"],
+            request_params=request_params,
+            requested_at=requested_at,
+            retrieved_at=retrieved_at,
+            recorded_at=recorded_at,
+            raw_response=raw,
+            response_headers=headers,
+            competition_id=competition_id,
+            fixture_count=len(parsed.fixtures),
+            approval=current_approval,
+        )
+        if persist_staging else None
+    )
+    if target_persistence and (
+        target_persistence["manifest_sha256"] != snapshot_hashes["manifest_sha256"]
+        or target_persistence["response_sha256"] != snapshot_hashes["response_sha256"]
+    ):
+        raise RuntimeError("FIXTURE_SNAPSHOT_PERSISTENCE_HASH_MISMATCH")
     page_path.parent.mkdir(parents=True, exist_ok=True)
     page_path.write_bytes(raw)
     page_info["raw_artifact"] = str(page_path)
+    page_info["response_sha256"] = snapshot_hashes["response_sha256"]
+    page_info["capture_manifest_sha256"] = snapshot_hashes["manifest_sha256"]
+    page_info["persisted_to_staging"] = target_persistence
 
     targets = []
     rejected_targets: dict[str, int] = {}
     for fixture in parsed.fixtures:
         try:
-            targets.append(registry.to_prediction_target(fixture))
+            targets.append(registry.to_prediction_target(
+                fixture,
+                response_sha256=snapshot_hashes["response_sha256"],
+                capture_manifest_sha256=snapshot_hashes["manifest_sha256"],
+            ))
         except (ValueError, TypeError) as exc:
             reason = str(exc)[:120]
             rejected_targets[reason] = rejected_targets.get(reason, 0) + 1
@@ -500,7 +598,7 @@ def run_capture(
         request_id = f"{os.getenv('GITHUB_RUN_ID', 'manual')}-{competition_id}-finished-1"
         request_count += 1
         try:
-            raw, headers, requested_at, retrieved_at = _request_page(
+            raw, headers, request_params, requested_at, retrieved_at = _request_page(
                 api_key, competition_id=competition_id, status="finished",
                 start_at=history_start, end_at=now, page=1,
                 pacing_state=pacing_state,
@@ -513,7 +611,8 @@ def run_capture(
             raise
         result_rows, info = _capture_page(
             raw, headers, competition_id=competition_id, status="finished",
-            request_id=request_id, requested_at=requested_at, retrieved_at=retrieved_at,
+            request_id=request_id, request_params=request_params,
+            requested_at=requested_at, retrieved_at=retrieved_at,
             registry=registry, out_dir=out_dir,
             staging_dsn=staging_dsn,
             persist_staging=persist_staging,
@@ -540,7 +639,7 @@ def run_capture(
         request_id = f"{os.getenv('GITHUB_RUN_ID', 'manual')}-{competition_id}-scheduled-1"
         request_count += 1
         try:
-            raw, headers, requested_at, retrieved_at = _request_page(
+            raw, headers, request_params, requested_at, retrieved_at = _request_page(
                 api_key, competition_id=competition_id, status="scheduled",
                 start_at=now, end_at=upcoming_end, page=1,
                 pacing_state=pacing_state,
@@ -553,7 +652,8 @@ def run_capture(
             raise
         target_rows, info = _capture_page(
             raw, headers, competition_id=competition_id, status="scheduled",
-            request_id=request_id, requested_at=requested_at, retrieved_at=retrieved_at,
+            request_id=request_id, request_params=request_params,
+            requested_at=requested_at, retrieved_at=retrieved_at,
             registry=registry, out_dir=out_dir,
             staging_dsn=staging_dsn,
             persist_staging=persist_staging,

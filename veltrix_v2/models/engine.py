@@ -24,6 +24,9 @@ class PredictionTarget:
     rights_approval_id: str
     home_team_name: str = ""
     away_team_name: str = ""
+    response_sha256: str | None = None
+    capture_manifest_sha256: str | None = None
+    provider_competition_id: str | None = None
 
 
 @dataclass(frozen=True)
@@ -69,6 +72,21 @@ def _valid_target(target: PredictionTarget) -> bool:
         return False
     if len(target.payload_sha256) != 64 or any(
         ch not in "0123456789abcdef" for ch in target.payload_sha256.casefold()
+    ):
+        return False
+    if (target.response_sha256 is None) != (target.capture_manifest_sha256 is None):
+        return False
+    if target.response_sha256 is not None and not all(
+        isinstance(value, str) and len(value) == 64
+        and all(ch in "0123456789abcdef" for ch in value.casefold())
+        for value in (target.response_sha256, target.capture_manifest_sha256)
+    ):
+        return False
+    if target.provider == "5DollarFootballAPI" and (
+        not isinstance(target.provider_competition_id, str)
+        or not target.provider_competition_id.strip()
+        or target.response_sha256 is None
+        or target.capture_manifest_sha256 is None
     ):
         return False
     return _aware(target.kickoff_at) and _aware(target.retrieved_at)

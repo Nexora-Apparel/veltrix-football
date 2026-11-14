@@ -64,6 +64,7 @@ def _approval_for(
     competition_id: str,
     at: datetime,
     purposes: tuple[DataUsePurpose, ...],
+    provider_competition_id: str | None = None,
 ) -> SourceApproval:
     approval = approvals.get(approval_id)
     if not isinstance(approval, SourceApproval):
@@ -72,7 +73,11 @@ def _approval_for(
         raise ValueError("SOURCE_APPROVAL_IDENTITY_MISMATCH")
     if approval.data_type not in {"fixture_result", "fixtures_and_results"}:
         raise ValueError("SOURCE_APPROVAL_DATA_TYPE_MISMATCH")
-    provider_competition = _provider_competition_id(competition_id, source_id)
+    provider_competition = (
+        provider_competition_id
+        if isinstance(provider_competition_id, str) and provider_competition_id.strip()
+        else _provider_competition_id(competition_id, source_id)
+    )
     scope = {item.strip() for item in approval.competition_scope.split(",") if item.strip()}
     if not provider_competition or provider_competition not in scope or "*" in scope:
         raise ValueError("SOURCE_APPROVAL_COMPETITION_SCOPE_MISMATCH")
@@ -134,12 +139,15 @@ def _training_evidence(
         approval = _approval_for(
             row.rights_approval_id, approvals,
             provider=row.provider, source_id=row.source_id,
-            competition_id=row.competition_id, at=rights_evaluated_at,
+            competition_id=row.competition_id,
+            at=rights_evaluated_at,
             purposes=(DataUsePurpose.STORAGE, DataUsePurpose.MODEL_TRAINING),
+            provider_competition_id=row.provider_competition_id,
         )
         used.append({
             "fixture_id": row.fixture_id,
             "competition_id": row.competition_id,
+            "provider_competition_id": row.provider_competition_id,
             "home_team_id": row.home_team_id,
             "away_team_id": row.away_team_id,
             "kickoff_at": row.kickoff_at.isoformat() if row.kickoff_at else None,
@@ -218,12 +226,24 @@ def admit_shadow_forecasts(
                 raise ValueError("TARGET_NOT_KNOWN_AND_FUTURE_AT_RECORDING")
             if not _valid_hash(target.payload_sha256):
                 raise ValueError("TARGET_PAYLOAD_HASH_INVALID")
+            if target.provider == "5DollarFootballAPI" and (
+                not isinstance(target.provider_competition_id, str)
+                or not target.provider_competition_id.strip()
+                or not all(
+                    _valid_hash(value) for value in (
+                        target.response_sha256, target.capture_manifest_sha256
+                    )
+                )
+            ):
+                raise ValueError("TARGET_RESPONSE_CAPTURE_EVIDENCE_MISSING")
 
             target_approval = _approval_for(
                 target.rights_approval_id, source_approvals,
                 provider=target.provider, source_id=target.source_id,
-                competition_id=target.competition_id, at=recorded_at,
+                competition_id=target.competition_id,
+                at=recorded_at,
                 purposes=(DataUsePurpose.COLLECTION, DataUsePurpose.CACHE),
+                provider_competition_id=target.provider_competition_id,
             )
             if _evidence_class == "PROSPECTIVE_OBSERVED_ONLY" and forecast.model.publishable is not False:
                 raise ValueError("OBSERVED_ONLY_FORECAST_MUST_REMAIN_NON_PUBLISHABLE")
@@ -251,6 +271,9 @@ def admit_shadow_forecasts(
                 "target_provider": target.provider,
                 "target_source_id": target.source_id,
                 "target_payload_sha256": target.payload_sha256,
+                "target_response_sha256": target.response_sha256,
+                "target_capture_manifest_sha256": target.capture_manifest_sha256,
+                "target_provider_competition_id": target.provider_competition_id,
                 "target_rights_approval_id": target_approval.approval_id,
                 "target_rights_evidence_sha256": target_approval.evidence_sha256,
                 "training_observations": evidence_rows,
@@ -275,6 +298,13 @@ def admit_shadow_forecasts(
                 evidence_sha256=evidence_hash,
                 point_in_time_certifiable=(_evidence_class == "PIT_CERTIFIED"),
                 evidence_class=_evidence_class,
+                target_provider=target.provider,
+                target_source_id=target.source_id,
+                target_source_fixture_id=target.source_fixture_id,
+                target_provider_competition_id=target.provider_competition_id,
+                target_payload_sha256=target.payload_sha256,
+                target_response_sha256=target.response_sha256,
+                target_capture_manifest_sha256=target.capture_manifest_sha256,
             )
             admitted.append(prediction)
         except (TypeError, ValueError, AttributeError) as exc:

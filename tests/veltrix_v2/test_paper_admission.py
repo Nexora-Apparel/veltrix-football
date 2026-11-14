@@ -2,6 +2,7 @@ from dataclasses import replace
 from datetime import datetime, timedelta, timezone
 
 from veltrix_v2.data.contracts import ApprovalStatus, DataUsePurpose, SourceApproval
+from veltrix_v2.ledger.paper_predictions import ProspectivePaperLedger
 from veltrix_v2.ledger.admission import (
     admit_prospective_observed_shadow_forecasts, admit_shadow_forecasts,
 )
@@ -218,3 +219,100 @@ def test_observed_only_admission_rejects_publishable_model_output():
     )
     assert not result.admitted
     assert result.rejected[0].reason_code == "OBSERVED_ONLY_FORECAST_MUST_REMAIN_NON_PUBLISHABLE"
+
+
+
+def test_rights_recheck_uses_explicit_provider_competition_id():
+    provider_scope_approval = replace(
+        APPROVAL, competition_scope="provider-comp-1"
+    )
+    provider_history = replace(
+        _fixture_set(certifiable=False)[2][0], provider_competition_id="provider-comp-1"
+    )
+    provider_target = replace(
+        _fixture_set(certifiable=False)[1], provider_competition_id="provider-comp-1"
+    )
+    admitted = admit_prospective_observed_shadow_forecasts(
+        _fixture_set(certifiable=False)[0],
+        [provider_history],
+        targets=[provider_target],
+        source_approvals={provider_scope_approval.approval_id: provider_scope_approval},
+        model_artifact_sha256="b" * 64,
+        feature_set_sha256="c" * 64,
+        forecasted_at=NOW + timedelta(seconds=1),
+        recorded_at=NOW + timedelta(seconds=2),
+    )
+    assert len(admitted.admitted) == 1
+
+    missing_provider_scope = replace(provider_history, provider_competition_id=None)
+    try:
+        admit_prospective_observed_shadow_forecasts(
+            _fixture_set(certifiable=False)[0],
+            [missing_provider_scope],
+            targets=[provider_target],
+            source_approvals={provider_scope_approval.approval_id: provider_scope_approval},
+            model_artifact_sha256="b" * 64,
+            feature_set_sha256="c" * 64,
+            forecasted_at=NOW + timedelta(seconds=1),
+            recorded_at=NOW + timedelta(seconds=2),
+        )
+    except ValueError as exc:
+        assert str(exc) == "SOURCE_APPROVAL_COMPETITION_SCOPE_MISMATCH"
+    else:
+        raise AssertionError("missing provider competition scope must fail closed")
+
+
+
+def test_5dollar_shadow_admission_requires_raw_page_and_provider_scope_evidence():
+    provider = "5DollarFootballAPI"
+    source = "5dollarfootballapi"
+    approval = replace(
+        APPROVAL, provider=provider, source_id=source,
+        competition_scope="3118717965",
+    )
+    provider_history = replace(
+        _fixture_set(certifiable=False)[2][0], provider=provider, source_id=source,
+        provider_competition_id="3118717965",
+    )
+    original_report = _fixture_set(certifiable=False)[0]
+    provider_forecast = replace(
+        original_report.forecasts[0], provider=provider, source_id=source
+    )
+    report = replace(original_report, forecasts=(provider_forecast,))
+    provider_target = replace(
+        _fixture_set(certifiable=False)[1], provider=provider, source_id=source,
+        provider_competition_id="3118717965",
+        response_sha256="d" * 64,
+        capture_manifest_sha256="e" * 64,
+    )
+    result = admit_prospective_observed_shadow_forecasts(
+        report, [provider_history], targets=[provider_target],
+        source_approvals={approval.approval_id: approval},
+        model_artifact_sha256="b" * 64, feature_set_sha256="c" * 64,
+        forecasted_at=NOW + timedelta(seconds=1),
+        recorded_at=NOW + timedelta(seconds=2),
+    )
+    assert len(result.admitted) == 1
+    ledger = ProspectivePaperLedger()
+    event = ledger.append_prediction(result.admitted[0])
+    assert ledger.verify_chain()
+    assert event.payload["target_provider"] == provider
+    assert event.payload["target_provider_competition_id"] == "3118717965"
+    assert event.payload["target_response_sha256"] == "d" * 64
+    assert event.payload["target_capture_manifest_sha256"] == "e" * 64
+
+    missing_page_hash = replace(
+        provider_target, response_sha256=None, capture_manifest_sha256=None
+    )
+    try:
+        admit_prospective_observed_shadow_forecasts(
+            report, [provider_history], targets=[missing_page_hash],
+            source_approvals={approval.approval_id: approval},
+            model_artifact_sha256="b" * 64, feature_set_sha256="c" * 64,
+            forecasted_at=NOW + timedelta(seconds=1),
+            recorded_at=NOW + timedelta(seconds=2),
+        )
+    except ValueError as exc:
+        assert str(exc) == "TARGET_RESPONSE_CAPTURE_EVIDENCE_MISSING"
+    else:
+        raise AssertionError("5Dollar target without page evidence must be rejected")

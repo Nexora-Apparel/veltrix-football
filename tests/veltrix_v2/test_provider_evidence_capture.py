@@ -384,6 +384,7 @@ def test_fivedollar_page_adapter_preserves_non_certifiable_timestamp_gap():
     assert observed.availability_basis == "collector_first_observed_v1"
     assert observed.available_at.isoformat() == observed_evidence.retrieved_at
     assert observed.payload_sha256 == sha256(raw).hexdigest()
+    assert observed.provider_competition_id == "4160026622"
     assert len(observed.evidence_manifest_sha256) == 64
     assert len(observed.capture_evidence_sha256) == 64
 

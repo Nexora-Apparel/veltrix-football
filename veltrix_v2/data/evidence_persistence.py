@@ -6,10 +6,13 @@ the verified staging target identity.
 """
 from __future__ import annotations
 
+from datetime import datetime
 from hashlib import sha256
 import json
-from typing import Any, Iterable
+from typing import Any, Iterable, Mapping
 
+from veltrix_v2.data.contracts import ApprovalStatus, DataUsePurpose, SourceApproval
+from veltrix_v2.data.rights import evaluate_source_use
 from veltrix_v2.data.provider_evidence_capture import (
     ProviderEvidenceCaptureReport,
     ProviderResultCapture,
@@ -37,6 +40,243 @@ def _fetch_id(cursor: Any, insert_sql: str, insert_params: tuple,
     if not row:
         raise RuntimeError("APPEND_ONLY_PERSISTENCE_ID_LOOKUP_FAILED")
     return int(row[0])
+
+
+def _aware(value: object) -> bool:
+    return (
+        isinstance(value, datetime)
+        and value.tzinfo is not None
+        and value.utcoffset() is not None
+    )
+
+
+def build_fixture_snapshot_manifest(
+    *,
+    provider: str,
+    source_id: str,
+    endpoint: str,
+    request_id: str,
+    request_params: Mapping[str, object],
+    requested_at: datetime,
+    retrieved_at: datetime,
+    recorded_at: datetime,
+    raw_response: bytes,
+    competition_id: str,
+    fixture_count: int,
+    rights_approval_id: str,
+    rights_evidence_sha256: str,
+) -> dict[str, str]:
+    """Build deterministic hashes for a raw upcoming-fixture page snapshot."""
+    if (provider, source_id) != ("5DollarFootballAPI", "5dollarfootballapi"):
+        raise ValueError("FIXTURE_SNAPSHOT_PROVIDER_NOT_ALLOWED")
+    if not all(isinstance(value, str) and value.strip() for value in (
+        endpoint, request_id, competition_id, rights_approval_id
+    )) or not isinstance(rights_evidence_sha256, str) or len(rights_evidence_sha256) != 64 or any(
+        ch not in "0123456789abcdef" for ch in rights_evidence_sha256.casefold()
+    ):
+        raise ValueError("FIXTURE_SNAPSHOT_IDENTITY_INVALID")
+    if not isinstance(request_params, Mapping):
+        raise ValueError("FIXTURE_SNAPSHOT_REQUEST_PARAMS_INVALID")
+    if not all(_aware(value) for value in (requested_at, retrieved_at, recorded_at)):
+        raise ValueError("FIXTURE_SNAPSHOT_TIMESTAMP_NOT_AWARE")
+    if not requested_at <= retrieved_at <= recorded_at:
+        raise ValueError("FIXTURE_SNAPSHOT_TIMESTAMP_ORDER_INVALID")
+    if not isinstance(raw_response, bytes) or not raw_response:
+        raise ValueError("FIXTURE_SNAPSHOT_RAW_RESPONSE_INVALID")
+    if type(fixture_count) is not int or fixture_count < 0:
+        raise ValueError("FIXTURE_SNAPSHOT_FIXTURE_COUNT_INVALID")
+
+    response_hash = sha256(raw_response).hexdigest()
+    body = {
+        "schema_version": "fixture_snapshot_page_v1",
+        "provider": provider,
+        "source_id": source_id,
+        "endpoint": endpoint,
+        "request_id": request_id,
+        "request_params": dict(request_params),
+        "requested_at": requested_at.isoformat(),
+        "retrieved_at": retrieved_at.isoformat(),
+        "recorded_at": recorded_at.isoformat(),
+        "response_sha256": response_hash,
+        "competition_id": competition_id,
+        "status_filter": "scheduled",
+        "fixture_count": fixture_count,
+        "rights_approval_id": rights_approval_id,
+        "rights_evidence_sha256": rights_evidence_sha256,
+        "rights_evaluated_at": recorded_at.isoformat(),
+    }
+    manifest_hash = sha256(_json(body).encode("utf-8")).hexdigest()
+    return {
+        "response_sha256": response_hash,
+        "manifest_sha256": manifest_hash,
+    }
+
+
+def persist_fixture_snapshot_response(
+    connection: Any,
+    *,
+    provider: str,
+    source_id: str,
+    endpoint: str,
+    request_id: str,
+    request_params: Mapping[str, object],
+    requested_at: datetime,
+    retrieved_at: datetime,
+    recorded_at: datetime,
+    raw_response: bytes,
+    response_headers: Mapping[str, str],
+    competition_id: str,
+    fixture_count: int,
+    rights_approval: SourceApproval,
+    write_enabled: bool = False,
+    environment: str = "unknown",
+    database_name: str = "",
+    host: str = "",
+    role: str = "",
+) -> dict[str, str | int]:
+    """Persist one scheduled-fixture raw page and its manifest in staging only."""
+    if write_enabled is not True:
+        raise PermissionError("FIXTURE_SNAPSHOT_PERSISTENCE_WRITE_GUARD_DISABLED")
+    if (environment, database_name, host, role) != (
+        "staging", _ALLOWED_DATABASE, _ALLOWED_HOST, _ALLOWED_ROLE
+    ):
+        raise PermissionError("FIXTURE_SNAPSHOT_PERSISTENCE_TARGET_NOT_ALLOWLISTED")
+    if not isinstance(rights_approval, SourceApproval):
+        raise TypeError("FIXTURE_SNAPSHOT_SOURCE_APPROVAL_REQUIRED")
+    if (
+        rights_approval.status is not ApprovalStatus.APPROVED
+        or rights_approval.provider != provider
+        or rights_approval.source_id != source_id
+        or competition_id not in {
+            value.strip() for value in rights_approval.competition_scope.split(",")
+        }
+    ):
+        raise PermissionError("FIXTURE_SNAPSHOT_SOURCE_RIGHTS_SCOPE_INVALID")
+
+    hashes = build_fixture_snapshot_manifest(
+        provider=provider,
+        source_id=source_id,
+        endpoint=endpoint,
+        request_id=request_id,
+        request_params=request_params,
+        requested_at=requested_at,
+        retrieved_at=retrieved_at,
+        recorded_at=recorded_at,
+        raw_response=raw_response,
+        competition_id=competition_id,
+        fixture_count=fixture_count,
+        rights_approval_id=rights_approval.approval_id,
+        rights_evidence_sha256=rights_approval.evidence_sha256 or "",
+    )
+    for purpose in (DataUsePurpose.STORAGE, DataUsePurpose.CACHE):
+        decision = evaluate_source_use(
+            rights_approval, purpose, at_utc=recorded_at, commercial=True
+        )
+        if not decision.allowed:
+            raise PermissionError(decision.reason_code)
+
+    response_hash = hashes["response_sha256"]
+    manifest_hash = hashes["manifest_sha256"]
+    manifest_key = f"{provider}:{source_id}:{request_id}:{manifest_hash}"
+    request_fingerprint = sha256(_json({
+        "endpoint": endpoint,
+        "request_params": dict(request_params),
+        "requested_at": requested_at.isoformat(),
+    }).encode("utf-8")).hexdigest()
+    scope = {
+        "provider": provider,
+        "source_id": source_id,
+        "endpoint": endpoint,
+        "request_id": request_id,
+        "data_domain": "FIXTURES",
+        "status_filter": "scheduled",
+        "competition_id": competition_id,
+        "fixture_count": fixture_count,
+        "response_sha256": response_hash,
+    }
+    headers = {
+        str(key).lower(): str(value)
+        for key, value in response_headers.items()
+        if str(key).lower() in {
+            "content-type", "date", "x-ratelimit-limit",
+            "x-ratelimit-remaining", "x-ratelimit-used",
+        }
+    }
+
+    with connection:
+        with connection.cursor() as cursor:
+            cursor.execute(
+                """SELECT evidence_sha256 FROM source_approvals
+                   WHERE approval_id = %s AND provider = %s AND source_id = %s""",
+                (rights_approval.approval_id, provider, source_id),
+            )
+            approval_row = cursor.fetchone()
+            if not approval_row:
+                raise ValueError("STAGING_SOURCE_APPROVAL_NOT_FOUND")
+            if approval_row[0] != rights_approval.evidence_sha256:
+                raise ValueError("STAGING_SOURCE_APPROVAL_EVIDENCE_MISMATCH")
+
+            manifest_id = _fetch_id(
+                cursor,
+                """INSERT INTO capture_manifests
+                   (manifest_key, manifest_sha256, capture_scope, requests_planned)
+                   VALUES (%s, %s, %s::jsonb, 1)
+                   ON CONFLICT (manifest_key) DO NOTHING
+                   RETURNING capture_manifest_id""",
+                (manifest_key, manifest_hash, _json(scope)),
+                "SELECT capture_manifest_id FROM capture_manifests WHERE manifest_key = %s",
+                (manifest_key,),
+            )
+            cursor.execute(
+                """SELECT 1 FROM capture_manifest_events
+                   WHERE capture_manifest_id = %s AND reason_code = %s
+                     AND evidence_sha256 = %s""",
+                (manifest_id, "FIXTURE_SNAPSHOT_PAGE_PERSISTED", manifest_hash),
+            )
+            if not cursor.fetchone():
+                cursor.execute(
+                    """INSERT INTO capture_manifest_events
+                       (capture_manifest_id, status, event_at, reason_code,
+                        evidence_sha256, coverage_summary)
+                       VALUES (%s, 'COMPLETED', %s, %s, %s, %s::jsonb)""",
+                    (manifest_id, recorded_at, "FIXTURE_SNAPSHOT_PAGE_PERSISTED",
+                     manifest_hash, _json({
+                         "competition_id": competition_id,
+                         "fixture_count": fixture_count,
+                         "response_sha256": response_hash,
+                     })),
+                )
+
+            response_id = _fetch_id(
+                cursor,
+                """INSERT INTO provider_responses
+                   (provider, source_id, endpoint, request_id, request_params,
+                    http_status, response_sha256, raw_body, response_headers, fetched_at)
+                   VALUES (%s, %s, %s, %s, %s::jsonb, 200, %s, %s, %s::jsonb, %s)
+                   ON CONFLICT (provider, source_id, request_id, response_sha256) DO NOTHING
+                   RETURNING id""",
+                (provider, source_id, endpoint, request_id, _json(dict(request_params)),
+                 response_hash, raw_response, _json(headers), retrieved_at),
+                """SELECT id FROM provider_responses
+                   WHERE provider = %s AND source_id = %s AND request_id = %s
+                     AND response_sha256 = %s""",
+                (provider, source_id, request_id, response_hash),
+            )
+            cursor.execute(
+                """INSERT INTO provider_capture_requests
+                   (capture_manifest_id, provider, source_id, endpoint, request_key,
+                    request_fingerprint, attempt_number, requested_at, response_id, outcome)
+                   VALUES (%s, %s, %s, %s, %s, %s, 1, %s, %s, 'RESPONSE')
+                   ON CONFLICT (capture_manifest_id, request_key, attempt_number) DO NOTHING""",
+                (manifest_id, provider, source_id, endpoint, request_id,
+                 request_fingerprint, requested_at, response_id),
+            )
+    return {
+        "capture_manifest_id": manifest_id,
+        "provider_response_id": response_id,
+        "manifest_sha256": manifest_hash,
+        "response_sha256": response_hash,
+    }
 
 
 def persist_provider_evidence_report(
@@ -105,14 +345,28 @@ def persist_provider_evidence_report(
     # commit on successful context exit and roll back on exceptions.
     with connection:
         with connection.cursor() as cursor:
-            for approval_id in sorted({row.rights_approval.approval_id for row in rows}):
+            approval_ids = sorted({row.rights_approval.approval_id for row in rows})
+            for approval_id in approval_ids:
+                approval_versions = {
+                    row.rights_approval.evidence_sha256
+                    for row in rows if row.rights_approval.approval_id == approval_id
+                }
+                if len(approval_versions) != 1:
+                    raise ValueError("CAPTURE_SOURCE_APPROVAL_EVIDENCE_CONFLICT")
+                approval = next(
+                    row.rights_approval for row in rows
+                    if row.rights_approval.approval_id == approval_id
+                )
                 cursor.execute(
-                    """SELECT 1 FROM source_approvals
+                    """SELECT evidence_sha256 FROM source_approvals
                        WHERE approval_id = %s AND provider = %s AND source_id = %s""",
                     (approval_id, first.provider, first.source_id),
                 )
-                if not cursor.fetchone():
+                approval_row = cursor.fetchone()
+                if not approval_row:
                     raise ValueError("STAGING_SOURCE_APPROVAL_NOT_FOUND")
+                if approval_row[0] != approval.evidence_sha256:
+                    raise ValueError("STAGING_SOURCE_APPROVAL_EVIDENCE_MISMATCH")
 
             manifest_id = _fetch_id(
                 cursor,

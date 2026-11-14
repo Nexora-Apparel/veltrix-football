@@ -8,7 +8,9 @@ from veltrix_v2.data.coverage_sql import (
 def test_coverage_queries_are_read_only_and_use_actual_staging_tables():
     validate_read_only_coverage_sql()
     assert "FROM fixtures AS f" in FIXTURE_COVERAGE_SQL
-    assert "JOIN source_observations AS o" in OBSERVATION_COVERAGE_SQL
+    assert "LEFT JOIN source_observations AS o" in OBSERVATION_COVERAGE_SQL
+    assert "o.id = f.source_observation_id" in OBSERVATION_COVERAGE_SQL
+    assert "o.payload->>'fixture_id' = f.id::text" in OBSERVATION_COVERAGE_SQL
     assert "f.id::text AS fixture_id" in OBSERVATION_COVERAGE_SQL
     assert "o.recorded_at AS recorded_at" in OBSERVATION_COVERAGE_SQL
     assert "o.point_in_time_certifiable AS point_in_time_certifiable" in OBSERVATION_COVERAGE_SQL

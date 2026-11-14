@@ -47,3 +47,12 @@ Consequently the adapter must reject all 2,496 historical rows for strict covera
 ## Safety
 
 No staging data was changed. No provider request, credential read, credit use, schema migration, production write, deployment, schedule activation, Telegram activation or publication occurred.
+
+
+## Prospective capture selection update (2026-11-14)
+
+The observation query now uses a read-only `LEFT JOIN` that returns all matching evidence rows for each canonical fixture:
+- The original `fixtures.source_observation_id` link.
+- New `fixture_result` observations whose payload `fixture_id` equals the canonical fixture ID.
+
+Returning every matching observation allows the coverage auditor to evaluate each snapshot against the requested `as_of` time and PIT/rights rules; it does not hide older eligible evidence behind a newer non-certifiable capture. The join does not mutate the fixture's original source-observation link. First-observed results remain non-PIT-certified.
