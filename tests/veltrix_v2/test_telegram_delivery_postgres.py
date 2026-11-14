@@ -86,7 +86,9 @@ def test_postgres_delivery_claim_is_atomic_terminal_and_destination_bound(monkey
             )
         assert store.mark_stale_claim_unknown(stale_key, minimum_age_seconds=300)
         assert not store.mark_stale_claim_unknown(stale_key, minimum_age_seconds=300)
-        fresh_key = "9" * 64
+        fresh_key = delivery_idempotency_key_fields(
+            "fresh-report", "8" * 64, destination
+        )
         assert store.claim(fresh_key, "fresh-report", "8" * 64, destination)
         assert not store.mark_stale_claim_unknown(fresh_key, minimum_age_seconds=300)
         with pytest.raises(ValueError, match="MINIMUM_AGE_OUT_OF_RANGE"):
