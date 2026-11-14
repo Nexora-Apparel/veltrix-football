@@ -117,6 +117,8 @@ def test_dashboard_html_has_no_legacy_static_prediction_fallback_or_experimental
     assert "raw.githubusercontent.com" not in html
     assert "EXPERIMENTAL" not in html
     assert "experimental_" not in html
+    assert "Football data by" in html
+    assert "https://5dollarfootballapi.com" in html
 
 
 def test_dashboard_api_reads_the_authorized_website_surface_from_the_portable_bundle():
@@ -132,6 +134,10 @@ def test_dashboard_api_reads_the_authorized_website_surface_from_the_portable_bu
     assert result["fixtures_visible"] == 2
     assert result["model_validation"]["status"] == "NOT_CERTIFIED"
     assert result["report_freshness_note"] == "Verified V2 test report"
+    assert result["data_attribution"] == {
+        "text": "Football data by 5DollarFootballAPI",
+        "url": "https://5dollarfootballapi.com",
+    }
     assert result["value_bet_screen"]["status"] == "LOCKED_UNVALIDATED"
     assert result["predictions"][0]["fixture_phase"] == "UPCOMING"
     assert result["predictions"][0]["kickoff_local"] == "19:00 WAT"

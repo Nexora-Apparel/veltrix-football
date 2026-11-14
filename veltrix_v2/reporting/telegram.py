@@ -107,6 +107,7 @@ def format_public_telegram_messages(
         "⚽ VELTRIX FOOTBALL · DAILY REPORT",
         f"📅 {identity.as_of_date} · WAT",
         f"Report: {identity.report_id}",
+        "Football data by 5DollarFootballAPI · https://5dollarfootballapi.com",
         "Value betting: LOCKED pending separate market certification",
     ]
     blocks = []

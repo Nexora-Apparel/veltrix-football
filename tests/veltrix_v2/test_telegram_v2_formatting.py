@@ -45,6 +45,8 @@ def test_public_formatter_emits_only_explicitly_certified_markets():
     assert "BTTS: Yes 60% | No 40%" in joined
     assert "TOTALS_2_5:" not in joined
     assert "VALUE BET" not in joined
+    assert "Football data by 5DollarFootballAPI" in joined
+    assert "https://5dollarfootballapi.com" in joined
 
 
 @pytest.mark.parametrize("release_mode", ["INTERNAL_SHADOW", "RESEARCH_ONLY", "DRAFT", None])

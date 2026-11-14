@@ -377,7 +377,7 @@ async function loadDashboard(){
  }finally{btn.disabled=false;btn.textContent='↻ Refresh'}
 }
 loadDashboard();
-</script></body></html>"""
+</script><footer id="data-attribution" style="padding:20px 24px;text-align:center;font-size:12px;color:#8b93a7">Football data by <a href="https://5dollarfootballapi.com" target="_blank" rel="noopener noreferrer">5DollarFootballAPI</a></footer></body></html>"""
 
 @app.get("/", response_class=HTMLResponse)
 def dashboard() -> HTMLResponse:
@@ -568,6 +568,10 @@ def dashboard_data() -> dict:
     return {
         "status": "OK",
         "as_of_date": report.get("as_of_date"),
+        "data_attribution": {
+            "text": "Football data by 5DollarFootballAPI",
+            "url": "https://5dollarfootballapi.com",
+        },
         "generated_at_utc": report.get("generated_at_utc"),
         "published_at_utc": report.get("published_at_utc"),
         "publication_status": "PUBLISHED",
