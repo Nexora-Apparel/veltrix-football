@@ -98,7 +98,7 @@ def merge_certified_observations(
         )
         if (
             not all(isinstance(value, str) and value.strip() for value in text_fields)
-            or not row.point_in_time_certifiable
+            or row.point_in_time_certifiable is not True
             or not valid_times or not valid_kickoff or not valid_score
             or not _valid_hash(row.payload_sha256)
             or (row.availability_basis == "provider_evidence_manifest_v1" and (
