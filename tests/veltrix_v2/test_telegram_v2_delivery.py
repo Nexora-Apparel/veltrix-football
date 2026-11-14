@@ -378,3 +378,35 @@ def test_telegram_portable_bundle_rejects_bad_authorization_before_claim_or_send
         )
     assert calls == []
     assert store.claimed == set()
+
+
+
+def test_legacy_telegram_entrypoint_refuses_legacy_report_before_any_network(monkeypatch, tmp_path):
+    import json
+    import sys
+    import types
+
+    class RequestException(Exception):
+        pass
+
+    monkeypatch.setitem(sys.modules, "requests", types.SimpleNamespace(
+        RequestException=RequestException,
+        post=lambda *args, **kwargs: pytest.fail("legacy sender must not contact Telegram"),
+    ))
+    from scripts import send_telegram_report
+
+    report_path = tmp_path / "legacy-report.json"
+    report_path.write_text(json.dumps({
+        "as_of_date": "2026-11-14",
+        "same_day_only": True,
+        "predictions": [],
+    }), encoding="utf-8")
+    monkeypatch.setattr(
+        send_telegram_report,
+        "_load_delivery_state",
+        lambda *args, **kwargs: pytest.fail("legacy sender must not access delivery state"),
+    )
+    monkeypatch.setattr(sys, "argv", ["send_telegram_report.py", "--report", str(report_path)])
+    with pytest.raises(SystemExit) as exc:
+        send_telegram_report.main()
+    assert exc.value.code == 1
