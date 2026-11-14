@@ -99,3 +99,10 @@ A staging-only read adapter and CLI are now available:
 The CLI requires `DATABASE_URL` for the exact allowlisted Neon staging host/database. The reader then verifies database `veltrix_football_staging` and role `neondb_owner`, starts the transaction with `SET TRANSACTION READ ONLY`, and reads one delivery claim plus its append-only reconciliation history. It returns only the destination hash, never a raw Telegram chat ID. It has no write, send, retry, or retry-authorization method.
 
 The CLI is not a browser UI and will only work after migrations 0009–0010 have been reviewed and applied to the dedicated staging database. No migration was applied as part of this implementation.
+
+
+## Authenticated actor enforcement in the writer
+
+The append-only reconciliation writer now requires an injected `authenticate_actor(subject)` callback. Missing callbacks, false results and authentication-provider exceptions all fail closed before evidence reads or database access. A `CONFIRMED_NOT_SENT` event must include a separately authenticated reviewer, distinct from the operator.
+
+This is an enforcement interface, not a production identity-provider integration. No OIDC/session provider is currently wired into a production reconciliation endpoint, and the writer has no public route. The authentication callback must validate the currently authenticated principal against the supplied subject; it must not trust an event-supplied actor ID by itself.
