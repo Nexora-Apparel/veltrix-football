@@ -1,3 +1,4 @@
+from dataclasses import replace
 from datetime import datetime, timedelta, timezone
 
 from veltrix_v2.data.contracts import ApprovalStatus, DataUsePurpose, SourceApproval
@@ -120,3 +121,41 @@ def test_rejects_late_recording_after_kickoff():
     )
     assert not result.admitted
     assert result.rejected[0].reason_code == "TARGET_NOT_KNOWN_AND_FUTURE_AT_RECORDING"
+
+
+def test_manifest_linked_observation_requires_both_capture_hashes():
+    report, target, history = _fixture_set()
+    manifest_only = replace(
+        history[0],
+        availability_basis="provider_evidence_manifest_v1",
+        evidence_manifest_sha256="f" * 64,
+        capture_evidence_sha256=None,
+    )
+    result = admit_shadow_forecasts(
+        report, [target], [manifest_only],
+        source_approvals={"approval-1": APPROVAL},
+        forecasted_at=NOW + timedelta(minutes=1),
+        recorded_at=NOW + timedelta(minutes=2),
+        model_artifact_sha256="d" * 64, feature_set_sha256="e" * 64,
+    )
+    assert not result.admitted
+    assert result.rejected[0].reason_code == "TRAINING_CAPTURE_EVIDENCE_HASH_MISSING"
+
+
+def test_manifest_linked_observation_is_admitted_with_both_capture_hashes():
+    report, target, history = _fixture_set()
+    linked = replace(
+        history[0],
+        availability_basis="provider_evidence_manifest_v1",
+        evidence_manifest_sha256="f" * 64,
+        capture_evidence_sha256="a" * 64,
+    )
+    result = admit_shadow_forecasts(
+        report, [target], [linked],
+        source_approvals={"approval-1": APPROVAL},
+        forecasted_at=NOW + timedelta(minutes=1),
+        recorded_at=NOW + timedelta(minutes=2),
+        model_artifact_sha256="d" * 64, feature_set_sha256="e" * 64,
+    )
+    assert len(result.admitted) == 1
+    assert not result.rejected

@@ -108,6 +108,11 @@ def _training_evidence(
             continue
         if not _valid_hash(row.payload_sha256):
             raise ValueError("TRAINING_OBSERVATION_PAYLOAD_HASH_MISSING")
+        if row.availability_basis == "provider_evidence_manifest_v1":
+            if not _valid_hash(row.evidence_manifest_sha256):
+                raise ValueError("TRAINING_EVIDENCE_MANIFEST_HASH_MISSING")
+            if not _valid_hash(row.capture_evidence_sha256):
+                raise ValueError("TRAINING_CAPTURE_EVIDENCE_HASH_MISSING")
         if not row.rights_approval_id:
             raise ValueError("TRAINING_OBSERVATION_RIGHTS_APPROVAL_MISSING")
         approval = _approval_for(
@@ -126,6 +131,8 @@ def _training_evidence(
             "available_at": row.available_at.isoformat(),
             "recorded_at": row.recorded_at.isoformat(),
             "payload_sha256": row.payload_sha256,
+            "evidence_manifest_sha256": row.evidence_manifest_sha256,
+            "capture_evidence_sha256": row.capture_evidence_sha256,
             "rights_approval_id": approval.approval_id,
             "rights_evidence_sha256": approval.evidence_sha256,
         })

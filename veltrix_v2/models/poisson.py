@@ -38,6 +38,8 @@ class MatchObservation:
     point_in_time_certifiable: bool = False
     payload_sha256: str | None = None
     rights_approval_id: str | None = None
+    evidence_manifest_sha256: str | None = None
+    capture_evidence_sha256: str | None = None
 
 
 @dataclass(frozen=True)
