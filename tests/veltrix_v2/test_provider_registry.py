@@ -67,3 +67,19 @@ def test_openligadb_is_conditional_and_never_dispatchable():
         assert profile not in dispatchable_providers_for(domain, include_conditional=True)
     with pytest.raises(PermissionError):
         assert_provider_dispatch_allowed("OpenLigaDB")
+
+
+def test_pitchapi_is_conditional_and_never_dispatchable():
+    profile = next(p for p in PROVIDER_REGISTRY if p.provider == "PitchAPI")
+    assert profile.state is ProviderState.OPTIONAL_GATED
+    assert profile.collection_allowed is False
+    for domain in (DataDomain.FIXTURES, DataDomain.RESULTS, DataDomain.EXPECTED_GOALS,
+                   DataDomain.LINEUPS, DataDomain.PLAYER_STATS):
+        assert profile.capability(domain).state is CapabilityState.CONDITIONAL
+        assert profile in providers_for(domain, include_conditional=True)
+        assert profile not in dispatchable_providers_for(domain, include_conditional=True)
+    assert profile.capability(DataDomain.INJURIES).state is CapabilityState.NOT_VERIFIED
+    for domain in (DataDomain.ODDS_1X2, DataDomain.ODDS_TOTALS, DataDomain.ODDS_BTTS):
+        assert profile.capability(domain).state is CapabilityState.UNAVAILABLE
+    with pytest.raises(PermissionError):
+        assert_provider_dispatch_allowed("PitchAPI")

@@ -112,6 +112,17 @@ PROVIDER_REGISTRY: tuple[ProviderProfile, ...] = (
             (DataDomain.EXPECTED_GOALS, CapabilityState.CONDITIONAL, "Shot-level StatsBomb xG exists in selected event files; research-use and attribution review required."),
             (DataDomain.LINEUPS, CapabilityState.CONDITIONAL, "Lineup JSON exists for selected historical matches; research-use and attribution review required."),
         ), False, "Static selected-match research archive. No live data; do not use commercially or publish derived material until rights scope is reviewed and attribution requirements are implemented."),
+    ProviderProfile("PitchAPI", "pitchapi", ProviderState.OPTIONAL_GATED,
+        _caps(
+            (DataDomain.FIXTURES, CapabilityState.CONDITIONAL, "Official docs describe upcoming and played fixture listings across a claimed 77-league catalogue; coverage and source timestamp semantics require independent verification."),
+            (DataDomain.RESULTS, CapabilityState.CONDITIONAL, "Post-match scores and event records are documented; no per-record publication timestamp or complete revision-history contract was found."),
+            (DataDomain.EXPECTED_GOALS, CapabilityState.CONDITIONAL, "Shot-level xG/xGOT and team/player xG are documented provider-derived metrics; model provenance and commercial reuse rights remain unverified."),
+            (DataDomain.LINEUPS, CapabilityState.CONDITIONAL, "Predicted lineups may appear up to 48 hours before kickoff; confirmed status must be checked explicitly."),
+            (DataDomain.PLAYER_STATS, CapabilityState.CONDITIONAL, "Match-level player stats and advanced metrics are documented; scope, freshness and reuse rights remain unverified."),
+            (DataDomain.ODDS_1X2, CapabilityState.UNAVAILABLE, "No odds endpoint documented in the reviewed API reference."),
+            (DataDomain.ODDS_TOTALS, CapabilityState.UNAVAILABLE, "No odds endpoint documented in the reviewed API reference."),
+            (DataDomain.ODDS_BTTS, CapabilityState.UNAVAILABLE, "No odds endpoint documented in the reviewed API reference."),
+        ), False, "Promising free candidate only. Public documentation claims no-cost access but a public data-use license/terms for commercial display, retention and model training were not found. No dispatch until rights and provenance are confirmed."),
     ProviderProfile("OpenLigaDB", "openligadb", ProviderState.OPTIONAL_GATED,
         _caps(
             (DataDomain.FIXTURES, CapabilityState.CONDITIONAL, "Public fixture schema parsed offline; league coverage, accuracy and recurring-collection scope remain unqualified."),
