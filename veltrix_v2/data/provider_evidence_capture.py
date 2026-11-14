@@ -284,6 +284,7 @@ class ProviderEvidenceManifest:
 class ProviderEvidenceCaptureReport:
     manifest: ProviderEvidenceManifest
     observations: tuple[CapturedResultEvidence, ...]
+    captures: tuple[ProviderResultCapture, ...] = ()
 
 
 def _capture_one(row: ProviderResultCapture) -> CapturedResultEvidence:
@@ -493,7 +494,7 @@ def capture_provider_result_evidence(
     manifest = ProviderEvidenceManifest(
         **manifest_body, manifest_sha256=_digest(manifest_body)
     )
-    return ProviderEvidenceCaptureReport(manifest, tuple(evidence))
+    return ProviderEvidenceCaptureReport(manifest, tuple(evidence), rows)
 
 
 def certified_match_observations(
