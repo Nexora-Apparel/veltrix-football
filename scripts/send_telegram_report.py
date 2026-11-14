@@ -420,6 +420,9 @@ def main() -> None:
             raise ValueError(
                 "V2_REPORT_REQUIRES_CERTIFIED_V2_DELIVERY_RUNNER; legacy sender is blocked"
             )
+        raise ValueError(
+            "LEGACY_REPORT_SENDER_DISABLED; public delivery requires the certified V2 report bundle runner"
+        )
         if not isinstance(report, dict) or not report.get("same_day_only"):
             raise ValueError("Report is invalid or does not enforce same-day fixture filtering.")
         ledger = None
