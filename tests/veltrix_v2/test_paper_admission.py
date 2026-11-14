@@ -2,6 +2,7 @@ from dataclasses import replace
 from datetime import datetime, timedelta, timezone
 
 from veltrix_v2.data.contracts import ApprovalStatus, DataUsePurpose, SourceApproval
+from veltrix_v2.ledger.paper_predictions import ProspectivePaperLedger
 from veltrix_v2.ledger.admission import (
     admit_prospective_observed_shadow_forecasts, admit_shadow_forecasts,
 )
@@ -292,6 +293,11 @@ def test_5dollar_shadow_admission_requires_raw_page_and_provider_scope_evidence(
         recorded_at=NOW + timedelta(seconds=2),
     )
     assert len(result.admitted) == 1
+    event = ProspectivePaperLedger().append_prediction(result.admitted[0])
+    assert event.payload["target_provider"] == provider
+    assert event.payload["target_provider_competition_id"] == "3118717965"
+    assert event.payload["target_response_sha256"] == "d" * 64
+    assert event.payload["target_capture_manifest_sha256"] == "e" * 64
 
     missing_page_hash = replace(
         provider_target, response_sha256=None, capture_manifest_sha256=None
