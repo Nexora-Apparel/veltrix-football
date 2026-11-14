@@ -208,8 +208,16 @@ class CapturedResultEvidence:
             or self.availability_timestamp_basis != "collector_first_observed_v1"
             or self.available_at is None
             or self.available_at != self.retrieved_at
-            or not self.rights_approved
+            or self.rights_approved is not True
             or self.rights_evaluated_at is None
+            or self.crosswalk_version < 1
+            or not all(isinstance(value, str) and value.strip() for value in (
+                self.fixture_id, self.competition_id, self.home_team_id, self.away_team_id,
+                self.provider, self.source_id, self.rights_approval_id,
+            ))
+            or self.home_team_id == self.away_team_id
+            or type(self.home_goals) is not int or type(self.away_goals) is not int
+            or min(self.home_goals, self.away_goals) < 0
             or not _valid_hash(self.raw_response_sha256)
             or not _valid_hash(self.rights_evidence_sha256)
             or not _valid_hash(self.crosswalk_evidence_sha256)
@@ -221,7 +229,13 @@ class CapturedResultEvidence:
         available = datetime.fromisoformat(self.available_at)
         retrieved = datetime.fromisoformat(self.retrieved_at)
         recorded = datetime.fromisoformat(self.recorded_at)
-        if not (kickoff <= available == retrieved <= recorded):
+        requested = datetime.fromisoformat(self.requested_at)
+        rights_evaluated = datetime.fromisoformat(self.rights_evaluated_at)
+        if not all(_aware(value) for value in (
+            kickoff, available, retrieved, recorded, requested, rights_evaluated,
+        )):
+            raise ValueError("FIRST_OBSERVED_EVIDENCE_CLOCKS_MUST_BE_AWARE")
+        if not (requested <= available == retrieved <= recorded and kickoff <= available):
             raise ValueError("FIRST_OBSERVED_EVIDENCE_TEMPORAL_ORDER_INVALID")
         return MatchObservation(
             fixture_id=self.fixture_id,
