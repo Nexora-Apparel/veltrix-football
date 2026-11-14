@@ -67,3 +67,36 @@ def test_wrong_host_is_rejected_before_any_migration(monkeypatch):
     monkeypatch.setattr(migration, "validate_staging_dsn_target", lambda value: None)
     with pytest.raises(PermissionError, match="PAPER_LEDGER_MIGRATION_HOST_NOT_ALLOWLISTED"):
         migration.run(apply=False)
+
+
+
+def test_baseline_counts_missing_phase4_plus_tables_as_zero():
+    class Result:
+        def __init__(self, value):
+            self.value = value
+
+        def fetchone(self):
+            return (self.value,)
+
+    class Connection:
+        existing = {
+            "public.fixtures": 2496,
+            "public.source_observations": 2496,
+            "public.provider_responses": 28,
+        }
+
+        def execute(self, sql, params=()):
+            if "to_regclass" in sql:
+                return Result(params[0] in self.existing)
+            table = sql.rsplit("public.", 1)[1]
+            return Result(self.existing[("public." + table)])
+
+    baseline = migration._baseline_counts_on_connection(Connection())
+    assert baseline == {
+        "fixtures": 2496,
+        "source_observations": 2496,
+        "provider_responses": 28,
+        "capture_manifests": 0,
+        "capture_manifest_events": 0,
+        "provider_capture_requests": 0,
+    }
