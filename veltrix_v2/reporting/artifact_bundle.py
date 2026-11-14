@@ -28,6 +28,8 @@ class ReportSurfaceBundle:
 
 
 PORTABLE_BUNDLE_SCHEMA = "VELTRIX_PORTABLE_REPORT_SURFACE_BUNDLE_V1"
+PORTABLE_BUNDLE_MAX_BYTES = 8_000_000
+REPORT_ARTIFACT_MAX_BYTES = 8_000_000
 _SURFACE_NAMES = ("canonical", "scheduled", "telegram", "dashboard")
 
 
@@ -81,14 +83,14 @@ def serialize_portable_report_surface_bundle(bundle: ReportSurfaceBundle) -> byt
     raw = json.dumps(
         envelope, ensure_ascii=False, sort_keys=True, separators=(",", ":"), allow_nan=False
     ).encode("utf-8")
-    if len(raw) > 32_000_000:
+    if len(raw) > PORTABLE_BUNDLE_MAX_BYTES:
         raise ValueError("PORTABLE_REPORT_BUNDLE_TOO_LARGE")
     return raw
 
 
 def parse_portable_report_surface_bundle(raw: bytes) -> ReportSurfaceBundle:
     """Parse one portable artifact and verify all four surface hashes and identities."""
-    if not isinstance(raw, bytes) or not raw or len(raw) > 32_000_000:
+    if not isinstance(raw, bytes) or not raw or len(raw) > PORTABLE_BUNDLE_MAX_BYTES:
         raise ValueError("PORTABLE_REPORT_BUNDLE_BYTES_INVALID")
     envelope = _strict_json_loads(raw.decode("utf-8"))
     if (
@@ -222,6 +224,11 @@ def load_report_surface_bundle(
     payloads: dict[str, dict[str, Any]] = {}
     for name, path in paths.items():
         try:
+            if path.stat().st_size > (
+                PORTABLE_BUNDLE_MAX_BYTES if name == "portable_bundle"
+                else REPORT_ARTIFACT_MAX_BYTES
+            ):
+                raise ValueError(f"REPORT_BUNDLE_ARTIFACT_TOO_LARGE:{name}")
             raw = path.read_bytes()
         except FileNotFoundError as exc:
             raise ValueError(f"REPORT_BUNDLE_ARTIFACT_MISSING:{name}") from exc
