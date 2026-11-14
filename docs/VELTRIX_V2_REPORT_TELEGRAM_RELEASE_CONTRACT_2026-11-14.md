@@ -122,3 +122,6 @@ The website report loader now checks `public-data/v2_report_bundle.json` on the 
 
 
 The website dashboard loader now checks the portable V2 artifact before any archived dashboard snapshot. When the portable artifact exists, an invalid or unauthorized bundle returns no dashboard and does not fall back to legacy content. This prevents an older legacy dashboard snapshot from masking or replacing the canonical V2 projection.
+
+
+An offline `verify_portable_report_bundle.py` CLI now validates the one-file envelope and reports the common report identity, fixture count and four verified surfaces. It performs no provider requests, DB writes, Telegram sends, schedule activation or publication. Structural verification is not publication certification.
