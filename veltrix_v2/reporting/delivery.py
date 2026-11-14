@@ -19,6 +19,7 @@ class DeliveryState(str, Enum):
     CLAIMED = "CLAIMED"
     SENT = "SENT"
     OUTCOME_UNKNOWN = "OUTCOME_UNKNOWN"
+    DUPLICATE_SKIPPED = "DUPLICATE_SKIPPED"
 
 
 @dataclass(frozen=True, slots=True)
@@ -66,7 +67,7 @@ def deliver_once(
     """
     key = delivery_idempotency_key(identity, destination)
     if not store.claim(key, destination):
-        return DeliveryAttempt(key, DeliveryState.CLAIMED)
+        return DeliveryAttempt(key, DeliveryState.DUPLICATE_SKIPPED)
 
     try:
         receipt = send()
