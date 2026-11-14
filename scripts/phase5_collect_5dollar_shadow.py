@@ -239,6 +239,19 @@ def _persist_paper_predictions_to_staging(
         }
 
 
+def _request_parameters(
+    *, competition_id: str, status: str, start_at: datetime, end_at: datetime, page: int
+) -> dict[str, object]:
+    return {
+        "start_time": int(start_at.timestamp()),
+        "end_time": int(end_at.timestamp()),
+        "status": status,
+        "order": "desc" if status == "finished" else "asc",
+        "page": page,
+        "per_page": 100,
+    }
+
+
 def _request_page(
     api_key: str,
     *,
@@ -258,14 +271,10 @@ def _request_page(
     before_request()
     requested_at = datetime.now(timezone.utc)
     pacing_state["last_started"] = time.monotonic()
-    params = {
-        "start_time": int(start_at.timestamp()),
-        "end_time": int(end_at.timestamp()),
-        "status": status,
-        "order": "desc" if status == "finished" else "asc",
-        "page": page,
-        "per_page": 100,
-    }
+    params = _request_parameters(
+        competition_id=competition_id, status=status,
+        start_at=start_at, end_at=end_at, page=page,
+    )
     endpoint = f"/leagues/{competition_id}/fixtures"
     url = f"{API_BASE}{endpoint}?{urlencode(params)}"
     request = Request(url, headers={
@@ -277,6 +286,7 @@ def _request_page(
         with urlopen(request, timeout=25) as response:
             raw = response.read()
             headers = {str(k): str(v) for k, v in response.headers.items()}
+            http_status = int(response.status)
     except HTTPError as exc:
         if exc.code == 403:
             raise PermissionError("FIVEDOLLAR_COMPETITION_NOT_ENTITLED") from None
@@ -290,10 +300,13 @@ def _request_page(
     retrieved_at = datetime.now(timezone.utc)
     if not raw:
         raise RuntimeError("FIVEDOLLAR_EMPTY_RESPONSE")
-    return raw, headers, requested_at, retrieved_at
+    return raw, headers, requested_at, retrieved_at, http_status
 
 
-def _persist_capture_report_to_staging(dsn: str, capture_report) -> dict[str, int]:
+def _persist_capture_report_to_staging(
+    dsn: str, capture_report, *, http_status: int,
+    request_params: dict[str, object],
+) -> dict[str, int]:
     validate_staging_dsn_target(dsn)
     import psycopg
 
@@ -314,6 +327,8 @@ def _persist_capture_report_to_staging(dsn: str, capture_report) -> dict[str, in
             database_name=identity[0],
             host=host,
             role=identity[1],
+            http_status=http_status,
+            request_params=request_params,
         )
 
 
@@ -326,6 +341,8 @@ def _capture_page(
     request_id: str,
     requested_at: datetime,
     retrieved_at: datetime,
+    http_status: int,
+    request_params: dict[str, object],
     registry,
     out_dir: Path,
     staging_dsn: str,
@@ -346,6 +363,8 @@ def _capture_page(
         "endpoint": f"/leagues/{competition_id}/fixtures",
         "requested_at": requested_at.isoformat(),
         "retrieved_at": retrieved_at.isoformat(),
+        "http_status": http_status,
+        "request_params": request_params,
         "raw_response_sha256": sha256(raw).hexdigest(),
         "raw_response_bytes": len(raw),
         "page": parsed.page,
@@ -391,7 +410,10 @@ def _capture_page(
             prospective_observed=True,
         )
         persistence = (
-            _persist_capture_report_to_staging(staging_dsn, capture)
+            _persist_capture_report_to_staging(
+                staging_dsn, capture, http_status=http_status,
+                request_params=request_params,
+            )
             if persist_staging else None
         )
         converted = []
@@ -517,7 +539,7 @@ def run_capture(
         request_id = f"{os.getenv('GITHUB_RUN_ID', 'manual')}-{competition_id}-finished-1"
         request_count += 1
         try:
-            raw, headers, requested_at, retrieved_at = _request_page(
+            raw, headers, requested_at, retrieved_at, http_status = _request_page(
                 api_key, competition_id=competition_id, status="finished",
                 start_at=history_start, end_at=now, page=1,
                 pacing_state=pacing_state,
