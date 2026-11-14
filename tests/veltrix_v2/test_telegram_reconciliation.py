@@ -219,3 +219,24 @@ def test_store_rejects_local_evidence_uri_before_calling_reader():
     with pytest.raises(ValueError, match="EVIDENCE_URI_NOT_DURABLE"):
         store.record(event(evidence_uri="/tmp/local-evidence.json"))
     assert reads == []
+
+
+@pytest.mark.parametrize("uri", [
+    "s3://user:secret@veltrix-audit/evidence.json",
+    "s3://veltrix-audit/evidence.json?token=secret",
+    "https://veltrix-audit.example/evidence.json#fragment",
+])
+def test_reconciliation_rejects_urls_that_could_leak_credentials(uri):
+    with pytest.raises(ValueError, match="EVIDENCE_URI_NOT_DURABLE"):
+        validate_reconciliation_event(CLAIM, event(evidence_uri=uri), EVIDENCE)
+
+
+def test_store_rejects_credential_bearing_uri_before_reading_evidence():
+    reads = []
+    store = PostgresTelegramReconciliationStore(
+        lambda: pytest.fail("database must not be opened"),
+        lambda uri: reads.append(uri),
+    )
+    with pytest.raises(ValueError, match="EVIDENCE_URI_NOT_DURABLE"):
+        store.record(event(evidence_uri="https://user:secret@evidence.example/file"))
+    assert reads == []
