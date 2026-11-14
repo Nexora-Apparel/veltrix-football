@@ -179,8 +179,15 @@ def handle_v2_command(
     except Exception:
         return _reply("V2 REPORT UNAVAILABLE\nThe report failed publication authorization.")
     fixtures = _published_fixtures(report)
-    if not fixtures:
-        return _reply("NO CERTIFIED FIXTURES\nNo fixtures passed the V2 publication gate.")
+    fixture_ids = [fixture.get("fixture_id") for fixture in fixtures]
+    if (
+        not fixtures
+        or len(fixtures) > 25
+        or any(not isinstance(value, str) or not value.strip() for value in fixture_ids)
+        or len(fixture_ids) != len(set(fixture_ids))
+    ):
+        return _reply("V2 REPORT UNAVAILABLE\\nFixture identity, uniqueness or report-size validation failed.")
+
 
     market_counts = {
         market: sum(
