@@ -28,3 +28,15 @@ def test_dashboard_api_hides_v2_predictions_without_trusted_verifier(monkeypatch
     result = telegram_api.dashboard_data()
     assert result["status"] == "UNAVAILABLE"
     assert result["predictions"] == []
+
+
+
+def test_dashboard_html_has_no_legacy_static_prediction_fallback_or_experimental_labels():
+    html = telegram_api.DASHBOARD_HTML
+    assert "/api/dashboard-data" in html
+    assert "dashboard_snapshot.json" not in html
+    assert "daily_predictions.json" not in html
+    assert "paper_tracking_ledger.json" not in html
+    assert "raw.githubusercontent.com" not in html
+    assert "EXPERIMENTAL" not in html
+    assert "experimental_" not in html
