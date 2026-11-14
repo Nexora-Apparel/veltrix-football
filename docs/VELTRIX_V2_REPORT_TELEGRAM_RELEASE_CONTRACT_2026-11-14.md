@@ -94,3 +94,10 @@ This is an atomic-visibility/commit protocol, not a claim that four separate fil
 The public verifier permits only the supported report markets: `1X2`, `BTTS` and `TOTALS_2_5`. Value-bet certification is not accepted through this report-publication path and remains separately locked.
 
 For 1X2, the certification manifest must beat the de-vigged bookmaker baseline on both Brier score and log loss on the full evaluation fixture set **and** the recent holdout fixture set. Each model/bookmaker comparison must carry the exact same fixture-set hash. Timestamped odds coverage must be within [0.98, 1.00], not merely greater than the minimum. Evidence objects are read through the injected evidence reader, byte-hashed and size-bounded; missing readers, missing evidence or mismatched hashes deny publication.
+
+
+## Single-file cross-surface handoff
+
+The bundle now also emits `bundles/{report_id}.bundle.json`: one portable envelope containing the canonical report, scheduled copy, Telegram copy and website projection, plus per-surface SHA-256 values and the common report identity. Its parser rejects missing surfaces, unknown schema, tampered surface bytes and report identity drift.
+
+The final commit marker binds this portable artifact together with the four separate surface files. Consumers can transfer one portable file for cross-surface processing while the local bundle reader verifies the complete five-artifact set before returning a bundle. This does not itself publish the artifact or wire the production workflows.
