@@ -57,6 +57,8 @@ def capture(**overrides):
         source_published_at=NOW - timedelta(minutes=40),
         source_timestamp_basis="provider_timestamp",
         source_timestamp_evidence_sha256=sha256(b'{"fixture":"fx-100","score":[2,1]}').hexdigest(),
+        availability_timestamp_basis="provider_timestamp",
+        availability_timestamp_evidence_sha256=sha256(b'{"fixture":"fx-100","score":[2,1]}').hexdigest(),
         source_effective_at=NOW - timedelta(minutes=35),
         available_at=NOW - timedelta(minutes=30),
         retrieved_at=NOW - timedelta(minutes=20),
