@@ -212,9 +212,12 @@ def load_latest_report(
     authorization_verifier=None,
 ) -> dict[str, Any] | None:
     """Load a report; V2 requires an injected authoritative publication verifier."""
-    portable_bundle = load_latest_portable_report_bundle(authorization_verifier)
-    if portable_bundle is not None:
-        return portable_bundle["report"]
+    portable_raw = _load_portable_bundle_bytes()
+    if portable_raw is not None:
+        portable_bundle = load_v2_portable_report_bundle(
+            portable_raw, authorization_verifier
+        )
+        return portable_bundle["report"] if portable_bundle is not None else None
     report = _load("report")
     if report is None:
         return None
