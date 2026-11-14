@@ -261,10 +261,12 @@ def main() -> int:
             "telegram": False,
         }, indent=2))
         return 0
+    if not args.persist_staging:
+        raise RuntimeError("STAGING_PERSISTENCE_REQUIRED_FOR_ODDS_API_PROBE")
     result = run_probe(
         api_key=os.environ.get("THE_ODDS_API_KEY", ""),
         staging_dsn=os.environ.get("VELTRIX_STAGING_DATABASE_URL", ""),
-        persist=args.persist_staging,
+        persist=True,
     )
     print(json.dumps(result, indent=2))
     return 0
