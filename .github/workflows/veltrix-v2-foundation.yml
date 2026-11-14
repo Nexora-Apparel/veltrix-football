@@ -11,7 +11,7 @@ on:
       - "tests/veltrix_v2/**"
       - "scripts/phase5_staging_coverage_audit.py"
       - "scripts/phase5_collect_5dollar_shadow.py"
-      - "db/migrations/0005_prospective_paper_ledger.sql"
+      - "db/migrations/0008_prospective_paper_ledger.sql"
       - "veltrix_v2/ledger/postgres_store.py"
       - "tests/veltrix_v2/test_paper_ledger_postgres.py"
       - "tests/veltrix_v2/test_phase5_staging_paper_ledger_migration.py"
