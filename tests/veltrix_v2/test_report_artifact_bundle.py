@@ -174,3 +174,32 @@ def test_publication_consumer_rejects_empty_fixture_bundle(tmp_path):
         load_authorized_scheduled_report(
             tmp_path, bundle.identity.report_id, lambda *_: True
         )
+
+
+
+def test_bundle_reader_rejects_artifacts_without_final_commit_marker(tmp_path):
+    bundle = build_report_surface_bundle(source_report())
+    paths = persist_report_surface_bundle(bundle, tmp_path)
+    marker = tmp_path / "bundles" / f"{bundle.identity.report_id}.commit.json"
+    marker.unlink()
+    with pytest.raises(ValueError, match="COMMIT_MARKER_MISSING"):
+        load_report_surface_bundle(tmp_path, bundle.identity.report_id)
+
+
+def test_bundle_reader_rejects_partial_or_replaced_artifact_after_commit(tmp_path):
+    bundle = build_report_surface_bundle(source_report())
+    paths = persist_report_surface_bundle(bundle, tmp_path)
+    paths["scheduled"].unlink()
+    with pytest.raises(FileNotFoundError):
+        load_report_surface_bundle(tmp_path, bundle.identity.report_id)
+
+
+def test_bundle_reader_checks_commit_marker_artifact_hashes(tmp_path):
+    bundle = build_report_surface_bundle(source_report())
+    persist_report_surface_bundle(bundle, tmp_path)
+    marker = tmp_path / "bundles" / f"{bundle.identity.report_id}.commit.json"
+    commit = json.loads(marker.read_text())
+    commit["artifacts"]["telegram"] = "0" * 64
+    marker.write_text(json.dumps(commit))
+    with pytest.raises(ValueError, match="COMMIT_HASH_MISMATCH"):
+        load_report_surface_bundle(tmp_path, bundle.identity.report_id)
