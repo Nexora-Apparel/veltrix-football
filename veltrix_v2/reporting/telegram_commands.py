@@ -86,9 +86,15 @@ def _slipcheck(argument: str) -> str:
         odds = [float(value) for value in re.split(r"[\s,]+", argument.strip()) if value]
     except (TypeError, ValueError):
         return "Usage: /slipcheck 1.80 2.10 1.65"
-    if not odds or any(not math.isfinite(value) or value <= 1 for value in odds):
-        return "Invalid input. Every decimal odd must be finite and greater than 1."
+    if (
+        not odds
+        or len(odds) > 25
+        or any(not math.isfinite(value) or value <= 1 for value in odds)
+    ):
+        return "Invalid input. Enter 1–25 finite decimal odds, each greater than 1."
     combined = math.prod(odds)
+    if not math.isfinite(combined):
+        return "Invalid input. Combined decimal odds exceed the supported numeric range."
     return (
         "SLIP ARITHMETIC ONLY — NOT A BETTING RECOMMENDATION\n"
         f"Selections: {len(odds)}\nCombined decimal odds: {combined:.2f}\n"
