@@ -110,3 +110,54 @@ def settle_from_verified_fixture(
         result_availability_basis=result_basis,
         settlement_delay_basis=fixture.availability_basis if observed_only else None,
     )
+
+
+
+def settle_verified_fixture_to_store(
+    store,
+    fixture: HistoricalFixture,
+    approval: SourceApproval,
+    *,
+    recorded_at: datetime,
+    model_version: str | None = None,
+) -> PaperLedgerEvent:
+    """Verify settlement rights and source identity, then persist through a ledger store.
+
+    The store must expose load() and append_settlement(). The first read verifies
+    the existing chain and locates the exact prediction; the store's append method
+    then rechecks the chain under its own transaction/lock before committing.
+    """
+    if not callable(getattr(store, "load", None)) or not callable(
+        getattr(store, "append_settlement", None)
+    ):
+        raise ValueError("PAPER_LEDGER_STORE_INTERFACE_INVALID")
+
+    ledger = store.load()
+    verified = settle_from_verified_fixture(
+        ledger,
+        fixture,
+        approval,
+        recorded_at=recorded_at,
+        model_version=model_version,
+    )
+    payload = verified.payload
+    persisted = store.append_settlement(
+        fixture_id=verified.fixture_id,
+        model_version=verified.model_version,
+        home_goals=payload["home_goals"],
+        away_goals=payload["away_goals"],
+        result_available_at=datetime.fromisoformat(payload["result_available_at"]),
+        result_retrieved_at=datetime.fromisoformat(payload["result_retrieved_at"]),
+        recorded_at=datetime.fromisoformat(payload["recorded_at"]),
+        source_provider=payload["source_provider"],
+        source_id=payload["source_id"],
+        source_fixture_id=payload["source_fixture_id"],
+        result_payload_sha256=payload["result_payload_sha256"],
+        rights_approval_id=payload["rights_approval_id"],
+        rights_evidence_sha256=payload["rights_evidence_sha256"],
+        result_availability_basis=payload["result_availability_basis"],
+        settlement_delay_basis=payload["settlement_delay_basis"],
+    )
+    if persisted.event_sha256 != verified.event_sha256:
+        raise RuntimeError("PAPER_LEDGER_PERSISTED_SETTLEMENT_HASH_MISMATCH")
+    return persisted
