@@ -234,7 +234,6 @@ def walk_forward_evaluate(
                 home_team_id=target.home_team_id, away_team_id=target.away_team_id,
                 kickoff_at=target.kickoff_at, cutoff_at=cutoff,
                 recency_half_life_days=recency_half_life_days,
-        dixon_coles_rho=dixon_coles_rho,
                 dixon_coles_rho=dixon_coles_rho,
             )
         except InsufficientHistoryError:
@@ -313,4 +312,5 @@ def walk_forward_evaluate(
         fixtures=tuple(scored), skipped_date_only_targets=skipped_date_only_targets,
         non_certifiable_input_rows=non_certifiable_input_rows,
         recency_half_life_days=recency_half_life_days,
+        dixon_coles_rho=dixon_coles_rho,
     )
