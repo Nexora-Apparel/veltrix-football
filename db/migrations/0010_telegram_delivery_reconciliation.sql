@@ -98,13 +98,17 @@ BEGIN
             RAISE EXCEPTION 'TELEGRAM_RECONCILIATION_ALREADY_RECORDED';
         END IF;
     ELSE
-        SELECT reconciliation_id, idempotency_key
+        SELECT reconciliation_id, idempotency_key, observed_at, recorded_at
           INTO parent_row
           FROM telegram_delivery_reconciliations
          WHERE reconciliation_id = NEW.supersedes_reconciliation_id
          FOR KEY SHARE;
         IF NOT FOUND OR parent_row.idempotency_key <> NEW.idempotency_key THEN
             RAISE EXCEPTION 'TELEGRAM_RECONCILIATION_SUPERSESSION_MISMATCH';
+        END IF;
+        IF NEW.observed_at < parent_row.observed_at
+           OR NEW.recorded_at < parent_row.recorded_at THEN
+            RAISE EXCEPTION 'TELEGRAM_RECONCILIATION_SUPERSESSION_TIME_REGRESSION';
         END IF;
         IF EXISTS (
             SELECT 1 FROM telegram_delivery_reconciliations
