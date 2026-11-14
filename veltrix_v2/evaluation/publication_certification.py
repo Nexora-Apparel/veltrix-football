@@ -142,6 +142,7 @@ def verify_publication_authorization(
             indexed[key] = record
 
         seen_fixture_ids: set[str] = set()
+        used_certifications: set[tuple[str, str]] = set()
         for fixture in predictions:
             if not isinstance(fixture, Mapping):
                 return False
@@ -172,9 +173,11 @@ def verify_publication_authorization(
             for market in markets:
                 if not isinstance(market, str) or market not in _SUPPORTED_PUBLIC_MARKETS:
                     return False
-                record = indexed.get((competition_id, market))
+                certification_key = (competition_id, market)
+                record = indexed.get(certification_key)
                 if record is None or record.get("model_build_id") != model_build_id:
                     return False
+                used_certifications.add(certification_key)
                 market_values = fixture.get("markets")
                 probability_keys = {
                     "1X2": ("home", "draw", "away"),
@@ -313,6 +316,8 @@ def verify_publication_authorization(
                 if rights_verifier(record) is not True:
                     return False
 
+        if used_certifications != set(indexed):
+            return False
         return True
     except Exception:
         return False
