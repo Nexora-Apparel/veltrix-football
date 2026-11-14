@@ -4,7 +4,7 @@ import json
 
 import pytest
 
-from veltrix_v2.data.openligadb import parse_openligadb_response
+from veltrix_v2.data.openligadb import full_time_90_score, parse_openligadb_response
 
 UTC = timezone.utc
 RETRIEVED = datetime(2026, 11, 14, 12, 0, tzinfo=UTC)
@@ -24,10 +24,12 @@ def match(**changes):
         "team1": {"teamId": 11, "teamName": "Home FC"},
         "team2": {"teamId": 22, "teamName": "Away FC"},
         "matchResults": [
-            {"resultTypeID": 2, "resultTypeKind": "After90Minutes",
-             "resultName": "Endergebnis", "resultOrderID": 1, "points": 2},
-            {"resultTypeID": 3, "resultTypeKind": "HalfTime",
-             "resultName": "Halbzeit", "resultOrderID": 2, "points": 1},
+            {"resultID": 1, "resultTypeID": 2, "resultTypeKind": "After90Minutes",
+             "resultName": "Endergebnis", "resultOrderID": 1,
+             "pointsTeam1": 2, "pointsTeam2": 1},
+            {"resultID": 2, "resultTypeID": 3, "resultTypeKind": "HalfTime",
+             "resultName": "Halbzeit", "resultOrderID": 2,
+             "pointsTeam1": 1, "pointsTeam2": 0},
         ],
     }
     row.update(changes)
@@ -75,7 +77,7 @@ def test_duplicate_provider_match_ids_reject_all_duplicate_rows():
 
 
 def test_bad_result_row_rejects_match_instead_of_guessing_full_time_score():
-    bad = {"resultTypeKind": "After90Minutes", "points": "2"}
+    bad = {"resultTypeKind": "After90Minutes", "pointsTeam1": "2", "pointsTeam2": 1}
     report = parse_openligadb_response(raw([match(matchResults=[bad])]), retrieved_at=RETRIEVED)
     assert report.accepted_count == 0
     assert report.rejected_rows[0].reason_code == "RESULT_ROWS_INVALID"
@@ -83,8 +85,9 @@ def test_bad_result_row_rejects_match_instead_of_guessing_full_time_score():
 
 def test_result_order_is_preserved_and_no_result_type_is_selected_as_final():
     parsed = parse_openligadb_response(raw([match()]), retrieved_at=RETRIEVED).matches[0]
-    assert [result.points for result in parsed.results] == [2, 1]
+    assert [(result.points_team1, result.points_team2) for result in parsed.results] == [(2, 1), (1, 0)]
     assert len(parsed.results) == 2
+    assert full_time_90_score(parsed) == (2, 1)
 
 
 def test_malformed_root_and_invalid_json_are_reported():
@@ -97,3 +100,20 @@ def test_malformed_root_and_invalid_json_are_reported():
 def test_naive_retrieval_clock_is_rejected():
     with pytest.raises(ValueError, match="RETRIEVED_AT_MUST_BE_TIMEZONE_AWARE"):
         parse_openligadb_response(b"[]", retrieved_at=datetime(2026, 11, 14, 12, 0))
+
+
+def test_full_time_selector_never_falls_back_to_half_time_or_extra_time():
+    only_half_time = match(matchResults=[{
+        "resultTypeKind": "HalfTime", "pointsTeam1": 1, "pointsTeam2": 0
+    }])
+    parsed = parse_openligadb_response(raw([only_half_time]), retrieved_at=RETRIEVED).matches[0]
+    assert full_time_90_score(parsed) is None
+
+
+def test_full_time_selector_rejects_ambiguous_duplicate_after_90_rows():
+    after_90 = {
+        "resultTypeKind": "After90Minutes", "pointsTeam1": 2, "pointsTeam2": 1
+    }
+    parsed = parse_openligadb_response(raw([match(matchResults=[after_90, after_90])]),
+                                       retrieved_at=RETRIEVED).matches[0]
+    assert full_time_90_score(parsed) is None
