@@ -116,11 +116,12 @@ def setup_db():
         )
 
 
-def persist(connection, report, rows, *, http_status=200, request_params=None):
+def persist(connection, report, rows, *, http_status=200, request_params=None, response_headers=None):
     return persist_provider_evidence_report(
         connection, report, rows,
         http_status=http_status,
         request_params=request_params,
+        response_headers=response_headers,
         write_enabled=True,
         environment="staging",
         database_name="veltrix_football_staging",
@@ -180,14 +181,26 @@ def test_evidence_persistence_preserves_exact_http_status_and_request_params():
         "per_page": 100,
     }
     with psycopg.connect(DATABASE_URL) as conn:
-        persist(conn, report, [row], http_status=206, request_params=params)
+        persist(conn, report, [row], http_status=206, request_params=params,
+                response_headers={
+                    "X-Requests-Remaining": "42",
+                    "X-Requests-Used": "18",
+                    "Content-Type": "application/json",
+                    "Set-Cookie": "must-not-persist",
+                    "Authorization": "must-not-persist",
+                })
     with psycopg.connect(DATABASE_URL) as conn:
         stored = conn.execute(
-            "SELECT http_status, request_params FROM provider_responses"
+            "SELECT http_status, request_params, response_headers FROM provider_responses"
         ).fetchone()
     assert stored[0] == 206
     assert stored[1]["request_params"] == params
     assert stored[1]["capture_manifest_sha256"] == report.manifest.manifest_sha256
+    assert stored[2] == {
+        "x-requests-remaining": "42",
+        "x-requests-used": "18",
+        "content-type": "application/json",
+    }
 
 
 def test_evidence_persistence_rolls_back_when_approval_is_missing():
