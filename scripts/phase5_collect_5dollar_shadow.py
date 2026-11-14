@@ -403,7 +403,7 @@ def run_capture(
         quota_remaining = info.get("quota_remaining")
         if isinstance(quota_remaining, int):
             planned_remaining = MAX_REQUESTS - request_count
-            if quota_remaining < max(1, planned_remaining):
+            if planned_remaining > 0 and quota_remaining < planned_remaining:
                 raise RuntimeError("FIVEDOLLAR_QUOTA_BELOW_BOUNDED_REQUEST_PLAN")
 
         if request_count >= MAX_REQUESTS:
