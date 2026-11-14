@@ -134,12 +134,14 @@ def _training_evidence(
         approval = _approval_for(
             row.rights_approval_id, approvals,
             provider=row.provider, source_id=row.source_id,
-            competition_id=row.competition_id, at=rights_evaluated_at,
+            competition_id=row.provider_competition_id or row.competition_id,
+            at=rights_evaluated_at,
             purposes=(DataUsePurpose.STORAGE, DataUsePurpose.MODEL_TRAINING),
         )
         used.append({
             "fixture_id": row.fixture_id,
             "competition_id": row.competition_id,
+            "provider_competition_id": row.provider_competition_id,
             "home_team_id": row.home_team_id,
             "away_team_id": row.away_team_id,
             "kickoff_at": row.kickoff_at.isoformat() if row.kickoff_at else None,
@@ -218,9 +220,13 @@ def admit_shadow_forecasts(
                 raise ValueError("TARGET_NOT_KNOWN_AND_FUTURE_AT_RECORDING")
             if not _valid_hash(target.payload_sha256):
                 raise ValueError("TARGET_PAYLOAD_HASH_INVALID")
-            if target.provider == "5DollarFootballAPI" and not all(
-                _valid_hash(value) for value in (
-                    target.response_sha256, target.capture_manifest_sha256
+            if target.provider == "5DollarFootballAPI" and (
+                not isinstance(target.provider_competition_id, str)
+                or not target.provider_competition_id.strip()
+                or not all(
+                    _valid_hash(value) for value in (
+                        target.response_sha256, target.capture_manifest_sha256
+                    )
                 )
             ):
                 raise ValueError("TARGET_RESPONSE_CAPTURE_EVIDENCE_MISSING")
@@ -228,7 +234,8 @@ def admit_shadow_forecasts(
             target_approval = _approval_for(
                 target.rights_approval_id, source_approvals,
                 provider=target.provider, source_id=target.source_id,
-                competition_id=target.competition_id, at=recorded_at,
+                competition_id=target.provider_competition_id or target.competition_id,
+                at=recorded_at,
                 purposes=(DataUsePurpose.COLLECTION, DataUsePurpose.CACHE),
             )
             if _evidence_class == "PROSPECTIVE_OBSERVED_ONLY" and forecast.model.publishable is not False:
