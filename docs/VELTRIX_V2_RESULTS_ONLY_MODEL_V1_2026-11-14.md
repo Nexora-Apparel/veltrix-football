@@ -27,7 +27,7 @@ Missing or malformed temporal evidence is excluded. No retrieval timestamp is su
 
 ## Publication boundary
 
-This baseline is not certified for production. Its internal publication flag requires at least 100 eligible competition matches and at least five matches for each target team. Those thresholds are an initial safety floor, not evidence of predictive skill. Full chronological walk-forward evaluation, calibration, recent-holdout checks and prospective settlement are still required.
+This baseline is not certified for production and its publication flag is hard-locked false. A separate sample-floor indicator requires at least 100 eligible competition matches and at least five matches for each target team; passing it only permits model review, not publication. Full chronological walk-forward evaluation, calibration, recent-holdout checks and prospective settlement are still required.
 
 ## Known limitations
 
