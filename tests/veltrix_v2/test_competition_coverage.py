@@ -26,7 +26,7 @@ def evidence(fid="fx-1", comp="league-a", domain=DataDomain.LINEUPS, **changes):
         recorded_at=AS_OF - timedelta(hours=1),
         payload_sha256=HASH, rights_approved=True,
         rights_approval_id="approval-1", rights_evidence_sha256="b" * 64,
-        rights_evaluated_at=AS_OF - timedelta(minutes=30),
+        rights_evaluated_at=AS_OF - timedelta(minutes=90),
         point_in_time_certifiable=True,
     )
     values.update(changes)
@@ -88,6 +88,7 @@ def test_results_are_allowed_to_become_available_after_kickoff():
         domain=DataDomain.RESULTS,
         available_at=finished_kickoff + timedelta(hours=2),
         recorded_at=finished_kickoff + timedelta(hours=3),
+        rights_evaluated_at=finished_kickoff + timedelta(hours=2, minutes=30),
     )
     report = audit_competition_coverage(
         [fixture(kickoff=finished_kickoff)], [result_evidence],
