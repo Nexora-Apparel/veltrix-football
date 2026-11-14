@@ -82,6 +82,13 @@ def _valid_target(target: PredictionTarget) -> bool:
         for value in (target.response_sha256, target.capture_manifest_sha256)
     ):
         return False
+    if target.provider == "5DollarFootballAPI" and (
+        not isinstance(target.provider_competition_id, str)
+        or not target.provider_competition_id.strip()
+        or target.response_sha256 is None
+        or target.capture_manifest_sha256 is None
+    ):
+        return False
     return _aware(target.kickoff_at) and _aware(target.retrieved_at)
 
 
