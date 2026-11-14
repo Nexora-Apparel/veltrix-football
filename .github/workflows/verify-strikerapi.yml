@@ -17,6 +17,8 @@ concurrency:
 
 jobs:
   qualify:
+    # PAUSED until the user's next monthly credit reset; do not probe StrikerAPI.
+    if: false
     runs-on: ubuntu-latest
     timeout-minutes: 15
     env:
