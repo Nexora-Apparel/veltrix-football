@@ -170,7 +170,7 @@ class PostgresTelegramReconciliationStore:
         self,
         connect: Callable,
         read_evidence: Callable[[str], bytes],
-        authenticate_actor: Callable[[str], bool],
+        authenticate_actor: Callable[[str], bool] | None = None,
     ):
         if not callable(connect) or not callable(read_evidence) or not callable(authenticate_actor):
             raise ValueError("RECONCILIATION_DEPENDENCIES_REQUIRED")
