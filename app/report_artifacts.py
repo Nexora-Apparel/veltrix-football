@@ -12,6 +12,12 @@ import re
 import time
 from typing import Any
 from urllib.error import HTTPError, URLError
+
+from veltrix_v2.reporting.report_identity import (
+    REPORT_SCHEMA,
+    assert_same_report,
+    verify_report_identity,
+)
 from urllib.request import Request, urlopen
 
 DEFAULT_REPOSITORY = "Nexora-Apparel/veltrix-football"
