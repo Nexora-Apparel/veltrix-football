@@ -3,14 +3,17 @@ import hashlib
 import json
 
 from veltrix_v2.data.contracts import FixtureStatus, HistoricalFixture
-from veltrix_v2.data.observation_adapter import historical_fixture_to_observation
+from veltrix_v2.data.observation_adapter import (
+    historical_fixture_to_observation,
+    historical_fixture_to_target,
+)
 
 UTC = timezone.utc
 KICKOFF = datetime(2026, 10, 1, 18, 0, tzinfo=UTC)
 RETRIEVED = datetime(2026, 11, 14, 0, 30, tzinfo=UTC)
 
 
-def historical_fixture(*, status=FixtureStatus.FINISHED, certifiable=False, retrieved=RETRIEVED):
+def historical_fixture(*, status=FixtureStatus.FINISHED, certifiable=False, retrieved=RETRIEVED, kickoff=KICKOFF):
     payload = {
         "id": 98765,
         "league": {"id": 4160026622, "name": "England Premier League"},
@@ -18,7 +21,7 @@ def historical_fixture(*, status=FixtureStatus.FINISHED, certifiable=False, retr
             "home": {"id": 101, "name": "Arsenal"},
             "away": {"id": 102, "name": "Chelsea"},
         },
-        "kickoff_utc": KICKOFF.isoformat(),
+        "kickoff_utc": kickoff.isoformat(),
         "status": status.value,
         "goals": {"home": 2, "away": 1} if status is FixtureStatus.FINISHED else None,
     }
@@ -36,7 +39,7 @@ def historical_fixture(*, status=FixtureStatus.FINISHED, certifiable=False, retr
         competition_name="England Premier League",
         home_team_name="Arsenal",
         away_team_name="Chelsea",
-        kickoff_at_utc=KICKOFF,
+        kickoff_at_utc=kickoff,
         season_key="2026-2027",
         status=status,
         home_score=2 if finished else None,
@@ -44,8 +47,8 @@ def historical_fixture(*, status=FixtureStatus.FINISHED, certifiable=False, retr
         payload=payload,
         payload_sha256=payload_hash,
         retrieved_at_utc=retrieved,
-        source_event_time_utc=KICKOFF,
-        available_at_utc=KICKOFF + timedelta(days=4) if finished else None,
+        source_event_time_utc=kickoff,
+        available_at_utc=kickoff + timedelta(days=4) if finished else None,
         availability_basis="provider_finished_status_conservative_4d" if finished else "not_settled",
         point_in_time_certifiable=certifiable,
         rights_approval_id="5dollar-epl-approved",
@@ -87,3 +90,23 @@ def test_result_is_not_emitted_before_conservative_availability_time():
         historical_fixture(retrieved=early_retrieval)
     )
     assert result is None
+
+
+def test_future_scheduled_provider_fixture_converts_to_prediction_target():
+    future_kickoff = RETRIEVED + timedelta(days=2)
+    result = historical_fixture_to_target(
+        historical_fixture(status=FixtureStatus.SCHEDULED, kickoff=future_kickoff)
+    )
+    assert result is not None
+    assert result.fixture_id == "5dollarfootballapi:98765"
+    assert result.competition_id == "5dollarfootballapi:4160026622"
+    assert result.home_team_id == "5dollarfootballapi:101"
+    assert result.away_team_id == "5dollarfootballapi:102"
+    assert result.kickoff_at == future_kickoff
+    assert result.retrieved_at == RETRIEVED
+
+
+def test_scheduled_fixture_already_kicked_off_is_not_a_prediction_target():
+    assert historical_fixture_to_target(
+        historical_fixture(status=FixtureStatus.SCHEDULED)
+    ) is None
