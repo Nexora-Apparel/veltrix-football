@@ -140,6 +140,8 @@ jobs:
         run: python -m pytest --import-mode=importlib -q tests/veltrix_v2/test_telegram_v2_formatting.py
       - name: Test V2 Telegram duplicate and uncertain-delivery guards
         run: python -m pytest --import-mode=importlib -q tests/veltrix_v2/test_telegram_v2_delivery.py
+      - name: Test Telegram operator reconciliation evidence
+        run: python -m pytest --import-mode=importlib -q tests/veltrix_v2/test_telegram_reconciliation.py
       - name: Enforce no legacy prediction imports in v2
         run: |
           if grep -R -n -E "from app\.(live_predictions|prediction|advanced_models|calibration|backtest_engine)|import app\.(live_predictions|prediction|advanced_models|calibration|backtest_engine)" veltrix_v2; then
@@ -187,3 +189,5 @@ jobs:
         run: python -m pytest --import-mode=importlib -q tests/veltrix_v2/test_paper_ledger_postgres.py
       - name: Test durable Telegram delivery claims
         run: python -m pytest --import-mode=importlib -q tests/veltrix_v2/test_telegram_delivery_postgres.py
+      - name: Test append-only Telegram delivery reconciliation
+        run: python -m pytest --import-mode=importlib -q tests/veltrix_v2/test_telegram_reconciliation_postgres.py
