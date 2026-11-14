@@ -218,3 +218,44 @@ def test_observed_only_admission_rejects_publishable_model_output():
     )
     assert not result.admitted
     assert result.rejected[0].reason_code == "OBSERVED_ONLY_FORECAST_MUST_REMAIN_NON_PUBLISHABLE"
+
+
+
+def test_rights_recheck_uses_explicit_provider_competition_id():
+    provider_scope_approval = replace(
+        APPROVAL, competition_scope="provider-comp-1"
+    )
+    provider_history = replace(
+        history()[0], provider_competition_id="provider-comp-1"
+    )
+    provider_target = replace(
+        target(), provider_competition_id="provider-comp-1"
+    )
+    admitted = admit_prospective_observed_shadow_forecasts(
+        forecast_report(),
+        [provider_history],
+        targets=[provider_target],
+        source_approvals={provider_scope_approval.approval_id: provider_scope_approval},
+        model_artifact_sha256="b" * 64,
+        feature_set_sha256="c" * 64,
+        forecasted_at=NOW + timedelta(seconds=1),
+        recorded_at=NOW + timedelta(seconds=2),
+    )
+    assert len(admitted.admitted) == 1
+
+    missing_provider_scope = replace(provider_history, provider_competition_id=None)
+    try:
+        admit_prospective_observed_shadow_forecasts(
+            forecast_report(),
+            [missing_provider_scope],
+            targets=[provider_target],
+            source_approvals={provider_scope_approval.approval_id: provider_scope_approval},
+            model_artifact_sha256="b" * 64,
+            feature_set_sha256="c" * 64,
+            forecasted_at=NOW + timedelta(seconds=1),
+            recorded_at=NOW + timedelta(seconds=2),
+        )
+    except ValueError as exc:
+        assert str(exc) == "SOURCE_APPROVAL_COMPETITION_SCOPE_MISMATCH"
+    else:
+        raise AssertionError("missing provider competition scope must fail closed")
