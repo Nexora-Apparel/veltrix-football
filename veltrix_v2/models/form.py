@@ -60,7 +60,7 @@ def _team_form(rows: list[MatchObservation], team_id: str, competition_id: str,
         else:
             continue
         appearances.append((*_event_time(row), row.fixture_id, gf, ga, is_home))
-    appearances.sort(key=lambda item: (item[0], item[1]))
+    appearances.sort(key=lambda item: (item[0], item[2]))
     if not appearances:
         raise ValueError("TEAM_FORM_HISTORY_UNAVAILABLE")
 
@@ -73,7 +73,7 @@ def _team_form(rows: list[MatchObservation], team_id: str, competition_id: str,
                       for _, _, _, gf, ga, _ in last_five)
     home_rows = [item for item in appearances if item[5]]
     away_rows = [item for item in appearances if not item[5]]
-    latest_time, latest_date_only = appearances[-1][0], appearances[-1][2]
+    latest_time, latest_date_only = appearances[-1][0], appearances[-1][1]
     rest_days = None if latest_date_only else max(
         0.0, (cutoff_at.astimezone(timezone.utc) - latest_time).total_seconds() / 86400.0
     )
