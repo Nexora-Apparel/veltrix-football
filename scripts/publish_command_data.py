@@ -7,12 +7,13 @@ from __future__ import annotations
 
 import argparse
 import base64
+import hashlib
 import json
 import os
 import re
 import sys
 from datetime import date, datetime, timezone
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from urllib.error import HTTPError, URLError
 from urllib.parse import quote
 from urllib.request import Request, urlopen
@@ -83,6 +84,17 @@ def _publish_large_blob(path: str, data: bytes, repo: str, token: str) -> None:
 
 
 def publish(path: str, local_file: Path, repo: str, token: str) -> None:
+    pure_path = PurePosixPath(path)
+    if pure_path.is_absolute() or ".." in pure_path.parts:
+        raise ValueError("COMMAND_DATA_PATH_INVALID")
+    canonical_path = pure_path.as_posix()
+    if canonical_path in {
+        "public-data/daily_predictions.json",
+        "public-data/dashboard_snapshot.json",
+    }:
+        raise PermissionError(
+            "LEGACY_PREDICTION_PUBLICATION_DISABLED; use the certified V2 bundle publisher"
+        )
     data = local_file.read_bytes()
     parsed = json.loads(data.decode("utf-8"))
     if not isinstance(parsed, dict):
@@ -97,6 +109,15 @@ def publish(path: str, local_file: Path, repo: str, token: str) -> None:
             existing = _github_json(f"{url}?ref={quote(BRANCH, safe='')}", token)
             if isinstance(existing.get("sha"), str):
                 current_sha = existing["sha"]
+                encoded_existing = existing.get("content")
+                if existing.get("encoding") == "base64" and isinstance(encoded_existing, str):
+                    try:
+                        existing_bytes = base64.b64decode(encoded_existing, validate=False)
+                    except (ValueError, TypeError):
+                        raise ValueError("EXISTING_COMMAND_DATA_FILE_CONTENT_INVALID") from None
+                    if existing_bytes == data:
+                        print(f"Already published {path}; exact bytes match.")
+                        return
         except HTTPError as exc:
             if exc.code != 404:
                 raise
@@ -123,6 +144,13 @@ def _archive_report_path(report: dict, published_at: datetime) -> str:
     report_date = date.fromisoformat(str(report.get("as_of_date"))).isoformat()
     timestamp = published_at.astimezone(timezone.utc).strftime("%Y%m%dT%H%M%S%fZ")
     return f"public-data/archive/{report_date}/daily_predictions_{timestamp}.json"
+
+
+def _archive_content_path(report: dict, report_bytes: bytes) -> str:
+    """Return a content-addressed archive path so retries cannot create duplicates."""
+    report_date = date.fromisoformat(str(report.get("as_of_date"))).isoformat()
+    digest = hashlib.sha256(report_bytes).hexdigest()
+    return f"public-data/archive/{report_date}/daily_predictions_{digest}.json"
 
 
 def _valid_recent_cache(cache: object) -> bool:
@@ -166,6 +194,7 @@ def main() -> int:
     parser.add_argument("--ledger", default=None, help="Validated paper_tracking_ledger.json (optional)")
     parser.add_argument("--recent-cache", default=None, help="Resumable recent-results cache (optional)")
     parser.add_argument("--value-evidence", default=None, help="Append-only shadow value evidence ledger (optional)")
+    parser.add_argument("--archive-only", action="store_true", help="Preserve one historical report snapshot without publishing live report/dashboard pointers.")
     args = parser.parse_args()
 
     repo = (os.getenv("GITHUB_REPOSITORY") or "").strip()
@@ -180,77 +209,22 @@ def main() -> int:
         print("Publication refused: report failed structural validation.", file=sys.stderr)
         return 2
 
-    errors: list[str] = []
-
-    def attempt(label: str, action) -> None:
+    if args.archive_only:
         try:
-            action()
-        except HTTPError as exc:
-            try:
-                detail = exc.read().decode("utf-8", "replace")[:500]
-            except Exception:
-                detail = ""
-            errors.append(f"{label}: HTTP {exc.code} {detail}".strip())
-            print(f"Publication failed for {label}: HTTP {exc.code} {detail}".strip(), file=sys.stderr)
-        except (URLError, OSError, ValueError, json.JSONDecodeError) as exc:
-            errors.append(f"{label}: {type(exc).__name__}")
-            print(f"Publication failed for {label}: {type(exc).__name__}", file=sys.stderr)
+            archive_path = _archive_content_path(report, report_path.read_bytes())
+            publish(archive_path, report_path, repo, token)
+            return 0
+        except (HTTPError, URLError, OSError, ValueError, json.JSONDecodeError) as exc:
+            print(f"Historical archive publication failed: {type(exc).__name__}", file=sys.stderr)
+            return 1
 
-    try:
-        # Separate transport publication from snapshot freshness: reused reports
-        # must retain their explicit reuse warning while still reporting that the
-        # command-data branch received this exact snapshot.
-        published_at = datetime.now(timezone.utc)
-        _mark_report_publication(report, published_at)
-        report_path.write_text(json.dumps(report, indent=2, ensure_ascii=False), encoding="utf-8")
-        attempt("daily report", lambda: publish("public-data/daily_predictions.json", report_path, repo, token))
-        dashboard_path = report_path.parent / "dashboard_snapshot.json"
-        dashboard_path.write_text(json.dumps(_dashboard_snapshot(report), separators=(",", ":"), ensure_ascii=False), encoding="utf-8")
-        attempt("compact dashboard snapshot", lambda: publish("public-data/dashboard_snapshot.json", dashboard_path, repo, token))
-        archive_path = _archive_report_path(report, published_at)
-        attempt("report archive", lambda: publish(archive_path, report_path, repo, token))
-        if args.ledger:
-            ledger_path = Path(args.ledger)
-            ledger = json.loads(ledger_path.read_text(encoding="utf-8"))
-            if (
-                not isinstance(ledger, dict)
-                or ledger.get("model_status") != "PAPER_TRACKING_ONLY"
-                or not isinstance(ledger.get("cumulative_metrics_by_model"), dict)
-            ):
-                # Keep the last known-good published ledger rather than replacing
-                # it with an incomplete first-run/error document.
-                print("Ledger publication skipped: ledger failed structural validation.", file=sys.stderr)
-            else:
-                attempt("paper tracking ledger", lambda: publish("public-data/paper_tracking_ledger.json", ledger_path, repo, token))
-        if args.value_evidence:
-            evidence_path = Path(args.value_evidence)
-            evidence = json.loads(evidence_path.read_text(encoding="utf-8"))
-            if (
-                isinstance(evidence, dict)
-                and evidence.get("version") == "VELTRIX_VALUE_EVIDENCE_V1"
-                and evidence.get("release_status") == "LOCKED_SHADOW_MODE"
-                and isinstance(evidence.get("observations"), list)
-            ):
-                attempt("value evidence ledger", lambda: publish("public-data/value_evidence_ledger.json", evidence_path, repo, token))
-            else:
-                print("Value evidence publication skipped: ledger schema or release lock validation failed.", file=sys.stderr)
-        if args.recent_cache:
-            cache_path = Path(args.recent_cache)
-            cache = json.loads(cache_path.read_text(encoding="utf-8"))
-            # Recent-results cache v2 is the active resumable schema. Accept v1
-            # only for backward-compatible migration; otherwise the cursor and
-            # historical matches would never be published for the next run.
-            if _valid_recent_cache(cache):
-                attempt("recent-results cache", lambda: publish("public-data/recent_results_cache.json", cache_path, repo, token))
-            else:
-                print("Recent-results cache publication skipped: cache schema validation failed.", file=sys.stderr)
-    except (HTTPError, URLError, OSError, ValueError, json.JSONDecodeError) as exc:
-        print(f"Command-data publication failed: {type(exc).__name__}", file=sys.stderr)
-        return 1
-    if errors:
-        print(f"Command-data publication completed with {len(errors)} failed snapshot(s).", file=sys.stderr)
-        return 1
-    return 0
+    print(
+        "LEGACY_COMMAND_DATA_PUBLISHER_DISABLED; use the certified V2 bundle publisher. "
+        "Historical preservation is available only with --archive-only.",
+        file=sys.stderr,
+    )
+    return 2
+
 
 
 if __name__ == "__main__":

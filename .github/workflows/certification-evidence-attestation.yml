@@ -1,0 +1,32 @@
+name: VELTRIX Certification Evidence Attestation
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+  attestations: write
+
+jobs:
+  attest-evidence-manifest:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Compile evidence verifier
+        run: |
+          python -m compileall -q app/certification_evidence.py app/certification_metrics.py
+          python -m compileall -q scripts/verify_certification_evidence.py
+      - name: Verify immutable raw evidence and all statistical gates
+        run: python scripts/verify_certification_evidence.py --manifest reports/certification/evidence-manifest.json
+      - name: Create GitHub artifact attestation for the exact manifest digest
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: reports/certification/evidence-manifest.json

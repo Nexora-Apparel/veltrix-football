@@ -39,3 +39,12 @@ def test_phase2_migration_is_additive_and_enforces_append_only_evidence():
     assert "CREATE TABLE SYNC_WATERMARKS" in migration
     assert "CREATE TABLE INGESTION_QUARANTINE" in migration
     assert migration.count("CREATE TRIGGER") == 5
+
+
+def test_phase3_approval_status_events_are_append_only_and_auditable():
+    migration = Path("db/migrations/0003_source_approval_status_events.sql").read_text(encoding="utf-8").upper()
+    assert "CREATE TABLE SOURCE_APPROVAL_STATUS_EVENTS" in migration
+    assert "APPROVED" in migration and "REVOKED" in migration
+    assert "EVIDENCE_SHA256" in migration
+    assert "CREATE TRIGGER SOURCE_APPROVAL_STATUS_EVENTS_APPEND_ONLY" in migration
+    assert "DROP TABLE" not in migration and "DELETE FROM" not in migration

@@ -17,6 +17,8 @@ from veltrix_v2.data.fivedollar import (
 from veltrix_v2.data.postgres import PostgresHistoryStore
 from veltrix_v2.data.rights import evaluate_fixture_import, evaluate_source_use
 from scripts import phase2_fivedollar_history_dry_run as history_probe
+from scripts import phase3_import_fivedollar_history as phase3_import
+from scripts import phase3_audit_staging_import as phase3_audit
 
 NOW = datetime(2026, 11, 12, 12, tzinfo=timezone.utc)
 KICKOFF = NOW - timedelta(days=30)
@@ -27,7 +29,7 @@ def approval(**changes):
         approval_id="approval-test",
         provider="5DollarFootballAPI",
         source_id="5dollarfootballapi",
-        competition_scope="*",
+        competition_scope="4160026622,3118717965",
         data_type="fixture_result",
         status=ApprovalStatus.APPROVED,
         permitted_uses=frozenset({
@@ -95,6 +97,105 @@ def provider_page(rows=None, pagination=None):
     return json.dumps(body, sort_keys=True, separators=(",", ":")).encode()
 
 
+def test_phase3_import_requires_explicit_staging_enable(monkeypatch):
+    monkeypatch.delenv("VELTRIX_ENABLE_STAGING_IMPORT", raising=False)
+    with pytest.raises(RuntimeError, match="STAGING_IMPORT_EXPLICIT_ENABLE_REQUIRED"):
+        phase3_import._preflight("not-a-real-database-url", "veltrix_football_staging")
+
+
+def test_phase3_import_requires_all_staging_tables_empty():
+    phase3_import._require_empty_staging_database((0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0))
+
+
+@pytest.mark.parametrize("counts", [
+    (1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+    (0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0),
+    (0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0),
+    (0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0),
+    (0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0),
+    (0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0),
+    (0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0),
+    (0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0),
+    (0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0),
+    (0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0),
+    (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1),
+    (0, 0, 0, 0, 0),
+])
+def test_phase3_import_rejects_nonempty_or_incomplete_staging_counts(counts):
+    with pytest.raises(RuntimeError, match="STAGING_IMPORT_REQUIRES_EMPTY_DEDICATED_DATABASE"):
+        phase3_import._require_empty_staging_database(counts)
+
+
+def test_phase3_import_rejects_non_staging_database_before_connecting(monkeypatch):
+    monkeypatch.setenv("VELTRIX_ENABLE_STAGING_IMPORT", "YES")
+    with pytest.raises(RuntimeError, match="STAGING_IMPORT_DATABASE_ALLOWLIST_MISMATCH"):
+        phase3_import._preflight("not-a-real-database-url", "veltrix-football")
+
+
+def test_phase3_import_pins_the_exact_staging_neon_endpoint(monkeypatch):
+    monkeypatch.setenv("VELTRIX_ENABLE_STAGING_IMPORT", "YES")
+    monkeypatch.setenv("VELTRIX_EXPECTED_DATABASE_HOST", phase3_import.EXPECTED_DATABASE_HOST)
+    with pytest.raises(RuntimeError, match="STAGING_DATABASE_HOST_ALLOWLIST_MISMATCH"):
+        phase3_import._preflight(
+            "postgresql://neondb_owner:fake@ep-wrong.c-16.us-east-1.aws.neon.tech/veltrix_football_staging",
+            "veltrix_football_staging",
+        )
+
+
+def test_phase3_audit_requires_explicit_staging_enable(monkeypatch):
+    monkeypatch.delenv("VELTRIX_ENABLE_STAGING_IMPORT", raising=False)
+    with pytest.raises(RuntimeError, match="STAGING_AUDIT_EXPLICIT_ENABLE_REQUIRED"):
+        phase3_audit.run_audit("not-a-real-database-url")
+
+
+def test_phase3_audit_rejects_non_staging_neon_endpoint(monkeypatch):
+    monkeypatch.setenv("VELTRIX_ENABLE_STAGING_IMPORT", "YES")
+    with pytest.raises(RuntimeError, match="STAGING_DATABASE_HOST_ALLOWLIST_MISMATCH"):
+        phase3_audit.run_audit(
+            "postgresql://neondb_owner:fake@ep-wrong.c-16.us-east-1.aws.neon.tech/veltrix_football_staging"
+        )
+
+
+def test_phase3_audit_accepts_exact_request_and_record_accounting():
+    assert phase3_audit._request_accounting_valid(
+        40, 9, 9, 7, 7, 1, 2, 3,
+    )
+
+
+@pytest.mark.parametrize("values", [
+    (40, 41, 41, 7, 7, 1, 2, 3),
+    (40, 9, 8, 7, 7, 1, 2, 3),
+    (40, 9, 9, 6, 7, 1, 2, 3),
+    (40, 9, 9, 7, 7, 1, 2, 4),
+    (39, 9, 9, 7, 7, 1, 2, 3),
+])
+def test_phase3_audit_rejects_request_or_record_accounting_mismatch(values):
+    assert not phase3_audit._request_accounting_valid(*values)
+
+
+def test_phase3_audit_recursively_rejects_secret_metadata():
+    assert not phase3_audit._safe_key_scan({"headers": {"Authorization": "Bearer fake"}})
+    assert not phase3_audit._safe_key_scan({"request": [{"api-key": "fake"}]})
+    assert phase3_audit._safe_key_scan({"headers": {"x-ratelimit-remaining": "12"}})
+
+
+def test_phase3_import_rejects_modified_expected_host_configuration(monkeypatch):
+    monkeypatch.setenv("VELTRIX_ENABLE_STAGING_IMPORT", "YES")
+    monkeypatch.setenv("VELTRIX_EXPECTED_DATABASE_HOST", "ep-production.c-16.us-east-1.aws.neon.tech")
+    with pytest.raises(RuntimeError, match="STAGING_EXPECTED_HOST_CONFIGURATION_MISMATCH"):
+        phase3_import._preflight(
+            "postgresql://neondb_owner:fake@ep-production.c-16.us-east-1.aws.neon.tech/veltrix_football_staging",
+            "veltrix_football_staging",
+        )
+
+
+def test_phase3_import_window_and_api_key_are_bounded():
+    with pytest.raises(ValueError, match="HISTORY_WINDOW_MUST_BE_1_TO_365_DAYS"):
+        phase3_import.run_import("unused", "key", days=366)
+    with pytest.raises(RuntimeError, match="FIVEDOLLAR_API_KEY_REQUIRED"):
+        phase3_import.run_import("unused", "", days=30)
+
+
 def test_source_approval_requires_complete_evidence():
     with pytest.raises(ValueError, match="APPROVED_SOURCE_REQUIRES_COMPLETE_RIGHTS_EVIDENCE"):
         approval(evidence_sha256=None)
@@ -137,6 +238,53 @@ def test_parse_fixture_page_preserves_raw_hash_and_four_day_availability_proxy()
     assert parsed.quota_remaining == 250
 
 
+def test_historical_fixture_rejects_payload_hash_not_matching_content():
+    with pytest.raises(ValueError, match="HISTORICAL_FIXTURE_PAYLOAD_HASH_MISMATCH"):
+        fixture("109", payload_hash="b" * 64)
+
+
+def test_postgres_writer_binds_parsed_rows_to_exact_raw_response_before_connecting():
+    connection_requested = False
+    def connection_factory():
+        nonlocal connection_requested
+        connection_requested = True
+        raise AssertionError("raw-response mismatch must fail before connecting")
+    response = ProviderResponse(
+        provider="5DollarFootballAPI", source_id="5dollarfootballapi",
+        endpoint="/leagues/4160026622/fixtures", request_id="raw-bind-1",
+        request_params={"league_id": 4160026622}, http_status=200,
+        raw_body=provider_page(), response_headers={}, fetched_at_utc=NOW,
+    )
+    store = PostgresHistoryStore(connection_factory)
+    with pytest.raises(ValueError, match="PROVIDER_RESPONSE_FIXTURE_SET_MISMATCH"):
+        store.persist_page(response, [fixture("110")], approval())
+    assert not connection_requested
+
+
+def test_postgres_writer_rechecks_mutable_fixture_payload_and_fetch_timestamp():
+    row = fixture("101")
+    row.payload["goals"]["home"] = 9
+    response = ProviderResponse(
+        provider="5DollarFootballAPI", source_id="5dollarfootballapi",
+        endpoint="/leagues/4160026622/fixtures", request_id="raw-bind-2",
+        request_params={"league_id": 4160026622}, http_status=200,
+        raw_body=provider_page(), response_headers={}, fetched_at_utc=NOW,
+    )
+    store = PostgresHistoryStore(lambda: (_ for _ in ()).throw(AssertionError("must not connect")))
+    with pytest.raises(ValueError, match="FIXTURE_PAYLOAD_NOT_BOUND_TO_RAW_PROVIDER_RESPONSE"):
+        store.persist_page(response, [row], approval())
+
+    valid = fixture("101")
+    later_response = ProviderResponse(
+        provider="5DollarFootballAPI", source_id="5dollarfootballapi",
+        endpoint="/leagues/4160026622/fixtures", request_id="raw-bind-3",
+        request_params={"league_id": 4160026622}, http_status=200,
+        raw_body=provider_page(), response_headers={}, fetched_at_utc=NOW + timedelta(seconds=1),
+    )
+    with pytest.raises(ValueError, match="FIXTURE_RESPONSE_RETRIEVAL_TIME_MISMATCH"):
+        store.persist_page(later_response, [valid], approval())
+
+
 def test_parse_rejects_missing_pagination_metadata():
     raw = provider_page(pagination={"page": 1, "per_page": 100})
     with pytest.raises(FixturePageError, match="PAGINATION_METADATA_INCOMPLETE"):
@@ -161,6 +309,19 @@ def test_finished_fixture_with_invalid_score_is_not_treated_as_settled():
                                 retrieved_at_utc=NOW, rights_approval_id="approval-test")
     assert parsed.fixtures[0].status is FixtureStatus.UNKNOWN
     assert parsed.fixtures[0].home_score is None
+
+
+def test_wildcard_and_out_of_scope_competitions_are_quarantined():
+    wildcard = approval(competition_scope="*")
+    decision = evaluate_fixture_import(fixture("105"), wildcard, evaluated_at_utc=NOW)
+    assert decision.status is ImportOutcomeStatus.QUARANTINED
+    assert decision.reason_code == "COMPETITION_OUTSIDE_SOURCE_APPROVAL"
+
+    scoped = approval(competition_scope="3118717965")
+    decision = evaluate_fixture_import(fixture("106", competition_id="4160026622"), scoped,
+                                       evaluated_at_utc=NOW)
+    assert decision.status is ImportOutcomeStatus.QUARANTINED
+    assert decision.reason_code == "COMPETITION_OUTSIDE_SOURCE_APPROVAL"
 
 
 def test_history_batch_imports_only_approved_settled_rows_and_reconciles_manifest():

@@ -7,7 +7,8 @@ fixture rows are updated only after provider identity consistency is verified.
 from __future__ import annotations
 
 import json
-from datetime import datetime, timezone
+from hashlib import sha256
+from datetime import date, datetime, timezone
 from typing import Callable, Iterable
 
 from veltrix_v2.data.contracts import (
@@ -27,6 +28,51 @@ def _contains_sensitive_key(value) -> bool:
     elif isinstance(value, (list, tuple)):
         return any(_contains_sensitive_key(item) for item in value)
     return False
+
+
+def _verify_response_fixture_binding(response: ProviderResponse, fixtures: tuple[HistoricalFixture, ...]) -> None:
+    """Prove every parsed fixture is present, unchanged, in its exact raw response."""
+    if not fixtures:
+        return
+    try:
+        body = json.loads(response.raw_body.decode("utf-8"))
+    except (UnicodeDecodeError, json.JSONDecodeError):
+        raise ValueError("PROVIDER_RESPONSE_FIXTURE_BODY_INVALID") from None
+    if not isinstance(body, dict) or body.get("success") not in (1, True):
+        raise ValueError("PROVIDER_RESPONSE_FIXTURE_BODY_UNSUCCESSFUL")
+    raw_rows = body.get("data")
+    if not isinstance(raw_rows, list):
+        raise ValueError("PROVIDER_RESPONSE_FIXTURE_DATA_NOT_LIST")
+    by_id = {}
+    for raw_row in raw_rows:
+        if not isinstance(raw_row, dict):
+            raise ValueError("PROVIDER_RESPONSE_FIXTURE_ROW_INVALID")
+        raw_id = raw_row.get("id")
+        if isinstance(raw_id, bool) or not (
+            isinstance(raw_id, int) and raw_id > 0
+            or isinstance(raw_id, str) and raw_id.strip().isdigit() and int(raw_id.strip()) > 0
+        ):
+            raise ValueError("PROVIDER_RESPONSE_FIXTURE_ID_INVALID")
+        fixture_id = str(int(raw_id))
+        if fixture_id in by_id:
+            raise ValueError("DUPLICATE_FIXTURE_ID_IN_PROVIDER_RESPONSE")
+        try:
+            canonical = json.dumps(
+                raw_row, sort_keys=True, separators=(",", ":"),
+                ensure_ascii=False, allow_nan=False,
+            ).encode("utf-8")
+        except (TypeError, ValueError):
+            raise ValueError("PROVIDER_RESPONSE_FIXTURE_NOT_CANONICAL_JSON") from None
+        by_id[fixture_id] = (raw_row, sha256(canonical).hexdigest())
+    supplied_ids = [fixture.provider_fixture_id for fixture in fixtures]
+    if len(supplied_ids) != len(set(supplied_ids)) or set(supplied_ids) != set(by_id):
+        raise ValueError("PROVIDER_RESPONSE_FIXTURE_SET_MISMATCH")
+    for fixture in fixtures:
+        raw_row, raw_hash = by_id[fixture.provider_fixture_id]
+        if fixture.retrieved_at_utc != response.fetched_at_utc:
+            raise ValueError("FIXTURE_RESPONSE_RETRIEVAL_TIME_MISMATCH")
+        if dict(fixture.payload) != raw_row or fixture.payload_sha256 != raw_hash:
+            raise ValueError("FIXTURE_PAYLOAD_NOT_BOUND_TO_RAW_PROVIDER_RESPONSE")
 
 
 class PostgresHistoryStore:
@@ -84,21 +130,84 @@ class PostgresHistoryStore:
             )
             cur.execute(
                 """SELECT provider,source_id,competition_scope,data_type,status,
-                    evidence_sha256,terms_version,permitted_uses
+                    rights_basis,terms_url,terms_version,evidence_uri,evidence_sha256,
+                    reviewed_at,reviewer_id,valid_from,valid_until,permitted_uses,
+                    commercial_use_allowed,attribution_required,attribution_text,
+                    attribution_url,raw_redistribution_allowed
                    FROM source_approvals WHERE approval_id=%s""",
                 (approval.approval_id,),
             )
             row = cur.fetchone()
             expected = (
                 approval.provider, approval.source_id, approval.competition_scope,
-                approval.data_type, approval.status.value, approval.evidence_sha256,
-                approval.terms_version,
-                json.dumps(sorted(item.value for item in approval.permitted_uses)),
+                approval.data_type, approval.status.value, approval.rights_basis,
+                approval.terms_url, approval.terms_version, approval.evidence_uri,
+                approval.evidence_sha256, approval.reviewed_at_utc, approval.reviewer_id,
+                approval.valid_from_utc, approval.valid_until_utc,
+                sorted(item.value for item in approval.permitted_uses),
+                approval.commercial_use_allowed, approval.attribution_required,
+                approval.attribution_text, approval.attribution_url,
+                approval.raw_redistribution_allowed,
             )
-            if not row or row[0:7] != expected[0:7] or json.dumps(row[7], sort_keys=True) != expected[7]:
+            stored = (
+                tuple(row[:14]) + (sorted(row[14] or []),) + tuple(row[15:])
+                if row else None
+            )
+            if stored != expected:
                 raise ValueError("SOURCE_APPROVAL_IDEMPOTENCY_CONFLICT")
+            if approval.status is ApprovalStatus.APPROVED:
+                cur.execute(
+                    """INSERT INTO source_approval_status_events(
+                        approval_id,status,evidence_uri,evidence_sha256,effective_at,reason_code
+                    ) VALUES (%s,'APPROVED',%s,%s,%s,'APPROVAL_CREATED')
+                    ON CONFLICT(approval_id,status,evidence_sha256) DO NOTHING""",
+                    (approval.approval_id, approval.evidence_uri,
+                     approval.evidence_sha256, approval.valid_from_utc),
+                )
             conn.commit()
             return approval.approval_id
+        except Exception:
+            conn.rollback()
+            raise
+        finally:
+            conn.close()
+
+    def revoke_source_approval(
+        self, *, approval_id: str, evidence_uri: str, evidence_sha256: str,
+        effective_at_utc: datetime, reason_code: str,
+    ) -> None:
+        """Append a revocation event; never mutate the original approval record."""
+        if not approval_id.strip() or not evidence_uri.strip() or not reason_code.strip():
+            raise ValueError("SOURCE_APPROVAL_REVOCATION_EVIDENCE_REQUIRED")
+        if effective_at_utc.tzinfo is None or effective_at_utc.utcoffset() is None:
+            raise ValueError("SOURCE_APPROVAL_REVOCATION_TIME_MUST_BE_TIMEZONE_AWARE")
+        if len(evidence_sha256) != 64 or any(
+            ch not in "0123456789abcdef" for ch in evidence_sha256.casefold()
+        ):
+            raise ValueError("SOURCE_APPROVAL_REVOCATION_HASH_INVALID")
+        conn = self._connect_for_write()
+        try:
+            cur = conn.cursor()
+            cur.execute("SELECT 1 FROM source_approvals WHERE approval_id=%s", (approval_id,))
+            if not cur.fetchone():
+                raise ValueError("SOURCE_APPROVAL_NOT_FOUND")
+            cur.execute(
+                """INSERT INTO source_approval_status_events(
+                    approval_id,status,evidence_uri,evidence_sha256,effective_at,reason_code
+                ) VALUES (%s,'REVOKED',%s,%s,%s,%s)
+                ON CONFLICT(approval_id,status,evidence_sha256) DO NOTHING""",
+                (approval_id, evidence_uri, evidence_sha256, effective_at_utc, reason_code),
+            )
+            cur.execute(
+                """SELECT status,evidence_uri,effective_at,reason_code
+                   FROM source_approval_status_events
+                   WHERE approval_id=%s AND status='REVOKED' AND evidence_sha256=%s""",
+                (approval_id, evidence_sha256),
+            )
+            row = cur.fetchone()
+            if not row or tuple(row) != ('REVOKED', evidence_uri, effective_at_utc, reason_code):
+                raise ValueError("SOURCE_APPROVAL_REVOCATION_IDEMPOTENCY_CONFLICT")
+            conn.commit()
         except Exception:
             conn.rollback()
             raise
@@ -174,11 +283,20 @@ class PostgresHistoryStore:
                     updated_at=NOW(),records_rejected=EXCLUDED.records_rejected,
                     records_quarantined=EXCLUDED.records_quarantined,
                     requests_used=EXCLUDED.requests_used,response_sha256=EXCLUDED.response_sha256,
-                    last_error_code=EXCLUDED.last_error_code""",
+                    last_error_code=EXCLUDED.last_error_code
+                WHERE import_checkpoints.status NOT IN ('COMPLETED','FAILED')
+                  AND (import_checkpoints.status <> 'RUNNING' OR EXCLUDED.status <> 'PENDING')
+                  AND EXCLUDED.records_seen >= import_checkpoints.records_seen
+                  AND EXCLUDED.records_inserted >= import_checkpoints.records_inserted
+                  AND EXCLUDED.records_rejected >= import_checkpoints.records_rejected
+                  AND EXCLUDED.records_quarantined >= import_checkpoints.records_quarantined
+                  AND EXCLUDED.requests_used >= import_checkpoints.requests_used""",
                 (import_run_id, window_start, window_end, cursor_value, status,
                  records_seen, records_inserted, records_rejected, records_quarantined,
                  requests_used, response_sha256, last_error_code),
             )
+            if cur.rowcount != 1:
+                raise ValueError("IMPORT_CHECKPOINT_TERMINAL_OR_REGRESSION")
             conn.commit()
         except Exception:
             conn.rollback()
@@ -381,6 +499,417 @@ class PostgresHistoryStore:
             raise ValueError("PROVIDER_RESPONSE_IDEMPOTENCY_CONFLICT")
         return int(stored[0])
 
+    def persist_capture_manifest(self, manifest) -> int:
+        """Persist a deterministic, credential-free request manifest idempotently."""
+        from veltrix_v2.providers.odds_api_v4.orchestrator import (
+            RequestManifest, _manifest_integrity_valid,
+        )
+
+        if not isinstance(manifest, RequestManifest) or not _manifest_integrity_valid(manifest):
+            raise ValueError("CAPTURE_MANIFEST_INTEGRITY_INVALID")
+        try:
+            created_at = datetime.fromisoformat(manifest.created_at.replace("Z", "+00:00"))
+        except (AttributeError, TypeError, ValueError):
+            raise ValueError("CAPTURE_MANIFEST_CREATED_AT_INVALID") from None
+        if created_at.tzinfo is None or created_at.utcoffset() is None:
+            raise ValueError("CAPTURE_MANIFEST_CREATED_AT_INVALID")
+
+        scope = {
+            "run_id": manifest.run_id,
+            "provider": manifest.provider,
+            "api_version": manifest.api_version,
+            "endpoint_class": manifest.endpoint_class,
+            "sport_key": manifest.sport_key,
+            "competition_keys": list(manifest.competition_keys),
+            "fixture_ids": list(manifest.fixture_ids),
+            "provider_event_ids": list(manifest.provider_event_ids),
+            "markets": list(manifest.markets),
+            "regions": list(manifest.regions),
+            "prediction_cutoffs": [list(item) for item in manifest.prediction_cutoffs],
+            "fixture_kickoffs": [list(item) for item in manifest.fixture_kickoffs],
+            "rights_evaluated_at": manifest.rights_evaluated_at,
+            "prediction_use": manifest.prediction_use,
+            "expected_terms_version": manifest.expected_terms_version,
+            "created_at": manifest.created_at,
+            "max_attempts": manifest.max_attempts,
+            "timeout_seconds": manifest.timeout_seconds,
+            "request_fingerprint": manifest.request_fingerprint,
+        }
+        manifest_key = f"{manifest.run_id}:{manifest.request_id}"
+        scope_json = json.dumps(scope, sort_keys=True, separators=(",", ":"))
+        conn = self._connect_for_write()
+        try:
+            cur = conn.cursor()
+            cur.execute(
+                """INSERT INTO capture_manifests (
+                    manifest_key,manifest_sha256,capture_scope,requests_planned,created_at
+                ) VALUES (%s,%s,%s::jsonb,1,%s)
+                ON CONFLICT (manifest_key) DO NOTHING
+                RETURNING capture_manifest_id""",
+                (manifest_key,manifest.manifest_sha256,scope_json,created_at),
+            )
+            row = cur.fetchone()
+            if row:
+                manifest_id = int(row[0])
+            else:
+                cur.execute(
+                    """SELECT capture_manifest_id,manifest_sha256,capture_scope,
+                              requests_planned,created_at
+                       FROM capture_manifests WHERE manifest_key=%s""",
+                    (manifest_key,),
+                )
+                stored = cur.fetchone()
+                if (not stored or stored[1] != manifest.manifest_sha256
+                        or stored[2] != scope or stored[3] != 1
+                        or stored[4] != created_at):
+                    raise ValueError("CAPTURE_MANIFEST_IDEMPOTENCY_CONFLICT")
+                manifest_id = int(stored[0])
+            conn.commit()
+            return manifest_id
+        except Exception:
+            conn.rollback()
+            raise
+        finally:
+            conn.close()
+
+    def persist_capture_request(
+        self,
+        *,
+        capture_manifest_id: int,
+        manifest,
+        endpoint: str,
+        attempt_number: int,
+        requested_at: datetime,
+        outcome: str,
+        response_id: int | None = None,
+        error_code: str | None = None,
+    ) -> int:
+        """Persist one completed provider attempt against its exact manifest."""
+        from veltrix_v2.providers.odds_api_v4.orchestrator import (
+            RequestManifest, _manifest_integrity_valid,
+        )
+        from veltrix_v2.providers.odds_api_v4.dispatch_guard import _valid_url
+
+        if not isinstance(manifest, RequestManifest) or not _manifest_integrity_valid(manifest):
+            raise ValueError("CAPTURE_MANIFEST_INTEGRITY_INVALID")
+        if (not isinstance(capture_manifest_id, int)
+                or isinstance(capture_manifest_id, bool) or capture_manifest_id < 1):
+            raise ValueError("CAPTURE_MANIFEST_ID_INVALID")
+        if not _valid_url(endpoint):
+            raise ValueError("CAPTURE_REQUEST_ENDPOINT_NOT_ALLOWLISTED")
+        if (not isinstance(attempt_number, int) or isinstance(attempt_number, bool)
+                or not 1 <= attempt_number <= manifest.max_attempts):
+            raise ValueError("CAPTURE_REQUEST_ATTEMPT_INVALID")
+        if (not isinstance(requested_at, datetime) or requested_at.tzinfo is None
+                or requested_at.utcoffset() is None):
+            raise ValueError("CAPTURE_REQUEST_TIME_INVALID")
+        try:
+            manifest_created_at = datetime.fromisoformat(manifest.created_at.replace("Z", "+00:00"))
+        except (AttributeError, TypeError, ValueError):
+            raise ValueError("CAPTURE_MANIFEST_CREATED_AT_INVALID") from None
+        if requested_at < manifest_created_at:
+            raise ValueError("CAPTURE_REQUEST_PRECEDES_MANIFEST")
+        if outcome not in {"RESPONSE","TIMEOUT","NETWORK_ERROR","RATE_LIMITED","CANCELLED"}:
+            raise ValueError("CAPTURE_REQUEST_OUTCOME_INVALID")
+        if outcome == "RESPONSE":
+            if not isinstance(response_id, int) or isinstance(response_id, bool) or response_id < 1:
+                raise ValueError("CAPTURE_REQUEST_RESPONSE_ID_REQUIRED")
+            if error_code is not None:
+                raise ValueError("CAPTURE_REQUEST_RESPONSE_ERROR_CODE_FORBIDDEN")
+        elif response_id is not None:
+            raise ValueError("CAPTURE_REQUEST_NON_RESPONSE_HAS_RESPONSE_ID")
+        if error_code is not None and (
+            not isinstance(error_code, str) or not error_code.strip()
+        ):
+            raise ValueError("CAPTURE_REQUEST_ERROR_CODE_INVALID")
+
+        conn = self._connect_for_write()
+        try:
+            cur = conn.cursor()
+            cur.execute(
+                """SELECT manifest_sha256,manifest_key FROM capture_manifests
+                   WHERE capture_manifest_id=%s""",
+                (capture_manifest_id,),
+            )
+            manifest_row = cur.fetchone()
+            if (not manifest_row or manifest_row[0] != manifest.manifest_sha256
+                    or manifest_row[1] != f"{manifest.run_id}:{manifest.request_id}"):
+                raise ValueError("CAPTURE_REQUEST_MANIFEST_BINDING_MISMATCH")
+            if outcome == "RESPONSE":
+                cur.execute(
+                    """SELECT provider,source_id,request_id,fetched_at FROM provider_responses
+                       WHERE id=%s""",
+                    (response_id,),
+                )
+                response_row = cur.fetchone()
+                if (not response_row
+                        or tuple(response_row[:3]) != (
+                            "the_odds_api","odds_api_v4",manifest.request_id
+                        )
+                        or response_row[3] < requested_at):
+                    raise ValueError("CAPTURE_REQUEST_RESPONSE_PROVENANCE_MISMATCH")
+
+            if attempt_number > 1:
+                cur.execute(
+                    """SELECT capture_request_id FROM provider_capture_requests
+                       WHERE capture_manifest_id=%s AND request_key=%s
+                         AND attempt_number=%s""",
+                    (capture_manifest_id,manifest.request_id,attempt_number - 1),
+                )
+                previous_request = cur.fetchone()
+                if not previous_request:
+                    raise ValueError("CAPTURE_REQUEST_PREVIOUS_ATTEMPT_MISSING")
+                cur.execute(
+                    """SELECT to_state FROM provider_capture_state_events
+                       WHERE capture_request_id=%s
+                       ORDER BY event_sequence DESC LIMIT 1""",
+                    (previous_request[0],),
+                )
+                previous_state = cur.fetchone()
+                if not previous_state or previous_state[0] != "COMMITTED":
+                    raise ValueError("CAPTURE_REQUEST_PREVIOUS_ATTEMPT_NOT_RECONCILED")
+
+            cur.execute(
+                """INSERT INTO provider_capture_requests (
+                    capture_manifest_id,provider,source_id,endpoint,request_key,
+                    request_fingerprint,attempt_number,requested_at,response_id,
+                    outcome,error_code
+                ) VALUES (%s,'the_odds_api','odds_api_v4',%s,%s,%s,%s,%s,%s,%s,%s)
+                ON CONFLICT (capture_manifest_id,request_key,attempt_number) DO NOTHING
+                RETURNING capture_request_id""",
+                (
+                    capture_manifest_id,endpoint,manifest.request_id,
+                    manifest.request_fingerprint,attempt_number,requested_at,
+                    response_id,outcome,error_code,
+                ),
+            )
+            row = cur.fetchone()
+            if row:
+                capture_request_id = int(row[0])
+            else:
+                cur.execute(
+                    """SELECT capture_request_id,provider,source_id,endpoint,request_key,
+                              request_fingerprint,requested_at,response_id,outcome,error_code
+                       FROM provider_capture_requests
+                       WHERE capture_manifest_id=%s AND request_key=%s AND attempt_number=%s""",
+                    (capture_manifest_id,manifest.request_id,attempt_number),
+                )
+                stored = cur.fetchone()
+                expected = (
+                    "the_odds_api","odds_api_v4",endpoint,manifest.request_id,
+                    manifest.request_fingerprint,requested_at,response_id,outcome,error_code,
+                )
+                if not stored or tuple(stored[1:]) != expected:
+                    raise ValueError("CAPTURE_REQUEST_IDEMPOTENCY_CONFLICT")
+                capture_request_id = int(stored[0])
+            conn.commit()
+            return capture_request_id
+        except Exception:
+            conn.rollback()
+            raise
+        finally:
+            conn.close()
+
+    def append_capture_state_event(
+        self,
+        capture_request_id: int,
+        event,
+    ) -> int:
+        """Append one hash-verified request-state event to the immutable ledger."""
+        from veltrix_v2.providers.odds_api_v4.state_machine import (
+            CaptureStateEvent, _event_integrity_valid,
+        )
+
+        if (not isinstance(capture_request_id, int)
+                or isinstance(capture_request_id, bool) or capture_request_id < 1):
+            raise ValueError("CAPTURE_REQUEST_ID_INVALID")
+        if not isinstance(event, CaptureStateEvent) or not _event_integrity_valid(event):
+            raise ValueError("CAPTURE_STATE_EVENT_HASH_INVALID")
+        try:
+            occurred_at = datetime.fromisoformat(event.occurred_at.replace("Z", "+00:00"))
+        except (AttributeError, TypeError, ValueError):
+            raise ValueError("CAPTURE_STATE_EVENT_TIME_INVALID") from None
+        if occurred_at.tzinfo is None or occurred_at.utcoffset() is None:
+            raise ValueError("CAPTURE_STATE_EVENT_TIME_INVALID")
+
+        conn = self._connect_for_write()
+        try:
+            cur = conn.cursor()
+            # Acquire the same per-request advisory lock as the INSERT trigger
+            # before checking for an exact replay. This makes idempotency safe
+            # under concurrent workers rather than relying on ON CONFLICT alone.
+            cur.execute(
+                "SELECT pg_advisory_xact_lock(hashtextextended(%s, 0))",
+                (str(capture_request_id),),
+            )
+            cur.execute(
+                """SELECT request_key FROM provider_capture_requests
+                   WHERE capture_request_id=%s""",
+                (capture_request_id,),
+            )
+            request_row = cur.fetchone()
+            if not request_row or request_row[0] != event.request_id:
+                raise ValueError("CAPTURE_STATE_REQUEST_IDENTITY_MISMATCH")
+
+            cur.execute(
+                """SELECT capture_state_event_id,from_state,to_state,occurred_at,actor,
+                          reason_code,evidence_sha256,previous_event_sha256,event_sha256
+                   FROM provider_capture_state_events
+                   WHERE capture_request_id=%s AND event_sequence=%s""",
+                (capture_request_id,event.sequence),
+            )
+            stored = cur.fetchone()
+            expected = (
+                event.from_state,event.to_state,occurred_at,event.actor,
+                event.reason_code,event.evidence_sha256,
+                event.previous_event_sha256,event.event_sha256,
+            )
+            if stored:
+                if tuple(stored[1:]) != expected:
+                    raise ValueError("CAPTURE_STATE_EVENT_IDEMPOTENCY_CONFLICT")
+                conn.commit()
+                return int(stored[0])
+
+            cur.execute(
+                """INSERT INTO provider_capture_state_events (
+                    capture_request_id,event_sequence,from_state,to_state,occurred_at,
+                    actor,reason_code,evidence_sha256,previous_event_sha256,event_sha256
+                ) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+                RETURNING capture_state_event_id""",
+                (
+                    capture_request_id,event.sequence,event.from_state,event.to_state,
+                    occurred_at,event.actor,event.reason_code,event.evidence_sha256,
+                    event.previous_event_sha256,event.event_sha256,
+                ),
+            )
+            row = cur.fetchone()
+            if not row:
+                raise ValueError("CAPTURE_STATE_EVENT_INSERT_FAILED")
+            conn.commit()
+            return int(row[0])
+        except Exception:
+            conn.rollback()
+            raise
+        finally:
+            conn.close()
+
+    def persist_odds_api_quota_evidence(
+        self,
+        response: ProviderResponse,
+        envelope,
+        *,
+        provider_account_ref: str,
+        billing_period_start: date,
+        billing_period_end: date,
+    ) -> tuple[int, int]:
+        """Atomically persist one exact Odds API response and its quota snapshot.
+
+        This method stores only the allowlisted quota headers from the validated
+        response envelope. It performs no network request and requires the
+        existing explicit non-production write guard.
+        """
+        if response.provider != "the_odds_api" or response.source_id != "odds_api_v4":
+            raise ValueError("ODDS_API_RESPONSE_IDENTITY_INVALID")
+        if response.http_status != 200 or getattr(envelope, "status_code", None) != 200:
+            raise ValueError("ODDS_API_RESPONSE_STATUS_INVALID")
+        if not isinstance(provider_account_ref, str) or not provider_account_ref.strip():
+            raise ValueError("ODDS_API_ACCOUNT_REFERENCE_REQUIRED")
+        if (not isinstance(billing_period_start, date)
+                or isinstance(billing_period_start, datetime)
+                or not isinstance(billing_period_end, date)
+                or isinstance(billing_period_end, datetime)
+                or billing_period_end <= billing_period_start):
+            raise ValueError("ODDS_API_BILLING_PERIOD_INVALID")
+
+        raw_body = getattr(envelope, "raw_body", None)
+        response_hash = getattr(envelope, "response_sha256", None)
+        retrieved_at = getattr(envelope, "retrieved_at", None)
+        raw_quota_headers = getattr(envelope, "raw_quota_headers", None)
+        quota_evidence = getattr(envelope, "quota_evidence", None)
+        if not isinstance(raw_body, bytes) or raw_body != response.raw_body:
+            raise ValueError("ODDS_API_RESPONSE_BODY_BINDING_MISMATCH")
+        if response_hash != response.response_sha256:
+            raise ValueError("ODDS_API_RESPONSE_HASH_BINDING_MISMATCH")
+        if retrieved_at != response.fetched_at_utc:
+            raise ValueError("ODDS_API_RESPONSE_TIME_BINDING_MISMATCH")
+        if (not isinstance(raw_quota_headers, tuple)
+                or not quota_evidence
+                or getattr(quota_evidence, "raw_headers", None) != raw_quota_headers):
+            raise ValueError("ODDS_API_QUOTA_EVIDENCE_BINDING_MISMATCH")
+        quota_hash = getattr(quota_evidence, "evidence_sha256", "")
+        if (not isinstance(quota_hash, str) or len(quota_hash) != 64
+                or any(ch not in "0123456789abcdef" for ch in quota_hash)):
+            raise ValueError("ODDS_API_QUOTA_EVIDENCE_HASH_INVALID")
+        if any(
+            not isinstance(pair, tuple) or len(pair) != 2
+            or pair[0] not in {"x-requests-used", "x-requests-remaining", "x-requests-last"}
+            or not isinstance(pair[1], str)
+            for pair in raw_quota_headers
+        ):
+            raise ValueError("ODDS_API_QUOTA_HEADER_ALLOWLIST_VIOLATION")
+
+        safe_response = ProviderResponse(
+            provider=response.provider,
+            source_id=response.source_id,
+            endpoint=response.endpoint,
+            request_id=response.request_id,
+            request_params=response.request_params,
+            http_status=response.http_status,
+            raw_body=response.raw_body,
+            response_headers=dict(raw_quota_headers),
+            fetched_at_utc=response.fetched_at_utc,
+        )
+        conn = self._connect_for_write()
+        try:
+            cur = conn.cursor()
+            provider_response_id = self._persist_provider_response(cur, safe_response)
+            cur.execute(
+                """INSERT INTO provider_quota_snapshots (
+                    provider,source_id,provider_account_ref,billing_period_start,
+                    billing_period_end,provider_response_id,observed_at,raw_quota_headers,
+                    requests_used,requests_remaining,requests_last,evidence_sha256
+                ) VALUES (%s,%s,%s,%s,%s,%s,%s,%s::jsonb,%s,%s,%s,%s)
+                ON CONFLICT (provider_response_id) DO NOTHING
+                RETURNING quota_snapshot_id""",
+                (
+                    response.provider, response.source_id, provider_account_ref,
+                    billing_period_start, billing_period_end, provider_response_id,
+                    retrieved_at, json.dumps(dict(raw_quota_headers), sort_keys=True),
+                    quota_evidence.requests_used, quota_evidence.requests_remaining,
+                    quota_evidence.requests_last, quota_hash,
+                ),
+            )
+            row = cur.fetchone()
+            if row:
+                quota_snapshot_id = int(row[0])
+            else:
+                cur.execute(
+                    """SELECT quota_snapshot_id,provider,source_id,provider_account_ref,
+                              billing_period_start,billing_period_end,observed_at,
+                              raw_quota_headers,requests_used,requests_remaining,
+                              requests_last,evidence_sha256
+                       FROM provider_quota_snapshots WHERE provider_response_id=%s""",
+                    (provider_response_id,),
+                )
+                stored = cur.fetchone()
+                expected = (
+                    response.provider, response.source_id, provider_account_ref,
+                    billing_period_start, billing_period_end, retrieved_at,
+                    dict(raw_quota_headers),
+                    quota_evidence.requests_used, quota_evidence.requests_remaining,
+                    quota_evidence.requests_last, quota_hash,
+                )
+                if not stored or tuple(stored[1:]) != expected:
+                    raise ValueError("ODDS_API_QUOTA_SNAPSHOT_IDEMPOTENCY_CONFLICT")
+                quota_snapshot_id = int(stored[0])
+            conn.commit()
+            return provider_response_id, quota_snapshot_id
+        except Exception:
+            conn.rollback()
+            raise
+        finally:
+            conn.close()
+
     def persist_page(
         self,
         response: ProviderResponse,
@@ -388,15 +917,19 @@ class PostgresHistoryStore:
         approval: SourceApproval,
         *,
         import_run_id: int | None = None,
+        duplicate_fixture_ids: frozenset[str] = frozenset(),
     ) -> dict:
         """Persist one page atomically; caller must use an isolated staging database."""
         rows = tuple(fixtures)
+        if not duplicate_fixture_ids <= {row.provider_fixture_id for row in rows}:
+            raise ValueError("DUPLICATE_FIXTURE_MARKER_NOT_IN_PROVIDER_PAGE")
         if approval.provider != response.provider or approval.source_id != response.source_id:
             raise ValueError("SOURCE_APPROVAL_PROVIDER_MISMATCH")
         if _contains_sensitive_key(dict(response.response_headers)):
             raise ValueError("PROVIDER_RESPONSE_SECRET_HEADER_MUST_NOT_BE_STORED")
         if _contains_sensitive_key(dict(response.request_params)):
             raise ValueError("PROVIDER_REQUEST_SECRET_PARAMETER_MUST_NOT_BE_STORED")
+        _verify_response_fixture_binding(response, rows)
         # Rights evidence is immutable and must exist before any source record can reference it.
         self.persist_source_approval(approval)
         conn = self._connect_for_write()
@@ -404,6 +937,14 @@ class PostgresHistoryStore:
         try:
             cur = conn.cursor()
             response_id = self._persist_provider_response(cur, response)
+            cur.execute(
+                """SELECT status FROM source_approval_status_events
+                   WHERE approval_id=%s AND effective_at<=%s
+                   ORDER BY effective_at DESC,event_id DESC LIMIT 1""",
+                (approval.approval_id, response.fetched_at_utc),
+            )
+            approval_event = cur.fetchone()
+            approval_active = bool(approval_event and approval_event[0] == "APPROVED")
             cur.execute(
                 """SELECT e.entitlement_status,e.competition_ids
                    FROM provider_entitlement_observations e
@@ -420,6 +961,20 @@ class PostgresHistoryStore:
             for fixture in rows:
                 if fixture.provider != response.provider or fixture.source_id != response.source_id:
                     raise ValueError("FIXTURE_PROVIDER_RESPONSE_MISMATCH")
+                if fixture.provider_fixture_id in duplicate_fixture_ids:
+                    self._quarantine(
+                        cur, fixture, import_run_id, "DUPLICATE_PROVIDER_FIXTURE_ID_ACROSS_PAGES",
+                        {"provider_fixture_id": fixture.provider_fixture_id},
+                    )
+                    conflicts += 1
+                    continue
+                if not approval_active:
+                    self._quarantine(
+                        cur, fixture, import_run_id, "SOURCE_APPROVAL_REVOKED_OR_UNVERIFIED",
+                        {"approval_id": approval.approval_id},
+                    )
+                    conflicts += 1
+                    continue
                 if not entitlement_active:
                     self._quarantine(
                         cur, fixture, import_run_id, "PROVIDER_ENTITLEMENT_NOT_VERIFIED",

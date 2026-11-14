@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import json
 from datetime import datetime
 from enum import StrEnum
 from hashlib import sha256
@@ -153,6 +154,8 @@ class HistoricalFixture:
     availability_basis: str
     point_in_time_certifiable: bool
     rights_approval_id: str
+    response_sha256: str | None = None
+    capture_manifest_sha256: str | None = None
 
     def __post_init__(self) -> None:
         if any(not value or not value.strip() for value in (
@@ -175,10 +178,29 @@ class HistoricalFixture:
                 raise ValueError("FIXTURE_RESULT_AVAILABILITY_PRECEDES_KICKOFF")
         if self.source_event_time_utc != self.kickoff_at_utc:
             raise ValueError("FIXTURE_SOURCE_EVENT_TIME_MUST_MATCH_KICKOFF")
+        if (self.response_sha256 is None) != (self.capture_manifest_sha256 is None):
+            raise ValueError("FIXTURE_CAPTURE_PAGE_EVIDENCE_PAIR_REQUIRED")
+        for field, value in (
+            ("response_sha256", self.response_sha256),
+            ("capture_manifest_sha256", self.capture_manifest_sha256),
+        ):
+            if value is not None and (
+                len(value) != 64 or any(ch not in "0123456789abcdef" for ch in value.casefold())
+            ):
+                raise ValueError(f"FIXTURE_{field.upper()}_INVALID")
         if len(self.payload_sha256) != 64 or any(
             ch not in "0123456789abcdef" for ch in self.payload_sha256.casefold()
         ):
             raise ValueError("HISTORICAL_FIXTURE_PAYLOAD_HASH_INVALID")
+        try:
+            canonical_payload = json.dumps(
+                dict(self.payload), sort_keys=True, separators=(",", ":"),
+                ensure_ascii=False, allow_nan=False,
+            ).encode("utf-8")
+        except (TypeError, ValueError):
+            raise ValueError("HISTORICAL_FIXTURE_PAYLOAD_NOT_CANONICAL_JSON") from None
+        if sha256(canonical_payload).hexdigest() != self.payload_sha256:
+            raise ValueError("HISTORICAL_FIXTURE_PAYLOAD_HASH_MISMATCH")
         if self.status is FixtureStatus.FINISHED:
             if type(self.home_score) is not int or type(self.away_score) is not int:
                 raise ValueError("FINISHED_FIXTURE_REQUIRES_INTEGER_SCORES")

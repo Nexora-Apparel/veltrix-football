@@ -104,82 +104,24 @@ def test_large_blob_publication_preserves_existing_branch_tree(tmp_path, monkeyp
     assert len(requests) == 6
 
 
-def test_one_snapshot_failure_does_not_block_later_publications(tmp_path, monkeypatch):
+def test_legacy_main_refuses_all_non_archive_snapshots(tmp_path, monkeypatch, capsys):
     import json
     import sys
     from scripts import publish_command_data as publisher
 
     report = tmp_path / "report.json"
-    ledger = tmp_path / "paper.json"
-    evidence = tmp_path / "evidence.json"
-    cache = tmp_path / "cache.json"
     report.write_text(json.dumps({
-        "as_of_date": "2026-11-02",
+        "as_of_date": "2026-11-14",
         "predictions": [],
     }), encoding="utf-8")
-    ledger.write_text(json.dumps({
-        "model_status": "PAPER_TRACKING_ONLY",
-        "cumulative_metrics_by_model": {},
-    }), encoding="utf-8")
-    evidence.write_text(json.dumps({
-        "version": "VELTRIX_VALUE_EVIDENCE_V1",
-        "release_status": "LOCKED_SHADOW_MODE",
-        "observations": [],
-    }), encoding="utf-8")
-    cache.write_text(json.dumps({
-        "version": 2,
-        "matches": [],
-        "state": {},
-    }), encoding="utf-8")
-
+    calls = []
+    monkeypatch.setattr(publisher, "publish", lambda *args, **kwargs: calls.append(args))
     monkeypatch.setenv("GITHUB_REPOSITORY", "owner/repo")
     monkeypatch.setenv("GITHUB_TOKEN", "test-token")
-    monkeypatch.setattr(sys, "argv", [
-        "publish_command_data.py",
-        "--report", str(report),
-        "--ledger", str(ledger),
-        "--value-evidence", str(evidence),
-        "--recent-cache", str(cache),
-    ])
-
-    attempted = []
-
-    def fake_publish(path, local_file, repo, token):
-        attempted.append(path)
-        if path == "public-data/value_evidence_ledger.json":
-            raise OSError("simulated large-snapshot publication failure")
-
-    monkeypatch.setattr(publisher, "publish", fake_publish)
-
-    assert publisher.main() == 1
-    assert "public-data/daily_predictions.json" in attempted
-    assert "public-data/paper_tracking_ledger.json" in attempted
-    assert "public-data/value_evidence_ledger.json" in attempted
-    assert "public-data/recent_results_cache.json" in attempted
-
-
-def test_publication_marker_confirms_live_report_but_preserves_reuse_warning():
-    from datetime import datetime, timezone
-    from scripts.publish_command_data import _mark_report_publication
-
-    published_at = datetime(2026, 11, 2, 10, 0, tzinfo=timezone.utc)
-    live = {
-        "publication_status": "LIVE_REPORT_GENERATED_PENDING_PUBLICATION",
-        "publication_notice": "Generated from this run's live fixture response.",
-    }
-    _mark_report_publication(live, published_at)
-    assert live["publication_status"] == "PUBLISHED"
-    assert live["command_data_publication"] == "PUBLISHED"
-    assert "publication to command-data is confirmed" in live["publication_notice"]
-
-    reused = {
-        "publication_status": "REUSED_SNAPSHOT_NOT_REFRESHED",
-        "publication_notice": "A previously generated report was reused.",
-    }
-    _mark_report_publication(reused, published_at)
-    assert reused["publication_status"] == "REUSED_SNAPSHOT_NOT_REFRESHED"
-    assert reused["command_data_publication"] == "PUBLISHED"
-    assert reused["publication_notice"] == "A previously generated report was reused."
+    monkeypatch.setattr(sys, "argv", ["publish_command_data.py", "--report", str(report)])
+    assert publisher.main() == 2
+    assert calls == []
+    assert "LEGACY_COMMAND_DATA_PUBLISHER_DISABLED" in capsys.readouterr().err
 
 
 
@@ -218,9 +160,165 @@ def test_large_blob_publication_retries_when_command_data_branch_moves(tmp_path,
         raise AssertionError(url)
 
     monkeypatch.setattr(publisher, "_github_json", fake_github_json)
-    publisher.publish("public-data/daily_predictions.json", target, "owner/repo", "token")
+    publisher.publish("public-data/archive/2026-11-14/daily_predictions_20261114T050000Z.json", target, "owner/repo", "token")
     assert ref_reads == 2
     assert patch_attempts == 2
     second_tree = next(body for url, method, body in calls
                        if url.endswith("/git/trees") and body["base_tree"] == "base-tree-2")
     assert second_tree["tree"][0]["sha"] == "blob-2"
+
+
+
+def test_legacy_command_data_publisher_blocks_prediction_and_dashboard_paths(tmp_path, monkeypatch):
+    import pytest
+    from scripts.publish_command_data import publish
+
+    local = tmp_path / "report.json"
+    local.write_text('{"predictions":[]}', encoding="utf-8")
+    monkeypatch.setattr(
+        "scripts.publish_command_data.urlopen",
+        lambda *args, **kwargs: pytest.fail("blocked legacy path must not contact GitHub"),
+    )
+    for path in (
+        "public-data/daily_predictions.json",
+        "public-data/dashboard_snapshot.json",
+    ):
+        with pytest.raises(PermissionError, match="LEGACY_PREDICTION_PUBLICATION_DISABLED"):
+            publish(path, local, "Nexora-Apparel/veltrix-football", "not-a-real-token")
+
+
+def test_legacy_command_data_publisher_rejects_path_traversal_before_network(tmp_path, monkeypatch):
+    import pytest
+    from scripts.publish_command_data import publish
+
+    local = tmp_path / "report.json"
+    local.write_text('{"predictions":[]}', encoding="utf-8")
+    monkeypatch.setattr(
+        "scripts.publish_command_data.urlopen",
+        lambda *args, **kwargs: pytest.fail("invalid path must not contact GitHub"),
+    )
+    with pytest.raises(ValueError, match="COMMAND_DATA_PATH_INVALID"):
+        publish("public-data/../public-data/daily_predictions.json", local,
+                "Nexora-Apparel/veltrix-football", "not-a-real-token")
+
+
+
+def test_archive_only_publication_preserves_historical_report_without_live_pointers(tmp_path, monkeypatch):
+    import json
+    from scripts import publish_command_data as publisher
+
+    report_path = tmp_path / "daily_predictions.json"
+    original = {
+        "as_of_date": "2026-10-31",
+        "same_day_only": True,
+        "predictions": [{"fixture_id": "historical-1"}],
+    }
+    original_bytes = json.dumps(original).encode()
+    report_path.write_bytes(original_bytes)
+    calls = []
+    monkeypatch.setattr(
+        publisher,
+        "publish",
+        lambda path, local_file, repo, token: calls.append((path, local_file.read_bytes())),
+    )
+    monkeypatch.setenv("GITHUB_REPOSITORY", "Nexora-Apparel/veltrix-football")
+    monkeypatch.setenv("GITHUB_TOKEN", "not-a-real-token")
+    monkeypatch.setattr(
+        "sys.argv",
+        ["publish_command_data.py", "--report", str(report_path), "--archive-only"],
+    )
+
+    assert publisher.main() == 0
+    assert len(calls) == 1
+    assert calls[0][0].startswith("public-data/archive/2026-10-31/")
+    assert calls[0][1] == original_bytes
+    assert report_path.read_bytes() == original_bytes
+
+
+def test_legacy_main_refuses_live_report_and_dashboard_publication(tmp_path, monkeypatch, capsys):
+    import json
+    from scripts import publish_command_data as publisher
+
+    report_path = tmp_path / "daily_predictions.json"
+    report_path.write_text(json.dumps({
+        "as_of_date": "2026-11-14",
+        "predictions": [],
+    }), encoding="utf-8")
+    calls = []
+    monkeypatch.setattr(
+        publisher,
+        "publish",
+        lambda *args, **kwargs: calls.append(args),
+    )
+    monkeypatch.setenv("GITHUB_REPOSITORY", "Nexora-Apparel/veltrix-football")
+    monkeypatch.setenv("GITHUB_TOKEN", "not-a-real-token")
+    monkeypatch.setattr(
+        "sys.argv",
+        ["publish_command_data.py", "--report", str(report_path)],
+    )
+    assert publisher.main() == 2
+    assert calls == []
+    assert "LEGACY_COMMAND_DATA_PUBLISHER_DISABLED" in capsys.readouterr().err
+
+
+def test_archive_path_remains_publishable_for_historical_preservation(tmp_path, monkeypatch):
+    import json
+    from scripts.publish_command_data import publish
+
+    local = tmp_path / "historical.json"
+    local.write_text('{"as_of_date":"2026-10-31","predictions":[]}', encoding="utf-8")
+    calls = []
+    monkeypatch.setattr(
+        "scripts.publish_command_data._github_json",
+        lambda url, token, method="GET", body=None: calls.append((url, method, body)) or {},
+    )
+    publish(
+        "public-data/archive/2026-10-31/daily_predictions_20261031T000000Z.json",
+        local,
+        "Nexora-Apparel/veltrix-football",
+        "not-a-real-token",
+    )
+    assert len(calls) == 2
+
+
+
+def test_archive_content_path_is_stable_and_content_addressed():
+    from scripts.publish_command_data import _archive_content_path
+
+    report = {"as_of_date": "2026-10-31"}
+    first = _archive_content_path(report, b"immutable-report")
+    same = _archive_content_path(report, b"immutable-report")
+    changed = _archive_content_path(report, b"corrected-report")
+    assert first == same
+    assert first != changed
+    assert first.startswith("public-data/archive/2026-10-31/daily_predictions_")
+
+
+def test_command_data_publish_skips_existing_identical_bytes(tmp_path, monkeypatch, capsys):
+    import base64
+    import json
+    from scripts.publish_command_data import publish
+
+    local = tmp_path / "snapshot.json"
+    raw = b'{"as_of_date":"2026-10-31","predictions":[]}'
+    local.write_bytes(raw)
+    calls = []
+
+    def fake_github_json(url, token, method="GET", body=None):
+        calls.append((url, method, body))
+        return {
+            "sha": "existing-blob-sha",
+            "encoding": "base64",
+            "content": base64.b64encode(raw).decode("ascii"),
+        }
+
+    monkeypatch.setattr("scripts.publish_command_data._github_json", fake_github_json)
+    publish(
+        "public-data/archive/2026-10-31/daily_predictions_abc.json",
+        local,
+        "Nexora-Apparel/veltrix-football",
+        "not-a-real-token",
+    )
+    assert len(calls) == 1
+    assert calls[0][1] == "GET"
+    assert "exact bytes match" in capsys.readouterr().out

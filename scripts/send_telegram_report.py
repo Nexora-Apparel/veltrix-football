@@ -18,6 +18,8 @@ from urllib.request import Request, urlopen
 
 import requests
 
+from veltrix_v2.reporting.report_identity import REPORT_SCHEMA
+
 
 MAX_MESSAGE_LENGTH = 3900
 MESSAGE_PREFIX = "🔔 🆕 NEW VELTRIX UPDATE  •  MESSAGE 999/999"
@@ -207,7 +209,9 @@ def _format_recent_form(team_form: Any) -> str:
 
 
 def format_report_messages(report: dict[str, Any], ledger: dict[str, Any] | None = None) -> list[str]:
-    """Send concise match verdicts and evidence-based explanations to Telegram."""
+    """Format legacy report payloads; V2 reports use the separately gated formatter."""
+    if report.get("schema") == REPORT_SCHEMA:
+        raise ValueError("V2 report rejected by legacy Telegram formatter; use the V2 publication gate.")
     day = str(report.get("as_of_date", "unknown date"))
     timezone_name = str(report.get("timezone", "Africa/Lagos"))
     predictions = report.get("predictions", [])
@@ -218,6 +222,7 @@ def format_report_messages(report: dict[str, Any], ledger: dict[str, Any] | None
         DIVIDER,
         f"⚽ VELTRIX FOOTBALL AI · DAILY INTELLIGENCE",
         f"📅 {day} · Kick-off times: WAT",
+        "Football data by 5DollarFootballAPI · https://5dollarfootballapi.com",
         "",
     ]
     blocks: list[list[str]] = []
@@ -268,7 +273,9 @@ def format_report_messages(report: dict[str, Any], ledger: dict[str, Any] | None
         approved_markets = certificate.get("approved_markets") or []
         if not isinstance(approved_markets, list):
             approved_markets = []
-        certificate_releases = certificate_status in {"PASSED", "CERTIFIED", "APPROVED"}
+        # Report-supplied certificate labels are untrusted. Telegram must not
+        # release value alerts until the source-attested verifier is wired in.
+        certificate_releases = False
         for market, result in (value_screen.get("markets") or {}).items():
             raw_candidates = (result.get("candidates") or [])[:2]
             market_approved = certificate_releases and market in approved_markets
@@ -400,53 +407,22 @@ def send_message(token: str, chat_id: str, message: str, *, timeout: int = 15) -
 
 
 def main() -> None:
+    """Refuse every public send until the certified V2 bundle runner is wired."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--report", default="reports/daily_predictions.json")
     parser.add_argument("--ledger", default="reports/paper_tracking_ledger.json")
-    parser.add_argument("--force", action="store_true", help="Allow an explicitly requested replacement report to be delivered again for the same date.")
+    parser.add_argument("--force", action="store_true")
     args = parser.parse_args()
-    token = os.environ.get("TELEGRAM_BOT_TOKEN", "")
-    chat_id = os.environ.get("TELEGRAM_CHAT_ID", "")
     try:
         report = json.loads(Path(args.report).read_text(encoding="utf-8"))
-        if not isinstance(report, dict) or not report.get("same_day_only"):
-            raise ValueError("Report is invalid or does not enforce same-day fixture filtering.")
-        ledger = None
-        ledger_path = Path(args.ledger)
-        if ledger_path.exists():
-            try:
-                loaded_ledger = json.loads(ledger_path.read_text(encoding="utf-8"))
-                if isinstance(loaded_ledger, dict):
-                    ledger = loaded_ledger
-            except (OSError, json.JSONDecodeError):
-                ledger = None
-        report_date = str(report.get("as_of_date", ""))
-        repo = os.environ.get("GITHUB_REPOSITORY", "").strip()
-        github_token = os.environ.get("GITHUB_TOKEN", "").strip()
-        messages = format_report_messages(report, ledger)
-        report_hash = _report_fingerprint(messages)
-        delivery_state = None
-        delivery_sha = None
-        same_day_update = False
-        if repo and github_token:
-            delivery_state, delivery_sha = _load_delivery_state(repo, github_token)
-            if _should_skip_delivery(delivery_state, report_date, report_hash, args.force):
-                print(f"Telegram delivery skipped: this exact report for {report_date} was already sent.")
-                return
-            same_day_update = report_date in delivery_state["sent_dates"]
-        else:
-            print("WARNING: persistent duplicate-prevention is unavailable outside GitHub Actions.", file=sys.stderr)
-
-        if same_day_update and not args.force:
-            messages = _mark_same_day_update(messages)
-            print(f"Sending an updated same-day report for {report_date}; its fixture/report content differs from the last recorded delivery.")
-        for index, message in enumerate(messages, start=1):
-            send_message(token, chat_id, message)
-            print(f"Telegram report part {index}/{len(messages)} delivered.")
-        if delivery_state is not None:
-            _record_delivery_date(repo, github_token, report_date, report_hash, delivery_state, delivery_sha)
-        print(f"Telegram report delivered for {report_date or 'unknown date'}.")
-    except (OSError, json.JSONDecodeError, ValueError, RuntimeError, requests.RequestException) as exc:
+        if isinstance(report, dict) and report.get("schema") == REPORT_SCHEMA:
+            raise ValueError(
+                "V2_REPORT_REQUIRES_CERTIFIED_V2_DELIVERY_RUNNER; legacy sender is blocked"
+            )
+        raise ValueError(
+            "LEGACY_REPORT_SENDER_DISABLED; public delivery requires the certified V2 report bundle runner"
+        )
+    except (OSError, json.JSONDecodeError, ValueError) as exc:
         print(f"TELEGRAM REPORT FAILED: {exc}", file=sys.stderr)
         raise SystemExit(1) from exc
 
