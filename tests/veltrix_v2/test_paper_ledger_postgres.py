@@ -74,6 +74,21 @@ def test_append_and_reload_verifies_hash_chain(dsn):
         assert loaded.verify_chain()
 
 
+def test_batch_append_is_atomic_when_a_later_prediction_is_duplicate(dsn):
+    ledger_id = f"test-ledger-{uuid.uuid4()}"
+    with psycopg.connect(dsn) as connection:
+        store = make_store(connection, ledger_id)
+        store.append_prediction(make_prediction("fixture-existing"))
+        with pytest.raises(ValueError, match="PAPER_PREDICTION_DUPLICATE"):
+            store.append_predictions([
+                make_prediction("fixture-new", offset_seconds=3),
+                make_prediction("fixture-existing", offset_seconds=5),
+            ])
+        loaded = store.load()
+        assert [event.fixture_id for event in loaded.events] == ["fixture-existing"]
+        assert loaded.verify_chain()
+
+
 def test_settlement_event_round_trips_and_links_prediction(dsn):
     ledger_id = f"test-ledger-{uuid.uuid4()}"
     with psycopg.connect(dsn) as connection:
