@@ -18,3 +18,13 @@ def test_api_accepts_only_explicit_callable_publication_verifier(monkeypatch):
     verifier = lambda report, identity: False
     telegram_api.configure_publication_verifier(verifier)
     assert telegram_api._authoritative_publication_verifier() is verifier
+
+
+
+def test_dashboard_api_hides_v2_predictions_without_trusted_verifier(monkeypatch):
+    monkeypatch.setattr(telegram_api, "_authoritative_publication_verifier", lambda: None)
+    monkeypatch.setattr(telegram_api, "load_dashboard_snapshot", lambda verifier=None: None)
+    monkeypatch.setattr(telegram_api, "load_latest_report", lambda verifier=None: None)
+    result = telegram_api.dashboard_data()
+    assert result["status"] == "UNAVAILABLE"
+    assert result["predictions"] == []
