@@ -12,6 +12,7 @@ import json
 import math
 import re
 from typing import Any, Callable, Mapping
+from urllib.parse import urlsplit
 
 from veltrix_v2.reporting.report_identity import REPORT_SCHEMA, ReportIdentity, verify_report_identity
 
@@ -38,6 +39,7 @@ def verify_publication_authorization(
     manifest_bytes: bytes,
     attestation_verifier: Callable[[bytes, str], bool],
     rights_verifier: Callable[[Mapping[str, Any]], bool],
+    evidence_reader: Callable[[str], bytes],
 ) -> bool:
     """Return True only when every published fixture/market has certified evidence."""
     try:
@@ -45,7 +47,11 @@ def verify_publication_authorization(
             return False
         if not manifest_bytes or len(manifest_bytes) > 8_000_000:
             return False
-        if not callable(attestation_verifier) or not callable(rights_verifier):
+        if (
+            not callable(attestation_verifier)
+            or not callable(rights_verifier)
+            or not callable(evidence_reader)
+        ):
             return False
 
         identity = verify_report_identity(report)
@@ -161,10 +167,26 @@ def verify_publication_authorization(
                     return False
                 if parsed_rights_time.tzinfo is None or parsed_rights_time.utcoffset() is None:
                     return False
-                if not isinstance(record.get("evidence_sha256"), str) or not _HASH.fullmatch(record["evidence_sha256"]):
-                    return False
-                if not isinstance(record.get("rights_evidence_sha256"), str) or not _HASH.fullmatch(record["rights_evidence_sha256"]):
-                    return False
+                for uri_field, hash_field in (
+                    ("evidence_uri", "evidence_sha256"),
+                    ("rights_evidence_uri", "rights_evidence_sha256"),
+                ):
+                    evidence_uri = record.get(uri_field)
+                    evidence_hash = record.get(hash_field)
+                    if not isinstance(evidence_uri, str) or not evidence_uri.strip():
+                        return False
+                    parsed_uri = urlsplit(evidence_uri)
+                    if parsed_uri.scheme not in {"https", "s3", "gs"} or not parsed_uri.netloc:
+                        return False
+                    if parsed_uri.username or parsed_uri.password or parsed_uri.query or parsed_uri.fragment:
+                        return False
+                    if not isinstance(evidence_hash, str) or not _HASH.fullmatch(evidence_hash):
+                        return False
+                    evidence_bytes = evidence_reader(evidence_uri)
+                    if not isinstance(evidence_bytes, bytes):
+                        return False
+                    if hashlib.sha256(evidence_bytes).hexdigest() != evidence_hash:
+                        return False
                 if rights_verifier(record) is not True:
                     return False
 
@@ -177,6 +199,7 @@ def build_publication_verifier(
     manifest_bytes: bytes,
     attestation_verifier: Callable[[bytes, str], bool],
     rights_verifier: Callable[[Mapping[str, Any]], bool],
+    evidence_reader: Callable[[str], bytes],
 ) -> Callable[[Mapping[str, Any], ReportIdentity], bool]:
     """Create the callback contract used by website and Telegram consumers."""
     def verifier(report: Mapping[str, Any], identity: ReportIdentity) -> bool:
@@ -184,7 +207,7 @@ def build_publication_verifier(
             if verify_report_identity(report) != identity:
                 return False
             return verify_publication_authorization(
-                report, manifest_bytes, attestation_verifier, rights_verifier
+                report, manifest_bytes, attestation_verifier, rights_verifier, evidence_reader
             )
         except (KeyError, TypeError, ValueError):
             return False
