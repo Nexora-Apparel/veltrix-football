@@ -39,6 +39,7 @@ def settle_from_verified_fixture(
     if len(predictions) != 1:
         raise ValueError("PAPER_SETTLEMENT_PREDICTION_NOT_UNIQUE")
     prediction = predictions[0]
+    observed_only = prediction.payload.get("evidence_class") == "PROSPECTIVE_OBSERVED_ONLY"
     if observed_only:
         if fixture.available_at_utc is None:
             raise ValueError("SETTLEMENT_CONSERVATIVE_DELAY_BASIS_MISSING")
