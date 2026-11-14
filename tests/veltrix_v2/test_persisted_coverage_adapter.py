@@ -78,6 +78,19 @@ def test_adapter_rejects_naive_fixture_and_observation_timestamps():
     assert result.rejected_observation_rows == 1
 
 
+def test_adapter_maps_derived_team_feature_domains_explicitly():
+    expected = {
+        "team_form": DataDomain.TEAM_FORM,
+        "team_strength": DataDomain.TEAM_STRENGTH,
+        "rest_days": DataDomain.REST_DAYS,
+    }
+    for data_type, domain in expected.items():
+        result = adapt_persisted_coverage_rows(
+            [fixture_row()], [observation_row(data_type=data_type)],
+        )
+        assert result.evidence[0].domain is domain
+
+
 def test_adapter_reports_unsupported_data_types_without_fabricating_domains():
     result = adapt_persisted_coverage_rows(
         [fixture_row()], [observation_row(data_type="unqualified_metric")],
