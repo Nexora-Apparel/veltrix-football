@@ -63,3 +63,15 @@ No monthly allowance, remaining balance, hard cap or per-run budget is invented 
 - VELTRIX provider capture design: `docs/VELTRIX_V2_PHASE4_ODDS_CAPTURE_ADAPTER_DESIGN_2026-11-13.md`.
 - VELTRIX account activation gate: `docs/VELTRIX_V2_PHASE4_ACCOUNT_ACTIVATION_EVIDENCE_GATE_2026-11-13.md`.
 - Project-owner authorization confirmation: VELTRIX FOOTBALL 2.0 conversation dated 2026-11-14.
+
+
+## Additional provider documentation verification — 2026-11-14
+
+The current official v4 documentation confirms that `GET /v4/sports/?all=true` returns in-season and out-of-season sport keys, does not count against usage quota, and returns `x-requests-used`, `x-requests-remaining`, and `x-requests-last` headers. The no-credit probe therefore uses this endpoint only; it does not call an odds or historical-odds endpoint.
+
+The provider FAQ states that usage credits reset on the first of every month. The reset rule is recorded, but the exact account plan/allowance, reset timezone and account-specific billing evidence remain unverified until the live account probe and account dashboard evidence are captured. No credit budget or hard cap is activated by this documentation finding.
+
+References:
+- v4 API documentation: https://the-odds-api.com/liveapi/guides/v4/
+- Official FAQ: https://the-odds-api.com/manage/faqs.html
+- Official Terms: https://the-odds-api.com/terms-and-conditions.html (last updated 31 August 2026)
