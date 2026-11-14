@@ -21,7 +21,7 @@ def historical_fixture_to_observation(
         return None
     if fixture.home_score is None or fixture.away_score is None:
         return None
-    if fixture.available_at_utc is None:
+    if fixture.available_at_utc is None or fixture.available_at_utc > fixture.retrieved_at_utc:
         return None
     return MatchObservation(
         fixture_id=f"{fixture.source_id}:{fixture.provider_fixture_id}",
