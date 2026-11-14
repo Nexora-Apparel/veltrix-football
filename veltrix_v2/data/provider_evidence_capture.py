@@ -116,6 +116,8 @@ class ProviderResultCapture:
     revision_history_complete: bool
     crosswalk: ResolvedFixtureCrosswalk
     rights_approval: SourceApproval
+    source_timestamp_basis: str = "unknown"
+    source_timestamp_evidence_sha256: str = ""
 
 
 @dataclass(frozen=True, slots=True)
@@ -220,6 +222,12 @@ def _capture_one(row: ProviderResultCapture) -> CapturedResultEvidence:
         reasons.append("SOURCE_PUBLICATION_TIMESTAMP_MISSING")
     elif not _aware(row.source_published_at):
         reasons.append("SOURCE_PUBLICATION_TIMESTAMP_UNTRUSTED")
+    if row.source_timestamp_basis not in {"provider_timestamp", "archival_snapshot_timestamp", "documented_guarantee"}:
+        reasons.append("SOURCE_TIMESTAMP_BASIS_UNTRUSTED")
+    if not _HASH.fullmatch(row.source_timestamp_evidence_sha256):
+        reasons.append("SOURCE_TIMESTAMP_EVIDENCE_MISSING")
+    elif row.source_timestamp_basis == "provider_timestamp" and row.source_timestamp_evidence_sha256 != raw_hash:
+        reasons.append("SOURCE_TIMESTAMP_EVIDENCE_HASH_MISMATCH")
     if row.available_at is None:
         reasons.append("RESULT_AVAILABILITY_TIMESTAMP_MISSING")
     elif not _aware(row.available_at):
@@ -242,6 +250,8 @@ def _capture_one(row: ProviderResultCapture) -> CapturedResultEvidence:
             reasons.append("RESULT_AVAILABLE_BEFORE_KICKOFF")
         if row.available_at > row.retrieved_at:
             reasons.append("RESULT_AVAILABLE_AFTER_RETRIEVAL")
+        if row.source_published_at > row.available_at:
+            reasons.append("SOURCE_PUBLISHED_AFTER_RESULT_AVAILABLE")
         if row.source_effective_at is not None and row.source_effective_at > row.retrieved_at:
             reasons.append("SOURCE_EFFECTIVE_AFTER_RETRIEVAL")
 
