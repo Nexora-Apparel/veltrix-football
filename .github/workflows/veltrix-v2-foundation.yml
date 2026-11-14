@@ -60,8 +60,8 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - name: Install test dependencies
-        run: python -m pip install --upgrade pip && pip install pytest
+      - name: Install application and test dependencies
+        run: python -m pip install --upgrade pip && pip install -r requirements.txt
       - name: Compile Phase 2 data foundation
         run: python -m compileall -q veltrix_v2 scripts/phase2_fivedollar_history_dry_run.py scripts/phase3_import_fivedollar_history.py scripts/phase3_audit_staging_import.py
       - name: Test Phase 2 data contracts
