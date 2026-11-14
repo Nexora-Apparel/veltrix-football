@@ -110,7 +110,7 @@ def test_append_only_triggers_block_update_delete_and_truncate(dsn):
         ("TRUNCATE paper_ledger_events", ()),
     ]
     for sql, params in statements:
-        with psycopg.connect(dsn) as connection:
+        with psycopg.connect(dsn, autocommit=True) as connection:
             with pytest.raises(psycopg.Error, match="PAPER_LEDGER_APPEND_ONLY"):
                 connection.execute(sql, params)
 
