@@ -247,3 +247,18 @@ def test_website_portable_bundle_loader_fails_closed_on_bad_bytes_or_missing_ver
     portable = serialize_portable_report_surface_bundle(build_report_surface_bundle(report))
     assert report_artifacts.load_v2_portable_report_bundle(portable, None) is None
     assert report_artifacts.load_v2_portable_report_bundle(portable, lambda *_: False) is None
+
+
+
+def test_invalid_portable_artifact_never_falls_back_to_legacy_report(monkeypatch):
+    legacy_report = {
+        "status": "PUBLISHED",
+        "as_of_date": "2026-11-14",
+        "predictions": [{"fixture_id": "legacy-fixture"}],
+    }
+    monkeypatch.setattr(report_artifacts, "_load_portable_bundle_bytes", lambda: b"not-json")
+    monkeypatch.setattr(
+        report_artifacts, "_load",
+        lambda kind: legacy_report if kind == "report" else None,
+    )
+    assert report_artifacts.load_latest_report(lambda *_: True) is None
