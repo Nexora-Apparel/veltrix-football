@@ -306,6 +306,7 @@ def _request_page(
 def _persist_capture_report_to_staging(
     dsn: str, capture_report, *, http_status: int,
     request_params: dict[str, object],
+    response_headers: dict[str, str],
 ) -> dict[str, int]:
     validate_staging_dsn_target(dsn)
     import psycopg
@@ -329,6 +330,7 @@ def _persist_capture_report_to_staging(
             role=identity[1],
             http_status=http_status,
             request_params=request_params,
+            response_headers=response_headers,
         )
 
 
@@ -412,7 +414,7 @@ def _capture_page(
         persistence = (
             _persist_capture_report_to_staging(
                 staging_dsn, capture, http_status=http_status,
-                request_params=request_params,
+                request_params=request_params, response_headers=headers,
             )
             if persist_staging else None
         )
