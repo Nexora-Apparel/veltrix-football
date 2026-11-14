@@ -7,6 +7,7 @@ verifier before it reads or writes the public command-data branch.
 from __future__ import annotations
 
 import base64
+import hashlib
 import json
 from dataclasses import dataclass
 from urllib.error import HTTPError, URLError
@@ -116,6 +117,11 @@ class GitHubContentsApiClient:
             raise RuntimeError("GITHUB_EXISTING_BUNDLE_READ_FAILED") from None
         if not content or len(content) > 8_000_000:
             raise RuntimeError("GITHUB_EXISTING_BUNDLE_SIZE_INVALID")
+        blob_sha = hashlib.sha1(
+            b"blob " + str(len(content)).encode("ascii") + b"\\0" + content
+        ).hexdigest()
+        if blob_sha != sha:
+            raise RuntimeError("GITHUB_EXISTING_BUNDLE_SHA_MISMATCH")
         return ExistingContentsFile(content=content, sha=sha)
 
     def put_file(
