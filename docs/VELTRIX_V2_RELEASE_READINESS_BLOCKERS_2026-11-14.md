@@ -241,3 +241,13 @@ A final website audit found that the browser still had independent raw-GitHub/CD
 - Archived formatting helpers remain for regression compatibility; they are not a publication path.
 - CI run #1496 passed the Foundation, PostgreSQL 16 and PostgreSQL 18 jobs, including the legacy sender shutdown test suite.
 - No certified V2 publisher/production sender exists yet. The command-data V2 bundle remains absent and all release workflows remain disabled.
+
+
+## Controlled V2 bundle publisher adapter — 2026-11-14 17:58 UTC
+
+- Added `veltrix_v2.reporting.publisher.publish_v2_report_bundle` and an allowlisted GitHub Contents API client.
+- The publisher is pinned to repository `Nexora-Apparel/veltrix-football`, branch `command-data`, path `public-data/v2_report_bundle.json`.
+- It requires the authoritative publication verifier before any GitHub access, enforces the same 8 MB maximum as the website loader, verifies the existing raw file against its Git blob SHA, rejects corrupt existing bundles, stale reports and report-ID mutation, and uses the existing GitHub blob SHA for optimistic updates.
+- It is transport-injected and tested offline. No GitHub publication call was made; the V2 bundle remains absent from command-data.
+- CI run #1509 passed Foundation, PostgreSQL 16 and PostgreSQL 18, including publisher authorization, immutability, stale-report and Git blob-integrity tests.
+- This supplies the publication adapter but not the missing trusted certification/rights verifier or evidence manifest. Do not invoke the publisher until those gates pass.
