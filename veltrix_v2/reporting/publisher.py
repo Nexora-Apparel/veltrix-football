@@ -118,7 +118,7 @@ class GitHubContentsApiClient:
         if not content or len(content) > 8_000_000:
             raise RuntimeError("GITHUB_EXISTING_BUNDLE_SIZE_INVALID")
         blob_sha = hashlib.sha1(
-            b"blob " + str(len(content)).encode("ascii") + b"\\0" + content
+            b"blob " + str(len(content)).encode("ascii") + b"\0" + content
         ).hexdigest()
         if blob_sha != sha:
             raise RuntimeError("GITHUB_EXISTING_BUNDLE_SHA_MISMATCH")
