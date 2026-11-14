@@ -26,9 +26,9 @@ Shadow, research, draft and uncertified forecasts are never rendered as public p
 
 ## Website publication boundary
 
-The V2 website loaders in `app/report_artifacts.py` require an injected authoritative publication verifier for V2 reports and dashboard projections. Without that verifier, V2 website data is rejected. The verifier is not yet connected to the V2 certification engine, so this is a deliberate fail-closed boundary rather than a completed public website integration.
+The V2 website loaders in `app/report_artifacts.py` require an injected authoritative publication verifier for V2 reports and dashboard projections. Without that verifier, V2 website data is rejected. The verifier is not yet connected to the V2 certification engine, so this is a deliberate fail-closed boundary rather than a completed public website integration. Legacy report snapshots containing forecasts are no longer served as current website predictions; they remain archived. Legacy dashboard snapshots with no forecast rows may still provide non-prediction status information.
 
-The local artifact builder writes separate canonical, scheduled, Telegram and website projection files. The persisted bundle reader and `scripts/veltrix_v2/verify_report_surface_bundle.py` verify the four surfaces against one report identity and reject missing or tampered files. The actual scheduled workflow and Telegram runner still need to consume this bundle.
+The local artifact builder writes separate canonical, scheduled, Telegram and website projection files. The persisted bundle reader and `scripts/veltrix_v2/verify_report_surface_bundle.py` verify the four surfaces against one report identity and reject missing or tampered files. `dispatch_public_telegram_bundle` now verifies the complete bundle before formatting or claiming a delivery. The actual scheduled workflow still needs to consume the scheduled artifact, and the Telegram workflow still needs a certified verifier and authenticated durable store wired into its runner.
 
 ## Delivery idempotency and crash semantics
 
