@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -68,6 +69,11 @@ def _write_immutable(path: Path, payload: bytes) -> None:
             os.fsync(handle.fileno())
         try:
             os.link(temporary, path)
+            directory_fd = os.open(path.parent, os.O_RDONLY)
+            try:
+                os.fsync(directory_fd)
+            finally:
+                os.close(directory_fd)
         except FileExistsError:
             if path.read_bytes() != payload:
                 raise ValueError("REPORT_ARTIFACT_IMMUTABLE_CONFLICT")
@@ -91,9 +97,32 @@ def load_report_surface_bundle(
         "telegram": root / "telegram" / f"{report_id}.json",
         "dashboard": root / "dashboard" / f"{report_id}.json",
     }
+    commit_path = root / "bundles" / f"{report_id}.commit.json"
+    try:
+        commit_raw = commit_path.read_bytes()
+    except FileNotFoundError as exc:
+        raise ValueError("REPORT_BUNDLE_COMMIT_MARKER_MISSING") from exc
+    if len(commit_raw) > 32_000:
+        raise ValueError("REPORT_BUNDLE_COMMIT_MARKER_TOO_LARGE")
+    commit = json.loads(commit_raw.decode("utf-8"))
+    if (
+        not isinstance(commit, dict)
+        or commit.get("schema") != "VELTRIX_REPORT_BUNDLE_COMMIT_V1"
+        or commit.get("report_id") != report_id
+        or not isinstance(commit.get("artifacts"), dict)
+    ):
+        raise ValueError("REPORT_BUNDLE_COMMIT_MARKER_INVALID")
+
     payloads: dict[str, dict[str, Any]] = {}
     for name, path in paths.items():
         raw = path.read_bytes()
+        expected_hash = commit["artifacts"].get(name)
+        if (
+            not isinstance(expected_hash, str)
+            or not re.fullmatch(r"[0-9a-f]{64}", expected_hash)
+            or hashlib.sha256(raw).hexdigest() != expected_hash
+        ):
+            raise ValueError("REPORT_BUNDLE_COMMIT_HASH_MISMATCH")
         if len(raw) > 8_000_000:
             raise ValueError("REPORT_ARTIFACT_TOO_LARGE")
         value = json.loads(raw.decode("utf-8"))
@@ -200,6 +229,28 @@ def persist_report_surface_bundle(
         ("dashboard", dashboard_bytes),
     ):
         _write_immutable(paths[key], payload)
+    commit = {
+        "schema": "VELTRIX_REPORT_BUNDLE_COMMIT_V1",
+        "report_id": identity.report_id,
+        "report_sha256": identity.report_sha256,
+        "artifacts": {
+            key: hashlib.sha256(payload).hexdigest()
+            for key, payload in (
+                ("canonical", report_bytes),
+                ("scheduled", scheduled_bytes),
+                ("telegram", telegram_bytes),
+                ("dashboard", dashboard_bytes),
+            )
+        },
+    }
+    commit_bytes = (
+        json.dumps(commit, ensure_ascii=False, sort_keys=True, separators=(",", ":"), allow_nan=False)
+        + "\n"
+    ).encode("utf-8")
+    _write_immutable(
+        root / "bundles" / f"{identity.report_id}.commit.json",
+        commit_bytes,
+    )
     verified = load_report_surface_bundle(root, identity.report_id)
     if verified.identity != identity:
         raise ValueError("PERSISTED_REPORT_BUNDLE_IDENTITY_MISMATCH")
