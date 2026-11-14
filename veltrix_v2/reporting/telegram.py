@@ -1,0 +1,126 @@
+"""V2 Telegram rendering boundary.
+
+Formatting is deliberately separate from network delivery. Public rendering
+requires an injected verifier backed by the authoritative publication gate.
+"""
+from __future__ import annotations
+
+from collections.abc import Callable, Mapping
+from typing import Any
+
+from veltrix_v2.reporting.report_identity import (
+    ReportIdentity,
+    verify_report_identity,
+)
+
+TELEGRAM_TEXT_LIMIT = 3900
+PUBLIC_RELEASE_MODES = frozenset({"RESTRICTED_PUBLIC", "FULL_PUBLIC"})
+MARKET_LABELS = {
+    "1X2": ("Home", "Draw", "Away"),
+    "BTTS": ("Yes", "No"),
+    "TOTALS_2_5": ("Over 2.5", "Under 2.5"),
+}
+
+
+def _percent(value: Any) -> str:
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        return "—"
+    if not 0 <= value <= 1:
+        return "—"
+    return f"{value:.0%}"
+
+
+def _fixture_block(fixture: Mapping[str, Any]) -> list[str]:
+    home = fixture.get("home_team")
+    away = fixture.get("away_team")
+    if not isinstance(home, str) or not home.strip() or not isinstance(away, str) or not away.strip():
+        raise ValueError("published fixture requires both team names")
+    kickoff = fixture.get("kickoff_wat")
+    competition = fixture.get("competition_name") or "Competition unavailable"
+    lines = [
+        "━━━━━━━━━━━━━━━━━━━━",
+        f"⚽ {home} vs {away}",
+        f"🏆 {competition} · 🕒 {kickoff if isinstance(kickoff, str) and kickoff else 'Time unavailable'}",
+    ]
+    markets = fixture.get("markets")
+    if not isinstance(markets, Mapping):
+        raise ValueError("published fixture markets must be an object")
+    certified = fixture.get("certified_markets")
+    if not isinstance(certified, list):
+        raise ValueError("certified_markets must be an explicit list")
+    for market in ("1X2", "BTTS", "TOTALS_2_5"):
+        if market not in certified:
+            continue
+        values = markets.get(market)
+        if not isinstance(values, Mapping):
+            raise ValueError(f"certified market {market} has no probabilities")
+        labels = MARKET_LABELS[market]
+        if market == "1X2":
+            rendered = f"Home {_percent(values.get('home'))} | Draw {_percent(values.get('draw'))} | Away {_percent(values.get('away'))}"
+        elif market == "BTTS":
+            rendered = f"Yes {_percent(values.get('yes'))} | No {_percent(values.get('no'))}"
+        else:
+            rendered = f"Over 2.5 {_percent(values.get('over'))} | Under 2.5 {_percent(values.get('under'))}"
+        lines.append(f"{market}: {rendered}")
+    if not certified:
+        lines.append("Forecast unavailable: no market passed publication certification.")
+    return lines
+
+
+def format_public_telegram_messages(
+    report: Mapping[str, Any],
+    authorization_verifier: Callable[[Mapping[str, Any], ReportIdentity], bool],
+) -> list[str]:
+    """Render only a hash-verified report accepted by the publication verifier.
+
+    This function never sends messages. It refuses shadow/research reports and
+    never renders value bets; those require a separate market certification.
+    """
+    identity = verify_report_identity(report)
+    if report.get("release_mode") not in PUBLIC_RELEASE_MODES:
+        raise PermissionError("report is not in an approved public release mode")
+    if not callable(authorization_verifier) or not authorization_verifier(report, identity):
+        raise PermissionError("authoritative publication authorization was not verified")
+    fixtures = report.get("predictions")
+    if not isinstance(fixtures, list):
+        raise ValueError("report predictions must be a list")
+    header = [
+        "🔔 🆕 NEW VELTRIX UPDATE",
+        "⚽ VELTRIX FOOTBALL · DAILY REPORT",
+        f"📅 {identity.as_of_date} · WAT",
+        f"Report: {identity.report_id}",
+    ]
+    blocks = []
+    for fixture in fixtures:
+        if not isinstance(fixture, Mapping):
+            raise ValueError("report contains a malformed fixture")
+        if fixture.get("publication_status") != "PUBLISHED":
+            continue
+        blocks.append(_fixture_block(fixture))
+    if not blocks:
+        blocks.append(["No certified fixtures are available for this report."])
+
+    messages: list[str] = []
+    current = list(header)
+    for block in blocks:
+        candidate = current + block
+        if len("\n".join(candidate)) <= TELEGRAM_TEXT_LIMIT:
+            current = candidate
+            continue
+        if len(current) > len(header):
+            messages.append("\n".join(current))
+            current = list(header)
+        if len("\n".join(current + block)) > TELEGRAM_TEXT_LIMIT:
+            raise ValueError("single fixture block exceeds Telegram message limit")
+        current.extend(block)
+    if current:
+        messages.append("\n".join(current))
+    total = len(messages)
+    return [
+        message.replace(
+            "🔔 🆕 NEW VELTRIX UPDATE",
+            f"🔔 🆕 NEW VELTRIX UPDATE · MESSAGE {index}/{total}",
+            1,
+        )
+        for index, message in enumerate(messages, start=1)
+    ]
