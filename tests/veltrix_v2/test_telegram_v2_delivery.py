@@ -240,4 +240,3 @@ def test_legacy_telegram_entrypoint_refuses_v2_report_before_network(monkeypatch
         send_telegram_report.main()
     assert exc.value.code == 1
     assert calls == []
-)
