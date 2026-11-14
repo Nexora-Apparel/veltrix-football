@@ -52,6 +52,8 @@ jobs:
         run: python -m pytest --import-mode=importlib -q tests/providers/odds_api_v4 --ignore=tests/providers/odds_api_v4/test_reservation_postgres.py --ignore=tests/providers/odds_api_v4/test_quota_evidence_postgres.py --ignore=tests/providers/odds_api_v4/test_capture_state_postgres.py --ignore=tests/providers/odds_api_v4/test_capture_request_postgres.py
       - name: Test provider-neutral free-first access policy
         run: python -m pytest --import-mode=importlib -q tests/providers/test_provider_access.py
+      - name: Test offline OpenLigaDB response parser
+        run: python -m pytest --import-mode=importlib -q tests/veltrix_v2/test_openligadb_parser.py
       - name: Test independent results-only Poisson model
         run: python -m pytest --import-mode=importlib -q tests/veltrix_v2/test_results_only_poisson.py
       - name: Test point-in-time Elo rating features
