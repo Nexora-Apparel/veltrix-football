@@ -425,3 +425,20 @@ def test_report_date_must_match_cutoff_date_in_wat():
     report = bind_report_identity({key: value for key, value in report.items() if key != "report_sha256"})
     raw = make_manifest(report)
     assert verify_publication_authorization(report, raw, attestation_ok, rights_ok, evidence_reader) is False
+
+
+
+def test_certification_manifest_rejects_duplicate_json_keys_and_nonfinite_constants():
+    report = make_report()
+    duplicate_key = (
+        b'{"manifest_schema":"VELTRIX_V2_CERTIFICATION_MANIFEST_V1",'
+        b'"manifest_schema":"VELTRIX_V2_CERTIFICATION_MANIFEST_V1"}'
+    )
+    assert verify_publication_authorization(
+        report, duplicate_key, attestation_ok, rights_ok, evidence_reader
+    ) is False
+
+    nonfinite = b'{"manifest_schema":"VELTRIX_V2_CERTIFICATION_MANIFEST_V1","value":NaN}'
+    assert verify_publication_authorization(
+        report, nonfinite, attestation_ok, rights_ok, evidence_reader
+    ) is False
