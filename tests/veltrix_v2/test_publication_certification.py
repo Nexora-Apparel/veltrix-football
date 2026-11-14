@@ -20,9 +20,12 @@ def make_report():
         "schema": REPORT_SCHEMA,
         "report_id": "publication-gate-2026-11-14",
         "as_of_date": "2026-11-14",
+        "cutoff_at_utc": "2026-11-14T10:00:00+00:00",
         "release_mode": "RESTRICTED_PUBLIC",
         "predictions": [{
             "fixture_id": "fixture-1",
+            "kickoff_utc": "2026-11-14T12:30:00+00:00",
+            "cutoff_at_utc": "2026-11-14T10:00:00+00:00",
             "competition_id": "competition-1",
             "model_build_id": "model-build-7",
             "publication_status": "PUBLISHED",
@@ -387,3 +390,38 @@ def test_report_identity_rejects_non_json_nan_probability_before_publication():
     report["predictions"][0]["markets"]["BTTS"] = {"yes": float("nan"), "no": 0.0}
     with pytest.raises(ValueError, match="non-canonical JSON"):
         bind_report_identity({key: value for key, value in report.items() if key != "report_sha256"})
+
+
+
+@pytest.mark.parametrize(("field", "value"), [
+    ("cutoff_at_utc", "2026-11-14T10:00:00"),
+    ("cutoff_at_utc", "not-a-time"),
+])
+def test_report_publication_requires_aware_report_cutoff(field, value):
+    report = make_report()
+    report[field] = value
+    report = bind_report_identity({key: value for key, value in report.items() if key != "report_sha256"})
+    raw = make_manifest(report)
+    assert verify_publication_authorization(report, raw, attestation_ok, rights_ok, evidence_reader) is False
+
+
+@pytest.mark.parametrize(("field", "value"), [
+    ("kickoff_utc", "2026-11-14T09:59:59+00:00"),
+    ("kickoff_utc", "2026-11-14T12:30:00"),
+    ("cutoff_at_utc", "2026-11-14T09:00:00+00:00"),
+])
+def test_fixture_must_have_exact_cutoff_and_strictly_future_kickoff(field, value):
+    report = make_report()
+    report["predictions"][0][field] = value
+    report = bind_report_identity({key: value for key, value in report.items() if key != "report_sha256"})
+    raw = make_manifest(report)
+    assert verify_publication_authorization(report, raw, attestation_ok, rights_ok, evidence_reader) is False
+
+
+def test_report_date_must_match_cutoff_date_in_wat():
+    report = make_report()
+    report["cutoff_at_utc"] = "2026-11-13T23:30:00+00:00"
+    report["predictions"][0]["cutoff_at_utc"] = report["cutoff_at_utc"]
+    report = bind_report_identity({key: value for key, value in report.items() if key != "report_sha256"})
+    raw = make_manifest(report)
+    assert verify_publication_authorization(report, raw, attestation_ok, rights_ok, evidence_reader) is False
