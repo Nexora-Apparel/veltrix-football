@@ -329,3 +329,11 @@ A second read-only Neon audit reconciled the imported 5Dollar evidence at item l
 The stored 2026-11-12 account responses confirm Community plan access to the seven listed competition IDs, with rate limits of 300/hour and 20/minute. The `/leagues` response recorded 298 remaining requests at that observation time. This is historical quota evidence, not a current balance; the first-observed capture must use fresh provider response headers before proceeding.
 
 This reconciliation proves historical item integrity and exact provenance links, but it does not upgrade the archive into point-in-time training data. Prospective first-observed capture remains the required source of future certifiable evidence.
+
+
+### Final raw-byte and result-label checks — 2026-11-14
+
+- All 28 stored 5Dollar raw response SHA-256 values recompute exactly from the stored `raw_body` bytes: 28 matches, 0 mismatches, 0 empty bodies.
+- All 2,496 fixture-result versions match the exact `goals.home` and `goals.away` values in their linked raw observation payloads: 2,496 matches, 0 score mismatches.
+- All 2,496 result versions link to their exact source observation, carry the same rights approval ID and have result-version recorded_at no earlier than the linked response retrieval time.
+- All 2,496 legacy `available_at` values match the kickoff-based proxy stored in the linked source observation. This confirms internal consistency of the old proxy, not provider result publication time; all 2,496 remain explicitly non-PIT.
