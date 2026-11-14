@@ -59,7 +59,7 @@ def test_v2_command_hides_uncertified_market_even_if_legacy_probabilities_exist(
     report["predictions"][0]["certified_markets"] = []
     report = bind_report_identity({key: value for key, value in report.items() if key != "report_sha256"})
     reply = handle_v2_command("/1x2", report=report, authorization_verifier=verifier)
-    assert "V2 REPORT UNAVAILABLE" in reply
+    assert "NO CERTIFIED PUBLIC FIXTURES" in reply
     assert "99%" not in reply
 
 
@@ -114,4 +114,4 @@ def test_v2_renderer_rejects_bad_probability_vector_even_when_verifier_returns_t
     report["predictions"][0]["markets"]["1X2"]["home"] = 0.9
     report = bind_report_identity({key: value for key, value in report.items() if key != "report_sha256"})
     reply = handle_v2_command("/1x2", report=report, authorization_verifier=verifier)
-    assert "NO CERTIFIED PUBLIC FIXTURES" in reply
+    assert "V2 REPORT UNAVAILABLE" in reply
