@@ -67,7 +67,13 @@ class CrosswalkRegistry:
     team_crosswalks: Mapping[str, EntityCrosswalk]
     competition_crosswalks: Mapping[str, EntityCrosswalk]
 
-    def to_prediction_target(self, fixture: HistoricalFixture) -> PredictionTarget:
+    def to_prediction_target(
+        self,
+        fixture: HistoricalFixture,
+        *,
+        response_sha256: str | None = None,
+        capture_manifest_sha256: str | None = None,
+    ) -> PredictionTarget:
         if not isinstance(fixture, HistoricalFixture):
             raise TypeError("HISTORICAL_FIXTURE_REQUIRED")
         if (fixture.provider, fixture.source_id) != (self.provider, self.source_id):
@@ -101,6 +107,8 @@ class CrosswalkRegistry:
             rights_approval_id=fixture.rights_approval_id,
             home_team_name=fixture.home_team_name,
             away_team_name=fixture.away_team_name,
+            response_sha256=response_sha256,
+            capture_manifest_sha256=capture_manifest_sha256,
         )
 
     def summary(self) -> dict[str, object]:
