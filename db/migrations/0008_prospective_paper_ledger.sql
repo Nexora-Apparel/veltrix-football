@@ -49,13 +49,12 @@ AS $paper_ledger_chain$
 DECLARE
     prior_sequence BIGINT;
     prior_event_sha256 CHAR(64);
-    prior_recorded_at TEXT;
     prediction_event_sha256 CHAR(64);
 BEGIN
     PERFORM pg_advisory_xact_lock(hashtextextended(NEW.ledger_id, 0));
 
-    SELECT sequence, event_sha256, recorded_at
-      INTO prior_sequence, prior_event_sha256, prior_recorded_at
+    SELECT sequence, event_sha256
+      INTO prior_sequence, prior_event_sha256
     FROM paper_ledger_events
     WHERE ledger_id = NEW.ledger_id
     ORDER BY sequence DESC
@@ -70,7 +69,6 @@ BEGIN
     ELSE
         IF NEW.sequence <> prior_sequence + 1
            OR NEW.previous_event_sha256 <> prior_event_sha256
-           OR NEW.recorded_at::timestamptz < prior_recorded_at::timestamptz
         THEN
             RAISE EXCEPTION 'PAPER_LEDGER_CHAIN_LINK_INVALID';
         END IF;
