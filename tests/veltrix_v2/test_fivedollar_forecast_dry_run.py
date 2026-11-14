@@ -88,6 +88,7 @@ def test_read_only_forecast_probe_fetches_free_data_and_calculates_one_locked_ba
     assert report["forecasts"][0]["home_team"] == "Alpha FC"
     assert report["forecasts"][0]["away_team"] == "Beta FC"
     assert report["forecasts"][0]["publishable"] is False
+    assert report["forecasts"][0]["kickoff_wat"].endswith("+01:00")
     assert report["side_effects"]["database_writes"] == 0
     assert report["side_effects"]["telegram_messages"] == 0
     assert all("raw" not in key.casefold() for key in report)

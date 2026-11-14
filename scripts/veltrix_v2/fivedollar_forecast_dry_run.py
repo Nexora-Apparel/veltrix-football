@@ -194,7 +194,8 @@ def run_forecast_probe(
             forecasts = []
             for row in batch.prediction_report.forecasts:
                 model = row.model
-                kickoff_wat = (row.kickoff_at.astimezone(timezone.utc) + timedelta(hours=1))
+                wat_zone = timezone(timedelta(hours=1))
+                kickoff_wat = row.kickoff_at.astimezone(wat_zone)
                 forecasts.append({
                     "fixture_id": row.fixture_id,
                     "competition_id": row.competition_id,

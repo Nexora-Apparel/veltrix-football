@@ -1,12 +1,6 @@
 name: VELTRIX free 5Dollar forecast dry run
 
 on:
-  push:
-    branches:
-      - phase5/team-identity-crosswalk-20261114
-    paths:
-      - "scripts/veltrix_v2/fivedollar_forecast_dry_run.py"
-      - ".github/workflows/fivedollar-forecast-dry-run.yml"
   workflow_dispatch:
 
 permissions:
