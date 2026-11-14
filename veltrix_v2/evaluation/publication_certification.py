@@ -28,6 +28,19 @@ MIN_PROSPECTIVE_DATES = 90
 MIN_TIMESTAMPED_ODDS_COVERAGE = 0.98
 
 
+def _reject_duplicate_object_keys(pairs):
+    result = {}
+    for key, value in pairs:
+        if key in result:
+            raise ValueError("CERTIFICATION_MANIFEST_DUPLICATE_KEY")
+        result[key] = value
+    return result
+
+
+def _reject_json_constant(value: str):
+    raise ValueError(f"CERTIFICATION_MANIFEST_NONFINITE_JSON:{value}")
+
+
 def _finite_number(value: Any) -> bool:
     return (
         isinstance(value, (int, float))
@@ -92,7 +105,11 @@ def verify_publication_authorization(
         if attestation_verifier(manifest_bytes, manifest_sha256) is not True:
             return False
 
-        manifest = json.loads(manifest_bytes.decode("utf-8"))
+        manifest = json.loads(
+            manifest_bytes.decode("utf-8"),
+            object_pairs_hook=_reject_duplicate_object_keys,
+            parse_constant=_reject_json_constant,
+        )
         if not isinstance(manifest, dict):
             return False
         if manifest.get("manifest_schema") != CERTIFICATION_MANIFEST_SCHEMA:
