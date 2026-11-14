@@ -19,6 +19,7 @@ from veltrix_v2.reporting.report_identity import REPORT_SCHEMA, ReportIdentity, 
 
 CERTIFICATION_MANIFEST_SCHEMA = "VELTRIX_V2_CERTIFICATION_MANIFEST_V1"
 _PUBLIC_RELEASE_MODES = frozenset({"RESTRICTED_PUBLIC", "FULL_PUBLIC"})
+_SUPPORTED_PUBLIC_MARKETS = frozenset({"1X2", "BTTS", "TOTALS_2_5"})
 _HASH = re.compile(r"^[0-9a-f]{64}$")
 MIN_WALK_FORWARD_MATCHES = 1000
 MIN_PROSPECTIVE_SETTLED_SELECTIONS = 300
@@ -89,7 +90,7 @@ def verify_publication_authorization(
             market = record.get("market")
             if not isinstance(competition_id, str) or not competition_id.strip():
                 return False
-            if not isinstance(market, str) or not market.strip():
+            if not isinstance(market, str) or market not in _SUPPORTED_PUBLIC_MARKETS:
                 return False
             key = (competition_id, market)
             if key in indexed:
@@ -114,7 +115,7 @@ def verify_publication_authorization(
                 return False
 
             for market in markets:
-                if not isinstance(market, str) or not market.strip():
+                if not isinstance(market, str) or market not in _SUPPORTED_PUBLIC_MARKETS:
                     return False
                 record = indexed.get((competition_id, market))
                 if record is None or record.get("model_build_id") != model_build_id:
