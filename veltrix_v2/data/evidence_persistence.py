@@ -71,7 +71,7 @@ def build_fixture_snapshot_manifest(
         raise ValueError("FIXTURE_SNAPSHOT_PROVIDER_NOT_ALLOWED")
     if not all(isinstance(value, str) and value.strip() for value in (
         endpoint, request_id, competition_id, rights_approval_id
-    )) or len(rights_evidence_sha256) != 64 or any(
+    )) or not isinstance(rights_evidence_sha256, str) or len(rights_evidence_sha256) != 64 or any(
         ch not in "0123456789abcdef" for ch in rights_evidence_sha256.casefold()
     ):
         raise ValueError("FIXTURE_SNAPSHOT_IDENTITY_INVALID")
