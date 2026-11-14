@@ -100,3 +100,15 @@ def test_batch_rejects_invalid_recency_even_when_no_targets_exist():
     import pytest
     with pytest.raises(ValueError, match="RECENCY_HALF_LIFE_MUST_BE_POSITIVE_FINITE"):
         predict_batch(history(), [], cutoff_at=CUTOFF, recency_half_life_days=0)
+
+
+def test_batch_propagates_dixon_coles_configuration():
+    report = predict_batch(history(), [target(0)], cutoff_at=CUTOFF,
+                           dixon_coles_rho=-0.1)
+    assert report.forecasts[0].model.dixon_coles_rho == -0.1
+
+
+def test_batch_rejects_invalid_dixon_coles_configuration_without_targets():
+    import pytest
+    with pytest.raises(ValueError, match="DIXON_COLES_RHO_INVALID"):
+        predict_batch(history(), [], cutoff_at=CUTOFF, dixon_coles_rho=1.5)
