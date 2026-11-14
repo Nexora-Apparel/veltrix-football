@@ -24,6 +24,12 @@ The V2 formatter is separate from the legacy formatter and requires:
 
 Shadow, research, draft and uncertified forecasts are never rendered as public predictions. The V2 formatter does not render value-bet candidates; value-bet publication requires a separate certification and authorization path. Missing probabilities remain unavailable, never zero. A single fixture block that exceeds Telegram's limit is rejected rather than silently truncated.
 
+## Website publication boundary
+
+The V2 website loaders in `app/report_artifacts.py` require an injected authoritative publication verifier for V2 reports and dashboard projections. Without that verifier, V2 website data is rejected. The verifier is not yet connected to the V2 certification engine, so this is a deliberate fail-closed boundary rather than a completed public website integration.
+
+The local artifact builder writes separate canonical, scheduled, Telegram and website projection files. The persisted bundle reader and `scripts/veltrix_v2/verify_report_surface_bundle.py` verify the four surfaces against one report identity and reject missing or tampered files. The actual scheduled workflow and Telegram runner still need to consume this bundle.
+
 ## Delivery idempotency and crash semantics
 
 The idempotency key binds report ID, report hash and destination. A durable store must atomically claim that key before any Telegram network request.
@@ -65,7 +71,7 @@ Duplicate fixture IDs, duplicate settlements, conflicting scores, ambiguous fixt
 
 | Area | Automated coverage | Still required |
 |---|---|---|
-| Report identity | Canonical hash, tamper rejection, four-surface parity helper, website projection checks, immutable multi-surface artifact bundle and local CLI | Connect the scheduled workflow to the V2 report builder; schedule remains disabled |
+| Report identity | Canonical hash, tamper rejection, exact website projection checks, immutable four-surface bundle, persisted bundle reader and verifier CLI | Connect scheduled workflow and Telegram runner to the bundle; wire the real certification verifier; schedule remains disabled |
 | Telegram formatting | Release-mode gate, market allowlist, chunking, no truncation, legacy-sender block | End-to-end test against actual certified V2 report |
 | Delivery | Atomic PostgreSQL claim, concurrent duplicate skip, terminal unknown outcome, append-only reconciliation and supersession | Apply migrations to staging; authenticate operators/reviewers and provision approved evidence reader |
 | Results | Existing admission/settlement identity, rights and duplicate tests | Full prospective result reconciliation over captured real fixtures |
