@@ -2,6 +2,10 @@ from __future__ import annotations
 
 import pytest
 
+from veltrix_v2.reporting.artifact_bundle import (
+    build_report_surface_bundle,
+    persist_report_surface_bundle,
+)
 from veltrix_v2.reporting.delivery import (
     DeliveryOutcomeUnknown,
     DeliveryReceipt,
@@ -9,7 +13,10 @@ from veltrix_v2.reporting.delivery import (
     deliver_once,
 )
 from veltrix_v2.reporting.report_identity import REPORT_SCHEMA, bind_report_identity, create_report_identity
-from veltrix_v2.reporting.telegram import dispatch_public_telegram_report
+from veltrix_v2.reporting.telegram import (
+    dispatch_public_telegram_bundle,
+    dispatch_public_telegram_report,
+)
 
 
 class MemoryStore:
@@ -240,3 +247,46 @@ def test_legacy_telegram_entrypoint_refuses_v2_report_before_network(monkeypatch
         send_telegram_report.main()
     assert exc.value.code == 1
     assert calls == []
+
+
+
+def test_telegram_dispatch_consumes_only_a_verified_four_surface_bundle(tmp_path):
+    store = MemoryStore()
+    report = public_report()
+    bundle = build_report_surface_bundle(report)
+    persist_report_surface_bundle(bundle, tmp_path)
+    calls = []
+    verifier = lambda value, identity: value.get("release_mode") == "RESTRICTED_PUBLIC"
+    result = dispatch_public_telegram_bundle(
+        tmp_path,
+        bundle.identity.report_id,
+        "telegram:chat-1",
+        verifier,
+        store,
+        lambda destination, message: (calls.append((destination, message)) or "bundle-message-1"),
+    )
+    assert result.state is DeliveryState.SENT
+    assert len(calls) == 1
+    assert "Alpha FC vs Beta FC" in calls[0][1]
+
+
+def test_telegram_bundle_dispatch_rejects_surface_drift_before_claim_or_send(tmp_path):
+    store = MemoryStore()
+    report = public_report()
+    bundle = build_report_surface_bundle(report)
+    paths = persist_report_surface_bundle(bundle, tmp_path)
+    dashboard = json.loads(paths["dashboard"].read_text())
+    dashboard["predictions"] = []
+    paths["dashboard"].write_text(json.dumps(dashboard))
+    calls = []
+    with pytest.raises(ValueError, match="WEBSITE_REPORT_PROJECTION_IDENTITY_MISMATCH"):
+        dispatch_public_telegram_bundle(
+            tmp_path,
+            bundle.identity.report_id,
+            "telegram:chat-1",
+            lambda *_: True,
+            store,
+            lambda *args: calls.append(args),
+        )
+    assert calls == []
+    assert store.claimed == set()
