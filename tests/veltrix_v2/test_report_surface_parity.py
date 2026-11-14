@@ -376,3 +376,18 @@ def test_portable_bundle_fetch_fails_closed_on_unexpected_transport_error(monkey
     monkeypatch.setenv("VELTRIX_DATA_BRANCH", "command-data")
     report_artifacts._portable_bundle_cache.clear()
     assert report_artifacts._load_portable_bundle_bytes() is None
+
+
+
+def test_invalid_portable_artifact_never_falls_back_to_legacy_dashboard(monkeypatch):
+    legacy_dashboard = {
+        "snapshot_schema": "VELTRIX_DASHBOARD_V1",
+        "as_of_date": "2026-11-14",
+        "predictions": [{"fixture_id": "legacy-fixture"}],
+    }
+    monkeypatch.setattr(report_artifacts, "_load_portable_bundle_bytes", lambda: b"not-json")
+    monkeypatch.setattr(
+        report_artifacts, "_load",
+        lambda kind: legacy_dashboard if kind == "dashboard" else None,
+    )
+    assert report_artifacts.load_dashboard_snapshot(lambda *_: True) is None
