@@ -12,6 +12,7 @@ The model pipeline requests data domains, not named vendors. This registry is po
 |---|---|---|
 | 5DollarFootballAPI | Active, limited | Primary live fixtures/results within free quota and accessible competitions |
 | OpenFootball | Archive only | Supplementary historical scores; date-only imports are not point-in-time certifiable |
+| StatsBomb Open Data | Research archive, gated | Selected historical matches include event data, lineups and shot-level xG; research-use/attribution review required |
 | The Odds API | Optional, gated | Odds only after rights, allowance, remaining quota and explicit spend caps are verified |
 | GOAL API | Suspended — credits exhausted | No calls, retries, scans or credit checks until reset and requalification |
 | StrikerAPI | Suspended — credits exhausted | No calls, retries, scans or credit checks until next monthly reset and requalification |
@@ -24,7 +25,8 @@ The model pipeline requests data domains, not named vendors. This registry is po
 - Rest days: derive only when exact timezone-aware kickoff timestamps exist.
 - 1X2 and totals odds: optional The Odds API markets, gated by rights/quota/spend authorization and quote timestamps.
 - BTTS odds: optional event-specific market, separately verified per event.
-- xG, lineups, injuries and player statistics: no currently qualified source is declared. Keep unavailable fields missing until another provider is independently qualified.
+- xG and lineups: StatsBomb Open Data is a candidate for selected historical research matches only. It is not a live/current source, and its research-use and attribution terms must be reviewed before any use in the public/commercial product.
+- Injuries and current player availability: no currently qualified source is declared. Keep unavailable fields missing until another provider is independently qualified.
 
 ## Evidence rules
 
@@ -37,6 +39,7 @@ The model pipeline requests data domains, not named vendors. This registry is po
 7. Missing xG, lineups, injuries or player information stays missing. No zero-fill or synthetic replacement.
 8. GOAL API and StrikerAPI are hard-blocked before transport construction while credits are exhausted.
 9. The Odds API remains excluded from dispatch until separate rights, quota and spend gates pass.
+10. StatsBomb Open Data is archive-only and research-gated; its published terms require source attribution and use of the StatsBomb logo when publishing analysis. No commercial rights are inferred.
 10. The registry does not relax publication, prospective paper-ledger or value-bet certification gates.
 
 ## Next integration
