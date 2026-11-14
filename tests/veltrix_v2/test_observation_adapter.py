@@ -4,6 +4,7 @@ import json
 
 from veltrix_v2.data.contracts import FixtureStatus, HistoricalFixture
 from veltrix_v2.data.observation_adapter import (
+    historical_fixture_to_first_observed_observation,
     historical_fixture_to_observation,
     historical_fixture_to_target,
 )
@@ -110,5 +111,32 @@ def test_future_scheduled_provider_fixture_converts_to_prediction_target():
 
 def test_scheduled_fixture_already_kicked_off_is_not_a_prediction_target():
     assert historical_fixture_to_target(
+        historical_fixture(status=FixtureStatus.SCHEDULED)
+    ) is None
+
+
+def test_first_observed_adapter_uses_retrieval_time_not_provider_proxy():
+    fixture = historical_fixture()
+    result = historical_fixture_to_first_observed_observation(fixture)
+    assert result is not None
+    assert result.available_at == RETRIEVED
+    assert result.recorded_at == RETRIEVED
+    assert result.available_at != fixture.available_at_utc
+    assert result.availability_basis == "collector_first_observed_v1"
+    assert result.point_in_time_certifiable is False
+    assert len(result.evidence_manifest_sha256) == 64
+    assert len(result.capture_evidence_sha256) == 64
+
+
+def test_first_observed_adapter_never_backdates_before_retrieval():
+    fixture = historical_fixture()
+    result = historical_fixture_to_first_observed_observation(
+        fixture, recorded_at=RETRIEVED - timedelta(seconds=1)
+    )
+    assert result is None or result.recorded_at >= result.available_at
+
+
+def test_first_observed_adapter_requires_finished_source_result():
+    assert historical_fixture_to_first_observed_observation(
         historical_fixture(status=FixtureStatus.SCHEDULED)
     ) is None
