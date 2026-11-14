@@ -1,4 +1,5 @@
 import json
+from pathlib import Path
 
 from scripts.veltrix_v2.build_report_surface_bundle import build
 from veltrix_v2.reporting.report_identity import REPORT_SCHEMA
@@ -25,4 +26,4 @@ def test_local_bundle_cli_builder_emits_only_aggregate_summary(tmp_path):
         "schedule_activation": 0,
         "publications": 0,
     }
-    assert all(path.exists() for path in summary["outputs"].values())
+    assert all(Path(path).exists() for path in summary["outputs"].values())
