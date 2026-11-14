@@ -20,30 +20,9 @@ class PostgresTelegramDeliveryStore:
             raise ValueError("DATABASE_CONNECT_FACTORY_REQUIRED")
         self._connect = connect
 
-    def claim(self, key: str, destination: str) -> bool:
-        if not isinstance(key, str) or not _HASH.fullmatch(key):
-            raise ValueError("DELIVERY_IDEMPOTENCY_KEY_INVALID")
-        if not isinstance(destination, str) or not destination.strip():
-            raise ValueError("DELIVERY_DESTINATION_REQUIRED")
-        destination_hash = hashlib.sha256(destination.encode("utf-8")).hexdigest()
-        with self._connect() as connection:
-            row = connection.execute(
-                """
-                INSERT INTO telegram_delivery_claims (
-                    idempotency_key, report_id, report_sha256, destination_sha256
-                )
-                VALUES (%s, %s, %s, %s)
-                ON CONFLICT (idempotency_key) DO NOTHING
-                RETURNING idempotency_key
-                """,
-                (key, "bound-by-idempotency-key", "0" * 64, destination_hash),
-            ).fetchone()
-        return row is not None
-
-    def claim_report(
+    def claim(
         self, key: str, report_id: str, report_sha256: str, destination: str
     ) -> bool:
-        """Claim while persisting the full immutable report identity."""
         if not isinstance(key, str) or not _HASH.fullmatch(key):
             raise ValueError("DELIVERY_IDEMPOTENCY_KEY_INVALID")
         if not isinstance(report_id, str) or not report_id.strip():
