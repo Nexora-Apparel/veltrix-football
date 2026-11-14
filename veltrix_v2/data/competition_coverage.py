@@ -126,7 +126,11 @@ def audit_competition_coverage(
             _aware(row.available_at) and _aware(row.recorded_at)
             and row.recorded_at >= row.available_at
             and row.available_at <= as_of and row.recorded_at <= as_of
-            and fixture is not None and row.available_at < fixture.kickoff_at
+            and fixture is not None
+            and (
+                (row.domain is DataDomain.RESULTS and row.available_at >= fixture.kickoff_at)
+                or (row.domain is not DataDomain.RESULTS and row.available_at < fixture.kickoff_at)
+            )
         )
         eligible = (
             valid_identity and valid_clock
