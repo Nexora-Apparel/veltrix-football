@@ -1,4 +1,5 @@
 from datetime import date, datetime, timezone
+from pathlib import Path
 
 import pytest
 
@@ -80,3 +81,31 @@ def test_invalid_snapshot_identity_and_time_order_fail_closed():
         parse_archive(SAMPLE, competition_id="NGA_NPFL", source_path="season.txt",
                       snapshot_commit_sha=SHA, snapshot_available_at=SNAPSHOT,
                       imported_at=datetime(2026, 8, 20, tzinfo=UTC))
+
+
+def test_full_nigeria_2025_26_archive_snapshot_parses_with_one_awarded_result_excluded():
+    source = Path(__file__).resolve().parents[1] / "fixtures" / "openfootball" / "nigeria_2025-26_ng1.txt"
+    result = parse_archive(
+        source.read_text(encoding="utf-8"),
+        competition_id="NGA_NPFL",
+        source_path="africa/nigeria/2025-26_ng1.txt",
+        snapshot_commit_sha=SHA,
+        snapshot_available_at=SNAPSHOT,
+        imported_at=IMPORTED,
+    )
+    assert result.fixture_line_count == 380
+    assert result.result_count == 379
+    assert result.rejected_result_count == 1
+    assert result.rejected_annotations == ("AWARDED",)
+    assert len(result.observations) == 379
+
+
+def test_awarded_score_is_not_silently_treated_as_ordinary_result():
+    text = SAMPLE + "  Mon Aug 25 2025\\n           Kano Pillars FC             v Wikki Tourists FC            1-0 [awarded]\\n"
+    result = parse_archive(
+        text, competition_id="NGA_NPFL", source_path="season.txt",
+        snapshot_commit_sha=SHA, snapshot_available_at=SNAPSHOT, imported_at=IMPORTED,
+    )
+    assert result.result_count == 3
+    assert result.rejected_result_count == 1
+    assert result.rejected_annotations == ("AWARDED",)
