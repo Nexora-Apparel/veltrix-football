@@ -356,3 +356,9 @@ def test_portable_public_consumer_rejects_duplicate_fixture_ids_even_if_verifier
 def test_portable_bundle_rejects_payload_over_runtime_size_limit():
     with pytest.raises(ValueError, match="BYTES_INVALID"):
         parse_portable_report_surface_bundle(b"x" * 8_000_001)
+
+
+
+def test_portable_bundle_rejects_nonfinite_json_constants():
+    with pytest.raises(ValueError, match="NONFINITE_JSON"):
+        parse_portable_report_surface_bundle(b'{"schema":"VELTRIX_PORTABLE_REPORT_SURFACE_BUNDLE_V1","value":NaN}')
