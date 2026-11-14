@@ -329,3 +329,38 @@ def test_portable_v2_dashboard_takes_precedence_over_archived_legacy_snapshot(mo
     assert dashboard is not None
     assert dashboard["report_id"] == report["report_id"]
     assert dashboard["predictions"] == report["predictions"]
+
+
+
+def test_latest_website_report_prefers_verified_portable_bundle_over_legacy_report(monkeypatch):
+    report = make_report()
+    portable = serialize_portable_report_surface_bundle(build_report_surface_bundle(report))
+    legacy_report = {
+        "status": "PUBLISHED",
+        "as_of_date": "2026-11-13",
+        "predictions": [{"fixture_id": "legacy-fixture"}],
+    }
+    monkeypatch.setattr(report_artifacts, "_load_portable_bundle_bytes", lambda: portable)
+    monkeypatch.setattr(
+        report_artifacts, "_load",
+        lambda kind: legacy_report if kind == "report" else None,
+    )
+    loaded = report_artifacts.load_latest_report(
+        lambda value, identity: value.get("release_mode") == "RESTRICTED_PUBLIC"
+    )
+    assert loaded == report
+
+
+def test_website_report_bundle_prefers_portable_envelope_and_returns_all_surfaces(monkeypatch):
+    report = make_report()
+    portable = serialize_portable_report_surface_bundle(build_report_surface_bundle(report))
+    monkeypatch.setattr(report_artifacts, "_load_portable_bundle_bytes", lambda: portable)
+    monkeypatch.setattr(report_artifacts, "_load", lambda *_: None)
+    bundle = report_artifacts.load_v2_report_bundle(
+        lambda value, identity: value.get("release_mode") == "RESTRICTED_PUBLIC"
+    )
+    assert bundle is not None
+    assert bundle["report"] == report
+    assert bundle["scheduled"] == report
+    assert bundle["telegram"] == report
+    assert bundle["dashboard"]["report_id"] == report["report_id"]
