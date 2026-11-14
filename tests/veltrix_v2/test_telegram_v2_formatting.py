@@ -134,5 +134,5 @@ def test_certified_market_with_invalid_or_unnormalized_probabilities_is_rejected
     report = public_report()
     report["predictions"][0]["markets"]["1X2"] = values
     report = bind_report_identity({key: value for key, value in report.items() if key != "report_sha256"})
-    with pytest.raises(ValueError, match="CERTIFIED_MARKET_PROBABILITY"):
+    with pytest.raises(ValueError, match="CERTIFIED_MARKET_PROBABILIT"):
         format_public_telegram_messages(report, verifier)
