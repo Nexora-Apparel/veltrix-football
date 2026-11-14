@@ -14,6 +14,7 @@ on:
       - "db/migrations/0005_prospective_paper_ledger.sql"
       - "veltrix_v2/ledger/postgres_store.py"
       - "tests/veltrix_v2/test_paper_ledger_postgres.py"
+      - "tests/veltrix_v2/test_phase5_staging_paper_ledger_migration.py"
       - "scripts/phase5_staging_paper_ledger_migration.py"
       - ".github/workflows/phase5-staging-paper-ledger-migration.yml"
       - "docs/VELTRIX_V2_STAGING_PAPER_LEDGER_2026-11-14.md"
@@ -106,6 +107,8 @@ jobs:
         run: python -m pytest --import-mode=importlib -q tests/veltrix_v2/test_crosswalk_bootstrap.py
       - name: Test manual 5Dollar shadow capture controls
         run: python -m pytest --import-mode=importlib -q tests/veltrix_v2/test_phase5_5dollar_shadow_capture.py
+      - name: Test staging paper ledger migration guards
+        run: python -m pytest --import-mode=importlib -q tests/veltrix_v2/test_phase5_staging_paper_ledger_migration.py
       - name: Test read-only staging coverage SQL
         run: python -m pytest --import-mode=importlib -q tests/veltrix_v2/test_coverage_sql.py
       - name: Test guarded staging evidence persistence
