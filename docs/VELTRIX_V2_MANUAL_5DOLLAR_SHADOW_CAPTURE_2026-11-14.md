@@ -41,11 +41,12 @@ GOAL API and StrikerAPI are not referenced by this workflow.
 - Storage and model-training rights are rechecked before result evidence persistence and shadow admission.
 - The optional `persist_staging` input defaults to false.
 - When enabled, raw result capture evidence is persisted only to the allowlisted Neon staging database through the guarded evidence persistence adapter. The script rejects any other database, host or role.
-- Scheduled target page snapshots and the local paper ledger are not persisted by this workflow yet.
+- Scheduled target page snapshots are retained only in the runner workspace and are not uploaded.
 - The runner's detailed raw responses and individual predictions are not uploaded as GitHub artifacts.
 - The only uploaded artifact is `public_summary.json`, containing aggregate counts and release-lock status; it contains no fixture IDs, raw payloads, odds, probabilities or individual predictions.
-- When `persist_staging=true`, result evidence is persisted through the guarded evidence writer and shadow predictions are appended to the PostgreSQL paper ledger. Migrations 0005–0008 must already be applied to staging.
-- When `persist_staging=false`, the JSONL paper ledger remains runner-local and is not durable between runs.
+- When `persist_staging=true`, result evidence is persisted through the guarded evidence writer and the admitted shadow-prediction batch is appended atomically to the PostgreSQL paper ledger. Migrations 0005–0008 must already be applied to staging; the run fails closed if migration 0008 is absent.
+- The JSONL ledger remains a runner-local audit copy in both modes. With staging persistence disabled, it is not durable between runs; with staging persistence enabled, PostgreSQL is the durable ledger.
+- The PostgreSQL batch uses one transaction and one ledger-scoped advisory lock. A duplicate or invalid prediction rolls back the entire batch, preventing a partially appended forecast set.
 
 ## Model and release boundaries
 
