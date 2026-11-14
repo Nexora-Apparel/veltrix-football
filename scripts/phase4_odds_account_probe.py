@@ -192,6 +192,10 @@ def run_probe(*, api_key: str, staging_dsn: str, persist: bool) -> dict[str, obj
     persisted_response_id = None
     entitlement_observation_id = None
     account_status = "UNVERIFIED"
+    zero_credit_verified = (
+        envelope.quota_evidence.complete
+        and envelope.quota_evidence.requests_last == 0
+    )
     if persist:
         # Re-evaluate source rights after the provider response and immediately
         # before retaining the response in staging.
@@ -214,12 +218,16 @@ def run_probe(*, api_key: str, staging_dsn: str, persist: bool) -> dict[str, obj
             expected_competition_keys=EXPECTED_COMPETITIONS,
             observed_competition_keys=observed,
         )
-        account_status = "ACTIVE" if not missing and envelope.quota_evidence.complete else "UNVERIFIED"
+        account_status = "ACTIVE" if not missing and zero_credit_verified else "UNVERIFIED"
     return {
-        "status": "ACCOUNT_SCOPE_VERIFIED" if not missing else "ACCOUNT_SCOPE_INCOMPLETE",
+        "status": (
+            "ACCOUNT_SCOPE_AND_ZERO_CREDIT_VERIFIED"
+            if not missing and zero_credit_verified
+            else "ACCOUNT_SCOPE_OR_QUOTA_UNVERIFIED"
+        ),
         "provider": PROVIDER,
         "source_id": SOURCE_ID,
-        "request_cost_credits": 0,
+        "request_cost_credits": envelope.quota_evidence.requests_last,
         "requested_at": requested_at.isoformat(),
         "retrieved_at": retrieved_at.isoformat(),
         "response_sha256": response.response_sha256,
@@ -231,6 +239,7 @@ def run_probe(*, api_key: str, staging_dsn: str, persist: bool) -> dict[str, obj
         "quota_requests_remaining": envelope.quota_evidence.requests_remaining,
         "quota_requests_last": envelope.quota_evidence.requests_last,
         "account_status": account_status,
+        "zero_credit_verified": zero_credit_verified,
         "plan_code": "UNDISCLOSED",
         "monthly_allowance": None,
         "billing_period": "NOT_ESTABLISHED",
