@@ -224,3 +224,15 @@ def test_dashboard_hides_predictions_until_prediction_tab_and_reports_paused_sch
     assert "Prediction</a>" in html
     assert "06:00 WAT" not in html
     assert "scheduled for 06:00" not in html
+
+
+def test_primary_navigation_is_dashboard_prediction_status_market_with_tracking_in_status():
+    html = telegram_api.DASHBOARD_HTML
+    nav = html.split('<nav class="bottomnav">', 1)[1].split("</nav>", 1)[0]
+    status = html.split('<section id="statusView"', 1)[1].split("</section>", 1)[0]
+    assert nav.count('class="navitem') == 4
+    assert nav.index("Dashboard") < nav.index("Prediction") < nav.index("Status") < nav.index("Market")
+    assert 'data-view="trackingView"' not in nav
+    assert 'id="trackingMetrics"' in status
+    assert 'id="trackingModels"' in status
+    assert 'id="trackingResults"' in status
