@@ -84,7 +84,7 @@ def test_read_only_forecast_probe_fails_closed_without_page_capture_manifest():
     assert report["skips"]["outside_window"] == 1
     assert report["forecast_count"] == 0
     assert report["skips"]["invalid_targets"] == 1
-    assert report["status"] == "CALCULATED_NOT_PUBLISHED"
+    assert report["status"] == "NO_FORECASTS"
     assert report["publication_locked"] is True
     assert report["forecasts"] == []
     assert report["side_effects"]["database_writes"] == 0
