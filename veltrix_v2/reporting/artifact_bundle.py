@@ -160,4 +160,7 @@ def persist_report_surface_bundle(
         ("dashboard", dashboard_bytes),
     ):
         _write_immutable(paths[key], payload)
+    verified = load_report_surface_bundle(root, identity.report_id)
+    if verified.identity != identity:
+        raise ValueError("PERSISTED_REPORT_BUNDLE_IDENTITY_MISMATCH")
     return paths
