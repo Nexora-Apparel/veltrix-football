@@ -56,9 +56,13 @@ class PostgresTelegramDeliveryStore:
                 SET state='SENT', updated_at=NOW(),
                     telegram_message_ids=%s::jsonb
                 WHERE idempotency_key=%s AND state='CLAIMED'
+                  AND destination_sha256=%s
                 RETURNING idempotency_key
                 """,
-                (json.dumps(list(receipt.message_ids)), key),
+                (
+                    json.dumps(list(receipt.message_ids)), key,
+                    hashlib.sha256(receipt.destination.encode("utf-8")).hexdigest(),
+                ),
             ).fetchone()
         if row is None:
             raise ValueError("DELIVERY_CLAIM_NOT_ACTIVE")
