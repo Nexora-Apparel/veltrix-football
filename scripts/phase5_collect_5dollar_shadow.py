@@ -304,7 +304,7 @@ def _request_page(
     page: int,
     pacing_state: dict[str, float | None],
     before_request,
-) -> tuple[bytes, dict[str, str], datetime, datetime]:
+) -> tuple[bytes, dict[str, str], dict[str, object], datetime, datetime]:
     last_request_started = pacing_state.get("last_started")
     if last_request_started is not None:
         delay = MIN_REQUEST_INTERVAL_SECONDS - (time.monotonic() - last_request_started)
