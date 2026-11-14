@@ -114,16 +114,12 @@ def delivery_idempotency_key(identity: ReportIdentity, destination: str) -> str:
     )
 
 
-def assert_report_surface_bundle(
+def assert_website_projection(
     canonical_report: Mapping[str, Any],
-    scheduled_report: Mapping[str, Any],
-    telegram_report: Mapping[str, Any],
     website_projection: Mapping[str, Any],
 ) -> ReportIdentity:
-    """Verify scheduler and Telegram use the canonical report and website projection."""
-    identity = assert_same_report(
-        [canonical_report, scheduled_report, telegram_report]
-    )
+    """Require the dashboard projection to preserve the canonical report payload."""
+    identity = verify_report_identity(canonical_report)
     if (
         website_projection.get("snapshot_schema") != "VELTRIX_DASHBOARD_V1"
         or website_projection.get("report_id") != identity.report_id
@@ -134,4 +130,18 @@ def assert_report_surface_bundle(
         or website_projection.get("predictions") != canonical_report.get("predictions")
     ):
         raise ValueError("WEBSITE_REPORT_PROJECTION_IDENTITY_MISMATCH")
+    return identity
+
+
+def assert_report_surface_bundle(
+    canonical_report: Mapping[str, Any],
+    scheduled_report: Mapping[str, Any],
+    telegram_report: Mapping[str, Any],
+    website_projection: Mapping[str, Any],
+) -> ReportIdentity:
+    """Verify scheduler and Telegram use the canonical report and website projection."""
+    identity = assert_same_report(
+        [canonical_report, scheduled_report, telegram_report]
+    )
+    assert_website_projection(canonical_report, website_projection)
     return identity
