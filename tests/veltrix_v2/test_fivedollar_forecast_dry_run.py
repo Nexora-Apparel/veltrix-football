@@ -41,7 +41,7 @@ def _response(data, *, page=1, per_page=100, has_more=False):
 def test_read_only_forecast_probe_fetches_free_data_and_calculates_one_locked_batch():
     calls = []
     history = [
-        _fixture(i, "4160026622", NOW - timedelta(days=10 + i), "finished")
+        _fixture(i, "4160026622", NOW - timedelta(hours=120 + i * 18), "finished")
         for i in range(100)
     ]
     upcoming = [_fixture(1000, "4160026622", NOW + timedelta(hours=5), "scheduled")]
