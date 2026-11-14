@@ -22,3 +22,8 @@ The report contains target count, forecast count, duplicate/invalid/not-yet-know
 ## Safety boundary
 
 No scheduler, Telegram sender, database writer, website publisher, odds engine or value-bet unlock is connected. The batch engine cannot publish predictions.
+
+
+## Optional recency weighting
+
+The engine accepts an exponential half-life setting. Equal weighting remains the default; any non-default half-life must be selected through chronological walk-forward comparison using the same weighting for the model and competition baseline.
