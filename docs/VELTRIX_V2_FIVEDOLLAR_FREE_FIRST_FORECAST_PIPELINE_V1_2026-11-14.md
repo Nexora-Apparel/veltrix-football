@@ -29,3 +29,8 @@ The pipeline consumes the existing approved 5Dollar source approval. It does not
 - No scheduler, website publisher or Telegram sender.
 - No value-bet or odds functionality.
 - Every generated model forecast remains unpublished until independent certification.
+
+
+## Optional recency weighting
+
+The engine accepts an exponential half-life setting. Equal weighting remains the default; any non-default half-life must be selected through chronological walk-forward comparison using the same weighting for the model and competition baseline.
