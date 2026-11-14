@@ -332,3 +332,35 @@ def test_fixture_snapshot_persistence_rejects_wrong_scope_and_disabled_write():
                 database_name="veltrix_football_staging", host=HOST,
                 role="neondb_owner",
             )
+
+
+
+def test_fixture_snapshot_persistence_rejects_approval_evidence_substitution():
+    setup_db()
+    args = snapshot_args()
+    args["rights_approval"] = SourceApproval(
+        approval_id=args["rights_approval"].approval_id,
+        provider=args["rights_approval"].provider,
+        source_id=args["rights_approval"].source_id,
+        competition_scope=args["rights_approval"].competition_scope,
+        data_type=args["rights_approval"].data_type,
+        status=args["rights_approval"].status,
+        permitted_uses=args["rights_approval"].permitted_uses,
+        commercial_use_allowed=args["rights_approval"].commercial_use_allowed,
+        terms_url=args["rights_approval"].terms_url,
+        terms_version=args["rights_approval"].terms_version,
+        evidence_uri=args["rights_approval"].evidence_uri,
+        evidence_sha256="b" * 64,
+        rights_basis=args["rights_approval"].rights_basis,
+        reviewed_at_utc=args["rights_approval"].reviewed_at_utc,
+        reviewer_id=args["rights_approval"].reviewer_id,
+        valid_from_utc=args["rights_approval"].valid_from_utc,
+    )
+    with psycopg.connect(DATABASE_URL) as connection:
+        with pytest.raises(ValueError, match="STAGING_SOURCE_APPROVAL_EVIDENCE_MISMATCH"):
+            persist_fixture_snapshot_response(
+                connection, **args,
+                write_enabled=True, environment="staging",
+                database_name="veltrix_football_staging", host=HOST,
+                role="neondb_owner",
+            )
