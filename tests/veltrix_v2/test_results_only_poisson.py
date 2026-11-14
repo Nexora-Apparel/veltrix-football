@@ -98,3 +98,34 @@ def test_target_cutoff_must_precede_kickoff():
     with pytest.raises(ValueError, match="TARGET_KICKOFF_MUST_BE_AFTER_CUTOFF"):
         predict_match(sample_history(), competition_id="league", home_team_id="A",
                       away_team_id="B", kickoff_at=CUTOFF, cutoff_at=CUTOFF)
+
+
+def test_duplicate_fixture_ids_are_excluded_without_input_order_preference():
+    rows = sample_history(120)
+    duplicate = rows[0]
+    conflicting = MatchObservation(
+        fixture_id=duplicate.fixture_id, competition_id="league",
+        home_team_id="A", away_team_id="B",
+        kickoff_at=duplicate.kickoff_at, available_at=duplicate.available_at,
+        recorded_at=duplicate.recorded_at, home_goals=8, away_goals=0,
+    )
+    result = predict_match(rows + [conflicting], competition_id="league",
+                           home_team_id="A", away_team_id="B",
+                           kickoff_at=KICKOFF, cutoff_at=CUTOFF)
+    assert result.evidence_match_count == 119
+
+
+def test_result_cannot_be_available_before_kickoff_or_recorded_before_available():
+    rows = sample_history(120)
+    invalid = MatchObservation(
+        fixture_id="invalid-time-order", competition_id="league",
+        home_team_id="A", away_team_id="B",
+        kickoff_at=CUTOFF - timedelta(days=3),
+        available_at=CUTOFF - timedelta(days=4),
+        recorded_at=CUTOFF - timedelta(days=4),
+        home_goals=9, away_goals=0,
+    )
+    result = predict_match(rows + [invalid], competition_id="league",
+                           home_team_id="A", away_team_id="B",
+                           kickoff_at=KICKOFF, cutoff_at=CUTOFF)
+    assert result.evidence_match_count == 120
