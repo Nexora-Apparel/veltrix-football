@@ -44,9 +44,10 @@ def _iso(value: datetime) -> str:
 
 
 def _safe_headers(headers) -> dict[str, str]:
+    normalized = {str(key).lower(): value for key, value in headers.items()}
     result: dict[str, str] = {}
     for name in SAFE_HEADERS:
-        value = headers.get(name)
+        value = normalized.get(name)
         if value is not None:
             result[name] = str(value).strip()
     return result
