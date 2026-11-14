@@ -40,6 +40,12 @@ def certification(market):
         "evaluation_fixture_set_sha256": hashlib.sha256(b"eligible-fixtures").hexdigest(),
         "model_artifact_sha256": hashlib.sha256(b"model-artifact").hexdigest(),
         "feature_set_sha256": hashlib.sha256(b"feature-set").hexdigest(),
+        "walk_forward_method": "EXPANDING_CHRONOLOGICAL",
+        "roi_basis": "NET_AFTER_FEES_AND_SLIPPAGE",
+        "roi_ci95_method": "DATE_CLUSTERED_BOOTSTRAP",
+        "point_in_time_certifiable": True,
+        "revision_history_complete": True,
+        "prospective_evidence": True,
         "walk_forward_matches": 1200,
         "prospective_settled_selections": 340,
         "distinct_dates": 96,
@@ -251,6 +257,24 @@ def test_1x2_requires_exact_bookmaker_baseline_evidence_bytes():
     report = make_report()
     one_x_two = certification("1X2")
     one_x_two["bookmaker_baseline_evidence_sha256"] = "0" * 64
+    raw = make_manifest(report, [one_x_two, certification("BTTS")])
+    assert verify_publication_authorization(
+        report, raw, attestation_ok, rights_ok, evidence_reader
+    ) is False
+
+
+@pytest.mark.parametrize(("field", "value"), [
+    ("walk_forward_method", "RANDOM_SPLIT"),
+    ("roi_basis", "GROSS"),
+    ("roi_ci95_method", "IID_BOOTSTRAP"),
+    ("point_in_time_certifiable", False),
+    ("revision_history_complete", False),
+    ("prospective_evidence", False),
+])
+def test_non_chronological_non_pit_or_non_prospective_evidence_denies_publication(field, value):
+    report = make_report()
+    one_x_two = certification("1X2")
+    one_x_two[field] = value
     raw = make_manifest(report, [one_x_two, certification("BTTS")])
     assert verify_publication_authorization(
         report, raw, attestation_ok, rights_ok, evidence_reader
