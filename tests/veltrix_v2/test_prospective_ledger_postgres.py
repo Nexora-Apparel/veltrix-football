@@ -58,12 +58,10 @@ def insert_snapshot(conn, capture_id, now, *, status="SCHEDULED",
                     fixture_id="fixture-1", competition_id="4160026622",
                     home_id="101", away_id="102"):
     snapshot_id = uuid.uuid4()
-    kickoff = now + timedelta(hours=3)
     finished = status == "FINISHED"
+    kickoff = now - timedelta(days=5) if finished else now + timedelta(hours=3)
     retrieved = now + timedelta(seconds=1)
     available = kickoff + timedelta(days=4) if finished else None
-    if finished:
-        retrieved = available + timedelta(minutes=1)
     conn.execute(
         """
         INSERT INTO veltrix_eval.fixture_snapshots
