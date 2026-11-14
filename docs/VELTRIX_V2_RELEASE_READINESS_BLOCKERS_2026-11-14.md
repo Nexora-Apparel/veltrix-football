@@ -311,3 +311,21 @@ This checkpoint supersedes earlier statements in this historical log that migrat
 - Remaining release blockers: manual provider workflow dispatch; prospective first-observed evidence; 300 settled selections and 90 distinct dates; market-level chronological certification; Odds API bookmaker-market/region and billing-period/hard-cap evidence; authoritative verifier provisioning; actual website/scheduler/Telegram runtime parity; delivery idempotency and failure-recovery acceptance.
 
 No production deployment, public publication, Telegram broadcast, schedule activation or value-bet unlock is authorized.
+
+
+## Item-level and timestamp reconciliation — 2026-11-14 22:54 UTC
+
+A second read-only Neon audit reconciled the imported 5Dollar evidence at item level:
+
+- 2,496 source observations; all 2,496 have provider-response foreign keys, payload SHA-256 values and rights-approval IDs.
+- 2,496/2,496 observation payloads match the exact corresponding JSON item in their linked raw response, with exact provider fixture ID match.
+- 26 distinct raw response IDs support the 2,496 fixture observations. The provider response table has 28 total 5Dollar responses; the two unlinked rows are provider-level `/status` and `/leagues` entitlement/catalogue responses, not orphaned fixture records.
+- 2,496 fixture-result versions link one-to-one to the 2,496 source observations and retain result scores, result-version recorded_at, availability proxy and rights approval ID.
+- All 2,496 source observations have `recorded_at IS NULL` and `source_published_at IS NULL`. Their `available_at` values are populated but are the legacy kickoff-based proxy, not provider publication timestamps. All 2,496 remain `point_in_time_certifiable = false`.
+- The result-version `recorded_at` is the later import/recording time; it does not establish when the provider first published the result. No source timestamp is inferred from it.
+- Historical result versions still reference the original approved result-use scope. The new BENCHMARKING approval is effective from its actual 2026-11-14 approval time and is not backdated to historical imports.
+
+### Existing 5Dollar account entitlement evidence
+The stored 2026-11-12 account responses confirm Community plan access to the seven listed competition IDs, with rate limits of 300/hour and 20/minute. The `/leagues` response recorded 298 remaining requests at that observation time. This is historical quota evidence, not a current balance; the first-observed capture must use fresh provider response headers before proceeding.
+
+This reconciliation proves historical item integrity and exact provenance links, but it does not upgrade the archive into point-in-time training data. Prospective first-observed capture remains the required source of future certifiable evidence.
