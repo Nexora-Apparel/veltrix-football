@@ -163,6 +163,8 @@ def test_correction_rejects_wrong_parent_or_existing_successor():
         "reconciliation_id": parent_id,
         "idempotency_key": "9" * 64,
         "supersedes_reconciliation_id": None,
+        "observed_at": NOW.isoformat(),
+        "recorded_at": NOW.isoformat(),
     }]
     corrected = event(supersedes_reconciliation_id=parent_id)
     with pytest.raises(ValueError, match="SUPERSESSION_MISMATCH"):
@@ -172,10 +174,14 @@ def test_correction_rejects_wrong_parent_or_existing_successor():
         "reconciliation_id": parent_id,
         "idempotency_key": CLAIM["idempotency_key"],
         "supersedes_reconciliation_id": None,
+        "observed_at": NOW.isoformat(),
+        "recorded_at": NOW.isoformat(),
     }, {
         "reconciliation_id": str(uuid.uuid4()),
         "idempotency_key": CLAIM["idempotency_key"],
         "supersedes_reconciliation_id": parent_id,
+        "observed_at": NOW.isoformat(),
+        "recorded_at": NOW.isoformat(),
     }]
     with pytest.raises(ValueError, match="PARENT_ALREADY_SUPERSEDED"):
         validate_reconciliation_event(
