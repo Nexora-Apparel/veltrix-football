@@ -36,6 +36,7 @@ class CapabilityState(StrEnum):
     CONDITIONAL = "CONDITIONAL"
     NOT_VERIFIED = "NOT_VERIFIED"
     UNAVAILABLE = "UNAVAILABLE"
+    EXPLORATORY_ONLY = "EXPLORATORY_ONLY"
 
 
 @dataclass(frozen=True, slots=True)
@@ -91,8 +92,8 @@ PROVIDER_REGISTRY: tuple[ProviderProfile, ...] = (
         _caps(
             (DataDomain.FIXTURES, CapabilityState.CONDITIONAL, "Static archive only; not a live fixture feed."),
             (DataDomain.RESULTS, CapabilityState.AVAILABLE, "Historical scores; imported date-only rows are not point-in-time certifiable."),
-            (DataDomain.TEAM_FORM, CapabilityState.DERIVED, "Exploratory unless source observations independently pass temporal eligibility."),
-            (DataDomain.TEAM_STRENGTH, CapabilityState.DERIVED, "Exploratory unless source observations independently pass temporal eligibility."),
+            (DataDomain.TEAM_FORM, CapabilityState.EXPLORATORY_ONLY, "Date-only archive rows are exploratory and cannot enter strict point-in-time training."),
+            (DataDomain.TEAM_STRENGTH, CapabilityState.EXPLORATORY_ONLY, "Date-only archive rows are exploratory and cannot enter strict point-in-time training."),
             (DataDomain.REST_DAYS, CapabilityState.UNAVAILABLE, "Date-only records do not support exact rest-day calculations."),
             (DataDomain.ODDS_1X2, CapabilityState.UNAVAILABLE, "No odds data."),
             (DataDomain.ODDS_TOTALS, CapabilityState.UNAVAILABLE, "No odds data."),
@@ -119,15 +120,22 @@ PROVIDER_REGISTRY: tuple[ProviderProfile, ...] = (
 
 
 def providers_for(domain: DataDomain, *, include_conditional: bool = False) -> tuple[ProviderProfile, ...]:
-    """List collection-enabled providers with usable declared coverage."""
+    """List sources with declared coverage, including static archives."""
     states = {CapabilityState.AVAILABLE, CapabilityState.DERIVED}
     if include_conditional:
         states.add(CapabilityState.CONDITIONAL)
     return tuple(
         profile for profile in PROVIDER_REGISTRY
-        if profile.collection_allowed
-        and profile.state is ProviderState.ACTIVE_LIMITED
+        if profile.state not in {ProviderState.SUSPENDED_CREDITS}
         and profile.capability(domain).state in states
+    )
+
+
+def dispatchable_providers_for(domain: DataDomain, *, include_conditional: bool = False) -> tuple[ProviderProfile, ...]:
+    """Return only live sources whose collection gate is enabled."""
+    return tuple(
+        profile for profile in providers_for(domain, include_conditional=include_conditional)
+        if profile.collection_allowed and profile.state is ProviderState.ACTIVE_LIMITED
     )
 
 
