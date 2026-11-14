@@ -68,7 +68,7 @@ def test_same_report_id_with_changed_content_cannot_overwrite_artifacts(tmp_path
 def test_bundle_rejects_tampered_prehashed_report():
     report = source_report()
     report["report_sha256"] = "0" * 64
-    with pytest.raises(ValueError, match="content hash"):
+    with pytest.raises(ValueError, match="REPORT_BUNDLE_COMMIT_HASH_MISMATCH"):
         build_report_surface_bundle(report)
 
 
@@ -97,7 +97,7 @@ def test_bundle_reader_rejects_website_projection_content_drift(tmp_path):
     changed = json.loads(paths["dashboard"].read_text())
     changed["predictions"] = [{"fixture_id": "different"}]
     paths["dashboard"].write_text(json.dumps(changed))
-    with pytest.raises(ValueError, match="WEBSITE_REPORT_PROJECTION_IDENTITY_MISMATCH"):
+    with pytest.raises(ValueError, match="REPORT_BUNDLE_COMMIT_HASH_MISMATCH"):
         load_report_surface_bundle(tmp_path, bundle.identity.report_id)
 
 
