@@ -203,3 +203,13 @@ A final website audit found that the browser still had independent raw-GitHub/CD
 - The CLI requires migrations 0009–0010 to exist, but those migrations remain unapplied; no DB access or migration was performed by this implementation.
 - Code head `942278b1fff7a91d6a7e4fbbdbcfbc8973d1934a` passed CI run #1478 across Foundation, PostgreSQL 16 and PostgreSQL 18.
 - PR #118 remains open/draft/unmerged. Production workflows and public release remain disabled.
+
+
+## Reconciliation actor-authentication boundary — 2026-11-14 17:52 UTC
+
+- The append-only reconciliation writer now requires an injected `authenticate_actor(subject)` callback. Missing callbacks, failed checks and callback exceptions deny writes before evidence access or DB access.
+- `CONFIRMED_NOT_SENT` requires a separately authenticated reviewer; operator and reviewer must differ.
+- The read-only staging inspector remains separate and has no send or write methods.
+- No production OIDC/session identity provider or reconciliation endpoint is wired. The callback must be backed by a real authenticated principal before any reconciliation writes are enabled.
+- Code head `311af7e3f76ec0f8f07278f37b7d6cd63004ae93` passed CI run #1488 across Foundation, PostgreSQL 16 and PostgreSQL 18.
+- PR #118 remains open/draft/unmerged; migrations 0005–0010 remain unapplied to staging.
