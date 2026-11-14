@@ -182,3 +182,14 @@ A final website audit found that the browser still had independent raw-GitHub/CD
 - Code head `c69c83337a3b32c0e069b6ab72e518fbd7fe4908`: CI run #1445 passed Foundation, PostgreSQL 16 and PostgreSQL 18.
 - Documentation update head is `d6c7f3161f3227c5107b27a6b694dfb2c8e78307`; CI run #1446 was queued at the time of this update.
 - PR #118 remains open/draft, mergeable, and unmerged. No migrations, production writes, provider requests, Telegram sends, schedule activation or deployment occurred.
+
+
+## V2 Telegram command isolation — 2026-11-14 17:43 UTC
+
+- The Telegram webhook now imports and calls `veltrix_v2.reporting.telegram_commands.handle_v2_command`; it no longer imports or calls the legacy `app.telegram_commands.handle_command`.
+- The V2 command renderer re-verifies the report through the same authoritative verifier used by the public Telegram formatter.
+- `/1x2`, `/btts` and `/overunder` render only their explicitly certified V2 probability vectors. `/match` renders only certified markets. Fixture IDs must be unique and the report is limited to 25 fixtures.
+- Legacy `status`, `probabilities`, `expected_goals` and `value_bet_screen` fields are ignored. Value commands return a locked verdict; expected-goals and odds diagnostics do not expose uncertified values.
+- The scheduled Telegram formatter now states that value betting is locked in every message chunk.
+- Latest code head: `6d83589f6e9d9b36fdde6b1619532587b53caad1`. CI run #1466 passed Foundation, PostgreSQL 16 and PostgreSQL 18.
+- This closes the Telegram command-router mismatch, but does not activate the webhook, schedule, public report, or delivery runner. The authoritative runtime verifier and real workflow wiring remain blockers.
