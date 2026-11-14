@@ -8,6 +8,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import date, datetime, time, timedelta, timezone
 import math
+import re
 from typing import Iterable
 
 
@@ -31,6 +32,12 @@ class MatchObservation:
     home_goals: int
     away_goals: int
     kickoff_date: date | None = None
+    provider: str = "unspecified"
+    source_id: str = "unspecified"
+    availability_basis: str = "unspecified"
+    point_in_time_certifiable: bool = False
+    payload_sha256: str | None = None
+    rights_approval_id: str | None = None
 
 
 @dataclass(frozen=True)
@@ -68,6 +75,14 @@ def _valid_observation(match: MatchObservation) -> bool:
     if not _aware(match.available_at) or not _aware(match.recorded_at):
         return False
     if match.recorded_at < match.available_at:
+        return False
+    if type(match.point_in_time_certifiable) is not bool:
+        return False
+    if not all(isinstance(value, str) and value.strip() for value in (
+        match.provider, match.source_id, match.availability_basis
+    )):
+        return False
+    if match.payload_sha256 is not None and not re.fullmatch(r"[0-9a-fA-F]{64}", match.payload_sha256):
         return False
     if match.kickoff_at is None:
         if not isinstance(match.kickoff_date, date) or isinstance(match.kickoff_date, datetime):
