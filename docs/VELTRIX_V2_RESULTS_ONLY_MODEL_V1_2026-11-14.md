@@ -35,3 +35,8 @@ This baseline is not certified for production and its publication flag is hard-l
 ## Data limitation
 
 Phase 3 historical imports are retained as historical records but are currently marked non-point-in-time-certifiable. Their missing publication/recorded timestamps are not backfilled. They cannot silently enter a point-in-time training set until independently timestamped evidence is obtained.
+
+
+## Dixon-Coles candidate
+
+An optional Dixon-Coles low-score correction parameter is exposed with rho=0.0 as the independent-Poisson default. Non-zero rho values are challengers only; invalid/non-positive low-score correction factors are rejected. A non-zero value may be selected only through chronological walk-forward evaluation against the independent baseline. The model remains unpublished.
