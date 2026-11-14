@@ -75,6 +75,7 @@ def predict_batch(
     *,
     cutoff_at: datetime,
     max_fixtures: int = 25,
+    recency_half_life_days: float | None = None,
 ) -> BatchForecastReport:
     """Generate up to 25 forecasts in kickoff order, without favourites filtering.
 
@@ -122,6 +123,7 @@ def predict_batch(
                 away_team_id=target.away_team_id,
                 kickoff_at=target.kickoff_at,
                 cutoff_at=cutoff_at,
+                recency_half_life_days=recency_half_life_days,
             )
         except InsufficientHistoryError:
             skipped_no_history += 1
