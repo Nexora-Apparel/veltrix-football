@@ -6,7 +6,7 @@ Resolve a durable Telegram delivery claim in `OUTCOME_UNKNOWN` after a timeout, 
 
 ## Non-negotiable invariants
 
-1. An `OUTCOME_UNKNOWN` claim is terminal for automated dispatch.
+1. An `OUTCOME_UNKNOWN` claim is terminal for automated dispatch. A `CLAIMED` row abandoned by a process crash is not eligible for reconciliation until an explicit recovery action moves it to `OUTCOME_UNKNOWN`; `mark_stale_claim_unknown` only permits claims at least 300 seconds old (maximum requested age 24 hours) and never sends or retries a message.
 2. Reconciliation never edits, deletes, truncates, or reopens the original delivery claim.
 3. Reconciliation does not send Telegram messages and does not call Telegram APIs.
 4. A later report revision has a new report ID/hash and is a distinct report, not a retry of the prior one.
@@ -83,3 +83,8 @@ Before any live Telegram dispatch:
 - Staging-only migration and read-only post-migration audit pass.
 
 No Telegram send, retry, schedule activation, database migration, or publication is authorized by this document.
+
+
+## Evidence URI handling
+
+Evidence locations must use HTTPS, S3 or GCS and must not contain embedded credentials, query-string tokens or fragments. The writer reads the exact evidence bytes and verifies their SHA-256 before persistence. Authentication of the evidence reader and operator/reviewer identities remains the responsibility of the trusted deployment integration.
