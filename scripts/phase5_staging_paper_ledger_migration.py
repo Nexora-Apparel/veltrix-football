@@ -88,6 +88,11 @@ def _verify_after_apply(dsn: str, baseline: dict[str, int]) -> dict[str, object]
             "telegram_delivery_claims_no_truncate",
         }.issubset(delivery_triggers):
             raise RuntimeError("TELEGRAM_DELIVERY_CLAIMS_TRIGGERS_MISSING")
+        delivery_rows = int(connection.execute(
+            "SELECT COUNT(*) FROM telegram_delivery_claims"
+        ).fetchone()[0])
+        if delivery_rows != 0:
+            raise RuntimeError("TELEGRAM_DELIVERY_CLAIMS_NOT_EMPTY_AFTER_SCHEMA_MIGRATION")
 
         trigger_names = {
             row[0] for row in connection.execute(
