@@ -54,7 +54,19 @@ def evaluate_fixture_import(
             ImportOutcomeStatus.QUARANTINED, "SOURCE_APPROVAL_IDENTITY_MISMATCH",
             fixture.provider_fixture_id,
         )
-    if approval.competition_scope not in {"*", fixture.provider_competition_id}:
+    # Scope is an explicit comma-separated allowlist of provider competition IDs.
+    # Wildcards are intentionally unsupported: a broad provider approval must never
+    # silently expand beyond the competitions actually reviewed and entitled.
+    approved_competitions = {
+        item.strip()
+        for item in approval.competition_scope.split(",")
+        if item.strip()
+    }
+    if (
+        not approved_competitions
+        or "*" in approved_competitions
+        or fixture.provider_competition_id not in approved_competitions
+    ):
         return FixtureImportDecision(
             ImportOutcomeStatus.QUARANTINED, "COMPETITION_OUTSIDE_SOURCE_APPROVAL",
             fixture.provider_fixture_id,

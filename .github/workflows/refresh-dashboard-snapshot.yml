@@ -15,6 +15,10 @@ concurrency:
   cancel-in-progress: false
 jobs:
   publish:
+    # PAUSED: this legacy workflow republishes a legacy report projection.
+    # Re-enable only after the V2 scheduler, website and Telegram all consume
+    # one verified immutable bundle and the authoritative certification gate.
+    if: false
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
