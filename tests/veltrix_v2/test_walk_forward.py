@@ -129,3 +129,18 @@ def test_non_certifiable_provider_snapshots_are_excluded_from_historical_trainin
     assert report.non_certifiable_input_rows == 40
     assert report.eligible_scored_fixtures == 0
     assert report.skipped_no_history > 0
+
+
+def test_walk_forward_records_and_applies_recency_half_life():
+    report = walk_forward_evaluate(
+        history(40), evaluation_as_of=AS_OF, recency_half_life_days=30
+    )
+    assert report.recency_half_life_days == 30
+    assert report.eligible_scored_fixtures > 0
+
+
+def test_walk_forward_rejects_invalid_recency_half_life():
+    import pytest
+    with pytest.raises(ValueError, match="RECENCY_HALF_LIFE_MUST_BE_POSITIVE_FINITE"):
+        walk_forward_evaluate(history(40), evaluation_as_of=AS_OF,
+                              recency_half_life_days=0)
