@@ -103,6 +103,12 @@ def test_manual_cli_defaults_to_dry_run_without_secrets_or_side_effects(monkeypa
     assert '"would_call_provider": false' in output
 
 
+def test_execute_requires_staging_persistence_before_provider_access(monkeypatch):
+    monkeypatch.setattr(sys, "argv", ["phase5_collect_5dollar_shadow", "--execute"])
+    with pytest.raises(RuntimeError, match="STAGING_PERSISTENCE_REQUIRED_FOR_PROVIDER_EXECUTION"):
+        main()
+
+
 def test_403_competition_response_is_not_retried_and_still_advances_pacer(monkeypatch):
     import scripts.phase5_collect_5dollar_shadow as capture
 
