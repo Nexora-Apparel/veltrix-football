@@ -234,8 +234,8 @@ def test_rights_recheck_uses_explicit_provider_competition_id():
     )
     admitted = admit_prospective_observed_shadow_forecasts(
         _fixture_set(certifiable=False)[0],
+        [provider_target],
         [provider_history],
-        targets=[provider_target],
         source_approvals={provider_scope_approval.approval_id: provider_scope_approval},
         model_artifact_sha256="b" * 64,
         feature_set_sha256="c" * 64,
@@ -248,8 +248,8 @@ def test_rights_recheck_uses_explicit_provider_competition_id():
     try:
         admit_prospective_observed_shadow_forecasts(
             _fixture_set(certifiable=False)[0],
+            [provider_target],
             [missing_provider_scope],
-            targets=[provider_target],
             source_approvals={provider_scope_approval.approval_id: provider_scope_approval},
             model_artifact_sha256="b" * 64,
             feature_set_sha256="c" * 64,
@@ -286,7 +286,7 @@ def test_5dollar_shadow_admission_requires_raw_page_and_provider_scope_evidence(
         capture_manifest_sha256="e" * 64,
     )
     result = admit_prospective_observed_shadow_forecasts(
-        report, [provider_history], targets=[provider_target],
+        report, [provider_target], [provider_history],
         source_approvals={approval.approval_id: approval},
         model_artifact_sha256="b" * 64, feature_set_sha256="c" * 64,
         forecasted_at=NOW + timedelta(seconds=1),
