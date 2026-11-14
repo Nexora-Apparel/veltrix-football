@@ -107,3 +107,34 @@ Official [Terms](https://goal-api.com/terms), last updated November 2026, state 
 7. Phase 3 must encode these source-specific decisions as enforceable rights/entitlement records before any ingestion. No unapproved source may enter V2 history or training.
 
 **Phase 2 release status:** COMPLETE. This approves only the explicitly scoped uses above; all unqualified providers and historical-odds access remain disabled.
+
+
+---
+
+## 9. 14 November 2026 reconciliation addendum — account evidence supersedes broad approval wording
+
+This addendum records the actual staging evidence and prevents the earlier phrase “approved supplemental source” from being interpreted as a live The Odds API entitlement or production authorization.
+
+### 9.1 5DollarFootballAPI
+
+The actual Neon staging source_approvals row records Community use with collection, caching, model training, public display, internal analytics and attribution. Commercial use is allowed; attribution is required; raw redistribution is prohibited. The row does not include an explicit BENCHMARKING permission. Therefore, 5Dollar is qualified for the scoped fixture/results and approved statistics role, but its odds are not the source for bookmaker-benchmark certification unless the provider grants explicit benchmarking rights.
+
+The latest stored entitlement observation (2026-11-12) records Community, seven competition IDs, 300 requests/hour, 20 requests/minute and 299 remaining at the time of that observation. This is not a live balance. Current official docs also require linked “Football data by 5DollarFootballAPI” attribution on public Free/Community websites, apps and bots. The V2 dashboard footer and Telegram formatter now include that attribution.
+
+### 9.2 The Odds API
+
+The official Terms and Conditions, last updated 31 August 2026, permit commercial UI display, storage, derived values and statistical/ML model training, while prohibiting raw-feed resale or redistribution as a standalone product. Attribution is not required.
+
+However, the current Neon staging source_approvals and provider_entitlement_observations tables contain no The Odds API approval or entitlement row. The account's accepted Terms version, current monthly credits and a numeric V2 capture budget are not evidenced there. The 2026-11-12 probe's 295 remaining credits after 205 used is historical only and must not be treated as a current balance. Therefore, The Odds API remains selected but **locked** until account acceptance, live entitlement and budget evidence are recorded.
+
+### 9.3 GOAL API and StrikerAPI
+
+Both remain blocked by exhausted credits. GOAL API's earlier HTTP 403 is a Cloudflare/browser-signature restriction, not proof of an invalid key. StrikerAPI's latest recorded response is HTTP 402 / insufficient credits. No retry, top-up or provider request is authorized by this addendum.
+
+### 9.4 Provider discovery is closed
+
+OpenFootball, OpenPlay and PitchAPI retain their already-recorded V2 qualifications and restrictions. No new provider discovery was performed. OpenFootball remains archive/reconciliation only; OpenPlay remains quarantined on upstream rights; PitchAPI remains disabled pending account and rights qualification.
+
+### 9.5 Staging migration state
+
+Only migrations 0001–0004 are applied to the staging database. Phase 5 provider quota/credit snapshot tables are still pending; absence of those tables is expected and must not be treated as an empty current quota balance. Do not apply migrations or create an approval row without the corresponding rights/account evidence.
