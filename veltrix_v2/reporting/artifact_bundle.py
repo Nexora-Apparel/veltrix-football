@@ -116,7 +116,10 @@ def load_report_surface_bundle(
 
     payloads: dict[str, dict[str, Any]] = {}
     for name, path in paths.items():
-        raw = path.read_bytes()
+        try:
+            raw = path.read_bytes()
+        except FileNotFoundError as exc:
+            raise ValueError(f"REPORT_BUNDLE_ARTIFACT_MISSING:{name}") from exc
         expected_hash = commit["artifacts"].get(name)
         if (
             not isinstance(expected_hash, str)
