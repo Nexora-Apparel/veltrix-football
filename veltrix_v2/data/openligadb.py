@@ -222,12 +222,12 @@ def parse_openligadb_response(
 
     accepted: list[OpenLigaDBMatch] = []
     rejected: list[OpenLigaDBRejectedRow] = []
-    for row in parsed_rows:
+    for row_index, row in enumerate(parsed_rows):
         if isinstance(row, OpenLigaDBRejectedRow):
             rejected.append(row)
         elif id_counts[row.provider_match_id] > 1:
             rejected.append(OpenLigaDBRejectedRow(
-                row_index=parsed_rows.index(row),
+                row_index=row_index,
                 provider_match_id=row.provider_match_id,
                 reason_code="DUPLICATE_PROVIDER_MATCH_ID",
             ))
