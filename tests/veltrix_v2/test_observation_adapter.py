@@ -1,4 +1,6 @@
 from datetime import datetime, timedelta, timezone
+
+import pytest
 import hashlib
 import json
 
@@ -112,3 +114,4 @@ def test_scheduled_fixture_already_kicked_off_is_not_a_prediction_target():
     assert historical_fixture_to_target(
         historical_fixture(status=FixtureStatus.SCHEDULED)
     ) is None
+

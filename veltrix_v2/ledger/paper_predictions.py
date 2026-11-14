@@ -2,7 +2,7 @@
 
 This module is intentionally storage-agnostic. Callers persist each immutable
 event to an append-only store; no database/network/production write occurs here.
-Historical backfills and non-point-in-time-certified fixtures are rejected.
+Historical backfills are rejected. Non-PIT observations can enter only the separately typed prospective-observed shadow class; they can never be represented as PIT-certified predictions.
 """
 from __future__ import annotations
 
@@ -33,6 +33,7 @@ class PaperPrediction:
     away_probability: float
     evidence_sha256: str
     point_in_time_certifiable: bool
+    evidence_class: str = "PIT_CERTIFIED"
 
 
 @dataclass(frozen=True)
@@ -80,8 +81,14 @@ class ProspectivePaperLedger:
         if not (prediction.prediction_cutoff_at <= prediction.forecasted_at
                 <= prediction.recorded_at < prediction.kickoff_at):
             raise ValueError("PAPER_PREDICTION_NOT_PROSPECTIVE")
-        if prediction.point_in_time_certifiable is not True:
+        if prediction.point_in_time_certifiable is True and prediction.evidence_class == "PIT_CERTIFIED":
+            event_type = "PREDICTION"
+        elif prediction.point_in_time_certifiable is False and prediction.evidence_class == "PROSPECTIVE_OBSERVED_ONLY":
+            event_type = "SHADOW_PREDICTION"
+        elif prediction.point_in_time_certifiable is False and prediction.evidence_class == "PIT_CERTIFIED":
             raise ValueError("PAPER_PREDICTION_EVIDENCE_NOT_CERTIFIABLE")
+        else:
+            raise ValueError("PAPER_PREDICTION_EVIDENCE_CLASS_INVALID")
         if not all(isinstance(x, str) and x.strip() for x in (
             prediction.fixture_id, prediction.competition_id, prediction.home_team_id,
             prediction.away_team_id, prediction.model_version
@@ -98,7 +105,8 @@ class ProspectivePaperLedger:
             raise ValueError("PAPER_PREDICTION_PROBABILITY_INVALID")
         if abs(sum(probs) - 1.0) > 1e-9:
             raise ValueError("PAPER_PREDICTION_PROBABILITIES_NOT_NORMALISED")
-        if any(e.event_type == "PREDICTION" and e.fixture_id == prediction.fixture_id
+        if any(e.event_type in {"PREDICTION", "SHADOW_PREDICTION"}
+               and e.fixture_id == prediction.fixture_id
                and e.model_version == prediction.model_version for e in self._events):
             raise ValueError("PAPER_PREDICTION_DUPLICATE")
 
@@ -116,9 +124,10 @@ class ProspectivePaperLedger:
             "draw_probability": float(prediction.draw_probability),
             "away_probability": float(prediction.away_probability),
             "evidence_sha256": prediction.evidence_sha256.lower(),
-            "point_in_time_certifiable": True,
+            "point_in_time_certifiable": prediction.point_in_time_certifiable,
+            "evidence_class": prediction.evidence_class,
         }
-        return self._append("PREDICTION", prediction.fixture_id,
+        return self._append(event_type, prediction.fixture_id,
                             prediction.model_version, prediction.recorded_at, payload)
 
     def append_settlement(self, *, fixture_id: str, model_version: str,
@@ -131,9 +140,12 @@ class ProspectivePaperLedger:
                           source_fixture_id: str,
                           result_payload_sha256: str,
                           rights_approval_id: str,
-                          rights_evidence_sha256: str) -> PaperLedgerEvent:
+                          rights_evidence_sha256: str,
+                          result_availability_basis: str = "provider_timestamp",
+                          settlement_delay_basis: str | None = None) -> PaperLedgerEvent:
         prediction = next((e for e in self._events
-                           if e.event_type == "PREDICTION" and e.fixture_id == fixture_id
+                           if e.event_type in {"PREDICTION", "SHADOW_PREDICTION"}
+                           and e.fixture_id == fixture_id
                            and e.model_version == model_version), None)
         if prediction is None:
             raise ValueError("PAPER_SETTLEMENT_WITHOUT_PREDICTION")
@@ -142,6 +154,11 @@ class ProspectivePaperLedger:
         kickoff = datetime.fromisoformat(prediction.payload["kickoff_at"])
         if not (kickoff <= result_available_at <= result_retrieved_at <= recorded_at):
             raise ValueError("PAPER_SETTLEMENT_TEMPORAL_ORDER_INVALID")
+        if result_availability_basis not in {"provider_timestamp", "collector_first_observed_v1"}:
+            raise ValueError("PAPER_SETTLEMENT_AVAILABILITY_BASIS_INVALID")
+        if (result_availability_basis == "collector_first_observed_v1"
+                and result_available_at != result_retrieved_at):
+            raise ValueError("PAPER_SETTLEMENT_FIRST_OBSERVED_CLOCK_MISMATCH")
         if any(e.event_type == "SETTLEMENT" and e.fixture_id == fixture_id
                and e.model_version == model_version for e in self._events):
             raise ValueError("PAPER_SETTLEMENT_DUPLICATE")
@@ -167,6 +184,10 @@ class ProspectivePaperLedger:
             "result_payload_sha256": result_payload_sha256.lower(),
             "rights_approval_id": rights_approval_id,
             "rights_evidence_sha256": rights_evidence_sha256.lower(),
+            "result_availability_basis": result_availability_basis,
+            "settlement_delay_basis": settlement_delay_basis,
+            "prediction_event_type": prediction.event_type,
+            "prediction_evidence_class": prediction.payload.get("evidence_class", "PIT_CERTIFIED"),
             "prediction_event_sha256": prediction.event_sha256,
         }
         return self._append("SETTLEMENT", fixture_id, model_version, recorded_at, payload)

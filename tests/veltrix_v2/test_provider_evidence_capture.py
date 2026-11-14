@@ -358,6 +358,33 @@ def test_fivedollar_page_adapter_preserves_non_certifiable_timestamp_gap():
     assert "RESULT_AVAILABILITY_TIMESTAMP_MISSING" in evidence.reason_codes
     assert "REVISION_HISTORY_INCOMPLETE" in evidence.reason_codes
 
+    observed_report = capture_fivedollar_page_evidence(
+        raw, page,
+        endpoint="/api/fixtures",
+        request_id="5d-page-1-observed",
+        requested_at=NOW - timedelta(minutes=21),
+        recorded_at=NOW - timedelta(minutes=19),
+        crosswalks={"fx-5d-1": crosswalk},
+        rights_approval=five_dollar_approval,
+        prospective_observed=True,
+    )
+    observed_evidence = observed_report.observations[0]
+    assert observed_evidence.point_in_time_certifiable is False
+    assert observed_evidence.source_published_at is None
+    assert observed_evidence.available_at == observed_evidence.retrieved_at
+    assert observed_evidence.availability_timestamp_basis == "collector_first_observed_v1"
+    assert observed_evidence.raw_response_sha256 == sha256(raw).hexdigest()
+    observed = observed_evidence.to_first_observed_match_observation(
+        manifest_sha256=observed_report.manifest.manifest_sha256,
+        evidence_sha256=observed_report.manifest.item_evidence_sha256[0],
+    )
+    assert observed.point_in_time_certifiable is False
+    assert observed.availability_basis == "collector_first_observed_v1"
+    assert observed.available_at.isoformat() == observed_evidence.retrieved_at
+    assert observed.payload_sha256 == sha256(raw).hexdigest()
+    assert len(observed.evidence_manifest_sha256) == 64
+    assert len(observed.capture_evidence_sha256) == 64
+
 
 def test_fivedollar_page_adapter_rejects_raw_response_hash_mismatch():
     with pytest.raises(ValueError, match="FIVEDOLLAR_RAW_RESPONSE_HASH_MISMATCH"):

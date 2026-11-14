@@ -11,6 +11,7 @@ on:
       - "tests/veltrix_v2/**"
       - "scripts/phase5_staging_coverage_audit.py"
       - "docs/VELTRIX_V2_STAGING_COVERAGE_AUDIT_CLI_2026-11-14.md"
+      - "docs/VELTRIX_V2_PROSPECTIVE_FIRST_OBSERVED_SHADOW_EVIDENCE_2026-11-14.md"
       - "docs/VELTRIX_V2_OPENLIGADB_OFFLINE_PARSER_2026-11-14.md"
       - "scripts/veltrix_v2/**"
       - "tests/providers/odds_api_v4/**"

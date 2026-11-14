@@ -1,3 +1,4 @@
+from dataclasses import replace
 import hashlib
 import json
 from datetime import datetime, timedelta, timezone
@@ -111,3 +112,87 @@ def test_rejects_settlement_for_different_fixture_identity():
             ledger, fixture, approval(),
             recorded_at=fixture.retrieved_at_utc + timedelta(hours=1)
         )
+
+
+def ledger_with_observed_prediction():
+    ledger = ProspectivePaperLedger()
+    kickoff = BASE + timedelta(days=2)
+    ledger.append_prediction(PaperPrediction(
+        fixture_id="testsrc:fixture-1", competition_id="testsrc:comp-1",
+        home_team_id="testsrc:team-a", away_team_id="testsrc:team-b",
+        kickoff_at=kickoff, prediction_cutoff_at=BASE - timedelta(minutes=5),
+        forecasted_at=BASE - timedelta(minutes=4),
+        recorded_at=BASE - timedelta(minutes=3), model_version="poisson-observed-v1",
+        home_probability=0.5, draw_probability=0.3, away_probability=0.2,
+        evidence_sha256="f" * 64, point_in_time_certifiable=False,
+        evidence_class="PROSPECTIVE_OBSERVED_ONLY",
+    ))
+    return ledger
+
+
+def test_observed_shadow_settlement_uses_collector_first_seen_not_provider_proxy():
+    ledger = ledger_with_observed_prediction()
+    fixture = source_fixture()
+    event = settle_from_verified_fixture(
+        ledger, fixture, approval(), recorded_at=fixture.retrieved_at_utc + timedelta(hours=1)
+    )
+    assert event.event_type == "SETTLEMENT"
+    assert event.payload["prediction_event_type"] == "SHADOW_PREDICTION"
+    assert event.payload["prediction_evidence_class"] == "PROSPECTIVE_OBSERVED_ONLY"
+    assert event.payload["result_availability_basis"] == "collector_first_observed_v1"
+    assert event.payload["result_available_at"] == fixture.retrieved_at_utc.isoformat()
+    assert event.payload["result_retrieved_at"] == fixture.retrieved_at_utc.isoformat()
+    assert event.payload["settlement_delay_basis"] == fixture.availability_basis
+    assert ledger.verify_chain()
+
+
+def test_observed_shadow_settlement_still_requires_explicit_benchmarking_rights():
+    ledger = ledger_with_observed_prediction()
+    fixture = source_fixture()
+    restricted = approval(purposes={DataUsePurpose.COLLECTION, DataUsePurpose.STORAGE})
+    with pytest.raises(ValueError, match="PURPOSE_NOT_PERMITTED"):
+        settle_from_verified_fixture(
+            ledger, fixture, restricted,
+            recorded_at=fixture.retrieved_at_utc + timedelta(hours=1)
+        )
+
+
+def test_observed_shadow_settlement_waits_for_conservative_delay_boundary():
+    ledger = ledger_with_observed_prediction()
+    fixture = source_fixture()
+    fixture = replace(
+        fixture,
+        available_at_utc=fixture.retrieved_at_utc + timedelta(days=1),
+        availability_basis="provider_finished_status_conservative_4d",
+        point_in_time_certifiable=False,
+    )
+    with pytest.raises(ValueError, match="SETTLEMENT_FIRST_OBSERVED_TEMPORAL_ORDER_INVALID"):
+        settle_from_verified_fixture(
+            ledger, fixture, approval(),
+            recorded_at=fixture.retrieved_at_utc + timedelta(hours=1)
+        )
+
+
+def test_settlement_requires_model_version_when_fixture_has_multiple_predictions():
+    ledger = ledger_with_prediction()
+    kickoff = BASE + timedelta(days=2)
+    ledger.append_prediction(PaperPrediction(
+        fixture_id="testsrc:fixture-1", competition_id="testsrc:comp-1",
+        home_team_id="testsrc:team-a", away_team_id="testsrc:team-b",
+        kickoff_at=kickoff, prediction_cutoff_at=BASE - timedelta(minutes=5),
+        forecasted_at=BASE - timedelta(minutes=4), recorded_at=BASE - timedelta(minutes=2),
+        model_version="poisson-v2", home_probability=0.4, draw_probability=0.3,
+        away_probability=0.3, evidence_sha256="c" * 64, point_in_time_certifiable=True,
+    ))
+    fixture = source_fixture()
+    with pytest.raises(ValueError, match="PAPER_SETTLEMENT_PREDICTION_NOT_UNIQUE"):
+        settle_from_verified_fixture(
+            ledger, fixture, approval(),
+            recorded_at=fixture.retrieved_at_utc + timedelta(hours=1)
+        )
+    settled = settle_from_verified_fixture(
+        ledger, fixture, approval(),
+        recorded_at=fixture.retrieved_at_utc + timedelta(hours=1),
+        model_version="poisson-v1",
+    )
+    assert settled.model_version == "poisson-v1"
