@@ -27,7 +27,8 @@ def setup_db():
             CREATE TABLE source_approvals (
                 approval_id TEXT PRIMARY KEY,
                 provider TEXT NOT NULL,
-                source_id TEXT NOT NULL
+                source_id TEXT NOT NULL,
+                evidence_sha256 TEXT NOT NULL
             )
         """)
         conn.execute("""
