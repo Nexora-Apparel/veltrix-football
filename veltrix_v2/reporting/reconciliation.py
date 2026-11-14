@@ -66,7 +66,7 @@ def validate_reconciliation_event(
             raise ValueError("RECONCILIATION_CLAIM_BINDING_MISMATCH")
 
     outcome = event["outcome"]
-    if outcome not in _OUTCOMES:
+    if not isinstance(outcome, str) or outcome not in _OUTCOMES:
         raise ValueError("RECONCILIATION_OUTCOME_INVALID")
 
     message_ids = event["telegram_message_ids"]
@@ -76,6 +76,8 @@ def validate_reconciliation_event(
     ):
         raise ValueError("RECONCILIATION_MESSAGE_IDS_INVALID")
     message_ids = [str(value) for value in message_ids]
+    if len(message_ids) != len(set(message_ids)):
+        raise ValueError("RECONCILIATION_MESSAGE_IDS_DUPLICATED")
     if outcome == "CONFIRMED_SENT" and not message_ids:
         raise ValueError("CONFIRMED_SENT_REQUIRES_MESSAGE_IDS")
     if outcome != "CONFIRMED_SENT" and message_ids:
@@ -101,12 +103,14 @@ def validate_reconciliation_event(
     if recorded_at < observed_at:
         raise ValueError("RECONCILIATION_RECORDED_BEFORE_OBSERVED")
 
+    operator_id = event["operator_id"].strip()
     reviewer_id = event.get("reviewer_id")
-    if reviewer_id is not None and (
-        not isinstance(reviewer_id, str) or not reviewer_id.strip()
-        or reviewer_id == event["operator_id"]
-    ):
-        raise ValueError("RECONCILIATION_REVIEWER_INVALID")
+    if reviewer_id is not None:
+        if not isinstance(reviewer_id, str) or not reviewer_id.strip():
+            raise ValueError("RECONCILIATION_REVIEWER_INVALID")
+        reviewer_id = reviewer_id.strip()
+        if reviewer_id == operator_id:
+            raise ValueError("RECONCILIATION_REVIEWER_INVALID")
     if outcome == "CONFIRMED_NOT_SENT" and reviewer_id is None:
         raise ValueError("CONFIRMED_NOT_SENT_REQUIRES_INDEPENDENT_REVIEWER")
 
@@ -137,8 +141,8 @@ def validate_reconciliation_event(
         "evidence_uri": evidence_uri,
         "evidence_sha256": event["evidence_sha256"],
         "evidence_kind": event["evidence_kind"].strip(),
-        "operator_id": event["operator_id"].strip(),
-        "reviewer_id": reviewer_id.strip() if reviewer_id else None,
+        "operator_id": operator_id,
+        "reviewer_id": reviewer_id,
         "observed_at": observed_at,
         "recorded_at": recorded_at,
         "reason_code": event["reason_code"].strip(),
