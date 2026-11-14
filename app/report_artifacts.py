@@ -29,6 +29,20 @@ _REPORT_TIMEOUT_SECONDS = 3.0
 _OPTIONAL_TIMEOUT_SECONDS = 1.25
 _API_FALLBACK_TIMEOUT_SECONDS = 1.0
 _cache: dict[str, tuple[float, dict[str, Any] | None]] = {}
+_PUBLIC_RELEASE_MODES = frozenset({"RESTRICTED_PUBLIC", "FULL_PUBLIC"})
+
+
+def _is_public_v2_report(report: dict[str, Any]) -> bool:
+    predictions = report.get("predictions")
+    return (
+        report.get("release_mode") in _PUBLIC_RELEASE_MODES
+        and isinstance(predictions, list)
+        and all(
+            isinstance(fixture, dict)
+            and fixture.get("publication_status") == "PUBLISHED"
+            for fixture in predictions
+        )
+    )
 
 
 def _parse_snapshot(raw: bytes, kind: str) -> dict[str, Any] | None:
@@ -46,6 +60,8 @@ def _parse_snapshot(raw: bytes, kind: str) -> dict[str, Any] | None:
             try:
                 verify_report_identity(parsed)
             except (TypeError, ValueError):
+                return None
+            if not _is_public_v2_report(parsed):
                 return None
         return parsed
     if kind == "dashboard":
@@ -131,7 +147,7 @@ def load_latest_report(
     report = _load("report")
     if report is None or report.get("schema") != REPORT_SCHEMA:
         return report
-    if not callable(authorization_verifier):
+    if not _is_public_v2_report(report) or not callable(authorization_verifier):
         return None
     try:
         identity = verify_report_identity(report)
@@ -174,7 +190,7 @@ def load_v2_report_bundle(
     dashboard = _load("dashboard")
     if report is None or dashboard is None or report.get("schema") != REPORT_SCHEMA:
         return None
-    if not callable(authorization_verifier):
+    if not _is_public_v2_report(report) or not callable(authorization_verifier):
         return None
     try:
         identity = assert_website_projection(report, dashboard)
