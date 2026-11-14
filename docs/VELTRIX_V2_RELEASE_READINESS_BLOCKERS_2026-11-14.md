@@ -258,3 +258,12 @@ A final website audit found that the browser still had independent raw-GitHub/CD
 - The V2 publisher now requires an explicit canonical `expected_as_of_date` from its caller and rejects a report whose WAT as-of date differs before any GitHub access.
 - This prevents publishing stale or future-dated daily reports through the command-data publisher. The production workflow must derive this value from the current `Africa/Lagos` date; no workflow is wired yet.
 - CI run #1513 passed Foundation, PostgreSQL 16 and PostgreSQL 18, including exact-date, immutable-ID, stale-publication and GitHub blob integrity tests.
+
+
+## Legacy command-data publisher shutdown and archive preservation — 2026-11-14 18:08 UTC
+
+- `scripts/publish_command_data.py` now refuses its normal live publication mode. It cannot publish `daily_predictions.json` or `dashboard_snapshot.json`; those paths are also blocked at the lower-level `publish()` function.
+- The historical 31 October seed workflow now uses explicit `--archive-only`. This path preserves the exact original report bytes and writes only to a content-addressed archive path; it does not update the live daily report or dashboard pointers.
+- Archive publication is idempotent: the path is based on the exact report SHA-256, and the publisher skips an existing file when its bytes match. Path traversal is rejected.
+- CI run #1525 passed Foundation, PostgreSQL 16 and PostgreSQL 18, including legacy live-publication shutdown and archive-preservation tests.
+- The V2 publisher remains the only permitted route for a new public report, and it still requires the authoritative certification/rights verifier.
