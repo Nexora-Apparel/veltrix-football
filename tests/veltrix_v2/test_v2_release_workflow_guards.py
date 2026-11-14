@@ -66,3 +66,11 @@ def test_legacy_prediction_backtests_and_report_watchdog_remain_paused():
     assert "ensure-daily-report:" in watchdog and "if: false" in watchdog
     assert "backtest:" in historical and "if: false" in historical
     assert "womens-backtest:" in womens and "if: false" in womens
+
+
+
+def test_historical_archive_seed_uses_archive_only_mode():
+    source = _workflow("seed-oct31-report-archive.yml")
+    assert "publish_command_data.py" in source
+    assert "--archive-only" in source
+    assert "public-data/daily_predictions.json" not in source
