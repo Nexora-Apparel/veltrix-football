@@ -181,3 +181,18 @@ For the additional 80% high-confidence target, require at least 300 prospective 
 5. Qualify FPL EPL player snapshots as a limited, undocumented source; keep it optional until terms and schema stability are reviewed.
 6. Probe PitchAPI only after provider confirms source lineage, storage, commercial display and model-training rights.
 7. Build point-in-time feature snapshots, then candidate score models and market-specific evaluation.
+
+
+## 9. Personal-use scope and independent control domains (2026-11-15)
+
+VELTRIX FOOTBALL is a personal-use project. Commercial monetisation assumptions are excluded from architecture, model development and release criteria. Do not require invoices, billing documents, business registration, commercial subscription proof, a revenue plan or advertising evidence to collect data, build models, run evaluation, certify a market or publish an integrity-verified personal report.
+
+Keep these controls independent:
+
+- **MODEL_QUALITY_GATES:** point-in-time provenance, data completeness, leakage prevention, chronological walk-forward evaluation, prospective settlements, calibration, benchmark performance, confidence intervals and market-specific certification.
+- **PROVIDER_USAGE_GUARDS:** provider terms, endpoint entitlement, request/rate limits, current observable quota and bounded request/credit caps. A provider-specific usage guard may defer that provider request, but must not block independent work using 5DollarFootballAPI or another authorized source.
+- **PUBLICATION_INTEGRITY_GATES:** exact report identity/hash, fixture/team/competition identity, cutoff-before-kickoff chronology, eligible evidence, authoritative certification, same-bundle website/report/Telegram parity, duplicate prevention, idempotent delivery and reconciliation of uncertain outcomes.
+
+5DollarFootballAPI is the primary source. The Odds API is supplementary and should be queried only where bookmaker/market coverage, source quote timestamps, odds baselines or closing-line evidence add measurable analytical value. Do not treat odds-provider availability as a prerequisite for every prediction; only markets and analyses that require odds data should depend on it.
+
+Provider terms and data rights remain binding regardless of personal use. However, billing paperwork and commercial subscription evidence are not model-quality, certification or publication-integrity requirements.
