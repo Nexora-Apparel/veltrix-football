@@ -41,18 +41,16 @@ def test_v2_report_snapshot_loader_rejects_tampered_report_hash():
     ) is None
 
 
-def test_v2_report_bundle_accepts_matching_website_projection(monkeypatch):
+def test_v2_report_bundle_never_reconstructs_from_separate_legacy_surfaces(monkeypatch):
     report = make_report()
     dashboard = make_dashboard(report)
+    monkeypatch.setattr(report_artifacts, "_load_portable_bundle_bytes", lambda: None)
     monkeypatch.setattr(
         report_artifacts, "_load",
         lambda kind: {"report": report, "dashboard": dashboard}.get(kind),
     )
-    bundle = report_artifacts.load_v2_report_bundle(lambda report, identity: report.get('release_mode') in {'RESTRICTED_PUBLIC', 'FULL_PUBLIC'})
-    assert bundle is not None
-    assert bundle["report"] == report
-    assert bundle["dashboard"] == dashboard
-    assert bundle["identity"].report_id == report["report_id"]
+    verifier = lambda value, identity: value.get("release_mode") in {"RESTRICTED_PUBLIC", "FULL_PUBLIC"}
+    assert report_artifacts.load_v2_report_bundle(verifier) is None
 
 
 def test_v2_report_bundle_rejects_dashboard_from_different_report(monkeypatch):
@@ -123,17 +121,19 @@ def test_v2_website_bundle_rejects_shadow_report_even_if_verifier_denies(monkeyp
     ) is None
 
 
-def test_v2_latest_report_requires_authoritative_publication_verifier(monkeypatch):
+def test_v2_latest_report_never_falls_back_to_separate_report_snapshot(monkeypatch):
     report = make_report()
+    monkeypatch.setattr(report_artifacts, "_load_portable_bundle_bytes", lambda: None)
     monkeypatch.setattr(report_artifacts, "_load", lambda kind: report if kind == "report" else None)
     assert report_artifacts.load_latest_report() is None
     assert report_artifacts.load_latest_report(
         lambda value, identity: value.get("release_mode") == "RESTRICTED_PUBLIC"
-    ) == report
+    ) is None
 
 
-def test_v2_latest_report_rejects_verifier_false_or_non_boolean_truth(monkeypatch):
+def test_v2_latest_report_without_portable_bundle_is_unavailable_even_with_verifier(monkeypatch):
     report = make_report()
+    monkeypatch.setattr(report_artifacts, "_load_portable_bundle_bytes", lambda: None)
     monkeypatch.setattr(report_artifacts, "_load", lambda kind: report if kind == "report" else None)
     assert report_artifacts.load_latest_report(lambda *_: False) is None
     assert report_artifacts.load_latest_report(lambda *_: 1) is None
