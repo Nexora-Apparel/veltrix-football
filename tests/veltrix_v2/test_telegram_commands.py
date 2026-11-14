@@ -144,3 +144,19 @@ def test_v2_command_rejects_more_than_25_published_fixtures():
     report = bind_report_identity({key: value for key, value in report.items() if key != "report_sha256"})
     reply = handle_v2_command("/fixtures", report=report, authorization_verifier=verifier)
     assert "V2 REPORT UNAVAILABLE" in reply
+
+
+
+def test_v2_slipcheck_rejects_overflowing_or_excessive_inputs():
+    overflow = handle_v2_command(
+        "/slipcheck 1e308 1e308",
+        report=None,
+        authorization_verifier=None,
+    )
+    excessive = handle_v2_command(
+        "/slipcheck " + " ".join(["1.1"] * 26),
+        report=None,
+        authorization_verifier=None,
+    )
+    assert "numeric range" in overflow
+    assert "1–25" in excessive
