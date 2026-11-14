@@ -87,7 +87,14 @@ def validate_reconciliation_event(
     if not isinstance(evidence_uri, str) or not evidence_uri.strip():
         raise ValueError("RECONCILIATION_EVIDENCE_URI_REQUIRED")
     parsed_uri = urlsplit(evidence_uri)
-    if parsed_uri.scheme not in _EVIDENCE_SCHEMES or not parsed_uri.netloc:
+    if (
+        parsed_uri.scheme not in _EVIDENCE_SCHEMES
+        or not parsed_uri.netloc
+        or parsed_uri.username
+        or parsed_uri.password
+        or parsed_uri.query
+        or parsed_uri.fragment
+    ):
         raise ValueError("RECONCILIATION_EVIDENCE_URI_NOT_DURABLE")
     if not isinstance(evidence_bytes, bytes):
         raise ValueError("RECONCILIATION_EVIDENCE_BYTES_REQUIRED")
@@ -164,7 +171,14 @@ class PostgresTelegramReconciliationStore:
         if not isinstance(evidence_uri, str) or not evidence_uri.strip():
             raise ValueError("RECONCILIATION_EVIDENCE_URI_REQUIRED")
         parsed_uri = urlsplit(evidence_uri)
-        if parsed_uri.scheme not in _EVIDENCE_SCHEMES or not parsed_uri.netloc:
+        if (
+            parsed_uri.scheme not in _EVIDENCE_SCHEMES
+            or not parsed_uri.netloc
+            or parsed_uri.username
+            or parsed_uri.password
+            or parsed_uri.query
+            or parsed_uri.fragment
+        ):
             raise ValueError("RECONCILIATION_EVIDENCE_URI_NOT_DURABLE")
         evidence_bytes = self._read_evidence(evidence_uri)
         if not isinstance(evidence_bytes, bytes):
