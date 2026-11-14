@@ -54,5 +54,30 @@ jobs:
           python -m compileall -q tests/veltrix_v2/test_provider_evidence_capture.py
           python -m compileall -q api/telegram.py
           python -m compileall -q tests/veltrix_v2/test_api_publication_verifier_injection.py
-      - name: Run focused regression
-        run: python -m pytest --import-mode=importlib -q tests/scripts/test_phase5_collect_5dollar_shadow.py tests/veltrix_v2/test_provider_evidence_capture.py tests/veltrix_v2/test_api_publication_verifier_injection.py
+      - name: Run provider and model evaluation contracts
+        run: >-
+          python -m pytest --import-mode=importlib -q
+          tests/scripts/test_phase5_collect_5dollar_shadow.py
+          tests/veltrix_v2/test_provider_evidence_capture.py
+          tests/veltrix_v2/test_walk_forward.py
+          tests/veltrix_v2/test_model_challengers_and_paper_ledger.py
+          tests/veltrix_v2/test_paper_settlement.py
+          tests/providers/odds_api_v4
+          --ignore=tests/providers/odds_api_v4/test_reservation_postgres.py
+          --ignore=tests/providers/odds_api_v4/test_quota_evidence_postgres.py
+          --ignore=tests/providers/odds_api_v4/test_capture_state_postgres.py
+          --ignore=tests/providers/odds_api_v4/test_capture_request_postgres.py
+          --ignore=tests/providers/odds_api_v4/test_reservation_postgres.py
+      - name: Run publication, bundle and delivery boundaries
+        run: >-
+          python -m pytest --import-mode=importlib -q
+          tests/veltrix_v2/test_api_publication_verifier_injection.py
+          tests/veltrix_v2/test_publication_certification.py
+          tests/veltrix_v2/test_certification_manifest_builder.py
+          tests/veltrix_v2/test_certification_manifest_cli.py
+          tests/veltrix_v2/test_portable_report_bundle_cli.py
+          tests/veltrix_v2/test_portable_bundle_cross_surface_integration.py
+          tests/veltrix_v2/test_telegram_delivery_runner.py
+          tests/veltrix_v2/test_telegram_v2_delivery.py
+          tests/veltrix_v2/test_telegram_v2_formatting.py
+          tests/veltrix_v2/test_telegram_reconciliation.py
