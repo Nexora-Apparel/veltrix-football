@@ -15,7 +15,6 @@ from fastapi.responses import HTMLResponse, JSONResponse
 
 from app.telegram_commands import handle_command
 from app.report_artifacts import load_latest_report, load_dashboard_snapshot
-from veltrix_v2.reporting.report_identity import REPORT_SCHEMA
 from app.telegram_security import telegram_webhook_secret_token
 
 app = FastAPI(title="Veltrix Football Command Centre")
