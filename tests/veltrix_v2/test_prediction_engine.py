@@ -36,6 +36,9 @@ def target(i, *, kickoff=None, retrieved=None, home="A", away="B", fixture_id=No
         source_fixture_id=str(1000 + i), retrieved_at=retrieved,
         payload_sha256=hashlib.sha256(f"target-{i}".encode()).hexdigest(),
         rights_approval_id="approval-5dollar-community-fixture-result-2026-11",
+        provider_competition_id="provider-league",
+        response_sha256="a" * 64,
+        capture_manifest_sha256="b" * 64,
     )
 
 
