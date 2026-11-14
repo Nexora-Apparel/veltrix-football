@@ -30,7 +30,11 @@ SELECT
     o.point_in_time_certifiable AS point_in_time_certifiable,
     o.source_published_at AS source_published_at,
     o.source_effective_at AS source_effective_at,
-    o.availability_basis AS availability_basis
+    o.availability_basis AS availability_basis,
+    EXISTS (
+        SELECT 1 FROM capture_manifests AS cm
+        WHERE cm.manifest_sha256 = o.payload->>'manifest_sha256'
+    ) AS capture_manifest_verified
 FROM fixtures AS f
 JOIN source_observations AS o
   ON o.id = f.source_observation_id

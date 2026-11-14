@@ -6,6 +6,7 @@ connection and never upgrades incomplete persisted evidence into eligibility.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from hashlib import sha256
 from datetime import datetime
 import json
 from typing import Iterable, Mapping
@@ -53,6 +54,28 @@ def _datetime(value: object) -> datetime | None:
     if parsed.tzinfo is None or parsed.utcoffset() is None:
         return None
     return parsed
+
+
+def _valid_sha256(value: object) -> bool:
+    if not isinstance(value, str) or len(value) != 64:
+        return False
+    try:
+        int(value, 16)
+        return True
+    except ValueError:
+        return False
+
+
+def _verified_item_hash(payload: Mapping[str, object]) -> str | None:
+    evidence = dict(payload)
+    item_hash = evidence.pop("item_evidence_sha256", None)
+    evidence.pop("manifest_sha256", None)
+    try:
+        canonical = json.dumps(evidence, sort_keys=True, separators=(",", ":"),
+                               ensure_ascii=False, allow_nan=False).encode("utf-8")
+    except (TypeError, ValueError):
+        return None
+    return sha256(canonical).hexdigest() if item_hash == sha256(canonical).hexdigest() else None
 
 
 def _payload(value: object) -> Mapping[str, object] | None:
@@ -124,12 +147,20 @@ def adapt_persisted_coverage_rows(
             row.get("payload_sha256"), row.get("rights_approval_id"),
             payload.get("rights_evidence_sha256"),
         )
+        manifest_sha256 = payload.get("manifest_sha256")
+        item_evidence_sha256 = payload.get("item_evidence_sha256")
+        item_hash_verified = _verified_item_hash(payload)
         if (
             available_at is None or recorded_at is None or rights_evaluated_at is None
             or not all(isinstance(value, str) and value.strip() for value in values)
             or type(payload.get("rights_approved")) is not bool
             or payload.get("rights_approval_id") != row.get("rights_approval_id")
             or type(point_in_time) is not bool
+            or row.get("capture_manifest_verified") is not True
+            or not _valid_sha256(manifest_sha256)
+            or not _valid_sha256(item_evidence_sha256)
+            or row.get("payload_sha256") != item_evidence_sha256
+            or item_hash_verified != item_evidence_sha256
         ):
             rejected_observations += 1
             continue

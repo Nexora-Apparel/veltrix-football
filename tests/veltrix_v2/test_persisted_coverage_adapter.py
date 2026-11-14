@@ -1,4 +1,6 @@
 from datetime import datetime, timedelta, timezone
+from hashlib import sha256
+import json
 
 from veltrix_v2.data.persisted_coverage_adapter import adapt_persisted_coverage_rows
 from veltrix_v2.data.provider_registry import DataDomain
@@ -33,6 +35,19 @@ def observation_row(**changes):
         },
     }
     row.update(changes)
+    payload = dict(row["payload"])
+    payload["manifest_sha256"] = "c" * 64
+    evidence = dict(payload)
+    evidence.pop("manifest_sha256", None)
+    evidence.pop("item_evidence_sha256", None)
+    item_hash = sha256(json.dumps(
+        evidence, sort_keys=True, separators=(",", ":"),
+        ensure_ascii=False, allow_nan=False,
+    ).encode("utf-8")).hexdigest()
+    payload["item_evidence_sha256"] = item_hash
+    row["payload"] = payload
+    row["payload_sha256"] = item_hash
+    row["capture_manifest_verified"] = True
     return row
 
 
@@ -136,3 +151,26 @@ def test_adapter_accepts_json_text_payload_without_changing_values():
     row["payload"] = json.dumps(row["payload"])
     result = adapt_persisted_coverage_rows([fixture_row()], [row])
     assert len(result.evidence) == 1
+
+
+def test_adapter_rejects_unlinked_capture_manifest():
+    row = observation_row(capture_manifest_verified=False)
+    result = adapt_persisted_coverage_rows([fixture_row()], [row])
+    assert result.evidence == ()
+    assert result.rejected_observation_rows == 1
+
+
+def test_adapter_rejects_tampered_capture_payload_after_hashing():
+    row = observation_row()
+    row["payload"]["rights_approved"] = False
+    result = adapt_persisted_coverage_rows([fixture_row()], [row])
+    assert result.evidence == ()
+    assert result.rejected_observation_rows == 1
+
+
+def test_adapter_rejects_mismatched_observation_item_hash():
+    row = observation_row()
+    row["payload_sha256"] = "d" * 64
+    result = adapt_persisted_coverage_rows([fixture_row()], [row])
+    assert result.evidence == ()
+    assert result.rejected_observation_rows == 1
