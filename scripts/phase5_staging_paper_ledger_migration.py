@@ -205,7 +205,7 @@ def run(*, apply: bool = False) -> dict[str, object]:
 
     manifest = load_manifest()
     versions = [entry[0] for entry in manifest]
-    if len(versions) < 9 or versions[-1] != MIGRATION_VERSION:
+    if len(versions) < 10 or versions[-1] != MIGRATION_VERSION:
         raise RuntimeError("PAPER_LEDGER_AND_DELIVERY_MIGRATIONS_NOT_LAST_IN_MANIFEST")
     expected_pending = versions[-len(EXPECTED_PENDING):]
     if expected_pending != EXPECTED_PENDING:
