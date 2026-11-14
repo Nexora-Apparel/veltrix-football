@@ -70,6 +70,8 @@ def _approval_for(
         raise ValueError("SOURCE_APPROVAL_MISSING")
     if approval.approval_id != approval_id or approval.provider != provider or approval.source_id != source_id:
         raise ValueError("SOURCE_APPROVAL_IDENTITY_MISMATCH")
+    if approval.data_type not in {"fixture_result", "fixtures_and_results"}:
+        raise ValueError("SOURCE_APPROVAL_DATA_TYPE_MISMATCH")
     provider_competition = _provider_competition_id(competition_id, source_id)
     scope = {item.strip() for item in approval.competition_scope.split(",") if item.strip()}
     if not provider_competition or provider_competition not in scope or "*" in scope:
@@ -94,7 +96,6 @@ def _training_evidence(
             counts[row.fixture_id] = counts.get(row.fixture_id, 0) + 1
     duplicate_ids = {key for key, count in counts.items() if count > 1}
     used: list[dict] = []
-    home_count = away_count = 0
 
     for row in observations:
         if not isinstance(row, MatchObservation) or row.fixture_id in duplicate_ids:
@@ -128,14 +129,8 @@ def _training_evidence(
             "rights_approval_id": approval.approval_id,
             "rights_evidence_sha256": approval.evidence_sha256,
         })
-        if forecast.model.home_team_match_count >= 0 and forecast.model is not None:
-            if row.home_team_id == forecast.model_home_team_id if hasattr(forecast, "model_home_team_id") else False:
-                home_count += 1
-            if row.away_team_id == forecast.model_away_team_id if hasattr(forecast, "model_away_team_id") else False:
-                away_count += 1
-
     used.sort(key=lambda item: item["fixture_id"])
-    return used, len(used), home_count, away_count
+    return used, len(used), 0, 0
 
 
 def admit_shadow_forecasts(
