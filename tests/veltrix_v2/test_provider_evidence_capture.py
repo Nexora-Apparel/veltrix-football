@@ -55,6 +55,8 @@ def capture(**overrides):
         away_goals=1,
         raw_response=b'{"fixture":"fx-100","score":[2,1]}',
         source_published_at=NOW - timedelta(minutes=40),
+        source_timestamp_basis="provider_timestamp",
+        source_timestamp_evidence_sha256=sha256(b'{"fixture":"fx-100","score":[2,1]}').hexdigest(),
         source_effective_at=NOW - timedelta(minutes=35),
         available_at=NOW - timedelta(minutes=30),
         retrieved_at=NOW - timedelta(minutes=20),
@@ -185,3 +187,10 @@ def test_untrusted_timezone_and_result_before_kickoff_fail_closed():
     report = capture_provider_result_evidence([naive])
     assert report.observations[0].point_in_time_certifiable is False
     assert "RETRIEVED_AT_TIMESTAMP_UNTRUSTED" in report.observations[0].reason_codes
+
+
+def test_source_timestamp_requires_explicit_basis_and_evidence_hash():
+    report = capture_provider_result_evidence([capture(source_timestamp_basis="unknown")])
+    evidence = report.observations[0]
+    assert evidence.point_in_time_certifiable is False
+    assert "SOURCE_TIMESTAMP_BASIS_UNTRUSTED" in evidence.reason_codes
