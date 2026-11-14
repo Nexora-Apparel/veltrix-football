@@ -190,13 +190,15 @@ def _request_page(
     start_at: datetime,
     end_at: datetime,
     page: int,
-    last_request_started: float | None,
-) -> tuple[bytes, dict[str, str], datetime, datetime, float]:
+    pacing_state: dict[str, float | None],
+) -> tuple[bytes, dict[str, str], datetime, datetime]:
+    last_request_started = pacing_state.get("last_started")
     if last_request_started is not None:
         delay = MIN_REQUEST_INTERVAL_SECONDS - (time.monotonic() - last_request_started)
         if delay > 0:
             time.sleep(delay)
     requested_at = datetime.now(timezone.utc)
+    pacing_state["last_started"] = time.monotonic()
     params = {
         "start_time": int(start_at.timestamp()),
         "end_time": int(end_at.timestamp()),
@@ -212,7 +214,6 @@ def _request_page(
         "Accept": "application/json",
         "User-Agent": USER_AGENT,
     })
-    started = time.monotonic()
     try:
         with urlopen(request, timeout=25) as response:
             raw = response.read()
@@ -230,7 +231,7 @@ def _request_page(
     retrieved_at = datetime.now(timezone.utc)
     if not raw:
         raise RuntimeError("FIVEDOLLAR_EMPTY_RESPONSE")
-    return raw, headers, requested_at, retrieved_at, started
+    return raw, headers, requested_at, retrieved_at
 
 
 def _capture_page(
@@ -245,6 +246,7 @@ def _capture_page(
     approval: SourceApproval,
     registry,
     out_dir: Path,
+    staging_dsn: str,
 ) -> tuple[list, dict[str, object]]:
     parsed = parse_fixture_page(
         raw,
@@ -276,9 +278,7 @@ def _capture_page(
 
     if status == "finished":
         recorded_at = datetime.now(timezone.utc)
-        current_approval = _refresh_approval(
-            os.environ["VELTRIX_STAGING_DATABASE_URL"], at=recorded_at
-        )
+        current_approval = _refresh_approval(staging_dsn, at=recorded_at)
         for purpose in (DataUsePurpose.STORAGE, DataUsePurpose.MODEL_TRAINING):
             decision = evaluate_source_use(
                 current_approval, purpose, at_utc=recorded_at, commercial=True
@@ -365,7 +365,7 @@ def run_capture(
     targets = []
     page_manifests = []
     request_count = 0
-    last_started = None
+    pacing_state: dict[str, float | None] = {"last_started": None}
     skipped_competitions = []
 
     for competition_id in competition_ids:
@@ -382,10 +382,10 @@ def run_capture(
         request_id = f"{os.getenv('GITHUB_RUN_ID', 'manual')}-{competition_id}-finished-1"
         request_count += 1
         try:
-            raw, headers, requested_at, retrieved_at, last_started = _request_page(
+            raw, headers, requested_at, retrieved_at = _request_page(
                 api_key, competition_id=competition_id, status="finished",
                 start_at=history_start, end_at=now, page=1,
-                last_request_started=last_started,
+                pacing_state=pacing_state,
             )
         except PermissionError as exc:
             if str(exc) == "FIVEDOLLAR_COMPETITION_NOT_ENTITLED":
@@ -396,12 +396,15 @@ def run_capture(
             raw, headers, competition_id=competition_id, status="finished",
             request_id=request_id, requested_at=requested_at, retrieved_at=retrieved_at,
             approval=current_approval, registry=registry, out_dir=out_dir,
+            staging_dsn=staging_dsn,
         )
         observations.extend(result_rows)
         page_manifests.append(info)
         quota_remaining = info.get("quota_remaining")
-        if isinstance(quota_remaining, int) and quota_remaining < 1:
-            raise RuntimeError("FIVEDOLLAR_QUOTA_EXHAUSTED")
+        if isinstance(quota_remaining, int):
+            planned_remaining = MAX_REQUESTS - request_count
+            if quota_remaining < max(1, planned_remaining):
+                raise RuntimeError("FIVEDOLLAR_QUOTA_BELOW_BOUNDED_REQUEST_PLAN")
 
         if request_count >= MAX_REQUESTS:
             break
@@ -415,10 +418,10 @@ def run_capture(
         request_id = f"{os.getenv('GITHUB_RUN_ID', 'manual')}-{competition_id}-scheduled-1"
         request_count += 1
         try:
-            raw, headers, requested_at, retrieved_at, last_started = _request_page(
+            raw, headers, requested_at, retrieved_at = _request_page(
                 api_key, competition_id=competition_id, status="scheduled",
                 start_at=now, end_at=upcoming_end, page=1,
-                last_request_started=last_started,
+                pacing_state=pacing_state,
             )
         except PermissionError as exc:
             if str(exc) == "FIVEDOLLAR_COMPETITION_NOT_ENTITLED":
@@ -429,12 +432,15 @@ def run_capture(
             raw, headers, competition_id=competition_id, status="scheduled",
             request_id=request_id, requested_at=requested_at, retrieved_at=retrieved_at,
             approval=current_approval, registry=registry, out_dir=out_dir,
+            staging_dsn=staging_dsn,
         )
         targets.extend(target_rows)
         page_manifests.append(info)
         quota_remaining = info.get("quota_remaining")
-        if isinstance(quota_remaining, int) and quota_remaining < 1:
-            raise RuntimeError("FIVEDOLLAR_QUOTA_EXHAUSTED")
+        if isinstance(quota_remaining, int):
+            planned_remaining = MAX_REQUESTS - request_count
+            if quota_remaining < max(1, planned_remaining):
+                raise RuntimeError("FIVEDOLLAR_QUOTA_BELOW_BOUNDED_REQUEST_PLAN")
 
     # Stable deduplication; conflicting duplicates are rejected rather than selected.
     observation_by_fixture = {}
