@@ -125,6 +125,55 @@ def test_403_competition_response_is_not_retried_and_still_advances_pacer(monkey
     assert isinstance(pacing["last_started"], float)
 
 
+def test_successful_request_preserves_http_status_and_exact_query(monkeypatch):
+    import scripts.phase5_collect_5dollar_shadow as capture
+    from urllib.parse import parse_qs, urlparse
+
+    seen = {}
+
+    class Response:
+        status = 206
+        headers = {"X-Requests-Remaining": "42"}
+
+        def read(self):
+            return b'{"fixtures":[]}'
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args):
+            return False
+
+    def fake_urlopen(request, timeout):
+        seen["url"] = request.full_url
+        seen["timeout"] = timeout
+        return Response()
+
+    monkeypatch.setattr(capture, "urlopen", fake_urlopen)
+    raw, headers, requested, retrieved, http_status = _request_page(
+        "test-key",
+        competition_id="league-123",
+        status="finished",
+        start_at=NOW - timedelta(days=7),
+        end_at=NOW,
+        page=1,
+        pacing_state={"last_started": None},
+        before_request=lambda: NOW,
+    )
+    query = parse_qs(urlparse(seen["url"]).query)
+    assert raw == b'{"fixtures":[]}'
+    assert http_status == 206
+    assert headers["X-Requests-Remaining"] == "42"
+    assert query["status"] == ["finished"]
+    assert query["order"] == ["desc"]
+    assert query["page"] == ["1"]
+    assert query["per_page"] == ["100"]
+    assert int(query["start_time"][0]) == int((NOW - timedelta(days=7)).timestamp())
+    assert int(query["end_time"][0]) == int(NOW.timestamp())
+    assert seen["timeout"] == 25
+    assert retrieved >= requested
+
+
 def test_staging_persistence_flag_does_not_execute_without_execute(monkeypatch, capsys):
     monkeypatch.setattr(sys, "argv", [
         "phase5_collect_5dollar_shadow", "--persist-staging"
