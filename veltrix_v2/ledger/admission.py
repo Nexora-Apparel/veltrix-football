@@ -261,6 +261,21 @@ def admit_shadow_forecasts(
             )):
                 raise ValueError("PAPER_EVIDENCE_HASH_INVALID")
 
+            market_probabilities = {
+                "1X2": {
+                    "home": forecast.model.home_win,
+                    "draw": forecast.model.draw,
+                    "away": forecast.model.away_win,
+                },
+                "BTTS": {
+                    "yes": forecast.model.btts_yes,
+                    "no": 1.0 - forecast.model.btts_yes,
+                },
+                "TOTALS_2_5": {
+                    "over": forecast.model.over_2_5,
+                    "under": 1.0 - forecast.model.over_2_5,
+                },
+            }
             evidence = {
                 "fixture_id": target.fixture_id,
                 "competition_id": target.competition_id,
@@ -280,6 +295,7 @@ def admit_shadow_forecasts(
                 "model_artifact_sha256": model_artifact_sha256,
                 "feature_set_sha256": feature_set_sha256,
                 "model_version": forecast.model.model_version,
+                "market_probabilities": market_probabilities,
             }
             evidence_hash = _digest(evidence)
             prediction = PaperPrediction(
@@ -305,6 +321,7 @@ def admit_shadow_forecasts(
                 target_payload_sha256=target.payload_sha256,
                 target_response_sha256=target.response_sha256,
                 target_capture_manifest_sha256=target.capture_manifest_sha256,
+                market_probabilities=market_probabilities,
             )
             admitted.append(prediction)
         except (TypeError, ValueError, AttributeError) as exc:

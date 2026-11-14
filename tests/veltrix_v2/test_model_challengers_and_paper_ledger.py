@@ -223,3 +223,63 @@ def test_first_observed_rows_never_enter_historical_walk_forward_training():
     assert report.scored_fixtures == baseline.scored_fixtures
     assert report.skipped_uncertified_targets == baseline.skipped_uncertified_targets + 1
     assert [row.predictions for row in report.fixtures] == [row.predictions for row in baseline.fixtures]
+
+
+
+def test_paper_ledger_records_and_settles_all_supported_market_outcomes():
+    ledger = ProspectivePaperLedger()
+    kickoff = BASE + timedelta(days=60)
+    markets = {
+        "1X2": {"home": 0.50, "draw": 0.25, "away": 0.25},
+        "BTTS": {"yes": 0.60, "no": 0.40},
+        "TOTALS_2_5": {"over": 0.55, "under": 0.45},
+    }
+    prediction = PaperPrediction(
+        fixture_id="multi-market-1", competition_id="league",
+        home_team_id="A", away_team_id="B", kickoff_at=kickoff,
+        prediction_cutoff_at=kickoff - timedelta(hours=2),
+        forecasted_at=kickoff - timedelta(hours=1),
+        recorded_at=kickoff - timedelta(minutes=30),
+        model_version="candidate-multi-v1",
+        home_probability=0.50, draw_probability=0.25, away_probability=0.25,
+        evidence_sha256="a" * 64, point_in_time_certifiable=True,
+        market_probabilities=markets,
+    )
+    ledger.append_prediction(prediction)
+    settled = ledger.append_settlement(
+        fixture_id="multi-market-1", model_version="candidate-multi-v1",
+        home_goals=2, away_goals=1,
+        result_available_at=kickoff + timedelta(hours=2),
+        result_retrieved_at=kickoff + timedelta(hours=3),
+        recorded_at=kickoff + timedelta(hours=4),
+        source_provider="TestProvider", source_id="testsrc",
+        source_fixture_id="multi-market-1",
+        result_payload_sha256="d" * 64,
+        rights_approval_id="approval-1", rights_evidence_sha256="e" * 64,
+    )
+    assert settled.payload["market_outcomes"] == {
+        "1X2": "HOME", "BTTS": "YES", "TOTALS_2_5": "OVER",
+    }
+    assert settled.payload["market_probabilities"] == markets
+    assert ledger.verify_chain()
+
+
+def test_paper_ledger_rejects_invalid_multi_market_probability_vectors():
+    ledger = ProspectivePaperLedger()
+    kickoff = BASE + timedelta(days=70)
+    prediction = PaperPrediction(
+        fixture_id="multi-market-invalid", competition_id="league",
+        home_team_id="A", away_team_id="B", kickoff_at=kickoff,
+        prediction_cutoff_at=kickoff - timedelta(hours=2),
+        forecasted_at=kickoff - timedelta(hours=1),
+        recorded_at=kickoff - timedelta(minutes=30),
+        model_version="candidate-multi-v1",
+        home_probability=0.50, draw_probability=0.25, away_probability=0.25,
+        evidence_sha256="a" * 64, point_in_time_certifiable=True,
+        market_probabilities={
+            "1X2": {"home": 0.50, "draw": 0.25, "away": 0.25},
+            "BTTS": {"yes": 0.70, "no": 0.20},
+        },
+    )
+    with pytest.raises(ValueError, match="PAPER_PREDICTION_MARKET_VECTOR_NOT_NORMALISED"):
+        ledger.append_prediction(prediction)

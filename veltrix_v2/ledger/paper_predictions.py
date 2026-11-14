@@ -11,7 +11,7 @@ from datetime import datetime
 import hashlib
 import json
 import math
-from typing import Iterable
+from typing import Iterable, Mapping
 
 
 GENESIS_HASH = "0" * 64
@@ -41,6 +41,7 @@ class PaperPrediction:
     target_payload_sha256: str | None = None
     target_response_sha256: str | None = None
     target_capture_manifest_sha256: str | None = None
+    market_probabilities: dict[str, dict[str, float]] | None = None
 
 
 @dataclass(frozen=True)
@@ -65,6 +66,40 @@ def _canonical(value: dict) -> bytes:
 
 def _event_hash(body: dict) -> str:
     return hashlib.sha256(_canonical(body)).hexdigest()
+
+
+_MARKET_KEYS = {
+    "1X2": ("home", "draw", "away"),
+    "BTTS": ("yes", "no"),
+    "TOTALS_2_5": ("over", "under"),
+}
+
+
+def _validated_market_probabilities(value, *, home: float, draw: float, away: float) -> dict:
+    markets = value if value is not None else {
+        "1X2": {"home": home, "draw": draw, "away": away}
+    }
+    if not isinstance(markets, Mapping) or "1X2" not in markets:
+        raise ValueError("PAPER_PREDICTION_MARKET_PROBABILITIES_INVALID")
+    normalized = {}
+    for market, vector in markets.items():
+        keys = _MARKET_KEYS.get(market)
+        if keys is None or not isinstance(vector, Mapping) or set(vector) != set(keys):
+            raise ValueError("PAPER_PREDICTION_MARKET_VECTOR_INVALID")
+        values = [vector[key] for key in keys]
+        if any(
+            not isinstance(item, (int, float)) or isinstance(item, bool)
+            or not math.isfinite(float(item)) or not 0.0 <= float(item) <= 1.0
+            for item in values
+        ) or abs(sum(float(item) for item in values) - 1.0) > 1e-9:
+            raise ValueError("PAPER_PREDICTION_MARKET_VECTOR_NOT_NORMALISED")
+        normalized[market] = {key: float(vector[key]) for key in keys}
+    one_x_two = normalized["1X2"]
+    if any(abs(one_x_two[key] - expected) > 1e-9 for key, expected in (
+        ("home", home), ("draw", draw), ("away", away)
+    )):
+        raise ValueError("PAPER_PREDICTION_MARKET_1X2_MISMATCH")
+    return normalized
 
 
 class ProspectivePaperLedger:
@@ -112,6 +147,12 @@ class ProspectivePaperLedger:
             raise ValueError("PAPER_PREDICTION_PROBABILITY_INVALID")
         if abs(sum(probs) - 1.0) > 1e-9:
             raise ValueError("PAPER_PREDICTION_PROBABILITIES_NOT_NORMALISED")
+        market_probabilities = _validated_market_probabilities(
+            prediction.market_probabilities,
+            home=float(prediction.home_probability),
+            draw=float(prediction.draw_probability),
+            away=float(prediction.away_probability),
+        )
         if any(e.event_type in {"PREDICTION", "SHADOW_PREDICTION"}
                and e.fixture_id == prediction.fixture_id
                and e.model_version == prediction.model_version for e in self._events):
@@ -163,6 +204,7 @@ class ProspectivePaperLedger:
             "evidence_sha256": prediction.evidence_sha256.lower(),
             "point_in_time_certifiable": prediction.point_in_time_certifiable,
             "evidence_class": prediction.evidence_class,
+            "market_probabilities": market_probabilities,
         }
         if prediction.target_provider is not None:
             payload.update({
@@ -221,8 +263,24 @@ class ProspectivePaperLedger:
                 char not in "0123456789abcdef" for char in value.lower()
             ):
                 raise ValueError("PAPER_SETTLEMENT_EVIDENCE_HASH_INVALID")
+        market_probabilities = prediction.payload.get("market_probabilities")
+        if market_probabilities is None:
+            market_probabilities = {
+                "1X2": {
+                    "home": prediction.payload["home_probability"],
+                    "draw": prediction.payload["draw_probability"],
+                    "away": prediction.payload["away_probability"],
+                }
+            }
+        market_outcomes = {
+            "1X2": "HOME" if home_goals > away_goals else "AWAY" if home_goals < away_goals else "DRAW",
+            "BTTS": "YES" if home_goals > 0 and away_goals > 0 else "NO",
+            "TOTALS_2_5": "OVER" if home_goals + away_goals >= 3 else "UNDER",
+        }
         payload = {
             "home_goals": home_goals, "away_goals": away_goals,
+            "market_probabilities": market_probabilities,
+            "market_outcomes": market_outcomes,
             "result_available_at": result_available_at.isoformat(),
             "result_retrieved_at": result_retrieved_at.isoformat(),
             "recorded_at": recorded_at.isoformat(),
@@ -259,6 +317,8 @@ class ProspectivePaperLedger:
 
     def verify_chain(self) -> bool:
         previous = GENESIS_HASH
+        predictions_by_key = {}
+        settled_keys = set()
         for index, event in enumerate(self._events, start=1):
             body = {
                 "sequence": event.sequence, "event_type": event.event_type,
@@ -278,6 +338,14 @@ class ProspectivePaperLedger:
                     or payload.get("recorded_at") != event.recorded_at
                 ):
                     raise ValueError("PAPER_LEDGER_EVENT_IDENTITY_INVALID")
+                if "market_probabilities" in payload:
+                    _validated_market_probabilities(
+                        payload["market_probabilities"],
+                        home=float(payload["home_probability"]),
+                        draw=float(payload["draw_probability"]),
+                        away=float(payload["away_probability"]),
+                    )
+                predictions_by_key[(event.fixture_id, event.model_version)] = event
                 if payload.get("target_provider") == "5DollarFootballAPI":
                     required_target_fields = (
                         "target_source_id", "target_source_fixture_id",
@@ -298,5 +366,34 @@ class ProspectivePaperLedger:
                         )
                     ):
                         raise ValueError("PAPER_LEDGER_TARGET_HASH_INVALID")
+            elif event.event_type == "SETTLEMENT":
+                key = (event.fixture_id, event.model_version)
+                prediction = predictions_by_key.get(key)
+                if prediction is None or key in settled_keys:
+                    raise ValueError("PAPER_LEDGER_SETTLEMENT_IDENTITY_INVALID")
+                if event.payload.get("prediction_event_sha256") != prediction.event_sha256:
+                    raise ValueError("PAPER_LEDGER_SETTLEMENT_PREDICTION_LINK_INVALID")
+                if "market_outcomes" in event.payload:
+                    goals = (event.payload.get("home_goals"), event.payload.get("away_goals"))
+                    if any(not isinstance(value, int) or isinstance(value, bool) or value < 0 for value in goals):
+                        raise ValueError("PAPER_LEDGER_SETTLEMENT_SCORE_INVALID")
+                    home_goals, away_goals = goals
+                    expected_outcomes = {
+                        "1X2": "HOME" if home_goals > away_goals else "AWAY" if home_goals < away_goals else "DRAW",
+                        "BTTS": "YES" if home_goals > 0 and away_goals > 0 else "NO",
+                        "TOTALS_2_5": "OVER" if home_goals + away_goals >= 3 else "UNDER",
+                    }
+                    if event.payload.get("market_outcomes") != expected_outcomes:
+                        raise ValueError("PAPER_LEDGER_SETTLEMENT_MARKET_OUTCOME_MISMATCH")
+                    prediction_markets = prediction.payload.get("market_probabilities")
+                    if prediction_markets is None:
+                        prediction_markets = {"1X2": {
+                            "home": prediction.payload["home_probability"],
+                            "draw": prediction.payload["draw_probability"],
+                            "away": prediction.payload["away_probability"],
+                        }}
+                    if event.payload.get("market_probabilities") != prediction_markets:
+                        raise ValueError("PAPER_LEDGER_SETTLEMENT_MARKET_PROBABILITY_MISMATCH")
+                settled_keys.add(key)
             previous = event.event_sha256
         return True

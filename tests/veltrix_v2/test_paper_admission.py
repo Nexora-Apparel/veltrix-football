@@ -87,6 +87,11 @@ def test_admits_prospective_shadow_forecast_with_source_and_history_rights():
     prediction = admitted.admitted[0]
     assert prediction.point_in_time_certifiable is True
     assert prediction.recorded_at < prediction.kickoff_at
+    assert prediction.market_probabilities == {
+        "1X2": {"home": 0.5, "draw": 0.3, "away": 0.2},
+        "BTTS": {"yes": 0.45, "no": 0.55},
+        "TOTALS_2_5": {"over": 0.42, "under": 0.58},
+    }
     assert len(prediction.evidence_sha256) == 64
 
 
@@ -299,6 +304,7 @@ def test_5dollar_shadow_admission_requires_raw_page_and_provider_scope_evidence(
     assert event.payload["target_provider_competition_id"] == "3118717965"
     assert event.payload["target_response_sha256"] == "d" * 64
     assert event.payload["target_capture_manifest_sha256"] == "e" * 64
+    assert set(event.payload["market_probabilities"]) == {"1X2", "BTTS", "TOTALS_2_5"}
 
     missing_page_hash = replace(
         provider_target, response_sha256=None, capture_manifest_sha256=None
