@@ -6,6 +6,7 @@ import pytest
 
 from veltrix_v2.reporting.report_identity import (
     REPORT_SCHEMA,
+    assert_report_surface_bundle,
     assert_same_report,
     bind_report_identity,
     create_report_identity,
@@ -90,3 +91,27 @@ def test_noncanonical_or_invalid_report_dates_are_rejected(as_of_date):
 def test_report_hash_cannot_be_constructed_from_missing_schema_or_identity():
     with pytest.raises(ValueError):
         create_report_identity({"report_id": "r1", "as_of_date": "2026-11-14"})
+
+
+def test_canonical_scheduled_telegram_and_website_surfaces_share_one_report():
+    canonical = bind_report_identity(report())
+    scheduled = deepcopy(canonical)
+    telegram = deepcopy(canonical)
+    website = {
+        "as_of_date": canonical["as_of_date"],
+        "report_id": canonical["report_id"],
+        "report_sha256": canonical["report_sha256"],
+    }
+    identity = assert_report_surface_bundle(canonical, scheduled, telegram, website)
+    assert identity.report_sha256 == canonical["report_sha256"]
+
+
+def test_four_surface_parity_rejects_dashboard_from_another_revision():
+    canonical = bind_report_identity(report())
+    website = {
+        "as_of_date": canonical["as_of_date"],
+        "report_id": canonical["report_id"],
+        "report_sha256": "f" * 64,
+    }
+    with pytest.raises(ValueError, match="WEBSITE_REPORT_PROJECTION_IDENTITY_MISMATCH"):
+        assert_report_surface_bundle(canonical, deepcopy(canonical), deepcopy(canonical), website)
