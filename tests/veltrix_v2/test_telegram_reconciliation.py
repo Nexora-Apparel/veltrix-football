@@ -143,6 +143,8 @@ def test_correction_must_supersede_existing_event_for_same_claim():
         "reconciliation_id": parent_id,
         "idempotency_key": CLAIM["idempotency_key"],
         "supersedes_reconciliation_id": None,
+        "observed_at": NOW.isoformat(),
+        "recorded_at": NOW.isoformat(),
     }]
     corrected = event(
         reconciliation_id=str(uuid.uuid4()),
@@ -248,3 +250,24 @@ def test_reconciliation_rejects_oversized_evidence_bytes():
     oversized_event = event(evidence_sha256=hashlib.sha256(oversized).hexdigest())
     with pytest.raises(ValueError, match="EVIDENCE_TOO_LARGE"):
         validate_reconciliation_event(CLAIM, oversized_event, oversized)
+
+
+
+def test_reconciliation_supersession_timestamps_cannot_regress():
+    parent_id = str(uuid.uuid4())
+    existing = [{
+        "reconciliation_id": parent_id,
+        "idempotency_key": CLAIM["idempotency_key"],
+        "supersedes_reconciliation_id": None,
+        "observed_at": NOW.isoformat(),
+        "recorded_at": NOW.isoformat(),
+    }]
+    corrected = event(
+        outcome="INCONCLUSIVE",
+        telegram_message_ids=[],
+        supersedes_reconciliation_id=parent_id,
+        observed_at="2026-11-14T11:59:59+00:00",
+        recorded_at="2026-11-14T12:00:01+00:00",
+    )
+    with pytest.raises(ValueError, match="SUPERSESSION_TIME_REGRESSION"):
+        validate_reconciliation_event(CLAIM, corrected, EVIDENCE, existing)
