@@ -1,3 +1,4 @@
+from dataclasses import replace
 from datetime import datetime, timedelta, timezone
 
 import pytest
@@ -207,3 +208,18 @@ def test_jsonl_store_round_trips_observed_only_shadow_event(tmp_path):
     assert loaded.verify_chain()
     assert loaded.events[0].event_type == "SHADOW_PREDICTION"
     assert loaded.events[0].event_sha256 == event.event_sha256
+
+
+def test_first_observed_rows_never_enter_historical_walk_forward_training():
+    as_of = BASE + timedelta(days=20)
+    baseline = evaluate_model_challengers(comparison_rows(), evaluation_as_of=as_of)
+    observed = replace(
+        match("observed-only", "A", "B", 5, 0, 4, certifiable=False),
+        availability_basis="collector_first_observed_v1",
+    )
+    report = evaluate_model_challengers(
+        comparison_rows() + [observed], evaluation_as_of=as_of
+    )
+    assert report.scored_fixtures == baseline.scored_fixtures
+    assert report.skipped_uncertified_targets == baseline.skipped_uncertified_targets + 1
+    assert [row.predictions for row in report.fixtures] == [row.predictions for row in baseline.fixtures]
