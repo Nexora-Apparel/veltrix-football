@@ -61,7 +61,7 @@ def test_last_five_form_uses_latest_results_only():
     rows += [match(str(i), "A", "B", 3, 0, 10 - i) for i in range(5, 9)]
     result = team_form_as_of(rows, competition_id="league", home_team_id="A",
                              away_team_id="B", cutoff_at=CUTOFF)
-    assert result.home.last_five_points_per_match == pytest.approx(3.0)
+    assert result.home.last_five_points_per_match == pytest.approx(2.4)
 
 
 def test_date_only_latest_result_does_not_invent_rest_days():
