@@ -322,6 +322,11 @@ def _persist_paper_predictions_to_staging(
         }
 
 
+def _persist_admitted_predictions_to_staging(dsn: str, admitted_predictions) -> dict[str, object]:
+    """Normalize the admission collection before crossing the PostgreSQL store boundary."""
+    return _persist_paper_predictions_to_staging(dsn, list(admitted_predictions))
+
+
 def _request_page(
     api_key: str,
     *,
@@ -803,7 +808,7 @@ def run_capture(
         local_store.append_prediction(prediction) for prediction in admission.admitted
     ]
     staging_ledger = (
-        _persist_paper_predictions_to_staging(staging_dsn, list(admission.admitted))
+        _persist_admitted_predictions_to_staging(staging_dsn, admission.admitted)
         if persist_staging else None
     )
 
