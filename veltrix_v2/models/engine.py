@@ -81,6 +81,7 @@ def predict_batch(
     cutoff_at: datetime,
     max_fixtures: int = 25,
     recency_half_life_days: float | None = None,
+    dixon_coles_rho: float = 0.0,
 ) -> BatchForecastReport:
     """Generate up to 25 forecasts in kickoff order, without favourites filtering.
 
@@ -98,6 +99,9 @@ def predict_batch(
         or recency_half_life_days <= 0
     ):
         raise ValueError("RECENCY_HALF_LIFE_MUST_BE_POSITIVE_FINITE")
+    if (not isinstance(dixon_coles_rho, (int, float)) or isinstance(dixon_coles_rho, bool)
+            or not math.isfinite(dixon_coles_rho) or not -1.0 <= dixon_coles_rho <= 1.0):
+        raise ValueError("DIXON_COLES_RHO_INVALID")
 
     history = list(observations)
     target_rows = list(targets)
@@ -136,6 +140,7 @@ def predict_batch(
                 kickoff_at=target.kickoff_at,
                 cutoff_at=cutoff_at,
                 recency_half_life_days=recency_half_life_days,
+                dixon_coles_rho=dixon_coles_rho,
             )
         except InsufficientHistoryError:
             skipped_no_history += 1
