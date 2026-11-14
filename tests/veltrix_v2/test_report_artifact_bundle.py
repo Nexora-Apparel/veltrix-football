@@ -5,12 +5,13 @@ import json
 import pytest
 
 from veltrix_v2.reporting.artifact_bundle import (
+    ReportSurfaceBundle,
     build_report_surface_bundle,
     load_authorized_scheduled_report,
     load_report_surface_bundle,
     persist_report_surface_bundle,
 )
-from veltrix_v2.reporting.report_identity import REPORT_SCHEMA
+from veltrix_v2.reporting.report_identity import REPORT_SCHEMA, ReportIdentity
 
 
 def source_report():
@@ -141,3 +142,22 @@ def public_source_report():
             {"fixture_id": "fx-1", "publication_status": "PUBLISHED", "certified_markets": ["1X2"]},
         ],
     }
+
+
+def test_persistence_rejects_bundle_identity_drift_before_writing(tmp_path):
+    bundle = build_report_surface_bundle(source_report())
+    wrong_identity = ReportIdentity(
+        report_id="different-report-id",
+        as_of_date=bundle.identity.as_of_date,
+        report_sha256=bundle.identity.report_sha256,
+    )
+    invalid = ReportSurfaceBundle(
+        bundle.canonical_report,
+        bundle.scheduled_report,
+        bundle.telegram_report,
+        bundle.website_projection,
+        wrong_identity,
+    )
+    with pytest.raises(ValueError, match="REPORT_SURFACE_BUNDLE_IDENTITY_MISMATCH"):
+        persist_report_surface_bundle(invalid, tmp_path)
+    assert not list(tmp_path.rglob("*.json"))
