@@ -3,6 +3,7 @@ from __future__ import annotations
 from copy import deepcopy
 
 from app import report_artifacts
+from veltrix_v2.reporting.artifact_bundle import build_report_surface_bundle, serialize_portable_report_surface_bundle
 from veltrix_v2.reporting.report_identity import REPORT_SCHEMA, bind_report_identity
 
 
@@ -223,3 +224,26 @@ def test_website_publication_loader_fails_closed_when_verifier_raises(monkeypatc
 
     assert report_artifacts.load_v2_report_bundle(unavailable_verifier) is None
     assert report_artifacts.load_latest_report(unavailable_verifier) is None
+
+
+
+def test_website_loader_accepts_same_verified_portable_bundle_for_all_surfaces():
+    report = make_report()
+    portable = serialize_portable_report_surface_bundle(build_report_surface_bundle(report))
+    bundle = report_artifacts.load_v2_portable_report_bundle(
+        portable,
+        lambda value, identity: value.get("release_mode") == "RESTRICTED_PUBLIC",
+    )
+    assert bundle is not None
+    assert bundle["report"] == report
+    assert bundle["dashboard"]["report_id"] == report["report_id"]
+    assert bundle["scheduled"] == report
+    assert bundle["telegram"] == report
+
+
+def test_website_portable_bundle_loader_fails_closed_on_bad_bytes_or_missing_verifier():
+    assert report_artifacts.load_v2_portable_report_bundle(b"not-json", lambda *_: True) is None
+    report = make_report()
+    portable = serialize_portable_report_surface_bundle(build_report_surface_bundle(report))
+    assert report_artifacts.load_v2_portable_report_bundle(portable, None) is None
+    assert report_artifacts.load_v2_portable_report_bundle(portable, lambda *_: False) is None
