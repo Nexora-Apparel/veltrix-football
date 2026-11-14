@@ -165,57 +165,40 @@ function renderValueBet(m,box){
  const card=document.createElement('article');card.className='insightcard';
  const i=document.createElement('div');i.className='insighticon';i.textContent='◇';
  const t=document.createElement('div');t.className='insighttitle';t.textContent='Value Bet Verdict';
- const screen=m&&m.value_bet_screen&&typeof m.value_bet_screen==='object'?m.value_bet_screen:{};
- const markets=screen.markets&&typeof screen.markets==='object'?screen.markets:{};
- const candidates=Object.entries(markets).flatMap(([market,result])=>[
-  ...(result&&Array.isArray(result.candidates)?result.candidates.map(candidate=>({market,candidate,paper:true})):[]),
-  ...(result&&Array.isArray(result.paper_candidates)?result.paper_candidates.map(candidate=>({market,candidate,paper:true})):[])
- ]);
- const v=document.createElement('div');v.className='insightbody insightvalue';
- const d=document.createElement('div');d.className='insightbody';
- if(candidates.length){
-  const best=candidates.sort((a,b)=>Number(b.candidate.edge_percentage_points||0)-Number(a.candidate.edge_percentage_points||0))[0];
-  const c=best.candidate;
-  v.textContent=(best.paper?'POTENTIAL EDGE · UNDER REVIEW':'APPROVED VALUE BET')+' · '+best.market+' · '+String(c.selection||'Selection')+' @ '+Number(c.decimal_odds||0).toFixed(2);
-  d.textContent='Estimated edge '+Number(c.edge_percentage_points||0).toFixed(1)+' percentage points.'+(best.paper?' This is a research candidate, not an approved betting recommendation.':'');
- }else{
-  v.textContent='NO QUALIFYING VALUE BET';
-  d.textContent='Available bookmaker prices do not currently show a sufficiently supported edge.';
- }
+ const v=document.createElement('div');v.className='insightbody insightvalue';v.textContent='LOCKED · NOT CERTIFIED';
+ const d=document.createElement('div');d.className='insightbody';d.textContent='Value betting remains disabled until its separate prospective and market-level certification is complete.';
  card.append(i,t,v,d);box.append(card);
 }
 function renderInsights(m,targetId='insights'){
  const box=document.getElementById(targetId);if(!box)return;box.replaceChildren();if(!m){box.textContent='No eligible fixture available for insight generation.';return}
- const x=m.expected_goals||{},homeX=num(x.home),awayX=num(x.away),btts=num(m.btts_yes),over=num(m.over_2_5),best=topProbability(m),rows=[];
- rows.push(['◉','Model lean',Number.isFinite(best[1])?(best[0]==='Home'?m.home_team:best[0]==='Away'?m.away_team:'Draw')+' leads at '+fmt(best[1]):'1X2 probability unavailable','Computed from published model probabilities.']);
- rows.push(['◎','BTTS outlook',Number.isFinite(btts)?(btts>=.55?'Higher estimated chance both teams score':btts<=.45?'Model leans toward at least one team not scoring':'No strong BTTS lean'):'BTTS probability unavailable',Number.isFinite(btts)?'Model estimate: '+fmt(btts):'No value supplied.']);
- rows.push(['↗','Goal total',Number.isFinite(over)?(over>=.55?'Model leans Over 2.5':over<=.45?'Model leans Under 2.5':'No strong 2.5-goal lean'):'Totals estimate unavailable',Number.isFinite(over)?'Over 2.5 estimate: '+fmt(over):'No value supplied.']);
- rows.push(['⌁','Expected goals',Number.isFinite(homeX)&&Number.isFinite(awayX)?m.home_team+' '+homeX.toFixed(2)+' · '+m.away_team+' '+awayX.toFixed(2):'Expected-goals data unavailable','Goal estimates from the published model; not live xG statistics.']);
- if(m.prediction_basis)rows.push(['⚑','Why this verdict',m.prediction_basis,m.evidence_grade==='VERY_LOW'?'Very limited verified match history is available.':'Based on the verified results and scoring rates available before kick-off.']);
+ const certified=certifiedMarketList(m),rows=[],x=m.expected_goals||{},homeX=num(x.home),awayX=num(x.away);
+ if(certified.includes('1X2')){const best=topProbability(m);const p=marketValues(m,'1X2');rows.push(['◉','1X2 outlook',best[0]+' leads at '+fmt(best[1]),'Certified probabilities: Home '+fmt(p.home)+' · Draw '+fmt(p.draw)+' · Away '+fmt(p.away)+'.'])}
+ if(certified.includes('BTTS')){const p=marketValues(m,'BTTS');rows.push(['◎','BTTS outlook',p.yes>=.55?'Higher certified chance both teams score':p.yes<=.45?'Certified model leans No':'No strong BTTS lean','Yes '+fmt(p.yes)+' · No '+fmt(p.no)+'.'])}
+ if(certified.includes('TOTALS_2_5')){const p=marketValues(m,'TOTALS_2_5');rows.push(['↗','Goal total',p.over>=.55?'Certified model leans Over 2.5':p.over<=.45?'Certified model leans Under 2.5':'No strong 2.5-goal lean','Over 2.5 '+fmt(p.over)+' · Under 2.5 '+fmt(p.under)+'.'])}
+ if(Number.isFinite(homeX)&&Number.isFinite(awayX))rows.push(['⌁','Expected goals',m.home_team+' '+homeX.toFixed(2)+' · '+m.away_team+' '+awayX.toFixed(2),'Model goal estimates; these are not live xG event statistics.'])
+ const insight=typeof m.ai_insight==='string'?m.ai_insight:(m.ai_insight&&typeof m.ai_insight.summary==='string'?m.ai_insight.summary:null);
+ if(insight)rows.push(['⚑','AI insight',insight,'Report-supplied analysis tied to this fixture.'])
+ if(!rows.length)rows.push(['⚑','Evidence status','No certified market is available.','The fixture remains visible, but the publication gate has not approved a forecast.'])
  for(const [icon,title,value,desc] of rows){const card=document.createElement('article');card.className='insightcard';const a=document.createElement('div');a.className='insighticon';a.textContent=icon;const b=document.createElement('div');b.className='insighttitle';b.textContent=title;const c=document.createElement('div');c.className='insightbody insightvalue';c.textContent=value;const d=document.createElement('div');d.className='insightbody';d.textContent=desc;card.append(a,b,c,d);box.append(card)}
  renderValueBet(m,box);
 }
 function renderRows(){
  const box=document.getElementById('predictions');box.replaceChildren();let rows=dashboardRows;
- if(currentFilter==='btts')rows=rows.filter(m=>m.btts_yes!==null&&m.btts_yes!==undefined&&m.btts_yes!==''&&Number.isFinite(Number(m.btts_yes)));
- if(currentFilter==='totals')rows=rows.filter(m=>m.over_2_5!==null&&m.over_2_5!==undefined&&m.over_2_5!==''&&Number.isFinite(Number(m.over_2_5)));
+ if(currentFilter==='btts')rows=rows.filter(m=>certifiedMarketList(m).includes('BTTS'));
+ if(currentFilter==='totals')rows=rows.filter(m=>certifiedMarketList(m).includes('TOTALS_2_5'));
  document.getElementById('fixtureCount').textContent=rows.length+' fixtures shown';
  if(!rows.length){const e=document.createElement('div');e.className='empty';e.textContent='No fixtures match this filter in the published data.';box.append(e);return}
  rows.forEach((m,i)=>{
   const card=document.createElement('article');card.className='prediction-card reveal';card.style.transitionDelay=Math.min(i*45,250)+'ms';
   const title=document.createElement('h3');title.className='prediction-title';title.textContent=(m.home_team||'Home')+' vs '+(m.away_team||'Away');
-  const meta=document.createElement('div');meta.className='meta';meta.textContent=(m.league||'Competition')+' · '+(m.kickoff_local||m.kickoff||'Kickoff unavailable')+(m.fixture_visibility_note?' · '+m.fixture_visibility_note:'');
-  const chips=document.createElement('div');chips.className='chips';
-  const hasForecast=hasModelForecast(m);
-  if(hasForecast){
-   const p=m.probabilities;for(const [label,value] of [['1X2 Home',fmt(p.home_win)],['1X2 Draw',fmt(p.draw)],['1X2 Away',fmt(p.away_win)],['BTTS Yes',fmt(m.btts_yes)],['Over 2.5',fmt(m.over_2_5)],['Under 2.5',Number.isFinite(num(m.over_2_5))?fmt(1-num(m.over_2_5)):'—']]){
-    const chip=document.createElement('span');chip.className='chip';chip.textContent=label+' '+value;chips.append(chip);
-   }
-  }else{
-   const chip=document.createElement('span');chip.className='chip';chip.textContent='FORECAST UNAVAILABLE · '+(m.status||'STATUS NOT REPORTED');chips.append(chip);
-  }
+  const meta=document.createElement('div');meta.className='meta';meta.textContent=(m.league||m.competition_name||'Competition')+' · '+(m.kickoff_local||m.kickoff_wat||m.kickoff_utc||'Kickoff unavailable')+(m.fixture_visibility_note?' · '+m.fixture_visibility_note:'');
+  const chips=document.createElement('div');chips.className='chips';const certified=certifiedMarketList(m);
+  if(certified.includes('1X2')){const p=marketValues(m,'1X2');for(const [label,key] of [['1X2 Home','home'],['1X2 Draw','draw'],['1X2 Away','away']]){const chip=document.createElement('span');chip.className='chip';chip.textContent=label+' '+fmt(p[key]);chips.append(chip)}}
+  if(certified.includes('BTTS')){const p=marketValues(m,'BTTS');for(const [label,key] of [['BTTS Yes','yes'],['BTTS No','no']]){const chip=document.createElement('span');chip.className='chip';chip.textContent=label+' '+fmt(p[key]);chips.append(chip)}}
+  if(certified.includes('TOTALS_2_5')){const p=marketValues(m,'TOTALS_2_5');for(const [label,key] of [['Over 2.5','over'],['Under 2.5','under']]){const chip=document.createElement('span');chip.className='chip';chip.textContent=label+' '+fmt(p[key]);chips.append(chip)}}
+  if(!hasModelForecast(m)){const chip=document.createElement('span');chip.className='chip';chip.textContent='FORECAST UNAVAILABLE · NOT CERTIFIED';chips.append(chip)}
   const odds=marketPriceLines(m);const price=document.createElement('div');price.className='prices';price.textContent=odds.length?odds.join(' · '):'No matched market odds available';
-  const open=document.createElement('button');open.type='button';open.className='refresh';open.textContent=hasForecast?'View AI Insights & Value Bet →':'View fixture status →';open.style.marginTop='12px';
+  const open=document.createElement('button');open.type='button';open.className='refresh';open.textContent=hasModelForecast(m)?'View AI Insights · Value betting locked →':'View fixture status →';open.style.marginTop='12px';
   const detail=document.createElement('div');detail.hidden=true;detail.className='prediction-detail';detail.style.marginTop='14px';
   const close=document.createElement('button');close.type='button';close.className='refresh';close.textContent='← Back to predictions';
   const feature=document.createElement('div');const insightHead=document.createElement('div');insightHead.className='sectionhead';const heading=document.createElement('h2');heading.textContent='AI Insights';insightHead.append(heading);
