@@ -78,6 +78,7 @@ def _verify_after_apply(dsn: str, baseline: dict[str, int]) -> dict[str, object]
             ).fetchall()
         }
         expected_triggers = {
+            "paper_ledger_events_validate_chain",
             "paper_ledger_events_append_only",
             "paper_ledger_events_no_truncate",
         }
