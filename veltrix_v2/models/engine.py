@@ -26,6 +26,7 @@ class PredictionTarget:
     away_team_name: str = ""
     response_sha256: str | None = None
     capture_manifest_sha256: str | None = None
+    provider_competition_id: str | None = None
 
 
 @dataclass(frozen=True)
