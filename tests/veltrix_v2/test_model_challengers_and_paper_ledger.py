@@ -44,10 +44,10 @@ def test_poisson_elo_form_and_blends_use_identical_fixture_set():
     report = evaluate_model_challengers(
         comparison_rows(), evaluation_as_of=BASE + timedelta(days=20)
     )
-    assert report.scored_fixtures == 3
+    assert report.scored_fixtures == 9
     expected = {row.fixture_id for row in report.fixtures}
-    assert expected == {"t9", "t10", "t11"}
-    assert all(metric.sample_count == 3 for metric in report.metrics.values())
+    assert expected == {f"h{i}" for i in range(2, 9)} | {"t9", "t10", "t11"}
+    assert all(metric.sample_count == 9 for metric in report.metrics.values())
     assert report.metrics["blend_all_equal"].sample_count == report.metrics["poisson"].sample_count
     for row in report.fixtures:
         for prediction in row.predictions.values():
@@ -63,8 +63,8 @@ def test_competition_reliability_is_separated_and_duplicates_excluded():
     )
     assert report.duplicate_fixture_rows == 2
     assert [item.competition_id for item in report.competitions] == ["league"]
-    assert report.competitions[0].sample_count == 3
-    assert report.competitions[0].metrics["form"].sample_count == 3
+    assert report.competitions[0].sample_count == 9
+    assert report.competitions[0].metrics["form"].sample_count == 9
 
 
 def test_uncertified_targets_are_not_scored():
@@ -73,7 +73,7 @@ def test_uncertified_targets_are_not_scored():
     report = evaluate_model_challengers(
         rows, evaluation_as_of=BASE + timedelta(days=20)
     )
-    assert report.scored_fixtures == 3
+    assert report.scored_fixtures == 9
     assert report.skipped_uncertified_targets == 1
 
 
@@ -129,8 +129,8 @@ def test_team_form_challenger_is_expanding_window_and_excludes_future_rows():
     report = evaluate_team_form_challenger(
         comparison_rows(), evaluation_as_of=BASE + timedelta(days=20)
     )
-    assert report.scored_targets == 3
+    assert report.scored_targets == 9
     assert report.metrics is not None
-    assert report.metrics.sample_count == 3
+    assert report.metrics.sample_count == 9
     assert report.metrics.form_mse >= 0
     assert report.metrics.competition_baseline_mse >= 0
