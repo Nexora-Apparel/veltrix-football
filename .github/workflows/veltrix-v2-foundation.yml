@@ -67,16 +67,25 @@ jobs:
       - name: Validate V2 dashboard JavaScript syntax
         run: |
           python - <<'PY'
+          import ast
           import pathlib
           import re
           source = pathlib.Path("api/telegram.py").read_text(encoding="utf-8")
-          match = re.search(r'DASHBOARD_HTML\s*=\s*"""(.*?)"""', source, re.S)
-          if not match:
-              raise SystemExit("DASHBOARD_HTML block not found")
-          scripts = re.findall(r"<script>(.*?)</script>", match.group(1), re.S)
+          module = ast.parse(source, filename="api/telegram.py")
+          dashboard = None
+          for node in ast.walk(module):
+              if isinstance(node, ast.Assign) and any(
+                  isinstance(target, ast.Name) and target.id == "DASHBOARD_HTML"
+                  for target in node.targets
+              ):
+                  dashboard = ast.literal_eval(node.value)
+                  break
+          if not isinstance(dashboard, str):
+              raise SystemExit("DASHBOARD_HTML literal assignment not found")
+          scripts = re.findall(r"<script>(.*?)</script>", dashboard, re.S)
           if not scripts:
               raise SystemExit("No embedded dashboard JavaScript found")
-          pathlib.Path("/tmp/veltrix-v2-dashboard.js").write_text("\n".join(scripts), encoding="utf-8")
+          pathlib.Path("/tmp/veltrix-v2-dashboard.js").write_text("\\n".join(scripts), encoding="utf-8")
           PY
           node --check /tmp/veltrix-v2-dashboard.js
       - name: Test Phase 2 data contracts
