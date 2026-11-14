@@ -9,6 +9,7 @@ from scripts.phase5_collect_5dollar_shadow import (
     _approval_from_rows,
     _approved_competition_ids,
     _request_page,
+    _require_quota_headroom,
     _build_public_summary,
     run_capture,
     main,
@@ -362,3 +363,14 @@ def test_run_capture_orchestrates_mocked_pages_with_optional_staging_ledger(
     public = (tmp_path / "public_summary.json").read_text()
     assert "fixture-target" not in public
     assert "event_sha256" not in public
+
+
+def test_quota_headroom_fails_closed_on_missing_or_insufficient_headers():
+    with pytest.raises(RuntimeError, match="FIVEDOLLAR_QUOTA_EVIDENCE_MISSING"):
+        _require_quota_headroom(None, 1)
+    with pytest.raises(RuntimeError, match="FIVEDOLLAR_QUOTA_EVIDENCE_MISSING"):
+        _require_quota_headroom("unknown", 1)
+    with pytest.raises(RuntimeError, match="FIVEDOLLAR_QUOTA_BELOW_BOUNDED_REQUEST_PLAN"):
+        _require_quota_headroom(12, 1)
+    _require_quota_headroom(13, 1)
+    _require_quota_headroom(0, 14)
