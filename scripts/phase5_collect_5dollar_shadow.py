@@ -511,6 +511,11 @@ def _capture_page(
         )
         if persist_staging else None
     )
+    if target_persistence and (
+        target_persistence["manifest_sha256"] != snapshot_hashes["manifest_sha256"]
+        or target_persistence["response_sha256"] != snapshot_hashes["response_sha256"]
+    ):
+        raise RuntimeError("FIXTURE_SNAPSHOT_PERSISTENCE_HASH_MISMATCH")
     page_path.parent.mkdir(parents=True, exist_ok=True)
     page_path.write_bytes(raw)
     page_info["raw_artifact"] = str(page_path)
