@@ -69,11 +69,12 @@ def _write_immutable(path: Path, payload: bytes) -> None:
             os.fsync(handle.fileno())
         try:
             os.link(temporary, path)
-            directory_fd = os.open(path.parent, os.O_RDONLY)
-            try:
-                os.fsync(directory_fd)
-            finally:
-                os.close(directory_fd)
+            for directory in (path.parent, path.parent.parent):
+                directory_fd = os.open(directory, os.O_RDONLY)
+                try:
+                    os.fsync(directory_fd)
+                finally:
+                    os.close(directory_fd)
         except FileExistsError:
             if path.read_bytes() != payload:
                 raise ValueError("REPORT_ARTIFACT_IMMUTABLE_CONFLICT")
