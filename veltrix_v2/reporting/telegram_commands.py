@@ -83,7 +83,7 @@ def _render_market(fixture: Mapping[str, Any], market: str) -> list[str]:
 
 def _slipcheck(argument: str) -> str:
     try:
-        odds = [float(value) for value in re.split(r"[\\s,]+", argument.strip()) if value]
+        odds = [float(value) for value in re.split(r"[\s,]+", argument.strip()) if value]
     except (TypeError, ValueError):
         return "Usage: /slipcheck 1.80 2.10 1.65"
     if not odds or any(not math.isfinite(value) or value <= 1 for value in odds):
