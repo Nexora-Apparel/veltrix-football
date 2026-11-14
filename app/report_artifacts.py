@@ -14,6 +14,11 @@ from typing import Any
 from urllib.error import HTTPError, URLError
 
 from veltrix_v2.reporting.artifact_bundle import load_authorized_portable_report_surface_bundle
+from veltrix_v2.reporting.publisher import (
+    PUBLICATION_BRANCH,
+    PUBLICATION_PATH,
+    PUBLICATION_REPOSITORY,
+)
 from veltrix_v2.reporting.report_identity import (
     REPORT_SCHEMA,
     assert_website_projection,
@@ -21,8 +26,8 @@ from veltrix_v2.reporting.report_identity import (
 )
 from urllib.request import Request, urlopen
 
-DEFAULT_REPOSITORY = "Nexora-Apparel/veltrix-football"
-DEFAULT_BRANCH = "command-data"
+DEFAULT_REPOSITORY = PUBLICATION_REPOSITORY
+DEFAULT_BRANCH = PUBLICATION_BRANCH
 CACHE_SECONDS = 30
 # Vercel Hobby functions have a short execution budget. The report is required;
 # ledger and model-validation snapshots are optional enrichments.
@@ -85,8 +90,10 @@ def _load(kind: str) -> dict[str, Any] | None:
     if cached and now - cached[0] < CACHE_SECONDS:
         return cached[1]
 
-    repo = (os.environ.get("VELTRIX_DATA_REPOSITORY") or DEFAULT_REPOSITORY).strip()
-    branch = (os.environ.get("VELTRIX_DATA_BRANCH") or DEFAULT_BRANCH).strip()
+    # V2 publication has one canonical source. Environment overrides must
+    # never redirect public report reads away from the publisher's target.
+    repo = PUBLICATION_REPOSITORY
+    branch = PUBLICATION_BRANCH
     if not re.fullmatch(r"[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+", repo) or not re.fullmatch(r"[A-Za-z0-9_.-]+", branch):
         _cache[kind] = (now, None)
         return None
@@ -166,7 +173,7 @@ def _load_portable_bundle_bytes() -> bytes | None:
     }
     cache_buster = int(time.time())
     raw_url = (
-        f"https://raw.githubusercontent.com/{repo}/{branch}/public-data/v2_report_bundle.json"
+        f"https://raw.githubusercontent.com/{repo}/{branch}/{PUBLICATION_PATH}"
         f"?v={cache_buster}"
     )
     value = None
@@ -180,7 +187,7 @@ def _load_portable_bundle_bytes() -> bytes | None:
 
     if value is None:
         api_url = (
-            f"https://api.github.com/repos/{repo}/contents/public-data/v2_report_bundle.json"
+            f"https://api.github.com/repos/{repo}/contents/{PUBLICATION_PATH}"
             f"?ref={branch}&v={cache_buster}"
         )
         try:
