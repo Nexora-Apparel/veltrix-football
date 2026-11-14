@@ -11,7 +11,6 @@ import os
 import re
 import time
 from typing import Any
-from veltrix_v2.reporting.report_identity import REPORT_SCHEMA
 from urllib.error import HTTPError, URLError
 
 from veltrix_v2.reporting.report_identity import (
