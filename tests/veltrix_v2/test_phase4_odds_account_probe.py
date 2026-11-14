@@ -122,6 +122,8 @@ class _FakeCursor:
         q = " ".join(self.last_query.lower().split())
         if q.startswith("select id,raw_body,http_status"):
             return (101, self.raw_body, 200)
+        if "metadata->>'provider_account_ref'" in q:
+            return ("veltrix-primary-the-odds-api",)
         if "returning id" in q:
             return (202,)
         return None
