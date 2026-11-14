@@ -190,7 +190,7 @@ def test_bundle_reader_rejects_partial_or_replaced_artifact_after_commit(tmp_pat
     bundle = build_report_surface_bundle(source_report())
     paths = persist_report_surface_bundle(bundle, tmp_path)
     paths["scheduled"].unlink()
-    with pytest.raises(FileNotFoundError):
+    with pytest.raises(ValueError, match="REPORT_BUNDLE_ARTIFACT_MISSING:scheduled"):
         load_report_surface_bundle(tmp_path, bundle.identity.report_id)
 
 
