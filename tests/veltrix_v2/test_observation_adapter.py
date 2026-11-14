@@ -1,4 +1,6 @@
 from datetime import datetime, timedelta, timezone
+
+import pytest
 import hashlib
 import json
 
@@ -130,10 +132,10 @@ def test_first_observed_adapter_uses_retrieval_time_not_provider_proxy():
 
 def test_first_observed_adapter_never_backdates_before_retrieval():
     fixture = historical_fixture()
-    result = historical_fixture_to_first_observed_observation(
-        fixture, recorded_at=RETRIEVED - timedelta(seconds=1)
-    )
-    assert result is None or result.recorded_at >= result.available_at
+    with pytest.raises(ValueError, match="FIRST_OBSERVED_TEMPORAL_ORDER_INVALID"):
+        historical_fixture_to_first_observed_observation(
+            fixture, recorded_at=RETRIEVED - timedelta(seconds=1)
+        )
 
 
 def test_first_observed_adapter_requires_finished_source_result():
