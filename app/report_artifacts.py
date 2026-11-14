@@ -30,6 +30,7 @@ _REPORT_TIMEOUT_SECONDS = 3.0
 _OPTIONAL_TIMEOUT_SECONDS = 1.25
 _API_FALLBACK_TIMEOUT_SECONDS = 1.0
 _cache: dict[str, tuple[float, dict[str, Any] | None]] = {}
+_portable_bundle_cache: tuple[float, bytes | None] = (0.0, None)
 _PUBLIC_RELEASE_MODES = frozenset({"RESTRICTED_PUBLIC", "FULL_PUBLIC"})
 
 
@@ -145,10 +146,75 @@ def _load(kind: str) -> dict[str, Any] | None:
     return value
 
 
+
+def _load_portable_bundle_bytes() -> bytes | None:
+    """Fetch the single V2 bundle artifact with a short cache and strict byte limit."""
+    global _portable_bundle_cache
+    now = time.monotonic()
+    cached_at, cached_bytes = _portable_bundle_cache
+    if now - cached_at < CACHE_SECONDS:
+        return cached_bytes
+
+    repo = (os.environ.get("VELTRIX_DATA_REPOSITORY") or DEFAULT_REPOSITORY).strip()
+    branch = (os.environ.get("VELTRIX_DATA_BRANCH") or DEFAULT_BRANCH).strip()
+    if not re.fullmatch(r"[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+", repo) or not re.fullmatch(r"[A-Za-z0-9_.-]+", branch):
+        _portable_bundle_cache = (now, None)
+        return None
+
+    headers = {
+        "User-Agent": "Veltrix-Football-Command-Centre",
+        "Cache-Control": "no-cache",
+        "Pragma": "no-cache",
+    }
+    cache_buster = int(time.time())
+    raw_url = (
+        f"https://raw.githubusercontent.com/{repo}/{branch}/public-data/v2_report_bundle.json"
+        f"?v={cache_buster}"
+    )
+    value = None
+    try:
+        with urlopen(Request(raw_url, headers=headers), timeout=_REPORT_TIMEOUT_SECONDS) as response:
+            candidate = response.read(8_000_001)
+        if 0 < len(candidate) <= 8_000_000:
+            value = candidate
+    except (HTTPError, URLError, OSError, TimeoutError):
+        value = None
+
+    if value is None:
+        api_url = (
+            f"https://api.github.com/repos/{repo}/contents/public-data/v2_report_bundle.json"
+            f"?ref={branch}&v={cache_buster}"
+        )
+        try:
+            with urlopen(Request(api_url, headers={
+                **headers,
+                "Accept": "application/vnd.github.raw+json",
+            }), timeout=_API_FALLBACK_TIMEOUT_SECONDS) as response:
+                candidate = response.read(8_000_001)
+            if 0 < len(candidate) <= 8_000_000:
+                value = candidate
+        except (HTTPError, URLError, OSError, TimeoutError):
+            value = None
+
+    _portable_bundle_cache = (now, value)
+    return value
+
+
+def load_latest_portable_report_bundle(authorization_verifier=None) -> dict[str, Any] | None:
+    """Fetch and verify the single published V2 report bundle."""
+    raw = _load_portable_bundle_bytes()
+    if raw is None:
+        return None
+    return load_v2_portable_report_bundle(raw, authorization_verifier)
+
+
 def load_latest_report(
     authorization_verifier=None,
 ) -> dict[str, Any] | None:
     """Load a report; V2 requires an injected authoritative publication verifier."""
+    portable_bundle = load_latest_portable_report_bundle(authorization_verifier)
+    if portable_bundle is not None:
+        return portable_bundle["report"]
     report = _load("report")
     if report is None:
         return None
@@ -181,7 +247,8 @@ def load_dashboard_snapshot(
     """Load a dashboard projection; V2 requires the same publication verifier as the report."""
     snapshot = _load("dashboard")
     if snapshot is None:
-        return None
+        portable_bundle = load_latest_portable_report_bundle(authorization_verifier)
+        return portable_bundle["dashboard"] if portable_bundle is not None else None
     if "report_id" in snapshot or "report_sha256" in snapshot:
         bundle = load_v2_report_bundle(authorization_verifier)
         if bundle is None or bundle["dashboard"] != snapshot:
@@ -196,6 +263,9 @@ def load_v2_report_bundle(
     authorization_verifier=None,
 ) -> dict[str, Any] | None:
     """Return V2 website data only after authoritative publication authorization."""
+    portable_raw = _load_portable_bundle_bytes()
+    if portable_raw is not None:
+        return load_v2_portable_report_bundle(portable_raw, authorization_verifier)
     report = _load("report")
     dashboard = _load("dashboard")
     if report is None or dashboard is None or report.get("schema") != REPORT_SCHEMA:
