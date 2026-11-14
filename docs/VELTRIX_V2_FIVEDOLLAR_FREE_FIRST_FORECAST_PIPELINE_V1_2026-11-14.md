@@ -34,3 +34,8 @@ The pipeline consumes the existing approved 5Dollar source approval. It does not
 ## Optional recency weighting
 
 The engine accepts an exponential half-life setting. Equal weighting remains the default; any non-default half-life must be selected through chronological walk-forward comparison using the same weighting for the model and competition baseline.
+
+
+## One-shot provider dry run
+
+The manual/push-only dry-run workflow requests at most 24 provider calls, paces requests at one every six seconds, reads at most 90 days of finished results and 14 days of scheduled fixtures, and filters any extra provider rows outside those windows locally. It uploads only a derived forecast report with provider attribution; raw provider responses are never written to the repository or artifact. No scheduled trigger is configured.
