@@ -46,7 +46,8 @@ GOAL API and StrikerAPI are not referenced by this workflow.
 - The only uploaded artifact is `public_summary.json`, containing aggregate counts and release-lock status; it contains no fixture IDs, raw payloads, odds, probabilities or individual predictions.
 - When `persist_staging=true`, result evidence is persisted through the guarded evidence writer and the admitted shadow-prediction batch is appended atomically to the PostgreSQL paper ledger. Migrations 0005–0008 must already be applied to staging; the run fails closed if migration 0008 is absent.
 - The JSONL ledger remains a runner-local audit copy in both modes. With staging persistence disabled, it is not durable between runs; with staging persistence enabled, PostgreSQL is the durable ledger.
-- The PostgreSQL batch uses one transaction and one ledger-scoped advisory lock. A duplicate or invalid prediction rolls back the entire batch, preventing a partially appended forecast set.
+- The PostgreSQL batch uses one transaction and one ledger-scoped advisory lock. Existing fixture/model pairs are skipped on rerun; new predictions append as one atomic batch. An invalid prediction rolls back the entire new batch, preventing partial forecast sets.
+- The uploaded public summary is constructed from an explicit field allowlist. It excludes fixture IDs, raw-response hashes, ledger hashes, odds, probabilities, API credentials and detailed per-fixture diagnostics.
 
 ## Model and release boundaries
 
