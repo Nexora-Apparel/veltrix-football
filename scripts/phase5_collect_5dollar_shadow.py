@@ -733,6 +733,7 @@ def run_capture(
         "admitted_shadow_predictions": summary["admitted_shadow_predictions"],
         "persisted_capture_pages": summary["persisted_capture_pages"],
         "persisted_shadow_ledger_events": summary["persisted_shadow_ledger_events"],
+        "paper_ledger_persisted_to_staging": summary["paper_ledger_persisted_to_staging"],
         "evidence_persisted_to_staging": summary["evidence_persisted_to_staging"],
         "paper_ledger_persisted_to_staging": summary["paper_ledger_persisted_to_staging"],
         "paper_ledger_events_appended": (
