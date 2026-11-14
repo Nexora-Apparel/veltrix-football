@@ -321,7 +321,7 @@ def test_telegram_bundle_dispatch_rejects_unverified_publication_before_claim(tm
     bundle = build_report_surface_bundle(public_report())
     persist_report_surface_bundle(bundle, tmp_path)
     calls = []
-    with pytest.raises(PermissionError, match="authorization"):
+    with pytest.raises(PermissionError, match="AUTHORIZATION"):
         dispatch_public_telegram_bundle(
             tmp_path,
             bundle.identity.report_id,
