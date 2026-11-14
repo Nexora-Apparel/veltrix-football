@@ -18,7 +18,7 @@ from veltrix_v2.models.poisson import MatchObservation
 
 _DATE_LINE = re.compile(r"^(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun)\s+([A-Za-z]{3})\s+(\d{1,2})\s+(\d{4})$")
 _MATCHDAY_LINE = re.compile(r"(?:Matchday|Round)\s+(\d+)", re.IGNORECASE)
-_SCORE_LINE = re.compile(r"\s+(\d+)\s*-\s*(\d+)\s*$")
+_SCORE_LINE = re.compile(r"\s+(\d+)\s*-\s*(\d+)(?:\s+\[([^\]]+)\])?\s*$")
 _MONTHS = {name: number for number, name in enumerate(
     ("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"), 1
 )}
