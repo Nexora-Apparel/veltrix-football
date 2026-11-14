@@ -42,3 +42,7 @@ The model pipeline requests data domains, not named vendors. This registry is po
 ## Next integration
 
 Each new provider adapter must normalize source data into the immutable evidence-capture contract and pass raw-byte, timestamp, crosswalk, rights and revision-history checks. Only certified observations may enter point-in-time training or paper admission. This document does not claim xG/lineup/injury coverage or launch-ready model evidence.
+
+## Coverage report interpretation
+
+The registry distinguishes three separate questions: whether a provider has a field, whether it may be contacted now, and whether its returned observation is temporally eligible for a model. These are independent gates. A source may appear in the coverage report while remaining non-dispatchable (archive or optional provider), and a retrieved result may remain non-certifiable despite a successful response. The `providers_for` function reports declared source coverage; `dispatchable_providers_for` reports the narrower set permitted for live collection.
