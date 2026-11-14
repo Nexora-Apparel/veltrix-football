@@ -145,8 +145,10 @@ def load_latest_report(
 ) -> dict[str, Any] | None:
     """Load a report; V2 requires an injected authoritative publication verifier."""
     report = _load("report")
-    if report is None or report.get("schema") != REPORT_SCHEMA:
-        return report
+    if report is None:
+        return None
+    if report.get("schema") != REPORT_SCHEMA:
+        return None
     if not _is_public_v2_report(report) or not callable(authorization_verifier):
         return None
     try:
@@ -179,6 +181,9 @@ def load_dashboard_snapshot(
         bundle = load_v2_report_bundle(authorization_verifier)
         if bundle is None or bundle["dashboard"] != snapshot:
             return None
+    elif snapshot.get("predictions"):
+        # Legacy forecast snapshots remain archived but are not a live V2 publication source.
+        return None
     return snapshot
 
 
