@@ -112,8 +112,11 @@ def adapt_persisted_coverage_rows(
         available_at = _datetime(row.get("available_at"))
         recorded_at = _datetime(row.get("recorded_at"))
         rights_evaluated_at = _datetime(payload.get("rights_evaluated_at"))
+        fixture_id = row.get("fixture_id", payload.get("fixture_id"))
+        competition_id = row.get("competition_id", payload.get("competition_id"))
+        point_in_time = row.get("point_in_time_certifiable", payload.get("point_in_time_certifiable"))
         values = (
-            payload.get("fixture_id"), payload.get("competition_id"),
+            fixture_id, competition_id,
             row.get("provider"), row.get("source_id"),
             row.get("payload_sha256"), row.get("rights_approval_id"),
             payload.get("rights_evidence_sha256"),
@@ -122,13 +125,13 @@ def adapt_persisted_coverage_rows(
             available_at is None or recorded_at is None or rights_evaluated_at is None
             or not all(isinstance(value, str) and value.strip() for value in values)
             or type(payload.get("rights_approved")) is not bool
-            or type(payload.get("point_in_time_certifiable")) is not bool
+            or type(point_in_time) is not bool
         ):
             rejected_observations += 1
             continue
         evidence.append(DomainEvidence(
-            fixture_id=payload["fixture_id"],
-            competition_id=payload["competition_id"],
+            fixture_id=fixture_id,
+            competition_id=competition_id,
             domain=domain,
             provider=row["provider"],
             source_id=row["source_id"],
@@ -139,7 +142,7 @@ def adapt_persisted_coverage_rows(
             rights_approval_id=row["rights_approval_id"],
             rights_evidence_sha256=payload["rights_evidence_sha256"],
             rights_evaluated_at=rights_evaluated_at,
-            point_in_time_certifiable=payload["point_in_time_certifiable"],
+            point_in_time_certifiable=point_in_time,
         ))
 
     return PersistedCoverageInputs(
