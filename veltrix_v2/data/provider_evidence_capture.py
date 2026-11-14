@@ -14,7 +14,8 @@ import json
 import re
 from typing import Iterable, Mapping
 
-from veltrix_v2.data.contracts import DataUsePurpose, SourceApproval
+from veltrix_v2.data.contracts import DataUsePurpose, FixtureStatus, HistoricalFixture, SourceApproval
+from veltrix_v2.data.fivedollar import ParsedFixturePage
 from veltrix_v2.data.rights import evaluate_source_use
 from veltrix_v2.models.poisson import MatchObservation
 
@@ -452,3 +453,69 @@ def certified_match_observations(
             evidence_sha256=item_hash,
         ))
     return tuple(observations)
+
+
+def capture_fivedollar_page_evidence(
+    raw_response: bytes,
+    parsed_page: ParsedFixturePage,
+    *,
+    endpoint: str,
+    request_id: str,
+    requested_at: datetime,
+    recorded_at: datetime,
+    crosswalks: Mapping[str, ResolvedFixtureCrosswalk],
+    rights_approval: SourceApproval,
+) -> ProviderEvidenceCaptureReport:
+    """Adapt a parsed 5Dollar page without promoting its derived timestamps.
+
+    The current 5Dollar historical contract exposes no source publication or
+    result-availability timestamp and no complete revision history. Its
+    conservative four-day availability proxy is intentionally not forwarded
+    as source evidence. Such rows are retained as rejected manifest items.
+    """
+    if not isinstance(raw_response, bytes) or not raw_response:
+        raise ValueError("FIVEDOLLAR_RAW_RESPONSE_REQUIRED")
+    if not isinstance(parsed_page, ParsedFixturePage):
+        raise TypeError("FIVEDOLLAR_PARSED_PAGE_REQUIRED")
+    if sha256(raw_response).hexdigest() != parsed_page.response_sha256:
+        raise ValueError("FIVEDOLLAR_RAW_RESPONSE_HASH_MISMATCH")
+    if not isinstance(crosswalks, Mapping):
+        raise TypeError("FIVEDOLLAR_CROSSWALK_MAPPING_REQUIRED")
+
+    captures: list[ProviderResultCapture] = []
+    for fixture in parsed_page.fixtures:
+        if (
+            not isinstance(fixture, HistoricalFixture)
+            or fixture.status is not FixtureStatus.FINISHED
+            or fixture.home_score is None
+            or fixture.away_score is None
+        ):
+            continue
+        captures.append(ProviderResultCapture(
+            provider=fixture.provider,
+            source_id=fixture.source_id,
+            endpoint=endpoint,
+            request_id=request_id,
+            provider_fixture_id=fixture.provider_fixture_id,
+            provider_competition_id=fixture.provider_competition_id,
+            provider_home_team_id=fixture.provider_home_team_id,
+            provider_away_team_id=fixture.provider_away_team_id,
+            kickoff_at=fixture.kickoff_at_utc,
+            home_goals=fixture.home_score,
+            away_goals=fixture.away_score,
+            raw_response=raw_response,
+            source_published_at=None,
+            source_effective_at=None,
+            available_at=None,
+            retrieved_at=fixture.retrieved_at_utc,
+            recorded_at=recorded_at,
+            requested_at=requested_at,
+            revision_history_complete=False,
+            crosswalk=crosswalks.get(fixture.provider_fixture_id),
+            rights_approval=rights_approval,
+            source_timestamp_basis="unknown",
+            source_timestamp_evidence_sha256="",
+            availability_timestamp_basis="unknown",
+            availability_timestamp_evidence_sha256="",
+        ))
+    return capture_provider_result_evidence(captures)
