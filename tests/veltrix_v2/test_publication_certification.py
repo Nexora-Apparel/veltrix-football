@@ -442,3 +442,13 @@ def test_certification_manifest_rejects_duplicate_json_keys_and_nonfinite_consta
     assert verify_publication_authorization(
         report, nonfinite, attestation_ok, rights_ok, evidence_reader
     ) is False
+
+
+
+def test_manifest_rejects_unused_certification_records_outside_report_scope():
+    report = make_report()
+    records = [certification("1X2"), certification("BTTS"), certification("TOTALS_2_5")]
+    raw = make_manifest(report, records)
+    assert verify_publication_authorization(
+        report, raw, attestation_ok, rights_ok, evidence_reader
+    ) is False
