@@ -115,3 +115,32 @@ def test_v2_renderer_rejects_bad_probability_vector_even_when_verifier_returns_t
     report = bind_report_identity({key: value for key, value in report.items() if key != "report_sha256"})
     reply = handle_v2_command("/1x2", report=report, authorization_verifier=verifier)
     assert "V2 REPORT UNAVAILABLE" in reply
+
+
+
+def test_v2_command_rejects_duplicate_fixture_ids():
+    report = public_report()
+    report["predictions"].append(dict(report["predictions"][0]))
+    report = bind_report_identity({key: value for key, value in report.items() if key != "report_sha256"})
+    reply = handle_v2_command("/fixtures", report=report, authorization_verifier=verifier)
+    assert "V2 REPORT UNAVAILABLE" in reply
+
+
+def test_v2_command_rejects_more_than_25_published_fixtures():
+    report = public_report()
+    report["predictions"] = [
+        {
+            "fixture_id": f"fixture-{index}",
+            "publication_status": "PUBLISHED",
+            "home_team": "Alpha",
+            "away_team": "Beta",
+            "competition_name": "League",
+            "kickoff_wat": "19:00 WAT",
+            "certified_markets": ["1X2"],
+            "markets": {"1X2": {"home": 0.5, "draw": 0.25, "away": 0.25}},
+        }
+        for index in range(26)
+    ]
+    report = bind_report_identity({key: value for key, value in report.items() if key != "report_sha256"})
+    reply = handle_v2_command("/fixtures", report=report, authorization_verifier=verifier)
+    assert "V2 REPORT UNAVAILABLE" in reply
