@@ -222,3 +222,13 @@ A final website audit found that the browser still had independent raw-GitHub/CD
 - `app/certification_evidence.py` explicitly states that byte-integrity verification is not certification. `scripts/verify_certification_evidence.py` is a raw-evidence diagnostic and does not issue a release certificate.
 - The existing evidence-attestation workflow is not wired into the V2 API's runtime verifier. Do not treat the presence of the workflow or verifier utilities as a signed V2 publication authorization.
 - No V2 publisher was added: without point-in-time eligible data, a complete evidence manifest, source-rights verification and a trusted runtime attestation verifier, writing a public bundle would bypass the release gates.
+
+
+## Legacy Telegram send path shutdown — 2026-11-14 17:55 UTC
+
+- `scripts/send_telegram_report.py` now refuses both V2 and legacy report payloads before any GitHub delivery-state access or Telegram network call.
+- V2 artifacts are reserved for the certified V2 bundle delivery runner. Legacy report payloads are categorically blocked. The `--force` flag cannot bypass this shutdown.
+- Legacy formatting helpers remain available for archived tests/diagnostics, but the legacy script's `main()` has no send path.
+- The old daily prediction, dashboard refresh and Telegram recovery workflows remain disabled.
+- CI run #1496 passed Foundation, PostgreSQL 16 and PostgreSQL 18, including the legacy sender shutdown tests.
+- This closes the accidental legacy-send route; it does not create a V2 production sender or activate Telegram.
