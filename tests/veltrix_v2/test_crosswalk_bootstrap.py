@@ -113,9 +113,9 @@ def test_rejects_duplicate_provider_fixture_ids():
         build_fivedollar_crosswalk_registry(data, verified_at=VERIFIED)
 
 
-def test_rejects_payload_hash_substitution():
+def test_rejects_malformed_payload_hash():
     data = rows()
-    data[0]["payload_sha256"] = "f" * 64
+    data[0]["payload_sha256"] = "z" * 64
     with pytest.raises(ValueError, match="CROSSWALK_PAYLOAD_HASH_INVALID"):
         build_fivedollar_crosswalk_registry(data, verified_at=VERIFIED)
 
