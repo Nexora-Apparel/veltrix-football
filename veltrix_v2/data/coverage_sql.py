@@ -27,7 +27,7 @@ SELECT
     o.recorded_at AS recorded_at,
     o.rights_approval_id AS rights_approval_id,
     o.payload AS payload,
-    o.point_in_time_certifiable AS database_point_in_time_certifiable,
+    o.point_in_time_certifiable AS point_in_time_certifiable,
     o.source_published_at AS source_published_at,
     o.source_effective_at AS source_effective_at,
     o.availability_basis AS availability_basis
