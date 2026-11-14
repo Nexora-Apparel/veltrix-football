@@ -910,6 +910,130 @@ class PostgresHistoryStore:
         finally:
             conn.close()
 
+    def persist_provider_account_probe(
+        self,
+        response: ProviderResponse,
+        envelope,
+        *,
+        provider_account_ref: str,
+        expected_competition_keys: tuple[str, ...],
+        observed_competition_keys: tuple[str, ...],
+    ) -> tuple[int, int]:
+        """Persist a no-credit account/sports probe and append its entitlement evidence.
+
+        The provider's /v4/sports endpoint is documented as zero-credit. This
+        method does not create a budget snapshot or infer a monthly allowance.
+        """
+        if response.provider != "the_odds_api" or response.source_id != "odds_api_v4":
+            raise ValueError("ODDS_API_PROBE_IDENTITY_INVALID")
+        if response.http_status != 200 or getattr(envelope, "status_code", None) != 200:
+            raise ValueError("ODDS_API_PROBE_STATUS_INVALID")
+        if not provider_account_ref.strip():
+            raise ValueError("ODDS_API_ACCOUNT_REFERENCE_REQUIRED")
+        if not expected_competition_keys or len(set(expected_competition_keys)) != len(expected_competition_keys):
+            raise ValueError("ODDS_API_EXPECTED_COMPETITIONS_INVALID")
+        if len(set(observed_competition_keys)) != len(observed_competition_keys):
+            raise ValueError("ODDS_API_OBSERVED_COMPETITIONS_DUPLICATED")
+        raw_body = getattr(envelope, "raw_body", None)
+        if not isinstance(raw_body, bytes) or raw_body != response.raw_body:
+            raise ValueError("ODDS_API_PROBE_BODY_BINDING_MISMATCH")
+        if getattr(envelope, "response_sha256", None) != response.response_sha256:
+            raise ValueError("ODDS_API_PROBE_HASH_BINDING_MISMATCH")
+        if getattr(envelope, "retrieved_at", None) != response.fetched_at_utc:
+            raise ValueError("ODDS_API_PROBE_TIME_BINDING_MISMATCH")
+        quota = getattr(envelope, "quota_evidence", None)
+        raw_quota_headers = getattr(envelope, "raw_quota_headers", None)
+        if quota is None or not isinstance(raw_quota_headers, tuple):
+            raise ValueError("ODDS_API_PROBE_QUOTA_EVIDENCE_MISSING")
+        if any(
+            not isinstance(pair, tuple) or len(pair) != 2
+            or pair[0] not in {"x-requests-used", "x-requests-remaining", "x-requests-last"}
+            or not isinstance(pair[1], str)
+            for pair in raw_quota_headers
+        ):
+            raise ValueError("ODDS_API_PROBE_QUOTA_HEADER_ALLOWLIST_VIOLATION")
+
+        safe_response = ProviderResponse(
+            provider=response.provider,
+            source_id=response.source_id,
+            endpoint=response.endpoint,
+            request_id=response.request_id,
+            request_params=response.request_params,
+            http_status=response.http_status,
+            raw_body=response.raw_body,
+            response_headers=dict(raw_quota_headers),
+            fetched_at_utc=response.fetched_at_utc,
+        )
+        missing = sorted(set(expected_competition_keys) - set(observed_competition_keys))
+        scope_verified = not missing
+        status = "ACTIVE" if scope_verified and quota.complete else "UNVERIFIED"
+        metadata = {
+            "last_sports_probe_response_sha256": response.response_sha256,
+            "last_sports_probe_at": response.fetched_at_utc.isoformat(),
+            "last_sports_probe_endpoint": response.endpoint,
+            "sports_probe_cost_credits": 0,
+            "sports_probe_scope_verified": scope_verified,
+            "sports_probe_expected_competitions": sorted(expected_competition_keys),
+            "sports_probe_observed_competitions": sorted(observed_competition_keys),
+            "sports_probe_missing_competitions": missing,
+            "quota_headers_complete": bool(quota.complete),
+            "quota_requests_used": quota.requests_used,
+            "quota_requests_remaining": quota.requests_remaining,
+            "quota_requests_last": quota.requests_last,
+            "account_plan": "UNDISCLOSED",
+            "billing_period": "NOT_ESTABLISHED",
+            "monthly_allowance": None,
+            "hard_caps": None,
+        }
+        conn = self._connect_for_write()
+        try:
+            cur = conn.cursor()
+            provider_response_id = self._persist_provider_response(cur, safe_response)
+            cur.execute(
+                """UPDATE provider_accounts
+                   SET entitlement_status=%s, checked_at=%s,
+                       metadata=metadata || %s::jsonb
+                   WHERE provider=%s""",
+                (status, response.fetched_at_utc, json.dumps(metadata, sort_keys=True), response.provider),
+            )
+            if cur.rowcount != 1:
+                raise ValueError("ODDS_API_PROVIDER_ACCOUNT_NOT_REGISTERED")
+            cur.execute(
+                """INSERT INTO provider_entitlement_observations(
+                    provider,source_id,plan_code,entitlement_status,country_pack_code,
+                    competition_ids,rate_limit_hour,rate_limit_minute,quota_remaining,
+                    provider_response_id,evidence_sha256,checked_at
+                ) VALUES (%s,%s,%s,%s,NULL,%s::jsonb,NULL,NULL,%s,%s,%s,%s)
+                ON CONFLICT(provider,source_id,checked_at,evidence_sha256) DO NOTHING
+                RETURNING id""",
+                (
+                    response.provider, response.source_id, "UNDISCLOSED", status,
+                    json.dumps(sorted(observed_competition_keys)),
+                    quota.requests_remaining, provider_response_id,
+                    response.response_sha256, response.fetched_at_utc,
+                ),
+            )
+            entitlement_row = cur.fetchone()
+            if entitlement_row:
+                entitlement_id = int(entitlement_row[0])
+            else:
+                cur.execute(
+                    """SELECT id FROM provider_entitlement_observations
+                       WHERE provider=%s AND source_id=%s AND checked_at=%s AND evidence_sha256=%s""",
+                    (response.provider, response.source_id, response.fetched_at_utc, response.response_sha256),
+                )
+                prior = cur.fetchone()
+                if not prior:
+                    raise ValueError("ODDS_API_ENTITLEMENT_EVIDENCE_INSERT_FAILED")
+                entitlement_id = int(prior[0])
+            conn.commit()
+            return provider_response_id, entitlement_id
+        except Exception:
+            conn.rollback()
+            raise
+        finally:
+            conn.close()
+
     def persist_page(
         self,
         response: ProviderResponse,
