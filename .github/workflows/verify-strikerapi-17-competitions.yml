@@ -1,0 +1,42 @@
+name: Verify StrikerAPI 17-Competition Coverage
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: strikerapi-17-competition-coverage
+  cancel-in-progress: false
+
+jobs:
+  qualify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      STRIKERAPI_API_KEY: ${{ secrets.STRIKERAPI_API_KEY }}
+    steps:
+      - name: Check out qualification branch
+        uses: actions/checkout@v4
+        with:
+          ref: phase-3/strikerapi-readonly-qualification
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Run 17-competition verifier tests
+        run: python -m unittest discover -s tests -p 'test_strikerapi_17_competitions.py' -v
+
+      - name: Run bounded 17-competition read-only qualification
+        run: python scripts/verify_strikerapi_17_competitions.py
+
+      - name: Upload sanitized 17-competition coverage report
+        uses: actions/upload-artifact@v4
+        with:
+          name: strikerapi-17-competition-coverage
+          path: strikerapi_17_competition_coverage.json
+          if-no-files-found: error
+          retention-days: 7

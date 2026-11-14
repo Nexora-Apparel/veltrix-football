@@ -1,0 +1,60 @@
+name: Audit Anchored Provider Team Crosswalk
+
+on:
+  push:
+    branches:
+      - phase-3/strikerapi-readonly-qualification
+    paths:
+      - ".github/workflows/audit-strikerapi-team-crosswalk.yml"
+      - "scripts/audit_provider_team_crosswalk.py"
+      - "tests/test_provider_team_crosswalk.py"
+
+permissions:
+  actions: read
+  contents: read
+
+concurrency:
+  group: strikerapi-anchored-crosswalk-audit
+  cancel-in-progress: false
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check out qualification branch
+        uses: actions/checkout@v4
+        with:
+          ref: phase-3/strikerapi-readonly-qualification
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Run anchored crosswalk unit tests
+        run: python -m unittest discover -s tests -p 'test_provider_team_crosswalk.py' -v
+
+      - name: Download baseline read-only reconciliation artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: strikerapi-5dollar-epl-reconciliation
+          path: audit-input
+          repository: Nexora-Apparel/veltrix-football
+          run-id: 42650167137
+          github-token: ${{ github.token }}
+
+      - name: Audit anchored cross-provider team identities
+        run: |
+          python scripts/audit_provider_team_crosswalk.py \
+            --reconciliation audit-input/strikerapi_5dollar_epl_reconciliation.json \
+            --output strikerapi_5dollar_anchored_team_crosswalk.json \
+            --minimum-support 3
+
+      - name: Upload anchored crosswalk audit
+        uses: actions/upload-artifact@v4
+        with:
+          name: strikerapi-5dollar-anchored-team-crosswalk
+          path: strikerapi_5dollar_anchored_team_crosswalk.json
+          if-no-files-found: error
+          retention-days: 7
