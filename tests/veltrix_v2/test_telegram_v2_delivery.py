@@ -8,7 +8,8 @@ from veltrix_v2.reporting.delivery import (
     DeliveryState,
     deliver_once,
 )
-from veltrix_v2.reporting.report_identity import create_report_identity
+from veltrix_v2.reporting.report_identity import REPORT_SCHEMA, bind_report_identity, create_report_identity
+from veltrix_v2.reporting.telegram import dispatch_public_telegram_report
 
 
 class MemoryStore:
@@ -123,3 +124,87 @@ def test_same_report_to_different_destinations_has_separate_idempotency_keys():
     assert first.idempotency_key != second.idempotency_key
     assert first.state is DeliveryState.SENT
     assert second.state is DeliveryState.SENT
+
+
+def public_report():
+    return bind_report_identity({
+        "schema": REPORT_SCHEMA,
+        "report_id": "telegram-e2e-2026-11-14",
+        "as_of_date": "2026-11-14",
+        "release_mode": "RESTRICTED_PUBLIC",
+        "predictions": [{
+            "publication_status": "PUBLISHED",
+            "home_team": "Alpha FC",
+            "away_team": "Beta FC",
+            "competition_name": "Example League",
+            "kickoff_wat": "17:30 WAT",
+            "certified_markets": ["1X2"],
+            "markets": {"1X2": {"home": 0.5, "draw": 0.25, "away": 0.25}},
+        }],
+    })
+
+
+def test_end_to_end_v2_telegram_dispatch_formats_then_sends_once():
+    store = MemoryStore()
+    calls = []
+
+    def send(destination, message):
+        calls.append((destination, message))
+        return f"message-{len(calls)}"
+
+    report = public_report()
+    verifier = lambda value, identity: identity.report_sha256 == value["report_sha256"]
+    first = dispatch_public_telegram_report(
+        report, "telegram:chat-1", verifier, store, send
+    )
+    second = dispatch_public_telegram_report(
+        report, "telegram:chat-1", verifier, store, send
+    )
+    assert first.state is DeliveryState.SENT
+    assert second.state is DeliveryState.DUPLICATE_SKIPPED
+    assert len(calls) == 1
+    assert "Alpha FC vs Beta FC" in calls[0][1]
+
+
+def test_end_to_end_shadow_report_never_calls_telegram_transport():
+    store = MemoryStore()
+    report = public_report()
+    report["release_mode"] = "INTERNAL_SHADOW"
+    report = bind_report_identity({key: value for key, value in report.items() if key != "report_sha256"})
+    with pytest.raises(PermissionError):
+        dispatch_public_telegram_report(
+            report, "telegram:chat-1", lambda *_: True, store,
+            lambda *_: pytest.fail("shadow report must never be sent"),
+        )
+    assert store.claimed == set()
+
+
+def test_partial_telegram_send_failure_is_unknown_and_never_replayed():
+    store = MemoryStore()
+    report = public_report()
+    report["predictions"] = [
+        {**report["predictions"][0], "home_team": f"Home {index:02d}"}
+        for index in range(80)
+    ]
+    report = bind_report_identity({key: value for key, value in report.items() if key != "report_sha256"})
+    attempts = []
+
+    def send(destination, message):
+        attempts.append(message)
+        if len(attempts) == 2:
+            raise TimeoutError("second chunk timed out")
+        return "first-message"
+
+    verifier = lambda value, identity: identity.report_sha256 == value["report_sha256"]
+    with pytest.raises(DeliveryOutcomeUnknown):
+        dispatch_public_telegram_report(
+            report, "telegram:chat-1", verifier, store, send
+        )
+    prior_attempts = len(attempts)
+    result = dispatch_public_telegram_report(
+        report, "telegram:chat-1", verifier, store,
+        lambda *_: pytest.fail("uncertain partial delivery must not be replayed"),
+    )
+    assert result.state is DeliveryState.DUPLICATE_SKIPPED
+    assert len(attempts) == prior_attempts
+    assert len(store.unknown) == 1
