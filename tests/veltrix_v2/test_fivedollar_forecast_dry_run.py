@@ -44,7 +44,10 @@ def test_read_only_forecast_probe_fetches_free_data_and_calculates_one_locked_ba
         _fixture(i, "4160026622", NOW - timedelta(hours=120 + i * 18), "finished")
         for i in range(100)
     ]
-    upcoming = [_fixture(1000, "4160026622", NOW + timedelta(hours=5), "scheduled")]
+    upcoming = [
+        _fixture(1000, "4160026622", NOW + timedelta(hours=5), "scheduled"),
+        _fixture(1001, "4160026622", NOW + timedelta(days=20), "scheduled"),
+    ]
 
     def request(path, api_key):
         calls.append(path)
@@ -77,6 +80,8 @@ def test_read_only_forecast_probe_fetches_free_data_and_calculates_one_locked_ba
     assert report["request_budget"] == REQUEST_BUDGET
     assert report["history_observation_count"] == 100
     assert report["scheduled_target_count"] == 1
+    assert report["skipped_outside_window"] == 1
+    assert report["skips"]["outside_window"] == 1
     assert report["forecast_count"] == 1
     assert report["status"] == "CALCULATED_NOT_PUBLISHED"
     assert report["publication_locked"] is True
