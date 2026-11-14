@@ -47,7 +47,7 @@ def test_poisson_elo_form_and_blends_use_identical_fixture_set():
     )
     assert report.scored_fixtures == 9
     expected = {row.fixture_id for row in report.fixtures}
-    assert expected == {f"h{i}" for i in range(2, 9)} | {"t9", "t10", "t11"}
+    assert expected == {"h2"} | {f"h{i}" for i in range(4, 9)} | {"t9", "t10", "t11"}
     assert all(metric.sample_count == 9 for metric in report.metrics.values())
     assert report.metrics["blend_all_equal"].sample_count == report.metrics["poisson"].sample_count
     for row in report.fixtures:
@@ -156,4 +156,4 @@ def test_jsonl_paper_ledger_persists_and_verifies_hash_chain(tmp_path):
     reloaded = store.load()
     assert reloaded.verify_chain()
     assert reloaded.events[0].event_sha256 == event.event_sha256
-    assert path.read_text(encoding="utf-8").count("\\n") == 1
+    assert path.read_text(encoding="utf-8").count("\n") == 1
