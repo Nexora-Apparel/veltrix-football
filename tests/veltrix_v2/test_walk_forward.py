@@ -144,3 +144,18 @@ def test_walk_forward_rejects_invalid_recency_half_life():
     with pytest.raises(ValueError, match="RECENCY_HALF_LIFE_MUST_BE_POSITIVE_FINITE"):
         walk_forward_evaluate(history(40), evaluation_as_of=AS_OF,
                               recency_half_life_days=0)
+
+
+def test_walk_forward_records_dixon_coles_candidate_configuration():
+    report = walk_forward_evaluate(
+        history(40), evaluation_as_of=AS_OF, dixon_coles_rho=-0.1
+    )
+    assert report.dixon_coles_rho == -0.1
+    assert report.eligible_scored_fixtures > 0
+
+
+def test_walk_forward_rejects_invalid_dixon_coles_rho():
+    import pytest
+    with pytest.raises(ValueError, match="DIXON_COLES_RHO_INVALID"):
+        walk_forward_evaluate(history(40), evaluation_as_of=AS_OF,
+                              dixon_coles_rho=1.5)
