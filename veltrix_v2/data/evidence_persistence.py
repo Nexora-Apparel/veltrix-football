@@ -64,13 +64,16 @@ def build_fixture_snapshot_manifest(
     competition_id: str,
     fixture_count: int,
     rights_approval_id: str,
+    rights_evidence_sha256: str,
 ) -> dict[str, str]:
     """Build deterministic hashes for a raw upcoming-fixture page snapshot."""
     if (provider, source_id) != ("5DollarFootballAPI", "5dollarfootballapi"):
         raise ValueError("FIXTURE_SNAPSHOT_PROVIDER_NOT_ALLOWED")
     if not all(isinstance(value, str) and value.strip() for value in (
         endpoint, request_id, competition_id, rights_approval_id
-    )):
+    )) or len(rights_evidence_sha256) != 64 or any(
+        ch not in "0123456789abcdef" for ch in rights_evidence_sha256.casefold()
+    ):
         raise ValueError("FIXTURE_SNAPSHOT_IDENTITY_INVALID")
     if not isinstance(request_params, Mapping):
         raise ValueError("FIXTURE_SNAPSHOT_REQUEST_PARAMS_INVALID")
@@ -99,6 +102,7 @@ def build_fixture_snapshot_manifest(
         "status_filter": "scheduled",
         "fixture_count": fixture_count,
         "rights_approval_id": rights_approval_id,
+        "rights_evidence_sha256": rights_evidence_sha256,
         "rights_evaluated_at": recorded_at.isoformat(),
     }
     manifest_hash = sha256(_json(body).encode("utf-8")).hexdigest()
@@ -162,6 +166,7 @@ def persist_fixture_snapshot_response(
         competition_id=competition_id,
         fixture_count=fixture_count,
         rights_approval_id=rights_approval.approval_id,
+        rights_evidence_sha256=rights_approval.evidence_sha256 or "",
     )
     for purpose in (DataUsePurpose.STORAGE, DataUsePurpose.CACHE):
         decision = evaluate_source_use(
