@@ -262,8 +262,6 @@ def _capture_page(
         rights_approval_id=approval.approval_id,
     )
     page_path = out_dir / "raw" / f"{competition_id}_{status}_page_1.json"
-    page_path.parent.mkdir(parents=True, exist_ok=True)
-    page_path.write_bytes(raw)
 
     page_info: dict[str, object] = {
         "competition_id": competition_id,
@@ -284,7 +282,6 @@ def _capture_page(
     }
 
     if status == "finished":
-        recorded_at = datetime.now(timezone.utc)
         current_approval, recorded_at = _refresh_approval(staging_dsn)
         for purpose in (DataUsePurpose.STORAGE, DataUsePurpose.MODEL_TRAINING):
             decision = evaluate_source_use(
@@ -292,6 +289,8 @@ def _capture_page(
             )
             if not decision.allowed:
                 raise PermissionError(decision.reason_code)
+        page_path.parent.mkdir(parents=True, exist_ok=True)
+        page_path.write_bytes(raw)
         capture = capture_fivedollar_page_evidence(
             raw,
             parsed,
@@ -322,6 +321,16 @@ def _capture_page(
             "point_in_time_certifiable": False,
         })
         return converted, page_info
+
+    current_approval, recorded_at = _refresh_approval(staging_dsn)
+    for purpose in (DataUsePurpose.STORAGE, DataUsePurpose.CACHE):
+        decision = evaluate_source_use(
+            current_approval, purpose, at_utc=recorded_at, commercial=True
+        )
+        if not decision.allowed:
+            raise PermissionError(decision.reason_code)
+    page_path.parent.mkdir(parents=True, exist_ok=True)
+    page_path.write_bytes(raw)
 
     targets = []
     rejected_targets: dict[str, int] = {}
