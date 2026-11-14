@@ -52,7 +52,7 @@ def settle_from_verified_fixture(
     fixture_id = f"{fixture.source_id}:{fixture.provider_fixture_id}"
     prediction = next((
         event for event in ledger.events
-        if event.event_type == "PREDICTION"
+        if event.event_type in {"PREDICTION", "SHADOW_PREDICTION"}
         and event.fixture_id == fixture_id
     ), None)
     if prediction is None:
@@ -66,13 +66,25 @@ def settle_from_verified_fixture(
     ):
         raise ValueError("SETTLEMENT_FIXTURE_IDENTITY_MISMATCH")
 
+    observed_only = prediction.payload.get("evidence_class") == "PROSPECTIVE_OBSERVED_ONLY"
+    if observed_only:
+        # The provider publication clock is unknown. Use the exact time this
+        # collector first observed the finished result, never the old proxy.
+        result_available_at = fixture.retrieved_at_utc
+        result_retrieved_at = fixture.retrieved_at_utc
+        result_basis = "collector_first_observed_v1"
+    else:
+        result_available_at = fixture.available_at_utc
+        result_retrieved_at = fixture.retrieved_at_utc
+        result_basis = "provider_timestamp"
+
     return ledger.append_settlement(
         fixture_id=fixture_id,
         model_version=prediction.model_version,
         home_goals=fixture.home_score,
         away_goals=fixture.away_score,
-        result_available_at=fixture.available_at_utc,
-        result_retrieved_at=fixture.retrieved_at_utc,
+        result_available_at=result_available_at,
+        result_retrieved_at=result_retrieved_at,
         recorded_at=recorded_at,
         source_provider=fixture.provider,
         source_id=fixture.source_id,
@@ -80,4 +92,5 @@ def settle_from_verified_fixture(
         result_payload_sha256=fixture.payload_sha256,
         rights_approval_id=approval.approval_id,
         rights_evidence_sha256=approval.evidence_sha256,
+        result_availability_basis=result_basis,
     )
