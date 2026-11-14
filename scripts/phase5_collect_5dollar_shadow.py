@@ -492,6 +492,7 @@ def _capture_page(
         competition_id=competition_id,
         fixture_count=len(parsed.fixtures),
         rights_approval_id=current_approval.approval_id,
+        rights_evidence_sha256=current_approval.evidence_sha256 or "",
     )
     target_persistence = (
         _persist_fixture_snapshot_to_staging(
