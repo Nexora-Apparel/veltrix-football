@@ -58,7 +58,8 @@ def test_reader_sets_read_only_and_returns_claim_with_append_only_events():
     assert result["status"] == "READ_ONLY_RECONCILIATION_INSPECTION"
     assert result["claim"]["state"] == "OUTCOME_UNKNOWN"
     assert result["claim"]["destination_sha256"] == "c" * 64
-    assert "destination" not in result["claim"]
+    assert "destination_id" not in result["claim"]
+    assert "chat_id" not in result["claim"]
     assert result["reconciliation_events"][0]["outcome"] == "INCONCLUSIVE"
     assert connection.queries[0][0] == "SET TRANSACTION READ ONLY"
     assert "FROM telegram_delivery_claims" in connection.queries[1][0]
