@@ -57,6 +57,7 @@ class PoissonPrediction:
     sample_floor_met: bool
     publishable: bool
     publication_reason: str
+    recency_half_life_days: float | None
 
 
 def _aware(value: datetime) -> bool:
@@ -126,6 +127,29 @@ def observation_eligible_as_of(match: MatchObservation, *, cutoff_at: datetime,
     return kickoff_precedes_cutoff and match.available_at <= cutoff_at and match.recorded_at <= cutoff_at
 
 
+def _event_time(match: MatchObservation) -> datetime:
+    if match.kickoff_at is not None:
+        return match.kickoff_at
+    return datetime.combine(
+        match.kickoff_date + timedelta(days=2), time.min, tzinfo=timezone.utc
+    )
+
+
+def observation_weight_as_of(
+    match: MatchObservation, *, cutoff_at: datetime, half_life_days: float | None
+) -> float:
+    """Return exponential recency weight for an eligible observation."""
+    if not observation_eligible_as_of(match, cutoff_at=cutoff_at):
+        return 0.0
+    if half_life_days is None:
+        return 1.0
+    if (not isinstance(half_life_days, (int, float)) or isinstance(half_life_days, bool)
+            or not math.isfinite(half_life_days) or half_life_days <= 0):
+        raise ValueError("RECENCY_HALF_LIFE_MUST_BE_POSITIVE_FINITE")
+    age_days = max(0.0, (cutoff_at - _event_time(match)).total_seconds() / 86400.0)
+    return math.exp(-math.log(2.0) * age_days / float(half_life_days))
+
+
 def _poisson_pmf(mean: float, goals: int) -> float:
     return math.exp(-mean) * (mean ** goals) / math.factorial(goals)
 
@@ -143,6 +167,7 @@ def predict_match(
     kickoff_at: datetime,
     cutoff_at: datetime,
     prior_matches: float = 5.0,
+    recency_half_life_days: float | None = None,
 ) -> PoissonPrediction:
     """Estimate 1X2, BTTS and O/U 2.5 using only results knowable at cutoff.
 
@@ -162,6 +187,13 @@ def predict_match(
     if (not isinstance(prior_matches, (int, float)) or isinstance(prior_matches, bool)
             or not math.isfinite(prior_matches) or prior_matches <= 0):
         raise ValueError("PRIOR_STRENGTH_INVALID")
+    if recency_half_life_days is not None and (
+        not isinstance(recency_half_life_days, (int, float))
+        or isinstance(recency_half_life_days, bool)
+        or not math.isfinite(recency_half_life_days)
+        or recency_half_life_days <= 0
+    ):
+        raise ValueError("RECENCY_HALF_LIFE_MUST_BE_POSITIVE_FINITE")
 
     candidates = list(observations)
     fixture_id_counts: dict[str, int] = {}
@@ -190,29 +222,41 @@ def predict_match(
     if not away_team:
         raise InsufficientHistoryError("AWAY_TEAM_HAS_NO_ELIGIBLE_HISTORY")
 
-    league_home_total = sum(m.home_goals for m in eligible)
-    league_away_total = sum(m.away_goals for m in eligible)
-    league_home_mean = league_home_total / len(eligible)
-    league_away_mean = league_away_total / len(eligible)
+    weights = {
+        m.fixture_id: observation_weight_as_of(
+            m, cutoff_at=cutoff_at, half_life_days=recency_half_life_days
+        ) for m in eligible
+    }
+    total_weight = sum(weights.values())
+    if total_weight <= 0 or not math.isfinite(total_weight):
+        raise InsufficientHistoryError("RECENCY_WEIGHT_MASS_INVALID")
+    league_home_total = sum(m.home_goals * weights[m.fixture_id] for m in eligible)
+    league_away_total = sum(m.away_goals * weights[m.fixture_id] for m in eligible)
+    league_home_mean = league_home_total / total_weight
+    league_away_mean = league_away_total / total_weight
     if league_home_mean <= 0 or league_away_mean <= 0:
         raise InsufficientHistoryError("COMPETITION_GOAL_BASELINE_INVALID")
 
     def team_rates(team_id: str) -> tuple[float, float, float, float, int]:
-        home_scored = home_conceded = home_count = 0
-        away_scored = away_conceded = away_count = 0
+        home_scored = home_conceded = home_weight = 0.0
+        away_scored = away_conceded = away_weight = 0.0
+        home_count = away_count = 0
         for m in eligible:
+            weight = weights[m.fixture_id]
             if m.home_team_id == team_id:
-                home_scored += m.home_goals
-                home_conceded += m.away_goals
+                home_scored += m.home_goals * weight
+                home_conceded += m.away_goals * weight
+                home_weight += weight
                 home_count += 1
             elif m.away_team_id == team_id:
-                away_scored += m.away_goals
-                away_conceded += m.home_goals
+                away_scored += m.away_goals * weight
+                away_conceded += m.home_goals * weight
+                away_weight += weight
                 away_count += 1
-        home_attack = _posterior_mean(home_scored, home_count, league_home_mean, prior_matches)
-        home_defence = _posterior_mean(home_conceded, home_count, league_away_mean, prior_matches)
-        away_attack = _posterior_mean(away_scored, away_count, league_away_mean, prior_matches)
-        away_defence = _posterior_mean(away_conceded, away_count, league_home_mean, prior_matches)
+        home_attack = _posterior_mean(home_scored, home_weight, league_home_mean, prior_matches)
+        home_defence = _posterior_mean(home_conceded, home_weight, league_away_mean, prior_matches)
+        away_attack = _posterior_mean(away_scored, away_weight, league_away_mean, prior_matches)
+        away_defence = _posterior_mean(away_conceded, away_weight, league_home_mean, prior_matches)
         return home_attack, home_defence, away_attack, away_defence, home_count + away_count
 
     home_attack, home_defence, _, _, home_count = team_rates(home_team_id)
@@ -265,4 +309,5 @@ def predict_match(
         sample_floor_met=sample_floor_met,
         publishable=publishable,
         publication_reason=reason,
+        recency_half_life_days=recency_half_life_days,
     )
