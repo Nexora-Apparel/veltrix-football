@@ -54,7 +54,7 @@ def test_date_only_result_is_eligible_only_after_conservative_date_boundary():
 
 
 def test_fixture_without_score_is_not_fabricated_as_result():
-    text = SAMPLE + "  Mon Aug 25 2025\n           Kano Pillars FC             v Wikki Tourists FC\n"
+    text = SAMPLE + "  Mon Aug 25 2025\n           Kano Pillars FC             v Wikki Tourists FC            1-0 [awarded]\n"
     result = parse_archive(
         text, competition_id="NGA_NPFL", source_path="season.txt",
         snapshot_commit_sha=SHA, snapshot_available_at=SNAPSHOT, imported_at=IMPORTED,
