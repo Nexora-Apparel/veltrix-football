@@ -360,7 +360,6 @@ def test_publication_rejects_more_than_25_fixtures():
 @pytest.mark.parametrize(("market", "values"), [
     ("1X2", {"home": 0.50, "draw": 0.25, "away": 0.30}),
     ("1X2", {"home": 0.50, "draw": True, "away": 0.25}),
-    ("BTTS", {"yes": float("nan"), "no": 0.0}),
     ("BTTS", {"yes": 1.1, "no": -0.1}),
     ("TOTALS_2_5", {"over": 0.50, "under": 0.49}),
     ("TOTALS_2_5", {"over": 0.50, "under": 0.50, "push": 0.0}),
@@ -380,3 +379,11 @@ def test_certified_market_probabilities_are_required_in_report():
     report = bind_report_identity({key: value for key, value in report.items() if key != "report_sha256"})
     raw = make_manifest(report)
     assert verify_publication_authorization(report, raw, attestation_ok, rights_ok, evidence_reader) is False
+
+
+
+def test_report_identity_rejects_non_json_nan_probability_before_publication():
+    report = make_report()
+    report["predictions"][0]["markets"]["BTTS"] = {"yes": float("nan"), "no": 0.0}
+    with pytest.raises(ValueError, match="non-canonical JSON"):
+        bind_report_identity({key: value for key, value in report.items() if key != "report_sha256"})
