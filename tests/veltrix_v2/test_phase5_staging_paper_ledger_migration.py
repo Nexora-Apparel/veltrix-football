@@ -22,8 +22,8 @@ def test_migration_script_defaults_to_dry_run_with_exact_pending_sequence(monkey
     monkeypatch.setattr(migration, "migrate", lambda value, dry_run=False: {
         "database": "veltrix_football_staging",
         "user": "neondb_owner",
-        "applied": versions[:-4],
-        "pending": versions[-4:],
+        "applied": versions[:-5],
+        "pending": versions[-5:],
     })
     result = migration.run(apply=False)
     assert result["status"] == "DRY_RUN_READY"
@@ -32,6 +32,7 @@ def test_migration_script_defaults_to_dry_run_with_exact_pending_sequence(monkey
         "0006_provider_quota_evidence",
         "0007_provider_capture_state_events",
         "0008_prospective_paper_ledger",
+        "0009_telegram_delivery_claims",
     ]
     assert result["writes_performed"] is False
 
@@ -49,8 +50,8 @@ def test_apply_requires_explicit_internal_guard(monkeypatch):
         return {
             "database": "veltrix_football_staging",
             "user": "neondb_owner",
-            "applied": versions[:-4],
-            "pending": versions[-4:],
+            "applied": versions[:-5],
+            "pending": versions[-5:],
         }
 
     monkeypatch.setattr(migration, "migrate", fake_migrate)
