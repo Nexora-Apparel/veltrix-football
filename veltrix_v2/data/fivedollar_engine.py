@@ -48,6 +48,7 @@ def build_fivedollar_forecast_batch(
     approval: SourceApproval,
     cutoff_at: datetime,
     max_fixtures: int = 25,
+    recency_half_life_days: float | None = None,
 ) -> FiveDollarForecastBatch:
     """Assemble a future forecast batch from parsed provider fixtures.
 
@@ -131,7 +132,8 @@ def build_fivedollar_forecast_batch(
                 targets.append(target)
 
     prediction_report = predict_batch(
-        observations, targets, cutoff_at=cutoff_at, max_fixtures=max_fixtures
+        observations, targets, cutoff_at=cutoff_at, max_fixtures=max_fixtures,
+        recency_half_life_days=recency_half_life_days,
     )
     return FiveDollarForecastBatch(
         approval_id=approval.approval_id,
