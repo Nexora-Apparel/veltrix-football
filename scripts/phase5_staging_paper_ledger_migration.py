@@ -120,6 +120,11 @@ def _verify_after_apply(dsn: str, baseline: dict[str, int]) -> dict[str, object]
             "SELECT COUNT(*) FROM telegram_delivery_reconciliations"
         ).fetchone()[0])
         if reconciliation_rows != 0:
+            raise RuntimeError("TELEGRAM_DELIVERY_RECONCILIATION_NOT_EMPTY_AFTER_SCHEMA_MIGRATION")
+        reconciliation_rows = int(connection.execute(
+            "SELECT COUNT(*) FROM telegram_delivery_reconciliations"
+        ).fetchone()[0])
+        if reconciliation_rows != 0:
             raise RuntimeError("TELEGRAM_DELIVERY_RECONCILIATIONS_NOT_EMPTY_AFTER_SCHEMA_MIGRATION")
 
         trigger_names = {
