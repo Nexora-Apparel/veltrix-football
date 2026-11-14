@@ -7,6 +7,7 @@ import pytest
 from veltrix_v2.reporting.artifact_bundle import (
     build_report_surface_bundle,
     persist_report_surface_bundle,
+    serialize_portable_report_surface_bundle,
 )
 from veltrix_v2.reporting.delivery import (
     DeliveryOutcomeUnknown,
@@ -17,6 +18,7 @@ from veltrix_v2.reporting.delivery import (
 from veltrix_v2.reporting.report_identity import REPORT_SCHEMA, bind_report_identity, create_report_identity
 from veltrix_v2.reporting.telegram import (
     dispatch_public_telegram_bundle,
+    dispatch_public_telegram_portable_bundle,
     dispatch_public_telegram_report,
 )
 
@@ -325,6 +327,49 @@ def test_telegram_bundle_dispatch_rejects_unverified_publication_before_claim(tm
         dispatch_public_telegram_bundle(
             tmp_path,
             bundle.identity.report_id,
+            "telegram:chat-1",
+            lambda *_: False,
+            store,
+            lambda *args: calls.append(args),
+        )
+    assert calls == []
+    assert store.claimed == set()
+
+
+
+def test_telegram_dispatch_uses_single_authorized_portable_bundle():
+    report = public_report()
+    bundle = build_report_surface_bundle(report)
+    portable = serialize_portable_report_surface_bundle(bundle)
+    store = MemoryStore()
+    calls = []
+
+    def send(destination, message):
+        calls.append((destination, message))
+        return "portable-message-1"
+
+    attempt = dispatch_public_telegram_portable_bundle(
+        portable,
+        "telegram:chat-1",
+        lambda value, identity: value["report_id"] == report["report_id"],
+        store,
+        send,
+    )
+    assert attempt.state == DeliveryState.SENT
+    assert len(calls) == 1
+    assert calls[0][0] == "telegram:chat-1"
+    assert "Alpha FC vs Beta FC" in calls[0][1]
+    assert len(store.claimed) == 1
+
+
+def test_telegram_portable_bundle_rejects_bad_authorization_before_claim_or_send():
+    report = public_report()
+    portable = serialize_portable_report_surface_bundle(build_report_surface_bundle(report))
+    store = MemoryStore()
+    calls = []
+    with pytest.raises(PermissionError, match="AUTHORIZATION_NOT_VERIFIED"):
+        dispatch_public_telegram_portable_bundle(
+            portable,
             "telegram:chat-1",
             lambda *_: False,
             store,
