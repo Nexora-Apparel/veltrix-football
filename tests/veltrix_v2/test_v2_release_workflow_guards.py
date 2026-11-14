@@ -27,3 +27,12 @@ def test_legacy_telegram_recovery_remains_paused():
     source = _workflow("telegram-delivery-recovery.yml")
     assert "deliver-published-report:" in source
     assert "if: false" in source
+
+
+
+def test_legacy_paper_tracking_recovery_cannot_republish_legacy_ledger():
+    source = _workflow("paper-tracking-recovery.yml")
+    assert "recover-paper-ledger:" in source
+    assert "if: false" in source
+    assert "legacy recovery job" in source
+    assert "publish_command_data.py" in source
