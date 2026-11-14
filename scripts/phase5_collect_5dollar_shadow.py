@@ -202,13 +202,12 @@ def _hash_files(paths: tuple[str, ...]) -> str:
 def _persist_paper_predictions_to_staging(
     dsn: str, predictions: list
 ) -> dict[str, object]:
+    """Idempotently append one atomic batch to the allowlisted staging ledger."""
     validate_staging_dsn_target(dsn)
     import psycopg
 
     parsed = urlparse(dsn)
     host = parsed.hostname or ""
-    appended = []
-    duplicates = 0
     with psycopg.connect(dsn, autocommit=False) as connection:
         identity = connection.execute(
             "SELECT current_database(), current_user"
@@ -224,14 +223,18 @@ def _persist_paper_predictions_to_staging(
             host=host,
             role=identity[1],
         )
-        for prediction in predictions:
-            try:
-                appended.append(store.append_prediction(prediction))
-            except ValueError as exc:
-                if str(exc) == "PAPER_PREDICTION_DUPLICATE":
-                    duplicates += 1
-                    continue
-                raise
+        existing = store.load()
+        existing_keys = {
+            (event.fixture_id, event.model_version)
+            for event in existing.events
+            if event.event_type in {"PREDICTION", "SHADOW_PREDICTION"}
+        }
+        new_predictions = [
+            prediction for prediction in predictions
+            if (prediction.fixture_id, prediction.model_version) not in existing_keys
+        ]
+        duplicates = len(predictions) - len(new_predictions)
+        appended = store.append_predictions(new_predictions) if new_predictions else []
         ledger = store.load()
         head = ledger.events[-1].event_sha256 if ledger.events else None
         return {
@@ -702,14 +705,18 @@ def run_capture(
             {"fixture_id": item.fixture_id, "reason_code": item.reason_code}
             for item in admission.rejected
         ],
-        "persisted_shadow_ledger_events": persisted_ledger_events,
+        "persisted_shadow_ledger_events": (
+            int(staging_ledger["events_appended"]) if staging_ledger else 0
+        ),
         "ledger_events": [
             {"event_type": event.event_type, "fixture_id": event.fixture_id,
              "model_version": event.model_version, "event_sha256": event.event_sha256}
             for event in ledger_events
         ],
         "ledger_path": str(ledger_path),
-        "paper_ledger_persisted_to_staging": staging_ledger is not None,
+        "paper_ledger_persisted_to_staging": bool(
+            staging_ledger and staging_ledger["events_appended"] > 0
+        ),
         "staging_paper_ledger": staging_ledger,
         "model_artifact_sha256": model_hash,
         "feature_set_sha256": feature_hash,
