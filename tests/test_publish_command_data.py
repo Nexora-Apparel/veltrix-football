@@ -104,82 +104,24 @@ def test_large_blob_publication_preserves_existing_branch_tree(tmp_path, monkeyp
     assert len(requests) == 6
 
 
-def test_one_snapshot_failure_does_not_block_later_publications(tmp_path, monkeypatch):
+def test_legacy_main_refuses_all_non_archive_snapshots(tmp_path, monkeypatch, capsys):
     import json
     import sys
     from scripts import publish_command_data as publisher
 
     report = tmp_path / "report.json"
-    ledger = tmp_path / "paper.json"
-    evidence = tmp_path / "evidence.json"
-    cache = tmp_path / "cache.json"
     report.write_text(json.dumps({
-        "as_of_date": "2026-11-02",
+        "as_of_date": "2026-11-14",
         "predictions": [],
     }), encoding="utf-8")
-    ledger.write_text(json.dumps({
-        "model_status": "PAPER_TRACKING_ONLY",
-        "cumulative_metrics_by_model": {},
-    }), encoding="utf-8")
-    evidence.write_text(json.dumps({
-        "version": "VELTRIX_VALUE_EVIDENCE_V1",
-        "release_status": "LOCKED_SHADOW_MODE",
-        "observations": [],
-    }), encoding="utf-8")
-    cache.write_text(json.dumps({
-        "version": 2,
-        "matches": [],
-        "state": {},
-    }), encoding="utf-8")
-
+    calls = []
+    monkeypatch.setattr(publisher, "publish", lambda *args, **kwargs: calls.append(args))
     monkeypatch.setenv("GITHUB_REPOSITORY", "owner/repo")
     monkeypatch.setenv("GITHUB_TOKEN", "test-token")
-    monkeypatch.setattr(sys, "argv", [
-        "publish_command_data.py",
-        "--report", str(report),
-        "--ledger", str(ledger),
-        "--value-evidence", str(evidence),
-        "--recent-cache", str(cache),
-    ])
-
-    attempted = []
-
-    def fake_publish(path, local_file, repo, token):
-        attempted.append(path)
-        if path == "public-data/value_evidence_ledger.json":
-            raise OSError("simulated large-snapshot publication failure")
-
-    monkeypatch.setattr(publisher, "publish", fake_publish)
-
-    assert publisher.main() == 1
-    assert "public-data/daily_predictions.json" in attempted
-    assert "public-data/paper_tracking_ledger.json" in attempted
-    assert "public-data/value_evidence_ledger.json" in attempted
-    assert "public-data/recent_results_cache.json" in attempted
-
-
-def test_publication_marker_confirms_live_report_but_preserves_reuse_warning():
-    from datetime import datetime, timezone
-    from scripts.publish_command_data import _mark_report_publication
-
-    published_at = datetime(2026, 11, 2, 10, 0, tzinfo=timezone.utc)
-    live = {
-        "publication_status": "LIVE_REPORT_GENERATED_PENDING_PUBLICATION",
-        "publication_notice": "Generated from this run's live fixture response.",
-    }
-    _mark_report_publication(live, published_at)
-    assert live["publication_status"] == "PUBLISHED"
-    assert live["command_data_publication"] == "PUBLISHED"
-    assert "publication to command-data is confirmed" in live["publication_notice"]
-
-    reused = {
-        "publication_status": "REUSED_SNAPSHOT_NOT_REFRESHED",
-        "publication_notice": "A previously generated report was reused.",
-    }
-    _mark_report_publication(reused, published_at)
-    assert reused["publication_status"] == "REUSED_SNAPSHOT_NOT_REFRESHED"
-    assert reused["command_data_publication"] == "PUBLISHED"
-    assert reused["publication_notice"] == "A previously generated report was reused."
+    monkeypatch.setattr(sys, "argv", ["publish_command_data.py", "--report", str(report)])
+    assert publisher.main() == 2
+    assert calls == []
+    assert "LEGACY_COMMAND_DATA_PUBLISHER_DISABLED" in capsys.readouterr().err
 
 
 
@@ -218,7 +160,7 @@ def test_large_blob_publication_retries_when_command_data_branch_moves(tmp_path,
         raise AssertionError(url)
 
     monkeypatch.setattr(publisher, "_github_json", fake_github_json)
-    publisher.publish("public-data/daily_predictions.json", target, "owner/repo", "token")
+    publisher.publish("public-data/archive/2026-11-14/daily_predictions_20261114T050000Z.json", target, "owner/repo", "token")
     assert ref_reads == 2
     assert patch_attempts == 2
     second_tree = next(body for url, method, body in calls
