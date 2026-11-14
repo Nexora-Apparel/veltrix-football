@@ -181,3 +181,5 @@ jobs:
         run: python -m pytest --import-mode=importlib -q tests/veltrix_v2/test_full_migration_chain_postgres.py
       - name: Test append-only PostgreSQL paper ledger persistence
         run: python -m pytest --import-mode=importlib -q tests/veltrix_v2/test_paper_ledger_postgres.py
+      - name: Test durable Telegram delivery claims
+        run: python -m pytest --import-mode=importlib -q tests/veltrix_v2/test_telegram_delivery_postgres.py
