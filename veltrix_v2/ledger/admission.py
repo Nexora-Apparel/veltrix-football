@@ -218,6 +218,12 @@ def admit_shadow_forecasts(
                 raise ValueError("TARGET_NOT_KNOWN_AND_FUTURE_AT_RECORDING")
             if not _valid_hash(target.payload_sha256):
                 raise ValueError("TARGET_PAYLOAD_HASH_INVALID")
+            if target.provider == "5DollarFootballAPI" and not all(
+                _valid_hash(value) for value in (
+                    target.response_sha256, target.capture_manifest_sha256
+                )
+            ):
+                raise ValueError("TARGET_RESPONSE_CAPTURE_EVIDENCE_MISSING")
 
             target_approval = _approval_for(
                 target.rights_approval_id, source_approvals,
@@ -251,6 +257,8 @@ def admit_shadow_forecasts(
                 "target_provider": target.provider,
                 "target_source_id": target.source_id,
                 "target_payload_sha256": target.payload_sha256,
+                "target_response_sha256": target.response_sha256,
+                "target_capture_manifest_sha256": target.capture_manifest_sha256,
                 "target_rights_approval_id": target_approval.approval_id,
                 "target_rights_evidence_sha256": target_approval.evidence_sha256,
                 "training_observations": evidence_rows,
