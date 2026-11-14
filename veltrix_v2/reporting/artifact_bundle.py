@@ -162,6 +162,11 @@ def build_report_surface_bundle(report: Mapping[str, Any]) -> ReportSurfaceBundl
         "report_sha256": identity.report_sha256,
         "status": canonical.get("status"),
         "release_mode": canonical.get("release_mode"),
+        **{
+            key: json.loads(json.dumps(canonical[key], ensure_ascii=False, allow_nan=False))
+            for key in ["generated_at_utc","published_at_utc","publication_notice","command_data_publication","primary_provider_request","fixture_discovery","multi_source_odds_sync","live_odds_sync","historical_data_coverage","fixtures_with_market_odds","model_validation","goal_market_calibration"]
+            if key in canonical
+        },
         "predictions": json.loads(json.dumps(canonical["predictions"], ensure_ascii=False, allow_nan=False)),
     }
     assert_report_surface_bundle(canonical, scheduled, telegram, dashboard)

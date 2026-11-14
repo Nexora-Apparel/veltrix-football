@@ -1,51 +1,27 @@
 from __future__ import annotations
 
+from datetime import datetime
+from zoneinfo import ZoneInfo
+from pathlib import Path
+
 import pytest
 
 from api import telegram as telegram_api
+from veltrix_v2.reporting.artifact_bundle import (
+    build_report_surface_bundle,
+    serialize_portable_report_surface_bundle,
+)
+from veltrix_v2.reporting.report_identity import REPORT_SCHEMA
 
 
-def test_api_has_no_implicit_publication_verifier(monkeypatch):
+@pytest.fixture(autouse=True)
+def reset_api_state(monkeypatch):
     monkeypatch.setattr(telegram_api.app.state, "_state", {}, raising=False)
-    assert telegram_api._authoritative_publication_verifier() is None
 
 
-def test_api_accepts_only_explicit_callable_publication_verifier(monkeypatch):
-    monkeypatch.setattr(telegram_api.app.state, "_state", {}, raising=False)
-    with pytest.raises(TypeError, match="AUTHORITATIVE_PUBLICATION_VERIFIER_REQUIRED"):
-        telegram_api.configure_publication_verifier(None)
-
-    verifier = lambda report, identity: False
-    telegram_api.configure_publication_verifier(verifier)
-    assert telegram_api._authoritative_publication_verifier() is verifier
-
-
-
-def test_dashboard_api_hides_v2_predictions_without_trusted_verifier(monkeypatch):
-    monkeypatch.setattr(telegram_api, "_authoritative_publication_verifier", lambda: None)
-    monkeypatch.setattr(telegram_api, "load_dashboard_snapshot", lambda verifier=None: None)
-    monkeypatch.setattr(telegram_api, "load_latest_report", lambda verifier=None: None)
-    result = telegram_api.dashboard_data()
-    assert result["status"] == "UNAVAILABLE"
-    assert result["predictions"] == []
-
-
-
-def test_dashboard_html_has_no_legacy_static_prediction_fallback_or_experimental_labels():
-    html = telegram_api.DASHBOARD_HTML
-    assert "/api/dashboard-data" in html
-    assert "dashboard_snapshot.json" not in html
-    assert "daily_predictions.json" not in html
-    assert "paper_tracking_ledger.json" not in html
-    assert "raw.githubusercontent.com" not in html
-    assert "EXPERIMENTAL" not in html
-    assert "experimental_" not in html
-
-
-
-def test_dashboard_api_counts_only_explicitly_certified_v2_markets(monkeypatch):
-    monkeypatch.setattr(telegram_api, "_authoritative_publication_verifier", lambda: (lambda *_: True))
-    fixture_rows = [
+def _portable_bundle_bytes():
+    as_of = datetime.now(ZoneInfo("Africa/Lagos")).date().isoformat()
+    fixtures = [
         {
             "fixture_id": "fixture-btts",
             "publication_status": "PUBLISHED",
@@ -69,18 +45,84 @@ def test_dashboard_api_counts_only_explicitly_certified_v2_markets(monkeypatch):
             "kickoff_wat": "20:00 WAT",
         },
     ]
-    monkeypatch.setattr(
-        telegram_api,
-        "load_dashboard_snapshot",
-        lambda verifier=None: {
-            "snapshot_schema": "VELTRIX_DASHBOARD_V1",
-            "as_of_date": telegram_api.datetime.now(telegram_api.ZoneInfo("Africa/Lagos")).date().isoformat(),
-            "report_id": "test-report",
-            "report_sha256": "a" * 64,
-            "predictions": fixture_rows,
-        },
-    )
-    monkeypatch.setattr(telegram_api, "load_latest_report", lambda verifier=None: None)
+    report = {
+        "schema": REPORT_SCHEMA,
+        "report_id": "test-report",
+        "as_of_date": as_of,
+        "status": "PUBLISHED",
+        "release_mode": "FULL_PUBLIC",
+        "generated_at_utc": "2099-11-14T05:00:00Z",
+        "published_at_utc": "2099-11-14T05:01:00Z",
+        "publication_notice": "Verified V2 test report",
+        "command_data_publication": "PUBLISHED",
+        "primary_provider_request": {"provider": "5DollarFootballAPI", "status": "SUCCESS"},
+        "fixture_discovery": {"retrieved": 2},
+        "multi_source_odds_sync": {"status": "NOT_CONFIGURED"},
+        "live_odds_sync": {"status": "NOT_CONFIGURED"},
+        "historical_data_coverage": {"status": "RESEARCH_ONLY"},
+        "fixtures_with_market_odds": 0,
+        "model_validation": {"status": "NOT_CERTIFIED"},
+        "goal_market_calibration": {"status": "NOT_REPORTED"},
+        "predictions": fixtures,
+    }
+    bundle = build_report_surface_bundle(report)
+    return serialize_portable_report_surface_bundle(bundle)
+
+
+def test_api_has_no_implicit_publication_verifier_or_bundle_reader():
+    assert telegram_api._authoritative_publication_verifier() is None
+    assert telegram_api._authoritative_report_bundle_reader() is None
+
+
+def test_api_accepts_only_explicit_callable_publication_and_bundle_dependencies():
+    with pytest.raises(TypeError, match="AUTHORITATIVE_PUBLICATION_VERIFIER_REQUIRED"):
+        telegram_api.configure_publication_verifier(None)
+    with pytest.raises(TypeError, match="AUTHORITATIVE_REPORT_BUNDLE_READER_REQUIRED"):
+        telegram_api.configure_report_bundle_reader(None)
+
+    verifier = lambda report, identity: False
+    reader = lambda: b"not-a-valid-bundle"
+    telegram_api.configure_publication_verifier(verifier)
+    telegram_api.configure_report_bundle_reader(reader)
+    assert telegram_api._authoritative_publication_verifier() is verifier
+    assert telegram_api._authoritative_report_bundle_reader() is reader
+
+
+def test_report_bundle_url_reader_rejects_non_command_data_sources():
+    with pytest.raises(ValueError, match="PORTABLE_REPORT_BUNDLE_URL_NOT_ALLOWLISTED"):
+        telegram_api.configure_report_bundle_reader_from_url(
+            "https://example.com/report.bundle.json"
+        )
+    with pytest.raises(ValueError, match="PORTABLE_REPORT_BUNDLE_URL_NOT_ALLOWLISTED"):
+        telegram_api.configure_report_bundle_reader_from_url(
+            "https://raw.githubusercontent.com/other/repository/main/public-data/bundle.json"
+        )
+
+
+def test_dashboard_api_hides_v2_predictions_without_both_trusted_dependencies():
+    calls = []
+    telegram_api.configure_report_bundle_reader(lambda: calls.append("read") or _portable_bundle_bytes())
+    result = telegram_api.dashboard_data()
+    assert result["status"] == "UNAVAILABLE"
+    assert result["predictions"] == []
+    assert calls == []
+
+
+def test_dashboard_html_has_no_legacy_static_prediction_fallback_or_experimental_labels():
+    html = telegram_api.DASHBOARD_HTML
+    assert "/api/dashboard-data" in html
+    assert "dashboard_snapshot.json" not in html
+    assert "daily_predictions.json" not in html
+    assert "paper_tracking_ledger.json" not in html
+    assert "raw.githubusercontent.com" not in html
+    assert "EXPERIMENTAL" not in html
+    assert "experimental_" not in html
+
+
+def test_dashboard_api_reads_the_authorized_website_surface_from_the_portable_bundle():
+    raw = _portable_bundle_bytes()
+    telegram_api.configure_publication_verifier(lambda report, identity: True)
+    telegram_api.configure_report_bundle_reader(lambda: raw)
 
     result = telegram_api.dashboard_data()
     assert result["status"] == "OK"
@@ -88,17 +130,31 @@ def test_dashboard_api_counts_only_explicitly_certified_v2_markets(monkeypatch):
     assert result["available_forecasts"] == 2
     assert result["unsupported_fixtures"] == 0
     assert result["fixtures_visible"] == 2
+    assert result["model_validation"]["status"] == "NOT_CERTIFIED"
+    assert result["report_freshness_note"] == "Verified V2 test report"
     assert result["value_bet_screen"]["status"] == "LOCKED_UNVALIDATED"
     assert result["predictions"][0]["fixture_phase"] == "UPCOMING"
     assert result["predictions"][0]["kickoff_local"] == "19:00 WAT"
 
 
+def test_website_and_telegram_surfaces_are_loaded_from_the_same_authorized_bundle():
+    raw = _portable_bundle_bytes()
+    telegram_api.configure_publication_verifier(lambda report, identity: True)
+    telegram_api.configure_report_bundle_reader(lambda: raw)
 
-def test_telegram_webhook_routes_commands_only_through_v2_renderer():
-    from pathlib import Path
+    bundle = telegram_api._load_authorized_v2_report_bundle()
+    assert bundle is not None
+    assert bundle.website_projection["report_id"] == bundle.telegram_report["report_id"]
+    assert bundle.website_projection["report_sha256"] == bundle.telegram_report["report_sha256"]
+    assert bundle.telegram_report["predictions"] == bundle.canonical_report["predictions"]
 
+
+def test_telegram_webhook_routes_commands_only_through_v2_bundle_renderer():
     source = (Path(__file__).resolve().parents[2] / "api" / "telegram.py").read_text(encoding="utf-8")
     assert "from veltrix_v2.reporting.telegram_commands import handle_v2_command" in source
     assert "from app.telegram_commands import handle_command" not in source
+    assert "_load_authorized_v2_report_bundle()" in source
+    assert "bundle.telegram_report" in source
+    assert "load_latest_report" not in source
     assert "handle_v2_command(" in source
     assert "handle_command(" not in source

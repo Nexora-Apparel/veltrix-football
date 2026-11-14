@@ -5,15 +5,20 @@ import hmac
 import json
 import math
 import os
+import re
 from datetime import datetime
+from urllib.parse import urlparse
 from zoneinfo import ZoneInfo
 from urllib.request import Request, urlopen
 
 from fastapi import FastAPI, Header, HTTPException, Request as FastAPIRequest
 from fastapi.responses import HTMLResponse, JSONResponse
 
-from app.report_artifacts import load_latest_report, load_dashboard_snapshot
 from app.telegram_security import telegram_webhook_secret_token
+from veltrix_v2.reporting.artifact_bundle import (
+    PORTABLE_BUNDLE_MAX_BYTES,
+    load_authorized_portable_report_surface_bundle,
+)
 from veltrix_v2.reporting.telegram_commands import handle_v2_command
 
 app = FastAPI(title="Veltrix Football Command Centre")
@@ -29,6 +34,65 @@ def configure_publication_verifier(verifier) -> None:
 def _authoritative_publication_verifier():
     verifier = getattr(app.state, "publication_verifier", None)
     return verifier if callable(verifier) else None
+
+
+def configure_report_bundle_reader(reader) -> None:
+    """Install the trusted portable V2 report-bundle reader at application startup."""
+    if not callable(reader):
+        raise TypeError("AUTHORITATIVE_REPORT_BUNDLE_READER_REQUIRED")
+    app.state.v2_report_bundle_reader = reader
+
+
+def configure_report_bundle_reader_from_url(url: str) -> None:
+    """Configure a bounded reader for one immutable bundle in the VELTRIX command-data branch."""
+    parsed = urlparse(url)
+    allowed_prefix = "/Nexora-Apparel/veltrix-football/command-data/public-data/bundles/"
+    if (
+        parsed.scheme != "https"
+        or parsed.hostname != "raw.githubusercontent.com"
+        or not parsed.path.startswith(allowed_prefix)
+        or not parsed.path.endswith(".bundle.json")
+        or parsed.query
+        or parsed.fragment
+    ):
+        raise ValueError("PORTABLE_REPORT_BUNDLE_URL_NOT_ALLOWLISTED")
+
+    def reader() -> bytes:
+        request = Request(
+            url,
+            headers={
+                "Accept": "application/json",
+                "User-Agent": "VELTRIX-FOOTBALL/2.0",
+            },
+        )
+        with urlopen(request, timeout=8) as response:
+            status = int(getattr(response, "status", 200))
+            raw = response.read(PORTABLE_BUNDLE_MAX_BYTES + 1)
+        if status != 200:
+            raise RuntimeError("PORTABLE_REPORT_BUNDLE_FETCH_FAILED")
+        if not raw or len(raw) > PORTABLE_BUNDLE_MAX_BYTES:
+            raise ValueError("PORTABLE_REPORT_BUNDLE_SIZE_INVALID")
+        return raw
+
+    configure_report_bundle_reader(reader)
+
+
+def _authoritative_report_bundle_reader():
+    reader = getattr(app.state, "v2_report_bundle_reader", None)
+    return reader if callable(reader) else None
+
+
+def _load_authorized_v2_report_bundle():
+    """Read one portable bundle only when both trusted dependencies are configured."""
+    verifier = _authoritative_publication_verifier()
+    reader = _authoritative_report_bundle_reader()
+    if verifier is None or reader is None:
+        return None
+    raw = reader()
+    if not isinstance(raw, bytes):
+        raise TypeError("PORTABLE_REPORT_BUNDLE_BYTES_REQUIRED")
+    return load_authorized_portable_report_surface_bundle(raw, verifier)
+
 
 DASHBOARD_HTML = """<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
@@ -329,16 +393,15 @@ def dashboard_data() -> dict:
         except Exception:
             return None
 
-    report = _safe_load(
-        lambda: load_dashboard_snapshot(_authoritative_publication_verifier())
-    )
-    if not isinstance(report, dict):
-        report = _safe_load(
-            lambda: load_latest_report(_authoritative_publication_verifier())
-        )
+    bundle = _safe_load(_load_authorized_v2_report_bundle)
+    report = bundle.website_projection if bundle is not None else None
     # Legacy paper ledgers and legacy model-validation snapshots are not V2 evidence.
     ledger = None
-    model_validation = None
+    model_validation = (
+        report.get("model_validation")
+        if isinstance(report, dict) and isinstance(report.get("model_validation"), dict)
+        else None
+    )
 
     if not isinstance(report, dict):
         return {"status": "UNAVAILABLE", "warning": "No published report could be loaded.", "predictions": []}
@@ -506,7 +569,7 @@ def dashboard_data() -> dict:
         "status": "OK",
         "as_of_date": report.get("as_of_date"),
         "generated_at_utc": report.get("generated_at_utc"),
-        "published_at_utc": None,
+        "published_at_utc": report.get("published_at_utc"),
         "publication_status": "PUBLISHED",
         "report_generation_status": "PUBLISHED",
         "report_freshness_note": report.get("publication_notice"),
@@ -687,9 +750,10 @@ async def telegram_webhook(
         # legacy prediction command router is deliberately not called.
         verifier = _authoritative_publication_verifier()
         try:
-            report = load_latest_report(verifier)
+            bundle = _load_authorized_v2_report_bundle()
         except Exception:
-            report = None
+            bundle = None
+        report = bundle.telegram_report if bundle is not None else None
         reply = handle_v2_command(
             command,
             report=report,
