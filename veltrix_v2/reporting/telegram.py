@@ -9,6 +9,12 @@ from collections.abc import Callable, Mapping
 import math
 from typing import Any
 
+from veltrix_v2.reporting.delivery import (
+    DeliveryAttempt,
+    DeliveryReceipt,
+    DeliveryStore,
+    deliver_once,
+)
 from veltrix_v2.reporting.report_identity import (
     ReportIdentity,
     verify_report_identity,
@@ -132,3 +138,31 @@ def format_public_telegram_messages(
         )
         for index, message in enumerate(messages, start=1)
     ]
+
+
+def dispatch_public_telegram_report(
+    report: Mapping[str, Any],
+    destination: str,
+    authorization_verifier: Callable[[Mapping[str, Any], ReportIdentity], bool],
+    store: DeliveryStore,
+    send_message: Callable[[str, str], str],
+) -> DeliveryAttempt:
+    """Format and dispatch one immutable report through the idempotent store.
+
+    The caller supplies the real Telegram transport. This module has no
+    credentials or network access. A partial multi-message failure is marked
+    OUTCOME_UNKNOWN and must be reconciled manually before any further send.
+    """
+    identity = verify_report_identity(report)
+    messages = format_public_telegram_messages(report, authorization_verifier)
+
+    def send_all() -> DeliveryReceipt:
+        message_ids = []
+        for message in messages:
+            message_id = send_message(destination, message)
+            if not isinstance(message_id, (str, int)) or not str(message_id).strip():
+                raise RuntimeError("TELEGRAM_MESSAGE_ID_MISSING")
+            message_ids.append(str(message_id))
+        return DeliveryReceipt(destination, tuple(message_ids))
+
+    return deliver_once(identity, destination, store, send_all)
