@@ -25,6 +25,8 @@ def evidence(fid="fx-1", comp="league-a", domain=DataDomain.LINEUPS, **changes):
         available_at=AS_OF - timedelta(hours=2),
         recorded_at=AS_OF - timedelta(hours=1),
         payload_sha256=HASH, rights_approved=True,
+        rights_approval_id="approval-1", rights_evidence_sha256="b" * 64,
+        rights_evaluated_at=AS_OF - timedelta(minutes=30),
         point_in_time_certifiable=True,
     )
     values.update(changes)
@@ -58,6 +60,9 @@ def test_cross_competition_or_unknown_fixture_evidence_is_rejected():
 @pytest.mark.parametrize("changes", [
     {"rights_approved": False},
     {"rights_approved": 1},
+    {"rights_approval_id": ""},
+    {"rights_evidence_sha256": "invalid"},
+    {"rights_evaluated_at": AS_OF + timedelta(minutes=1)},
     {"point_in_time_certifiable": False},
     {"point_in_time_certifiable": 1},
     {"payload_sha256": "bad"},
