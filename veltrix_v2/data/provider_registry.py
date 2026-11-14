@@ -103,6 +103,15 @@ PROVIDER_REGISTRY: tuple[ProviderProfile, ...] = (
             (DataDomain.INJURIES, CapabilityState.UNAVAILABLE, "No injury data."),
             (DataDomain.PLAYER_STATS, CapabilityState.UNAVAILABLE, "No player-stat data."),
         ), False, "Static public-domain results archive; no automatic/live retrieval."),
+    ProviderProfile("StatsBomb Open Data", "statsbomb-open-data", ProviderState.ARCHIVE_ONLY,
+        _caps(
+            (DataDomain.FIXTURES, CapabilityState.CONDITIONAL, "Selected historical match lists only; no live fixture feed."),
+            (DataDomain.RESULTS, CapabilityState.AVAILABLE, "Selected historical match records; temporal certification must be established independently."),
+            (DataDomain.TEAM_FORM, CapabilityState.EXPLORATORY_ONLY, "Historical sample coverage is selective and not a substitute for current competition-wide form."),
+            (DataDomain.TEAM_STRENGTH, CapabilityState.EXPLORATORY_ONLY, "Historical sample coverage is selective and not a substitute for current competition-wide ratings."),
+            (DataDomain.EXPECTED_GOALS, CapabilityState.CONDITIONAL, "Shot-level StatsBomb xG exists in selected event files; research-use and attribution review required."),
+            (DataDomain.LINEUPS, CapabilityState.CONDITIONAL, "Lineup JSON exists for selected historical matches; research-use and attribution review required."),
+        ), False, "Static selected-match research archive. No live data; do not use commercially or publish derived material until rights scope is reviewed and attribution requirements are implemented."),
     ProviderProfile("The Odds API", "the-odds-api", ProviderState.OPTIONAL_GATED,
         _caps(
             (DataDomain.FIXTURES, CapabilityState.CONDITIONAL, "Event discovery only; not canonical fixture source."),
