@@ -132,6 +132,8 @@ jobs:
         run: python -m pytest --import-mode=importlib -q tests/veltrix_v2/test_report_identity.py
       - name: Test website dashboard and V2 report parity
         run: python -m pytest --import-mode=importlib -q tests/veltrix_v2/test_report_surface_parity.py
+      - name: Test immutable report artifact bundle
+        run: python -m pytest --import-mode=importlib -q tests/veltrix_v2/test_report_artifact_bundle.py
       - name: Test V2 Telegram publication and formatting boundary
         run: python -m pytest --import-mode=importlib -q tests/veltrix_v2/test_telegram_v2_formatting.py
       - name: Test V2 Telegram duplicate and uncertain-delivery guards
