@@ -151,6 +151,6 @@ def test_nonfinite_probability_cannot_enter_canonical_report():
 
 def test_public_telegram_report_explicitly_states_value_betting_is_locked():
     report = public_report()
-    messages = format_public_telegram_messages(report, authorized)
+    messages = format_public_telegram_messages(report, verifier)
     assert messages
     assert all("Value betting: LOCKED" in message for message in messages)
