@@ -3,6 +3,7 @@ from datetime import datetime, timedelta, timezone
 import pytest
 
 from veltrix_v2.evaluation.model_challengers import evaluate_model_challengers
+from veltrix_v2.evaluation.team_form_challenger import evaluate_team_form_challenger
 from veltrix_v2.models.poisson import MatchObservation
 from veltrix_v2.ledger.paper_predictions import PaperPrediction, ProspectivePaperLedger
 
@@ -122,3 +123,14 @@ def test_paper_ledger_rejects_backfill_noncertifiable_and_duplicate_prediction()
                                  "fixture_id": "fixture-3"})
     with pytest.raises(ValueError, match="PAPER_PREDICTION_EVIDENCE_NOT_CERTIFIABLE"):
         ledger.append_prediction(invalid)
+
+
+def test_team_form_challenger_is_expanding_window_and_excludes_future_rows():
+    report = evaluate_team_form_challenger(
+        comparison_rows(), evaluation_as_of=BASE + timedelta(days=20)
+    )
+    assert report.scored_targets == 3
+    assert report.metrics is not None
+    assert report.metrics.sample_count == 3
+    assert report.metrics.form_mse >= 0
+    assert report.metrics.competition_baseline_mse >= 0
