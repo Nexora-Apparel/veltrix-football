@@ -27,7 +27,7 @@ def main() -> int:
     parser.add_argument("--snapshot-available-at", required=True, type=parse_timestamp)
     parser.add_argument("--imported-at", type=parse_timestamp)
     parser.add_argument("--output-dir", required=True)
-    parser.add_argument("--allow-rejected", action="store_true")
+    parser.add_argument("--max-rejected", type=int, default=0)
     args = parser.parse_args()
 
     imported_at = args.imported_at or datetime.now(timezone.utc)
@@ -42,9 +42,12 @@ def main() -> int:
     )
     if not archive.observations:
         raise SystemExit("No eligible scored results were parsed.")
-    if archive.rejected_result_count and not args.allow_rejected:
+    if not isinstance(args.max_rejected, int) or args.max_rejected < 0:
+        raise SystemExit("--max-rejected must be a non-negative integer.")
+    if archive.rejected_result_count > args.max_rejected:
         raise SystemExit(
-            f"Refusing partial export: {archive.rejected_result_count} scored rows rejected."
+            f"Refusing partial export: {archive.rejected_result_count} scored rows rejected; "
+            f"maximum permitted is {args.max_rejected}."
         )
 
     output_dir = Path(args.output_dir)
@@ -80,6 +83,7 @@ def main() -> int:
         "fixture_line_count": archive.fixture_line_count,
         "result_count": archive.result_count,
         "rejected_result_count": archive.rejected_result_count,
+        "rejected_annotations": list(archive.rejected_annotations),
         "kickoff_precision": "date_only",
         "date_only_eligibility": "00:00 UTC on source-local match date + 2 calendar days",
         "publication_policy": "not eligible as historical walk-forward target fixtures",
