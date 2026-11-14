@@ -166,13 +166,33 @@ def validate_reconciliation_event(
 class PostgresTelegramReconciliationStore:
     """Append-only reconciliation writer with evidence-byte verification."""
 
-    def __init__(self, connect: Callable, read_evidence: Callable[[str], bytes]):
-        if not callable(connect) or not callable(read_evidence):
+    def __init__(
+        self,
+        connect: Callable,
+        read_evidence: Callable[[str], bytes],
+        authenticate_actor: Callable[[str], bool],
+    ):
+        if not callable(connect) or not callable(read_evidence) or not callable(authenticate_actor):
             raise ValueError("RECONCILIATION_DEPENDENCIES_REQUIRED")
         self._connect = connect
         self._read_evidence = read_evidence
+        self._authenticate_actor = authenticate_actor
 
     def record(self, event: Mapping[str, Any]) -> str:
+        if not isinstance(event, Mapping):
+            raise ValueError("RECONCILIATION_INPUTS_MUST_BE_OBJECTS")
+        operator_id = event.get("operator_id")
+        if not isinstance(operator_id, str) or not operator_id.strip():
+            raise ValueError("RECONCILIATION_OPERATOR_ID_REQUIRED")
+        if self._authenticate_actor(operator_id.strip()) is not True:
+            raise PermissionError("RECONCILIATION_OPERATOR_NOT_AUTHENTICATED")
+        reviewer_id = event.get("reviewer_id")
+        if reviewer_id is not None:
+            if not isinstance(reviewer_id, str) or not reviewer_id.strip():
+                raise ValueError("RECONCILIATION_REVIEWER_INVALID")
+            if self._authenticate_actor(reviewer_id.strip()) is not True:
+                raise PermissionError("RECONCILIATION_REVIEWER_NOT_AUTHENTICATED")
+
         evidence_uri = event.get("evidence_uri")
         if not isinstance(evidence_uri, str) or not evidence_uri.strip():
             raise ValueError("RECONCILIATION_EVIDENCE_URI_REQUIRED")
