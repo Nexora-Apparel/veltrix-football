@@ -141,7 +141,11 @@ def providers_for(domain: DataDomain, *, include_conditional: bool = False) -> t
 
 
 def dispatchable_providers_for(domain: DataDomain, *, include_conditional: bool = False) -> tuple[ProviderProfile, ...]:
-    """Return only live sources whose collection gate is enabled."""
+    """Return sources with the static registry switch enabled, not final authorization.
+
+Callers must still independently pass source rights, account, quota, request
+budget and provider-specific evidence gates before creating a transport.
+"""
     return tuple(
         profile for profile in providers_for(domain, include_conditional=include_conditional)
         if profile.collection_allowed and profile.state is ProviderState.ACTIVE_LIMITED
@@ -149,7 +153,11 @@ def dispatchable_providers_for(domain: DataDomain, *, include_conditional: bool 
 
 
 def assert_provider_dispatch_allowed(provider: str) -> ProviderProfile:
-    """Fail closed before transport construction or request dispatch."""
+    """Reject statically disabled sources before transport construction.
+
+A successful return is not complete authorization: callers must still pass
+rights, account, quota, request-budget and endpoint-specific checks.
+"""
     matches = tuple(p for p in PROVIDER_REGISTRY if p.provider == provider)
     if len(matches) != 1:
         raise ValueError("PROVIDER_NOT_REGISTERED")
