@@ -42,8 +42,16 @@ def _reject_duplicate_object_keys(pairs):
     return result
 
 
+def _reject_json_constant(value: str):
+    raise ValueError(f"REPORT_BUNDLE_NONFINITE_JSON:{value}")
+
+
 def _strict_json_loads(raw: str):
-    return json.loads(raw, object_pairs_hook=_reject_duplicate_object_keys)
+    return json.loads(
+        raw,
+        object_pairs_hook=_reject_duplicate_object_keys,
+        parse_constant=_reject_json_constant,
+    )
 
 
 def _canonical_json_bytes(value: Mapping[str, Any]) -> bytes:
