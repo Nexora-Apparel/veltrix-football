@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime
+import math
 from typing import Iterable
 
 from .poisson import InsufficientHistoryError, MatchObservation, PoissonPrediction, predict_match
@@ -86,6 +87,13 @@ def predict_batch(
         raise ValueError("BATCH_CUTOFF_MUST_BE_TIMEZONE_AWARE")
     if not isinstance(max_fixtures, int) or isinstance(max_fixtures, bool) or not 1 <= max_fixtures <= 25:
         raise ValueError("MAX_FIXTURES_MUST_BE_1_TO_25")
+    if recency_half_life_days is not None and (
+        not isinstance(recency_half_life_days, (int, float))
+        or isinstance(recency_half_life_days, bool)
+        or not math.isfinite(recency_half_life_days)
+        or recency_half_life_days <= 0
+    ):
+        raise ValueError("RECENCY_HALF_LIFE_MUST_BE_POSITIVE_FINITE")
 
     history = list(observations)
     target_rows = list(targets)
