@@ -193,3 +193,13 @@ A final website audit found that the browser still had independent raw-GitHub/CD
 - The scheduled Telegram formatter now states that value betting is locked in every message chunk.
 - Latest code head: `6d83589f6e9d9b36fdde6b1619532587b53caad1`. CI run #1466 passed Foundation, PostgreSQL 16 and PostgreSQL 18.
 - This closes the Telegram command-router mismatch, but does not activate the webhook, schedule, public report, or delivery runner. The authoritative runtime verifier and real workflow wiring remain blockers.
+
+
+## Telegram reconciliation inspector — 2026-11-14 17:48 UTC
+
+- Added a read-only PostgreSQL reconciliation reader and staging-only CLI at `scripts/veltrix_v2/inspect_telegram_reconciliation.py`.
+- It allowlists the exact Neon staging host/database, then verifies database `veltrix_football_staging` and role `neondb_owner` from the live connection.
+- The reader starts with `SET TRANSACTION READ ONLY`, fetches one claim and its append-only events, and never exposes a raw destination/chat ID. It has no write, send, retry or retry-authorization capability.
+- The CLI requires migrations 0009–0010 to exist, but those migrations remain unapplied; no DB access or migration was performed by this implementation.
+- Code head `942278b1fff7a91d6a7e4fbbdbcfbc8973d1934a` passed CI run #1478 across Foundation, PostgreSQL 16 and PostgreSQL 18.
+- PR #118 remains open/draft/unmerged. Production workflows and public release remain disabled.
