@@ -63,7 +63,7 @@ jobs:
             "https://raw.githubusercontent.com/openfootball/world/${SOURCE_SHA}/africa/nigeria/2025-26_ng1.txt" \
             --output work/nigeria-2025-26.football.txt
 
-      - name: Export provenance-bound observations
+      - name: Export provenance-bound observations (one audited awarded result)
         env:
           SOURCE_SHA: ${{ steps.source.outputs.sha }}
           SOURCE_TIMESTAMP: ${{ steps.source.outputs.timestamp }}
