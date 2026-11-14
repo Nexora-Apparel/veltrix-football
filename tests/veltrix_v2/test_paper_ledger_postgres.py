@@ -22,7 +22,7 @@ def dsn():
 
 @pytest.fixture(scope="session", autouse=True)
 def create_paper_ledger_schema(dsn):
-    migration = Path("db/migrations/0005_prospective_paper_ledger.sql").read_text()
+    migration = Path("db/migrations/0008_prospective_paper_ledger.sql").read_text()
     with psycopg.connect(dsn, autocommit=True) as connection:
         connection.execute(migration)
 
