@@ -100,7 +100,12 @@ def test_paper_ledger_accepts_only_prospective_certifiable_predictions_and_settl
         fixture_id="fixture-1", model_version="candidate-v1",
         home_goals=2, away_goals=1,
         result_available_at=kickoff + timedelta(hours=2),
-        recorded_at=kickoff + timedelta(hours=3),
+        result_retrieved_at=kickoff + timedelta(hours=3),
+        recorded_at=kickoff + timedelta(hours=4),
+        source_provider="TestProvider", source_id="testsrc",
+        source_fixture_id="fixture-1",
+        result_payload_sha256="d" * 64,
+        rights_approval_id="approval-1", rights_evidence_sha256="e" * 64,
     )
     assert settled.sequence == 2
     assert ledger.verify_chain()
