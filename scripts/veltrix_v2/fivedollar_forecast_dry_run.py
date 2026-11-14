@@ -62,6 +62,7 @@ def run_forecast_probe(
     all_fixtures = []
     selected_competitions: dict[str, str] = {}
     competition_summary: list[dict] = []
+    skipped_outside_window = 0
     failure: str | None = None
     status_summary: dict = {}
 
@@ -135,6 +136,7 @@ def run_forecast_probe(
                 for status_name, start_epoch, end_epoch in windows:
                     page = 1
                     count = 0
+                    outside_count = 0
                     while True:
                         params = {
                             "status": status_name,
@@ -155,23 +157,34 @@ def run_forecast_probe(
                             raise ProbeFailure("FIXTURE_COMPETITION_SCOPE_MISMATCH")
                         if any(row.status.value.casefold() != status_name for row in parsed.fixtures):
                             raise ProbeFailure("FIXTURE_STATUS_FILTER_MISMATCH")
-                        if any(row.kickoff_at_utc.timestamp() < start_epoch
-                               or row.kickoff_at_utc.timestamp() > end_epoch
-                               for row in parsed.fixtures):
-                            raise ProbeFailure("FIXTURE_OUTSIDE_REQUESTED_WINDOW")
-                        all_fixtures.extend(parsed.fixtures)
-                        count += len(parsed.fixtures)
+                        in_window = [
+                            row for row in parsed.fixtures
+                            if start_epoch <= row.kickoff_at_utc.timestamp() <= end_epoch
+                        ]
+                        outside_count += len(parsed.fixtures) - len(in_window)
+                        all_fixtures.extend(in_window)
+                        count += len(in_window)
                         if not parsed.has_more:
                             break
                         if not parsed.fixtures:
                             raise ProbeFailure("EMPTY_PAGE_WITH_MORE_RESULTS")
+                        page_times = [row.kickoff_at_utc.timestamp() for row in parsed.fixtures]
+                        ascending = page_times == sorted(page_times)
+                        descending = page_times == sorted(page_times, reverse=True)
+                        if ascending and max(page_times) >= end_epoch:
+                            break
+                        if descending and min(page_times) <= start_epoch:
+                            break
                         page += 1
+                    skipped_outside_window += outside_count
                     per_status[status_name] = count
+                    per_status[f"{status_name}_outside_window"] = outside_count
                 competition_summary.append({
                     "competition_id": competition_id,
                     "competition": competition_name,
                     "finished_rows": per_status.get("finished", 0),
                     "scheduled_rows": per_status.get("scheduled", 0),
+                    "outside_window_rows": per_status.get("finished_outside_window", 0) + per_status.get("scheduled_outside_window", 0),
                 })
 
             cutoff_at = clock().astimezone(timezone.utc)
@@ -220,6 +233,7 @@ def run_forecast_probe(
                 "account": status_summary,
                 "competition_results": competition_summary,
                 "source_fixture_count": batch.source_fixture_count,
+                "skipped_outside_window": skipped_outside_window,
                 "history_observation_count": batch.observation_count,
                 "scheduled_target_count": batch.target_count,
                 "forecast_count": batch.prediction_report.forecast_count,
@@ -233,6 +247,7 @@ def run_forecast_probe(
                     "not_yet_known_targets": batch.prediction_report.skipped_targets_not_yet_known,
                     "no_history": batch.prediction_report.skipped_no_history,
                     "capacity": batch.prediction_report.skipped_capacity,
+                    "outside_window": skipped_outside_window,
                 },
                 "request_count": request_count,
                 "request_budget": REQUEST_BUDGET,
@@ -263,6 +278,7 @@ def run_forecast_probe(
                 "account": status_summary,
                 "competition_results": competition_summary,
                 "source_fixture_count": len(all_fixtures),
+                "skipped_outside_window": skipped_outside_window,
                 "history_observation_count": 0,
                 "scheduled_target_count": 0,
                 "forecast_count": 0,
