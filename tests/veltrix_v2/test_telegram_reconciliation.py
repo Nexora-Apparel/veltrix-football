@@ -179,3 +179,29 @@ def test_correction_rejects_wrong_parent_or_existing_successor():
             EVIDENCE,
             existing,
         )
+
+
+def test_reconciliation_rejects_duplicate_telegram_message_ids():
+    with pytest.raises(ValueError, match="MESSAGE_IDS_DUPLICATED"):
+        validate_reconciliation_event(
+            CLAIM, event(telegram_message_ids=["12345", "12345"]), EVIDENCE
+        )
+
+
+def test_reconciliation_rejects_reviewer_equal_after_normalization():
+    with pytest.raises(ValueError, match="REVIEWER_INVALID"):
+        validate_reconciliation_event(
+            CLAIM,
+            event(
+                outcome="CONFIRMED_NOT_SENT",
+                telegram_message_ids=[],
+                operator_id="github:operator-1",
+                reviewer_id=" github:operator-1 ",
+            ),
+            EVIDENCE,
+        )
+
+
+def test_reconciliation_rejects_unrecognized_outcome_type():
+    with pytest.raises(ValueError, match="OUTCOME_INVALID"):
+        validate_reconciliation_event(CLAIM, event(outcome=[]), EVIDENCE)
