@@ -213,3 +213,14 @@ def test_runtime_factory_must_live_under_veltrix_v2_namespace():
         ),
     }) is False
     assert telegram_api.app.state.v2_publication_runtime_status == "BLOCKED"
+
+
+def test_dashboard_hides_predictions_until_prediction_tab_and_reports_paused_schedule():
+    html = telegram_api.DASHBOARD_HTML
+    dashboard = html.split('<section id="dashboardView"', 1)[1].split("</section>", 1)[0]
+    assert "Publication overview" in dashboard
+    assert "Predictions are not shown on Dashboard." in dashboard
+    assert "Featured prediction" not in dashboard
+    assert "Prediction</a>" in html
+    assert "06:00 WAT" not in html
+    assert "scheduled for 06:00" not in html
