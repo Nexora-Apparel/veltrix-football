@@ -61,6 +61,8 @@ def publish_v2_report_bundle(
     client: GitHubContentsClient,
 ) -> PublicationResult:
     """Publish one fully authorized immutable report bundle to command-data."""
+    if not isinstance(portable_bundle_bytes, bytes) or not portable_bundle_bytes or len(portable_bundle_bytes) > 8_000_000:
+        raise ValueError("PORTABLE_REPORT_BUNDLE_SIZE_OR_TYPE_INVALID")
     if not callable(authorization_verifier):
         raise PermissionError("AUTHORITATIVE_PUBLICATION_VERIFIER_REQUIRED")
     if client is None or not callable(getattr(client, "get_file", None)) or not callable(
@@ -78,7 +80,13 @@ def publish_v2_report_bundle(
     )
     existing_sha = None
     if existing is not None:
-        if not isinstance(existing.content, bytes) or not isinstance(existing.sha, str) or not existing.sha:
+        if (
+            not isinstance(existing.content, bytes)
+            or not existing.content
+            or len(existing.content) > 8_000_000
+            or not isinstance(existing.sha, str)
+            or not existing.sha
+        ):
             raise ValueError("EXISTING_REPORT_BUNDLE_METADATA_INVALID")
         try:
             prior = parse_portable_report_surface_bundle(existing.content)
