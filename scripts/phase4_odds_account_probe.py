@@ -193,6 +193,9 @@ def run_probe(*, api_key: str, staging_dsn: str, persist: bool) -> dict[str, obj
     entitlement_observation_id = None
     account_status = "UNVERIFIED"
     if persist:
+        # Re-evaluate source rights after the provider response and immediately
+        # before retaining the response in staging.
+        _load_approval(staging_dsn)
         validate_staging_dsn_target(staging_dsn)
         import psycopg
         with psycopg.connect(staging_dsn, autocommit=True) as conn:
