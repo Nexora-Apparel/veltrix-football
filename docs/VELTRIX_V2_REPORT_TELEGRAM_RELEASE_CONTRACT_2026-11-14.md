@@ -128,3 +128,8 @@ An offline `verify_portable_report_bundle.py` CLI now validates the one-file env
 
 
 A single end-to-end offline integration test now passes the exact same portable bundle bytes through the website adapter, scheduled consumer and Telegram dispatcher. It asserts matching report ID/hash, identical report projections, one Telegram idempotency claim and one stubbed message. This proves adapter-level parity only; it does not prove the production GitHub Actions workflows are wired or that a real certification verifier accepts a report.
+
+
+## API runtime verifier injection and legacy ledger isolation
+
+The FastAPI command-centre now exposes a startup-only `configure_publication_verifier(callable)` hook. All dashboard/report and Telegram command call sites request that exact server-side verifier. No verifier is installed by default; without one, V2 reports remain unavailable. The dashboard and Telegram commands no longer load or display the legacy paper ledger or legacy model-validation snapshots as V2 evidence. No public endpoint or environment variable can set the verifier.
