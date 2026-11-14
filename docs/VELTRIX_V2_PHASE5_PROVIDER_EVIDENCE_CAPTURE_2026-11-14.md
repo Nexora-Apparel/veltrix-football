@@ -40,7 +40,7 @@ Paper admission recognizes that basis and requires valid manifest and item evide
 
 ## Current provider limitations
 
-The 5Dollar historical parser's conservative availability estimate is retrieval-derived, and the recovered archive lacks proven source publication/availability timestamps and complete revision history. Those records therefore remain non-certifiable. This adapter does not promote those historical records.
+The 5Dollar page adapter now maps parsed result pages into this capture contract while preserving the exact page response hash. It deliberately does not forward the parser's conservative kickoff-plus-four-day availability proxy. The current 5Dollar contract does not prove source publication time, result availability time or complete revision history, so its finished results remain in the manifest as rejected items.
 
 A future provider-specific prospective adapter must populate this contract from source-documented timestamps and raw responses. If the provider does not expose adequate timestamps or revision history, the result remains ineligible. No timestamp may be manufactured to satisfy this contract.
 
