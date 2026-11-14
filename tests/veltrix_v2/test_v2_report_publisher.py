@@ -6,6 +6,7 @@ from veltrix_v2.reporting.artifact_bundle import (
     build_report_surface_bundle,
     serialize_portable_report_surface_bundle,
 )
+from veltrix_v2.reporting.report_identity import REPORT_SCHEMA
 from veltrix_v2.reporting.publisher import (
     ExistingContentsFile,
     PUBLICATION_BRANCH,
@@ -17,7 +18,7 @@ from veltrix_v2.reporting.publisher import (
 
 def public_bundle(report_id="public-report-1", as_of_date="2026-11-14", note="first"):
     report = {
-        "schema": "VELTRIX_REPORT_V2",
+        "schema": REPORT_SCHEMA,
         "report_id": report_id,
         "as_of_date": as_of_date,
         "release_mode": "RESTRICTED_PUBLIC",
