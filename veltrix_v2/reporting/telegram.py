@@ -9,7 +9,10 @@ from collections.abc import Callable, Mapping
 import math
 from typing import Any
 
-from veltrix_v2.reporting.artifact_bundle import load_authorized_report_surface_bundle
+from veltrix_v2.reporting.artifact_bundle import (
+    load_authorized_portable_report_surface_bundle,
+    load_authorized_report_surface_bundle,
+)
 from veltrix_v2.reporting.delivery import (
     DeliveryAttempt,
     DeliveryReceipt,
@@ -181,6 +184,27 @@ def dispatch_public_telegram_bundle(
     """Verify all four immutable surfaces, then dispatch only the bundle's Telegram copy."""
     bundle = load_authorized_report_surface_bundle(
         bundle_dir, report_id, authorization_verifier
+    )
+    return dispatch_public_telegram_report(
+        bundle.telegram_report,
+        destination,
+        authorization_verifier,
+        store,
+        send_message,
+    )
+
+
+
+def dispatch_public_telegram_portable_bundle(
+    portable_bundle_bytes: bytes,
+    destination: str,
+    authorization_verifier: Callable[[Mapping[str, Any], ReportIdentity], bool],
+    store: DeliveryStore,
+    send_message: Callable[[str, str], str],
+) -> DeliveryAttempt:
+    """Verify the single portable artifact, then dispatch its Telegram surface."""
+    bundle = load_authorized_portable_report_surface_bundle(
+        portable_bundle_bytes, authorization_verifier
     )
     return dispatch_public_telegram_report(
         bundle.telegram_report,
