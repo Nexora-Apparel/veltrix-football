@@ -323,3 +323,29 @@ def test_unknown_market_cannot_be_publicly_certified():
     report = bind_report_identity({key: value for key, value in report.items() if key != "report_sha256"})
     raw = make_manifest(report, [certification("VALUE_BET")])
     assert verify_publication_authorization(report, raw, attestation_ok, rights_ok, evidence_reader) is False
+
+
+
+def test_publication_rejects_duplicate_fixture_identity():
+    report = make_report()
+    report["predictions"].append(dict(report["predictions"][0]))
+    report = bind_report_identity({key: value for key, value in report.items() if key != "report_sha256"})
+    raw = make_manifest(report)
+    assert verify_publication_authorization(report, raw, attestation_ok, rights_ok, evidence_reader) is False
+
+
+def test_publication_rejects_more_than_25_fixtures():
+    report = make_report()
+    report["predictions"] = [
+        {
+            "fixture_id": f"fixture-{index}",
+            "competition_id": "competition-1",
+            "model_build_id": "model-build-7",
+            "publication_status": "PUBLISHED",
+            "certified_markets": ["1X2"],
+        }
+        for index in range(26)
+    ]
+    report = bind_report_identity({key: value for key, value in report.items() if key != "report_sha256"})
+    raw = make_manifest(report, [certification("1X2")])
+    assert verify_publication_authorization(report, raw, attestation_ok, rights_ok, evidence_reader) is False
