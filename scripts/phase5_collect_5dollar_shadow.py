@@ -31,6 +31,7 @@ from veltrix_v2.data.rights import evaluate_source_use
 from veltrix_v2.data.temporal_eligibility import resolve_rights_status
 from veltrix_v2.ledger.admission import admit_prospective_observed_shadow_forecasts
 from veltrix_v2.ledger.jsonl_store import JsonlPaperLedgerStore
+from veltrix_v2.ledger.postgres_store import PostgresPaperLedgerStore
 from veltrix_v2.models.engine import predict_batch
 
 from scripts.phase5_staging_coverage_audit import validate_staging_dsn_target
@@ -110,7 +111,7 @@ def _approval_from_rows(
     )
 
 
-def _read_staging_context(dsn: str):
+def _read_staging_context(dsn: str, *, require_paper_ledger: bool = False):
     validate_staging_dsn_target(dsn)
     validate_read_only_coverage_sql()
     try:
@@ -136,6 +137,12 @@ def _read_staging_context(dsn: str):
         approval = _approval_from_rows(
             approval_rows[0], event_rows, rights_evaluated_at=rights_evaluated_at
         )
+        if require_paper_ledger:
+            ledger_table_exists = connection.execute(
+                "SELECT to_regclass('public.paper_ledger_events') IS NOT NULL"
+            ).fetchone()[0]
+            if not ledger_table_exists:
+                raise RuntimeError("PAPER_LEDGER_STAGING_MIGRATION_REQUIRED")
         crosswalk_rows = _rows_as_dicts(
             connection.execute(FIVEDOLLAR_CROSSWALK_BOOTSTRAP_SQL)
         )
@@ -191,6 +198,60 @@ def _hash_files(paths: tuple[str, ...]) -> str:
     return sha256(payload).hexdigest()
 
 
+def _persist_paper_predictions_to_staging(
+    dsn: str, predictions: list
+) -> dict[str, object]:
+    """Idempotently append one atomic batch to the allowlisted staging ledger."""
+    validate_staging_dsn_target(dsn)
+    import psycopg
+
+    host = urlparse(dsn).hostname or ""
+    with psycopg.connect(dsn, autocommit=False) as connection:
+        identity = connection.execute(
+            "SELECT current_database(), current_user"
+        ).fetchone()
+        if identity != ("veltrix_football_staging", "neondb_owner"):
+            raise PermissionError("STAGING_DATABASE_ROLE_NOT_ALLOWLISTED")
+        store = PostgresPaperLedgerStore(
+            connection,
+            ledger_id="veltrix-v2-prospective-observed",
+            write_enabled=True,
+            environment="staging",
+            database_name=identity[0],
+            host=host,
+            role=identity[1],
+        )
+        if predictions:
+            appended, duplicates, ledger = store.append_predictions_idempotent(predictions)
+        else:
+            ledger = store.load()
+            appended, duplicates = [], 0
+        if not ledger.verify_chain():
+            raise ValueError("PAPER_LEDGER_CHAIN_VERIFICATION_FAILED")
+        return {
+            "events_appended": len(appended),
+            "duplicate_predictions_skipped": duplicates,
+            "ledger_event_count": len(ledger.events),
+            "ledger_head_sha256": (
+                ledger.events[-1].event_sha256 if ledger.events else None
+            ),
+            "chain_verified": True,
+        }
+
+
+def _request_parameters(
+    *, competition_id: str, status: str, start_at: datetime, end_at: datetime, page: int
+) -> dict[str, object]:
+    return {
+        "start_time": int(start_at.timestamp()),
+        "end_time": int(end_at.timestamp()),
+        "status": status,
+        "order": "desc" if status == "finished" else "asc",
+        "page": page,
+        "per_page": 100,
+    }
+
+
 def _request_page(
     api_key: str,
     *,
@@ -201,7 +262,7 @@ def _request_page(
     page: int,
     pacing_state: dict[str, float | None],
     before_request,
-) -> tuple[bytes, dict[str, str], datetime, datetime]:
+) -> tuple[bytes, dict[str, str], datetime, datetime, int]:
     last_request_started = pacing_state.get("last_started")
     if last_request_started is not None:
         delay = MIN_REQUEST_INTERVAL_SECONDS - (time.monotonic() - last_request_started)
@@ -210,14 +271,10 @@ def _request_page(
     before_request()
     requested_at = datetime.now(timezone.utc)
     pacing_state["last_started"] = time.monotonic()
-    params = {
-        "start_time": int(start_at.timestamp()),
-        "end_time": int(end_at.timestamp()),
-        "status": status,
-        "order": "desc" if status == "finished" else "asc",
-        "page": page,
-        "per_page": 100,
-    }
+    params = _request_parameters(
+        competition_id=competition_id, status=status,
+        start_at=start_at, end_at=end_at, page=page,
+    )
     endpoint = f"/leagues/{competition_id}/fixtures"
     url = f"{API_BASE}{endpoint}?{urlencode(params)}"
     request = Request(url, headers={
@@ -229,6 +286,7 @@ def _request_page(
         with urlopen(request, timeout=25) as response:
             raw = response.read()
             headers = {str(k): str(v) for k, v in response.headers.items()}
+            http_status = int(response.status)
     except HTTPError as exc:
         if exc.code == 403:
             raise PermissionError("FIVEDOLLAR_COMPETITION_NOT_ENTITLED") from None
@@ -242,10 +300,14 @@ def _request_page(
     retrieved_at = datetime.now(timezone.utc)
     if not raw:
         raise RuntimeError("FIVEDOLLAR_EMPTY_RESPONSE")
-    return raw, headers, requested_at, retrieved_at
+    return raw, headers, requested_at, retrieved_at, http_status
 
 
-def _persist_capture_report_to_staging(dsn: str, capture_report) -> dict[str, int]:
+def _persist_capture_report_to_staging(
+    dsn: str, capture_report, *, http_status: int,
+    request_params: dict[str, object],
+    response_headers: dict[str, str],
+) -> dict[str, int]:
     validate_staging_dsn_target(dsn)
     import psycopg
 
@@ -266,6 +328,9 @@ def _persist_capture_report_to_staging(dsn: str, capture_report) -> dict[str, in
             database_name=identity[0],
             host=host,
             role=identity[1],
+            http_status=http_status,
+            request_params=request_params,
+            response_headers=response_headers,
         )
 
 
@@ -278,6 +343,8 @@ def _capture_page(
     request_id: str,
     requested_at: datetime,
     retrieved_at: datetime,
+    http_status: int,
+    request_params: dict[str, object],
     registry,
     out_dir: Path,
     staging_dsn: str,
@@ -298,6 +365,8 @@ def _capture_page(
         "endpoint": f"/leagues/{competition_id}/fixtures",
         "requested_at": requested_at.isoformat(),
         "retrieved_at": retrieved_at.isoformat(),
+        "http_status": http_status,
+        "request_params": request_params,
         "raw_response_sha256": sha256(raw).hexdigest(),
         "raw_response_bytes": len(raw),
         "page": parsed.page,
@@ -343,7 +412,10 @@ def _capture_page(
             prospective_observed=True,
         )
         persistence = (
-            _persist_capture_report_to_staging(staging_dsn, capture)
+            _persist_capture_report_to_staging(
+                staging_dsn, capture, http_status=http_status,
+                request_params=request_params, response_headers=headers,
+            )
             if persist_staging else None
         )
         converted = []
@@ -393,6 +465,26 @@ def _capture_page(
     return targets, page_info
 
 
+def _build_public_summary(summary: dict[str, object]) -> dict[str, object]:
+    """Explicit allowlist projection; never expose IDs, hashes, odds or probabilities."""
+    allowed = (
+        "status", "provider", "requests_used", "request_cap",
+        "crosswalk_registry", "captured_first_observed_rows",
+        "mapped_upcoming_targets", "forecast_count",
+        "admitted_shadow_predictions", "persisted_capture_pages",
+        "persisted_shadow_ledger_events", "paper_ledger_persisted_to_staging",
+        "paper_ledger_chain_verified", "duplicate_predictions_skipped",
+        "evidence_persisted_to_staging", "publication_status",
+        "settlement_status", "database_writes",
+    )
+    return {
+        **{key: summary[key] for key in allowed if key in summary},
+        "telegram_delivery": False,
+        "schedule_activation": False,
+        "public_publication": False,
+    }
+
+
 def run_capture(
     *,
     api_key: str,
@@ -410,7 +502,9 @@ def run_capture(
     if not 1 <= max_fixtures <= 25:
         raise ValueError("MAX_FIXTURES_OUT_OF_RANGE")
 
-    approval, registry = _read_staging_context(staging_dsn)
+    approval, registry = _read_staging_context(
+        staging_dsn, require_paper_ledger=persist_staging
+    )
     initial_time = datetime.now(timezone.utc)
     for purpose in (DataUsePurpose.COLLECTION, DataUsePurpose.CACHE, DataUsePurpose.MODEL_TRAINING):
         decision = evaluate_source_use(approval, purpose, at_utc=initial_time, commercial=True)
@@ -447,7 +541,7 @@ def run_capture(
         request_id = f"{os.getenv('GITHUB_RUN_ID', 'manual')}-{competition_id}-finished-1"
         request_count += 1
         try:
-            raw, headers, requested_at, retrieved_at = _request_page(
+            raw, headers, requested_at, retrieved_at, http_status = _request_page(
                 api_key, competition_id=competition_id, status="finished",
                 start_at=history_start, end_at=now, page=1,
                 pacing_state=pacing_state,
@@ -461,6 +555,11 @@ def run_capture(
         result_rows, info = _capture_page(
             raw, headers, competition_id=competition_id, status="finished",
             request_id=request_id, requested_at=requested_at, retrieved_at=retrieved_at,
+            http_status=http_status,
+            request_params=_request_parameters(
+                competition_id=competition_id, status="finished",
+                start_at=history_start, end_at=now, page=1,
+            ),
             registry=registry, out_dir=out_dir,
             staging_dsn=staging_dsn,
             persist_staging=persist_staging,
@@ -487,7 +586,7 @@ def run_capture(
         request_id = f"{os.getenv('GITHUB_RUN_ID', 'manual')}-{competition_id}-scheduled-1"
         request_count += 1
         try:
-            raw, headers, requested_at, retrieved_at = _request_page(
+            raw, headers, requested_at, retrieved_at, http_status = _request_page(
                 api_key, competition_id=competition_id, status="scheduled",
                 start_at=now, end_at=upcoming_end, page=1,
                 pacing_state=pacing_state,
@@ -501,6 +600,11 @@ def run_capture(
         target_rows, info = _capture_page(
             raw, headers, competition_id=competition_id, status="scheduled",
             request_id=request_id, requested_at=requested_at, retrieved_at=retrieved_at,
+            http_status=http_status,
+            request_params=_request_parameters(
+                competition_id=competition_id, status="scheduled",
+                start_at=now, end_at=upcoming_end, page=1,
+            ),
             registry=registry, out_dir=out_dir,
             staging_dsn=staging_dsn,
             persist_staging=persist_staging,
@@ -560,8 +664,14 @@ def run_capture(
 
     out_dir.mkdir(parents=True, exist_ok=True)
     ledger_path = out_dir / "paper" / "observed_shadow_ledger.jsonl"
-    store = JsonlPaperLedgerStore(ledger_path)
-    ledger_events = [store.append_prediction(prediction) for prediction in admission.admitted]
+    local_store = JsonlPaperLedgerStore(ledger_path)
+    ledger_events = [
+        local_store.append_prediction(prediction) for prediction in admission.admitted
+    ]
+    staging_ledger = (
+        _persist_paper_predictions_to_staging(staging_dsn, admission.admitted)
+        if persist_staging else None
+    )
 
     benchmarking_allowed = DataUsePurpose.BENCHMARKING in current_approval.permitted_uses
     persisted_capture_pages = sum(
@@ -588,12 +698,26 @@ def run_capture(
             {"fixture_id": item.fixture_id, "reason_code": item.reason_code}
             for item in admission.rejected
         ],
+        "persisted_shadow_ledger_events": (
+            int(staging_ledger["events_appended"]) if staging_ledger else 0
+        ),
         "ledger_events": [
             {"event_type": event.event_type, "fixture_id": event.fixture_id,
              "model_version": event.model_version, "event_sha256": event.event_sha256}
             for event in ledger_events
         ],
         "ledger_path": str(ledger_path),
+        "paper_ledger_persisted_to_staging": bool(
+            staging_ledger and staging_ledger["ledger_event_count"] > 0
+        ),
+        "paper_ledger_chain_verified": bool(
+            staging_ledger and staging_ledger["chain_verified"]
+        ),
+        "duplicate_predictions_skipped": (
+            int(staging_ledger["duplicate_predictions_skipped"])
+            if staging_ledger else 0
+        ),
+        "staging_paper_ledger": staging_ledger,
         "model_artifact_sha256": model_hash,
         "feature_set_sha256": feature_hash,
         "page_manifests": page_manifests,
@@ -612,7 +736,10 @@ def run_capture(
         "raw_redistribution_allowed": current_approval.raw_redistribution_allowed,
         "persisted_capture_pages": persisted_capture_pages,
         "evidence_persisted_to_staging": persisted_capture_pages > 0,
-        "database_writes": persisted_capture_pages > 0,
+        "database_writes": (
+            persisted_capture_pages > 0
+            or bool(staging_ledger and staging_ledger["events_appended"] > 0)
+        ),
         "telegram_delivery": False,
         "schedule_activation": False,
         "public_publication": False,
@@ -620,25 +747,7 @@ def run_capture(
     (out_dir / "summary.json").write_text(
         json.dumps(summary, indent=2, sort_keys=True), encoding="utf-8"
     )
-    public_summary = {
-        "status": summary["status"],
-        "provider": summary["provider"],
-        "requests_used": summary["requests_used"],
-        "request_cap": summary["request_cap"],
-        "crosswalk_registry": summary["crosswalk_registry"],
-        "captured_first_observed_rows": summary["captured_first_observed_rows"],
-        "mapped_upcoming_targets": summary["mapped_upcoming_targets"],
-        "forecast_count": summary["forecast_count"],
-        "admitted_shadow_predictions": summary["admitted_shadow_predictions"],
-        "persisted_capture_pages": summary["persisted_capture_pages"],
-        "evidence_persisted_to_staging": summary["evidence_persisted_to_staging"],
-        "publication_status": summary["publication_status"],
-        "settlement_status": summary["settlement_status"],
-        "database_writes": summary["database_writes"],
-        "telegram_delivery": False,
-        "schedule_activation": False,
-        "public_publication": False,
-    }
+    public_summary = _build_public_summary(summary)
     (out_dir / "public_summary.json").write_text(
         json.dumps(public_summary, indent=2, sort_keys=True), encoding="utf-8"
     )

@@ -11,6 +11,14 @@ on:
       - "tests/veltrix_v2/**"
       - "scripts/phase5_staging_coverage_audit.py"
       - "scripts/phase5_collect_5dollar_shadow.py"
+      - "db/migrations/0008_prospective_paper_ledger.sql"
+      - "veltrix_v2/ledger/postgres_store.py"
+      - "tests/veltrix_v2/test_paper_ledger_postgres.py"
+      - "tests/veltrix_v2/test_phase5_staging_paper_ledger_migration.py"
+      - "tests/veltrix_v2/test_full_migration_chain_postgres.py"
+      - "scripts/phase5_staging_paper_ledger_migration.py"
+      - ".github/workflows/phase5-staging-paper-ledger-migration.yml"
+      - "docs/VELTRIX_V2_STAGING_PAPER_LEDGER_2026-11-14.md"
       - ".github/workflows/phase5-5dollar-shadow-capture.yml"
       - "tests/veltrix_v2/test_phase5_5dollar_shadow_capture.py"
       - "veltrix_v2/data/crosswalk_bootstrap.py"
@@ -100,6 +108,8 @@ jobs:
         run: python -m pytest --import-mode=importlib -q tests/veltrix_v2/test_crosswalk_bootstrap.py
       - name: Test manual 5Dollar shadow capture controls
         run: python -m pytest --import-mode=importlib -q tests/veltrix_v2/test_phase5_5dollar_shadow_capture.py
+      - name: Test staging paper ledger migration guards
+        run: python -m pytest --import-mode=importlib -q tests/veltrix_v2/test_phase5_staging_paper_ledger_migration.py
       - name: Test read-only staging coverage SQL
         run: python -m pytest --import-mode=importlib -q tests/veltrix_v2/test_coverage_sql.py
       - name: Test guarded staging evidence persistence
@@ -159,3 +169,7 @@ jobs:
         run: python -m pytest --import-mode=importlib -q tests/providers/odds_api_v4/test_reservation_postgres.py tests/providers/odds_api_v4/test_quota_evidence_postgres.py tests/providers/odds_api_v4/test_capture_state_postgres.py tests/providers/odds_api_v4/test_capture_request_postgres.py
       - name: Test append-only provider evidence persistence
         run: python -m pytest --import-mode=importlib -q tests/veltrix_v2/test_evidence_persistence_postgres.py
+      - name: Test complete PostgreSQL migration chain
+        run: python -m pytest --import-mode=importlib -q tests/veltrix_v2/test_full_migration_chain_postgres.py
+      - name: Test append-only PostgreSQL paper ledger persistence
+        run: python -m pytest --import-mode=importlib -q tests/veltrix_v2/test_paper_ledger_postgres.py

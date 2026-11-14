@@ -29,7 +29,8 @@ GOAL API and StrikerAPI are not referenced by this workflow.
 - Fixture, team and competition mappings must be one-to-one; ambiguous mappings fail closed.
 - Crosswalks are valid only from the verification instant forward. They are never backdated.
 - New scheduled targets use canonical team and competition IDs; the target fixture ID remains provider-namespaced until a canonical fixture row exists.
-- Finished results are captured with the exact page response bytes, response hash, request/retrieval/recording clocks, capture manifest and item evidence hashes.
+- Finished results are captured with the exact page response bytes, response hash, successful HTTP status, exact query window/status/page parameters, request/retrieval/recording clocks, capture manifest and item evidence hashes.
+- Provider response persistence retains an explicit allowlist of quota/rate-limit and basic response headers; authorization and cookie headers are excluded.
 - Newly observed result snapshots are explicitly non-PIT-certified. Retrieval time is not relabelled as provider publication time.
 - Rows without a valid crosswalk, rights approval, source hash or temporal evidence are rejected from model history.
 - Missing history remains missing; no fallback prior or fabricated feature is introduced.
@@ -41,11 +42,14 @@ GOAL API and StrikerAPI are not referenced by this workflow.
 - Storage and model-training rights are rechecked before result evidence persistence and shadow admission.
 - The optional `persist_staging` input defaults to false.
 - When enabled, raw result capture evidence is persisted only to the allowlisted Neon staging database through the guarded evidence persistence adapter. The script rejects any other database, host or role.
-- Scheduled target page snapshots and the local paper ledger are not persisted by this workflow yet.
-- The runner's detailed raw responses and local JSONL paper ledger are not uploaded as GitHub artifacts.
+- Scheduled target page snapshots are retained only in the runner workspace and are not uploaded.
+- The runner's detailed raw responses and individual predictions are not uploaded as GitHub artifacts.
 - The only uploaded artifact is `public_summary.json`, containing aggregate counts and release-lock status; it contains no fixture IDs, raw payloads, odds, probabilities or individual predictions.
-
-The paper ledger is currently runner-local and therefore not durable between runs. A separate append-only staging paper-ledger store and migration are required before prospective selections can accumulate durably.
+- When `persist_staging=true`, result evidence is persisted through the guarded evidence writer and the admitted shadow-prediction batch is appended atomically to the PostgreSQL paper ledger. Migrations 0005–0008 must already be applied to staging; the run fails closed if migration 0008 is absent.
+- The JSONL ledger remains a runner-local audit copy in both modes. With staging persistence disabled, it is not durable between runs; with staging persistence enabled, PostgreSQL is the durable ledger.
+- The PostgreSQL batch uses one transaction and one ledger-scoped advisory lock. Duplicate detection happens only after acquiring that lock, so overlapping runs cannot both classify the same fixture/model pair as new. Existing fixture/model pairs and duplicates within the same batch are skipped; new predictions append atomically. An invalid prediction rolls back the entire new batch, preventing partial forecast sets.
+- The aggregate audit summary records the number of skipped duplicate predictions and whether the persisted hash chain was verified.
+- The uploaded public summary is constructed from an explicit field allowlist. It excludes fixture IDs, raw-response hashes, ledger hashes, odds, probabilities, API credentials and detailed per-fixture diagnostics.
 
 ## Model and release boundaries
 

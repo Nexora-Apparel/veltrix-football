@@ -9,7 +9,10 @@ from veltrix_v2.data.contracts import (
     ApprovalStatus, DataUsePurpose, FixtureStatus, HistoricalFixture, SourceApproval,
 )
 from veltrix_v2.ledger.paper_predictions import PaperPrediction, ProspectivePaperLedger
-from veltrix_v2.ledger.settlement import settle_from_verified_fixture
+from veltrix_v2.ledger.settlement import (
+    settle_from_verified_fixture,
+    settle_verified_fixture_to_store,
+)
 
 UTC = timezone.utc
 BASE = datetime(2026, 11, 14, 8, 0, tzinfo=UTC)
@@ -196,3 +199,41 @@ def test_settlement_requires_model_version_when_fixture_has_multiple_predictions
         model_version="poisson-v1",
     )
     assert settled.model_version == "poisson-v1"
+
+
+
+class MemoryLedgerStore:
+    def __init__(self, ledger):
+        self.ledger = ledger
+
+    def load(self):
+        return ProspectivePaperLedger(self.ledger.events)
+
+    def append_settlement(self, **kwargs):
+        return self.ledger.append_settlement(**kwargs)
+
+
+def test_rights_verified_settlement_persists_through_ledger_store():
+    store = MemoryLedgerStore(ledger_with_observed_prediction())
+    fixture = source_fixture()
+    persisted = settle_verified_fixture_to_store(
+        store,
+        fixture,
+        approval(),
+        recorded_at=fixture.retrieved_at_utc + timedelta(hours=1),
+    )
+    assert persisted.event_type == "SETTLEMENT"
+    assert persisted.payload["prediction_evidence_class"] == "PROSPECTIVE_OBSERVED_ONLY"
+    assert len(store.ledger.events) == 2
+    assert store.ledger.events[-1] == persisted
+    assert store.ledger.verify_chain()
+
+
+def test_store_settlement_adapter_rejects_missing_store_contract():
+    with pytest.raises(ValueError, match="PAPER_LEDGER_STORE_INTERFACE_INVALID"):
+        settle_verified_fixture_to_store(
+            object(),
+            source_fixture(),
+            approval(),
+            recorded_at=source_fixture().retrieved_at_utc + timedelta(hours=1),
+        )
