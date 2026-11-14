@@ -223,6 +223,7 @@ def test_store_rejects_local_evidence_uri_before_calling_reader():
     store = PostgresTelegramReconciliationStore(
         lambda: pytest.fail("database must not be opened"),
         lambda uri: reads.append(uri),
+        lambda actor: True,
     )
     with pytest.raises(ValueError, match="EVIDENCE_URI_NOT_DURABLE"):
         store.record(event(evidence_uri="/tmp/local-evidence.json"))
@@ -244,6 +245,7 @@ def test_store_rejects_credential_bearing_uri_before_reading_evidence():
     store = PostgresTelegramReconciliationStore(
         lambda: pytest.fail("database must not be opened"),
         lambda uri: reads.append(uri),
+        lambda actor: True,
     )
     with pytest.raises(ValueError, match="EVIDENCE_URI_NOT_DURABLE"):
         store.record(event(evidence_uri="https://user:secret@evidence.example/file"))
