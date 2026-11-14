@@ -124,16 +124,23 @@ class ProspectivePaperLedger:
     def append_settlement(self, *, fixture_id: str, model_version: str,
                           home_goals: int, away_goals: int,
                           result_available_at: datetime,
-                          recorded_at: datetime) -> PaperLedgerEvent:
+                          result_retrieved_at: datetime,
+                          recorded_at: datetime,
+                          source_provider: str,
+                          source_id: str,
+                          source_fixture_id: str,
+                          result_payload_sha256: str,
+                          rights_approval_id: str,
+                          rights_evidence_sha256: str) -> PaperLedgerEvent:
         prediction = next((e for e in self._events
                            if e.event_type == "PREDICTION" and e.fixture_id == fixture_id
                            and e.model_version == model_version), None)
         if prediction is None:
             raise ValueError("PAPER_SETTLEMENT_WITHOUT_PREDICTION")
-        if not _aware(result_available_at) or not _aware(recorded_at):
+        if not all(_aware(x) for x in (result_available_at, result_retrieved_at, recorded_at)):
             raise ValueError("PAPER_SETTLEMENT_TIMESTAMPS_MUST_BE_AWARE")
         kickoff = datetime.fromisoformat(prediction.payload["kickoff_at"])
-        if result_available_at < kickoff or recorded_at < result_available_at:
+        if not (kickoff <= result_available_at <= result_retrieved_at <= recorded_at):
             raise ValueError("PAPER_SETTLEMENT_TEMPORAL_ORDER_INVALID")
         if any(e.event_type == "SETTLEMENT" and e.fixture_id == fixture_id
                and e.model_version == model_version for e in self._events):
@@ -141,10 +148,25 @@ class ProspectivePaperLedger:
         if any(not isinstance(x, int) or isinstance(x, bool) or x < 0
                for x in (home_goals, away_goals)):
             raise ValueError("PAPER_SETTLEMENT_SCORE_INVALID")
+        if not all(isinstance(x, str) and x.strip() for x in (
+            source_provider, source_id, source_fixture_id, rights_approval_id
+        )):
+            raise ValueError("PAPER_SETTLEMENT_SOURCE_IDENTITY_INVALID")
+        for value in (result_payload_sha256, rights_evidence_sha256):
+            if not isinstance(value, str) or len(value) != 64 or any(
+                char not in "0123456789abcdef" for char in value.lower()
+            ):
+                raise ValueError("PAPER_SETTLEMENT_EVIDENCE_HASH_INVALID")
         payload = {
             "home_goals": home_goals, "away_goals": away_goals,
             "result_available_at": result_available_at.isoformat(),
+            "result_retrieved_at": result_retrieved_at.isoformat(),
             "recorded_at": recorded_at.isoformat(),
+            "source_provider": source_provider, "source_id": source_id,
+            "source_fixture_id": source_fixture_id,
+            "result_payload_sha256": result_payload_sha256.lower(),
+            "rights_approval_id": rights_approval_id,
+            "rights_evidence_sha256": rights_evidence_sha256.lower(),
             "prediction_event_sha256": prediction.event_sha256,
         }
         return self._append("SETTLEMENT", fixture_id, model_version, recorded_at, payload)
