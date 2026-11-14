@@ -24,8 +24,8 @@ A forecast can use this row only when its prediction cutoff is at or after both 
 
 ## Separate model/ledger path
 
-The adapter `historical_fixture_to_first_observed_observation` creates a non-PIT MatchObservation with:
-- exact provider payload hash;
+The 5Dollar capture adapter's explicit `prospective_observed=True` mode and `CapturedResultEvidence.to_first_observed_match_observation` create a non-PIT MatchObservation from the exact raw response and persisted capture manifest with:
+- exact raw-response SHA-256;
 - exact retrieval/first-observed time;
 - collector item and manifest SHA-256 values;
 - provider/source/fixture/team/competition identities;
