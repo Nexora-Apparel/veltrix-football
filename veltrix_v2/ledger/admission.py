@@ -89,7 +89,7 @@ def _training_evidence(
     forecast: ForecastRecord,
     approvals: Mapping[str, SourceApproval],
     rights_evaluated_at: datetime,
-) -> tuple[list[dict], int, int, int]:
+) -> tuple[list[dict], int]:
     counts: dict[str, int] = {}
     for row in observations:
         if isinstance(row, MatchObservation) and isinstance(row.fixture_id, str):
@@ -130,7 +130,7 @@ def _training_evidence(
             "rights_evidence_sha256": approval.evidence_sha256,
         })
     used.sort(key=lambda item: item["fixture_id"])
-    return used, len(used), 0, 0
+    return used, len(used)
 
 
 def admit_shadow_forecasts(
@@ -153,6 +153,8 @@ def admit_shadow_forecasts(
     """
     if not isinstance(report, BatchForecastReport):
         raise ValueError("BATCH_FORECAST_REPORT_REQUIRED")
+    if report.forecast_count != len(report.forecasts):
+        raise ValueError("BATCH_FORECAST_COUNT_MISMATCH")
     if not _aware(report.cutoff_at) or not _aware(forecasted_at) or not _aware(recorded_at):
         raise ValueError("PAPER_ADMISSION_TIMESTAMPS_MUST_BE_AWARE")
     if not (report.cutoff_at <= forecasted_at <= recorded_at):
@@ -180,7 +182,9 @@ def admit_shadow_forecasts(
                 raise ValueError("UNIQUE_SOURCE_TARGET_NOT_FOUND")
             if (forecast.competition_id != target.competition_id
                     or forecast.kickoff_at != target.kickoff_at
-                    or forecast.cutoff_at != report.cutoff_at):
+                    or forecast.cutoff_at != report.cutoff_at
+                    or forecast.provider != target.provider
+                    or forecast.source_id != target.source_id):
                 raise ValueError("FORECAST_TARGET_IDENTITY_OR_CUTOFF_MISMATCH")
             if target.retrieved_at > report.cutoff_at or target.kickoff_at <= recorded_at:
                 raise ValueError("TARGET_NOT_KNOWN_AND_FUTURE_AT_RECORDING")
@@ -193,7 +197,7 @@ def admit_shadow_forecasts(
                 competition_id=target.competition_id, at=recorded_at,
                 purposes=(DataUsePurpose.COLLECTION, DataUsePurpose.CACHE),
             )
-            evidence_rows, evidence_count, _, _ = _training_evidence(
+            evidence_rows, evidence_count = _training_evidence(
                 history, forecast=forecast, approvals=source_approvals,
                 rights_evaluated_at=recorded_at,
             )
