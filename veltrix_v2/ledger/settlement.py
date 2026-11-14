@@ -26,11 +26,23 @@ def settle_from_verified_fixture(
         raise ValueError("SETTLEMENT_SOURCE_APPROVAL_REQUIRED")
     if recorded_at.tzinfo is None or recorded_at.utcoffset() is None:
         raise ValueError("SETTLEMENT_RECORDING_TIMESTAMP_MUST_BE_AWARE")
-    if fixture.available_at_utc is None:
-        raise ValueError("SETTLEMENT_RESULT_AVAILABILITY_TIMESTAMP_MISSING")
-    if not (fixture.kickoff_at_utc <= fixture.available_at_utc
-            <= fixture.retrieved_at_utc <= recorded_at):
-        raise ValueError("SETTLEMENT_SOURCE_TEMPORAL_ORDER_INVALID")
+    fixture_id = f"{fixture.source_id}:{fixture.provider_fixture_id}"
+    prediction = next((
+        event for event in ledger.events
+        if event.event_type in {"PREDICTION", "SHADOW_PREDICTION"}
+        and event.fixture_id == fixture_id
+    ), None)
+    if prediction is None:
+        raise ValueError("PAPER_SETTLEMENT_WITHOUT_MATCHING_PREDICTION")
+    if observed_only:
+        if not (fixture.kickoff_at_utc <= fixture.retrieved_at_utc <= recorded_at):
+            raise ValueError("SETTLEMENT_FIRST_OBSERVED_TEMPORAL_ORDER_INVALID")
+    else:
+        if fixture.available_at_utc is None:
+            raise ValueError("SETTLEMENT_RESULT_AVAILABILITY_TIMESTAMP_MISSING")
+        if not (fixture.kickoff_at_utc <= fixture.available_at_utc
+                <= fixture.retrieved_at_utc <= recorded_at):
+            raise ValueError("SETTLEMENT_SOURCE_TEMPORAL_ORDER_INVALID")
     if (approval.approval_id != fixture.rights_approval_id
             or approval.provider != fixture.provider
             or approval.source_id != fixture.source_id):
@@ -49,14 +61,6 @@ def settle_from_verified_fixture(
         if not decision.allowed:
             raise ValueError(decision.reason_code)
 
-    fixture_id = f"{fixture.source_id}:{fixture.provider_fixture_id}"
-    prediction = next((
-        event for event in ledger.events
-        if event.event_type in {"PREDICTION", "SHADOW_PREDICTION"}
-        and event.fixture_id == fixture_id
-    ), None)
-    if prediction is None:
-        raise ValueError("PAPER_SETTLEMENT_WITHOUT_MATCHING_PREDICTION")
     payload = prediction.payload
     if (
         payload.get("competition_id") != f"{fixture.source_id}:{fixture.provider_competition_id}"
