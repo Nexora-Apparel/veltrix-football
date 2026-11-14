@@ -6,7 +6,12 @@ verifier before it reads or writes the public command-data branch.
 """
 from __future__ import annotations
 
+import base64
+import json
 from dataclasses import dataclass
+from urllib.error import HTTPError, URLError
+from urllib.parse import quote
+from urllib.request import Request, urlopen
 from typing import Protocol
 
 from veltrix_v2.reporting.artifact_bundle import (
@@ -41,6 +46,107 @@ class GitHubContentsClient(Protocol):
         message: str,
     ) -> str:
         ...
+
+
+class GitHubContentsApiClient:
+    """Concrete Contents API client pinned to the single V2 publication target."""
+
+    def __init__(self, token: str, *, opener=None):
+        if not isinstance(token, str) or not token.strip():
+            raise ValueError("GITHUB_PUBLICATION_TOKEN_REQUIRED")
+        self._token = token.strip()
+        self._opener = opener or urlopen
+
+    def _assert_target(self, repository: str, branch: str, path: str) -> None:
+        if (
+            repository != PUBLICATION_REPOSITORY
+            or branch != PUBLICATION_BRANCH
+            or path != PUBLICATION_PATH
+        ):
+            raise PermissionError("GITHUB_PUBLICATION_TARGET_NOT_ALLOWLISTED")
+
+    def _request(self, method: str, url: str, body: dict | None = None) -> dict:
+        headers = {
+            "Accept": "application/vnd.github+json",
+            "Authorization": f"Bearer {self._token}",
+            "X-GitHub-Api-Version": "2022-11-28",
+            "User-Agent": "Veltrix-V2-Report-Publisher",
+        }
+        data = None
+        if body is not None:
+            headers["Content-Type"] = "application/json"
+            data = json.dumps(body, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
+        request = Request(url, data=data, headers=headers, method=method)
+        try:
+            with self._opener(request, timeout=20) as response:
+                payload = json.loads(response.read().decode("utf-8"))
+        except HTTPError as exc:
+            raise RuntimeError(f"GITHUB_CONTENTS_API_HTTP_{exc.code}") from None
+        except (URLError, OSError, TimeoutError, json.JSONDecodeError):
+            raise RuntimeError("GITHUB_CONTENTS_API_REQUEST_FAILED") from None
+        if not isinstance(payload, dict):
+            raise RuntimeError("GITHUB_CONTENTS_API_RESPONSE_INVALID")
+        return payload
+
+    def get_file(self, repository: str, branch: str, path: str) -> ExistingContentsFile | None:
+        self._assert_target(repository, branch, path)
+        encoded_path = quote(path, safe="/")
+        url = (
+            f"https://api.github.com/repos/{repository}/contents/{encoded_path}"
+            f"?ref={quote(branch, safe='')}"
+        )
+        try:
+            metadata = self._request("GET", url)
+        except RuntimeError as exc:
+            if str(exc) == "GITHUB_CONTENTS_API_HTTP_404":
+                return None
+            raise
+        sha = metadata.get("sha")
+        if not isinstance(sha, str) or not sha:
+            raise RuntimeError("GITHUB_EXISTING_FILE_SHA_MISSING")
+        raw_url = f"https://raw.githubusercontent.com/{repository}/{branch}/{encoded_path}"
+        try:
+            request = Request(raw_url, headers={
+                "User-Agent": "Veltrix-V2-Report-Publisher",
+                "Cache-Control": "no-cache",
+            })
+            with self._opener(request, timeout=20) as response:
+                content = response.read(8_000_001)
+        except (HTTPError, URLError, OSError, TimeoutError):
+            raise RuntimeError("GITHUB_EXISTING_BUNDLE_READ_FAILED") from None
+        if not content or len(content) > 8_000_000:
+            raise RuntimeError("GITHUB_EXISTING_BUNDLE_SIZE_INVALID")
+        return ExistingContentsFile(content=content, sha=sha)
+
+    def put_file(
+        self,
+        repository: str,
+        branch: str,
+        path: str,
+        content: bytes,
+        *,
+        sha: str | None,
+        message: str,
+    ) -> str:
+        self._assert_target(repository, branch, path)
+        if not isinstance(content, bytes) or not content or len(content) > 8_000_000:
+            raise ValueError("GITHUB_PUBLICATION_CONTENT_INVALID")
+        if sha is not None and (not isinstance(sha, str) or not sha):
+            raise ValueError("GITHUB_PUBLICATION_EXISTING_SHA_INVALID")
+        body = {
+            "message": message,
+            "content": base64.b64encode(content).decode("ascii"),
+            "branch": branch,
+        }
+        if sha is not None:
+            body["sha"] = sha
+        encoded_path = quote(path, safe="/")
+        url = f"https://api.github.com/repos/{repository}/contents/{encoded_path}"
+        payload = self._request("PUT", url, body)
+        commit_sha = ((payload.get("commit") or {}).get("sha"))
+        if not isinstance(commit_sha, str) or not commit_sha:
+            raise RuntimeError("GITHUB_PUBLICATION_COMMIT_SHA_MISSING")
+        return commit_sha
 
 
 @dataclass(frozen=True, slots=True)
