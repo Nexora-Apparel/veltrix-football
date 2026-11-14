@@ -25,7 +25,7 @@ class MatchObservation:
     competition_id: str
     home_team_id: str
     away_team_id: str
-    kickoff_at: datetime
+    kickoff_at: datetime | None
     available_at: datetime
     recorded_at: datetime
     home_goals: int
