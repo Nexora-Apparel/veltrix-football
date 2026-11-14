@@ -243,7 +243,6 @@ def _capture_page(
     request_id: str,
     requested_at: datetime,
     retrieved_at: datetime,
-    approval: SourceApproval,
     registry,
     out_dir: Path,
     staging_dsn: str,
@@ -395,7 +394,7 @@ def run_capture(
         result_rows, info = _capture_page(
             raw, headers, competition_id=competition_id, status="finished",
             request_id=request_id, requested_at=requested_at, retrieved_at=retrieved_at,
-            approval=current_approval, registry=registry, out_dir=out_dir,
+            registry=registry, out_dir=out_dir,
             staging_dsn=staging_dsn,
         )
         observations.extend(result_rows)
