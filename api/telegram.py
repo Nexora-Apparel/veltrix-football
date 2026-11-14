@@ -155,26 +155,26 @@ main{padding:20px clamp(12px,3vw,30px)}.eyebrow{color:var(--green);font-weight:8
 @media(min-width:760px){.featurelayout{display:grid;grid-template-columns:1.15fr .85fr;gap:14px;align-items:start}.featurelayout .sectionhead{margin-top:0}.feature{height:100%}.matchhero{padding:32px 0}.statusgrid{grid-template-columns:repeat(4,minmax(0,1fr))}}
 @media(max-width:520px){main{padding:14px 11px}.overview{gap:7px}.metric{padding:11px 9px}.metric .value{font-size:21px}.metric .label{font-size:10px}.feature{padding:14px}.matchhero{grid-template-columns:1fr 28px 1fr;padding:18px 0 14px}.probwrap{gap:10px;align-items:start}.ring{width:78px;height:78px}.ringtext{font-size:20px}.markets{gap:5px}.market{padding:8px 4px}.market .mvalue{font-size:14px}.market .mlabel{font-size:9px}.fixturelist{grid-template-columns:1fr}.brand{font-size:18px}.mark{font-size:33px}.tagline{font-size:10px}.live{padding:5px 8px}.statusgrid{grid-template-columns:1fr 1fr}}
 </style></head><body><div class="shell">
-<header class="topbar"><div class="headrow"><div><div class="brandbox"><div class="mark">V</div><div class="brand">VELTRIX<span>F O O T B A L L</span></div></div><div class="tagline">Command Centre · Football intelligence · Real published data</div></div><div class="live"><i class="dot"></i><span id="liveLabel">CHECKING DATA</span></div></div></header>
+<header class="topbar"><div class="headrow"><div><div class="brandbox"><div class="mark">V</div><div class="brand">VELTRIX<span>F O O T B A L L</span></div></div><div class="tagline">Command Centre · Evidence-gated football intelligence</div></div><div class="live"><i class="dot"></i><span id="liveLabel">CHECKING DATA</span></div></div></header>
 <main>
 <section id="dashboardView" class="sectionview active">
-<div class="sectionhead" style="margin-top:0"><div><div class="eyebrow">Match intelligence</div><h2>Featured prediction</h2></div><button class="refresh" id="refresh" onclick="loadDashboard()">↻ Refresh</button></div>
-<div id="featured" class="empty">Loading the next eligible fixture…</div>
-<div class="sectionhead"><div><div class="eyebrow">Model interpretation</div><h2>AI Insights · Recommended angles</h2></div></div>
-<div id="insights" class="insights"><div class="empty">Preparing insights from available data…</div></div>
+<div class="sectionhead" style="margin-top:0"><div><div class="eyebrow">Command centre</div><h2>Publication overview</h2></div><button class="refresh" id="refresh" onclick="loadDashboard()">↻ Refresh</button></div>
+<div class="notice" role="status">Predictions are not shown on Dashboard. Open Prediction to view eligible forecasts; only independently certified markets can be published.</div>
+<div id="featured" class="empty" hidden></div>
+<div id="insights" class="insights" hidden></div>
 <div class="section-divider"></div>
 <div class="sectionhead overview-bottom"><div><div class="eyebrow">Report snapshot</div><h2 id="overviewTitle">Report overview</h2></div></div>
 <div id="reportFreshness" class="notice" role="status">Loading report freshness…</div><div class="overview"><div class="metric"><div class="label">Fixtures received</div><div class="value" id="fixtures">—</div><div class="hint">From published report</div></div><div class="metric"><div class="label">Eligible forecasts</div><div class="value" id="forecasts">—</div><div class="hint">Available model outputs</div></div><div class="metric"><div class="label">With market prices</div><div class="value" id="odds">—</div><div class="hint">Matched bookmaker quotes</div></div></div>
 </section>
 <div class="section-divider"></div>
 <section id="predictionsView" class="sectionview">
-<div class="sectionhead"><div><div class="eyebrow">Model output</div><h2>Predictions</h2></div><span class="small muted" id="fixtureCount">—</span></div>
+<div class="sectionhead"><div><div class="eyebrow">Model output</div><h2>Prediction</h2></div><span class="small muted" id="fixtureCount">—</span></div>
 <div class="filters" id="filters"><button class="filter active" data-filter="all" aria-pressed="true">All fixtures</button><button class="filter" data-filter="btts" aria-pressed="false">BTTS focus</button><button class="filter" data-filter="totals" aria-pressed="false">Over / Under</button></div>
 <div id="predictions"><div class="empty">Loading fixtures…</div></div>
 </section>
 <div class="section-divider"></div>
 <section id="marketView" class="sectionview">
-<div class="sectionhead"><div><div class="eyebrow">Verified price feed</div><h2>Market odds</h2></div><span class="small muted" id="marketCount">Matched prices only</span></div>
+<div class="sectionhead"><div><div class="eyebrow">Verified price feed</div><h2>Market</h2></div><span class="small muted" id="marketCount">Matched prices only</span></div>
 <div id="marketOdds" class="market-list"><div class="empty">Loading matched market prices…</div></div>
 </section>
 <div class="section-divider"></div>
@@ -198,7 +198,7 @@ main{padding:20px clamp(12px,3vw,30px)}.eyebrow{color:var(--green);font-weight:8
 <div class="footer">Football data by <a href="https://5dollarfootballapi.com" target="_blank" rel="noopener noreferrer">5DollarFootballAPI</a>. Predictions include evidence-weighted estimates; value-bet verdicts are shown only when supported by the available evidence. Market prices are displayed only when matched to a fixture. Missing statistics are not invented; their coverage is not assumed complete. <span id="reporttime"></span></div>
 </section>
 </main></div>
-<nav class="bottomnav"><a class="navitem active" href="#dashboardView" data-view="dashboardView"><span>⌂</span>Dashboard</a><a class="navitem" href="#predictionsView" data-view="predictionsView"><span>◎</span>Predictions</a><a class="navitem" href="#marketView" data-view="marketView"><span>▤</span>Market odds</a><a class="navitem" href="#trackingView" data-view="trackingView"><span>◷</span>Tracking</a><a class="navitem" href="#statusView" data-view="statusView"><span>▥</span>Status</a></nav>
+<nav class="bottomnav"><a class="navitem active" href="#dashboardView" data-view="dashboardView"><span>⌂</span>Dashboard</a><a class="navitem" href="#predictionsView" data-view="predictionsView"><span>◎</span>Prediction</a><a class="navitem" href="#marketView" data-view="marketView"><span>▤</span>Market</a><a class="navitem" href="#trackingView" data-view="trackingView"><span>◷</span>Tracking</a><a class="navitem" href="#statusView" data-view="statusView"><span>▥</span>Status</a></nav>
 <script>
 let dashboardRows=[];let currentFilter='all';
 function num(v){return v===null||v===undefined||v===''?NaN:Number(v)}
@@ -403,9 +403,9 @@ async function loadDashboard(){
   const liveLabel=document.getElementById('liveLabel');if(liveLabel)liveLabel.textContent=connection.status==='CONNECTED'?(stale?'CONNECTED · STALE DATA':'DATA CONNECTED'):'DATA OFFLINE';
   const dateParts=new Intl.DateTimeFormat('en-CA',{timeZone:'Africa/Lagos',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date());const today=dateParts.filter(p=>['year','month','day'].includes(p.type)).reduce((o,p)=>(o[p.type]=p.value,o),{});const todayKey=today.year+'-'+today.month+'-'+today.day;
   document.getElementById('overviewTitle').textContent=reportDate?(reportDate===todayKey?"Today's overview":'Report overview · '+reportDate):'Report overview';
-  const localHour=Number(new Intl.DateTimeFormat('en-GB',{timeZone:'Africa/Lagos',hour:'2-digit',hourCycle:'h23'}).format(new Date()));const offline=connection.status!=='CONNECTED'||d.status!=='OK';const reportNotice=document.getElementById('reportFreshness');if(reportNotice){reportNotice.textContent=offline?(d.warning||'Dashboard data source is not connected. Published predictions could not be loaded.') :stale?'Published-data connection is working, but the latest report is '+reportDate+'. Today’s automated report is '+(localHour<6?'scheduled for 06:00 WAT':'overdue after 06:00 WAT')+'. Older fixtures remain visible in Predictions and are not treated as today’s featured picks.':reused?'The dashboard is connected, but this is a reused snapshot; no fresh fixture retrieval completed. '+(d.report_freshness_note||'Wait for the next successful live report.'):(dashboardRows.length?'Connected to the latest current-day published report.':'Connected, but no fixtures are present in the current report.');if(!offline&&!stale&&!reused&&dashboardRows.length){reportNotice.textContent+=' Predictions: '+(d.available_forecasts??0)+'; fixtures retained without forecasts: '+(d.unsupported_fixtures??0)+'. Unsupported fixtures remain visible; no predictions are fabricated.';}reportNotice.classList.toggle('warn',offline||stale||reused||!dashboardRows.length);}
+  const localHour=Number(new Intl.DateTimeFormat('en-GB',{timeZone:'Africa/Lagos',hour:'2-digit',hourCycle:'h23'}).format(new Date()));const offline=connection.status!=='CONNECTED'||d.status!=='OK';const reportNotice=document.getElementById('reportFreshness');if(reportNotice){reportNotice.textContent=offline?(d.warning||'Dashboard data source is not connected. Published predictions could not be loaded.') :stale?'Published-data connection is working, but the latest report is '+reportDate+'. The daily report schedule is paused; no automatic report is scheduled. Older reports are not treated as current predictions.':reused?'The dashboard is connected, but this is a reused snapshot; no fresh fixture retrieval completed. '+(d.report_freshness_note||'Wait for the next successful live report.'):(dashboardRows.length?'Connected to the latest current-day published report.':'Connected, but no fixtures are present in the current report.');if(!offline&&!stale&&!reused&&dashboardRows.length){reportNotice.textContent+=' Predictions: '+(d.available_forecasts??0)+'; fixtures retained without forecasts: '+(d.unsupported_fixtures??0)+'. Unsupported fixtures remain visible; no predictions are fabricated.';}reportNotice.classList.toggle('warn',offline||stale||reused||!dashboardRows.length);}
   text(document.getElementById('fixtures'),d.fixtures_received);text(document.getElementById('forecasts'),d.available_forecasts);text(document.getElementById('odds'),d.fixtures_with_market_odds);
-  const currentFixtures=stale?[]:dashboardRows.filter(m=>m&&m.fixture_phase==='UPCOMING');renderFeatured(currentFixtures.find(m=>m.publication_status==='PUBLISHED')||currentFixtures[0]||null);renderRows();renderMarketOdds();renderPaperTracking(d);renderStatus(d);observeReveals(document);
+  renderFeatured(null);renderRows();renderMarketOdds();renderPaperTracking(d);renderStatus(d);observeReveals(document);
   document.getElementById('reporttime').textContent='Report date '+(d.as_of_date||'unknown')+' · published '+(d.published_at_utc||'unknown')+' UTC';
  }catch(e){
   const liveLabel=document.getElementById('liveLabel');if(liveLabel)liveLabel.textContent='DATA OFFLINE';
