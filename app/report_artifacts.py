@@ -211,25 +211,12 @@ def load_latest_report(
 ) -> dict[str, Any] | None:
     """Load a report; V2 requires an injected authoritative publication verifier."""
     portable_raw = _load_portable_bundle_bytes()
-    if portable_raw is not None:
-        portable_bundle = load_v2_portable_report_bundle(
-            portable_raw, authorization_verifier
-        )
-        return portable_bundle["report"] if portable_bundle is not None else None
-    report = _load("report")
-    if report is None:
+    if portable_raw is None:
         return None
-    if report.get("schema") != REPORT_SCHEMA:
-        return None
-    if not _is_public_v2_report(report) or not callable(authorization_verifier):
-        return None
-    try:
-        identity = verify_report_identity(report)
-        if authorization_verifier(report, identity) is not True:
-            return None
-    except Exception:
-        return None
-    return report
+    portable_bundle = load_v2_portable_report_bundle(
+        portable_raw, authorization_verifier
+    )
+    return portable_bundle["report"] if portable_bundle is not None else None
 
 
 def load_paper_ledger() -> dict[str, Any] | None:
@@ -270,21 +257,9 @@ def load_v2_report_bundle(
 ) -> dict[str, Any] | None:
     """Return V2 website data only after authoritative publication authorization."""
     portable_raw = _load_portable_bundle_bytes()
-    if portable_raw is not None:
-        return load_v2_portable_report_bundle(portable_raw, authorization_verifier)
-    report = _load("report")
-    dashboard = _load("dashboard")
-    if report is None or dashboard is None or report.get("schema") != REPORT_SCHEMA:
+    if portable_raw is None:
         return None
-    if not _is_public_v2_report(report) or not callable(authorization_verifier):
-        return None
-    try:
-        identity = assert_website_projection(report, dashboard)
-        if authorization_verifier(report, identity) is not True:
-            return None
-    except Exception:
-        return None
-    return {"report": report, "dashboard": dashboard, "identity": identity}
+    return load_v2_portable_report_bundle(portable_raw, authorization_verifier)
 
 
 
