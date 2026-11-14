@@ -416,6 +416,10 @@ def main() -> None:
     chat_id = os.environ.get("TELEGRAM_CHAT_ID", "")
     try:
         report = json.loads(Path(args.report).read_text(encoding="utf-8"))
+        if isinstance(report, dict) and report.get("schema") == REPORT_SCHEMA:
+            raise ValueError(
+                "V2_REPORT_REQUIRES_CERTIFIED_V2_DELIVERY_RUNNER; legacy sender is blocked"
+            )
         if not isinstance(report, dict) or not report.get("same_day_only"):
             raise ValueError("Report is invalid or does not enforce same-day fixture filtering.")
         ledger = None
