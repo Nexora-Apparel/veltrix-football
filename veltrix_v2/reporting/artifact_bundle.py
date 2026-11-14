@@ -266,19 +266,14 @@ def load_report_surface_bundle(
     )
 
 
-def load_authorized_report_surface_bundle(
-    output_dir: str | Path,
-    report_id: str,
-    authorization_verifier,
-) -> ReportSurfaceBundle:
-    """Load the four-surface bundle only when a trusted verifier authorizes publication."""
-    bundle = load_report_surface_bundle(output_dir, report_id)
+def _authorize_public_bundle(bundle: ReportSurfaceBundle, authorization_verifier) -> ReportSurfaceBundle:
     report = bundle.canonical_report
     predictions = report.get("predictions")
     if (
         report.get("release_mode") not in {"RESTRICTED_PUBLIC", "FULL_PUBLIC"}
         or not isinstance(predictions, list)
         or not predictions
+        or len(predictions) > 25
         or any(
             not isinstance(fixture, dict)
             or fixture.get("publication_status") != "PUBLISHED"
@@ -291,6 +286,37 @@ def load_authorized_report_surface_bundle(
     if authorization_verifier(report, bundle.identity) is not True:
         raise PermissionError("AUTHORITATIVE_PUBLICATION_AUTHORIZATION_NOT_VERIFIED")
     return bundle
+
+
+def load_authorized_report_surface_bundle(
+    output_dir: str | Path,
+    report_id: str,
+    authorization_verifier,
+) -> ReportSurfaceBundle:
+    """Load the immutable filesystem bundle only when a trusted verifier authorizes publication."""
+    return _authorize_public_bundle(
+        load_report_surface_bundle(output_dir, report_id), authorization_verifier
+    )
+
+
+def load_authorized_portable_report_surface_bundle(
+    raw: bytes,
+    authorization_verifier,
+) -> ReportSurfaceBundle:
+    """Load the single-file portable bundle only when publication is authorized."""
+    return _authorize_public_bundle(
+        parse_portable_report_surface_bundle(raw), authorization_verifier
+    )
+
+
+def load_authorized_scheduled_report_from_portable(
+    raw: bytes,
+    authorization_verifier,
+) -> dict[str, Any]:
+    """Return the scheduled surface from the authorized portable bundle."""
+    return load_authorized_portable_report_surface_bundle(
+        raw, authorization_verifier
+    ).scheduled_report
 
 
 def load_authorized_scheduled_report(
