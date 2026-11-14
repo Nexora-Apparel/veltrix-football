@@ -7,8 +7,7 @@ quarantined as a group; identical corroborating records count only once.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import date, datetime, timezone
-from hashlib import sha256
+from datetime import datetime, timezone
 from typing import Iterable, Mapping
 
 from veltrix_v2.models.poisson import MatchObservation
@@ -59,7 +58,8 @@ def merge_certified_observations(
 
     Lower explicit priority values win. Unlisted providers share a stable
     fallback priority; then earliest valid availability/recording timestamps
-    and lexical source identity break ties.
+    and lexical source identity break ties. Exact kickoff timestamps are
+    mandatory for point-in-time certification; date-only archives are rejected.
     """
     priorities = dict(source_priority or {})
     if any(not isinstance(key, str) or not key.strip() or type(value) is not int
@@ -87,9 +87,6 @@ def merge_certified_observations(
             isinstance(row.kickoff_at, datetime)
             and row.kickoff_at.tzinfo is not None and row.kickoff_at.utcoffset() is not None
             and valid_times and row.available_at >= row.kickoff_at
-        ) or (
-            row.kickoff_at is None and isinstance(row.kickoff_date, date)
-            and not isinstance(row.kickoff_date, datetime)
         )
         valid_score = (
             type(row.home_goals) is int and row.home_goals >= 0
