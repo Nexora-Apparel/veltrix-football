@@ -125,9 +125,13 @@ def assert_report_surface_bundle(
         [canonical_report, scheduled_report, telegram_report]
     )
     if (
-        website_projection.get("report_id") != identity.report_id
+        website_projection.get("snapshot_schema") != "VELTRIX_DASHBOARD_V1"
+        or website_projection.get("report_id") != identity.report_id
         or website_projection.get("report_sha256") != identity.report_sha256
         or website_projection.get("as_of_date") != identity.as_of_date
+        or website_projection.get("status") != canonical_report.get("status")
+        or website_projection.get("release_mode") != canonical_report.get("release_mode")
+        or website_projection.get("predictions") != canonical_report.get("predictions")
     ):
         raise ValueError("WEBSITE_REPORT_PROJECTION_IDENTITY_MISMATCH")
     return identity
