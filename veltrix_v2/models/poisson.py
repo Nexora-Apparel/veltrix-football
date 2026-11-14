@@ -197,26 +197,28 @@ def predict_match(
     if league_home_mean <= 0 or league_away_mean <= 0:
         raise InsufficientHistoryError("COMPETITION_GOAL_BASELINE_INVALID")
 
-    def team_rates(team_id: str) -> tuple[float, float, int]:
-        scored = conceded = count = 0
+    def team_rates(team_id: str) -> tuple[float, float, float, float, int]:
+        home_scored = home_conceded = home_count = 0
+        away_scored = away_conceded = away_count = 0
         for m in eligible:
             if m.home_team_id == team_id:
-                scored += m.home_goals
-                conceded += m.away_goals
-                count += 1
+                home_scored += m.home_goals
+                home_conceded += m.away_goals
+                home_count += 1
             elif m.away_team_id == team_id:
-                scored += m.away_goals
-                conceded += m.home_goals
-                count += 1
-        attack_mean = _posterior_mean(scored, count, (league_home_mean + league_away_mean) / 2, prior_matches)
-        defence_mean = _posterior_mean(conceded, count, (league_home_mean + league_away_mean) / 2, prior_matches)
-        return attack_mean, defence_mean, count
+                away_scored += m.away_goals
+                away_conceded += m.home_goals
+                away_count += 1
+        home_attack = _posterior_mean(home_scored, home_count, league_home_mean, prior_matches)
+        home_defence = _posterior_mean(home_conceded, home_count, league_away_mean, prior_matches)
+        away_attack = _posterior_mean(away_scored, away_count, league_away_mean, prior_matches)
+        away_defence = _posterior_mean(away_conceded, away_count, league_home_mean, prior_matches)
+        return home_attack, home_defence, away_attack, away_defence, home_count + away_count
 
-    home_attack, home_conceded, home_count = team_rates(home_team_id)
-    away_attack, away_conceded, away_count = team_rates(away_team_id)
-    league_mean = (league_home_mean + league_away_mean) / 2
-    home_lambda = league_home_mean * (home_attack / league_mean) * (away_conceded / league_mean)
-    away_lambda = league_away_mean * (away_attack / league_mean) * (home_conceded / league_mean)
+    home_attack, home_defence, _, _, home_count = team_rates(home_team_id)
+    _, _, away_attack, away_defence, away_count = team_rates(away_team_id)
+    home_lambda = home_attack * away_defence / league_home_mean
+    away_lambda = away_attack * home_defence / league_away_mean
     home_lambda = min(max(home_lambda, 0.05), 5.0)
     away_lambda = min(max(away_lambda, 0.05), 5.0)
 
