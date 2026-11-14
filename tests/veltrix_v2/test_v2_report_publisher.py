@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import hashlib
+import json
+
 import pytest
 
 from veltrix_v2.reporting.artifact_bundle import (
@@ -9,6 +12,7 @@ from veltrix_v2.reporting.artifact_bundle import (
 from veltrix_v2.reporting.report_identity import REPORT_SCHEMA
 from veltrix_v2.reporting.publisher import (
     ExistingContentsFile,
+    GitHubContentsApiClient,
     PUBLICATION_BRANCH,
     PUBLICATION_PATH,
     PUBLICATION_REPOSITORY,
@@ -156,3 +160,90 @@ def test_publisher_rejects_bundle_larger_than_website_limit_before_github_access
         )
     assert client.get_calls == []
     assert client.put_calls == []
+
+
+
+class FakeResponse:
+    def __init__(self, body):
+        self.body = body
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *_):
+        return False
+
+    def read(self, *_):
+        return self.body
+
+
+def github_blob_sha(content):
+    return hashlib.sha1(
+        b"blob " + str(len(content)).encode("ascii") + bytes([0]) + content
+    ).hexdigest()
+
+
+def test_github_contents_client_reads_exact_allowlisted_blob_and_verifies_sha():
+    raw = public_bundle()
+    sha = github_blob_sha(raw)
+    calls = []
+
+    def opener(request, timeout):
+        calls.append(request)
+        if "api.github.com" in request.full_url:
+            return FakeResponse(json.dumps({"sha": sha}).encode())
+        return FakeResponse(raw)
+
+    client = GitHubContentsApiClient("test-token", opener=opener)
+    existing = client.get_file(PUBLICATION_REPOSITORY, PUBLICATION_BRANCH, PUBLICATION_PATH)
+    assert existing == ExistingContentsFile(content=raw, sha=sha)
+    assert len(calls) == 2
+    assert "api.github.com" in calls[0].full_url
+    assert "raw.githubusercontent.com" in calls[1].full_url
+
+
+def test_github_contents_client_rejects_stale_or_tampered_raw_blob():
+    raw = public_bundle()
+    wrong_sha = "0" * 40
+
+    def opener(request, timeout):
+        if "api.github.com" in request.full_url:
+            return FakeResponse(json.dumps({"sha": wrong_sha}).encode())
+        return FakeResponse(raw)
+
+    client = GitHubContentsApiClient("test-token", opener=opener)
+    with pytest.raises(RuntimeError, match="BUNDLE_SHA_MISMATCH"):
+        client.get_file(PUBLICATION_REPOSITORY, PUBLICATION_BRANCH, PUBLICATION_PATH)
+
+
+def test_github_contents_client_pins_target_and_puts_with_optimistic_sha():
+    raw = public_bundle()
+    calls = []
+
+    def opener(request, timeout):
+        calls.append(request)
+        return FakeResponse(json.dumps({"commit": {"sha": "commit-sha"}}).encode())
+
+    client = GitHubContentsApiClient("test-token", opener=opener)
+    with pytest.raises(PermissionError, match="TARGET_NOT_ALLOWLISTED"):
+        client.get_file(PUBLICATION_REPOSITORY, "main", PUBLICATION_PATH)
+    assert calls == []
+
+    commit = client.put_file(
+        PUBLICATION_REPOSITORY,
+        PUBLICATION_BRANCH,
+        PUBLICATION_PATH,
+        raw,
+        sha="expected-existing-sha",
+        message="test publish",
+    )
+    assert commit == "commit-sha"
+    payload = json.loads(calls[0].data)
+    assert payload["branch"] == PUBLICATION_BRANCH
+    assert payload["sha"] == "expected-existing-sha"
+    assert payload["content"]
+
+
+def test_github_contents_client_requires_token():
+    with pytest.raises(ValueError, match="TOKEN_REQUIRED"):
+        GitHubContentsApiClient("")
