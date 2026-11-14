@@ -276,9 +276,12 @@ def _authorize_public_bundle(bundle: ReportSurfaceBundle, authorization_verifier
         or len(predictions) > 25
         or any(
             not isinstance(fixture, dict)
+            or not isinstance(fixture.get("fixture_id"), str)
+            or not fixture.get("fixture_id", "").strip()
             or fixture.get("publication_status") != "PUBLISHED"
             for fixture in predictions
         )
+        or len({fixture["fixture_id"] for fixture in predictions}) != len(predictions)
     ):
         raise PermissionError("REPORT_BUNDLE_CONTAINS_NON_PUBLIC_FORECASTS")
     if not callable(authorization_verifier):
