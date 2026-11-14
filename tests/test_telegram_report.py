@@ -58,7 +58,8 @@ def test_telegram_report_is_predictions_only_and_keeps_new_update_alert():
     assert "PAPER TRACKING" not in message
     assert "DATA NOTICE" not in message
     assert "MULTI-SOURCE REFERENCE PRICES" not in message
-    assert "Football data by 5DollarFootballAPI" not in message
+    assert "Football data by 5DollarFootballAPI" in message
+    assert "https://5dollarfootballapi.com" in message
 
 
 def test_predictions_alert_is_short_when_no_usable_forecasts():
@@ -136,7 +137,8 @@ def test_report_splits_without_dropping_fixtures_or_exceeding_limit():
     messages = format_report_messages(report)
     assert len(messages) > 1
     assert all(len(message) <= MAX_MESSAGE_LENGTH for message in messages)
-    assert all("Football data by 5DollarFootballAPI" not in message for message in messages)
+    assert all("Football data by 5DollarFootballAPI" in message for message in messages)
+    assert all("https://5dollarfootballapi.com" in message for message in messages)
     combined = "\n".join(messages)
     for index in range(30):
         assert f"Home Team {index:02d} vs Away Team {index:02d}" in combined
@@ -202,7 +204,7 @@ def test_delivery_marker_is_saved_with_existing_sha_and_recent_dates(monkeypatch
 
 
 
-def test_main_skips_a_report_date_already_recorded_as_sent(tmp_path, monkeypatch, capsys):
+def test_main_blocks_legacy_report_before_github_or_telegram(tmp_path, monkeypatch, capsys):
     import json
     from scripts import send_telegram_report as sender
 
@@ -213,21 +215,21 @@ def test_main_skips_a_report_date_already_recorded_as_sent(tmp_path, monkeypatch
         "timezone": "Africa/Lagos",
         "predictions": [],
     }), encoding="utf-8")
-    monkeypatch.setattr("sys.argv", ["send_telegram_report.py", "--report", str(report_path), "--ledger", str(tmp_path / "missing-ledger.json")])
-    monkeypatch.setenv("GITHUB_REPOSITORY", "Nexora-Apparel/veltrix-football")
-    monkeypatch.setenv("GITHUB_TOKEN", "github-test-token")
-    monkeypatch.setenv("TELEGRAM_BOT_TOKEN", "telegram-test-token")
-    monkeypatch.setenv("TELEGRAM_CHAT_ID", "12345")
-    report = json.loads(report_path.read_text(encoding="utf-8"))
-    report_hash = sender._report_fingerprint(sender.format_report_messages(report))
-    monkeypatch.setattr(sender, "_load_delivery_state", lambda repo, token: ({
-        "version": 2, "sent_dates": ["2026-10-27"],
-        "sent_report_hashes_by_date": {"2026-10-27": [report_hash]},
-    }, "sha"))
-    monkeypatch.setattr(sender, "send_message", lambda *args, **kwargs: (_ for _ in ()).throw(AssertionError("duplicate send attempted")))
-
-    sender.main()
-    assert "already sent" in capsys.readouterr().out
+    monkeypatch.setattr("sys.argv", ["send_telegram_report.py", "--report", str(report_path)])
+    monkeypatch.setattr(
+        sender,
+        "_load_delivery_state",
+        lambda *args, **kwargs: pytest.fail("legacy sender must not access GitHub delivery state"),
+    )
+    monkeypatch.setattr(
+        sender,
+        "send_message",
+        lambda *args, **kwargs: pytest.fail("legacy sender must not contact Telegram"),
+    )
+    with pytest.raises(SystemExit) as exc:
+        sender.main()
+    assert exc.value.code == 1
+    assert "LEGACY_REPORT_SENDER_DISABLED" in capsys.readouterr().err
 
 
 
@@ -250,9 +252,7 @@ def test_report_hides_plan_limited_history_details_from_prediction_alert():
     assert "provider plan" not in message
 
 
-def test_main_force_flag_resends_corrected_same_day_report(tmp_path, monkeypatch, capsys):
-    """Explicit opt-in resend for a corrected same-day publication."""
-    """Controlled release check for corrected same-day delivery."""
+def test_main_force_flag_cannot_bypass_legacy_sender_shutdown(tmp_path, monkeypatch, capsys):
     import json
     from scripts import send_telegram_report as sender
 
@@ -263,19 +263,25 @@ def test_main_force_flag_resends_corrected_same_day_report(tmp_path, monkeypatch
         "timezone": "Africa/Lagos",
         "predictions": [],
     }), encoding="utf-8")
-    monkeypatch.setattr("sys.argv", ["send_telegram_report.py", "--report", str(report_path), "--ledger", str(tmp_path / "missing-ledger.json"), "--force"])
-    monkeypatch.setenv("GITHUB_REPOSITORY", "Nexora-Apparel/veltrix-football")
-    monkeypatch.setenv("GITHUB_TOKEN", "github-test-token")
-    monkeypatch.setenv("TELEGRAM_BOT_TOKEN", "telegram-test-token")
-    monkeypatch.setenv("TELEGRAM_CHAT_ID", "12345")
-    monkeypatch.setattr(sender, "_load_delivery_state", lambda repo, token: ({"version": 1, "sent_dates": ["2026-10-27"]}, "sha"))
-    sent = []
-    monkeypatch.setattr(sender, "send_message", lambda token, chat_id, message: sent.append(message))
-    monkeypatch.setattr(sender, "_record_delivery_date", lambda *args, **kwargs: None)
+    monkeypatch.setattr(
+        "sys.argv",
+        ["send_telegram_report.py", "--report", str(report_path), "--force"],
+    )
+    monkeypatch.setattr(
+        sender,
+        "_load_delivery_state",
+        lambda *args, **kwargs: pytest.fail("force must not access GitHub delivery state"),
+    )
+    monkeypatch.setattr(
+        sender,
+        "send_message",
+        lambda *args, **kwargs: pytest.fail("force must not contact Telegram"),
+    )
+    with pytest.raises(SystemExit) as exc:
+        sender.main()
+    assert exc.value.code == 1
+    assert "LEGACY_REPORT_SENDER_DISABLED" in capsys.readouterr().err
 
-    sender.main()
-    assert sent
-    assert "delivered for 2026-10-27" in capsys.readouterr().out
 
 
 def test_telegram_report_includes_value_screen_status_and_only_supplied_candidates():

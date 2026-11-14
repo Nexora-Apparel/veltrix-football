@@ -1,0 +1,34 @@
+name: VELTRIX free 5Dollar forecast dry run
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  forecast:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      FIVEDOLLARFOOTBALL_API_KEY: ${{ secrets.FIVEDOLLARFOOTBALL_API_KEY }}
+    steps:
+      - name: Checkout VELTRIX
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Run bounded free-provider forecast batch
+        run: python scripts/veltrix_v2/fivedollar_forecast_dry_run.py --output reports/phase5/fivedollar-forecast-dry-run.json
+
+      - name: Upload derived forecast report only
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: veltrix-fivedollar-forecast-dry-run
+          path: reports/phase5/fivedollar-forecast-dry-run.json
+          if-no-files-found: warn
+          retention-days: 7

@@ -42,7 +42,8 @@ NEW_MESSAGE_HEADER = "🔔 🆕 NEW VELTRIX UPDATE\n━━━━━━━━━�
 
 
 def _reply(body: str) -> str:
-    return f"{NEW_MESSAGE_HEADER}\n{body.strip()}"
+    attribution = "Football data by 5DollarFootballAPI · https://5dollarfootballapi.com"
+    return f"{NEW_MESSAGE_HEADER}\n{body.strip()}\n\n{attribution}"
 
 
 def _report_predictions(report: dict[str, Any] | None) -> list[dict[str, Any]]:
@@ -722,14 +723,12 @@ def handle_command(
                     if isinstance(candidate, dict):
                         candidates.append((row, market, candidate))
 
-        certificate = (report or {}).get("value_validation_certificate") or {}
-        summary = (report or {}).get("value_bet_screen") or {}
         lines = [
             f"{command.upper()} — VALUE RESEARCH",
-            "Release certificate: " + str(certificate.get("status") or "LOCKED_INSUFFICIENT_EVIDENCE"),
-            "Approved markets: " + (", ".join(certificate.get("approved_markets") or []) or "none"),
+            "Release certificate: LOCKED_SOURCE_ATTESTATION_REQUIRED",
+            "Approved markets: none",
             f"Upcoming paper-only candidates: {len(candidates)}",
-            f"Release-approved candidates: {summary.get('candidate_count', 0)}",
+            "Release-approved candidates: 0",
         ]
         if candidates:
             lines.append("")

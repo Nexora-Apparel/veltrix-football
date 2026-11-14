@@ -13,14 +13,14 @@ from typing import Mapping, Any
 
 
 def _certificate_allows(certificate: Any, market: str) -> bool:
-    """Require an evidence-backed, market-specific validation certificate."""
-    return (
-        isinstance(certificate, Mapping)
-        and certificate.get("status") in {"VALIDATED", "PARTIALLY_VALIDATED"}
-        and certificate.get("schema_version") == 1
-        and market in (certificate.get("approved_markets") or [])
-        and certificate.get("betting_validation") is True
-    )
+    """Fail closed until a source-attested certificate verifier is implemented.
+
+    A caller-supplied JSON object, status string, market list or boolean is not
+    proof that the referenced backtest and prospective ledger are authentic.
+    The current evidence builder is diagnostic only; it cannot authorize live
+    value-bet release. This guard intentionally rejects every external object.
+    """
+    return False
 
 
 def build_value_validation_certificate(
@@ -131,15 +131,22 @@ def build_value_validation_certificate(
         approved.append("1X2")
 
     required = ["1X2", *goal_markets.keys()]
-    passed = len(approved) == len(required)
-    any_passed = bool(approved)
+    diagnostic_passes = list(approved)
+    # Aggregate JSON metrics are diagnostic only. No source-attested raw-row
+    # verifier has authorized this bundle, so none of these summaries can
+    # produce a VALIDATED/PARTIALLY_VALIDATED release status.
     return {
-        "schema_version": 1,
-        "status": "VALIDATED" if passed else "PARTIALLY_VALIDATED" if any_passed else "LOCKED_INSUFFICIENT_EVIDENCE",
-        "betting_validation": any_passed,
-        "approved_markets": approved,
+        "schema_version": 2,
+        "status": "LOCKED_SOURCE_ATTESTATION_REQUIRED",
+        "diagnostic_markets": diagnostic_passes,
+        "betting_validation": False,
+        "approved_markets": [],
         "market_diagnostics": {
-            market: {"status": "PASS" if market in approved else "LOCKED", "failures": failures.get(market, [])}
+            market: {
+                "status": "LOCKED",
+                "diagnostic_status": "SUMMARY_THRESHOLDS_MET" if market in diagnostic_passes else "DIAGNOSTIC_FAIL",
+                "failures": failures.get(market, []) + ["source-attested raw evidence has not been verified"],
+            }
             for market in required
         },
         "requirements": {
@@ -153,8 +160,8 @@ def build_value_validation_certificate(
             "paper_evidence_must_match_deployed_calibration_version": True,
             "1x2_paper_evidence_must_match_benchmarked_model_version": True,
         },
-        "alerts_enabled": any_passed,
-        "note": "Missing, incomplete or failing evidence keeps every market locked. Calibration alone does not prove profitability.",
+        "alerts_enabled": False,
+        "note": "Summary metrics are diagnostic only. Every market remains locked until source-attested raw evidence is independently verified.",
     }
 
 
@@ -392,8 +399,8 @@ def screen_fixture_value_bets(
         }
         total_candidates += len(candidates)
     return {
-        "status": "CANDIDATES_FOUND" if total_candidates else ("NO_QUALIFYING_VALUE" if isinstance(validation_certificate, Mapping) and validation_certificate.get("status") in {"VALIDATED", "PARTIALLY_VALIDATED"} else "DISABLED_UNVALIDATED"),
-        "model_validated": bool(isinstance(validation_certificate, Mapping) and validation_certificate.get("status") in {"VALIDATED", "PARTIALLY_VALIDATED"}),
+        "status": "DISABLED_UNVALIDATED" if not total_candidates else "CANDIDATES_FOUND",
+        "model_validated": False,
         "markets": output,
         "candidate_count": total_candidates,
         "note": "Research screen only. No bookmaker actions are performed.",
@@ -421,12 +428,12 @@ def attach_value_bet_screens(
         for market, result in (screen.get("markets") or {}).items():
             aggregate[market] = aggregate.get(market, 0) + int(result.get("bookmaker_price_sets") or 0)
     report["value_bet_screen"] = {
-        "status": "CANDIDATES_FOUND" if candidate_count else ("NO_QUALIFYING_VALUE" if isinstance(validation_certificate, Mapping) and validation_certificate.get("status") in {"VALIDATED", "PARTIALLY_VALIDATED"} else "DISABLED_UNVALIDATED"),
-        "model_validated": bool(isinstance(validation_certificate, Mapping) and validation_certificate.get("status") in {"VALIDATED", "PARTIALLY_VALIDATED"}),
+        "status": "DISABLED_UNVALIDATED" if not candidate_count else "CANDIDATES_FOUND",
+        "model_validated": False,
         "markets": ["1X2", "BTTS", "OVER_UNDER_2_5"],
         "bookmaker_price_sets_by_market": aggregate,
         "candidate_count": candidate_count,
-        "alerts_enabled": bool(isinstance(validation_certificate, Mapping) and validation_certificate.get("status") in {"VALIDATED", "PARTIALLY_VALIDATED"} and validation_certificate.get("alerts_enabled") is True),
+        "alerts_enabled": False,
         "validation_certificate": dict(validation_certificate) if isinstance(validation_certificate, Mapping) else None,
         "note": "Value candidates remain suppressed until repeated chronological out-of-sample validation passes.",
     }

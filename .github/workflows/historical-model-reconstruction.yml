@@ -19,6 +19,8 @@ concurrency:
 
 jobs:
   reconstruct-archived-reports:
+    # PAUSED: this job reconstructs forecasts from the excluded legacy model stack.
+    if: false
     runs-on: ubuntu-latest
     timeout-minutes: 12
     steps:
