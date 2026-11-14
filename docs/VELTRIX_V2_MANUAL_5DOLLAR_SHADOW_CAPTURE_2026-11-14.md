@@ -44,7 +44,7 @@ GOAL API and StrikerAPI are not referenced by this workflow.
 - Scheduled target page snapshots and the local paper ledger are not persisted by this workflow yet.
 - The runner's detailed raw responses and individual predictions are not uploaded as GitHub artifacts.
 - The only uploaded artifact is `public_summary.json`, containing aggregate counts and release-lock status; it contains no fixture IDs, raw payloads, odds, probabilities or individual predictions.
-- When `persist_staging=true`, result evidence is persisted through the guarded evidence writer and shadow predictions are appended to the PostgreSQL paper ledger. Migration 0005 must already be applied to staging.
+- When `persist_staging=true`, result evidence is persisted through the guarded evidence writer and shadow predictions are appended to the PostgreSQL paper ledger. Migrations 0005–0008 must already be applied to staging.
 - When `persist_staging=false`, the JSONL paper ledger remains runner-local and is not durable between runs.
 
 ## Model and release boundaries
