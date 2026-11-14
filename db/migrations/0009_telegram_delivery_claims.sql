@@ -55,7 +55,7 @@ END;
 $$;
 
 CREATE TRIGGER telegram_delivery_claims_transition
-    BEFORE UPDATE ON telegram_delivery_claims
+    BEFORE INSERT OR UPDATE ON telegram_delivery_claims
     FOR EACH ROW EXECUTE FUNCTION validate_telegram_delivery_transition();
 
 CREATE TRIGGER telegram_delivery_claims_no_delete
