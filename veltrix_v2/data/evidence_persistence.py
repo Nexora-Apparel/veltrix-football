@@ -340,7 +340,14 @@ def persist_provider_evidence_report(
     # commit on successful context exit and roll back on exceptions.
     with connection:
         with connection.cursor() as cursor:
-            for approval_id in sorted({row.rights_approval.approval_id for row in rows}):
+            approval_ids = sorted({row.rights_approval.approval_id for row in rows})
+            for approval_id in approval_ids:
+                approval_versions = {
+                    row.rights_approval.evidence_sha256
+                    for row in rows if row.rights_approval.approval_id == approval_id
+                }
+                if len(approval_versions) != 1:
+                    raise ValueError("CAPTURE_SOURCE_APPROVAL_EVIDENCE_CONFLICT")
                 approval = next(
                     row.rights_approval for row in rows
                     if row.rights_approval.approval_id == approval_id
