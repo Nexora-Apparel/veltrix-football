@@ -227,7 +227,8 @@ def test_rights_recheck_uses_explicit_provider_competition_id():
         APPROVAL, competition_scope="provider-comp-1"
     )
     provider_history = replace(
-        _fixture_set(certifiable=False)[2][0], provider_competition_id="provider-comp-1"
+        _first_observed_history(_fixture_set(certifiable=False)[2])[0],
+        provider_competition_id="provider-comp-1",
     )
     provider_target = replace(
         _fixture_set(certifiable=False)[1], provider_competition_id="provider-comp-1"
@@ -271,7 +272,8 @@ def test_5dollar_shadow_admission_requires_raw_page_and_provider_scope_evidence(
         competition_scope="3118717965",
     )
     provider_history = replace(
-        _fixture_set(certifiable=False)[2][0], provider=provider, source_id=source,
+        _first_observed_history(_fixture_set(certifiable=False)[2])[0],
+        provider=provider, source_id=source,
         provider_competition_id="3118717965",
     )
     original_report = _fixture_set(certifiable=False)[0]
