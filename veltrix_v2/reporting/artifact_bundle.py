@@ -187,6 +187,7 @@ def load_report_surface_bundle(
         "scheduled": root / "scheduled" / f"{report_id}.json",
         "telegram": root / "telegram" / f"{report_id}.json",
         "dashboard": root / "dashboard" / f"{report_id}.json",
+        "portable_bundle": root / "bundles" / f"{report_id}.bundle.json",
     }
     commit_path = root / "bundles" / f"{report_id}.commit.json"
     try:
@@ -218,6 +219,10 @@ def load_report_surface_bundle(
             or hashlib.sha256(raw).hexdigest() != expected_hash
         ):
             raise ValueError("REPORT_BUNDLE_COMMIT_HASH_MISMATCH")
+        if name == "portable_bundle":
+            portable = parse_portable_report_surface_bundle(raw)
+            payloads[name] = {"report_id": portable.identity.report_id, "report_sha256": portable.identity.report_sha256}
+            continue
         if len(raw) > 8_000_000:
             raise ValueError("REPORT_ARTIFACT_TOO_LARGE")
         value = json.loads(raw.decode("utf-8"))
@@ -234,6 +239,11 @@ def load_report_surface_bundle(
         raise ValueError("REPORT_ARTIFACT_PATH_IDENTITY_MISMATCH")
     if commit.get("report_sha256") != identity.report_sha256:
         raise ValueError("REPORT_BUNDLE_COMMIT_IDENTITY_MISMATCH")
+    if (
+        payloads["portable_bundle"].get("report_id") != identity.report_id
+        or payloads["portable_bundle"].get("report_sha256") != identity.report_sha256
+    ):
+        raise ValueError("PORTABLE_REPORT_BUNDLE_IDENTITY_MISMATCH")
     return ReportSurfaceBundle(
         payloads["canonical"],
         payloads["scheduled"],
@@ -319,6 +329,9 @@ def persist_report_surface_bundle(
         "telegram": root / "telegram" / f"{identity.report_id}.json",
         "dashboard": root / "dashboard" / f"{identity.report_id}.json",
     }
+    portable_bytes = serialize_portable_report_surface_bundle(bundle)
+    portable_path = root / "bundles" / f"{identity.report_id}.bundle.json"
+    _write_immutable(portable_path, portable_bytes)
     for key, payload in (
         ("canonical", report_bytes),
         ("scheduled", scheduled_bytes),
@@ -337,6 +350,7 @@ def persist_report_surface_bundle(
                 ("scheduled", scheduled_bytes),
                 ("telegram", telegram_bytes),
                 ("dashboard", dashboard_bytes),
+                ("portable_bundle", portable_bytes),
             )
         },
     }
@@ -353,5 +367,6 @@ def persist_report_surface_bundle(
         raise ValueError("PERSISTED_REPORT_BUNDLE_IDENTITY_MISMATCH")
     return {
         **paths,
+        "portable_bundle": portable_path,
         "commit_marker": root / "bundles" / f"{identity.report_id}.commit.json",
     }
