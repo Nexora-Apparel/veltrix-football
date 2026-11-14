@@ -86,6 +86,22 @@ def test_adapter_reports_unsupported_data_types_without_fabricating_domains():
     assert result.unsupported_data_types == ("unqualified_metric",)
 
 
+def test_adapter_uses_canonical_identity_from_joined_sql_columns():
+    row = observation_row(payload={
+        "rights_approved": True,
+        "rights_approval_id": "approval-1",
+        "rights_evidence_sha256": "b" * 64,
+        "rights_evaluated_at": (AS_OF - timedelta(minutes=30)).isoformat(),
+    })
+    row["fixture_id"] = "fx-1"
+    row["competition_id"] = "league-a"
+    row["point_in_time_certifiable"] = True
+    result = adapt_persisted_coverage_rows([fixture_row()], [row])
+    assert len(result.evidence) == 1
+    assert result.evidence[0].fixture_id == "fx-1"
+    assert result.evidence[0].competition_id == "league-a"
+
+
 def test_adapter_accepts_json_text_payload_without_changing_values():
     row = observation_row()
     import json
