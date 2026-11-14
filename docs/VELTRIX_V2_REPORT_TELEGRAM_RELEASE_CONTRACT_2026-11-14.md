@@ -65,7 +65,7 @@ Duplicate fixture IDs, duplicate settlements, conflicting scores, ambiguous fixt
 
 | Area | Automated coverage | Still required |
 |---|---|---|
-| Report identity | Canonical hash, tamper rejection, four-surface parity helper, website projection checks | Wire scheduled V2 artifact generation and Telegram runner to the same artifact |
+| Report identity | Canonical hash, tamper rejection, four-surface parity helper, website projection checks, immutable multi-surface artifact bundle and local CLI | Connect the scheduled workflow to the V2 report builder; schedule remains disabled |
 | Telegram formatting | Release-mode gate, market allowlist, chunking, no truncation, legacy-sender block | End-to-end test against actual certified V2 report |
 | Delivery | Atomic PostgreSQL claim, concurrent duplicate skip, terminal unknown outcome | Apply migration to staging and implement operator receipt reconciliation |
 | Results | Existing admission/settlement identity, rights and duplicate tests | Full prospective result reconciliation over captured real fixtures |
