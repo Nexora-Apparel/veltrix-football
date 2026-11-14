@@ -109,6 +109,7 @@ class CrosswalkRegistry:
             away_team_name=fixture.away_team_name,
             response_sha256=response_sha256,
             capture_manifest_sha256=capture_manifest_sha256,
+            provider_competition_id=fixture.provider_competition_id,
         )
 
     def summary(self) -> dict[str, object]:
