@@ -15,7 +15,7 @@ from pathlib import Path
 import sys
 import time
 from urllib.error import HTTPError, URLError
-from urllib.parse import urlencode
+from urllib.parse import urlencode, urlparse
 from urllib.request import Request, urlopen
 
 from veltrix_v2.data.contracts import ApprovalStatus, DataUsePurpose, SourceApproval
@@ -26,6 +26,7 @@ from veltrix_v2.data.coverage_sql import (
 )
 from veltrix_v2.data.fivedollar import parse_fixture_page
 from veltrix_v2.data.provider_evidence_capture import capture_fivedollar_page_evidence
+from veltrix_v2.data.evidence_persistence import persist_provider_evidence_report
 from veltrix_v2.data.rights import evaluate_source_use
 from veltrix_v2.data.temporal_eligibility import resolve_rights_status
 from veltrix_v2.ledger.admission import admit_prospective_observed_shadow_forecasts
@@ -242,6 +243,30 @@ def _request_page(
     return raw, headers, requested_at, retrieved_at
 
 
+def _persist_capture_report_to_staging(dsn: str, capture_report) -> dict[str, int]:
+    validate_staging_dsn_target(dsn)
+    import psycopg
+
+    parsed = urlparse(dsn)
+    host = parsed.hostname or ""
+    with psycopg.connect(dsn, autocommit=False) as connection:
+        identity = connection.execute(
+            "SELECT current_database(), current_user"
+        ).fetchone()
+        if identity != ("veltrix_football_staging", "neondb_owner"):
+            raise PermissionError("STAGING_DATABASE_ROLE_NOT_ALLOWLISTED")
+        return persist_provider_evidence_report(
+            connection,
+            capture_report,
+            capture_report.captures,
+            write_enabled=True,
+            environment="staging",
+            database_name=identity[0],
+            host=host,
+            role=identity[1],
+        )
+
+
 def _capture_page(
     raw: bytes,
     headers: dict[str, str],
@@ -254,6 +279,7 @@ def _capture_page(
     registry,
     out_dir: Path,
     staging_dsn: str,
+    persist_staging: bool,
 ) -> tuple[list, dict[str, object]]:
     parsed = parse_fixture_page(
         raw,
@@ -302,6 +328,10 @@ def _capture_page(
             rights_approval=current_approval,
             prospective_observed=True,
         )
+        persistence = (
+            _persist_capture_report_to_staging(staging_dsn, capture)
+            if persist_staging else None
+        )
         converted = []
         rejected: dict[str, int] = {}
         for index, evidence in enumerate(capture.observations):
@@ -319,6 +349,7 @@ def _capture_page(
             "first_observed_observations": len(converted),
             "rejected_observations": rejected,
             "point_in_time_certifiable": False,
+            "persisted_to_staging": persistence,
         })
         return converted, page_info
 
@@ -355,6 +386,7 @@ def run_capture(
     upcoming_days: int,
     max_fixtures: int,
     out_dir: Path,
+    persist_staging: bool = False,
 ) -> dict[str, object]:
     if not api_key.strip():
         raise ValueError("FIVEDOLLAR_API_KEY_MISSING")
@@ -416,6 +448,7 @@ def run_capture(
             request_id=request_id, requested_at=requested_at, retrieved_at=retrieved_at,
             registry=registry, out_dir=out_dir,
             staging_dsn=staging_dsn,
+            persist_staging=persist_staging,
         )
         observations.extend(result_rows)
         page_manifests.append(info)
@@ -558,7 +591,8 @@ def run_capture(
             "url": current_approval.attribution_url,
         },
         "raw_redistribution_allowed": current_approval.raw_redistribution_allowed,
-        "database_writes": False,
+        "evidence_persisted_to_staging": persist_staging,
+        "database_writes": persist_staging,
         "telegram_delivery": False,
         "schedule_activation": False,
         "public_publication": False,
@@ -577,6 +611,8 @@ def main() -> int:
     parser.add_argument("--upcoming-days", type=int, default=14)
     parser.add_argument("--max-fixtures", type=int, default=25)
     parser.add_argument("--out", default="artifacts/5dollar-shadow")
+    parser.add_argument("--persist-staging", action="store_true",
+                        help="append raw capture evidence to the allowlisted staging database")
     args = parser.parse_args()
 
     if not args.execute:
@@ -591,6 +627,7 @@ def main() -> int:
             "upcoming_days": args.upcoming_days,
             "manual_only": True,
             "publication": "DISABLED",
+            "persist_staging": args.persist_staging,
         }, indent=2))
         return 0
 
@@ -603,6 +640,7 @@ def main() -> int:
         upcoming_days=args.upcoming_days,
         max_fixtures=args.max_fixtures,
         out_dir=Path(args.out),
+        persist_staging=args.persist_staging,
     )
     print(json.dumps({
         "status": result["status"],
