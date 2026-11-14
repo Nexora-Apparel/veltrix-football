@@ -54,6 +54,12 @@ jobs:
         run: python -m pytest --import-mode=importlib -q tests/providers/test_provider_access.py
       - name: Test independent results-only Poisson model
         run: python -m pytest --import-mode=importlib -q tests/veltrix_v2/test_results_only_poisson.py
+      - name: Test point-in-time Elo rating features
+        run: python -m pytest --import-mode=importlib -q tests/veltrix_v2/test_elo.py
+      - name: Test point-in-time team form features
+        run: python -m pytest --import-mode=importlib -q tests/veltrix_v2/test_form.py
+      - name: Test chronological Elo challenger evaluation
+        run: python -m pytest --import-mode=importlib -q tests/veltrix_v2/test_elo_challenger.py
       - name: Test deterministic batch prediction engine
         run: python -m pytest --import-mode=importlib -q tests/veltrix_v2/test_prediction_engine.py
       - name: Test evidence-backed team identity crosswalk
