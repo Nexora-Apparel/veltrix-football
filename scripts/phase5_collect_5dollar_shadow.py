@@ -715,7 +715,7 @@ def run_capture(
         ],
         "ledger_path": str(ledger_path),
         "paper_ledger_persisted_to_staging": bool(
-            staging_ledger and staging_ledger["events_appended"] > 0
+            staging_ledger and staging_ledger["ledger_event_count"] > 0
         ),
         "staging_paper_ledger": staging_ledger,
         "model_artifact_sha256": model_hash,
