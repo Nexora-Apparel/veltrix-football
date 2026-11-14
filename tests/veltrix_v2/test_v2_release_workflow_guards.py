@@ -78,3 +78,18 @@ def test_historical_archive_seed_uses_archive_only_mode():
     assert "publish_command_data.py" in source
     assert "--archive-only" in source
     assert "public-data/daily_predictions.json" not in source
+
+
+def test_manual_provider_capture_workflows_require_staging_persistence():
+    fivedollar = _workflow("phase5-5dollar-shadow-capture.yml")
+    odds = _workflow("phase5-odds-api-quota-capture.yml")
+    assert "workflow_dispatch:" in fivedollar
+    assert "--execute" in fivedollar
+    assert "--persist-staging" in fivedollar
+    assert "persist_staging:" not in fivedollar
+    assert "FIVEDOLLARFOOTBALL_API_KEY" in fivedollar
+    assert "VELTRIX_STAGING_DATABASE_URL" in fivedollar
+    assert "workflow_dispatch:" in odds
+    assert "phase5_capture_odds_api_quota --execute --persist-staging" in odds
+    assert "THE_ODDS_API_KEY" in odds
+    assert "VELTRIX_STAGING_DATABASE_URL" in odds
