@@ -52,7 +52,7 @@ PR #118 contains:
 - Legacy sender guard and V2 regression tests.
 - Website loaders that fail closed without an authoritative verifier and no longer serve legacy forecast snapshots as current V2 predictions.
 
-Latest fully validated checkpoint at this snapshot: commit `ab9ec896d2e17f2546e2dbfe529d99057a0a6260`, CI run #1342 passed Foundation, PostgreSQL 16 and PostgreSQL 18. Later website-loader and certification changes are under their own CI runs and are not yet included in that pass.
+Latest fully validated code checkpoint at this snapshot: commit `01504bc0233864eb8c028e487837a41d0d3ca48e`, CI run #1344 passed Foundation, PostgreSQL 16 and PostgreSQL 18. This includes website-loader fixture bounds, duplicate prevention and fail-closed verifier error handling.
 
 ## Hard release blockers
 
@@ -101,4 +101,4 @@ Latest fully validated checkpoint at this snapshot: commit `ab9ec896d2e17f2546e2
 - Publication reports are limited to 1–25 unique fixture IDs.
 - Certification and rights evidence objects are byte-hashed and size-bounded.
 - Telegram reconciliation evidence is size-bounded; the reconciliation path still has no send/retry capability.
-- CI run #1342 passed Foundation, PostgreSQL 16 and PostgreSQL 18 for commit `ab9ec896d2e17f2546e2dbfe529d99057a0a6260`. Later commits are still being validated.
+- CI run #1344 passed Foundation, PostgreSQL 16 and PostgreSQL 18 for commit `01504bc0233864eb8c028e487837a41d0d3ca48e`.
