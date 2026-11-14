@@ -46,6 +46,7 @@ class PoissonPrediction:
     evidence_match_count: int
     home_team_match_count: int
     away_team_match_count: int
+    sample_floor_met: bool
     publishable: bool
     publication_reason: str
 
@@ -194,8 +195,10 @@ def predict_match(
 
     total = h + d + a
     h, d, a = h / total, d / total, a / total
-    publishable = len(eligible) >= 100 and min(home_count, away_count) >= 5
-    reason = "EVIDENCE_THRESHOLD_MET" if publishable else "INSUFFICIENT_EVIDENCE_FOR_PUBLICATION"
+    sample_floor_met = len(eligible) >= 100 and min(home_count, away_count) >= 5
+    # Model-level publication remains locked until independent certification.
+    publishable = False
+    reason = "MODEL_NOT_CERTIFIED" if sample_floor_met else "INSUFFICIENT_EVIDENCE_FOR_MODEL_REVIEW"
     return PoissonPrediction(
         model_version=MODEL_VERSION,
         cutoff_at=cutoff_at,
@@ -209,6 +212,7 @@ def predict_match(
         evidence_match_count=len(eligible),
         home_team_match_count=home_count,
         away_team_match_count=away_count,
+        sample_floor_met=sample_floor_met,
         publishable=publishable,
         publication_reason=reason,
     )
