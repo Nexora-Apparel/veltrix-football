@@ -52,3 +52,18 @@ A future provider-specific prospective adapter must populate this contract from 
 - No paper-ledger persistence.
 - No scheduler, Telegram, website publication or value-bet activation.
 - Draft PR only; real predictive performance remains unproven.
+
+
+## Append-only persistence adapter
+
+The staging persistence adapter is implemented in `veltrix_v2/data/evidence_persistence.py`. It appends:
+- The immutable capture manifest and a manifest event.
+- The exact raw provider response bytes and SHA-256.
+- The provider request record linked to the stored response.
+- One source-observation row per captured fixture, including rejected rows and their reason codes.
+
+All writes execute in one DB-API transaction. Replays are idempotent by manifest key, response identity and source-observation identity. Each referenced source approval must already exist in the target database.
+
+Writes are disabled by default. The explicit guard requires the staging environment label, the dedicated staging database, the known direct staging host and the staging role. The adapter does not create connections or read environment secrets. Tests assert that disabled or non-allowlisted calls never open the supplied connection.
+
+The current CI test validates guard behavior and static integration. A staging integration write/readback test is still required before enabling this adapter against Neon staging. No database writes have been performed by this component.
