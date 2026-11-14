@@ -90,7 +90,7 @@ def publish(path: str, local_file: Path, repo: str, token: str) -> None:
     if canonical_path in {
         "public-data/daily_predictions.json",
         "public-data/dashboard_snapshot.json",
-    } or canonical_path.startswith("public-data/archive/"):
+    }:
         raise PermissionError(
             "LEGACY_PREDICTION_PUBLICATION_DISABLED; use the certified V2 bundle publisher"
         )
@@ -177,6 +177,7 @@ def main() -> int:
     parser.add_argument("--ledger", default=None, help="Validated paper_tracking_ledger.json (optional)")
     parser.add_argument("--recent-cache", default=None, help="Resumable recent-results cache (optional)")
     parser.add_argument("--value-evidence", default=None, help="Append-only shadow value evidence ledger (optional)")
+    parser.add_argument("--archive-only", action="store_true", help="Preserve one historical report snapshot without publishing live report/dashboard pointers.")
     args = parser.parse_args()
 
     repo = (os.getenv("GITHUB_REPOSITORY") or "").strip()
@@ -190,6 +191,22 @@ def main() -> int:
     if not isinstance(report, dict) or not isinstance(report.get("predictions"), list) or not report.get("as_of_date"):
         print("Publication refused: report failed structural validation.", file=sys.stderr)
         return 2
+
+    if args.archive_only:
+        try:
+            archive_path = _archive_report_path(report, datetime.now(timezone.utc))
+            publish(archive_path, report_path, repo, token)
+            return 0
+        except (HTTPError, URLError, OSError, ValueError, json.JSONDecodeError) as exc:
+            print(f"Historical archive publication failed: {type(exc).__name__}", file=sys.stderr)
+            return 1
+
+    print(
+        "LEGACY_COMMAND_DATA_PUBLISHER_DISABLED; use the certified V2 bundle publisher. "
+        "Historical preservation is available only with --archive-only.",
+        file=sys.stderr,
+    )
+    return 2
 
     errors: list[str] = []
 
