@@ -100,7 +100,7 @@ def persist_provider_evidence_report(
         request_params = {}
     if not isinstance(request_params, dict):
         raise ValueError("PROVIDER_REQUEST_PARAMS_INVALID")
-    request_params_json = _json(request_params)
+    _json(request_params)
     response_hash = sha256(first.raw_response).hexdigest()
     request_fingerprint = sha256(_json({
         "provider": first.provider, "source_id": first.source_id,
@@ -170,7 +170,7 @@ def persist_provider_evidence_report(
                    ON CONFLICT (provider, source_id, request_id, response_sha256) DO NOTHING
                    RETURNING id""",
                 (first.provider, first.source_id, first.endpoint, first.request_id,
-                 _json({"capture_manifest_sha256": manifest_hash, **request_params}),
+                 _json({"capture_manifest_sha256": manifest_hash, "request_params": request_params}),
                  http_status, response_hash, first.raw_response, report.manifest.retrieved_at),
                 """SELECT id FROM provider_responses
                    WHERE provider = %s AND source_id = %s AND request_id = %s
