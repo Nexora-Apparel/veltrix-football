@@ -78,3 +78,12 @@ Duplicate fixture IDs, duplicate settlements, conflicting scores, ambiguous fixt
 | Release | Shadow/public gate separation | Certification, operational sign-off and schedule activation |
 
 No live Telegram delivery, schedule activation, staging migration, production migration or public prediction is authorized by this contract.
+
+
+## Immutable bundle commit marker
+
+The report bundle writer persists four immutable artifacts (canonical, scheduled, Telegram and website projection) and writes a final commit marker only after all four artifact files have been durably written. The marker binds the report ID/hash to the SHA-256 of each exact artifact byte stream.
+
+Bundle readers require the marker, exact four-artifact inventory, matching artifact hashes and matching report identity before parsing/returning a bundle. Missing markers, missing artifacts, replaced artifacts, hash mismatch or report-identity mismatch fail closed. A crash before the final marker leaves the bundle unavailable to consumers; an identical retry can finish the missing artifacts and commit marker without overwriting existing content.
+
+This is an atomic-visibility/commit protocol, not a claim that four separate filesystem paths are renamed as one filesystem transaction.
