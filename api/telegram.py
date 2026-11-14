@@ -150,11 +150,10 @@ function renderValueBet(m,box){
 }
 function renderInsights(m,targetId='insights'){
  const box=document.getElementById(targetId);if(!box)return;box.replaceChildren();if(!m){box.textContent='No eligible fixture available for insight generation.';return}
- const certified=certifiedMarketList(m),rows=[],x=m.expected_goals||{},homeX=num(x.home),awayX=num(x.away);
+ const certified=certifiedMarketList(m),rows=[];
  if(certified.includes('1X2')){const best=topProbability(m);const p=marketValues(m,'1X2');rows.push(['◉','1X2 outlook',best[0]+' leads at '+fmt(best[1]),'Certified probabilities: Home '+fmt(p.home)+' · Draw '+fmt(p.draw)+' · Away '+fmt(p.away)+'.'])}
  if(certified.includes('BTTS')){const p=marketValues(m,'BTTS');rows.push(['◎','BTTS outlook',p.yes>=.55?'Higher certified chance both teams score':p.yes<=.45?'Certified model leans No':'No strong BTTS lean','Yes '+fmt(p.yes)+' · No '+fmt(p.no)+'.'])}
  if(certified.includes('TOTALS_2_5')){const p=marketValues(m,'TOTALS_2_5');rows.push(['↗','Goal total',p.over>=.55?'Certified model leans Over 2.5':p.over<=.45?'Certified model leans Under 2.5':'No strong 2.5-goal lean','Over 2.5 '+fmt(p.over)+' · Under 2.5 '+fmt(p.under)+'.'])}
- if(Number.isFinite(homeX)&&Number.isFinite(awayX))rows.push(['⌁','Expected goals',m.home_team+' '+homeX.toFixed(2)+' · '+m.away_team+' '+awayX.toFixed(2),'Model goal estimates; these are not live xG event statistics.'])
  const insight=typeof m.ai_insight==='string'?m.ai_insight:(m.ai_insight&&typeof m.ai_insight.summary==='string'?m.ai_insight.summary:null);
  if(insight)rows.push(['⚑','AI insight',insight,'Report-supplied analysis tied to this fixture.'])
  if(!rows.length)rows.push(['⚑','Evidence status','No certified market is available.','The fixture remains visible, but the publication gate has not approved a forecast.'])
