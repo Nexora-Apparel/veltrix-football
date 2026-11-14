@@ -10,7 +10,7 @@ def _manifest_versions():
     return [entry[0] for entry in migration.load_manifest()]
 
 
-def test_migration_script_defaults_to_dry_run_with_only_0005_pending(monkeypatch):
+def test_migration_script_defaults_to_dry_run_with_exact_pending_sequence(monkeypatch):
     monkeypatch.setenv("DATABASE_URL", DSN)
     monkeypatch.setattr(migration, "validate_staging_dsn_target", lambda value: None)
     monkeypatch.setattr(migration, "_baseline", lambda value: {
