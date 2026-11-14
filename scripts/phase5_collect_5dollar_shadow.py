@@ -306,7 +306,6 @@ def _capture_page(
         "quota_limit": parsed.quota_limit,
         "quota_remaining": parsed.quota_remaining,
         "fixture_rows": len(parsed.fixtures),
-        "raw_artifact": str(page_path),
     }
 
     if status == "finished":
@@ -331,6 +330,7 @@ def _capture_page(
                 raise PermissionError(decision.reason_code)
         page_path.parent.mkdir(parents=True, exist_ok=True)
         page_path.write_bytes(raw)
+        page_info["raw_artifact"] = str(page_path)
         capture = capture_fivedollar_page_evidence(
             raw,
             parsed,
@@ -376,6 +376,7 @@ def _capture_page(
             raise PermissionError(decision.reason_code)
     page_path.parent.mkdir(parents=True, exist_ok=True)
     page_path.write_bytes(raw)
+    page_info["raw_artifact"] = str(page_path)
 
     targets = []
     rejected_targets: dict[str, int] = {}
