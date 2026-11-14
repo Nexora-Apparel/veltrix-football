@@ -100,3 +100,22 @@ def delivery_idempotency_key(identity: ReportIdentity, destination: str) -> str:
         raise ValueError("destination must be explicit")
     material = f"{identity.report_id}\n{identity.report_sha256}\n{destination}".encode()
     return hashlib.sha256(material).hexdigest()
+
+
+def assert_report_surface_bundle(
+    canonical_report: Mapping[str, Any],
+    scheduled_report: Mapping[str, Any],
+    telegram_report: Mapping[str, Any],
+    website_projection: Mapping[str, Any],
+) -> ReportIdentity:
+    """Verify scheduler and Telegram use the canonical report and website projection."""
+    identity = assert_same_report(
+        [canonical_report, scheduled_report, telegram_report]
+    )
+    if (
+        website_projection.get("report_id") != identity.report_id
+        or website_projection.get("report_sha256") != identity.report_sha256
+        or website_projection.get("as_of_date") != identity.as_of_date
+    ):
+        raise ValueError("WEBSITE_REPORT_PROJECTION_IDENTITY_MISMATCH")
+    return identity
