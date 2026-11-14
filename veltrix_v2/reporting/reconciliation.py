@@ -212,14 +212,17 @@ class PostgresTelegramReconciliationStore:
             existing_rows = connection.execute(
                 """
                 SELECT reconciliation_id::text, idempotency_key,
-                       supersedes_reconciliation_id::text
+                       supersedes_reconciliation_id::text, observed_at, recorded_at
                 FROM telegram_delivery_reconciliations
                 WHERE idempotency_key=%s
                 """,
                 (event.get("idempotency_key"),),
             ).fetchall()
             existing = [
-                dict(zip(("reconciliation_id", "idempotency_key", "supersedes_reconciliation_id"), row))
+                dict(zip(
+                    ("reconciliation_id", "idempotency_key", "supersedes_reconciliation_id", "observed_at", "recorded_at"),
+                    row,
+                ))
                 for row in existing_rows
             ]
             validated = validate_reconciliation_event(
