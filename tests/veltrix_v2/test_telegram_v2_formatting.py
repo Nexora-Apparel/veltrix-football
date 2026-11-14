@@ -118,7 +118,11 @@ def test_single_fixture_block_too_large_is_rejected_not_truncated():
         format_public_telegram_messages(report, verifier)
 
 
-def test_legacy_telegram_formatter_cannot_consume_v2_report():
+def test_legacy_telegram_formatter_cannot_consume_v2_report(monkeypatch):
+    import sys
+    from types import SimpleNamespace
+
+    monkeypatch.setitem(sys.modules, "requests", SimpleNamespace())
     from scripts.send_telegram_report import format_report_messages as legacy_formatter
 
     with pytest.raises(ValueError, match="V2 report rejected"):
@@ -128,7 +132,6 @@ def test_legacy_telegram_formatter_cannot_consume_v2_report():
 @pytest.mark.parametrize("values", [
     {"home": 0.8, "draw": 0.3, "away": 0.1},
     {"home": 1.2, "draw": -0.1, "away": -0.1},
-    {"home": float("nan"), "draw": 0.3, "away": 0.7},
 ])
 def test_certified_market_with_invalid_or_unnormalized_probabilities_is_rejected(values):
     report = public_report()
@@ -136,3 +139,10 @@ def test_certified_market_with_invalid_or_unnormalized_probabilities_is_rejected
     report = bind_report_identity({key: value for key, value in report.items() if key != "report_sha256"})
     with pytest.raises(ValueError, match="CERTIFIED_MARKET_PROBABILIT"):
         format_public_telegram_messages(report, verifier)
+
+
+def test_nonfinite_probability_cannot_enter_canonical_report():
+    report = public_report()
+    report["predictions"][0]["markets"]["1X2"]["home"] = float("nan")
+    with pytest.raises(ValueError, match="non-canonical JSON"):
+        bind_report_identity({key: value for key, value in report.items() if key != "report_sha256"})
