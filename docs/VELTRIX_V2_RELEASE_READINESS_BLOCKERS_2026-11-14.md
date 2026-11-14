@@ -307,7 +307,7 @@ This checkpoint supersedes earlier statements in this historical log that migrat
 ### CI and immediate blockers
 - Historical Model Audit Tests and Certification Evidence Integrity passed on the preceding head `4baeb75d82e20bf1e18fc0c839a79ebddda7c467`.
 - The Foundation suite exposed one stale 5Dollar test assertion expecting BENCHMARKING to remain absent. The test was corrected to match the newly approved scope.
-- Fresh Foundation, PostgreSQL 16 and PostgreSQL 18 checks were running against head `0634b6bae2ad152733850dd6407d27c9e027de64` at this checkpoint; do not treat them as passed until their conclusions are recorded.
+- Fresh checks against head `0634b6bae2ad152733850dd6407d27c9e027de64` completed successfully: Foundation run #1584, PostgreSQL 16/18 acceptance run #149, Historical Model Audit run #77 and Certification Evidence Integrity run #209 all passed. The new no-credit Odds API probe test and corrected 5Dollar approval-scope test both passed.
 - Remaining release blockers: manual provider workflow dispatch; prospective first-observed evidence; 300 settled selections and 90 distinct dates; market-level chronological certification; Odds API bookmaker-market/region and billing-period/hard-cap evidence; authoritative verifier provisioning; actual website/scheduler/Telegram runtime parity; delivery idempotency and failure-recovery acceptance.
 
 No production deployment, public publication, Telegram broadcast, schedule activation or value-bet unlock is authorized.
