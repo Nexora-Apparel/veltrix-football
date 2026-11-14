@@ -45,6 +45,9 @@ def test_model_emits_normalized_probabilities_and_explicit_evidence_counts():
     assert 0 <= result.over_2_5 <= 1
     assert result.evidence_match_count == 120
     assert result.home_team_match_count > 0 and result.away_team_match_count > 0
+    assert result.sample_floor_met
+    assert not result.publishable
+    assert result.publication_reason == "MODEL_NOT_CERTIFIED"
     assert result.model_version == "veltrix-results-poisson-v1"
 
 
@@ -79,8 +82,9 @@ def test_one_or_two_team_matches_are_used_but_not_marked_publishable():
                            away_team_id="B", kickoff_at=KICKOFF, cutoff_at=CUTOFF)
     assert result.home_team_match_count == 2
     assert result.away_team_match_count == 2
+    assert not result.sample_floor_met
     assert not result.publishable
-    assert result.publication_reason == "INSUFFICIENT_EVIDENCE_FOR_PUBLICATION"
+    assert result.publication_reason == "INSUFFICIENT_EVIDENCE_FOR_MODEL_REVIEW"
 
 
 def test_naive_timestamps_and_invalid_scores_are_not_admitted():
