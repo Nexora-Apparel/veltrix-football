@@ -34,5 +34,5 @@ def test_cli_verifier_confirms_all_surfaces_without_side_effects(tmp_path):
 
 
 def test_cli_verifier_fails_closed_when_surface_is_missing(tmp_path):
-    with pytest.raises(FileNotFoundError):
+    with pytest.raises(ValueError, match="REPORT_BUNDLE_COMMIT_MARKER_MISSING"):
         verify(tmp_path, "missing-report")
