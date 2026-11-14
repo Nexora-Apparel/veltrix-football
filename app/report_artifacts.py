@@ -15,7 +15,6 @@ from urllib.error import HTTPError, URLError
 
 from veltrix_v2.reporting.report_identity import (
     REPORT_SCHEMA,
-    assert_same_report,
     verify_report_identity,
 )
 from urllib.request import Request, urlopen
@@ -173,12 +172,6 @@ def load_v2_report_bundle() -> dict[str, Any] | None:
             or dashboard.get("report_sha256") != identity.report_sha256
         ):
             return None
-        assert_same_report([report, {
-            "schema": REPORT_SCHEMA,
-            "report_id": dashboard["report_id"],
-            "as_of_date": identity.as_of_date,
-            "report_sha256": dashboard["report_sha256"],
-        }])
     except (KeyError, TypeError, ValueError):
         return None
     return {"report": report, "dashboard": dashboard, "identity": identity}
