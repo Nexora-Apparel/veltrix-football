@@ -31,7 +31,7 @@ def approval(scope="4160026622"):
 
 def fixture(i, *, status=FixtureStatus.FINISHED, kickoff=None, retrieved=None,
             competition="4160026622", approval_id=APPROVAL_ID, home="101", away="102"):
-    kickoff = kickoff or datetime(2026, 8, 1, tzinfo=UTC) + timedelta(days=i)
+    kickoff = kickoff or datetime(2026, 6, 1, tzinfo=UTC) + timedelta(days=i)
     retrieved = retrieved or CUTOFF - timedelta(hours=1)
     finished = status is FixtureStatus.FINISHED
     payload = {
