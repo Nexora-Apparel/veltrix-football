@@ -144,7 +144,7 @@ def persist_fixture_snapshot_response(
     host: str = "",
     role: str = "",
 ) -> dict[str, str | int]:
-    """Persist one scheduled-fixture raw page and its manifest in staging only."""
+    """Persist one raw fixture-page response and its manifest in staging only."""
     if write_enabled is not True:
         raise PermissionError("FIXTURE_SNAPSHOT_PERSISTENCE_WRITE_GUARD_DISABLED")
     if (environment, database_name, host, role) != (
