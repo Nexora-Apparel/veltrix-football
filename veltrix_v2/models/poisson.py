@@ -6,7 +6,7 @@ prediction, calibration, prior, feature, or value-bet code.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import date, datetime, time, timedelta, timezone
 import math
 from typing import Iterable
 
@@ -25,11 +25,12 @@ class MatchObservation:
     competition_id: str
     home_team_id: str
     away_team_id: str
-    kickoff_at: datetime
+    kickoff_at: datetime | None
     available_at: datetime
     recorded_at: datetime
     home_goals: int
     away_goals: int
+    kickoff_date: date | None = None
 
 
 @dataclass(frozen=True)
@@ -64,14 +65,50 @@ def _valid_observation(match: MatchObservation) -> bool:
         return False
     if match.home_team_id == match.away_team_id:
         return False
-    if not all(_aware(value) for value in (match.kickoff_at, match.available_at, match.recorded_at)):
+    if not _aware(match.available_at) or not _aware(match.recorded_at):
         return False
-    if match.available_at < match.kickoff_at or match.recorded_at < match.available_at:
+    if match.recorded_at < match.available_at:
         return False
+    if match.kickoff_at is None:
+        if not isinstance(match.kickoff_date, date) or isinstance(match.kickoff_date, datetime):
+            return False
+        safe_after_date = datetime.combine(
+            match.kickoff_date + timedelta(days=2), time.min, tzinfo=timezone.utc
+        )
+        if match.available_at.astimezone(timezone.utc) < safe_after_date:
+            return False
+    else:
+        if match.kickoff_date is not None or not _aware(match.kickoff_at):
+            return False
+        if match.available_at < match.kickoff_at:
+            return False
     if any(not isinstance(value, int) or isinstance(value, bool) or value < 0
            for value in (match.home_goals, match.away_goals)):
         return False
     return True
+
+
+
+def observation_eligible_as_of(match: MatchObservation, *, cutoff_at: datetime,
+                               competition_id: str | None = None) -> bool:
+    """Return whether a result is safely usable at a point-in-time cutoff.
+
+    Date-only source records are eligible only from 00:00 UTC two calendar
+    days after their source-local match date, conservatively covering civil
+    timezone differences. Exact kickoff observations use their timestamp.
+    """
+    if not _aware(cutoff_at) or not _valid_observation(match):
+        return False
+    if competition_id is not None and match.competition_id != competition_id:
+        return False
+    if match.kickoff_at is not None:
+        kickoff_precedes_cutoff = match.kickoff_at < cutoff_at
+    else:
+        safe_boundary = datetime.combine(
+            match.kickoff_date + timedelta(days=2), time.min, tzinfo=timezone.utc
+        )
+        kickoff_precedes_cutoff = cutoff_at.astimezone(timezone.utc) >= safe_boundary
+    return kickoff_precedes_cutoff and match.available_at <= cutoff_at and match.recorded_at <= cutoff_at
 
 
 def _poisson_pmf(mean: float, goals: int) -> float:
@@ -124,11 +161,7 @@ def predict_match(
         # Conflicting or repeated fixture identities are excluded independent of input order.
         if fixture_id_counts.get(match.fixture_id, 0) != 1:
             continue
-        if match.competition_id != competition_id:
-            continue
-        if match.kickoff_at >= cutoff_at:
-            continue
-        if match.available_at > cutoff_at or match.recorded_at > cutoff_at:
+        if not observation_eligible_as_of(match, cutoff_at=cutoff_at, competition_id=competition_id):
             continue
         eligible.append(match)
 

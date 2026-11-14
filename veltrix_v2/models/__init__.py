@@ -5,6 +5,7 @@ from .poisson import (
     MatchObservation,
     PoissonPrediction,
     predict_match,
+    observation_eligible_as_of,
 )
 
 __all__ = [
@@ -12,4 +13,5 @@ __all__ = [
     "MatchObservation",
     "PoissonPrediction",
     "predict_match",
+    "observation_eligible_as_of",
 ]

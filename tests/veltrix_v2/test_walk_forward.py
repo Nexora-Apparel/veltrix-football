@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 
 import pytest
 
@@ -92,3 +92,29 @@ def test_walk_forward_metrics_are_finite_and_improvement_sign_is_consistent():
                                             market.model_log_loss, market.baseline_log_loss))
         assert market.brier_improvement == pytest.approx(market.baseline_brier - market.model_brier)
         assert market.log_loss_improvement == pytest.approx(market.baseline_log_loss - market.model_log_loss)
+
+
+def test_date_only_archive_rows_can_train_future_targets_but_are_not_scored_as_targets():
+    snapshot = datetime(2026, 8, 21, 7, 43, tzinfo=UTC)
+    rows = []
+    pairs = [("A", "C"), ("D", "B"), ("C", "A"), ("B", "D")]
+    for i in range(12):
+        home, away = pairs[i % len(pairs)]
+        rows.append(MatchObservation(
+            fixture_id=f"archive-{i}", competition_id="league",
+            home_team_id=home, away_team_id=away,
+            kickoff_at=None, available_at=snapshot, recorded_at=snapshot,
+            home_goals=1 + (i % 2), away_goals=i % 2,
+            kickoff_date=date(2026, 8, 1 + (i % 10)),
+        ))
+    kickoff = datetime(2026, 11, 20, 12, tzinfo=UTC)
+    rows.append(MatchObservation(
+        fixture_id="future-target", competition_id="league",
+        home_team_id="A", away_team_id="B", kickoff_at=kickoff,
+        available_at=kickoff + timedelta(hours=2),
+        recorded_at=kickoff + timedelta(hours=3), home_goals=2, away_goals=1,
+    ))
+    report = walk_forward_evaluate(rows, evaluation_as_of=datetime(2026, 11, 22, tzinfo=UTC))
+    assert report.skipped_date_only_targets == 12
+    assert report.eligible_scored_fixtures == 1
+    assert report.fixtures[0].fixture_id == "future-target"

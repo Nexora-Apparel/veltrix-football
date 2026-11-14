@@ -6,11 +6,7 @@ A clean-room, results-only baseline under `veltrix_v2.models`. It imports no leg
 
 ## Temporal contract
 
-A training observation is eligible only when all timestamps are timezone-aware and:
-
-- Match kickoff is strictly before the forecast cutoff.
-- Result availability/publication time is at or before the cutoff.
-- Local recorded/ingestion time is at or before the cutoff.
+A training observation is eligible only when availability and local recorded/ingestion timestamps are timezone-aware and at or before the forecast cutoff. Exact-kickoff records must have kickoff strictly before the cutoff. Date-only records retain a null kickoff timestamp and original calendar date; they are eligible only from 00:00 UTC two calendar days after that source-local date, and only if the exact source snapshot and import timestamps are also before the cutoff. This conservative bound avoids inventing a kickoff time and accounts for timezone uncertainty.
 - Competition identity matches the target competition.
 - Fixture identity is unique in the input batch.
 

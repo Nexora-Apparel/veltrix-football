@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 
 import pytest
 
@@ -6,6 +6,7 @@ from veltrix_v2.models.poisson import (
     InsufficientHistoryError,
     MatchObservation,
     predict_match,
+    observation_eligible_as_of,
 )
 
 UTC = timezone.utc
@@ -150,3 +151,37 @@ def test_btts_and_totals_are_normalized_score_grid_probabilities():
     expected_over = sum(home[h] * away[a] for h in range(13) for a in range(13) if h + a >= 3) / mass
     assert result.btts_yes == pytest.approx(expected_btts)
     assert result.over_2_5 == pytest.approx(expected_over)
+
+
+def test_date_only_archive_results_can_train_only_after_conservative_boundary():
+    available = datetime(2026, 8, 21, 7, 43, tzinfo=UTC)
+    rows = [
+        MatchObservation("date-a", "league", "A", "C", None, available, available,
+                        2, 0, kickoff_date=date(2026, 8, 1)),
+        MatchObservation("date-b", "league", "D", "B", None, available, available,
+                        1, 1, kickoff_date=date(2026, 8, 1)),
+    ]
+    cutoff = datetime(2026, 11, 14, 12, tzinfo=UTC)
+    result = predict_match(rows, competition_id="league", home_team_id="A",
+                           away_team_id="B", kickoff_at=cutoff + timedelta(hours=2),
+                           cutoff_at=cutoff)
+    assert result.evidence_match_count == 2
+    assert result.home_team_match_count == 1
+    assert result.away_team_match_count == 1
+    assert not result.publishable
+
+
+def test_date_only_record_cannot_be_used_before_snapshot_and_safety_boundary():
+    available = datetime(2026, 8, 21, 7, 43, tzinfo=UTC)
+    row = MatchObservation("date-a", "league", "A", "B", None, available, available,
+                           1, 0, kickoff_date=date(2026, 8, 1))
+    before_snapshot = datetime(2026, 8, 20, tzinfo=UTC)
+    after_snapshot = datetime(2026, 8, 22, tzinfo=UTC)
+    assert not observation_eligible_as_of(row, cutoff_at=before_snapshot)
+    assert observation_eligible_as_of(row, cutoff_at=after_snapshot)
+
+
+def test_date_only_observation_requires_exactly_one_date_precision_field():
+    available = datetime(2026, 8, 21, 7, 43, tzinfo=UTC)
+    row = MatchObservation("date-a", "league", "A", "B", None, available, available, 1, 0)
+    assert not observation_eligible_as_of(row, cutoff_at=CUTOFF)

@@ -14,6 +14,7 @@ from typing import Iterable
 from veltrix_v2.models.poisson import (
     InsufficientHistoryError,
     MatchObservation,
+    observation_eligible_as_of,
     predict_match,
 )
 
@@ -70,6 +71,7 @@ class WalkForwardReport:
     btts: MarketComparison | None
     over_2_5: MarketComparison | None
     fixtures: tuple[FixtureEvaluation, ...]
+    skipped_date_only_targets: int = 0
 
 
 def _aware(value: datetime) -> bool:
@@ -172,6 +174,11 @@ def walk_forward_evaluate(
 
     valid_rows = [row for row in rows if isinstance(row, MatchObservation)
                   and row.fixture_id not in duplicate_ids]
+    skipped_date_only_targets = sum(
+        1 for row in valid_rows if row.kickoff_at is None and row.kickoff_date is not None
+    )
+    valid_rows = [row for row in valid_rows
+                  if not (row.kickoff_at is None and row.kickoff_date is not None)]
     valid_rows.sort(key=lambda row: row.kickoff_at if _aware(row.kickoff_at)
                     else datetime.max.replace(tzinfo=evaluation_as_of.tzinfo))
 
@@ -212,16 +219,9 @@ def walk_forward_evaluate(
         training = [m for m in rows if isinstance(m, MatchObservation)
                     and m.fixture_id != target.fixture_id
                     and id_counts.get(m.fixture_id, 0) == 1
-                    and m.competition_id == target.competition_id
-                    and all(isinstance(v, str) and v.strip() for v in
-                            (m.fixture_id, m.competition_id, m.home_team_id, m.away_team_id))
-                    and m.home_team_id != m.away_team_id
-                    and _aware(m.kickoff_at) and _aware(m.available_at) and _aware(m.recorded_at)
-                    and m.kickoff_at < m.available_at <= m.recorded_at <= cutoff
-                    and m.kickoff_at < cutoff
-                    and isinstance(m.home_goals, int) and not isinstance(m.home_goals, bool)
-                    and isinstance(m.away_goals, int) and not isinstance(m.away_goals, bool)
-                    and m.home_goals >= 0 and m.away_goals >= 0]
+                    and observation_eligible_as_of(
+                        m, cutoff_at=cutoff, competition_id=target.competition_id
+                    )]
         if not training:
             skipped_no_history += 1
             continue
@@ -270,5 +270,5 @@ def walk_forward_evaluate(
         skipped_invalid_target=skipped_invalid, skipped_duplicate_ids=skipped_duplicate,
         skipped_after_evaluation_as_of=skipped_future,
         one_x_two=one_x_two, btts=btts, over_2_5=over,
-        fixtures=tuple(scored),
+        fixtures=tuple(scored), skipped_date_only_targets=skipped_date_only_targets,
     )
