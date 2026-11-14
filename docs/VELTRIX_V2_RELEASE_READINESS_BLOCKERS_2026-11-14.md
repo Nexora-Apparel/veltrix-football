@@ -56,7 +56,7 @@ Latest fully validated code head at this snapshot: 36c831421bc1377f6eea4c79d58e0
 ## Hard release blockers
 
 1. **Certification evidence and wiring:** a pure V2 publication verifier now checks exact report identity, attested certification-manifest bytes, per-market thresholds, exact raw evidence bytes, rights evidence bytes and injected source-rights approval. No real certification manifest currently passes the gates, and the trusted attestation/rights callbacks are not yet wired into the website or Telegram runtime.
-2. **Surface wiring:** the actual scheduled workflow, dashboard refresh and Telegram runner do not yet consume the same generated V2 artifact. The new bundle adapters are not a substitute for wiring those real workflows.
+2. **Surface wiring:** the actual scheduled workflow and Telegram runner do not yet consume the same generated V2 artifact. The legacy dashboard snapshot refresh has now been explicitly paused with an `if: false` job guard because it republishes a legacy report projection. The new bundle adapters are not a substitute for wiring the real V2 workflows.
 3. **Staging schema:** migrations 0005–0010 have not been applied to Neon staging. The manual-only staging guard must be reviewed and run only against the dedicated staging database.
 4. **Operator controls:** authenticated operator/reviewer identity and approved durable evidence-reader provisioning are not connected to the reconciliation writer.
 5. **Prospective evidence:** the required 90 dates and 300 settled selections must accrue from real eligible forecasts and verified results.
@@ -65,7 +65,7 @@ Latest fully validated code head at this snapshot: 36c831421bc1377f6eea4c79d58e0
 
 ## Required execution order
 
-1. Finish PR #118 CI and code review; keep it draft until validated.
+1. Finish PR #118 CI and code review; keep it draft until validated. A static regression test now asserts that the legacy daily prediction, dashboard refresh and Telegram recovery jobs remain paused until V2 wiring is complete.
 2. Connect the authoritative V2 certification verifier to the website, scheduled and Telegram consumers.
 3. Complete authenticated operator/reviewer identity and evidence storage.
 4. Wire the real scheduler, dashboard refresh and Telegram runner to the same immutable bundle, while keeping all production triggers disabled.
