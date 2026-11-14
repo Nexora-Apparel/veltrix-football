@@ -116,3 +116,10 @@ def test_single_fixture_block_too_large_is_rejected_not_truncated():
     report = bind_report_identity({key: value for key, value in report.items() if key != "report_sha256"})
     with pytest.raises(ValueError, match="single fixture block"):
         format_public_telegram_messages(report, verifier)
+
+
+def test_legacy_telegram_formatter_cannot_consume_v2_report():
+    from scripts.send_telegram_report import format_report_messages as legacy_formatter
+
+    with pytest.raises(ValueError, match="V2 report rejected"):
+        legacy_formatter(public_report())
