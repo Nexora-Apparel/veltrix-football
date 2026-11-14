@@ -33,7 +33,7 @@ class PostgresTelegramDeliveryStore:
             raise ValueError("DELIVERY_DESTINATION_REQUIRED")
         destination_hash = hashlib.sha256(destination.encode("utf-8")).hexdigest()
         expected_key = hashlib.sha256(
-            f"{report_id}\\n{report_sha256}\\n{destination}".encode("utf-8")
+            f"{report_id}\n{report_sha256}\n{destination}".encode("utf-8")
         ).hexdigest()
         if key != expected_key:
             raise ValueError("DELIVERY_IDEMPOTENCY_KEY_REPORT_BINDING_MISMATCH")
