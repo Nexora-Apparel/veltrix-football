@@ -140,6 +140,15 @@ def verify_publication_authorization(
                 if not _finite_number(roi_lower) or float(roi_lower) <= 0:
                     return False
 
+                for hash_field in (
+                    "evaluation_fixture_set_sha256",
+                    "model_artifact_sha256",
+                    "feature_set_sha256",
+                ):
+                    hash_value = record.get(hash_field)
+                    if not isinstance(hash_value, str) or not _HASH.fullmatch(hash_value):
+                        return False
+
                 if market == "1X2":
                     brier = record.get("brier_score")
                     bookmaker_brier = record.get("bookmaker_brier_score")
@@ -152,6 +161,12 @@ def verify_publication_authorization(
                     if float(brier) >= float(bookmaker_brier):
                         return False
                     if float(log_loss) >= float(bookmaker_log_loss):
+                        return False
+                    if record.get("bookmaker_baseline_method") != "DEVIGGED":
+                        return False
+                    if not isinstance(record.get("bookmaker_baseline_source"), str) or not record["bookmaker_baseline_source"].strip():
+                        return False
+                    if record.get("bookmaker_fixture_set_sha256") != record.get("evaluation_fixture_set_sha256"):
                         return False
 
                 if record.get("status") != "CERTIFIED":
@@ -167,10 +182,16 @@ def verify_publication_authorization(
                     return False
                 if parsed_rights_time.tzinfo is None or parsed_rights_time.utcoffset() is None:
                     return False
-                for uri_field, hash_field in (
+                evidence_objects = [
                     ("evidence_uri", "evidence_sha256"),
                     ("rights_evidence_uri", "rights_evidence_sha256"),
-                ):
+                ]
+                if market == "1X2":
+                    evidence_objects.append((
+                        "bookmaker_baseline_evidence_uri",
+                        "bookmaker_baseline_evidence_sha256",
+                    ))
+                for uri_field, hash_field in evidence_objects:
                     evidence_uri = record.get(uri_field)
                     evidence_hash = record.get(hash_field)
                     if not isinstance(evidence_uri, str) or not evidence_uri.strip():
