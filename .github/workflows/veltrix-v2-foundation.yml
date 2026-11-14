@@ -58,6 +58,8 @@ jobs:
         run: python -m pytest --import-mode=importlib -q tests/veltrix_v2/test_elo.py
       - name: Test point-in-time team form features
         run: python -m pytest --import-mode=importlib -q tests/veltrix_v2/test_form.py
+      - name: Test chronological Elo challenger evaluation
+        run: python -m pytest --import-mode=importlib -q tests/veltrix_v2/test_elo_challenger.py
       - name: Test deterministic batch prediction engine
         run: python -m pytest --import-mode=importlib -q tests/veltrix_v2/test_prediction_engine.py
       - name: Test evidence-backed team identity crosswalk
