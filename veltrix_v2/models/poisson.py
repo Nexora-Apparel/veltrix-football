@@ -65,6 +65,8 @@ def _valid_observation(match: MatchObservation) -> bool:
         return False
     if not all(_aware(value) for value in (match.kickoff_at, match.available_at, match.recorded_at)):
         return False
+    if match.available_at < match.kickoff_at or match.recorded_at < match.available_at:
+        return False
     if any(not isinstance(value, int) or isinstance(value, bool) or value < 0
            for value in (match.home_goals, match.away_goals)):
         return False
@@ -108,21 +110,24 @@ def predict_match(
             or not math.isfinite(prior_matches) or prior_matches <= 0):
         raise ValueError("PRIOR_STRENGTH_INVALID")
 
+    candidates = list(observations)
+    fixture_id_counts: dict[str, int] = {}
+    for candidate in candidates:
+        if isinstance(candidate, MatchObservation) and isinstance(candidate.fixture_id, str):
+            fixture_id_counts[candidate.fixture_id] = fixture_id_counts.get(candidate.fixture_id, 0) + 1
+
     eligible: list[MatchObservation] = []
-    seen: set[str] = set()
-    for match in observations:
+    for match in candidates:
         if not _valid_observation(match):
             continue
-        if match.fixture_id in seen:
+        # Conflicting or repeated fixture identities are excluded independent of input order.
+        if fixture_id_counts.get(match.fixture_id, 0) != 1:
             continue
-        seen.add(match.fixture_id)
         if match.competition_id != competition_id:
             continue
         if match.kickoff_at >= cutoff_at:
             continue
         if match.available_at > cutoff_at or match.recorded_at > cutoff_at:
-            continue
-        if match.fixture_id == "":
             continue
         eligible.append(match)
 
