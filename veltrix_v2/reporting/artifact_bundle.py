@@ -110,6 +110,7 @@ def load_report_surface_bundle(
         or commit.get("schema") != "VELTRIX_REPORT_BUNDLE_COMMIT_V1"
         or commit.get("report_id") != report_id
         or not isinstance(commit.get("artifacts"), dict)
+        or set(commit.get("artifacts", {})) != set(paths)
     ):
         raise ValueError("REPORT_BUNDLE_COMMIT_MARKER_INVALID")
 
@@ -137,6 +138,8 @@ def load_report_surface_bundle(
     )
     if identity.report_id != report_id:
         raise ValueError("REPORT_ARTIFACT_PATH_IDENTITY_MISMATCH")
+    if commit.get("report_sha256") != identity.report_sha256:
+        raise ValueError("REPORT_BUNDLE_COMMIT_IDENTITY_MISMATCH")
     return ReportSurfaceBundle(
         payloads["canonical"],
         payloads["scheduled"],
