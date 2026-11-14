@@ -15,6 +15,7 @@ on:
       - "veltrix_v2/ledger/postgres_store.py"
       - "tests/veltrix_v2/test_paper_ledger_postgres.py"
       - "tests/veltrix_v2/test_phase5_staging_paper_ledger_migration.py"
+      - "tests/veltrix_v2/test_full_migration_chain_postgres.py"
       - "scripts/phase5_staging_paper_ledger_migration.py"
       - ".github/workflows/phase5-staging-paper-ledger-migration.yml"
       - "docs/VELTRIX_V2_STAGING_PAPER_LEDGER_2026-11-14.md"
@@ -168,5 +169,7 @@ jobs:
         run: python -m pytest --import-mode=importlib -q tests/providers/odds_api_v4/test_reservation_postgres.py tests/providers/odds_api_v4/test_quota_evidence_postgres.py tests/providers/odds_api_v4/test_capture_state_postgres.py tests/providers/odds_api_v4/test_capture_request_postgres.py
       - name: Test append-only provider evidence persistence
         run: python -m pytest --import-mode=importlib -q tests/veltrix_v2/test_evidence_persistence_postgres.py
+      - name: Test complete PostgreSQL migration chain
+        run: python -m pytest --import-mode=importlib -q tests/veltrix_v2/test_full_migration_chain_postgres.py
       - name: Test append-only PostgreSQL paper ledger persistence
         run: python -m pytest --import-mode=importlib -q tests/veltrix_v2/test_paper_ledger_postgres.py
