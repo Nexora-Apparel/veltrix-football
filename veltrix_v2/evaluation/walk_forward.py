@@ -72,6 +72,7 @@ class WalkForwardReport:
     over_2_5: MarketComparison | None
     fixtures: tuple[FixtureEvaluation, ...]
     skipped_date_only_targets: int = 0
+    non_certifiable_input_rows: int = 0
 
 
 def _aware(value: datetime) -> bool:
@@ -171,6 +172,10 @@ def walk_forward_evaluate(
     skipped_duplicate = sum(id_counts[key] for key in duplicate_ids)
     skipped_invalid = skipped_no_history = skipped_future = 0
     scored: list[FixtureEvaluation] = []
+    non_certifiable_input_rows = sum(
+        1 for row in rows if isinstance(row, MatchObservation)
+        and row.point_in_time_certifiable is not True
+    )
 
     valid_rows = [row for row in rows if isinstance(row, MatchObservation)
                   and row.fixture_id not in duplicate_ids]
@@ -203,9 +208,14 @@ def walk_forward_evaluate(
         if cutoff >= target.kickoff_at:
             skipped_invalid += 1
             continue
+        certified_training = [
+            m for m in rows if isinstance(m, MatchObservation)
+            and m.point_in_time_certifiable is True
+            and id_counts.get(m.fixture_id, 0) == 1
+        ]
         try:
             prediction = predict_match(
-                rows, competition_id=target.competition_id,
+                certified_training, competition_id=target.competition_id,
                 home_team_id=target.home_team_id, away_team_id=target.away_team_id,
                 kickoff_at=target.kickoff_at, cutoff_at=cutoff,
             )
@@ -216,9 +226,8 @@ def walk_forward_evaluate(
             skipped_invalid += 1
             continue
 
-        training = [m for m in rows if isinstance(m, MatchObservation)
-                    and m.fixture_id != target.fixture_id
-                    and id_counts.get(m.fixture_id, 0) == 1
+        training = [m for m in certified_training
+                    if m.fixture_id != target.fixture_id
                     and observation_eligible_as_of(
                         m, cutoff_at=cutoff, competition_id=target.competition_id
                     )]
@@ -271,4 +280,5 @@ def walk_forward_evaluate(
         skipped_after_evaluation_as_of=skipped_future,
         one_x_two=one_x_two, btts=btts, over_2_5=over,
         fixtures=tuple(scored), skipped_date_only_targets=skipped_date_only_targets,
+        non_certifiable_input_rows=non_certifiable_input_rows,
     )
