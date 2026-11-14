@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 import hashlib
 import os
 from urllib.parse import urlsplit, urlunsplit
@@ -53,6 +53,8 @@ def test_postgres_reconciliation_is_claim_bound_append_only_and_supersedable(mon
             lambda uri: evidence if uri == "s3://veltrix-audit/telegram/integration.json" else b"",
         )
         now = datetime.now(timezone.utc)
+        observed_at = now - timedelta(seconds=2)
+        recorded_at = now - timedelta(seconds=1)
         first_id = str(uuid.uuid4())
         base_event = {
             "reconciliation_id": first_id,
@@ -67,8 +69,8 @@ def test_postgres_reconciliation_is_claim_bound_append_only_and_supersedable(mon
             "evidence_kind": "telegram_export_json",
             "operator_id": "github:operator",
             "reviewer_id": None,
-            "observed_at": now.isoformat(),
-            "recorded_at": now.isoformat(),
+            "observed_at": observed_at.isoformat(),
+            "recorded_at": recorded_at.isoformat(),
             "reason_code": "OPERATOR_EVIDENCE_CONFIRMED",
         }
         assert store.record(base_event) == first_id
