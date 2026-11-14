@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pytest
 
-from veltrix_v2.models.poisson import MatchObservation, observation_eligible_as_of
+from veltrix_v2.models.poisson import MatchObservation, observation_eligible_as_of, predict_match
 from veltrix_v2.providers.openfootball_archive import parse_archive
 
 UTC = timezone.utc
@@ -109,3 +109,32 @@ def test_awarded_score_is_not_silently_treated_as_ordinary_result():
     assert result.result_count == 3
     assert result.rejected_result_count == 1
     assert result.rejected_annotations == ("AWARDED",)
+
+
+def test_full_nigeria_archive_drives_future_model_estimate_without_unlocking_publication():
+    source = Path(__file__).resolve().parents[1] / "fixtures" / "openfootball" / "nigeria_2025-26_ng1.txt"
+    archive = parse_archive(
+        source.read_text(encoding="utf-8"),
+        competition_id="NGA_NPFL",
+        source_path="africa/nigeria/2025-26_ng1.txt",
+        snapshot_commit_sha=SHA,
+        snapshot_available_at=SNAPSHOT,
+        imported_at=IMPORTED,
+    )
+    first = archive.observations[0]
+    cutoff = datetime(2026, 11, 15, 0, 0, tzinfo=UTC)
+    prediction = predict_match(
+        archive.observations,
+        competition_id="NGA_NPFL",
+        home_team_id=first.home_team_id,
+        away_team_id=first.away_team_id,
+        kickoff_at=datetime(2026, 11, 15, 1, 0, tzinfo=UTC),
+        cutoff_at=cutoff,
+    )
+    assert prediction.evidence_match_count == 379
+    assert prediction.home_team_match_count >= 5
+    assert prediction.away_team_match_count >= 5
+    assert prediction.sample_floor_met
+    assert prediction.home_win + prediction.draw + prediction.away_win == pytest.approx(1.0)
+    assert not prediction.publishable
+    assert prediction.publication_reason == "MODEL_NOT_CERTIFIED"
