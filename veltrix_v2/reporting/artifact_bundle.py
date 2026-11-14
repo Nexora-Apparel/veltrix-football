@@ -27,6 +27,96 @@ class ReportSurfaceBundle:
     identity: ReportIdentity
 
 
+PORTABLE_BUNDLE_SCHEMA = "VELTRIX_PORTABLE_REPORT_SURFACE_BUNDLE_V1"
+_SURFACE_NAMES = ("canonical", "scheduled", "telegram", "dashboard")
+
+
+def _canonical_json_bytes(value: Mapping[str, Any]) -> bytes:
+    return (
+        json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":"), allow_nan=False)
+        + "\\n"
+    ).encode("utf-8")
+
+
+def serialize_portable_report_surface_bundle(bundle: ReportSurfaceBundle) -> bytes:
+    """Serialize all four delivery surfaces into one hash-bound portable artifact."""
+    identity = assert_report_surface_bundle(
+        bundle.canonical_report,
+        bundle.scheduled_report,
+        bundle.telegram_report,
+        bundle.website_projection,
+    )
+    if identity != bundle.identity:
+        raise ValueError("REPORT_SURFACE_BUNDLE_IDENTITY_MISMATCH")
+    surfaces = {
+        "canonical": bundle.canonical_report,
+        "scheduled": bundle.scheduled_report,
+        "telegram": bundle.telegram_report,
+        "dashboard": bundle.website_projection,
+    }
+    surface_hashes = {
+        name: hashlib.sha256(_canonical_json_bytes(value)).hexdigest()
+        for name, value in surfaces.items()
+    }
+    envelope = {
+        "schema": PORTABLE_BUNDLE_SCHEMA,
+        "report_id": identity.report_id,
+        "report_sha256": identity.report_sha256,
+        "surface_sha256": surface_hashes,
+        "surfaces": surfaces,
+    }
+    raw = json.dumps(
+        envelope, ensure_ascii=False, sort_keys=True, separators=(",", ":"), allow_nan=False
+    ).encode("utf-8")
+    if len(raw) > 32_000_000:
+        raise ValueError("PORTABLE_REPORT_BUNDLE_TOO_LARGE")
+    return raw
+
+
+def parse_portable_report_surface_bundle(raw: bytes) -> ReportSurfaceBundle:
+    """Parse one portable artifact and verify all four surface hashes and identities."""
+    if not isinstance(raw, bytes) or not raw or len(raw) > 32_000_000:
+        raise ValueError("PORTABLE_REPORT_BUNDLE_BYTES_INVALID")
+    envelope = json.loads(raw.decode("utf-8"))
+    if (
+        not isinstance(envelope, dict)
+        or envelope.get("schema") != PORTABLE_BUNDLE_SCHEMA
+        or not isinstance(envelope.get("surfaces"), dict)
+        or set(envelope["surfaces"]) != set(_SURFACE_NAMES)
+        or not isinstance(envelope.get("surface_sha256"), dict)
+        or set(envelope["surface_sha256"]) != set(_SURFACE_NAMES)
+    ):
+        raise ValueError("PORTABLE_REPORT_BUNDLE_SCHEMA_INVALID")
+    for name in _SURFACE_NAMES:
+        surface = envelope["surfaces"][name]
+        expected = envelope["surface_sha256"][name]
+        if not isinstance(surface, dict) or not isinstance(expected, str):
+            raise ValueError("PORTABLE_REPORT_BUNDLE_SURFACE_INVALID")
+        if not re.fullmatch(r"[0-9a-f]{64}", expected):
+            raise ValueError("PORTABLE_REPORT_BUNDLE_SURFACE_HASH_INVALID")
+        if hashlib.sha256(_canonical_json_bytes(surface)).hexdigest() != expected:
+            raise ValueError("PORTABLE_REPORT_BUNDLE_SURFACE_HASH_MISMATCH")
+    surfaces = envelope["surfaces"]
+    identity = assert_report_surface_bundle(
+        surfaces["canonical"],
+        surfaces["scheduled"],
+        surfaces["telegram"],
+        surfaces["dashboard"],
+    )
+    if (
+        envelope.get("report_id") != identity.report_id
+        or envelope.get("report_sha256") != identity.report_sha256
+    ):
+        raise ValueError("PORTABLE_REPORT_BUNDLE_IDENTITY_MISMATCH")
+    return ReportSurfaceBundle(
+        surfaces["canonical"],
+        surfaces["scheduled"],
+        surfaces["telegram"],
+        surfaces["dashboard"],
+        identity,
+    )
+
+
 def build_report_surface_bundle(report: Mapping[str, Any]) -> ReportSurfaceBundle:
     """Bind all surfaces to the same report bytes and identity."""
     if report.get("schema") != REPORT_SCHEMA:
