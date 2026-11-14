@@ -48,3 +48,11 @@ def test_exhausted_goal_api_and_strikerapi_probe_workflows_remain_paused():
     assert "qualify:" in striker
     assert "if: false" in striker
     assert "next monthly credit reset" in striker
+
+
+
+def test_legacy_historical_model_reconstruction_remains_paused():
+    source = _workflow("historical-model-reconstruction.yml")
+    assert "reconstruct-archived-reports:" in source
+    assert "if: false" in source
+    assert "excluded legacy model stack" in source
