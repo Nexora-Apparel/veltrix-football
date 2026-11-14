@@ -45,7 +45,8 @@ class OpenLigaDBResult:
     result_type_kind: str | None
     result_name: str | None
     result_order_id: int | None
-    points: int
+    points_team1: int
+    points_team2: int
 
 
 @dataclass(frozen=True, slots=True)
@@ -100,8 +101,9 @@ def _parse_result_rows(value: object) -> tuple[OpenLigaDBResult, ...] | None:
     for item in value:
         if not isinstance(item, dict):
             return None
-        points = _integer(item.get("points"))
-        if points is None:
+        points_team1 = _integer(item.get("pointsTeam1"))
+        points_team2 = _integer(item.get("pointsTeam2"))
+        if points_team1 is None or points_team2 is None:
             return None
         result_type_id = item.get("resultTypeID")
         if result_type_id is not None and _integer(result_type_id) is None:
@@ -120,7 +122,8 @@ def _parse_result_rows(value: object) -> tuple[OpenLigaDBResult, ...] | None:
             result_type_kind=_text(kind),
             result_name=_text(name),
             result_order_id=result_order_id,
-            points=points,
+            points_team1=points_team1,
+            points_team2=points_team2,
         ))
     return tuple(parsed)
 
@@ -243,10 +246,7 @@ def parse_openligadb_response(
 
 
 def full_time_90_score(match: OpenLigaDBMatch) -> tuple[int, int] | None:
-    """Return the explicit After90Minutes score only when uniquely present.
-
-    Do not substitute HalfTime, AfterExtraTime, AfterPenalties, or list order.
-    """
+    """Return only a unique, explicit After90Minutes score for a finished match."""
     if not isinstance(match, OpenLigaDBMatch) or not match.match_is_finished:
         return None
     candidates = tuple(
@@ -255,8 +255,4 @@ def full_time_90_score(match: OpenLigaDBMatch) -> tuple[int, int] | None:
     )
     if len(candidates) != 1:
         return None
-    # OpenLigaDB stores one result row per result type; each row's points
-    # represents the match score encoded by that result type. The API does not
-    # expose a separate home/away pair inside a single MatchResult row, so this
-    # helper intentionally cannot construct a two-sided score from that row.
-    return None
+    return candidates[0].points_team1, candidates[0].points_team2
