@@ -10,6 +10,8 @@ on:
       - "veltrix_v2/**"
       - "tests/veltrix_v2/**"
       - "scripts/phase5_staging_coverage_audit.py"
+      - "veltrix_v2/data/crosswalk_bootstrap.py"
+      - "tests/veltrix_v2/test_crosswalk_bootstrap.py"
       - "docs/VELTRIX_V2_STAGING_COVERAGE_AUDIT_CLI_2026-11-14.md"
       - "docs/VELTRIX_V2_PROSPECTIVE_FIRST_OBSERVED_SHADOW_EVIDENCE_2026-11-14.md"
       - "docs/VELTRIX_V2_OPENLIGADB_OFFLINE_PARSER_2026-11-14.md"
@@ -90,6 +92,8 @@ jobs:
         run: python -m pytest --import-mode=importlib -q tests/veltrix_v2/test_persisted_coverage_adapter.py
       - name: Test read-only staging coverage audit CLI
         run: python -m pytest --import-mode=importlib -q tests/veltrix_v2/test_staging_coverage_audit_cli.py
+      - name: Test evidence-backed crosswalk bootstrap
+        run: python -m pytest --import-mode=importlib -q tests/veltrix_v2/test_crosswalk_bootstrap.py
       - name: Test read-only staging coverage SQL
         run: python -m pytest --import-mode=importlib -q tests/veltrix_v2/test_coverage_sql.py
       - name: Test guarded staging evidence persistence
