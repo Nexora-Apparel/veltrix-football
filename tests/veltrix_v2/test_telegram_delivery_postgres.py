@@ -11,6 +11,7 @@ from veltrix_v2.reporting.delivery import DeliveryReceipt
 from veltrix_v2.reporting.postgres_delivery_store import PostgresTelegramDeliveryStore
 from veltrix_v2.reporting.report_identity import (
     REPORT_SCHEMA, create_report_identity, delivery_idempotency_key,
+    delivery_idempotency_key_fields,
 )
 
 
@@ -59,7 +60,9 @@ def test_postgres_delivery_claim_is_atomic_terminal_and_destination_bound(monkey
             assert row[0] == "SENT"
             assert row[1] == ["1001", "1002"]
 
-        unknown_key = "b" * 64
+        unknown_key = delivery_idempotency_key_fields(
+            "unknown-report", "c" * 64, destination
+        )
         assert store.claim(unknown_key, "unknown-report", "c" * 64, destination)
         store.mark_unknown(unknown_key, "TimeoutError")
         assert not store.claim(unknown_key, "unknown-report", "c" * 64, destination)
