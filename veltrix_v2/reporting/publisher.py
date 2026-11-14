@@ -10,6 +10,7 @@ import base64
 import hashlib
 import json
 from dataclasses import dataclass
+from datetime import date
 from urllib.error import HTTPError, URLError
 from urllib.parse import quote
 from urllib.request import Request, urlopen
@@ -169,12 +170,19 @@ class PublicationResult:
 def publish_v2_report_bundle(
     portable_bundle_bytes: bytes,
     *,
+    expected_as_of_date: str,
     authorization_verifier,
     client: GitHubContentsClient,
 ) -> PublicationResult:
     """Publish one fully authorized immutable report bundle to command-data."""
     if not isinstance(portable_bundle_bytes, bytes) or not portable_bundle_bytes or len(portable_bundle_bytes) > 8_000_000:
         raise ValueError("PORTABLE_REPORT_BUNDLE_SIZE_OR_TYPE_INVALID")
+    try:
+        expected_date = date.fromisoformat(expected_as_of_date)
+    except (TypeError, ValueError):
+        raise ValueError("EXPECTED_PUBLICATION_DATE_INVALID") from None
+    if expected_date.isoformat() != expected_as_of_date:
+        raise ValueError("EXPECTED_PUBLICATION_DATE_INVALID")
     if not callable(authorization_verifier):
         raise PermissionError("AUTHORITATIVE_PUBLICATION_VERIFIER_REQUIRED")
     if client is None or not callable(getattr(client, "get_file", None)) or not callable(
@@ -186,6 +194,8 @@ def publish_v2_report_bundle(
         portable_bundle_bytes, authorization_verifier
     )
     identity = incoming.identity
+    if identity.as_of_date != expected_as_of_date:
+        raise PermissionError("REPORT_AS_OF_DATE_MUST_MATCH_PUBLICATION_DATE")
 
     existing = client.get_file(
         PUBLICATION_REPOSITORY, PUBLICATION_BRANCH, PUBLICATION_PATH
