@@ -210,3 +210,11 @@ def test_persist_probe_updates_only_verified_scope(
     assert update[2] is not None
     assert not any("provider_credit_budget_snapshots" in query
                    for query, _ in connection.cursor_value.queries)
+
+
+def test_execute_requires_staging_persistence_before_provider_access(monkeypatch):
+    import sys
+
+    monkeypatch.setattr(sys, "argv", ["phase4_odds_account_probe", "--execute"])
+    with pytest.raises(RuntimeError, match="STAGING_PERSISTENCE_REQUIRED_FOR_ODDS_API_PROBE"):
+        probe.main()
