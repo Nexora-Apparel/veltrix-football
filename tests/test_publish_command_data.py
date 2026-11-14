@@ -224,3 +224,38 @@ def test_large_blob_publication_retries_when_command_data_branch_moves(tmp_path,
     second_tree = next(body for url, method, body in calls
                        if url.endswith("/git/trees") and body["base_tree"] == "base-tree-2")
     assert second_tree["tree"][0]["sha"] == "blob-2"
+
+
+
+def test_legacy_command_data_publisher_blocks_prediction_dashboard_and_archive_paths(tmp_path, monkeypatch):
+    import pytest
+    from scripts.publish_command_data import publish
+
+    local = tmp_path / "report.json"
+    local.write_text('{"predictions":[]}', encoding="utf-8")
+    monkeypatch.setattr(
+        "scripts.publish_command_data.urlopen",
+        lambda *args, **kwargs: pytest.fail("blocked legacy path must not contact GitHub"),
+    )
+    for path in (
+        "public-data/daily_predictions.json",
+        "public-data/dashboard_snapshot.json",
+        "public-data/archive/2026-11-14/daily_predictions_20261114T050000Z.json",
+    ):
+        with pytest.raises(PermissionError, match="LEGACY_PREDICTION_PUBLICATION_DISABLED"):
+            publish(path, local, "Nexora-Apparel/veltrix-football", "not-a-real-token")
+
+
+def test_legacy_command_data_publisher_rejects_path_traversal_before_network(tmp_path, monkeypatch):
+    import pytest
+    from scripts.publish_command_data import publish
+
+    local = tmp_path / "report.json"
+    local.write_text('{"predictions":[]}', encoding="utf-8")
+    monkeypatch.setattr(
+        "scripts.publish_command_data.urlopen",
+        lambda *args, **kwargs: pytest.fail("invalid path must not contact GitHub"),
+    )
+    with pytest.raises(ValueError, match="COMMAND_DATA_PATH_INVALID"):
+        publish("public-data/../public-data/daily_predictions.json", local,
+                "Nexora-Apparel/veltrix-football", "not-a-real-token")
