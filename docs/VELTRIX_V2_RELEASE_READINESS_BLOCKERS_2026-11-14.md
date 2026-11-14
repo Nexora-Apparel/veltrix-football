@@ -149,3 +149,11 @@ Regression coverage also asserts that the legacy daily-report watchdog and legac
 - Regression tests also assert the daily-report watchdog, historical model backtest, women's historical backtest, daily predictions, dashboard snapshot publisher and Telegram recovery remain disabled.
 - GitHub Actions run #1392 passed Foundation, PostgreSQL 16 and PostgreSQL 18 at commit `edc63ee60b619306d5b7687842168ff62b6f8ef9`.
 - No GOAL API, StrikerAPI, 5Dollar provider request, database migration/write, Telegram send, schedule activation or deployment was performed.
+
+
+## Cross-surface adapter integration — 2026-11-14 15:15 UTC
+
+- Added one integration test that feeds the identical portable bundle bytes into the website loader, scheduled-report adapter and Telegram dispatcher.
+- Test verifies the same report ID/hash and identical projections across the three adapters, then verifies one durable claim and one stubbed Telegram message.
+- GitHub Actions run #1396 passed Foundation, PostgreSQL 16 and PostgreSQL 18.
+- This is adapter-level parity, not production workflow parity. Actual GitHub Actions scheduler and Telegram delivery jobs remain disabled/unwired.
