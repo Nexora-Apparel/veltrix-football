@@ -1,3 +1,4 @@
+from dataclasses import replace
 import hashlib
 import json
 from datetime import datetime, timedelta, timezone
@@ -153,3 +154,19 @@ def test_observed_shadow_settlement_still_requires_explicit_benchmarking_rights(
             ledger, fixture, restricted,
             recorded_at=fixture.retrieved_at_utc + timedelta(hours=1)
         )
+
+
+def test_observed_shadow_settlement_ignores_untrusted_four_day_proxy_if_not_yet_elapsed():
+    ledger = ledger_with_observed_prediction()
+    fixture = source_fixture()
+    fixture = replace(
+        fixture,
+        available_at_utc=fixture.retrieved_at_utc + timedelta(days=1),
+        availability_basis="provider_finished_status_conservative_4d",
+        point_in_time_certifiable=False,
+    )
+    event = settle_from_verified_fixture(
+        ledger, fixture, approval(), recorded_at=fixture.retrieved_at_utc + timedelta(hours=1)
+    )
+    assert event.payload["result_availability_basis"] == "collector_first_observed_v1"
+    assert event.payload["result_available_at"] == fixture.retrieved_at_utc.isoformat()
