@@ -29,6 +29,8 @@ on:
       - "docs/VELTRIX_V2_OPENLIGADB_OFFLINE_PARSER_2026-11-14.md"
       - "scripts/veltrix_v2/**"
       - "scripts/send_telegram_report.py"
+      - "scripts/publish_command_data.py"
+      - "tests/test_publish_command_data.py"
       - "tests/test_telegram_report.py"
       - "tests/providers/odds_api_v4/**"
       - "tests/providers/test_openfootball_archive.py"
@@ -40,6 +42,8 @@ on:
       - "veltrix_v2/**"
       - "scripts/veltrix_v2/**"
       - "scripts/send_telegram_report.py"
+      - "scripts/publish_command_data.py"
+      - "tests/test_publish_command_data.py"
       - "tests/test_telegram_report.py"
       - "tests/veltrix_v2/**"
       - "tests/providers/odds_api_v4/**"
@@ -187,6 +191,8 @@ jobs:
         run: python -m pytest --import-mode=importlib -q tests/veltrix_v2/test_telegram_v2_delivery.py
       - name: Test legacy Telegram sender shutdown
         run: python -m pytest --import-mode=importlib -q tests/test_telegram_report.py
+      - name: Test legacy command-data publication shutdown
+        run: python -m pytest --import-mode=importlib -q tests/test_publish_command_data.py
       - name: Test Telegram operator reconciliation evidence
         run: python -m pytest --import-mode=importlib -q tests/veltrix_v2/test_telegram_reconciliation.py
       - name: Test read-only Telegram reconciliation inspector
