@@ -7,6 +7,7 @@ import re
 from typing import Callable
 
 from veltrix_v2.reporting.delivery import DeliveryReceipt
+from veltrix_v2.reporting.report_identity import delivery_idempotency_key_fields
 
 
 _HASH = re.compile(r"^[0-9a-f]{64}$")
@@ -32,9 +33,9 @@ class PostgresTelegramDeliveryStore:
         if not isinstance(destination, str) or not destination.strip():
             raise ValueError("DELIVERY_DESTINATION_REQUIRED")
         destination_hash = hashlib.sha256(destination.encode("utf-8")).hexdigest()
-        expected_key = hashlib.sha256(
-            f"{report_id}\n{report_sha256}\n{destination}".encode("utf-8")
-        ).hexdigest()
+        expected_key = delivery_idempotency_key_fields(
+            report_id, report_sha256, destination
+        )
         if key != expected_key:
             raise ValueError("DELIVERY_IDEMPOTENCY_KEY_REPORT_BINDING_MISMATCH")
         with self._connect() as connection:
