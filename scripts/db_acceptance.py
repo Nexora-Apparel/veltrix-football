@@ -20,6 +20,10 @@ EXPECTED_TABLES = {
     "source_approval_status_events", "capture_manifests", "capture_manifest_events",
     "provider_capture_requests", "entity_crosswalk_versions", "feature_snapshots",
     "feature_snapshot_eligibility_events", "feature_snapshot_links",
+    "provider_credit_budget_snapshots", "provider_credit_reservation_events",
+    "provider_quota_snapshots", "provider_quota_reconciliation_events",
+    "provider_capture_state_events", "paper_ledger_events",
+    "telegram_delivery_claims", "telegram_delivery_reconciliations",
 }
 EXPECTED_INDEXES = {
     "fixtures_kickoff_idx", "fixtures_competition_kickoff_idx",
@@ -29,6 +33,12 @@ EXPECTED_INDEXES = {
     "provider_entitlement_history_idx", "source_observations_source_lookup_idx",
     "fixtures_provider_kickoff_idx", "fixture_result_versions_fixture_time_idx",
     "ingestion_quarantine_open_idx", "source_approval_status_latest_idx",
+    "provider_credit_budget_scope_idx", "provider_credit_reservation_attempt_uq",
+    "provider_credit_reservation_period_idx", "provider_credit_reservation_run_idx",
+    "provider_credit_reservation_event_identity_uq", "provider_quota_snapshot_account_idx",
+    "provider_quota_reconciliation_reservation_idx", "provider_capture_state_events_latest_idx",
+    "paper_ledger_prediction_unique", "paper_ledger_settlement_unique",
+    "telegram_delivery_reconciliation_root_unique", "telegram_delivery_reconciliation_successor_unique",
 }
 
 
@@ -99,7 +109,15 @@ def run_acceptance() -> dict:
                     'entity_crosswalk_versions'::regclass,
                     'feature_snapshots'::regclass,
                     'feature_snapshot_eligibility_events'::regclass,
-                    'feature_snapshot_links'::regclass
+                    'feature_snapshot_links'::regclass,
+                    'provider_credit_budget_snapshots'::regclass,
+                    'provider_credit_reservation_events'::regclass,
+                    'provider_quota_snapshots'::regclass,
+                    'provider_quota_reconciliation_events'::regclass,
+                    'provider_capture_state_events'::regclass,
+                    'paper_ledger_events'::regclass,
+                    'telegram_delivery_claims'::regclass,
+                    'telegram_delivery_reconciliations'::regclass
                   )
             """)
             immutable_triggers = {row[0] for row in cur.fetchall()}
@@ -118,6 +136,23 @@ def run_acceptance() -> dict:
                 "feature_snapshots_append_only",
                 "feature_snapshot_eligibility_events_append_only",
                 "feature_snapshot_links_append_only",
+                "provider_credit_budget_snapshots_append_only",
+                "provider_credit_reservation_events_append_only",
+                "provider_quota_reconciliation_validate",
+                "provider_quota_snapshots_append_only",
+                "provider_quota_reconciliation_events_append_only",
+                "provider_capture_state_events_validate",
+                "provider_capture_state_events_append_only",
+                "paper_ledger_events_validate_chain",
+                "paper_ledger_events_append_only",
+                "paper_ledger_events_no_truncate",
+                "telegram_delivery_claims_transition",
+                "telegram_delivery_claims_no_delete",
+                "telegram_delivery_claims_no_truncate",
+                "telegram_delivery_reconciliations_insert_guard",
+                "telegram_delivery_reconciliations_no_update",
+                "telegram_delivery_reconciliations_no_delete",
+                "telegram_delivery_reconciliations_no_truncate",
             }
             assert expected_triggers <= immutable_triggers, sorted(expected_triggers - immutable_triggers)
 

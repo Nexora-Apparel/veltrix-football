@@ -65,6 +65,7 @@ def build_fixture_snapshot_manifest(
     fixture_count: int,
     rights_approval_id: str,
     rights_evidence_sha256: str,
+    http_status: int = 200,
 ) -> dict[str, str]:
     """Build deterministic hashes for a raw upcoming-fixture page snapshot."""
     if (provider, source_id) != ("5DollarFootballAPI", "5dollarfootballapi"):
@@ -85,6 +86,8 @@ def build_fixture_snapshot_manifest(
         raise ValueError("FIXTURE_SNAPSHOT_RAW_RESPONSE_INVALID")
     if type(fixture_count) is not int or fixture_count < 0:
         raise ValueError("FIXTURE_SNAPSHOT_FIXTURE_COUNT_INVALID")
+    if type(http_status) is not int or not 200 <= http_status < 300:
+        raise ValueError("FIXTURE_SNAPSHOT_HTTP_STATUS_INVALID")
 
     response_hash = sha256(raw_response).hexdigest()
     body = {
@@ -94,6 +97,7 @@ def build_fixture_snapshot_manifest(
         "endpoint": endpoint,
         "request_id": request_id,
         "request_params": dict(request_params),
+        "http_status": http_status,
         "requested_at": requested_at.isoformat(),
         "retrieved_at": retrieved_at.isoformat(),
         "recorded_at": recorded_at.isoformat(),
@@ -125,6 +129,7 @@ def persist_fixture_snapshot_response(
     recorded_at: datetime,
     raw_response: bytes,
     response_headers: Mapping[str, str],
+    http_status: int = 200,
     competition_id: str,
     fixture_count: int,
     rights_approval: SourceApproval,
@@ -163,6 +168,7 @@ def persist_fixture_snapshot_response(
         retrieved_at=retrieved_at,
         recorded_at=recorded_at,
         raw_response=raw_response,
+        http_status=http_status,
         competition_id=competition_id,
         fixture_count=fixture_count,
         rights_approval_id=rights_approval.approval_id,
@@ -252,11 +258,11 @@ def persist_fixture_snapshot_response(
                 """INSERT INTO provider_responses
                    (provider, source_id, endpoint, request_id, request_params,
                     http_status, response_sha256, raw_body, response_headers, fetched_at)
-                   VALUES (%s, %s, %s, %s, %s::jsonb, 200, %s, %s, %s::jsonb, %s)
+                   VALUES (%s, %s, %s, %s, %s::jsonb, %s, %s, %s, %s::jsonb, %s)
                    ON CONFLICT (provider, source_id, request_id, response_sha256) DO NOTHING
                    RETURNING id""",
                 (provider, source_id, endpoint, request_id, _json(dict(request_params)),
-                 response_hash, raw_response, _json(headers), retrieved_at),
+                 http_status, response_hash, raw_response, _json(headers), retrieved_at),
                 """SELECT id FROM provider_responses
                    WHERE provider = %s AND source_id = %s AND request_id = %s
                      AND response_sha256 = %s""",
@@ -409,11 +415,11 @@ def persist_provider_evidence_report(
                 """INSERT INTO provider_responses
                    (provider, source_id, endpoint, request_id, request_params,
                     http_status, response_sha256, raw_body, response_headers, fetched_at)
-                   VALUES (%s, %s, %s, %s, %s::jsonb, 200, %s, %s, '{}'::jsonb, %s)
+                   VALUES (%s, %s, %s, %s, %s::jsonb, %s, %s, %s, '{}'::jsonb, %s)
                    ON CONFLICT (provider, source_id, request_id, response_sha256) DO NOTHING
                    RETURNING id""",
                 (first.provider, first.source_id, first.endpoint, first.request_id,
-                 _json({"capture_manifest_sha256": manifest_hash}), response_hash,
+                 _json({"capture_manifest_sha256": manifest_hash}), first.http_status, response_hash,
                  first.raw_response, report.manifest.retrieved_at),
                 """SELECT id FROM provider_responses
                    WHERE provider = %s AND source_id = %s AND request_id = %s

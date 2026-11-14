@@ -150,7 +150,7 @@ def test_successful_request_preserves_http_status_and_exact_query(monkeypatch):
         return Response()
 
     monkeypatch.setattr(capture, "urlopen", fake_urlopen)
-    raw, headers, requested, retrieved, http_status = _request_page(
+    raw, headers, request_params, requested, retrieved, http_status = _request_page(
         "test-key",
         competition_id="league-123",
         status="finished",
@@ -162,6 +162,7 @@ def test_successful_request_preserves_http_status_and_exact_query(monkeypatch):
     )
     query = parse_qs(urlparse(seen["url"]).query)
     assert raw == b'{"fixtures":[]}'
+    assert request_params["status"] == "finished"
     assert http_status == 206
     assert headers["X-Requests-Remaining"] == "42"
     assert query["status"] == ["finished"]
@@ -282,7 +283,7 @@ def test_run_capture_orchestrates_mocked_pages_with_optional_staging_ledger(
                         lambda *a, **k: SimpleNamespace(allowed=True, reason_code=None))
     monkeypatch.setattr(
         capture, "_request_page",
-        lambda *a, **k: (b"{}", {}, NOW, NOW + timedelta(seconds=1), 200),
+        lambda *a, **k: (b"{}", {}, {"status": k.get("status")}, NOW, NOW + timedelta(seconds=1), 200),
     )
 
     def fake_capture_page(raw, headers, *, status, **kwargs):

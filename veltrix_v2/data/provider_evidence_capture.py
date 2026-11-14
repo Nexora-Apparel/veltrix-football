@@ -125,6 +125,7 @@ class ProviderResultCapture:
     source_timestamp_evidence_sha256: str = ""
     availability_timestamp_basis: str = "unknown"
     availability_timestamp_evidence_sha256: str = ""
+    http_status: int = 200
 
 
 @dataclass(frozen=True, slots=True)
@@ -300,6 +301,8 @@ def _capture_one(row: ProviderResultCapture) -> CapturedResultEvidence:
     )
     if any(not isinstance(value, str) or not value.strip() for value in required_text):
         reasons.append("SOURCE_IDENTITY_INCOMPLETE")
+    if type(row.http_status) is not int or not 200 <= row.http_status < 300:
+        reasons.append("HTTP_STATUS_INVALID")
     if not isinstance(row.raw_response, bytes) or not row.raw_response:
         reasons.append("RAW_RESPONSE_BYTES_MISSING")
         raw_hash = ""
@@ -458,7 +461,7 @@ def capture_provider_result_evidence(
     rows = tuple(captures)
     if not rows:
         raise ValueError("EMPTY_PROVIDER_EVIDENCE_CAPTURE")
-    identity = {(r.provider, r.source_id, r.endpoint, r.request_id) for r in rows}
+    identity = {(r.provider, r.source_id, r.endpoint, r.request_id, r.http_status) for r in rows}
     if len(identity) != 1:
         raise ValueError("CAPTURE_BATCH_REQUEST_IDENTITY_MISMATCH")
     fixture_ids = [r.crosswalk.canonical_fixture_id if isinstance(r.crosswalk, ResolvedFixtureCrosswalk) else "" for r in rows]
@@ -557,6 +560,7 @@ def capture_fivedollar_page_evidence(
     recorded_at: datetime,
     crosswalks: Mapping[str, ResolvedFixtureCrosswalk],
     rights_approval: SourceApproval,
+    http_status: int = 200,
     prospective_observed: bool = False,
 ) -> ProviderEvidenceCaptureReport:
     """Adapt a parsed 5Dollar page without promoting its derived timestamps.
@@ -611,5 +615,6 @@ def capture_fivedollar_page_evidence(
             source_timestamp_evidence_sha256=sha256(raw_response).hexdigest() if prospective_observed else "",
             availability_timestamp_basis="collector_first_observed_v1" if prospective_observed else "unknown",
             availability_timestamp_evidence_sha256=sha256(raw_response).hexdigest() if prospective_observed else "",
+            http_status=http_status,
         ))
     return capture_provider_result_evidence(captures)
