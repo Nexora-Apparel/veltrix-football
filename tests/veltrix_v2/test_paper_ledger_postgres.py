@@ -89,6 +89,45 @@ def test_batch_append_is_atomic_when_a_later_prediction_is_duplicate(dsn):
         assert loaded.verify_chain()
 
 
+def test_idempotent_batch_skips_existing_and_intra_batch_duplicates(dsn):
+    ledger_id = f"test-ledger-{uuid.uuid4()}"
+    with psycopg.connect(dsn) as connection:
+        store = make_store(connection, ledger_id)
+        store.append_prediction(make_prediction("fixture-existing"))
+        appended, skipped, ledger = store.append_predictions_idempotent([
+            make_prediction("fixture-existing", offset_seconds=3),
+            make_prediction("fixture-new", offset_seconds=5),
+            make_prediction("fixture-new", offset_seconds=7),
+        ])
+        assert [event.fixture_id for event in appended] == ["fixture-new"]
+        assert skipped == 2
+        assert [event.fixture_id for event in ledger.events] == [
+            "fixture-existing", "fixture-new"
+        ]
+        assert ledger.verify_chain()
+
+
+def test_concurrent_idempotent_batches_append_identical_prediction_once(dsn):
+    ledger_id = f"test-ledger-{uuid.uuid4()}"
+
+    def append_once(offset):
+        with psycopg.connect(dsn) as connection:
+            return make_store(connection, ledger_id).append_predictions_idempotent([
+                make_prediction("fixture-concurrent-idempotent", offset_seconds=offset)
+            ])
+
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        results = list(pool.map(append_once, (1, 3)))
+
+    assert sorted(len(result[0]) for result in results) == [0, 1]
+    assert sorted(result[1] for result in results) == [0, 1]
+    with psycopg.connect(dsn) as connection:
+        loaded = make_store(connection, ledger_id).load()
+        assert len(loaded.events) == 1
+        assert loaded.events[0].fixture_id == "fixture-concurrent-idempotent"
+        assert loaded.verify_chain()
+
+
 def test_settlement_event_round_trips_and_links_prediction(dsn):
     ledger_id = f"test-ledger-{uuid.uuid4()}"
     with psycopg.connect(dsn) as connection:
