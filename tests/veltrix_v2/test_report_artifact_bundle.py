@@ -8,6 +8,7 @@ from veltrix_v2.reporting.artifact_bundle import (
     ReportSurfaceBundle,
     build_report_surface_bundle,
     load_authorized_scheduled_report,
+    load_authorized_scheduled_report_from_portable,
     load_report_surface_bundle,
     persist_report_surface_bundle,
     parse_portable_report_surface_bundle,
@@ -315,3 +316,21 @@ def test_bundle_reader_rejects_duplicate_keys_in_commit_marker(tmp_path):
     marker.write_bytes(b'{"schema":"VELTRIX_REPORT_BUNDLE_COMMIT_V1","schema":"duplicate"}')
     with pytest.raises(ValueError, match="DUPLICATE_KEY"):
         load_report_surface_bundle(tmp_path, bundle.identity.report_id)
+
+
+
+def test_scheduled_consumer_loads_same_scheduled_surface_from_portable_bundle():
+    bundle = build_report_surface_bundle(public_source_report())
+    portable = serialize_portable_report_surface_bundle(bundle)
+    scheduled = load_authorized_scheduled_report_from_portable(
+        portable,
+        lambda report, identity: report.get("release_mode") == "RESTRICTED_PUBLIC",
+    )
+    assert scheduled == bundle.scheduled_report
+
+
+def test_scheduled_portable_consumer_fails_closed_without_verifier():
+    bundle = build_report_surface_bundle(public_source_report())
+    portable = serialize_portable_report_surface_bundle(bundle)
+    with pytest.raises(PermissionError, match="VERIFIER_REQUIRED"):
+        load_authorized_scheduled_report_from_portable(portable, None)
