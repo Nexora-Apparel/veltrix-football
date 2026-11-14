@@ -187,6 +187,8 @@ jobs:
         run: python -m pytest --import-mode=importlib -q tests/veltrix_v2/test_telegram_v2_formatting.py
       - name: Test fail-closed V2 Telegram dispatcher
         run: python -m pytest --import-mode=importlib -q tests/veltrix_v2/test_telegram_delivery_runner.py
+      - name: Test V2 certification manifest builder and offline CLI
+        run: python -m pytest --import-mode=importlib -q tests/veltrix_v2/test_certification_manifest_builder.py tests/veltrix_v2/test_certification_manifest_cli.py
       - name: Test V2 Telegram command renderer isolation
         run: python -m pytest --import-mode=importlib -q tests/veltrix_v2/test_telegram_commands.py
       - name: Test V2 Telegram duplicate and uncertain-delivery guards
