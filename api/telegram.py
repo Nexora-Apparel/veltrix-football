@@ -44,16 +44,29 @@ def configure_report_bundle_reader(reader) -> None:
 
 
 def configure_report_bundle_reader_from_url(url: str) -> None:
-    """Configure a bounded reader for one immutable bundle in the VELTRIX command-data branch."""
+    """Configure the single current V2 bundle pointer or one immutable versioned bundle."""
     parsed = urlparse(url)
     allowed_prefix = "/Nexora-Apparel/veltrix-football/command-data/public-data/bundles/"
+    fixed_pointer = (
+        parsed.path
+        == "/Nexora-Apparel/veltrix-football/command-data/public-data/v2_report_bundle.json"
+    )
+    versioned_bundle = (
+        parsed.path.startswith(allowed_prefix)
+        and parsed.path.endswith(".bundle.json")
+        and re.fullmatch(
+            r"[A-Za-z0-9._-]{1,160}",
+            parsed.path[len(allowed_prefix):-len(".bundle.json")],
+        ) is not None
+    )
     if (
         parsed.scheme != "https"
         or parsed.hostname != "raw.githubusercontent.com"
-        or not parsed.path.startswith(allowed_prefix)
-        or not parsed.path.endswith(".bundle.json")
+        or not (fixed_pointer or versioned_bundle)
         or parsed.query
         or parsed.fragment
+        or parsed.username
+        or parsed.password
     ):
         raise ValueError("PORTABLE_REPORT_BUNDLE_URL_NOT_ALLOWLISTED")
 
@@ -92,6 +105,33 @@ def _load_authorized_v2_report_bundle():
     if not isinstance(raw, bytes):
         raise TypeError("PORTABLE_REPORT_BUNDLE_BYTES_REQUIRED")
     return load_authorized_portable_report_surface_bundle(raw, verifier)
+
+
+def configure_v2_publication_from_environment(environ=None) -> bool:
+    """Wire one trusted verifier and one shared portable bundle reader at cold start."""
+    try:
+        from veltrix_v2.reporting.runtime import load_runtime_publication_dependencies
+
+        dependencies = load_runtime_publication_dependencies(environ)
+        if dependencies is None:
+            app.state.v2_publication_runtime_status = "UNCONFIGURED"
+            return False
+        configure_publication_verifier(dependencies.verifier)
+        configure_report_bundle_reader(dependencies.bundle_reader)
+        app.state.v2_publication_runtime_status = "READY"
+        app.state.v2_publication_bundle_url = dependencies.bundle_url
+        return True
+    except Exception as exc:
+        app.state.v2_publication_runtime_status = "BLOCKED"
+        app.state.v2_publication_runtime_error = type(exc).__name__
+        return False
+
+
+
+
+# Both the website data route and Telegram webhook share this one startup configuration.
+# Missing verifier or bundle URL leaves both surfaces fail-closed.
+configure_v2_publication_from_environment()
 
 
 DASHBOARD_HTML = """<!doctype html>
