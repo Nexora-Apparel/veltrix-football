@@ -111,3 +111,45 @@ def test_rejects_settlement_for_different_fixture_identity():
             ledger, fixture, approval(),
             recorded_at=fixture.retrieved_at_utc + timedelta(hours=1)
         )
+
+
+def ledger_with_observed_prediction():
+    ledger = ProspectivePaperLedger()
+    kickoff = BASE + timedelta(days=2)
+    ledger.append_prediction(PaperPrediction(
+        fixture_id="testsrc:fixture-1", competition_id="testsrc:comp-1",
+        home_team_id="testsrc:team-a", away_team_id="testsrc:team-b",
+        kickoff_at=kickoff, prediction_cutoff_at=BASE - timedelta(minutes=5),
+        forecasted_at=BASE - timedelta(minutes=4),
+        recorded_at=BASE - timedelta(minutes=3), model_version="poisson-observed-v1",
+        home_probability=0.5, draw_probability=0.3, away_probability=0.2,
+        evidence_sha256="f" * 64, point_in_time_certifiable=False,
+        evidence_class="PROSPECTIVE_OBSERVED_ONLY",
+    ))
+    return ledger
+
+
+def test_observed_shadow_settlement_uses_collector_first_seen_not_provider_proxy():
+    ledger = ledger_with_observed_prediction()
+    fixture = source_fixture()
+    event = settle_from_verified_fixture(
+        ledger, fixture, approval(), recorded_at=fixture.retrieved_at_utc + timedelta(hours=1)
+    )
+    assert event.event_type == "SETTLEMENT"
+    assert event.payload["prediction_event_type"] == "SHADOW_PREDICTION"
+    assert event.payload["prediction_evidence_class"] == "PROSPECTIVE_OBSERVED_ONLY"
+    assert event.payload["result_availability_basis"] == "collector_first_observed_v1"
+    assert event.payload["result_available_at"] == fixture.retrieved_at_utc.isoformat()
+    assert event.payload["result_retrieved_at"] == fixture.retrieved_at_utc.isoformat()
+    assert ledger.verify_chain()
+
+
+def test_observed_shadow_settlement_still_requires_explicit_benchmarking_rights():
+    ledger = ledger_with_observed_prediction()
+    fixture = source_fixture()
+    restricted = approval(purposes={DataUsePurpose.COLLECTION, DataUsePurpose.STORAGE})
+    with pytest.raises(ValueError, match="PURPOSE_NOT_PERMITTED"):
+        settle_from_verified_fixture(
+            ledger, fixture, restricted,
+            recorded_at=fixture.retrieved_at_utc + timedelta(hours=1)
+        )
