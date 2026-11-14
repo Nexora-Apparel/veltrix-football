@@ -42,7 +42,7 @@ from scripts.phase5_staging_coverage_audit import validate_staging_dsn_target
 
 
 API_BASE = "https://api.5dollarfootballapi.com/v1"
-APPROVAL_ID = "approval-5dollar-community-fixture-result-2026-11"
+APPROVAL_ID = "approval-5dollar-community-fixture-result-benchmarking-2026-11-14"
 MAX_REQUESTS = 14
 MIN_REQUEST_INTERVAL_SECONDS = 3.1
 USER_AGENT = "VELTRIX-FOOTBALL-2.0-READONLY-SHADOW/1.0"
