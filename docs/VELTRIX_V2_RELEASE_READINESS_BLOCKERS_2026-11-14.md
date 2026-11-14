@@ -161,7 +161,7 @@ Regression coverage also asserts that the legacy daily-report watchdog and legac
 
 ## API surface safety
 
-The FastAPI command centre now passes an explicitly installed server-side publication verifier into every report/dashboard and Telegram command loader. No verifier is installed by default, so the dashboard returns `UNAVAILABLE` and no V2 predictions until trusted attestation and rights verification is configured. Legacy paper-ledger and model-validation snapshots are no longer loaded into V2 dashboard or Telegram command responses. CI covers the no-verifier fail-closed path.
+The FastAPI command centre exposes a server-side publication-verifier injection point and passes its configured value into report/dashboard and Telegram command loaders. No production bootstrap currently installs a verifier, so the dashboard returns `UNAVAILABLE` and no V2 predictions. A trusted attestation and rights-verification implementation still has to be provisioned and wired at startup. Legacy paper-ledger and model-validation snapshots are no longer loaded into V2 dashboard or Telegram command responses. CI covers the no-verifier fail-closed path.
 
 
 ## Legacy dashboard fallback removal — 2026-11-14 15:22 UTC
@@ -175,3 +175,10 @@ A final website audit found that the browser still had independent raw-GitHub/CD
 - CI run #1445 (`43621787204`) passed Foundation, PostgreSQL 16 and PostgreSQL 18.
 - The previous #1441 foundation failure was isolated to the dashboard JavaScript extraction check: its regex did not reliably identify the embedded HTML assignment. The check now parses `api/telegram.py` with Python's AST, extracts the literal `DASHBOARD_HTML`, and runs `node --check` on the embedded script.
 - This is a CI-check correction, not a change to publication eligibility or launch status.
+
+
+## CI checkpoint — 2026-11-14 17:35 UTC
+
+- Code head `c69c83337a3b32c0e069b6ab72e518fbd7fe4908`: CI run #1445 passed Foundation, PostgreSQL 16 and PostgreSQL 18.
+- Documentation update head is `d6c7f3161f3227c5107b27a6b694dfb2c8e78307`; CI run #1446 was queued at the time of this update.
+- PR #118 remains open/draft, mergeable, and unmerged. No migrations, production writes, provider requests, Telegram sends, schedule activation or deployment occurred.
