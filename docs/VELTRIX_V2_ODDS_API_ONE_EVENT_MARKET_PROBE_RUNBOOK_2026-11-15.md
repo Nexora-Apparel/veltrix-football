@@ -76,3 +76,13 @@ Send the API key in the `x-api-key` header, not in a logged URL. Capture the raw
 ## Release boundary
 
 Passing this probe establishes only the returned bookmaker/market coverage for this one event and region at the captured time. It does not certify the odds provider across all competitions, establish 98% timestamped odds coverage, certify any model or authorize publication. Use the captured observations in prediction research only after provenance and timestamp checks. All prediction and publication release gates remain independently fail-closed.
+
+
+## Governing project policy
+
+This runbook is subordinate to the personal-use and separated-control policy in:
+- `docs/PROVIDER_PLAN_CORRECTION.md`
+- `docs/VELTRIX_V2_ACCURACY_AND_MODEL_STANDARD_2026-11-11.md`
+- `docs/VELTRIX_V2_REPORT_TELEGRAM_RELEASE_CONTRACT_2026-11-14.md`
+
+No commercial monetisation or billing-document requirement may be reintroduced as a model-quality, certification or publication gate. Provider terms, endpoint entitlement, quota and the bounded one-request/3-credit safety guard remain applicable.
