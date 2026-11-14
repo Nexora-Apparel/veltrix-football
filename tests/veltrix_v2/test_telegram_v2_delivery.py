@@ -213,6 +213,10 @@ def test_partial_telegram_send_failure_is_unknown_and_never_replayed():
 def test_legacy_telegram_entrypoint_refuses_v2_report_before_network(monkeypatch, tmp_path):
     import json
     import sys
+    import types
+    monkeypatch.setitem(sys.modules, "requests", types.SimpleNamespace(
+        post=lambda *args, **kwargs: pytest.fail("legacy sender must not contact Telegram")
+    ))
     from scripts import send_telegram_report
 
     report_path = tmp_path / "v2-report.json"
