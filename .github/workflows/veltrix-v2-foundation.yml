@@ -60,6 +60,12 @@ jobs:
         run: python -m pytest --import-mode=importlib -q tests/veltrix_v2/test_form.py
       - name: Test chronological Elo challenger evaluation
         run: python -m pytest --import-mode=importlib -q tests/veltrix_v2/test_elo_challenger.py
+      - name: Test chronological team form and shared-sample challengers
+        run: python -m pytest --import-mode=importlib -q tests/veltrix_v2/test_model_challengers_and_paper_ledger.py
+      - name: Test rights-gated prospective paper forecast admission
+        run: python -m pytest --import-mode=importlib -q tests/veltrix_v2/test_paper_admission.py
+      - name: Test rights-verified paper settlements
+        run: python -m pytest --import-mode=importlib -q tests/veltrix_v2/test_paper_settlement.py
       - name: Test deterministic batch prediction engine
         run: python -m pytest --import-mode=importlib -q tests/veltrix_v2/test_prediction_engine.py
       - name: Test evidence-backed team identity crosswalk

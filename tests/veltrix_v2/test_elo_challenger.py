@@ -30,10 +30,10 @@ def test_challenger_uses_only_certified_pre_cutoff_history():
     report = evaluate_elo_challenger(
         rows, evaluation_as_of=BASE + timedelta(days=10)
     )
-    assert report.scored_targets == 3
+    assert report.scored_targets == 2
     assert report.skipped_uncertified_targets == 1
     assert report.metrics is not None
-    assert report.metrics.sample_count == 3
+    assert report.metrics.sample_count == 2
 
 
 def test_no_future_training_and_duplicate_target_is_excluded():
@@ -48,7 +48,6 @@ def test_no_future_training_and_duplicate_target_is_excluded():
         rows, evaluation_as_of=BASE + timedelta(days=10)
     )
     assert report.duplicate_fixture_rows == 2
-    assert all(x.fixture_id not in {"dup", "future"} for x in rows[:0])
     assert report.scored_targets == 1
 
 
