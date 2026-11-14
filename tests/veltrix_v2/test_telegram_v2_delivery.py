@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import json
+
 import pytest
 
 from veltrix_v2.reporting.artifact_bundle import (
