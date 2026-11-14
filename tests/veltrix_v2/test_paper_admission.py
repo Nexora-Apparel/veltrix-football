@@ -246,21 +246,18 @@ def test_rights_recheck_uses_explicit_provider_competition_id():
     assert len(admitted.admitted) == 1
 
     missing_provider_scope = replace(provider_history, provider_competition_id=None)
-    try:
-        admit_prospective_observed_shadow_forecasts(
-            _fixture_set(certifiable=False)[0],
-            [provider_target],
-            [missing_provider_scope],
-            source_approvals={provider_scope_approval.approval_id: provider_scope_approval},
-            model_artifact_sha256="b" * 64,
-            feature_set_sha256="c" * 64,
-            forecasted_at=NOW + timedelta(seconds=1),
-            recorded_at=NOW + timedelta(seconds=2),
-        )
-    except ValueError as exc:
-        assert str(exc) == "SOURCE_APPROVAL_COMPETITION_SCOPE_MISMATCH"
-    else:
-        raise AssertionError("missing provider competition scope must fail closed")
+    rejected = admit_prospective_observed_shadow_forecasts(
+        _fixture_set(certifiable=False)[0],
+        [provider_target],
+        [missing_provider_scope],
+        source_approvals={provider_scope_approval.approval_id: provider_scope_approval},
+        model_artifact_sha256="b" * 64,
+        feature_set_sha256="c" * 64,
+        forecasted_at=NOW + timedelta(seconds=1),
+        recorded_at=NOW + timedelta(seconds=2),
+    )
+    assert not rejected.admitted
+    assert rejected.rejected[0].reason_code == "SOURCE_APPROVAL_COMPETITION_SCOPE_MISMATCH"
 
 
 
@@ -306,15 +303,12 @@ def test_5dollar_shadow_admission_requires_raw_page_and_provider_scope_evidence(
     missing_page_hash = replace(
         provider_target, response_sha256=None, capture_manifest_sha256=None
     )
-    try:
-        admit_prospective_observed_shadow_forecasts(
-            report, [missing_page_hash], [provider_history],
-            source_approvals={approval.approval_id: approval},
-            model_artifact_sha256="b" * 64, feature_set_sha256="c" * 64,
-            forecasted_at=NOW + timedelta(seconds=1),
-            recorded_at=NOW + timedelta(seconds=2),
-        )
-    except ValueError as exc:
-        assert str(exc) == "TARGET_RESPONSE_CAPTURE_EVIDENCE_MISSING"
-    else:
-        raise AssertionError("5Dollar target without page evidence must be rejected")
+    rejected = admit_prospective_observed_shadow_forecasts(
+        report, [missing_page_hash], [provider_history],
+        source_approvals={approval.approval_id: approval},
+        model_artifact_sha256="b" * 64, feature_set_sha256="c" * 64,
+        forecasted_at=NOW + timedelta(seconds=1),
+        recorded_at=NOW + timedelta(seconds=2),
+    )
+    assert not rejected.admitted
+    assert rejected.rejected[0].reason_code == "TARGET_RESPONSE_CAPTURE_EVIDENCE_MISSING"
