@@ -165,3 +165,45 @@ def test_jsonl_paper_ledger_persists_and_verifies_hash_chain(tmp_path):
     assert reloaded.verify_chain()
     assert reloaded.events[0].event_sha256 == event.event_sha256
     assert path.read_text(encoding="utf-8").count("\n") == 1
+
+
+def test_paper_ledger_keeps_first_observed_predictions_in_distinct_shadow_event_type():
+    ledger = ProspectivePaperLedger()
+    kickoff = BASE + timedelta(days=40)
+    prediction = PaperPrediction(
+        fixture_id="observed-1", competition_id="league",
+        home_team_id="A", away_team_id="B", kickoff_at=kickoff,
+        prediction_cutoff_at=kickoff - timedelta(hours=3),
+        forecasted_at=kickoff - timedelta(hours=2),
+        recorded_at=kickoff - timedelta(hours=1),
+        model_version="candidate-observed-v1",
+        home_probability=0.46, draw_probability=0.29, away_probability=0.25,
+        evidence_sha256="f" * 64, point_in_time_certifiable=False,
+        evidence_class="PROSPECTIVE_OBSERVED_ONLY",
+    )
+    event = ledger.append_prediction(prediction)
+    assert event.event_type == "SHADOW_PREDICTION"
+    assert event.payload["point_in_time_certifiable"] is False
+    assert event.payload["evidence_class"] == "PROSPECTIVE_OBSERVED_ONLY"
+    assert ledger.verify_chain()
+
+
+def test_jsonl_store_round_trips_observed_only_shadow_event(tmp_path):
+    store = JsonlPaperLedgerStore(tmp_path / "observed" / "ledger.jsonl")
+    kickoff = BASE + timedelta(days=50)
+    prediction = PaperPrediction(
+        fixture_id="observed-durable", competition_id="league",
+        home_team_id="A", away_team_id="B", kickoff_at=kickoff,
+        prediction_cutoff_at=kickoff - timedelta(hours=3),
+        forecasted_at=kickoff - timedelta(hours=2),
+        recorded_at=kickoff - timedelta(hours=1),
+        model_version="candidate-observed-v1",
+        home_probability=0.40, draw_probability=0.30, away_probability=0.30,
+        evidence_sha256="e" * 64, point_in_time_certifiable=False,
+        evidence_class="PROSPECTIVE_OBSERVED_ONLY",
+    )
+    event = store.append_prediction(prediction)
+    loaded = store.load()
+    assert loaded.verify_chain()
+    assert loaded.events[0].event_type == "SHADOW_PREDICTION"
+    assert loaded.events[0].event_sha256 == event.event_sha256
