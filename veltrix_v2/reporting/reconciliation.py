@@ -136,6 +136,10 @@ def validate_reconciliation_event(
         parent = next((row for row in existing if str(row.get("reconciliation_id")) == supersedes), None)
         if parent is None or parent.get("idempotency_key") != event["idempotency_key"]:
             raise ValueError("RECONCILIATION_SUPERSESSION_MISMATCH")
+        parent_recorded_at = _aware_datetime(parent.get("recorded_at"), "parent_recorded_at")
+        parent_observed_at = _aware_datetime(parent.get("observed_at"), "parent_observed_at")
+        if recorded_at < parent_recorded_at or observed_at < parent_observed_at:
+            raise ValueError("RECONCILIATION_SUPERSESSION_TIME_REGRESSION")
         if any(row.get("supersedes_reconciliation_id") == supersedes for row in existing):
             raise ValueError("RECONCILIATION_PARENT_ALREADY_SUPERSEDED")
 
