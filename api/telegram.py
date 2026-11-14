@@ -14,7 +14,7 @@ from fastapi import FastAPI, Header, HTTPException, Request as FastAPIRequest
 from fastapi.responses import HTMLResponse, JSONResponse
 
 from app.telegram_commands import handle_command
-from app.report_artifacts import load_latest_report, load_dashboard_snapshot, load_paper_ledger, load_model_validation_report
+from app.report_artifacts import load_latest_report, load_dashboard_snapshot
 from veltrix_v2.reporting.report_identity import REPORT_SCHEMA
 from app.telegram_security import telegram_webhook_secret_token
 
@@ -444,24 +444,19 @@ def dashboard_data() -> dict:
         except Exception:
             return None
 
-    with ThreadPoolExecutor(max_workers=3) as pool:
+    with ThreadPoolExecutor(max_workers=1) as pool:
         report_future = pool.submit(
             _safe_load,
             lambda: load_dashboard_snapshot(_authoritative_publication_verifier()),
         )
-        validation_future = pool.submit(_safe_load, load_model_validation_report)
-        ledger_future = pool.submit(_safe_load, load_paper_ledger)
         report = report_future.result()
         if not isinstance(report, dict):
             report = _safe_load(
                 lambda: load_latest_report(_authoritative_publication_verifier())
             )
-        model_validation = validation_future.result()
-        ledger = ledger_future.result()
-        if isinstance(report, dict) and report.get("schema") == REPORT_SCHEMA:
-            # Never mix the legacy paper ledger or legacy model validation into V2.
-            ledger = None
-            model_validation = None
+    # Legacy paper ledgers and legacy model-validation snapshots are not V2 evidence.
+    ledger = None
+    model_validation = None
 
     if not isinstance(report, dict):
         return {"status": "UNAVAILABLE", "warning": "No published report could be loaded.", "predictions": []}
@@ -833,11 +828,8 @@ async def telegram_webhook(
         # consumes the football provider's API quota.
         try:
             report = load_latest_report(_authoritative_publication_verifier())
-            ledger = (
-                None
-                if isinstance(report, dict) and report.get("schema") == REPORT_SCHEMA
-                else load_paper_ledger()
-            )
+            # No legacy paper ledger is passed into V2 Telegram commands.
+            ledger = None
         except Exception:
             # A data-source outage must not break the Telegram webhook.
             report, ledger = None, None
