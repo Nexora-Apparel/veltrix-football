@@ -1,9 +1,12 @@
 from datetime import datetime, timezone
+import json
+import sys
 
 import pytest
 
 from scripts.phase5_staging_coverage_audit import (
     build_coverage_summary,
+    main,
     parse_as_of,
     validate_staging_dsn_target,
 )
@@ -45,3 +48,12 @@ def test_summary_reports_empty_coverage_without_claiming_certification():
     assert summary["fixture_rows"] == 0
     assert summary["eligible_evidence_rows"] == 0
     assert "does not certify" in summary["certification_notice"]
+
+
+def test_cli_defaults_to_dry_run_without_reading_database_dsn(monkeypatch, capsys):
+    monkeypatch.setattr(sys, "argv", ["phase5_staging_coverage_audit.py"])
+    monkeypatch.delenv("VELTRIX_STAGING_DATABASE_URL", raising=False)
+    assert main() == 0
+    output = json.loads(capsys.readouterr().out)
+    assert output["mode"] == "DRY_RUN"
+    assert output["would_connect"] is False
