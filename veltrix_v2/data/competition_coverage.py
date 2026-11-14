@@ -86,8 +86,9 @@ def audit_competition_coverage(
 
     Eligibility requires exact fixture identity, matching competition,
     timezone-aware availability/recording timestamps no later than as_of,
-    evidence availability before kickoff, explicit rights and temporal
-    certification, and a valid payload SHA-256. Coverage is not model or
+    explicit rights evidence, temporal certification, and a valid payload
+    SHA-256. Results may become available at/after kickoff; all other domains
+    must be available strictly before kickoff. Coverage is not model or
     publication certification.
     """
     if not _aware(as_of):
