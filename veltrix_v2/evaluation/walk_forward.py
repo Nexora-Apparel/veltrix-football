@@ -57,6 +57,7 @@ class FixtureEvaluation:
     baseline_btts_yes: float
     model_over_2_5: float
     baseline_over_2_5: float
+    model_build_id: str | None = None
 
 
 @dataclass(frozen=True)
@@ -76,6 +77,7 @@ class WalkForwardReport:
     non_certifiable_input_rows: int = 0
     recency_half_life_days: float | None = None
     dixon_coles_rho: float = 0.0
+    model_build_id: str | None = None
 
 
 def _aware(value: datetime) -> bool:
@@ -155,6 +157,7 @@ def walk_forward_evaluate(
     cutoff_buffer: timedelta = timedelta(seconds=1),
     recency_half_life_days: float | None = None,
     dixon_coles_rho: float = 0.0,
+    model_build_id: str | None = None,
 ) -> WalkForwardReport:
     """Evaluate with an expanding chronological window and strict point-in-time cutoffs.
 
@@ -163,6 +166,10 @@ def walk_forward_evaluate(
     at kickoff minus cutoff_buffer. Duplicate fixture IDs are all excluded.
     Skips are counted explicitly rather than silently imputed.
     """
+    if model_build_id is not None and (
+        not isinstance(model_build_id, str) or not model_build_id.strip()
+    ):
+        raise ValueError("MODEL_BUILD_ID_INVALID")
     if not _aware(evaluation_as_of):
         raise ValueError("EVALUATION_AS_OF_MUST_BE_TIMEZONE_AWARE")
     if not isinstance(cutoff_buffer, timedelta) or cutoff_buffer <= timedelta(0):
@@ -281,6 +288,7 @@ def walk_forward_evaluate(
             baseline_home_win=base[0], baseline_draw=base[1], baseline_away_win=base[2],
             model_btts_yes=prediction.btts_yes, baseline_btts_yes=base[3],
             model_over_2_5=prediction.over_2_5, baseline_over_2_5=base[4],
+            model_build_id=model_build_id,
         ))
 
     model_1x2 = [(x.model_home_win, x.model_draw, x.model_away_win) for x in scored]
@@ -313,4 +321,5 @@ def walk_forward_evaluate(
         non_certifiable_input_rows=non_certifiable_input_rows,
         recency_half_life_days=recency_half_life_days,
         dixon_coles_rho=dixon_coles_rho,
+        model_build_id=model_build_id,
     )

@@ -159,3 +159,20 @@ def test_walk_forward_rejects_invalid_dixon_coles_rho():
     with pytest.raises(ValueError, match="DIXON_COLES_RHO_INVALID"):
         walk_forward_evaluate(history(40), evaluation_as_of=AS_OF,
                               dixon_coles_rho=1.5)
+
+
+def test_walk_forward_binds_model_build_id_to_every_scored_fixture():
+    report = walk_forward_evaluate(
+        history(40), evaluation_as_of=AS_OF, model_build_id="poisson-build-2026-11-14"
+    )
+    assert report.model_build_id == "poisson-build-2026-11-14"
+    assert report.fixtures
+    assert all(
+        row.model_build_id == "poisson-build-2026-11-14"
+        for row in report.fixtures
+    )
+
+
+def test_walk_forward_rejects_blank_model_build_id():
+    with pytest.raises(ValueError, match="MODEL_BUILD_ID_INVALID"):
+        walk_forward_evaluate(history(40), evaluation_as_of=AS_OF, model_build_id=" ")

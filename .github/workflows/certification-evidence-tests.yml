@@ -82,6 +82,7 @@ jobs:
         run: >-
           python -m pytest --import-mode=importlib -q
           tests/veltrix_v2/test_publication_certification.py
+          tests/veltrix_v2/test_certification_manifest_builder.py
           tests/veltrix_v2/test_report_artifact_bundle.py
           tests/veltrix_v2/test_api_publication_verifier_injection.py
           tests/veltrix_v2/test_telegram_v2_formatting.py
