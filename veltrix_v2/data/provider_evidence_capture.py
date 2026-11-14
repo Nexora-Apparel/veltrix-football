@@ -150,6 +150,8 @@ class CapturedResultEvidence:
     raw_response_sha256: str
     rights_approval_id: str
     rights_evidence_sha256: str
+    rights_approved: bool
+    rights_evaluated_at: str | None
     crosswalk_version: int
     crosswalk_evidence_sha256: str
     point_in_time_certifiable: bool
@@ -283,6 +285,8 @@ def _capture_one(row: ProviderResultCapture) -> CapturedResultEvidence:
         reasons.append("REVISION_HISTORY_INCOMPLETE")
 
     approval = row.rights_approval
+    rights_approved = False
+    rights_evaluated_at = _utc(row.recorded_at) if _aware(row.recorded_at) else None
     if not isinstance(approval, SourceApproval):
         reasons.append("SOURCE_APPROVAL_MISSING")
     else:
@@ -294,7 +298,8 @@ def _capture_one(row: ProviderResultCapture) -> CapturedResultEvidence:
             item.strip() for item in approval.competition_scope.split(",")
         }:
             reasons.append("SOURCE_APPROVAL_COMPETITION_SCOPE_MISMATCH")
-        if _aware(row.recorded_at):
+        decisions_allowed = _aware(row.recorded_at)
+        if decisions_allowed:
             for purpose in (
                 DataUsePurpose.COLLECTION, DataUsePurpose.STORAGE,
                 DataUsePurpose.MODEL_TRAINING,
@@ -305,9 +310,14 @@ def _capture_one(row: ProviderResultCapture) -> CapturedResultEvidence:
                     )
                 except (TypeError, ValueError):
                     reasons.append("SOURCE_RIGHTS_EVALUATION_FAILED")
+                    decisions_allowed = False
                     break
                 if not decision.allowed:
                     reasons.append(f"SOURCE_RIGHTS_{purpose.value}_{decision.reason_code}")
+                    decisions_allowed = False
+        rights_approved = decisions_allowed and not any(
+            code.startswith(("SOURCE_RIGHTS_", "SOURCE_APPROVAL_")) for code in reasons
+        )
 
     crosswalk = row.crosswalk
     if not isinstance(crosswalk, ResolvedFixtureCrosswalk):
@@ -352,6 +362,8 @@ def _capture_one(row: ProviderResultCapture) -> CapturedResultEvidence:
         raw_response_sha256=raw_hash,
         rights_approval_id=approval.approval_id if isinstance(approval, SourceApproval) else "",
         rights_evidence_sha256=approval.evidence_sha256 or "" if isinstance(approval, SourceApproval) else "",
+        rights_approved=rights_approved,
+        rights_evaluated_at=rights_evaluated_at,
         crosswalk_version=crosswalk.mapping_version if crosswalk else 0,
         crosswalk_evidence_sha256=crosswalk.evidence_sha256 if crosswalk else "",
         point_in_time_certifiable=not reasons,

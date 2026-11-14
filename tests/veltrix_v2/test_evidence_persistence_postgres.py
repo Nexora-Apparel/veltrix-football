@@ -148,13 +148,18 @@ def test_evidence_persistence_writes_exact_raw_bytes_and_manifest_links_idempote
         assert manifest[0] == report.manifest.manifest_sha256
         observation = conn.execute("""
             SELECT point_in_time_certifiable,payload->>'manifest_sha256',
-                   payload->>'item_evidence_sha256',provider_response_id
+                   payload->>'item_evidence_sha256',provider_response_id,
+                   payload->>'rights_approved',payload->>'rights_evaluated_at',
+                   payload->>'rights_evidence_sha256'
             FROM source_observations
         """).fetchone()
         assert observation[0] is True
         assert observation[1] == report.manifest.manifest_sha256
         assert observation[2] == report.manifest.item_evidence_sha256[0]
         assert observation[3] == first["provider_response_id"]
+        assert observation[4] == "true"
+        assert observation[5] == report.observations[0].recorded_at
+        assert observation[6] == report.observations[0].rights_evidence_sha256
         assert conn.execute("SELECT COUNT(*) FROM capture_manifest_events").fetchone()[0] == 1
         assert conn.execute("SELECT COUNT(*) FROM provider_capture_requests").fetchone()[0] == 1
         assert conn.execute("SELECT COUNT(*) FROM source_observations").fetchone()[0] == 1
