@@ -140,27 +140,6 @@ function renderFeatured(m,targetId='featured',insightTarget='insights'){
  const odds=marketPriceLines(m);if(odds.length){const price=document.createElement('div');price.className='prices';price.textContent='AVAILABLE MARKET PRICES · '+odds.join(' · ');wrap.append(price)}
  box.append(top,hero,wrap);if(insightTarget)renderInsights(m,insightTarget);
 }
-const VALUE_BET_MODEL_VALIDATED=false; // Enable only after repeated chronological out-of-sample validation.
-function findValueBets(m){
- if(!VALUE_BET_MODEL_VALIDATED)return [];
- const markets=(m.the_odds_api_market_odds||{}).markets||{};const candidates=[
-  {key:'h2h',label:'1X2 Home',p:num((m.probabilities||{}).home_win),names:[String(m.home_team||'').toLowerCase()]},
-  {key:'h2h',label:'1X2 Draw',p:num((m.probabilities||{}).draw),names:['draw']},
-  {key:'h2h',label:'1X2 Away',p:num((m.probabilities||{}).away_win),names:[String(m.away_team||'').toLowerCase()]},
-  {key:'btts',label:'BTTS Yes',p:num(m.btts_yes),names:['yes','btts yes']},
-  {key:'btts',label:'BTTS No',p:Number.isFinite(num(m.btts_yes))?1-num(m.btts_yes):NaN,names:['no','btts no']},
-  {key:'totals',label:'Over 2.5',p:num(m.over_2_5),names:['over 2.5','over'],point:2.5},
-  {key:'totals',label:'Under 2.5',p:Number.isFinite(num(m.over_2_5))?1-num(m.over_2_5):NaN,names:['under 2.5','under'],point:2.5}
- ];const bets=[];
- for(const c of candidates){
-  if(!Number.isFinite(c.p)||c.p<=0||c.p>=1)continue;
-  const list=markets[c.key]||[];const market=(list.find(x=>Number.isFinite(c.point)?Number(x.point)===c.point:true))||list[0];if(!market)continue;
-  const outcome=(market.outcomes||[]).find(o=>c.names.includes(String(o.name||'').toLowerCase())&&Number.isFinite(Number(o.price)));if(!outcome)continue;
-  const price=Number(outcome.price);if(price<=1)continue;const edge=c.p-1/price,ev=c.p*price-1;
-  if(edge>=.05&&ev>=.05)bets.push({label:c.label,prob:c.p,price,edge,ev,bookmaker:market.bookmaker||'Matched bookmaker'});
- }
- return bets.sort((a,b)=>b.ev-a.ev);
-}
 function renderValueBet(m,box){
  const card=document.createElement('article');card.className='insightcard';
  const i=document.createElement('div');i.className='insighticon';i.textContent='◇';
