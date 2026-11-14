@@ -306,7 +306,7 @@ def test_5dollar_shadow_admission_requires_raw_page_and_provider_scope_evidence(
     )
     try:
         admit_prospective_observed_shadow_forecasts(
-            report, [provider_history], targets=[missing_page_hash],
+            report, [missing_page_hash], [provider_history],
             source_approvals={approval.approval_id: approval},
             model_artifact_sha256="b" * 64, feature_set_sha256="c" * 64,
             forecasted_at=NOW + timedelta(seconds=1),
