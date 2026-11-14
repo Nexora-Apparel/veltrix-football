@@ -88,3 +88,14 @@ No Telegram send, retry, schedule activation, database migration, or publication
 ## Evidence URI handling
 
 Evidence locations must use HTTPS, S3 or GCS and must not contain embedded credentials, query-string tokens or fragments. The writer reads the exact evidence bytes and verifies their SHA-256 before persistence. Authentication of the evidence reader and operator/reviewer identities remains the responsibility of the trusted deployment integration.
+
+
+## Read-only operator inspection tool
+
+A staging-only read adapter and CLI are now available:
+
+`python scripts/veltrix_v2/inspect_telegram_reconciliation.py --idempotency-key <64-character-key>`
+
+The CLI requires `DATABASE_URL` for the exact allowlisted Neon staging host/database. The reader then verifies database `veltrix_football_staging` and role `neondb_owner`, starts the transaction with `SET TRANSACTION READ ONLY`, and reads one delivery claim plus its append-only reconciliation history. It returns only the destination hash, never a raw Telegram chat ID. It has no write, send, retry, or retry-authorization method.
+
+The CLI is not a browser UI and will only work after migrations 0009–0010 have been reviewed and applied to the dedicated staging database. No migration was applied as part of this implementation.
