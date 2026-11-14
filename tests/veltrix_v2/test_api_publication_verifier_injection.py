@@ -91,3 +91,14 @@ def test_dashboard_api_counts_only_explicitly_certified_v2_markets(monkeypatch):
     assert result["value_bet_screen"]["status"] == "LOCKED_UNVALIDATED"
     assert result["predictions"][0]["fixture_phase"] == "UPCOMING"
     assert result["predictions"][0]["kickoff_local"] == "19:00 WAT"
+
+
+
+def test_telegram_webhook_routes_commands_only_through_v2_renderer():
+    from pathlib import Path
+
+    source = (Path(__file__).resolve().parents[2] / "api" / "telegram.py").read_text(encoding="utf-8")
+    assert "from veltrix_v2.reporting.telegram_commands import handle_v2_command" in source
+    assert "from app.telegram_commands import handle_command" not in source
+    assert "handle_v2_command(" in source
+    assert "handle_command(" not in source
