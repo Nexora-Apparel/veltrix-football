@@ -32,7 +32,6 @@ from veltrix_v2.data.temporal_eligibility import resolve_rights_status
 from veltrix_v2.ledger.admission import admit_prospective_observed_shadow_forecasts
 from veltrix_v2.ledger.jsonl_store import JsonlPaperLedgerStore
 from veltrix_v2.ledger.postgres_store import PostgresPaperLedgerStore
-from veltrix_v2.ledger.postgres_store import PostgresPaperLedgerStore
 from veltrix_v2.models.engine import predict_batch
 
 from scripts.phase5_staging_coverage_audit import validate_staging_dsn_target
@@ -206,8 +205,7 @@ def _persist_paper_predictions_to_staging(
     validate_staging_dsn_target(dsn)
     import psycopg
 
-    parsed = urlparse(dsn)
-    host = parsed.hostname or ""
+    host = urlparse(dsn).hostname or ""
     with psycopg.connect(dsn, autocommit=False) as connection:
         identity = connection.execute(
             "SELECT current_database(), current_user"
@@ -223,26 +221,21 @@ def _persist_paper_predictions_to_staging(
             host=host,
             role=identity[1],
         )
-        existing = store.load()
-        existing_keys = {
-            (event.fixture_id, event.model_version)
-            for event in existing.events
-            if event.event_type in {"PREDICTION", "SHADOW_PREDICTION"}
-        }
-        new_predictions = [
-            prediction for prediction in predictions
-            if (prediction.fixture_id, prediction.model_version) not in existing_keys
-        ]
-        duplicates = len(predictions) - len(new_predictions)
-        appended = store.append_predictions(new_predictions) if new_predictions else []
-        ledger = store.load()
-        head = ledger.events[-1].event_sha256 if ledger.events else None
+        if predictions:
+            appended, duplicates, ledger = store.append_predictions_idempotent(predictions)
+        else:
+            ledger = store.load()
+            appended, duplicates = [], 0
+        if not ledger.verify_chain():
+            raise ValueError("PAPER_LEDGER_CHAIN_VERIFICATION_FAILED")
         return {
             "events_appended": len(appended),
             "duplicate_predictions_skipped": duplicates,
             "ledger_event_count": len(ledger.events),
-            "ledger_head_sha256": head,
-            "chain_verified": ledger.verify_chain(),
+            "ledger_head_sha256": (
+                ledger.events[-1].event_sha256 if ledger.events else None
+            ),
+            "chain_verified": True,
         }
 
 
@@ -322,41 +315,6 @@ def _persist_capture_report_to_staging(dsn: str, capture_report) -> dict[str, in
             host=host,
             role=identity[1],
         )
-
-
-def _persist_shadow_predictions_to_staging(
-    dsn: str, predictions: list
-) -> int:
-    """Atomically append admitted shadow predictions to the exact staging ledger."""
-    validate_staging_dsn_target(dsn)
-    if not predictions:
-        return 0
-    import psycopg
-
-    parsed = urlparse(dsn)
-    host = parsed.hostname or ""
-    with psycopg.connect(dsn, autocommit=False) as connection:
-        identity = connection.execute(
-            "SELECT current_database(), current_user"
-        ).fetchone()
-        if identity != ("veltrix_football_staging", "neondb_owner"):
-            raise PermissionError("STAGING_DATABASE_ROLE_NOT_ALLOWLISTED")
-        exists = connection.execute(
-            "SELECT to_regclass('public.paper_ledger_events') IS NOT NULL"
-        ).fetchone()[0]
-        if not exists:
-            raise RuntimeError("PAPER_LEDGER_MIGRATION_0008_REQUIRED")
-        store = PostgresPaperLedgerStore(
-            connection,
-            ledger_id="veltrix-football-v2-observed-shadow",
-            write_enabled=True,
-            environment="staging",
-            database_name=identity[0],
-            host=host,
-            role=identity[1],
-        )
-        events = store.append_predictions(predictions)
-        return len(events)
 
 
 def _capture_page(
