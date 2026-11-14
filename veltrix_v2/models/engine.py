@@ -22,6 +22,8 @@ class PredictionTarget:
     retrieved_at: datetime
     payload_sha256: str
     rights_approval_id: str
+    home_team_name: str = ""
+    away_team_name: str = ""
 
 
 @dataclass(frozen=True)
@@ -32,6 +34,8 @@ class ForecastRecord:
     cutoff_at: datetime
     provider: str
     source_id: str
+    home_team_name: str
+    away_team_name: str
     model: PoissonPrediction
 
 
@@ -146,6 +150,8 @@ def predict_batch(
             cutoff_at=cutoff_at,
             provider=target.provider,
             source_id=target.source_id,
+            home_team_name=target.home_team_name,
+            away_team_name=target.away_team_name,
             model=prediction,
         ))
 
