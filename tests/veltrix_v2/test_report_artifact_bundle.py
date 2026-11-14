@@ -68,7 +68,7 @@ def test_same_report_id_with_changed_content_cannot_overwrite_artifacts(tmp_path
 def test_bundle_rejects_tampered_prehashed_report():
     report = source_report()
     report["report_sha256"] = "0" * 64
-    with pytest.raises(ValueError, match="REPORT_BUNDLE_COMMIT_HASH_MISMATCH"):
+    with pytest.raises(ValueError, match="content hash"):
         build_report_surface_bundle(report)
 
 
@@ -87,7 +87,7 @@ def test_bundle_reader_rejects_tampered_telegram_artifact(tmp_path):
     changed = json.loads(paths["telegram"].read_text())
     changed["predictions"][0]["publication_status"] = "PUBLISHED"
     paths["telegram"].write_text(json.dumps(changed))
-    with pytest.raises(ValueError, match="content hash"):
+    with pytest.raises(ValueError, match="REPORT_BUNDLE_COMMIT_HASH_MISMATCH"):
         load_report_surface_bundle(tmp_path, bundle.identity.report_id)
 
 
