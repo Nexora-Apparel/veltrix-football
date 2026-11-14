@@ -6,6 +6,7 @@ requires an injected verifier backed by the authoritative publication gate.
 from __future__ import annotations
 
 from collections.abc import Callable, Mapping
+import math
 from typing import Any
 
 from veltrix_v2.reporting.report_identity import (
@@ -22,12 +23,17 @@ MARKET_LABELS = {
 }
 
 
-def _percent(value: Any) -> str:
-    if isinstance(value, bool) or not isinstance(value, (int, float)):
-        return "—"
-    if not 0 <= value <= 1:
-        return "—"
-    return f"{value:.0%}"
+def _market_percentages(values: Mapping[str, Any], keys: tuple[str, ...]) -> list[str]:
+    probabilities = [values.get(key) for key in keys]
+    if any(
+        isinstance(value, bool) or not isinstance(value, (int, float))
+        or not math.isfinite(value) or not 0 <= value <= 1
+        for value in probabilities
+    ):
+        raise ValueError("CERTIFIED_MARKET_PROBABILITY_INVALID")
+    if abs(sum(probabilities) - 1.0) > 1e-6:
+        raise ValueError("CERTIFIED_MARKET_PROBABILITIES_NOT_NORMALIZED")
+    return [f"{value:.0%}" for value in probabilities]
 
 
 def _fixture_block(fixture: Mapping[str, Any]) -> list[str]:
@@ -54,13 +60,15 @@ def _fixture_block(fixture: Mapping[str, Any]) -> list[str]:
         values = markets.get(market)
         if not isinstance(values, Mapping):
             raise ValueError(f"certified market {market} has no probabilities")
-        labels = MARKET_LABELS[market]
         if market == "1X2":
-            rendered = f"Home {_percent(values.get('home'))} | Draw {_percent(values.get('draw'))} | Away {_percent(values.get('away'))}"
+            home, draw, away = _market_percentages(values, ("home", "draw", "away"))
+            rendered = f"Home {home} | Draw {draw} | Away {away}"
         elif market == "BTTS":
-            rendered = f"Yes {_percent(values.get('yes'))} | No {_percent(values.get('no'))}"
+            yes, no = _market_percentages(values, ("yes", "no"))
+            rendered = f"Yes {yes} | No {no}"
         else:
-            rendered = f"Over 2.5 {_percent(values.get('over'))} | Under 2.5 {_percent(values.get('under'))}"
+            over, under = _market_percentages(values, ("over", "under"))
+            rendered = f"Over 2.5 {over} | Under 2.5 {under}"
         lines.append(f"{market}: {rendered}")
     if not certified:
         lines.append("Forecast unavailable: no market passed publication certification.")
