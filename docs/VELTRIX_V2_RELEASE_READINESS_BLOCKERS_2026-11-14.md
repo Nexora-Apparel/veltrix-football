@@ -126,3 +126,12 @@ Latest fully validated code checkpoint at this snapshot: commit `b063979c16e6bf2
 - Added offline portable bundle verification CLI and CI coverage; structural verification does not authorize publication.
 - GitHub Actions run #1381 passed Foundation, PostgreSQL 16 and PostgreSQL 18.
 - API call sites still do not have a trusted runtime certification/rights verifier. Until that is configured, website V2 forecasts remain hidden by design.
+
+
+## Legacy and exhausted-provider workflow containment — 2026-11-14 15:10 UTC
+
+- Paused `paper-tracking-recovery.yml`: it consumed the legacy published report, rebuilt the legacy value screen, re-evaluated old paper predictions and republished legacy command data.
+- Paused `verify-goal-api.yml` and `verify-strikerapi.yml` jobs until the next monthly credit reset. Neither provider has been probed, called, or credit-checked.
+- Added regression guards for all three workflow pauses.
+- Existing legacy daily prediction, dashboard refresh, Telegram recovery and daily-report watchdog jobs remain paused.
+- These changes do not affect offline provider adapters, model tests, staging read-only audits or free-source qualification.
