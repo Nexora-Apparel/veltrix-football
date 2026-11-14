@@ -36,7 +36,7 @@ The database does not recompute the event hash; the application adapter reconstr
 
 ## Migration workflow
 
-`.github/workflows/phase5-staging-paper-ledger-migration.yml` is manual-only. Its `apply` input defaults to false. The script first requires migrations 0001–0004 applied and migrations 0005–0008 as the exact pending sequence. Migrations 0005–0007 add the previously designed provider-credit reservation, quota-evidence and capture-state schemas; they do not dispatch providers or consume credits. An explicit apply additionally requires the internal guard variable and exact staging target.
+`.github/workflows/phase5-staging-paper-ledger-migration.yml` is manual-only. Its `apply` input defaults to false. The script now gates the combined staging sequence 0005–0009: provider-credit reservation, quota evidence, capture-state events, the prospective paper ledger, and durable Telegram delivery claims. The full sequence must be pending exactly; it is not a partial migration. Migrations 0005–0007 add the previously designed provider-credit reservation, quota-evidence and capture-state schemas; they do not dispatch providers or consume credits. An explicit apply additionally requires the internal guard variable and exact staging target.
 
 After apply, it verifies:
 - Full migration checksums.
@@ -48,7 +48,7 @@ No production database, website, Telegram, schedule or deployment is touched.
 
 ## Next integration
 
-The manual 5Dollar capture workflow will use this adapter when its `persist_staging` input is true. Before that workflow can run with staging persistence, migrations 0005–0008 must be reviewed and manually applied to staging. The capture workflow uploads only an aggregate summary; raw response bytes and individual predictions remain in the guarded staging store.
+The manual 5Dollar capture workflow will use this adapter when its `persist_staging` input is true. Before capture or Telegram persistence can be enabled, migrations 0005–0009 must be reviewed and manually applied to staging. The capture workflow uploads only an aggregate summary; raw response bytes and individual predictions remain in the guarded staging store.
 
 
 ## Target snapshot linkage
@@ -56,3 +56,17 @@ The manual 5Dollar capture workflow will use this adapter when its `persist_stag
 The 5Dollar admission path stores both canonical competition identity and provider competition identity. Rights are evaluated against the provider competition ID in the source approval scope; canonical competition IDs remain the model and reporting identity.
 
 Each 5Dollar shadow event now includes target provider/source/fixture IDs, provider competition ID, per-fixture payload SHA-256, raw scheduled-page response SHA-256 and capture-manifest SHA-256. The ledger chain verifier rejects 5Dollar events missing any of these provenance fields. This allows the target snapshot to be linked directly to the immutable `provider_responses`, `capture_manifests` and `provider_capture_requests` records in staging.
+
+
+## Migration 0009 — Telegram delivery claims
+
+`db/migrations/0009_telegram_delivery_claims.sql` creates a durable unique claim keyed by the SHA-256 of report ID, report hash and destination. Only the destination hash is stored; raw chat IDs are not persisted.
+
+- Claims are inserted before any Telegram request.
+- Concurrent inserts for the same key produce exactly one claim winner.
+- State transitions are limited to `CLAIMED → SENT` or `CLAIMED → OUTCOME_UNKNOWN`.
+- Terminal claims cannot be updated, deleted or truncated.
+- `SENT` rows retain Telegram message IDs.
+- `OUTCOME_UNKNOWN` is terminal for automatic dispatch and requires manual reconciliation.
+
+The migration has not been applied to Neon staging. PostgreSQL 16/18 integration tests are required before any staging apply.
