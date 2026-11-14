@@ -100,23 +100,23 @@ def run_read_only_audit(dsn: str, *, as_of: datetime) -> dict[str, object]:
         raise RuntimeError("PSYCOPG3_REQUIRED_FOR_STAGING_AUDIT") from exc
 
     with psycopg.connect(dsn, autocommit=False) as connection:
-        with connection.transaction():
-            connection.execute("SET TRANSACTION READ ONLY")
-            connection.execute("SET LOCAL statement_timeout = '15000ms'")
-            identity = connection.execute(
-                "SELECT current_database(), current_user"
-            ).fetchone()
-            if identity != (_ALLOWED_DATABASE, "neondb_owner"):
-                raise PermissionError("STAGING_DATABASE_ROLE_NOT_ALLOWLISTED")
+        # This must be the first SQL statement in the transaction.
+        connection.execute("SET TRANSACTION READ ONLY")
+        connection.execute("SET LOCAL statement_timeout = '15000ms'")
+        identity = connection.execute(
+            "SELECT current_database(), current_user"
+        ).fetchone()
+        if identity != (_ALLOWED_DATABASE, "neondb_owner"):
+            raise PermissionError("STAGING_DATABASE_ROLE_NOT_ALLOWLISTED")
 
-            fixture_rows = _rows_as_dicts(connection.execute(FIXTURE_COVERAGE_SQL))
-            observation_rows = _rows_as_dicts(connection.execute(OBSERVATION_COVERAGE_SQL))
-            inputs = adapt_persisted_coverage_rows(fixture_rows, observation_rows)
-            result = build_coverage_summary(inputs, as_of=as_of)
-            result["database"] = _ALLOWED_DATABASE
-            result["role"] = "neondb_owner"
-            result["query_mode"] = "READ_ONLY"
-            return result
+        fixture_rows = _rows_as_dicts(connection.execute(FIXTURE_COVERAGE_SQL))
+        observation_rows = _rows_as_dicts(connection.execute(OBSERVATION_COVERAGE_SQL))
+        inputs = adapt_persisted_coverage_rows(fixture_rows, observation_rows)
+        result = build_coverage_summary(inputs, as_of=as_of)
+        result["database"] = _ALLOWED_DATABASE
+        result["role"] = "neondb_owner"
+        result["query_mode"] = "READ_ONLY"
+        return result
 
 
 def main() -> int:
