@@ -156,6 +156,8 @@ def test_public_summary_is_an_explicit_aggregate_only_allowlist():
         "persisted_capture_pages": 2,
         "persisted_shadow_ledger_events": 15,
         "paper_ledger_persisted_to_staging": True,
+        "paper_ledger_chain_verified": True,
+        "duplicate_predictions_skipped": 3,
         "evidence_persisted_to_staging": True,
         "publication_status": "LOCKED",
         "settlement_status": "LOCKED",
@@ -176,6 +178,8 @@ def test_public_summary_is_an_explicit_aggregate_only_allowlist():
     assert summary["admitted_shadow_predictions"] == 15
     assert summary["persisted_shadow_ledger_events"] == 15
     assert summary["public_publication"] is False
+    assert summary["paper_ledger_chain_verified"] is True
+    assert summary["duplicate_predictions_skipped"] == 3
 
 
 
