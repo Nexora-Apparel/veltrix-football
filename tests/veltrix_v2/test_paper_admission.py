@@ -293,7 +293,9 @@ def test_5dollar_shadow_admission_requires_raw_page_and_provider_scope_evidence(
         recorded_at=NOW + timedelta(seconds=2),
     )
     assert len(result.admitted) == 1
-    event = ProspectivePaperLedger().append_prediction(result.admitted[0])
+    ledger = ProspectivePaperLedger()
+    event = ledger.append_prediction(result.admitted[0])
+    assert ledger.verify_chain()
     assert event.payload["target_provider"] == provider
     assert event.payload["target_provider_competition_id"] == "3118717965"
     assert event.payload["target_response_sha256"] == "d" * 64
