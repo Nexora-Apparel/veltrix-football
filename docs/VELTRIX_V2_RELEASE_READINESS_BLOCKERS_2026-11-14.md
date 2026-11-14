@@ -81,3 +81,12 @@ Latest fully validated code head at this snapshot: 36c831421bc1377f6eea4c79d58e0
 - No legacy prediction models, priors, feature logic, or fallback forecasts.
 - No public release based on CI fixtures or exploratory backtests.
 - No production database writes/migrations, Telegram sends, schedule activation, or Vercel deployment attempts while the corresponding gates remain closed.
+
+
+## Latest CI update — 2026-11-14 14:44 UTC
+
+- PR #118 branch head: `7c605fc38b9a8e4c5742878ac461a42b9d5f62b7`.
+- GitHub Actions run #1318 passed Foundation, PostgreSQL 16 and PostgreSQL 18.
+- Legacy daily predictions, dashboard snapshot publication and Telegram recovery remain paused and are covered by regression checks.
+- The publication verifier and artifact bundle remain fail-closed; no real certification manifest is currently eligible.
+- PR #118 remains draft/open/unmerged. No staging migration, production write, provider request, Telegram send, schedule activation or manual Vercel deployment was performed.
