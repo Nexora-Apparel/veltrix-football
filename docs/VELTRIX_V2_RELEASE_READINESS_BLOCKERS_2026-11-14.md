@@ -135,3 +135,6 @@ Latest fully validated code checkpoint at this snapshot: commit `b063979c16e6bf2
 - Added regression guards for all three workflow pauses.
 - Existing legacy daily prediction, dashboard refresh, Telegram recovery and daily-report watchdog jobs remain paused.
 - These changes do not affect offline provider adapters, model tests, staging read-only audits or free-source qualification.
+
+
+Additional legacy containment: paused `historical-model-reconstruction.yml`, which replayed archived forecasts through the excluded legacy model audit stack. CI now asserts this workflow remains disabled. Historical source archives remain preserved; only the legacy reconstruction workflow is paused.
