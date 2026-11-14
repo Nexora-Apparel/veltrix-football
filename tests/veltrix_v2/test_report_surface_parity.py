@@ -265,7 +265,7 @@ def test_invalid_portable_artifact_never_falls_back_to_legacy_report(monkeypatch
 
 
 
-def test_portable_bundle_fetch_cache_is_scoped_to_repository_and_branch(monkeypatch):
+def test_portable_bundle_fetch_cache_is_pinned_to_canonical_repository_and_branch(monkeypatch):
     class Response:
         def __init__(self, payload):
             self.payload = payload
@@ -291,9 +291,11 @@ def test_portable_bundle_fetch_cache_is_scoped_to_repository_and_branch(monkeypa
     assert report_artifacts._load_portable_bundle_bytes() == payload
     assert len(calls) == 1
 
+    monkeypatch.setenv("VELTRIX_DATA_REPOSITORY", "untrusted/fork")
     monkeypatch.setenv("VELTRIX_DATA_BRANCH", "another-data-branch")
     assert report_artifacts._load_portable_bundle_bytes() == payload
-    assert len(calls) == 2
+    assert len(calls) == 1
+    assert "Nexora-Apparel/veltrix-football/command-data/public-data/v2_report_bundle.json" in calls[0][0]
 
 
 def test_portable_bundle_fetch_rejects_oversized_remote_artifact(monkeypatch):
