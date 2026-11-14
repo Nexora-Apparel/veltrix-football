@@ -97,7 +97,7 @@ def _expected_score_to_1x2(expected_home_score: float, draw_rate: float) -> Prob
     d = min(max(draw_rate, 0.0), 0.95)
     # E[score] = P(home win) + 0.5 * P(draw).
     e = min(max(expected_home_score, d / 2.0), 1.0 - d / 2.0)
-    return _normalise(ProbabilityVector(e - d / 2.0, d, 1.0 - d / 2.0 - e + d / 2.0))
+    return _normalise(ProbabilityVector(e - d / 2.0, d, 1.0 - e - d / 2.0))
 
 
 def _actual(row: MatchObservation) -> str:
