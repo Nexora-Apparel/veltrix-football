@@ -200,7 +200,9 @@ class CapturedResultEvidence:
             "AVAILABILITY_TIMESTAMP_BASIS_UNTRUSTED",
             "REVISION_HISTORY_INCOMPLETE",
         }
-        if self.point_in_time_certifiable is not False or set(self.reason_codes) != expected_reasons:
+        if (self.point_in_time_certifiable is not False
+                or len(self.reason_codes) != len(expected_reasons)
+                or set(self.reason_codes) != expected_reasons):
             raise ValueError("FIRST_OBSERVED_EVIDENCE_REASON_SET_INVALID")
         if (
             self.source_published_at is not None
