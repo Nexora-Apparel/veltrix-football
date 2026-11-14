@@ -926,6 +926,8 @@ class PostgresHistoryStore:
         """
         if response.provider != "the_odds_api" or response.source_id != "odds_api_v4":
             raise ValueError("ODDS_API_PROBE_IDENTITY_INVALID")
+        if response.endpoint != "/v4/sports/" or response.request_params != {"all": "true"}:
+            raise ValueError("ODDS_API_PROBE_ENDPOINT_SCOPE_INVALID")
         if response.http_status != 200 or getattr(envelope, "status_code", None) != 200:
             raise ValueError("ODDS_API_PROBE_STATUS_INVALID")
         if not provider_account_ref.strip():
@@ -966,12 +968,17 @@ class PostgresHistoryStore:
         )
         missing = sorted(set(expected_competition_keys) - set(observed_competition_keys))
         scope_verified = not missing
-        status = "ACTIVE" if scope_verified and quota.complete else "UNVERIFIED"
+        status = (
+            "ACTIVE" if scope_verified and quota.complete and quota.requests_last == 0
+            else "UNVERIFIED"
+        )
         metadata = {
+            "provider_account_ref": provider_account_ref,
             "last_sports_probe_response_sha256": response.response_sha256,
             "last_sports_probe_at": response.fetched_at_utc.isoformat(),
             "last_sports_probe_endpoint": response.endpoint,
-            "sports_probe_cost_credits": 0,
+            "sports_probe_expected_cost_credits": 0,
+            "sports_probe_observed_cost_credits": quota.requests_last,
             "sports_probe_scope_verified": scope_verified,
             "sports_probe_expected_competitions": sorted(expected_competition_keys),
             "sports_probe_observed_competitions": sorted(observed_competition_keys),
@@ -989,6 +996,13 @@ class PostgresHistoryStore:
         try:
             cur = conn.cursor()
             provider_response_id = self._persist_provider_response(cur, safe_response)
+            cur.execute(
+                "SELECT metadata->>'provider_account_ref' FROM provider_accounts WHERE provider=%s FOR UPDATE",
+                (response.provider,),
+            )
+            account_row = cur.fetchone()
+            if not account_row or account_row[0] != provider_account_ref:
+                raise ValueError("ODDS_API_PROVIDER_ACCOUNT_REFERENCE_MISMATCH")
             cur.execute(
                 """UPDATE provider_accounts
                    SET entitlement_status=%s, checked_at=%s,
