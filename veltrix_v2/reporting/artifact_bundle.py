@@ -78,6 +78,45 @@ def _write_immutable(path: Path, payload: bytes) -> None:
             pass
 
 
+def load_report_surface_bundle(
+    output_dir: str | Path, report_id: str
+) -> ReportSurfaceBundle:
+    """Read and verify all four immutable artifacts from a previously built bundle."""
+    if not isinstance(report_id, str) or not re.fullmatch(r"[A-Za-z0-9._-]{1,160}", report_id):
+        raise ValueError("REPORT_ID_NOT_SAFE_FOR_ARTIFACT_PATH")
+    root = Path(output_dir)
+    paths = {
+        "canonical": root / "reports" / f"{report_id}.json",
+        "scheduled": root / "scheduled" / f"{report_id}.json",
+        "telegram": root / "telegram" / f"{report_id}.json",
+        "dashboard": root / "dashboard" / f"{report_id}.json",
+    }
+    payloads: dict[str, dict[str, Any]] = {}
+    for name, path in paths.items():
+        raw = path.read_bytes()
+        if len(raw) > 8_000_000:
+            raise ValueError("REPORT_ARTIFACT_TOO_LARGE")
+        value = json.loads(raw.decode("utf-8"))
+        if not isinstance(value, dict):
+            raise ValueError("REPORT_ARTIFACT_MUST_BE_OBJECT")
+        payloads[name] = value
+    identity = assert_report_surface_bundle(
+        payloads["canonical"],
+        payloads["scheduled"],
+        payloads["telegram"],
+        payloads["dashboard"],
+    )
+    if identity.report_id != report_id:
+        raise ValueError("REPORT_ARTIFACT_PATH_IDENTITY_MISMATCH")
+    return ReportSurfaceBundle(
+        payloads["canonical"],
+        payloads["scheduled"],
+        payloads["telegram"],
+        payloads["dashboard"],
+        identity,
+    )
+
+
 def persist_report_surface_bundle(
     bundle: ReportSurfaceBundle, output_dir: str | Path
 ) -> dict[str, Path]:
