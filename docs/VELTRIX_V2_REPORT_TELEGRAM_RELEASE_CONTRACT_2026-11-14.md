@@ -34,7 +34,7 @@ The dispatch adapter is deliberately at-most-once:
 - A timeout, transport exception, destination mismatch or receipt-persistence failure becomes `OUTCOME_UNKNOWN`.
 - An unknown outcome is never automatically retried. It requires reconciliation against Telegram delivery evidence before a new attempt is considered.
 
-Exactly-once delivery cannot be guaranteed across Telegram and our database because they do not share a transaction coordinator. The durable PostgreSQL implementation and operator reconciliation workflow remain required before live dispatch.
+Exactly-once delivery cannot be guaranteed across Telegram and our database because they do not share a transaction coordinator. A durable PostgreSQL implementation now exists in `veltrix_v2/reporting/postgres_delivery_store.py`, backed by migration 0009 and concurrent-claim integration tests. It must pass PostgreSQL 16/18 CI and be applied to staging under the separate migration guard before live dispatch. Operator reconciliation for `OUTCOME_UNKNOWN` remains required.
 
 ## Historical result and duplicate reconciliation
 
@@ -65,10 +65,10 @@ Duplicate fixture IDs, duplicate settlements, conflicting scores, ambiguous fixt
 
 | Area | Automated coverage | Still required |
 |---|---|---|
-| Report identity | Canonical hash, tamper rejection, surface parity | Wire website/scheduler/Telegram to the same V2 artifact |
-| Telegram formatting | Release-mode gate, market allowlist, chunking, no truncation | End-to-end test against actual V2 report schema |
-| Delivery | Atomic-claim interface, duplicate skip, unknown outcome no-retry | Durable PostgreSQL claim store and Telegram receipt reconciliation |
+| Report identity | Canonical hash, tamper rejection, four-surface parity helper, website projection checks | Wire scheduled V2 artifact generation and Telegram runner to the same artifact |
+| Telegram formatting | Release-mode gate, market allowlist, chunking, no truncation, legacy-sender block | End-to-end test against actual certified V2 report |
+| Delivery | Atomic PostgreSQL claim, concurrent duplicate skip, terminal unknown outcome | Apply migration to staging and implement operator receipt reconciliation |
 | Results | Existing admission/settlement identity, rights and duplicate tests | Full prospective result reconciliation over captured real fixtures |
 | Release | Shadow/public gate separation | Certification, operational sign-off and schedule activation |
 
-No live Telegram delivery, schedule activation, production migration or public prediction is authorized by this contract.
+No live Telegram delivery, schedule activation, staging migration, production migration or public prediction is authorized by this contract.
