@@ -374,3 +374,77 @@ def test_quota_headroom_fails_closed_on_missing_or_insufficient_headers():
         _require_quota_headroom(12, 1)
     _require_quota_headroom(13, 1)
     _require_quota_headroom(0, 14)
+
+
+def test_empty_finished_page_still_persists_raw_response_and_manifest(monkeypatch, tmp_path):
+    import hashlib
+    import scripts.phase5_collect_5dollar_shadow as capture
+
+    raw = b'{"success":1,"data":[]}'
+    approval = SimpleNamespace(
+        approval_id="approval-test",
+        evidence_sha256="a" * 64,
+    )
+    retrieved = NOW + timedelta(seconds=1)
+    recorded = NOW + timedelta(seconds=2)
+    parsed = SimpleNamespace(
+        fixtures=(),
+        response_sha256=hashlib.sha256(raw).hexdigest(),
+        page=1,
+        per_page=100,
+        has_more=False,
+        quota_limit=300,
+        quota_remaining=299,
+    )
+    monkeypatch.setattr(capture, "parse_fixture_page", lambda *a, **k: parsed)
+    monkeypatch.setattr(capture, "_refresh_approval", lambda *a: (approval, recorded))
+    monkeypatch.setattr(
+        capture, "evaluate_source_use",
+        lambda *a, **k: SimpleNamespace(allowed=True, reason_code=None),
+    )
+    persisted = {}
+
+    def fake_persist(dsn, **kwargs):
+        persisted.update(kwargs)
+        return capture.build_fixture_snapshot_manifest(
+            provider="5DollarFootballAPI",
+            source_id="5dollarfootballapi",
+            endpoint=kwargs["endpoint"],
+            request_id=kwargs["request_id"],
+            request_params=kwargs["request_params"],
+            requested_at=kwargs["requested_at"],
+            retrieved_at=kwargs["retrieved_at"],
+            recorded_at=kwargs["recorded_at"],
+            raw_response=kwargs["raw_response"],
+            http_status=kwargs["http_status"],
+            competition_id=kwargs["competition_id"],
+            fixture_count=kwargs["fixture_count"],
+            rights_approval_id=approval.approval_id,
+            rights_evidence_sha256=approval.evidence_sha256,
+            status_filter=kwargs["status_filter"],
+        )
+
+    monkeypatch.setattr(capture, "_persist_fixture_snapshot_to_staging", fake_persist)
+    rows, info = capture._capture_page(
+        raw,
+        {"X-RateLimit-Remaining": "299"},
+        competition_id="3118717965",
+        status="finished",
+        request_id="test-empty-finished",
+        request_params={"status": "finished"},
+        requested_at=NOW,
+        retrieved_at=retrieved,
+        http_status=200,
+        registry=SimpleNamespace(),
+        out_dir=tmp_path,
+        staging_dsn="mock-staging",
+        persist_staging=True,
+    )
+
+    assert rows == []
+    assert info["no_finished_rows"] is True
+    assert info["capture_observations"] == 0
+    assert info["capture_manifest_sha256"] == persisted["manifest_sha256"]
+    assert persisted["status_filter"] == "finished"
+    assert persisted["fixture_count"] == 0
+    assert (tmp_path / "raw" / "3118717965_finished_page_1.json").read_bytes() == raw
