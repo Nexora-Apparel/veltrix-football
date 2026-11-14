@@ -299,3 +299,19 @@ def test_bundle_reader_rejects_tampered_portable_bundle(tmp_path):
     paths["portable_bundle"].write_bytes(b"{}")
     with pytest.raises(ValueError, match="REPORT_BUNDLE_COMMIT_HASH_MISMATCH"):
         load_report_surface_bundle(tmp_path, bundle.identity.report_id)
+
+
+
+def test_portable_bundle_rejects_duplicate_json_object_keys():
+    raw = b'{"schema":"INVALID","schema":"VELTRIX_PORTABLE_REPORT_SURFACE_BUNDLE_V1"}'
+    with pytest.raises(ValueError, match="DUPLICATE_KEY"):
+        parse_portable_report_surface_bundle(raw)
+
+
+def test_bundle_reader_rejects_duplicate_keys_in_commit_marker(tmp_path):
+    bundle = build_report_surface_bundle(source_report())
+    persist_report_surface_bundle(bundle, tmp_path)
+    marker = tmp_path / "bundles" / f"{bundle.identity.report_id}.commit.json"
+    marker.write_bytes(b'{"schema":"VELTRIX_REPORT_BUNDLE_COMMIT_V1","schema":"duplicate"}')
+    with pytest.raises(ValueError, match="DUPLICATE_KEY"):
+        load_report_surface_bundle(tmp_path, bundle.identity.report_id)
