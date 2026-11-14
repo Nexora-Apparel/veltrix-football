@@ -430,7 +430,7 @@ def run_capture(
         target_rows, info = _capture_page(
             raw, headers, competition_id=competition_id, status="scheduled",
             request_id=request_id, requested_at=requested_at, retrieved_at=retrieved_at,
-            approval=current_approval, registry=registry, out_dir=out_dir,
+            registry=registry, out_dir=out_dir,
             staging_dsn=staging_dsn,
         )
         targets.extend(target_rows)
