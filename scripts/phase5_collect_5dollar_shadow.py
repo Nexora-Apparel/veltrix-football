@@ -73,6 +73,8 @@ def _approval_from_rows(
     *,
     rights_evaluated_at: datetime,
 ) -> SourceApproval:
+    if not events:
+        raise PermissionError("SOURCE_APPROVAL_STATUS_EVENT_MISSING")
     resolution = resolve_rights_status(
         approval_row, events, rights_evaluated_at=rights_evaluated_at
     )
@@ -599,6 +601,27 @@ def run_capture(
     }
     (out_dir / "summary.json").write_text(
         json.dumps(summary, indent=2, sort_keys=True), encoding="utf-8"
+    )
+    public_summary = {
+        "status": summary["status"],
+        "provider": summary["provider"],
+        "requests_used": summary["requests_used"],
+        "request_cap": summary["request_cap"],
+        "crosswalk_registry": summary["crosswalk_registry"],
+        "captured_first_observed_rows": summary["captured_first_observed_rows"],
+        "mapped_upcoming_targets": summary["mapped_upcoming_targets"],
+        "forecast_count": summary["forecast_count"],
+        "admitted_shadow_predictions": summary["admitted_shadow_predictions"],
+        "evidence_persisted_to_staging": summary["evidence_persisted_to_staging"],
+        "publication_status": summary["publication_status"],
+        "settlement_status": summary["settlement_status"],
+        "database_writes": summary["database_writes"],
+        "telegram_delivery": False,
+        "schedule_activation": False,
+        "public_publication": False,
+    }
+    (out_dir / "public_summary.json").write_text(
+        json.dumps(public_summary, indent=2, sort_keys=True), encoding="utf-8"
     )
     return summary
 
