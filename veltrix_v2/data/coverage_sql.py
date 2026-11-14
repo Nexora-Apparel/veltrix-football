@@ -57,8 +57,20 @@ SELECT
         WHERE cm.manifest_sha256 = o.payload->>'manifest_sha256'
     ) AS capture_manifest_verified
 FROM fixtures AS f
-JOIN source_observations AS o
-  ON o.id = f.source_observation_id
+LEFT JOIN LATERAL (
+    SELECT candidate.*
+    FROM source_observations AS candidate
+    WHERE candidate.id = f.source_observation_id
+       OR (
+           candidate.payload->>'fixture_id' = f.id::text
+           AND candidate.data_type = 'fixture_result'
+       )
+    ORDER BY
+        CASE WHEN candidate.payload ? 'manifest_sha256' THEN 1 ELSE 0 END DESC,
+        candidate.recorded_at DESC NULLS LAST,
+        candidate.id DESC
+    LIMIT 1
+) AS o ON TRUE
 ORDER BY f.competition_id, f.id, o.id
 """.strip()
 
