@@ -25,7 +25,7 @@ Additional datasets:
 
 The new Poisson, Elo, team-form, challenger comparison, calibration and chronological evaluation components are software foundations. They are not evidence that any model or market is certified.
 
-The publication and value-bet gates remain:
+The pure publication verifier additionally requires expanding chronological walk-forward evidence, explicit PIT certification and complete revision history, prospective selection evidence, net ROI after fees/slippage, date-clustered bootstrap confidence bounds, model/feature artifact hashes, exact evidence-byte hashes, and a de-vigged bookmaker baseline evaluated on the identical 1X2 fixture set. The publication and value-bet gates remain:
 
 - At least 1,000 chronological walk-forward matches per market.
 - At least 300 prospective settled selections.
