@@ -12,13 +12,13 @@ HASH_B = "b" * 64
 
 
 def observation(provider="5DollarFootballAPI", *, score=(2, 1), fixture="fx-1",
-                payload=HASH_A, available=None, priority_source="manifest"):
+                payload=HASH_A, available=None, recorded=None):
     return MatchObservation(
         fixture_id=fixture, competition_id="comp-1",
         home_team_id="home-1", away_team_id="away-1",
         kickoff_at=NOW - timedelta(days=3),
         available_at=available or NOW - timedelta(days=2),
-        recorded_at=NOW - timedelta(days=1),
+        recorded_at=recorded or NOW - timedelta(days=1),
         home_goals=score[0], away_goals=score[1],
         provider=provider, source_id=provider.lower(),
         availability_basis="provider_evidence_manifest_v1",
@@ -30,7 +30,7 @@ def observation(provider="5DollarFootballAPI", *, score=(2, 1), fixture="fx-1",
 
 def test_identical_cross_provider_results_are_counted_once_with_both_provenances():
     a = observation()
-    b = observation("ProviderB", payload=HASH_B, available=NOW - timedelta(hours=12))
+    b = observation("ProviderB", payload=HASH_B, available=NOW - timedelta(hours=12), recorded=NOW - timedelta(hours=6))
     report = merge_certified_observations([a, b])
     assert len(report.observations) == 1
     assert report.duplicate_observation_count == 1
@@ -39,8 +39,8 @@ def test_identical_cross_provider_results_are_counted_once_with_both_provenances
 
 
 def test_explicit_source_priority_precedes_availability_order():
-    a = observation("ProviderA", payload=HASH_A, available=NOW - timedelta(hours=1))
-    b = observation("ProviderB", payload=HASH_B, available=NOW - timedelta(days=1))
+    a = observation("ProviderA", payload=HASH_A, available=NOW - timedelta(hours=1), recorded=NOW)
+    b = observation("ProviderB", payload=HASH_B, available=NOW - timedelta(days=1), recorded=NOW - timedelta(hours=12))
     report = merge_certified_observations([a, b], source_priority={"ProviderB": 1, "ProviderA": 2})
     assert report.observations[0].provider == "ProviderB"
 
