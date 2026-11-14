@@ -292,3 +292,43 @@ def test_telegram_bundle_dispatch_rejects_surface_drift_before_claim_or_send(tmp
         )
     assert calls == []
     assert store.claimed == set()
+
+
+
+def test_telegram_bundle_dispatch_rejects_shadow_report_before_claim_or_send(tmp_path):
+    store = MemoryStore()
+    report = public_report()
+    report["release_mode"] = "INTERNAL_SHADOW"
+    report = bind_report_identity({key: value for key, value in report.items() if key != "report_sha256"})
+    bundle = build_report_surface_bundle(report)
+    persist_report_surface_bundle(bundle, tmp_path)
+    calls = []
+    with pytest.raises(PermissionError):
+        dispatch_public_telegram_bundle(
+            tmp_path,
+            bundle.identity.report_id,
+            "telegram:chat-1",
+            lambda *_: True,
+            store,
+            lambda *args: calls.append(args),
+        )
+    assert calls == []
+    assert store.claimed == set()
+
+
+def test_telegram_bundle_dispatch_rejects_unverified_publication_before_claim(tmp_path):
+    store = MemoryStore()
+    bundle = build_report_surface_bundle(public_report())
+    persist_report_surface_bundle(bundle, tmp_path)
+    calls = []
+    with pytest.raises(PermissionError, match="authorization"):
+        dispatch_public_telegram_bundle(
+            tmp_path,
+            bundle.identity.report_id,
+            "telegram:chat-1",
+            lambda *_: False,
+            store,
+            lambda *args: calls.append(args),
+        )
+    assert calls == []
+    assert store.claimed == set()
