@@ -81,3 +81,10 @@ def test_batch_configuration_is_bounded_and_cutoff_must_be_aware():
         predict_batch(history(), [], cutoff_at=CUTOFF, max_fixtures=26)
     with pytest.raises(ValueError, match="BATCH_CUTOFF_MUST_BE_TIMEZONE_AWARE"):
         predict_batch(history(), [], cutoff_at=datetime(2026, 11, 14, 12))
+
+
+def test_batch_counts_untyped_targets_as_invalid():
+    report = predict_batch(history(), [object()], cutoff_at=CUTOFF)
+    assert report.requested_target_count == 1
+    assert report.skipped_invalid_targets == 1
+    assert report.forecast_count == 0
