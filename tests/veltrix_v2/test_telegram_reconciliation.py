@@ -240,3 +240,11 @@ def test_store_rejects_credential_bearing_uri_before_reading_evidence():
     with pytest.raises(ValueError, match="EVIDENCE_URI_NOT_DURABLE"):
         store.record(event(evidence_uri="https://user:secret@evidence.example/file"))
     assert reads == []
+
+
+
+def test_reconciliation_rejects_oversized_evidence_bytes():
+    oversized = b"x" * (8_000_001)
+    oversized_event = event(evidence_sha256=hashlib.sha256(oversized).hexdigest())
+    with pytest.raises(ValueError, match="EVIDENCE_TOO_LARGE"):
+        validate_reconciliation_event(CLAIM, oversized_event, oversized)
