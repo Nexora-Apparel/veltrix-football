@@ -36,20 +36,32 @@ def _connect_read_only(dsn: str):
     return connection
 
 
+def _baseline_counts_on_connection(connection) -> dict[str, int]:
+    """Count known evidence tables, treating not-yet-applied additive tables as zero."""
+    tables = (
+        "fixtures",
+        "source_observations",
+        "provider_responses",
+        "capture_manifests",
+        "capture_manifest_events",
+        "provider_capture_requests",
+    )
+    counts: dict[str, int] = {}
+    for table in tables:
+        exists = connection.execute(
+            "SELECT to_regclass(%s) IS NOT NULL",
+            (f"public.{table}",),
+        ).fetchone()[0]
+        counts[table] = (
+            int(connection.execute(f"SELECT COUNT(*) FROM public.{table}").fetchone()[0])
+            if exists else 0
+        )
+    return counts
+
+
 def _baseline(dsn: str) -> dict[str, int]:
     with _connect_read_only(dsn) as connection:
-        queries = {
-            "fixtures": "SELECT COUNT(*) FROM fixtures",
-            "source_observations": "SELECT COUNT(*) FROM source_observations",
-            "provider_responses": "SELECT COUNT(*) FROM provider_responses",
-            "capture_manifests": "SELECT COUNT(*) FROM capture_manifests",
-            "capture_manifest_events": "SELECT COUNT(*) FROM capture_manifest_events",
-            "provider_capture_requests": "SELECT COUNT(*) FROM provider_capture_requests",
-        }
-        return {
-            name: int(connection.execute(sql).fetchone()[0])
-            for name, sql in queries.items()
-        }
+        return _baseline_counts_on_connection(connection)
 
 
 def _verify_after_apply(dsn: str, baseline: dict[str, int]) -> dict[str, object]:
@@ -117,21 +129,6 @@ def _verify_after_apply(dsn: str, baseline: dict[str, int]) -> dict[str, object]
             }),
             "preserved_baseline": after,
         }
-
-
-def _baseline_counts_on_connection(connection) -> dict[str, int]:
-    queries = {
-        "fixtures": "SELECT COUNT(*) FROM fixtures",
-        "source_observations": "SELECT COUNT(*) FROM source_observations",
-        "provider_responses": "SELECT COUNT(*) FROM provider_responses",
-        "capture_manifests": "SELECT COUNT(*) FROM capture_manifests",
-        "capture_manifest_events": "SELECT COUNT(*) FROM capture_manifest_events",
-        "provider_capture_requests": "SELECT COUNT(*) FROM provider_capture_requests",
-    }
-    return {
-        name: int(connection.execute(sql).fetchone()[0])
-        for name, sql in queries.items()
-    }
 
 
 def run(*, apply: bool = False) -> dict[str, object]:
