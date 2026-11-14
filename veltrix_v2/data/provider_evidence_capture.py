@@ -271,7 +271,7 @@ def _capture_one(row: ProviderResultCapture) -> CapturedResultEvidence:
             reasons.append("SOURCE_APPROVAL_IDENTITY_MISMATCH")
         if approval.evidence_sha256 is None or not _HASH.fullmatch(approval.evidence_sha256):
             reasons.append("SOURCE_APPROVAL_EVIDENCE_HASH_INVALID")
-        if row.crosswalk.canonical_competition_id not in {
+        if row.provider_competition_id not in {
             item.strip() for item in approval.competition_scope.split(",")
         }:
             reasons.append("SOURCE_APPROVAL_COMPETITION_SCOPE_MISMATCH")
@@ -353,16 +353,16 @@ def capture_provider_result_evidence(
         evidence.append(item)
 
     first = rows[0]
-    if not all(_aware(x) for x in (first.requested_at, first.retrieved_at, first.recorded_at)):
-        raise ValueError("MANIFEST_CAPTURE_TIMESTAMPS_UNTRUSTED")
+    def manifest_timestamp(value: datetime) -> str:
+        return _utc(value) if _aware(value) else value.isoformat()
     item_hashes = tuple(_digest(item.as_dict()) for item in evidence)
     manifest_body = {
         "manifest_version": "veltrix-provider-evidence-v1",
         "provider": first.provider, "source_id": first.source_id,
         "endpoint": first.endpoint, "request_id": first.request_id,
-        "requested_at": _utc(first.requested_at),
-        "retrieved_at": _utc(first.retrieved_at),
-        "recorded_at": _utc(first.recorded_at),
+        "requested_at": manifest_timestamp(first.requested_at),
+        "retrieved_at": manifest_timestamp(first.retrieved_at),
+        "recorded_at": manifest_timestamp(first.recorded_at),
         "item_count": len(evidence),
         "certified_count": sum(item.point_in_time_certifiable for item in evidence),
         "rejected_count": sum(not item.point_in_time_certifiable for item in evidence),
