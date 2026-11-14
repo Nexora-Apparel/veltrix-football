@@ -153,7 +153,7 @@ class CapturedResultEvidence:
         result["reason_codes"] = list(self.reason_codes)
         return result
 
-    def to_match_observation(self, *, home_goals: int, away_goals: int) -> MatchObservation:
+    def to_match_observation(self, *, home_goals: int, away_goals: int, manifest_sha256: str, evidence_sha256: str) -> MatchObservation:
         if not self.point_in_time_certifiable:
             raise ValueError("UNCERTIFIED_EVIDENCE_CANNOT_ENTER_MODEL")
         return MatchObservation(
@@ -168,10 +168,12 @@ class CapturedResultEvidence:
             away_goals=away_goals,
             provider=self.provider,
             source_id=self.source_id,
-            availability_basis=self.availability_timestamp_basis,
+            availability_basis="provider_evidence_manifest_v1",
             point_in_time_certifiable=True,
             payload_sha256=self.raw_response_sha256,
             rights_approval_id=self.rights_approval_id,
+            evidence_manifest_sha256=manifest_sha256,
+            capture_evidence_sha256=evidence_sha256,
         )
 
 
@@ -399,6 +401,9 @@ def certified_match_observations(
         if not evidence.point_in_time_certifiable:
             continue
         observations.append(evidence.to_match_observation(
-            home_goals=source.home_goals, away_goals=source.away_goals
+            home_goals=source.home_goals,
+            away_goals=source.away_goals,
+            manifest_sha256=report.manifest.manifest_sha256,
+            evidence_sha256=_digest(evidence.as_dict()),
         ))
     return tuple(observations)
