@@ -45,7 +45,9 @@ def certification(market):
         "roi_ci95_lower": 0.008,
         "rights_approval_id": "rights-approval-17",
         "rights_evaluated_at": "2026-11-14T10:00:00+00:00",
+        "evidence_uri": f"s3://veltrix-evidence/{market}.json",
         "evidence_sha256": hashlib.sha256(f"{market}-evidence".encode()).hexdigest(),
+        "rights_evidence_uri": "s3://veltrix-evidence/rights.json",
         "rights_evidence_sha256": hashlib.sha256(b"rights-evidence").hexdigest(),
     }
     if market == "1X2":
@@ -83,12 +85,21 @@ def rights_ok(record):
     )
 
 
+def evidence_reader(uri):
+    if uri.startswith("s3://veltrix-evidence/") and uri.endswith("/rights.json"):
+        return b"rights-evidence"
+    if uri.startswith("s3://veltrix-evidence/"):
+        market = uri.rsplit("/", 1)[-1].removesuffix(".json")
+        return f"{market}-evidence".encode()
+    return b""
+
+
 def test_valid_manifest_and_exact_report_identity_authorize_certified_markets():
     report = make_report()
     raw = make_manifest(report)
-    assert verify_publication_authorization(report, raw, attestation_ok, rights_ok) is True
+    assert verify_publication_authorization(report, raw, attestation_ok, rights_ok, evidence_reader) is True
     identity = __import__("veltrix_v2.reporting.report_identity", fromlist=["verify_report_identity"]).verify_report_identity(report)
-    verifier = build_publication_verifier(raw, attestation_ok, rights_ok)
+    verifier = build_publication_verifier(raw, attestation_ok, rights_ok, evidence_reader)
     assert verifier(report, identity) is True
 
 
@@ -106,7 +117,7 @@ def test_any_failed_market_gate_denies_publication(field, value):
     one_x_two = certification("1X2")
     one_x_two[field] = value
     raw = make_manifest(report, [one_x_two, certification("BTTS")])
-    assert verify_publication_authorization(report, raw, attestation_ok, rights_ok) is False
+    assert verify_publication_authorization(report, raw, attestation_ok, rights_ok, evidence_reader) is False
 
 
 @pytest.mark.parametrize(("field", "value"), [
@@ -118,7 +129,7 @@ def test_1x2_must_beat_both_bookmaker_baselines(field, value):
     one_x_two = certification("1X2")
     one_x_two[field] = value
     raw = make_manifest(report, [one_x_two, certification("BTTS")])
-    assert verify_publication_authorization(report, raw, attestation_ok, rights_ok) is False
+    assert verify_publication_authorization(report, raw, attestation_ok, rights_ok, evidence_reader) is False
 
 
 def test_report_and_manifest_identity_must_match_exactly():
@@ -140,10 +151,10 @@ def test_report_and_manifest_identity_must_match_exactly():
 def test_attestation_and_rights_verifiers_are_mandatory_and_fail_closed():
     report = make_report()
     raw = make_manifest(report)
-    assert verify_publication_authorization(report, raw, lambda *_: False, rights_ok) is False
-    assert verify_publication_authorization(report, raw, attestation_ok, lambda *_: False) is False
-    assert verify_publication_authorization(report, raw, None, rights_ok) is False
-    assert verify_publication_authorization(report, raw, attestation_ok, None) is False
+    assert verify_publication_authorization(report, raw, lambda *_: False, rights_ok, evidence_reader) is False
+    assert verify_publication_authorization(report, raw, attestation_ok, lambda *_: False, evidence_reader) is False
+    assert verify_publication_authorization(report, raw, None, rights_ok, evidence_reader) is False
+    assert verify_publication_authorization(report, raw, attestation_ok, None, evidence_reader) is False
 
 
 def test_wrong_model_build_or_missing_market_evidence_denies_publication():
@@ -151,10 +162,10 @@ def test_wrong_model_build_or_missing_market_evidence_denies_publication():
     wrong_build = certification("BTTS")
     wrong_build["model_build_id"] = "different-model"
     raw = make_manifest(report, [certification("1X2"), wrong_build])
-    assert verify_publication_authorization(report, raw, attestation_ok, rights_ok) is False
+    assert verify_publication_authorization(report, raw, attestation_ok, rights_ok, evidence_reader) is False
 
     raw = make_manifest(report, [certification("1X2")])
-    assert verify_publication_authorization(report, raw, attestation_ok, rights_ok) is False
+    assert verify_publication_authorization(report, raw, attestation_ok, rights_ok, evidence_reader) is False
 
 
 def test_duplicate_certification_records_are_rejected():
@@ -164,7 +175,7 @@ def test_duplicate_certification_records_are_rejected():
         certification("1X2"),
         certification("BTTS"),
     ])
-    assert verify_publication_authorization(report, raw, attestation_ok, rights_ok) is False
+    assert verify_publication_authorization(report, raw, attestation_ok, rights_ok, evidence_reader) is False
 
 
 def test_shadow_or_unpublished_report_is_never_authorized():
@@ -172,13 +183,13 @@ def test_shadow_or_unpublished_report_is_never_authorized():
     report["release_mode"] = "INTERNAL_SHADOW"
     report = bind_report_identity({key: value for key, value in report.items() if key != "report_sha256"})
     raw = make_manifest(report)
-    assert verify_publication_authorization(report, raw, attestation_ok, rights_ok) is False
+    assert verify_publication_authorization(report, raw, attestation_ok, rights_ok, evidence_reader) is False
 
     report = make_report()
     report["predictions"][0]["publication_status"] = "SHADOW_ONLY"
     report = bind_report_identity({key: value for key, value in report.items() if key != "report_sha256"})
     raw = make_manifest(report)
-    assert verify_publication_authorization(report, raw, attestation_ok, rights_ok) is False
+    assert verify_publication_authorization(report, raw, attestation_ok, rights_ok, evidence_reader) is False
 
 
 def test_rights_evaluation_timestamp_must_be_timezone_aware():
@@ -186,7 +197,7 @@ def test_rights_evaluation_timestamp_must_be_timezone_aware():
     btts = certification("BTTS")
     btts["rights_evaluated_at"] = "2026-11-14T10:00:00"
     raw = make_manifest(report, [certification("1X2"), btts])
-    assert verify_publication_authorization(report, raw, attestation_ok, rights_ok) is False
+    assert verify_publication_authorization(report, raw, attestation_ok, rights_ok, evidence_reader) is False
 
 
 def test_tampered_report_hash_and_malformed_manifest_fail_closed():
@@ -194,8 +205,8 @@ def test_tampered_report_hash_and_malformed_manifest_fail_closed():
     raw = make_manifest(report)
     tampered = deepcopy(report)
     tampered["predictions"][0]["model_build_id"] = "tampered"
-    assert verify_publication_authorization(tampered, raw, attestation_ok, rights_ok) is False
-    assert verify_publication_authorization(report, b"not-json", attestation_ok, rights_ok) is False
+    assert verify_publication_authorization(tampered, raw, attestation_ok, rights_ok, evidence_reader) is False
+    assert verify_publication_authorization(report, b"not-json", attestation_ok, rights_ok, evidence_reader) is False
 
 
 def test_over_under_market_uses_common_sample_roi_and_odds_gates_without_1x2_baseline():
@@ -203,4 +214,4 @@ def test_over_under_market_uses_common_sample_roi_and_odds_gates_without_1x2_bas
     report["predictions"][0]["certified_markets"] = ["OVER_UNDER"]
     report = bind_report_identity({key: value for key, value in report.items() if key != "report_sha256"})
     raw = make_manifest(report, [certification("OVER_UNDER")])
-    assert verify_publication_authorization(report, raw, attestation_ok, rights_ok) is True
+    assert verify_publication_authorization(report, raw, attestation_ok, rights_ok, evidence_reader) is True
