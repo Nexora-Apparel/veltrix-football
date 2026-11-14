@@ -12,7 +12,13 @@ from scripts.phase5_staging_coverage_audit import validate_staging_dsn_target
 EXPECTED_DATABASE = "veltrix_football_staging"
 EXPECTED_ROLE = "neondb_owner"
 EXPECTED_HOST = "ep-ancient-block-bcb439pk.c-16.us-east-1.aws.neon.tech"
-MIGRATION_VERSION = "0005_prospective_paper_ledger"
+MIGRATION_VERSION = "0008_prospective_paper_ledger"
+EXPECTED_PENDING = [
+    "0005_provider_credit_reservation_ledger",
+    "0006_provider_quota_evidence",
+    "0007_provider_capture_state_events",
+    "0008_prospective_paper_ledger",
+]
 
 
 def _connect_read_only(dsn: str):
@@ -135,13 +141,16 @@ def run(*, apply: bool = False) -> dict[str, object]:
 
     manifest = load_manifest()
     versions = [entry[0] for entry in manifest]
-    if not versions or versions[-1] != MIGRATION_VERSION:
+    if len(versions) < 8 or versions[-1] != MIGRATION_VERSION:
         raise RuntimeError("PAPER_LEDGER_MIGRATION_NOT_LAST_IN_MANIFEST")
+    expected_pending = versions[-len(EXPECTED_PENDING):]
+    if expected_pending != EXPECTED_PENDING:
+        raise RuntimeError("PAPER_LEDGER_PENDING_SEQUENCE_UNEXPECTED")
 
     baseline = _baseline(dsn)
     dry = migrate(dsn, dry_run=True)
-    expected_applied = versions[:-1]
-    if dry["applied"] != expected_applied or dry["pending"] != [MIGRATION_VERSION]:
+    expected_applied = versions[:-len(EXPECTED_PENDING)]
+    if dry["applied"] != expected_applied or dry["pending"] != expected_pending:
         raise RuntimeError("PAPER_LEDGER_MIGRATION_PRECONDITION_FAILED")
 
     if not apply:
