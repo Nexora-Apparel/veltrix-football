@@ -64,6 +64,4 @@ The staging persistence adapter is implemented in `veltrix_v2/data/evidence_pers
 
 All writes execute in one DB-API transaction. Replays are idempotent by manifest key, response identity and source-observation identity. Each referenced source approval must already exist in the target database.
 
-Writes are disabled by default. The explicit guard requires the staging environment label, the dedicated staging database, the known direct staging host and the staging role. The adapter does not create connections or read environment secrets. Tests assert that disabled or non-allowlisted calls never open the supplied connection.
-
-The current CI test validates guard behavior and static integration. A staging integration write/readback test is still required before enabling this adapter against Neon staging. No database writes have been performed by this component.
+Writes are disabled by default. The explicit guard requires the staging environment label, the dedicated staging database, the known direct staging host and the staging role. The adapter does not create connections or read environment secrets. Tests assert that disabled or non-allowlisted calls never open the supplied connection. PostgreSQL integration tests create an isolated schema on PostgreSQL 16 and 18, write and read back exact raw bytes and manifest/item links, verify replay idempotency, and confirm missing approval rolls back the entire transaction. These are isolated CI databases, not Neon staging. No database writes have been performed by this component.
