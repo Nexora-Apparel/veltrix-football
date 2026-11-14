@@ -72,7 +72,7 @@ def _caps(*items: tuple[DataDomain, CapabilityState, str]) -> tuple[Capability, 
 
 
 PROVIDER_REGISTRY: tuple[ProviderProfile, ...] = (
-    ProviderProfile("5DollarFootballAPI", "5dollarfootballapi", ProviderState.ACTIVE_LIMITED, True,
+    ProviderProfile("5DollarFootballAPI", "5dollarfootballapi", ProviderState.ACTIVE_LIMITED,
         _caps(
             (DataDomain.FIXTURES, CapabilityState.AVAILABLE, "Fixture feed; five accessible competitions and free-tier quota limits apply."),
             (DataDomain.RESULTS, CapabilityState.AVAILABLE, "Finished scores exist; current historical rows lack strict publication/availability and revision evidence."),
@@ -86,8 +86,8 @@ PROVIDER_REGISTRY: tuple[ProviderProfile, ...] = (
             (DataDomain.LINEUPS, CapabilityState.NOT_VERIFIED, "No qualified lineup contract."),
             (DataDomain.INJURIES, CapabilityState.NOT_VERIFIED, "No qualified injury contract."),
             (DataDomain.PLAYER_STATS, CapabilityState.NOT_VERIFIED, "No qualified player-stat contract."),
-        ), "Free tier; respect its accessible competitions and request limits."),
-    ProviderProfile("OpenFootball", "openfootball-world", ProviderState.ARCHIVE_ONLY, False,
+        ), True, "Free tier; respect its accessible competitions and request limits."),
+    ProviderProfile("OpenFootball", "openfootball-world", ProviderState.ARCHIVE_ONLY,
         _caps(
             (DataDomain.FIXTURES, CapabilityState.CONDITIONAL, "Static archive only; not a live fixture feed."),
             (DataDomain.RESULTS, CapabilityState.AVAILABLE, "Historical scores; imported date-only rows are not point-in-time certifiable."),
@@ -101,20 +101,20 @@ PROVIDER_REGISTRY: tuple[ProviderProfile, ...] = (
             (DataDomain.LINEUPS, CapabilityState.UNAVAILABLE, "No lineup data."),
             (DataDomain.INJURIES, CapabilityState.UNAVAILABLE, "No injury data."),
             (DataDomain.PLAYER_STATS, CapabilityState.UNAVAILABLE, "No player-stat data."),
-        ), "Static public-domain results archive; no automatic/live retrieval."),
-    ProviderProfile("The Odds API", "the-odds-api", ProviderState.OPTIONAL_GATED, False,
+        ), False, "Static public-domain results archive; no automatic/live retrieval."),
+    ProviderProfile("The Odds API", "the-odds-api", ProviderState.OPTIONAL_GATED,
         _caps(
             (DataDomain.FIXTURES, CapabilityState.CONDITIONAL, "Event discovery only; not canonical fixture source."),
             (DataDomain.ODDS_1X2, CapabilityState.CONDITIONAL, "Soccer h2h market; event, region, bookmaker and quote timestamp coverage must be checked."),
             (DataDomain.ODDS_TOTALS, CapabilityState.CONDITIONAL, "Totals coverage must be checked per competition/region/bookmaker."),
             (DataDomain.ODDS_BTTS, CapabilityState.CONDITIONAL, "Event-specific market; verify availability and request budget."),
-        ), "Optional odds only; rights, quota, account allowance and explicit spend caps gate dispatch."),
-    ProviderProfile("GOAL API", "goal-api", ProviderState.SUSPENDED_CREDITS, False,
+        ), False, "Optional odds only; rights, quota, account allowance and explicit spend caps gate dispatch."),
+    ProviderProfile("GOAL API", "goal-api", ProviderState.SUSPENDED_CREDITS,
         _caps(*((domain, CapabilityState.NOT_VERIFIED, "Dormant while credits are exhausted; do not call.") for domain in DataDomain)),
-        "No calls, retries, scans or credit checks until reset and requalification."),
-    ProviderProfile("StrikerAPI", "strikerapi", ProviderState.SUSPENDED_CREDITS, False,
+        False, "No calls, retries, scans or credit checks until reset and requalification."),
+    ProviderProfile("StrikerAPI", "strikerapi", ProviderState.SUSPENDED_CREDITS,
         _caps(*((domain, CapabilityState.NOT_VERIFIED, "Dormant while credits are exhausted; do not call.") for domain in DataDomain)),
-        "No calls, retries, scans or credit checks until next monthly reset and requalification."),
+        False, "No calls, retries, scans or credit checks until next monthly reset and requalification."),
 )
 
 
