@@ -1,9 +1,9 @@
 """Guarded PostgreSQL adapter for the append-only paper ledger.
 
-Reads are limited to the allowlisted staging/test targets. Writes require an
-explicit write_enabled=True and a staging target or an explicit local test
-target. The database table has independent UPDATE/DELETE/TRUNCATE triggers;
-the application verifies the full event hash chain before every append.
+Reads are limited to allowlisted staging/test targets. Writes require an
+explicit write_enabled=True. PostgreSQL independently enforces append-only
+storage, sequence continuity and settlement-to-prediction linkage; the
+application verifies the full event hash chain before every append.
 """
 from __future__ import annotations
 
@@ -112,35 +112,49 @@ class PostgresPaperLedgerStore:
         self._assert_target(write=False)
         return ProspectivePaperLedger(self._load_events())
 
+    def _begin_append(self) -> ProspectivePaperLedger:
+        self.connection.execute(
+            "SELECT pg_advisory_xact_lock(hashtextextended(%s, 0))",
+            (self.ledger_id,),
+        )
+        return ProspectivePaperLedger(self._load_events())
+
+    def _insert_event(self, event: PaperLedgerEvent) -> None:
+        self.connection.execute(
+            """
+            INSERT INTO paper_ledger_events (
+                ledger_id, sequence, event_type, fixture_id, model_version,
+                recorded_at, payload, previous_event_sha256, event_sha256
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s::jsonb, %s, %s)
+            """,
+            (
+                self.ledger_id,
+                event.sequence,
+                event.event_type,
+                event.fixture_id,
+                event.model_version,
+                event.recorded_at,
+                json.dumps(
+                    event.payload, sort_keys=True, separators=(",", ":"),
+                    ensure_ascii=False, allow_nan=False,
+                ),
+                event.previous_event_sha256,
+                event.event_sha256,
+            ),
+        )
+
     def append_prediction(self, prediction: PaperPrediction) -> PaperLedgerEvent:
         self._assert_target(write=True)
         with self.connection.transaction():
-            self.connection.execute(
-                "SELECT pg_advisory_xact_lock(hashtextextended(%s, 0))",
-                (self.ledger_id,),
-            )
-            ledger = ProspectivePaperLedger(self._load_events())
+            ledger = self._begin_append()
             event = ledger.append_prediction(prediction)
-            self.connection.execute(
-                """
-                INSERT INTO paper_ledger_events (
-                    ledger_id, sequence, event_type, fixture_id, model_version,
-                    recorded_at, payload, previous_event_sha256, event_sha256
-                ) VALUES (%s, %s, %s, %s, %s, %s, %s::jsonb, %s, %s)
-                """,
-                (
-                    self.ledger_id,
-                    event.sequence,
-                    event.event_type,
-                    event.fixture_id,
-                    event.model_version,
-                    event.recorded_at,
-                    json.dumps(
-                        event.payload, sort_keys=True, separators=(",", ":"),
-                        ensure_ascii=False, allow_nan=False,
-                    ),
-                    event.previous_event_sha256,
-                    event.event_sha256,
-                ),
-            )
+            self._insert_event(event)
+            return event
+
+    def append_settlement(self, **kwargs: Any) -> PaperLedgerEvent:
+        self._assert_target(write=True)
+        with self.connection.transaction():
+            ledger = self._begin_append()
+            event = ledger.append_settlement(**kwargs)
+            self._insert_event(event)
             return event
