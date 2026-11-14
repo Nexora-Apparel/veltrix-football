@@ -151,3 +151,29 @@ def test_public_website_parser_rejects_any_unpublished_fixture():
     assert report_artifacts._parse_snapshot(
         __import__("json").dumps(report).encode(), "report"
     ) is None
+
+
+def test_legacy_current_report_is_not_served_as_a_v2_publication(monkeypatch):
+    legacy_report = {
+        "status": "PUBLISHED",
+        "as_of_date": "2026-11-14",
+        "predictions": [{"fixture_id": "legacy-fixture"}],
+    }
+    monkeypatch.setattr(
+        report_artifacts, "_load",
+        lambda kind: legacy_report if kind == "report" else None,
+    )
+    assert report_artifacts.load_latest_report() is None
+
+
+def test_legacy_dashboard_with_forecasts_is_not_served_as_current_v2_data(monkeypatch):
+    legacy_dashboard = {
+        "snapshot_schema": "VELTRIX_DASHBOARD_V1",
+        "as_of_date": "2026-11-14",
+        "predictions": [{"fixture_id": "legacy-fixture"}],
+    }
+    monkeypatch.setattr(
+        report_artifacts, "_load",
+        lambda kind: legacy_dashboard if kind == "dashboard" else None,
+    )
+    assert report_artifacts.load_dashboard_snapshot() is None
