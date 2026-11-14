@@ -270,5 +270,33 @@ class ProspectivePaperLedger:
                 raise ValueError("PAPER_LEDGER_CHAIN_LINK_INVALID")
             if _event_hash(body) != event.event_sha256:
                 raise ValueError("PAPER_LEDGER_EVENT_HASH_INVALID")
+            if event.event_type in {"PREDICTION", "SHADOW_PREDICTION"}:
+                payload = event.payload
+                if (
+                    payload.get("fixture_id") != event.fixture_id
+                    or payload.get("model_version") != event.model_version
+                    or payload.get("recorded_at") != event.recorded_at
+                ):
+                    raise ValueError("PAPER_LEDGER_EVENT_IDENTITY_INVALID")
+                if payload.get("target_provider") == "5DollarFootballAPI":
+                    required_target_fields = (
+                        "target_source_id", "target_source_fixture_id",
+                        "target_provider_competition_id", "target_payload_sha256",
+                        "target_response_sha256", "target_capture_manifest_sha256",
+                    )
+                    if not all(
+                        isinstance(payload.get(key), str) and payload[key].strip()
+                        for key in required_target_fields
+                    ):
+                        raise ValueError("PAPER_LEDGER_TARGET_PROVENANCE_INCOMPLETE")
+                    if not all(
+                        len(payload[key]) == 64
+                        and all(ch in "0123456789abcdef" for ch in payload[key].casefold())
+                        for key in (
+                            "target_payload_sha256", "target_response_sha256",
+                            "target_capture_manifest_sha256",
+                        )
+                    ):
+                        raise ValueError("PAPER_LEDGER_TARGET_HASH_INVALID")
             previous = event.event_sha256
         return True
