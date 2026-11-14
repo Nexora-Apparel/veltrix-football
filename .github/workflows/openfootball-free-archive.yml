@@ -1,6 +1,13 @@
 name: VELTRIX free OpenFootball archive export
 
 on:
+  push:
+    branches:
+      - phase5/openfootball-free-import-workflow-20261114
+    paths:
+      - ".github/workflows/openfootball-free-archive.yml"
+      - "scripts/export_openfootball_archive.py"
+      - "veltrix_v2/providers/openfootball_archive/**"
   workflow_dispatch:
 
 permissions:
@@ -60,7 +67,6 @@ jobs:
         env:
           SOURCE_SHA: ${{ steps.source.outputs.sha }}
           SOURCE_TIMESTAMP: ${{ steps.source.outputs.timestamp }}
-          IMPORTED_AT: ${{ github.event.repository.updated_at }}
         run: |
           python scripts/export_openfootball_archive.py \
             --source-file work/nigeria-2025-26.football.txt \
