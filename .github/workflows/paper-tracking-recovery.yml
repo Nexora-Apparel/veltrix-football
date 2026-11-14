@@ -28,6 +28,10 @@ concurrency:
 
 jobs:
   recover-paper-ledger:
+    # PAUSED: this legacy recovery job re-evaluates legacy predictions and republishes
+    # the legacy command-data report/ledger. V2 paper tracking uses the certified
+    # prospective ledger and portable report bundle instead.
+    if: false
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
