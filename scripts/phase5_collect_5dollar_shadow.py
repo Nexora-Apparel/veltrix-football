@@ -503,6 +503,7 @@ def run_capture(
             request_id=request_id, requested_at=requested_at, retrieved_at=retrieved_at,
             registry=registry, out_dir=out_dir,
             staging_dsn=staging_dsn,
+            persist_staging=persist_staging,
         )
         targets.extend(target_rows)
         page_manifests.append(info)
