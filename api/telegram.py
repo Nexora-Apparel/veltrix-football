@@ -700,24 +700,3 @@ async def telegram_webhook(
         # Do not expose the update, chat id, token, or Telegram request URL.
         raise HTTPException(status_code=502, detail="Telegram reply delivery failed") from None
     return JSONResponse({"ok": True})
-    try:
-        # Read published snapshots only. This never starts prediction jobs or
-        # consumes the football provider's API quota.
-        try:
-            report = load_latest_report(_authoritative_publication_verifier())
-            # No legacy paper ledger is passed into V2 Telegram commands.
-            ledger = None
-        except Exception:
-            # A data-source outage must not break the Telegram webhook.
-            report, ledger = None, None
-        odds_data = None
-        odds_error = None
-        _send_message(
-            bot_token, chat_id,
-            handle_command(command, report=report, ledger=ledger,
-                           odds_data=odds_data, odds_error=odds_error)
-        )
-    except Exception:
-        # Do not expose the update, chat id, token, or Telegram request URL.
-        raise HTTPException(status_code=502, detail="Telegram reply delivery failed") from None
-    return JSONResponse({"ok": True})
