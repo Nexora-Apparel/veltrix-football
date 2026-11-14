@@ -53,6 +53,7 @@ def test_persistence_is_idempotent_for_identical_bundle(tmp_path):
     second = persist_report_surface_bundle(bundle, tmp_path)
     assert first == second
     assert all(path.exists() for path in first.values())
+    assert first["commit_marker"].name.endswith(".commit.json")
 
 
 def test_same_report_id_with_changed_content_cannot_overwrite_artifacts(tmp_path):
