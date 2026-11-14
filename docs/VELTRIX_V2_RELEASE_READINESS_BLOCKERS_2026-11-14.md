@@ -42,7 +42,8 @@ The 90-date and 300-settlement requirements cannot be completed by compressing s
 PR #118 contains:
 - Canonical report identity and hash verification.
 - Website projection content-parity checks.
-- Immutable canonical, scheduled, Telegram and website artifact bundle.
+- Immutable canonical, scheduled, Telegram and website artifact bundle with a final commit marker binding all four artifact byte hashes; interrupted writes remain invisible to readers until the marker is committed.
+- Website V2 loader rejects empty reports, duplicate fixture IDs, more than 25 fixtures, and verifier exceptions.
 - Read-back bundle verifier and offline CLI.
 - Authorization-gated scheduled report consumer.
 - Telegram dispatch adapter that verifies the entire bundle and publication authorization before claiming a delivery.
@@ -51,7 +52,7 @@ PR #118 contains:
 - Legacy sender guard and V2 regression tests.
 - Website loaders that fail closed without an authoritative verifier and no longer serve legacy forecast snapshots as current V2 predictions.
 
-Latest fully validated code head at this snapshot: 36c831421bc1377f6eea4c79d58e0a8e256e4d78, CI run #1284 passed Foundation, PostgreSQL 16 and PostgreSQL 18. Subsequent commits are subject to their own CI results.
+Latest fully validated checkpoint at this snapshot: commit `ab9ec896d2e17f2546e2dbfe529d99057a0a6260`, CI run #1342 passed Foundation, PostgreSQL 16 and PostgreSQL 18. Later website-loader and certification changes are under their own CI runs and are not yet included in that pass.
 
 ## Hard release blockers
 
@@ -90,3 +91,14 @@ Latest fully validated code head at this snapshot: 36c831421bc1377f6eea4c79d58e0
 - Legacy daily predictions, dashboard snapshot publication and Telegram recovery remain paused and are covered by regression checks.
 - The publication verifier and artifact bundle remain fail-closed; no real certification manifest is currently eligible.
 - PR #118 remains draft/open/unmerged. No staging migration, production write, provider request, Telegram send, schedule activation or manual Vercel deployment was performed.
+
+
+## Additional certification hardening — 2026-11-14 14:56 UTC
+
+- Public market whitelist is limited to `1X2`, `BTTS` and `TOTALS_2_5`; value betting cannot be authorized by this verifier.
+- 1X2 must beat the de-vigged bookmaker on both Brier and log loss for the full and recent holdout sets, with exact fixture-set hashes matched in each comparison.
+- Timestamped odds coverage is constrained to 98%–100%.
+- Publication reports are limited to 1–25 unique fixture IDs.
+- Certification and rights evidence objects are byte-hashed and size-bounded.
+- Telegram reconciliation evidence is size-bounded; the reconciliation path still has no send/retry capability.
+- CI run #1342 passed Foundation, PostgreSQL 16 and PostgreSQL 18 for commit `ab9ec896d2e17f2546e2dbfe529d99057a0a6260`. Later commits are still being validated.
