@@ -28,7 +28,7 @@ This baseline is not certified for production and its publication flag is hard-l
 ## Known limitations
 
 - Independent Poisson assumptions do not model score dependence or low-score correlation.
-- All eligible results currently receive equal temporal weight; recency decay remains a separately testable model parameter.
+- Equal temporal weighting is the default. An optional exponential half-life parameter applies the same time-decay weights to competition baselines, team rates and the walk-forward comparison baseline; candidate half-lives must be selected only by chronological validation.
 - No lineup, injuries, rest, travel, tactical or odds features are included.
 - The model should be benchmarked against a simple competition-rate baseline and later compared with Dixon-Coles only through independent chronological tests.
 
