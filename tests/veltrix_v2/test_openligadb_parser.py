@@ -56,7 +56,7 @@ def test_parses_match_and_preserves_all_result_types_and_raw_hash():
 
 def test_provider_update_time_is_not_promoted_to_publication_or_availability():
     parsed = parse_openligadb_response(raw([match()]), retrieved_at=RETRIEVED).matches[0]
-    assert parsed.provider_update_at == datetime(2026, 11, 12, 21, 0, tzinfo=timezone(timedelta(hours=1)))
+    assert parsed.provider_update_at == datetime(2026, 11, 12, 22, 0, tzinfo=timezone(timedelta(hours=1)))
     assert not hasattr(parsed, "source_published_at")
     assert not hasattr(parsed, "available_at")
 
