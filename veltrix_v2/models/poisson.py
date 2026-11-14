@@ -58,6 +58,7 @@ class PoissonPrediction:
     publishable: bool
     publication_reason: str
     recency_half_life_days: float | None
+    dixon_coles_rho: float
 
 
 def _aware(value: datetime) -> bool:
@@ -168,6 +169,7 @@ def predict_match(
     cutoff_at: datetime,
     prior_matches: float = 5.0,
     recency_half_life_days: float | None = None,
+    dixon_coles_rho: float = 0.0,
 ) -> PoissonPrediction:
     """Estimate 1X2, BTTS and O/U 2.5 using only results knowable at cutoff.
 
@@ -194,6 +196,9 @@ def predict_match(
         or recency_half_life_days <= 0
     ):
         raise ValueError("RECENCY_HALF_LIFE_MUST_BE_POSITIVE_FINITE")
+    if (not isinstance(dixon_coles_rho, (int, float)) or isinstance(dixon_coles_rho, bool)
+            or not math.isfinite(dixon_coles_rho) or not -1.0 <= dixon_coles_rho <= 1.0):
+        raise ValueError("DIXON_COLES_RHO_INVALID")
 
     candidates = list(observations)
     fixture_id_counts: dict[str, int] = {}
@@ -268,24 +273,46 @@ def predict_match(
 
     home_probs = [_poisson_pmf(home_lambda, i) for i in range(MAX_GOALS + 1)]
     away_probs = [_poisson_pmf(away_lambda, i) for i in range(MAX_GOALS + 1)]
-    mass = sum(home_probs) * sum(away_probs)
+    h = d = a = btts = over = mass = 0.0
+    score_probabilities: list[tuple[int, int, float]] = []
+    rho = float(dixon_coles_rho)
+    tau_00 = 1.0 - home_lambda * away_lambda * rho
+    tau_01 = 1.0 + home_lambda * rho
+    tau_10 = 1.0 + away_lambda * rho
+    tau_11 = 1.0 - rho
+    if min(tau_00, tau_01, tau_10, tau_11) <= 0:
+        raise ValueError("DIXON_COLES_TAU_NONPOSITIVE")
+    for hg, hp in enumerate(home_probs):
+        for ag, ap in enumerate(away_probs):
+            tau = 1.0
+            if hg == 0 and ag == 0:
+                tau = tau_00
+            elif hg == 0 and ag == 1:
+                tau = tau_01
+            elif hg == 1 and ag == 0:
+                tau = tau_10
+            elif hg == 1 and ag == 1:
+                tau = tau_11
+            probability = hp * ap * tau
+            if probability < 0 or not math.isfinite(probability):
+                raise ValueError("DIXON_COLES_SCORE_PROBABILITY_INVALID")
+            score_probabilities.append((hg, ag, probability))
+            mass += probability
     if mass <= 0 or not math.isfinite(mass):
         raise ValueError("POISSON_SCORE_MASS_INVALID")
 
-    h = d = a = btts = over = 0.0
-    for hg, hp in enumerate(home_probs):
-        for ag, ap in enumerate(away_probs):
-            probability = hp * ap / mass
-            if hg > ag:
-                h += probability
-            elif hg == ag:
-                d += probability
-            else:
-                a += probability
-            if hg > 0 and ag > 0:
-                btts += probability
-            if hg + ag >= 3:
-                over += probability
+    for hg, ag, raw_probability in score_probabilities:
+        probability = raw_probability / mass
+        if hg > ag:
+            h += probability
+        elif hg == ag:
+            d += probability
+        else:
+            a += probability
+        if hg > 0 and ag > 0:
+            btts += probability
+        if hg + ag >= 3:
+            over += probability
 
     total = h + d + a
     h, d, a = h / total, d / total, a / total
@@ -310,4 +337,5 @@ def predict_match(
         publishable=publishable,
         publication_reason=reason,
         recency_half_life_days=recency_half_life_days,
+        dixon_coles_rho=rho,
     )
