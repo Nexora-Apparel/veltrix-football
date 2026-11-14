@@ -13,7 +13,8 @@ The offline coverage auditor measures how much fixture-level evidence is eligibl
 - Evidence domain, provider and source identity.
 - Source availability and recording timestamps.
 - Raw payload SHA-256.
-- Explicit rights approval and point-in-time certification booleans.
+- Explicit rights approval identity, evidence SHA-256, evaluation timestamp and approval boolean.
+- Point-in-time certification boolean.
 - An explicit timezone-aware audit cutoff.
 
 The auditor does not fetch providers, read credentials, infer rights, resolve team identity, or promote uncertified records.
@@ -23,7 +24,7 @@ The auditor does not fetch providers, read credentials, infer rights, resolve te
 - Results evidence may become available at or after the fixture kickoff, but must be available and recorded no later than the audit cutoff.
 - Prematch domains (fixtures, form, strength, rest, odds, xG, lineups, injuries and player statistics) must have been available strictly before kickoff.
 - All timestamps must be timezone-aware.
-- Missing timestamps, naive timestamps, late evidence, invalid hashes, mismatched fixture/competition identity, non-boolean approval flags and uncertified observations are rejected.
+- Missing timestamps, naive timestamps, late evidence, invalid hashes, mismatched fixture/competition identity, missing or malformed rights approval evidence, non-boolean approval flags and uncertified observations are rejected.
 - Coverage is counted per distinct canonical fixture, not per provider response. Multiple providers corroborating one fixture do not inflate the denominator or numerator.
 - Provider provenance is retained as a sorted list for each competition/domain report.
 
