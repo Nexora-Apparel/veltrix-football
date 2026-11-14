@@ -94,6 +94,7 @@ def predict_batch(
             counts[target.fixture_id] = counts.get(target.fixture_id, 0) + 1
     duplicate_ids = {key for key, count in counts.items() if count > 1}
     skipped_duplicates = sum(counts[key] for key in duplicate_ids)
+    invalid_target_types = sum(1 for target in target_rows if not isinstance(target, PredictionTarget))
 
     candidates = [target for target in target_rows
                   if isinstance(target, PredictionTarget)
@@ -111,7 +112,7 @@ def predict_batch(
 
     forecasts: list[ForecastRecord] = []
     skipped_no_history = 0
-    skipped_invalid = len(invalid_targets) + len(past_or_live)
+    skipped_invalid = invalid_target_types + len(invalid_targets) + len(past_or_live)
     for target in selected:
         try:
             prediction = predict_match(
