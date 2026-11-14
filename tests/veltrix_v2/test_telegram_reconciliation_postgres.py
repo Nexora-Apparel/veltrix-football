@@ -51,6 +51,7 @@ def test_postgres_reconciliation_is_claim_bound_append_only_and_supersedable(mon
         store = PostgresTelegramReconciliationStore(
             lambda: psycopg.connect(test_dsn),
             lambda uri: evidence if uri == "s3://veltrix-audit/telegram/integration.json" else b"",
+            lambda actor: actor in {"operator-1", "reviewer-1"},
         )
         now = datetime.now(timezone.utc)
         observed_at = now - timedelta(seconds=2)
