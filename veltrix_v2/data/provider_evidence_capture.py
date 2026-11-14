@@ -316,7 +316,7 @@ def _capture_one(row: ProviderResultCapture) -> CapturedResultEvidence:
                     reasons.append(f"SOURCE_RIGHTS_{purpose.value}_{decision.reason_code}")
                     decisions_allowed = False
         rights_approved = decisions_allowed and not any(
-            code.startswith("SOURCE_RIGHTS_") for code in reasons
+            code.startswith(("SOURCE_RIGHTS_", "SOURCE_APPROVAL_")) for code in reasons
         )
 
     crosswalk = row.crosswalk
