@@ -24,6 +24,12 @@ Resolve a durable Telegram delivery claim in `OUTCOME_UNKNOWN` after a timeout, 
 
 A missing message ID is not proof of non-delivery. A successful first chunk followed by a timeout on a later chunk is a partial delivery and must be reconciled as such; it cannot be classified as `CONFIRMED_NOT_SENT`.
 
+## Implemented reconciliation foundation
+
+The repository now contains migration `0010_telegram_delivery_reconciliation.sql`, the pure validator and PostgreSQL writer in `veltrix_v2/reporting/reconciliation.py`, and unit/PostgreSQL integration tests. The writer re-reads evidence bytes through an injected trusted evidence reader, verifies their SHA-256, binds the event to the exact `OUTCOME_UNKNOWN` claim, and writes an append-only event. Database triggers enforce claim identity, outcome constraints, supersession links, and append-only behavior. The writer has no Telegram transport and cannot resend a message.
+
+The caller must still authenticate the operator and independent reviewer identities and provide an approved evidence reader. The database stores identity strings; it does not itself prove those identities were authenticated.
+
 ## Required reconciliation event fields
 
 The future append-only reconciliation event must contain:
@@ -67,7 +73,7 @@ Even after `CONFIRMED_NOT_SENT`, the original idempotency key remains consumed. 
 
 Before any live Telegram dispatch:
 
-- Reconciliation event schema and append-only migration pass PostgreSQL 16 and 18 tests.
+- Reconciliation event schema, append-only migration and integration tests pass PostgreSQL 16 and 18.
 - Evidence URI/hash verification is implemented.
 - Operator and independent reviewer identity are authenticated.
 - The operator workflow has no Telegram send capability.
