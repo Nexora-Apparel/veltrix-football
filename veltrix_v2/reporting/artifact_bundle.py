@@ -31,6 +31,19 @@ PORTABLE_BUNDLE_SCHEMA = "VELTRIX_PORTABLE_REPORT_SURFACE_BUNDLE_V1"
 _SURFACE_NAMES = ("canonical", "scheduled", "telegram", "dashboard")
 
 
+def _reject_duplicate_object_keys(pairs):
+    result = {}
+    for key, value in pairs:
+        if key in result:
+            raise ValueError("REPORT_BUNDLE_JSON_DUPLICATE_KEY")
+        result[key] = value
+    return result
+
+
+def _strict_json_loads(raw: str):
+    return json.loads(raw, object_pairs_hook=_reject_duplicate_object_keys)
+
+
 def _canonical_json_bytes(value: Mapping[str, Any]) -> bytes:
     return (
         json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":"), allow_nan=False)
@@ -77,7 +90,7 @@ def parse_portable_report_surface_bundle(raw: bytes) -> ReportSurfaceBundle:
     """Parse one portable artifact and verify all four surface hashes and identities."""
     if not isinstance(raw, bytes) or not raw or len(raw) > 32_000_000:
         raise ValueError("PORTABLE_REPORT_BUNDLE_BYTES_INVALID")
-    envelope = json.loads(raw.decode("utf-8"))
+    envelope = _strict_json_loads(raw.decode("utf-8"))
     if (
         not isinstance(envelope, dict)
         or envelope.get("schema") != PORTABLE_BUNDLE_SCHEMA
@@ -196,7 +209,7 @@ def load_report_surface_bundle(
         raise ValueError("REPORT_BUNDLE_COMMIT_MARKER_MISSING") from exc
     if len(commit_raw) > 32_000:
         raise ValueError("REPORT_BUNDLE_COMMIT_MARKER_TOO_LARGE")
-    commit = json.loads(commit_raw.decode("utf-8"))
+    commit = _strict_json_loads(commit_raw.decode("utf-8"))
     if (
         not isinstance(commit, dict)
         or commit.get("schema") != "VELTRIX_REPORT_BUNDLE_COMMIT_V1"
@@ -225,7 +238,7 @@ def load_report_surface_bundle(
             continue
         if len(raw) > 8_000_000:
             raise ValueError("REPORT_ARTIFACT_TOO_LARGE")
-        value = json.loads(raw.decode("utf-8"))
+        value = _strict_json_loads(raw.decode("utf-8"))
         if not isinstance(value, dict):
             raise ValueError("REPORT_ARTIFACT_MUST_BE_OBJECT")
         payloads[name] = value
