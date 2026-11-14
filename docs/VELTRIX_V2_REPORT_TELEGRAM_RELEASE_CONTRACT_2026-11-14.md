@@ -34,7 +34,7 @@ The dispatch adapter is deliberately at-most-once:
 - A timeout, transport exception, destination mismatch or receipt-persistence failure becomes `OUTCOME_UNKNOWN`.
 - An unknown outcome is never automatically retried. It requires reconciliation against Telegram delivery evidence before a new attempt is considered.
 
-Exactly-once delivery cannot be guaranteed across Telegram and our database because they do not share a transaction coordinator. A durable PostgreSQL implementation now exists in `veltrix_v2/reporting/postgres_delivery_store.py`, backed by migration 0009 and concurrent-claim integration tests. It must pass PostgreSQL 16/18 CI and be applied to staging under the separate migration guard before live dispatch. Operator reconciliation for `OUTCOME_UNKNOWN` remains required.
+Exactly-once delivery cannot be guaranteed across Telegram and our database because they do not share a transaction coordinator. A durable PostgreSQL implementation exists in `veltrix_v2/reporting/postgres_delivery_store.py`, backed by migration 0009 and concurrent-claim integration tests. Append-only operator reconciliation is implemented in migration 0010 and `veltrix_v2/reporting/reconciliation.py`; it verifies evidence bytes and binds events to the exact unknown claim. The latest tested reconciliation commit passed PostgreSQL 16/18 and foundation CI. Staging application, trusted operator/reviewer authentication, and evidence-reader provisioning remain required before live dispatch.
 
 ## Historical result and duplicate reconciliation
 
@@ -67,7 +67,7 @@ Duplicate fixture IDs, duplicate settlements, conflicting scores, ambiguous fixt
 |---|---|---|
 | Report identity | Canonical hash, tamper rejection, four-surface parity helper, website projection checks, immutable multi-surface artifact bundle and local CLI | Connect the scheduled workflow to the V2 report builder; schedule remains disabled |
 | Telegram formatting | Release-mode gate, market allowlist, chunking, no truncation, legacy-sender block | End-to-end test against actual certified V2 report |
-| Delivery | Atomic PostgreSQL claim, concurrent duplicate skip, terminal unknown outcome | Apply migration to staging and implement operator receipt reconciliation |
+| Delivery | Atomic PostgreSQL claim, concurrent duplicate skip, terminal unknown outcome, append-only reconciliation and supersession | Apply migrations to staging; authenticate operators/reviewers and provision approved evidence reader |
 | Results | Existing admission/settlement identity, rights and duplicate tests | Full prospective result reconciliation over captured real fixtures |
 | Release | Shadow/public gate separation | Certification, operational sign-off and schedule activation |
 
