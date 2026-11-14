@@ -10,7 +10,7 @@ KICKOFF = datetime(2026, 10, 1, 18, 0, tzinfo=UTC)
 RETRIEVED = datetime(2026, 11, 14, 0, 30, tzinfo=UTC)
 
 
-def historical_fixture(*, status=FixtureStatus.FINISHED, certifiable=False):
+def historical_fixture(*, status=FixtureStatus.FINISHED, certifiable=False, retrieved=RETRIEVED):
     payload = {
         "id": 98765,
         "league": {"id": 4160026622, "name": "England Premier League"},
@@ -43,7 +43,7 @@ def historical_fixture(*, status=FixtureStatus.FINISHED, certifiable=False):
         away_score=1 if finished else None,
         payload=payload,
         payload_sha256=payload_hash,
-        retrieved_at_utc=RETRIEVED,
+        retrieved_at_utc=retrieved,
         source_event_time_utc=KICKOFF,
         available_at_utc=KICKOFF + timedelta(days=4) if finished else None,
         availability_basis="provider_finished_status_conservative_4d" if finished else "not_settled",
@@ -78,4 +78,12 @@ def test_certification_flag_is_carried_through_without_upgrading_source_evidence
 
 def test_unsettled_provider_fixtures_do_not_become_model_result_observations():
     result = historical_fixture_to_observation(historical_fixture(status=FixtureStatus.SCHEDULED))
+    assert result is None
+
+
+def test_result_is_not_emitted_before_conservative_availability_time():
+    early_retrieval = KICKOFF + timedelta(days=1)
+    result = historical_fixture_to_observation(
+        historical_fixture(retrieved=early_retrieval)
+    )
     assert result is None
