@@ -29,7 +29,8 @@ GOAL API and StrikerAPI are not referenced by this workflow.
 - Fixture, team and competition mappings must be one-to-one; ambiguous mappings fail closed.
 - Crosswalks are valid only from the verification instant forward. They are never backdated.
 - New scheduled targets use canonical team and competition IDs; the target fixture ID remains provider-namespaced until a canonical fixture row exists.
-- Finished results are captured with the exact page response bytes, response hash, request/retrieval/recording clocks, capture manifest and item evidence hashes.
+- Finished results are captured with the exact page response bytes, response hash, successful HTTP status, exact query window/status/page parameters, request/retrieval/recording clocks, capture manifest and item evidence hashes.
+- Provider response persistence retains an explicit allowlist of quota/rate-limit and basic response headers; authorization and cookie headers are excluded.
 - Newly observed result snapshots are explicitly non-PIT-certified. Retrieval time is not relabelled as provider publication time.
 - Rows without a valid crosswalk, rights approval, source hash or temporal evidence are rejected from model history.
 - Missing history remains missing; no fallback prior or fabricated feature is introduced.
