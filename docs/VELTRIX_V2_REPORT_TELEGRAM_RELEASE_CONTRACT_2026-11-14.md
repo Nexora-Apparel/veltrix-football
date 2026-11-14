@@ -109,3 +109,8 @@ The final commit marker binds this portable artifact together with the four sepa
 - The Telegram adapter can dispatch the Telegram projection from the single portable bundle only after bundle identity, all four surface hashes, public fixture status, unique fixture IDs and authoritative certification have passed.
 - The Telegram adapter still claims durable idempotency before sending and has no automatic resend path for uncertain outcomes.
 - These adapters are offline-testable and do not activate any production workflow.
+
+
+## Website portable-bundle adapter
+
+The website now exposes `load_v2_portable_report_bundle(bytes, verifier)`. It consumes the same portable bytes as the scheduled and Telegram adapters, returns all four projections plus report identity, and returns no data if bytes are malformed, the verifier is missing/denies, or bundle checks fail. The function is an integration adapter only; the production website fetch path and trusted verifier injection remain unwired pending release evidence and deployment authorization.
