@@ -179,7 +179,10 @@ def test_public_summary_is_an_explicit_aggregate_only_allowlist():
 
 
 
-def test_run_capture_orchestrates_mocked_pages_without_staging_writes(monkeypatch, tmp_path):
+@pytest.mark.parametrize("persist_staging", [False, True])
+def test_run_capture_orchestrates_mocked_pages_with_optional_staging_ledger(
+    monkeypatch, tmp_path, persist_staging
+):
     import scripts.phase5_collect_5dollar_shadow as capture
 
     approval = SimpleNamespace(
@@ -256,8 +259,20 @@ def test_run_capture_orchestrates_mocked_pages_without_staging_writes(monkeypatc
             return event
 
     monkeypatch.setattr(capture, "JsonlPaperLedgerStore", LocalStore)
+    persistence_calls = []
+    def fake_persist(dsn, predictions):
+        persistence_calls.append((dsn, list(predictions)))
+        return {
+            "events_appended": 1,
+            "duplicate_predictions_skipped": 0,
+            "ledger_event_count": 1,
+            "ledger_head_sha256": "e" * 64,
+            "chain_verified": True,
+        }
+
     monkeypatch.setattr(
         capture, "_persist_paper_predictions_to_staging",
+        fake_persist if persist_staging else
         lambda *a, **k: pytest.fail("staging persistence must remain disabled"),
     )
 
@@ -268,14 +283,18 @@ def test_run_capture_orchestrates_mocked_pages_without_staging_writes(monkeypatc
         upcoming_days=14,
         max_fixtures=25,
         out_dir=tmp_path,
-        persist_staging=False,
+        persist_staging=persist_staging,
     )
 
     assert result["requests_used"] == 2
     assert result["forecast_count"] == 1
     assert result["admitted_shadow_predictions"] == 1
-    assert result["persisted_shadow_ledger_events"] == 0
-    assert result["database_writes"] is False
+    assert result["persisted_shadow_ledger_events"] == (1 if persist_staging else 0)
+    assert result["paper_ledger_persisted_to_staging"] is persist_staging
+    assert result["database_writes"] is persist_staging
+    assert len(persistence_calls) == (1 if persist_staging else 0)
+    if persist_staging:
+        assert persistence_calls[0][1] == [prediction]
     assert result["public_publication"] is False
     assert result["telegram_delivery"] is False
     assert result["schedule_activation"] is False
