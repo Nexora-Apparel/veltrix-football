@@ -118,6 +118,7 @@ def test_403_competition_response_is_not_retried_and_still_advances_pacer(monkey
             end_at=NOW,
             page=1,
             pacing_state=pacing,
+            before_request=lambda: NOW,
         )
     assert isinstance(pacing["last_started"], float)
 
