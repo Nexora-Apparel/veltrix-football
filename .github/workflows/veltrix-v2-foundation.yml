@@ -140,6 +140,8 @@ jobs:
         run: python -m pytest --import-mode=importlib -q tests/veltrix_v2/test_report_artifact_bundle.py
       - name: Test portable report bundle verifier CLI
         run: python -m pytest --import-mode=importlib -q tests/veltrix_v2/test_portable_report_bundle_cli.py
+      - name: Test website scheduler Telegram portable bundle parity
+        run: python -m pytest --import-mode=importlib -q tests/veltrix_v2/test_portable_bundle_cross_surface_integration.py
       - name: Test local report bundle CLI
         run: python -m pytest --import-mode=importlib -q tests/veltrix_v2/test_report_surface_bundle_cli.py
       - name: Test offline four-surface report bundle verifier
