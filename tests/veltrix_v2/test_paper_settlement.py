@@ -171,3 +171,28 @@ def test_observed_shadow_settlement_waits_for_conservative_delay_boundary():
             ledger, fixture, approval(),
             recorded_at=fixture.retrieved_at_utc + timedelta(hours=1)
         )
+
+
+def test_settlement_requires_model_version_when_fixture_has_multiple_predictions():
+    ledger = ledger_with_prediction()
+    kickoff = BASE + timedelta(days=2)
+    ledger.append_prediction(PaperPrediction(
+        fixture_id="testsrc:fixture-1", competition_id="testsrc:comp-1",
+        home_team_id="testsrc:team-a", away_team_id="testsrc:team-b",
+        kickoff_at=kickoff, prediction_cutoff_at=BASE - timedelta(minutes=5),
+        forecasted_at=BASE - timedelta(minutes=4), recorded_at=BASE - timedelta(minutes=2),
+        model_version="poisson-v2", home_probability=0.4, draw_probability=0.3,
+        away_probability=0.3, evidence_sha256="c" * 64, point_in_time_certifiable=True,
+    ))
+    fixture = source_fixture()
+    with pytest.raises(ValueError, match="PAPER_SETTLEMENT_PREDICTION_NOT_UNIQUE"):
+        settle_from_verified_fixture(
+            ledger, fixture, approval(),
+            recorded_at=fixture.retrieved_at_utc + timedelta(hours=1)
+        )
+    settled = settle_from_verified_fixture(
+        ledger, fixture, approval(),
+        recorded_at=fixture.retrieved_at_utc + timedelta(hours=1),
+        model_version="poisson-v1",
+    )
+    assert settled.model_version == "poisson-v1"
