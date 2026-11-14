@@ -15,7 +15,7 @@ Missing or malformed temporal evidence is excluded. No retrieval timestamp is su
 ## Estimation
 
 - Competition home/away goal rates form the scoring baseline.
-- Team scoring and conceding rates are shrunk toward the competition mean using a fixed, explicit five-match prior strength.
+- Home and away scoring/defending rates are estimated separately and shrunk toward the matching competition venue baseline using an explicit five-match prior strength. A missing venue sample falls back only to that venue's competition mean; a team with no history at all produces no forecast.
 - Expected goals feed independent Poisson score distributions.
 - The score grid yields 1X2, BTTS Yes and Over 2.5 probabilities.
 - Team history of one or two matches is usable for exploratory estimation, but is explicitly marked non-publishable.
@@ -28,7 +28,7 @@ This baseline is not certified for production and its publication flag is hard-l
 ## Known limitations
 
 - Independent Poisson assumptions do not model score dependence or low-score correlation.
-- Team attack/defence are pooled across home and away venues.
+- All eligible results currently receive equal temporal weight; recency decay remains a separately testable model parameter.
 - No lineup, injuries, rest, travel, tactical or odds features are included.
 - The model should be benchmarked against a simple competition-rate baseline and later compared with Dixon-Coles only through independent chronological tests.
 
