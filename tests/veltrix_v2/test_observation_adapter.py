@@ -102,6 +102,8 @@ def test_future_scheduled_provider_fixture_converts_to_prediction_target():
     assert result.competition_id == "5dollarfootballapi:4160026622"
     assert result.home_team_id == "5dollarfootballapi:101"
     assert result.away_team_id == "5dollarfootballapi:102"
+    assert result.home_team_name == "Arsenal"
+    assert result.away_team_name == "Chelsea"
     assert result.kickoff_at == future_kickoff
     assert result.retrieved_at == RETRIEVED
 
