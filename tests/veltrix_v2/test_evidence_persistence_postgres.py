@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 import os
 
 import psycopg
@@ -118,6 +118,11 @@ def setup_db():
         conn.execute(
             "INSERT INTO source_approvals(approval_id,provider,source_id) VALUES (%s,%s,%s)",
             (a.approval_id, a.provider, a.source_id),
+        )
+        target_approval = snapshot_approval()
+        conn.execute(
+            "INSERT INTO source_approvals(approval_id,provider,source_id) VALUES (%s,%s,%s)",
+            (target_approval.approval_id, target_approval.provider, target_approval.source_id),
         )
 
 
