@@ -298,6 +298,13 @@ def admit_shadow_forecasts(
                 evidence_sha256=evidence_hash,
                 point_in_time_certifiable=(_evidence_class == "PIT_CERTIFIED"),
                 evidence_class=_evidence_class,
+                target_provider=target.provider,
+                target_source_id=target.source_id,
+                target_source_fixture_id=target.source_fixture_id,
+                target_provider_competition_id=target.provider_competition_id,
+                target_payload_sha256=target.payload_sha256,
+                target_response_sha256=target.response_sha256,
+                target_capture_manifest_sha256=target.capture_manifest_sha256,
             )
             admitted.append(prediction)
         except (TypeError, ValueError, AttributeError) as exc:
