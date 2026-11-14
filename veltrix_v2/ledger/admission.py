@@ -259,6 +259,7 @@ def admit_shadow_forecasts(
                 "target_payload_sha256": target.payload_sha256,
                 "target_response_sha256": target.response_sha256,
                 "target_capture_manifest_sha256": target.capture_manifest_sha256,
+                "target_provider_competition_id": target.provider_competition_id,
                 "target_rights_approval_id": target_approval.approval_id,
                 "target_rights_evidence_sha256": target_approval.evidence_sha256,
                 "training_observations": evidence_rows,
