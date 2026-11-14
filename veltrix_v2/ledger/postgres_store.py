@@ -151,6 +151,22 @@ class PostgresPaperLedgerStore:
             self._insert_event(event)
             return event
 
+    def append_predictions(
+        self, predictions: list[PaperPrediction]
+    ) -> list[PaperLedgerEvent]:
+        """Append a batch atomically; any invalid or duplicate row rolls back all."""
+        if not isinstance(predictions, list) or not predictions:
+            raise ValueError("PAPER_LEDGER_PREDICTION_BATCH_INVALID")
+        self._assert_target(write=True)
+        with self.connection.transaction():
+            ledger = self._begin_append()
+            events = []
+            for prediction in predictions:
+                event = ledger.append_prediction(prediction)
+                self._insert_event(event)
+                events.append(event)
+            return events
+
     def append_settlement(self, **kwargs: Any) -> PaperLedgerEvent:
         self._assert_target(write=True)
         with self.connection.transaction():
