@@ -75,6 +75,7 @@ class WalkForwardReport:
     skipped_date_only_targets: int = 0
     non_certifiable_input_rows: int = 0
     recency_half_life_days: float | None = None
+    dixon_coles_rho: float = 0.0
 
 
 def _aware(value: datetime) -> bool:
@@ -153,6 +154,7 @@ def walk_forward_evaluate(
     evaluation_as_of: datetime,
     cutoff_buffer: timedelta = timedelta(seconds=1),
     recency_half_life_days: float | None = None,
+    dixon_coles_rho: float = 0.0,
 ) -> WalkForwardReport:
     """Evaluate with an expanding chronological window and strict point-in-time cutoffs.
 
@@ -172,6 +174,9 @@ def walk_forward_evaluate(
         or recency_half_life_days <= 0
     ):
         raise ValueError("RECENCY_HALF_LIFE_MUST_BE_POSITIVE_FINITE")
+    if (not isinstance(dixon_coles_rho, (int, float)) or isinstance(dixon_coles_rho, bool)
+            or not math.isfinite(dixon_coles_rho) or not -1.0 <= dixon_coles_rho <= 1.0):
+        raise ValueError("DIXON_COLES_RHO_INVALID")
     rows = list(observations)
     id_counts: dict[str, int] = {}
     for row in rows:
@@ -229,6 +234,8 @@ def walk_forward_evaluate(
                 home_team_id=target.home_team_id, away_team_id=target.away_team_id,
                 kickoff_at=target.kickoff_at, cutoff_at=cutoff,
                 recency_half_life_days=recency_half_life_days,
+        dixon_coles_rho=dixon_coles_rho,
+                dixon_coles_rho=dixon_coles_rho,
             )
         except InsufficientHistoryError:
             skipped_no_history += 1
