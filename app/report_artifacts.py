@@ -34,7 +34,14 @@ def _parse_snapshot(raw: bytes, kind: str) -> dict[str, Any] | None:
     if not isinstance(parsed, dict):
         return None
     if kind == "report":
-        return parsed if isinstance(parsed.get("predictions"), list) and parsed.get("status") != "NOT_YET_PUBLISHED" else None
+        if not isinstance(parsed.get("predictions"), list) or parsed.get("status") == "NOT_YET_PUBLISHED":
+            return None
+        if parsed.get("schema") == REPORT_SCHEMA:
+            try:
+                verify_report_identity(parsed)
+            except (TypeError, ValueError):
+                return None
+        return parsed
     if kind == "dashboard":
         return parsed if parsed.get("snapshot_schema") == "VELTRIX_DASHBOARD_V1" and isinstance(parsed.get("predictions"), list) and parsed.get("as_of_date") else None
     if kind == "ledger":
@@ -127,5 +134,45 @@ def load_model_validation_report() -> dict[str, Any] | None:
 
 
 def load_dashboard_snapshot() -> dict[str, Any] | None:
-    """Load the compact public dashboard projection."""
-    return _load("dashboard")
+    """Load dashboard projection and reject V2 report-identity drift."""
+    snapshot = _load("dashboard")
+    if snapshot is None:
+        return None
+    if "report_id" in snapshot or "report_sha256" in snapshot:
+        report = _load("report")
+        if report is None or report.get("schema") != REPORT_SCHEMA:
+            return None
+        try:
+            identity = verify_report_identity(report)
+        except (TypeError, ValueError):
+            return None
+        if (
+            snapshot.get("report_id") != identity.report_id
+            or snapshot.get("report_sha256") != identity.report_sha256
+        ):
+            return None
+    return snapshot
+
+
+def load_v2_report_bundle() -> dict[str, Any] | None:
+    """Return one V2 report plus its dashboard projection only when hashes match."""
+    report = _load("report")
+    dashboard = _load("dashboard")
+    if report is None or dashboard is None or report.get("schema") != REPORT_SCHEMA:
+        return None
+    try:
+        identity = verify_report_identity(report)
+        if (
+            dashboard.get("report_id") != identity.report_id
+            or dashboard.get("report_sha256") != identity.report_sha256
+        ):
+            return None
+        assert_same_report([report, {
+            "schema": REPORT_SCHEMA,
+            "report_id": dashboard["report_id"],
+            "as_of_date": identity.as_of_date,
+            "report_sha256": dashboard["report_sha256"],
+        }])
+    except (KeyError, TypeError, ValueError):
+        return None
+    return {"report": report, "dashboard": dashboard, "identity": identity}
