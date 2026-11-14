@@ -57,14 +57,18 @@ def validate_fixture_visibility(report: dict[str, Any]) -> dict[str, Any]:
         and "women's, youth and reserve competitions require category-matched historical results"
         not in str(row.get("reason") or "").casefold()
     ]
-    forecast_rows = sum(
+    is_forecast = lambda row: (
         str(row.get("status") or "").upper() in FORECAST_STATUSES
         and isinstance(row.get("probabilities"), dict)
-        for row in rows
     )
+    forecast_rows = sum(is_forecast(row) for row in rows)
+    # Senior coverage must use the same category-scoped population for both
+    # numerator and denominator. Category-neutral forecasts remain visible and
+    # count toward all-fixture coverage, but never inflate senior coverage.
+    senior_forecast_rows = sum(is_forecast(row) for row in senior_candidates)
     low_data_forecasts = counts.get("LOW_HISTORY_FORECAST", 0)
     insufficient_history_rows = counts.get("INSUFFICIENT_HISTORY", 0)
-    forecast_coverage = forecast_rows / len(senior_candidates) if senior_candidates else 1.0
+    forecast_coverage = senior_forecast_rows / len(senior_candidates) if senior_candidates else 1.0
     result = {
         "status": "PASSED",
         "fixture_rows": len(rows),
@@ -72,6 +76,7 @@ def validate_fixture_visibility(report: dict[str, Any]) -> dict[str, Any]:
         "fixture_status_counts": counts,
         "kickoff_unverified_rows": counts.get("KICKOFF_UNVERIFIED", 0),
         "forecast_rows": forecast_rows,
+        "senior_forecast_rows": senior_forecast_rows,
         "low_data_forecast_rows": low_data_forecasts,
         "insufficient_history_rows": insufficient_history_rows,
         "senior_forecast_coverage": round(forecast_coverage, 4),
