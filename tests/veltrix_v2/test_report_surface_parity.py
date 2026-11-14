@@ -22,7 +22,9 @@ def make_dashboard(report):
         "as_of_date": report["as_of_date"],
         "report_id": report["report_id"],
         "report_sha256": report["report_sha256"],
-        "predictions": [],
+        "status": report.get("status"),
+        "release_mode": report.get("release_mode"),
+        "predictions": report["predictions"],
     }
 
 
@@ -79,3 +81,14 @@ def test_legacy_dashboard_without_v2_identity_keeps_existing_loader_contract(mon
     }
     monkeypatch.setattr(report_artifacts, "_load", lambda kind: dashboard if kind == "dashboard" else None)
     assert report_artifacts.load_dashboard_snapshot() == dashboard
+
+
+def test_v2_report_bundle_rejects_website_projection_content_drift(monkeypatch):
+    report = make_report()
+    dashboard = make_dashboard(report)
+    dashboard["predictions"] = [{"fixture_id": "unrelated-fixture"}]
+    monkeypatch.setattr(
+        report_artifacts, "_load",
+        lambda kind: {"report": report, "dashboard": dashboard}.get(kind),
+    )
+    assert report_artifacts.load_v2_report_bundle() is None
