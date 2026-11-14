@@ -124,9 +124,22 @@ def _load(kind: str) -> dict[str, Any] | None:
     return value
 
 
-def load_latest_report() -> dict[str, Any] | None:
-    """Load the most recently published prediction report, if one exists."""
-    return _load("report")
+def load_latest_report(
+    authorization_verifier=None,
+) -> dict[str, Any] | None:
+    """Load a report; V2 requires an injected authoritative publication verifier."""
+    report = _load("report")
+    if report is None or report.get("schema") != REPORT_SCHEMA:
+        return report
+    if not callable(authorization_verifier):
+        return None
+    try:
+        identity = verify_report_identity(report)
+        if authorization_verifier(report, identity) is not True:
+            return None
+    except (KeyError, TypeError, ValueError):
+        return None
+    return report
 
 
 def load_paper_ledger() -> dict[str, Any] | None:
@@ -139,30 +152,34 @@ def load_model_validation_report() -> dict[str, Any] | None:
     return _load("model_validation")
 
 
-def load_dashboard_snapshot() -> dict[str, Any] | None:
-    """Load dashboard projection and reject V2 report-identity drift."""
+def load_dashboard_snapshot(
+    authorization_verifier=None,
+) -> dict[str, Any] | None:
+    """Load a dashboard projection; V2 requires the same publication verifier as the report."""
     snapshot = _load("dashboard")
     if snapshot is None:
         return None
     if "report_id" in snapshot or "report_sha256" in snapshot:
-        report = _load("report")
-        if report is None or report.get("schema") != REPORT_SCHEMA:
-            return None
-        try:
-            assert_website_projection(report, snapshot)
-        except (KeyError, TypeError, ValueError):
+        bundle = load_v2_report_bundle(authorization_verifier)
+        if bundle is None or bundle["dashboard"] != snapshot:
             return None
     return snapshot
 
 
-def load_v2_report_bundle() -> dict[str, Any] | None:
-    """Return one V2 report plus its dashboard projection only when hashes match."""
+def load_v2_report_bundle(
+    authorization_verifier=None,
+) -> dict[str, Any] | None:
+    """Return V2 website data only after authoritative publication authorization."""
     report = _load("report")
     dashboard = _load("dashboard")
     if report is None or dashboard is None or report.get("schema") != REPORT_SCHEMA:
         return None
+    if not callable(authorization_verifier):
+        return None
     try:
         identity = assert_website_projection(report, dashboard)
+        if authorization_verifier(report, identity) is not True:
+            return None
     except (KeyError, TypeError, ValueError):
         return None
     return {"report": report, "dashboard": dashboard, "identity": identity}
