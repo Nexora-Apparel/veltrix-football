@@ -81,14 +81,23 @@ def test_invalid_source_priority_fails_closed():
     with pytest.raises(ValueError, match="SOURCE_PRIORITY_MAP_INVALID"):
         merge_certified_observations([], source_priority={"ProviderA": True})
 
+
 def test_result_available_before_kickoff_is_rejected():
     invalid = observation(available=NOW - timedelta(days=4))
     report = merge_certified_observations([invalid])
     assert report.observations == ()
     assert report.rejected_uncertified_count == 1
 
+
 def test_truthy_non_boolean_certification_is_rejected():
     invalid = replace(observation(), point_in_time_certifiable=1)
+    report = merge_certified_observations([invalid])
+    assert report.observations == ()
+    assert report.rejected_uncertified_count == 1
+
+
+def test_date_only_kickoff_cannot_enter_certified_merge():
+    invalid = replace(observation(), kickoff_at=None, kickoff_date=NOW.date())
     report = merge_certified_observations([invalid])
     assert report.observations == ()
     assert report.rejected_uncertified_count == 1
