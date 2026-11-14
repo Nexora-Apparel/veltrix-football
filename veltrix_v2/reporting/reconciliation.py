@@ -8,6 +8,7 @@ from __future__ import annotations
 
 from datetime import datetime
 import hashlib
+import json
 import re
 from typing import Any, Callable, Mapping
 from urllib.parse import urlsplit
@@ -156,6 +157,8 @@ class PostgresTelegramReconciliationStore:
 
     def record(self, event: Mapping[str, Any]) -> str:
         evidence_uri = event.get("evidence_uri")
+        if not isinstance(evidence_uri, str) or not evidence_uri.strip():
+            raise ValueError("RECONCILIATION_EVIDENCE_URI_REQUIRED")
         evidence_bytes = self._read_evidence(evidence_uri)
         if not isinstance(evidence_bytes, bytes):
             raise ValueError("RECONCILIATION_EVIDENCE_READER_INVALID")
@@ -209,7 +212,7 @@ class PostgresTelegramReconciliationStore:
                     validated["reconciliation_id"], validated["idempotency_key"],
                     validated["report_id"], validated["report_sha256"],
                     validated["destination_sha256"], validated["outcome"],
-                    __import__("json").dumps(validated["telegram_message_ids"]),
+                    json.dumps(validated["telegram_message_ids"]),
                     validated["evidence_uri"], validated["evidence_sha256"],
                     validated["evidence_kind"], validated["operator_id"],
                     validated["reviewer_id"], validated["observed_at"],
