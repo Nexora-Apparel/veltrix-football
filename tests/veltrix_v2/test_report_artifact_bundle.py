@@ -6,6 +6,7 @@ import pytest
 
 from veltrix_v2.reporting.artifact_bundle import (
     build_report_surface_bundle,
+    load_report_surface_bundle,
     persist_report_surface_bundle,
 )
 from veltrix_v2.reporting.report_identity import REPORT_SCHEMA
@@ -67,3 +68,32 @@ def test_bundle_rejects_tampered_prehashed_report():
     report["report_sha256"] = "0" * 64
     with pytest.raises(ValueError, match="content hash"):
         build_report_surface_bundle(report)
+
+
+def test_bundle_reader_verifies_all_four_persisted_surfaces(tmp_path):
+    bundle = build_report_surface_bundle(source_report())
+    persist_report_surface_bundle(bundle, tmp_path)
+    loaded = load_report_surface_bundle(tmp_path, bundle.identity.report_id)
+    assert loaded.identity == bundle.identity
+    assert loaded.canonical_report == loaded.scheduled_report == loaded.telegram_report
+    assert loaded.website_projection["report_sha256"] == loaded.identity.report_sha256
+
+
+def test_bundle_reader_rejects_tampered_telegram_artifact(tmp_path):
+    bundle = build_report_surface_bundle(source_report())
+    paths = persist_report_surface_bundle(bundle, tmp_path)
+    changed = json.loads(paths["telegram"].read_text())
+    changed["predictions"][0]["publication_status"] = "PUBLISHED"
+    paths["telegram"].write_text(json.dumps(changed))
+    with pytest.raises(ValueError, match="content hash"):
+        load_report_surface_bundle(tmp_path, bundle.identity.report_id)
+
+
+def test_bundle_reader_rejects_website_projection_content_drift(tmp_path):
+    bundle = build_report_surface_bundle(source_report())
+    paths = persist_report_surface_bundle(bundle, tmp_path)
+    changed = json.loads(paths["dashboard"].read_text())
+    changed["predictions"] = [{"fixture_id": "different"}]
+    paths["dashboard"].write_text(json.dumps(changed))
+    with pytest.raises(ValueError, match="WEBSITE_REPORT_PROJECTION_IDENTITY_MISMATCH"):
+        load_report_surface_bundle(tmp_path, bundle.identity.report_id)
