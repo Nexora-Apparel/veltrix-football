@@ -5,7 +5,6 @@ import hmac
 import json
 import math
 import os
-from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 from zoneinfo import ZoneInfo
 from urllib.request import Request, urlopen
@@ -443,16 +442,13 @@ def dashboard_data() -> dict:
         except Exception:
             return None
 
-    with ThreadPoolExecutor(max_workers=1) as pool:
-        report_future = pool.submit(
-            _safe_load,
-            lambda: load_dashboard_snapshot(_authoritative_publication_verifier()),
+    report = _safe_load(
+        lambda: load_dashboard_snapshot(_authoritative_publication_verifier())
+    )
+    if not isinstance(report, dict):
+        report = _safe_load(
+            lambda: load_latest_report(_authoritative_publication_verifier())
         )
-        report = report_future.result()
-        if not isinstance(report, dict):
-            report = _safe_load(
-                lambda: load_latest_report(_authoritative_publication_verifier())
-            )
     # Legacy paper ledgers and legacy model-validation snapshots are not V2 evidence.
     ledger = None
     model_validation = None
