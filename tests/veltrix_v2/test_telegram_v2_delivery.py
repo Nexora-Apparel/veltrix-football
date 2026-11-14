@@ -17,7 +17,7 @@ class MemoryStore:
         self.sent = {}
         self.unknown = {}
 
-    def claim(self, key, destination):
+    def claim(self, key, report_id, report_sha256, destination):
         if key in self.claimed:
             return False
         self.claimed.add(key)
