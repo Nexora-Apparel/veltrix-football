@@ -143,3 +143,16 @@ def test_publisher_updates_existing_file_with_optimistic_sha():
     )
     assert result.status == "PUBLISHED"
     assert client.put_calls[0][4] == "existing-sha"
+
+
+
+def test_publisher_rejects_bundle_larger_than_website_limit_before_github_access():
+    client = FakeContentsClient()
+    with pytest.raises(ValueError, match="SIZE_OR_TYPE_INVALID"):
+        publish_v2_report_bundle(
+            b"x" * 8_000_001,
+            authorization_verifier=authorized,
+            client=client,
+        )
+    assert client.get_calls == []
+    assert client.put_calls == []
