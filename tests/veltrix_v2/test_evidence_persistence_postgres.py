@@ -116,9 +116,11 @@ def setup_db():
         )
 
 
-def persist(connection, report, rows):
+def persist(connection, report, rows, *, http_status=200, request_params=None):
     return persist_provider_evidence_report(
         connection, report, rows,
+        http_status=http_status,
+        request_params=request_params,
         write_enabled=True,
         environment="staging",
         database_name="veltrix_football_staging",
@@ -163,6 +165,29 @@ def test_evidence_persistence_writes_exact_raw_bytes_and_manifest_links_idempote
         assert conn.execute("SELECT COUNT(*) FROM capture_manifest_events").fetchone()[0] == 1
         assert conn.execute("SELECT COUNT(*) FROM provider_capture_requests").fetchone()[0] == 1
         assert conn.execute("SELECT COUNT(*) FROM source_observations").fetchone()[0] == 1
+
+
+def test_evidence_persistence_preserves_exact_http_status_and_request_params():
+    setup_db()
+    row = capture()
+    report = capture_provider_result_evidence([row])
+    params = {
+        "start_time": 1794650000,
+        "end_time": 1794740000,
+        "status": "finished",
+        "order": "desc",
+        "page": 1,
+        "per_page": 100,
+    }
+    with psycopg.connect(DATABASE_URL) as conn:
+        persist(conn, report, [row], http_status=206, request_params=params)
+    with psycopg.connect(DATABASE_URL) as conn:
+        stored = conn.execute(
+            "SELECT http_status, request_params FROM provider_responses"
+        ).fetchone()
+    assert stored[0] == 206
+    assert stored[1]["request_params"] == params
+    assert stored[1]["capture_manifest_sha256"] == report.manifest.manifest_sha256
 
 
 def test_evidence_persistence_rolls_back_when_approval_is_missing():
