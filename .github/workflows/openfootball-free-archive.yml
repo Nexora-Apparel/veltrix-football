@@ -1,0 +1,79 @@
+name: VELTRIX free OpenFootball archive export
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout VELTRIX
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Resolve exact OpenFootball source commit
+        id: source
+        run: |
+          python - <<'PY'
+          import json
+          import os
+          import urllib.request
+
+          path = "africa/nigeria/2025-26_ng1.txt"
+          url = "https://api.github.com/repos/openfootball/world/commits?path=" + path + "&per_page=1"
+          request = urllib.request.Request(url, headers={
+              "Accept": "application/vnd.github+json",
+              "User-Agent": "VELTRIX-FOOTBALL-2.0"
+          })
+          with urllib.request.urlopen(request, timeout=20) as response:
+              commits = json.load(response)
+          if not commits:
+              raise SystemExit("No source commit found for the selected archive.")
+          commit = commits[0]
+          sha = commit["sha"]
+          timestamp = commit["commit"]["committer"]["date"]
+          if len(sha) != 40 or not timestamp:
+              raise SystemExit("Source commit metadata is incomplete.")
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as output:
+              output.write(f"sha={sha}\n")
+              output.write(f"timestamp={timestamp}\n")
+          PY
+
+      - name: Download immutable source snapshot
+        env:
+          SOURCE_SHA: ${{ steps.source.outputs.sha }}
+        run: |
+          mkdir -p work
+          curl --fail --silent --show-error --location \
+            "https://raw.githubusercontent.com/openfootball/world/${SOURCE_SHA}/africa/nigeria/2025-26_ng1.txt" \
+            --output work/nigeria-2025-26.football.txt
+
+      - name: Export provenance-bound observations
+        env:
+          SOURCE_SHA: ${{ steps.source.outputs.sha }}
+          SOURCE_TIMESTAMP: ${{ steps.source.outputs.timestamp }}
+          IMPORTED_AT: ${{ github.event.repository.updated_at }}
+        run: |
+          python scripts/export_openfootball_archive.py \
+            --source-file work/nigeria-2025-26.football.txt \
+            --source-path africa/nigeria/2025-26_ng1.txt \
+            --competition-id NGA_NPFL \
+            --snapshot-commit-sha "${SOURCE_SHA}" \
+            --snapshot-available-at "${SOURCE_TIMESTAMP}" \
+            --output-dir artifacts/openfootball-nigeria-2025-26
+
+      - name: Upload offline archive artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: veltrix-openfootball-nigeria-2025-26
+          path: artifacts/openfootball-nigeria-2025-26/
+          if-no-files-found: error
+          retention-days: 30
