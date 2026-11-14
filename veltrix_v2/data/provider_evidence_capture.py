@@ -36,6 +36,10 @@ def _digest(value: object) -> str:
     return sha256(raw).hexdigest()
 
 
+def _valid_hash(value: object) -> bool:
+    return isinstance(value, str) and _HASH.fullmatch(value) is not None
+
+
 @dataclass(frozen=True, slots=True)
 class ResolvedFixtureCrosswalk:
     """Exact, reviewed provider-to-canonical fixture/team/competition mapping."""
@@ -87,7 +91,7 @@ class ResolvedFixtureCrosswalk:
             raise ValueError("CROSSWALK_PROVIDER_IDENTITY_MISMATCH")
         if self.canonical_home_team_id == self.canonical_away_team_id:
             raise ValueError("CROSSWALK_CANONICAL_TEAM_COLLISION")
-        if not _HASH.fullmatch(self.evidence_sha256):
+        if not _valid_hash(self.evidence_sha256):
             raise ValueError("CROSSWALK_EVIDENCE_HASH_INVALID")
 
 
@@ -230,7 +234,7 @@ def _capture_one(row: ProviderResultCapture) -> CapturedResultEvidence:
         reasons.append("SOURCE_PUBLICATION_TIMESTAMP_UNTRUSTED")
     if row.source_timestamp_basis not in {"provider_timestamp", "archival_snapshot_timestamp", "documented_guarantee"}:
         reasons.append("SOURCE_TIMESTAMP_BASIS_UNTRUSTED")
-    if not _HASH.fullmatch(row.source_timestamp_evidence_sha256):
+    if not _valid_hash(row.source_timestamp_evidence_sha256):
         reasons.append("SOURCE_TIMESTAMP_EVIDENCE_MISSING")
     elif row.source_timestamp_basis == "provider_timestamp" and row.source_timestamp_evidence_sha256 != raw_hash:
         reasons.append("SOURCE_TIMESTAMP_EVIDENCE_HASH_MISMATCH")
@@ -240,7 +244,7 @@ def _capture_one(row: ProviderResultCapture) -> CapturedResultEvidence:
         reasons.append("RESULT_AVAILABILITY_TIMESTAMP_UNTRUSTED")
     if row.availability_timestamp_basis != "provider_timestamp":
         reasons.append("AVAILABILITY_TIMESTAMP_BASIS_UNTRUSTED")
-    if not _HASH.fullmatch(row.availability_timestamp_evidence_sha256):
+    if not _valid_hash(row.availability_timestamp_evidence_sha256):
         reasons.append("AVAILABILITY_TIMESTAMP_EVIDENCE_MISSING")
     elif row.availability_timestamp_evidence_sha256 != raw_hash:
         reasons.append("AVAILABILITY_TIMESTAMP_EVIDENCE_HASH_MISMATCH")
@@ -281,7 +285,7 @@ def _capture_one(row: ProviderResultCapture) -> CapturedResultEvidence:
     else:
         if approval.provider != row.provider or approval.source_id != row.source_id:
             reasons.append("SOURCE_APPROVAL_IDENTITY_MISMATCH")
-        if approval.evidence_sha256 is None or not _HASH.fullmatch(approval.evidence_sha256):
+        if not _valid_hash(approval.evidence_sha256):
             reasons.append("SOURCE_APPROVAL_EVIDENCE_HASH_INVALID")
         if row.provider_competition_id not in {
             item.strip() for item in approval.competition_scope.split(",")
@@ -302,27 +306,32 @@ def _capture_one(row: ProviderResultCapture) -> CapturedResultEvidence:
                 if not decision.allowed:
                     reasons.append(f"SOURCE_RIGHTS_{purpose.value}_{decision.reason_code}")
 
-    try:
-        row.crosswalk.validate(
-            at=row.recorded_at, provider=row.provider, source_id=row.source_id,
-            provider_fixture_id=row.provider_fixture_id,
-            provider_competition_id=row.provider_competition_id,
-            provider_home_team_id=row.provider_home_team_id,
-            provider_away_team_id=row.provider_away_team_id,
-        )
-    except (TypeError, ValueError, AttributeError) as exc:
-        reasons.append(str(exc) or "CROSSWALK_INVALID")
+    crosswalk = row.crosswalk
+    if not isinstance(crosswalk, ResolvedFixtureCrosswalk):
+        reasons.append("CROSSWALK_MISSING_OR_INVALID")
+        crosswalk = None
+    else:
+        try:
+            crosswalk.validate(
+                at=row.recorded_at, provider=row.provider, source_id=row.source_id,
+                provider_fixture_id=row.provider_fixture_id,
+                provider_competition_id=row.provider_competition_id,
+                provider_home_team_id=row.provider_home_team_id,
+                provider_away_team_id=row.provider_away_team_id,
+            )
+        except (TypeError, ValueError, AttributeError) as exc:
+            reasons.append(str(exc) or "CROSSWALK_INVALID")
 
-    if not _HASH.fullmatch(raw_hash):
+    if not _valid_hash(raw_hash):
         reasons.append("RAW_RESPONSE_HASH_INVALID")
 
     reasons = list(dict.fromkeys(reasons))
-    crosswalk = row.crosswalk
+    crosswalk = crosswalk
     return CapturedResultEvidence(
-        fixture_id=crosswalk.canonical_fixture_id,
-        competition_id=crosswalk.canonical_competition_id,
-        home_team_id=crosswalk.canonical_home_team_id,
-        away_team_id=crosswalk.canonical_away_team_id,
+        fixture_id=crosswalk.canonical_fixture_id if crosswalk else "",
+        competition_id=crosswalk.canonical_competition_id if crosswalk else "",
+        home_team_id=crosswalk.canonical_home_team_id if crosswalk else "",
+        away_team_id=crosswalk.canonical_away_team_id if crosswalk else "",
         provider=row.provider,
         source_id=row.source_id,
         provider_fixture_id=row.provider_fixture_id,
@@ -338,8 +347,8 @@ def _capture_one(row: ProviderResultCapture) -> CapturedResultEvidence:
         raw_response_sha256=raw_hash,
         rights_approval_id=approval.approval_id if isinstance(approval, SourceApproval) else "",
         rights_evidence_sha256=approval.evidence_sha256 or "" if isinstance(approval, SourceApproval) else "",
-        crosswalk_version=crosswalk.mapping_version,
-        crosswalk_evidence_sha256=crosswalk.evidence_sha256,
+        crosswalk_version=crosswalk.mapping_version if crosswalk else 0,
+        crosswalk_evidence_sha256=crosswalk.evidence_sha256 if crosswalk else "",
         point_in_time_certifiable=not reasons,
         reason_codes=tuple(reasons),
     )
