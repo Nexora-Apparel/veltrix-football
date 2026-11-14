@@ -10,6 +10,8 @@ on:
       - "veltrix_v2/**"
       - "tests/veltrix_v2/**"
       - "tests/providers/odds_api_v4/**"
+      - "tests/providers/test_openfootball_archive.py"
+      - "tests/scripts/test_export_openfootball_archive.py"
       - "scripts/veltrix_v2/**"
       - ".github/workflows/veltrix-v2-foundation.yml"
   pull_request:
