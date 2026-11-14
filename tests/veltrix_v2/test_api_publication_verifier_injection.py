@@ -5,6 +5,8 @@ from zoneinfo import ZoneInfo
 from pathlib import Path
 
 import pytest
+import sys
+import types
 
 from api import telegram as telegram_api
 from veltrix_v2.reporting.artifact_bundle import (
@@ -164,3 +166,50 @@ def test_telegram_webhook_routes_commands_only_through_v2_bundle_renderer():
     assert "load_latest_report" not in source
     assert "handle_v2_command(" in source
     assert "handle_command(" not in source
+
+
+def test_fixed_current_bundle_pointer_is_an_allowlisted_runtime_source():
+    telegram_api.configure_report_bundle_reader_from_url(
+        "https://raw.githubusercontent.com/Nexora-Apparel/veltrix-football/"
+        "command-data/public-data/v2_report_bundle.json"
+    )
+    assert callable(telegram_api._authoritative_report_bundle_reader())
+
+
+def test_runtime_configuration_requires_both_factory_and_bundle_url():
+    assert telegram_api.configure_v2_publication_from_environment({}) is False
+    assert telegram_api.app.state.v2_publication_runtime_status == "UNCONFIGURED"
+
+    assert telegram_api.configure_v2_publication_from_environment({
+        "VELTRIX_V2_PUBLICATION_VERIFIER_FACTORY": "veltrix_v2.fake_runtime:build",
+    }) is False
+    assert telegram_api.app.state.v2_publication_runtime_status == "BLOCKED"
+
+
+def test_runtime_configuration_loads_one_trusted_factory_and_shared_bundle(monkeypatch):
+    module = types.ModuleType("veltrix_v2.fake_runtime")
+    verifier = lambda report, identity: False
+    module.build = lambda: verifier
+    monkeypatch.setitem(sys.modules, "veltrix_v2.fake_runtime", module)
+    environment = {
+        "VELTRIX_V2_PUBLICATION_VERIFIER_FACTORY": "veltrix_v2.fake_runtime:build",
+        "VELTRIX_V2_REPORT_BUNDLE_URL": (
+            "https://raw.githubusercontent.com/Nexora-Apparel/veltrix-football/"
+            "command-data/public-data/v2_report_bundle.json"
+        ),
+    }
+    assert telegram_api.configure_v2_publication_from_environment(environment) is True
+    assert telegram_api._authoritative_publication_verifier() is verifier
+    assert callable(telegram_api._authoritative_report_bundle_reader())
+    assert telegram_api.app.state.v2_publication_runtime_status == "READY"
+
+
+def test_runtime_factory_must_live_under_veltrix_v2_namespace():
+    assert telegram_api.configure_v2_publication_from_environment({
+        "VELTRIX_V2_PUBLICATION_VERIFIER_FACTORY": "os:path",
+        "VELTRIX_V2_REPORT_BUNDLE_URL": (
+            "https://raw.githubusercontent.com/Nexora-Apparel/veltrix-football/"
+            "command-data/public-data/v2_report_bundle.json"
+        ),
+    }) is False
+    assert telegram_api.app.state.v2_publication_runtime_status == "BLOCKED"
