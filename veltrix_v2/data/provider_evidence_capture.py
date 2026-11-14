@@ -185,6 +185,64 @@ class CapturedResultEvidence:
             capture_evidence_sha256=evidence_sha256,
         )
 
+    def to_first_observed_match_observation(
+        self, *, manifest_sha256: str, evidence_sha256: str
+    ) -> MatchObservation:
+        """Convert only a strictly captured, explicitly non-PIT first-seen result.
+
+        Source publication remains unknown. The observation becomes usable only
+        at the collector retrieval time; it can never enter historical PIT
+        evaluation or be upgraded to a certifiable observation.
+        """
+        expected_reasons = {
+            "SOURCE_PUBLICATION_TIMESTAMP_MISSING",
+            "SOURCE_TIMESTAMP_BASIS_UNTRUSTED",
+            "AVAILABILITY_TIMESTAMP_BASIS_UNTRUSTED",
+            "REVISION_HISTORY_INCOMPLETE",
+        }
+        if self.point_in_time_certifiable is not False or set(self.reason_codes) != expected_reasons:
+            raise ValueError("FIRST_OBSERVED_EVIDENCE_REASON_SET_INVALID")
+        if (
+            self.source_published_at is not None
+            or self.source_timestamp_basis != "unknown"
+            or self.availability_timestamp_basis != "collector_first_observed_v1"
+            or self.available_at is None
+            or self.available_at != self.retrieved_at
+            or not self.rights_approved
+            or self.rights_evaluated_at is None
+            or not _valid_hash(self.raw_response_sha256)
+            or not _valid_hash(self.rights_evidence_sha256)
+            or not _valid_hash(self.crosswalk_evidence_sha256)
+            or not _valid_hash(manifest_sha256)
+            or not _valid_hash(evidence_sha256)
+        ):
+            raise ValueError("FIRST_OBSERVED_EVIDENCE_PROVENANCE_INVALID")
+        kickoff = datetime.fromisoformat(self.kickoff_at)
+        available = datetime.fromisoformat(self.available_at)
+        retrieved = datetime.fromisoformat(self.retrieved_at)
+        recorded = datetime.fromisoformat(self.recorded_at)
+        if not (kickoff <= available == retrieved <= recorded):
+            raise ValueError("FIRST_OBSERVED_EVIDENCE_TEMPORAL_ORDER_INVALID")
+        return MatchObservation(
+            fixture_id=self.fixture_id,
+            competition_id=self.competition_id,
+            home_team_id=self.home_team_id,
+            away_team_id=self.away_team_id,
+            kickoff_at=kickoff,
+            available_at=available,
+            recorded_at=recorded,
+            home_goals=self.home_goals,
+            away_goals=self.away_goals,
+            provider=self.provider,
+            source_id=self.source_id,
+            availability_basis="collector_first_observed_v1",
+            point_in_time_certifiable=False,
+            payload_sha256=self.raw_response_sha256,
+            rights_approval_id=self.rights_approval_id,
+            evidence_manifest_sha256=manifest_sha256,
+            capture_evidence_sha256=evidence_sha256,
+        )
+
 
 @dataclass(frozen=True, slots=True)
 class ProviderEvidenceManifest:
@@ -477,6 +535,7 @@ def capture_fivedollar_page_evidence(
     recorded_at: datetime,
     crosswalks: Mapping[str, ResolvedFixtureCrosswalk],
     rights_approval: SourceApproval,
+    prospective_observed: bool = False,
 ) -> ProviderEvidenceCaptureReport:
     """Adapt a parsed 5Dollar page without promoting its derived timestamps.
 
@@ -518,7 +577,7 @@ def capture_fivedollar_page_evidence(
             raw_response=raw_response,
             source_published_at=None,
             source_effective_at=None,
-            available_at=None,
+            available_at=fixture.retrieved_at_utc if prospective_observed else None,
             retrieved_at=fixture.retrieved_at_utc,
             recorded_at=recorded_at,
             requested_at=requested_at,
@@ -526,8 +585,8 @@ def capture_fivedollar_page_evidence(
             crosswalk=crosswalks.get(fixture.provider_fixture_id),
             rights_approval=rights_approval,
             source_timestamp_basis="unknown",
-            source_timestamp_evidence_sha256="",
-            availability_timestamp_basis="unknown",
-            availability_timestamp_evidence_sha256="",
+            source_timestamp_evidence_sha256=sha256(raw_response).hexdigest() if prospective_observed else "",
+            availability_timestamp_basis="collector_first_observed_v1" if prospective_observed else "unknown",
+            availability_timestamp_evidence_sha256=sha256(raw_response).hexdigest() if prospective_observed else "",
         ))
     return capture_provider_result_evidence(captures)
