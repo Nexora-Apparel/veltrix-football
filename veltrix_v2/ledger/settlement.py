@@ -16,6 +16,7 @@ def settle_from_verified_fixture(
     approval: SourceApproval,
     *,
     recorded_at: datetime,
+    model_version: str | None = None,
 ) -> PaperLedgerEvent:
     """Settle one paper prediction from an exact, rights-approved final result."""
     if not isinstance(ledger, ProspectivePaperLedger):
@@ -27,13 +28,17 @@ def settle_from_verified_fixture(
     if recorded_at.tzinfo is None or recorded_at.utcoffset() is None:
         raise ValueError("SETTLEMENT_RECORDING_TIMESTAMP_MUST_BE_AWARE")
     fixture_id = f"{fixture.source_id}:{fixture.provider_fixture_id}"
-    prediction = next((
+    predictions = tuple(
         event for event in ledger.events
         if event.event_type in {"PREDICTION", "SHADOW_PREDICTION"}
         and event.fixture_id == fixture_id
-    ), None)
-    if prediction is None:
+        and (model_version is None or event.model_version == model_version)
+    )
+    if not predictions:
         raise ValueError("PAPER_SETTLEMENT_WITHOUT_MATCHING_PREDICTION")
+    if len(predictions) != 1:
+        raise ValueError("PAPER_SETTLEMENT_PREDICTION_NOT_UNIQUE")
+    prediction = predictions[0]
     if observed_only:
         if not (fixture.kickoff_at_utc <= fixture.retrieved_at_utc <= recorded_at):
             raise ValueError("SETTLEMENT_FIRST_OBSERVED_TEMPORAL_ORDER_INVALID")
