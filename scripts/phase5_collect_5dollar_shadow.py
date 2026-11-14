@@ -312,7 +312,7 @@ def _capture_page(
     if status == "finished":
         finished_fixtures = [
             fixture for fixture in parsed.fixtures
-            if fixture.status.value == "finished"
+            if fixture.status.value == "FINISHED"
         ]
         if not finished_fixtures:
             page_info.update({
