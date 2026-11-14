@@ -42,7 +42,8 @@ The 90-date and 300-settlement requirements cannot be completed by compressing s
 PR #118 contains:
 - Canonical report identity and hash verification.
 - Website projection content-parity checks.
-- Immutable canonical, scheduled, Telegram and website artifact bundle with a final commit marker binding all four artifact byte hashes; interrupted writes remain invisible to readers until the marker is committed.
+- Immutable canonical, scheduled, Telegram and website artifact bundle with a final commit marker binding all four surface files plus one portable bundle file; interrupted writes remain invisible to readers until the marker is committed.
+- A single portable bundle file contains all four surfaces with per-surface hashes; website, scheduled-report and Telegram adapters can consume those same bytes with the authoritative verifier.
 - Website V2 loader rejects empty reports, duplicate fixture IDs, more than 25 fixtures, and verifier exceptions.
 - Read-back bundle verifier and offline CLI.
 - Authorization-gated scheduled report consumer.
@@ -52,7 +53,7 @@ PR #118 contains:
 - Legacy sender guard and V2 regression tests.
 - Website loaders that fail closed without an authoritative verifier and no longer serve legacy forecast snapshots as current V2 predictions.
 
-Latest fully validated code checkpoint at this snapshot: commit `01504bc0233864eb8c028e487837a41d0d3ca48e`, CI run #1344 passed Foundation, PostgreSQL 16 and PostgreSQL 18. This includes website-loader fixture bounds, duplicate prevention and fail-closed verifier error handling.
+Latest fully validated code checkpoint at this snapshot: commit `cdd3c36216e595fa390f41009038b2ded5bc3d83`, CI run #1366 passed Foundation, PostgreSQL 16 and PostgreSQL 18. CI run #1367 also passed for the following documentation update.
 
 ## Hard release blockers
 
@@ -102,3 +103,15 @@ Latest fully validated code checkpoint at this snapshot: commit `01504bc0233864e
 - Certification and rights evidence objects are byte-hashed and size-bounded.
 - Telegram reconciliation evidence is size-bounded; the reconciliation path still has no send/retry capability.
 - CI run #1344 passed Foundation, PostgreSQL 16 and PostgreSQL 18 for commit `01504bc0233864eb8c028e487837a41d0d3ca48e`.
+
+
+## Latest cross-surface bundle validation — 2026-11-14 15:03 UTC
+
+- Portable one-file report envelope and strict duplicate-JSON-key rejection implemented.
+- Portable parser verifies exact canonical/scheduled/Telegram/website surface hashes and common report identity.
+- Scheduled consumer, website adapter and Telegram dispatch adapter accept the same portable bytes only after authorization.
+- Public bundle consumers independently enforce 1–25 unique fixture IDs and PUBLISHED status.
+- Telegram portable dispatch preserves durable idempotency and uncertain-outcome quarantine; no automatic retry or resend.
+- GitHub Actions run #1366 passed Foundation, PostgreSQL 16 and PostgreSQL 18 for code commit `cdd3c36216e595fa390f41009038b2ded5bc3d83`.
+- Run #1367 passed the documentation-only follow-up.
+- Production workflows remain disabled and are not yet wired to fetch the portable bundle.
