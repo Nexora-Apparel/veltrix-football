@@ -541,8 +541,9 @@ def capture_fivedollar_page_evidence(
 
     The current 5Dollar historical contract exposes no source publication or
     result-availability timestamp and no complete revision history. Its
-    conservative four-day availability proxy is intentionally not forwarded
-    as source evidence. Such rows are retained as rejected manifest items.
+    conservative four-day availability proxy is never promoted to source
+    evidence. When prospective_observed=True, the collector retrieval time is
+    recorded as first-observed availability, while the item remains non-PIT.
     """
     if not isinstance(raw_response, bytes) or not raw_response:
         raise ValueError("FIVEDOLLAR_RAW_RESPONSE_REQUIRED")
