@@ -15,3 +15,14 @@ __all__ = [
     "predict_match",
     "observation_eligible_as_of",
 ]
+
+from .engine import (
+    BatchForecastReport,
+    ForecastRecord,
+    PredictionTarget,
+    predict_batch,
+)
+
+__all__ += [
+    "BatchForecastReport", "ForecastRecord", "PredictionTarget", "predict_batch",
+]
