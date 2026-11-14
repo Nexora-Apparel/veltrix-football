@@ -74,6 +74,7 @@ jobs:
             --competition-id NGA_NPFL \
             --snapshot-commit-sha "${SOURCE_SHA}" \
             --snapshot-available-at "${SOURCE_TIMESTAMP}" \
+            --max-rejected 1 \
             --output-dir artifacts/openfootball-nigeria-2025-26
 
       - name: Upload offline archive artifact
