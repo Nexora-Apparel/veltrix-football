@@ -55,6 +55,8 @@ jobs:
         run: python -m pytest --import-mode=importlib -q tests/veltrix_v2/test_results_only_poisson.py
       - name: Test evidence-backed team identity crosswalk
         run: python -m pytest --import-mode=importlib -q tests/veltrix_v2/test_team_identity.py
+      - name: Test provider-to-model observation adapter
+        run: python -m pytest --import-mode=importlib -q tests/veltrix_v2/test_observation_adapter.py
       - name: Test OpenFootball archive parser
         run: python -m pytest --import-mode=importlib -q tests/providers/test_openfootball_archive.py
       - name: Test OpenFootball archive export script
