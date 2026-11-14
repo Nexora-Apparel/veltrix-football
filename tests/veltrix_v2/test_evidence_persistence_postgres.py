@@ -7,7 +7,12 @@ import pytest
 from tests.veltrix_v2.test_provider_evidence_capture import (
     approval, capture, capture_provider_result_evidence,
 )
-from veltrix_v2.data.evidence_persistence import persist_provider_evidence_report
+from veltrix_v2.data.contracts import ApprovalStatus, DataUsePurpose, SourceApproval
+from veltrix_v2.data.evidence_persistence import (
+    build_fixture_snapshot_manifest,
+    persist_fixture_snapshot_response,
+    persist_provider_evidence_report,
+)
 
 
 DATABASE_URL = os.environ["DATABASE_URL"]
@@ -177,3 +182,147 @@ def test_evidence_persistence_rolls_back_when_approval_is_missing():
     with psycopg.connect(DATABASE_URL) as conn:
         assert conn.execute("SELECT COUNT(*) FROM capture_manifests").fetchone()[0] == 0
         assert conn.execute("SELECT COUNT(*) FROM provider_responses").fetchone()[0] == 0
+
+
+SNAPSHOT_NOW = datetime(2026, 11, 14, 12, 0, tzinfo=timezone.utc)
+SNAPSHOT_RAW = b'{"success":1,"data":[{"fixture_id":"f-1"},{"fixture_id":"f-2"}]}'
+
+
+def snapshot_approval():
+    return SourceApproval(
+        approval_id="approval-5dollar-community-fixture-result-2026-11",
+        provider="5DollarFootballAPI",
+        source_id="5dollarfootballapi",
+        competition_scope="3118717965",
+        data_type="fixture_result",
+        status=ApprovalStatus.APPROVED,
+        permitted_uses=frozenset({
+            DataUsePurpose.COLLECTION, DataUsePurpose.STORAGE, DataUsePurpose.CACHE
+        }),
+        commercial_use_allowed=True,
+        terms_url="https://provider.invalid/terms",
+        terms_version="2026-11",
+        evidence_uri="https://evidence.invalid/approval",
+        evidence_sha256="a" * 64,
+        rights_basis="TERMS",
+        reviewed_at_utc=SNAPSHOT_NOW - timedelta(days=1),
+        reviewer_id="reviewer-1",
+        valid_from_utc=SNAPSHOT_NOW - timedelta(days=2),
+    )
+
+
+def snapshot_args():
+    approval_record = snapshot_approval()
+    return {
+        "provider": "5DollarFootballAPI",
+        "source_id": "5dollarfootballapi",
+        "endpoint": "/v1/leagues/3118717965/fixtures",
+        "request_id": "run-123-3118717965-scheduled-1",
+        "request_params": {
+            "start_time": 1794657600, "end_time": 1795867200,
+            "status": "scheduled", "order": "asc", "page": 1, "per_page": 100,
+        },
+        "requested_at": SNAPSHOT_NOW - timedelta(seconds=3),
+        "retrieved_at": SNAPSHOT_NOW - timedelta(seconds=2),
+        "recorded_at": SNAPSHOT_NOW,
+        "raw_response": SNAPSHOT_RAW,
+        "response_headers": {
+            "Content-Type": "application/json",
+            "X-RateLimit-Remaining": "57",
+            "Authorization": "must-not-be-stored",
+        },
+        "competition_id": "3118717965",
+        "fixture_count": 2,
+        "rights_approval": approval_record,
+    }
+
+
+def test_fixture_snapshot_manifest_is_deterministic_and_timestamp_bound():
+    args = snapshot_args()
+    first = build_fixture_snapshot_manifest(**{
+        key: value for key, value in args.items()
+        if key not in {"response_headers", "rights_approval"}
+    }, rights_approval_id=args["rights_approval"].approval_id)
+    second = build_fixture_snapshot_manifest(**{
+        key: value for key, value in args.items()
+        if key not in {"response_headers", "rights_approval"}
+    }, rights_approval_id=args["rights_approval"].approval_id)
+    assert first == second
+    assert first["response_sha256"] == __import__("hashlib").sha256(SNAPSHOT_RAW).hexdigest()
+
+
+def test_fixture_snapshot_persistence_retains_raw_target_response_and_manifest_idempotently():
+    setup_db()
+    args = snapshot_args()
+    with psycopg.connect(DATABASE_URL) as connection:
+        first = persist_fixture_snapshot_response(
+            connection, **args,
+            write_enabled=True, environment="staging",
+            database_name="veltrix_football_staging", host=HOST,
+            role="neondb_owner",
+        )
+    with psycopg.connect(DATABASE_URL) as connection:
+        second = persist_fixture_snapshot_response(
+            connection, **args,
+            write_enabled=True, environment="staging",
+            database_name="veltrix_football_staging", host=HOST,
+            role="neondb_owner",
+        )
+    assert first == second
+    with psycopg.connect(DATABASE_URL) as connection:
+        response = connection.execute(
+            "SELECT raw_body,response_sha256,request_params,response_headers FROM provider_responses"
+        ).fetchone()
+        assert response[0] == SNAPSHOT_RAW
+        assert response[1] == first["response_sha256"]
+        assert response[2]["status"] == "scheduled"
+        assert "authorization" not in response[3]
+        manifest = connection.execute(
+            "SELECT manifest_sha256,capture_scope FROM capture_manifests"
+        ).fetchone()
+        assert manifest[0] == first["manifest_sha256"]
+        assert manifest[1]["fixture_count"] == 2
+        assert connection.execute("SELECT COUNT(*) FROM capture_manifest_events").fetchone()[0] == 1
+        assert connection.execute("SELECT COUNT(*) FROM provider_capture_requests").fetchone()[0] == 1
+
+
+def test_fixture_snapshot_persistence_rejects_wrong_scope_and_disabled_write():
+    setup_db()
+    args = snapshot_args()
+    wrong_scope = snapshot_approval()
+    wrong_scope = SourceApproval(
+        approval_id=wrong_scope.approval_id,
+        provider=wrong_scope.provider,
+        source_id=wrong_scope.source_id,
+        competition_scope="different-competition",
+        data_type=wrong_scope.data_type,
+        status=wrong_scope.status,
+        permitted_uses=wrong_scope.permitted_uses,
+        commercial_use_allowed=wrong_scope.commercial_use_allowed,
+        terms_url=wrong_scope.terms_url,
+        terms_version=wrong_scope.terms_version,
+        evidence_uri=wrong_scope.evidence_uri,
+        evidence_sha256=wrong_scope.evidence_sha256,
+        rights_basis=wrong_scope.rights_basis,
+        reviewed_at_utc=wrong_scope.reviewed_at_utc,
+        reviewer_id=wrong_scope.reviewer_id,
+        valid_from_utc=wrong_scope.valid_from_utc,
+    )
+    args["rights_approval"] = wrong_scope
+    with psycopg.connect(DATABASE_URL) as connection:
+        with pytest.raises(PermissionError, match="FIXTURE_SNAPSHOT_SOURCE_RIGHTS_SCOPE_INVALID"):
+            persist_fixture_snapshot_response(
+                connection, **args,
+                write_enabled=True, environment="staging",
+                database_name="veltrix_football_staging", host=HOST,
+                role="neondb_owner",
+            )
+    args["rights_approval"] = snapshot_approval()
+    with psycopg.connect(DATABASE_URL) as connection:
+        with pytest.raises(PermissionError, match="FIXTURE_SNAPSHOT_PERSISTENCE_WRITE_GUARD_DISABLED"):
+            persist_fixture_snapshot_response(
+                connection, **args,
+                write_enabled=False, environment="staging",
+                database_name="veltrix_football_staging", host=HOST,
+                role="neondb_owner",
+            )
