@@ -10,6 +10,7 @@ from scripts.phase5_collect_5dollar_shadow import (
     _approved_competition_ids,
     _request_page,
     _build_public_summary,
+    run_capture,
     main,
 )
 from veltrix_v2.data.contracts import ApprovalStatus, DataUsePurpose
@@ -175,3 +176,110 @@ def test_public_summary_is_an_explicit_aggregate_only_allowlist():
     assert summary["admitted_shadow_predictions"] == 15
     assert summary["persisted_shadow_ledger_events"] == 15
     assert summary["public_publication"] is False
+
+
+
+def test_run_capture_orchestrates_mocked_pages_without_staging_writes(monkeypatch, tmp_path):
+    import scripts.phase5_collect_5dollar_shadow as capture
+
+    approval = SimpleNamespace(
+        approval_id="approval-test",
+        permitted_uses=frozenset({DataUsePurpose.COLLECTION, DataUsePurpose.CACHE,
+                                  DataUsePurpose.MODEL_TRAINING, DataUsePurpose.STORAGE}),
+        attribution_required=True,
+        attribution_text="Attribution",
+        attribution_url="https://example.test",
+        raw_redistribution_allowed=False,
+    )
+    registry = SimpleNamespace(summary=lambda: {
+        "provider": "5DollarFootballAPI",
+        "fixture_crosswalks": 1,
+        "team_crosswalks": 2,
+        "competition_crosswalks": 1,
+        "validity": "VERIFIED_FROM_VERIFIED_AT_FORWARD_ONLY",
+    })
+    observation = SimpleNamespace(fixture_id="fixture-history")
+    target = SimpleNamespace(
+        fixture_id="fixture-target",
+        kickoff_at=NOW + timedelta(days=2),
+    )
+    prediction = SimpleNamespace(
+        fixture_id="fixture-target",
+        model_version="poisson-results-v2",
+    )
+    forecast_report = SimpleNamespace(
+        forecast_count=1,
+        skipped_no_history=0,
+        skipped_invalid_targets=0,
+    )
+    event = SimpleNamespace(
+        event_type="SHADOW_PREDICTION",
+        fixture_id="fixture-target",
+        model_version="poisson-results-v2",
+        event_sha256="c" * 64,
+    )
+
+    monkeypatch.setattr(capture, "_read_staging_context", lambda *a, **k: (approval, registry))
+    monkeypatch.setattr(capture, "_approved_competition_ids", lambda *a: ["3118717965"])
+    monkeypatch.setattr(capture, "_refresh_approval", lambda *a: (approval, NOW))
+    monkeypatch.setattr(capture, "evaluate_source_use",
+                        lambda *a, **k: SimpleNamespace(allowed=True, reason_code=None))
+    monkeypatch.setattr(
+        capture, "_request_page",
+        lambda *a, **k: (b"{}", {}, NOW, NOW + timedelta(seconds=1)),
+    )
+
+    def fake_capture_page(raw, headers, *, status, **kwargs):
+        return (
+            [observation] if status == "finished" else [target],
+            {
+                "status_filter": status,
+                "quota_remaining": 100,
+                "persisted_to_staging": None,
+            },
+        )
+
+    monkeypatch.setattr(capture, "_capture_page", fake_capture_page)
+    monkeypatch.setattr(capture, "predict_batch", lambda *a, **k: forecast_report)
+    monkeypatch.setattr(
+        capture, "admit_prospective_observed_shadow_forecasts",
+        lambda *a, **k: SimpleNamespace(admitted=[prediction], rejected=[]),
+    )
+    monkeypatch.setattr(capture, "_hash_files", lambda paths: "d" * 64)
+
+    class LocalStore:
+        def __init__(self, path):
+            self.path = path
+
+        def append_prediction(self, item):
+            assert item is prediction
+            return event
+
+    monkeypatch.setattr(capture, "JsonlPaperLedgerStore", LocalStore)
+    monkeypatch.setattr(
+        capture, "_persist_paper_predictions_to_staging",
+        lambda *a, **k: pytest.fail("staging persistence must remain disabled"),
+    )
+
+    result = run_capture(
+        api_key="mock-key",
+        staging_dsn="mock-dsn",
+        history_days=90,
+        upcoming_days=14,
+        max_fixtures=25,
+        out_dir=tmp_path,
+        persist_staging=False,
+    )
+
+    assert result["requests_used"] == 2
+    assert result["forecast_count"] == 1
+    assert result["admitted_shadow_predictions"] == 1
+    assert result["persisted_shadow_ledger_events"] == 0
+    assert result["database_writes"] is False
+    assert result["public_publication"] is False
+    assert result["telegram_delivery"] is False
+    assert result["schedule_activation"] is False
+    assert (tmp_path / "public_summary.json").exists()
+    public = (tmp_path / "public_summary.json").read_text()
+    assert "fixture-target" not in public
+    assert "event_sha256" not in public
