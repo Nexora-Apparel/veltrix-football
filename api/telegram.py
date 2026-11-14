@@ -178,7 +178,15 @@ main{padding:20px clamp(12px,3vw,30px)}.eyebrow{color:var(--green);font-weight:8
 <div id="marketOdds" class="market-list"><div class="empty">Loading matched market prices…</div></div>
 </section>
 <div class="section-divider"></div>
-<section id="trackingView" class="sectionview">
+
+<div class="section-divider"></div>
+<section id="statusView" class="sectionview">
+<div class="sectionhead"><div><div class="eyebrow">Data quality & providers</div><h2>System status</h2></div></div>
+<div class="panel statusgrid" id="systemStatus"><div class="statusitem"><div class="stitle">Published report</div><div class="svalue">Checking…</div></div></div>
+<div class="panel status-detail" id="statusDetails" style="margin-top:12px">Loading provider and historical coverage details…</div>
+<div class="footer">Football data by <a href="https://5dollarfootballapi.com" target="_blank" rel="noopener noreferrer">5DollarFootballAPI</a>. Predictions include evidence-weighted estimates; value-bet verdicts are shown only when supported by the available evidence. Market prices are displayed only when matched to a fixture. Missing statistics are not invented; their coverage is not assumed complete. <span id="reporttime"></span></div>
+
+
 <div class="sectionhead"><div><div class="eyebrow">Retrospective evaluation</div><h2>Paper tracking & results</h2></div></div>
 <div class="notice">Paper tracking only · historical outcomes are not proof of profitability.</div>
 <div class="sectionhead"><div><div class="eyebrow">Release controls</div><h2>Value validation</h2></div></div>
@@ -189,16 +197,10 @@ main{padding:20px clamp(12px,3vw,30px)}.eyebrow{color:var(--green);font-weight:8
 <div class="filters" id="historyFilters"><button class="filter active" data-history-filter="all" aria-pressed="true">All results</button><button class="filter" data-history-filter="wins" aria-pressed="false">Wins</button><button class="filter" data-history-filter="losses" aria-pressed="false">Losses</button><label class="filter" style="display:flex;align-items:center;gap:7px">Date <select id="historyDateSort" style="background:#061721;color:#d8edf3;border:0;outline:0"><option value="newest">Newest first</option><option value="oldest">Oldest first</option></select></label></div>
 <div id="historySummary" class="overview" style="margin-bottom:12px"></div>
 <div id="trackingResults" class="market-list"><div class="empty">Loading results…</div></div>
-</section>
-<div class="section-divider"></div>
-<section id="statusView" class="sectionview">
-<div class="sectionhead"><div><div class="eyebrow">Data quality & providers</div><h2>System status</h2></div></div>
-<div class="panel statusgrid" id="systemStatus"><div class="statusitem"><div class="stitle">Published report</div><div class="svalue">Checking…</div></div></div>
-<div class="panel status-detail" id="statusDetails" style="margin-top:12px">Loading provider and historical coverage details…</div>
-<div class="footer">Football data by <a href="https://5dollarfootballapi.com" target="_blank" rel="noopener noreferrer">5DollarFootballAPI</a>. Predictions include evidence-weighted estimates; value-bet verdicts are shown only when supported by the available evidence. Market prices are displayed only when matched to a fixture. Missing statistics are not invented; their coverage is not assumed complete. <span id="reporttime"></span></div>
+
 </section>
 </main></div>
-<nav class="bottomnav"><a class="navitem active" href="#dashboardView" data-view="dashboardView"><span>⌂</span>Dashboard</a><a class="navitem" href="#predictionsView" data-view="predictionsView"><span>◎</span>Prediction</a><a class="navitem" href="#marketView" data-view="marketView"><span>▤</span>Market</a><a class="navitem" href="#trackingView" data-view="trackingView"><span>◷</span>Tracking</a><a class="navitem" href="#statusView" data-view="statusView"><span>▥</span>Status</a></nav>
+<nav class="bottomnav"><a class="navitem active" href="#dashboardView" data-view="dashboardView"><span>⌂</span>Dashboard</a><a class="navitem" href="#predictionsView" data-view="predictionsView"><span>◎</span>Prediction</a><a class="navitem" href="#statusView" data-view="statusView"><span>▥</span>Status</a><a class="navitem" href="#marketView" data-view="marketView"><span>▤</span>Market</a></nav>
 <script>
 let dashboardRows=[];let currentFilter='all';
 function num(v){return v===null||v===undefined||v===''?NaN:Number(v)}
