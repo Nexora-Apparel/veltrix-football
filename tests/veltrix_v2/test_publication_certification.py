@@ -420,7 +420,7 @@ def test_fixture_must_have_exact_cutoff_and_strictly_future_kickoff(field, value
 
 def test_report_date_must_match_cutoff_date_in_wat():
     report = make_report()
-    report["cutoff_at_utc"] = "2026-11-13T23:30:00+00:00"
+    report["cutoff_at_utc"] = "2026-11-13T22:30:00+00:00"
     report["predictions"][0]["cutoff_at_utc"] = report["cutoff_at_utc"]
     report = bind_report_identity({key: value for key, value in report.items() if key != "report_sha256"})
     raw = make_manifest(report)
