@@ -449,6 +449,7 @@ def _build_public_summary(summary: dict[str, object]) -> dict[str, object]:
         "mapped_upcoming_targets", "forecast_count",
         "admitted_shadow_predictions", "persisted_capture_pages",
         "persisted_shadow_ledger_events", "paper_ledger_persisted_to_staging",
+        "paper_ledger_chain_verified", "duplicate_predictions_skipped",
         "evidence_persisted_to_staging", "publication_status",
         "settlement_status", "database_writes",
     )
@@ -674,6 +675,13 @@ def run_capture(
         "ledger_path": str(ledger_path),
         "paper_ledger_persisted_to_staging": bool(
             staging_ledger and staging_ledger["ledger_event_count"] > 0
+        ),
+        "paper_ledger_chain_verified": bool(
+            staging_ledger and staging_ledger["chain_verified"]
+        ),
+        "duplicate_predictions_skipped": (
+            int(staging_ledger["duplicate_predictions_skipped"])
+            if staging_ledger else 0
         ),
         "staging_paper_ledger": staging_ledger,
         "model_artifact_sha256": model_hash,
