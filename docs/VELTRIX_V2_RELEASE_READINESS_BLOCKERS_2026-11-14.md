@@ -44,6 +44,7 @@ PR #118 contains:
 - Website projection content-parity checks.
 - Immutable canonical, scheduled, Telegram and website artifact bundle with a final commit marker binding all four surface files plus one portable bundle file; interrupted writes remain invisible to readers until the marker is committed.
 - A single portable bundle file contains all four surfaces with per-surface hashes; website, scheduled-report and Telegram adapters can consume those same bytes with the authoritative verifier.
+- The website fetches `public-data/v2_report_bundle.json` first, with an 8 MB cap and a repo/branch-scoped 30-second cache; an invalid present artifact blocks fallback to legacy snapshots.
 - Website V2 loader rejects empty reports, duplicate fixture IDs, more than 25 fixtures, and verifier exceptions.
 - Read-back bundle verifier and offline CLI.
 - Authorization-gated scheduled report consumer.
@@ -53,7 +54,7 @@ PR #118 contains:
 - Legacy sender guard and V2 regression tests.
 - Website loaders that fail closed without an authoritative verifier and no longer serve legacy forecast snapshots as current V2 predictions.
 
-Latest fully validated code checkpoint at this snapshot: commit `cdd3c36216e595fa390f41009038b2ded5bc3d83`, CI run #1366 passed Foundation, PostgreSQL 16 and PostgreSQL 18. CI run #1367 also passed for the following documentation update.
+Latest fully validated code checkpoint at this snapshot: commit `b063979c16e6bf2f982a56cc4d06c7b3b5c1a7ee`, CI run #1379 passed Foundation, PostgreSQL 16 and PostgreSQL 18. CI run #1381 passed the follow-up portable-bundle verifier workflow integration.
 
 ## Hard release blockers
 
@@ -115,3 +116,13 @@ Latest fully validated code checkpoint at this snapshot: commit `cdd3c36216e595f
 - GitHub Actions run #1366 passed Foundation, PostgreSQL 16 and PostgreSQL 18 for code commit `cdd3c36216e595fa390f41009038b2ded5bc3d83`.
 - Run #1367 passed the documentation-only follow-up.
 - Production workflows remain disabled and are not yet wired to fetch the portable bundle.
+
+
+## Website retrieval and offline verifier update — 2026-11-14 15:08 UTC
+
+- Website report and dashboard loaders now prefer the portable V2 bundle over legacy snapshots.
+- If the portable file exists but is malformed or unauthorized, the website returns no report/dashboard and does not fall back to legacy forecast content.
+- Fetch is bounded to 8 MB, cached for 30 seconds by repository/branch, with bounded raw-content and Contents API requests.
+- Added offline portable bundle verification CLI and CI coverage; structural verification does not authorize publication.
+- GitHub Actions run #1381 passed Foundation, PostgreSQL 16 and PostgreSQL 18.
+- API call sites still do not have a trusted runtime certification/rights verifier. Until that is configured, website V2 forecasts remain hidden by design.
