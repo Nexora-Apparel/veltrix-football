@@ -310,3 +310,22 @@ def test_portable_bundle_fetch_rejects_oversized_remote_artifact(monkeypatch):
     monkeypatch.setenv("VELTRIX_DATA_BRANCH", "command-data")
     report_artifacts._portable_bundle_cache.clear()
     assert report_artifacts._load_portable_bundle_bytes() is None
+
+
+
+def test_portable_v2_dashboard_takes_precedence_over_archived_legacy_snapshot(monkeypatch):
+    report = make_report()
+    portable = serialize_portable_report_surface_bundle(build_report_surface_bundle(report))
+    legacy_dashboard = {
+        "snapshot_schema": "VELTRIX_DASHBOARD_V1",
+        "as_of_date": "2026-11-13",
+        "predictions": [{"fixture_id": "legacy-fixture"}],
+    }
+    monkeypatch.setattr(report_artifacts, "_load_portable_bundle_bytes", lambda: portable)
+    monkeypatch.setattr(report_artifacts, "_load", lambda kind: legacy_dashboard if kind == "dashboard" else None)
+    dashboard = report_artifacts.load_dashboard_snapshot(
+        lambda value, identity: value.get("release_mode") == "RESTRICTED_PUBLIC"
+    )
+    assert dashboard is not None
+    assert dashboard["report_id"] == report["report_id"]
+    assert dashboard["predictions"] == report["predictions"]
