@@ -16,7 +16,7 @@ def test_exhausted_credit_providers_are_hard_blocked():
 
 def test_fivedollar_is_only_live_fixture_source_and_results_have_archive_supplement():
     assert [p.provider for p in providers_for(DataDomain.FIXTURES)] == ["5DollarFootballAPI"]
-    assert [p.provider for p in providers_for(DataDomain.RESULTS)] == ["5DollarFootballAPI"]
+    assert [p.provider for p in providers_for(DataDomain.RESULTS)] == ["5DollarFootballAPI", "OpenFootball"]
 
 
 def test_archive_and_odds_provider_are_not_dispatchable_by_default():
@@ -40,4 +40,6 @@ def test_xg_lineups_injuries_and_player_stats_are_not_fabricated():
 def test_internal_form_and_strength_features_have_explicit_derived_status():
     profile = next(p for p in PROVIDER_REGISTRY if p.provider == "5DollarFootballAPI")
     assert profile.capability(DataDomain.TEAM_FORM).state is CapabilityState.DERIVED
+    archive = next(p for p in PROVIDER_REGISTRY if p.provider == "OpenFootball")
+    assert archive.capability(DataDomain.TEAM_FORM).state is CapabilityState.EXPLORATORY_ONLY
     assert profile.capability(DataDomain.TEAM_STRENGTH).state is CapabilityState.DERIVED
