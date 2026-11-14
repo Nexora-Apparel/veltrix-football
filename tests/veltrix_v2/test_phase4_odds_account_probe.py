@@ -157,6 +157,11 @@ class _FakeConnection:
             ("x-requests-remaining", "988"),
             ("x-requests-last", "0"),
         ], "ACTIVE"),
+        (EXPECTED, [
+            ("x-requests-used", "12"),
+            ("x-requests-remaining", "988"),
+            ("x-requests-last", "1"),
+        ], "UNVERIFIED"),
         (("soccer_epl",), [
             ("x-requests-used", "12"),
             ("x-requests-remaining", "988"),
