@@ -34,7 +34,7 @@ _SURFACE_NAMES = ("canonical", "scheduled", "telegram", "dashboard")
 def _canonical_json_bytes(value: Mapping[str, Any]) -> bytes:
     return (
         json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":"), allow_nan=False)
-        + "\\n"
+        + "\n"
     ).encode("utf-8")
 
 
