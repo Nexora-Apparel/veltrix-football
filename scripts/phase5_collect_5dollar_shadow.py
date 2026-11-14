@@ -31,6 +31,7 @@ from veltrix_v2.data.rights import evaluate_source_use
 from veltrix_v2.data.temporal_eligibility import resolve_rights_status
 from veltrix_v2.ledger.admission import admit_prospective_observed_shadow_forecasts
 from veltrix_v2.ledger.jsonl_store import JsonlPaperLedgerStore
+from veltrix_v2.ledger.postgres_store import PostgresPaperLedgerStore
 from veltrix_v2.models.engine import predict_batch
 
 from scripts.phase5_staging_coverage_audit import validate_staging_dsn_target
@@ -110,7 +111,7 @@ def _approval_from_rows(
     )
 
 
-def _read_staging_context(dsn: str):
+def _read_staging_context(dsn: str, *, require_paper_ledger: bool = False):
     validate_staging_dsn_target(dsn)
     validate_read_only_coverage_sql()
     try:
@@ -136,6 +137,12 @@ def _read_staging_context(dsn: str):
         approval = _approval_from_rows(
             approval_rows[0], event_rows, rights_evaluated_at=rights_evaluated_at
         )
+        if require_paper_ledger:
+            ledger_table_exists = connection.execute(
+                "SELECT to_regclass('public.paper_ledger_events') IS NOT NULL"
+            ).fetchone()[0]
+            if not ledger_table_exists:
+                raise RuntimeError("PAPER_LEDGER_STAGING_MIGRATION_REQUIRED")
         crosswalk_rows = _rows_as_dicts(
             connection.execute(FIVEDOLLAR_CROSSWALK_BOOTSTRAP_SQL)
         )
@@ -189,6 +196,50 @@ def _hash_files(paths: tuple[str, ...]) -> str:
         rows, sort_keys=True, separators=(",", ":"), ensure_ascii=False
     ).encode("utf-8")
     return sha256(payload).hexdigest()
+
+
+def _persist_paper_predictions_to_staging(
+    dsn: str, predictions: list
+) -> dict[str, object]:
+    validate_staging_dsn_target(dsn)
+    import psycopg
+
+    parsed = urlparse(dsn)
+    host = parsed.hostname or ""
+    appended = []
+    duplicates = 0
+    with psycopg.connect(dsn, autocommit=False) as connection:
+        identity = connection.execute(
+            "SELECT current_database(), current_user"
+        ).fetchone()
+        if identity != ("veltrix_football_staging", "neondb_owner"):
+            raise PermissionError("STAGING_DATABASE_ROLE_NOT_ALLOWLISTED")
+        store = PostgresPaperLedgerStore(
+            connection,
+            ledger_id="veltrix-v2-prospective-observed",
+            write_enabled=True,
+            environment="staging",
+            database_name=identity[0],
+            host=host,
+            role=identity[1],
+        )
+        for prediction in predictions:
+            try:
+                appended.append(store.append_prediction(prediction))
+            except ValueError as exc:
+                if str(exc) == "PAPER_PREDICTION_DUPLICATE":
+                    duplicates += 1
+                    continue
+                raise
+        ledger = store.load()
+        head = ledger.events[-1].event_sha256 if ledger.events else None
+        return {
+            "events_appended": len(appended),
+            "duplicate_predictions_skipped": duplicates,
+            "ledger_event_count": len(ledger.events),
+            "ledger_head_sha256": head,
+            "chain_verified": ledger.verify_chain(),
+        }
 
 
 def _request_page(
@@ -410,7 +461,9 @@ def run_capture(
     if not 1 <= max_fixtures <= 25:
         raise ValueError("MAX_FIXTURES_OUT_OF_RANGE")
 
-    approval, registry = _read_staging_context(staging_dsn)
+    approval, registry = _read_staging_context(
+        staging_dsn, require_paper_ledger=persist_staging
+    )
     initial_time = datetime.now(timezone.utc)
     for purpose in (DataUsePurpose.COLLECTION, DataUsePurpose.CACHE, DataUsePurpose.MODEL_TRAINING):
         decision = evaluate_source_use(approval, purpose, at_utc=initial_time, commercial=True)
@@ -560,8 +613,14 @@ def run_capture(
 
     out_dir.mkdir(parents=True, exist_ok=True)
     ledger_path = out_dir / "paper" / "observed_shadow_ledger.jsonl"
-    store = JsonlPaperLedgerStore(ledger_path)
-    ledger_events = [store.append_prediction(prediction) for prediction in admission.admitted]
+    local_store = JsonlPaperLedgerStore(ledger_path)
+    ledger_events = [
+        local_store.append_prediction(prediction) for prediction in admission.admitted
+    ]
+    staging_ledger = (
+        _persist_paper_predictions_to_staging(staging_dsn, admission.admitted)
+        if persist_staging else None
+    )
 
     benchmarking_allowed = DataUsePurpose.BENCHMARKING in current_approval.permitted_uses
     persisted_capture_pages = sum(
@@ -594,6 +653,8 @@ def run_capture(
             for event in ledger_events
         ],
         "ledger_path": str(ledger_path),
+        "paper_ledger_persisted_to_staging": staging_ledger is not None,
+        "staging_paper_ledger": staging_ledger,
         "model_artifact_sha256": model_hash,
         "feature_set_sha256": feature_hash,
         "page_manifests": page_manifests,
@@ -632,6 +693,11 @@ def run_capture(
         "admitted_shadow_predictions": summary["admitted_shadow_predictions"],
         "persisted_capture_pages": summary["persisted_capture_pages"],
         "evidence_persisted_to_staging": summary["evidence_persisted_to_staging"],
+        "paper_ledger_persisted_to_staging": summary["paper_ledger_persisted_to_staging"],
+        "paper_ledger_events_appended": (
+            summary["staging_paper_ledger"]["events_appended"]
+            if summary["staging_paper_ledger"] else 0
+        ),
         "publication_status": summary["publication_status"],
         "settlement_status": summary["settlement_status"],
         "database_writes": summary["database_writes"],
