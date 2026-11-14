@@ -248,11 +248,13 @@ def test_fixture_snapshot_manifest_is_deterministic_and_timestamp_bound():
     first = build_fixture_snapshot_manifest(**{
         key: value for key, value in args.items()
         if key not in {"response_headers", "rights_approval"}
-    }, rights_approval_id=args["rights_approval"].approval_id)
+    }, rights_approval_id=args["rights_approval"].approval_id,
+       rights_evidence_sha256=args["rights_approval"].evidence_sha256)
     second = build_fixture_snapshot_manifest(**{
         key: value for key, value in args.items()
         if key not in {"response_headers", "rights_approval"}
-    }, rights_approval_id=args["rights_approval"].approval_id)
+    }, rights_approval_id=args["rights_approval"].approval_id,
+       rights_evidence_sha256=args["rights_approval"].evidence_sha256)
     assert first == second
     assert first["response_sha256"] == __import__("hashlib").sha256(SNAPSHOT_RAW).hexdigest()
 
