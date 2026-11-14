@@ -157,6 +157,11 @@ def parse_archive(
             home_goals=home_goals,
             away_goals=away_goals,
             kickoff_date=current_date,
+            provider="OpenFootball",
+            source_id="openfootball/world",
+            availability_basis="immutable_github_commit_and_import_timestamp_with_date_boundary",
+            point_in_time_certifiable=True,
+            payload_sha256=hashlib.sha256(line.encode("utf-8")).hexdigest(),
         ))
         result_count += 1
 
