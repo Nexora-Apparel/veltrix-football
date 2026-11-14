@@ -214,7 +214,12 @@ def test_legacy_telegram_entrypoint_refuses_v2_report_before_network(monkeypatch
     import json
     import sys
     import types
+
+    class RequestException(Exception):
+        pass
+
     monkeypatch.setitem(sys.modules, "requests", types.SimpleNamespace(
+        RequestException=RequestException,
         post=lambda *args, **kwargs: pytest.fail("legacy sender must not contact Telegram")
     ))
     from scripts import send_telegram_report
@@ -235,3 +240,4 @@ def test_legacy_telegram_entrypoint_refuses_v2_report_before_network(monkeypatch
         send_telegram_report.main()
     assert exc.value.code == 1
     assert calls == []
+}
