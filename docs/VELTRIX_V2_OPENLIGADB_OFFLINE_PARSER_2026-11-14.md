@@ -6,7 +6,7 @@ Date: 2026-11-14
 
 `veltrix_v2/data/openligadb.py` parses only exact UTF-8 response bytes already supplied by a caller. It performs no HTTP, secret lookup, provider dispatch, DB access, persistence, scheduling or retry.
 
-The provider API describes match records with match ID, league ID, UTC kickoff, teams, finished flag, match result rows and a `lastUpdateDateTime` field. The parser preserves every result type and order; it does not guess which result row is the canonical full-time score. See the official API catalogue: https://api.openligadb.de/index.html and the match response schema: https://skmtc.dev/openligadb/apis/openligadb-api/docs/getmatchdata/:leagueShortcut/:leagueSeason/get.
+The provider API describes match records with match ID, league ID, UTC kickoff, teams, finished flag, match result rows and a `lastUpdateDateTime` field. The parser preserves every result type and order, including separate `pointsTeam1` and `pointsTeam2` fields. A dedicated selector accepts only exactly one `After90Minutes` result row on a finished match; it never substitutes half-time, extra-time, penalties or list order. See the official API catalogue: https://api.openligadb.de/index.html, the published OpenAPI schema at https://api.openligadb.de/swagger/v1/swagger.json (MatchResult defines pointsTeam1/pointsTeam2 and resultTypeKind), and the match response schema: https://skmtc.dev/openligadb/apis/openligadb-api/docs/getmatchdata/:leagueShortcut/:leagueSeason/get.
 
 ## Timestamp semantics
 
