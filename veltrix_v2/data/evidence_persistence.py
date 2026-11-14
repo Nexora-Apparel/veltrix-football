@@ -66,8 +66,10 @@ def build_fixture_snapshot_manifest(
     rights_approval_id: str,
     rights_evidence_sha256: str,
     http_status: int = 200,
+    status_filter: str = "scheduled",
 ) -> dict[str, str]:
-    """Build deterministic hashes for a raw upcoming-fixture page snapshot."""
+    """Build deterministic hashes for a raw fixture-page snapshot."""
+
     if (provider, source_id) != ("5DollarFootballAPI", "5dollarfootballapi"):
         raise ValueError("FIXTURE_SNAPSHOT_PROVIDER_NOT_ALLOWED")
     if not all(isinstance(value, str) and value.strip() for value in (
@@ -88,6 +90,8 @@ def build_fixture_snapshot_manifest(
         raise ValueError("FIXTURE_SNAPSHOT_FIXTURE_COUNT_INVALID")
     if type(http_status) is not int or not 200 <= http_status < 300:
         raise ValueError("FIXTURE_SNAPSHOT_HTTP_STATUS_INVALID")
+    if status_filter not in {"scheduled", "finished"}:
+        raise ValueError("FIXTURE_SNAPSHOT_STATUS_FILTER_INVALID")
 
     response_hash = sha256(raw_response).hexdigest()
     body = {
@@ -103,7 +107,7 @@ def build_fixture_snapshot_manifest(
         "recorded_at": recorded_at.isoformat(),
         "response_sha256": response_hash,
         "competition_id": competition_id,
-        "status_filter": "scheduled",
+        "status_filter": status_filter,
         "fixture_count": fixture_count,
         "rights_approval_id": rights_approval_id,
         "rights_evidence_sha256": rights_evidence_sha256,
@@ -133,6 +137,7 @@ def persist_fixture_snapshot_response(
     competition_id: str,
     fixture_count: int,
     rights_approval: SourceApproval,
+    status_filter: str = "scheduled",
     write_enabled: bool = False,
     environment: str = "unknown",
     database_name: str = "",
@@ -173,6 +178,7 @@ def persist_fixture_snapshot_response(
         fixture_count=fixture_count,
         rights_approval_id=rights_approval.approval_id,
         rights_evidence_sha256=rights_approval.evidence_sha256 or "",
+        status_filter=status_filter,
     )
     for purpose in (DataUsePurpose.STORAGE, DataUsePurpose.CACHE):
         decision = evaluate_source_use(
@@ -195,7 +201,7 @@ def persist_fixture_snapshot_response(
         "endpoint": endpoint,
         "request_id": request_id,
         "data_domain": "FIXTURES",
-        "status_filter": "scheduled",
+        "status_filter": status_filter,
         "competition_id": competition_id,
         "fixture_count": fixture_count,
         "response_sha256": response_hash,
