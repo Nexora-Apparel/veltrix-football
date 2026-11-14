@@ -406,7 +406,7 @@ def test_empty_finished_page_still_persists_raw_response_and_manifest(monkeypatc
 
     def fake_persist(dsn, **kwargs):
         persisted.update(kwargs)
-        return capture.build_fixture_snapshot_manifest(
+        hashes = capture.build_fixture_snapshot_manifest(
             provider="5DollarFootballAPI",
             source_id="5dollarfootballapi",
             endpoint=kwargs["endpoint"],
@@ -423,6 +423,8 @@ def test_empty_finished_page_still_persists_raw_response_and_manifest(monkeypatc
             rights_evidence_sha256=approval.evidence_sha256,
             status_filter=kwargs["status_filter"],
         )
+        persisted["result"] = hashes
+        return hashes
 
     monkeypatch.setattr(capture, "_persist_fixture_snapshot_to_staging", fake_persist)
     rows, info = capture._capture_page(
@@ -444,7 +446,7 @@ def test_empty_finished_page_still_persists_raw_response_and_manifest(monkeypatc
     assert rows == []
     assert info["no_finished_rows"] is True
     assert info["capture_observations"] == 0
-    assert info["capture_manifest_sha256"] == persisted["manifest_sha256"]
+    assert info["capture_manifest_sha256"] == persisted["result"]["manifest_sha256"]
     assert persisted["status_filter"] == "finished"
     assert persisted["fixture_count"] == 0
     assert (tmp_path / "raw" / "3118717965_finished_page_1.json").read_bytes() == raw
