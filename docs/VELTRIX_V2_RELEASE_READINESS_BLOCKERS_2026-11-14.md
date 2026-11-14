@@ -337,3 +337,11 @@ This reconciliation proves historical item integrity and exact provenance links,
 - All 2,496 fixture-result versions match the exact `goals.home` and `goals.away` values in their linked raw observation payloads: 2,496 matches, 0 score mismatches.
 - All 2,496 result versions link to their exact source observation, carry the same rights approval ID and have result-version recorded_at no earlier than the linked response retrieval time.
 - All 2,496 legacy `available_at` values match the kickoff-based proxy stored in the linked source observation. This confirms internal consistency of the old proxy, not provider result publication time; all 2,496 remain explicitly non-PIT.
+
+
+## Latest CI confirmation — 2026-11-14 23:00 UTC
+
+- Code head `c478b53ce3764a550eb137cce928d712ac74f1fc` passed Foundation run #1605, PostgreSQL 16/18 acceptance run #170, Historical Model Audit run #98 and Certification Evidence Integrity run #230.
+- The passing Foundation suite includes: no-credit Odds API account probe persistence; zero-credit cost verification; 5Dollar capture approval and persistence guards; quota headroom fail-closed behavior; empty finished-result page manifest persistence; portable website/Telegram bundle parity; and legacy release-workflow safety guards.
+- The current branch has advanced to `b201f195360d02efa9b446db247c9d0550922437` with documentation-only follow-up; it remains 66 commits ahead and 0 behind `main`.
+- Neither manual provider capture workflow has been dispatched. The prospective paper ledger remains empty and no provider requests or credits have been consumed.
