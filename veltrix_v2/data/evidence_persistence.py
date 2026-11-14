@@ -341,13 +341,20 @@ def persist_provider_evidence_report(
     with connection:
         with connection.cursor() as cursor:
             for approval_id in sorted({row.rights_approval.approval_id for row in rows}):
+                approval = next(
+                    row.rights_approval for row in rows
+                    if row.rights_approval.approval_id == approval_id
+                )
                 cursor.execute(
-                    """SELECT 1 FROM source_approvals
+                    """SELECT evidence_sha256 FROM source_approvals
                        WHERE approval_id = %s AND provider = %s AND source_id = %s""",
                     (approval_id, first.provider, first.source_id),
                 )
-                if not cursor.fetchone():
+                approval_row = cursor.fetchone()
+                if not approval_row:
                     raise ValueError("STAGING_SOURCE_APPROVAL_NOT_FOUND")
+                if approval_row[0] != approval.evidence_sha256:
+                    raise ValueError("STAGING_SOURCE_APPROVAL_EVIDENCE_MISMATCH")
 
             manifest_id = _fetch_id(
                 cursor,
