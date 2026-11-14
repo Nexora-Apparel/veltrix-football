@@ -27,3 +27,8 @@ No scheduler, Telegram sender, database writer, website publisher, odds engine o
 ## Optional recency weighting
 
 The engine accepts an exponential half-life setting. Equal weighting remains the default; any non-default half-life must be selected through chronological walk-forward comparison using the same weighting for the model and competition baseline.
+
+
+## Dixon-Coles candidate
+
+An optional Dixon-Coles low-score correction parameter is exposed with rho=0.0 as the independent-Poisson default. Non-zero rho values are challengers only; invalid/non-positive low-score correction factors are rejected. A non-zero value may be selected only through chronological walk-forward evaluation against the independent baseline. The model remains unpublished.
