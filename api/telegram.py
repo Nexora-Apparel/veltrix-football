@@ -12,9 +12,9 @@ from urllib.request import Request, urlopen
 from fastapi import FastAPI, Header, HTTPException, Request as FastAPIRequest
 from fastapi.responses import HTMLResponse, JSONResponse
 
-from app.telegram_commands import handle_command
 from app.report_artifacts import load_latest_report, load_dashboard_snapshot
 from app.telegram_security import telegram_webhook_secret_token
+from veltrix_v2.reporting.telegram_commands import handle_v2_command
 
 app = FastAPI(title="Veltrix Football Command Centre")
 
@@ -682,45 +682,24 @@ async def telegram_webhook(
     command = BUTTON_COMMANDS.get(text.strip().casefold(), text)
     if not command.startswith("/"):
         return JSONResponse({"ok": True})
-    if command.strip().split()[0].split("@", 1)[0].casefold() == "/oddsdiag":
+    try:
+        # V2 commands consume only the authorized immutable V2 report. The
+        # legacy prediction command router is deliberately not called.
+        verifier = _authoritative_publication_verifier()
         try:
-            report = load_latest_report(_authoritative_publication_verifier())
-            if not isinstance(report, dict):
-                raise RuntimeError("PUBLISHED_V2_REPORT_UNAVAILABLE")
-            request_meta = report.get("primary_provider_request") or {}
-            odds_meta = report.get("multi_source_odds_sync") or {}
-            live_odds = report.get("live_odds_sync") or {}
-            five = odds_meta.get("five_dollar") or {}
-            odds_api = odds_meta.get("the_odds_api") or {}
-            infer = odds_meta.get("infer_sports") or {}
-            predictions = report.get("predictions") if isinstance(report.get("predictions"), list) else []
-            five_rows = sum(1 for row in predictions if isinstance(row, dict) and row.get("five_dollar_market_odds"))
-            odds_api_rows = sum(1 for row in predictions if isinstance(row, dict) and row.get("the_odds_api_market_odds"))
-            infer_rows = sum(1 for row in predictions if isinstance(row, dict) and row.get("infer_sports_market_odds"))
-            diagnostic = "\n".join([
-                "VELTRIX MULTI-SOURCE ODDS DIAGNOSTIC",
-                f"Report date: {report.get('as_of_date', 'not available')}",
-                f"Primary fixture provider: {request_meta.get('provider', 'not reported')}",
-                f"Primary fixture status: {request_meta.get('status', 'not reported')}",
-                f"Fixtures received: {request_meta.get('fixtures_received', report.get('fixtures_received', 0))}",
-                f"5DollarFootballAPI odds status: {five.get('status', 'not reported')}",
-                f"Fixtures with 5Dollar odds: {five_rows}",
-                f"The Odds API status: {odds_api.get('status', 'not reported')}",
-                f"Sports queried: {', '.join(odds_api.get('sports_queried', [])) or 'none'}",
-                f"Fixtures with The Odds API prices: {odds_api_rows}",
-                f"The Odds API quota metadata: {odds_api.get('quota', {})}",
-                f"InferSports status: {infer.get('status', 'not reported')}",
-                f"Fixtures with InferSports prices: {infer_rows}",
-                f"Combined odds status: {live_odds.get('status', 'not reported')}",
-                f"Fixtures with matched market odds: {report.get('fixtures_with_market_odds', 0)}",
-                "Odds markets are reference data only; model probabilities remain estimates.",
-                "API-Football/API-Sports is suspended and is not called by this diagnostic.",
-                "No API keys are shown and no provider request is made by this command.",
-            ])
-            _send_message(bot_token, chat_id, "🔔 🆕 NEW VELTRIX UPDATE\n━━━━━━━━━━━━━━━━━━━━\n" + diagnostic)
+            report = load_latest_report(verifier)
         except Exception:
-            _send_message(bot_token, chat_id, "🔔 🆕 NEW VELTRIX UPDATE\n━━━━━━━━━━━━━━━━━━━━\nMULTI-SOURCE DIAGNOSTIC FAILED — published report details unavailable.")
-        return JSONResponse({"ok": True})
+            report = None
+        reply = handle_v2_command(
+            command,
+            report=report,
+            authorization_verifier=verifier,
+        )
+        _send_message(bot_token, chat_id, reply)
+    except Exception:
+        # Do not expose the update, chat id, token, or Telegram request URL.
+        raise HTTPException(status_code=502, detail="Telegram reply delivery failed") from None
+    return JSONResponse({"ok": True})
     try:
         # Read published snapshots only. This never starts prediction jobs or
         # consumes the football provider's API quota.
