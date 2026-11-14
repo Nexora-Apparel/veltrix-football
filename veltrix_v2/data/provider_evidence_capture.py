@@ -177,6 +177,7 @@ class CapturedResultEvidence:
             away_goals=self.away_goals,
             provider=self.provider,
             source_id=self.source_id,
+            provider_competition_id=self.provider_competition_id,
             availability_basis="provider_evidence_manifest_v1",
             point_in_time_certifiable=True,
             payload_sha256=self.raw_response_sha256,
@@ -215,7 +216,8 @@ class CapturedResultEvidence:
             or self.crosswalk_version < 1
             or not all(isinstance(value, str) and value.strip() for value in (
                 self.fixture_id, self.competition_id, self.home_team_id, self.away_team_id,
-                self.provider, self.source_id, self.rights_approval_id,
+                self.provider, self.source_id, self.provider_competition_id,
+                self.rights_approval_id,
             ))
             or self.home_team_id == self.away_team_id
             or type(self.home_goals) is not int or type(self.away_goals) is not int
@@ -251,6 +253,7 @@ class CapturedResultEvidence:
             away_goals=self.away_goals,
             provider=self.provider,
             source_id=self.source_id,
+            provider_competition_id=self.provider_competition_id,
             availability_basis="collector_first_observed_v1",
             point_in_time_certifiable=False,
             payload_sha256=self.raw_response_sha256,
