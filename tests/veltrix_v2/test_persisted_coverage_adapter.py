@@ -154,7 +154,8 @@ def test_adapter_accepts_json_text_payload_without_changing_values():
 
 
 def test_adapter_rejects_unlinked_capture_manifest():
-    row = observation_row(capture_manifest_verified=False)
+    row = observation_row()
+    row["capture_manifest_verified"] = False
     result = adapt_persisted_coverage_rows([fixture_row()], [row])
     assert result.evidence == ()
     assert result.rejected_observation_rows == 1
