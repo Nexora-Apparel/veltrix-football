@@ -147,3 +147,8 @@ Every market listed in a fixture's `certified_markets` must have an exact probab
 Each probability must be a finite non-boolean number in [0, 1], the vector must sum to 1 within 1e-6, and unexpected keys are rejected. The report's canonical identity also rejects non-JSON values such as NaN and Infinity.
 
 Reconciliation corrections must be append-only superseding events whose observed and recorded timestamps do not precede their parent event. The same monotonicity is enforced by the application validator and PostgreSQL trigger.
+
+
+## Single-artifact read rule
+
+The V2 website/API read path now requires the single hash-bound portable report bundle. It does not reconstruct a V2 report from independently fetched `daily_predictions.json` and `dashboard_snapshot.json` files, even when their individual report identities appear to match. Separate legacy snapshots remain archival only. If the portable bundle is missing, invalid, or cannot pass the authoritative verifier, the current V2 report is unavailable; no legacy fallback is served.
