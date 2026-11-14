@@ -279,3 +279,46 @@ def test_archive_path_remains_publishable_for_historical_preservation(tmp_path, 
         "not-a-real-token",
     )
     assert len(calls) == 2
+
+
+
+def test_archive_content_path_is_stable_and_content_addressed():
+    from scripts.publish_command_data import _archive_content_path
+
+    report = {"as_of_date": "2026-10-31"}
+    first = _archive_content_path(report, b"immutable-report")
+    same = _archive_content_path(report, b"immutable-report")
+    changed = _archive_content_path(report, b"corrected-report")
+    assert first == same
+    assert first != changed
+    assert first.startswith("public-data/archive/2026-10-31/daily_predictions_")
+
+
+def test_command_data_publish_skips_existing_identical_bytes(tmp_path, monkeypatch, capsys):
+    import base64
+    import json
+    from scripts.publish_command_data import publish
+
+    local = tmp_path / "snapshot.json"
+    raw = b'{"as_of_date":"2026-10-31","predictions":[]}'
+    local.write_bytes(raw)
+    calls = []
+
+    def fake_github_json(url, token, method="GET", body=None):
+        calls.append((url, method, body))
+        return {
+            "sha": "existing-blob-sha",
+            "encoding": "base64",
+            "content": base64.b64encode(raw).decode("ascii"),
+        }
+
+    monkeypatch.setattr("scripts.publish_command_data._github_json", fake_github_json)
+    publish(
+        "public-data/archive/2026-10-31/daily_predictions_abc.json",
+        local,
+        "Nexora-Apparel/veltrix-football",
+        "not-a-real-token",
+    )
+    assert len(calls) == 1
+    assert calls[0][1] == "GET"
+    assert "exact bytes match" in capsys.readouterr().out
