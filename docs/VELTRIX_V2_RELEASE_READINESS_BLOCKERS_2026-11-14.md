@@ -232,3 +232,12 @@ A final website audit found that the browser still had independent raw-GitHub/CD
 - The old daily prediction, dashboard refresh and Telegram recovery workflows remain disabled.
 - CI run #1496 passed Foundation, PostgreSQL 16 and PostgreSQL 18, including the legacy sender shutdown tests.
 - This closes the accidental legacy-send route; it does not create a V2 production sender or activate Telegram.
+
+
+## Legacy sender shutdown validation — 2026-11-14 17:56 UTC
+
+- `scripts/send_telegram_report.py` now has a fail-closed `main()`: it rejects V2 reports with `V2_REPORT_REQUIRES_CERTIFIED_V2_DELIVERY_RUNNER` and rejects all legacy reports with `LEGACY_REPORT_SENDER_DISABLED`.
+- The legacy `--force` option cannot bypass the shutdown. The main entrypoint performs no GitHub delivery-state access and no Telegram network request.
+- Archived formatting helpers remain for regression compatibility; they are not a publication path.
+- CI run #1496 passed the Foundation, PostgreSQL 16 and PostgreSQL 18 jobs, including the legacy sender shutdown test suite.
+- No certified V2 publisher/production sender exists yet. The command-data V2 bundle remains absent and all release workflows remain disabled.
