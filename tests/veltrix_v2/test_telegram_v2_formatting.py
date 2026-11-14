@@ -123,3 +123,16 @@ def test_legacy_telegram_formatter_cannot_consume_v2_report():
 
     with pytest.raises(ValueError, match="V2 report rejected"):
         legacy_formatter(public_report())
+
+
+@pytest.mark.parametrize("values", [
+    {"home": 0.8, "draw": 0.3, "away": 0.1},
+    {"home": 1.2, "draw": -0.1, "away": -0.1},
+    {"home": float("nan"), "draw": 0.3, "away": 0.7},
+])
+def test_certified_market_with_invalid_or_unnormalized_probabilities_is_rejected(values):
+    report = public_report()
+    report["predictions"][0]["markets"]["1X2"] = values
+    report = bind_report_identity({key: value for key, value in report.items() if key != "report_sha256"})
+    with pytest.raises(ValueError, match="CERTIFIED_MARKET_PROBABILITY"):
+        format_public_telegram_messages(report, verifier)
