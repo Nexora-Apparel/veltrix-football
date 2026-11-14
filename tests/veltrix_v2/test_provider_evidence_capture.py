@@ -349,7 +349,10 @@ def test_fivedollar_page_adapter_preserves_non_certifiable_timestamp_gap():
 def test_fivedollar_page_adapter_rejects_raw_response_hash_mismatch():
     with pytest.raises(ValueError, match="FIVEDOLLAR_RAW_RESPONSE_HASH_MISMATCH"):
         capture_fivedollar_page_evidence(
-            b"wrong", object(),
+            b"wrong", ParsedFixturePage(
+                fixtures=(), page=1, per_page=1, has_more=False,
+                response_sha256=HASH, quota_limit=60, quota_remaining=59, quota_reset=None,
+            ),
             endpoint="/api/fixtures",
             request_id="req",
             requested_at=NOW - timedelta(minutes=1),
