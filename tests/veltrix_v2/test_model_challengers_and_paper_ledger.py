@@ -6,6 +6,7 @@ from veltrix_v2.evaluation.model_challengers import evaluate_model_challengers
 from veltrix_v2.evaluation.team_form_challenger import evaluate_team_form_challenger
 from veltrix_v2.models.poisson import MatchObservation
 from veltrix_v2.ledger.paper_predictions import PaperPrediction, ProspectivePaperLedger
+from veltrix_v2.ledger.jsonl_store import JsonlPaperLedgerStore
 
 UTC = timezone.utc
 BASE = datetime(2026, 1, 1, tzinfo=UTC)
@@ -134,3 +135,25 @@ def test_team_form_challenger_is_expanding_window_and_excludes_future_rows():
     assert report.metrics.sample_count == 9
     assert report.metrics.form_mse >= 0
     assert report.metrics.competition_baseline_mse >= 0
+
+
+def test_jsonl_paper_ledger_persists_and_verifies_hash_chain(tmp_path):
+    path = tmp_path / "paper" / "ledger.jsonl"
+    store = JsonlPaperLedgerStore(path)
+    kickoff = BASE + timedelta(days=30)
+    prediction = PaperPrediction(
+        fixture_id="durable-1", competition_id="league",
+        home_team_id="A", away_team_id="B", kickoff_at=kickoff,
+        prediction_cutoff_at=kickoff - timedelta(hours=2),
+        forecasted_at=kickoff - timedelta(hours=1),
+        recorded_at=kickoff - timedelta(minutes=30),
+        model_version="candidate-v2",
+        home_probability=0.45, draw_probability=0.30, away_probability=0.25,
+        evidence_sha256="c" * 64, point_in_time_certifiable=True,
+    )
+    event = store.append_prediction(prediction)
+    assert event.sequence == 1
+    reloaded = store.load()
+    assert reloaded.verify_chain()
+    assert reloaded.events[0].event_sha256 == event.event_sha256
+    assert path.read_text(encoding="utf-8").count("\\n") == 1
