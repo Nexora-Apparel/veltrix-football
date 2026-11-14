@@ -185,3 +185,65 @@ def test_date_only_observation_requires_exactly_one_date_precision_field():
     available = datetime(2026, 8, 21, 7, 43, tzinfo=UTC)
     row = MatchObservation("date-a", "league", "A", "B", None, available, available, 1, 0)
     assert not observation_eligible_as_of(row, cutoff_at=CUTOFF)
+
+
+def test_venue_specific_attack_and_defence_change_expected_goals():
+    rows = []
+    for i in range(10):
+        rows.append(match(200 + i, "A", "C", 4, 0))
+        rows.append(match(220 + i, "D", "B", 3, 0))
+        rows.append(match(240 + i, "C", "D", 1, 1))
+    strong_home = predict_match(
+        rows, competition_id="league", home_team_id="A", away_team_id="B",
+        kickoff_at=KICKOFF, cutoff_at=CUTOFF,
+    )
+    neutral_pair = predict_match(
+        rows, competition_id="league", home_team_id="C", away_team_id="D",
+        kickoff_at=KICKOFF, cutoff_at=CUTOFF,
+    )
+    assert strong_home.expected_home_goals > neutral_pair.expected_home_goals
+
+
+def test_optional_recency_half_life_weights_recent_results_more_heavily():
+    rows = [match(i, "A", "B", 4, 0) for i in range(60, 120)]
+    rows += [match(i, "A", "B", 0, 1) for i in range(60)]
+    equal = predict_match(rows, competition_id="league", home_team_id="A",
+                          away_team_id="B", kickoff_at=KICKOFF, cutoff_at=CUTOFF)
+    recent = predict_match(rows, competition_id="league", home_team_id="A",
+                           away_team_id="B", kickoff_at=KICKOFF, cutoff_at=CUTOFF,
+                           recency_half_life_days=30)
+    assert recent.expected_home_goals < equal.expected_home_goals
+    assert recent.recency_half_life_days == 30
+    assert equal.recency_half_life_days is None
+
+
+def test_invalid_recency_half_life_fails_closed():
+    with pytest.raises(ValueError, match="RECENCY_HALF_LIFE_MUST_BE_POSITIVE_FINITE"):
+        predict_match(sample_history(), competition_id="league", home_team_id="A",
+                      away_team_id="B", kickoff_at=KICKOFF, cutoff_at=CUTOFF,
+                      recency_half_life_days=0)
+
+
+def test_dixon_coles_low_score_correction_increases_draw_probability():
+    rows = sample_history(120)
+    independent = predict_match(
+        rows, competition_id="league", home_team_id="A", away_team_id="B",
+        kickoff_at=KICKOFF, cutoff_at=CUTOFF, dixon_coles_rho=0.0,
+    )
+    corrected = predict_match(
+        rows, competition_id="league", home_team_id="A", away_team_id="B",
+        kickoff_at=KICKOFF, cutoff_at=CUTOFF, dixon_coles_rho=-0.1,
+    )
+    assert corrected.draw > independent.draw
+    assert corrected.dixon_coles_rho == -0.1
+
+
+def test_dixon_coles_rejects_invalid_rho_and_nonpositive_tau():
+    with pytest.raises(ValueError, match="DIXON_COLES_RHO_INVALID"):
+        predict_match(sample_history(), competition_id="league", home_team_id="A",
+                      away_team_id="B", kickoff_at=KICKOFF, cutoff_at=CUTOFF,
+                      dixon_coles_rho=1.5)
+    with pytest.raises(ValueError, match="DIXON_COLES_TAU_NONPOSITIVE"):
+        predict_match(sample_history(), competition_id="league", home_team_id="A",
+                      away_team_id="B", kickoff_at=KICKOFF, cutoff_at=CUTOFF,
+                      dixon_coles_rho=1.0)

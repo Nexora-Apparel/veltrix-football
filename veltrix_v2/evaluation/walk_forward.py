@@ -15,6 +15,7 @@ from veltrix_v2.models.poisson import (
     InsufficientHistoryError,
     MatchObservation,
     observation_eligible_as_of,
+    observation_weight_as_of,
     predict_match,
 )
 
@@ -72,6 +73,9 @@ class WalkForwardReport:
     over_2_5: MarketComparison | None
     fixtures: tuple[FixtureEvaluation, ...]
     skipped_date_only_targets: int = 0
+    non_certifiable_input_rows: int = 0
+    recency_half_life_days: float | None = None
+    dixon_coles_rho: float = 0.0
 
 
 def _aware(value: datetime) -> bool:
@@ -149,6 +153,8 @@ def walk_forward_evaluate(
     *,
     evaluation_as_of: datetime,
     cutoff_buffer: timedelta = timedelta(seconds=1),
+    recency_half_life_days: float | None = None,
+    dixon_coles_rho: float = 0.0,
 ) -> WalkForwardReport:
     """Evaluate with an expanding chronological window and strict point-in-time cutoffs.
 
@@ -161,6 +167,16 @@ def walk_forward_evaluate(
         raise ValueError("EVALUATION_AS_OF_MUST_BE_TIMEZONE_AWARE")
     if not isinstance(cutoff_buffer, timedelta) or cutoff_buffer <= timedelta(0):
         raise ValueError("CUTOFF_BUFFER_MUST_BE_POSITIVE")
+    if recency_half_life_days is not None and (
+        not isinstance(recency_half_life_days, (int, float))
+        or isinstance(recency_half_life_days, bool)
+        or not math.isfinite(recency_half_life_days)
+        or recency_half_life_days <= 0
+    ):
+        raise ValueError("RECENCY_HALF_LIFE_MUST_BE_POSITIVE_FINITE")
+    if (not isinstance(dixon_coles_rho, (int, float)) or isinstance(dixon_coles_rho, bool)
+            or not math.isfinite(dixon_coles_rho) or not -1.0 <= dixon_coles_rho <= 1.0):
+        raise ValueError("DIXON_COLES_RHO_INVALID")
     rows = list(observations)
     id_counts: dict[str, int] = {}
     for row in rows:
@@ -171,6 +187,10 @@ def walk_forward_evaluate(
     skipped_duplicate = sum(id_counts[key] for key in duplicate_ids)
     skipped_invalid = skipped_no_history = skipped_future = 0
     scored: list[FixtureEvaluation] = []
+    non_certifiable_input_rows = sum(
+        1 for row in rows if isinstance(row, MatchObservation)
+        and row.point_in_time_certifiable is not True
+    )
 
     valid_rows = [row for row in rows if isinstance(row, MatchObservation)
                   and row.fixture_id not in duplicate_ids]
@@ -203,11 +223,18 @@ def walk_forward_evaluate(
         if cutoff >= target.kickoff_at:
             skipped_invalid += 1
             continue
+        certified_training = [
+            m for m in rows if isinstance(m, MatchObservation)
+            and m.point_in_time_certifiable is True
+            and id_counts.get(m.fixture_id, 0) == 1
+        ]
         try:
             prediction = predict_match(
-                rows, competition_id=target.competition_id,
+                certified_training, competition_id=target.competition_id,
                 home_team_id=target.home_team_id, away_team_id=target.away_team_id,
                 kickoff_at=target.kickoff_at, cutoff_at=cutoff,
+                recency_half_life_days=recency_half_life_days,
+                dixon_coles_rho=dixon_coles_rho,
             )
         except InsufficientHistoryError:
             skipped_no_history += 1
@@ -216,17 +243,29 @@ def walk_forward_evaluate(
             skipped_invalid += 1
             continue
 
-        training = [m for m in rows if isinstance(m, MatchObservation)
-                    and m.fixture_id != target.fixture_id
-                    and id_counts.get(m.fixture_id, 0) == 1
+        training = [m for m in certified_training
+                    if m.fixture_id != target.fixture_id
                     and observation_eligible_as_of(
                         m, cutoff_at=cutoff, competition_id=target.competition_id
                     )]
         if not training:
             skipped_no_history += 1
             continue
-        league_home = sum(m.home_goals for m in training) / len(training)
-        league_away = sum(m.away_goals for m in training) / len(training)
+        training_weights = [
+            observation_weight_as_of(
+                m, cutoff_at=cutoff, half_life_days=recency_half_life_days
+            ) for m in training
+        ]
+        weight_total = sum(training_weights)
+        if weight_total <= 0:
+            skipped_no_history += 1
+            continue
+        league_home = sum(
+            m.home_goals * weight for m, weight in zip(training, training_weights)
+        ) / weight_total
+        league_away = sum(
+            m.away_goals * weight for m, weight in zip(training, training_weights)
+        ) / weight_total
         if league_home <= 0 or league_away <= 0:
             skipped_no_history += 1
             continue
@@ -271,4 +310,7 @@ def walk_forward_evaluate(
         skipped_after_evaluation_as_of=skipped_future,
         one_x_two=one_x_two, btts=btts, over_2_5=over,
         fixtures=tuple(scored), skipped_date_only_targets=skipped_date_only_targets,
+        non_certifiable_input_rows=non_certifiable_input_rows,
+        recency_half_life_days=recency_half_life_days,
+        dixon_coles_rho=dixon_coles_rho,
     )

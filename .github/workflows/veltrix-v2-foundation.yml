@@ -9,7 +9,10 @@ on:
     paths:
       - "veltrix_v2/**"
       - "tests/veltrix_v2/**"
+      - "scripts/veltrix_v2/**"
       - "tests/providers/odds_api_v4/**"
+      - "tests/providers/test_openfootball_archive.py"
+      - "tests/scripts/test_export_openfootball_archive.py"
       - "scripts/veltrix_v2/**"
       - ".github/workflows/veltrix-v2-foundation.yml"
   pull_request:
@@ -51,8 +54,20 @@ jobs:
         run: python -m pytest --import-mode=importlib -q tests/providers/test_provider_access.py
       - name: Test independent results-only Poisson model
         run: python -m pytest --import-mode=importlib -q tests/veltrix_v2/test_results_only_poisson.py
+      - name: Test deterministic batch prediction engine
+        run: python -m pytest --import-mode=importlib -q tests/veltrix_v2/test_prediction_engine.py
+      - name: Test evidence-backed team identity crosswalk
+        run: python -m pytest --import-mode=importlib -q tests/veltrix_v2/test_team_identity.py
+      - name: Test provider-to-model observation adapter
+        run: python -m pytest --import-mode=importlib -q tests/veltrix_v2/test_observation_adapter.py
+      - name: Test free-first 5Dollar forecast orchestration
+        run: python -m pytest --import-mode=importlib -q tests/veltrix_v2/test_fivedollar_engine.py
+      - name: Test bounded 5Dollar forecast dry run
+        run: python -m pytest --import-mode=importlib -q tests/veltrix_v2/test_fivedollar_forecast_dry_run.py
       - name: Test OpenFootball archive parser
         run: python -m pytest --import-mode=importlib -q tests/providers/test_openfootball_archive.py
+      - name: Test OpenFootball archive export script
+        run: python -m pytest --import-mode=importlib -q tests/scripts/test_export_openfootball_archive.py
       - name: Test chronological and date-only walk-forward evaluation
         run: python -m pytest --import-mode=importlib -q tests/veltrix_v2/test_walk_forward.py
       - name: Test calibration and date-clustered uncertainty

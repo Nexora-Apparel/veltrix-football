@@ -8,6 +8,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import date, datetime, time, timedelta, timezone
 import math
+import re
 from typing import Iterable
 
 
@@ -31,6 +32,12 @@ class MatchObservation:
     home_goals: int
     away_goals: int
     kickoff_date: date | None = None
+    provider: str = "unspecified"
+    source_id: str = "unspecified"
+    availability_basis: str = "unspecified"
+    point_in_time_certifiable: bool = False
+    payload_sha256: str | None = None
+    rights_approval_id: str | None = None
 
 
 @dataclass(frozen=True)
@@ -50,6 +57,8 @@ class PoissonPrediction:
     sample_floor_met: bool
     publishable: bool
     publication_reason: str
+    recency_half_life_days: float | None
+    dixon_coles_rho: float
 
 
 def _aware(value: datetime) -> bool:
@@ -68,6 +77,14 @@ def _valid_observation(match: MatchObservation) -> bool:
     if not _aware(match.available_at) or not _aware(match.recorded_at):
         return False
     if match.recorded_at < match.available_at:
+        return False
+    if type(match.point_in_time_certifiable) is not bool:
+        return False
+    if not all(isinstance(value, str) and value.strip() for value in (
+        match.provider, match.source_id, match.availability_basis
+    )):
+        return False
+    if match.payload_sha256 is not None and not re.fullmatch(r"[0-9a-fA-F]{64}", match.payload_sha256):
         return False
     if match.kickoff_at is None:
         if not isinstance(match.kickoff_date, date) or isinstance(match.kickoff_date, datetime):
@@ -111,6 +128,29 @@ def observation_eligible_as_of(match: MatchObservation, *, cutoff_at: datetime,
     return kickoff_precedes_cutoff and match.available_at <= cutoff_at and match.recorded_at <= cutoff_at
 
 
+def _event_time(match: MatchObservation) -> datetime:
+    if match.kickoff_at is not None:
+        return match.kickoff_at
+    return datetime.combine(
+        match.kickoff_date + timedelta(days=2), time.min, tzinfo=timezone.utc
+    )
+
+
+def observation_weight_as_of(
+    match: MatchObservation, *, cutoff_at: datetime, half_life_days: float | None
+) -> float:
+    """Return exponential recency weight for an eligible observation."""
+    if not observation_eligible_as_of(match, cutoff_at=cutoff_at):
+        return 0.0
+    if half_life_days is None:
+        return 1.0
+    if (not isinstance(half_life_days, (int, float)) or isinstance(half_life_days, bool)
+            or not math.isfinite(half_life_days) or half_life_days <= 0):
+        raise ValueError("RECENCY_HALF_LIFE_MUST_BE_POSITIVE_FINITE")
+    age_days = max(0.0, (cutoff_at - _event_time(match)).total_seconds() / 86400.0)
+    return math.exp(-math.log(2.0) * age_days / float(half_life_days))
+
+
 def _poisson_pmf(mean: float, goals: int) -> float:
     return math.exp(-mean) * (mean ** goals) / math.factorial(goals)
 
@@ -128,6 +168,8 @@ def predict_match(
     kickoff_at: datetime,
     cutoff_at: datetime,
     prior_matches: float = 5.0,
+    recency_half_life_days: float | None = None,
+    dixon_coles_rho: float = 0.0,
 ) -> PoissonPrediction:
     """Estimate 1X2, BTTS and O/U 2.5 using only results knowable at cutoff.
 
@@ -147,6 +189,16 @@ def predict_match(
     if (not isinstance(prior_matches, (int, float)) or isinstance(prior_matches, bool)
             or not math.isfinite(prior_matches) or prior_matches <= 0):
         raise ValueError("PRIOR_STRENGTH_INVALID")
+    if recency_half_life_days is not None and (
+        not isinstance(recency_half_life_days, (int, float))
+        or isinstance(recency_half_life_days, bool)
+        or not math.isfinite(recency_half_life_days)
+        or recency_half_life_days <= 0
+    ):
+        raise ValueError("RECENCY_HALF_LIFE_MUST_BE_POSITIVE_FINITE")
+    if (not isinstance(dixon_coles_rho, (int, float)) or isinstance(dixon_coles_rho, bool)
+            or not math.isfinite(dixon_coles_rho) or not -1.0 <= dixon_coles_rho <= 1.0):
+        raise ValueError("DIXON_COLES_RHO_INVALID")
 
     candidates = list(observations)
     fixture_id_counts: dict[str, int] = {}
@@ -175,56 +227,92 @@ def predict_match(
     if not away_team:
         raise InsufficientHistoryError("AWAY_TEAM_HAS_NO_ELIGIBLE_HISTORY")
 
-    league_home_total = sum(m.home_goals for m in eligible)
-    league_away_total = sum(m.away_goals for m in eligible)
-    league_home_mean = league_home_total / len(eligible)
-    league_away_mean = league_away_total / len(eligible)
+    weights = {
+        m.fixture_id: observation_weight_as_of(
+            m, cutoff_at=cutoff_at, half_life_days=recency_half_life_days
+        ) for m in eligible
+    }
+    total_weight = sum(weights.values())
+    if total_weight <= 0 or not math.isfinite(total_weight):
+        raise InsufficientHistoryError("RECENCY_WEIGHT_MASS_INVALID")
+    league_home_total = sum(m.home_goals * weights[m.fixture_id] for m in eligible)
+    league_away_total = sum(m.away_goals * weights[m.fixture_id] for m in eligible)
+    league_home_mean = league_home_total / total_weight
+    league_away_mean = league_away_total / total_weight
     if league_home_mean <= 0 or league_away_mean <= 0:
         raise InsufficientHistoryError("COMPETITION_GOAL_BASELINE_INVALID")
 
-    def team_rates(team_id: str) -> tuple[float, float, int]:
-        scored = conceded = count = 0
+    def team_rates(team_id: str) -> tuple[float, float, float, float, int]:
+        home_scored = home_conceded = home_weight = 0.0
+        away_scored = away_conceded = away_weight = 0.0
+        home_count = away_count = 0
         for m in eligible:
+            weight = weights[m.fixture_id]
             if m.home_team_id == team_id:
-                scored += m.home_goals
-                conceded += m.away_goals
-                count += 1
+                home_scored += m.home_goals * weight
+                home_conceded += m.away_goals * weight
+                home_weight += weight
+                home_count += 1
             elif m.away_team_id == team_id:
-                scored += m.away_goals
-                conceded += m.home_goals
-                count += 1
-        attack_mean = _posterior_mean(scored, count, (league_home_mean + league_away_mean) / 2, prior_matches)
-        defence_mean = _posterior_mean(conceded, count, (league_home_mean + league_away_mean) / 2, prior_matches)
-        return attack_mean, defence_mean, count
+                away_scored += m.away_goals * weight
+                away_conceded += m.home_goals * weight
+                away_weight += weight
+                away_count += 1
+        home_attack = _posterior_mean(home_scored, home_weight, league_home_mean, prior_matches)
+        home_defence = _posterior_mean(home_conceded, home_weight, league_away_mean, prior_matches)
+        away_attack = _posterior_mean(away_scored, away_weight, league_away_mean, prior_matches)
+        away_defence = _posterior_mean(away_conceded, away_weight, league_home_mean, prior_matches)
+        return home_attack, home_defence, away_attack, away_defence, home_count + away_count
 
-    home_attack, home_conceded, home_count = team_rates(home_team_id)
-    away_attack, away_conceded, away_count = team_rates(away_team_id)
-    league_mean = (league_home_mean + league_away_mean) / 2
-    home_lambda = league_home_mean * (home_attack / league_mean) * (away_conceded / league_mean)
-    away_lambda = league_away_mean * (away_attack / league_mean) * (home_conceded / league_mean)
+    home_attack, home_defence, _, _, home_count = team_rates(home_team_id)
+    _, _, away_attack, away_defence, away_count = team_rates(away_team_id)
+    home_lambda = home_attack * away_defence / league_home_mean
+    away_lambda = away_attack * home_defence / league_away_mean
     home_lambda = min(max(home_lambda, 0.05), 5.0)
     away_lambda = min(max(away_lambda, 0.05), 5.0)
 
     home_probs = [_poisson_pmf(home_lambda, i) for i in range(MAX_GOALS + 1)]
     away_probs = [_poisson_pmf(away_lambda, i) for i in range(MAX_GOALS + 1)]
-    mass = sum(home_probs) * sum(away_probs)
+    h = d = a = btts = over = mass = 0.0
+    score_probabilities: list[tuple[int, int, float]] = []
+    rho = float(dixon_coles_rho)
+    tau_00 = 1.0 - home_lambda * away_lambda * rho
+    tau_01 = 1.0 + home_lambda * rho
+    tau_10 = 1.0 + away_lambda * rho
+    tau_11 = 1.0 - rho
+    if min(tau_00, tau_01, tau_10, tau_11) <= 0:
+        raise ValueError("DIXON_COLES_TAU_NONPOSITIVE")
+    for hg, hp in enumerate(home_probs):
+        for ag, ap in enumerate(away_probs):
+            tau = 1.0
+            if hg == 0 and ag == 0:
+                tau = tau_00
+            elif hg == 0 and ag == 1:
+                tau = tau_01
+            elif hg == 1 and ag == 0:
+                tau = tau_10
+            elif hg == 1 and ag == 1:
+                tau = tau_11
+            probability = hp * ap * tau
+            if probability < 0 or not math.isfinite(probability):
+                raise ValueError("DIXON_COLES_SCORE_PROBABILITY_INVALID")
+            score_probabilities.append((hg, ag, probability))
+            mass += probability
     if mass <= 0 or not math.isfinite(mass):
         raise ValueError("POISSON_SCORE_MASS_INVALID")
 
-    h = d = a = btts = over = 0.0
-    for hg, hp in enumerate(home_probs):
-        for ag, ap in enumerate(away_probs):
-            probability = hp * ap / mass
-            if hg > ag:
-                h += probability
-            elif hg == ag:
-                d += probability
-            else:
-                a += probability
-            if hg > 0 and ag > 0:
-                btts += probability
-            if hg + ag >= 3:
-                over += probability
+    for hg, ag, raw_probability in score_probabilities:
+        probability = raw_probability / mass
+        if hg > ag:
+            h += probability
+        elif hg == ag:
+            d += probability
+        else:
+            a += probability
+        if hg > 0 and ag > 0:
+            btts += probability
+        if hg + ag >= 3:
+            over += probability
 
     total = h + d + a
     h, d, a = h / total, d / total, a / total
@@ -248,4 +336,6 @@ def predict_match(
         sample_floor_met=sample_floor_met,
         publishable=publishable,
         publication_reason=reason,
+        recency_half_life_days=recency_half_life_days,
+        dixon_coles_rho=rho,
     )

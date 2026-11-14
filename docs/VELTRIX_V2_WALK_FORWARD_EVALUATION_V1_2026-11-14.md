@@ -2,7 +2,7 @@
 
 ## Evaluation design
 
-The evaluator uses an expanding chronological window. Each target fixture receives a forecast cutoff at kickoff minus a configurable non-negative buffer (one second by default). The model independently admits only same-competition observations whose match kickoff, result-availability timestamp and ingestion/recorded timestamp are all at or before that cutoff.
+The evaluator uses an expanding chronological window. Each target fixture receives a forecast cutoff at kickoff minus a configurable non-negative buffer (one second by default). The model independently admits only same-competition observations explicitly marked point_in_time_certifiable=true whose match kickoff (or conservative date-only boundary), result-availability timestamp and ingestion/recorded timestamp are all at or before that cutoff. Non-certifiable inputs are counted and excluded from both model and baseline training folds.
 
 A target outcome is scored only when the target kickoff, result-availability timestamp and recorded timestamp are all no later than the explicit timezone-aware `evaluation_as_of`. Duplicate fixture IDs are excluded in full, rather than selecting whichever conflicting row happens to appear first.
 

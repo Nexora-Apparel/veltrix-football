@@ -1,3 +1,4 @@
+from dataclasses import replace
 from datetime import date, datetime, timedelta, timezone
 
 import pytest
@@ -24,6 +25,7 @@ def history(n=40):
             available_at=kickoff + timedelta(hours=2),
             recorded_at=kickoff + timedelta(hours=3),
             home_goals=1 + (i % 3 == 0), away_goals=i % 2,
+            point_in_time_certifiable=True,
         ))
     return rows
 
@@ -106,6 +108,7 @@ def test_date_only_archive_rows_can_train_future_targets_but_are_not_scored_as_t
             kickoff_at=None, available_at=snapshot, recorded_at=snapshot,
             home_goals=1 + (i % 2), away_goals=i % 2,
             kickoff_date=date(2026, 8, 1 + (i % 10)),
+            point_in_time_certifiable=True,
         ))
     kickoff = datetime(2026, 11, 20, 12, tzinfo=UTC)
     rows.append(MatchObservation(
@@ -118,3 +121,41 @@ def test_date_only_archive_rows_can_train_future_targets_but_are_not_scored_as_t
     assert report.skipped_date_only_targets == 12
     assert report.eligible_scored_fixtures == 1
     assert report.fixtures[0].fixture_id == "future-target"
+
+
+def test_non_certifiable_provider_snapshots_are_excluded_from_historical_training():
+    rows = [replace(row, point_in_time_certifiable=False) for row in history(40)]
+    report = walk_forward_evaluate(rows, evaluation_as_of=AS_OF)
+    assert report.non_certifiable_input_rows == 40
+    assert report.eligible_scored_fixtures == 0
+    assert report.skipped_no_history > 0
+
+
+def test_walk_forward_records_and_applies_recency_half_life():
+    report = walk_forward_evaluate(
+        history(40), evaluation_as_of=AS_OF, recency_half_life_days=30
+    )
+    assert report.recency_half_life_days == 30
+    assert report.eligible_scored_fixtures > 0
+
+
+def test_walk_forward_rejects_invalid_recency_half_life():
+    import pytest
+    with pytest.raises(ValueError, match="RECENCY_HALF_LIFE_MUST_BE_POSITIVE_FINITE"):
+        walk_forward_evaluate(history(40), evaluation_as_of=AS_OF,
+                              recency_half_life_days=0)
+
+
+def test_walk_forward_records_dixon_coles_candidate_configuration():
+    report = walk_forward_evaluate(
+        history(40), evaluation_as_of=AS_OF, dixon_coles_rho=-0.1
+    )
+    assert report.dixon_coles_rho == -0.1
+    assert report.eligible_scored_fixtures > 0
+
+
+def test_walk_forward_rejects_invalid_dixon_coles_rho():
+    import pytest
+    with pytest.raises(ValueError, match="DIXON_COLES_RHO_INVALID"):
+        walk_forward_evaluate(history(40), evaluation_as_of=AS_OF,
+                              dixon_coles_rho=1.5)
