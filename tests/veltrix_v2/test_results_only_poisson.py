@@ -133,3 +133,20 @@ def test_result_cannot_be_available_before_kickoff_or_recorded_before_available(
                            home_team_id="A", away_team_id="B",
                            kickoff_at=KICKOFF, cutoff_at=CUTOFF)
     assert result.evidence_match_count == 120
+
+
+def test_btts_and_totals_are_normalized_score_grid_probabilities():
+    import math
+
+    result = predict_match(sample_history(), competition_id="league",
+                           home_team_id="A", away_team_id="B",
+                           kickoff_at=KICKOFF, cutoff_at=CUTOFF)
+    home = [math.exp(-result.expected_home_goals) * result.expected_home_goals**i / math.factorial(i)
+            for i in range(13)]
+    away = [math.exp(-result.expected_away_goals) * result.expected_away_goals**i / math.factorial(i)
+            for i in range(13)]
+    mass = sum(home) * sum(away)
+    expected_btts = sum(home[h] * away[a] for h in range(1, 13) for a in range(1, 13)) / mass
+    expected_over = sum(home[h] * away[a] for h in range(13) for a in range(13) if h + a >= 3) / mass
+    assert result.btts_yes == pytest.approx(expected_btts)
+    assert result.over_2_5 == pytest.approx(expected_over)
