@@ -119,3 +119,6 @@ The website now exposes `load_v2_portable_report_bundle(bytes, verifier)`. It co
 ## Website portable artifact retrieval
 
 The website report loader now checks `public-data/v2_report_bundle.json` on the configured command-data branch first, using one bounded raw GitHub fetch, an 8 MB response cap, a short cache and a bounded Contents API fallback. If a portable artifact is present but malformed or unauthorized, the loader returns no report and does not fall back to a legacy snapshot. If no portable artifact exists, the prior V2 report/dashboard pair remains subject to exact identity parity and the same verifier. The new fetch path is not live until a valid portable artifact is committed and the website deployment is authorized.
+
+
+The website dashboard loader now checks the portable V2 artifact before any archived dashboard snapshot. When the portable artifact exists, an invalid or unauthorized bundle returns no dashboard and does not fall back to legacy content. This prevents an older legacy dashboard snapshot from masking or replacing the canonical V2 projection.
