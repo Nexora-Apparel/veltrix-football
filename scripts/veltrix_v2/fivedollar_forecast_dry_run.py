@@ -71,8 +71,8 @@ def run_forecast_probe(
             raise ProbeFailure("REQUEST_BUDGET_EXHAUSTED")
         if request_count:
             sleep(PACE_SECONDS)
-        status, raw, headers = request_fn(path, api_key)
         request_count += 1
+        status, raw, headers = request_fn(path, api_key)
         last_headers = _safe_headers(headers)
         payload = _parse_json(raw, status)
         return payload, headers, raw, clock().astimezone(timezone.utc)
@@ -284,6 +284,35 @@ def run_forecast_probe(
                 },
             }
 
+    if "report" not in locals():
+        cutoff_at = clock().astimezone(timezone.utc)
+        report = {
+            "schema_version": 1,
+            "provider": PROVIDER,
+            "source_id": SOURCE_ID,
+            "mode": "free_first_read_only_forecast_batch",
+            "generated_at_utc": cutoff_at.isoformat(),
+            "cutoff_at_utc": cutoff_at.isoformat(),
+            "source_approval_id": approval.approval_id,
+            "account": status_summary,
+            "competition_results": competition_summary,
+            "source_fixture_count": len(all_fixtures),
+            "history_observation_count": 0,
+            "scheduled_target_count": 0,
+            "forecast_count": 0,
+            "skips": {},
+            "request_count": request_count,
+            "request_budget": REQUEST_BUDGET,
+            "last_quota_headers": last_headers,
+            "status": "CAPTURE_FAILED",
+            "failure_reason": failure,
+            "publication_locked": True,
+            "forecasts": [],
+            "side_effects": {
+                "database_writes": 0, "imports": 0, "website_publications": 0,
+                "telegram_messages": 0, "schedule_changes": 0, "paid_requests": 0,
+            },
+        }
     report["report_sha256"] = _report_hash(report)
     return report
 
