@@ -21,13 +21,13 @@ NOW = datetime(2026, 11, 14, 12, tzinfo=UTC)
 
 def approval_row():
     return {
-        "approval_id": "approval-5dollar-community-fixture-result-2026-11",
+        "approval_id": "approval-5dollar-community-fixture-result-benchmarking-2026-11-14",
         "provider": "5DollarFootballAPI",
         "source_id": "5dollarfootballapi",
         "competition_scope": "3118717965,4160026622",
         "data_type": "fixture_result",
         "status": "APPROVED",
-        "permitted_uses": ["CACHE", "COLLECTION", "MODEL_TRAINING", "STORAGE"],
+        "permitted_uses": ["CACHE", "COLLECTION", "MODEL_TRAINING", "BENCHMARKING", "STORAGE"],
         "commercial_use_allowed": True,
         "terms_url": "https://5dollarfootballapi.com/terms",
         "terms_version": "October 2026",
@@ -48,7 +48,7 @@ def approval_row():
 def approval_event(status="APPROVED", event_id=1):
     return {
         "event_id": event_id,
-        "approval_id": "approval-5dollar-community-fixture-result-2026-11",
+        "approval_id": "approval-5dollar-community-fixture-result-benchmarking-2026-11-14",
         "status": status,
         "evidence_uri": "https://example.test/approval-event",
         "evidence_sha256": "b" * 64,
