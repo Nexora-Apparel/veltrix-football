@@ -57,3 +57,19 @@ def test_cli_defaults_to_dry_run_without_reading_database_dsn(monkeypatch, capsy
     output = json.loads(capsys.readouterr().out)
     assert output["mode"] == "DRY_RUN"
     assert output["would_connect"] is False
+
+
+def test_coverage_summary_includes_verified_crosswalk_registry():
+    from veltrix_v2.data.crosswalk_bootstrap import build_fivedollar_crosswalk_registry
+    from tests.veltrix_v2.test_crosswalk_bootstrap import rows
+    registry = build_fivedollar_crosswalk_registry(
+        rows(), verified_at=datetime(2026, 11, 14, 12, tzinfo=timezone.utc)
+    )
+    summary = build_coverage_summary(
+        PersistedCoverageInputs((), (), 0, 0, ()),
+        as_of=datetime(2026, 11, 14, 12, tzinfo=timezone.utc),
+        crosswalk_registry=registry,
+    )
+    assert summary["crosswalk_registry"]["fixture_crosswalks"] == 2
+    assert summary["crosswalk_registry"]["team_crosswalks"] == 3
+    assert summary["crosswalk_registry"]["competition_crosswalks"] == 1
