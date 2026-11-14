@@ -103,6 +103,9 @@ def test_capture_builds_raw_hash_manifest_and_certified_model_observation():
     assert observations[0].fixture_id == "epl:fixture-100"
     assert observations[0].point_in_time_certifiable is True
     assert observations[0].payload_sha256 == evidence.raw_response_sha256
+    assert observations[0].availability_basis == "provider_evidence_manifest_v1"
+    assert observations[0].evidence_manifest_sha256 == report.manifest.manifest_sha256
+    assert observations[0].capture_evidence_sha256 == report.manifest.item_evidence_sha256[0]
 
 
 def test_missing_source_publication_time_is_not_replaced_by_retrieval_time():
