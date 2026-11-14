@@ -45,6 +45,14 @@ API_BASE = "https://api.5dollarfootballapi.com/v1"
 APPROVAL_ID = "approval-5dollar-community-fixture-result-benchmarking-2026-11-14"
 MAX_REQUESTS = 14
 MIN_REQUEST_INTERVAL_SECONDS = 3.1
+
+
+def _require_quota_headroom(quota_remaining: object, requests_used: int) -> None:
+    if type(quota_remaining) is not int or quota_remaining < 0:
+        raise RuntimeError("FIVEDOLLAR_QUOTA_EVIDENCE_MISSING")
+    planned_remaining = MAX_REQUESTS - requests_used
+    if quota_remaining < planned_remaining:
+        raise RuntimeError("FIVEDOLLAR_QUOTA_BELOW_BOUNDED_REQUEST_PLAN")
 USER_AGENT = "VELTRIX-FOOTBALL-2.0-READONLY-SHADOW/1.0"
 
 
@@ -647,10 +655,7 @@ def run_capture(
         observations.extend(result_rows)
         page_manifests.append(info)
         quota_remaining = info.get("quota_remaining")
-        if isinstance(quota_remaining, int):
-            planned_remaining = MAX_REQUESTS - request_count
-            if planned_remaining > 0 and quota_remaining < planned_remaining:
-                raise RuntimeError("FIVEDOLLAR_QUOTA_BELOW_BOUNDED_REQUEST_PLAN")
+        _require_quota_headroom(quota_remaining, request_count)
 
         if request_count >= MAX_REQUESTS:
             break
@@ -689,10 +694,7 @@ def run_capture(
         targets.extend(target_rows)
         page_manifests.append(info)
         quota_remaining = info.get("quota_remaining")
-        if isinstance(quota_remaining, int):
-            planned_remaining = MAX_REQUESTS - request_count
-            if quota_remaining < max(1, planned_remaining):
-                raise RuntimeError("FIVEDOLLAR_QUOTA_BELOW_BOUNDED_REQUEST_PLAN")
+        _require_quota_headroom(quota_remaining, request_count)
 
     # Stable deduplication; conflicting duplicates are rejected rather than selected.
     observation_by_fixture = {}
