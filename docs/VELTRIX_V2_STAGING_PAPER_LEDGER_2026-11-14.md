@@ -49,3 +49,10 @@ No production database, website, Telegram, schedule or deployment is touched.
 ## Next integration
 
 The manual 5Dollar capture workflow will use this adapter when its `persist_staging` input is true. Before that workflow can run with staging persistence, migrations 0005–0008 must be reviewed and manually applied to staging. The capture workflow uploads only an aggregate summary; raw response bytes and individual predictions remain in the guarded staging store.
+
+
+## Target snapshot linkage
+
+The 5Dollar admission path stores both canonical competition identity and provider competition identity. Rights are evaluated against the provider competition ID in the source approval scope; canonical competition IDs remain the model and reporting identity.
+
+Each 5Dollar shadow event now includes target provider/source/fixture IDs, provider competition ID, per-fixture payload SHA-256, raw scheduled-page response SHA-256 and capture-manifest SHA-256. The ledger chain verifier rejects 5Dollar events missing any of these provenance fields. This allows the target snapshot to be linked directly to the immutable `provider_responses`, `capture_manifests` and `provider_capture_requests` records in staging.
