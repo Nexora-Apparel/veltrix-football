@@ -54,7 +54,7 @@ def test_cross_competition_or_unknown_fixture_evidence_is_rejected():
     )
     item = report.for_domain("league-a", DataDomain.LINEUPS)
     assert item.eligible_fixture_count == 0
-    assert item.rejected_evidence_count == 2
+    assert item.rejected_evidence_count == 1  # the cross-competition row is accounted under league-b
 
 
 @pytest.mark.parametrize("changes", [
