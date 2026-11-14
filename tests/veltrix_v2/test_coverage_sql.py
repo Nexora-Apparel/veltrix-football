@@ -1,5 +1,6 @@
 from veltrix_v2.data.coverage_sql import (
     FIXTURE_COVERAGE_SQL, OBSERVATION_COVERAGE_SQL,
+    FIVEDOLLAR_CROSSWALK_BOOTSTRAP_SQL,
     validate_read_only_coverage_sql,
 )
 
@@ -11,6 +12,9 @@ def test_coverage_queries_are_read_only_and_use_actual_staging_tables():
     assert "f.id::text AS fixture_id" in OBSERVATION_COVERAGE_SQL
     assert "o.recorded_at AS recorded_at" in OBSERVATION_COVERAGE_SQL
     assert "o.point_in_time_certifiable AS point_in_time_certifiable" in OBSERVATION_COVERAGE_SQL
+    assert "o.payload_sha256 AS payload_sha256" in FIVEDOLLAR_CROSSWALK_BOOTSTRAP_SQL
+    assert "o.provider = '5DollarFootballAPI'" in FIVEDOLLAR_CROSSWALK_BOOTSTRAP_SQL
+    assert "FROM fixtures AS f" in FIVEDOLLAR_CROSSWALK_BOOTSTRAP_SQL
 
 
 def test_mutating_sql_is_rejected(monkeypatch):
