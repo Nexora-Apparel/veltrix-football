@@ -20,8 +20,8 @@ For date-only observations, model eligibility is conservatively delayed until 00
 
 ## Limitations
 
-- Date-only rows may inform future forecasts only after the conservative eligibility boundary.
-- They are not suitable as historical walk-forward target fixtures because exact kickoff times are absent.
+- Date-only rows carry point-in-time-certified snapshot and import evidence and may inform future forecasts only after the conservative eligibility boundary.
+- They may be training observations in a walk-forward fold only after their snapshot/import times precede that fold's cutoff; they are never evaluation targets because exact kickoff times are absent.
 - They cannot be backdated to their match dates or used for historical pre-match backtesting.
 - Team identity is source-scoped; cross-provider team mapping remains a separate, evidence-backed step.
 - Unscored fixtures are counted but never converted into results.
