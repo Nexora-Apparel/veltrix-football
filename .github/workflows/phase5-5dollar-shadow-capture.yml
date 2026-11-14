@@ -33,7 +33,7 @@ concurrency:
 
 jobs:
   capture:
-    name: Bounded read-only provider capture and shadow admission
+    name: Bounded provider capture and shadow admission
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -67,7 +67,7 @@ jobs:
             --out artifacts/5dollar-shadow \
             ${{ inputs.persist_staging && '--persist-staging' || '' }}
 
-      - name: Upload private audit artifact
+      - name: Upload aggregate-only audit summary
         if: always()
         uses: actions/upload-artifact@v4
         with:
