@@ -64,6 +64,21 @@ jobs:
         run: python -m pip install --upgrade pip && pip install -r requirements.txt
       - name: Compile Phase 2 data foundation
         run: python -m compileall -q veltrix_v2 scripts/phase2_fivedollar_history_dry_run.py scripts/phase3_import_fivedollar_history.py scripts/phase3_audit_staging_import.py
+      - name: Validate V2 dashboard JavaScript syntax
+        run: |
+          python - <<'PY'
+          import pathlib
+          import re
+          source = pathlib.Path("api/telegram.py").read_text(encoding="utf-8")
+          match = re.search(r'DASHBOARD_HTML\\s*=\\s*"""(.*?)"""', source, re.S)
+          if not match:
+              raise SystemExit("DASHBOARD_HTML block not found")
+          scripts = re.findall(r"<script>(.*?)</script>", match.group(1), re.S)
+          if not scripts:
+              raise SystemExit("No embedded dashboard JavaScript found")
+          pathlib.Path("/tmp/veltrix-v2-dashboard.js").write_text("\\n".join(scripts), encoding="utf-8")
+          PY
+          node --check /tmp/veltrix-v2-dashboard.js
       - name: Test Phase 2 data contracts
         run: python -m pytest --import-mode=importlib -q tests/test_phase2_data_foundation.py
       - name: Test offline Odds API parser and budget planner
