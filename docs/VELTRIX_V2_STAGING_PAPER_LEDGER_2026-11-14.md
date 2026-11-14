@@ -18,9 +18,10 @@ The prospective paper ledger currently has an append-only JSONL adapter. A GitHu
 - Unique ledger/sequence and ledger/event-hash constraints.
 - One prediction per ledger/fixture/model and one settlement per ledger/fixture/model.
 - Database triggers rejecting UPDATE, DELETE and TRUNCATE.
+- A database insert trigger enforces genesis, monotonic sequence numbers, previous-hash continuity and settlement-to-prediction linkage.
 - No historical prediction backfill.
 
-The database does not recompute the event hash; the application adapter reconstructs and verifies the complete chain before every append.
+The database does not recompute the event hash; the application adapter reconstructs and verifies the complete chain before every append. Event sequence is append order, not a promise that concurrently recorded event timestamps are globally monotonic.
 
 ## PostgreSQL adapter
 
