@@ -232,6 +232,7 @@ def _persist_fixture_snapshot_to_staging(
     recorded_at: datetime,
     raw_response: bytes,
     response_headers: dict[str, str],
+    http_status: int,
     competition_id: str,
     fixture_count: int,
     approval: SourceApproval,
@@ -258,6 +259,7 @@ def _persist_fixture_snapshot_to_staging(
             recorded_at=recorded_at,
             raw_response=raw_response,
             response_headers=response_headers,
+            http_status=http_status,
             competition_id=competition_id,
             fixture_count=fixture_count,
             rights_approval=approval,
@@ -348,6 +350,7 @@ def _request_page(
         with urlopen(request, timeout=25) as response:
             raw = response.read()
             headers = {str(k): str(v) for k, v in response.headers.items()}
+            http_status = int(getattr(response, "status", getattr(response, "code", 200)))
     except HTTPError as exc:
         if exc.code == 403:
             raise PermissionError("FIVEDOLLAR_COMPETITION_NOT_ENTITLED") from None
@@ -361,7 +364,9 @@ def _request_page(
     retrieved_at = datetime.now(timezone.utc)
     if not raw:
         raise RuntimeError("FIVEDOLLAR_EMPTY_RESPONSE")
-    return raw, headers, params, requested_at, retrieved_at
+    if not 200 <= http_status < 300:
+        raise RuntimeError(f"FIVEDOLLAR_HTTP_{http_status}")
+    return raw, headers, params, requested_at, retrieved_at, http_status
 
 
 def _persist_capture_report_to_staging(dsn: str, capture_report) -> dict[str, int]:
@@ -398,6 +403,7 @@ def _capture_page(
     request_params: dict[str, object],
     requested_at: datetime,
     retrieved_at: datetime,
+    http_status: int,
     registry,
     out_dir: Path,
     staging_dsn: str,
@@ -419,6 +425,7 @@ def _capture_page(
         "request_params": request_params,
         "requested_at": requested_at.isoformat(),
         "retrieved_at": retrieved_at.isoformat(),
+        "http_status": http_status,
         "raw_response_sha256": sha256(raw).hexdigest(),
         "raw_response_bytes": len(raw),
         "page": parsed.page,
@@ -459,6 +466,7 @@ def _capture_page(
             request_id=request_id,
             requested_at=requested_at,
             recorded_at=recorded_at,
+            http_status=http_status,
             crosswalks=registry.fixture_crosswalks,
             rights_approval=current_approval,
             prospective_observed=True,
@@ -505,6 +513,7 @@ def _capture_page(
         retrieved_at=retrieved_at,
         recorded_at=recorded_at,
         raw_response=raw,
+        http_status=http_status,
         competition_id=competition_id,
         fixture_count=len(parsed.fixtures),
         rights_approval_id=current_approval.approval_id,
@@ -521,6 +530,7 @@ def _capture_page(
             recorded_at=recorded_at,
             raw_response=raw,
             response_headers=headers,
+            http_status=http_status,
             competition_id=competition_id,
             fixture_count=len(parsed.fixtures),
             approval=current_approval,
