@@ -80,8 +80,8 @@ def test_settlement_event_round_trips_and_links_prediction(dsn):
         store = make_store(connection, ledger_id)
         prediction = store.append_prediction(make_prediction("fixture-settle"))
         kickoff = NOW + timedelta(days=2)
-        available = kickoff
-        retrieved = available + timedelta(minutes=5)
+        available = kickoff + timedelta(minutes=5)
+        retrieved = available
         recorded = retrieved + timedelta(seconds=1)
         settlement = store.append_settlement(
             fixture_id="fixture-settle",
