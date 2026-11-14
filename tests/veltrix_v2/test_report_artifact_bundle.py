@@ -10,6 +10,8 @@ from veltrix_v2.reporting.artifact_bundle import (
     load_authorized_scheduled_report,
     load_report_surface_bundle,
     persist_report_surface_bundle,
+    parse_portable_report_surface_bundle,
+    serialize_portable_report_surface_bundle,
 )
 from veltrix_v2.reporting.report_identity import REPORT_SCHEMA, ReportIdentity
 
@@ -231,3 +233,50 @@ def test_interrupted_four_surface_write_is_invisible_until_commit_marker(tmp_pat
     persist_report_surface_bundle(bundle, tmp_path)
     loaded = load_report_surface_bundle(tmp_path, bundle.identity.report_id)
     assert loaded.identity == bundle.identity
+
+
+
+def test_portable_bundle_round_trip_preserves_all_four_surfaces():
+    bundle = build_report_surface_bundle(source_report())
+    raw = serialize_portable_report_surface_bundle(bundle)
+    loaded = parse_portable_report_surface_bundle(raw)
+    assert loaded.identity == bundle.identity
+    assert loaded.canonical_report == bundle.canonical_report
+    assert loaded.scheduled_report == bundle.scheduled_report
+    assert loaded.telegram_report == bundle.telegram_report
+    assert loaded.website_projection == bundle.website_projection
+
+
+def test_portable_bundle_rejects_tampered_surface_bytes():
+    bundle = build_report_surface_bundle(source_report())
+    envelope = json.loads(serialize_portable_report_surface_bundle(bundle))
+    envelope["surfaces"]["telegram"]["predictions"][0]["publication_status"] = "PUBLISHED"
+    raw = json.dumps(envelope).encode()
+    with pytest.raises(ValueError, match="SURFACE_HASH_MISMATCH"):
+        parse_portable_report_surface_bundle(raw)
+
+
+def test_portable_bundle_rejects_surface_identity_drift_even_with_recomputed_surface_hash():
+    import hashlib
+
+    bundle = build_report_surface_bundle(source_report())
+    envelope = json.loads(serialize_portable_report_surface_bundle(bundle))
+    envelope["surfaces"]["dashboard"]["report_sha256"] = "0" * 64
+    surface = envelope["surfaces"]["dashboard"]
+    canonical = (
+        json.dumps(surface, ensure_ascii=False, sort_keys=True, separators=(",", ":"), allow_nan=False)
+        + "\\n"
+    ).encode()
+    envelope["surface_sha256"]["dashboard"] = hashlib.sha256(canonical).hexdigest()
+    with pytest.raises(ValueError, match="WEBSITE_REPORT_PROJECTION_IDENTITY_MISMATCH"):
+        parse_portable_report_surface_bundle(json.dumps(envelope).encode())
+
+
+def test_portable_bundle_rejects_missing_surface_and_invalid_envelope():
+    with pytest.raises(ValueError, match="BYTES_INVALID"):
+        parse_portable_report_surface_bundle(b"")
+    bundle = build_report_surface_bundle(source_report())
+    envelope = json.loads(serialize_portable_report_surface_bundle(bundle))
+    del envelope["surfaces"]["scheduled"]
+    with pytest.raises(ValueError, match="SCHEMA_INVALID"):
+        parse_portable_report_surface_bundle(json.dumps(envelope).encode())
