@@ -144,6 +144,7 @@ def public_report():
         "as_of_date": "2026-11-14",
         "release_mode": "RESTRICTED_PUBLIC",
         "predictions": [{
+            "fixture_id": "fixture-alpha-beta",
             "publication_status": "PUBLISHED",
             "home_team": "Alpha FC",
             "away_team": "Beta FC",
