@@ -36,3 +36,15 @@ def test_legacy_paper_tracking_recovery_cannot_republish_legacy_ledger():
     assert "if: false" in source
     assert "legacy recovery job" in source
     assert "publish_command_data.py" in source
+
+
+
+def test_exhausted_goal_api_and_strikerapi_probe_workflows_remain_paused():
+    goal = _workflow("verify-goal-api.yml")
+    striker = _workflow("verify-strikerapi.yml")
+    assert "goal-api-readonly-probe:" in goal
+    assert "if: false" in goal
+    assert "next monthly credit reset" in goal
+    assert "qualify:" in striker
+    assert "if: false" in striker
+    assert "next monthly credit reset" in striker
