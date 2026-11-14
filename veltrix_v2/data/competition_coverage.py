@@ -29,6 +29,9 @@ class DomainEvidence:
     recorded_at: datetime
     payload_sha256: str
     rights_approved: bool
+    rights_approval_id: str
+    rights_evidence_sha256: str
+    rights_evaluated_at: datetime
     point_in_time_certifiable: bool
 
 
@@ -126,11 +129,14 @@ def audit_competition_coverage(
             fixture is not None and fixture.competition_id == row.competition_id
             and isinstance(row.provider, str) and bool(row.provider.strip())
             and isinstance(row.source_id, str) and bool(row.source_id.strip())
+            and isinstance(row.rights_approval_id, str) and bool(row.rights_approval_id.strip())
         )
         valid_clock = (
             _aware(row.available_at) and _aware(row.recorded_at)
+            and _aware(row.rights_evaluated_at)
             and row.recorded_at >= row.available_at
             and row.available_at <= as_of and row.recorded_at <= as_of
+            and row.rights_evaluated_at <= as_of
             and fixture is not None
             and (
                 (row.domain is DataDomain.RESULTS and row.available_at >= fixture.kickoff_at)
@@ -142,6 +148,7 @@ def audit_competition_coverage(
             and row.rights_approved is True
             and row.point_in_time_certifiable is True
             and _valid_sha256(row.payload_sha256)
+            and _valid_sha256(row.rights_evidence_sha256)
         )
         if not eligible:
             if isinstance(row.competition_id, str) and isinstance(row.domain, DataDomain):
