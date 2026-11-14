@@ -364,3 +364,15 @@ def test_website_report_bundle_prefers_portable_envelope_and_returns_all_surface
     assert bundle["scheduled"] == report
     assert bundle["telegram"] == report
     assert bundle["dashboard"]["report_id"] == report["report_id"]
+
+
+
+def test_portable_bundle_fetch_fails_closed_on_unexpected_transport_error(monkeypatch):
+    def broken_transport(*_args, **_kwargs):
+        raise RuntimeError("transport adapter failed")
+
+    monkeypatch.setattr(report_artifacts, "urlopen", broken_transport)
+    monkeypatch.setenv("VELTRIX_DATA_REPOSITORY", "Nexora-Apparel/veltrix-football")
+    monkeypatch.setenv("VELTRIX_DATA_BRANCH", "command-data")
+    report_artifacts._portable_bundle_cache.clear()
+    assert report_artifacts._load_portable_bundle_bytes() is None
