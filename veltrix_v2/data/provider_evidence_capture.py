@@ -367,8 +367,16 @@ def capture_provider_result_evidence(
         evidence.append(item)
 
     first = rows[0]
+    request_clock = (first.requested_at, first.retrieved_at, first.recorded_at)
+    if not all(_aware(value) for value in request_clock):
+        raise ValueError("MANIFEST_CAPTURE_TIMESTAMPS_UNTRUSTED")
+    for row in rows:
+        if not all(_aware(value) for value in (row.requested_at, row.retrieved_at, row.recorded_at)):
+            raise ValueError("MANIFEST_CAPTURE_TIMESTAMPS_UNTRUSTED")
+        if (row.requested_at, row.retrieved_at, row.recorded_at) != request_clock:
+            raise ValueError("MANIFEST_REQUEST_CLOCK_MISMATCH")
     def manifest_timestamp(value: datetime) -> str:
-        return _utc(value) if _aware(value) else value.isoformat()
+        return _utc(value)
     item_hashes = tuple(_digest(item.as_dict()) for item in evidence)
     manifest_body = {
         "manifest_version": "veltrix-provider-evidence-v1",
