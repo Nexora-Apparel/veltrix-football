@@ -98,6 +98,8 @@ def validate_reconciliation_event(
         raise ValueError("RECONCILIATION_EVIDENCE_URI_NOT_DURABLE")
     if not isinstance(evidence_bytes, bytes):
         raise ValueError("RECONCILIATION_EVIDENCE_BYTES_REQUIRED")
+    if len(evidence_bytes) > 8_000_000:
+        raise ValueError("RECONCILIATION_EVIDENCE_TOO_LARGE")
     if hashlib.sha256(evidence_bytes).hexdigest() != event["evidence_sha256"]:
         raise ValueError("RECONCILIATION_EVIDENCE_HASH_MISMATCH")
 
@@ -183,6 +185,8 @@ class PostgresTelegramReconciliationStore:
         evidence_bytes = self._read_evidence(evidence_uri)
         if not isinstance(evidence_bytes, bytes):
             raise ValueError("RECONCILIATION_EVIDENCE_READER_INVALID")
+        if len(evidence_bytes) > 8_000_000:
+            raise ValueError("RECONCILIATION_EVIDENCE_TOO_LARGE")
 
         with self._connect() as connection:
             claim = connection.execute(
