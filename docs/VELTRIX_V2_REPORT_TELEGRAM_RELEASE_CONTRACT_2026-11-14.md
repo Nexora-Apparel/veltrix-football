@@ -87,3 +87,10 @@ The report bundle writer persists four immutable artifacts (canonical, scheduled
 Bundle readers require the marker, exact four-artifact inventory, matching artifact hashes and matching report identity before parsing/returning a bundle. Missing markers, missing artifacts, replaced artifacts, hash mismatch or report-identity mismatch fail closed. A crash before the final marker leaves the bundle unavailable to consumers; an identical retry can finish the missing artifacts and commit marker without overwriting existing content.
 
 This is an atomic-visibility/commit protocol, not a claim that four separate filesystem paths are renamed as one filesystem transaction.
+
+
+## Publication verifier market scope and recent-holdout gate
+
+The public verifier permits only the supported report markets: `1X2`, `BTTS` and `TOTALS_2_5`. Value-bet certification is not accepted through this report-publication path and remains separately locked.
+
+For 1X2, the certification manifest must beat the de-vigged bookmaker baseline on both Brier score and log loss on the full evaluation fixture set **and** the recent holdout fixture set. Each model/bookmaker comparison must carry the exact same fixture-set hash. Timestamped odds coverage must be within [0.98, 1.00], not merely greater than the minimum. Evidence objects are read through the injected evidence reader, byte-hashed and size-bounded; missing readers, missing evidence or mismatched hashes deny publication.
