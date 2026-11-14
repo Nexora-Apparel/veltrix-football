@@ -47,3 +47,12 @@ Consequently the adapter must reject all 2,496 historical rows for strict covera
 ## Safety
 
 No staging data was changed. No provider request, credential read, credit use, schema migration, production write, deployment, schedule activation, Telegram activation or publication occurred.
+
+
+## Prospective capture selection update (2026-11-14)
+
+The observation query now uses a read-only `LEFT JOIN LATERAL` selector. For each canonical fixture it considers:
+- The original `fixtures.source_observation_id` link.
+- New manifest-linked `fixture_result` observations whose payload `fixture_id` equals the canonical fixture ID.
+
+Manifest-linked observations are preferred, then the newest `recorded_at`, then the highest observation ID. This exposes newly captured evidence to the coverage auditor without mutating the fixture's original source-observation link. It does not promote first-observed results to PIT-certified history; the point-in-time and rights checks remain unchanged.
