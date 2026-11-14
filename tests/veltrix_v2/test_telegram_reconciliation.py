@@ -307,7 +307,7 @@ def test_store_rejects_unauthenticated_reviewer_before_evidence_or_database():
     store = PostgresTelegramReconciliationStore(
         lambda: pytest.fail("database must not be opened"),
         lambda uri: reads.append(uri),
-        lambda actor: actor == "github:operator",
+        lambda actor: actor == "github:operator-1",
     )
     unreviewed = event(
         outcome="CONFIRMED_NOT_SENT",
