@@ -1,3 +1,4 @@
+from dataclasses import replace
 from datetime import datetime, timedelta, timezone
 from hashlib import sha256
 
@@ -227,3 +228,20 @@ def test_manifest_rejects_mixed_request_clocks():
     )
     with pytest.raises(ValueError, match="MANIFEST_REQUEST_CLOCK_MISMATCH"):
         capture_provider_result_evidence([first, second])
+
+
+def test_certified_conversion_rejects_payload_substitution():
+    row = capture()
+    report = capture_provider_result_evidence([row])
+    substituted = capture(raw_response=b'{"fixture":"fx-100","score":[9,9]}')
+    with pytest.raises(ValueError, match="CAPTURE_EVIDENCE_SOURCE_ROW_MISMATCH"):
+        certified_match_observations(report, [substituted])
+
+
+def test_certified_conversion_rejects_manifest_tampering():
+    row = capture()
+    report = capture_provider_result_evidence([row])
+    altered_manifest = replace(report.manifest, certified_count=0)
+    altered_report = replace(report, manifest=altered_manifest)
+    with pytest.raises(ValueError, match="CAPTURE_EVIDENCE_MANIFEST_HASH_MISMATCH"):
+        certified_match_observations(altered_report, [row])
