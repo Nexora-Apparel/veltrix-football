@@ -199,3 +199,31 @@ def test_source_timestamp_requires_explicit_basis_and_evidence_hash():
     evidence = report.observations[0]
     assert evidence.point_in_time_certifiable is False
     assert "SOURCE_TIMESTAMP_BASIS_UNTRUSTED" in evidence.reason_codes
+
+
+def test_manifest_rejects_mixed_request_clocks():
+    first = capture()
+    second = capture(
+        provider_fixture_id="fx-101",
+        provider_home_team_id="team-3",
+        provider_away_team_id="team-4",
+        requested_at=NOW - timedelta(minutes=22),
+        crosswalk=ResolvedFixtureCrosswalk(
+            provider="5dollarfootball",
+            source_id="5dollarfootball",
+            provider_fixture_id="fx-101",
+            provider_competition_id="epl",
+            provider_home_team_id="team-3",
+            provider_away_team_id="team-4",
+            canonical_fixture_id="epl:fixture-101",
+            canonical_competition_id="5dollarfootball:epl",
+            canonical_home_team_id="club-c",
+            canonical_away_team_id="club-d",
+            mapping_version=1,
+            mapping_status="RESOLVED",
+            valid_from=NOW - timedelta(days=1),
+            evidence_sha256=HASH,
+        ),
+    )
+    with pytest.raises(ValueError, match="MANIFEST_REQUEST_CLOCK_MISMATCH"):
+        capture_provider_result_evidence([first, second])
