@@ -133,3 +133,21 @@ def test_v2_latest_report_rejects_verifier_false_or_non_boolean_truth(monkeypatc
     monkeypatch.setattr(report_artifacts, "_load", lambda kind: report if kind == "report" else None)
     assert report_artifacts.load_latest_report(lambda *_: False) is None
     assert report_artifacts.load_latest_report(lambda *_: 1) is None
+
+
+def test_public_website_parser_rejects_internal_shadow_report():
+    report = make_report()
+    report["release_mode"] = "INTERNAL_SHADOW"
+    report = bind_report_identity({key: value for key, value in report.items() if key != "report_sha256"})
+    assert report_artifacts._parse_snapshot(
+        __import__("json").dumps(report).encode(), "report"
+    ) is None
+
+
+def test_public_website_parser_rejects_any_unpublished_fixture():
+    report = make_report()
+    report["predictions"] = [{"publication_status": "SHADOW_ONLY"}]
+    report = bind_report_identity({key: value for key, value in report.items() if key != "report_sha256"})
+    assert report_artifacts._parse_snapshot(
+        __import__("json").dumps(report).encode(), "report"
+    ) is None
