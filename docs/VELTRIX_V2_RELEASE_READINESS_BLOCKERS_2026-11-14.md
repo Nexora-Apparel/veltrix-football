@@ -157,3 +157,8 @@ Regression coverage also asserts that the legacy daily-report watchdog and legac
 - Test verifies the same report ID/hash and identical projections across the three adapters, then verifies one durable claim and one stubbed Telegram message.
 - GitHub Actions run #1396 passed Foundation, PostgreSQL 16 and PostgreSQL 18.
 - This is adapter-level parity, not production workflow parity. Actual GitHub Actions scheduler and Telegram delivery jobs remain disabled/unwired.
+
+
+## API surface safety
+
+The FastAPI command centre now passes an explicitly installed server-side publication verifier into every report/dashboard and Telegram command loader. No verifier is installed by default, so the dashboard returns `UNAVAILABLE` and no V2 predictions until trusted attestation and rights verification is configured. Legacy paper-ledger and model-validation snapshots are no longer loaded into V2 dashboard or Telegram command responses. CI covers the no-verifier fail-closed path.
