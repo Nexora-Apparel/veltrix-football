@@ -51,8 +51,8 @@ def test_apply_requires_explicit_internal_guard(monkeypatch):
         return {
             "database": "veltrix_football_staging",
             "user": "neondb_owner",
-            "applied": versions[:-5],
-            "pending": versions[-5:],
+            "applied": versions[:-6],
+            "pending": versions[-6:],
         }
 
     monkeypatch.setattr(migration, "migrate", fake_migrate)
