@@ -161,3 +161,16 @@ def test_persistence_rejects_bundle_identity_drift_before_writing(tmp_path):
     with pytest.raises(ValueError, match="REPORT_SURFACE_BUNDLE_IDENTITY_MISMATCH"):
         persist_report_surface_bundle(invalid, tmp_path)
     assert not list(tmp_path.rglob("*.json"))
+
+
+
+def test_publication_consumer_rejects_empty_fixture_bundle(tmp_path):
+    report = public_source_report()
+    report["report_id"] = "veltrix-daily-2026-11-14-empty"
+    report["predictions"] = []
+    bundle = build_report_surface_bundle(report)
+    persist_report_surface_bundle(bundle, tmp_path)
+    with pytest.raises(PermissionError, match="NON_PUBLIC_FORECASTS"):
+        load_authorized_scheduled_report(
+            tmp_path, bundle.identity.report_id, lambda *_: True
+        )
