@@ -7,7 +7,7 @@ crosswalk, complete revision history, and use-time rights all pass.
 """
 from __future__ import annotations
 
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, replace
 from datetime import datetime, timezone
 from hashlib import sha256
 import json
@@ -87,7 +87,7 @@ class ResolvedFixtureCrosswalk:
             raise ValueError("CROSSWALK_PROVIDER_IDENTITY_MISMATCH")
         if self.canonical_home_team_id == self.canonical_away_team_id:
             raise ValueError("CROSSWALK_CANONICAL_TEAM_COLLISION")
-        if self.evidence_sha256 and not _HASH.fullmatch(self.evidence_sha256):
+        if not _HASH.fullmatch(self.evidence_sha256):
             raise ValueError("CROSSWALK_EVIDENCE_HASH_INVALID")
 
 
@@ -339,11 +339,7 @@ def capture_provider_result_evidence(
     for row in rows:
         item = _capture_one(row)
         if item.fixture_id in duplicates or (row.provider, row.source_id, row.provider_fixture_id) in duplicate_provider_ids:
-            item = CapturedResultEvidence(**{
-                **item.as_dict(),
-                "reason_codes": tuple(dict.fromkeys((*item.reason_codes, "DUPLICATE_FIXTURE_IDENTITY"))),
-                "point_in_time_certifiable": False,
-            })
+            item = replace(item, reason_codes=tuple(dict.fromkeys((*item.reason_codes, "DUPLICATE_FIXTURE_IDENTITY"))), point_in_time_certifiable=False)
         evidence.append(item)
 
     first = rows[0]
