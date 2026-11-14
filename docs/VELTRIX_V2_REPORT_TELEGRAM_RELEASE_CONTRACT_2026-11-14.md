@@ -1,0 +1,74 @@
+# VELTRIX V2 report and Telegram delivery contract — 2026-11-14
+
+## Objective
+
+The website, scheduled report and Telegram must consume the same immutable daily report. A successful model run, a successful artifact upload and a successful Telegram API call are separate events; none implies the others.
+
+## Canonical report identity
+
+Every V2 daily report uses schema `VELTRIX_V2_DAILY_REPORT_V1` and carries:
+- `report_id`: stable identifier for the daily report revision.
+- `as_of_date`: ISO calendar date in the report's declared timezone.
+- `report_sha256`: SHA-256 of canonical UTF-8 JSON (sorted keys, compact separators, no NaN/Infinity), excluding the hash field itself.
+
+Every consumer verifies the embedded hash. The website projection, scheduled report and Telegram formatter must reference the same report ID and hash. A same-day correction is a new report revision with a new ID/hash; the old report remains attributable.
+
+## Telegram formatting boundary
+
+The V2 formatter is separate from the legacy formatter and requires:
+1. A valid V2 report identity.
+2. `release_mode` of `RESTRICTED_PUBLIC` or `FULL_PUBLIC`.
+3. An injected authoritative publication verifier to approve the exact report identity.
+4. Per-fixture `publication_status=PUBLISHED`.
+5. Explicit `certified_markets` for every probability market rendered.
+
+Shadow, research, draft and uncertified forecasts are never rendered as public predictions. The V2 formatter does not render value-bet candidates; value-bet publication requires a separate certification and authorization path. Missing probabilities remain unavailable, never zero. A single fixture block that exceeds Telegram's limit is rejected rather than silently truncated.
+
+## Delivery idempotency and crash semantics
+
+The idempotency key binds report ID, report hash and destination. A durable store must atomically claim that key before any Telegram network request.
+
+The dispatch adapter is deliberately at-most-once:
+- A previously claimed key is skipped.
+- A successful send must persist Telegram message IDs.
+- A timeout, transport exception, destination mismatch or receipt-persistence failure becomes `OUTCOME_UNKNOWN`.
+- An unknown outcome is never automatically retried. It requires reconciliation against Telegram delivery evidence before a new attempt is considered.
+
+Exactly-once delivery cannot be guaranteed across Telegram and our database because they do not share a transaction coordinator. The durable PostgreSQL implementation and operator reconciliation workflow remain required before live dispatch.
+
+## Historical result and duplicate reconciliation
+
+Prediction and settlement records remain append-only. A settlement must match the exact prediction fixture, canonical competition, home/away team identities and kickoff. The result source must supply source identity, result payload hash, retrieval/recording timestamps and independently verified rights for COLLECTION, STORAGE and BENCHMARKING.
+
+Duplicate fixture IDs, duplicate settlements, conflicting scores, ambiguous fixture matches, or changed source payloads are quarantined/rejected; they must not overwrite prior evidence. A corrected result is represented as a new source observation/version and requires explicit reconciliation. No historical timestamp or result may be inferred to make a row eligible.
+
+## Release phases
+
+### Internal shadow
+- Eligible real fixtures only.
+- Forecasts remain non-publishable.
+- No public Telegram messages, public website predictions or scheduled public report.
+
+### Restricted prediction release
+- Only certified markets and competitions.
+- Every surface consumes the same report ID/hash.
+- Value betting remains locked unless separately certified.
+- Telegram delivery uses the durable idempotency store and verified publication authorization.
+
+### Full launch
+- Full certification gates passed.
+- Website, scheduled report and Telegram parity verified.
+- 06:00 WAT schedule enabled only after an explicit operational release review.
+- Delivery monitoring and duplicate/reconciliation controls active.
+
+## Validation matrix
+
+| Area | Automated coverage | Still required |
+|---|---|---|
+| Report identity | Canonical hash, tamper rejection, surface parity | Wire website/scheduler/Telegram to the same V2 artifact |
+| Telegram formatting | Release-mode gate, market allowlist, chunking, no truncation | End-to-end test against actual V2 report schema |
+| Delivery | Atomic-claim interface, duplicate skip, unknown outcome no-retry | Durable PostgreSQL claim store and Telegram receipt reconciliation |
+| Results | Existing admission/settlement identity, rights and duplicate tests | Full prospective result reconciliation over captured real fixtures |
+| Release | Shadow/public gate separation | Certification, operational sign-off and schedule activation |
+
+No live Telegram delivery, schedule activation, production migration or public prediction is authorized by this contract.
