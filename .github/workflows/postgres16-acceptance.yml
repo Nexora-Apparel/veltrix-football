@@ -81,7 +81,7 @@ jobs:
                   q.execute("SELECT count(*) FROM pg_indexes WHERE schemaname='public'")
                   assert q.fetchone()[0] >= 13
                   q.execute("SELECT count(*) FROM schema_migrations")
-                  assert q.fetchone()[0] == 4
+                  assert q.fetchone()[0] == 10
                   q.execute("SAVEPOINT rollback_probe")
                   q.execute("INSERT INTO provider_accounts(provider) VALUES ('rollback-probe')")
                   q.execute("ROLLBACK TO SAVEPOINT rollback_probe")

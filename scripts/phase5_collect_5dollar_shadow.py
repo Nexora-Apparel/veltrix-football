@@ -771,6 +771,9 @@ def run_capture(
         "skipped_no_history": forecast_report.skipped_no_history,
         "skipped_invalid_targets": forecast_report.skipped_invalid_targets,
         "admitted_shadow_predictions": len(admission.admitted),
+        "persisted_shadow_ledger_events": int(staging_ledger.get("events_appended", 0)) if staging_ledger else 0,
+        "paper_ledger_chain_verified": bool(staging_ledger and staging_ledger.get("chain_verified") is True),
+        "duplicate_predictions_skipped": int(staging_ledger.get("duplicate_predictions_skipped", 0)) if staging_ledger else 0,
         "rejected_admissions": [
             {"fixture_id": item.fixture_id, "reason_code": item.reason_code}
             for item in admission.rejected

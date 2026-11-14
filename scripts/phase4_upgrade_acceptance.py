@@ -89,8 +89,13 @@ def run_upgrade_acceptance() -> dict:
             with psycopg.connect(upgrade_url) as conn:
                 legacy_id = _insert_observation(conn, "legacy")
 
-            # Apply the full manifest; only migration 0004 should be pending.
-            result = migrate(upgrade_url, directory=MIGRATION_DIR)
+            # Apply a bounded Phase 4 manifest (0001-0004). Later Phase 5
+            # migrations must not be included in this historical upgrade test.
+            with tempfile.TemporaryDirectory(prefix="veltrix-phase4-0004-") as phase4_temp:
+                phase4_dir = Path(phase4_temp)
+                for path in sorted(MIGRATION_DIR.glob("000[1234]_*.sql")):
+                    shutil.copy2(path, phase4_dir / path.name)
+                result = migrate(upgrade_url, directory=phase4_dir)
             if result.get("applied_now") != 1:
                 raise AssertionError(f"Expected exactly migration 0004 to apply: {result}")
 
