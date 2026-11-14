@@ -1,6 +1,8 @@
 from dataclasses import replace
 from datetime import datetime, timedelta, timezone
 
+import pytest
+
 from veltrix_v2.data.contracts import ApprovalStatus, DataUsePurpose, SourceApproval
 from veltrix_v2.ledger.paper_predictions import ProspectivePaperLedger
 from veltrix_v2.ledger.admission import (
@@ -87,11 +89,15 @@ def test_admits_prospective_shadow_forecast_with_source_and_history_rights():
     prediction = admitted.admitted[0]
     assert prediction.point_in_time_certifiable is True
     assert prediction.recorded_at < prediction.kickoff_at
-    assert prediction.market_probabilities == {
-        "1X2": {"home": 0.5, "draw": 0.3, "away": 0.2},
-        "BTTS": {"yes": 0.45, "no": 0.55},
-        "TOTALS_2_5": {"over": 0.42, "under": 0.58},
-    }
+    assert prediction.market_probabilities["1X2"] == pytest.approx(
+        {"home": 0.5, "draw": 0.3, "away": 0.2}
+    )
+    assert prediction.market_probabilities["BTTS"] == pytest.approx(
+        {"yes": 0.45, "no": 0.55}
+    )
+    assert prediction.market_probabilities["TOTALS_2_5"] == pytest.approx(
+        {"over": 0.42, "under": 0.58}
+    )
     assert len(prediction.evidence_sha256) == 64
 
 

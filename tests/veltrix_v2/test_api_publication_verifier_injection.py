@@ -15,8 +15,8 @@ from veltrix_v2.reporting.report_identity import REPORT_SCHEMA
 
 
 @pytest.fixture(autouse=True)
-def reset_api_state(monkeypatch):
-    monkeypatch.setattr(telegram_api.app.state, "_state", {}, raising=False)
+def reset_api_state():
+    telegram_api.app.state._state.clear()
 
 
 def _portable_bundle_bytes():

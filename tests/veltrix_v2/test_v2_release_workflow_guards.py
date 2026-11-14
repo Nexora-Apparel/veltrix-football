@@ -23,10 +23,14 @@ def test_legacy_daily_prediction_pipeline_remains_paused():
     assert "if: false" in source
 
 
-def test_legacy_telegram_recovery_remains_paused():
+def test_v2_telegram_bundle_dispatcher_remains_locked_without_schedule():
     source = _workflow("telegram-delivery-recovery.yml")
-    assert "deliver-published-report:" in source
+    assert "v2-telegram-delivery:" in source
     assert "if: false" in source
+    assert "scripts/veltrix_v2/dispatch_public_telegram_bundle.py" in source
+    assert "send_telegram_report.py" not in source
+    assert "daily_predictions.json" not in source
+    assert "schedule:" not in source
 
 
 
