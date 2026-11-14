@@ -129,6 +129,7 @@ def load_authorized_report_surface_bundle(
     if (
         report.get("release_mode") not in {"RESTRICTED_PUBLIC", "FULL_PUBLIC"}
         or not isinstance(predictions, list)
+        or not predictions
         or any(
             not isinstance(fixture, dict)
             or fixture.get("publication_status") != "PUBLISHED"
