@@ -119,4 +119,4 @@ def test_rejects_late_recording_after_kickoff():
         model_artifact_sha256="d" * 64, feature_set_sha256="e" * 64,
     )
     assert not result.admitted
-    assert result.rejected[0].reason_code == "PAPER_ADMISSION_TIMESTAMP_ORDER_INVALID"
+    assert result.rejected[0].reason_code == "TARGET_NOT_KNOWN_AND_FUTURE_AT_RECORDING"
