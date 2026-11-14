@@ -239,9 +239,9 @@ def test_tampered_report_hash_and_malformed_manifest_fail_closed():
 
 def test_over_under_market_uses_common_sample_roi_and_odds_gates_without_1x2_baseline():
     report = make_report()
-    report["predictions"][0]["certified_markets"] = ["OVER_UNDER"]
+    report["predictions"][0]["certified_markets"] = ["TOTALS_2_5"]
     report = bind_report_identity({key: value for key, value in report.items() if key != "report_sha256"})
-    raw = make_manifest(report, [certification("OVER_UNDER")])
+    raw = make_manifest(report, [certification("TOTALS_2_5")])
     assert verify_publication_authorization(report, raw, attestation_ok, rights_ok, evidence_reader) is True
 
 
@@ -313,4 +313,13 @@ def test_recent_model_and_bookmaker_fixture_sets_must_match():
     one_x_two = certification("1X2")
     one_x_two["recent_bookmaker_fixture_set_sha256"] = "0" * 64
     raw = make_manifest(report, [one_x_two, certification("BTTS")])
+    assert verify_publication_authorization(report, raw, attestation_ok, rights_ok, evidence_reader) is False
+
+
+
+def test_unknown_market_cannot_be_publicly_certified():
+    report = make_report()
+    report["predictions"][0]["certified_markets"] = ["VALUE_BET"]
+    report = bind_report_identity({key: value for key, value in report.items() if key != "report_sha256"})
+    raw = make_manifest(report, [certification("VALUE_BET")])
     assert verify_publication_authorization(report, raw, attestation_ok, rights_ok, evidence_reader) is False
