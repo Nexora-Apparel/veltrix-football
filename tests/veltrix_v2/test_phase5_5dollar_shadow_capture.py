@@ -9,6 +9,7 @@ from scripts.phase5_collect_5dollar_shadow import (
     _approval_from_rows,
     _approved_competition_ids,
     _request_page,
+    _build_public_summary,
     main,
 )
 from veltrix_v2.data.contracts import ApprovalStatus, DataUsePurpose
@@ -131,3 +132,46 @@ def test_staging_persistence_flag_does_not_execute_without_execute(monkeypatch, 
     output = capsys.readouterr().out
     assert '"mode": "DRY_RUN"' in output
     assert '"persist_staging": true' in output
+
+
+
+def test_public_summary_is_an_explicit_aggregate_only_allowlist():
+    summary = _build_public_summary({
+        "status": "SHADOW_CAPTURE_COMPLETE",
+        "provider": "5DollarFootballAPI",
+        "requests_used": 4,
+        "request_cap": 14,
+        "crosswalk_registry": {
+            "provider": "5DollarFootballAPI",
+            "fixture_crosswalks": 100,
+            "team_crosswalks": 20,
+            "competition_crosswalks": 2,
+            "validity": "VERIFIED_FROM_VERIFIED_AT_FORWARD_ONLY",
+        },
+        "captured_first_observed_rows": 100,
+        "mapped_upcoming_targets": 25,
+        "forecast_count": 20,
+        "admitted_shadow_predictions": 15,
+        "persisted_capture_pages": 2,
+        "persisted_shadow_ledger_events": 15,
+        "paper_ledger_persisted_to_staging": True,
+        "evidence_persisted_to_staging": True,
+        "publication_status": "LOCKED",
+        "settlement_status": "LOCKED",
+        "database_writes": True,
+        "fixture_ids": ["private-fixture"],
+        "ledger_events": [{"fixture_id": "private-fixture", "event_sha256": "a" * 64}],
+        "page_manifests": [{"raw_response_sha256": "b" * 64}],
+        "odds": {"home": 2.0},
+        "probabilities": {"home": 0.5},
+        "api_key": "must-never-leak",
+    })
+    rendered = repr(summary)
+    for forbidden in (
+        "private-fixture", "event_sha256", "raw_response_sha256",
+        "probabilities", "api_key", "must-never-leak", "odds",
+    ):
+        assert forbidden not in rendered
+    assert summary["admitted_shadow_predictions"] == 15
+    assert summary["persisted_shadow_ledger_events"] == 15
+    assert summary["public_publication"] is False
