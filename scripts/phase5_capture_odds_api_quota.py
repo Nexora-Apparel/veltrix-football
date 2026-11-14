@@ -7,7 +7,7 @@ allowlisted VELTRIX staging database. It never requests bookmaker odds.
 from __future__ import annotations
 
 import argparse
-from datetime import datetime, timezone, date
+from datetime import datetime, timezone, date, timedelta
 from hashlib import sha256
 import json
 import os
@@ -122,7 +122,7 @@ def _persist(
     last_cost = _quota_integer(headers, "x-requests-last")
     quota_valid = (
         used is not None and remaining is not None and last_cost is not None
-        and used >= 0 and remaining >= 0 and last_cost >= 0
+        and used >= 0 and remaining >= 0 and last_cost >= 0\n        and used + remaining > 0
     )
     monthly_allowance = used + remaining if quota_valid else None
     month_start = date(fetched_at.year, fetched_at.month, 1)
@@ -266,14 +266,14 @@ def _persist(
                     PROVIDER, ACCOUNT_REF, month_start, month_end,
                     monthly_allowance, remaining, monthly_cap, per_run_cap, 8,
                     used, last_cost, fetched_at,
-                    fetched_at.replace(microsecond=0) + __import__("datetime").timedelta(hours=24),
+                    fetched_at.replace(microsecond=0) + timedelta(hours=24),
                     f"neon://{connection.info.dbname}/provider_responses/{response_id}",
                     budget_hash, TERMS_VERSION, TERMS_EVIDENCE_URI,
                     TERMS_EVIDENCE_SHA256, json.dumps([APPROVAL_ID]), fetched_at,
                 ),
             ).fetchone()[0]
 
-        active = status == 200 and payload_is_json and quota_valid and last_cost == 0
+        active = status == 200 and payload_is_json and sports_count > 0 and quota_valid and last_cost == 0
         metadata_patch = {
             "quota_status": "VERIFIED" if active else "UNVERIFIED",
             "quota_probe_response_id": response_id,
