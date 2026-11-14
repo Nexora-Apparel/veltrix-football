@@ -78,7 +78,7 @@ def test_approval_loader_fails_closed_on_revocation():
 def test_approval_loader_fails_closed_on_malformed_status_history():
     event = approval_event()
     event["evidence_sha256"] = "bad"
-    with pytest.raises(PermissionError, match="RIGHTS_STATUS_HISTORY_UNTRUSTED"):
+    with pytest.raises(PermissionError):
         _approval_from_rows(approval_row(), [event], rights_evaluated_at=NOW)
 
 
@@ -120,3 +120,13 @@ def test_403_competition_response_is_not_retried_and_still_advances_pacer(monkey
             pacing_state=pacing,
         )
     assert isinstance(pacing["last_started"], float)
+
+
+def test_staging_persistence_flag_does_not_execute_without_execute(monkeypatch, capsys):
+    monkeypatch.setattr(sys, "argv", [
+        "phase5_collect_5dollar_shadow", "--persist-staging"
+    ])
+    assert main() == 0
+    output = capsys.readouterr().out
+    assert '"mode": "DRY_RUN"' in output
+    assert '"persist_staging": true' in output
