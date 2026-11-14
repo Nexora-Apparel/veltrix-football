@@ -88,3 +88,37 @@ class PostgresTelegramDeliveryStore:
             ).fetchone()
         if row is None:
             raise ValueError("DELIVERY_CLAIM_NOT_ACTIVE")
+
+
+    def mark_stale_claim_unknown(
+        self, key: str, minimum_age_seconds: int = 300
+    ) -> bool:
+        """Move an abandoned claim to OUTCOME_UNKNOWN; never resend it.
+
+        This is an explicit operator/recovery action. A minimum five-minute
+        age prevents racing an active sender; callers must still reconcile
+        the resulting unknown outcome with independent evidence.
+        """
+        if not isinstance(key, str) or not _HASH.fullmatch(key):
+            raise ValueError("DELIVERY_IDEMPOTENCY_KEY_INVALID")
+        if (
+            not isinstance(minimum_age_seconds, int)
+            or isinstance(minimum_age_seconds, bool)
+            or not 300 <= minimum_age_seconds <= 86400
+        ):
+            raise ValueError("STALE_CLAIM_MINIMUM_AGE_OUT_OF_RANGE")
+        with self._connect() as connection:
+            row = connection.execute(
+                """
+                UPDATE telegram_delivery_claims
+                SET state='OUTCOME_UNKNOWN',
+                    updated_at=NOW(),
+                    reason_code='STALE_CLAIM_REQUIRES_RECONCILIATION'
+                WHERE idempotency_key=%s
+                  AND state='CLAIMED'
+                  AND claimed_at <= NOW() - (%s * INTERVAL '1 second')
+                RETURNING idempotency_key
+                """,
+                (key, minimum_age_seconds),
+            ).fetchone()
+        return row is not None
