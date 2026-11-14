@@ -133,3 +133,17 @@ A single end-to-end offline integration test now passes the exact same portable 
 ## API runtime verifier injection and legacy ledger isolation
 
 The FastAPI command-centre now exposes a startup-only `configure_publication_verifier(callable)` hook. All dashboard/report and Telegram command call sites request that exact server-side verifier. No verifier is installed by default; without one, V2 reports remain unavailable. The dashboard and Telegram commands no longer load or display the legacy paper ledger or legacy model-validation snapshots as V2 evidence. No public endpoint or environment variable can set the verifier.
+
+
+## Strict report cutoff and probability-vector validation
+
+A public report must carry an explicit timezone-aware `cutoff_at_utc`. Its Africa/Lagos calendar date must equal `as_of_date`. Every published fixture must carry timezone-aware `cutoff_at_utc` and `kickoff_utc`; the fixture cutoff must exactly equal the report cutoff and kickoff must be strictly later. Missing, naive, mismatched or post-kickoff timestamps deny publication.
+
+Every market listed in a fixture's `certified_markets` must have an exact probability vector in `markets`:
+- `1X2`: `home`, `draw`, `away`
+- `BTTS`: `yes`, `no`
+- `TOTALS_2_5`: `over`, `under`
+
+Each probability must be a finite non-boolean number in [0, 1], the vector must sum to 1 within 1e-6, and unexpected keys are rejected. The report's canonical identity also rejects non-JSON values such as NaN and Infinity.
+
+Reconciliation corrections must be append-only superseding events whose observed and recorded timestamps do not precede their parent event. The same monotonicity is enforced by the application validator and PostgreSQL trigger.
