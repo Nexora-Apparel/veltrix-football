@@ -251,3 +251,10 @@ A final website audit found that the browser still had independent raw-GitHub/CD
 - It is transport-injected and tested offline. No GitHub publication call was made; the V2 bundle remains absent from command-data.
 - CI run #1509 passed Foundation, PostgreSQL 16 and PostgreSQL 18, including publisher authorization, immutability, stale-report and Git blob-integrity tests.
 - This supplies the publication adapter but not the missing trusted certification/rights verifier or evidence manifest. Do not invoke the publisher until those gates pass.
+
+
+## Same-day publication date gate — 2026-11-14 18:04 UTC
+
+- The V2 publisher now requires an explicit canonical `expected_as_of_date` from its caller and rejects a report whose WAT as-of date differs before any GitHub access.
+- This prevents publishing stale or future-dated daily reports through the command-data publisher. The production workflow must derive this value from the current `Africa/Lagos` date; no workflow is wired yet.
+- CI run #1513 passed Foundation, PostgreSQL 16 and PostgreSQL 18, including exact-date, immutable-ID, stale-publication and GitHub blob integrity tests.
