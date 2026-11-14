@@ -1,0 +1,77 @@
+name: VELTRIX Phase 5 — Manual 5Dollar Shadow Capture
+
+on:
+  workflow_dispatch:
+    inputs:
+      history_days:
+        description: "Finished-results lookback (1–90 days)"
+        required: true
+        default: "90"
+        type: string
+      upcoming_days:
+        description: "Upcoming fixture window (1–14 days)"
+        required: true
+        default: "14"
+        type: string
+      max_fixtures:
+        description: "Maximum shadow targets (1–25)"
+        required: true
+        default: "25"
+        type: string
+      persist_staging:
+        description: "Persist raw capture evidence to the allowlisted Neon staging database"
+        required: true
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+
+concurrency:
+  group: veltrix-5dollar-shadow-capture
+  cancel-in-progress: false
+
+jobs:
+  capture:
+    name: Bounded provider capture and shadow admission
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install project and PostgreSQL client
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e . "psycopg[binary]>=3.2,<4"
+
+      - name: Validate dry-run mode
+        run: python -m scripts.phase5_collect_5dollar_shadow
+
+      - name: Execute bounded first-observed shadow capture
+        env:
+          FIVEDOLLARFOOTBALL_API_KEY: ${{ secrets.FIVEDOLLARFOOTBALL_API_KEY }}
+          VELTRIX_STAGING_DATABASE_URL: ${{ secrets.VELTRIX_STAGING_DATABASE_URL }}
+        run: |
+          python -m scripts.phase5_collect_5dollar_shadow \
+            --execute \
+            --history-days "${{ inputs.history_days }}" \
+            --upcoming-days "${{ inputs.upcoming_days }}" \
+            --max-fixtures "${{ inputs.max_fixtures }}" \
+            --out artifacts/5dollar-shadow \
+            ${{ inputs.persist_staging && '--persist-staging' || '' }}
+
+      - name: Upload aggregate-only audit summary
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: veltrix-5dollar-shadow-${{ github.run_id }}
+          path: artifacts/5dollar-shadow/public_summary.json
+          if-no-files-found: warn
+          retention-days: 7

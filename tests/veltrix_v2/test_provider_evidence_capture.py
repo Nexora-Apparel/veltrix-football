@@ -369,6 +369,8 @@ def test_fivedollar_page_adapter_preserves_non_certifiable_timestamp_gap():
         prospective_observed=True,
     )
     observed_evidence = observed_report.observations[0]
+    assert len(observed_report.captures) == 1
+    assert observed_report.captures[0].raw_response == raw
     assert observed_evidence.point_in_time_certifiable is False
     assert observed_evidence.source_published_at is None
     assert observed_evidence.available_at == observed_evidence.retrieved_at
