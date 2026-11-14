@@ -63,6 +63,7 @@ def test_cross_competition_or_unknown_fixture_evidence_is_rejected():
     {"rights_approval_id": ""},
     {"rights_evidence_sha256": "invalid"},
     {"rights_evaluated_at": AS_OF + timedelta(minutes=1)},
+    {"rights_evaluated_at": AS_OF + timedelta(hours=1)},
     {"point_in_time_certifiable": False},
     {"point_in_time_certifiable": 1},
     {"payload_sha256": "bad"},
