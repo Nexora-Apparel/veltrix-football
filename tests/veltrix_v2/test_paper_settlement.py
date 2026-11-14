@@ -196,3 +196,29 @@ def test_settlement_requires_model_version_when_fixture_has_multiple_predictions
         model_version="poisson-v1",
     )
     assert settled.model_version == "poisson-v1"
+
+
+def test_duplicate_or_corrected_result_cannot_overwrite_an_existing_settlement():
+    ledger = ledger_with_prediction()
+    fixture = source_fixture()
+    recorded_at = fixture.retrieved_at_utc + timedelta(hours=1)
+    first = settle_from_verified_fixture(
+        ledger, fixture, approval(), recorded_at=recorded_at
+    )
+    corrected_payload = {"status": "FINISHED", "home_score": 3, "away_score": 1}
+    corrected_digest = hashlib.sha256(json.dumps(
+        corrected_payload, sort_keys=True, separators=(",", ":"), ensure_ascii=False
+    ).encode("utf-8")).hexdigest()
+    corrected = replace(
+        fixture,
+        home_score=3,
+        payload=corrected_payload,
+        payload_sha256=corrected_digest,
+    )
+    with pytest.raises(ValueError, match="PAPER_SETTLEMENT_DUPLICATE"):
+        settle_from_verified_fixture(
+            ledger, corrected, approval(), recorded_at=recorded_at + timedelta(minutes=1)
+        )
+    assert len([event for event in ledger.events if event.event_type == "SETTLEMENT"]) == 1
+    assert ledger.events[-1].event_sha256 == first.event_sha256
+    assert ledger.verify_chain()
