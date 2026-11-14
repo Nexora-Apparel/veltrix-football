@@ -56,3 +56,13 @@ def test_legacy_historical_model_reconstruction_remains_paused():
     assert "reconstruct-archived-reports:" in source
     assert "if: false" in source
     assert "excluded legacy model stack" in source
+
+
+
+def test_legacy_prediction_backtests_and_report_watchdog_remain_paused():
+    watchdog = _workflow("daily-report-watchdog.yml")
+    historical = _workflow("historical-model-backtest.yml")
+    womens = _workflow("womens-model-backtest.yml")
+    assert "ensure-daily-report:" in watchdog and "if: false" in watchdog
+    assert "backtest:" in historical and "if: false" in historical
+    assert "womens-backtest:" in womens and "if: false" in womens
