@@ -202,3 +202,23 @@ def test_venue_specific_attack_and_defence_change_expected_goals():
         kickoff_at=KICKOFF, cutoff_at=CUTOFF,
     )
     assert strong_home.expected_home_goals > neutral_pair.expected_home_goals
+
+
+def test_optional_recency_half_life_weights_recent_results_more_heavily():
+    rows = [match(i, "A", "B", 4, 0) for i in range(60, 120)]
+    rows += [match(i, "A", "B", 0, 1) for i in range(60)]
+    equal = predict_match(rows, competition_id="league", home_team_id="A",
+                          away_team_id="B", kickoff_at=KICKOFF, cutoff_at=CUTOFF)
+    recent = predict_match(rows, competition_id="league", home_team_id="A",
+                           away_team_id="B", kickoff_at=KICKOFF, cutoff_at=CUTOFF,
+                           recency_half_life_days=30)
+    assert recent.expected_home_goals < equal.expected_home_goals
+    assert recent.recency_half_life_days == 30
+    assert equal.recency_half_life_days is None
+
+
+def test_invalid_recency_half_life_fails_closed():
+    with pytest.raises(ValueError, match="RECENCY_HALF_LIFE_MUST_BE_POSITIVE_FINITE"):
+        predict_match(sample_history(), competition_id="league", home_team_id="A",
+                      away_team_id="B", kickoff_at=KICKOFF, cutoff_at=CUTOFF,
+                      recency_half_life_days=0)
