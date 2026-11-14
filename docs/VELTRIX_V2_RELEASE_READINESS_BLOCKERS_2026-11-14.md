@@ -274,3 +274,40 @@ A final website audit found that the browser still had independent raw-GitHub/CD
 - Historical archive filenames now include the SHA-256 of the exact archived report bytes, so reruns resolve to the same immutable path.
 - For small GitHub Contents API files, the legacy archive publisher compares existing base64 content and skips the write when the bytes already match.
 - CI run #1526 passed Foundation, PostgreSQL 16 and PostgreSQL 18 with the content-addressed path and idempotent archive tests.
+
+
+## Latest execution checkpoint — 2026-11-14 22:53 UTC
+
+**Current branch:** `integration/v2-report-bundle-wiring-20261114`  
+**Current head:** `0634b6bae2ad152733850dd6407d27c9e027de64`  
+**PR:** #120, open/draft/unmerged; 44 commits ahead of `main`, 0 behind.
+
+This checkpoint supersedes earlier statements in this historical log that migrations 0005–0010 were unapplied or that 5Dollar BENCHMARKING scope remained unresolved.
+
+### Staging and provenance
+- Migrations 0005–0010 are applied on the dedicated Neon staging branch `br-silent-violet-bc5de88s`, database `veltrix_football_staging`.
+- Existing 2,496 fixtures, 2,496 observations and 28 raw responses remain unchanged.
+- 2,659 exact-provider-ID crosswalk records are now persisted: 2,496 fixtures, 156 teams and 7 competitions. All are resolved and linked to source observation evidence, valid from verification time forward.
+- No historical timestamp has been backfilled. The 2,496 historical result rows remain labels only, not PIT-certified pre-match features.
+- Capture manifests: 0; capture requests: 0; prospective paper ledger events: 0.
+
+### Provider rights and account evidence
+- 5Dollar has a new append-only approved scope version `approval-5dollar-community-fixture-result-benchmarking-2026-11-14`, including BENCHMARKING for the same seven entitled competitions. The original approval remains preserved.
+- The Odds API owner authorization and Terms scope are recorded as `approval-the-odds-api-v4-owner-authorized-2026-11-14`. Account entitlement remains UNVERIFIED.
+- The Odds API no-credit `/v4/sports/?all=true` probe is prepared to persist exact raw response bytes, response hash, retrieval time, safe quota headers and the five configured sport-key observations.
+- The prior quota workflow's rolling-period budget inference and arbitrary 400/15-credit hard caps have been removed from the execution path. No billing period, monthly allowance or hard cap is invented.
+- No 5Dollar or Odds API network request has yet been made in this checkpoint; no provider credits have been consumed.
+
+### First-observed capture and certification
+- Manual 5Dollar first-observed workflow is prepared with staging persistence enabled, 14-request maximum, 90-day results lookback, 14-day upcoming window and 25-target cap.
+- Odds API account probe is prepared as a separate manual workflow and calls only the documented zero-credit sports endpoint.
+- The available GitHub Actions connector does not expose workflow dispatch, so neither manual workflow has been triggered from this session.
+- The prospective paper ledger is empty. No prospective selections have been settled and no market is certified. Value betting remains locked.
+
+### CI and immediate blockers
+- Historical Model Audit Tests and Certification Evidence Integrity passed on the preceding head `4baeb75d82e20bf1e18fc0c839a79ebddda7c467`.
+- The Foundation suite exposed one stale 5Dollar test assertion expecting BENCHMARKING to remain absent. The test was corrected to match the newly approved scope.
+- Fresh Foundation, PostgreSQL 16 and PostgreSQL 18 checks were running against head `0634b6bae2ad152733850dd6407d27c9e027de64` at this checkpoint; do not treat them as passed until their conclusions are recorded.
+- Remaining release blockers: manual provider workflow dispatch; prospective first-observed evidence; 300 settled selections and 90 distinct dates; market-level chronological certification; Odds API bookmaker-market/region and billing-period/hard-cap evidence; authoritative verifier provisioning; actual website/scheduler/Telegram runtime parity; delivery idempotency and failure-recovery acceptance.
+
+No production deployment, public publication, Telegram broadcast, schedule activation or value-bet unlock is authorized.
