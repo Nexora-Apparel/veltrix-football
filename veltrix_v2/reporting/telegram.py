@@ -9,6 +9,7 @@ from collections.abc import Callable, Mapping
 import math
 from typing import Any
 
+from veltrix_v2.reporting.artifact_bundle import load_report_surface_bundle
 from veltrix_v2.reporting.delivery import (
     DeliveryAttempt,
     DeliveryReceipt,
@@ -166,3 +167,23 @@ def dispatch_public_telegram_report(
         return DeliveryReceipt(destination, tuple(message_ids))
 
     return deliver_once(identity, destination, store, send_all)
+
+
+
+def dispatch_public_telegram_bundle(
+    bundle_dir,
+    report_id: str,
+    destination: str,
+    authorization_verifier: Callable[[Mapping[str, Any], ReportIdentity], bool],
+    store: DeliveryStore,
+    send_message: Callable[[str, str], str],
+) -> DeliveryAttempt:
+    """Verify all four immutable surfaces, then dispatch only the bundle's Telegram copy."""
+    bundle = load_report_surface_bundle(bundle_dir, report_id)
+    return dispatch_public_telegram_report(
+        bundle.telegram_report,
+        destination,
+        authorization_verifier,
+        store,
+        send_message,
+    )
