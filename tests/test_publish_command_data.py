@@ -240,7 +240,6 @@ def test_legacy_command_data_publisher_blocks_prediction_dashboard_and_archive_p
     for path in (
         "public-data/daily_predictions.json",
         "public-data/dashboard_snapshot.json",
-        "public-data/archive/2026-11-14/daily_predictions_20261114T050000Z.json",
     ):
         with pytest.raises(PermissionError, match="LEGACY_PREDICTION_PUBLICATION_DISABLED"):
             publish(path, local, "Nexora-Apparel/veltrix-football", "not-a-real-token")
@@ -259,3 +258,82 @@ def test_legacy_command_data_publisher_rejects_path_traversal_before_network(tmp
     with pytest.raises(ValueError, match="COMMAND_DATA_PATH_INVALID"):
         publish("public-data/../public-data/daily_predictions.json", local,
                 "Nexora-Apparel/veltrix-football", "not-a-real-token")
+
+
+
+def test_archive_only_publication_preserves_historical_report_without_live_pointers(tmp_path, monkeypatch):
+    import json
+    from scripts import publish_command_data as publisher
+
+    report_path = tmp_path / "daily_predictions.json"
+    original = {
+        "as_of_date": "2026-10-31",
+        "same_day_only": True,
+        "predictions": [{"fixture_id": "historical-1"}],
+    }
+    original_bytes = json.dumps(original).encode()
+    report_path.write_bytes(original_bytes)
+    calls = []
+    monkeypatch.setattr(
+        publisher,
+        "publish",
+        lambda path, local_file, repo, token: calls.append((path, local_file.read_bytes())),
+    )
+    monkeypatch.setenv("GITHUB_REPOSITORY", "Nexora-Apparel/veltrix-football")
+    monkeypatch.setenv("GITHUB_TOKEN", "not-a-real-token")
+    monkeypatch.setattr(
+        "sys.argv",
+        ["publish_command_data.py", "--report", str(report_path), "--archive-only"],
+    )
+
+    assert publisher.main() == 0
+    assert len(calls) == 1
+    assert calls[0][0].startswith("public-data/archive/2026-10-31/")
+    assert calls[0][1] == original_bytes
+    assert report_path.read_bytes() == original_bytes
+
+
+def test_legacy_main_refuses_live_report_and_dashboard_publication(tmp_path, monkeypatch, capsys):
+    import json
+    from scripts import publish_command_data as publisher
+
+    report_path = tmp_path / "daily_predictions.json"
+    report_path.write_text(json.dumps({
+        "as_of_date": "2026-11-14",
+        "predictions": [],
+    }), encoding="utf-8")
+    calls = []
+    monkeypatch.setattr(
+        publisher,
+        "publish",
+        lambda *args, **kwargs: calls.append(args),
+    )
+    monkeypatch.setenv("GITHUB_REPOSITORY", "Nexora-Apparel/veltrix-football")
+    monkeypatch.setenv("GITHUB_TOKEN", "not-a-real-token")
+    monkeypatch.setattr(
+        "sys.argv",
+        ["publish_command_data.py", "--report", str(report_path)],
+    )
+    assert publisher.main() == 2
+    assert calls == []
+    assert "LEGACY_COMMAND_DATA_PUBLISHER_DISABLED" in capsys.readouterr().err
+
+
+def test_archive_path_remains_publishable_for_historical_preservation(tmp_path, monkeypatch):
+    import json
+    from scripts.publish_command_data import publish
+
+    local = tmp_path / "historical.json"
+    local.write_text('{"as_of_date":"2026-10-31","predictions":[]}', encoding="utf-8")
+    calls = []
+    monkeypatch.setattr(
+        "scripts.publish_command_data._github_json",
+        lambda url, token, method="GET", body=None: calls.append((url, method, body)) or {},
+    )
+    publish(
+        "public-data/archive/2026-10-31/daily_predictions_20261031T000000Z.json",
+        local,
+        "Nexora-Apparel/veltrix-football",
+        "not-a-real-token",
+    )
+    assert len(calls) == 2
