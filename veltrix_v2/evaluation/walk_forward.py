@@ -108,8 +108,10 @@ def _binary_metrics(probabilities: list[float], outcomes: list[int]) -> BinaryMe
         raise ValueError("METRICS_REQUIRE_NONEMPTY_SAMPLE")
     eps = 1e-15
     brier = sum((p - y) ** 2 for p, y in zip(probabilities, outcomes)) / len(outcomes)
-    loss = -sum(math.log(min(max(p, eps), 1 - eps) if y else min(max(1 - p, eps), 1 - eps)
-                           for p, y in zip(probabilities, outcomes)) / len(outcomes)
+    loss = -sum(
+        math.log(min(max(p, eps), 1 - eps) if y else min(max(1 - p, eps), 1 - eps))
+        for p, y in zip(probabilities, outcomes)
+    ) / len(outcomes)
     return BinaryMetrics(len(outcomes), brier, loss)
 
 
@@ -155,8 +157,8 @@ def walk_forward_evaluate(
     """
     if not _aware(evaluation_as_of):
         raise ValueError("EVALUATION_AS_OF_MUST_BE_TIMEZONE_AWARE")
-    if not isinstance(cutoff_buffer, timedelta) or cutoff_buffer < timedelta(0):
-        raise ValueError("CUTOFF_BUFFER_INVALID")
+    if not isinstance(cutoff_buffer, timedelta) or cutoff_buffer <= timedelta(0):
+        raise ValueError("CUTOFF_BUFFER_MUST_BE_POSITIVE")
     rows = list(observations)
     id_counts: dict[str, int] = {}
     for row in rows:
@@ -209,9 +211,14 @@ def walk_forward_evaluate(
 
         training = [m for m in rows if isinstance(m, MatchObservation)
                     and m.fixture_id != target.fixture_id
+                    and id_counts.get(m.fixture_id, 0) == 1
                     and m.competition_id == target.competition_id
+                    and all(isinstance(v, str) and v.strip() for v in
+                            (m.fixture_id, m.competition_id, m.home_team_id, m.away_team_id))
+                    and m.home_team_id != m.away_team_id
                     and _aware(m.kickoff_at) and _aware(m.available_at) and _aware(m.recorded_at)
-                    and m.kickoff_at < cutoff and m.available_at <= cutoff and m.recorded_at <= cutoff
+                    and m.kickoff_at < m.available_at <= m.recorded_at <= cutoff
+                    and m.kickoff_at < cutoff
                     and isinstance(m.home_goals, int) and not isinstance(m.home_goals, bool)
                     and isinstance(m.away_goals, int) and not isinstance(m.away_goals, bool)
                     and m.home_goals >= 0 and m.away_goals >= 0]
