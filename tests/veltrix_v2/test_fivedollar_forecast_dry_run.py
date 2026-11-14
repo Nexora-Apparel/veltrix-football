@@ -61,6 +61,8 @@ def test_read_only_forecast_probe_fetches_free_data_and_calculates_one_locked_ba
         comp = parsed.path.split("/")[2]
         params = parse_qs(parsed.query)
         status = params["status"][0]
+        assert "from_time" in params and "to_time" in params
+        assert "start_time" not in params and "end_time" not in params
         rows = history if comp == "4160026622" and status == "finished" else (
             upcoming if comp == "4160026622" and status == "scheduled" else []
         )

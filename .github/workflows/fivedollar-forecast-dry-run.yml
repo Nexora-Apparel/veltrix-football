@@ -31,9 +31,10 @@ jobs:
         run: python scripts/veltrix_v2/fivedollar_forecast_dry_run.py --output reports/phase5/fivedollar-forecast-dry-run.json
 
       - name: Upload derived forecast report only
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: veltrix-fivedollar-forecast-dry-run
           path: reports/phase5/fivedollar-forecast-dry-run.json
-          if-no-files-found: error
+          if-no-files-found: warn
           retention-days: 7

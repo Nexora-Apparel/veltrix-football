@@ -138,8 +138,8 @@ def run_forecast_probe(
                     while True:
                         params = {
                             "status": status_name,
-                            "start_time": start_epoch,
-                            "end_time": end_epoch,
+                            "from_time": start_epoch,
+                            "to_time": end_epoch,
                             "per_page": PER_PAGE,
                             "page": page,
                         }
@@ -353,6 +353,7 @@ def main() -> int:
         "history_observation_count": report["history_observation_count"],
         "scheduled_target_count": report["scheduled_target_count"],
         "report_sha256": report["report_sha256"],
+        "failure_reason": report.get("failure_reason"),
     }, sort_keys=True))
     return 0 if report["status"] != "CAPTURE_FAILED" else 2
 
