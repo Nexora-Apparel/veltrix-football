@@ -112,6 +112,11 @@ PROVIDER_REGISTRY: tuple[ProviderProfile, ...] = (
             (DataDomain.EXPECTED_GOALS, CapabilityState.CONDITIONAL, "Shot-level StatsBomb xG exists in selected event files; research-use and attribution review required."),
             (DataDomain.LINEUPS, CapabilityState.CONDITIONAL, "Lineup JSON exists for selected historical matches; research-use and attribution review required."),
         ), False, "Static selected-match research archive. No live data; do not use commercially or publish derived material until rights scope is reviewed and attribution requirements are implemented."),
+    ProviderProfile("OpenLigaDB", "openligadb", ProviderState.OPTIONAL_GATED,
+        _caps(
+            (DataDomain.FIXTURES, CapabilityState.CONDITIONAL, "Public fixture schema parsed offline; league coverage, accuracy and recurring-collection scope remain unqualified."),
+            (DataDomain.RESULTS, CapabilityState.CONDITIONAL, "Explicit score result types available; no public revision history or immutable snapshots, so historical PIT certification is unavailable."),
+        ), False, "Conditional candidate only. No live dispatch until operator-use review, ODbL attribution/share-alike controls, competition coverage and prospective capture validation pass."),
     ProviderProfile("The Odds API", "the-odds-api", ProviderState.OPTIONAL_GATED,
         _caps(
             (DataDomain.FIXTURES, CapabilityState.CONDITIONAL, "Event discovery only; not canonical fixture source."),
