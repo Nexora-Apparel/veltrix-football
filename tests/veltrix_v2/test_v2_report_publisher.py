@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+from urllib.error import HTTPError
 
 import pytest
 
@@ -247,3 +248,12 @@ def test_github_contents_client_pins_target_and_puts_with_optimistic_sha():
 def test_github_contents_client_requires_token():
     with pytest.raises(ValueError, match="TOKEN_REQUIRED"):
         GitHubContentsApiClient("")
+
+
+
+def test_github_contents_client_treats_only_http_404_as_missing_file():
+    def opener(request, timeout):
+        raise HTTPError(request.full_url, 404, "Not Found", {}, None)
+
+    client = GitHubContentsApiClient("test-token", opener=opener)
+    assert client.get_file(PUBLICATION_REPOSITORY, PUBLICATION_BRANCH, PUBLICATION_PATH) is None
