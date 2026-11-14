@@ -262,3 +262,51 @@ def test_invalid_portable_artifact_never_falls_back_to_legacy_report(monkeypatch
         lambda kind: legacy_report if kind == "report" else None,
     )
     assert report_artifacts.load_latest_report(lambda *_: True) is None
+
+
+
+def test_portable_bundle_fetch_cache_is_scoped_to_repository_and_branch(monkeypatch):
+    class Response:
+        def __init__(self, payload):
+            self.payload = payload
+        def __enter__(self):
+            return self
+        def __exit__(self, *_):
+            return False
+        def read(self, size=-1):
+            return self.payload if size < 0 else self.payload[:size]
+
+    report = make_report()
+    payload = serialize_portable_report_surface_bundle(build_report_surface_bundle(report))
+    calls = []
+    monkeypatch.setattr(
+        report_artifacts,
+        "urlopen",
+        lambda request, timeout: (calls.append((request.full_url, timeout)) or Response(payload)),
+    )
+    monkeypatch.setenv("VELTRIX_DATA_REPOSITORY", "Nexora-Apparel/veltrix-football")
+    monkeypatch.setenv("VELTRIX_DATA_BRANCH", "command-data")
+    report_artifacts._portable_bundle_cache.clear()
+    assert report_artifacts._load_portable_bundle_bytes() == payload
+    assert report_artifacts._load_portable_bundle_bytes() == payload
+    assert len(calls) == 1
+
+    monkeypatch.setenv("VELTRIX_DATA_BRANCH", "another-data-branch")
+    assert report_artifacts._load_portable_bundle_bytes() == payload
+    assert len(calls) == 2
+
+
+def test_portable_bundle_fetch_rejects_oversized_remote_artifact(monkeypatch):
+    class Response:
+        def __enter__(self):
+            return self
+        def __exit__(self, *_):
+            return False
+        def read(self, size=-1):
+            return b"x" * size
+
+    monkeypatch.setattr(report_artifacts, "urlopen", lambda *_args, **_kwargs: Response())
+    monkeypatch.setenv("VELTRIX_DATA_REPOSITORY", "Nexora-Apparel/veltrix-football")
+    monkeypatch.setenv("VELTRIX_DATA_BRANCH", "command-data")
+    report_artifacts._portable_bundle_cache.clear()
+    assert report_artifacts._load_portable_bundle_bytes() is None
