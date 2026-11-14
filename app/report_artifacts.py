@@ -12,6 +12,13 @@ import re
 import time
 from typing import Any
 from urllib.error import HTTPError, URLError
+
+from veltrix_v2.reporting.artifact_bundle import load_authorized_portable_report_surface_bundle
+from veltrix_v2.reporting.report_identity import (
+    REPORT_SCHEMA,
+    assert_website_projection,
+    verify_report_identity,
+)
 from urllib.request import Request, urlopen
 
 DEFAULT_REPOSITORY = "Nexora-Apparel/veltrix-football"
@@ -23,6 +30,25 @@ _REPORT_TIMEOUT_SECONDS = 3.0
 _OPTIONAL_TIMEOUT_SECONDS = 1.25
 _API_FALLBACK_TIMEOUT_SECONDS = 1.0
 _cache: dict[str, tuple[float, dict[str, Any] | None]] = {}
+_portable_bundle_cache: dict[str, tuple[float, bytes | None]] = {}
+_PUBLIC_RELEASE_MODES = frozenset({"RESTRICTED_PUBLIC", "FULL_PUBLIC"})
+
+
+def _is_public_v2_report(report: dict[str, Any]) -> bool:
+    predictions = report.get("predictions")
+    return (
+        report.get("release_mode") in _PUBLIC_RELEASE_MODES
+        and isinstance(predictions, list)
+        and 1 <= len(predictions) <= 25
+        and all(
+            isinstance(fixture, dict)
+            and isinstance(fixture.get("fixture_id"), str)
+            and bool(fixture.get("fixture_id").strip())
+            and fixture.get("publication_status") == "PUBLISHED"
+            for fixture in predictions
+        )
+        and len({fixture["fixture_id"] for fixture in predictions}) == len(predictions)
+    )
 
 
 def _parse_snapshot(raw: bytes, kind: str) -> dict[str, Any] | None:
@@ -34,7 +60,16 @@ def _parse_snapshot(raw: bytes, kind: str) -> dict[str, Any] | None:
     if not isinstance(parsed, dict):
         return None
     if kind == "report":
-        return parsed if isinstance(parsed.get("predictions"), list) and parsed.get("status") != "NOT_YET_PUBLISHED" else None
+        if not isinstance(parsed.get("predictions"), list) or parsed.get("status") == "NOT_YET_PUBLISHED":
+            return None
+        if parsed.get("schema") == REPORT_SCHEMA:
+            try:
+                verify_report_identity(parsed)
+            except (TypeError, ValueError):
+                return None
+            if not _is_public_v2_report(parsed):
+                return None
+        return parsed
     if kind == "dashboard":
         return parsed if parsed.get("snapshot_schema") == "VELTRIX_DASHBOARD_V1" and isinstance(parsed.get("predictions"), list) and parsed.get("as_of_date") else None
     if kind == "ledger":
@@ -111,9 +146,90 @@ def _load(kind: str) -> dict[str, Any] | None:
     return value
 
 
-def load_latest_report() -> dict[str, Any] | None:
-    """Load the most recently published prediction report, if one exists."""
-    return _load("report")
+
+def _load_portable_bundle_bytes() -> bytes | None:
+    """Fetch the single V2 bundle artifact with a short cache and strict byte limit."""
+    now = time.monotonic()
+    repo = (os.environ.get("VELTRIX_DATA_REPOSITORY") or DEFAULT_REPOSITORY).strip()
+    branch = (os.environ.get("VELTRIX_DATA_BRANCH") or DEFAULT_BRANCH).strip()
+    if not re.fullmatch(r"[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+", repo) or not re.fullmatch(r"[A-Za-z0-9_.-]+", branch):
+        return None
+    cache_key = f"{repo}@{branch}"
+    cached = _portable_bundle_cache.get(cache_key)
+    if cached is not None and now - cached[0] < CACHE_SECONDS:
+        return cached[1]
+
+    headers = {
+        "User-Agent": "Veltrix-Football-Command-Centre",
+        "Cache-Control": "no-cache",
+        "Pragma": "no-cache",
+    }
+    cache_buster = int(time.time())
+    raw_url = (
+        f"https://raw.githubusercontent.com/{repo}/{branch}/public-data/v2_report_bundle.json"
+        f"?v={cache_buster}"
+    )
+    value = None
+    try:
+        with urlopen(Request(raw_url, headers=headers), timeout=_REPORT_TIMEOUT_SECONDS) as response:
+            candidate = response.read(8_000_001)
+        if 0 < len(candidate) <= 8_000_000:
+            value = candidate
+    except Exception:
+        value = None
+
+    if value is None:
+        api_url = (
+            f"https://api.github.com/repos/{repo}/contents/public-data/v2_report_bundle.json"
+            f"?ref={branch}&v={cache_buster}"
+        )
+        try:
+            with urlopen(Request(api_url, headers={
+                **headers,
+                "Accept": "application/vnd.github.raw+json",
+            }), timeout=_API_FALLBACK_TIMEOUT_SECONDS) as response:
+                candidate = response.read(8_000_001)
+            if 0 < len(candidate) <= 8_000_000:
+                value = candidate
+        except Exception:
+            value = None
+
+    _portable_bundle_cache[cache_key] = (now, value)
+    return value
+
+
+def load_latest_portable_report_bundle(authorization_verifier=None) -> dict[str, Any] | None:
+    """Fetch and verify the single published V2 report bundle."""
+    raw = _load_portable_bundle_bytes()
+    if raw is None:
+        return None
+    return load_v2_portable_report_bundle(raw, authorization_verifier)
+
+
+def load_latest_report(
+    authorization_verifier=None,
+) -> dict[str, Any] | None:
+    """Load a report; V2 requires an injected authoritative publication verifier."""
+    portable_raw = _load_portable_bundle_bytes()
+    if portable_raw is not None:
+        portable_bundle = load_v2_portable_report_bundle(
+            portable_raw, authorization_verifier
+        )
+        return portable_bundle["report"] if portable_bundle is not None else None
+    report = _load("report")
+    if report is None:
+        return None
+    if report.get("schema") != REPORT_SCHEMA:
+        return None
+    if not _is_public_v2_report(report) or not callable(authorization_verifier):
+        return None
+    try:
+        identity = verify_report_identity(report)
+        if authorization_verifier(report, identity) is not True:
+            return None
+    except Exception:
+        return None
+    return report
 
 
 def load_paper_ledger() -> dict[str, Any] | None:
@@ -126,6 +242,69 @@ def load_model_validation_report() -> dict[str, Any] | None:
     return _load("model_validation")
 
 
-def load_dashboard_snapshot() -> dict[str, Any] | None:
-    """Load the compact public dashboard projection."""
-    return _load("dashboard")
+def load_dashboard_snapshot(
+    authorization_verifier=None,
+) -> dict[str, Any] | None:
+    """Load a dashboard projection; V2 requires the same publication verifier as the report."""
+    portable_raw = _load_portable_bundle_bytes()
+    if portable_raw is not None:
+        portable_bundle = load_v2_portable_report_bundle(
+            portable_raw, authorization_verifier
+        )
+        return portable_bundle["dashboard"] if portable_bundle is not None else None
+    snapshot = _load("dashboard")
+    if snapshot is None:
+        return None
+    if "report_id" in snapshot or "report_sha256" in snapshot:
+        bundle = load_v2_report_bundle(authorization_verifier)
+        if bundle is None or bundle["dashboard"] != snapshot:
+            return None
+    elif snapshot.get("predictions"):
+        # Legacy forecast snapshots remain archived but are not a live V2 publication source.
+        return None
+    return snapshot
+
+
+def load_v2_report_bundle(
+    authorization_verifier=None,
+) -> dict[str, Any] | None:
+    """Return V2 website data only after authoritative publication authorization."""
+    portable_raw = _load_portable_bundle_bytes()
+    if portable_raw is not None:
+        return load_v2_portable_report_bundle(portable_raw, authorization_verifier)
+    report = _load("report")
+    dashboard = _load("dashboard")
+    if report is None or dashboard is None or report.get("schema") != REPORT_SCHEMA:
+        return None
+    if not _is_public_v2_report(report) or not callable(authorization_verifier):
+        return None
+    try:
+        identity = assert_website_projection(report, dashboard)
+        if authorization_verifier(report, identity) is not True:
+            return None
+    except Exception:
+        return None
+    return {"report": report, "dashboard": dashboard, "identity": identity}
+
+
+
+def load_v2_portable_report_bundle(
+    portable_bundle_bytes: bytes,
+    authorization_verifier=None,
+) -> dict[str, Any] | None:
+    """Load website V2 data from the single portable artifact using the authoritative verifier."""
+    if not callable(authorization_verifier):
+        return None
+    try:
+        bundle = load_authorized_portable_report_surface_bundle(
+            portable_bundle_bytes, authorization_verifier
+        )
+    except Exception:
+        return None
+    return {
+        "report": bundle.canonical_report,
+        "dashboard": bundle.website_projection,
+        "scheduled": bundle.scheduled_report,
+        "telegram": bundle.telegram_report,
+        "identity": bundle.identity,
+    }

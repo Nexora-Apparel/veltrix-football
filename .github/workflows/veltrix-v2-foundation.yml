@@ -60,8 +60,8 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - name: Install test dependencies
-        run: python -m pip install --upgrade pip && pip install pytest
+      - name: Install application and test dependencies
+        run: python -m pip install --upgrade pip && pip install -r requirements.txt
       - name: Compile Phase 2 data foundation
         run: python -m compileall -q veltrix_v2 scripts/phase2_fivedollar_history_dry_run.py scripts/phase3_import_fivedollar_history.py scripts/phase3_audit_staging_import.py
       - name: Test Phase 2 data contracts
@@ -128,6 +128,32 @@ jobs:
         run: python -m pytest --import-mode=importlib -q tests/veltrix_v2/test_walk_forward.py
       - name: Test calibration and date-clustered uncertainty
         run: python -m pytest --import-mode=importlib -q tests/veltrix_v2/test_reliability.py
+      - name: Test immutable cross-surface report identity
+        run: python -m pytest --import-mode=importlib -q tests/veltrix_v2/test_report_identity.py
+      - name: Test website dashboard and V2 report parity
+        run: python -m pytest --import-mode=importlib -q tests/veltrix_v2/test_report_surface_parity.py
+      - name: Test API trusted publication verifier injection
+        run: python -m pytest --import-mode=importlib -q tests/veltrix_v2/test_api_publication_verifier_injection.py
+      - name: Test V2 publication certification gates
+        run: python -m pytest --import-mode=importlib -q tests/veltrix_v2/test_publication_certification.py
+      - name: Test V2 release workflow safety guards
+        run: python -m pytest --import-mode=importlib -q tests/veltrix_v2/test_v2_release_workflow_guards.py
+      - name: Test immutable report artifact bundle
+        run: python -m pytest --import-mode=importlib -q tests/veltrix_v2/test_report_artifact_bundle.py
+      - name: Test portable report bundle verifier CLI
+        run: python -m pytest --import-mode=importlib -q tests/veltrix_v2/test_portable_report_bundle_cli.py
+      - name: Test website scheduler Telegram portable bundle parity
+        run: python -m pytest --import-mode=importlib -q tests/veltrix_v2/test_portable_bundle_cross_surface_integration.py
+      - name: Test local report bundle CLI
+        run: python -m pytest --import-mode=importlib -q tests/veltrix_v2/test_report_surface_bundle_cli.py
+      - name: Test offline four-surface report bundle verifier
+        run: python -m pytest --import-mode=importlib -q tests/veltrix_v2/test_report_surface_bundle_verify_cli.py
+      - name: Test V2 Telegram publication and formatting boundary
+        run: python -m pytest --import-mode=importlib -q tests/veltrix_v2/test_telegram_v2_formatting.py
+      - name: Test V2 Telegram duplicate and uncertain-delivery guards
+        run: python -m pytest --import-mode=importlib -q tests/veltrix_v2/test_telegram_v2_delivery.py
+      - name: Test Telegram operator reconciliation evidence
+        run: python -m pytest --import-mode=importlib -q tests/veltrix_v2/test_telegram_reconciliation.py
       - name: Enforce no legacy prediction imports in v2
         run: |
           if grep -R -n -E "from app\.(live_predictions|prediction|advanced_models|calibration|backtest_engine)|import app\.(live_predictions|prediction|advanced_models|calibration|backtest_engine)" veltrix_v2; then
@@ -173,3 +199,7 @@ jobs:
         run: python -m pytest --import-mode=importlib -q tests/veltrix_v2/test_full_migration_chain_postgres.py
       - name: Test append-only PostgreSQL paper ledger persistence
         run: python -m pytest --import-mode=importlib -q tests/veltrix_v2/test_paper_ledger_postgres.py
+      - name: Test durable Telegram delivery claims
+        run: python -m pytest --import-mode=importlib -q tests/veltrix_v2/test_telegram_delivery_postgres.py
+      - name: Test append-only Telegram delivery reconciliation
+        run: python -m pytest --import-mode=importlib -q tests/veltrix_v2/test_telegram_reconciliation_postgres.py

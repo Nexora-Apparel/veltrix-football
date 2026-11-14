@@ -18,6 +18,8 @@ from urllib.request import Request, urlopen
 
 import requests
 
+from veltrix_v2.reporting.report_identity import REPORT_SCHEMA
+
 
 MAX_MESSAGE_LENGTH = 3900
 MESSAGE_PREFIX = "🔔 🆕 NEW VELTRIX UPDATE  •  MESSAGE 999/999"
@@ -207,7 +209,9 @@ def _format_recent_form(team_form: Any) -> str:
 
 
 def format_report_messages(report: dict[str, Any], ledger: dict[str, Any] | None = None) -> list[str]:
-    """Send concise match verdicts and evidence-based explanations to Telegram."""
+    """Format legacy report payloads; V2 reports use the separately gated formatter."""
+    if report.get("schema") == REPORT_SCHEMA:
+        raise ValueError("V2 report rejected by legacy Telegram formatter; use the V2 publication gate.")
     day = str(report.get("as_of_date", "unknown date"))
     timezone_name = str(report.get("timezone", "Africa/Lagos"))
     predictions = report.get("predictions", [])
@@ -412,6 +416,10 @@ def main() -> None:
     chat_id = os.environ.get("TELEGRAM_CHAT_ID", "")
     try:
         report = json.loads(Path(args.report).read_text(encoding="utf-8"))
+        if isinstance(report, dict) and report.get("schema") == REPORT_SCHEMA:
+            raise ValueError(
+                "V2_REPORT_REQUIRES_CERTIFIED_V2_DELIVERY_RUNNER; legacy sender is blocked"
+            )
         if not isinstance(report, dict) or not report.get("same_day_only"):
             raise ValueError("Report is invalid or does not enforce same-day fixture filtering.")
         ledger = None

@@ -63,6 +63,9 @@ def historical_fixture_to_target(fixture: HistoricalFixture) -> PredictionTarget
         retrieved_at=fixture.retrieved_at_utc,
         payload_sha256=fixture.payload_sha256,
         rights_approval_id=fixture.rights_approval_id,
+        provider_competition_id=fixture.provider_competition_id,
+        response_sha256=fixture.response_sha256,
+        capture_manifest_sha256=fixture.capture_manifest_sha256,
         home_team_name=fixture.home_team_name,
         away_team_name=fixture.away_team_name,
     )

@@ -1,0 +1,124 @@
+"""PostgreSQL implementation of the durable Telegram delivery claim store."""
+from __future__ import annotations
+
+import hashlib
+import json
+import re
+from typing import Callable
+
+from veltrix_v2.reporting.delivery import DeliveryReceipt
+from veltrix_v2.reporting.report_identity import delivery_idempotency_key_fields
+
+
+_HASH = re.compile(r"^[0-9a-f]{64}$")
+
+
+class PostgresTelegramDeliveryStore:
+    """Atomic idempotency claims; destination identifiers are stored only as hashes."""
+
+    def __init__(self, connect: Callable):
+        if not callable(connect):
+            raise ValueError("DATABASE_CONNECT_FACTORY_REQUIRED")
+        self._connect = connect
+
+    def claim(
+        self, key: str, report_id: str, report_sha256: str, destination: str
+    ) -> bool:
+        if not isinstance(key, str) or not _HASH.fullmatch(key):
+            raise ValueError("DELIVERY_IDEMPOTENCY_KEY_INVALID")
+        if not isinstance(report_id, str) or not report_id.strip():
+            raise ValueError("DELIVERY_REPORT_ID_REQUIRED")
+        if not isinstance(report_sha256, str) or not _HASH.fullmatch(report_sha256):
+            raise ValueError("DELIVERY_REPORT_HASH_INVALID")
+        if not isinstance(destination, str) or not destination.strip():
+            raise ValueError("DELIVERY_DESTINATION_REQUIRED")
+        destination_hash = hashlib.sha256(destination.encode("utf-8")).hexdigest()
+        expected_key = delivery_idempotency_key_fields(
+            report_id, report_sha256, destination
+        )
+        if key != expected_key:
+            raise ValueError("DELIVERY_IDEMPOTENCY_KEY_REPORT_BINDING_MISMATCH")
+        with self._connect() as connection:
+            row = connection.execute(
+                """
+                INSERT INTO telegram_delivery_claims (
+                    idempotency_key, report_id, report_sha256, destination_sha256
+                )
+                VALUES (%s, %s, %s, %s)
+                ON CONFLICT (idempotency_key) DO NOTHING
+                RETURNING idempotency_key
+                """,
+                (key, report_id, report_sha256, destination_hash),
+            ).fetchone()
+        return row is not None
+
+    def mark_sent(self, key: str, receipt: DeliveryReceipt) -> None:
+        if not isinstance(receipt, DeliveryReceipt):
+            raise ValueError("DELIVERY_RECEIPT_REQUIRED")
+        with self._connect() as connection:
+            row = connection.execute(
+                """
+                UPDATE telegram_delivery_claims
+                SET state='SENT', updated_at=NOW(),
+                    telegram_message_ids=%s::jsonb
+                WHERE idempotency_key=%s AND state='CLAIMED'
+                  AND destination_sha256=%s
+                RETURNING idempotency_key
+                """,
+                (
+                    json.dumps(list(receipt.message_ids)), key,
+                    hashlib.sha256(receipt.destination.encode("utf-8")).hexdigest(),
+                ),
+            ).fetchone()
+        if row is None:
+            raise ValueError("DELIVERY_CLAIM_NOT_ACTIVE")
+
+    def mark_unknown(self, key: str, reason_code: str) -> None:
+        if not isinstance(reason_code, str) or not reason_code.strip():
+            reason_code = "DELIVERY_OUTCOME_UNKNOWN"
+        with self._connect() as connection:
+            row = connection.execute(
+                """
+                UPDATE telegram_delivery_claims
+                SET state='OUTCOME_UNKNOWN', updated_at=NOW(), reason_code=%s
+                WHERE idempotency_key=%s AND state='CLAIMED'
+                RETURNING idempotency_key
+                """,
+                (reason_code[:128], key),
+            ).fetchone()
+        if row is None:
+            raise ValueError("DELIVERY_CLAIM_NOT_ACTIVE")
+
+
+    def mark_stale_claim_unknown(
+        self, key: str, minimum_age_seconds: int = 300
+    ) -> bool:
+        """Move an abandoned claim to OUTCOME_UNKNOWN; never resend it.
+
+        This is an explicit operator/recovery action. A minimum five-minute
+        age prevents racing an active sender; callers must still reconcile
+        the resulting unknown outcome with independent evidence.
+        """
+        if not isinstance(key, str) or not _HASH.fullmatch(key):
+            raise ValueError("DELIVERY_IDEMPOTENCY_KEY_INVALID")
+        if (
+            not isinstance(minimum_age_seconds, int)
+            or isinstance(minimum_age_seconds, bool)
+            or not 300 <= minimum_age_seconds <= 86400
+        ):
+            raise ValueError("STALE_CLAIM_MINIMUM_AGE_OUT_OF_RANGE")
+        with self._connect() as connection:
+            row = connection.execute(
+                """
+                UPDATE telegram_delivery_claims
+                SET state='OUTCOME_UNKNOWN',
+                    updated_at=NOW(),
+                    reason_code='STALE_CLAIM_REQUIRES_RECONCILIATION'
+                WHERE idempotency_key=%s
+                  AND state='CLAIMED'
+                  AND claimed_at <= NOW() - (%s * INTERVAL '1 second')
+                RETURNING idempotency_key
+                """,
+                (key, minimum_age_seconds),
+            ).fetchone()
+        return row is not None

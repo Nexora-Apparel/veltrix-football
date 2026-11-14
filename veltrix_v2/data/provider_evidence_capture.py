@@ -138,6 +138,7 @@ class CapturedResultEvidence:
     provider: str
     source_id: str
     provider_fixture_id: str
+    provider_competition_id: str
     source_published_at: str | None
     source_timestamp_basis: str
     source_effective_at: str | None
@@ -428,6 +429,7 @@ def _capture_one(row: ProviderResultCapture) -> CapturedResultEvidence:
         provider=row.provider,
         source_id=row.source_id,
         provider_fixture_id=row.provider_fixture_id,
+        provider_competition_id=row.provider_competition_id,
         source_published_at=_utc(row.source_published_at) if _aware(row.source_published_at) else None,
         source_timestamp_basis=row.source_timestamp_basis,
         source_effective_at=_utc(row.source_effective_at) if _aware(row.source_effective_at) else None,

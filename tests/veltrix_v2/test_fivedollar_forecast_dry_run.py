@@ -38,7 +38,7 @@ def _response(data, *, page=1, per_page=100, has_more=False):
     }).encode()
 
 
-def test_read_only_forecast_probe_fetches_free_data_and_calculates_one_locked_batch():
+def test_read_only_forecast_probe_fails_closed_without_page_capture_manifest():
     calls = []
     history = [
         _fixture(i, "4160026622", NOW - timedelta(hours=120 + i * 18), "finished")
@@ -82,13 +82,11 @@ def test_read_only_forecast_probe_fetches_free_data_and_calculates_one_locked_ba
     assert report["scheduled_target_count"] == 1
     assert report["skipped_outside_window"] == 1
     assert report["skips"]["outside_window"] == 1
-    assert report["forecast_count"] == 1
-    assert report["status"] == "CALCULATED_NOT_PUBLISHED"
+    assert report["forecast_count"] == 0
+    assert report["skips"]["invalid_targets"] == 1
+    assert report["status"] == "NO_FORECASTS"
     assert report["publication_locked"] is True
-    assert report["forecasts"][0]["home_team"] == "Alpha FC"
-    assert report["forecasts"][0]["away_team"] == "Beta FC"
-    assert report["forecasts"][0]["publishable"] is False
-    assert report["forecasts"][0]["kickoff_wat"].endswith("+01:00")
+    assert report["forecasts"] == []
     assert report["side_effects"]["database_writes"] == 0
     assert report["side_effects"]["telegram_messages"] == 0
     assert all("raw" not in key.casefold() for key in report)

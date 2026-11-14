@@ -30,7 +30,8 @@ def approval(scope="4160026622"):
 
 
 def fixture(i, *, status=FixtureStatus.FINISHED, kickoff=None, retrieved=None,
-            competition="4160026622", approval_id=APPROVAL_ID, home="101", away="102"):
+            competition="4160026622", approval_id=APPROVAL_ID, home="101", away="102",
+            response_sha256=None, capture_manifest_sha256=None):
     kickoff = kickoff or datetime(2026, 6, 1, tzinfo=UTC) + timedelta(days=i)
     retrieved = retrieved or CUTOFF - timedelta(hours=1)
     finished = status is FixtureStatus.FINISHED
@@ -56,6 +57,8 @@ def fixture(i, *, status=FixtureStatus.FINISHED, kickoff=None, retrieved=None,
         available_at_utc=kickoff + timedelta(days=4) if finished else None,
         availability_basis="provider_finished_status_conservative_4d" if finished else "not_settled",
         point_in_time_certifiable=False, rights_approval_id=approval_id,
+        response_sha256=response_sha256,
+        capture_manifest_sha256=capture_manifest_sha256,
     )
 
 
@@ -70,6 +73,8 @@ def test_builds_forecasts_from_approved_finished_history_and_future_targets():
         kickoff=CUTOFF + timedelta(hours=5),
         retrieved=CUTOFF - timedelta(minutes=10),
         home="100", away="101",
+        response_sha256="c" * 64,
+        capture_manifest_sha256="d" * 64,
     )
     report = build_fivedollar_forecast_batch(
         history + [target_fixture], approval=approval(), cutoff_at=CUTOFF
@@ -84,7 +89,9 @@ def test_recent_results_before_four_day_availability_are_excluded():
     recent = fixture(200, kickoff=CUTOFF - timedelta(days=2))
     scheduled = fixture(201, status=FixtureStatus.SCHEDULED,
                         kickoff=CUTOFF + timedelta(hours=2),
-                        retrieved=CUTOFF - timedelta(minutes=5))
+                        retrieved=CUTOFF - timedelta(minutes=5),
+                        response_sha256="c" * 64,
+                        capture_manifest_sha256="d" * 64)
     report = build_fivedollar_forecast_batch(
         [recent, scheduled], approval=approval(), cutoff_at=CUTOFF
     )

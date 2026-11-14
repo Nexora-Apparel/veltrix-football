@@ -154,6 +154,8 @@ class HistoricalFixture:
     availability_basis: str
     point_in_time_certifiable: bool
     rights_approval_id: str
+    response_sha256: str | None = None
+    capture_manifest_sha256: str | None = None
 
     def __post_init__(self) -> None:
         if any(not value or not value.strip() for value in (
@@ -176,6 +178,16 @@ class HistoricalFixture:
                 raise ValueError("FIXTURE_RESULT_AVAILABILITY_PRECEDES_KICKOFF")
         if self.source_event_time_utc != self.kickoff_at_utc:
             raise ValueError("FIXTURE_SOURCE_EVENT_TIME_MUST_MATCH_KICKOFF")
+        if (self.response_sha256 is None) != (self.capture_manifest_sha256 is None):
+            raise ValueError("FIXTURE_CAPTURE_PAGE_EVIDENCE_PAIR_REQUIRED")
+        for field, value in (
+            ("response_sha256", self.response_sha256),
+            ("capture_manifest_sha256", self.capture_manifest_sha256),
+        ):
+            if value is not None and (
+                len(value) != 64 or any(ch not in "0123456789abcdef" for ch in value.casefold())
+            ):
+                raise ValueError(f"FIXTURE_{field.upper()}_INVALID")
         if len(self.payload_sha256) != 64 or any(
             ch not in "0123456789abcdef" for ch in self.payload_sha256.casefold()
         ):

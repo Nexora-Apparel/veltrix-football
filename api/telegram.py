@@ -5,7 +5,6 @@ import hmac
 import json
 import math
 import os
-from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 from zoneinfo import ZoneInfo
 from urllib.request import Request, urlopen
@@ -14,10 +13,22 @@ from fastapi import FastAPI, Header, HTTPException, Request as FastAPIRequest
 from fastapi.responses import HTMLResponse, JSONResponse
 
 from app.telegram_commands import handle_command
-from app.report_artifacts import load_latest_report, load_dashboard_snapshot, load_paper_ledger, load_model_validation_report
+from app.report_artifacts import load_latest_report, load_dashboard_snapshot
 from app.telegram_security import telegram_webhook_secret_token
 
 app = FastAPI(title="Veltrix Football Command Centre")
+
+
+def configure_publication_verifier(verifier) -> None:
+    """Install the trusted server-side V2 certification/rights verifier at startup."""
+    if not callable(verifier):
+        raise TypeError("AUTHORITATIVE_PUBLICATION_VERIFIER_REQUIRED")
+    app.state.publication_verifier = verifier
+
+
+def _authoritative_publication_verifier():
+    verifier = getattr(app.state, "publication_verifier", None)
+    return verifier if callable(verifier) else None
 
 DASHBOARD_HTML = """<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
@@ -244,7 +255,7 @@ function renderPaperTracking(d){
  for(const [title,value] of values){const el=document.createElement('div');el.className='statusitem';const t=document.createElement('div');t.className='stitle';t.textContent=title;const v=document.createElement('div');v.className='svalue';v.textContent=value;el.append(t,v);metrics.append(el)}
  const modelBox=document.getElementById('trackingModels');modelBox.replaceChildren();const models=data.cumulative_metrics_by_model||{};const entries=Object.entries(models);
  if(!entries.length){const empty=document.createElement('div');empty.className='empty';empty.textContent='No completed forecasts scored yet.';modelBox.append(empty)}
- for(const [name,m] of entries){const card=document.createElement('article');card.className='market-fixture';const title=document.createElement('h3');const friendlyModelName=name.replace(/^experimental_/,'').replaceAll('_',' ');title.textContent=friendlyModelName;const line=document.createElement('div');line.className='market-line';const acc=Number(m.result_accuracy);line.textContent=String(m.matches??0)+' scored · accuracy '+(Number.isFinite(acc)?(acc*100).toFixed(1)+'%':'—')+' · Brier '+(Number.isFinite(Number(m.brier_score))?Number(m.brier_score).toFixed(3):'—')+' · Log loss '+(Number.isFinite(Number(m.log_loss))?Number(m.log_loss).toFixed(3):'—');card.append(title,line);modelBox.append(card)}
+ for(const [name,m] of entries){const card=document.createElement('article');card.className='market-fixture';const title=document.createElement('h3');const friendlyModelName=name.replaceAll('_',' ');title.textContent=friendlyModelName;const line=document.createElement('div');line.className='market-line';const acc=Number(m.result_accuracy);line.textContent=String(m.matches??0)+' scored · accuracy '+(Number.isFinite(acc)?(acc*100).toFixed(1)+'%':'—')+' · Brier '+(Number.isFinite(Number(m.brier_score))?Number(m.brier_score).toFixed(3):'—')+' · Log loss '+(Number.isFinite(Number(m.log_loss))?Number(m.log_loss).toFixed(3):'—');card.append(title,line);modelBox.append(card)}
  const results=document.getElementById('trackingResults');results.replaceChildren();
  const rawRows=Array.isArray(data.scored_matches)?data.scored_matches.slice():[];
  const dayOf=row=>String(row.match_date||row.fixture_date||row.report_date||'').slice(0,10);
@@ -306,92 +317,13 @@ async function fetchWithDeadline(url,ms){
  try{return await fetch(url,{cache:'no-store',signal:controller.signal})}finally{clearTimeout(timer)}
 }
 async function fetchDashboardPayload(){
- let apiError=null;
- try{
-  const response=await fetchWithDeadline('/api/dashboard-data',6500);
-  if(response.ok){const payload=await response.json();if(payload&&payload.status==='OK'&&Array.isArray(payload.predictions))return payload;apiError=new Error('Dashboard API returned no published report')}
-  else apiError=new Error('Dashboard API HTTP '+response.status);
- }catch(error){apiError=error}
- // Independent browser-side recovery path: the published report is a static,
- // public JSON snapshot. This keeps fixture visibility working if a serverless
- // function, GitHub API rate limit, or Vercel runtime has a transient failure.
- const stamp=Date.now();
- const rawUrl='https://raw.githubusercontent.com/Nexora-Apparel/veltrix-football/command-data/public-data/dashboard_snapshot.json?v='+stamp;
- try{
-  const response=await fetchWithDeadline(rawUrl,7000);
-  if(!response.ok)throw new Error('Published snapshot HTTP '+response.status);
-  const report=await response.json();
-  if(!report||!Array.isArray(report.predictions)||!report.as_of_date)throw new Error('Published snapshot failed validation');
-  return await normalizeStaticReport(report);
- }catch(rawFallbackError){
-  // Second CDN route is independent of raw.githubusercontent.com.
-  try{
-   const cdn='https://cdn.jsdelivr.net/gh/Nexora-Apparel/veltrix-football@command-data/public-data/dashboard_snapshot.json';
-   const response=await fetchWithDeadline(cdn+'?v='+stamp,6000);
-   if(!response.ok)throw new Error('Mirror HTTP '+response.status);
-   const report=await response.json();
-   if(!report||!Array.isArray(report.predictions)||!report.as_of_date)throw new Error('Mirror snapshot failed validation');
-   return await normalizeStaticReport(report);
-  }catch(mirrorError){
-   // Final recovery route uses the GitHub Contents API; decode UTF-8 safely.
-   try{
-    const api='https://api.github.com/repos/Nexora-Apparel/veltrix-football/contents/public-data/dashboard_snapshot.json?ref=command-data&v='+stamp;
-    const response=await fetchWithDeadline(api,5000);
-    if(!response.ok)throw new Error('GitHub API HTTP '+response.status);
-    const wrapper=await response.json();
-    if(!wrapper||!wrapper.content)throw new Error('GitHub API returned no file content');
-    const bytes=Uint8Array.from(atob(wrapper.content.replace(/\s/g,'')),c=>c.charCodeAt(0));
-    const report=JSON.parse(new TextDecoder().decode(bytes));
-    if(!report||!Array.isArray(report.predictions)||!report.as_of_date)throw new Error('GitHub API snapshot failed validation');
-    return await normalizeStaticReport(report);
-   }catch(apiFallbackError){
-    throw new Error('Dashboard API, raw CDN, mirror CDN and GitHub API all failed: '+(apiFallbackError?.message||'unknown'));
-   }
-  }
+ const response=await fetchWithDeadline('/api/dashboard-data',6500);
+ if(!response.ok)throw new Error('Dashboard API HTTP '+response.status);
+ const payload=await response.json();
+ if(!payload||payload.status!=='OK'||!Array.isArray(payload.predictions)){
+  throw new Error('No authoritative V2 report is currently available');
  }
-}
-async function normalizeStaticReport(report){
- const visibleRows=report.predictions.map(row=>{
-  if(!row||typeof row!=='object')return row;
-  const kickoff=Date.parse(row.kickoff_local||row.kickoff||'');
-  const phase=row.fixture_phase||(Number.isFinite(kickoff)?(kickoff>Date.now()?'UPCOMING':'KICKOFF_PASSED'):'KICKOFF_UNVERIFIED');
-  const note=row.fixture_visibility_note||(phase==='KICKOFF_PASSED'?'Kickoff has passed; fixture remains visible in this report.':phase==='KICKOFF_UNVERIFIED'?'Kickoff could not be verified; fixture retained for visibility.':undefined);
-  return {...row,fixture_phase:phase,...(note?{fixture_visibility_note:note}:{})};
- });
- const normalized = {
-  ...report,status:'OK',predictions:visibleRows,
-  as_of_date:report.as_of_date,generated_at_utc:report.generated_at_utc,
-  published_at_utc:report.command_data_published_at_utc,
-  fixtures_received:report.fixtures_received??report.predictions.length,
-  available_forecasts:report.predictions.filter(x=>hasModelForecast(x)).length,
-  fixtures_visible:visibleRows.length,
-  unsupported_fixtures:report.predictions.filter(x=>!x||!['EXPERIMENTAL_ONLY','EXPERIMENTAL_LOW_DATA','LOW_HISTORY_FORECAST'].includes(x.status)).length,
-  fixtures_with_market_odds:report.fixtures_with_market_odds??0,
-  data_connection:{status:'CONNECTED',freshness:report.as_of_date===new Intl.DateTimeFormat('en-CA',{timeZone:'Africa/Lagos',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date())?'CURRENT':'STALE',report_date:report.as_of_date,provider:(report.primary_provider_request||{}).provider,provider_status:(report.primary_provider_request||{}).status},
-  model_validation:{status:'NOT_LOADED_FROM_STATIC_FALLBACK',dataset:{},historical_1x2:{},release_controls:{}},
-  paper_tracking:null,
-  warning:'Dashboard is using the published static report because the live API is temporarily unavailable. Fixtures remain visible; paper history is loaded independently.'
- };
- try{
-  const url='https://raw.githubusercontent.com/Nexora-Apparel/veltrix-football/command-data/public-data/paper_tracking_ledger.json?v='+Date.now();
-  const response=await fetchWithDeadline(url,3500);
-  if(response.ok){
-   const ledger=await response.json();
-   if(ledger&&ledger.model_status==='PAPER_TRACKING_ONLY'&&Array.isArray(ledger.scored_matches)){
-    normalized.paper_tracking={
-     model_status:ledger.model_status,updated_at_utc:ledger.updated_at_utc,
-     evaluated_report_dates:ledger.evaluated_report_dates,
-     cumulative_metrics_by_model:ledger.cumulative_metrics_by_model||{},
-     last_attempt:ledger.last_attempt||{},
-     value_market_metrics_by_market:ledger.value_market_metrics_by_market||{},
-     value_model_versions:ledger.value_model_versions||[],
-     calibration_versions:ledger.calibration_versions||[],
-     scored_matches:ledger.scored_matches
-    };
-   }
-  }
- }catch(_ledgerFallbackError){}
- return normalized;
+ return payload;
 }
 async function loadDashboard(){
  const btn=document.getElementById('refresh');btn.disabled=true;btn.textContent='Loading…';
@@ -403,7 +335,7 @@ async function loadDashboard(){
   document.getElementById('overviewTitle').textContent=reportDate?(reportDate===todayKey?"Today's overview":'Report overview · '+reportDate):'Report overview';
   const localHour=Number(new Intl.DateTimeFormat('en-GB',{timeZone:'Africa/Lagos',hour:'2-digit',hourCycle:'h23'}).format(new Date()));const offline=connection.status!=='CONNECTED'||d.status!=='OK';const reportNotice=document.getElementById('reportFreshness');if(reportNotice){reportNotice.textContent=offline?(d.warning||'Dashboard data source is not connected. Published predictions could not be loaded.') :stale?'Published-data connection is working, but the latest report is '+reportDate+'. Today’s automated report is '+(localHour<6?'scheduled for 06:00 WAT':'overdue after 06:00 WAT')+'. Older fixtures remain visible in Predictions and are not treated as today’s featured picks.':reused?'The dashboard is connected, but this is a reused snapshot; no fresh fixture retrieval completed. '+(d.report_freshness_note||'Wait for the next successful live report.'):(dashboardRows.length?'Connected to the latest current-day published report.':'Connected, but no fixtures are present in the current report.');if(!offline&&!stale&&!reused&&dashboardRows.length){reportNotice.textContent+=' Predictions: '+(d.available_forecasts??0)+'; fixtures retained without forecasts: '+(d.unsupported_fixtures??0)+'. Unsupported fixtures remain visible; no predictions are fabricated.';}reportNotice.classList.toggle('warn',offline||stale||reused||!dashboardRows.length);}
   text(document.getElementById('fixtures'),d.fixtures_received);text(document.getElementById('forecasts'),d.available_forecasts);text(document.getElementById('odds'),d.fixtures_with_market_odds);
-  const currentFixtures=stale?[]:dashboardRows.filter(m=>m&&m.fixture_phase==='UPCOMING');renderFeatured(currentFixtures.find(m=>['EXPERIMENTAL_ONLY','LOW_HISTORY_FORECAST'].includes(m.status))||currentFixtures[0]||null);renderRows();renderMarketOdds();renderPaperTracking(d);renderStatus(d);observeReveals(document);
+  const currentFixtures=stale?[]:dashboardRows.filter(m=>m&&m.fixture_phase==='UPCOMING');renderFeatured(currentFixtures.find(m=>m.publication_status==='PUBLISHED')||currentFixtures[0]||null);renderRows();renderMarketOdds();renderPaperTracking(d);renderStatus(d);observeReveals(document);
   document.getElementById('reporttime').textContent='Report date '+(d.as_of_date||'unknown')+' · published '+(d.published_at_utc||'unknown')+' UTC';
  }catch(e){
   const liveLabel=document.getElementById('liveLabel');if(liveLabel)liveLabel.textContent='DATA OFFLINE';
@@ -431,15 +363,16 @@ def dashboard_data() -> dict:
         except Exception:
             return None
 
-    with ThreadPoolExecutor(max_workers=3) as pool:
-        report_future = pool.submit(_safe_load, load_dashboard_snapshot)
-        validation_future = pool.submit(_safe_load, load_model_validation_report)
-        ledger_future = pool.submit(_safe_load, load_paper_ledger)
-        report = report_future.result()
-        if not isinstance(report, dict):
-            report = _safe_load(load_latest_report)
-        model_validation = validation_future.result()
-        ledger = ledger_future.result()
+    report = _safe_load(
+        lambda: load_dashboard_snapshot(_authoritative_publication_verifier())
+    )
+    if not isinstance(report, dict):
+        report = _safe_load(
+            lambda: load_latest_report(_authoritative_publication_verifier())
+        )
+    # Legacy paper ledgers and legacy model-validation snapshots are not V2 evidence.
+    ledger = None
+    model_validation = None
 
     if not isinstance(report, dict):
         return {"status": "UNAVAILABLE", "warning": "No published report could be loaded.", "predictions": []}
@@ -625,9 +558,9 @@ def dashboard_data() -> dict:
         "live_odds_sync": report.get("live_odds_sync"),
         "historical_data_coverage": report.get("historical_data_coverage"),
         "fixtures_received": report.get("fixtures_received", 0),
-        "available_forecasts": sum(1 for row in rows if isinstance(row, dict) and isinstance(row.get("probabilities"), dict) and row.get("status") in {"EXPERIMENTAL_ONLY", "EXPERIMENTAL_LOW_DATA", "LOW_HISTORY_FORECAST"}),
+        "available_forecasts": sum(1 for row in rows if isinstance(row, dict) and row.get("publication_status") == "PUBLISHED" and isinstance(row.get("markets"), dict)),
         "fixtures_visible": len(upcoming),
-        "unsupported_fixtures": sum(1 for row in upcoming if isinstance(row, dict) and row.get("status") not in {"EXPERIMENTAL_ONLY", "EXPERIMENTAL_LOW_DATA", "LOW_HISTORY_FORECAST"}),
+        "unsupported_fixtures": sum(1 for row in upcoming if isinstance(row, dict) and row.get("publication_status") != "PUBLISHED"),
         "fixtures_with_market_odds": odds_count,
         "model_validation": model_validation or {"status": "NOT_REPORTED", "dataset": {}, "historical_1x2": {}, "rolling_origin_1x2_calibration": {}, "rolling_origin_goal_market_calibration": {}, "release_controls": {}},
         "goal_market_calibration": report.get("goal_market_calibration") or {
@@ -769,7 +702,9 @@ async def telegram_webhook(
         return JSONResponse({"ok": True})
     if command.strip().split()[0].split("@", 1)[0].casefold() == "/oddsdiag":
         try:
-            report = load_latest_report()
+            report = load_latest_report(_authoritative_publication_verifier())
+            if not isinstance(report, dict):
+                raise RuntimeError("PUBLISHED_V2_REPORT_UNAVAILABLE")
             request_meta = report.get("primary_provider_request") or {}
             odds_meta = report.get("multi_source_odds_sync") or {}
             live_odds = report.get("live_odds_sync") or {}
@@ -808,8 +743,9 @@ async def telegram_webhook(
         # Read published snapshots only. This never starts prediction jobs or
         # consumes the football provider's API quota.
         try:
-            report = load_latest_report()
-            ledger = load_paper_ledger()
+            report = load_latest_report(_authoritative_publication_verifier())
+            # No legacy paper ledger is passed into V2 Telegram commands.
+            ledger = None
         except Exception:
             # A data-source outage must not break the Telegram webhook.
             report, ledger = None, None

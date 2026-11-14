@@ -1,0 +1,352 @@
+from __future__ import annotations
+
+import json
+
+import pytest
+
+from veltrix_v2.reporting.artifact_bundle import (
+    ReportSurfaceBundle,
+    build_report_surface_bundle,
+    load_authorized_scheduled_report,
+    load_authorized_scheduled_report_from_portable,
+    load_authorized_portable_report_surface_bundle,
+    load_report_surface_bundle,
+    persist_report_surface_bundle,
+    parse_portable_report_surface_bundle,
+    serialize_portable_report_surface_bundle,
+)
+from veltrix_v2.reporting.report_identity import REPORT_SCHEMA, ReportIdentity
+
+
+def source_report():
+    return {
+        "schema": REPORT_SCHEMA,
+        "report_id": "veltrix-daily-2026-11-14-r1",
+        "as_of_date": "2026-11-14",
+        "release_mode": "INTERNAL_SHADOW",
+        "status": "SHADOW_ONLY",
+        "predictions": [
+            {"fixture_id": "fx-1", "publication_status": "SHADOW_ONLY"},
+        ],
+    }
+
+
+def test_bundle_binds_website_scheduler_and_telegram_to_same_report():
+    bundle = build_report_surface_bundle(source_report())
+    assert bundle.canonical_report["report_sha256"] == bundle.scheduled_report["report_sha256"]
+    assert bundle.canonical_report["report_sha256"] == bundle.telegram_report["report_sha256"]
+    assert bundle.website_projection["report_id"] == bundle.identity.report_id
+    assert bundle.website_projection["report_sha256"] == bundle.identity.report_sha256
+
+
+def test_persisted_surface_files_share_one_canonical_report_hash(tmp_path):
+    bundle = build_report_surface_bundle(source_report())
+    paths = persist_report_surface_bundle(bundle, tmp_path)
+    canonical = json.loads(paths["canonical"].read_text())
+    scheduled = json.loads(paths["scheduled"].read_text())
+    telegram = json.loads(paths["telegram"].read_text())
+    dashboard = json.loads(paths["dashboard"].read_text())
+    assert canonical == scheduled == telegram
+    assert dashboard["report_id"] == canonical["report_id"]
+    assert dashboard["report_sha256"] == canonical["report_sha256"]
+
+
+def test_persistence_is_idempotent_for_identical_bundle(tmp_path):
+    bundle = build_report_surface_bundle(source_report())
+    first = persist_report_surface_bundle(bundle, tmp_path)
+    second = persist_report_surface_bundle(bundle, tmp_path)
+    assert first == second
+    assert all(path.exists() for path in first.values())
+    assert first["commit_marker"].name.endswith(".commit.json")
+
+
+def test_same_report_id_with_changed_content_cannot_overwrite_artifacts(tmp_path):
+    first = build_report_surface_bundle(source_report())
+    persist_report_surface_bundle(first, tmp_path)
+    changed = source_report()
+    changed["predictions"][0]["publication_status"] = "PUBLISHED"
+    second = build_report_surface_bundle(changed)
+    with pytest.raises(ValueError, match="IMMUTABLE_CONFLICT"):
+        persist_report_surface_bundle(second, tmp_path)
+
+
+def test_bundle_rejects_tampered_prehashed_report():
+    report = source_report()
+    report["report_sha256"] = "0" * 64
+    with pytest.raises(ValueError, match="content hash"):
+        build_report_surface_bundle(report)
+
+
+def test_bundle_reader_verifies_all_four_persisted_surfaces(tmp_path):
+    bundle = build_report_surface_bundle(source_report())
+    persist_report_surface_bundle(bundle, tmp_path)
+    loaded = load_report_surface_bundle(tmp_path, bundle.identity.report_id)
+    assert loaded.identity == bundle.identity
+    assert loaded.canonical_report == loaded.scheduled_report == loaded.telegram_report
+    assert loaded.website_projection["report_sha256"] == loaded.identity.report_sha256
+
+
+def test_bundle_reader_rejects_tampered_telegram_artifact(tmp_path):
+    bundle = build_report_surface_bundle(source_report())
+    paths = persist_report_surface_bundle(bundle, tmp_path)
+    changed = json.loads(paths["telegram"].read_text())
+    changed["predictions"][0]["publication_status"] = "PUBLISHED"
+    paths["telegram"].write_text(json.dumps(changed))
+    with pytest.raises(ValueError, match="REPORT_BUNDLE_COMMIT_HASH_MISMATCH"):
+        load_report_surface_bundle(tmp_path, bundle.identity.report_id)
+
+
+def test_bundle_reader_rejects_website_projection_content_drift(tmp_path):
+    bundle = build_report_surface_bundle(source_report())
+    paths = persist_report_surface_bundle(bundle, tmp_path)
+    changed = json.loads(paths["dashboard"].read_text())
+    changed["predictions"] = [{"fixture_id": "different"}]
+    paths["dashboard"].write_text(json.dumps(changed))
+    with pytest.raises(ValueError, match="REPORT_BUNDLE_COMMIT_HASH_MISMATCH"):
+        load_report_surface_bundle(tmp_path, bundle.identity.report_id)
+
+
+def test_scheduled_consumer_returns_only_the_authorized_scheduled_copy(tmp_path):
+    bundle = build_report_surface_bundle(public_source_report())
+    persist_report_surface_bundle(bundle, tmp_path)
+    authorized_report = load_authorized_scheduled_report(
+        tmp_path,
+        bundle.identity.report_id,
+        lambda report, identity: report.get("release_mode") == "RESTRICTED_PUBLIC",
+    )
+    assert authorized_report == bundle.scheduled_report
+
+
+def test_scheduled_consumer_rejects_missing_or_failed_publication_verifier(tmp_path):
+    bundle = build_report_surface_bundle(source_report())
+    persist_report_surface_bundle(bundle, tmp_path)
+    with pytest.raises(PermissionError, match="NON_PUBLIC_FORECASTS"):
+        load_authorized_scheduled_report(
+            tmp_path, bundle.identity.report_id, lambda *_: True
+        )
+    public_bundle = build_report_surface_bundle(public_source_report())
+    persist_report_surface_bundle(public_bundle, tmp_path)
+    with pytest.raises(PermissionError, match="VERIFIER_REQUIRED"):
+        load_authorized_scheduled_report(
+            tmp_path, public_bundle.identity.report_id, None
+        )
+    with pytest.raises(PermissionError, match="AUTHORIZATION_NOT_VERIFIED"):
+        load_authorized_scheduled_report(
+            tmp_path, public_bundle.identity.report_id, lambda *_: False
+        )
+
+
+def public_source_report():
+    return {
+        "schema": REPORT_SCHEMA,
+        "report_id": "veltrix-daily-2026-11-14-public",
+        "as_of_date": "2026-11-14",
+        "release_mode": "RESTRICTED_PUBLIC",
+        "status": "PUBLISHED",
+        "predictions": [
+            {"fixture_id": "fx-1", "publication_status": "PUBLISHED", "certified_markets": ["1X2"]},
+        ],
+    }
+
+
+def test_persistence_rejects_bundle_identity_drift_before_writing(tmp_path):
+    bundle = build_report_surface_bundle(source_report())
+    wrong_identity = ReportIdentity(
+        report_id="different-report-id",
+        as_of_date=bundle.identity.as_of_date,
+        report_sha256=bundle.identity.report_sha256,
+    )
+    invalid = ReportSurfaceBundle(
+        bundle.canonical_report,
+        bundle.scheduled_report,
+        bundle.telegram_report,
+        bundle.website_projection,
+        wrong_identity,
+    )
+    with pytest.raises(ValueError, match="REPORT_SURFACE_BUNDLE_IDENTITY_MISMATCH"):
+        persist_report_surface_bundle(invalid, tmp_path)
+    assert not list(tmp_path.rglob("*.json"))
+
+
+
+def test_publication_consumer_rejects_empty_fixture_bundle(tmp_path):
+    report = public_source_report()
+    report["report_id"] = "veltrix-daily-2026-11-14-empty"
+    report["predictions"] = []
+    bundle = build_report_surface_bundle(report)
+    persist_report_surface_bundle(bundle, tmp_path)
+    with pytest.raises(PermissionError, match="NON_PUBLIC_FORECASTS"):
+        load_authorized_scheduled_report(
+            tmp_path, bundle.identity.report_id, lambda *_: True
+        )
+
+
+
+def test_bundle_reader_rejects_artifacts_without_final_commit_marker(tmp_path):
+    bundle = build_report_surface_bundle(source_report())
+    paths = persist_report_surface_bundle(bundle, tmp_path)
+    marker = tmp_path / "bundles" / f"{bundle.identity.report_id}.commit.json"
+    marker.unlink()
+    with pytest.raises(ValueError, match="COMMIT_MARKER_MISSING"):
+        load_report_surface_bundle(tmp_path, bundle.identity.report_id)
+
+
+def test_bundle_reader_rejects_partial_or_replaced_artifact_after_commit(tmp_path):
+    bundle = build_report_surface_bundle(source_report())
+    paths = persist_report_surface_bundle(bundle, tmp_path)
+    paths["scheduled"].unlink()
+    with pytest.raises(ValueError, match="REPORT_BUNDLE_ARTIFACT_MISSING:scheduled"):
+        load_report_surface_bundle(tmp_path, bundle.identity.report_id)
+
+
+def test_bundle_reader_checks_commit_marker_artifact_hashes(tmp_path):
+    bundle = build_report_surface_bundle(source_report())
+    persist_report_surface_bundle(bundle, tmp_path)
+    marker = tmp_path / "bundles" / f"{bundle.identity.report_id}.commit.json"
+    commit = json.loads(marker.read_text())
+    commit["artifacts"]["telegram"] = "0" * 64
+    marker.write_text(json.dumps(commit))
+    with pytest.raises(ValueError, match="COMMIT_HASH_MISMATCH"):
+        load_report_surface_bundle(tmp_path, bundle.identity.report_id)
+
+
+
+def test_interrupted_four_surface_write_is_invisible_until_commit_marker(tmp_path, monkeypatch):
+    from veltrix_v2.reporting import artifact_bundle
+
+    bundle = build_report_surface_bundle(source_report())
+    original_write = artifact_bundle._write_immutable
+    writes = {"count": 0}
+
+    def fail_before_dashboard_or_commit(path, payload):
+        writes["count"] += 1
+        if writes["count"] == 4:
+            raise OSError("simulated interruption before final artifact")
+        return original_write(path, payload)
+
+    monkeypatch.setattr(artifact_bundle, "_write_immutable", fail_before_dashboard_or_commit)
+    with pytest.raises(OSError, match="simulated interruption"):
+        persist_report_surface_bundle(bundle, tmp_path)
+
+    with pytest.raises(ValueError, match="COMMIT_MARKER_MISSING"):
+        load_report_surface_bundle(tmp_path, bundle.identity.report_id)
+
+    monkeypatch.setattr(artifact_bundle, "_write_immutable", original_write)
+    persist_report_surface_bundle(bundle, tmp_path)
+    loaded = load_report_surface_bundle(tmp_path, bundle.identity.report_id)
+    assert loaded.identity == bundle.identity
+
+
+
+def test_portable_bundle_round_trip_preserves_all_four_surfaces():
+    bundle = build_report_surface_bundle(source_report())
+    raw = serialize_portable_report_surface_bundle(bundle)
+    loaded = parse_portable_report_surface_bundle(raw)
+    assert loaded.identity == bundle.identity
+    assert loaded.canonical_report == bundle.canonical_report
+    assert loaded.scheduled_report == bundle.scheduled_report
+    assert loaded.telegram_report == bundle.telegram_report
+    assert loaded.website_projection == bundle.website_projection
+
+
+def test_portable_bundle_rejects_tampered_surface_bytes():
+    bundle = build_report_surface_bundle(source_report())
+    envelope = json.loads(serialize_portable_report_surface_bundle(bundle))
+    envelope["surfaces"]["telegram"]["predictions"][0]["publication_status"] = "PUBLISHED"
+    raw = json.dumps(envelope).encode()
+    with pytest.raises(ValueError, match="SURFACE_HASH_MISMATCH"):
+        parse_portable_report_surface_bundle(raw)
+
+
+def test_portable_bundle_rejects_surface_identity_drift_even_with_recomputed_surface_hash():
+    import hashlib
+
+    bundle = build_report_surface_bundle(source_report())
+    envelope = json.loads(serialize_portable_report_surface_bundle(bundle))
+    envelope["surfaces"]["dashboard"]["report_sha256"] = "0" * 64
+    surface = envelope["surfaces"]["dashboard"]
+    canonical = (
+        json.dumps(surface, ensure_ascii=False, sort_keys=True, separators=(",", ":"), allow_nan=False)
+    ).encode() + bytes([10])
+    envelope["surface_sha256"]["dashboard"] = hashlib.sha256(canonical).hexdigest()
+    with pytest.raises(ValueError, match="WEBSITE_REPORT_PROJECTION_IDENTITY_MISMATCH"):
+        parse_portable_report_surface_bundle(json.dumps(envelope).encode())
+
+
+def test_portable_bundle_rejects_missing_surface_and_invalid_envelope():
+    with pytest.raises(ValueError, match="BYTES_INVALID"):
+        parse_portable_report_surface_bundle(b"")
+    bundle = build_report_surface_bundle(source_report())
+    envelope = json.loads(serialize_portable_report_surface_bundle(bundle))
+    del envelope["surfaces"]["scheduled"]
+    with pytest.raises(ValueError, match="SCHEMA_INVALID"):
+        parse_portable_report_surface_bundle(json.dumps(envelope).encode())
+
+
+
+def test_persisted_bundle_exposes_one_file_handoff_for_all_surfaces(tmp_path):
+    bundle = build_report_surface_bundle(source_report())
+    paths = persist_report_surface_bundle(bundle, tmp_path)
+    portable = parse_portable_report_surface_bundle(paths["portable_bundle"].read_bytes())
+    assert portable.identity == bundle.identity
+    assert portable.canonical_report == bundle.canonical_report
+    assert portable.scheduled_report == bundle.scheduled_report
+    assert portable.telegram_report == bundle.telegram_report
+    assert portable.website_projection == bundle.website_projection
+
+
+def test_bundle_reader_rejects_tampered_portable_bundle(tmp_path):
+    bundle = build_report_surface_bundle(source_report())
+    paths = persist_report_surface_bundle(bundle, tmp_path)
+    paths["portable_bundle"].write_bytes(b"{}")
+    with pytest.raises(ValueError, match="REPORT_BUNDLE_COMMIT_HASH_MISMATCH"):
+        load_report_surface_bundle(tmp_path, bundle.identity.report_id)
+
+
+
+def test_portable_bundle_rejects_duplicate_json_object_keys():
+    raw = b'{"schema":"INVALID","schema":"VELTRIX_PORTABLE_REPORT_SURFACE_BUNDLE_V1"}'
+    with pytest.raises(ValueError, match="DUPLICATE_KEY"):
+        parse_portable_report_surface_bundle(raw)
+
+
+def test_bundle_reader_rejects_duplicate_keys_in_commit_marker(tmp_path):
+    bundle = build_report_surface_bundle(source_report())
+    persist_report_surface_bundle(bundle, tmp_path)
+    marker = tmp_path / "bundles" / f"{bundle.identity.report_id}.commit.json"
+    marker.write_bytes(b'{"schema":"VELTRIX_REPORT_BUNDLE_COMMIT_V1","schema":"duplicate"}')
+    with pytest.raises(ValueError, match="DUPLICATE_KEY"):
+        load_report_surface_bundle(tmp_path, bundle.identity.report_id)
+
+
+
+def test_scheduled_consumer_loads_same_scheduled_surface_from_portable_bundle():
+    bundle = build_report_surface_bundle(public_source_report())
+    portable = serialize_portable_report_surface_bundle(bundle)
+    scheduled = load_authorized_scheduled_report_from_portable(
+        portable,
+        lambda report, identity: report.get("release_mode") == "RESTRICTED_PUBLIC",
+    )
+    assert scheduled == bundle.scheduled_report
+
+
+def test_scheduled_portable_consumer_fails_closed_without_verifier():
+    bundle = build_report_surface_bundle(public_source_report())
+    portable = serialize_portable_report_surface_bundle(bundle)
+    with pytest.raises(PermissionError, match="VERIFIER_REQUIRED"):
+        load_authorized_scheduled_report_from_portable(portable, None)
+
+
+
+def test_portable_public_consumer_rejects_duplicate_fixture_ids_even_if_verifier_returns_true():
+    report = public_source_report()
+    report["predictions"].append(dict(report["predictions"][0]))
+    report = {
+        key: value for key, value in report.items()
+        if key != "report_sha256"
+    }
+    from veltrix_v2.reporting.report_identity import bind_report_identity
+    report = bind_report_identity(report)
+    portable = serialize_portable_report_surface_bundle(build_report_surface_bundle(report))
+    with pytest.raises(PermissionError, match="NON_PUBLIC_FORECASTS"):
+        load_authorized_portable_report_surface_bundle(portable, lambda *_: True)
