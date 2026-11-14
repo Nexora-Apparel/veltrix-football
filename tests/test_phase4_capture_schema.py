@@ -11,10 +11,13 @@ MIGRATIONS = ROOT / "db" / "migrations"
 def test_phase4_migration_is_in_manifest_after_phase3():
     manifest = load_manifest(MIGRATIONS)
     versions = [row[0] for row in manifest]
-    assert versions[-1] == "0004_point_in_time_feature_capture"
+    phase4_version = "0004_point_in_time_feature_capture"
+    assert phase4_version in versions
+    assert versions.index(phase4_version) == 3
     assert versions == sorted(versions)
     raw = (MIGRATIONS / "0004_point_in_time_feature_capture.sql").read_bytes()
-    assert manifest[-1][1] == hashlib.sha256(raw).hexdigest()
+    phase4_entry = next(row for row in manifest if row[0] == phase4_version)
+    assert phase4_entry[1] == hashlib.sha256(raw).hexdigest()
 
 
 def test_phase4_migration_is_additive_and_does_not_backfill_history():

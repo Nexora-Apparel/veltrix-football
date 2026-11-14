@@ -202,6 +202,25 @@ def _hash_files(paths: tuple[str, ...]) -> str:
     return sha256(payload).hexdigest()
 
 
+def _build_public_summary(summary: dict[str, object]) -> dict[str, object]:
+    """Explicit allowlist projection; never expose IDs, hashes, odds or probabilities."""
+    allowed = (
+        "status", "provider", "requests_used", "request_cap",
+        "crosswalk_registry", "captured_first_observed_rows",
+        "mapped_upcoming_targets", "forecast_count",
+        "admitted_shadow_predictions", "persisted_capture_pages",
+        "persisted_shadow_ledger_events", "paper_ledger_persisted_to_staging",
+        "paper_ledger_chain_verified", "duplicate_predictions_skipped",
+        "evidence_persisted_to_staging", "publication_status",
+        "settlement_status", "database_writes",
+    )
+    return {
+        **{key: summary[key] for key in allowed if key in summary},
+        "telegram_delivery": False,
+        "schedule_activation": False,
+        "public_publication": False,
+    }
+
 def _persist_fixture_snapshot_to_staging(
     dsn: str,
     *,
