@@ -167,6 +167,37 @@ class PostgresPaperLedgerStore:
                 events.append(event)
             return events
 
+    def append_predictions_idempotent(
+        self, predictions: list[PaperPrediction]
+    ) -> tuple[list[PaperLedgerEvent], int, ProspectivePaperLedger]:
+        """Serialize duplicate detection and batch append under one transaction lock."""
+        if not isinstance(predictions, list) or not predictions:
+            raise ValueError("PAPER_LEDGER_PREDICTION_BATCH_INVALID")
+        self._assert_target(write=True)
+        with self.connection.transaction():
+            ledger = self._begin_append()
+            existing_keys = {
+                (event.fixture_id, event.model_version)
+                for event in ledger.events
+                if event.event_type in {"PREDICTION", "SHADOW_PREDICTION"}
+            }
+            batch_keys: set[tuple[str, str]] = set()
+            new_predictions = []
+            skipped = 0
+            for prediction in predictions:
+                key = (prediction.fixture_id, prediction.model_version)
+                if key in existing_keys or key in batch_keys:
+                    skipped += 1
+                    continue
+                batch_keys.add(key)
+                new_predictions.append(prediction)
+            appended = []
+            for prediction in new_predictions:
+                event = ledger.append_prediction(prediction)
+                self._insert_event(event)
+                appended.append(event)
+            return appended, skipped, ledger
+
     def append_settlement(self, **kwargs: Any) -> PaperLedgerEvent:
         self._assert_target(write=True)
         with self.connection.transaction():
