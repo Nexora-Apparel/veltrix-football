@@ -101,6 +101,10 @@ def test_capture_builds_raw_hash_manifest_and_certified_model_observation():
     assert report.manifest.rejected_count == 0
     assert evidence.raw_response_sha256 == sha256(row.raw_response).hexdigest()
     assert evidence.point_in_time_certifiable is True
+    assert evidence.rights_approved is True
+    assert evidence.rights_approval_id == "approval-5d-epl"
+    assert evidence.rights_evidence_sha256 == approval().evidence_sha256
+    assert evidence.rights_evaluated_at == evidence.recorded_at
 
     observations = certified_match_observations(report, [row])
     assert len(observations) == 1
@@ -120,6 +124,15 @@ def test_missing_source_publication_time_is_not_replaced_by_retrieval_time():
     assert "SOURCE_PUBLICATION_TIMESTAMP_MISSING" in evidence.reason_codes
     assert evidence.source_published_at is None
     assert certified_match_observations(report, [capture(source_published_at=None)]) == ()
+
+
+def test_rights_approval_identity_mismatch_is_not_reported_as_approved():
+    row = capture(rights_approval=replace(approval(), provider="different-provider"))
+    report = capture_provider_result_evidence([row])
+    evidence = report.observations[0]
+    assert evidence.rights_approved is False
+    assert evidence.point_in_time_certifiable is False
+    assert evidence.rights_evaluated_at == evidence.recorded_at
 
 
 def test_incomplete_revision_history_fails_closed():
