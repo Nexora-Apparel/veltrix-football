@@ -673,7 +673,10 @@ def run_capture(
         "raw_redistribution_allowed": current_approval.raw_redistribution_allowed,
         "persisted_capture_pages": persisted_capture_pages,
         "evidence_persisted_to_staging": persisted_capture_pages > 0,
-        "database_writes": persisted_capture_pages > 0,
+        "database_writes": (
+            persisted_capture_pages > 0
+            or bool(staging_ledger and staging_ledger["events_appended"] > 0)
+        ),
         "telegram_delivery": False,
         "schedule_activation": False,
         "public_publication": False,
