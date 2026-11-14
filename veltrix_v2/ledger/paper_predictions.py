@@ -141,7 +141,8 @@ class ProspectivePaperLedger:
                           result_payload_sha256: str,
                           rights_approval_id: str,
                           rights_evidence_sha256: str,
-                          result_availability_basis: str = "provider_timestamp") -> PaperLedgerEvent:
+                          result_availability_basis: str = "provider_timestamp",
+                          settlement_delay_basis: str | None = None) -> PaperLedgerEvent:
         prediction = next((e for e in self._events
                            if e.event_type in {"PREDICTION", "SHADOW_PREDICTION"}
                            and e.fixture_id == fixture_id
@@ -184,6 +185,7 @@ class ProspectivePaperLedger:
             "rights_approval_id": rights_approval_id,
             "rights_evidence_sha256": rights_evidence_sha256.lower(),
             "result_availability_basis": result_availability_basis,
+            "settlement_delay_basis": settlement_delay_basis,
             "prediction_event_type": prediction.event_type,
             "prediction_evidence_class": prediction.payload.get("evidence_class", "PIT_CERTIFIED"),
             "prediction_event_sha256": prediction.event_sha256,
