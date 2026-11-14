@@ -12,13 +12,14 @@ from scripts.phase5_staging_coverage_audit import validate_staging_dsn_target
 EXPECTED_DATABASE = "veltrix_football_staging"
 EXPECTED_ROLE = "neondb_owner"
 EXPECTED_HOST = "ep-ancient-block-bcb439pk.c-16.us-east-1.aws.neon.tech"
-MIGRATION_VERSION = "0009_telegram_delivery_claims"
+MIGRATION_VERSION = "0010_telegram_delivery_reconciliation"
 EXPECTED_PENDING = [
     "0005_provider_credit_reservation_ledger",
     "0006_provider_quota_evidence",
     "0007_provider_capture_state_events",
     "0008_prospective_paper_ledger",
     "0009_telegram_delivery_claims",
+    "0010_telegram_delivery_reconciliation",
 ]
 
 
@@ -93,6 +94,33 @@ def _verify_after_apply(dsn: str, baseline: dict[str, int]) -> dict[str, object]
         ).fetchone()[0])
         if delivery_rows != 0:
             raise RuntimeError("TELEGRAM_DELIVERY_CLAIMS_NOT_EMPTY_AFTER_SCHEMA_MIGRATION")
+        reconciliation_exists = connection.execute(
+            "SELECT to_regclass('public.telegram_delivery_reconciliations') IS NOT NULL"
+        ).fetchone()[0]
+        if not reconciliation_exists:
+            raise RuntimeError("TELEGRAM_DELIVERY_RECONCILIATION_TABLE_MISSING")
+        reconciliation_triggers = {
+            row[0] for row in connection.execute(
+                """
+                SELECT tgname FROM pg_trigger
+                WHERE tgrelid='public.telegram_delivery_reconciliations'::regclass
+                  AND NOT tgisinternal
+                """
+            ).fetchall()
+        }
+        expected_reconciliation_triggers = {
+            "telegram_delivery_reconciliations_insert_guard",
+            "telegram_delivery_reconciliations_no_update",
+            "telegram_delivery_reconciliations_no_delete",
+            "telegram_delivery_reconciliations_no_truncate",
+        }
+        if not expected_reconciliation_triggers.issubset(reconciliation_triggers):
+            raise RuntimeError("TELEGRAM_DELIVERY_RECONCILIATION_TRIGGERS_MISSING")
+        reconciliation_rows = int(connection.execute(
+            "SELECT COUNT(*) FROM telegram_delivery_reconciliations"
+        ).fetchone()[0])
+        if reconciliation_rows != 0:
+            raise RuntimeError("TELEGRAM_DELIVERY_RECONCILIATIONS_NOT_EMPTY_AFTER_SCHEMA_MIGRATION")
 
         trigger_names = {
             row[0] for row in connection.execute(
@@ -138,6 +166,8 @@ def _verify_after_apply(dsn: str, baseline: dict[str, int]) -> dict[str, object]
             "telegram_delivery_claims": int(connection.execute(
                 "SELECT COUNT(*) FROM telegram_delivery_claims"
             ).fetchone()[0]),
+            "telegram_delivery_reconciliations": reconciliation_rows,
+            "reconciliation_triggers": sorted(expected_reconciliation_triggers),
             "delivery_claim_triggers": sorted({
                 "telegram_delivery_claims_transition",
                 "telegram_delivery_claims_no_delete",
