@@ -403,3 +403,17 @@ def test_fivedollar_page_adapter_rejects_raw_response_hash_mismatch():
             crosswalks={},
             rights_approval=approval(),
         )
+
+
+def test_missing_crosswalks_do_not_create_false_duplicate_fixture_identity():
+    first = capture(crosswalk=None)
+    second = capture(
+        provider_fixture_id="fx-101",
+        crosswalk=None,
+        raw_response=b'{"fixture":"fx-101","score":[0,0]}',
+    )
+    report = capture_provider_result_evidence([first, second])
+
+    assert report.manifest.item_count == 2
+    assert all("CROSSWALK_MISSING_OR_INVALID" in row.reason_codes for row in report.observations)
+    assert all("DUPLICATE_FIXTURE_IDENTITY" not in row.reason_codes for row in report.observations)
