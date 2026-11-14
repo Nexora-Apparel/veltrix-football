@@ -633,7 +633,7 @@ def run_capture(
         request_id = f"{os.getenv('GITHUB_RUN_ID', 'manual')}-{competition_id}-scheduled-1"
         request_count += 1
         try:
-            raw, headers, requested_at, retrieved_at = _request_page(
+            raw, headers, request_params, requested_at, retrieved_at = _request_page(
                 api_key, competition_id=competition_id, status="scheduled",
                 start_at=now, end_at=upcoming_end, page=1,
                 pacing_state=pacing_state,
@@ -646,7 +646,8 @@ def run_capture(
             raise
         target_rows, info = _capture_page(
             raw, headers, competition_id=competition_id, status="scheduled",
-            request_id=request_id, requested_at=requested_at, retrieved_at=retrieved_at,
+            request_id=request_id, request_params=request_params,
+            requested_at=requested_at, retrieved_at=retrieved_at,
             registry=registry, out_dir=out_dir,
             staging_dsn=staging_dsn,
             persist_staging=persist_staging,
