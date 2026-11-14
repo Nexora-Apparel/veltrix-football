@@ -1,0 +1,130 @@
+name: Manual 5Dollar Historical Acquisition Batch
+
+on:
+  workflow_dispatch:
+    inputs:
+      start_date:
+        description: "Inclusive Africa/Lagos historical start date (YYYY-MM-DD)"
+        required: true
+        type: string
+      end_date:
+        description: "Inclusive Africa/Lagos historical end date; maximum seven days"
+        required: true
+        type: string
+      max_requests:
+        description: "Hard HTTP-attempt ceiling for this batch (5-20)"
+        required: true
+        default: "15"
+        type: string
+      max_pages_per_competition:
+        description: "Maximum pages per qualified competition (1-3)"
+        required: true
+        default: "3"
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: fivedollar-historical-acquisition
+  cancel-in-progress: false
+
+jobs:
+  acquire:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      FIVEDOLLARFOOTBALL_API_KEY: ${{ secrets.FIVEDOLLARFOOTBALL_API_KEY }}
+      VELTRIX_QUALIFICATION_ATTESTATION_KEY: ${{ secrets.VELTRIX_QUALIFICATION_ATTESTATION_KEY }}
+    steps:
+      - name: Check out historical acquisition implementation
+        uses: actions/checkout@v4
+        with:
+          ref: 6efb3a8c9597ad766c8dd7c806fecd5c150460db
+
+      - name: Check out persistent hourly quota ledger
+        uses: actions/checkout@v4
+        with:
+          ref: ops/fivedollar-request-hourly-ledger
+          path: quota-ledger
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Validate inputs and run secret-free regression tests
+        env:
+          START_DATE: ${{ inputs.start_date }}
+          END_DATE: ${{ inputs.end_date }}
+          MAX_REQUESTS: ${{ inputs.max_requests }}
+          MAX_PAGES: ${{ inputs.max_pages_per_competition }}
+        run: |
+          python - <<'PY'
+          import os
+          from datetime import date
+          start, end = date.fromisoformat(os.environ["START_DATE"]), date.fromisoformat(os.environ["END_DATE"])
+          assert 0 <= (end - start).days <= 6, "batch must cover at most seven inclusive dates"
+          assert 5 <= int(os.environ["MAX_REQUESTS"]) <= 20
+          assert 1 <= int(os.environ["MAX_PAGES"]) <= 3
+          PY
+          python -m unittest discover -s tests -p 'test_fivedollar_history_batch.py' -v
+          python -m unittest discover -s tests -p 'test_provider_acquisition_adapters.py' -v
+          python -m unittest discover -s tests -p 'test_provider_fixture_normalizer.py' -v
+          python scripts/acquire_fivedollar_history_batch.py --help
+
+      - name: Install provider runtime dependency
+        run: python -m pip install "requests>=2.32.0,<3.0.0"
+
+      - name: Reserve rolling-hour provider quota before any API request
+        env:
+          RUN_ID: ${{ github.run_id }}-${{ github.run_attempt }}
+          MAX_REQUESTS: ${{ inputs.max_requests }}
+        run: |
+          python scripts/manage_fivedollar_hourly_quota.py reserve \
+            --ledger quota-ledger/data/provider_request_hourly_ledger.json \
+            --run-id "$RUN_ID" \
+            --reserved-requests "$MAX_REQUESTS"
+          git -C quota-ledger config user.name "github-actions[bot]"
+          git -C quota-ledger config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git -C quota-ledger add data/provider_request_hourly_ledger.json
+          git -C quota-ledger commit -m "Reserve provider quota for run $RUN_ID"
+          git -C quota-ledger push origin HEAD:ops/fivedollar-request-hourly-ledger
+
+      - name: Acquire signed-registry-scoped historical batch
+        env:
+          START_DATE: ${{ inputs.start_date }}
+          END_DATE: ${{ inputs.end_date }}
+          MAX_REQUESTS: ${{ inputs.max_requests }}
+          MAX_PAGES: ${{ inputs.max_pages_per_competition }}
+        run: |
+          python scripts/acquire_fivedollar_history_batch.py \
+            --start-date "$START_DATE" \
+            --end-date "$END_DATE" \
+            --max-requests "$MAX_REQUESTS" \
+            --max-pages-per-competition "$MAX_PAGES" \
+            --registry data/provider_qualification_registry.json \
+            --output fivedollar_history_batch.json
+
+      - name: Verify acquisition artifact integrity
+        run: python scripts/verify_acquisition_artifact.py fivedollar_history_batch.json
+
+      - name: Settle rolling-hour provider quota from the validated acquisition report
+        env:
+          RUN_ID: ${{ github.run_id }}-${{ github.run_attempt }}
+        run: |
+          python scripts/manage_fivedollar_hourly_quota.py settle \
+            --ledger quota-ledger/data/provider_request_hourly_ledger.json \
+            --run-id "$RUN_ID" \
+            --report fivedollar_history_batch.json
+          git -C quota-ledger add data/provider_request_hourly_ledger.json
+          git -C quota-ledger commit -m "Settle provider quota for run $RUN_ID"
+          git -C quota-ledger push origin HEAD:ops/fivedollar-request-hourly-ledger
+
+      - name: Upload sanitized historical acquisition report
+        uses: actions/upload-artifact@v4
+        with:
+          name: fivedollar-historical-batch
+          path: fivedollar_history_batch.json
+          if-no-files-found: error
+          retention-days: 14
