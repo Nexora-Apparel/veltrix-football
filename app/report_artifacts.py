@@ -246,10 +246,15 @@ def load_dashboard_snapshot(
     authorization_verifier=None,
 ) -> dict[str, Any] | None:
     """Load a dashboard projection; V2 requires the same publication verifier as the report."""
+    portable_raw = _load_portable_bundle_bytes()
+    if portable_raw is not None:
+        portable_bundle = load_v2_portable_report_bundle(
+            portable_raw, authorization_verifier
+        )
+        return portable_bundle["dashboard"] if portable_bundle is not None else None
     snapshot = _load("dashboard")
     if snapshot is None:
-        portable_bundle = load_latest_portable_report_bundle(authorization_verifier)
-        return portable_bundle["dashboard"] if portable_bundle is not None else None
+        return None
     if "report_id" in snapshot or "report_sha256" in snapshot:
         bundle = load_v2_report_bundle(authorization_verifier)
         if bundle is None or bundle["dashboard"] != snapshot:
