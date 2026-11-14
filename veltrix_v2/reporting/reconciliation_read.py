@@ -25,6 +25,11 @@ class PostgresTelegramReconciliationReader:
             raise ValueError("DELIVERY_IDEMPOTENCY_KEY_INVALID")
         with self._connect() as connection:
             connection.execute("SET TRANSACTION READ ONLY")
+            identity = connection.execute(
+                "SELECT current_database(), current_user"
+            ).fetchone()
+            if identity != ("veltrix_football_staging", "neondb_owner"):
+                raise PermissionError("RECONCILIATION_READER_TARGET_NOT_ALLOWLISTED")
             claim_row = connection.execute(
                 """
                 SELECT idempotency_key, report_id, report_sha256,
