@@ -74,6 +74,8 @@ jobs:
         run: python -m pytest --import-mode=importlib -q tests/veltrix_v2/test_observation_adapter.py
       - name: Test immutable provider evidence capture
         run: python -m pytest --import-mode=importlib -q tests/veltrix_v2/test_provider_evidence_capture.py
+      - name: Test multi-provider coverage and dispatch policy
+        run: python -m pytest --import-mode=importlib -q tests/veltrix_v2/test_provider_registry.py
       - name: Test guarded staging evidence persistence
         run: python -m pytest --import-mode=importlib -q tests/veltrix_v2/test_evidence_persistence.py
       - name: Test StrikerAPI dataset freshness evidence
