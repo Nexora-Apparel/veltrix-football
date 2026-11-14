@@ -16,11 +16,11 @@ def test_exhausted_credit_providers_are_hard_blocked():
 
 def test_fivedollar_is_only_live_fixture_source_and_results_have_archive_supplement():
     assert [p.provider for p in providers_for(DataDomain.FIXTURES)] == ["5DollarFootballAPI"]
-    assert [p.provider for p in providers_for(DataDomain.RESULTS)] == ["5DollarFootballAPI", "OpenFootball"]
+    assert [p.provider for p in providers_for(DataDomain.RESULTS)] == ["5DollarFootballAPI", "OpenFootball", "StatsBomb Open Data"]
 
 
 def test_archive_and_odds_provider_are_not_dispatchable_by_default():
-    for name in ("OpenFootball", "The Odds API"):
+    for name in ("OpenFootball", "StatsBomb Open Data", "The Odds API"):
         with pytest.raises(PermissionError):
             assert_provider_dispatch_allowed(name)
 
