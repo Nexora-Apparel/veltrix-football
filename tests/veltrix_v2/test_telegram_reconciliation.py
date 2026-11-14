@@ -6,7 +6,10 @@ import uuid
 
 import pytest
 
-from veltrix_v2.reporting.reconciliation import validate_reconciliation_event
+from veltrix_v2.reporting.reconciliation import (
+    PostgresTelegramReconciliationStore,
+    validate_reconciliation_event,
+)
 
 
 CLAIM = {
@@ -205,3 +208,14 @@ def test_reconciliation_rejects_reviewer_equal_after_normalization():
 def test_reconciliation_rejects_unrecognized_outcome_type():
     with pytest.raises(ValueError, match="OUTCOME_INVALID"):
         validate_reconciliation_event(CLAIM, event(outcome=[]), EVIDENCE)
+
+
+def test_store_rejects_local_evidence_uri_before_calling_reader():
+    reads = []
+    store = PostgresTelegramReconciliationStore(
+        lambda: pytest.fail("database must not be opened"),
+        lambda uri: reads.append(uri),
+    )
+    with pytest.raises(ValueError, match="EVIDENCE_URI_NOT_DURABLE"):
+        store.record(event(evidence_uri="/tmp/local-evidence.json"))
+    assert reads == []
