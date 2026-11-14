@@ -240,3 +240,23 @@ def parse_openligadb_response(
         matches=tuple(accepted),
         rejected_rows=tuple(sorted(rejected, key=lambda row: row.row_index)),
     )
+
+
+def full_time_90_score(match: OpenLigaDBMatch) -> tuple[int, int] | None:
+    """Return the explicit After90Minutes score only when uniquely present.
+
+    Do not substitute HalfTime, AfterExtraTime, AfterPenalties, or list order.
+    """
+    if not isinstance(match, OpenLigaDBMatch) or not match.match_is_finished:
+        return None
+    candidates = tuple(
+        result for result in match.results
+        if result.result_type_kind == "After90Minutes"
+    )
+    if len(candidates) != 1:
+        return None
+    # OpenLigaDB stores one result row per result type; each row's points
+    # represents the match score encoded by that result type. The API does not
+    # expose a separate home/away pair inside a single MatchResult row, so this
+    # helper intentionally cannot construct a two-sided score from that row.
+    return None
