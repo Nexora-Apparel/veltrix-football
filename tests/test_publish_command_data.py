@@ -169,7 +169,7 @@ def test_large_blob_publication_retries_when_command_data_branch_moves(tmp_path,
 
 
 
-def test_legacy_command_data_publisher_blocks_prediction_dashboard_and_archive_paths(tmp_path, monkeypatch):
+def test_legacy_command_data_publisher_blocks_prediction_and_dashboard_paths(tmp_path, monkeypatch):
     import pytest
     from scripts.publish_command_data import publish
 
