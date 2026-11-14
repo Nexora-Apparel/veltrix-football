@@ -175,7 +175,7 @@ def _load_portable_bundle_bytes() -> bytes | None:
             candidate = response.read(8_000_001)
         if 0 < len(candidate) <= 8_000_000:
             value = candidate
-    except (HTTPError, URLError, OSError, TimeoutError):
+    except Exception:
         value = None
 
     if value is None:
