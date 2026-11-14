@@ -45,7 +45,7 @@ $$;
 CREATE OR REPLACE FUNCTION validate_paper_ledger_chain_event()
 RETURNS TRIGGER
 LANGUAGE plpgsql
-AS $
+AS $paper_ledger_chain$
 DECLARE
     prior_sequence BIGINT;
     prior_event_sha256 CHAR(64);
@@ -95,7 +95,7 @@ BEGIN
 
     RETURN NEW;
 END;
-$;
+$paper_ledger_chain$;
 
 CREATE TRIGGER paper_ledger_events_validate_chain
     BEFORE INSERT ON paper_ledger_events
