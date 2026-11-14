@@ -161,12 +161,14 @@ def persist_report_surface_bundle(
     identity = bundle.identity
     if not re.fullmatch(r"[A-Za-z0-9._-]{1,160}", identity.report_id):
         raise ValueError("REPORT_ID_NOT_SAFE_FOR_ARTIFACT_PATH")
-    assert_report_surface_bundle(
+    verified_identity = assert_report_surface_bundle(
         bundle.canonical_report,
         bundle.scheduled_report,
         bundle.telegram_report,
         bundle.website_projection,
     )
+    if verified_identity != identity:
+        raise ValueError("REPORT_SURFACE_BUNDLE_IDENTITY_MISMATCH")
     root = Path(output_dir)
     report_bytes = (
         json.dumps(bundle.canonical_report, ensure_ascii=False, sort_keys=True, separators=(",", ":"), allow_nan=False)
