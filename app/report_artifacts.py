@@ -15,6 +15,7 @@ from urllib.error import HTTPError, URLError
 
 from veltrix_v2.reporting.report_identity import (
     REPORT_SCHEMA,
+    assert_website_projection,
     verify_report_identity,
 )
 from urllib.request import Request, urlopen
@@ -148,13 +149,8 @@ def load_dashboard_snapshot() -> dict[str, Any] | None:
         if report is None or report.get("schema") != REPORT_SCHEMA:
             return None
         try:
-            identity = verify_report_identity(report)
-        except (TypeError, ValueError):
-            return None
-        if (
-            snapshot.get("report_id") != identity.report_id
-            or snapshot.get("report_sha256") != identity.report_sha256
-        ):
+            assert_website_projection(report, snapshot)
+        except (KeyError, TypeError, ValueError):
             return None
     return snapshot
 
@@ -166,12 +162,7 @@ def load_v2_report_bundle() -> dict[str, Any] | None:
     if report is None or dashboard is None or report.get("schema") != REPORT_SCHEMA:
         return None
     try:
-        identity = verify_report_identity(report)
-        if (
-            dashboard.get("report_id") != identity.report_id
-            or dashboard.get("report_sha256") != identity.report_sha256
-        ):
-            return None
+        identity = assert_website_projection(report, dashboard)
     except (KeyError, TypeError, ValueError):
         return None
     return {"report": report, "dashboard": dashboard, "identity": identity}
