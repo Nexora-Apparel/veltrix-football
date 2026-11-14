@@ -146,7 +146,11 @@ def verify_publication_authorization(
                 odds_coverage = record.get("timestamped_odds_coverage")
                 net_roi = record.get("net_roi")
                 roi_lower = record.get("roi_ci95_lower")
-                if not _finite_number(odds_coverage) or float(odds_coverage) < MIN_TIMESTAMPED_ODDS_COVERAGE:
+                if (
+                    not _finite_number(odds_coverage)
+                    or float(odds_coverage) < MIN_TIMESTAMPED_ODDS_COVERAGE
+                    or float(odds_coverage) > 1.0
+                ):
                     return False
                 if not _finite_number(net_roi) or float(net_roi) <= 0:
                     return False
@@ -174,6 +178,25 @@ def verify_publication_authorization(
                     if float(brier) >= float(bookmaker_brier):
                         return False
                     if float(log_loss) >= float(bookmaker_log_loss):
+                        return False
+                    recent_brier = record.get("recent_brier_score")
+                    recent_bookmaker_brier = record.get("recent_bookmaker_brier_score")
+                    recent_log_loss = record.get("recent_log_loss")
+                    recent_bookmaker_log_loss = record.get("recent_bookmaker_log_loss")
+                    if not all(_finite_number(value) for value in (
+                        recent_brier,
+                        recent_bookmaker_brier,
+                        recent_log_loss,
+                        recent_bookmaker_log_loss,
+                    )):
+                        return False
+                    if float(recent_brier) >= float(recent_bookmaker_brier):
+                        return False
+                    if float(recent_log_loss) >= float(recent_bookmaker_log_loss):
+                        return False
+                    if record.get("recent_fixture_set_sha256") != record.get("recent_bookmaker_fixture_set_sha256"):
+                        return False
+                    if not isinstance(record.get("recent_fixture_set_sha256"), str) or not _HASH.fullmatch(record["recent_fixture_set_sha256"]):
                         return False
                     if record.get("bookmaker_baseline_method") != "DEVIGGED":
                         return False
@@ -217,7 +240,7 @@ def verify_publication_authorization(
                     if not isinstance(evidence_hash, str) or not _HASH.fullmatch(evidence_hash):
                         return False
                     evidence_bytes = evidence_reader(evidence_uri)
-                    if not isinstance(evidence_bytes, bytes):
+                    if not isinstance(evidence_bytes, bytes) or len(evidence_bytes) > 8_000_000:
                         return False
                     if hashlib.sha256(evidence_bytes).hexdigest() != evidence_hash:
                         return False
