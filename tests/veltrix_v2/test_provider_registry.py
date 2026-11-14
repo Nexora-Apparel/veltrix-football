@@ -44,3 +44,14 @@ def test_internal_form_and_strength_features_have_explicit_derived_status():
     archive = next(p for p in PROVIDER_REGISTRY if p.provider == "OpenFootball")
     assert archive.capability(DataDomain.TEAM_FORM).state is CapabilityState.EXPLORATORY_ONLY
     assert profile.capability(DataDomain.TEAM_STRENGTH).state is CapabilityState.DERIVED
+
+def test_statsbomb_is_historical_research_only_xg_and_lineup_candidate():
+    profile = next(p for p in PROVIDER_REGISTRY if p.provider == "StatsBomb Open Data")
+    assert profile.state is ProviderState.ARCHIVE_ONLY
+    assert not profile.collection_allowed
+    for domain in (DataDomain.EXPECTED_GOALS, DataDomain.LINEUPS):
+        assert profile.capability(domain).state is CapabilityState.CONDITIONAL
+        assert profile in providers_for(domain, include_conditional=True)
+        assert profile not in dispatchable_providers_for(domain, include_conditional=True)
+    with pytest.raises(PermissionError):
+        assert_provider_dispatch_allowed("StatsBomb Open Data")
