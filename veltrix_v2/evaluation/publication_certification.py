@@ -35,6 +35,15 @@ def _finite_number(value: Any) -> bool:
     )
 
 
+def _valid_probability_vector(values: Any, keys: tuple[str, ...]) -> bool:
+    if not isinstance(values, Mapping) or set(values) != set(keys):
+        return False
+    probabilities = [values.get(key) for key in keys]
+    if not all(_finite_number(value) and 0.0 <= float(value) <= 1.0 for value in probabilities):
+        return False
+    return abs(sum(float(value) for value in probabilities) - 1.0) <= 1e-6
+
+
 def verify_publication_authorization(
     report: Mapping[str, Any],
     manifest_bytes: bytes,
@@ -124,6 +133,16 @@ def verify_publication_authorization(
                     return False
                 record = indexed.get((competition_id, market))
                 if record is None or record.get("model_build_id") != model_build_id:
+                    return False
+                market_values = fixture.get("markets")
+                probability_keys = {
+                    "1X2": ("home", "draw", "away"),
+                    "BTTS": ("yes", "no"),
+                    "TOTALS_2_5": ("over", "under"),
+                }[market]
+                if not isinstance(market_values, Mapping) or not _valid_probability_vector(
+                    market_values.get(market), probability_keys
+                ):
                     return False
 
                 if record.get("walk_forward_method") != "EXPANDING_CHRONOLOGICAL":
