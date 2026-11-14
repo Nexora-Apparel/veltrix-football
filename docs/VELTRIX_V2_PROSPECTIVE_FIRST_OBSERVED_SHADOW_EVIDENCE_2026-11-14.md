@@ -44,7 +44,7 @@ The paper ledger stores these as `SHADOW_PREDICTION`, distinct from PIT-certifie
 
 ## Settlement boundary
 
-For a `SHADOW_PREDICTION`, the settlement adapter records the collector's exact first-observed result time for both availability and retrieval. It never substitutes the provider's four-day proxy.
+For a `SHADOW_PREDICTION`, the settlement adapter records the collector's exact first-observed result time for both availability and retrieval. It never substitutes the provider's four-day proxy. It still requires the source's conservative settlement-delay boundary to have elapsed before accepting the result; that delay basis is stored separately in the settlement event.
 
 Settlement still requires COLLECTION, STORAGE and BENCHMARKING rights. The current 5DollarFootballAPI approval explicitly includes MODEL_TRAINING but does not include BENCHMARKING. Therefore 5Dollar shadow settlements remain blocked until the separate approval-scope gap is resolved. No rights purpose is inferred from another purpose.
 
