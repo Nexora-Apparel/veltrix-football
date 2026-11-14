@@ -11,7 +11,7 @@ def make_report():
         "schema": REPORT_SCHEMA,
         "report_id": "veltrix-2026-11-14-surface-parity",
         "as_of_date": "2026-11-14",
-        "release_mode": "INTERNAL_SHADOW",
+        "release_mode": "RESTRICTED_PUBLIC",
         "predictions": [],
     })
 
@@ -44,7 +44,7 @@ def test_v2_report_bundle_accepts_matching_website_projection(monkeypatch):
         report_artifacts, "_load",
         lambda kind: {"report": report, "dashboard": dashboard}.get(kind),
     )
-    bundle = report_artifacts.load_v2_report_bundle()
+    bundle = report_artifacts.load_v2_report_bundle(lambda report, identity: report.get('release_mode') in {'RESTRICTED_PUBLIC', 'FULL_PUBLIC'})
     assert bundle is not None
     assert bundle["report"] == report
     assert bundle["dashboard"] == dashboard
@@ -59,7 +59,7 @@ def test_v2_report_bundle_rejects_dashboard_from_different_report(monkeypatch):
         report_artifacts, "_load",
         lambda kind: {"report": report, "dashboard": dashboard}.get(kind),
     )
-    assert report_artifacts.load_v2_report_bundle() is None
+    assert report_artifacts.load_v2_report_bundle(lambda report, identity: True) is None
 
 
 def test_dashboard_loader_rejects_report_id_or_hash_drift(monkeypatch):
@@ -70,7 +70,7 @@ def test_dashboard_loader_rejects_report_id_or_hash_drift(monkeypatch):
         report_artifacts, "_load",
         lambda kind: {"report": report, "dashboard": dashboard}.get(kind),
     )
-    assert report_artifacts.load_dashboard_snapshot() is None
+    assert report_artifacts.load_dashboard_snapshot(lambda report, identity: True) is None
 
 
 def test_legacy_dashboard_without_v2_identity_keeps_existing_loader_contract(monkeypatch):
@@ -92,3 +92,28 @@ def test_v2_report_bundle_rejects_website_projection_content_drift(monkeypatch):
         lambda kind: {"report": report, "dashboard": dashboard}.get(kind),
     )
     assert report_artifacts.load_v2_report_bundle() is None
+
+
+def test_v2_website_bundle_is_hidden_without_authoritative_verifier(monkeypatch):
+    report = make_report()
+    dashboard = make_dashboard(report)
+    monkeypatch.setattr(
+        report_artifacts, "_load",
+        lambda kind: {"report": report, "dashboard": dashboard}.get(kind),
+    )
+    assert report_artifacts.load_v2_report_bundle() is None
+    assert report_artifacts.load_dashboard_snapshot() is None
+
+
+def test_v2_website_bundle_rejects_shadow_report_even_if_verifier_denies(monkeypatch):
+    report = make_report()
+    report["release_mode"] = "INTERNAL_SHADOW"
+    report = bind_report_identity({key: value for key, value in report.items() if key != "report_sha256"})
+    dashboard = make_dashboard(report)
+    monkeypatch.setattr(
+        report_artifacts, "_load",
+        lambda kind: {"report": report, "dashboard": dashboard}.get(kind),
+    )
+    assert report_artifacts.load_v2_report_bundle(
+        lambda value, identity: value.get("release_mode") in {"RESTRICTED_PUBLIC", "FULL_PUBLIC"}
+    ) is None
