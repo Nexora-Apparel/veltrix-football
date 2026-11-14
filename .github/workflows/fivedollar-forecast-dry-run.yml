@@ -7,8 +7,6 @@ on:
     paths:
       - "scripts/veltrix_v2/fivedollar_forecast_dry_run.py"
       - ".github/workflows/fivedollar-forecast-dry-run.yml"
-      - "veltrix_v2/models/**"
-      - "veltrix_v2/data/**"
   workflow_dispatch:
 
 permissions:
