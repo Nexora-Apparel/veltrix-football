@@ -11,6 +11,7 @@ import hashlib
 import json
 import math
 import re
+from zoneinfo import ZoneInfo
 from typing import Any, Callable, Mapping
 from urllib.parse import urlsplit
 
@@ -44,6 +45,18 @@ def _valid_probability_vector(values: Any, keys: tuple[str, ...]) -> bool:
     return abs(sum(float(value) for value in probabilities) - 1.0) <= 1e-6
 
 
+def _aware_timestamp(value: Any) -> datetime | None:
+    if not isinstance(value, str):
+        return None
+    try:
+        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    if parsed.tzinfo is None or parsed.utcoffset() is None:
+        return None
+    return parsed
+
+
 def verify_publication_authorization(
     report: Mapping[str, Any],
     manifest_bytes: bytes,
@@ -68,6 +81,11 @@ def verify_publication_authorization(
         if report.get("schema") != REPORT_SCHEMA:
             return False
         if report.get("release_mode") not in _PUBLIC_RELEASE_MODES:
+            return False
+        report_cutoff = _aware_timestamp(report.get("cutoff_at_utc"))
+        if report_cutoff is None:
+            return False
+        if report_cutoff.astimezone(ZoneInfo("Africa/Lagos")).date().isoformat() != identity.as_of_date:
             return False
 
         manifest_sha256 = hashlib.sha256(manifest_bytes).hexdigest()
@@ -116,6 +134,12 @@ def verify_publication_authorization(
             if not isinstance(fixture_id, str) or not fixture_id.strip() or fixture_id in seen_fixture_ids:
                 return False
             seen_fixture_ids.add(fixture_id)
+            fixture_cutoff = _aware_timestamp(fixture.get("cutoff_at_utc"))
+            kickoff = _aware_timestamp(fixture.get("kickoff_utc"))
+            if fixture_cutoff is None or kickoff is None:
+                return False
+            if fixture_cutoff != report_cutoff or kickoff <= fixture_cutoff:
+                return False
             competition_id = fixture.get("competition_id")
             model_build_id = fixture.get("model_build_id")
             markets = fixture.get("certified_markets")
