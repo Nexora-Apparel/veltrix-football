@@ -13,9 +13,11 @@ import os
 from urllib.parse import urlsplit
 
 from veltrix_v2.data.competition_coverage import audit_competition_coverage
+from veltrix_v2.data.crosswalk_bootstrap import build_fivedollar_crosswalk_registry
 from veltrix_v2.data.coverage_sql import (
     FIXTURE_COVERAGE_SQL,
     OBSERVATION_COVERAGE_SQL,
+    FIVEDOLLAR_CROSSWALK_BOOTSTRAP_SQL,
     validate_read_only_coverage_sql,
 )
 from veltrix_v2.data.persisted_coverage_adapter import adapt_persisted_coverage_rows
@@ -56,7 +58,9 @@ def _rows_as_dicts(cursor) -> list[dict[str, object]]:
     return [dict(zip(columns, row)) for row in cursor.fetchall()]
 
 
-def build_coverage_summary(inputs, *, as_of: datetime) -> dict[str, object]:
+def build_coverage_summary(
+    inputs, *, as_of: datetime, crosswalk_registry=None
+) -> dict[str, object]:
     report = audit_competition_coverage(
         inputs.fixtures,
         inputs.evidence,
@@ -70,6 +74,9 @@ def build_coverage_summary(inputs, *, as_of: datetime) -> dict[str, object]:
         "rejected_fixture_rows": inputs.rejected_fixture_rows,
         "rejected_observation_rows": inputs.rejected_observation_rows,
         "unsupported_data_types": list(inputs.unsupported_data_types),
+        "crosswalk_registry": (
+            crosswalk_registry.summary() if crosswalk_registry is not None else None
+        ),
         "coverage": [
             {
                 "competition_id": row.competition_id,
@@ -111,8 +118,14 @@ def run_read_only_audit(dsn: str, *, as_of: datetime) -> dict[str, object]:
 
         fixture_rows = _rows_as_dicts(connection.execute(FIXTURE_COVERAGE_SQL))
         observation_rows = _rows_as_dicts(connection.execute(OBSERVATION_COVERAGE_SQL))
+        crosswalk_rows = _rows_as_dicts(connection.execute(FIVEDOLLAR_CROSSWALK_BOOTSTRAP_SQL))
         inputs = adapt_persisted_coverage_rows(fixture_rows, observation_rows)
-        result = build_coverage_summary(inputs, as_of=as_of)
+        crosswalk_registry = build_fivedollar_crosswalk_registry(
+            crosswalk_rows, verified_at=datetime.now(timezone.utc)
+        )
+        result = build_coverage_summary(
+            inputs, as_of=as_of, crosswalk_registry=crosswalk_registry
+        )
         result["database"] = _ALLOWED_DATABASE
         result["role"] = "neondb_owner"
         result["query_mode"] = "READ_ONLY"

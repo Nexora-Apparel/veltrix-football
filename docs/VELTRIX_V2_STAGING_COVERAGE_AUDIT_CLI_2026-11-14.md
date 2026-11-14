@@ -47,12 +47,15 @@ Requires psycopg 3 in the execution environment. No dependency is imported at mo
 
 ## Output
 
+The CLI also derives a read-only 5Dollar crosswalk registry from the exact imported source-observation rows already linked to canonical fixture rows. It requires one-to-one provider fixture IDs, globally consistent team IDs and competition IDs, valid source payload hashes, and a timezone-aware verification instant. The generated mappings become valid only from that verification instant forward; they are not backdated and are not written to `entity_crosswalk_versions`.
+
 The JSON report includes:
 - as-of timestamp
 - accepted fixture rows
 - eligible evidence rows
 - rejected fixture/observation row counts
 - unsupported data types
+- verified fixture/team/competition crosswalk counts and the forward-only verification timestamp
 - each competition and data domain's target count, eligible count, ratio, missing fixture count, rejected evidence count and contributing providers
 
 Missing or incomplete rights, timestamps, capture-manifest linkage, item hashes or point-in-time flags remain ineligible. No values are imputed.
