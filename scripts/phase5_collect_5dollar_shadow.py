@@ -32,6 +32,7 @@ from veltrix_v2.data.temporal_eligibility import resolve_rights_status
 from veltrix_v2.ledger.admission import admit_prospective_observed_shadow_forecasts
 from veltrix_v2.ledger.jsonl_store import JsonlPaperLedgerStore
 from veltrix_v2.ledger.postgres_store import PostgresPaperLedgerStore
+from veltrix_v2.ledger.postgres_store import PostgresPaperLedgerStore
 from veltrix_v2.models.engine import predict_batch
 
 from scripts.phase5_staging_coverage_audit import validate_staging_dsn_target
@@ -318,6 +319,41 @@ def _persist_capture_report_to_staging(dsn: str, capture_report) -> dict[str, in
             host=host,
             role=identity[1],
         )
+
+
+def _persist_shadow_predictions_to_staging(
+    dsn: str, predictions: list
+) -> int:
+    """Atomically append admitted shadow predictions to the exact staging ledger."""
+    validate_staging_dsn_target(dsn)
+    if not predictions:
+        return 0
+    import psycopg
+
+    parsed = urlparse(dsn)
+    host = parsed.hostname or ""
+    with psycopg.connect(dsn, autocommit=False) as connection:
+        identity = connection.execute(
+            "SELECT current_database(), current_user"
+        ).fetchone()
+        if identity != ("veltrix_football_staging", "neondb_owner"):
+            raise PermissionError("STAGING_DATABASE_ROLE_NOT_ALLOWLISTED")
+        exists = connection.execute(
+            "SELECT to_regclass('public.paper_ledger_events') IS NOT NULL"
+        ).fetchone()[0]
+        if not exists:
+            raise RuntimeError("PAPER_LEDGER_MIGRATION_0008_REQUIRED")
+        store = PostgresPaperLedgerStore(
+            connection,
+            ledger_id="veltrix-football-v2-observed-shadow",
+            write_enabled=True,
+            environment="staging",
+            database_name=identity[0],
+            host=host,
+            role=identity[1],
+        )
+        events = store.append_predictions(predictions)
+        return len(events)
 
 
 def _capture_page(
@@ -647,6 +683,7 @@ def run_capture(
             {"fixture_id": item.fixture_id, "reason_code": item.reason_code}
             for item in admission.rejected
         ],
+        "persisted_shadow_ledger_events": persisted_ledger_events,
         "ledger_events": [
             {"event_type": event.event_type, "fixture_id": event.fixture_id,
              "model_version": event.model_version, "event_sha256": event.event_sha256}
@@ -695,6 +732,7 @@ def run_capture(
         "forecast_count": summary["forecast_count"],
         "admitted_shadow_predictions": summary["admitted_shadow_predictions"],
         "persisted_capture_pages": summary["persisted_capture_pages"],
+        "persisted_shadow_ledger_events": summary["persisted_shadow_ledger_events"],
         "evidence_persisted_to_staging": summary["evidence_persisted_to_staging"],
         "paper_ledger_persisted_to_staging": summary["paper_ledger_persisted_to_staging"],
         "paper_ledger_events_appended": (
