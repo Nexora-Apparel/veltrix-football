@@ -9,6 +9,7 @@ from veltrix_v2.reporting.artifact_bundle import (
     build_report_surface_bundle,
     load_authorized_scheduled_report,
     load_authorized_scheduled_report_from_portable,
+    load_authorized_portable_report_surface_bundle,
     load_report_surface_bundle,
     persist_report_surface_bundle,
     parse_portable_report_surface_bundle,
@@ -334,3 +335,18 @@ def test_scheduled_portable_consumer_fails_closed_without_verifier():
     portable = serialize_portable_report_surface_bundle(bundle)
     with pytest.raises(PermissionError, match="VERIFIER_REQUIRED"):
         load_authorized_scheduled_report_from_portable(portable, None)
+
+
+
+def test_portable_public_consumer_rejects_duplicate_fixture_ids_even_if_verifier_returns_true():
+    report = public_source_report()
+    report["predictions"].append(dict(report["predictions"][0]))
+    report = {
+        key: value for key, value in report.items()
+        if key != "report_sha256"
+    }
+    from veltrix_v2.reporting.report_identity import bind_report_identity
+    report = bind_report_identity(report)
+    portable = serialize_portable_report_surface_bundle(build_report_surface_bundle(report))
+    with pytest.raises(PermissionError, match="NON_PUBLIC_FORECASTS"):
+        load_authorized_portable_report_surface_bundle(portable, lambda *_: True)
