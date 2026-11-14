@@ -40,7 +40,12 @@ def settle_from_verified_fixture(
         raise ValueError("PAPER_SETTLEMENT_PREDICTION_NOT_UNIQUE")
     prediction = predictions[0]
     if observed_only:
-        if not (fixture.kickoff_at_utc <= fixture.retrieved_at_utc <= recorded_at):
+        if fixture.available_at_utc is None:
+            raise ValueError("SETTLEMENT_CONSERVATIVE_DELAY_BASIS_MISSING")
+        if not (
+            fixture.kickoff_at_utc <= fixture.available_at_utc
+            <= fixture.retrieved_at_utc <= recorded_at
+        ):
             raise ValueError("SETTLEMENT_FIRST_OBSERVED_TEMPORAL_ORDER_INVALID")
     else:
         if fixture.available_at_utc is None:
@@ -102,4 +107,5 @@ def settle_from_verified_fixture(
         rights_approval_id=approval.approval_id,
         rights_evidence_sha256=approval.evidence_sha256,
         result_availability_basis=result_basis,
+        settlement_delay_basis=fixture.availability_basis if observed_only else None,
     )
