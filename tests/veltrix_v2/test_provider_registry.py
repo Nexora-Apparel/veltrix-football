@@ -1,7 +1,7 @@
 import pytest
 from veltrix_v2.data.provider_registry import (
     CapabilityState, DataDomain, PROVIDER_REGISTRY, ProviderState,
-    assert_provider_dispatch_allowed, providers_for,
+    assert_provider_dispatch_allowed, dispatchable_providers_for, providers_for,
 )
 
 
@@ -29,7 +29,8 @@ def test_odds_markets_remain_conditional_not_enabled():
     profile = next(p for p in PROVIDER_REGISTRY if p.provider == "The Odds API")
     for domain in (DataDomain.ODDS_1X2, DataDomain.ODDS_TOTALS, DataDomain.ODDS_BTTS):
         assert profile.capability(domain).state is CapabilityState.CONDITIONAL
-        assert profile not in providers_for(domain, include_conditional=True)
+        assert profile in providers_for(domain, include_conditional=True)
+        assert profile not in dispatchable_providers_for(domain, include_conditional=True)
 
 
 def test_xg_lineups_injuries_and_player_stats_are_not_fabricated():
