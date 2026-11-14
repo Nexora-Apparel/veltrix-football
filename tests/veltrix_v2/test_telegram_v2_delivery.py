@@ -208,3 +208,26 @@ def test_partial_telegram_send_failure_is_unknown_and_never_replayed():
     assert result.state is DeliveryState.DUPLICATE_SKIPPED
     assert len(attempts) == prior_attempts
     assert len(store.unknown) == 1
+
+
+def test_legacy_telegram_entrypoint_refuses_v2_report_before_network(monkeypatch, tmp_path):
+    import json
+    import sys
+    from scripts import send_telegram_report
+
+    report_path = tmp_path / "v2-report.json"
+    report_path.write_text(json.dumps({
+        "schema": REPORT_SCHEMA,
+        "report_id": "legacy-block-test",
+        "as_of_date": "2026-11-14",
+        "predictions": [],
+    }), encoding="utf-8")
+    calls = []
+    monkeypatch.setattr(send_telegram_report, "send_message", lambda *args, **kwargs: calls.append(args))
+    monkeypatch.setenv("TELEGRAM_BOT_TOKEN", "not-a-real-token")
+    monkeypatch.setenv("TELEGRAM_CHAT_ID", "not-a-real-chat")
+    monkeypatch.setattr(sys, "argv", ["send_telegram_report.py", "--report", str(report_path)])
+    with pytest.raises(SystemExit) as exc:
+        send_telegram_report.main()
+    assert exc.value.code == 1
+    assert calls == []
