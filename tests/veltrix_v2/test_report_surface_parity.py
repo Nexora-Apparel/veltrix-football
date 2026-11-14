@@ -391,3 +391,37 @@ def test_invalid_portable_artifact_never_falls_back_to_legacy_dashboard(monkeypa
         lambda kind: legacy_dashboard if kind == "dashboard" else None,
     )
     assert report_artifacts.load_dashboard_snapshot(lambda *_: True) is None
+
+
+
+def test_v2_website_loader_is_pinned_to_the_publishers_canonical_branch(monkeypatch):
+    raw = serialize_portable_report_surface_bundle(build_report_surface_bundle(make_report()))
+    requests = []
+
+    class Response:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_):
+            return False
+
+        def read(self, limit):
+            return raw
+
+    def fake_urlopen(request, timeout):
+        requests.append(request.full_url)
+        return Response()
+
+    report_artifacts._portable_bundle_cache.clear()
+    monkeypatch.setenv("VELTRIX_DATA_REPOSITORY", "untrusted/fork")
+    monkeypatch.setenv("VELTRIX_DATA_BRANCH", "main")
+    monkeypatch.setattr(report_artifacts, "urlopen", fake_urlopen)
+    loaded = report_artifacts.load_v2_report_bundle(lambda report, identity: True)
+
+    assert loaded is not None
+    assert len(requests) == 1
+    assert requests[0].startswith(
+        "https://raw.githubusercontent.com/Nexora-Apparel/veltrix-football/command-data/"
+    )
+    assert requests[0].split("?", 1)[0].endswith("public-data/v2_report_bundle.json")
+    report_artifacts._portable_bundle_cache.clear()
