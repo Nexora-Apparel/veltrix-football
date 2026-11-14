@@ -46,7 +46,7 @@ def test_complete_schema_migration_chain_on_clean_postgres16_plus(monkeypatch):
                 WHERE tgrelid='public.paper_ledger_events'::regclass
                   AND NOT tgisinternal
                 """
-            ).fetchone()[0] == 2
+            ).fetchone()[0] == 3
             assert connection.execute(
                 "SELECT to_regclass('public.provider_credit_reservation_events') IS NOT NULL"
             ).fetchone()[0]
