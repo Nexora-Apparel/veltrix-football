@@ -4,13 +4,16 @@ from hashlib import sha256
 
 import pytest
 
-from veltrix_v2.data.contracts import ApprovalStatus, DataUsePurpose, SourceApproval
+from veltrix_v2.data.contracts import ApprovalStatus, DataUsePurpose, FixtureStatus, HistoricalFixture, SourceApproval
 from veltrix_v2.data.provider_evidence_capture import (
     ProviderResultCapture,
     ResolvedFixtureCrosswalk,
     capture_provider_result_evidence,
+    capture_fivedollar_page_evidence,
     certified_match_observations,
 )
+
+from veltrix_v2.data.fivedollar import ParsedFixturePage
 
 UTC = timezone.utc
 NOW = datetime(2026, 11, 14, 14, 0, tzinfo=UTC)
@@ -245,3 +248,112 @@ def test_certified_conversion_rejects_manifest_tampering():
     altered_report = replace(report, manifest=altered_manifest)
     with pytest.raises(ValueError, match="CAPTURE_EVIDENCE_MANIFEST_HASH_MISMATCH"):
         certified_match_observations(altered_report, [row])
+
+
+def test_fivedollar_page_adapter_preserves_non_certifiable_timestamp_gap():
+    payload = {
+        "id": "fx-5d-1",
+        "league": {"id": "4160026622"},
+        "teams": {"home": {"id": "101"}, "away": {"id": "102"}},
+        "goals": {"home": 1, "away": 0},
+    }
+    row_hash = sha256(__import__("json").dumps(
+        payload, sort_keys=True, separators=(",", ":")
+    ).encode()).hexdigest()
+    fixture = HistoricalFixture(
+        provider="5DollarFootballAPI",
+        source_id="5dollarfootballapi",
+        provider_fixture_id="fx-5d-1",
+        provider_competition_id="4160026622",
+        provider_home_team_id="101",
+        provider_away_team_id="102",
+        competition_name="England Premier League",
+        home_team_name="Home",
+        away_team_name="Away",
+        kickoff_at_utc=NOW - timedelta(hours=3),
+        season_key="2026",
+        status=FixtureStatus.FINISHED,
+        home_score=1,
+        away_score=0,
+        payload=payload,
+        payload_sha256=row_hash,
+        retrieved_at_utc=NOW - timedelta(minutes=20),
+        source_event_time_utc=NOW - timedelta(hours=3),
+        available_at_utc=NOW + timedelta(days=1),
+        availability_basis="provider_finished_status_conservative_4d",
+        point_in_time_certifiable=False,
+        rights_approval_id="approval-5d-epl",
+    )
+    raw = b'{"success":1,"data":[{"id":"fx-5d-1"}]}'
+    page = ParsedFixturePage(
+        fixtures=(fixture,), page=1, per_page=1, has_more=False,
+        response_sha256=sha256(raw).hexdigest(),
+        quota_limit=60, quota_remaining=59, quota_reset=None,
+    )
+    five_dollar_approval = SourceApproval(
+        approval_id="approval-5d-epl",
+        provider="5DollarFootballAPI",
+        source_id="5dollarfootballapi",
+        competition_scope="4160026622",
+        data_type="fixtures_and_results",
+        status=ApprovalStatus.APPROVED,
+        permitted_uses=frozenset({
+            DataUsePurpose.COLLECTION, DataUsePurpose.STORAGE,
+            DataUsePurpose.MODEL_TRAINING,
+        }),
+        commercial_use_allowed=True,
+        terms_url="https://provider.invalid/terms",
+        terms_version="2026-11",
+        evidence_uri="https://evidence.invalid/approval",
+        evidence_sha256=HASH,
+        rights_basis="OPEN_LICENSE",
+        reviewed_at_utc=NOW - timedelta(days=1),
+        reviewer_id="reviewer-1",
+        valid_from_utc=NOW - timedelta(days=2),
+    )
+    crosswalk = ResolvedFixtureCrosswalk(
+        provider="5DollarFootballAPI",
+        source_id="5dollarfootballapi",
+        provider_fixture_id="fx-5d-1",
+        provider_competition_id="4160026622",
+        provider_home_team_id="101",
+        provider_away_team_id="102",
+        canonical_fixture_id="epl:fx-5d-1",
+        canonical_competition_id="5dollarfootballapi:4160026622",
+        canonical_home_team_id="club-a",
+        canonical_away_team_id="club-b",
+        mapping_version=1,
+        mapping_status="RESOLVED",
+        valid_from=NOW - timedelta(days=1),
+        evidence_sha256=HASH,
+    )
+    report = capture_fivedollar_page_evidence(
+        raw, page,
+        endpoint="/api/fixtures",
+        request_id="5d-page-1",
+        requested_at=NOW - timedelta(minutes=21),
+        recorded_at=NOW - timedelta(minutes=19),
+        crosswalks={"fx-5d-1": crosswalk},
+        rights_approval=five_dollar_approval,
+    )
+    evidence = report.observations[0]
+    assert report.manifest.item_count == 1
+    assert report.manifest.certified_count == 0
+    assert evidence.available_at is None
+    assert evidence.source_published_at is None
+    assert "SOURCE_PUBLICATION_TIMESTAMP_MISSING" in evidence.reason_codes
+    assert "RESULT_AVAILABILITY_TIMESTAMP_MISSING" in evidence.reason_codes
+    assert "REVISION_HISTORY_INCOMPLETE" in evidence.reason_codes
+
+
+def test_fivedollar_page_adapter_rejects_raw_response_hash_mismatch():
+    with pytest.raises(ValueError, match="FIVEDOLLAR_RAW_RESPONSE_HASH_MISMATCH"):
+        capture_fivedollar_page_evidence(
+            b"wrong", object(),
+            endpoint="/api/fixtures",
+            request_id="req",
+            requested_at=NOW - timedelta(minutes=1),
+            recorded_at=NOW,
+            crosswalks={},
+            rights_approval=approval(),
+        )
