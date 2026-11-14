@@ -10,6 +10,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 import math
+import random
 from typing import Iterable
 
 from veltrix_v2.models.elo import ratings_as_of
@@ -46,6 +47,16 @@ class CandidateMetrics:
 
 
 @dataclass(frozen=True)
+class PairedImprovement:
+    candidate_name: str
+    sample_count: int
+    brier_improvement_vs_poisson: float
+    log_loss_improvement_vs_poisson: float
+    brier_ci_95: tuple[float, float] | None
+    log_loss_ci_95: tuple[float, float] | None
+
+
+@dataclass(frozen=True)
 class FixtureCandidateRow:
     fixture_id: str
     competition_id: str
@@ -73,6 +84,7 @@ class ChallengerComparisonReport:
     skipped_invalid_targets: int
     skipped_without_shared_history: int
     metrics: dict[str, CandidateMetrics]
+    paired_vs_poisson: dict[str, PairedImprovement]
     competitions: tuple[CompetitionReliability, ...]
     fixtures: tuple[FixtureCandidateRow, ...]
 
@@ -145,6 +157,48 @@ def _metrics(rows: list[FixtureCandidateRow], name: str) -> CandidateMetrics:
             bins.append(ReliabilityBin(label, lower, upper, len(selected), mean_p, observed))
     n = len(rows)
     return CandidateMetrics(n, brier / n, loss / n, tuple(bins))
+
+
+def _paired_improvement(rows: list[FixtureCandidateRow], candidate: str) -> PairedImprovement:
+    """Date-clustered paired bootstrap; positive values favour the candidate."""
+    classes = ("HOME", "DRAW", "AWAY")
+    by_date: dict[str, list[tuple[float, float]]] = {}
+    for row in rows:
+        actual_index = classes.index(row.actual_class)
+        baseline = row.predictions["poisson"]
+        challenger = row.predictions[candidate]
+        base_values = (baseline.home, baseline.draw, baseline.away)
+        candidate_values = (challenger.home, challenger.draw, challenger.away)
+        base_brier = sum((p - (1.0 if i == actual_index else 0.0)) ** 2
+                         for i, p in enumerate(base_values))
+        candidate_brier = sum((p - (1.0 if i == actual_index else 0.0)) ** 2
+                              for i, p in enumerate(candidate_values))
+        base_log = -math.log(max(1e-15, base_values[actual_index]))
+        candidate_log = -math.log(max(1e-15, candidate_values[actual_index]))
+        by_date.setdefault(row.kickoff_at.date().isoformat(), []).append(
+            (base_brier - candidate_brier, base_log - candidate_log)
+        )
+
+    paired = [value for values in by_date.values() for value in values]
+    brier_mean = sum(x[0] for x in paired) / len(paired) if paired else 0.0
+    log_mean = sum(x[1] for x in paired) / len(paired) if paired else 0.0
+    brier_ci = log_ci = None
+    date_keys = sorted(by_date)
+    if len(date_keys) >= 2:
+        rng = random.Random(20261114 + sum(ord(c) for c in candidate))
+        brier_samples: list[float] = []
+        log_samples: list[float] = []
+        for _ in range(1000):
+            chosen = [rng.choice(date_keys) for _ in date_keys]
+            sample = [x for key in chosen for x in by_date[key]]
+            brier_samples.append(sum(x[0] for x in sample) / len(sample))
+            log_samples.append(sum(x[1] for x in sample) / len(sample))
+        brier_samples.sort()
+        log_samples.sort()
+        lo, hi = int(0.025 * 999), int(0.975 * 999)
+        brier_ci = (brier_samples[lo], brier_samples[hi])
+        log_ci = (log_samples[lo], log_samples[hi])
+    return PairedImprovement(candidate, len(rows), brier_mean, log_mean, brier_ci, log_ci)
 
 
 def evaluate_model_challengers(
@@ -243,6 +297,7 @@ def evaluate_model_challengers(
     names = ("poisson", "elo", "form", "blend_poisson_elo",
              "blend_poisson_form", "blend_elo_form", "blend_all_equal")
     metrics = {name: _metrics(scored, name) for name in names}
+    paired = {name: _paired_improvement(scored, name) for name in names if name != "poisson"}
     competition_reports = []
     for competition in sorted({row.competition_id for row in scored}):
         subset = [row for row in scored if row.competition_id == competition]
@@ -256,6 +311,6 @@ def evaluate_model_challengers(
         skipped_after_evaluation_as_of=skipped_future,
         skipped_invalid_targets=skipped_invalid,
         skipped_without_shared_history=skipped_history,
-        metrics=metrics, competitions=tuple(competition_reports),
+        metrics=metrics, paired_vs_poisson=paired, competitions=tuple(competition_reports),
         fixtures=tuple(scored),
     )

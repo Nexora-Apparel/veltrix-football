@@ -50,6 +50,9 @@ def test_poisson_elo_form_and_blends_use_identical_fixture_set():
     assert expected == {"h2"} | {f"h{i}" for i in range(4, 9)} | {"t9", "t10", "t11"}
     assert all(metric.sample_count == 9 for metric in report.metrics.values())
     assert report.metrics["blend_all_equal"].sample_count == report.metrics["poisson"].sample_count
+    assert report.paired_vs_poisson["blend_all_equal"].sample_count == 9
+    assert report.paired_vs_poisson["blend_all_equal"].brier_ci_95 is not None
+    assert report.paired_vs_poisson["blend_all_equal"].log_loss_ci_95 is not None
     for row in report.fixtures:
         for prediction in row.predictions.values():
             assert prediction.home + prediction.draw + prediction.away == pytest.approx(1.0)
