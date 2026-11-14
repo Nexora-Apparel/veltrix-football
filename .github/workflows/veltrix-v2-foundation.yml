@@ -82,6 +82,8 @@ jobs:
         run: python -m pytest --import-mode=importlib -q tests/veltrix_v2/test_competition_coverage.py
       - name: Test persisted evidence coverage adapter
         run: python -m pytest --import-mode=importlib -q tests/veltrix_v2/test_persisted_coverage_adapter.py
+      - name: Test read-only staging coverage SQL
+        run: python -m pytest --import-mode=importlib -q tests/veltrix_v2/test_coverage_sql.py
       - name: Test guarded staging evidence persistence
         run: python -m pytest --import-mode=importlib -q tests/veltrix_v2/test_evidence_persistence.py
       - name: Test StrikerAPI dataset freshness evidence
