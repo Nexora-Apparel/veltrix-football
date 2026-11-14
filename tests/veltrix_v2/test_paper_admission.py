@@ -2,7 +2,9 @@ from dataclasses import replace
 from datetime import datetime, timedelta, timezone
 
 from veltrix_v2.data.contracts import ApprovalStatus, DataUsePurpose, SourceApproval
-from veltrix_v2.ledger.admission import admit_shadow_forecasts
+from veltrix_v2.ledger.admission import (
+    admit_prospective_observed_shadow_forecasts, admit_shadow_forecasts,
+)
 from veltrix_v2.models.engine import BatchForecastReport, ForecastRecord, PredictionTarget
 from veltrix_v2.models.poisson import MatchObservation, PoissonPrediction
 
@@ -159,3 +161,60 @@ def test_manifest_linked_observation_is_admitted_with_both_capture_hashes():
     )
     assert len(result.admitted) == 1
     assert not result.rejected
+
+
+def _first_observed_history(history):
+    return [replace(
+        history[0],
+        available_at=NOW - timedelta(days=4),
+        recorded_at=NOW - timedelta(days=4),
+        availability_basis="collector_first_observed_v1",
+        point_in_time_certifiable=False,
+        evidence_manifest_sha256="f" * 64,
+        capture_evidence_sha256="9" * 64,
+    )]
+
+
+def test_observed_only_admission_creates_separate_non_pit_shadow_prediction():
+    report, target, history = _fixture_set(certifiable=False)
+    result = admit_prospective_observed_shadow_forecasts(
+        report, [target], _first_observed_history(history),
+        source_approvals={"approval-1": APPROVAL},
+        forecasted_at=NOW + timedelta(minutes=1),
+        recorded_at=NOW + timedelta(minutes=2),
+        model_artifact_sha256="d" * 64, feature_set_sha256="e" * 64,
+    )
+    assert len(result.admitted) == 1
+    assert not result.rejected
+    assert result.admitted[0].point_in_time_certifiable is False
+    assert result.admitted[0].evidence_class == "PROSPECTIVE_OBSERVED_ONLY"
+
+
+def test_observed_only_admission_rejects_missing_collector_manifest_hashes():
+    report, target, history = _fixture_set(certifiable=False)
+    observed = replace(_first_observed_history(history)[0], capture_evidence_sha256=None)
+    result = admit_prospective_observed_shadow_forecasts(
+        report, [target], [observed],
+        source_approvals={"approval-1": APPROVAL},
+        forecasted_at=NOW + timedelta(minutes=1),
+        recorded_at=NOW + timedelta(minutes=2),
+        model_artifact_sha256="d" * 64, feature_set_sha256="e" * 64,
+    )
+    assert not result.admitted
+    assert result.rejected[0].reason_code == "OBSERVED_CAPTURE_EVIDENCE_HASH_MISSING"
+
+
+def test_observed_only_admission_rejects_publishable_model_output():
+    report, target, history = _fixture_set(certifiable=False)
+    forecast = report.forecasts[0]
+    publishable_model = replace(forecast.model, publishable=True)
+    report = replace(report, forecasts=(replace(forecast, model=publishable_model),))
+    result = admit_prospective_observed_shadow_forecasts(
+        report, [target], _first_observed_history(history),
+        source_approvals={"approval-1": APPROVAL},
+        forecasted_at=NOW + timedelta(minutes=1),
+        recorded_at=NOW + timedelta(minutes=2),
+        model_artifact_sha256="d" * 64, feature_set_sha256="e" * 64,
+    )
+    assert not result.admitted
+    assert result.rejected[0].reason_code == "OBSERVED_ONLY_FORECAST_MUST_REMAIN_NON_PUBLISHABLE"
