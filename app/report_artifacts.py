@@ -90,10 +90,8 @@ def _load(kind: str) -> dict[str, Any] | None:
     if cached and now - cached[0] < CACHE_SECONDS:
         return cached[1]
 
-    # V2 publication has one canonical source. Environment overrides must
-    # never redirect public report reads away from the publisher's target.
-    repo = PUBLICATION_REPOSITORY
-    branch = PUBLICATION_BRANCH
+    repo = (os.environ.get("VELTRIX_DATA_REPOSITORY") or DEFAULT_REPOSITORY).strip()
+    branch = (os.environ.get("VELTRIX_DATA_BRANCH") or DEFAULT_BRANCH).strip()
     if not re.fullmatch(r"[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+", repo) or not re.fullmatch(r"[A-Za-z0-9_.-]+", branch):
         _cache[kind] = (now, None)
         return None
@@ -157,8 +155,10 @@ def _load(kind: str) -> dict[str, Any] | None:
 def _load_portable_bundle_bytes() -> bytes | None:
     """Fetch the single V2 bundle artifact with a short cache and strict byte limit."""
     now = time.monotonic()
-    repo = (os.environ.get("VELTRIX_DATA_REPOSITORY") or DEFAULT_REPOSITORY).strip()
-    branch = (os.environ.get("VELTRIX_DATA_BRANCH") or DEFAULT_BRANCH).strip()
+    # V2 publication has one canonical source. Environment overrides must
+    # never redirect public report reads away from the publisher's target.
+    repo = PUBLICATION_REPOSITORY
+    branch = PUBLICATION_BRANCH
     if not re.fullmatch(r"[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+", repo) or not re.fullmatch(r"[A-Za-z0-9_.-]+", branch):
         return None
     cache_key = f"{repo}@{branch}"
