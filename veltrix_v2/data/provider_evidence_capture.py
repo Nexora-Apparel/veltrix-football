@@ -466,7 +466,7 @@ def capture_provider_result_evidence(
         raise ValueError("CAPTURE_BATCH_REQUEST_IDENTITY_MISMATCH")
     fixture_ids = [r.crosswalk.canonical_fixture_id if isinstance(r.crosswalk, ResolvedFixtureCrosswalk) else "" for r in rows]
     provider_ids = [(r.provider, r.source_id, r.provider_fixture_id) for r in rows]
-    duplicates = {x for x in fixture_ids if fixture_ids.count(x) > 1}
+    duplicates = {x for x in fixture_ids if x and fixture_ids.count(x) > 1}
     duplicate_provider_ids = {x for x in provider_ids if provider_ids.count(x) > 1}
     evidence = []
     for row in rows:
