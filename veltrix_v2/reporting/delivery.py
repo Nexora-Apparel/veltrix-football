@@ -44,7 +44,7 @@ class DeliveryAttempt:
 class DeliveryStore(Protocol):
     """Implementations must make claim() atomic across workers and restarts."""
 
-    def claim(self, key: str, destination: str) -> bool: ...
+    def claim(self, key: str, report_id: str, report_sha256: str, destination: str) -> bool: ...
     def mark_sent(self, key: str, receipt: DeliveryReceipt) -> None: ...
     def mark_unknown(self, key: str, reason_code: str) -> None: ...
 
@@ -66,7 +66,7 @@ def deliver_once(
     not share a transaction coordinator.
     """
     key = delivery_idempotency_key(identity, destination)
-    if not store.claim(key, destination):
+    if not store.claim(key, identity.report_id, identity.report_sha256, destination):
         return DeliveryAttempt(key, DeliveryState.DUPLICATE_SKIPPED)
 
     try:
