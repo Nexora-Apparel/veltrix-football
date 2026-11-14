@@ -51,6 +51,8 @@ jobs:
         run: python -m pytest --import-mode=importlib -q tests/providers/test_provider_access.py
       - name: Test independent results-only Poisson model
         run: python -m pytest --import-mode=importlib -q tests/veltrix_v2/test_results_only_poisson.py
+      - name: Test OpenFootball archive parser
+        run: python -m pytest --import-mode=importlib -q tests/providers/test_openfootball_archive.py
       - name: Test chronological walk-forward evaluation
         run: python -m pytest --import-mode=importlib -q tests/veltrix_v2/test_walk_forward.py
       - name: Test calibration and date-clustered uncertainty
