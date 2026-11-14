@@ -117,3 +117,19 @@ def test_v2_website_bundle_rejects_shadow_report_even_if_verifier_denies(monkeyp
     assert report_artifacts.load_v2_report_bundle(
         lambda value, identity: value.get("release_mode") in {"RESTRICTED_PUBLIC", "FULL_PUBLIC"}
     ) is None
+
+
+def test_v2_latest_report_requires_authoritative_publication_verifier(monkeypatch):
+    report = make_report()
+    monkeypatch.setattr(report_artifacts, "_load", lambda kind: report if kind == "report" else None)
+    assert report_artifacts.load_latest_report() is None
+    assert report_artifacts.load_latest_report(
+        lambda value, identity: value.get("release_mode") == "RESTRICTED_PUBLIC"
+    ) == report
+
+
+def test_v2_latest_report_rejects_verifier_false_or_non_boolean_truth(monkeypatch):
+    report = make_report()
+    monkeypatch.setattr(report_artifacts, "_load", lambda kind: report if kind == "report" else None)
+    assert report_artifacts.load_latest_report(lambda *_: False) is None
+    assert report_artifacts.load_latest_report(lambda *_: 1) is None
