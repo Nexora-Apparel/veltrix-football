@@ -76,6 +76,8 @@ jobs:
         run: python -m pytest --import-mode=importlib -q tests/veltrix_v2/test_provider_evidence_capture.py
       - name: Test guarded staging evidence persistence
         run: python -m pytest --import-mode=importlib -q tests/veltrix_v2/test_evidence_persistence.py
+      - name: Test StrikerAPI dataset freshness evidence
+        run: python -m pytest --import-mode=importlib -q tests/veltrix_v2/test_strikerapi_freshness.py
       - name: Test free-first 5Dollar forecast orchestration
         run: python -m pytest --import-mode=importlib -q tests/veltrix_v2/test_fivedollar_engine.py
       - name: Test bounded 5Dollar forecast dry run
