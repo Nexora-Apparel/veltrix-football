@@ -803,7 +803,7 @@ def run_capture(
         local_store.append_prediction(prediction) for prediction in admission.admitted
     ]
     staging_ledger = (
-        _persist_paper_predictions_to_staging(staging_dsn, admission.admitted)
+        _persist_paper_predictions_to_staging(staging_dsn, list(admission.admitted))
         if persist_staging else None
     )
 
