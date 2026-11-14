@@ -65,6 +65,12 @@ def certification(market):
             "bookmaker_brier_score": 0.21,
             "log_loss": 0.58,
             "bookmaker_log_loss": 0.62,
+            "recent_brier_score": 0.18,
+            "recent_bookmaker_brier_score": 0.20,
+            "recent_log_loss": 0.55,
+            "recent_bookmaker_log_loss": 0.60,
+            "recent_fixture_set_sha256": hashlib.sha256(b"recent-fixtures").hexdigest(),
+            "recent_bookmaker_fixture_set_sha256": hashlib.sha256(b"recent-fixtures").hexdigest(),
             "bookmaker_baseline_method": "DEVIGGED",
             "bookmaker_baseline_source": "independent_timestamped_consensus",
             "bookmaker_fixture_set_sha256": hashlib.sha256(b"eligible-fixtures").hexdigest(),
@@ -279,3 +285,32 @@ def test_non_chronological_non_pit_or_non_prospective_evidence_denies_publicatio
     assert verify_publication_authorization(
         report, raw, attestation_ok, rights_ok, evidence_reader
     ) is False
+
+
+
+def test_odds_coverage_above_one_is_invalid():
+    report = make_report()
+    btts = certification("BTTS")
+    btts["timestamped_odds_coverage"] = 1.01
+    raw = make_manifest(report, [certification("1X2"), btts])
+    assert verify_publication_authorization(report, raw, attestation_ok, rights_ok, evidence_reader) is False
+
+
+@pytest.mark.parametrize(("field", "value"), [
+    ("recent_brier_score", 0.20),
+    ("recent_log_loss", 0.60),
+])
+def test_1x2_must_beat_bookmaker_on_recent_holdout_too(field, value):
+    report = make_report()
+    one_x_two = certification("1X2")
+    one_x_two[field] = value
+    raw = make_manifest(report, [one_x_two, certification("BTTS")])
+    assert verify_publication_authorization(report, raw, attestation_ok, rights_ok, evidence_reader) is False
+
+
+def test_recent_model_and_bookmaker_fixture_sets_must_match():
+    report = make_report()
+    one_x_two = certification("1X2")
+    one_x_two["recent_bookmaker_fixture_set_sha256"] = "0" * 64
+    raw = make_manifest(report, [one_x_two, certification("BTTS")])
+    assert verify_publication_authorization(report, raw, attestation_ok, rights_ok, evidence_reader) is False
