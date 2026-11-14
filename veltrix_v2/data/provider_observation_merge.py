@@ -86,6 +86,7 @@ def merge_certified_observations(
         valid_kickoff = (
             isinstance(row.kickoff_at, datetime)
             and row.kickoff_at.tzinfo is not None and row.kickoff_at.utcoffset() is not None
+            and valid_times and row.available_at >= row.kickoff_at
         ) or (
             row.kickoff_at is None and isinstance(row.kickoff_date, date)
             and not isinstance(row.kickoff_date, datetime)
