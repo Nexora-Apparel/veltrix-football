@@ -132,6 +132,8 @@ class CapturedResultEvidence:
     competition_id: str
     home_team_id: str
     away_team_id: str
+    home_goals: int
+    away_goals: int
     provider: str
     source_id: str
     provider_fixture_id: str
@@ -157,7 +159,7 @@ class CapturedResultEvidence:
         result["reason_codes"] = list(self.reason_codes)
         return result
 
-    def to_match_observation(self, *, home_goals: int, away_goals: int, manifest_sha256: str, evidence_sha256: str) -> MatchObservation:
+    def to_match_observation(self, *, manifest_sha256: str, evidence_sha256: str) -> MatchObservation:
         if not self.point_in_time_certifiable:
             raise ValueError("UNCERTIFIED_EVIDENCE_CANNOT_ENTER_MODEL")
         return MatchObservation(
@@ -168,8 +170,8 @@ class CapturedResultEvidence:
             kickoff_at=datetime.fromisoformat(self.kickoff_at),
             available_at=datetime.fromisoformat(self.available_at or ""),
             recorded_at=datetime.fromisoformat(self.recorded_at),
-            home_goals=home_goals,
-            away_goals=away_goals,
+            home_goals=self.home_goals,
+            away_goals=self.away_goals,
             provider=self.provider,
             source_id=self.source_id,
             availability_basis="provider_evidence_manifest_v1",
@@ -332,6 +334,8 @@ def _capture_one(row: ProviderResultCapture) -> CapturedResultEvidence:
         competition_id=crosswalk.canonical_competition_id if crosswalk else "",
         home_team_id=crosswalk.canonical_home_team_id if crosswalk else "",
         away_team_id=crosswalk.canonical_away_team_id if crosswalk else "",
+        home_goals=row.home_goals if type(row.home_goals) is int and row.home_goals >= 0 else -1,
+        away_goals=row.away_goals if type(row.away_goals) is int and row.away_goals >= 0 else -1,
         provider=row.provider,
         source_id=row.source_id,
         provider_fixture_id=row.provider_fixture_id,
@@ -364,7 +368,7 @@ def capture_provider_result_evidence(
     identity = {(r.provider, r.source_id, r.endpoint, r.request_id) for r in rows}
     if len(identity) != 1:
         raise ValueError("CAPTURE_BATCH_REQUEST_IDENTITY_MISMATCH")
-    fixture_ids = [r.crosswalk.canonical_fixture_id for r in rows]
+    fixture_ids = [r.crosswalk.canonical_fixture_id if isinstance(r.crosswalk, ResolvedFixtureCrosswalk) else "" for r in rows]
     provider_ids = [(r.provider, r.source_id, r.provider_fixture_id) for r in rows]
     duplicates = {x for x in fixture_ids if fixture_ids.count(x) > 1}
     duplicate_provider_ids = {x for x in provider_ids if provider_ids.count(x) > 1}
@@ -411,16 +415,40 @@ def certified_match_observations(
 ) -> tuple[MatchObservation, ...]:
     """Pair evidence with original score values; reject any uncertified row."""
     rows = tuple(captures)
-    if len(rows) != len(report.observations):
+    if len(rows) != len(report.observations) or len(rows) != report.manifest.item_count:
         raise ValueError("CAPTURE_EVIDENCE_ROW_COUNT_MISMATCH")
+    item_hashes = tuple(_digest(item.as_dict()) for item in report.observations)
+    if item_hashes != report.manifest.item_evidence_sha256:
+        raise ValueError("CAPTURE_EVIDENCE_ITEM_HASH_MISMATCH")
+    manifest_body = report.manifest.as_dict()
+    declared_manifest_hash = manifest_body.pop("manifest_sha256", None)
+    if not _valid_hash(declared_manifest_hash) or _digest(manifest_body) != declared_manifest_hash:
+        raise ValueError("CAPTURE_EVIDENCE_MANIFEST_HASH_MISMATCH")
+    certified_count = sum(item.point_in_time_certifiable for item in report.observations)
+    if certified_count != report.manifest.certified_count or (
+        len(report.observations) - certified_count != report.manifest.rejected_count
+    ):
+        raise ValueError("CAPTURE_EVIDENCE_MANIFEST_COUNT_MISMATCH")
+
     observations = []
-    for evidence, source in zip(report.observations, rows):
+    for evidence, source, item_hash in zip(report.observations, rows, item_hashes):
+        if (
+            source.provider != evidence.provider
+            or source.source_id != evidence.source_id
+            or source.provider_fixture_id != evidence.provider_fixture_id
+            or not isinstance(source.raw_response, bytes)
+            or sha256(source.raw_response).hexdigest() != evidence.raw_response_sha256
+            or not isinstance(source.crosswalk, ResolvedFixtureCrosswalk)
+            or source.crosswalk.canonical_fixture_id != evidence.fixture_id
+            or source.crosswalk.canonical_competition_id != evidence.competition_id
+            or source.crosswalk.canonical_home_team_id != evidence.home_team_id
+            or source.crosswalk.canonical_away_team_id != evidence.away_team_id
+        ):
+            raise ValueError("CAPTURE_EVIDENCE_SOURCE_ROW_MISMATCH")
         if not evidence.point_in_time_certifiable:
             continue
         observations.append(evidence.to_match_observation(
-            home_goals=source.home_goals,
-            away_goals=source.away_goals,
-            manifest_sha256=report.manifest.manifest_sha256,
-            evidence_sha256=_digest(evidence.as_dict()),
+            manifest_sha256=declared_manifest_hash,
+            evidence_sha256=item_hash,
         ))
     return tuple(observations)
