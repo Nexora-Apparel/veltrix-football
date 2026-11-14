@@ -203,3 +203,30 @@ def test_bundle_reader_checks_commit_marker_artifact_hashes(tmp_path):
     marker.write_text(json.dumps(commit))
     with pytest.raises(ValueError, match="COMMIT_HASH_MISMATCH"):
         load_report_surface_bundle(tmp_path, bundle.identity.report_id)
+
+
+
+def test_interrupted_four_surface_write_is_invisible_until_commit_marker(tmp_path, monkeypatch):
+    from veltrix_v2.reporting import artifact_bundle
+
+    bundle = build_report_surface_bundle(source_report())
+    original_write = artifact_bundle._write_immutable
+    writes = {"count": 0}
+
+    def fail_before_dashboard_or_commit(path, payload):
+        writes["count"] += 1
+        if writes["count"] == 4:
+            raise OSError("simulated interruption before final artifact")
+        return original_write(path, payload)
+
+    monkeypatch.setattr(artifact_bundle, "_write_immutable", fail_before_dashboard_or_commit)
+    with pytest.raises(OSError, match="simulated interruption"):
+        persist_report_surface_bundle(bundle, tmp_path)
+
+    with pytest.raises(ValueError, match="COMMIT_MARKER_MISSING"):
+        load_report_surface_bundle(tmp_path, bundle.identity.report_id)
+
+    monkeypatch.setattr(artifact_bundle, "_write_immutable", original_write)
+    persist_report_surface_bundle(bundle, tmp_path)
+    loaded = load_report_surface_bundle(tmp_path, bundle.identity.report_id)
+    assert loaded.identity == bundle.identity
