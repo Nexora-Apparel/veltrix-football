@@ -189,10 +189,10 @@ def test_untrusted_timezone_and_result_before_kickoff_fail_closed():
     assert report.observations[0].point_in_time_certifiable is False
     assert "RESULT_AVAILABLE_BEFORE_KICKOFF" in report.observations[0].reason_codes
 
-    naive = capture(retrieved_at=datetime(2026, 11, 14, 13, 40))
+    naive = capture(kickoff_at=datetime(2026, 11, 14, 11, 0))
     report = capture_provider_result_evidence([naive])
     assert report.observations[0].point_in_time_certifiable is False
-    assert "RETRIEVED_AT_TIMESTAMP_UNTRUSTED" in report.observations[0].reason_codes
+    assert "KICKOFF_AT_TIMESTAMP_UNTRUSTED" in report.observations[0].reason_codes
 
 
 def test_source_timestamp_requires_explicit_basis_and_evidence_hash():
