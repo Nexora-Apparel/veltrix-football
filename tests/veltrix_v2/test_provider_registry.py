@@ -55,3 +55,15 @@ def test_statsbomb_is_historical_research_only_xg_and_lineup_candidate():
         assert profile not in dispatchable_providers_for(domain, include_conditional=True)
     with pytest.raises(PermissionError):
         assert_provider_dispatch_allowed("StatsBomb Open Data")
+
+
+def test_openligadb_is_conditional_and_never_dispatchable():
+    profile = next(p for p in PROVIDER_REGISTRY if p.provider == "OpenLigaDB")
+    assert profile.state is ProviderState.OPTIONAL_GATED
+    assert profile.collection_allowed is False
+    for domain in (DataDomain.FIXTURES, DataDomain.RESULTS):
+        assert profile.capability(domain).state is CapabilityState.CONDITIONAL
+        assert profile in providers_for(domain, include_conditional=True)
+        assert profile not in dispatchable_providers_for(domain, include_conditional=True)
+    with pytest.raises(PermissionError):
+        assert_provider_dispatch_allowed("OpenLigaDB")
