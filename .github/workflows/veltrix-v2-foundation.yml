@@ -53,7 +53,7 @@ jobs:
         run: python -m pytest --import-mode=importlib -q tests/veltrix_v2/test_results_only_poisson.py
       - name: Test OpenFootball archive parser
         run: python -m pytest --import-mode=importlib -q tests/providers/test_openfootball_archive.py
-      - name: Test chronological walk-forward evaluation
+      - name: Test chronological and date-only walk-forward evaluation
         run: python -m pytest --import-mode=importlib -q tests/veltrix_v2/test_walk_forward.py
       - name: Test calibration and date-clustered uncertainty
         run: python -m pytest --import-mode=importlib -q tests/veltrix_v2/test_reliability.py
