@@ -1,6 +1,6 @@
 name: VELTRIX 2.0 Phase 2 Data Foundation Tests
 # Historical source rights, fixture parsing, provenance and ingestion contracts only.
-# Model estimators and prediction evaluation remain out of scope until their later phases.
+# Includes clean-room model-core tests; full predictive evaluation remains a separate gate.
 
 on:
   push:
@@ -47,6 +47,10 @@ jobs:
         run: python -m pytest --import-mode=importlib -q tests/test_phase2_data_foundation.py
       - name: Test offline Odds API parser and budget planner
         run: python -m pytest --import-mode=importlib -q tests/providers/odds_api_v4 --ignore=tests/providers/odds_api_v4/test_reservation_postgres.py --ignore=tests/providers/odds_api_v4/test_quota_evidence_postgres.py --ignore=tests/providers/odds_api_v4/test_capture_state_postgres.py --ignore=tests/providers/odds_api_v4/test_capture_request_postgres.py
+      - name: Test provider-neutral free-first access policy
+        run: python -m pytest --import-mode=importlib -q tests/providers/test_provider_access.py
+      - name: Test independent results-only Poisson model
+        run: python -m pytest --import-mode=importlib -q tests/veltrix_v2/test_results_only_poisson.py
       - name: Enforce no legacy prediction imports in v2
         run: |
           if grep -R -n -E "from app\.(live_predictions|prediction|advanced_models|calibration|backtest_engine)|import app\.(live_predictions|prediction|advanced_models|calibration|backtest_engine)" veltrix_v2; then
