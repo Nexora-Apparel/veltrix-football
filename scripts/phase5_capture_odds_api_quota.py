@@ -60,10 +60,9 @@ def _quota_integer(headers: dict[str, str], name: str) -> int | None:
     return int(value)
 
 
-def _next_month_start(observed_at: datetime) -> date:
-    if observed_at.month == 12:
-        return date(observed_at.year + 1, 1, 1)
-    return date(observed_at.year, observed_at.month + 1, 1)
+def _internal_budget_period(observed_at: datetime) -> tuple[date, date]:
+    start = observed_at.date()
+    return start, start + timedelta(days=30)
 
 
 def _fetch() -> tuple[int, bytes, dict[str, str], datetime]:
@@ -126,8 +125,7 @@ def _persist(
         and used >= 0 and remaining >= 0 and last_cost >= 0\n        and used + remaining > 0
     )
     monthly_allowance = used + remaining if quota_valid else None
-    month_start = date(fetched_at.year, fetched_at.month, 1)
-    month_end = _next_month_start(fetched_at)
+    month_start, month_end = _internal_budget_period(fetched_at)
     payload_is_json = False
     sports_count = 0
     if status == 200:
@@ -150,6 +148,7 @@ def _persist(
         "terms_version": TERMS_VERSION,
         "terms_acceptance_evidence_sha256": TERMS_EVIDENCE_SHA256,
         "rights_approval_id": APPROVAL_ID,
+        "budget_period_basis": "VELTRIX_INTERNAL_ROLLING_30D",
     }
     quota_hash = _canonical_hash({"schema": "veltrix-odds-quota-probe-v1", **evidence_base})
     budget_hash = _canonical_hash({
@@ -218,8 +217,7 @@ def _persist(
                 json.dumps({"auth": "x-api-key-header", "dateFormat": "iso"}),
                 status, response_hash, body, json.dumps(headers),
                 monthly_allowance, remaining,
-                datetime.combine(month_end, datetime.min.time(), tzinfo=timezone.utc)
-                if quota_valid else None,
+                None,  # Provider reset instant is not exposed by the documented quota headers.
                 fetched_at,
             ),
         ).fetchone()[0]
@@ -290,6 +288,7 @@ def _persist(
                 "NO_CREDIT_DISCOVERY_VERIFIED" if active
                 else "HTTP_JSON_QUOTA_EVIDENCE_INCOMPLETE_OR_UNEXPECTED_COST"
             ),
+            "budget_period_basis": "VELTRIX_INTERNAL_ROLLING_30D",
         }
         connection.execute(
             """
