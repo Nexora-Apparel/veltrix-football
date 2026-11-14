@@ -88,3 +88,15 @@ def test_batch_counts_untyped_targets_as_invalid():
     assert report.requested_target_count == 1
     assert report.skipped_invalid_targets == 1
     assert report.forecast_count == 0
+
+
+def test_batch_propagates_recency_half_life_to_each_forecast():
+    report = predict_batch(history(), [target(0)], cutoff_at=CUTOFF,
+                           recency_half_life_days=30)
+    assert report.forecasts[0].model.recency_half_life_days == 30
+
+
+def test_batch_rejects_invalid_recency_even_when_no_targets_exist():
+    import pytest
+    with pytest.raises(ValueError, match="RECENCY_HALF_LIFE_MUST_BE_POSITIVE_FINITE"):
+        predict_batch(history(), [], cutoff_at=CUTOFF, recency_half_life_days=0)
