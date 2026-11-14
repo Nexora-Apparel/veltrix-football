@@ -65,3 +65,10 @@ The staging persistence adapter is implemented in `veltrix_v2/data/evidence_pers
 All writes execute in one DB-API transaction. Replays are idempotent by manifest key, response identity and source-observation identity. Each referenced source approval must already exist in the target database.
 
 Writes are disabled by default. The explicit guard requires the staging environment label, the dedicated staging database, the known direct staging host and the staging role. The adapter does not create connections or read environment secrets. Tests assert that disabled or non-allowlisted calls never open the supplied connection. PostgreSQL integration tests create an isolated schema on PostgreSQL 16 and 18, write and read back exact raw bytes and manifest/item links, verify replay idempotency, and confirm missing approval rolls back the entire transaction. These are isolated CI databases, not Neon staging. No database writes have been performed by this component.
+
+
+## StrikerAPI dataset refresh evidence
+
+The official StrikerAPI changelog publishes a dataset-level Written timestamp for "Fixtures, results and box scores". The offline parser in veltrix_v2/data/strikerapi_freshness.py preserves the exact changelog response hash, dataset name, through-date, written timestamp and retrieval timestamp. It rejects missing, malformed, naive or future timestamps.
+
+This is dataset-level refresh evidence, not a per-fixture publication timestamp or per-record revision ID. StrikerAPI documents that it overwrites corrected records and does not retain per-record revision history. Therefore this parser does not certify individual fixtures or historical walk-forward rows by itself. A prospective capture process must archive the raw list_games response and changelog snapshot each refresh, track per-fixture payload changes in our own append-only history, detect missed refresh intervals, and only then mark a locally complete as-of interval eligible. The source's documented lack of historical revisions must never be concealed or treated as proof of historical completeness.
