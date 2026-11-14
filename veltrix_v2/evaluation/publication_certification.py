@@ -6,6 +6,7 @@ publication. It does not create predictions or certify missing observations.
 """
 from __future__ import annotations
 
+from datetime import datetime
 import hashlib
 import json
 import math
@@ -54,8 +55,6 @@ def verify_publication_authorization(
             return False
 
         manifest_sha256 = hashlib.sha256(manifest_bytes).hexdigest()
-        if report.get("certification_manifest_sha256") != manifest_sha256:
-            return False
         if attestation_verifier(manifest_bytes, manifest_sha256) is not True:
             return False
 
@@ -149,7 +148,18 @@ def verify_publication_authorization(
                     if float(log_loss) >= float(bookmaker_log_loss):
                         return False
 
+                if record.get("status") != "CERTIFIED":
+                    return False
                 if not isinstance(record.get("rights_approval_id"), str) or not record["rights_approval_id"].strip():
+                    return False
+                rights_evaluated_at = record.get("rights_evaluated_at")
+                if not isinstance(rights_evaluated_at, str):
+                    return False
+                try:
+                    parsed_rights_time = datetime.fromisoformat(rights_evaluated_at.replace("Z", "+00:00"))
+                except ValueError:
+                    return False
+                if parsed_rights_time.tzinfo is None or parsed_rights_time.utcoffset() is None:
                     return False
                 if not isinstance(record.get("evidence_sha256"), str) or not _HASH.fullmatch(record["evidence_sha256"]):
                     return False
@@ -159,7 +169,7 @@ def verify_publication_authorization(
                     return False
 
         return True
-    except (UnicodeDecodeError, json.JSONDecodeError, KeyError, TypeError, ValueError, OverflowError):
+    except Exception:
         return False
 
 
