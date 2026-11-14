@@ -98,9 +98,13 @@ def test_canonical_scheduled_telegram_and_website_surfaces_share_one_report():
     scheduled = deepcopy(canonical)
     telegram = deepcopy(canonical)
     website = {
+        "snapshot_schema": "VELTRIX_DASHBOARD_V1",
         "as_of_date": canonical["as_of_date"],
         "report_id": canonical["report_id"],
         "report_sha256": canonical["report_sha256"],
+        "status": canonical.get("status"),
+        "release_mode": canonical.get("release_mode"),
+        "predictions": canonical["predictions"],
     }
     identity = assert_report_surface_bundle(canonical, scheduled, telegram, website)
     assert identity.report_sha256 == canonical["report_sha256"]
@@ -109,9 +113,13 @@ def test_canonical_scheduled_telegram_and_website_surfaces_share_one_report():
 def test_four_surface_parity_rejects_dashboard_from_another_revision():
     canonical = bind_report_identity(report())
     website = {
+        "snapshot_schema": "VELTRIX_DASHBOARD_V1",
         "as_of_date": canonical["as_of_date"],
         "report_id": canonical["report_id"],
         "report_sha256": "f" * 64,
+        "status": canonical.get("status"),
+        "release_mode": canonical.get("release_mode"),
+        "predictions": canonical["predictions"],
     }
     with pytest.raises(ValueError, match="WEBSITE_REPORT_PROJECTION_IDENTITY_MISMATCH"):
         assert_report_surface_bundle(canonical, deepcopy(canonical), deepcopy(canonical), website)
