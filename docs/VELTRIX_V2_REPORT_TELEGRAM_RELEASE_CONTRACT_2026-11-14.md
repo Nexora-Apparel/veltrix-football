@@ -125,3 +125,6 @@ The website dashboard loader now checks the portable V2 artifact before any arch
 
 
 An offline `verify_portable_report_bundle.py` CLI now validates the one-file envelope and reports the common report identity, fixture count and four verified surfaces. It performs no provider requests, DB writes, Telegram sends, schedule activation or publication. Structural verification is not publication certification.
+
+
+A single end-to-end offline integration test now passes the exact same portable bundle bytes through the website adapter, scheduled consumer and Telegram dispatcher. It asserts matching report ID/hash, identical report projections, one Telegram idempotency claim and one stubbed message. This proves adapter-level parity only; it does not prove the production GitHub Actions workflows are wired or that a real certification verifier accepts a report.
