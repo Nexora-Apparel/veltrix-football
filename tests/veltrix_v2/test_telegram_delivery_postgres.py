@@ -41,6 +41,10 @@ def test_postgres_delivery_claim_is_atomic_terminal_and_destination_bound(monkey
                 range(8),
             ))
         assert sum(claims) == 1
+        with pytest.raises(ValueError, match="REPORT_BINDING_MISMATCH"):
+            store.claim("a" * 64, identity.report_id, identity.report_sha256, destination)
+        with pytest.raises(ValueError, match="CLAIM_NOT_ACTIVE"):
+            store.mark_sent(key, DeliveryReceipt("telegram:wrong-chat", ("9999",)))
 
         store.mark_sent(key, DeliveryReceipt(destination, ("1001", "1002")))
         assert not store.claim(key, identity.report_id, identity.report_sha256, destination)
