@@ -244,6 +244,7 @@ def _persist_fixture_snapshot_to_staging(
     competition_id: str,
     fixture_count: int,
     approval: SourceApproval,
+    status_filter: str = "scheduled",
 ) -> dict[str, str | int]:
     validate_staging_dsn_target(dsn)
     import psycopg
@@ -271,6 +272,7 @@ def _persist_fixture_snapshot_to_staging(
             competition_id=competition_id,
             fixture_count=fixture_count,
             rights_approval=approval,
+            status_filter=status_filter,
             write_enabled=True,
             environment="staging",
             database_name=identity[0],
@@ -450,10 +452,63 @@ def _capture_page(
             if fixture.status.value == "FINISHED"
         ]
         if not finished_fixtures:
+            current_approval, recorded_at = _refresh_approval(staging_dsn)
+            decision = evaluate_source_use(
+                current_approval, DataUsePurpose.STORAGE,
+                at_utc=recorded_at, commercial=True,
+            )
+            if not decision.allowed:
+                raise PermissionError(decision.reason_code)
+            empty_page_hashes = build_fixture_snapshot_manifest(
+                provider="5DollarFootballAPI",
+                source_id="5dollarfootballapi",
+                endpoint=page_info["endpoint"],
+                request_id=request_id,
+                request_params=request_params,
+                requested_at=requested_at,
+                retrieved_at=retrieved_at,
+                recorded_at=recorded_at,
+                raw_response=raw,
+                http_status=http_status,
+                competition_id=competition_id,
+                fixture_count=0,
+                rights_approval_id=current_approval.approval_id,
+                rights_evidence_sha256=current_approval.evidence_sha256 or "",
+                status_filter="finished",
+            )
+            empty_page_persistence = (
+                _persist_fixture_snapshot_to_staging(
+                    staging_dsn,
+                    request_id=request_id,
+                    endpoint=page_info["endpoint"],
+                    request_params=request_params,
+                    requested_at=requested_at,
+                    retrieved_at=retrieved_at,
+                    recorded_at=recorded_at,
+                    raw_response=raw,
+                    response_headers=headers,
+                    http_status=http_status,
+                    competition_id=competition_id,
+                    fixture_count=0,
+                    approval=current_approval,
+                    status_filter="finished",
+                )
+                if persist_staging else None
+            )
+            if empty_page_persistence and (
+                empty_page_persistence["manifest_sha256"] != empty_page_hashes["manifest_sha256"]
+                or empty_page_persistence["response_sha256"] != empty_page_hashes["response_sha256"]
+            ):
+                raise RuntimeError("EMPTY_FINISHED_PAGE_MANIFEST_HASH_MISMATCH")
+            page_path.parent.mkdir(parents=True, exist_ok=True)
+            page_path.write_bytes(raw)
             page_info.update({
                 "capture_observations": 0,
                 "first_observed_observations": 0,
                 "no_finished_rows": True,
+                "response_sha256": empty_page_hashes["response_sha256"],
+                "capture_manifest_sha256": empty_page_hashes["manifest_sha256"],
+                "persisted_to_staging": empty_page_persistence,
                 "point_in_time_certifiable": False,
             })
             return [], page_info
