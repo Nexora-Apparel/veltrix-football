@@ -89,6 +89,7 @@ def _training_evidence(
     forecast: ForecastRecord,
     approvals: Mapping[str, SourceApproval],
     rights_evaluated_at: datetime,
+    evidence_class: str = "PIT_CERTIFIED",
 ) -> tuple[list[dict], int]:
     counts: dict[str, int] = {}
     for row in observations:
@@ -100,8 +101,23 @@ def _training_evidence(
     for row in observations:
         if not isinstance(row, MatchObservation) or row.fixture_id in duplicate_ids:
             continue
-        if row.competition_id != forecast.competition_id or row.point_in_time_certifiable is not True:
+        if row.competition_id != forecast.competition_id:
             continue
+        if evidence_class == "PIT_CERTIFIED":
+            if row.point_in_time_certifiable is not True:
+                continue
+        elif evidence_class == "PROSPECTIVE_OBSERVED_ONLY":
+            if (
+                row.point_in_time_certifiable is not False
+                or row.availability_basis != "collector_first_observed_v1"
+            ):
+                continue
+            if not _valid_hash(row.evidence_manifest_sha256):
+                raise ValueError("OBSERVED_EVIDENCE_MANIFEST_HASH_MISSING")
+            if not _valid_hash(row.capture_evidence_sha256):
+                raise ValueError("OBSERVED_CAPTURE_EVIDENCE_HASH_MISSING")
+        else:
+            raise ValueError("PAPER_EVIDENCE_CLASS_INVALID")
         if not observation_eligible_as_of(
             row, cutoff_at=forecast.cutoff_at, competition_id=forecast.competition_id
         ):
@@ -133,6 +149,8 @@ def _training_evidence(
             "payload_sha256": row.payload_sha256,
             "evidence_manifest_sha256": row.evidence_manifest_sha256,
             "capture_evidence_sha256": row.capture_evidence_sha256,
+            "availability_basis": row.availability_basis,
+            "evidence_class": evidence_class,
             "rights_approval_id": approval.approval_id,
             "rights_evidence_sha256": approval.evidence_sha256,
         })
@@ -150,6 +168,7 @@ def admit_shadow_forecasts(
     recorded_at: datetime,
     model_artifact_sha256: str,
     feature_set_sha256: str,
+    _evidence_class: str = "PIT_CERTIFIED",
 ) -> PaperAdmissionReport:
     """Create prospective shadow-ledger records only after all evidence checks.
 
@@ -158,6 +177,8 @@ def admit_shadow_forecasts(
     website/Telegram publication. A model remains unpublishable until separate
     certification.
     """
+    if _evidence_class not in {"PIT_CERTIFIED", "PROSPECTIVE_OBSERVED_ONLY"}:
+        raise ValueError("PAPER_EVIDENCE_CLASS_INVALID")
     if not isinstance(report, BatchForecastReport):
         raise ValueError("BATCH_FORECAST_REPORT_REQUIRED")
     if report.forecast_count != len(report.forecasts):
@@ -204,9 +225,11 @@ def admit_shadow_forecasts(
                 competition_id=target.competition_id, at=recorded_at,
                 purposes=(DataUsePurpose.COLLECTION, DataUsePurpose.CACHE),
             )
+            if _evidence_class == "PROSPECTIVE_OBSERVED_ONLY" and forecast.model.publishable is not False:
+                raise ValueError("OBSERVED_ONLY_FORECAST_MUST_REMAIN_NON_PUBLISHABLE")
             evidence_rows, evidence_count = _training_evidence(
                 history, forecast=forecast, approvals=source_approvals,
-                rights_evaluated_at=recorded_at,
+                rights_evaluated_at=recorded_at, evidence_class=_evidence_class,
             )
             if evidence_count != forecast.model.evidence_match_count:
                 raise ValueError("MODEL_EVIDENCE_COUNT_MISMATCH")
@@ -250,7 +273,8 @@ def admit_shadow_forecasts(
                 draw_probability=forecast.model.draw,
                 away_probability=forecast.model.away_win,
                 evidence_sha256=evidence_hash,
-                point_in_time_certifiable=True,
+                point_in_time_certifiable=(_evidence_class == "PIT_CERTIFIED"),
+                evidence_class=_evidence_class,
             )
             admitted.append(prediction)
         except (TypeError, ValueError, AttributeError) as exc:
@@ -263,4 +287,31 @@ def admit_shadow_forecasts(
     return PaperAdmissionReport(
         admitted=tuple(admitted), rejected=tuple(rejected),
         evaluated_forecast_count=len(report.forecasts),
+    )
+
+
+def admit_prospective_observed_shadow_forecasts(
+    report: BatchForecastReport,
+    targets: Iterable[PredictionTarget],
+    observations: Iterable[MatchObservation],
+    *,
+    source_approvals: Mapping[str, SourceApproval],
+    forecasted_at: datetime,
+    recorded_at: datetime,
+    model_artifact_sha256: str,
+    feature_set_sha256: str,
+) -> PaperAdmissionReport:
+    """Admit forecasts using only first-observed snapshots into a non-PIT shadow class.
+
+    This path never promotes evidence to PIT-certified and rejects any model
+    forecast marked publishable. It is for prospective paper tracking only.
+    """
+    return admit_shadow_forecasts(
+        report, targets, observations,
+        source_approvals=source_approvals,
+        forecasted_at=forecasted_at,
+        recorded_at=recorded_at,
+        model_artifact_sha256=model_artifact_sha256,
+        feature_set_sha256=feature_set_sha256,
+        _evidence_class="PROSPECTIVE_OBSERVED_ONLY",
     )
