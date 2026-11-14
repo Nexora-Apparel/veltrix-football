@@ -32,6 +32,12 @@ BEGIN
     IF TG_OP IN ('DELETE', 'TRUNCATE') THEN
         RAISE EXCEPTION 'TELEGRAM_DELIVERY_CLAIMS_APPEND_ONLY';
     END IF;
+    IF TG_OP = 'INSERT' THEN
+        IF NEW.state <> 'CLAIMED' OR NEW.telegram_message_ids <> '[]'::jsonb
+           OR NEW.reason_code IS NOT NULL THEN
+            RAISE EXCEPTION 'TELEGRAM_DELIVERY_INITIAL_STATE_INVALID';
+        END IF;
+    END IF;
     IF TG_OP = 'UPDATE' THEN
         IF OLD.state <> 'CLAIMED'
            OR NEW.state NOT IN ('SENT', 'OUTCOME_UNKNOWN')
