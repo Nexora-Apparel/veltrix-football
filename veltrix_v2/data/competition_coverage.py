@@ -115,6 +115,11 @@ def audit_competition_coverage(
     for row in tuple(evidence):
         if not isinstance(row, DomainEvidence):
             continue
+        if (
+            not isinstance(row.fixture_id, str) or not isinstance(row.competition_id, str)
+            or not isinstance(row.domain, DataDomain)
+        ):
+            continue
         key = (row.competition_id, row.domain)
         fixture = fixture_by_id.get(row.fixture_id)
         valid_identity = (
