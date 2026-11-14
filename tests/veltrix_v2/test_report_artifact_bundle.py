@@ -265,8 +265,7 @@ def test_portable_bundle_rejects_surface_identity_drift_even_with_recomputed_sur
     surface = envelope["surfaces"]["dashboard"]
     canonical = (
         json.dumps(surface, ensure_ascii=False, sort_keys=True, separators=(",", ":"), allow_nan=False)
-        + "\n"
-    ).encode()
+    ).encode() + bytes([10])
     envelope["surface_sha256"]["dashboard"] = hashlib.sha256(canonical).hexdigest()
     with pytest.raises(ValueError, match="WEBSITE_REPORT_PROJECTION_IDENTITY_MISMATCH"):
         parse_portable_report_surface_bundle(json.dumps(envelope).encode())
