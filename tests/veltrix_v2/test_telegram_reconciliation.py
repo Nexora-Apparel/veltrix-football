@@ -279,3 +279,41 @@ def test_reconciliation_supersession_timestamps_cannot_regress():
     )
     with pytest.raises(ValueError, match="SUPERSESSION_TIME_REGRESSION"):
         validate_reconciliation_event(CLAIM, corrected, EVIDENCE, existing)
+
+
+
+def test_reconciliation_store_requires_injected_actor_authenticator():
+    with pytest.raises(ValueError, match="DEPENDENCIES_REQUIRED"):
+        PostgresTelegramReconciliationStore(
+            lambda: None,
+            lambda uri: EVIDENCE,
+        )
+
+
+def test_store_rejects_unauthenticated_operator_before_evidence_or_database():
+    reads = []
+    store = PostgresTelegramReconciliationStore(
+        lambda: pytest.fail("database must not be opened"),
+        lambda uri: reads.append(uri),
+        lambda actor: False,
+    )
+    with pytest.raises(PermissionError, match="OPERATOR_NOT_AUTHENTICATED"):
+        store.record(event())
+    assert reads == []
+
+
+def test_store_rejects_unauthenticated_reviewer_before_evidence_or_database():
+    reads = []
+    store = PostgresTelegramReconciliationStore(
+        lambda: pytest.fail("database must not be opened"),
+        lambda uri: reads.append(uri),
+        lambda actor: actor == "github:operator",
+    )
+    unreviewed = event(
+        outcome="CONFIRMED_NOT_SENT",
+        telegram_message_ids=[],
+        reviewer_id="github:reviewer",
+    )
+    with pytest.raises(PermissionError, match="REVIEWER_NOT_AUTHENTICATED"):
+        store.record(unreviewed)
+    assert reads == []
