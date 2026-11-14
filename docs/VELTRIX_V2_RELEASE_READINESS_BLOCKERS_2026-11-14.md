@@ -138,3 +138,6 @@ Latest fully validated code checkpoint at this snapshot: commit `b063979c16e6bf2
 
 
 Additional legacy containment: paused `historical-model-reconstruction.yml`, which replayed archived forecasts through the excluded legacy model audit stack. CI now asserts this workflow remains disabled. Historical source archives remain preserved; only the legacy reconstruction workflow is paused.
+
+
+Regression coverage also asserts that the legacy daily-report watchdog and legacy historical backtest jobs remain disabled. This prevents a workflow_dispatch or code push from reviving old report/model pipelines during the V2 rebuild.
