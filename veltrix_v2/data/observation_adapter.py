@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from veltrix_v2.data.contracts import FixtureStatus, HistoricalFixture
 from veltrix_v2.models.poisson import MatchObservation
+from veltrix_v2.models.engine import PredictionTarget
 
 
 def historical_fixture_to_observation(
@@ -37,6 +38,29 @@ def historical_fixture_to_observation(
         source_id=fixture.source_id,
         availability_basis=fixture.availability_basis,
         point_in_time_certifiable=fixture.point_in_time_certifiable,
+        payload_sha256=fixture.payload_sha256,
+        rights_approval_id=fixture.rights_approval_id,
+    )
+
+
+def historical_fixture_to_target(fixture: HistoricalFixture) -> PredictionTarget | None:
+    """Convert a known future scheduled provider fixture into a prediction target."""
+    if not isinstance(fixture, HistoricalFixture):
+        raise TypeError("HISTORICAL_FIXTURE_REQUIRED")
+    if fixture.status is not FixtureStatus.SCHEDULED:
+        return None
+    if fixture.kickoff_at_utc <= fixture.retrieved_at_utc:
+        return None
+    return PredictionTarget(
+        fixture_id=f"{fixture.source_id}:{fixture.provider_fixture_id}",
+        competition_id=f"{fixture.source_id}:{fixture.provider_competition_id}",
+        home_team_id=f"{fixture.source_id}:{fixture.provider_home_team_id}",
+        away_team_id=f"{fixture.source_id}:{fixture.provider_away_team_id}",
+        kickoff_at=fixture.kickoff_at_utc,
+        provider=fixture.provider,
+        source_id=fixture.source_id,
+        source_fixture_id=fixture.provider_fixture_id,
+        retrieved_at=fixture.retrieved_at_utc,
         payload_sha256=fixture.payload_sha256,
         rights_approval_id=fixture.rights_approval_id,
     )
