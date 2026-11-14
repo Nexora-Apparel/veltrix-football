@@ -137,6 +137,7 @@ def audit_competition_coverage(
             and _aware(row.rights_evaluated_at)
             and row.recorded_at >= row.available_at
             and row.available_at <= as_of and row.recorded_at <= as_of
+            and row.rights_evaluated_at <= row.recorded_at
             and row.rights_evaluated_at <= as_of
             and fixture is not None
             and (
