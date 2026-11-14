@@ -28,9 +28,7 @@ def row(fid, comp, home, away, canonical_fixture, canonical_comp, canonical_home
         "canonical_home_team_id": canonical_home,
         "canonical_away_team_id": canonical_away,
         "payload": payload,
-        "payload_sha256": sha256(json.dumps(
-            payload, sort_keys=True, separators=(",", ":"), ensure_ascii=False
-        ).encode()).hexdigest(),
+        "payload_sha256": sha256(f"raw-response-{obs}".encode()).hexdigest(),
         "source_observation_id": obs,
     }
 
@@ -118,7 +116,7 @@ def test_rejects_duplicate_provider_fixture_ids():
 def test_rejects_payload_hash_substitution():
     data = rows()
     data[0]["payload_sha256"] = "f" * 64
-    with pytest.raises(ValueError, match="CROSSWALK_PAYLOAD_HASH_MISMATCH"):
+    with pytest.raises(ValueError, match="CROSSWALK_PAYLOAD_HASH_INVALID"):
         build_fivedollar_crosswalk_registry(data, verified_at=VERIFIED)
 
 
