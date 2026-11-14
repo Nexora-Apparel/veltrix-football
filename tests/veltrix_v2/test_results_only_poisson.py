@@ -222,3 +222,28 @@ def test_invalid_recency_half_life_fails_closed():
         predict_match(sample_history(), competition_id="league", home_team_id="A",
                       away_team_id="B", kickoff_at=KICKOFF, cutoff_at=CUTOFF,
                       recency_half_life_days=0)
+
+
+def test_dixon_coles_low_score_correction_increases_draw_probability():
+    rows = sample_history(120)
+    independent = predict_match(
+        rows, competition_id="league", home_team_id="A", away_team_id="B",
+        kickoff_at=KICKOFF, cutoff_at=CUTOFF, dixon_coles_rho=0.0,
+    )
+    corrected = predict_match(
+        rows, competition_id="league", home_team_id="A", away_team_id="B",
+        kickoff_at=KICKOFF, cutoff_at=CUTOFF, dixon_coles_rho=-0.1,
+    )
+    assert corrected.draw > independent.draw
+    assert corrected.dixon_coles_rho == -0.1
+
+
+def test_dixon_coles_rejects_invalid_rho_and_nonpositive_tau():
+    with pytest.raises(ValueError, match="DIXON_COLES_RHO_INVALID"):
+        predict_match(sample_history(), competition_id="league", home_team_id="A",
+                      away_team_id="B", kickoff_at=KICKOFF, cutoff_at=CUTOFF,
+                      dixon_coles_rho=1.5)
+    with pytest.raises(ValueError, match="DIXON_COLES_TAU_NONPOSITIVE"):
+        predict_match(sample_history(), competition_id="league", home_team_id="A",
+                      away_team_id="B", kickoff_at=KICKOFF, cutoff_at=CUTOFF,
+                      dixon_coles_rho=1.0)
