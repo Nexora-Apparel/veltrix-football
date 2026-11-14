@@ -12,7 +12,7 @@ import os
 import re
 import sys
 from datetime import date, datetime, timezone
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from urllib.error import HTTPError, URLError
 from urllib.parse import quote
 from urllib.request import Request, urlopen
@@ -83,6 +83,17 @@ def _publish_large_blob(path: str, data: bytes, repo: str, token: str) -> None:
 
 
 def publish(path: str, local_file: Path, repo: str, token: str) -> None:
+    pure_path = PurePosixPath(path)
+    if pure_path.is_absolute() or ".." in pure_path.parts:
+        raise ValueError("COMMAND_DATA_PATH_INVALID")
+    canonical_path = pure_path.as_posix()
+    if canonical_path in {
+        "public-data/daily_predictions.json",
+        "public-data/dashboard_snapshot.json",
+    } or canonical_path.startswith("public-data/archive/"):
+        raise PermissionError(
+            "LEGACY_PREDICTION_PUBLICATION_DISABLED; use the certified V2 bundle publisher"
+        )
     data = local_file.read_bytes()
     parsed = json.loads(data.decode("utf-8"))
     if not isinstance(parsed, dict):
