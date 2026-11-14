@@ -9,6 +9,7 @@ from dataclasses import dataclass
 from datetime import date
 import hashlib
 import json
+import re
 from typing import Any, Iterable, Mapping
 
 
@@ -94,12 +95,23 @@ def assert_same_report(reports: Iterable[Mapping[str, Any]]) -> ReportIdentity:
     return first
 
 
-def delivery_idempotency_key(identity: ReportIdentity, destination: str) -> str:
-    """Bind a delivery attempt to report identity and exact destination."""
+def delivery_idempotency_key_fields(report_id: str, report_sha256: str, destination: str) -> str:
+    """Canonical key function shared by memory and durable delivery stores."""
+    if not isinstance(report_id, str) or not report_id.strip():
+        raise ValueError("report_id must be explicit")
+    if not isinstance(report_sha256, str) or not re.fullmatch(r"[0-9a-f]{64}", report_sha256):
+        raise ValueError("report hash must be lowercase SHA-256 hex")
     if not isinstance(destination, str) or not destination.strip():
         raise ValueError("destination must be explicit")
-    material = f"{identity.report_id}\n{identity.report_sha256}\n{destination}".encode()
+    material = f"{report_id}\n{report_sha256}\n{destination}".encode("utf-8")
     return hashlib.sha256(material).hexdigest()
+
+
+def delivery_idempotency_key(identity: ReportIdentity, destination: str) -> str:
+    """Bind a delivery attempt to report identity and exact destination."""
+    return delivery_idempotency_key_fields(
+        identity.report_id, identity.report_sha256, destination
+    )
 
 
 def assert_report_surface_bundle(
