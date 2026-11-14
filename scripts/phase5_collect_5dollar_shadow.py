@@ -848,7 +848,7 @@ def run_capture(
 def main() -> int:
     parser = argparse.ArgumentParser(description="Manual 5Dollar prospective shadow capture")
     parser.add_argument("--execute", action="store_true",
-                        help="perform bounded provider requests and read-only staging queries")
+                        help="perform bounded provider requests and persist all evidence to staging")
     parser.add_argument("--history-days", type=int, default=90)
     parser.add_argument("--upcoming-days", type=int, default=14)
     parser.add_argument("--max-fixtures", type=int, default=25)
@@ -872,6 +872,9 @@ def main() -> int:
             "persist_staging": args.persist_staging,
         }, indent=2))
         return 0
+
+    if not args.persist_staging:
+        raise RuntimeError("STAGING_PERSISTENCE_REQUIRED_FOR_PROVIDER_EXECUTION")
 
     api_key = os.environ.get("FIVEDOLLARFOOTBALL_API_KEY", "")
     staging_dsn = os.environ.get("VELTRIX_STAGING_DATABASE_URL", "")
