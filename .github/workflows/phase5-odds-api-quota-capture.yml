@@ -1,0 +1,52 @@
+name: VELTRIX Phase 5 — The Odds API quota evidence capture
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: veltrix-odds-api-quota-capture
+  cancel-in-progress: false
+
+jobs:
+  quota-evidence:
+    name: No-credit account verification and staging evidence
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install project and PostgreSQL client
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e . "psycopg[binary]>=3.2,<4"
+
+      - name: Validate dry-run mode
+        run: python -m scripts.phase5_capture_odds_api_quota
+
+      - name: Capture no-credit account and quota evidence
+        env:
+          THE_ODDS_API_KEY: ${{ secrets.THE_ODDS_API_KEY }}
+          VELTRIX_STAGING_DATABASE_URL: ${{ secrets.VELTRIX_STAGING_DATABASE_URL }}
+        run: |
+          python -m scripts.phase5_capture_odds_api_quota \
+            --execute \
+            --out artifacts/odds-api-quota/public_summary.json
+
+      - name: Upload aggregate-only quota summary
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: veltrix-odds-api-quota-${{ github.run_id }}
+          path: artifacts/odds-api-quota/public_summary.json
+          if-no-files-found: warn
+          retention-days: 7
