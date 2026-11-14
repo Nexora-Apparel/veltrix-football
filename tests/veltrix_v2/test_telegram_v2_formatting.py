@@ -146,3 +146,11 @@ def test_nonfinite_probability_cannot_enter_canonical_report():
     report["predictions"][0]["markets"]["1X2"]["home"] = float("nan")
     with pytest.raises(ValueError, match="non-canonical JSON"):
         bind_report_identity({key: value for key, value in report.items() if key != "report_sha256"})
+
+
+
+def test_public_telegram_report_explicitly_states_value_betting_is_locked():
+    report = public_report()
+    messages = format_public_telegram_messages(report, authorized)
+    assert messages
+    assert all("Value betting: LOCKED" in message for message in messages)
