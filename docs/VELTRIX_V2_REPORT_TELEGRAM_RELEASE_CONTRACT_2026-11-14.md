@@ -152,3 +152,41 @@ Reconciliation corrections must be append-only superseding events whose observed
 ## Single-artifact read rule
 
 The V2 website/API read path now requires the single hash-bound portable report bundle. It does not reconstruct a V2 report from independently fetched `daily_predictions.json` and `dashboard_snapshot.json` files, even when their individual report identities appear to match. Separate legacy snapshots remain archival only. If the portable bundle is missing, invalid, or cannot pass the authoritative verifier, the current V2 report is unavailable; no legacy fallback is served.
+
+
+## Personal-use scope and publication-integrity gates (2026-11-15)
+
+VELTRIX FOOTBALL is a personal-use analysis system, not a commercial monetisation release. Business registration, invoices, commercial subscription proof, billing documents, advertising/revenue plans or commercial-account paperwork are not publication prerequisites and must not appear in the release checklist.
+
+Keep two independent control domains:
+
+### MODEL_QUALITY_GATES
+- Point-in-time feature eligibility and explicit forecast cutoff.
+- Source, fixture, team and competition identity resolution.
+- Data rights/entitlement for the exact collection, storage, benchmarking and display use.
+- Chronological walk-forward and prospective evaluation with disclosed denominators.
+- Market-specific calibration and baseline comparisons.
+- Certification thresholds and uncertainty bounds.
+- No unsupported probabilities, generic fallback forecasts or unverified value selections.
+
+### PROVIDER_USAGE_GUARDS
+- Provider terms and endpoint-level account entitlement.
+- Request/rate limits and observable quota state.
+- Bounded per-run request/credit caps, no unapproved retries and audit logging.
+- These safeguards may stop a particular provider request when access or quota cannot be verified. They must not stop independent model development, evaluation or prospective collection through an available authorized source.
+- Provider billing paperwork and commercial monetisation evidence are not model-quality or publication-integrity gates.
+
+### PUBLICATION_INTEGRITY_GATES
+A report may be published only when:
+1. The exact report identity, schema and canonical hash verify.
+2. Every fixture has a unique stable identity, resolved teams/competition and valid kickoff/cutoff chronology.
+3. Every forecast has complete, eligible, point-in-time provenance and independently supported model/certification evidence for its market.
+4. The authoritative verifier approves the exact report ID/hash and evidence manifest.
+5. Website, scheduled report and Telegram consume the same immutable bundle and projections.
+6. Duplicate fixture IDs, duplicate report/destination claims, stale revisions, conflicting settlements, unsupported probabilities and tampered artifacts are rejected.
+7. Delivery idempotency, unknown-outcome reconciliation, destination authorization and recovery controls pass.
+8. Any failed or missing check fails closed for the affected report/market; retain status/history records without presenting unsupported predictions.
+
+The purpose of the publication gate is to prevent incorrect, stale, unsupported or duplicate reports. A technically successful model run, API request, bundle write or Telegram call does not by itself authorize publication.
+
+The existing 06:00 WAT report schedule remains stopped until the user-authorized operational release review. This schedule condition is independent of monetisation and billing.
