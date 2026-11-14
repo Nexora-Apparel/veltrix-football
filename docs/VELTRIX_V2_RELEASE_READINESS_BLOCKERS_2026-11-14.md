@@ -267,3 +267,10 @@ A final website audit found that the browser still had independent raw-GitHub/CD
 - Archive publication is idempotent: the path is based on the exact report SHA-256, and the publisher skips an existing file when its bytes match. Path traversal is rejected.
 - CI run #1525 passed Foundation, PostgreSQL 16 and PostgreSQL 18, including legacy live-publication shutdown and archive-preservation tests.
 - The V2 publisher remains the only permitted route for a new public report, and it still requires the authoritative certification/rights verifier.
+
+
+## Content-addressed archive retry validation — 2026-11-14 18:11 UTC
+
+- Historical archive filenames now include the SHA-256 of the exact archived report bytes, so reruns resolve to the same immutable path.
+- For small GitHub Contents API files, the legacy archive publisher compares existing base64 content and skips the write when the bytes already match.
+- CI run #1526 passed Foundation, PostgreSQL 16 and PostgreSQL 18 with the content-addressed path and idempotent archive tests.
