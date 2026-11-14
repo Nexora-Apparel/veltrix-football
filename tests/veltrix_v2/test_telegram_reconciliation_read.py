@@ -19,14 +19,13 @@ class FakeConnection:
         return False
 
     def execute(self, sql, params=None):
-        self.queries.append((" ".join(sql.split()), params))
-        if "FROM telegram_delivery_claims" in sql:
-            return self
-        if "FROM telegram_delivery_reconciliations" in sql:
-            return self
+        self.last_sql = " ".join(sql.split())
+        self.queries.append((self.last_sql, params))
         return self
 
     def fetchone(self):
+        if "current_database()" in self.last_sql:
+            return ("veltrix_football_staging", "neondb_owner")
         return (
             KEY, "report-1", "b" * 64, "c" * 64, "OUTCOME_UNKNOWN",
             "TELEGRAM_TIMEOUT", "2026-11-14T10:00:00+00:00",
@@ -62,8 +61,9 @@ def test_reader_sets_read_only_and_returns_claim_with_append_only_events():
     assert "chat_id" not in result["claim"]
     assert result["reconciliation_events"][0]["outcome"] == "INCONCLUSIVE"
     assert connection.queries[0][0] == "SET TRANSACTION READ ONLY"
-    assert "FROM telegram_delivery_claims" in connection.queries[1][0]
-    assert "FROM telegram_delivery_reconciliations" in connection.queries[2][0]
+    assert connection.queries[1][0] == "SELECT current_database(), current_user"
+    assert "FROM telegram_delivery_claims" in connection.queries[2][0]
+    assert "FROM telegram_delivery_reconciliations" in connection.queries[3][0]
     assert all(
         query.startswith("SELECT") or query == "SET TRANSACTION READ ONLY"
         for query, _ in connection.queries
@@ -87,6 +87,8 @@ def test_reader_rejects_invalid_idempotency_key_before_connecting(key):
 def test_reader_rejects_missing_claim():
     class MissingConnection(FakeConnection):
         def fetchone(self):
+            if "current_database()" in self.last_sql:
+                return ("veltrix_football_staging", "neondb_owner")
             return None
 
     reader = PostgresTelegramReconciliationReader(MissingConnection)
