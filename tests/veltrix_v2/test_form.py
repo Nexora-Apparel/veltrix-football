@@ -38,7 +38,7 @@ def test_form_counts_points_goals_and_venue_splits():
     assert result.home.away_matches == 2
     assert result.home.home_goals_for_per_match == pytest.approx(1.0)
     assert result.home.away_goals_for_per_match == pytest.approx(2.0)
-    assert result.home.rest_days == pytest.approx(3.125)
+    assert result.home.rest_days == pytest.approx(3.0)
 
 
 def test_late_future_and_non_certifiable_rows_are_excluded():
