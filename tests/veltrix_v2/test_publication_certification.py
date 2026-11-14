@@ -37,6 +37,9 @@ def certification(market):
         "competition_id": "competition-1",
         "market": market,
         "model_build_id": "model-build-7",
+        "evaluation_fixture_set_sha256": hashlib.sha256(b"eligible-fixtures").hexdigest(),
+        "model_artifact_sha256": hashlib.sha256(b"model-artifact").hexdigest(),
+        "feature_set_sha256": hashlib.sha256(b"feature-set").hexdigest(),
         "walk_forward_matches": 1200,
         "prospective_settled_selections": 340,
         "distinct_dates": 96,
@@ -56,6 +59,11 @@ def certification(market):
             "bookmaker_brier_score": 0.21,
             "log_loss": 0.58,
             "bookmaker_log_loss": 0.62,
+            "bookmaker_baseline_method": "DEVIGGED",
+            "bookmaker_baseline_source": "independent_timestamped_consensus",
+            "bookmaker_fixture_set_sha256": hashlib.sha256(b"eligible-fixtures").hexdigest(),
+            "bookmaker_baseline_evidence_uri": "s3://veltrix-evidence/bookmaker-baseline.json",
+            "bookmaker_baseline_evidence_sha256": hashlib.sha256(b"bookmaker-baseline").hexdigest(),
         })
     return record
 
@@ -86,6 +94,8 @@ def rights_ok(record):
 
 
 def evidence_reader(uri):
+    if uri == "s3://veltrix-evidence/bookmaker-baseline.json":
+        return b"bookmaker-baseline"
     if uri.startswith("s3://veltrix-evidence/") and uri.endswith("/rights.json"):
         return b"rights-evidence"
     if uri.startswith("s3://veltrix-evidence/"):
@@ -221,3 +231,27 @@ def test_over_under_market_uses_common_sample_roi_and_odds_gates_without_1x2_bas
     report = bind_report_identity({key: value for key, value in report.items() if key != "report_sha256"})
     raw = make_manifest(report, [certification("OVER_UNDER")])
     assert verify_publication_authorization(report, raw, attestation_ok, rights_ok, evidence_reader) is True
+
+
+@pytest.mark.parametrize("field,value", [
+    ("bookmaker_baseline_method", "RAW_MARGIN"),
+    ("bookmaker_fixture_set_sha256", "0" * 64),
+])
+def test_1x2_requires_de_vigged_baseline_on_identical_fixture_set(field, value):
+    report = make_report()
+    one_x_two = certification("1X2")
+    one_x_two[field] = value
+    raw = make_manifest(report, [one_x_two, certification("BTTS")])
+    assert verify_publication_authorization(
+        report, raw, attestation_ok, rights_ok, evidence_reader
+    ) is False
+
+
+def test_1x2_requires_exact_bookmaker_baseline_evidence_bytes():
+    report = make_report()
+    one_x_two = certification("1X2")
+    one_x_two["bookmaker_baseline_evidence_sha256"] = "0" * 64
+    raw = make_manifest(report, [one_x_two, certification("BTTS")])
+    assert verify_publication_authorization(
+        report, raw, attestation_ok, rights_ok, evidence_reader
+    ) is False
