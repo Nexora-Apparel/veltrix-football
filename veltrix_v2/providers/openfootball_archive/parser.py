@@ -36,6 +36,7 @@ class OpenFootballArchive:
     fixture_line_count: int
     result_count: int
     rejected_result_count: int
+    rejected_annotations: tuple[str, ...]
     observations: tuple[MatchObservation, ...]
 
 
@@ -90,6 +91,7 @@ def parse_archive(
     fixture_lines = 0
     result_count = 0
     rejected = 0
+    rejected_annotations: list[str] = []
     observations: list[MatchObservation] = []
     seen_ids: set[str] = set()
 
@@ -120,10 +122,15 @@ def parse_archive(
         if not score_match:
             continue
         home_goals, away_goals = int(score_match.group(1)), int(score_match.group(2))
+        annotation = score_match.group(3)
         away_name = away_and_score[:score_match.start()].strip()
         home_name = home_name.strip()
         if not home_name or not away_name:
             rejected += 1
+            continue
+        if annotation:
+            rejected += 1
+            rejected_annotations.append(annotation.strip().upper())
             continue
         identity = "|".join((source_path, matchday, current_date.isoformat(),
                              home_name.casefold(), away_name.casefold()))
@@ -159,5 +166,6 @@ def parse_archive(
         snapshot_available_at=snapshot_available_at, imported_at=imported_at,
         content_sha256=hashlib.sha256(text.encode("utf-8")).hexdigest(),
         fixture_line_count=fixture_lines, result_count=result_count,
-        rejected_result_count=rejected, observations=tuple(observations),
+        rejected_result_count=rejected, rejected_annotations=tuple(rejected_annotations),
+        observations=tuple(observations),
     )
