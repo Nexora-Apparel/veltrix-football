@@ -7,7 +7,7 @@ quarantined as a group; identical corroborating records count only once.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from hashlib import sha256
 from typing import Iterable, Mapping
 
@@ -72,19 +72,38 @@ def merge_certified_observations(
         if not isinstance(row, MatchObservation):
             rejected += 1
             continue
+        text_fields = (
+            row.fixture_id, row.competition_id, row.home_team_id, row.away_team_id,
+            row.provider, row.source_id, row.availability_basis, row.rights_approval_id,
+        )
+        valid_times = (
+            isinstance(row.available_at, datetime)
+            and row.available_at.tzinfo is not None and row.available_at.utcoffset() is not None
+            and isinstance(row.recorded_at, datetime)
+            and row.recorded_at.tzinfo is not None and row.recorded_at.utcoffset() is not None
+            and row.recorded_at >= row.available_at
+        )
+        valid_kickoff = (
+            isinstance(row.kickoff_at, datetime)
+            and row.kickoff_at.tzinfo is not None and row.kickoff_at.utcoffset() is not None
+        ) or (
+            row.kickoff_at is None and isinstance(row.kickoff_date, date)
+            and not isinstance(row.kickoff_date, datetime)
+        )
+        valid_score = (
+            type(row.home_goals) is int and row.home_goals >= 0
+            and type(row.away_goals) is int and row.away_goals >= 0
+            and row.home_team_id != row.away_team_id
+        )
         if (
-            not row.point_in_time_certifiable
-            or not row.fixture_id.strip()
-            or not row.provider.strip()
-            or not row.source_id.strip()
-            or not row.rights_approval_id
+            not all(isinstance(value, str) and value.strip() for value in text_fields)
+            or not row.point_in_time_certifiable
+            or not valid_times or not valid_kickoff or not valid_score
             or not _valid_hash(row.payload_sha256)
             or (row.availability_basis == "provider_evidence_manifest_v1" and (
                 not _valid_hash(row.evidence_manifest_sha256)
                 or not _valid_hash(row.capture_evidence_sha256)
             ))
-            or row.available_at.tzinfo is None or row.available_at.utcoffset() is None
-            or row.recorded_at.tzinfo is None or row.recorded_at.utcoffset() is None
         ):
             rejected += 1
             continue
