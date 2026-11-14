@@ -259,7 +259,7 @@ def _capture_page(
         raw,
         headers=headers,
         retrieved_at_utc=retrieved_at,
-        rights_approval_id=approval.approval_id,
+        rights_approval_id=APPROVAL_ID,
     )
     page_path = out_dir / "raw" / f"{competition_id}_{status}_page_1.json"
 
