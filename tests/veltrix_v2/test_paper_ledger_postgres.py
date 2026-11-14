@@ -74,6 +74,79 @@ def test_append_and_reload_verifies_hash_chain(dsn):
         assert loaded.verify_chain()
 
 
+def test_settlement_event_round_trips_and_links_prediction(dsn):
+    ledger_id = f"test-ledger-{uuid.uuid4()}"
+    with psycopg.connect(dsn) as connection:
+        store = make_store(connection, ledger_id)
+        prediction = store.append_prediction(make_prediction("fixture-settle"))
+        kickoff = NOW + timedelta(days=2)
+        available = kickoff
+        retrieved = available + timedelta(minutes=5)
+        recorded = retrieved + timedelta(seconds=1)
+        settlement = store.append_settlement(
+            fixture_id="fixture-settle",
+            model_version="poisson-results-v2",
+            home_goals=2,
+            away_goals=1,
+            result_available_at=available,
+            result_retrieved_at=retrieved,
+            recorded_at=recorded,
+            source_provider="5DollarFootballAPI",
+            source_id="5dollarfootballapi",
+            source_fixture_id="provider-fixture-1",
+            result_payload_sha256="c" * 64,
+            rights_approval_id="approval-test",
+            rights_evidence_sha256="d" * 64,
+            result_availability_basis="collector_first_observed_v1",
+            settlement_delay_basis="collector_first_observed",
+        )
+        loaded = store.load()
+        assert len(loaded.events) == 2
+        assert loaded.events[0] == prediction
+        assert loaded.events[1] == settlement
+        assert settlement.payload["prediction_event_sha256"] == prediction.event_sha256
+        assert loaded.verify_chain()
+
+
+def test_settlement_without_matching_prediction_is_rejected(dsn):
+    ledger_id = f"test-ledger-{uuid.uuid4()}"
+    with psycopg.connect(dsn) as connection:
+        store = make_store(connection, ledger_id)
+        kickoff = NOW + timedelta(days=2)
+        with pytest.raises(ValueError, match="PAPER_SETTLEMENT_WITHOUT_PREDICTION"):
+            store.append_settlement(
+                fixture_id="fixture-no-prediction",
+                model_version="poisson-results-v2",
+                home_goals=0,
+                away_goals=0,
+                result_available_at=kickoff,
+                result_retrieved_at=kickoff + timedelta(minutes=1),
+                recorded_at=kickoff + timedelta(minutes=2),
+                source_provider="5DollarFootballAPI",
+                source_id="5dollarfootballapi",
+                source_fixture_id="provider-fixture-2",
+                result_payload_sha256="c" * 64,
+                rights_approval_id="approval-test",
+                rights_evidence_sha256="d" * 64,
+            )
+
+
+def test_database_rejects_broken_sequence_or_previous_hash(dsn):
+    ledger_id = f"test-ledger-{uuid.uuid4()}"
+    with psycopg.connect(dsn) as connection:
+        with pytest.raises(psycopg.Error, match="PAPER_LEDGER_INITIAL_EVENT_INVALID"):
+            connection.execute(
+                """
+                INSERT INTO paper_ledger_events (
+                    ledger_id, sequence, event_type, fixture_id, model_version,
+                    recorded_at, payload, previous_event_sha256, event_sha256
+                ) VALUES (%s, 2, 'SHADOW_PREDICTION', 'fixture-invalid',
+                          'poisson-results-v2', %s, '{}'::jsonb, %s, %s)
+                """,
+                (ledger_id, NOW.isoformat(), "1" * 64, "f" * 64),
+            )
+
+
 def test_duplicate_fixture_model_prediction_is_rejected(dsn):
     ledger_id = f"test-ledger-{uuid.uuid4()}"
     with psycopg.connect(dsn) as connection:
