@@ -79,7 +79,7 @@ def verify_publication_authorization(
         predictions = report.get("predictions")
         if not isinstance(records, list) or not records:
             return False
-        if not isinstance(predictions, list) or not predictions:
+        if not isinstance(predictions, list) or not predictions or len(predictions) > 25:
             return False
 
         indexed: dict[tuple[str, str], Mapping[str, Any]] = {}
@@ -97,11 +97,16 @@ def verify_publication_authorization(
                 return False
             indexed[key] = record
 
+        seen_fixture_ids: set[str] = set()
         for fixture in predictions:
             if not isinstance(fixture, Mapping):
                 return False
             if fixture.get("publication_status") != "PUBLISHED":
                 return False
+            fixture_id = fixture.get("fixture_id")
+            if not isinstance(fixture_id, str) or not fixture_id.strip() or fixture_id in seen_fixture_ids:
+                return False
+            seen_fixture_ids.add(fixture_id)
             competition_id = fixture.get("competition_id")
             model_build_id = fixture.get("model_build_id")
             markets = fixture.get("certified_markets")
