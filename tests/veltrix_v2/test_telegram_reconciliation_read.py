@@ -94,3 +94,18 @@ def test_reader_rejects_missing_claim():
     reader = PostgresTelegramReconciliationReader(MissingConnection)
     with pytest.raises(ValueError, match="CLAIM_NOT_FOUND"):
         reader.inspect(KEY)
+
+
+
+def test_reader_rejects_non_allowlisted_database_identity_before_claim_query():
+    class WrongIdentityConnection(FakeConnection):
+        def fetchone(self):
+            if "current_database()" in self.last_sql:
+                return ("veltrix_football_staging", "postgres")
+            return super().fetchone()
+
+    connection = WrongIdentityConnection()
+    reader = PostgresTelegramReconciliationReader(lambda: connection)
+    with pytest.raises(PermissionError, match="TARGET_NOT_ALLOWLISTED"):
+        reader.inspect(KEY)
+    assert len(connection.queries) == 2
