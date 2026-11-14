@@ -163,6 +163,9 @@ class PostgresTelegramReconciliationStore:
         evidence_uri = event.get("evidence_uri")
         if not isinstance(evidence_uri, str) or not evidence_uri.strip():
             raise ValueError("RECONCILIATION_EVIDENCE_URI_REQUIRED")
+        parsed_uri = urlsplit(evidence_uri)
+        if parsed_uri.scheme not in _EVIDENCE_SCHEMES or not parsed_uri.netloc:
+            raise ValueError("RECONCILIATION_EVIDENCE_URI_NOT_DURABLE")
         evidence_bytes = self._read_evidence(evidence_uri)
         if not isinstance(evidence_bytes, bytes):
             raise ValueError("RECONCILIATION_EVIDENCE_READER_INVALID")
