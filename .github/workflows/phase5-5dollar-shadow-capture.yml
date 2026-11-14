@@ -21,7 +21,7 @@ on:
       persist_staging:
         description: "Persist raw capture evidence to the allowlisted Neon staging database"
         required: true
-        default: false
+        default: true
         type: boolean
 
 permissions:
