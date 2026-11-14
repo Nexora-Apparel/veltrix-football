@@ -280,3 +280,23 @@ def test_portable_bundle_rejects_missing_surface_and_invalid_envelope():
     del envelope["surfaces"]["scheduled"]
     with pytest.raises(ValueError, match="SCHEMA_INVALID"):
         parse_portable_report_surface_bundle(json.dumps(envelope).encode())
+
+
+
+def test_persisted_bundle_exposes_one_file_handoff_for_all_surfaces(tmp_path):
+    bundle = build_report_surface_bundle(source_report())
+    paths = persist_report_surface_bundle(bundle, tmp_path)
+    portable = parse_portable_report_surface_bundle(paths["portable_bundle"].read_bytes())
+    assert portable.identity == bundle.identity
+    assert portable.canonical_report == bundle.canonical_report
+    assert portable.scheduled_report == bundle.scheduled_report
+    assert portable.telegram_report == bundle.telegram_report
+    assert portable.website_projection == bundle.website_projection
+
+
+def test_bundle_reader_rejects_tampered_portable_bundle(tmp_path):
+    bundle = build_report_surface_bundle(source_report())
+    paths = persist_report_surface_bundle(bundle, tmp_path)
+    paths["portable_bundle"].write_bytes(b"{}")
+    with pytest.raises(ValueError, match="REPORT_BUNDLE_COMMIT_HASH_MISMATCH"):
+        load_report_surface_bundle(tmp_path, bundle.identity.report_id)
