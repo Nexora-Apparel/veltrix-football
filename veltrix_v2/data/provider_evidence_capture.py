@@ -118,6 +118,8 @@ class ProviderResultCapture:
     rights_approval: SourceApproval
     source_timestamp_basis: str = "unknown"
     source_timestamp_evidence_sha256: str = ""
+    availability_timestamp_basis: str = "unknown"
+    availability_timestamp_evidence_sha256: str = ""
 
 
 @dataclass(frozen=True, slots=True)
@@ -130,9 +132,11 @@ class CapturedResultEvidence:
     source_id: str
     provider_fixture_id: str
     source_published_at: str | None
+    source_timestamp_basis: str
     source_effective_at: str | None
     kickoff_at: str
     available_at: str | None
+    availability_timestamp_basis: str
     retrieved_at: str
     recorded_at: str
     requested_at: str
@@ -164,7 +168,7 @@ class CapturedResultEvidence:
             away_goals=away_goals,
             provider=self.provider,
             source_id=self.source_id,
-            availability_basis="provider_timestamp",
+            availability_basis=self.availability_timestamp_basis,
             point_in_time_certifiable=True,
             payload_sha256=self.raw_response_sha256,
             rights_approval_id=self.rights_approval_id,
@@ -232,6 +236,12 @@ def _capture_one(row: ProviderResultCapture) -> CapturedResultEvidence:
         reasons.append("RESULT_AVAILABILITY_TIMESTAMP_MISSING")
     elif not _aware(row.available_at):
         reasons.append("RESULT_AVAILABILITY_TIMESTAMP_UNTRUSTED")
+    if row.availability_timestamp_basis != "provider_timestamp":
+        reasons.append("AVAILABILITY_TIMESTAMP_BASIS_UNTRUSTED")
+    if not _HASH.fullmatch(row.availability_timestamp_evidence_sha256):
+        reasons.append("AVAILABILITY_TIMESTAMP_EVIDENCE_MISSING")
+    elif row.availability_timestamp_evidence_sha256 != raw_hash:
+        reasons.append("AVAILABILITY_TIMESTAMP_EVIDENCE_HASH_MISMATCH")
     if row.source_effective_at is not None and not _aware(row.source_effective_at):
         reasons.append("SOURCE_EFFECTIVE_TIMESTAMP_UNTRUSTED")
     for name, value in timestamps.items():
@@ -315,9 +325,11 @@ def _capture_one(row: ProviderResultCapture) -> CapturedResultEvidence:
         source_id=row.source_id,
         provider_fixture_id=row.provider_fixture_id,
         source_published_at=_utc(row.source_published_at) if _aware(row.source_published_at) else None,
+        source_timestamp_basis=row.source_timestamp_basis,
         source_effective_at=_utc(row.source_effective_at) if _aware(row.source_effective_at) else None,
         kickoff_at=_utc(row.kickoff_at) if _aware(row.kickoff_at) else "",
         available_at=_utc(row.available_at) if _aware(row.available_at) else None,
+        availability_timestamp_basis=row.availability_timestamp_basis,
         retrieved_at=_utc(row.retrieved_at) if _aware(row.retrieved_at) else "",
         recorded_at=_utc(row.recorded_at) if _aware(row.recorded_at) else "",
         requested_at=_utc(row.requested_at) if _aware(row.requested_at) else "",
