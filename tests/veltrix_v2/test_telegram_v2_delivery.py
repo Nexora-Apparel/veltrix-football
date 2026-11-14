@@ -281,7 +281,7 @@ def test_telegram_bundle_dispatch_rejects_surface_drift_before_claim_or_send(tmp
     dashboard["predictions"] = []
     paths["dashboard"].write_text(json.dumps(dashboard))
     calls = []
-    with pytest.raises(ValueError, match="WEBSITE_REPORT_PROJECTION_IDENTITY_MISMATCH"):
+    with pytest.raises(ValueError, match="REPORT_BUNDLE_COMMIT_HASH_MISMATCH"):
         dispatch_public_telegram_bundle(
             tmp_path,
             bundle.identity.report_id,
