@@ -139,12 +139,14 @@ def test_report_and_manifest_identity_must_match_exactly():
         make_manifest(report, report_id="different-report"),
         attestation_ok,
         rights_ok,
+        evidence_reader,
     ) is False
     assert verify_publication_authorization(
         report,
         make_manifest(report, report_sha256="0" * 64),
         attestation_ok,
         rights_ok,
+        evidence_reader,
     ) is False
 
 
