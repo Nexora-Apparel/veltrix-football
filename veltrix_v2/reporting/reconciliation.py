@@ -184,14 +184,24 @@ class PostgresTelegramReconciliationStore:
         operator_id = event.get("operator_id")
         if not isinstance(operator_id, str) or not operator_id.strip():
             raise ValueError("RECONCILIATION_OPERATOR_ID_REQUIRED")
-        if self._authenticate_actor(operator_id.strip()) is not True:
+        try:
+            operator_authenticated = self._authenticate_actor(operator_id.strip()) is True
+        except Exception:
+            operator_authenticated = False
+        if not operator_authenticated:
             raise PermissionError("RECONCILIATION_OPERATOR_NOT_AUTHENTICATED")
         reviewer_id = event.get("reviewer_id")
         if reviewer_id is not None:
             if not isinstance(reviewer_id, str) or not reviewer_id.strip():
                 raise ValueError("RECONCILIATION_REVIEWER_INVALID")
-            if self._authenticate_actor(reviewer_id.strip()) is not True:
+            try:
+                reviewer_authenticated = self._authenticate_actor(reviewer_id.strip()) is True
+            except Exception:
+                reviewer_authenticated = False
+            if not reviewer_authenticated:
                 raise PermissionError("RECONCILIATION_REVIEWER_NOT_AUTHENTICATED")
+        elif event.get("outcome") == "CONFIRMED_NOT_SENT":
+            raise ValueError("CONFIRMED_NOT_SENT_REQUIRES_INDEPENDENT_REVIEWER")
 
         evidence_uri = event.get("evidence_uri")
         if not isinstance(evidence_uri, str) or not evidence_uri.strip():
