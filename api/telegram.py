@@ -15,9 +15,22 @@ from fastapi.responses import HTMLResponse, JSONResponse
 
 from app.telegram_commands import handle_command
 from app.report_artifacts import load_latest_report, load_dashboard_snapshot, load_paper_ledger, load_model_validation_report
+from veltrix_v2.reporting.report_identity import REPORT_SCHEMA
 from app.telegram_security import telegram_webhook_secret_token
 
 app = FastAPI(title="Veltrix Football Command Centre")
+
+
+def configure_publication_verifier(verifier) -> None:
+    """Install the trusted server-side V2 certification/rights verifier at startup."""
+    if not callable(verifier):
+        raise TypeError("AUTHORITATIVE_PUBLICATION_VERIFIER_REQUIRED")
+    app.state.publication_verifier = verifier
+
+
+def _authoritative_publication_verifier():
+    verifier = getattr(app.state, "publication_verifier", None)
+    return verifier if callable(verifier) else None
 
 DASHBOARD_HTML = """<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
@@ -432,14 +445,23 @@ def dashboard_data() -> dict:
             return None
 
     with ThreadPoolExecutor(max_workers=3) as pool:
-        report_future = pool.submit(_safe_load, load_dashboard_snapshot)
+        report_future = pool.submit(
+            _safe_load,
+            lambda: load_dashboard_snapshot(_authoritative_publication_verifier()),
+        )
         validation_future = pool.submit(_safe_load, load_model_validation_report)
         ledger_future = pool.submit(_safe_load, load_paper_ledger)
         report = report_future.result()
         if not isinstance(report, dict):
-            report = _safe_load(load_latest_report)
+            report = _safe_load(
+                lambda: load_latest_report(_authoritative_publication_verifier())
+            )
         model_validation = validation_future.result()
         ledger = ledger_future.result()
+        if isinstance(report, dict) and report.get("schema") == REPORT_SCHEMA:
+            # Never mix the legacy paper ledger or legacy model validation into V2.
+            ledger = None
+            model_validation = None
 
     if not isinstance(report, dict):
         return {"status": "UNAVAILABLE", "warning": "No published report could be loaded.", "predictions": []}
@@ -769,7 +791,9 @@ async def telegram_webhook(
         return JSONResponse({"ok": True})
     if command.strip().split()[0].split("@", 1)[0].casefold() == "/oddsdiag":
         try:
-            report = load_latest_report()
+            report = load_latest_report(_authoritative_publication_verifier())
+            if not isinstance(report, dict):
+                raise RuntimeError("PUBLISHED_V2_REPORT_UNAVAILABLE")
             request_meta = report.get("primary_provider_request") or {}
             odds_meta = report.get("multi_source_odds_sync") or {}
             live_odds = report.get("live_odds_sync") or {}
@@ -808,8 +832,12 @@ async def telegram_webhook(
         # Read published snapshots only. This never starts prediction jobs or
         # consumes the football provider's API quota.
         try:
-            report = load_latest_report()
-            ledger = load_paper_ledger()
+            report = load_latest_report(_authoritative_publication_verifier())
+            ledger = (
+                None
+                if isinstance(report, dict) and report.get("schema") == REPORT_SCHEMA
+                else load_paper_ledger()
+            )
         except Exception:
             # A data-source outage must not break the Telegram webhook.
             report, ledger = None, None
