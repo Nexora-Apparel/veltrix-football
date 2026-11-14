@@ -2,7 +2,7 @@
 
 This module is intentionally storage-agnostic. Callers persist each immutable
 event to an append-only store; no database/network/production write occurs here.
-Historical backfills and non-point-in-time-certified fixtures are rejected.
+Historical backfills are rejected. Non-PIT observations can enter only the separately typed prospective-observed shadow class; they can never be represented as PIT-certified predictions.
 """
 from __future__ import annotations
 
@@ -85,6 +85,8 @@ class ProspectivePaperLedger:
             event_type = "PREDICTION"
         elif prediction.point_in_time_certifiable is False and prediction.evidence_class == "PROSPECTIVE_OBSERVED_ONLY":
             event_type = "SHADOW_PREDICTION"
+        elif prediction.point_in_time_certifiable is False and prediction.evidence_class == "PIT_CERTIFIED":
+            raise ValueError("PAPER_PREDICTION_EVIDENCE_NOT_CERTIFIABLE")
         else:
             raise ValueError("PAPER_PREDICTION_EVIDENCE_CLASS_INVALID")
         if not all(isinstance(x, str) and x.strip() for x in (
