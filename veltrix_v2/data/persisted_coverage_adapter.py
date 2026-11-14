@@ -128,6 +128,7 @@ def adapt_persisted_coverage_rows(
             available_at is None or recorded_at is None or rights_evaluated_at is None
             or not all(isinstance(value, str) and value.strip() for value in values)
             or type(payload.get("rights_approved")) is not bool
+            or payload.get("rights_approval_id") != row.get("rights_approval_id")
             or type(point_in_time) is not bool
         ):
             rejected_observations += 1
