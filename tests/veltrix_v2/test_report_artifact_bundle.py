@@ -101,12 +101,12 @@ def test_bundle_reader_rejects_website_projection_content_drift(tmp_path):
 
 
 def test_scheduled_consumer_returns_only_the_authorized_scheduled_copy(tmp_path):
-    bundle = build_report_surface_bundle(source_report())
+    bundle = build_report_surface_bundle(public_source_report())
     persist_report_surface_bundle(bundle, tmp_path)
     authorized_report = load_authorized_scheduled_report(
         tmp_path,
         bundle.identity.report_id,
-        lambda report, identity: report.get("release_mode") == "INTERNAL_SHADOW",
+        lambda report, identity: report.get("release_mode") == "RESTRICTED_PUBLIC",
     )
     assert authorized_report == bundle.scheduled_report
 
@@ -118,8 +118,7 @@ def test_scheduled_consumer_rejects_missing_or_failed_publication_verifier(tmp_p
         load_authorized_scheduled_report(
             tmp_path, bundle.identity.report_id, lambda *_: True
         )
-    public_report = {**source_report(), "release_mode": "RESTRICTED_PUBLIC"}
-    public_bundle = build_report_surface_bundle(public_report)
+    public_bundle = build_report_surface_bundle(public_source_report())
     persist_report_surface_bundle(public_bundle, tmp_path)
     with pytest.raises(PermissionError, match="VERIFIER_REQUIRED"):
         load_authorized_scheduled_report(
@@ -129,3 +128,16 @@ def test_scheduled_consumer_rejects_missing_or_failed_publication_verifier(tmp_p
         load_authorized_scheduled_report(
             tmp_path, public_bundle.identity.report_id, lambda *_: False
         )
+
+
+def public_source_report():
+    return {
+        "schema": REPORT_SCHEMA,
+        "report_id": "veltrix-daily-2026-11-14-public",
+        "as_of_date": "2026-11-14",
+        "release_mode": "RESTRICTED_PUBLIC",
+        "status": "PUBLISHED",
+        "predictions": [
+            {"fixture_id": "fx-1", "publication_status": "PUBLISHED", "certified_markets": ["1X2"]},
+        ],
+    }
