@@ -350,3 +350,9 @@ def test_portable_public_consumer_rejects_duplicate_fixture_ids_even_if_verifier
     portable = serialize_portable_report_surface_bundle(build_report_surface_bundle(report))
     with pytest.raises(PermissionError, match="NON_PUBLIC_FORECASTS"):
         load_authorized_portable_report_surface_bundle(portable, lambda *_: True)
+
+
+
+def test_portable_bundle_rejects_payload_over_runtime_size_limit():
+    with pytest.raises(ValueError, match="BYTES_INVALID"):
+        parse_portable_report_surface_bundle(b"x" * 8_000_001)
