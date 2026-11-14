@@ -30,7 +30,7 @@ _REPORT_TIMEOUT_SECONDS = 3.0
 _OPTIONAL_TIMEOUT_SECONDS = 1.25
 _API_FALLBACK_TIMEOUT_SECONDS = 1.0
 _cache: dict[str, tuple[float, dict[str, Any] | None]] = {}
-_portable_bundle_cache: tuple[float, bytes | None] = (0.0, None)
+_portable_bundle_cache: dict[str, tuple[float, bytes | None]] = {}
 _PUBLIC_RELEASE_MODES = frozenset({"RESTRICTED_PUBLIC", "FULL_PUBLIC"})
 
 
@@ -149,17 +149,15 @@ def _load(kind: str) -> dict[str, Any] | None:
 
 def _load_portable_bundle_bytes() -> bytes | None:
     """Fetch the single V2 bundle artifact with a short cache and strict byte limit."""
-    global _portable_bundle_cache
     now = time.monotonic()
-    cached_at, cached_bytes = _portable_bundle_cache
-    if now - cached_at < CACHE_SECONDS:
-        return cached_bytes
-
     repo = (os.environ.get("VELTRIX_DATA_REPOSITORY") or DEFAULT_REPOSITORY).strip()
     branch = (os.environ.get("VELTRIX_DATA_BRANCH") or DEFAULT_BRANCH).strip()
     if not re.fullmatch(r"[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+", repo) or not re.fullmatch(r"[A-Za-z0-9_.-]+", branch):
-        _portable_bundle_cache = (now, None)
         return None
+    cache_key = f"{repo}@{branch}"
+    cached = _portable_bundle_cache.get(cache_key)
+    if cached is not None and now - cached[0] < CACHE_SECONDS:
+        return cached[1]
 
     headers = {
         "User-Agent": "Veltrix-Football-Command-Centre",
@@ -196,7 +194,7 @@ def _load_portable_bundle_bytes() -> bytes | None:
         except (HTTPError, URLError, OSError, TimeoutError):
             value = None
 
-    _portable_bundle_cache = (now, value)
+    _portable_bundle_cache[cache_key] = (now, value)
     return value
 
 
