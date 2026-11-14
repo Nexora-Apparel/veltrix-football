@@ -2,7 +2,7 @@ from datetime import date, datetime, timezone
 
 from scripts.phase5_capture_odds_api_quota import (
     _canonical_hash,
-    _next_month_start,
+    _internal_budget_period,
     _quota_integer,
     _safe_headers,
 )
@@ -34,9 +34,13 @@ def test_quota_integer_rejects_missing_negative_and_malformed_values():
     assert _quota_integer({"x-requests-used": "21.5"}, "x-requests-used") is None
 
 
-def test_month_boundary_uses_first_day_of_next_month():
-    assert _next_month_start(datetime(2026, 11, 14, tzinfo=timezone.utc)) == date(2026, 12, 1)
-    assert _next_month_start(datetime(2026, 12, 31, tzinfo=timezone.utc)) == date(2027, 1, 1)
+def test_internal_budget_period_is_rolling_30_days_not_provider_reset_inference():
+    assert _internal_budget_period(datetime(2026, 11, 14, tzinfo=timezone.utc)) == (
+        date(2026, 11, 14), date(2026, 12, 14)
+    )
+    assert _internal_budget_period(datetime(2026, 12, 31, tzinfo=timezone.utc)) == (
+        date(2026, 12, 31), date(2027, 1, 30)
+    )
 
 
 def test_quota_evidence_hash_is_deterministic_and_scope_sensitive():
