@@ -167,3 +167,11 @@ The FastAPI command centre now passes an explicitly installed server-side public
 ## Legacy dashboard fallback removal — 2026-11-14 15:22 UTC
 
 A final website audit found that the browser still had independent raw-GitHub/CDN fallbacks to legacy `dashboard_snapshot.json` and `paper_tracking_ledger.json`, plus legacy `EXPERIMENTAL_*` state handling. These paths could bypass the new API verifier. They have been removed. The browser now uses only `/api/dashboard-data`; if the trusted V2 verifier or portable report is unavailable, the dashboard displays an unavailable state rather than legacy forecasts or paper history. Legacy experimental labels and static fallback references are covered by regression tests.
+
+
+## CI checkpoint — 2026-11-14 17:34 UTC
+
+- Current branch head: `c69c83337a3b32c0e069b6ab72e518fbd7fe4908`.
+- CI run #1445 (`43621787204`) passed Foundation, PostgreSQL 16 and PostgreSQL 18.
+- The previous #1441 foundation failure was isolated to the dashboard JavaScript extraction check: its regex did not reliably identify the embedded HTML assignment. The check now parses `api/telegram.py` with Python's AST, extracts the literal `DASHBOARD_HTML`, and runs `node --check` on the embedded script.
+- This is a CI-check correction, not a change to publication eligibility or launch status.
