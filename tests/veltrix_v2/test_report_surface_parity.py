@@ -12,7 +12,10 @@ def make_report():
         "report_id": "veltrix-2026-11-14-surface-parity",
         "as_of_date": "2026-11-14",
         "release_mode": "RESTRICTED_PUBLIC",
-        "predictions": [],
+        "predictions": [{
+            "fixture_id": "fixture-1",
+            "publication_status": "PUBLISHED",
+        }],
     })
 
 
@@ -177,3 +180,46 @@ def test_legacy_dashboard_with_forecasts_is_not_served_as_current_v2_data(monkey
         lambda kind: legacy_dashboard if kind == "dashboard" else None,
     )
     assert report_artifacts.load_dashboard_snapshot() is None
+
+
+
+def test_website_publication_loader_rejects_empty_duplicate_and_oversized_reports(monkeypatch):
+    report = make_report()
+    dashboard = make_dashboard(report)
+
+    empty = deepcopy(report)
+    empty["predictions"] = []
+    empty = bind_report_identity({key: value for key, value in empty.items() if key != "report_sha256"})
+    monkeypatch.setattr(report_artifacts, "_load", lambda kind: {"report": empty, "dashboard": make_dashboard(empty)}.get(kind))
+    assert report_artifacts.load_v2_report_bundle(lambda *_: True) is None
+
+    duplicate = deepcopy(report)
+    duplicate["predictions"].append(dict(duplicate["predictions"][0]))
+    duplicate = bind_report_identity({key: value for key, value in duplicate.items() if key != "report_sha256"})
+    monkeypatch.setattr(report_artifacts, "_load", lambda kind: {"report": duplicate, "dashboard": make_dashboard(duplicate)}.get(kind))
+    assert report_artifacts.load_v2_report_bundle(lambda *_: True) is None
+
+    oversized = deepcopy(report)
+    oversized["predictions"] = [
+        {"fixture_id": f"fixture-{index}", "publication_status": "PUBLISHED"}
+        for index in range(26)
+    ]
+    oversized = bind_report_identity({key: value for key, value in oversized.items() if key != "report_sha256"})
+    monkeypatch.setattr(report_artifacts, "_load", lambda kind: {"report": oversized, "dashboard": make_dashboard(oversized)}.get(kind))
+    assert report_artifacts.load_v2_report_bundle(lambda *_: True) is None
+
+
+def test_website_publication_loader_fails_closed_when_verifier_raises(monkeypatch):
+    report = make_report()
+    dashboard = make_dashboard(report)
+    monkeypatch.setattr(
+        report_artifacts,
+        "_load",
+        lambda kind: {"report": report, "dashboard": dashboard}.get(kind),
+    )
+
+    def unavailable_verifier(*_):
+        raise RuntimeError("trusted evidence store unavailable")
+
+    assert report_artifacts.load_v2_report_bundle(unavailable_verifier) is None
+    assert report_artifacts.load_latest_report(unavailable_verifier) is None
