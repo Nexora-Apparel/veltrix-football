@@ -213,3 +213,12 @@ A final website audit found that the browser still had independent raw-GitHub/CD
 - No production OIDC/session identity provider or reconciliation endpoint is wired. The callback must be backed by a real authenticated principal before any reconciliation writes are enabled.
 - Code head `311af7e3f76ec0f8f07278f37b7d6cd63004ae93` passed CI run #1488 across Foundation, PostgreSQL 16 and PostgreSQL 18.
 - PR #118 remains open/draft/unmerged; migrations 0005–0010 remain unapplied to staging.
+
+
+## Verified publication artifacts still absent — 2026-11-14 17:53 UTC
+
+- Read-only GitHub Contents API check returned 404 for `command-data/public-data/v2_report_bundle.json`. The website's V2 loader therefore has no portable report artifact to load.
+- The repository also has no `reports/certification/evidence-manifest.json`. The existing manual `certification-evidence-attestation.yml` workflow is pinned to `main` and references that missing file; it cannot provide current release authorization.
+- `app/certification_evidence.py` explicitly states that byte-integrity verification is not certification. `scripts/verify_certification_evidence.py` is a raw-evidence diagnostic and does not issue a release certificate.
+- The existing evidence-attestation workflow is not wired into the V2 API's runtime verifier. Do not treat the presence of the workflow or verifier utilities as a signed V2 publication authorization.
+- No V2 publisher was added: without point-in-time eligible data, a complete evidence manifest, source-rights verification and a trusted runtime attestation verifier, writing a public bundle would bypass the release gates.
