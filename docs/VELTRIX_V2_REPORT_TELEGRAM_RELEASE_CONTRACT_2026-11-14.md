@@ -101,3 +101,11 @@ For 1X2, the certification manifest must beat the de-vigged bookmaker baseline o
 The bundle now also emits `bundles/{report_id}.bundle.json`: one portable envelope containing the canonical report, scheduled copy, Telegram copy and website projection, plus per-surface SHA-256 values and the common report identity. Its parser rejects missing surfaces, unknown schema, tampered surface bytes and report identity drift.
 
 The final commit marker binds this portable artifact together with the four separate surface files. Consumers can transfer one portable file for cross-surface processing while the local bundle reader verifies the complete five-artifact set before returning a bundle. This does not itself publish the artifact or wire the production workflows.
+
+
+## Portable bundle consumer adapters
+
+- The scheduled-report adapter can return its scheduled projection from the single portable bundle only after the same injected authoritative verifier succeeds.
+- The Telegram adapter can dispatch the Telegram projection from the single portable bundle only after bundle identity, all four surface hashes, public fixture status, unique fixture IDs and authoritative certification have passed.
+- The Telegram adapter still claims durable idempotency before sending and has no automatic resend path for uncertain outcomes.
+- These adapters are offline-testable and do not activate any production workflow.
