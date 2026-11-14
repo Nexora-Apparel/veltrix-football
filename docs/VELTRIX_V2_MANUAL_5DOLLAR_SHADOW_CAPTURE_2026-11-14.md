@@ -42,10 +42,10 @@ GOAL API and StrikerAPI are not referenced by this workflow.
 - The optional `persist_staging` input defaults to false.
 - When enabled, raw result capture evidence is persisted only to the allowlisted Neon staging database through the guarded evidence persistence adapter. The script rejects any other database, host or role.
 - Scheduled target page snapshots and the local paper ledger are not persisted by this workflow yet.
-- The runner's detailed raw responses and local JSONL paper ledger are not uploaded as GitHub artifacts.
+- The runner's detailed raw responses and individual predictions are not uploaded as GitHub artifacts.
 - The only uploaded artifact is `public_summary.json`, containing aggregate counts and release-lock status; it contains no fixture IDs, raw payloads, odds, probabilities or individual predictions.
-
-The paper ledger is currently runner-local and therefore not durable between runs. A separate append-only staging paper-ledger store and migration are required before prospective selections can accumulate durably.
+- When `persist_staging=true`, result evidence is persisted through the guarded evidence writer and shadow predictions are appended to the PostgreSQL paper ledger. Migration 0005 must already be applied to staging.
+- When `persist_staging=false`, the JSONL paper ledger remains runner-local and is not durable between runs.
 
 ## Model and release boundaries
 
