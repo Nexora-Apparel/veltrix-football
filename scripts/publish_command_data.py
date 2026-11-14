@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import argparse
 import base64
+import hashlib
 import json
 import os
 import re
@@ -108,6 +109,15 @@ def publish(path: str, local_file: Path, repo: str, token: str) -> None:
             existing = _github_json(f"{url}?ref={quote(BRANCH, safe='')}", token)
             if isinstance(existing.get("sha"), str):
                 current_sha = existing["sha"]
+                encoded_existing = existing.get("content")
+                if existing.get("encoding") == "base64" and isinstance(encoded_existing, str):
+                    try:
+                        existing_bytes = base64.b64decode(encoded_existing, validate=False)
+                    except (ValueError, TypeError):
+                        raise ValueError("EXISTING_COMMAND_DATA_FILE_CONTENT_INVALID") from None
+                    if existing_bytes == data:
+                        print(f"Already published {path}; exact bytes match.")
+                        return
         except HTTPError as exc:
             if exc.code != 404:
                 raise
@@ -134,6 +144,13 @@ def _archive_report_path(report: dict, published_at: datetime) -> str:
     report_date = date.fromisoformat(str(report.get("as_of_date"))).isoformat()
     timestamp = published_at.astimezone(timezone.utc).strftime("%Y%m%dT%H%M%S%fZ")
     return f"public-data/archive/{report_date}/daily_predictions_{timestamp}.json"
+
+
+def _archive_content_path(report: dict, report_bytes: bytes) -> str:
+    """Return a content-addressed archive path so retries cannot create duplicates."""
+    report_date = date.fromisoformat(str(report.get("as_of_date"))).isoformat()
+    digest = hashlib.sha256(report_bytes).hexdigest()
+    return f"public-data/archive/{report_date}/daily_predictions_{digest}.json"
 
 
 def _valid_recent_cache(cache: object) -> bool:
@@ -194,7 +211,7 @@ def main() -> int:
 
     if args.archive_only:
         try:
-            archive_path = _archive_report_path(report, datetime.now(timezone.utc))
+            archive_path = _archive_content_path(report, report_path.read_bytes())
             publish(archive_path, report_path, repo, token)
             return 0
         except (HTTPError, URLError, OSError, ValueError, json.JSONDecodeError) as exc:
