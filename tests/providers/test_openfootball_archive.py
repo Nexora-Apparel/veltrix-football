@@ -2,7 +2,7 @@ from datetime import date, datetime, timezone
 
 import pytest
 
-from veltrix_v2.models.poisson import observation_eligible_as_of
+from veltrix_v2.models.poisson import MatchObservation, observation_eligible_as_of
 from veltrix_v2.providers.openfootball_archive import parse_archive
 
 UTC = timezone.utc
@@ -39,13 +39,15 @@ def test_parse_archive_preserves_date_precision_and_source_provenance():
 
 
 def test_date_only_result_is_eligible_only_after_conservative_date_boundary():
-    result = parse_archive(
-        SAMPLE, competition_id="NGA_NPFL", source_path="africa/nigeria/2025-26_ng1.txt",
-        snapshot_commit_sha=SHA, snapshot_available_at=SNAPSHOT, imported_at=IMPORTED,
-    )
-    observation = result.observations[0]
-    before = datetime(2025, 8, 23, 23, 59, tzinfo=UTC)
     boundary = datetime(2025, 8, 24, 0, 0, tzinfo=UTC)
+    observation = MatchObservation(
+        fixture_id="date-only", competition_id="NGA_NPFL",
+        home_team_id="openfootball:NGA_NPFL:home",
+        away_team_id="openfootball:NGA_NPFL:away",
+        kickoff_at=None, available_at=boundary, recorded_at=boundary,
+        home_goals=1, away_goals=1, kickoff_date=date(2025, 8, 22),
+    )
+    before = datetime(2025, 8, 23, 23, 59, tzinfo=UTC)
     assert not observation_eligible_as_of(observation, cutoff_at=before)
     assert observation_eligible_as_of(observation, cutoff_at=boundary)
 
