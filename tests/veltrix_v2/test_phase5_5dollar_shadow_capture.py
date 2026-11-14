@@ -233,7 +233,7 @@ def test_run_capture_orchestrates_mocked_pages_with_optional_staging_ledger(
                         lambda *a, **k: SimpleNamespace(allowed=True, reason_code=None))
     monkeypatch.setattr(
         capture, "_request_page",
-        lambda *a, **k: (b"{}", {}, NOW, NOW + timedelta(seconds=1)),
+        lambda *a, **k: (b"{}", {}, NOW, NOW + timedelta(seconds=1), 200),
     )
 
     def fake_capture_page(raw, headers, *, status, **kwargs):
