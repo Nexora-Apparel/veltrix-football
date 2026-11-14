@@ -310,6 +310,18 @@ def _capture_page(
     }
 
     if status == "finished":
+        finished_fixtures = [
+            fixture for fixture in parsed.fixtures
+            if fixture.status.value == "finished"
+        ]
+        if not finished_fixtures:
+            page_info.update({
+                "capture_observations": 0,
+                "first_observed_observations": 0,
+                "no_finished_rows": True,
+                "point_in_time_certifiable": False,
+            })
+            return [], page_info
         current_approval, recorded_at = _refresh_approval(staging_dsn)
         for purpose in (DataUsePurpose.STORAGE, DataUsePurpose.MODEL_TRAINING):
             decision = evaluate_source_use(
@@ -550,6 +562,9 @@ def run_capture(
     ledger_events = [store.append_prediction(prediction) for prediction in admission.admitted]
 
     benchmarking_allowed = DataUsePurpose.BENCHMARKING in current_approval.permitted_uses
+    persisted_capture_pages = sum(
+        1 for page in page_manifests if page.get("persisted_to_staging")
+    )
     summary = {
         "status": "SHADOW_CAPTURE_COMPLETE" if admission.admitted else "NO_ADMISSIBLE_SHADOW_FORECASTS",
         "provider": "5DollarFootballAPI",
@@ -593,8 +608,9 @@ def run_capture(
             "url": current_approval.attribution_url,
         },
         "raw_redistribution_allowed": current_approval.raw_redistribution_allowed,
-        "evidence_persisted_to_staging": persist_staging,
-        "database_writes": persist_staging,
+        "persisted_capture_pages": persisted_capture_pages,
+        "evidence_persisted_to_staging": persisted_capture_pages > 0,
+        "database_writes": persisted_capture_pages > 0,
         "telegram_delivery": False,
         "schedule_activation": False,
         "public_publication": False,
@@ -612,6 +628,7 @@ def run_capture(
         "mapped_upcoming_targets": summary["mapped_upcoming_targets"],
         "forecast_count": summary["forecast_count"],
         "admitted_shadow_predictions": summary["admitted_shadow_predictions"],
+        "persisted_capture_pages": summary["persisted_capture_pages"],
         "evidence_persisted_to_staging": summary["evidence_persisted_to_staging"],
         "publication_status": summary["publication_status"],
         "settlement_status": summary["settlement_status"],
