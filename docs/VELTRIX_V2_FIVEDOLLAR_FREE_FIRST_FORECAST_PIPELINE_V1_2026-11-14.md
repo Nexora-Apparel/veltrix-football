@@ -39,3 +39,8 @@ The engine accepts an exponential half-life setting. Equal weighting remains the
 ## One-shot provider dry run
 
 The manual/push-only dry-run workflow requests at most 24 provider calls, paces requests at one every six seconds, reads at most 90 days of finished results and 14 days of scheduled fixtures, and filters any extra provider rows outside those windows locally. It uploads only a derived forecast report with provider attribution; raw provider responses are never written to the repository or artifact. No scheduled trigger is configured.
+
+
+## Dixon-Coles candidate
+
+An optional Dixon-Coles low-score correction parameter is exposed with rho=0.0 as the independent-Poisson default. Non-zero rho values are challengers only; invalid/non-positive low-score correction factors are rejected. A non-zero value may be selected only through chronological walk-forward evaluation against the independent baseline. The model remains unpublished.
