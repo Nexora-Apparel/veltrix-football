@@ -262,7 +262,7 @@ def _request_page(
     page: int,
     pacing_state: dict[str, float | None],
     before_request,
-) -> tuple[bytes, dict[str, str], datetime, datetime]:
+) -> tuple[bytes, dict[str, str], datetime, datetime, int]:
     last_request_started = pacing_state.get("last_started")
     if last_request_started is not None:
         delay = MIN_REQUEST_INTERVAL_SECONDS - (time.monotonic() - last_request_started)
@@ -553,6 +553,11 @@ def run_capture(
         result_rows, info = _capture_page(
             raw, headers, competition_id=competition_id, status="finished",
             request_id=request_id, requested_at=requested_at, retrieved_at=retrieved_at,
+            http_status=http_status,
+            request_params=_request_parameters(
+                competition_id=competition_id, status="finished",
+                start_at=history_start, end_at=now, page=1,
+            ),
             registry=registry, out_dir=out_dir,
             staging_dsn=staging_dsn,
             persist_staging=persist_staging,
@@ -579,7 +584,7 @@ def run_capture(
         request_id = f"{os.getenv('GITHUB_RUN_ID', 'manual')}-{competition_id}-scheduled-1"
         request_count += 1
         try:
-            raw, headers, requested_at, retrieved_at = _request_page(
+            raw, headers, requested_at, retrieved_at, http_status = _request_page(
                 api_key, competition_id=competition_id, status="scheduled",
                 start_at=now, end_at=upcoming_end, page=1,
                 pacing_state=pacing_state,
@@ -593,6 +598,11 @@ def run_capture(
         target_rows, info = _capture_page(
             raw, headers, competition_id=competition_id, status="scheduled",
             request_id=request_id, requested_at=requested_at, retrieved_at=retrieved_at,
+            http_status=http_status,
+            request_params=_request_parameters(
+                competition_id=competition_id, status="scheduled",
+                start_at=now, end_at=upcoming_end, page=1,
+            ),
             registry=registry, out_dir=out_dir,
             staging_dsn=staging_dsn,
             persist_staging=persist_staging,
