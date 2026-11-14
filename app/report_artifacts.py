@@ -37,11 +37,15 @@ def _is_public_v2_report(report: dict[str, Any]) -> bool:
     return (
         report.get("release_mode") in _PUBLIC_RELEASE_MODES
         and isinstance(predictions, list)
+        and 1 <= len(predictions) <= 25
         and all(
             isinstance(fixture, dict)
+            and isinstance(fixture.get("fixture_id"), str)
+            and bool(fixture.get("fixture_id").strip())
             and fixture.get("publication_status") == "PUBLISHED"
             for fixture in predictions
         )
+        and len({fixture["fixture_id"] for fixture in predictions}) == len(predictions)
     )
 
 
@@ -155,7 +159,7 @@ def load_latest_report(
         identity = verify_report_identity(report)
         if authorization_verifier(report, identity) is not True:
             return None
-    except (KeyError, TypeError, ValueError):
+    except Exception:
         return None
     return report
 
@@ -201,6 +205,6 @@ def load_v2_report_bundle(
         identity = assert_website_projection(report, dashboard)
         if authorization_verifier(report, identity) is not True:
             return None
-    except (KeyError, TypeError, ValueError):
+    except Exception:
         return None
     return {"report": report, "dashboard": dashboard, "identity": identity}
