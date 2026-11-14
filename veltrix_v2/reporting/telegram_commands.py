@@ -224,7 +224,10 @@ def handle_v2_command(
     elif command == "/fixtures":
         selected = fixtures[:25]
 
-    lines = [f"VELTRIX FOOTBALL · {report.get('as_of_date')} · WAT"]
+    lines = [
+        f"VELTRIX FOOTBALL · {report.get('as_of_date')} · WAT",
+        f"Report: {report.get('report_id')}",
+    ]
     if command in {"/1x2", "/btts", "/overunder"}:
         lines.append(f"CERTIFIED MARKET: { {'/1x2': '1X2', '/btts': 'BTTS', '/overunder': 'TOTALS_2_5'}[command] }")
     for fixture in selected:
