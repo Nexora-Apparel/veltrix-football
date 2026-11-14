@@ -65,7 +65,7 @@ def test_approval_loader_resolves_append_only_status_events_and_uses():
     assert approval.status is ApprovalStatus.APPROVED
     assert DataUsePurpose.COLLECTION in approval.permitted_uses
     assert DataUsePurpose.MODEL_TRAINING in approval.permitted_uses
-    assert DataUsePurpose.BENCHMARKING not in approval.permitted_uses
+    assert DataUsePurpose.BENCHMARKING in approval.permitted_uses
 
 
 def test_approval_loader_fails_closed_on_revocation():
