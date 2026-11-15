@@ -215,3 +215,22 @@ This section records the original read-only reconciliation run only. It does not
 ### Replacement-source exclusion
 
 The Odds API's public technical catalogue lists Brazil Série B, but the active Veltrix source approval for that provider is limited to five European competitions and excludes Brazil Série B. The Brazil metadata-only discovery results are therefore not admitted as fixture identity or odds evidence. They were not persisted and cannot be used to create replacement crosswalks. The two absent canonical fixtures remain `UNRESOLVED`; no replacement mapping was invented. Reviewer-backed crosswalk acceptance is complete in staging: 389 RESOLVED crosswalk versions are independently verified; the two source-absent canonical fixtures remain unresolved.
+
+
+## 11. Persistent staging quarantine follow-up — 2026-11-15
+
+The two previously documented contradictory AI Midas team-stat rows have now also been persisted as explicit open quarantine records in `veltrix_football_staging.public.ingestion_quarantine`. This was a separate follow-up after the crosswalk-acceptance transaction; it does not change the 389 accepted crosswalks.
+
+| Quarantine ID | Source line | Team | Source-row SHA-256 | State |
+|---:|---:|---|---|---|
+| 1 | 8 | CRB | `78d9492295da1b8dfa9ef735b786f63412089a37640b1f01aa3d57395707abc6` | OPEN / unresolved |
+| 2 | 9 | Náutico | `ce5bf78a5090a5bef9997ae65c3b5a8e864e117218ed0404e59384b57a62bfb4` | OPEN / unresolved |
+
+Both records:
+- reference source observation `432397`, pinned to source file SHA-256 `55b0c00629abd2d4ff3c31659ada950b67ffc2752609284b32c15c99f71152ab`;
+- retain the exact provider row ID, source commit, source path, line number, canonical fixture 1811 and provider fixture 4070869087;
+- use reason code `SOURCE_TEAM_STAT_SCORE_CONFLICT`;
+- retain observed and expected-from-match-label values without rewriting either source row;
+- carry `QUARANTINED_NO_FEATURE_ADMISSION` and `UNRESOLVED_DO_NOT_REWRITE` dispositions.
+
+Independent staging read-back confirms two open quarantine rows, two distinct row fingerprints and both source-observation references. The feature-snapshot tables remain empty: 0 `feature_snapshots`, 0 `feature_snapshot_links`, 0 `feature_snapshot_eligibility_events`. No advanced statistics or features were admitted. The two missing canonical fixtures 1927 and 1807 remain without AI Midas fixture crosswalks; all 389 accepted TEAM/FIXTURE crosswalks remain present.
