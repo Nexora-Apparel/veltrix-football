@@ -11,6 +11,7 @@ on:
       - "veltrix_v2/ledger/paper_predictions.py"
       - "veltrix_v2/ledger/settlement.py"
       - "tests/veltrix_v2/test_settlement_reconciliation.py"
+      - "tests/veltrix_v2/test_paper_ledger_postgres.py"
       - "tests/scripts/test_phase5_collect_5dollar_shadow.py"
       - "veltrix_v2/data/provider_evidence_capture.py"
       - "tests/veltrix_v2/test_provider_evidence_capture.py"
@@ -39,6 +40,7 @@ on:
       - "veltrix_v2/ledger/paper_predictions.py"
       - "veltrix_v2/ledger/settlement.py"
       - "tests/veltrix_v2/test_settlement_reconciliation.py"
+      - "tests/veltrix_v2/test_paper_ledger_postgres.py"
       - "tests/scripts/test_phase5_collect_5dollar_shadow.py"
       - "veltrix_v2/data/provider_evidence_capture.py"
       - "tests/veltrix_v2/test_provider_evidence_capture.py"
@@ -157,3 +159,4 @@ jobs:
           tests/providers/odds_api_v4/test_quota_evidence_postgres.py
           tests/providers/odds_api_v4/test_capture_state_postgres.py
           tests/providers/odds_api_v4/test_capture_request_postgres.py
+          tests/veltrix_v2/test_paper_ledger_postgres.py
