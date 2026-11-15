@@ -40,6 +40,8 @@ def historical_fixture_to_observation(
         point_in_time_certifiable=fixture.point_in_time_certifiable,
         payload_sha256=fixture.payload_sha256,
         rights_approval_id=fixture.rights_approval_id,
+        evidence_manifest_sha256=fixture.capture_manifest_sha256,
+        capture_evidence_sha256=fixture.response_sha256,
     )
 
 
