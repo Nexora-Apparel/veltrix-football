@@ -52,7 +52,7 @@ def report_sha256(report: dict) -> str:
 
 
 def validate_report(report: dict, rows: list[dict]) -> tuple[list[dict], list[dict]]:
-    if report.get("schema_version") != "veltrix-aimidas-serieb-identity-audit-v1":
+    if report.get("schema_version") != "veltrix-aimidas-brazil-serie-b-identity-audit-v1":
         raise RuntimeError("AIMIDAS_CROSSWALK_REPORT_SCHEMA_INVALID")
     source = report.get("source", {})
     db = report.get("database", {})
