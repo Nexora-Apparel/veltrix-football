@@ -42,6 +42,7 @@ jobs:
           pytest -q tests/veltrix_v2/test_openfootball_pit_snapshot_pack.py tests/providers/test_openfootball_archive.py
 
       - name: Collect rights-scoped immutable source snapshots
+        id: collect
         env:
           GITHUB_TOKEN: \${{ github.token }}
         run: |
@@ -51,6 +52,7 @@ jobs:
             --max-commits-per-source "\${{ inputs.max_commits_per_source }}"
 
       - name: Upload source snapshots, observation versions and manifest
+        if: always() && steps.collect.outcome != 'skipped'
         uses: actions/upload-artifact@v4
         with:
           name: veltrix-stage2-openfootball-pit-snapshot-pack
