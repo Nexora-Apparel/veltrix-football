@@ -585,3 +585,55 @@ At the time of this ledger:
 - Value betting remains LOCKED; PR #120 remains open/draft/unmerged.
 
 **Next execution:** maintain the 25 prospective targets until kickoff; settle only after provider FINISHED and the conservative availability checks pass; qualify a direct bookmaker close source only after account entitlement/rights proof; do not count opening quotes or unknown-timestamp latest-prematch snapshots as closing evidence.
+
+## Live execution audit — 2026-11-15
+
+**Audit scope:** PR #120, operational Neon staging branch, current 5Dollar account evidence, odds provenance, V2 forecast readiness and certification gates.
+
+### Repository and CI verification
+- PR #120 is open, draft and unmerged. Current head: `53599c6303eb3f7ba734e6b9c7545f8326e16c08`; branch: `integration/v2-report-bundle-wiring-20261114`.
+- The latest workflow batch associated with this exact head reports successful Phase 2 data foundation, PostgreSQL 16/18 acceptance, Phase 5 shadow regression, historical model audit, AI Midas identity reconciliation and certification-evidence integrity. Daily Fixture Predictions was skipped as intended.
+- Combined legacy commit-status API returned no status entries; the workflow-run API is the current evidence source. No merge, deployment, publication, Telegram delivery or schedule activation was performed.
+
+### 5DollarFootballAPI entitlement
+- Read-only Neon entitlement observation remains `Community / ACTIVE`, checked at `2026-11-12T22:51:54.745Z`, with 300 requests/hour, 20/minute and quota_remaining 299 at that observation.
+- No Ultra entitlement observation exists. The current account plan on 15 November has not been live-verified.
+- Official provider documentation confirms `GET /v1/status` returns the account plan and rate limits. The odds-history route `GET /v1/fixtures/{id}/odds/history` and non-Bet365 bookmakers require Ultra. The connected GitHub integration exposes no Actions workflow-dispatch operation, and the account key is available only as a protected repository secret; therefore a live authenticated `/status` call could not be made in this session.
+- No Ultra endpoint was called, no upgrade or payment occurred, and no API key was exposed or changed.
+- Decision: keep tick-history collection blocked until an authenticated current status response proves Ultra. If it reports Community, continue Bet365 opening snapshots only; do not attempt the restricted history endpoint.
+
+### Timestamped odds evidence — staging read-only audit
+- `source_observations` currently contains 788 distinct 5Dollar fixture odds observations with `source_timestamp_basis=provider_timestamp`, `availability_basis=provider_opening_timestamp`, `source_published_at` present and `point_in_time_certifiable=true`. These are timestamped Bet365 1X2 **opening** quotes, not closing prices.
+- A separate 25 observations use `source_timestamp_basis=unknown`, `availability_basis=collector_first_observed_v1`, no source-published timestamp and `point_in_time_certifiable=false`. They remain excluded from PIT features, market selection and CLV.
+- The dedicated `odds_quote_observations` relation introduced for The Odds API currently has zero rows. The existing 788 5Dollar opening observations are preserved in the generic `source_observations` evidence relation and must not be confused with that separate writer.
+- No bookmaker closing-price observations or full tick-history responses were added in this audit. The historical closing-odds provider qualification remains: 5Dollar Ultra is the preferred direct tick-history path pending entitlement; alternative provider competition coverage and rights remain unproven or insufficient.
+- No provider request, quota expenditure, source approval, odds row or database write was made during this audit.
+
+### Forecast and prospective settlement readiness
+- `feature_snapshots`: 0 rows.
+- `feature_snapshot_links`: 0 rows.
+- `feature_snapshot_eligibility_events`: 0 rows.
+- Canonical `fixtures`: 2,496 rows, all FINISHED; no upcoming canonical fixture rows are present on the inspected staging branch.
+- Prospective paper ledger: 25 `SHADOW_PREDICTION` events across 25 fixtures and four WAT kickoff dates. All use legacy `veltrix-results-poisson-v1`; all are non-PIT. No new eligible V2 forecasts were generated, and no new ledger event was written.
+- Settlement events: 0. The target fixtures remain future fixtures in the ledger; settlement is prohibited until the provider reports FINISHED and result identity, score, response hash, rights and post-commit ledger verification pass.
+- The 26,547 OpenPlay historical `match_result_snapshot` source observations are marked PIT-certifiable with documented page-save availability timestamps. They are historical result snapshots, not ready-made pre-match feature snapshots. They may be considered for feature construction only when each source's availability is demonstrably before the relevant forecast cutoff; no such feature snapshots have yet been built or admitted.
+- The 2,496 5Dollar result archive and 4,697 later first-observed 5Dollar result rows remain non-PIT for pre-match reconstruction. They must not be backdated.
+
+### Certification scorecard — current status
+- Walk-forward samples: no admitted V2 feature snapshots; no report-bound market scorecard currently demonstrates the required 1,000 chronological samples per market.
+- Prospective settled selections: 0 eligible settlements against the required 300 per market.
+- Distinct settled Africa/Lagos kickoff dates: 0 against the required 90.
+- Timestamped odds: 788 opening observations are preserved, but closing/tick-history evidence is not established. The 25 unknown-timestamp snapshots are excluded. A valid 98% denominator must be tied to the predeclared eligible universe and forecast cutoffs; do not infer certification from the opening-quote count alone.
+- Net ROI and date-clustered 95% lower confidence bound: not computable from eligible settled selections; remain null/uncertified.
+- 1X2 Brier/log-loss comparison against de-vigged bookmaker prices: not certified; no aligned eligible V2 forecast/benchmark cohort exists.
+- All market certifications remain NOT_CERTIFIED. Value betting remains LOCKED.
+
+### Execution blockers and next steps
+1. **Authenticated entitlement:** a workflow runner with access to the existing protected 5Dollar key must perform a fresh `GET /v1/status` preflight and persist the raw response, timestamp, hash and quota headers. No plan upgrade.
+2. **Historical close qualification:** if Ultra is confirmed, run the existing timestamp-preserving tick-history parser against the frozen historical fixture universe, with strict response hashes, source timestamps, retrieval times, rights checks and exact fixture crosswalks. If not Ultra, do not call the restricted endpoint; continue evaluating the documented alternatives without assuming coverage.
+3. **Prospective quote collection:** keep collecting genuine provider-timestamped Bet365 openings within the approved seven-competition scope. Do not relabel openings as closes. Add a true pre-kickoff close/tick source only after entitlement and rights are proven.
+4. **New V2 forecast series:** first reconcile upcoming provider fixtures into canonical fixture identities, build feature snapshots from admissible historical source observations with availability strictly before cutoff, record feature links/eligibility evidence, then generate forecasts from the new V2 model build. Do not reuse the old Poisson shadow events.
+5. **Settlement:** after each actual kickoff, run the manual staging-only settlement collector; require FINISHED status, exact fixture identity, score agreement, raw response/manifest hashes, rights recheck, hash-chain integrity and fresh-connection post-commit verification.
+6. **Certification:** calculate each market independently against the unchanged thresholds. Do not unlock value betting or release on partial evidence.
+
+**Controls unchanged:** no production writes; no PR merge; no paid provider upgrade; no public prediction publication; no Telegram sends; no schedule activation; value betting locked.
