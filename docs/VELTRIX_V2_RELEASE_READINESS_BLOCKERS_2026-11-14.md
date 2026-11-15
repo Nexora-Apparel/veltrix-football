@@ -308,7 +308,7 @@ This checkpoint supersedes earlier statements in this historical log that migrat
 - Historical Model Audit Tests and Certification Evidence Integrity passed on the preceding head `4baeb75d82e20bf1e18fc0c839a79ebddda7c467`.
 - The Foundation suite exposed one stale 5Dollar test assertion expecting BENCHMARKING to remain absent. The test was corrected to match the newly approved scope.
 - Fresh checks against head `0634b6bae2ad152733850dd6407d27c9e027de64` completed successfully: Foundation run #1584, PostgreSQL 16/18 acceptance run #149, Historical Model Audit run #77 and Certification Evidence Integrity run #209 all passed. The new no-credit Odds API probe test and corrected 5Dollar approval-scope test both passed.
-- Remaining release blockers: manual provider workflow dispatch; prospective first-observed evidence; 300 settled selections and 90 distinct dates; market-level chronological certification; Odds API bookmaker-market/region and billing-period/hard-cap evidence; authoritative verifier provisioning; actual website/scheduler/Telegram runtime parity; delivery idempotency and failure-recovery acceptance.
+- Remaining release blockers at this historical checkpoint: manual provider workflow dispatch; prospective first-observed evidence; 300 settled selections and 90 distinct dates; market-level chronological certification; Odds API bookmaker-market/region evidence; authoritative verifier provisioning; actual website/scheduler/Telegram runtime parity; delivery idempotency and failure-recovery acceptance.
 
 No production deployment, public publication, Telegram broadcast, schedule activation or value-bet unlock is authorized.
 
@@ -345,3 +345,17 @@ This reconciliation proves historical item integrity and exact provenance links,
 - The passing Foundation suite includes: no-credit Odds API account probe persistence; zero-credit cost verification; 5Dollar capture approval and persistence guards; quota headroom fail-closed behavior; empty finished-result page manifest persistence; portable website/Telegram bundle parity; and legacy release-workflow safety guards.
 - The current branch has advanced to `b201f195360d02efa9b446db247c9d0550922437` with documentation-only follow-up; it remains 66 commits ahead and 0 behind `main`.
 - Neither manual provider capture workflow has been dispatched. The prospective paper ledger remains empty and no provider requests or credits have been consumed.
+
+
+## Superseding personal-use release and provider-usage correction — 2026-11-15
+
+This section supersedes any earlier wording in this historical log that treats billing-period records, monthly allowance proof, commercial subscription evidence or invoices as prerequisites for model work, provider research, certification or publication.
+
+- VELTRIX is a personal-use football analysis system. Commercial monetisation assumptions are removed from architecture and release criteria.
+- **MODEL_QUALITY_GATES** remain evidence-based: point-in-time feature provenance, source/rights approval for the intended use, identity reconciliation, temporal leakage prevention, chronological walk-forward evaluation, prospective settlements, calibration, bookmaker benchmarking where applicable, sample sizes and uncertainty intervals.
+- **PROVIDER_USAGE_GUARDS** are separate operational safeguards: current endpoint access/entitlement, approved data-use scope, a fresh observable quota balance, request/rate limits, a bounded per-run credit cap, one-request limit and no automatic retries. Do not infer a monthly allowance or billing period from quota headers. Billing documents and proof of a commercial subscription are not required.
+- A missing/insufficient Odds API quota observation may defer only the Odds API request. It must not block 5DollarFootballAPI first-observed collection, prospective settlement work, model implementation or evaluation that can proceed with authorized evidence.
+- 5DollarFootballAPI remains the primary acquisition source. The Odds API remains supplementary and is used only when bookmaker coverage, market availability, quote timestamps, market baselines or closing-line evidence add measurable analytical value.
+- **PUBLICATION_INTEGRITY_GATES** focus on correct fixture/team/competition identity, point-in-time eligibility, evidence provenance, pre-kickoff chronology, model/market certification where required, one authoritative report bundle, website/Telegram parity, duplicate prevention, idempotent delivery, authorization and recovery reconciliation. Commercial monetisation and billing paperwork are not publication gates.
+- Current staging audit on 2026-11-15: 25 shadow predictions across 25 unique fixtures; zero settlements; 56 5Dollar provider responses, latest fixture response retrieved 2026-11-14T23:18:30.935Z; one Odds API sports-catalogue response, zero event-odds responses, zero Odds API quota snapshots and zero budget snapshots. These are shadow/collection observations, not certification.
+- The one-event UK probe remains defined by `docs/VELTRIX_V2_ODDS_API_ONE_EVENT_MARKET_PROBE_RUNBOOK_2026-11-15.md`: one future EPL event, UK region, `h2h`, `totals`, `btts`, at most 3 credits, exactly one credit-consuming request, no retries, staging-only persistence. Its purpose is bookmaker/market availability, timestamp quality and prediction research.
