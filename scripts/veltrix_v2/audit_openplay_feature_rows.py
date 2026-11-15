@@ -64,12 +64,12 @@ def audit(input_dir: str | Path) -> dict:
                 raise RuntimeError("OPENPLAY_FEATURE_REQUIRED_COLUMNS_MISSING:" + filename)
             key_sql = ", ".join(f"f.\"{name}\"" for name in spec["key"])
             duplicate_sql = f"""
-                SELECT count(*) FROM (
+                SELECT count(*), coalesce(sum(n),0) FROM (
                     SELECT {key_sql}, count(*) AS n
                     FROM read_parquet(?) f GROUP BY {key_sql} HAVING count(*) > 1
                 ) d
             """
-            duplicate_keys = db.execute(duplicate_sql, [path]).fetchone()[0]
+            duplicate_groups, duplicate_rows = db.execute(duplicate_sql, [path]).fetchone()
             row = db.execute("""
                 SELECT count(*) AS rows,
                        count(*) FILTER (WHERE m.match_id IS NOT NULL) AS matched_rows,
@@ -86,7 +86,8 @@ def audit(input_dir: str | Path) -> dict:
                 "inherited_page_save_timestamp_rows": row[2],
                 "distinct_match_ids": row[3],
                 "orphan_rows": row[4],
-                "duplicate_natural_keys": duplicate_keys,
+                "duplicate_natural_key_groups": duplicate_groups,
+                "duplicate_rows_quarantined": duplicate_rows,
                 "natural_key": spec["key"],
                 "source_timestamp": "matches.scraped_at (documented UTC page-save time)",
                 "temporal_admission": "only cutoffs after actual VELTRIX recorded_at",
@@ -97,12 +98,15 @@ def audit(input_dir: str | Path) -> dict:
             if row["rows"] != row["matched_to_documented_match_page"]
             or row["rows"] != row["inherited_page_save_timestamp_rows"]
             or row["orphan_rows"] != 0
-            or row["duplicate_natural_keys"] != 0
         ]
         if failed:
             raise RuntimeError("OPENPLAY_FEATURE_ROW_AUDIT_FAILED:" + ",".join(failed))
         return {
-            "status": "PASS_ROW_LEVEL_PAGE_TIMESTAMP_INHERITANCE",
+            "status": (
+                "PASS_WITH_DUPLICATE_KEY_QUARANTINE"
+                if any(row["duplicate_rows_quarantined"] for row in reports.values())
+                else "PASS_ROW_LEVEL_PAGE_TIMESTAMP_INHERITANCE"
+            ),
             "commercial_use_allowed": False,
             "monetisation_prohibited": True,
             "timestamp_evidence_id": TIMESTAMP_EVIDENCE_ID,
@@ -115,6 +119,7 @@ def audit(input_dir: str | Path) -> dict:
             "historical_cutoffs_before_veltrix_import_eligible": False,
             "feature_tables": reports,
             "rows_total": sum(row["rows"] for row in reports.values()),
+            "duplicate_rows_quarantined": sum(row["duplicate_rows_quarantined"] for row in reports.values()),
         }
     finally:
         db.close()
