@@ -40,6 +40,7 @@ MARKET = "h2h_3_way"
 APPROVAL_ID = "approval-the-odds-api-v4-owner-authorized-2026-11-14"
 MIN_REMAINING_BEFORE_SPEND = 100
 MAX_CREDITS = 12
+PAID_HISTORICAL_ENTITLEMENT_CONFIRMED = False
 EXCHANGE_KEYS = {"betfair_ex_eu", "matchbook"}
 USER_AGENT = "VELTRIX-FOOTBALL-2.0-APPROVED-ODDS-HISTORICAL-PILOT/1.0"
 
@@ -293,6 +294,21 @@ def _persist_staging(dsn: str, approval, response: ProviderResponse, payload: di
 
 
 def run_capture(api_key: str, staging_dsn: str) -> dict:
+    if not PAID_HISTORICAL_ENTITLEMENT_CONFIRMED:
+        return {
+            "status": "BLOCKED_PAID_HISTORICAL_PLAN_REQUIRED",
+            "provider": PROVIDER,
+            "source_id": SOURCE_ID,
+            "approval_id": APPROVAL_ID,
+            "sport_key": SPORT,
+            "provider_error": "Historical odds are only available on paid usage plans",
+            "credits_spent_this_run": 0,
+            "database_writes_this_run": 0,
+            "normalized_odds_quote_rows_written": 0,
+            "production_writes": 0,
+            "raw_prices_in_artifact": False,
+            "value_betting": "LOCKED",
+        }
     approval = _assert_approved_scope(staging_dsn)
     request_id = "veltrix-v2-historical-odds-pilot-la-liga-atletico-madrid-barcelona-h2h3way-eu-2026-11-08T20:00:00Z"
     endpoint = f"/v4/historical/sports/{SPORT}/events/{{event_id}}/odds"
@@ -576,6 +592,7 @@ def main() -> int:
         "APPROVED_LEAGUE_EVENT_NOT_UNIQUELY_FOUND",
         "APPROVED_LEAGUE_THREE_WAY_MARKET_NOT_AVAILABLE",
         "PRICE_CAPTURE_SKIPPED_LOW_QUOTA",
+        "BLOCKED_PAID_HISTORICAL_PLAN_REQUIRED",
     } else 1
 
 
