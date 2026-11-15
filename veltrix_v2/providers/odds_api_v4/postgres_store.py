@@ -168,7 +168,7 @@ class PostgresOddsQuoteStore:
                                response_sha256, rights_approval_id, rights_evidence_sha256
                            ) VALUES (
                                %s,'the_odds_api','odds_api_v4',%s,%s,%s,%s,%s,%s,
-                               %s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s
+                               %s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s
                            ) ON CONFLICT (observation_key) DO NOTHING
                            RETURNING odds_quote_observation_id""",
                         (
