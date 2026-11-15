@@ -102,8 +102,10 @@ def load_runtime_publication_dependencies(
     bundle_url = env.get("VELTRIX_V2_REPORT_BUNDLE_URL", "").strip()
     if not factory_spec and not bundle_url:
         return None
-    if not factory_spec or not bundle_url:
+    if not bundle_url:
         raise RuntimeError("V2_PUBLICATION_RUNTIME_CONFIGURATION_INCOMPLETE")
+    if not factory_spec:
+        factory_spec = "veltrix_v2.reporting.trusted_runtime:build_deployment_publication_verifier_factory"
 
     allowed_url = validate_public_bundle_url(bundle_url)
     factory = _load_verifier_factory(factory_spec)
