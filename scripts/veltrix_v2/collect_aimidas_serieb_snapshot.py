@@ -13,6 +13,9 @@ from datetime import datetime, timezone
 from pathlib import Path
 from urllib.parse import quote
 from urllib.request import Request, urlopen
+import sys
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 from scripts.veltrix_v2.collect_aimidas_snapshot import (
     APPROVAL_ID, REPOSITORY, SOURCE_COMMIT, SOURCE_FILES, git_blob_sha1,
