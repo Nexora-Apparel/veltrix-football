@@ -344,6 +344,31 @@ def generate(database_url: str, output_path: str | Path) -> dict:
             if event is None or event[0]!="APPROVED" or event[1]>forecasted_at or event[2]>forecasted_at or str(event[3]).strip()!=str(approval[2]).strip():
                 raise RuntimeError("OPENPLAY_FORECAST_RIGHTS_STATUS_EVENT_INVALID")
 
+            cur.execute(
+                """
+                SELECT count(DISTINCT f.id)
+                FROM fixtures f
+                WHERE f.provider='5DollarFootballAPI' AND f.status='SCHEDULED'
+                  AND f.kickoff_at>%s
+                  AND EXISTS (
+                    SELECT 1 FROM feature_snapshots fs
+                    JOIN feature_snapshot_eligibility_events fee
+                      ON fee.feature_snapshot_id=fs.feature_snapshot_id
+                    WHERE fs.fixture_id=f.id AND fs.model_build_id=%s
+                      AND fee.eligibility_status='ELIGIBLE'
+                      AND fs.prediction_cutoff_at<=%s
+                  )
+                  AND EXISTS (
+                    SELECT 1 FROM paper_ledger_events pe
+                    WHERE pe.ledger_id=%s
+                      AND pe.fixture_id=('5dollarfootballapi:' || f.provider_fixture_id)
+                      AND pe.model_version=%s
+                      AND pe.event_type IN ('PREDICTION','SHADOW_PREDICTION')
+                  )
+                """,
+                (forecasted_at,FEATURE_BUILD_ID,forecasted_at,LEDGER_ID,MODEL_VERSION),
+            )
+            already_forecasted=int(cur.fetchone()[0])
             rows=_load_candidate_rows(cur,forecasted_at)
             for row in rows:
                 target=_verify_target(row,forecasted_at)
