@@ -216,3 +216,38 @@ def test_openplay_snapshot_fails_closed_when_temporal_or_rights_evidence_is_inva
         row, team_crosswalk={"1001":"canonical-home","1002":"canonical-away"},
         competition_crosswalk={"eng":"canonical-premier-league"},
     ) is None
+
+
+def test_fivedollar_observation_and_target_use_shared_canonical_team_and_competition_ids():
+    teams = {"101":"canonical-arsenal","102":"canonical-chelsea"}
+    competitions = {"4160026622":"canonical-epl"}
+    observation = historical_fixture_to_observation(
+        historical_fixture(), team_crosswalk=teams,
+        competition_crosswalk=competitions,
+    )
+    assert observation is not None
+    assert observation.competition_id == "canonical-epl"
+    assert observation.home_team_id == "canonical-arsenal"
+    assert observation.away_team_id == "canonical-chelsea"
+
+    target = historical_fixture_to_target(
+        historical_fixture(status=FixtureStatus.SCHEDULED,
+                           kickoff=RETRIEVED + timedelta(days=2)),
+        team_crosswalk=teams, competition_crosswalk=competitions,
+    )
+    assert target is not None
+    assert target.competition_id == observation.competition_id
+    assert target.home_team_id == observation.home_team_id
+    assert target.away_team_id == observation.away_team_id
+
+
+def test_fivedollar_crosswalk_mode_fails_closed_on_missing_or_ambiguous_identity():
+    with pytest.raises(ValueError, match="HISTORICAL_FIXTURE_CROSSWALK_PAIR_REQUIRED"):
+        historical_fixture_to_observation(
+            historical_fixture(), team_crosswalk={"101":"canonical-arsenal"}
+        )
+    assert historical_fixture_to_observation(
+        historical_fixture(),
+        team_crosswalk={"101":"canonical-arsenal"},
+        competition_crosswalk={"4160026622":"canonical-epl"},
+    ) is None
