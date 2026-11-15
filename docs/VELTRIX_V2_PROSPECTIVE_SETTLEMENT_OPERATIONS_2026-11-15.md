@@ -112,3 +112,12 @@ Do not run `--execute` until target fixtures have actually kicked off. The colle
 `veltrix_v2/evaluation/prospective_settlement_metrics.py` scores only immutable prospective settlements linked to their exact prediction event hash. It rejects duplicate prediction/settlement keys and non-prospective settlement links. It reports market-specific sample counts, distinct UTC kickoff dates, Brier score and log loss for 1X2, BTTS and totals where those probabilities were actually recorded. Missing market probabilities are omitted rather than inferred. The settlement CLI includes this scorecard in `settlement_summary.json`, including the zero-eligible-target dry outcome, so the operator receives an auditable baseline even before the first result settles.
 
 ROI and CLV remain explicitly unavailable: the current prediction/settlement ledger does not contain a verified pre-kickoff selection plus timestamped odds evidence. The scorecard returns null ROI/CLV and a locked reason rather than deriving stake, price or expected value. Its certification status is always `NOT_CERTIFIED`; it is a measurement layer, not a release gate override.
+
+## Manual GitHub Actions runner
+
+The staging-only collector is available through the manual workflow:
+`https://github.com/Nexora-Apparel/veltrix-football/actions/workflows/phase5-5dollar-shadow-settlement.yml`
+
+The workflow performs a no-I/O dry-run first, then executes the existing bounded collector with the approved 5Dollar key and staging DSN. It has no schedule trigger, production database target, publication path or Telegram delivery path. It uploads only `settlement_public_summary.json`; row-level fixture identifiers and quarantine details remain in the private full run output.
+
+The collector now checks quota headroom on every provider page and verifies the full ledger plus exact settlement event hashes from a fresh PostgreSQL connection after the write transaction commits. A missing post-commit event or hash mismatch fails the workflow. The current 25 targets are not due until their kickoffs (18–21 November 2026); running before then returns `NO_ELIGIBLE_FINISHED_TARGETS` without provider requests or settlement writes.
