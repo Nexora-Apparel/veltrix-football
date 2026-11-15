@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """One-request, read-only 5DollarFootballAPI entitlement check.
 
+One-time staging trigger: [status-check].
+
 This module calls only GET /v1/status. It never calls leagues, fixtures, odds,
 or odds-history endpoints and never writes to a database.
 """
