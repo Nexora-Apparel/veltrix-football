@@ -27,13 +27,16 @@ The fixed 90-day, seven-competition universe contains 763 eligible 5Dollar fixtu
 | 114 | 43732926602 | 25 | 25 | 25 | 25 | 25 |
 | 115 | 43733133345 | 25 | 25 | 25 | 25 | 25 |
 | 116 | 43733321610 | 25 | 25 | 25 | 25 | 25 |
-| **Total** | | **200** | **200** | **200** | **200** | **200** |
+| 117 | 43733520229 | 25 | 25 | 25 | 25 | 25 |
+| 118 | 43733721786 | 25 | 25 | 25 | 25 | 25 |
+| 119 | 43733924743 | 25 | 25 | 25 | 25 | 25 |
+| **Total** | | **275** | **275** | **275** | **275** | **275** |
 
-Independent aggregate read-back confirms 200/200 distinct provider fixture IDs map to canonical fixtures, are PIT eligible, preserve valid opening timestamp ordering, use Bet365 1X2, and have active RESOLVED fixture crosswalks. No duplicates or ineligible observations were found in these eight manifests.
+Independent aggregate read-back confirms 275/275 distinct provider fixture IDs map to canonical fixtures, are PIT eligible, preserve valid opening timestamp ordering, use Bet365 1X2, and have active RESOLVED fixture crosswalks. No duplicates or ineligible observations were found in these eight manifests.
 
-**Coverage:** 200/763 = 26.21%. 563 fixtures remain without a captured opening quote. At least 748 timestamped quotes are required to reach 98% of this denominator, so at least 548 additional valid quotes are still required. The full acquisition target remains 563 additional quotes.
+**Coverage:** 275/763 = 36.04%. 488 fixtures remain without a captured opening quote. At least 748 timestamped quotes are required to reach 98% of this denominator, so at least 473 additional valid quotes are still required. The full acquisition target remains 488 additional quotes.
 
-All eight batches were capped at 25 fixture requests, used a fresh Community quota preflight, used no automatic retries, retained the provider's opening timestamp and were written only to staging. The latest completed batch is workflow #43733321610, artifact #14169004455, SHA-256 `3f8dd0a575cc50dc52aa75d32fc2901051a3d7351f45e3f38b003bcf3e9c9c24`.
+All eight batches were capped at 25 fixture requests, used a fresh Community quota preflight, used no automatic retries, retained the provider's opening timestamp and were written only to staging. The latest completed batch is workflow #43733924743, artifact #14169571727, SHA-256 `0a186a816796490c3da46492ac06b01ed9997b7609c20d552a61bb47f54bf5bd`.
 
 ## 3. Second-batch persistence discrepancy — resolved
 
@@ -88,3 +91,7 @@ Formal source decision: **BLOCKED — ENTITLEMENT NOT VERIFIED**. The detailed e
 PR #120 remains draft/open/unmerged. No production database writes, production deployment, public prediction publication, Telegram delivery, schedule activation, or value-betting unlock is authorized. Keep all these controls fail-closed.
 
 **Final Stage 2 decision: NO-GO — NOT COMPLETE / NOT RELEASE-READY.**
+
+## 9. Acquisition continuation update — 2026-11-15
+
+Manifests 117–119 have since completed and independently reconciled, bringing the total to 275/763 (36.04%) opening quotes across 275 distinct fixtures. Each new manifest has 25/25 requests, responses, observations and PIT-eligible fixtures. The 98% threshold requires at least 473 more valid quotes; full acquisition requires 488. Manifest 120 is currently in progress and is not included in this verified total. The Stage 2 decision remains NO-GO.
