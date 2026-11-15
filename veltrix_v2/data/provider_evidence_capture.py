@@ -388,7 +388,7 @@ def _capture_one(row: ProviderResultCapture) -> CapturedResultEvidence:
             ):
                 try:
                     decision = evaluate_source_use(
-                        approval, purpose, at_utc=row.recorded_at, commercial=True
+                        approval, purpose, at_utc=row.recorded_at, commercial=False
                     )
                 except (TypeError, ValueError):
                     reasons.append("SOURCE_RIGHTS_EVALUATION_FAILED")
