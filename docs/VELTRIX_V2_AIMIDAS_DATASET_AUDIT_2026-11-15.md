@@ -159,7 +159,8 @@ This is a verified identity crosswalk result, not a PIT admission. Keep the sour
 
 ### Remaining bounded actions
 
-1. Design a staging-only feature/observation import contract for AI Midas, preserving the raw file hashes, source date and actual Veltrix retrieval time; do not write to production.
-2. Keep the 2016–2025 Brazil Série B historical gap explicit; do not silently substitute Brazil Série A or Italy Serie B.
-3. Keep average odds separate from bookmaker quote observations and continue searching for timestamped closing odds.
-4. Admit only leakage-safe features for future cutoffs after the actual Veltrix import timestamp; keep retrospective walk-forward certification blocked.
+1. Implement the staging-only importer and independent read-after-commit verifier defined in `docs/VELTRIX_V2_AIMIDAS_STAGING_IMPORT_CONTRACT_2026-11-15.md`; keep production untouched.
+2. Obtain reviewer-backed evidence before marking the 369 Brazil Série B fixture mappings RESOLVED in `entity_crosswalk_versions`.
+3. Keep the 2016–2025 Brazil Série B historical gap explicit; do not silently substitute Brazil Série A or Italy Serie B.
+4. Keep average odds separate from bookmaker quote observations and continue searching for timestamped closing odds.
+5. Admit only leakage-safe features for future cutoffs after the actual Veltrix import timestamp; keep retrospective walk-forward certification blocked.
