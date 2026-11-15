@@ -1,4 +1,3 @@
-from dataclasses import replace
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 import hashlib
@@ -80,11 +79,9 @@ def test_exact_fixture_identity_is_mandatory():
     q = quote()
     result = evaluate_quote_admission(
         quote=q,
-        crosswalk=replace(
-            evidence(q) and FixtureCrosswalk(
-                "the_odds_api", "odds_api_v4", "other-event", 123,
-                "FIXTURE", "RESOLVED", RETRIEVED - timedelta(days=1), None, 7
-            )
+        crosswalk=FixtureCrosswalk(
+            "the_odds_api", "odds_api_v4", "other-event", 123,
+            "FIXTURE", "RESOLVED", RETRIEVED - timedelta(days=1), None, 7
         ),
         rights=QuoteRights(
             "approval-odds-1", "the_odds_api", "odds_api_v4", "APPROVED",
