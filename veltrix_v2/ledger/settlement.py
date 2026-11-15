@@ -67,7 +67,7 @@ def settle_from_verified_fixture(
         DataUsePurpose.COLLECTION, DataUsePurpose.STORAGE, DataUsePurpose.BENCHMARKING,
     ):
         decision = evaluate_source_use(
-            approval, purpose, at_utc=recorded_at, commercial=True
+            approval, purpose, at_utc=recorded_at, commercial=False
         )
         if not decision.allowed:
             raise ValueError(decision.reason_code)
