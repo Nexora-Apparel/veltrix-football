@@ -223,6 +223,8 @@ def _capture_completion_status(
         return "SHADOW_CAPTURE_ADMITTED_NOT_PERSISTED"
     if staging_ledger.get("chain_verified") is not True:
         return "SHADOW_CAPTURE_LEDGER_CHAIN_UNVERIFIED"
+    if staging_ledger.get("post_commit_verified") is not True:
+        return "SHADOW_CAPTURE_LEDGER_POST_COMMIT_UNVERIFIED"
     appended = int(staging_ledger.get("events_appended", 0))
     duplicates = int(staging_ledger.get("duplicate_predictions_skipped", 0))
     if appended > 0:
@@ -241,7 +243,8 @@ def _build_public_summary(summary: dict[str, object]) -> dict[str, object]:
         "forecast_count", "admitted_shadow_predictions",
         "new_shadow_predictions_persisted", "persisted_capture_pages",
         "persisted_shadow_ledger_events", "duplicate_predictions_skipped",
-        "paper_ledger_persisted_to_staging", "paper_ledger_chain_verified",\n        "paper_ledger_post_commit_verified",
+        "paper_ledger_persisted_to_staging", "paper_ledger_chain_verified",
+        "paper_ledger_post_commit_verified",
         "evidence_persisted_to_staging", "publication_status",
         "settlement_status", "database_writes",
     )
@@ -906,7 +909,8 @@ def run_capture(
         "admitted_shadow_predictions": len(admission.admitted),
         "persisted_shadow_ledger_events": int(staging_ledger.get("events_appended", 0)) if staging_ledger else 0,
         "new_shadow_predictions_persisted": int(staging_ledger.get("events_appended", 0)) if staging_ledger else 0,
-        "paper_ledger_chain_verified": bool(staging_ledger and staging_ledger.get("chain_verified") is True),\n        "paper_ledger_post_commit_verified": bool(staging_ledger and staging_ledger.get("post_commit_verified") is True),
+        "paper_ledger_chain_verified": bool(staging_ledger and staging_ledger.get("chain_verified") is True),
+        "paper_ledger_post_commit_verified": bool(staging_ledger and staging_ledger.get("post_commit_verified") is True),\n        "paper_ledger_post_commit_verified": bool(staging_ledger and staging_ledger.get("post_commit_verified") is True),
         "duplicate_predictions_skipped": int(staging_ledger.get("duplicate_predictions_skipped", 0)) if staging_ledger else 0,
         "rejected_admissions": [
             {"fixture_id": item.fixture_id, "reason_code": item.reason_code}
