@@ -84,6 +84,10 @@ def build_evidence(api_key: str, request_fn=fetch_status, now_fn=None) -> dict:
     data = parsed.get("data") if isinstance(parsed, dict) and isinstance(parsed.get("data"), dict) else {}
     # Keep the exact provider value. Do not infer a plan from limits or quota.
     plan_value = data.get("plan")
+    plan_field = "plan" if isinstance(plan_value, str) else None
+    if not isinstance(plan_value, str):
+        plan_value = data.get("plan_code")
+        plan_field = "plan_code" if isinstance(plan_value, str) else None
     plan = plan_value if isinstance(plan_value, str) else None
     ultra_confirmed = bool(schema_ok and plan is not None and plan.strip().casefold() == "ultra")
     evidence = {
@@ -102,6 +106,7 @@ def build_evidence(api_key: str, request_fn=fetch_status, now_fn=None) -> dict:
         ],
         "response_schema_valid": bool(schema_ok),
         "plan": plan,
+        "plan_field": plan_field,
         "ultra_confirmed": ultra_confirmed,
         "entitlement_decision": (
             "ULTRA_CONFIRMED_STATUS_ONLY"
