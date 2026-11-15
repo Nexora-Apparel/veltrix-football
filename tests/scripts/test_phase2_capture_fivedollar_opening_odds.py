@@ -6,6 +6,7 @@ import pytest
 from scripts.phase2_capture_fivedollar_opening_odds import (
     MAX_FIXTURES,
     _header_int,
+    _validate_fixture_identity,
     main,
 )
 
@@ -40,3 +41,45 @@ def test_capture_rejects_out_of_bounds_before_connecting(lookback, limit):
             max_fixtures=limit,
             output_dir="unused",
         )
+
+
+def _fixture_response(*, fixture_id=100, home=11, away=22, league=33, kickoff="2026-11-10T18:00:00+00:00"):
+    return json.dumps({
+        "success": 1,
+        "data": {
+            "id": fixture_id,
+            "league": {"id": league},
+            "teams": {"home": {"id": home}, "away": {"id": away}},
+            "kickoff_utc": kickoff,
+        },
+    }).encode()
+
+
+def _target():
+    from datetime import datetime, timezone
+    return {
+        "provider_fixture_id": "100",
+        "provider_home_team_id": "11",
+        "provider_away_team_id": "22",
+        "provider_competition_id": "33",
+        "kickoff_at": datetime(2026, 11, 10, 18, 0, tzinfo=timezone.utc),
+    }
+
+
+def test_fixture_identity_must_match_fixture_teams_competition_and_kickoff():
+    _validate_fixture_identity(_fixture_response(), _target())
+
+
+@pytest.mark.parametrize(
+    "body,code",
+    [
+        (_fixture_response(fixture_id=101), "FIVEDOLLAR_ODDS_FIXTURE_ID_MISMATCH"),
+        (_fixture_response(home=99), "FIVEDOLLAR_ODDS_HOME_TEAM_ID_MISMATCH"),
+        (_fixture_response(away=99), "FIVEDOLLAR_ODDS_AWAY_TEAM_ID_MISMATCH"),
+        (_fixture_response(league=99), "FIVEDOLLAR_ODDS_COMPETITION_ID_MISMATCH"),
+        (_fixture_response(kickoff="2026-11-10T20:00:00+00:00"), "FIVEDOLLAR_ODDS_KICKOFF_MISMATCH"),
+    ],
+)
+def test_fixture_identity_mismatch_fails_closed(body, code):
+    with pytest.raises(ValueError, match=code):
+        _validate_fixture_identity(body, _target())
