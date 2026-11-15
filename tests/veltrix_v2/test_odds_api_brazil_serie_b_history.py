@@ -36,7 +36,7 @@ def test_historical_discovery_uses_two_credits_and_no_prices():
                 "x-requests-last": 1, "response_sha256": "a" * 64}
         return {
             "timestamp": "2026-11-11T21:55:00Z",
-            "data": [{"key": "pinnacle", "title": "Pinnacle", "markets": ["h2h", "totals"]}]
+            "data": {"bookmakers": [{"key": "pinnacle", "title": "Pinnacle", "markets": [{"key": "h2h", "last_update": "2026-11-11T21:50:00Z"}, {"key": "totals", "last_update": "2026-11-11T21:50:00Z"}]}]}
         }, {"x-requests-used": 207, "x-requests-remaining": 293,
             "x-requests-last": 1, "response_sha256": "b" * 64}
     result = discover("not-a-real-key", _sports(), request)
@@ -46,6 +46,7 @@ def test_historical_discovery_uses_two_credits_and_no_prices():
     assert result["database_writes"] == 0
     assert result["bookmakers"][0]["bookmaker_key"] == "pinnacle"
     assert result["market_keys"] == ["h2h", "totals"]
+    assert result["bookmakers"][0]["markets"][0]["last_update"] == "2026-11-11T21:50:00Z"
     assert len(calls) == 2
 
 
