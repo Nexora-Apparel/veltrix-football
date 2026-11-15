@@ -1,9 +1,10 @@
 """Manual-only, non-commercial 5Dollar timestamped opening-odds capture.
 
-Captures only Bet365 1X2 opening quotes from GET /v1/fixtures/{id}.
-No paid historical tick endpoint, no automatic retries, no production writes,
-no prediction publication, no Telegram, and no schedule activation.
-"""
+Captures only Bet365 1X2 opening quotes from GET /v1/fixtures/{id}. Supports
+bounded historical lookback and prospective upcoming-fixture windows. Opening
+quotes are not current/closing prices and cannot certify CLV. No paid historical
+tick endpoint, automatic retries, production writes, publication, Telegram or
+schedule activation.
 from __future__ import annotations
 
 import argparse
@@ -156,7 +157,26 @@ def _load_approval(connection, at: datetime) -> SourceApproval:
     return approval
 
 
-def _load_targets(connection, *, lookback_days: int, limit: int, now: datetime) -> list[dict]:
+def _capture_window(*, mode: str, lookback_days: int, future_days: int,
+                    now: datetime) -> tuple[datetime, datetime]:
+    if not isinstance(now, datetime) or now.tzinfo is None or now.utcoffset() is None:
+        raise ValueError("OPENING_ODDS_CAPTURE_TIMEZONE_REQUIRED")
+    if mode == "historical":
+        if isinstance(lookback_days, bool) or not isinstance(lookback_days, int) or not 1 <= lookback_days <= 90 or future_days != 0:
+            raise ValueError("OPENING_ODDS_CAPTURE_BOUNDS_INVALID")
+        return now - timedelta(days=lookback_days), now
+    if mode == "prospective":
+        if isinstance(future_days, bool) or not isinstance(future_days, int) or not 1 <= future_days <= 7:
+            raise ValueError("OPENING_ODDS_CAPTURE_BOUNDS_INVALID")
+        return now, now + timedelta(days=future_days)
+    raise ValueError("OPENING_ODDS_CAPTURE_MODE_INVALID")
+
+
+def _load_targets(connection, *, mode: str, lookback_days: int, future_days: int,
+                  limit: int, now: datetime) -> list[dict]:
+    window_start, window_end = _capture_window(
+        mode=mode, lookback_days=lookback_days, future_days=future_days, now=now
+    )
     approval = _load_approval(connection, now)
     scope = [x.strip() for x in approval.competition_scope.split(",") if x.strip()]
     if not scope or "*" in scope:
@@ -190,7 +210,7 @@ def _load_targets(connection, *, lookback_days: int, limit: int, now: datetime) 
             LIMIT %s
         """, (
             PROVIDER, PROVIDER, PROVIDER, SOURCE_ID, PROVIDER,
-            now - timedelta(days=lookback_days), now,
+            window_start, window_end,
             scope, now, now, PROVIDER, SOURCE_ID, limit,
         ))
         rows = cur.fetchall()
@@ -395,9 +415,14 @@ def _persist_capture(connection, *, manifest_id: int, target: dict, raw: bytes,
 
 
 def capture(*, dsn: str, api_key: str, lookback_days: int, max_fixtures: int,
-            output_dir: str | Path) -> dict:
-    if not 1 <= lookback_days <= 90 or not 1 <= max_fixtures <= MAX_FIXTURES:
+            output_dir: str | Path, mode: str = "historical",
+            future_days: int = 0) -> dict:
+    if not 1 <= max_fixtures <= MAX_FIXTURES:
         raise ValueError("OPENING_ODDS_CAPTURE_BOUNDS_INVALID")
+    now = datetime.now(timezone.utc)
+    window_start, window_end = _capture_window(
+        mode=mode, lookback_days=lookback_days, future_days=future_days, now=now
+    )
     if not api_key:
         raise RuntimeError("FIVEDOLLAR_API_KEY_REQUIRED")
     validate_staging_dsn_target(dsn)
@@ -405,13 +430,15 @@ def capture(*, dsn: str, api_key: str, lookback_days: int, max_fixtures: int,
 
     output = Path(output_dir)
     output.mkdir(parents=True, exist_ok=True)
-    now = datetime.now(timezone.utc)
     with psycopg.connect(dsn) as connection:
         identity = connection.execute("SELECT current_database(),current_user").fetchone()
         if identity != (EXPECTED_DATABASE,EXPECTED_ROLE):
             raise PermissionError("OPENING_ODDS_STAGING_TARGET_MISMATCH")
         approval = _load_approval(connection, now)
-        targets = _load_targets(connection, lookback_days=lookback_days, limit=max_fixtures, now=now)
+        targets = _load_targets(
+            connection, mode=mode, lookback_days=lookback_days, future_days=future_days,
+            limit=max_fixtures, now=now,
+        )
         quota_preflight = None
         last_started = None
         if targets:
@@ -429,7 +456,10 @@ def capture(*, dsn: str, api_key: str, lookback_days: int, max_fixtures: int,
         ]
         manifest_body = {
             "provider":PROVIDER,"source_id":SOURCE_ID,"endpoint":"/v1/fixtures/{id}",
-            "market":"1x2","bookmaker":"bet365","lookback_days":lookback_days,
+            "market":"1x2","bookmaker":"bet365","capture_mode":mode,
+            "lookback_days":lookback_days if mode == "historical" else 0,
+            "future_days":future_days if mode == "prospective" else 0,
+            "window_start_utc":window_start.isoformat(),"window_end_utc":window_end.isoformat(),
             "max_fixtures":max_fixtures,"requested_at":now.isoformat(),
             "commercial_use_allowed":False,"targets":target_manifest,
             "quota_preflight":quota_preflight,
@@ -492,7 +522,10 @@ def capture(*, dsn: str, api_key: str, lookback_days: int, max_fixtures: int,
 
         summary = {
             "status":"OPENING_ODDS_CAPTURE_COMPLETE",
-            "provider":PROVIDER,"source_id":SOURCE_ID,
+            "provider":PROVIDER,"source_id":SOURCE_ID,"capture_mode":mode,
+            "quote_type":"BET365_1X2_OPENING_ONLY",
+            "window_start_utc":window_start.isoformat(),"window_end_utc":window_end.isoformat(),
+            "closing_odds_qualified":False,"clv_certified":False,
             "requests_used":len(results),"request_cap":max_fixtures,
             "provider_requests_total":len(results) + int(quota_preflight is not None),
             "quota_preflight":quota_preflight,
@@ -518,7 +551,9 @@ def capture(*, dsn: str, api_key: str, lookback_days: int, max_fixtures: int,
 def main() -> int:
     parser=argparse.ArgumentParser()
     parser.add_argument("--execute",action="store_true")
+    parser.add_argument("--mode",choices=("historical","prospective"),default="historical")
     parser.add_argument("--lookback-days",type=int,default=90)
+    parser.add_argument("--future-days",type=int,default=0)
     parser.add_argument("--max-fixtures",type=int,default=25)
     parser.add_argument("--out",default="artifacts/5dollar-opening-odds")
     args=parser.parse_args()
@@ -526,8 +561,11 @@ def main() -> int:
         print(_json({
             "status":"DRY_RUN_NO_NETWORK_NO_DATABASE",
             "provider":PROVIDER,"endpoint":"/v1/fixtures/{id}",
-            "market":"bet365 1x2 opening only","lookback_days":args.lookback_days,
+            "capture_mode":args.mode,"market":"bet365 1x2 opening only",
+            "lookback_days":args.lookback_days if args.mode == "historical" else 0,
+            "future_days":args.future_days if args.mode == "prospective" else 0,
             "max_fixtures":args.max_fixtures,"request_spacing_seconds":MIN_REQUEST_INTERVAL_SECONDS,
+            "closing_odds_qualified":False,"clv_certified":False,
             "automatic_retries":False,"paid_historical_tick_endpoint":False,
             "commercial_use_allowed":False,
         }))
@@ -536,6 +574,7 @@ def main() -> int:
         dsn=os.getenv("VELTRIX_STAGING_DATABASE_URL",""),
         api_key=os.getenv("FIVEDOLLARFOOTBALL_API_KEY",""),
         lookback_days=args.lookback_days,max_fixtures=args.max_fixtures,output_dir=args.out,
+        mode=args.mode,future_days=args.future_days,
     )
     print(_json(result))
     return 0

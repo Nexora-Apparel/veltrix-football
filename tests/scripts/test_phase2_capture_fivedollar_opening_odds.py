@@ -8,6 +8,7 @@ from scripts.phase2_capture_fivedollar_opening_odds import (
     _header_int,
     _validate_fixture_identity,
     _validate_quota_preflight,
+    _capture_window,
     main,
 )
 
@@ -28,6 +29,10 @@ def test_default_cli_is_dry_run_and_declares_noncommercial_guard(monkeypatch, ca
     assert result["automatic_retries"] is False
     assert result["paid_historical_tick_endpoint"] is False
     assert result["max_fixtures"] == MAX_FIXTURES == 25
+    assert result["capture_mode"] == "historical"
+    assert result["future_days"] == 0
+    assert result["closing_odds_qualified"] is False
+    assert result["clv_certified"] is False
 
 
 @pytest.mark.parametrize("lookback,limit", [(0, 25), (91, 25), (90, 0), (90, 26)])
@@ -41,6 +46,40 @@ def test_capture_rejects_out_of_bounds_before_connecting(lookback, limit):
             lookback_days=lookback,
             max_fixtures=limit,
             output_dir="unused",
+        )
+
+
+def test_capture_windows_are_timezone_aware_and_mode_specific():
+    from datetime import datetime, timedelta, timezone
+
+    now = datetime(2026, 11, 15, 12, 0, tzinfo=timezone.utc)
+    start, end = _capture_window(mode="historical", lookback_days=30, future_days=0, now=now)
+    assert start == now - timedelta(days=30)
+    assert end == now
+
+    start, end = _capture_window(mode="prospective", lookback_days=90, future_days=7, now=now)
+    assert start == now
+    assert end == now + timedelta(days=7)
+
+
+@pytest.mark.parametrize(
+    "mode,lookback,future,code",
+    [
+        ("historical", 0, 0, "OPENING_ODDS_CAPTURE_BOUNDS_INVALID"),
+        ("historical", 91, 0, "OPENING_ODDS_CAPTURE_BOUNDS_INVALID"),
+        ("historical", 90, 1, "OPENING_ODDS_CAPTURE_BOUNDS_INVALID"),
+        ("prospective", 90, 0, "OPENING_ODDS_CAPTURE_BOUNDS_INVALID"),
+        ("prospective", 90, 8, "OPENING_ODDS_CAPTURE_BOUNDS_INVALID"),
+        ("unknown", 90, 0, "OPENING_ODDS_CAPTURE_MODE_INVALID"),
+    ],
+)
+def test_capture_window_rejects_invalid_mode_or_bounds(mode, lookback, future, code):
+    from datetime import datetime, timezone
+
+    with pytest.raises(ValueError, match=code):
+        _capture_window(
+            mode=mode, lookback_days=lookback, future_days=future,
+            now=datetime(2026, 11, 15, 12, 0, tzinfo=timezone.utc),
         )
 
 

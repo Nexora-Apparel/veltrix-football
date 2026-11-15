@@ -1,5 +1,5 @@
-# Controlled continuation: manifests 109–138 reconciled at 25/25 each.
-# 98% timestamped opening-odds coverage gate is now met (750/763); this push schedules the final residual capture after a fresh quota preflight.
+# Bounded, manual-only prospective opening-quote capture; this push performs one 7-day batch.
+# Quotes are opening-only (not current or closing prices); no CLV or value-bet certification is implied.
 # workflow_dispatch remains unavailable until this workflow is on the default branch.
 name: VELTRIX Phase 2 — Manual 5Dollar Opening Odds Capture
 
@@ -14,6 +14,19 @@ on:
       - "tests/scripts/test_phase2_capture_fivedollar_opening_odds.py"
   workflow_dispatch:
     inputs:
+      mode:
+        description: "Capture window mode"
+        required: true
+        default: "prospective"
+        type: choice
+        options:
+          - prospective
+          - historical
+      future_days:
+        description: "Prospective window (1–7 days)"
+        required: true
+        default: "7"
+        type: string
       lookback_days:
         description: "Historical fixture lookback (1–90 days)"
         required: true
@@ -56,7 +69,7 @@ jobs:
         run: python -m pytest -q tests/providers/test_fivedollar_opening_odds.py tests/scripts/test_phase2_capture_fivedollar_opening_odds.py
 
       - name: Validate dry-run mode
-        run: python -m scripts.phase2_capture_fivedollar_opening_odds --lookback-days "${{ inputs.lookback_days || '90' }}" --max-fixtures "${{ inputs.max_fixtures || '25' }}"
+        run: python -m scripts.phase2_capture_fivedollar_opening_odds --mode "${{ inputs.mode || 'prospective' }}" --lookback-days "${{ inputs.lookback_days || '90' }}" --future-days "${{ inputs.future_days || '7' }}" --max-fixtures "${{ inputs.max_fixtures || '25' }}"
 
       - name: Execute bounded opening-odds capture
         env:
@@ -65,7 +78,9 @@ jobs:
         run: |
           python -m scripts.phase2_capture_fivedollar_opening_odds \
             --execute \
+            --mode "${{ inputs.mode || 'prospective' }}" \
             --lookback-days "${{ inputs.lookback_days || '90' }}" \
+            --future-days "${{ inputs.future_days || '7' }}" \
             --max-fixtures "${{ inputs.max_fixtures || '25' }}" \
             --out artifacts/5dollar-opening-odds
 
