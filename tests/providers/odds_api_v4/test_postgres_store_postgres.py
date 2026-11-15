@@ -66,7 +66,7 @@ def postgres_db(monkeypatch):
     try:
         monkeypatch.setenv("VELTRIX_EXPECTED_DATABASE", database_name)
         migrated = migrate(target_dsn, dry_run=False)
-        assert migrated["applied_now"] == len(migrated["manifest_count"] if isinstance(migrated["manifest_count"], list) else range(migrated["manifest_count"]))
+        assert migrated["applied_now"] == migrated["manifest_count"]
         yield target_dsn
     finally:
         with psycopg.connect(admin_dsn, autocommit=True) as admin:
