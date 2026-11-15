@@ -223,7 +223,8 @@ def test_prospective_targets_require_exact_ledger_and_current_scheduled_snapshot
     target_sql = connection.cursor_instance.calls[1][0]
     for required in ("paper_ledger_events", "provider_responses", "jsonb_array_elements",
                      "entity_crosswalk_versions", "source_observations", "POSITION(",
-                     "mapped_provider_competition_id AS provider_competition_id"):
+                     "mapped_provider_competition_id AS provider_competition_id",
+                     "DISTINCT ON (provider_fixture_id)"):
         assert required in target_sql
 
 

@@ -290,6 +290,11 @@ def _load_targets(connection, *, mode: str, lookback_days: int, future_days: int
                           AND fx->'league'->>'id'=comp.provider_competition_id
                           AND (fx->>'kickoff_utc')::timestamptz=c.kickoff_at
                      )
+                ),
+                deduplicated AS (
+                    SELECT DISTINCT ON (provider_fixture_id) *
+                    FROM verified
+                    ORDER BY provider_fixture_id, current_snapshot_fetched_at DESC
                 )
                 SELECT
                     NULL::bigint AS id,
@@ -319,7 +324,7 @@ def _load_targets(connection, *, mode: str, lookback_days: int, future_days: int
                     away_team_evidence_observation_id,
                     competition_crosswalk_version_id,
                     competition_evidence_observation_id
-                FROM verified
+                FROM deduplicated
                 ORDER BY kickoff_at ASC,provider_fixture_id
                 LIMIT %s
             """, (

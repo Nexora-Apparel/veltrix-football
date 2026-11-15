@@ -527,3 +527,11 @@ At the time of this ledger:
 - The next opening-quote workflow attempt [#43768280700](https://github.com/Nexora-Apparel/veltrix-football/actions/runs/43768280700) passed all parser/safety tests and dry-run, then stopped in the read-only prospective target query with PostgreSQL `AmbiguousColumn: provider_competition_id`. The candidates CTE and verified competition join exposed the same column name.
 - Failure occurred before quota preflight and before any fixture endpoint calls. No provider quota or odds rows were consumed.
 - Aliased the verified competition mapping as `mapped_provider_competition_id` and explicitly selected it as the final provider competition field; added a regression assertion. The next run will retry the same bounded 25-target query.
+
+
+### Prospective opening-odds duplicate target correction — 2026-11-15
+
+- The prospective opening-quote workflow attempt [#43768345812](https://github.com/Nexora-Apparel/veltrix-football/actions/runs/43768345812) passed all parser/safety tests and dry-run, then stopped in the read-only target loader with `PROSPECTIVE_SHADOW_TARGET_DUPLICATE`.
+- Investigation: multiple fresh scheduled-page responses within the 24-hour evidence window can contain the same provider fixture ID. The query correctly found the 25 unique paper-ledger target IDs but returned repeated rows from those multiple page snapshots.
+- Added a deterministic `DISTINCT ON (provider_fixture_id)` selection ordered by the latest current snapshot fetch timestamp, while preserving the independent exact team/competition/kickoff identity predicate and the 25 unique-target assertion. Added a regression assertion.
+- The duplicate check failed before quota preflight, provider fixture requests or any database writes. No API quota was consumed.
