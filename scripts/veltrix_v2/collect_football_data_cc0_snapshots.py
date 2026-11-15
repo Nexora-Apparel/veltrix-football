@@ -6,6 +6,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from urllib.parse import quote
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+
 from scripts.veltrix_v2.collect_openfootball_pit_snapshots import (
     RequestBudget, aware, canonical_hash, http_get, list_path_commits, read_json_default,
 )
