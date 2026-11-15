@@ -1,48 +1,60 @@
-# VELTRIX FOOTBALL 2.0 — Account-Specific Provider Activation Gate
+# VELTRIX FOOTBALL 2.0 — Account-Specific Provider Activation and Usage Guard
 
-**Date:** 2026-11-13  
-**Status:** Pure offline evidence gate; no provider dispatch or staging writes
+**Policy correction:** 2026-11-15  
+**Status:** Offline activation decision; no provider dispatch or staging writes
 
 ## Purpose
 
-Combine three independent evidence domains immediately before any future Odds API request:
-1. Account-specific accepted Terms evidence.
-2. Source approval with exact competition, market, region and permitted-use scope.
-3. Fresh provider quota/budget evidence with monthly, per-run and request-count headroom.
+Keep three independent checks separate before a credit-consuming Odds API request:
 
-A successful result is a necessary precondition only. It does not itself reserve credits or authorize a network request; the transactional reservation and final dispatch guard remain separate gates.
+1. Account Terms and provider endpoint entitlement.
+2. Source rights for the exact competition, market, region and intended research use.
+3. Fresh observable quota plus a bounded local usage guard.
+
+This gate protects provider access and the user's quota. It is not a model-quality gate and it is not a commercial billing verification workflow.
 
 ## Required evidence
 
-- Provider and source identity: `the_odds_api` / `odds_api_v4`.
-- Opaque account reference shared by Terms, rights and budget evidence.
-- Exact accepted Terms version and immutable evidence URI/hash.
-- Explicit APPROVED rights event with matching Terms version, effective/recorded timestamps, validity and exact scope tuples. Wildcards and empty scopes are rejected.
-- Budget snapshot for the same account and billing period, with positive monthly/per-run/request caps, non-negative provider remaining credits, evidence URI/hash and timezone-aware observation/expiry.
-- Request scope, intended use, rights-evaluation time, dispatch time, estimated credits and already committed usage.
+- Provider/source identity: `the_odds_api` / `odds_api_v4`.
+- Account reference consistent across Terms, rights and quota evidence.
+- Accepted Terms version and immutable evidence URI/hash, where required by the provider's account/terms flow.
+- Explicit APPROVED rights event with matching Terms version, effective/recorded timestamps, validity and exact competition/market/region/permitted-use scopes. Wildcards and empty scopes are rejected.
+- Fresh provider quota observation with complete, valid quota headers, retrieval time, raw response hash and enough observed remaining credits for the proposed request.
+- Local per-run credit cap, request-count cap, current run commitments, request fingerprint and dispatch time.
+- For the VELTRIX one-event research probe: one future EPL event, UK region, `h2h`, `totals`, `btts`; maximum estimated cost 3 credits; exactly one credit-consuming request; no retries; staging-only persistence.
 
-## Temporal rules
+## Explicitly not required
 
-- Terms acceptance and its recorded evidence must both exist no later than rights evaluation.
-- Rights approval must be effective and recorded no later than rights evaluation; rights evaluation must not occur after dispatch.
-- Budget observation must be no later than dispatch; dispatch must be strictly before budget expiry.
-- Billing period must contain the dispatch date.
-- Missing, naive or invalid timestamps fail closed.
+- Invoice, receipt or payment evidence.
+- Business registration or proof of commercial status.
+- Commercial subscription or monetisation evidence.
+- Billing-period start/end records or a declared monthly allowance.
+- Monthly hard-cap calculations or a monthly headroom calculation.
 
-## Independent capacity calculations
+Do not infer monthly allowance or billing-period boundaries from `x-requests-used`, `x-requests-remaining` or `x-requests-last`. Provider terms and actual endpoint entitlement remain binding regardless of personal use.
 
-- Monthly headroom = min(monthly allowance, monthly hard cap) − committed monthly credits.
-- Per-run headroom = per-run hard cap − committed run credits.
-- Provider headroom = provider-reported remaining credits − credits committed since that snapshot.
-- Request-count headroom = request-count cap − requests already committed.
+## Temporal and quota rules
 
-Estimated request cost must fit all three credit headrooms, and at least one request-count slot must remain. Unknown or malformed numbers are never converted to zero.
+- Terms acceptance and rights evidence must be available by the rights-evaluation time.
+- Rights evaluation must precede dispatch; approval must be effective and not expired at evaluation.
+- Quota observation must be no later than dispatch and must remain within its explicit freshness window.
+- Remaining provider quota minus credits already committed since the snapshot must cover the estimated request cost.
+- Remaining per-run credit cap must cover the estimate.
+- Remaining request-count cap must permit exactly one request for this probe.
+- Missing, malformed, stale or insufficient quota evidence fails closed for this Odds API request only. It does not block independent authorized 5DollarFootballAPI capture or model research.
 
-## Activation status
+## Model-quality separation
 
-The currently documented manual evidence gaps remain:
-- The account's exact accepted Terms version and acceptance evidence.
-- A scoped, account-linked APPROVED rights record for the intended competitions/markets/regions/uses.
-- Actual monthly allowance, remaining credits and explicit per-run/request-count caps.
+The activation gate must not decide whether a model is accurate or certified. Model-quality evaluation is handled by independent chronological walk-forward and prospective-settlement gates. A successful provider activation only means the bounded request may proceed; it does not certify bookmaker coverage, quote freshness, prediction value or publication eligibility.
 
-Until those records are supplied and independently verified, this gate returns a blocked decision and the real provider transport remains disabled.
+## Current one-event probe status
+
+The runbook is `docs/VELTRIX_V2_ODDS_API_ONE_EVENT_MARKET_PROBE_RUNBOOK_2026-11-15.md`. It is ready for a fresh no-credit quota preflight and a single capped request. The latest stored sports-catalogue quota observation is historical and cannot substitute for a fresh preflight. The connected GitHub integration does not expose workflow dispatch, so no credit-consuming event-odds request has been sent from this session.
+
+## Decision outcomes
+
+- `ALLOW_BOUNDED_REQUEST`: all Terms/rights/scope/time/quota/per-run/request-count checks pass.
+- `DEFER_PROVIDER_REQUEST`: any required provider access, rights or quota evidence is missing, stale or insufficient. No retry; continue independent data/model work.
+- `REJECT_REQUEST_SCOPE`: requested competition, market, region or intended use is outside approved scope.
+
+Neither outcome authorizes public prediction publication, Telegram delivery, schedule activation or value betting.
