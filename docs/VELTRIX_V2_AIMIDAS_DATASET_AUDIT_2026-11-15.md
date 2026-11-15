@@ -209,3 +209,12 @@ A deeper row-level check of the 738 CSV team rows found two exceptions in the N�
 - Do not alter either row, infer corrected statistics, or reject the verified match-level 0–3 identity solely because the separate team-stat fields disagree.
 - This supersedes the earlier 738/738 team-row consistency wording in the preceding Brazil Série B addendum. Match-level canonical score agreements remain 369/369.
 - Full discrepancy and disposition: docs/VELTRIX_V2_AIMIDAS_BRAZIL_SERIE_B_2026_IDENTITY_RECONCILIATION_2026-11-15.md.
+
+
+### Completed audit artifact — 2026-11-15
+
+- Dedicated Phase 2 audit job completed successfully in workflow run 43758559130; 21 focused tests passed.
+- 738/738 row IDs and canonical-row SHA-256 fingerprints generated and retained; 369 unique match-key hashes and 369 distinct canonical fixture links.
+- Sanitized artifact #14178319188, ZIP SHA-256 4b8c0ed7489cf82dd48c34ca1ba55f884ae5fe652fb2190c919139721a764500.
+- The two quarantined row fingerprints are line 8 / CRB: 78d9492295da1b8dfa9ef735b786f63412089a37640b1f01aa3d57395707abc6; and line 9 / Náutico: ce5bf78a5090a5bef9997ae65c3b5a8e864e117218ed0404e59384b57a62bfb4.
+- No raw CSV body was uploaded; no crosswalk or normalized records were written.
