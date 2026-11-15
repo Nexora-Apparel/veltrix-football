@@ -490,3 +490,11 @@ The Neon rehearsal branch `veltrix-0011-migration-rehearsal-2026-11-15` reports 
 - Aggregate output now exposes appended-event count, duplicate skips, chain verification and post-commit verification. Private fixture identifiers, hashes, odds and probabilities remain excluded from the public artifact.
 - Exact-head CI at `7293dadb95a31ff7c599a02dbace069b05ab67e6`: Phase 2 foundation tests, PostgreSQL 16/18 acceptance, Phase 5 shadow regression, historical model audit and certification evidence integrity all passed.
 - A new manual capture is still required to exercise the post-commit check against the operational staging endpoint. This correction has not dispatched a provider request. The schedule remains off; no publication, Telegram send, merge or production deploy was performed.
+
+## 2026-11-15 settlement runner hardening
+
+- Added a manual-only staging settlement workflow. No cron/schedule trigger was introduced.
+- Settlement now enforces quota headroom on each provider page and verifies committed settlement events from a fresh database connection, including event hashes and the full append-only chain.
+- The workflow uploads an aggregate-only scorecard. No fixture-level IDs or quarantine rows are included in the artifact.
+- The collector will not make provider requests until a shadow target has actually kicked off; current targets are scheduled for 18–21 November 2026.
+- Workflow link: https://github.com/Nexora-Apparel/veltrix-football/actions/workflows/phase5-5dollar-shadow-settlement.yml
