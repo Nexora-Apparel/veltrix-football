@@ -5,7 +5,7 @@
 The website and Telegram application use the same deployment factory:
 
 - `VELTRIX_V2_REPORT_BUNDLE_URL`: HTTPS URL to the exact canonical GitHub raw file `command-data/public-data/v2_report_bundle.json`.
-- `GH_TOKEN` (or `GITHUB_TOKEN`): GitHub token with read access to repository artifact attestations. Store it only as a deployment secret.
+- Optional `GH_TOKEN` (or `GITHUB_TOKEN`): a GitHub token with `attestations:read` permission. The repository is public, so the verifier can query public attestations without a token; configure a token only if higher API rate limits are needed.
 - `VELTRIX_V2_EVIDENCE_ALLOWED_HOSTS`: comma-separated exact hostnames permitted for certification evidence retrieval. Include `raw.githubusercontent.com` and only the evidence hosts actually in use.
 - Optional `VELTRIX_V2_PUBLICATION_VERIFIER_FACTORY`: defaults to `veltrix_v2.reporting.trusted_runtime:build_deployment_publication_verifier_factory` when a bundle URL is configured.
 
