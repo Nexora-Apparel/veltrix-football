@@ -7,6 +7,7 @@ on:
     paths:
       - ".github/workflows/phase2-openfootball-pit-snapshot-pack.yml"
       - "scripts/veltrix_v2/collect_openfootball_pit_snapshots.py"
+      - "veltrix_v2/providers/openfootball_archive/parser.py"
   workflow_dispatch:
     inputs:
       max_requests:
@@ -25,7 +26,7 @@ permissions:
 
 concurrency:
   group: veltrix-stage2-openfootball-pit-snapshot-pack
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   collect:

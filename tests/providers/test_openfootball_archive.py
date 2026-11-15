@@ -140,3 +140,26 @@ def test_full_nigeria_archive_drives_future_model_estimate_without_unlocking_pub
     assert prediction.home_win + prediction.draw + prediction.away_win == pytest.approx(1.0)
     assert not prediction.publishable
     assert prediction.publication_reason == "MODEL_NOT_CERTIFIED"
+
+
+def test_parser_handles_yearless_dates_and_half_time_scores():
+    text = """= English Premier League 2025/26
+▪ Matchday 1
+  Fri Dec 26 2025
+    12:30  Arsenal FC              v Chelsea FC           2-1 (1-0)
+  Sat Dec 27
+    15:00  Liverpool FC             v Everton FC            1-0 (0-0)
+  Sat Jan 03
+    15:00  Manchester City FC       v Tottenham Hotspur FC  3-2 (2-1)
+"""
+    result = parse_archive(
+        text, competition_id="EPL", source_path="2025-26/1-premierleague.txt",
+        snapshot_commit_sha=SHA,
+        snapshot_available_at=datetime(2026, 1, 7, tzinfo=UTC),
+        imported_at=IMPORTED,
+    )
+    assert result.result_count == 3
+    assert [row.kickoff_date for row in result.observations] == [
+        date(2025, 12, 26), date(2025, 12, 27), date(2026, 1, 3)
+    ]
+    assert [row.home_goals for row in result.observations] == [2, 1, 3]

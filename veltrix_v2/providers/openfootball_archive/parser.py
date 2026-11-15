@@ -1,7 +1,8 @@
 """Strict parser for OpenFootball Football.TXT season archives.
 
 The source format supplies calendar dates but generally no exact kickoff
-clock/timezone. Parsed observations therefore retain kickoff_date and never
+clock/timezone. Matchday date lines may omit the year; infer it from the season
+header and chronological year rollover rather than reusing a previous date. Parsed observations therefore retain kickoff_date and never
 invent kickoff_at. Snapshot availability comes from the exact repository
 commit timestamp supplied by the caller; import time is recorded separately.
 """
@@ -110,7 +111,17 @@ def parse_archive(
         if date_match:
             month_name, day_text, year_text = date_match.groups()
             try:
-                current_date = date(int(year_text), _MONTHS[month_name], int(day_text))
+                month_number = _MONTHS[month_name]
+                if year_text:
+                    inferred_year = int(year_text)
+                elif current_date is not None:
+                    inferred_year = current_date.year
+                    if current_date.month >= 10 and month_number <= 3 and month_number < current_date.month:
+                        inferred_year += 1
+                else:
+                    season_year = re.search(r"\\b(20\\d{2})\\b", season_title)
+                    inferred_year = int(season_year.group(1)) if season_year else None
+                current_date = date(inferred_year, month_number, int(day_text)) if inferred_year else None
             except (KeyError, ValueError):
                 current_date = None
             continue
