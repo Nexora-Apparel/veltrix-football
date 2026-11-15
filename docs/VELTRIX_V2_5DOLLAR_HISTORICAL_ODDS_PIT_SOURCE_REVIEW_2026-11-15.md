@@ -16,15 +16,25 @@ The provider documents full pre-match and in-play price ticks, oldest first, eac
 
 The endpoint requires Ultra. Free and Pro plans receive HTTP 403 insufficient_plan. The provider documents history windows of three months on Free, twelve months on Pro and complete supported history back to 2014 on Ultra. Actual season/market coverage varies by competition.
 
-## Existing approval gap
+## Approval state — 2026-11-15
 
-The staging rights approval approval-5dollar-community-fixture-result-2026-11 is for fixture_result; it does not explicitly authorize odds_quote. The source Terms support model training and evaluation, but the rights engine requires exact data-type and permitted-purpose records. A separate odds_quote approval must explicitly include COLLECTION, STORAGE, MODEL_TRAINING and BENCHMARKING, with competition/season scope, terms version, evidence URI/hash and append-only approval event.
+A separate non-commercial staging approval is now recorded:
+- Approval ID: `approval-5dollar-community-odds-quote-noncommercial-2026-11-15`
+- Data type: `odds_quote`; permitted uses include COLLECTION, STORAGE, MODEL_TRAINING and BENCHMARKING.
+- Competition scope: the seven already-approved canonical competition IDs.
+- `commercial_use_allowed=false`; raw redistribution prohibited.
+- Terms version: October 2026; evidence hash is the existing legal terms review hash.
+- An append-only `APPROVED` status event was recorded.
+
+The project owner has separately imposed a project-wide non-commercial rule. VELTRIX will not monetise any source data, regardless of broader permissions in upstream provider terms.
 
 ## Current account status and decision
 
-The user's account was previously verified as Free. Full tick-history access is therefore unavailable under the current plan. No historical odds request, paid subscription change, or database rights mutation was performed.
+The account's Free/Community opening 1X2 quote route is now implemented as a manual, staging-only capture workflow. It uses the provider's per-fixture endpoint and only the Bet365 1X2 opening object with its explicit `opened_at` timestamp. Closing and in-play values remain excluded because their individual source timestamps are absent.
 
-**Disposition: BLOCKED.** The provider is a strong rights-compatible PIT odds candidate, but acquisition cannot begin until Ultra entitlement and the separate odds_quote approval are verified. Existing fixture-result rows remain non-PIT for feature reconstruction; do not fabricate their publication times.
+The full tick-history endpoint remains unavailable on the current Free plan and requires Ultra. No paid historical tick request or subscription change has been made. The new opening-odds workflow is capped at 25 fixtures per run, 90-day lookback, no retries, 3.1-second pacing, and no schedule. No opening quote has yet been acquired by that workflow.
+
+**Disposition:** opening 1X2 quote acquisition is technically ready for a bounded manual run; full tick history remains blocked by plan entitlement. Existing fixture-result rows remain non-PIT for pre-match feature reconstruction; do not fabricate their publication times.
 
 
 ## 2X. Community Access opening 1X2 quote — timestamped subset
