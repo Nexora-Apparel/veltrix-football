@@ -1,4 +1,5 @@
 import json
+from decimal import Decimal
 from datetime import datetime, timezone
 
 import pytest
@@ -42,7 +43,7 @@ def test_preserves_source_tick_time_separately_from_local_retrieval_time():
     assert row.recorded_at == datetime(2026, 11, 14, 10, 0, tzinfo=UTC)
     assert row.retrieved_at == RETRIEVED
     assert row.eligible_prematch is True
-    assert row.home_price == 2.1
+    assert row.home_price == Decimal("2.1")
     assert len(parsed.response_sha256) == 64
 
 
@@ -142,3 +143,31 @@ def test_invalid_input_and_naive_retrieval_or_kickoff_fail_closed():
             b"{}", expected_fixture_id="481163241", expected_market="1x2",
             retrieved_at=datetime(2026, 11, 15), kickoff_at=KICKOFF,
         )
+
+
+def test_out_of_order_ticks_are_diagnostic_and_not_admitted():
+    parsed = parse_odds_history(
+        _response([
+            _tick("2026-11-14T11:00:00Z"),
+            _tick("2026-11-14T10:00:00Z"),
+        ]),
+        expected_fixture_id="481163241", expected_market="1x2",
+        retrieved_at=RETRIEVED, kickoff_at=KICKOFF,
+    )
+    assert parsed.observations[0].eligible_prematch is True
+    assert parsed.observations[1].eligible_prematch is False
+    assert any(d.code == "TICK_ORDER_NOT_CHRONOLOGICAL" for d in parsed.diagnostics)
+
+
+def test_malformed_minute_and_state_flags_cannot_be_treated_as_prematch():
+    parsed = parse_odds_history(
+        _response([
+            _tick("2026-11-14T10:00:00Z", minute="0"),
+            _tick("2026-11-14T11:00:00Z", half_time="false"),
+        ]),
+        expected_fixture_id="481163241", expected_market="1x2",
+        retrieved_at=RETRIEVED, kickoff_at=KICKOFF,
+    )
+    assert all(not row.eligible_prematch for row in parsed.observations)
+    assert any(d.code == "TICK_MINUTE_INVALID" for d in parsed.diagnostics)
+    assert any(d.code == "TICK_STATE_FLAG_INVALID" for d in parsed.diagnostics)
