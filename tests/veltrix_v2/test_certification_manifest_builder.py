@@ -140,6 +140,8 @@ def _evidence():
         "rights_evidence_uri": "https://evidence.example/rights",
         "rights_evidence_sha256": hashlib.sha256(b"rights").hexdigest(),
         "rights_approval_id": "rights-bundle-1",
+        "provider_id": "5dollarfootballapi",
+        "provider_scope": "historical-results-and-fixtures",
         "rights_evaluated_at": "2026-11-14T04:00:00Z",
         "model_artifact_sha256": "c" * 64,
         "feature_set_sha256": "d" * 64,
