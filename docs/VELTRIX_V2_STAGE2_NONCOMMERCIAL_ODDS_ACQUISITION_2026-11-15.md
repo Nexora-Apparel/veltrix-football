@@ -57,7 +57,7 @@ This is a no-credit account/catalogue check only. No live event odds request or 
 
 ## Remaining Stage 2 gates
 
-1. Complete the OpenPlay Parquet-to-feature adapter and chronological loader, preserving the post-import temporal gate and xG model ID.
+1. The pure OpenPlay team-match feature adapter is now implemented in `veltrix_v2/data/openplay_features.py`. Its regression suite verifies canonical IDs, xG model provenance, team/player/lineup/shot/card/formation features, duplicate rejection and strict post-import cutoff eligibility. Still outstanding: wire it to the pinned Parquet assets and staging recording-time/crosswalk tables, then persist or expose the derived feature bundle to the chronological loader.
 2. Run the manual 5Dollar opening-odds capture after the workflow is available on the default branch; continue bounded runs until the declared fixture universe is measured.
 3. Measure timestamped quote coverage against a predeclared fixture × bookmaker × market universe; do not infer the 98% gate from source claims.
 4. Reconcile OpenPlay identities beyond the 89 exact matches using evidence-backed aliases only; unresolved entities stay quarantined.
