@@ -10,6 +10,9 @@ on:
       - "scripts/veltrix_v2/build_openplay_feature_bundle.py"
       - "veltrix_v2/data/openplay_feature_bundle.py"
       - "tests/scripts/test_persist_openplay_feature_snapshots.py"
+      - "veltrix_v2/models/openplay_xg_poisson.py"
+      - "scripts/veltrix_v2/generate_openplay_v2_forecasts.py"
+      - "tests/veltrix_v2/test_openplay_xg_poisson.py"
   workflow_dispatch:
 
 permissions:
@@ -39,8 +42,10 @@ jobs:
         run: |
           python -m pip install duckdb==1.4.2 pytz==2025.2 "psycopg[binary]>=3.2,<4" pytest==8.4.2
 
-      - name: Run snapshot selector contract tests
-        run: python -m pytest --import-mode=importlib -q tests/scripts/test_persist_openplay_feature_snapshots.py
+      - name: Compile and test snapshot admission and new V2 model
+        run: |
+          python -m compileall -q scripts/veltrix_v2/persist_openplay_feature_snapshots.py scripts/veltrix_v2/generate_openplay_v2_forecasts.py veltrix_v2/models/openplay_xg_poisson.py
+          python -m pytest --import-mode=importlib -q tests/scripts/test_persist_openplay_feature_snapshots.py tests/veltrix_v2/test_openplay_xg_poisson.py
 
       - name: Rebuild verified OpenPlay feature bundle from staging
         env:
@@ -55,11 +60,20 @@ jobs:
             --manifest openplay-feature-bundle/openplay_feature_bundle_manifest.json \
             --output artifacts/openplay-feature-snapshot-admission/summary.json
 
-      - name: Upload non-raw snapshot admission evidence
+      - name: Generate fresh PIT-eligible V2 prospective forecast series
+        env:
+          VELTRIX_STAGING_DATABASE_URL: ${{ secrets.VELTRIX_STAGING_DATABASE_URL }}
+        run: |
+          python -m scripts.veltrix_v2.generate_openplay_v2_forecasts \\
+            --output artifacts/openplay-v2-forecasts/summary.json
+
+      - name: Upload non-raw snapshot and forecast evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: veltrix-openplay-pit-feature-snapshots-${{ github.run_id }}
-          path: artifacts/openplay-feature-snapshot-admission/summary.json
+          path: |
+            artifacts/openplay-feature-snapshot-admission/summary.json
+            artifacts/openplay-v2-forecasts/summary.json
           if-no-files-found: warn
           retention-days: 30
