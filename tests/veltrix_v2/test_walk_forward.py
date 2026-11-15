@@ -216,3 +216,46 @@ def test_walk_forward_rejects_target_with_invalid_pit_payload_hash():
     report = walk_forward_evaluate(rows, evaluation_as_of=AS_OF)
     assert report.skipped_invalid_target >= 1
     assert all(row.fixture_id != target.fixture_id for row in report.fixtures)
+
+
+
+def test_walk_forward_exposes_only_cutoff_eligible_openplay_context():
+    rows = history(40)
+    target = rows[-1]
+    cutoff = target.kickoff_at - timedelta(seconds=1)
+    eligible_at = cutoff - timedelta(hours=1)
+    base = {
+        "canonical_competition_id": "league",
+        "match_date": (target.kickoff_at.date() - timedelta(days=3)).isoformat(),
+        "source_published_at": (eligible_at - timedelta(days=2)).isoformat(),
+        "available_at": (eligible_at - timedelta(days=2)).isoformat(),
+        "recorded_at": (eligible_at - timedelta(hours=1)).isoformat(),
+        "eligibility_at": eligible_at.isoformat(),
+        "crosswalk_provenance": {},
+        "approval_provenance": {},
+    }
+    features = [
+        {**base, "canonical_team_id": target.home_team_id, "provider_match_id": "prior-home"},
+        {**base, "canonical_team_id": target.away_team_id, "provider_match_id": "prior-away"},
+        {**base, "canonical_team_id": target.home_team_id, "provider_match_id": "same-day",
+         "match_date": target.kickoff_at.date().isoformat()},
+        {**base, "canonical_team_id": target.away_team_id, "provider_match_id": "future",
+         "eligibility_at": (cutoff + timedelta(seconds=1)).isoformat()},
+    ]
+    report = walk_forward_evaluate(
+        rows, evaluation_as_of=AS_OF, openplay_features=features
+    )
+    evaluated = next(row for row in report.fixtures if row.fixture_id == target.fixture_id)
+    assert evaluated.openplay_home_feature_rows == 1
+    assert evaluated.openplay_away_feature_rows == 1
+    assert evaluated.openplay_latest_feature_eligibility_at == eligible_at
+
+
+def test_walk_forward_openplay_context_is_optional_and_does_not_change_baseline_predictions():
+    rows = history(40)
+    without_context = walk_forward_evaluate(rows, evaluation_as_of=AS_OF)
+    with_context = walk_forward_evaluate(rows, evaluation_as_of=AS_OF, openplay_features=())
+    assert [row.model_home_win for row in without_context.fixtures] == [
+        row.model_home_win for row in with_context.fixtures
+    ]
+    assert all(row.openplay_home_feature_rows == 0 for row in with_context.fixtures)
