@@ -390,3 +390,15 @@ At the time of this ledger:
 - Terms permit statistical analysis, data modelling and application development; raw odds resale/redistribution needs written consent. The homepage advertises website/app display, including paid products, but obtain written confirmation for the exact Veltrix public display/derived-output use before onboarding.
 - Odds-API.io is now the strongest technical candidate for historical bookmaker-specific closes across the five approved European leagues, but it is NOT yet a Veltrix-authorized source. No key, subscription, payment or data ingestion occurred. A provider-specific rights approval and budget decision are still required.
 - The Odds API remains blocked for historical endpoints on the current key (HTTP 401 paid-plan-only) and its existing rights scope remains five European competitions. No successful historical price response or CLV observation exists. Value betting remains LOCKED.
+
+
+### Independent staging read-back and report synchronization — 2026-11-15 21:27 UTC
+
+- Independently queried Neon project `withered-sky-75161174`, branch `br-silent-violet-bc5de88s`, database `veltrix_football_staging` after acceptance workflow #43762497871.
+- Confirmed 389 RESOLVED AI Midas crosswalk rows: 20 TEAM and 369 FIXTURE; all rows have reviewer `automated-independent-reconciliation-v1` and evidence observation `432397`; zero missing references and zero evidence orphans.
+- Source and canonical identifiers are one-to-one in both directions: no duplicate source-to-canonical or canonical-to-source mappings.
+- Confirmed the two canonical fixtures absent from the AI Midas source remain unresolved with no replacement mappings. The two conflicting team-stat rows remain quarantined.
+- Normalized-data isolation: Brazil Série B 2026 remains 371 fixtures / 371 result rows; zero fixture rows were created and zero result rows were observed during the acceptance interval. Acceptance wrote only `entity_crosswalk_versions` in staging.
+- Synchronized the dedicated identity-reconciliation report to the accepted state and clarified that its zero-write side-effect section applies only to the earlier read-only audit: `docs/VELTRIX_V2_AIMIDAS_BRAZIL_SERIE_B_2026_IDENTITY_RECONCILIATION_2026-11-15.md`. Report commits: `3efb836fdab8c6529bfe4924c17172a3c7c97ef9`, `726edd84ae199b98e7b83dc648d14a477f413a96`.
+- No model admission, normalized fixture/result writes, odds writes, production writes, deployment, publication, Telegram delivery or schedule activation. Value betting remains LOCKED.
+- Next: continue closing-odds and CLV source research separately; preserve opening-odds evidence as opening-only. PR #120 remains draft/open/unmerged and no merge/release authorization is implied.
