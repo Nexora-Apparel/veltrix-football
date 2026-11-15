@@ -127,12 +127,20 @@ def apply_crosswalk(database_url: str, candidate_path: str | Path) -> dict:
                 """, (FIVEDOLLAR_PROVIDER,FIVEDOLLAR_SOURCE_ID,target_provider_id,canonical))
                 if cur.fetchone()[0] != 1:
                     raise RuntimeError("OPENPLAY_TEAM_CROSSWALK_TARGET_NOT_UNIQUE:" + row["team"])
-                overlap = sorted(str(value) for value in row["mapped_openplay_competition_keys"])
+                overlap = sorted(str(value) for value in row["country_verified_competition_keys"])
                 if not overlap:
-                    raise RuntimeError("OPENPLAY_TEAM_CROSSWALK_COMPETITION_OVERLAP_MISSING")
+                    raise RuntimeError("OPENPLAY_TEAM_CROSSWALK_COUNTRY_REGION_OVERLAP_MISSING")
+                cur.execute("""
+                    SELECT count(DISTINCT competition_id)
+                    FROM fixtures
+                    WHERE (home_team_id=%s OR away_team_id=%s)
+                      AND competition_id = ANY(%s::bigint[])
+                """, (int(canonical),int(canonical),[int(value) for value in overlap]))
+                if cur.fetchone()[0] < 1:
+                    raise RuntimeError("OPENPLAY_TEAM_CROSSWALK_TARGET_COMPETITION_OVERLAP_INVALID")
                 reason = (
                     f"Exact normalized team-name match; unique in both source inventories; "
-                    f"overlapping resolved competition canonical keys={','.join(overlap)}; "
+                    f"country and competition region agree; overlapping resolved competition canonical keys={','.join(overlap)}; "
                     f"OpenPlay team={row['team']!r}, country={row['country']!r}; "
                     f"5Dollar team ID={target_provider_id}; evidence asset SHA-256={team_asset_hash}."
                 )
