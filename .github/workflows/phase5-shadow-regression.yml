@@ -25,6 +25,7 @@ on:
       - ".github/workflows/telegram-delivery-recovery.yml"
       - "docs/VELTRIX_V2_ODDS_API_ONE_EVENT_MARKET_PROBE_RUNBOOK_2026-11-15.md"
       - ".github/workflows/phase5-shadow-regression.yml"
+      - ".github/workflows/vercel-preview-runtime-publication-smoke.yml"
   pull_request:
     paths:
       - "scripts/phase5_collect_5dollar_shadow.py"
@@ -41,6 +42,7 @@ on:
       - ".github/workflows/report-certification-attestation.yml"
       - "requirements.txt"
       - ".github/workflows/phase5-shadow-regression.yml"
+      - ".github/workflows/vercel-preview-runtime-publication-smoke.yml"
   workflow_dispatch:
 
 permissions:
