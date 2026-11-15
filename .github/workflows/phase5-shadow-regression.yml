@@ -11,6 +11,9 @@ on:
       - "tests/veltrix_v2/test_provider_evidence_capture.py"
       - "api/telegram.py"
       - "tests/veltrix_v2/test_api_publication_verifier_injection.py"
+      - "scripts/veltrix_v2/dispatch_public_telegram_bundle.py"
+      - "tests/veltrix_v2/test_v2_release_workflow_guards.py"
+      - ".github/workflows/telegram-delivery-recovery.yml"
       - "docs/VELTRIX_V2_ODDS_API_ONE_EVENT_MARKET_PROBE_RUNBOOK_2026-11-15.md"
       - ".github/workflows/phase5-shadow-regression.yml"
   pull_request:
