@@ -60,3 +60,11 @@ def test_raw_body_hash_is_exact():
     result = build_evidence("test-key", request_fn=fake_request(body))
     import hashlib
     assert result["raw_response_sha256"] == hashlib.sha256(body).hexdigest()
+
+
+def test_plan_code_field_is_supported_without_plan_aliasing():
+    body = b'{"success":true,"data":{"plan_code":"Ultra"}}'
+    result = build_evidence("test-key", request_fn=fake_request(body))
+    assert result["plan"] == "Ultra"
+    assert result["plan_field"] == "plan_code"
+    assert result["ultra_confirmed"] is True
