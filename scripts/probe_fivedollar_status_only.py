@@ -63,6 +63,8 @@ def fetch_status(api_key: str, opener=urlopen) -> tuple[int, bytes, dict[str, st
 
 
 def build_evidence(api_key: str, request_fn=fetch_status, now_fn=None) -> dict:
+    if not isinstance(api_key, str) or not api_key.strip():
+        raise ProbeError("MISSING_SECRET")
     now = now_fn() if now_fn else datetime.now(timezone.utc)
     if now.tzinfo is None:
         raise ProbeError("CLOCK_NOT_TIMEZONE_AWARE")
