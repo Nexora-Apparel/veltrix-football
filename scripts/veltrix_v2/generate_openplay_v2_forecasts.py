@@ -171,9 +171,9 @@ def _verify_target(row, now):
         or target_entity_type!="odds_opening_quote"
         or str(target_provider_id)!=str(provider_fixture_id)
         or target_response_provider!="5DollarFootballAPI" or target_response_source!="5dollarfootballapi"
+        or not isinstance(target_payload,dict)
         or str(target_response_hash).strip()!=str(target_payload.get("response_sha256","")).strip()
         or str(target_payload_sha).strip()!=str(target_obs_payload_sha).strip()
-        or not isinstance(target_payload,dict)
         or str(target_payload.get("fixture_id"))!=str(provider_fixture_id)
         or target_payload.get("kickoff_at") is None
         or _aware(datetime.fromisoformat(str(target_payload["kickoff_at"]).replace("Z","+00:00")),"TARGET_PAYLOAD_KICKOFF")!=kickoff_at
