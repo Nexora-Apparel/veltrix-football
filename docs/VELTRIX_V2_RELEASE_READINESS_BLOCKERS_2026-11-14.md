@@ -359,3 +359,64 @@ This section supersedes any earlier wording in this historical log that treats b
 - **PUBLICATION_INTEGRITY_GATES** focus on correct fixture/team/competition identity, point-in-time eligibility, evidence provenance, pre-kickoff chronology, model/market certification where required, one authoritative report bundle, website/Telegram parity, duplicate prevention, idempotent delivery, authorization and recovery reconciliation. Commercial monetisation and billing paperwork are not publication gates.
 - Current staging audit on 2026-11-15: 25 shadow predictions across 25 unique fixtures; zero settlements; 56 5Dollar provider responses, latest fixture response retrieved 2026-11-14T23:18:30.935Z; one Odds API sports-catalogue response, zero event-odds responses, zero Odds API quota snapshots and zero budget snapshots. These are shadow/collection observations, not certification.
 - The one-event UK probe remains defined by `docs/VELTRIX_V2_ODDS_API_ONE_EVENT_MARKET_PROBE_RUNBOOK_2026-11-15.md`: one future EPL event, UK region, `h2h`, `totals`, `btts`, at most 3 credits, exactly one credit-consuming request, no retries, staging-only persistence. Its purpose is bookmaker/market availability, timestamp quality and prediction research.
+
+
+## Controlled integration and release audit — 2026-11-15
+
+### Canonical integration and historical PR cleanup
+
+- Canonical integration remains PR #120, base `main`, branch `integration/v2-report-bundle-wiring-20261114`, head `afeb54e32fa0ec35cb7c55bfc3c8429c5aa3c0e5`.
+- The branch is 245 commits ahead and 0 behind the recorded `main` base; PR #120 remains open, draft and mergeable. It has not been merged.
+- Fifty-seven superseded historical PRs were closed without merging. Their branches and commit histories were not deleted. The canonical integration PR is the only intended release candidate.
+- The older Phase 4/5 stack PRs #68–#96 were checked for changed-path coverage in the canonical tree. The implementation and corresponding tests are present; branch histories diverge, so the historical PRs were closed rather than merged into one another.
+- A personal-use policy defect was corrected in `veltrix_v2/data/fivedollar_engine.py`: forecast collection/storage/model-training rights are now evaluated with `commercial=False`. The regression fixture now has `commercial_use_allowed=False`, and the pipeline contract states that commercial permission is not required for personal-use operation.
+- Fix/test/documentation commits: `3b083fed7bc3fa673132de9e2ef94bb4f867fa01`, `052489707ee0a768fcd9a077a9a5757c3d3b6297`, `afeb54e32fa0ec35cb7c55bfc3c8429c5aa3c0e5`.
+
+### Latest automated test result
+
+At head `afeb54e32fa0ec35cb7c55bfc3c8429c5aa3c0e5`, all 10 required automated checks completed successfully:
+
+- Foundation and audit tests.
+- Certification evidence integrity.
+- Shadow regression.
+- PostgreSQL 16 and PostgreSQL 18 integration.
+- PostgreSQL 16 and PostgreSQL 18 acceptance.
+- PostgreSQL reservation tests for versions 16 and 18.
+
+The daily-predictions workflow was skipped by design. This is an automated code/database regression pass, not a production delivery acceptance.
+
+### Read-only staging evidence snapshot — 2026-11-15
+
+Read-only queries were run against Neon project `VELTRIXFOOTBALL`, branch `veltrix-0011-migration-rehearsal-2026-11-15` (`br-red-grass-bclcmtk1`), database `veltrix_football_staging`, role `neondb_owner`.
+
+- Migrations `0001` through `0011` are present on this rehearsal branch.
+- 4,509 source observations: 2,013 `FIXTURE_RESULT` rows and 2,496 legacy `fixture` rows.
+- 0 observations are marked point-in-time certifiable; 0 have `source_published_at`.
+- The prospective ledger contains 25 `SHADOW_PREDICTION` events for 25 unique fixtures, all tagged `PROSPECTIVE_OBSERVED_ONLY`. They were recorded in one forecast session on 2026-11-14.
+- 0 prospective settlements are recorded; the 25 predictions do not satisfy the 300-settlement or 90-distinct-date requirements.
+- 0 timestamped odds quote observations and 0 Telegram delivery claims are present.
+- 72 provider responses are stored. The two The Odds API responses are sports-catalogue responses; no event-odds market quote was captured.
+
+The 2,496 imported historical observations remain non-PIT. They must not be upgraded using import time or kickoff-based availability proxies. The prospective shadow ledger is useful evidence collection, not market certification.
+
+### Website, report and Telegram parity
+
+- Adapter-level regression `tests/veltrix_v2/test_portable_bundle_cross_surface_integration.py` verifies that website, scheduled-report and Telegram adapters consume identical portable bundle bytes, share report identity/hash, and exercise one idempotent Telegram claim with a stub transport.
+- Production parity remains unaccepted: `public-data/v2_report_bundle.json` and `reports/certification/evidence-manifest.json` are absent from the `command-data` branch.
+- The runtime requires an explicitly configured trusted publication verifier and report-bundle URL. Without both, the website and Telegram API remain fail-closed.
+- `.github/workflows/telegram-delivery-recovery.yml` remains deliberately guarded by `if: false` and has no cron trigger. No real Telegram send, scheduled report run or public website report publication was performed.
+
+### Controlled release decision
+
+**NOT ACCEPTED — remain internal/shadow only.**
+
+Blocking evidence:
+
+1. No historical observations are PIT-certifiable, so no qualifying chronological walk-forward market sample is available from the imported archive.
+2. The prospective ledger has 25 shadow predictions, 0 settled selections and one forecast date; the required 300 settlements and 90 distinct dates have not accrued.
+3. No timestamped bookmaker quote evidence is present; the 98% odds-coverage gate and bookmaker benchmark cannot be evaluated.
+4. No market has a passing certification bundle with positive date-clustered ROI lower bound and required sample coverage.
+5. The canonical report bundle and attested certification manifest are absent from `command-data`; trusted production runtime configuration and actual workflow wiring are not accepted.
+6. Actual Telegram delivery, schedule execution, duplicate/recovery behaviour against production infrastructure and website/report/Telegram byte parity remain unverified.
+
+Public predictions, value betting, the 06:00 WAT schedule, Telegram broadcast and production deployment remain disabled. No production database migration/write, provider request for an Odds API event market, Telegram send or Vercel deployment was performed during this acceptance audit.
