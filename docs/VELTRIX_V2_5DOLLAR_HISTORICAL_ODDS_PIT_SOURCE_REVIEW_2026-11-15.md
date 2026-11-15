@@ -39,4 +39,4 @@ The Community Access 12-month dataset can therefore supply one timestamped Bet36
 
 An offline parser was added for this timestamped opening quote. It ignores closing/in-play values, preserves the source opened_at separately from retrieval time, and rejects missing/naive timestamps, malformed prices, and quotes at or after kickoff. It is not yet connected to live collection or staging persistence.
 
-This gives Stage 2 a viable no-cost 1X2 PIT acquisition route once the separate Community Access credential is added. It does not solve historical team-form result availability or full CLV/tick-history coverage.
+This gives Stage 2 a viable no-cost 1X2 PIT acquisition route once the separate Community Access credential is added. The offline parser and regression tests now pass on integration commit e30d6d870da8cebc61eab483e7fcf587fa72ffc8. It does not solve historical team-form result availability or full CLV/tick-history coverage, and no live data has yet been acquired.

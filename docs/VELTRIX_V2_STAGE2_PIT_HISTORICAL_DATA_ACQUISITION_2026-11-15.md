@@ -209,3 +209,39 @@ Manual workflow:
 https://github.com/Nexora-Apparel/veltrix-football/actions/workflows/phase2-historical-data-dry-run.yml
 
 The workflow performs a read-only 365-day, 40-request qualification probe and emits a sanitized artifact. It does not import to staging or certify historical PIT eligibility. The result data remains non-PIT for feature reconstruction unless the provider supplies source publication/revision timestamps. Do not execute the Phase 3 staging importer as a substitute for this qualification or as a way around PIT requirements.
+
+
+## 12. Community Access 1X2 opening-quote parser — 2026-11-15
+
+The 5Dollar per-fixture odds response includes a timestamped Bet365 1X2 opening quote through the documented opened_at field. This quote is available on the Free and Community plans and is distinct from the full odds-history endpoint.
+
+Implemented on the integration branch:
+- Offline 1X2 opening-quote parser: veltrix_v2/providers/fivedollar_odds_history/fixture_odds_parser.py
+- Regression tests: tests/providers/test_fivedollar_opening_odds.py
+- The parser preserves opened_at and retrieved_at separately, verifies all three prices, rejects missing/naive/future timestamps, and only marks the quote eligible when opened_at is strictly before kickoff.
+- Closing and in-play prices are deliberately ignored because their individual source timestamps are not present in this fixture response.
+- The full tick-history parser remains separate and Ultra/Education gated.
+
+Exact-head verification on commit e30d6d870da8cebc61eab483e7fcf587fa72ffc8:
+- Phase 2 Data Foundation: SUCCESS; the new Community opening-quote parser test passed.
+- Historical Model Audit: SUCCESS.
+- PostgreSQL 16/18 integration and acceptance: SUCCESS.
+- Phase 5 Shadow Regression: SUCCESS.
+- Certification Evidence Integrity: SUCCESS.
+- Daily fixture predictions: intentionally SKIPPED.
+
+No Community API key has been connected to the workflow, no live 5Dollar odds request has been made, no quote observations have been persisted, and no source_approvals odds_quote record has been added. The parser is validated offline only.
+
+### Stage 2 current disposition
+
+The 12-month Community Access source path is ready for a bounded data qualification run once the dedicated Community credential is available. The separate key name is FIVEDOLLARFOOTBALL_COMMUNITY_API_KEY; Brazil is the selected country pack. The existing Free credential remains unchanged.
+
+Still outstanding:
+1. User adds the Community credential as a GitHub Actions secret.
+2. Run the read-only Community 365-day fixture/result qualification workflow.
+3. Implement and run the bounded per-fixture 1X2 opening-quote collector, preserving raw-response hashes and opened_at/retrieved_at.
+4. Add and independently verify the exact odds_quote rights approval and staging persistence contract.
+5. Measure real timestamp coverage by competition/date; do not infer 98%.
+6. Obtain a genuinely PIT result-feature source or keep historical form/strength features excluded from walk-forward evaluation.
+
+Stage 2 remains OPEN. The new 1X2 opening-quote path is a qualified acquisition candidate, not yet an acquired dataset.
