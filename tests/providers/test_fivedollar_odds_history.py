@@ -125,7 +125,7 @@ def test_bad_prices_and_duplicate_ticks_are_diagnostic_and_not_admitted():
         retrieved_at=RETRIEVED, kickoff_at=KICKOFF,
     )
     assert parsed.observations[0].eligible_prematch
-    assert parsed.observations[1].eligible_prematch
+    assert parsed.observations[1].eligible_prematch is False
     assert any(d.code == "DUPLICATE_TICK" for d in parsed.diagnostics)
     assert parsed.observations[2].eligible_prematch is False
     assert any(d.code == "TICK_PRICE_OR_LINE_MISSING" for d in parsed.diagnostics)

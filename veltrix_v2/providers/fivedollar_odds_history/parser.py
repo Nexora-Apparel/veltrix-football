@@ -112,11 +112,7 @@ def parse_odds_history(
         raise TypeError("RAW_RESPONSE_MUST_BE_BYTES")
     if not isinstance(expected_fixture_id, str) or not expected_fixture_id.strip():
         raise ValueError("EXPECTED_FIXTURE_ID_REQUIRED")
-    if not isinstance(expected_market, str) or expected_market not in {
-        "1x2", "asian", "goalline", "goalline_fixed", "btts",
-        "corner", "corner_asian", "cards", "cards_asian",
-        "1x2_half", "asian_half", "goalline_half", "corner_half",
-    }:
+    if expected_market != "1x2":
         raise ValueError("EXPECTED_MARKET_UNSUPPORTED")
     retrieved = _aware(retrieved_at, "RETRIEVED_AT")
     kickoff = _aware(kickoff_at, "KICKOFF_AT")
@@ -170,7 +166,13 @@ def parse_odds_history(
         minute = minute_value if isinstance(minute_value, int) and not isinstance(minute_value, bool) and minute_value >= 0 else None
         if minute_value is not None and minute is None:
             diagnostics.append(OddsHistoryDiagnostic("TICK_MINUTE_INVALID", index))
-        line = _decimal(tick.get("line")) if tick.get("line") is not None else None
+        line = None
+        if tick.get("line") is not None:
+            try:
+                parsed_line = Decimal(str(tick.get("line")))
+                line = parsed_line if parsed_line.is_finite() else None
+            except (InvalidOperation, ValueError):
+                line = None
 
         home = _decimal(tick.get("home"))
         draw = _decimal(tick.get("draw"))
@@ -178,7 +180,8 @@ def parse_odds_history(
         over = _decimal(tick.get("over"))
         under = _decimal(tick.get("under"))
         score = tick.get("score")
-        if score is not None and not isinstance(score, dict):
+        score_valid = score is None or isinstance(score, dict)
+        if not score_valid:
             diagnostics.append(OddsHistoryDiagnostic("TICK_SCORE_INVALID", index))
             score = {}
         score = score or {}
@@ -186,13 +189,16 @@ def parse_odds_history(
         score_away = _score(score.get("away"))
         half_time = tick.get("half_time", False)
         suspended = tick.get("suspended", False)
-        if type(half_time) is not bool or type(suspended) is not bool:
+        state_flags_valid = type(half_time) is bool and type(suspended) is bool
+        if not state_flags_valid:
             diagnostics.append(OddsHistoryDiagnostic("TICK_STATE_FLAG_INVALID", index))
             half_time = half_time is True
             suspended = suspended is True
+        minute_valid = minute_value is None or minute is not None
 
         prematch_state = (
-            minute is None and score_home is None and score_away is None
+            minute_valid and score_valid and state_flags_valid
+            and minute is None and score_home is None and score_away is None
             and not half_time and not suspended
         )
         before_kickoff = recorded_at is not None and recorded_at < kickoff
@@ -201,27 +207,24 @@ def parse_odds_history(
         if recorded_at is not None and recorded_at > kickoff:
             diagnostics.append(OddsHistoryDiagnostic("TICK_AFTER_KICKOFF_EXCLUDED", index))
 
-        if expected_market == "1x2":
-            prices_valid = all(value is not None for value in (home, draw, away))
-        elif expected_market == "goalline":
-            prices_valid = line is not None and over is not None and under is not None
-        elif expected_market == "goalline_fixed":
-            prices_valid = line is not None and over is not None and under is not None
-        elif expected_market == "btts":
-            prices_valid = home is not None and away is not None
-        else:
-            prices_valid = any(value is not None for value in (home, draw, away, over, under))
+        prices_valid = all(value is not None for value in (home, draw, away))
 
         identity = (
             recorded_at, minute, line, home, draw, away, over, under,
             score_home, score_away, half_time, suspended,
         )
-        if identity in seen:
+        duplicate = identity in seen
+        if duplicate:
             diagnostics.append(OddsHistoryDiagnostic("DUPLICATE_TICK", index))
         seen.add(identity)
+        chronological = not any(
+            diagnostic.code == "TICK_ORDER_NOT_CHRONOLOGICAL"
+            and diagnostic.tick_index == index for diagnostic in diagnostics
+        )
         eligible = (
             recorded_at is not None and recorded_at <= retrieved
-            and prematch_state and before_kickoff and prices_valid and not suspended
+            and prematch_state and before_kickoff and prices_valid
+            and not suspended and not duplicate and chronological
         )
         if not prices_valid:
             diagnostics.append(OddsHistoryDiagnostic("TICK_PRICE_OR_LINE_MISSING", index))
