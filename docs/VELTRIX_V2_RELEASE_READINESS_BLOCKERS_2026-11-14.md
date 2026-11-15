@@ -493,7 +493,7 @@ The Neon rehearsal branch `veltrix-0011-migration-rehearsal-2026-11-15` reports 
 
 ## 2026-11-15 settlement runner hardening
 
-- Added a manual-only staging settlement workflow. No cron/schedule trigger was introduced.
+- Added a manual-only staging settlement workflow on the integration branch. It is not dispatchable until it is promoted to the default branch; PR #120 remains draft and unmerged, so do not treat the workflow link as runnable yet. No cron/schedule trigger was introduced.
 - Settlement now enforces quota headroom on each provider page and verifies committed settlement events from a fresh database connection, including event hashes and the full append-only chain.
 - The workflow uploads an aggregate-only scorecard. No fixture-level IDs or quarantine rows are included in the artifact.
 - The collector will not make provider requests until a shadow target has actually kicked off; current targets are scheduled for 18–21 November 2026.
