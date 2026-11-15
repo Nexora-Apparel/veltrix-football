@@ -779,7 +779,7 @@ This entry supersedes the prior 2026-11-15 status-only, fixture, feature-snapsho
 - The first seven forecast snapshots were IDs 15–21. Later stable-key snapshots are IDs 36–42. No snapshot or eligibility event was deleted or rewritten.
 
 ### New V2 prospective forecast series
-- New independent model: veltrix-openplay-xg-poisson-v1; formula: symmetric_recent_xg_attack_defence_v1. Model artifact SHA-256: 0332c653... (exact full hash is retained in the workflow artifact).
+- New independent model: veltrix-openplay-xg-poisson-v1; formula: symmetric_recent_xg_attack_defence_v1. Model artifact SHA-256: 0332c6537e44c189653b4ff74b816beed3c5ab484ee9b205e261c149fef51eda.
 - No legacy results-Poisson model, global prior, generic fallback or bookmaker odds input was used. The model requires both teams' recent xG and xG-against rows and produces 1X2, BTTS and O/U 2.5 probabilities.
 - First forecast workflow run 43775129579 appended seven new PREDICTION events to ledger veltrix-v2-prospective-observed. Fresh-connection post-commit verification and full ledger-chain verification passed.
 - Seven forecasts: Athletic Club–Espanyol; Chelsea–Leeds; Tottenham–Ipswich; Como–Cagliari; Lazio–Lecce; Manchester City–Fulham; Troyes–Le Havre.
