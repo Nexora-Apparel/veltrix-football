@@ -13,6 +13,8 @@ on:
       - "veltrix_v2/models/openplay_xg_poisson.py"
       - "scripts/veltrix_v2/generate_openplay_v2_forecasts.py"
       - "tests/veltrix_v2/test_openplay_xg_poisson.py"
+      - "scripts/probe_fivedollar_status_only.py"
+      - "tests/scripts/test_probe_fivedollar_status_only.py"
   workflow_dispatch:
 
 permissions:
@@ -44,8 +46,15 @@ jobs:
 
       - name: Compile and test snapshot admission and new V2 model
         run: |
-          python -m compileall -q scripts/veltrix_v2/persist_openplay_feature_snapshots.py scripts/veltrix_v2/generate_openplay_v2_forecasts.py veltrix_v2/models/openplay_xg_poisson.py
-          python -m pytest --import-mode=importlib -q tests/scripts/test_persist_openplay_feature_snapshots.py tests/veltrix_v2/test_openplay_xg_poisson.py
+          python -m compileall -q scripts/veltrix_v2/persist_openplay_feature_snapshots.py scripts/veltrix_v2/generate_openplay_v2_forecasts.py veltrix_v2/models/openplay_xg_poisson.py scripts/probe_fivedollar_status_only.py
+          python -m pytest --import-mode=importlib -q tests/scripts/test_persist_openplay_feature_snapshots.py tests/veltrix_v2/test_openplay_xg_poisson.py tests/scripts/test_probe_fivedollar_status_only.py
+
+      - name: One-time 5Dollar entitlement status-only probe
+        if: github.event_name == 'push' && contains(github.event.head_commit.message, '[status-check]')
+        continue-on-error: true
+        env:
+          FIVEDOLLARFOOTBALL_API_KEY: ${{ secrets.FIVEDOLLARFOOTBALL_API_KEY }}
+        run: python -m scripts.probe_fivedollar_status_only --output artifacts/5dollar-status/evidence.json
 
       - name: Rebuild verified OpenPlay feature bundle from staging
         env:
@@ -74,5 +83,6 @@ jobs:
           path: |
             artifacts/openplay-feature-snapshot-admission/summary.json
             artifacts/openplay-v2-forecasts/summary.json
+            artifacts/5dollar-status/evidence.json
           if-no-files-found: warn
           retention-days: 30
