@@ -6,7 +6,7 @@ The website and Telegram application use the same deployment factory:
 
 - `VELTRIX_V2_REPORT_BUNDLE_URL`: HTTPS URL to the exact canonical GitHub raw file `command-data/public-data/v2_report_bundle.json`.
 - Optional `GH_TOKEN` (or `GITHUB_TOKEN`): a GitHub token with `attestations:read` permission. The repository is public, so the verifier can query public attestations without a token; configure a token only if higher API rate limits are needed.
-- `VELTRIX_V2_EVIDENCE_ALLOWED_HOSTS`: comma-separated exact hostnames permitted for certification evidence retrieval. Include `raw.githubusercontent.com` and only the evidence hosts actually in use.
+- Optional `VELTRIX_V2_EVIDENCE_ALLOWED_HOSTS`: comma-separated exact hostnames permitted for certification evidence retrieval. Defaults to `raw.githubusercontent.com`; add another exact host only when an approved evidence object is stored there.
 - Optional `VELTRIX_V2_PUBLICATION_VERIFIER_FACTORY`: defaults to `veltrix_v2.reporting.trusted_runtime:build_deployment_publication_verifier_factory` when a bundle URL is configured.
 
 The verifier runs in the Python application process. It does not require the GitHub CLI. It retrieves attestation bundles from the GitHub repository attestations API and verifies each candidate using the `sigstore` Python package. The verifier pins repository, workflow identity, workflow name, `workflow_dispatch` trigger and `refs/heads/main` source ref. The GitHub API response is only a discovery mechanism; it is not treated as proof.
