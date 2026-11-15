@@ -572,3 +572,16 @@ def test_phase2_history_probe_uses_separate_community_secret_only(monkeypatch):
     assert history_probe._community_api_key() == "community-key"
     monkeypatch.delenv("FIVEDOLLARFOOTBALL_COMMUNITY_API_KEY")
     assert history_probe._community_api_key() == ""
+
+
+def test_community_probe_uses_current_noncommercial_approval_evidence():
+    approval = history_probe._source_approval(NOW)
+    evidence_path = history_probe.AUTHORIZATION_EVIDENCE_PATH
+    assert evidence_path.is_file()
+    assert approval.approval_id == "approval-5dollar-community-fixture-result-benchmarking-2026-11-14"
+    assert approval.commercial_use_allowed is False
+    assert approval.evidence_uri == history_probe.AUTHORIZATION_EVIDENCE_URI
+    assert approval.evidence_sha256 == hashlib.sha256(evidence_path.read_bytes()).hexdigest()
+    assert approval.raw_redistribution_allowed is False
+    assert approval.competition_scope.split(",") == sorted(history_probe.EXPECTED_COMPETITIONS)
+
