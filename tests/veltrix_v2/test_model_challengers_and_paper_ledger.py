@@ -210,6 +210,35 @@ def test_jsonl_store_round_trips_observed_only_shadow_event(tmp_path):
     assert loaded.events[0].event_sha256 == event.event_sha256
 
 
+def test_shadow_ledger_persists_exact_training_observation_evidence():
+    ledger = ProspectivePaperLedger()
+    kickoff = BASE + timedelta(days=45)
+    training_row = {
+        "fixture_id": "history-001",
+        "available_at": (kickoff - timedelta(days=10)).isoformat(),
+        "recorded_at": (kickoff - timedelta(days=9)).isoformat(),
+        "payload_sha256": "a" * 64,
+        "availability_basis": "collector_first_observed_v1",
+        "evidence_class": "PROSPECTIVE_OBSERVED_ONLY",
+        "rights_approval_id": "approval-test",
+    }
+    prediction = PaperPrediction(
+        fixture_id="observed-with-evidence", competition_id="league",
+        home_team_id="A", away_team_id="B", kickoff_at=kickoff,
+        prediction_cutoff_at=kickoff - timedelta(hours=3),
+        forecasted_at=kickoff - timedelta(hours=2),
+        recorded_at=kickoff - timedelta(hours=1),
+        model_version="candidate-observed-v2",
+        home_probability=0.46, draw_probability=0.29, away_probability=0.25,
+        evidence_sha256="b" * 64, point_in_time_certifiable=False,
+        evidence_class="PROSPECTIVE_OBSERVED_ONLY",
+        training_observations=(training_row,),
+    )
+    event = ledger.append_prediction(prediction)
+    assert event.payload["training_observations"] == [training_row]
+    assert ledger.verify_chain()
+
+
 def test_first_observed_rows_never_enter_historical_walk_forward_training():
     as_of = BASE + timedelta(days=20)
     baseline = evaluate_model_challengers(comparison_rows(), evaluation_as_of=as_of)
