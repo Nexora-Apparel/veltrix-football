@@ -1,4 +1,4 @@
-name: VELTRIX Stage 2 — OpenFootball PIT archive snapshot pack
+name: VELTRIX Stage 2 — CC0 historical archive snapshot packs
 
 on:
   push:
@@ -9,6 +9,9 @@ on:
       - "scripts/veltrix_v2/collect_openfootball_pit_snapshots.py"
       - "veltrix_v2/providers/openfootball_archive/parser.py"
       - "scripts/veltrix_v2/verify_openfootball_pit_snapshot_pack.py"
+      - "veltrix_v2/providers/football_data_cc0/parser.py"
+      - "scripts/veltrix_v2/collect_football_data_cc0_snapshots.py"
+      - "scripts/veltrix_v2/verify_football_data_cc0_snapshots.py"
   workflow_dispatch:
     inputs:
       max_requests:
@@ -49,8 +52,8 @@ jobs:
 
       - name: Compile collector and run isolated tests
         run: |
-          python -m compileall -q scripts/veltrix_v2/collect_openfootball_pit_snapshots.py scripts/veltrix_v2/verify_openfootball_pit_snapshot_pack.py
-          python -m pytest --import-mode=importlib -q tests/veltrix_v2/test_openfootball_pit_snapshot_pack.py tests/providers/test_openfootball_archive.py
+          python -m compileall -q scripts/veltrix_v2/collect_openfootball_pit_snapshots.py scripts/veltrix_v2/verify_openfootball_pit_snapshot_pack.py scripts/veltrix_v2/collect_football_data_cc0_snapshots.py scripts/veltrix_v2/verify_football_data_cc0_snapshots.py veltrix_v2/providers/football_data_cc0
+          python -m pytest --import-mode=importlib -q tests/veltrix_v2/test_openfootball_pit_snapshot_pack.py tests/providers/test_openfootball_archive.py tests/veltrix_v2/test_football_data_cc0_snapshots.py
 
       - name: Collect rights-scoped immutable source snapshots
         id: collect
@@ -72,5 +75,27 @@ jobs:
         with:
           name: veltrix-stage2-openfootball-pit-snapshot-pack
           path: artifacts/openfootball-pit-snapshot-pack/
+          if-no-files-found: error
+          retention-days: 90
+
+      - name: Collect supplemental FootballData CC0 Brazil Serie B snapshots
+        id: football_data
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          python scripts/veltrix_v2/collect_football_data_cc0_snapshots.py \
+            --output-dir artifacts/football-data-cc0-snapshot-pack \
+            --max-requests 100 --max-commits-per-source 100
+
+      - name: Verify supplemental FootballData archive pack independently
+        if: always() && steps.football_data.outcome != 'skipped'
+        run: python scripts/veltrix_v2/verify_football_data_cc0_snapshots.py --input-dir artifacts/football-data-cc0-snapshot-pack
+
+      - name: Upload supplemental Brazil Serie B source snapshots and observations
+        if: always() && steps.football_data.outcome != 'skipped'
+        uses: actions/upload-artifact@v4
+        with:
+          name: veltrix-stage2-footballdata-brazil-serieb-snapshot-pack
+          path: artifacts/football-data-cc0-snapshot-pack/
           if-no-files-found: error
           retention-days: 90
