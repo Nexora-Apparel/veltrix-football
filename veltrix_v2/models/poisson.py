@@ -127,6 +127,9 @@ def observation_eligible_as_of(match: MatchObservation, *, cutoff_at: datetime,
         return False
     if match.kickoff_at is not None:
         kickoff_precedes_cutoff = match.kickoff_at < cutoff_at
+        if (match.availability_basis == "provider_finished_status_conservative_4d"
+                and match.available_at < match.kickoff_at + timedelta(days=4)):
+            return False
     else:
         safe_boundary = datetime.combine(
             match.kickoff_date + timedelta(days=2), time.min, tzinfo=timezone.utc
@@ -150,7 +153,10 @@ def observation_prospectively_observed_as_of(
         return False
     if match.point_in_time_certifiable is not False:
         return False
-    if match.availability_basis != "collector_first_observed_v1":
+    if match.availability_basis not in {
+        "collector_first_observed_v1",
+        "provider_finished_status_conservative_4d",
+    }:
         return False
     if not all(isinstance(value, str) and value.strip() for value in (
         match.rights_approval_id or "", match.provider, match.source_id
