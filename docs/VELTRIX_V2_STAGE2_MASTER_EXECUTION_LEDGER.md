@@ -520,3 +520,10 @@ At the time of this ledger:
 - The prospective opening-quote workflow run [#43768185582](https://github.com/Nexora-Apparel/veltrix-football/actions/runs/43768185582) passed all 35 parser/safety tests and the dry-run, then stopped during the read-only staging target query. Psycopg interpreted the literal SQL `LIKE '%'` as a placeholder and raised `ProgrammingError: only '%s', '%b', '%t' are allowed as placeholders, got '%'`.
 - This occurred before quota preflight or any provider fixture request. No API quota was consumed and no odds rows were written.
 - Replaced the literal-percent `LIKE` expression with PostgreSQL `POSITION(... IN request_id)` matching, and strengthened the prospective target-loader test to assert the placeholder-safe query. The next bounded attempt will re-run the 25-target exact identity check before making any provider requests.
+
+
+### Prospective opening-odds SQL alias correction — 2026-11-15
+
+- The next opening-quote workflow attempt [#43768280700](https://github.com/Nexora-Apparel/veltrix-football/actions/runs/43768280700) passed all parser/safety tests and dry-run, then stopped in the read-only prospective target query with PostgreSQL `AmbiguousColumn: provider_competition_id`. The candidates CTE and verified competition join exposed the same column name.
+- Failure occurred before quota preflight and before any fixture endpoint calls. No provider quota or odds rows were consumed.
+- Aliased the verified competition mapping as `mapped_provider_competition_id` and explicitly selected it as the final provider competition field; added a regression assertion. The next run will retry the same bounded 25-target query.
