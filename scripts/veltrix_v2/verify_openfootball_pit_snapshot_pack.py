@@ -62,7 +62,7 @@ def verify_pack(input_dir: Path) -> dict:
             fail("SNAPSHOT_ROW_INVALID")
         repo, path, comp = snap.get("source_repository"), snap.get("source_path"), snap.get("competition_id")
         if (repo, path, comp) not in allowed:
-            fail("SNAPSHOT_SOURCE_OUTSIDE_ALLOWLIST")
+            raise ValueError(f"SNAPSHOT_SOURCE_OUTSIDE_ALLOWLIST:{repo!r}:{path!r}:{comp!r}")
         if snap.get("source_license_spdx") != SPDX_REQUIRED or snap.get("rights_approval_id") != APPROVAL_ID:
             fail("SNAPSHOT_RIGHTS_SCOPE_INVALID")
         if snap.get("revision_history_complete") is not True:
