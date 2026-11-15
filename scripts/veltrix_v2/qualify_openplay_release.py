@@ -21,7 +21,9 @@ TAG = "data-v0.1.0"
 TAG_COMMIT = "ac0bd9aff52016066433ebebf818bec4278fcf54"
 API_RELEASE = f"https://api.github.com/repos/{OWNER}/{REPO}/releases/tags/{TAG}"
 API_REF = f"https://api.github.com/repos/{OWNER}/{REPO}/git/ref/tags/{TAG}"
-USER_AGENT = "VELTRIX-FOOTBALL-OPENPLAY-QUALIFIER/2.0"
+USER_AGENT = "VELTRIX-FOOTBALL-OPENPLAY-QUALIFIER/2.1"
+DATA_DICTIONARY_URL = f"https://raw.githubusercontent.com/{OWNER}/{REPO}/{TAG_COMMIT}/DATA_DICTIONARY.md"
+SCRAPED_AT_DEFINITION = b"| scraped_at | string | 100% | When the page was saved (UTC) |"
 AUTHORIZATION_RECORD = Path(__file__).resolve().parents[2] / "docs" / "legal" / "openplay-whoscored-opta-authorization-2026-11-15.md"
 AUTHORIZATION_URI = "https://github.com/Nexora-Apparel/veltrix-football/blob/5bd279544b0cf8a453fbae89638bac29cc51fd07/docs/legal/openplay-whoscored-opta-authorization-2026-11-15.md"
 
@@ -130,6 +132,12 @@ def audit_release(output_dir: str | Path) -> dict:
     root = Path(output_dir)
     root.mkdir(parents=True, exist_ok=True)
 
+    dictionary_raw = _request(DATA_DICTIONARY_URL, "text/plain")
+    if SCRAPED_AT_DEFINITION not in dictionary_raw:
+        raise RuntimeError("OPENPLAY_SCRAPED_AT_DOCUMENTATION_MISMATCH")
+    dictionary_sha256 = _sha256(dictionary_raw)
+    (root / "DATA_DICTIONARY.md").write_bytes(dictionary_raw)
+
     ref = _json(API_REF)
     commit_sha = (ref.get("object") or {}).get("sha")
     if ref.get("ref") != f"refs/tags/{TAG}" or commit_sha != TAG_COMMIT:
@@ -211,7 +219,9 @@ def audit_release(output_dir: str | Path) -> dict:
         "last_page_saved_at_utc": str(scrape_row[5]) if scrape_row[5] is not None else None,
         "unique_match_ids": scrape_row[6],
         "data_dictionary_semantics": "When the page was saved (UTC)",
-        "data_dictionary_url": "https://github.com/nlbair/openplay/blob/1681bc4076a290c6a020394ac24792d5141aeeb4/DATA_DICTIONARY.md",
+        "data_dictionary_url": DATA_DICTIONARY_URL,
+        "timestamp_guarantee_evidence_id": "openplay-data-v0.1.0:DATA_DICTIONARY.md#matches.scraped_at",
+        "timestamp_guarantee_evidence_sha256": dictionary_sha256,
         "temporal_status": (
             "CAPTURE_TIMESTAMP_CANDIDATE"
             if scrape_row[0] == scrape_row[1] == scrape_row[2] == scrape_row[6]
