@@ -5,7 +5,7 @@
 **Repository:** `Nexora-Apparel/veltrix-football`  
 **Working branch:** `integration/v2-report-bundle-wiring-20261114`  
 **PR:** [#120](https://github.com/Nexora-Apparel/veltrix-football/pull/120) — draft, open, unmerged  
-**Last inspected PR head before this ledger revision:** `ebbe4e72902bd0f1231f0dbd7f838355880215da` — AI Midas authorization and dataset-audit documents committed; exact-head CI for these documentation changes pending.  
+**Latest AI Midas code-validation commit:** `4d431594b3f678781acc68a8a18232351e93a862` — pinned snapshot workflow #43752239352 passed; PR #120 remains draft/open/unmerged.  
 **Purpose:** Single operational index preventing completed work from being skipped, duplicated or rebuilt unnecessarily.
 
 > This ledger is the navigation and state register, not a replacement for detailed contracts, code, test reports or immutable workflow artifacts. Detailed documents remain authoritative for their specific technical scope. Every status must be backed by a path, commit, workflow run, artifact, test result or explicit blocker.
@@ -77,8 +77,9 @@ Authoritative rights documents:
 - Brazil Série B coverage is only the 2026 advanced-statistics CSV: 738 team rows / 369 distinct matches / 20 teams, 2026-03-21 through 2026-11-08. No 2016–2025 Brazil Série B historical match archive or standard match/odds CSV was found.
 - The public files can be fetched without an API key. The AI Midas `sync_stats.py` pushes to the source owner's mirror and is not a Veltrix collector; preserve its upstream lineage to `griffisben/Post_Match_App/Stat_Files`.
 - Repository metadata for AI Midas and the identified upstream repository reports no declared SPDX licence. Keep the user-confirmed authorization record, attribution and upstream lineage; no raw redistribution.
+- Immutable snapshot workflow #43752239352 passed: 14/14 files captured and independently verified; artifact #14176128656; ZIP SHA-256 `dca676cb75ab395f27f5149694dd3e8cac9f2b0349aff1d83a7cf225408563bb`.
 - All source rows remain retrospective/non-PIT unless independently proven otherwise. `pre_match_*` fields have no row-level availability evidence; actual xG/PPDA/possession and other match statistics are post-match. Do not use same-match post-match fields as prediction inputs.
-- No AI Midas import, database write, model admission, prediction change or production operation has been performed. Average odds do not qualify as closing odds, CLV or the 98% timestamped-odds gate.
+- No AI Midas Neon import, database write, model admission, prediction change or production operation has been performed. Average odds do not qualify as closing odds, CLV or the 98% timestamped-odds gate.
 
 ## 4. Known manual/external dependencies
 
@@ -122,6 +123,8 @@ Append one entry per meaningful operation. Never replace an earlier entry.
 | 2026-11-15 | User-confirmed authorization | AI Midas source authorization recorded | AUTHORIZED for non-commercial VELTRIX project work; technical dataset qualification remains pending | This ledger entry; project-wide non-commercial policy in `docs/legal/veltrix-all-source-noncommercial-authorization-2026-11-15.md` | Audit exact dataset provenance, seven-competition coverage, statistics and odds timestamp semantics before ingestion |
 
 | 2026-11-15 | User-confirmed authorization; pinned AI Midas repository audit | AI Midas authorization, inventory and temporal qualification | PASS — authorization documented; inventory verified; PARTIAL technical qualification; 19,605 historical rows across six competitions; Brazil Série B 2026 advanced stats 369 matches; no PIT or closing-odds certification | `docs/legal/aimidas-noncommercial-authorization-2026-11-15.md`; `docs/VELTRIX_V2_AIMIDAS_DATASET_AUDIT_2026-11-15.md`; source commit `29baca362a34ce5dcd3924b07ec9c7d5139d83fc` | Build a pinned no-key snapshot artifact and exact fixture/team crosswalk; no database/model admission yet |
+
+| 2026-11-15 | Workflow [#43752239352](https://github.com/Nexora-Apparel/veltrix-football/actions/runs/43752239352), commit `4d431594b3f678781acc68a8a18232351e93a862` | AI Midas pinned snapshot collection and independent verification | PASS — 7 tests; 14/14 files; 11,599,486 bytes; independent verifier PASS; no database/production/model/prediction writes | Artifact [#14176128656](https://github.com/Nexora-Apparel/veltrix-football/actions/runs/43752239352/artifacts/14176128656), SHA-256 `dca676cb75ab395f27f5149694dd3e8cac9f2b0349aff1d83a7cf225408563bb`; audit `docs/VELTRIX_V2_AIMIDAS_DATASET_AUDIT_2026-11-15.md` | Build exact Brazil Série B identity crosswalk; keep odds and PIT gates closed |
 
 ## 7. Per-session update template
 
