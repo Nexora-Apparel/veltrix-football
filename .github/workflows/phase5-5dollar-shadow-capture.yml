@@ -18,6 +18,11 @@ on:
         required: true
         default: "25"
         type: string
+      persist_staging:
+        description: "Persist raw capture evidence to the allowlisted Neon staging database"
+        required: true
+        default: false
+        type: boolean
 
 permissions:
   contents: read
@@ -32,21 +37,23 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - name: Checkout VELTRIX integration branch
+      - name: Checkout
         uses: actions/checkout@v4
-        with:
-          ref: integration/v2-report-bundle-wiring-20261114
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
           cache: pip
+
       - name: Install project and PostgreSQL client
         run: |
           python -m pip install --upgrade pip
-          python -m pip install -r requirements.txt "psycopg[binary]>=3.2,<4"
+          python -m pip install -e . "psycopg[binary]>=3.2,<4"
+
       - name: Validate dry-run mode
         run: python -m scripts.phase5_collect_5dollar_shadow
+
       - name: Execute bounded first-observed shadow capture
         env:
           FIVEDOLLARFOOTBALL_API_KEY: ${{ secrets.FIVEDOLLARFOOTBALL_API_KEY }}
@@ -58,7 +65,8 @@ jobs:
             --upcoming-days "${{ inputs.upcoming_days }}" \
             --max-fixtures "${{ inputs.max_fixtures }}" \
             --out artifacts/5dollar-shadow \
-            --persist-staging
+            ${{ inputs.persist_staging && '--persist-staging' || '' }}
+
       - name: Upload aggregate-only audit summary
         if: always()
         uses: actions/upload-artifact@v4
