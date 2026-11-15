@@ -20,6 +20,27 @@ def _row(team="10", comp="20", match_date="2026-11-01", eligibility="2026-11-15T
         "feature_sha256":"a"*64,
         "source_timestamp_basis":"documented_guarantee",
         "source_observation_payload_sha256":"b"*64,
+        "point_in_time_certifiable":True,
+        "commercial_use_allowed":False,
+        "monetisation_prohibited":True,
+        "rights_approval_id":"approval-openplay-whoscored-opta-noncommercial-2026-11-15",
+        "source_observation_id":1,
+        "provider_response_id":1,
+        "asset_provenance":{
+            name:{"provider_response_id":1,"source_observation_id":1,"sha256":"c"*64}
+            for name in ("matches.parquet","team_match_stats.parquet","player_match_stats.parquet",
+                         "lineups.parquet","shots.parquet","cards.parquet","formations.parquet",
+                         "teams.parquet","competitions.parquet")
+        },
+        "crosswalk_provenance":{
+            "team":{"provider_entity_id":"p-team","canonical_entity_id":team,"crosswalk_version_id":1,
+                    "evidence_observation_id":1,"mapping_status":"RESOLVED","mapping_method":"EXACT_NAME_AND_COMPETITION_OVERLAP"},
+            "opponent":{"provider_entity_id":"p-opp","canonical_entity_id":"11","crosswalk_version_id":2,
+                        "evidence_observation_id":1,"mapping_status":"RESOLVED","mapping_method":"EXACT_NAME_AND_COMPETITION_OVERLAP"},
+            "competition":{"provider_entity_id":"comp","canonical_entity_id":comp,"crosswalk_version_id":3,
+                           "evidence_observation_id":1,"mapping_status":"RESOLVED","mapping_method":"EXPLICIT_REGION_NAME_ALIAS"},
+        },
+        "approval_provenance":{"status":"APPROVED","evidence_sha256":"5e6bd00416f180109751e422521d76910da8b491c62507c4d9836e6700c38c46"},
     }
 
 
