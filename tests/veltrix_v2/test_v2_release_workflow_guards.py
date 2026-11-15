@@ -89,9 +89,9 @@ def test_manual_provider_capture_workflows_gate_staging_persistence_explicitly()
     odds = _workflow("phase5-odds-api-quota-capture.yml")
     assert "workflow_dispatch:" in fivedollar
     assert "--execute" in fivedollar
-    assert "persist_staging:" in fivedollar
-    assert "default: false" in fivedollar
-    assert "${{ inputs.persist_staging && '--persist-staging' || '' }}" in fivedollar
+    assert "--persist-staging" in fivedollar
+    assert "inputs.persist_staging" not in fivedollar
+    assert "default: false" not in fivedollar
     assert "FIVEDOLLARFOOTBALL_API_KEY" in fivedollar
     assert "VELTRIX_STAGING_DATABASE_URL" in fivedollar
     assert "workflow_dispatch:" in odds
