@@ -225,6 +225,7 @@ def _verify_sigstore_bundle(
                 "sha256:" + artifact_sha256,
                 "--bundle", bundle_file.name,
                 "--cert-identity", workflow_identity,
+                "--cert-oidc-issuer", OIDC_ISSUER,
                 "--repository", repository,
                 "--ref", "refs/heads/main",
                 "--trigger", "workflow_dispatch",
@@ -280,13 +281,27 @@ def build_github_attestation_verifier(
                     headers={"Accept": "application/json"},
                     timeout=(3.05, 10),
                     allow_redirects=False,
+                    stream=True,
                 )
                 try:
                     if bundle_response.status_code != 200:
                         continue
-                    raw = bundle_response.content
-                    if len(raw) > MAX_ATTESTATION_BYTES:
+                    declared = bundle_response.headers.get("Content-Length")
+                    if declared and (not declared.isdigit() or int(declared) > MAX_ATTESTATION_BYTES):
                         continue
+                    chunks = []
+                    size = 0
+                    for chunk in bundle_response.iter_content(chunk_size=64 * 1024):
+                        if not chunk:
+                            continue
+                        size += len(chunk)
+                        if size > MAX_ATTESTATION_BYTES:
+                            chunks = []
+                            break
+                        chunks.append(chunk)
+                    if not chunks:
+                        continue
+                    raw = b"".join(chunks)
                     if _verify_sigstore_bundle(
                         artifact_sha256=digest,
                         bundle_bytes=raw,
