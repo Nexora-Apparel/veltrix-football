@@ -347,3 +347,13 @@ At the time of this ledger:
 - Read-only staging verification: 0 pilot provider_responses, 0 pilot source_observations, 0 normalized odds_quote_observations. No production writes, predictions, or Telegram messages.
 - The capture script is now fail-closed until paid historical-price entitlement is confirmed. Do not retry the price endpoint or spend more credits under the current account.
 - Historical closing odds: NOT QUALIFIED. CLV: NOT CERTIFIED. PIT walk-forward: NOT MET. Value betting: LOCKED.
+
+### AI Midas Brazil Série B 2026 identity reconciliation — 2026-11-15
+
+- **Verified:** 20/20 source team identities map uniquely to 20 canonical team registry IDs; 738/738 source rows fingerprinted; 369/369 match groups map uniquely with exact home/away orientation; 369/369 Match-label scores agree with canonical fixture results.
+- Source-to-canonical date deltas: 333 same UTC calendar date, 36 one-day offset (source date is date-only; no timezone inference).
+- **Quarantine:** two team-stat rows in one match conflict with the Match-label/canonical score. For Náutico 0-3 CRB (source 2026-11-07; canonical fixture 1811 / provider fixture 4070869087), the team rows state 2-0. Source line 8 row SHA-256 78d9492295da1b8dfa9ef735b786f63412089a37640b1f01aa3d57395707abc6; line 9 SHA-256 ce5bf78a5090a5bef9997ae65c3b5a8e864e117218ed0404e59384b57a62bfb4. Match label agrees with canonical 0-3, but both advanced-stat rows are quarantined.
+- Two canonical fixtures have no source row: Náutico 1-0 Botafogo SP, 2026-09-03 23:00 UTC (fixture 1927 / provider 3538579905), absent despite being inside source date range; Londrina 2-1 Náutico, 2026-11-11 22:00 UTC (fixture 1807 / provider 1878457839), after source file's last date 2026-11-08. Exact reasons are recorded in the report; neither has a replacement mapping.
+- Reviewer acceptance remains pending. No crosswalk rows resolved/written, no normalized fixtures/results or model rows written, and no database mutation.
+- Workflow [#43761387345](https://github.com/Nexora-Apparel/veltrix-football/actions/runs/43761387345) passed at code head a55dc20a385a82e6886946850f1aec3b4971ebe5. Full report artifact [#14180247939](https://github.com/Nexora-Apparel/veltrix-football/actions/runs/43761387345/artifacts/14180247939), ZIP SHA-256 33f0b1f78f3dd0cf4993b9957e99f562386f8d4c6f56123ad6490dc1dd29cd47. The artifact contains all 369 match candidates, 738 row fingerprints, 20 team mappings and both unmatched fixtures, without raw advanced-stat values.
+- AI Midas remains non-PIT and model-ineligible. Its average odds are not timestamped bookmaker closing odds or CLV evidence. **Value betting remains LOCKED.**
