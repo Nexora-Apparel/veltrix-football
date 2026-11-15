@@ -319,7 +319,7 @@ Historical PR branches and commit histories are retained for audit/recovery. The
 | OpenFootball collector/verifier | IMPLEMENTED / ARTIFACT RECONCILIATION REQUIRED | Inspect existing workflow artifact and independently verify; no rebuild |
 | FootballData collector/verifier | IMPLEMENTED / ARTIFACT RECONCILIATION REQUIRED | Inspect existing workflow artifact and independently verify; no rebuild |
 | Archive PIT admission | BLOCKED | No independent historical publication-time proof |
-| 5Dollar Community qualification | DEFECT / NOT RUN | Reconcile stale rights approval ID/commercial flag and fixtures; key already configured |
+| 5Dollar Community qualification | QUALIFIED — READ-ONLY / NON-PIT | Workflow #43726672957: 59 tests passed; 2,505/2,505 fixture/result labels qualified across seven competitions; 28/40 requests; no side effects. Report SHA-256 `3bf4d797df92c293af6f346e296d3d76f7e7d9ec8988320d3992da1b5f6c668a`. Explicitly not PIT-certifiable and not pre-match feature evidence. |
 | 5Dollar opening-odds code | VERIFIED code correction/test at recorded checkpoint | Preserve; verify exact current-head CI |
 | 5Dollar opening-odds quote capture | IMPLEMENTED / NOT RUN | 763 candidate audit but zero quotes at that audit; bounded capture outstanding |
 | 5Dollar shadow capture | EXECUTED, NON-PIT | 671 rows observed; all non-PIT; duplicate protection worked |
@@ -371,3 +371,13 @@ At every continuation:
 6. Keep publication, value betting, Telegram, schedule and production deployment locked until their separate evidence gates pass.
 
 **This register is a dated inventory, not a claim that VELTRIX FOOTBALL 2.0 is finished or production-ready.**
+
+
+## Stage 2 Community qualification evidence — 2026-11-15
+- Workflow [#43726672957](https://github.com/Nexora-Apparel/veltrix-football/actions/runs/43726672957), job `132850009142`, branch `integration/v2-report-bundle-wiring-20261114`, exact commit `90d984091fdde520da4126842fb5301e5a8c0990`, completed successfully.
+- Offline Phase 2 tests: `tests/test_phase2_data_foundation.py` and `tests/test_db_migrations.py`; **59 passed**.
+- Community read-only historical fixture/result qualification: 2,505 fixtures, 2,505 importable, seven authorized competitions, 26 fixture pages, pagination complete, 28/40 requests, zero rejected/quarantined/duplicate rows.
+- Report SHA-256 `3bf4d797df92c293af6f346e296d3d76f7e7d9ec8988320d3992da1b5f6c668a`; artifact [#14166776290](https://github.com/Nexora-Apparel/veltrix-football/actions/runs/43726672957/artifacts/14166776290), ZIP SHA-256 `29e908f311ede85de1a8a8e1f824da54520da32073d0a26cb843ef033384ddea`.
+- Account quota observation: 300/hour, 20/minute; remaining 299 before and 272 after. This is a point-in-time observation, not a quota guarantee.
+- Temporal qualification only: report explicitly says `point_in_time_certifiable=false`; conservative finished-status availability supports settled target labels only, not pre-match features or PIT historical model evaluation.
+- Side effects reported: zero database writes, imports, prediction changes, deployments and Telegram messages. Non-commercial use only; attribution required; raw redistribution prohibited.
