@@ -378,15 +378,14 @@ def generate(database_url: str, output_path: str | Path) -> dict:
                 prediction,detail=_build_prediction(target,model,training,model_sha,forecasted_at)
                 predictions.append(prediction);details.append(detail)
 
-    if not predictions:
-        raise RuntimeError("NO_ELIGIBLE_OPENPLAY_V2_PROSPECTIVE_FORECASTS")
-
-    with psycopg.connect(database_url) as conn:
-        store=PostgresPaperLedgerStore(
-            conn,ledger_id=LEDGER_ID,write_enabled=True,environment="staging",
-            database_name=EXPECTED_DATABASE,host=parsed.hostname or "",role="neondb_owner",
-        )
-        appended,duplicates,_=store.append_predictions_idempotent(predictions)
+    appended=[];duplicates=0
+    if predictions:
+        with psycopg.connect(database_url) as conn:
+            store=PostgresPaperLedgerStore(
+                conn,ledger_id=LEDGER_ID,write_enabled=True,environment="staging",
+                database_name=EXPECTED_DATABASE,host=parsed.hostname or "",role="neondb_owner",
+            )
+            appended,duplicates,_=store.append_predictions_idempotent(predictions)
 
     with psycopg.connect(database_url) as verify:
         store=PostgresPaperLedgerStore(
@@ -401,15 +400,19 @@ def generate(database_url: str, output_path: str | Path) -> dict:
             event=by_key.get((prediction.fixture_id,prediction.model_version))
             if event is None:
                 raise RuntimeError("OPENPLAY_FORECAST_POST_COMMIT_EVENT_MISSING")
+            if str(event.payload.get("evidence_sha256","")).strip()!=prediction.evidence_sha256:
+                raise RuntimeError("OPENPLAY_FORECAST_EXISTING_EVENT_EVIDENCE_CONFLICT")
             verified.append(event.event_sha256)
         ledger.verify_chain()
 
     summary={
-        "status":"PASS_OPENPLAY_V2_PROSPECTIVE_FORECAST_SERIES",
+        "status":("PASS_OPENPLAY_V2_PROSPECTIVE_FORECAST_SERIES" if predictions
+                 else "PASS_NO_NEW_OPENPLAY_FORECASTS_ALREADY_RECORDED"),
         "model_version":MODEL_VERSION,"model_artifact_sha256":model_sha,
         "forecast_cutoff_at":forecasted_at.isoformat(),
         "eligible_snapshots_considered":len(rows),
         "forecasts_generated":len(predictions),
+        "already_forecasted_fixtures":already_forecasted,
         "ledger_events_appended":len(appended),
         "duplicate_forecasts_skipped":int(duplicates),
         "ledger_chain_verified":True,"fresh_connection_post_commit_verified":True,
@@ -433,6 +436,7 @@ def main() -> int:
     print(json.dumps({
         "status":result["status"],"model_version":result["model_version"],
         "forecasts_generated":result["forecasts_generated"],
+        "already_forecasted_fixtures":result["already_forecasted_fixtures"],
         "ledger_events_appended":result["ledger_events_appended"],
         "duplicate_forecasts_skipped":result["duplicate_forecasts_skipped"],
         "ledger_chain_verified":result["ledger_chain_verified"],
