@@ -367,3 +367,15 @@ At the time of this ledger:
 - Provider screening completed: Odds-API.io is the strongest technical candidate for the five approved European leagues (timestamped bookmaker-specific closing ML/1X2, archive since Dec 2025, 366-day bulk window), but starts at £49/month, has no new free keys, has no published Brazil Série B confirmation, and is not yet an approved Veltrix source. ParlayAPI has separate historical odds/closing endpoints but its terms require a signed agreement for public/customer-facing derived products and cap line-level retention at 90 days absent written consent; Brazil Série B coverage unverified. SockOdds does not list Brazil Série B in its published league catalogue and history is Pro-only. OddsRelay history starts 17 Oct 2026, is UK & Ireland-focused and requires Enterprise for business use. OddsIntel does not provide bookmaker identities and excludes betting operators/affiliates. Public Odds.School/SharpPick pages are leads only; no scraping or ingestion.
 - No new provider was authorized, no subscription/payment was made, and no alternative prices were ingested. Historical closing odds and CLV remain NOT CERTIFIED. **Value betting remains LOCKED.**
 - Detailed comparison and source links: docs/VELTRIX_V2_HISTORICAL_ODDS_SOURCE_RESEARCH_2026-11-15.md, section 8.
+
+
+### AI Midas Brazil Série B crosswalk acceptance — 2026-11-15 21:13:49 UTC
+
+- Workflow [#43762497871](https://github.com/Nexora-Apparel/veltrix-football/actions/runs/43762497871) passed at code head cb30b76ba8446170eb8639fe58789dca7176d8c2. Acceptance artifact [#14180892673](https://github.com/Nexora-Apparel/veltrix-football/actions/runs/43762497871/artifacts/14180892673), ZIP SHA-256 1870fc9066afed1ee0cc0db11911270808408cc77dee34013b3d63e5ce20ac81.
+- Independent automated reviewer ID: automated-independent-reconciliation-v1.
+- Staging crosswalk registry now contains 389 RESOLVED mappings: 20 TEAM (10 exact names, 10 explicit aliases) and 369 FIXTURE (exact team orientation/date/score evidence). All 389 rows link evidence observation 432397; staging read-back confirmed all reviewer IDs and unique canonical/source IDs. valid_from is 2026-11-15T21:13:49.803Z; no backdating.
+- The two unmatched canonical fixtures (1927 Náutico–Botafogo SP and 1807 Londrina–Náutico) remain unresolved with no replacement mappings.
+- Canonical fixture 1811 identity is resolved from the Match label and canonical score, but its two inconsistent team-stat rows (source lines 8–9) remain quarantined.
+- Only entity_crosswalk_versions was written in staging. No normalized fixture/results, advanced-stat features, odds, predictions or production rows were written. No deployment, publication, Telegram or schedule changes.
+- The reviewer ID is automated, not a human signature. If a named human sign-off is later required by governance, it must be recorded separately.
+- All AI Midas observations remain non-PIT and model-ineligible; closing odds/CLV remain uncertified. **Value betting remains LOCKED.**
