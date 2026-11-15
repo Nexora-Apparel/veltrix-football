@@ -33,14 +33,50 @@ from scripts.phase5_collect_5dollar_shadow import (
     _refresh_approval,
     _request_page,
     _persist_fixture_snapshot_to_staging,
+    _require_quota_headroom,
 )
 from scripts.phase5_staging_coverage_audit import validate_staging_dsn_target
 
 LEDGER_ID = "veltrix-v2-prospective-observed"
-MAX_PAGES = 14
+MAX_PAGES = MAX_REQUESTS
 MAX_PAGE_SIZE = 100
 MIN_INTERVAL_SECONDS = 3.1
 
+
+
+def _public_summary(result: dict) -> dict:
+    """Aggregate-only settlement summary; never publish fixture IDs or row-level evidence."""
+    summary = {
+        "status": result.get("status"),
+        "shadow_targets": result.get("shadow_targets", 0),
+        "eligible_unsettled_targets": result.get("eligible_unsettled_targets", 0),
+        "provider_requests": result.get("provider_requests", 0),
+        "provider_pages_persisted": result.get("provider_pages_persisted", 0),
+        "finished_rows_observed": result.get("finished_rows_observed", 0),
+        "settlements_appended": result.get("settlements_appended", 0),
+        "quarantined_count": len(result.get("quarantined_rows", ())),
+        "ledger_events": result.get("ledger_events", 0),
+        "ledger_chain_verified": result.get("ledger_chain_verified", False),
+        "publication": False,
+        "telegram": False,
+        "schedule": False,
+        "value_betting": "LOCKED",
+    }
+    if "ledger_post_commit_verified" in result:
+        summary["ledger_post_commit_verified"] = result["ledger_post_commit_verified"]
+    if "prospective_scorecard" in result:
+        summary["prospective_scorecard"] = result["prospective_scorecard"]
+    return summary
+
+
+def _write_summaries(out_dir: Path, result: dict) -> None:
+    out_dir.mkdir(parents=True, exist_ok=True)
+    (out_dir / "settlement_summary.json").write_text(
+        json.dumps(result, indent=2, sort_keys=True), encoding="utf-8"
+    )
+    (out_dir / "settlement_public_summary.json").write_text(
+        json.dumps(_public_summary(result), indent=2, sort_keys=True), encoding="utf-8"
+    )
 
 def _targets(ledger):
     rows = []
@@ -99,13 +135,12 @@ def run(*, api_key: str, staging_dsn: str, out_dir: Path) -> dict:
                 "telegram": False,
                 "schedule": False,
                 "value_betting": "LOCKED",
-                "ledger_chain_verified": True,
+                "ledger_chain_verified": ledger.verify_chain(),
+                "ledger_post_commit_verified": None,
+                "ledger_write_performed": False,
                 "prospective_scorecard": asdict(scorecard),
             }
-            out_dir.mkdir(parents=True, exist_ok=True)
-            (out_dir / "settlement_summary.json").write_text(
-                json.dumps(result, indent=2, sort_keys=True), encoding="utf-8"
-            )
+            _write_summaries(out_dir, result)
             return result
 
         by_competition: dict[str, list] = {}
@@ -152,6 +187,7 @@ def run(*, api_key: str, staging_dsn: str, out_dir: Path) -> dict:
                     raw, headers=headers, retrieved_at_utc=retrieved,
                     rights_approval_id=page_approval.approval_id,
                 )
+                _require_quota_headroom(parsed.quota_remaining, request_count)
                 recorded = datetime.now(timezone.utc)
                 snapshot_approval, storage_checked_at = _refresh_approval(staging_dsn)
                 if snapshot_approval.approval_id != page_approval.approval_id:
@@ -228,6 +264,37 @@ def run(*, api_key: str, staging_dsn: str, out_dir: Path) -> dict:
         verified = store.load()
         if not verified.verify_chain():
             raise RuntimeError("PAPER_LEDGER_CHAIN_VERIFICATION_FAILED")
+        expected_event_count = len(verified.events)
+        expected_settlement_hashes = {
+            (event.fixture_id, event.model_version): event.event_sha256
+            for event in persisted
+        }
+
+    # The write connection has committed. Re-open staging independently and
+    # verify the exact appended settlement hashes and full chain after commit.
+    with psycopg.connect(staging_dsn, autocommit=True) as verify_connection:
+        identity = verify_connection.execute(
+            "SELECT current_database(), current_user"
+        ).fetchone()
+        if identity != ("veltrix_football_staging", "neondb_owner"):
+            raise PermissionError("STAGING_DATABASE_ROLE_NOT_ALLOWLISTED")
+        verify_store = PostgresPaperLedgerStore(
+            verify_connection, ledger_id=LEDGER_ID, write_enabled=False,
+            environment="staging", database_name=identity[0], host=host,
+            role=identity[1],
+        )
+        verified = verify_store.load()
+        if not verified.verify_chain():
+            raise RuntimeError("PAPER_LEDGER_POST_COMMIT_CHAIN_VERIFICATION_FAILED")
+        if len(verified.events) != expected_event_count:
+            raise RuntimeError("PAPER_LEDGER_POST_COMMIT_COUNT_MISMATCH")
+        actual_settlement_hashes = {
+            (event.fixture_id, event.model_version): event.event_sha256
+            for event in verified.events if event.event_type == "SETTLEMENT"
+        }
+        for key, event_hash in expected_settlement_hashes.items():
+            if actual_settlement_hashes.get(key) != event_hash:
+                raise RuntimeError("PAPER_LEDGER_POST_COMMIT_SETTLEMENT_MISMATCH")
 
     scorecard = evaluate_prospective_settlements(verified)
     result = {
@@ -242,15 +309,15 @@ def run(*, api_key: str, staging_dsn: str, out_dir: Path) -> dict:
                              for fid, reason in quarantined],
         "ledger_events": len(verified.events),
         "ledger_chain_verified": True,
+        "ledger_post_commit_verified": True,
+        "ledger_write_performed": bool(persisted),
         "prospective_scorecard": asdict(scorecard),
         "publication": False,
         "telegram": False,
         "schedule": False,
         "value_betting": "LOCKED",
     }
-    (out_dir / "settlement_summary.json").write_text(
-        json.dumps(result, indent=2, sort_keys=True), encoding="utf-8"
-    )
+    _write_summaries(out_dir, result)
     return result
 
 
@@ -274,7 +341,7 @@ def main() -> int:
         staging_dsn=os.environ.get("VELTRIX_STAGING_DATABASE_URL", ""),
         out_dir=Path(args.out),
     )
-    print(json.dumps(result, indent=2, sort_keys=True))
+    print(json.dumps(_public_summary(result), indent=2, sort_keys=True))
     return 0
 
 
