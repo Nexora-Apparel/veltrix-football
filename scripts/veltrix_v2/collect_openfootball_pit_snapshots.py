@@ -213,6 +213,8 @@ def collect_snapshots(
                         "away_team_id": item.away_team_id,
                         "kickoff_at": None,
                         "kickoff_date": item.kickoff_date.isoformat(),
+                        "source_reported_local_time": item.source_reported_local_time,
+                        "source_timezone": item.source_timezone,
                         "home_goals": item.home_goals,
                         "away_goals": item.away_goals,
                         "provider": item.provider,

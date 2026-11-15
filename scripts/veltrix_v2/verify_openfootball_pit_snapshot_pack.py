@@ -111,6 +111,8 @@ def verify_pack(input_dir: Path) -> dict:
                 "fixture_id": item.fixture_id, "competition_id": item.competition_id,
                 "home_team_id": item.home_team_id, "away_team_id": item.away_team_id,
                 "kickoff_at": None, "kickoff_date": item.kickoff_date.isoformat(),
+                "source_reported_local_time": item.source_reported_local_time,
+                "source_timezone": item.source_timezone,
                 "home_goals": item.home_goals, "away_goals": item.away_goals,
                 "provider": item.provider, "source_id": item.source_id,
                 "availability_basis": item.availability_basis,

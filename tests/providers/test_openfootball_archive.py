@@ -165,3 +165,24 @@ def test_parser_handles_yearless_dates_and_half_time_scores():
         date(2025, 12, 26), date(2025, 12, 27), date(2026, 1, 3)
     ]
     assert [row.home_goals for row in result.observations] == [2, 1, 3]
+
+
+def test_parser_strips_and_preserves_local_kickoff_clock_without_timezone():
+    text = """= English Premier League 2025/26
+▪ Matchday 1
+  Fri Aug 22 2025
+    17:00  Arsenal FC              v Chelsea FC             2-1 (1-0)
+"""
+    result = parse_archive(
+        text, competition_id="EPL", source_path="2025-26/1-premierleague.txt",
+        snapshot_commit_sha=SHA,
+        snapshot_available_at=datetime(2025, 8, 25, 0, 0, tzinfo=UTC),
+        imported_at=IMPORTED,
+    )
+    assert result.result_count == 1
+    observation = result.observations[0]
+    assert observation.home_team_id == "openfootball:EPL:arsenal-fc"
+    assert observation.away_team_id == "openfootball:EPL:chelsea-fc"
+    assert observation.source_reported_local_time == "17:00"
+    assert observation.source_timezone == "UNKNOWN"
+    assert observation.kickoff_at is None

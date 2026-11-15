@@ -1,8 +1,9 @@
 """Strict parser for OpenFootball Football.TXT season archives.
 
-The source format supplies calendar dates but generally no exact kickoff
-clock/timezone. Matchday date lines may omit the year; infer it from the season
-header and chronological year rollover rather than reusing a previous date. Parsed observations therefore retain kickoff_date and never
+The source format supplies calendar dates and may include a reported local
+kickoff clock on the fixture line, but it does not establish a timezone.
+Preserve that clock separately and never infer kickoff_at. Matchday date lines
+may omit the year; infer it from the season header and year rollover. Parsed observations therefore retain kickoff_date and never
 invent kickoff_at. Snapshot availability comes from the exact repository
 commit timestamp supplied by the caller; import time is recorded separately.
 """
@@ -134,6 +135,11 @@ def parse_archive(
             rejected += 1
             continue
         home_name, away_and_score = re.split(r"\s+v\s+", stripped, maxsplit=1)
+        source_reported_local_time = None
+        time_match = re.match(r"^(\d{1,2}[:.]\d{2})\s+(.+)$", home_name.strip())
+        if time_match:
+            source_reported_local_time = time_match.group(1)
+            home_name = time_match.group(2)
         score_match = _SCORE_LINE.search(away_and_score)
         if not score_match:
             continue
@@ -178,6 +184,8 @@ def parse_archive(
             availability_basis="immutable_github_commit_and_import_timestamp_with_date_boundary",
             point_in_time_certifiable=True,
             payload_sha256=hashlib.sha256(line.encode("utf-8")).hexdigest(),
+            source_reported_local_time=source_reported_local_time,
+            source_timezone="UNKNOWN",
         ))
         result_count += 1
 

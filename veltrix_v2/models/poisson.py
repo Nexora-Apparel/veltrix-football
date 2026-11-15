@@ -41,6 +41,8 @@ class MatchObservation:
     evidence_manifest_sha256: str | None = None
     capture_evidence_sha256: str | None = None
     provider_competition_id: str | None = None
+    source_reported_local_time: str | None = None
+    source_timezone: str = "UNKNOWN"
 
 
 @dataclass(frozen=True)
