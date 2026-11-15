@@ -93,16 +93,9 @@ def run_dispatch(
         raise RuntimeError("TELEGRAM_DESTINATION_IDENTITY_MISMATCH")
 
     bundle_path = Path(bundle_path_value)
-    parts = bundle_path.parts
-    if (
-        bundle_path.is_absolute()
-        or ".." in parts
-        or len(parts) < 4
-        or parts[0] != "command-data"
-        or parts[1] != "public-data"
-        or parts[2] != "bundles"
-        or not bundle_path.name.endswith(".bundle.json")
-    ):
+    # Website and Telegram must read the exact same immutable publication bytes.
+    # Do not accept per-surface or versioned copies in the delivery runner.
+    if bundle_path != Path("command-data/public-data/v2_report_bundle.json"):
         raise RuntimeError("PORTABLE_REPORT_BUNDLE_PATH_NOT_ALLOWLISTED")
     raw_bundle = bundle_path.read_bytes()
     if not raw_bundle or len(raw_bundle) > PORTABLE_BUNDLE_MAX_BYTES:
