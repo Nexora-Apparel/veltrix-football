@@ -1,6 +1,13 @@
-name: VELTRIX Phase 5 — Manual 5Dollar Shadow Capture
+name: VELTRIX Phase 2 — 5Dollar Fixture Evidence Capture (No Model)
 
 on:
+  push:
+    branches:
+      - integration/v2-report-bundle-wiring-20261114
+    paths:
+      - ".github/workflows/phase5-5dollar-shadow-capture.yml"
+      - "scripts/phase5_collect_5dollar_shadow.py"
+      - "tests/scripts/test_phase5_collect_5dollar_shadow.py"
   workflow_dispatch:
     inputs:
       history_days:
@@ -28,7 +35,7 @@ concurrency:
 
 jobs:
   capture:
-    name: Bounded provider capture and shadow admission
+    name: Bounded provider fixture snapshot capture (no model or paper ledger)
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -47,26 +54,27 @@ jobs:
           python -m pip install -e . "psycopg[binary]>=3.2,<4"
 
       - name: Validate dry-run mode
-        run: python -m scripts.phase5_collect_5dollar_shadow --persist-staging
+        run: python -m scripts.phase5_collect_5dollar_shadow --persist-staging --fixtures-only
 
-      - name: Execute bounded first-observed shadow capture
+      - name: Execute bounded fixture evidence capture only
         env:
           FIVEDOLLARFOOTBALL_API_KEY: ${{ secrets.FIVEDOLLARFOOTBALL_API_KEY }}
           VELTRIX_STAGING_DATABASE_URL: ${{ secrets.VELTRIX_STAGING_DATABASE_URL }}
         run: |
           python -m scripts.phase5_collect_5dollar_shadow \
             --execute \
-            --history-days "${{ inputs.history_days }}" \
-            --upcoming-days "${{ inputs.upcoming_days }}" \
-            --max-fixtures "${{ inputs.max_fixtures }}" \
+            --history-days "${{ inputs.history_days || '90' }}" \
+            --upcoming-days "${{ inputs.upcoming_days || '14' }}" \
+            --max-fixtures "${{ inputs.max_fixtures || '25' }}" \
             --out artifacts/5dollar-shadow \
-            --persist-staging
+            --persist-staging \
+            --fixtures-only
 
       - name: Upload aggregate-only audit summary
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: veltrix-5dollar-shadow-${{ github.run_id }}
+          name: veltrix-5dollar-fixture-evidence-${{ github.run_id }}
           path: artifacts/5dollar-shadow/public_summary.json
           if-no-files-found: warn
           retention-days: 7

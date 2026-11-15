@@ -36,7 +36,6 @@ from veltrix_v2.data.temporal_eligibility import resolve_rights_status
 from veltrix_v2.ledger.admission import admit_prospective_observed_shadow_forecasts
 from veltrix_v2.ledger.jsonl_store import JsonlPaperLedgerStore
 from veltrix_v2.ledger.postgres_store import PostgresPaperLedgerStore
-from veltrix_v2.models.engine import predict_batch
 
 from scripts.phase5_staging_coverage_audit import validate_staging_dsn_target
 
@@ -257,6 +256,58 @@ def _build_public_summary(summary: dict[str, object]) -> dict[str, object]:
     if "persisted_shadow_ledger_events" in summary:
         result["paper_ledger_events_appended"] = summary["persisted_shadow_ledger_events"]
     return result
+
+def _build_fixtures_only_summary(
+    *,
+    requests_used: int,
+    history_days: int,
+    upcoming_days: int,
+    max_fixtures: int,
+    crosswalk_registry: dict[str, object],
+    captured_first_observed_rows: int,
+    rejected_first_observed_rows: int,
+    mapped_upcoming_targets: int,
+    persisted_capture_pages: int,
+) -> dict[str, object]:
+    """Summarize source-evidence capture without importing or executing a model."""
+    return {
+        "status": (
+            "FIXTURE_SNAPSHOT_CAPTURE_COMPLETE"
+            if mapped_upcoming_targets > 0 else "NO_UPCOMING_FIXTURE_TARGETS"
+        ),
+        "provider": "5DollarFootballAPI",
+        "requests_used": requests_used,
+        "request_cap": MAX_REQUESTS,
+        "history_days": history_days,
+        "upcoming_days": upcoming_days,
+        "max_fixtures": max_fixtures,
+        "crosswalk_registry": crosswalk_registry,
+        "captured_first_observed_rows": captured_first_observed_rows,
+        "rejected_first_observed_rows": rejected_first_observed_rows,
+        "mapped_upcoming_targets": mapped_upcoming_targets,
+        "fixture_snapshot_only": True,
+        "model_execution": False,
+        "forecast_count": 0,
+        "admitted_shadow_predictions": 0,
+        "persisted_shadow_ledger_events": 0,
+        "paper_ledger_persisted_to_staging": False,
+        "paper_ledger_chain_verified": False,
+        "paper_ledger_post_commit_verified": False,
+        "persisted_capture_pages": persisted_capture_pages,
+        "evidence_persisted_to_staging": persisted_capture_pages > 0,
+        "publication_status": "LOCKED_FIXTURE_DISCOVERY_ONLY",
+        "settlement_status": "NOT_SETTLED",
+        "database_writes": persisted_capture_pages > 0,
+        "normalized_fixture_writes": 0,
+        "normalized_result_writes": 0,
+        "feature_writes": 0,
+        "prediction_writes": 0,
+        "odds_quote_writes": 0,
+        "telegram_delivery": False,
+        "schedule_activation": False,
+        "public_publication": False,
+    }
+
 
 def _persist_fixture_snapshot_to_staging(
     dsn: str,
@@ -718,6 +769,7 @@ def run_capture(
     max_fixtures: int,
     out_dir: Path,
     persist_staging: bool = False,
+    fixtures_only: bool = False,
 ) -> dict[str, object]:
     if not api_key.strip():
         raise ValueError("FIVEDOLLAR_API_KEY_MISSING")
@@ -847,6 +899,36 @@ def run_capture(
     targets = sorted(target_by_fixture.values(), key=lambda item: (item.kickoff_at, item.fixture_id))
     targets = targets[:max_fixtures]
 
+    if fixtures_only:
+        persisted_capture_pages = sum(
+            1 for page in page_manifests if page.get("persisted_to_staging")
+        )
+        summary = _build_fixtures_only_summary(
+            requests_used=request_count,
+            history_days=history_days,
+            upcoming_days=upcoming_days,
+            max_fixtures=max_fixtures,
+            crosswalk_registry=registry.summary(),
+            captured_first_observed_rows=len(observations),
+            rejected_first_observed_rows=sum(
+                sum(page.get("rejected_observations", {}).values())
+                for page in page_manifests
+            ),
+            mapped_upcoming_targets=len(targets),
+            persisted_capture_pages=persisted_capture_pages,
+        )
+        out_dir.mkdir(parents=True, exist_ok=True)
+        (out_dir / "summary.json").write_text(
+            json.dumps(summary, indent=2, sort_keys=True), encoding="utf-8"
+        )
+        (out_dir / "public_summary.json").write_text(
+            json.dumps(_build_public_summary(summary), indent=2, sort_keys=True),
+            encoding="utf-8",
+        )
+        return summary
+
+    from veltrix_v2.models.engine import predict_batch
+
     cutoff_at = datetime.now(timezone.utc)
     forecast_report = predict_batch(
         observations, targets, cutoff_at=cutoff_at, max_fixtures=max_fixtures
@@ -970,6 +1052,8 @@ def main() -> int:
     parser.add_argument("--out", default="artifacts/5dollar-shadow")
     parser.add_argument("--persist-staging", action="store_true",
                         help="append raw capture evidence to the allowlisted staging database")
+    parser.add_argument("--fixtures-only", action="store_true",
+                        help="capture provider fixture evidence only; do not import or execute a model or write paper predictions")
     args = parser.parse_args()
 
     if not args.execute:
@@ -985,6 +1069,9 @@ def main() -> int:
             "manual_only": True,
             "publication": "DISABLED",
             "persist_staging": args.persist_staging,
+            "fixtures_only": args.fixtures_only,
+            "model_execution": False,
+            "prediction_writes": False,
         }, indent=2))
         return 0
 
@@ -1001,6 +1088,7 @@ def main() -> int:
         max_fixtures=args.max_fixtures,
         out_dir=Path(args.out),
         persist_staging=args.persist_staging,
+        fixtures_only=args.fixtures_only,
     )
     print(json.dumps({
         "status": result["status"],
@@ -1014,6 +1102,10 @@ def main() -> int:
         "paper_ledger_post_commit_verified": result["paper_ledger_post_commit_verified"],
         "publication_status": result["publication_status"],
         "settlement_status": result["settlement_status"],
+        "fixture_snapshot_only": result.get("fixture_snapshot_only", False),
+        "model_execution": result.get("model_execution", True),
+        "prediction_writes": result.get("prediction_writes", None),
+        "odds_quote_writes": result.get("odds_quote_writes", None),
     }, indent=2))
     return 0
 

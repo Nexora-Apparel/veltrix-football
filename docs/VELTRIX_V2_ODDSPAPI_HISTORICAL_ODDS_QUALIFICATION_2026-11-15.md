@@ -102,7 +102,7 @@ Read-only queries against Neon project `withered-sky-75161174`, branch `br-silen
 - 389 accepted AI Midas crosswalk versions remain present: 20 TEAM + 369 FIXTURE, with no missing reviewer/evidence references. The two absent canonical fixtures have zero AI Midas fixture-crosswalk rows.
 - 763/763 5Dollar opening-odds observations remain present and PIT-eligible as opening quotes only.
 - 2,496 canonical `fixture_results` rows are linked to source observations and rights approvals. Their availability basis is `provider_finished_status_conservative_4d`; this is a conservative post-match settlement-label availability rule, not pre-match feature availability.
-- The prospective paper ledger contains 25 `SHADOW_PREDICTION` events, all from `veltrix-results-poisson-v1`, all with `point_in_time_certifiable=false`, no odds snapshot link and no settlement link. Their kickoff dates span 18–21 November 2026. These legacy/non-PIT records must not count toward any market certification threshold or be silently upgraded. They require a new independently validated V2 model and a new valid prospective evidence series.
+- The prospective paper ledger contains 25 `SHADOW_PREDICTION` events, all from `veltrix-results-poisson-v1`, all with `point_in_time_certifiable=false`, no odds snapshot link and no settlement link. Their kickoff dates span 18–21 November 2026. These V2 Poisson v1 first-observed non-PIT records must not count toward any market certification threshold or be silently upgraded. They require a new independently validated V2 model and a new valid prospective evidence series.
 - No OddsPapi provider response, source observation or source-approval record exists.
 - No prospective selection or settlement has been admitted from these 25 shadow records.
 
