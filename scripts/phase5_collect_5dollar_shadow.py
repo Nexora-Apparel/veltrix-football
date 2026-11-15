@@ -210,24 +210,50 @@ def _hash_files(paths: tuple[str, ...]) -> str:
     return sha256(payload).hexdigest()
 
 
+def _capture_completion_status(
+    admitted_count: int,
+    staging_ledger: dict[str, object] | None,
+    *,
+    persist_staging: bool,
+) -> str:
+    """Distinguish new durable predictions from successful duplicate-only replays."""
+    if admitted_count <= 0:
+        return "NO_ADMISSIBLE_SHADOW_FORECASTS"
+    if not persist_staging or staging_ledger is None:
+        return "SHADOW_CAPTURE_ADMITTED_NOT_PERSISTED"
+    if staging_ledger.get("chain_verified") is not True:
+        return "SHADOW_CAPTURE_LEDGER_CHAIN_UNVERIFIED"
+    appended = int(staging_ledger.get("events_appended", 0))
+    duplicates = int(staging_ledger.get("duplicate_predictions_skipped", 0))
+    if appended > 0:
+        return "SHADOW_CAPTURE_COMPLETE"
+    if duplicates > 0:
+        return "SHADOW_CAPTURE_COMPLETE_DUPLICATES_ONLY"
+    return "SHADOW_CAPTURE_ADMITTED_WITHOUT_LEDGER_EVENTS"
+
+
 def _build_public_summary(summary: dict[str, object]) -> dict[str, object]:
     """Explicit allowlist projection; never expose IDs, hashes, odds or probabilities."""
     allowed = (
         "status", "provider", "requests_used", "request_cap",
         "crosswalk_registry", "captured_first_observed_rows",
-        "mapped_upcoming_targets", "forecast_count",
-        "admitted_shadow_predictions", "persisted_capture_pages",
-        "persisted_shadow_ledger_events", "paper_ledger_persisted_to_staging",
-        "paper_ledger_chain_verified", "duplicate_predictions_skipped",
+        "rejected_first_observed_rows", "mapped_upcoming_targets",
+        "forecast_count", "admitted_shadow_predictions",
+        "new_shadow_predictions_persisted", "persisted_capture_pages",
+        "persisted_shadow_ledger_events", "duplicate_predictions_skipped",
+        "paper_ledger_persisted_to_staging", "paper_ledger_chain_verified",
         "evidence_persisted_to_staging", "publication_status",
         "settlement_status", "database_writes",
     )
-    return {
+    result = {
         **{key: summary[key] for key in allowed if key in summary},
         "telegram_delivery": False,
         "schedule_activation": False,
         "public_publication": False,
     }
+    if "persisted_shadow_ledger_events" in summary:
+        result["paper_ledger_events_appended"] = summary["persisted_shadow_ledger_events"]
+    return result
 
 def _persist_fixture_snapshot_to_staging(
     dsn: str,
@@ -817,7 +843,7 @@ def run_capture(
         1 for page in page_manifests if page.get("persisted_to_staging")
     )
     summary = {
-        "status": "SHADOW_CAPTURE_COMPLETE" if admission.admitted else "NO_ADMISSIBLE_SHADOW_FORECASTS",
+        "status": _capture_completion_status(len(admission.admitted), staging_ledger, persist_staging=persist_staging),
         "provider": "5DollarFootballAPI",
         "approval_id": current_approval.approval_id,
         "competition_scope": competition_ids,
@@ -828,12 +854,14 @@ def run_capture(
         "max_fixtures": max_fixtures,
         "crosswalk_registry": registry.summary(),
         "captured_first_observed_rows": len(observations),
+        "rejected_first_observed_rows": sum(sum(page.get("rejected_observations", {}).values()) for page in page_manifests),
         "mapped_upcoming_targets": len(targets),
         "forecast_count": forecast_report.forecast_count,
         "skipped_no_history": forecast_report.skipped_no_history,
         "skipped_invalid_targets": forecast_report.skipped_invalid_targets,
         "admitted_shadow_predictions": len(admission.admitted),
         "persisted_shadow_ledger_events": int(staging_ledger.get("events_appended", 0)) if staging_ledger else 0,
+        "new_shadow_predictions_persisted": int(staging_ledger.get("events_appended", 0)) if staging_ledger else 0,
         "paper_ledger_chain_verified": bool(staging_ledger and staging_ledger.get("chain_verified") is True),
         "duplicate_predictions_skipped": int(staging_ledger.get("duplicate_predictions_skipped", 0)) if staging_ledger else 0,
         "rejected_admissions": [
@@ -877,30 +905,7 @@ def run_capture(
     (out_dir / "summary.json").write_text(
         json.dumps(summary, indent=2, sort_keys=True), encoding="utf-8"
     )
-    public_summary = {
-        "status": summary["status"],
-        "provider": summary["provider"],
-        "requests_used": summary["requests_used"],
-        "request_cap": summary["request_cap"],
-        "crosswalk_registry": summary["crosswalk_registry"],
-        "captured_first_observed_rows": summary["captured_first_observed_rows"],
-        "mapped_upcoming_targets": summary["mapped_upcoming_targets"],
-        "forecast_count": summary["forecast_count"],
-        "admitted_shadow_predictions": summary["admitted_shadow_predictions"],
-        "persisted_capture_pages": summary["persisted_capture_pages"],
-        "evidence_persisted_to_staging": summary["evidence_persisted_to_staging"],
-        "paper_ledger_persisted_to_staging": summary["paper_ledger_persisted_to_staging"],
-        "paper_ledger_events_appended": (
-            summary["staging_paper_ledger"]["events_appended"]
-            if summary["staging_paper_ledger"] else 0
-        ),
-        "publication_status": summary["publication_status"],
-        "settlement_status": summary["settlement_status"],
-        "database_writes": summary["database_writes"],
-        "telegram_delivery": False,
-        "schedule_activation": False,
-        "public_publication": False,
-    }
+    public_summary = _build_public_summary(summary)
     (out_dir / "public_summary.json").write_text(
         json.dumps(public_summary, indent=2, sort_keys=True), encoding="utf-8"
     )
