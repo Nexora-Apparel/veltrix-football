@@ -107,6 +107,25 @@ def _truthy(value: object) -> bool:
     return str(value).strip().casefold() in {"true", "1", "yes", "y"}
 
 
+
+def authorization_evidence() -> dict:
+    """Return the hash-bound, non-commercial project authorization record."""
+    if not AUTHORIZATION_RECORD.is_file():
+        raise RuntimeError("OPENPLAY_AUTHORIZATION_RECORD_MISSING")
+    return {
+        "status": "USER_CONFIRMED_NONCOMMERCIAL_AUTHORIZATION",
+        "uri": AUTHORIZATION_URI,
+        "sha256": _sha256(AUTHORIZATION_RECORD.read_bytes()),
+        "rights_basis": "WRITTEN_PERMISSION",
+        "permitted_uses": [
+            "collection", "storage", "historical_import", "internal_analysis",
+            "model_training", "model_validation", "derived_research",
+        ],
+        "commercial_use_allowed": False,
+        "raw_redistribution_allowed": False,
+    }
+
+
 def audit_release(output_dir: str | Path) -> dict:
     root = Path(output_dir)
     root.mkdir(parents=True, exist_ok=True)
@@ -193,9 +212,7 @@ def audit_release(output_dir: str | Path) -> dict:
             "matches_with_data_issues": int(row.get("matches_with_data_issues") or 0),
         })
 
-    if not AUTHORIZATION_RECORD.is_file():
-        raise RuntimeError("OPENPLAY_AUTHORIZATION_RECORD_MISSING")
-    authorization_sha256 = _sha256(AUTHORIZATION_RECORD.read_bytes())
+    rights_evidence = authorization_evidence()
     report = {
         "schema_version": "openplay-release-qualification-v2",
         "status": "FAILED" if schema_failures else "PASS_NONCOMMERCIAL_SOURCE_QUALIFIED",
@@ -206,18 +223,7 @@ def audit_release(output_dir: str | Path) -> dict:
         "non_commercial_only": True,
         "commercial_use_allowed": False,
         "monetisation_prohibited": True,
-        "authorization_evidence": {
-            "status": "USER_CONFIRMED_NONCOMMERCIAL_AUTHORIZATION",
-            "uri": AUTHORIZATION_URI,
-            "sha256": authorization_sha256,
-            "rights_basis": "WRITTEN_PERMISSION",
-            "permitted_uses": [
-                "collection", "storage", "historical_import", "internal_analysis",
-                "model_training", "model_validation", "derived_research",
-            ],
-            "commercial_use_allowed": False,
-            "raw_redistribution_allowed": False,
-        },
+        "authorization_evidence": rights_evidence,
         "read_only": True,
         "database_writes": 0,
         "prediction_code_access": False,
