@@ -124,6 +124,7 @@ def test_provider_rights_evaluator_checks_provider_scope_terms_entitlement_and_q
     lambda data: data["entitlement"].update(status="EXPIRED"),
     lambda data: data["entitlement"]["quota"].update(remaining=0),
     lambda data: data["terms"].update(status="NOT_ACCEPTED"),
+    lambda data: (data.pop("terms_version"), data["terms"].pop("version")),
 ])
 def test_provider_rights_evaluator_denies_missing_or_invalid_permission(mutation):
     raw = json.loads(_rights_bytes())
