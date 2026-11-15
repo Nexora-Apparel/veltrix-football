@@ -33,7 +33,9 @@ jobs:
           python -m pip install -e . "psycopg[binary]>=3.2,<4"
 
       - name: Validate dry-run mode
-        run: python -m scripts.phase5_settle_5dollar_shadow
+        run: |
+          python -m scripts.phase5_settle_5dollar_shadow > /tmp/veltrix-settlement-dry-run.json
+          python -c 'import json; d=json.load(open("/tmp/veltrix-settlement-dry-run.json")); assert d["mode"] == "DRY_RUN" and d["would_connect_to_database"] is False and d["would_call_provider"] is False and d["would_write_database"] is False and d["settlement"] is False'
 
       - name: Execute bounded prospective settlement
         env:
