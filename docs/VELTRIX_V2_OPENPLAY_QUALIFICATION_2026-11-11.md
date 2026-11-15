@@ -74,18 +74,18 @@ The release is a static snapshot through 2025/26. It is not a current 2026/27 pl
 - Technical integrity: **PASS**.
 - Historical player/lineup/xG data candidate: **accepted for continued isolated research and feature-contract development**.
 - Rights status: **APPROVED FOR NON-COMMERCIAL VELTRIX FOOTBALL USE**; Neon staging approval `approval-openplay-whoscored-opta-noncommercial-2026-11-15` is hash-bound to the project authorization record. The project-wide overlay is `approval-veltrix-all-source-noncommercial-2026-11-15`. Monetisation is prohibited.
-- Isolated technical ingestion: **APPROVED TO PROCEED**, subject to provenance, point-in-time and data-quality controls.
+- Isolated technical ingestion: **PASS** — 15 raw assets persisted to Neon staging, linked to 15 immutable source observations and a completed capture manifest; independent hash/read-back audit passed.
 - Non-commercial model training and evaluation: **APPROVED TO PROCEED**.
 - Commercial use / monetisation: **PROHIBITED**.
-- Neon writes: zero.
+- Neon staging writes: 15 immutable provider responses, 15 linked dataset-asset source observations and one completed capture manifest. Production database writes: zero.
 - Prediction models changed: no.
 - Telegram publication/schedule: unchanged and stopped.
 
 ## Next engineering work
 
-1. Preserve this pinned release and its hashes as the historical research baseline.
-2. Build a competition-season coverage-aware adapter that keeps source xG model IDs, native player/team IDs, source timestamps and data-issue flags.
-3. Create point-in-time player form, minutes, expected-minutes, shot-quality and team-style features without post-kickoff leakage.
+1. Build a competition-season coverage-aware Parquet adapter that preserves source xG model IDs, native player/team IDs, match IDs, and all known-gap/data-issue flags.
+2. Extract row-level historical features from the immutable staging assets with DuckDB; never write them into the historical PIT lane without a defensible availability timestamp.
+3. Create player form, minutes, expected-minutes, shot-quality and team-style features using chronological as-of joins and no post-kickoff leakage.
 4. Exclude known gaps and issue rows according to predeclared rules.
-5. Preserve the registered source-specific and project-wide authorization records; any new source or changed use must inherit the non-commercial restriction and retain its source-level attribution/provenance.
-6. Find a separate rights-cleared current-season player/lineup provider; this static release does not provide a current 2026/27 feed and FPL automated ingestion remains excluded after terms review.
+5. Preserve the registered source-specific and project-wide authorization records; any new source or changed use must inherit the non-commercial restriction and retain source attribution/provenance.
+6. Qualify a current 2026/27 player/lineup source; this static release ends at 2025/26. The project-wide authorization covers non-commercial use, but endpoint access and data coverage must still be proven.
