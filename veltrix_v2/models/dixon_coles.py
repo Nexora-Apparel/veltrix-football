@@ -87,6 +87,78 @@ def fit_dixon_coles_rho(
     )
 
 @dataclass(frozen=True)
+class DixonColesTrainingRateRow:
+    fixture_id: str
+    kickoff_at: object
+    available_at: object
+    recorded_at: object
+    expected_home_goals: float
+    expected_away_goals: float
+    home_goals: int
+    away_goals: int
+
+
+def build_dixon_coles_rate_history(
+    observations: Iterable[object], *, competition_id: str, as_of,
+) -> tuple[DixonColesTrainingRateRow, ...]:
+    """Precompute each historical match's strictly pre-kickoff Poisson rates once.
+
+    These immutable rows can be reused across later target cutoffs in the same
+    competition. A target fold still filters each result by its own available
+    and recorded clocks before fitting rho.
+    """
+    from datetime import timedelta
+    from veltrix_v2.models.poisson import (
+        MatchObservation, observation_eligible_as_of, predict_match,
+    )
+    source = list(observations)
+    if any(not isinstance(row, MatchObservation) for row in source):
+        raise ValueError("DIXON_COLES_OBSERVATION_TYPE_INVALID")
+    source.sort(key=lambda row: row.kickoff_at or row.available_at)
+    rate_rows: list[DixonColesTrainingRateRow] = []
+    for historical in source:
+        if historical.competition_id != competition_id or historical.kickoff_at is None:
+            continue
+        if historical.point_in_time_certifiable is not True:
+            continue
+        if not observation_eligible_as_of(
+            historical, cutoff_at=as_of, competition_id=competition_id
+        ):
+            continue
+        historical_cutoff = historical.kickoff_at - timedelta(seconds=1)
+        prior = [
+            row for row in source
+            if row.fixture_id != historical.fixture_id
+            and row.competition_id == competition_id
+            and row.point_in_time_certifiable is True
+            and observation_eligible_as_of(
+                row, cutoff_at=historical_cutoff, competition_id=competition_id
+            )
+        ]
+        try:
+            baseline = predict_match(
+                prior, competition_id=competition_id,
+                home_team_id=historical.home_team_id,
+                away_team_id=historical.away_team_id,
+                kickoff_at=historical.kickoff_at,
+                cutoff_at=historical_cutoff,
+            )
+        except (TypeError, ValueError):
+            continue
+        rate_rows.append(DixonColesTrainingRateRow(
+            fixture_id=historical.fixture_id,
+            kickoff_at=historical.kickoff_at,
+            available_at=historical.available_at,
+            recorded_at=historical.recorded_at,
+            expected_home_goals=baseline.expected_home_goals,
+            expected_away_goals=baseline.expected_away_goals,
+            home_goals=historical.home_goals,
+            away_goals=historical.away_goals,
+        ))
+    return tuple(rate_rows)
+
+
+@dataclass(frozen=True)
 class FittedDixonColesPrediction:
     prediction: object
     fit: DixonColesFit
@@ -97,6 +169,7 @@ def predict_dixon_coles_match(
     competition_id: str, home_team_id: str, away_team_id: str,
     kickoff_at, cutoff_at, minimum_fit_rows: int = 30,
     rho_min: float = -0.2, rho_max: float = 0.2, grid_step: float = 0.001,
+    rate_history: Iterable[DixonColesTrainingRateRow] | None = None,
 ):
     """Fit rho from rolling, strictly earlier training predictions, then score target.
 
@@ -113,46 +186,22 @@ def predict_dixon_coles_match(
     if any(not isinstance(row, MatchObservation) for row in source):
         raise ValueError("DIXON_COLES_OBSERVATION_TYPE_INVALID")
     source.sort(key=lambda row: row.kickoff_at or row.available_at)
-    rate_rows = []
-    for historical in source:
-        if historical.competition_id != competition_id:
-            continue
-        if historical.point_in_time_certifiable is not True:
-            continue
-        if historical.kickoff_at is None:
-            continue
-        # A past kickoff alone does not prove its result was knowable at the
-        # target cutoff. Enforce both publication/availability and ingestion
-        # clocks for the rho-training outcome itself.
-        if not observation_eligible_as_of(
-            historical, cutoff_at=cutoff_at, competition_id=competition_id
-        ):
-            continue
-        historical_cutoff = historical.kickoff_at - timedelta(seconds=1)
-        if historical_cutoff >= cutoff_at:
-            continue
-        prior = [
-            row for row in source
-            if row.fixture_id != historical.fixture_id
-            and row.competition_id == competition_id
-            and row.point_in_time_certifiable is True
-            and observation_eligible_as_of(row, cutoff_at=historical_cutoff,
-                                           competition_id=competition_id)
-        ]
-        try:
-            baseline = predict_match(
-                prior, competition_id=competition_id,
-                home_team_id=historical.home_team_id,
-                away_team_id=historical.away_team_id,
-                kickoff_at=historical.kickoff_at,
-                cutoff_at=historical_cutoff,
-            )
-        except (TypeError, ValueError):
-            continue
-        rate_rows.append((
-            baseline.expected_home_goals, baseline.expected_away_goals,
-            historical.home_goals, historical.away_goals,
-        ))
+    precomputed = (
+        build_dixon_coles_rate_history(source, competition_id=competition_id, as_of=cutoff_at)
+        if rate_history is None else tuple(rate_history)
+    )
+    if any(not isinstance(row, DixonColesTrainingRateRow) for row in precomputed):
+        raise ValueError("DIXON_COLES_RATE_HISTORY_INVALID")
+    # The target fold admits only rate rows whose result was both available
+    # and recorded by this exact target cutoff and whose match predates target.
+    rate_rows = [
+        (row.expected_home_goals, row.expected_away_goals,
+         row.home_goals, row.away_goals)
+        for row in precomputed
+        if row.kickoff_at < kickoff_at
+        and row.available_at <= cutoff_at
+        and row.recorded_at <= cutoff_at
+    ]
     fitted = fit_dixon_coles_rho(
         rate_rows, minimum_rows=minimum_fit_rows, rho_min=rho_min,
         rho_max=rho_max, grid_step=grid_step,
