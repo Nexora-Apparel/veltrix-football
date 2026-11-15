@@ -190,3 +190,13 @@ At the time of this ledger:
 - The next bounded capture trigger is being advanced sequentially; a batch is not counted until workflow completion and independent DB reconciliation.
 - Formal exit decision: `docs/VELTRIX_V2_STAGE2_FINAL_EXIT_DECISION_2026-11-15.md` — **NO-GO / STAGE 2 NOT COMPLETE / NOT RELEASE-READY**. Stage 3 remains on hold. Historical/closing odds, 98% coverage, prospective settlements, walk-forward sample thresholds and other evidence gates remain open.
 - Release controls unchanged: PR #120 draft/open/unmerged; no production writes/deployment, publication, Telegram send, schedule activation or value-betting unlock.
+
+
+### Opening-odds acquisition update — 2026-11-15 (manifests 109–119)
+
+- Eleven manifests (109–119) are independently reconciled: 275/275 request rows, 275/275 provider responses, 275/275 opening quote observations, 275 distinct fixtures and 275 PIT-eligible observations.
+- All 275 rows map to canonical fixtures, preserve valid provider opening timestamp ordering, use Bet365 1X2 and have active RESOLVED fixture crosswalks. No duplicates or ineligible rows.
+- Coverage: 275/763 = 36.04%; 488 remain to full universe; 473 more are required to reach the 98% minimum (748/763).
+- Latest completed batch: workflow [#43733924743](https://github.com/Nexora-Apparel/veltrix-football/actions/runs/43733924743), artifact [#14169571727](https://github.com/Nexora-Apparel/veltrix-football/actions/runs/43733924743/artifacts/14169571727), SHA-256 `0a186a816796490c3da46492ac06b01ed9997b7609c20d552a61bb47f54bf5bd`.
+- Manifest 120 / workflow #43734128538 is currently in progress and is excluded from the 275 verified total until job success and independent reconciliation.
+- Formal decision remains **NO-GO — Stage 2 not complete / not release-ready**. See `docs/VELTRIX_V2_STAGE2_FINAL_EXIT_DECISION_2026-11-15.md`. Historical/closing odds entitlement and certification thresholds remain blocked. Stage 3 stays on hold.
