@@ -84,3 +84,14 @@ The correction and regression test are committed on PR #120:
 - Exact-head Phase 2, PostgreSQL 16/18, Phase 5 shadow, historical audit and certification-integrity checks: PASS on `c0ff02f2b021cf9afbe942056e011e59cc9cbc4a`.
 
 No provider odds requests have been made. The 763 count is a fixture-universe count, not a quote-coverage result. The manual workflow is still on the draft PR branch and cannot be dispatched until the workflow exists on the default branch; no merge is authorized here. Once available, execute bounded batches (maximum 25 fixture requests, one request per fixture, no retries) and measure actual timestamped quote coverage from persisted observations.
+
+
+## 5Dollar opening-odds capture and historical-odds gate — 2026-11-15
+The first bounded Community capture completed successfully:
+- Workflow [#43727509783](https://github.com/Nexora-Apparel/veltrix-football/actions/runs/43727509783), job `132852553767`, exact commit `70b1a8ef1742975464f74dfefcf8dac265d46d86`; 26 focused tests passed.
+- 25 fixture requests, no retries; 26 provider requests including fresh status preflight. Community quota profile: 300/hour, 20/minute; remaining 299 before fixture calls and 274 after.
+- 25 Bet365 1X2 opening quotes inserted and independently read back from staging; all 25 have provider opening timestamps before kickoff and retrieval after opening. All 25 exact-match their canonical fixture crosswalks.
+- Capture manifest 109; 25 request rows; provider response IDs 462–486; observation IDs 431621–431645. Artifact #14166689086; ZIP SHA-256 `b8a6b0594294fdd4b6178ebab0e010c2a30fb15b87686c3ba30457dae82fd171`.
+- Eligible 90-day universe: 763 fixtures; 25/763 = 3.28%; 738 outstanding. All 763 have exactly one active RESOLVED fixture crosswalk. Per-competition quote counts: Brazil Serie A 1/115; Brazil Serie B 10/151; England Premier League 6/100; France Ligue 1 2/90; Germany Bundesliga I 0/81; Italy Serie A 0/110; Spain La Liga 6/116.
+- Historical odds: 0 5Dollar historical tick observations; the full history endpoint requires Ultra, not entitled. The Odds API has 3 catalogue-only `/v4/sports/` responses and 0 event/historical odds requests. No CLV/closing movement evidence. The 98% timestamped odds coverage target remains unmet.
+- The 25 opening observations are an eligible timestamped subset only; do not infer full competition/season coverage or model certification. Keep value betting locked.
