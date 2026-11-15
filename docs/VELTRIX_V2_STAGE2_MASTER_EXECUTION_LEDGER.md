@@ -79,9 +79,9 @@ Authoritative rights documents:
 
 Only perform these existing-work closure tasks; do not add new scope.
 
-1. **Reconcile Community probe rights contract and tests.** Inspect the approval object, rights evidence file/hash, secret reference, request budget, quota guard and test fixtures. Make the smallest correction so commercial use is false and the current approval ID/evidence is used. Run focused offline tests.
-2. **Run the existing Community qualification workflow** once safely dispatchable. It is read-only, 365-day qualification only; retain exact run URL, report and quota evidence. Stop on any mismatch or request-budget guard.
-3. **Inspect existing OpenFootball and FootballData workflow artifacts.** Run the existing independent verifiers on the exact artifacts; record hashes, counts, failed sources and temporal caveats. Do not recapture unless the artifact is absent, corrupt or incomplete.
+1. **COMPLETE — Community rights contract and tests.** Exact non-commercial approval ID/evidence, Community-only secret reference, seven-competition scope, 40-request budget and quota guard reconciled. Exact-head workflow run #43726672957 executed the two Phase 2 test files: 59 passed.
+2. **COMPLETE — bounded Community qualification.** Read-only 365-day run #43726672957 qualified 2,505/2,505 fixture/result labels across seven competitions with 28/40 requests; report and artifact hashes recorded below. It is explicitly non-PIT and not pre-match feature evidence.
+3. **NEXT — Inspect existing OpenFootball and FootballData workflow artifacts.** Run the existing independent verifiers on the exact artifacts; record hashes, counts, failed sources and temporal caveats. Do not recapture unless the artifact is absent, corrupt or incomplete.
 4. **Resolve the default-branch dispatch constraint** without merging PR #120. Any workflow exposure must be minimal, reviewed and limited to the already-approved read-only capture.
 5. **Run bounded 5Dollar opening-odds capture** (maximum 25 fixture requests per run; no retries) only after the workflow is safely dispatchable. Reconcile actual persisted quote timestamps and provenance.
 6. **Reconcile crosswalk and historical-odds gates** using existing artifacts. No speculative mappings or paid calls.
@@ -97,6 +97,7 @@ Append one entry per meaningful operation. Never replace an earlier entry.
 | 2026-11-15 | Commit `c0ff02f2b021cf9afbe942056e011e59cc9cbc4a` | 5Dollar opening-odds query predicate/test correction | Focused code-head tests previously reported passing | Script/test commits listed in Section 2 | Actual quote capture remains not run |
 | 2026-11-15 | Read-only Neon staging audit | 5Dollar opening-odds target audit | 763 eligible candidates; 0 quote observations | Project/branch/database listed in Section 2 | Capture still outstanding |
 | 2026-11-15 | PR #120 head `1b50d53edd8388dbf4c9df0b04e792956fee50d0` | Repository state inspection | PR draft/open/unmerged; Community probe stale rights contract identified | `scripts/phase2_fivedollar_history_dry_run.py`; `tests/test_phase2_data_foundation.py` | Correct before workflow execution |
+| 2026-11-15 | [Workflow #43726672957](https://github.com/Nexora-Apparel/veltrix-football/actions/runs/43726672957), job `132850009142`, commit `90d984091fdde520da4126842fb5301e5a8c0990` | Community rights regression + bounded 365-day qualification | PASS — 59 tests; 2,505/2,505 importable; 7/7 competitions; pagination complete; 28/40 requests; read-only; non-PIT | [Artifact #14166776290](https://github.com/Nexora-Apparel/veltrix-football/actions/runs/43726672957/artifacts/14166776290); report SHA-256 `3bf4d797df92c293af6f346e296d3d76f7e7d9ec8988320d3992da1b5f6c668a`; ZIP SHA-256 `29e908f311ede85de1a8a8e1f824da54520da32073d0a26cb843ef033384ddea` | Continue to OpenFootball/FootballData artifact verification; no PIT admission |
 
 ## 7. Per-session update template
 
@@ -130,6 +131,22 @@ At the time of this ledger:
 - Added `test_community_probe_uses_current_noncommercial_approval_evidence` to `tests/test_phase2_data_foundation.py`, asserting the exact approval ID, non-commercial flag, evidence URI/hash, raw redistribution prohibition and competition scope.
 - Commits: authorization document `1dcdea9bc202428da9fecbad4b3dd23f3c2917f7`; script correction `8ad3b4629cf42ee5ca27da91cd4068469cfc979c`; focused regression test `db86995533dcba8b61f1c755cc6067f1137f9e73`.
 - Read-back verification: script blob `8a6dd22485a176eb22914051bbdd59fd902b0f1d`; test blob `e44c9cbc57f2f860a6c8ee45780412f4487af314`; Community workflow blob `eb309212da4a6f5de1b74334c00620bc89cb3a42` still references `FIVEDOLLARFOOTBALL_COMMUNITY_API_KEY`.
-- Test execution status: NOT RUN in this session. The GitHub Actions connector exposes no workflow-dispatch action; `fetch_commit_workflow_runs` returned no runs for the test commit. Do not claim tests passed or dispatch the provider probe yet.
-- Safety: no provider requests, database writes, production writes, deployment, schedule or Telegram sends were performed.
-- Next action: obtain an authorized way to run the focused offline tests against this exact branch head; only after tests pass, address safe dispatch of the bounded read-only Community probe.
+- Test execution: PASS — workflow run [#43726672957](https://github.com/Nexora-Apparel/veltrix-football/actions/runs/43726672957), job `132850009142`, exact checkout commit `90d984091fdde520da4126842fb5301e5a8c0990`; `tests/test_phase2_data_foundation.py` and `tests/test_db_migrations.py`: **59 passed in 0.13s**.
+- Bounded Community qualification: PASS — same run, `status=QUALIFIED`; 365-day window `2025-11-15T14:52:17Z` through `2026-11-15T14:52:17Z`; 2,505 fixtures and 2,505 importable; all seven allowlisted competitions; pagination complete; 28 requests of 40; 0 rejected, 0 quarantined, 0 duplicate fixture IDs; no failure reason.
+- Fresh account/quota evidence: Community plan; 300/hour and 20/minute; initial remaining 299, final remaining 272. Do not treat this as a future quota guarantee.
+- Report: `fivedollar-history-dry-run.json`, report SHA-256 `3bf4d797df92c293af6f346e296d3d76f7e7d9ec8988320d3992da1b5f6c668a`; artifact [#14166776290](https://github.com/Nexora-Apparel/veltrix-football/actions/runs/43726672957/artifacts/14166776290), ZIP SHA-256 `29e908f311ede85de1a8a8e1f824da54520da32073d0a26cb843ef033384ddea`.
+- Temporal boundary: report explicitly sets `point_in_time_certifiable=false`; provider finished-status conservative four-day availability is suitable for settled target labels only, not pre-match feature availability. This run does not qualify PIT history or historical model training.
+- Side effects: report records 0 database writes, 0 imports, 0 prediction changes, 0 deployments and 0 Telegram messages. Read-only qualification only.
+- Safety: no production writes, deployment, schedule activation or Telegram sends occurred.
+- Next action: proceed to the next fixed Stage 2 queue item: inspect existing OpenFootball and FootballData workflow artifacts with their independent verifiers. Do not recapture unless artifacts are absent, corrupt or incomplete.
+
+
+### Community qualification run evidence — 2026-11-15
+- Exact run: [#43726672957](https://github.com/Nexora-Apparel/veltrix-football/actions/runs/43726672957); job `132850009142`; branch `integration/v2-report-bundle-wiring-20261114`; checkout commit `90d984091fdde520da4126842fb5301e5a8c0990`; workflow event `workflow_dispatch`; conclusion `success`.
+- Test command: `python -m pytest -q tests/test_phase2_data_foundation.py tests/test_db_migrations.py`; result `59 passed in 0.13s`.
+- Probe result: `QUALIFIED`; 2,505 fixtures, all 2,505 importable, 7 competitions, 26 fixture pages, 28 total requests / 40 budget; pagination complete; no rejected, quarantined, duplicate or failed rows.
+- Account snapshot: Community plan; 300/hour; 20/minute; initial quota remaining 299; final remaining 272. Current observation only; preflight must be repeated for any later capture.
+- Report hash: `3bf4d797df92c293af6f346e296d3d76f7e7d9ec8988320d3992da1b5f6c668a`. Artifact ZIP hash: `29e908f311ede85de1a8a8e1f824da54520da32073d0a26cb843ef033384ddea`.
+- Report rights: approval `approval-5dollar-community-fixture-result-benchmarking-2026-11-14`; non-commercial; attribution required; raw redistribution prohibited; October 2026 terms.
+- Crucial temporal boundary: `availability_policy.point_in_time_certifiable=false`; conservative finished-status availability is for settled target labels only, not certified pre-match feature availability. Do not backdate or admit these rows into PIT feature training/evaluation.
+- Side effects asserted by the report: database writes 0; imports 0; prediction changes 0; deployments 0; Telegram messages 0.
