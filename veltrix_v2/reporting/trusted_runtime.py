@@ -31,7 +31,6 @@ from veltrix_v2.reporting.report_identity import ReportIdentity, verify_report_i
 REPOSITORY = "Nexora-Apparel/veltrix-football"
 WORKFLOW_PATH = ".github/workflows/report-certification-attestation.yml"
 WORKFLOW_NAME = "VELTRIX Report Certification Attestation"
-OIDC_ISSUER = "https://token.actions.githubusercontent.com"
 RAW_HOST = "raw.githubusercontent.com"
 MAX_EVIDENCE_BYTES = 8_000_000
 MAX_ATTESTATION_BYTES = 4_000_000
@@ -225,7 +224,6 @@ def _verify_sigstore_bundle(
                 "sha256:" + artifact_sha256,
                 "--bundle", bundle_file.name,
                 "--cert-identity", workflow_identity,
-                "--cert-oidc-issuer", OIDC_ISSUER,
                 "--repository", repository,
                 "--ref", "refs/heads/main",
                 "--trigger", "workflow_dispatch",
