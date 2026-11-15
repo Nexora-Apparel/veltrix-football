@@ -223,6 +223,9 @@ def eligible_openplay_features_as_of(
                 approval.get("status") == "APPROVED"
                 and approval.get("evidence_sha256") == "5e6bd00416f180109751e422521d76910da8b491c62507c4d9836e6700c38c46"
                 and set(crosswalks) == {"team", "opponent", "competition"}
+                and crosswalks.get("team", {}).get("mapping_method") == "EXACT_NAME_AND_COMPETITION_OVERLAP"
+                and crosswalks.get("opponent", {}).get("mapping_method") == "EXACT_NAME_AND_COMPETITION_OVERLAP"
+                and crosswalks.get("competition", {}).get("mapping_method") == "EXPLICIT_REGION_NAME_ALIAS"
             )
             for mapping in crosswalks.values():
                 if (mapping.get("mapping_status") != "RESOLVED"
