@@ -343,8 +343,17 @@ def recompute_raw_certification(manifest_path: str | Path, *, min_walk_forward: 
         raise EvidenceIntegrityError("Non-empty walk-forward rows require a pinned fold manifest.")
     if not isinstance(data["coverage_audit"], dict):
         raise EvidenceIntegrityError("coverage_audit must be a structured object.")
-    if data["coverage_audit"].get("rights_status") != "APPROVED_FOR_INTENDED_USE" or data["coverage_audit"].get("commercial_use_eligible") is not True:
-        raise EvidenceIntegrityError("coverage_audit does not prove approved rights for intended commercial use.")
+    rights_audit = data["coverage_audit"]
+    if (
+        rights_audit.get("rights_status") != "APPROVED_FOR_INTENDED_USE"
+        or rights_audit.get("project_use_mode") != "NON_COMMERCIAL_ONLY"
+        or rights_audit.get("noncommercial_use_eligible") is not True
+        or rights_audit.get("commercial_use_eligible") is not False
+        or rights_audit.get("raw_redistribution_allowed") is not False
+    ):
+        raise EvidenceIntegrityError(
+            "coverage_audit does not prove approved non-commercial project rights and raw-redistribution restrictions."
+        )
     approved_sources = data["coverage_audit"].get("approved_source_ids")
     if not isinstance(approved_sources, list) or not approved_sources or any(not isinstance(item, str) or not item for item in approved_sources):
         raise EvidenceIntegrityError("coverage_audit must enumerate approved source IDs.")
