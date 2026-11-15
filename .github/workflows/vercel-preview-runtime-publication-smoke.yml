@@ -1,0 +1,32 @@
+name: Vercel Preview Runtime Publication Smoke
+
+on:
+  status:
+
+permissions:
+  contents: read
+
+jobs:
+  publication-runtime-smoke:
+    if: github.event.context == 'Vercel' && github.event.state == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Probe deployed preview API
+        env:
+          PREVIEW_URL: https://veltrix-football-commands-git-integration-6168a8-nexora-apparel.vercel.app
+        run: |
+          set -euo pipefail
+          response="$(mktemp)"
+          code="$(curl --silent --show-error --location --max-time 20 \
+            --output "$response" --write-out '%{http_code}' \
+            "$PREVIEW_URL/api/dashboard-data")"
+          test "$code" = "200"
+          python - "$response" <<'PY'
+          import json, pathlib, sys
+          payload = json.loads(pathlib.Path(sys.argv[1]).read_text())
+          assert isinstance(payload, dict), "dashboard API must return a JSON object"
+          assert payload.get("status") == "UNAVAILABLE", payload
+          assert payload.get("predictions") == [], payload
+          print("DEPLOYED_RUNTIME_FAIL_CLOSED_OK")
+          PY
