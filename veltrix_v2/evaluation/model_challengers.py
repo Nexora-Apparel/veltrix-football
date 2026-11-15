@@ -19,7 +19,9 @@ from veltrix_v2.models.poisson import (
     InsufficientHistoryError, MatchObservation, observation_eligible_as_of,
     predict_match,
 )
-from veltrix_v2.models.dixon_coles import predict_dixon_coles_match
+from veltrix_v2.models.dixon_coles import (
+    build_dixon_coles_rate_history, predict_dixon_coles_match,
+)
 from veltrix_v2.evaluation.calibration import (
     apply_multiclass_temperature, fit_multiclass_temperature,
 )
@@ -233,6 +235,21 @@ def evaluate_model_challengers(
     unique.sort(key=lambda x: x.kickoff_at if _aware(x.kickoff_at)
                 else datetime.max.replace(tzinfo=evaluation_as_of.tzinfo))
 
+    # Precompute the chronological Poisson rate for each eligible historical
+    # match once per competition. Each target still refilters these rows by
+    # its own cutoff before fitting rho.
+    dixon_rate_history = {}
+    for competition in sorted({
+        row.competition_id for row in unique
+        if row.point_in_time_certifiable is True and row.competition_id
+    }):
+        try:
+            dixon_rate_history[competition] = build_dixon_coles_rate_history(
+                unique, competition_id=competition, as_of=evaluation_as_of
+            )
+        except (TypeError, ValueError):
+            dixon_rate_history[competition] = ()
+
     scored: list[FixtureCandidateRow] = []
     skipped_uncertified = skipped_future = skipped_invalid = skipped_history = 0
     for target in unique:
@@ -305,6 +322,7 @@ def evaluate_model_challengers(
                 home_team_id=target.home_team_id, away_team_id=target.away_team_id,
                 kickoff_at=target.kickoff_at, cutoff_at=cutoff,
                 minimum_fit_rows=30,
+                rate_history=dixon_rate_history.get(target.competition_id, ()),
             )
             predictions["dixon_coles"] = _normalise(ProbabilityVector(
                 dc.prediction.home_win, dc.prediction.draw, dc.prediction.away_win
