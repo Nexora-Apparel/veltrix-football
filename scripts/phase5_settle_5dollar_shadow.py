@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import argparse
 from datetime import datetime, timedelta, timezone
+from dataclasses import replace
 import json
 import os
 from pathlib import Path
@@ -136,7 +137,19 @@ def run(*, api_key: str, staging_dsn: str, out_dir: Path) -> dict:
                 )
                 snapshots.append(snapshot)
                 (out_dir / f"{competition_id}_finished_page_{page}.json").write_bytes(raw)
-                all_fixtures.extend(parsed.fixtures)
+                if not all(
+                    isinstance(snapshot.get(key), str) and len(snapshot[key]) == 64
+                    for key in ("response_sha256", "manifest_sha256")
+                ):
+                    raise RuntimeError("SETTLEMENT_CAPTURE_MANIFEST_EVIDENCE_MISSING")
+                all_fixtures.extend(
+                    replace(
+                        fixture,
+                        response_sha256=snapshot["response_sha256"],
+                        capture_manifest_sha256=snapshot["manifest_sha256"],
+                    )
+                    for fixture in parsed.fixtures
+                )
                 if not parsed.has_more:
                     break
                 page += 1
@@ -167,6 +180,8 @@ def run(*, api_key: str, staging_dsn: str, out_dir: Path) -> dict:
                     rights_evidence_sha256=payload["rights_evidence_sha256"],
                     result_availability_basis=payload["result_availability_basis"],
                     settlement_delay_basis=payload["settlement_delay_basis"],
+                    result_response_sha256=payload.get("result_response_sha256"),
+                    result_capture_manifest_sha256=payload.get("result_capture_manifest_sha256"),
                 )
                 if persisted_event.event_sha256 != event.event_sha256:
                     raise RuntimeError("PAPER_LEDGER_SETTLEMENT_HASH_MISMATCH")
