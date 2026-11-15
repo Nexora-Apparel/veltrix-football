@@ -6,7 +6,7 @@ No random split, shuffled fold, legacy model, or external service is used.
 """
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 import math
 from typing import Iterable
@@ -18,6 +18,7 @@ from veltrix_v2.models.poisson import (
     observation_weight_as_of,
     predict_match,
 )
+from veltrix_v2.evaluation.calibration import apply_binary_platt, fit_binary_platt
 
 
 @dataclass(frozen=True)
@@ -78,6 +79,9 @@ class WalkForwardReport:
     recency_half_life_days: float | None = None
     dixon_coles_rho: float = 0.0
     model_build_id: str | None = None
+    competition_calibration: dict[str, dict[str, BinaryMetrics]] = field(default_factory=dict)
+    calibration_fit_samples: dict[str, int] = field(default_factory=dict)
+    calibration_test_samples: dict[str, int] = field(default_factory=dict)
 
 
 def _aware(value: datetime) -> bool:
@@ -311,6 +315,43 @@ def walk_forward_evaluate(
     btts = _comparison([x.model_btts_yes for x in scored], [x.baseline_btts_yes for x in scored], btts_outcomes)
     over = _comparison([x.model_over_2_5 for x in scored], [x.baseline_over_2_5 for x in scored], over_outcomes)
 
+    # Competition-isolated Platt calibration. Fit on the earlier 60% of
+    # each competition's chronological scored rows and evaluate only on the
+    # later untouched 40%; no pooled cross-competition calibration is used.
+    competition_calibration: dict[str, dict[str, BinaryMetrics]] = {}
+    calibration_fit_samples: dict[str, int] = {}
+    calibration_test_samples: dict[str, int] = {}
+    for competition in sorted({row.competition_id for row in scored}):
+        subset = sorted(
+            [row for row in scored if row.competition_id == competition],
+            key=lambda row: (row.kickoff_at, row.fixture_id),
+        )
+        split = max(50, int(len(subset) * 0.6))
+        outputs: dict[str, BinaryMetrics] = {}
+        if split < len(subset):
+            calibration_rows, test_rows = subset[:split], subset[split:]
+            for market, probability_attr, outcome_fn in (
+                ("btts", "model_btts_yes", lambda row: int(row.actual_home_goals > 0 and row.actual_away_goals > 0)),
+                ("over_2_5", "model_over_2_5", lambda row: int(row.actual_home_goals + row.actual_away_goals >= 3)),
+            ):
+                try:
+                    calibrator = fit_binary_platt(
+                        [getattr(row, probability_attr) for row in calibration_rows],
+                        [outcome_fn(row) for row in calibration_rows],
+                    )
+                except (TypeError, ValueError):
+                    continue
+                probabilities = [
+                    apply_binary_platt(getattr(row, probability_attr), calibrator)
+                    for row in test_rows
+                ]
+                outcomes = [outcome_fn(row) for row in test_rows]
+                outputs[market] = _binary_metrics(probabilities, outcomes)
+                key = f"{competition}:{market}"
+                calibration_fit_samples[key] = len(calibration_rows)
+                calibration_test_samples[key] = len(test_rows)
+        competition_calibration[competition] = outputs
+
     return WalkForwardReport(
         evaluation_as_of=evaluation_as_of, total_input_fixtures=len(rows),
         eligible_scored_fixtures=len(scored), skipped_no_history=skipped_no_history,
@@ -322,4 +363,7 @@ def walk_forward_evaluate(
         recency_half_life_days=recency_half_life_days,
         dixon_coles_rho=dixon_coles_rho,
         model_build_id=model_build_id,
+        competition_calibration=competition_calibration,
+        calibration_fit_samples=calibration_fit_samples,
+        calibration_test_samples=calibration_test_samples,
     )
