@@ -80,9 +80,9 @@ def _source_rows(report):
                 "source_line_number": line,
                 "source_row_sha256": match["source_row_sha256"][index],
                 "source_date": match["source_date"],
-                "match_label": "Team A 1-0 Team B",
-                "source_team_raw": "Team A" if index == 0 else "Team B",
-                "match": {"home_raw": "Team A", "away_raw": "Team B", "home_score": 1, "away_score": 0},
+                "match_label": "América Mineiro 1-0 Athletic Club MG",
+                "source_team_raw": "América Mineiro" if index == 0 else "Athletic Club MG",
+                "match": {"home_raw": "América Mineiro", "away_raw": "Athletic Club MG", "home_score": 1, "away_score": 0},
             })
     return rows
 
