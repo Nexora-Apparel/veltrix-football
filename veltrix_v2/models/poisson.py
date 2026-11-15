@@ -144,10 +144,10 @@ def observation_prospectively_observed_as_of(
 ) -> bool:
     """Eligibility for a prospective shadow forecast, never historical backtests.
 
-    A collector's first-observed timestamp proves only that the result was
-    known by this later forecast cutoff. It does not certify what was knowable
-    at the historical fixture's kickoff, so this path is explicitly separate
-    from observation_eligible_as_of.
+    Collector-first-observed timestamps and conservative four-day finished
+    status bounds prove only that a result was known by this later forecast
+    cutoff. They do not certify what was knowable at the historical fixture's
+    kickoff, so this path is separate from observation_eligible_as_of.
     """
     if not _aware(cutoff_at) or not _valid_observation(match):
         return False
