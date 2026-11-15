@@ -44,6 +44,14 @@ def test_complete_schema_migration_chain_on_clean_postgres16_plus(monkeypatch):
                 "SELECT to_regclass('public.telegram_delivery_reconciliations') IS NOT NULL"
             ).fetchone()[0]
             assert connection.execute(
+                "SELECT to_regclass('public.odds_quote_observations') IS NOT NULL"
+            ).fetchone()[0]
+            assert connection.execute(
+                """SELECT COUNT(*) FROM pg_trigger
+                   WHERE tgrelid='public.odds_quote_observations'::regclass
+                     AND NOT tgisinternal"""
+            ).fetchone()[0] == 2
+            assert connection.execute(
                 """
                 SELECT COUNT(*) FROM pg_trigger
                 WHERE tgrelid='public.telegram_delivery_reconciliations'::regclass
