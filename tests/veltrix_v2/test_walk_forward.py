@@ -289,6 +289,7 @@ def test_walk_forward_exposes_only_cutoff_eligible_openplay_context():
             "approval_provenance": {
                 "status": "APPROVED", "evidence_sha256": approval_hash,
                 "effective_at": (eligibility - timedelta(days=1)).isoformat(),
+                "valid_from": (eligibility - timedelta(days=1)).isoformat(),
                 "recorded_at": (eligibility - timedelta(days=1)).isoformat(),
                 "approval_recorded_at": (eligibility - timedelta(days=1)).isoformat(),
                 "valid_until": None,
