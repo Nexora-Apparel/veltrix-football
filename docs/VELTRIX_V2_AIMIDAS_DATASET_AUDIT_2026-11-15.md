@@ -225,7 +225,7 @@ A deeper row-level check of the 738 CSV team rows found two exceptions in the N�
 
 ## 8. Brazil Série B 2026 — independent identity and score reconciliation
 
-**Audit result:** PASS WITH TWO UNMATCHED CANONICAL FIXTURES AND ONE SOURCE TEAM-STAT SCORE CONFLICT. All identity candidates remain reviewer-pending; none has been marked RESOLVED.
+**Audit result:** PASS WITH TWO UNMATCHED CANONICAL FIXTURES AND ONE SOURCE TEAM-STAT SCORE CONFLICT. The subsequent reviewer acceptance is recorded in section 9.
 
 Reconciliation workflow [#43761387345](https://github.com/Nexora-Apparel/veltrix-football/actions/runs/43761387345) passed at code head a55dc20a385a82e6886946850f1aec3b4971ebe5. The sanitized provenance-preserving 369-match JSON report is artifact [#14180247939](https://github.com/Nexora-Apparel/veltrix-football/actions/runs/43761387345/artifacts/14180247939), ZIP digest sha256:33f0b1f78f3dd0cf4993b9957e99f562386f8d4c6f56123ad6490dc1dd29cd47.
 
@@ -251,7 +251,7 @@ All 20 source team names map one-to-one to 20 unique canonical 5DollarFootballAP
 - 369/369 match-label final scores agree independently with canonical fixture results.
 - 333 source dates equal the canonical UTC kickoff date; 36 differ by one calendar day. The source field is date-only, so this offset is recorded rather than silently normalized.
 - No duplicate source match groups, ambiguous fixture candidates or canonical score mismatches.
-- No crosswalk rows or normalized fixture rows were written; no database mutation occurred.
+- The audit run itself wrote no crosswalk or normalized rows and made no database mutation; the separate acceptance transaction is documented in section 9.
 
 **One source-data integrity discrepancy:** source match label Náutico 0-3 CRB (2026-11-07) agrees with canonical fixture ID 1811, provider fixture ID 4070869087, whose result is 0-3. However, the two source team rows report CRB Goals=2, Goals Conceded=0 and Náutico Goals=0, Goals Conceded=2. Both team rows are quarantined from advanced-stat use:
 - line 8, source row SHA-256 78d9492295da1b8dfa9ef735b786f63412089a37640b1f01aa3d57395707abc6
@@ -268,10 +268,36 @@ Both remain UNRESOLVED_NO_REPLACEMENT_MAPPING. No synthetic, date-shifted or rep
 
 ### Reviewer and admission disposition
 
-- 369 candidate mappings remain NOT_RESOLVED; reviewer acceptance is pending.
+- At audit time, 369 candidate mappings were NOT_RESOLVED; see section 9 for subsequent accepted crosswalks.
 - The two unmatched canonical fixtures remain unresolved.
 - The two inconsistent team-stat rows remain quarantined.
 - No normalized results, advanced-stat features or model-training rows were created.
 - All source observations remain non-PIT; no historical walk-forward admission.
 - AI Midas average odds are not bookmaker-specific timestamped closing odds and do not qualify for CLV.
 - Value betting remains **LOCKED**.
+
+
+## 9. Reviewer-backed crosswalk acceptance — 2026-11-15 21:13:49 UTC
+
+**Disposition:** accepted in staging with explicit quarantine boundaries.
+
+Acceptance workflow [#43762497871](https://github.com/Nexora-Apparel/veltrix-football/actions/runs/43762497871) passed at code head cb30b76ba8446170eb8639fe58789dca7176d8c2. The final sanitized acceptance report is artifact [#14180892673](https://github.com/Nexora-Apparel/veltrix-football/actions/runs/43762497871/artifacts/14180892673), ZIP SHA-256 1870fc9066afed1ee0cc0db11911270808408cc77dee34013b3d63e5ce20ac81.
+
+The independent automated reviewer recorded by ID automated-independent-reconciliation-v1 accepted and inserted **389 RESOLVED crosswalk versions** into the isolated staging database:
+- 20 TEAM crosswalks: 10 EXACT_NAME and 10 EXPLICIT_ALIAS_TABLE.
+- 369 FIXTURE crosswalks: EXACT_TEAM_ORIENTATION_DATE_SCORE; every source match maps to one unique canonical fixture with exact home/away orientation, a recorded source-date-to-UTC-kickoff delta, and 369/369 Match-label score agreement.
+- Evidence observation ID 432397 is linked to every accepted row.
+- All mappings have mapping_version 1 and valid_from 2026-11-15T21:13:49.803Z. They are not backdated.
+- Staging read-back independently confirmed 389/389 RESOLVED rows, 389/389 reviewer IDs, 389/389 evidence links, 369 unique fixture IDs and 20 unique team IDs.
+
+The one score-stat conflict does **not** invalidate fixture identity: canonical fixture 1811 / provider fixture 4070869087 is resolved from the source Match label and canonical 0-3 result. The two source team-stat rows (lines 8 and 9) remain QUARANTINED and are not admitted as advanced statistics.
+
+The two canonical fixtures with no source row remain unresolved and have no AI Midas crosswalk:
+- fixture 1927 / provider 3538579905, Náutico–Botafogo SP, 2026-09-03: within-range source match-row omission;
+- fixture 1807 / provider 1878457839, Londrina–Náutico, 2026-11-11: after the source file's last date.
+
+**Write boundary:** the acceptance transaction wrote only 389 rows to entity_crosswalk_versions in veltrix_football_staging. It did not write normalized fixtures, fixture results, advanced-stat features, odds observations, predictions or production data. No deployment, publication, Telegram delivery or schedule activation occurred.
+
+Reviewer identity is an automated independent audit identifier, not a human signature. If a future governance rule requires a named human sign-off, that must be recorded as a separate decision; it must not be inferred from this automated review.
+
+All source observations remain non-PIT and model-ineligible. The two team-stat rows remain quarantined. AI Midas average odds do not satisfy timestamped bookmaker-specific closing odds or CLV. Value betting remains **LOCKED**.
