@@ -52,6 +52,7 @@ on:
       - "scripts/veltrix_v2/**"
       - ".github/workflows/veltrix-v2-foundation.yml"
   pull_request:
+    types: [opened, synchronize, reopened, labeled]
     paths:
       - "veltrix_v2/**"
       - "scripts/veltrix_v2/**"
