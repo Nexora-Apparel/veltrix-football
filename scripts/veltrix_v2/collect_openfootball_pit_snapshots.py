@@ -171,7 +171,7 @@ def collect_snapshots(
                 content_sha = hashlib.sha256(raw).hexdigest()
                 archive = parse_archive(
                     source_text, competition_id=competition_id, source_path=source_path,
-                    source_id=repo, snapshot_commit_sha=sha, snapshot_available_at=snapshot_at,
+                    source_id="openfootball-cc0-archive", snapshot_commit_sha=sha, snapshot_available_at=snapshot_at,
                     imported_at=imported_at,
                 )
                 if not archive.observations:

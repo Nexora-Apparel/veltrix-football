@@ -57,7 +57,7 @@ def parse_archive(
     *,
     competition_id: str,
     source_path: str,
-    source_id: str = "openfootball/world",
+    source_id: str = "openfootball-cc0-archive",
     snapshot_commit_sha: str,
     snapshot_available_at: datetime,
     imported_at: datetime,
