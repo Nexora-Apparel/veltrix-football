@@ -7,8 +7,10 @@ on:
       - '.github/workflows/openplay-historical-data-qualification.yml'
       - 'scripts/veltrix_v2/qualify_openplay_release.py'
       - 'scripts/veltrix_v2/import_openplay_staging.py'
-      - 'scripts/veltrix_v2/audit_openplay_staging.py'
-      - 'tests/veltrix_v2/test_openplay_staging_import.py'
+      - 'scripts/veltrix_v2/audit_openplay_staging.py scripts/veltrix_v2/build_openplay_identity_crosswalk_candidates.py'
+      - 'scripts/veltrix_v2/build_openplay_identity_crosswalk_candidates.py'
+      - 'tests/veltrix_v2/test_openplay_identity_crosswalk_candidates.py'
+      - 'tests/veltrix_v2/test_openplay_staging_import.py tests/veltrix_v2/test_openplay_identity_crosswalk_candidates.py'
       - 'docs/legal/openplay-whoscored-opta-authorization-2026-11-15.md'
       - 'tests/veltrix_v2/test_openplay_rights_acceptance.py'
   workflow_dispatch:
@@ -59,6 +61,11 @@ jobs:
           DATABASE_URL: ${{ secrets.VELTRIX_STAGING_DATABASE_URL }}
           VELTRIX_ENABLE_OPENPLAY_STAGING_IMPORT: "YES"
         run: python scripts/veltrix_v2/audit_openplay_staging.py --input-dir openplay-audit
+
+      - name: Build conservative OpenPlay identity crosswalk candidates
+        env:
+          DATABASE_URL: ${{ secrets.VELTRIX_STAGING_DATABASE_URL }}
+        run: python scripts/veltrix_v2/build_openplay_identity_crosswalk_candidates.py --input-dir openplay-audit --output openplay-audit/openplay_identity_crosswalk_candidates.json
 
       - name: Upload verified release bundle and audit report
         if: always()
