@@ -16,11 +16,11 @@ def test_exhausted_credit_providers_are_hard_blocked():
 
 def test_fivedollar_is_only_live_fixture_source_and_results_have_archive_supplement():
     assert [p.provider for p in providers_for(DataDomain.FIXTURES)] == ["5DollarFootballAPI"]
-    assert [p.provider for p in providers_for(DataDomain.RESULTS)] == ["5DollarFootballAPI", "OpenFootball", "StatsBomb Open Data"]
+    assert [p.provider for p in providers_for(DataDomain.RESULTS)] == ["5DollarFootballAPI", "OpenFootball", "FootballData CC0", "StatsBomb Open Data"]
 
 
 def test_archive_and_odds_provider_are_not_dispatchable_by_default():
-    for name in ("OpenFootball", "StatsBomb Open Data", "The Odds API"):
+    for name in ("OpenFootball", "FootballData CC0", "StatsBomb Open Data", "The Odds API"):
         with pytest.raises(PermissionError):
             assert_provider_dispatch_allowed(name)
 
@@ -43,6 +43,13 @@ def test_internal_form_and_strength_features_have_explicit_derived_status():
     assert profile.capability(DataDomain.TEAM_FORM).state is CapabilityState.DERIVED
     archive = next(p for p in PROVIDER_REGISTRY if p.provider == "OpenFootball")
     assert archive.capability(DataDomain.TEAM_FORM).state is CapabilityState.EXPLORATORY_ONLY
+    football_data = next(p for p in PROVIDER_REGISTRY if p.provider == "FootballData CC0")
+    assert football_data.source_id == "ferrerasrp-footballdata-cc0"
+    assert football_data.state is ProviderState.ARCHIVE_ONLY
+    assert football_data.collection_allowed is False
+    assert football_data.capability(DataDomain.RESULTS).state is CapabilityState.AVAILABLE
+    assert football_data.capability(DataDomain.TEAM_FORM).state is CapabilityState.EXPLORATORY_ONLY
+    assert football_data.capability(DataDomain.REST_DAYS).state is CapabilityState.UNAVAILABLE
     assert profile.capability(DataDomain.TEAM_STRENGTH).state is CapabilityState.DERIVED
 
 def test_statsbomb_is_historical_research_only_xg_and_lineup_candidate():
