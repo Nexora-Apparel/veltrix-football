@@ -138,3 +138,32 @@ PR #120 remains draft/open/unmerged. Exact-head CI checks on `70b1a8ef1742975464
 5. Keep model certification, value betting, production deployment, publication, Telegram delivery and schedule activation fail-closed.
 
 **Final Stage 2 disposition: OPEN / NOT RELEASE-READY.** This report records the completed ordered audit and the remaining acquisition gates; it does not represent completion of the full VELTRIX FOOTBALL 2.0 rebuild or production certification.
+
+
+---
+
+## 10. Post-report continuation and definitive exit decision — 2026-11-15
+
+This addendum supersedes the earlier opening-odds count in this report while preserving the original evidence record.
+
+### Opening-odds acquisition reconciliation
+
+Manifests 109–116 have now completed successfully. Each contains 25 provider requests, 25 successful responses and 25 distinct PIT-eligible Bet365 1X2 opening observations. Total: 200/200 requests, responses and observations, with 200 distinct canonical fixture matches and 200 active RESOLVED crosswalks. Independent read-back confirmed timestamp ordering and correct market/bookmaker for all 200 rows. No duplicates or ineligible observations were found.
+
+The fixed universe is 763 fixtures. Coverage is now 200/763 (26.21%); 563 fixtures remain to complete acquisition, and 548 additional valid observations are needed to reach the 98% threshold. Latest completed batch: [workflow #43733321610](https://github.com/Nexora-Apparel/veltrix-football/actions/runs/43733321610), [artifact #14169004455](https://github.com/Nexora-Apparel/veltrix-football/actions/runs/43733321610/artifacts/14169004455), SHA-256 `3f8dd0a575cc50dc52aa75d32fc2901051a3d7351f45e3f38b003bcf3e9c9c24`.
+
+### Persistence discrepancy resolution
+
+The apparent second-batch discrepancy was caused by auditing the separate normalized `odds_quote_observations` table instead of the acquisition write target `source_observations`. Manifests 109 and 110 both independently read back as 25/25 source observations linked through their capture requests and provider responses. No provider calls were repeated.
+
+### Historical/closing odds decision
+
+The separate source decision is recorded at `docs/VELTRIX_V2_HISTORICAL_CLOSING_ODDS_ENTITLEMENT_DECISION_2026-11-15.md`. 5Dollar timestamped tick history remains Ultra-only and account entitlement is not evidenced. The Odds API V4 historical snapshots are a technically acceptable alternative, but the connected account's paid historical endpoint access and UK bookmaker/market coverage are not verified. No credit-consuming odds request or restricted 5Dollar history request was made. There is no timestamped closing/near-close dataset or CLV evidence.
+
+### Definitive Stage 2 disposition
+
+The full decision is recorded in `docs/VELTRIX_V2_STAGE2_FINAL_EXIT_DECISION_2026-11-15.md`.
+
+**NO-GO — STAGE 2 EXIT CRITERIA NOT MET.** Opening-odds coverage remains 26.21%; historical/closing odds entitlement and CLV remain blocked; walk-forward and prospective settlement thresholds are not met; additional temporal and identity restrictions remain. Stage 3 remains on hold.
+
+No production writes, deployment, public predictions, Telegram delivery, schedule activation or value-betting unlock occurred. PR #120 remains draft/open/unmerged.
