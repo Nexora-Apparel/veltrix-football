@@ -342,6 +342,12 @@ def main() -> int:
     output = Path(args.output)
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(json.dumps(result, indent=2, sort_keys=True, ensure_ascii=False, default=str) + "\n", encoding="utf-8")
+    if args.summary_output:
+        summary = {k: v for k, v in result.items() if k != "rows"}
+        summary["row_level_detail_retained_on_runner_only"] = True
+        summary_path = Path(args.summary_output)
+        summary_path.parent.mkdir(parents=True, exist_ok=True)
+        summary_path.write_text(json.dumps(summary, indent=2, sort_keys=True, ensure_ascii=False, default=str) + "\n", encoding="utf-8")
     print(json.dumps(result["summary"], sort_keys=True, ensure_ascii=False))
     return 0
 
