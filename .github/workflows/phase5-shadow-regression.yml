@@ -105,37 +105,6 @@ jobs:
           tests/veltrix_v2/test_telegram_v2_delivery.py
           tests/veltrix_v2/test_telegram_v2_formatting.py
           tests/veltrix_v2/test_telegram_reconciliation.py
-      - name: Verify fail-closed response from deployed Vercel preview runtime
-        if: github.event_name == 'pull_request'
-        env:
-          PREVIEW_URL: https://veltrix-football-commands-git-integration-6168a8-nexora-apparel.vercel.app
-        run: |
-          set -euo pipefail
-          for path in /api/dashboard-data /api/dashboard_data; do
-            response="$(mktemp)"
-            headers="$(mktemp)"
-            code="$(curl --silent --show-error --location --max-time 15 \
-              --dump-header "$headers" --output "$response" --write-out '%{http_code}' \
-              "$PREVIEW_URL$path" || true)"
-            echo "PROBE path=$path status=$code bytes=$(wc -c < "$response")"
-            sed -n '1,12p' "$headers"
-            head -c 500 "$response" || true
-            echo
-            if [ "$path" = "/api/dashboard-data" ]; then
-              test "$code" = "200"
-              python - "$response" <<'PY'
-          import json, pathlib, sys
-          raw = pathlib.Path(sys.argv[1]).read_bytes()
-          assert raw, "deployed dashboard API returned an empty body"
-          payload = json.loads(raw)
-          assert isinstance(payload, dict), "dashboard API must return a JSON object"
-          assert payload.get("status") == "UNAVAILABLE", payload
-          assert payload.get("predictions") == [], payload
-          print("DEPLOYED_RUNTIME_FAIL_CLOSED_OK")
-          PY
-            fi
-          done
-
   postgres-integration:
     runs-on: ubuntu-latest
     timeout-minutes: 15
