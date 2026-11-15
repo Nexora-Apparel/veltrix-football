@@ -32,6 +32,9 @@ on:
   pull_request:
     paths:
       - "scripts/phase5_collect_5dollar_shadow.py"
+      - "scripts/phase5_settle_5dollar_shadow.py"
+      - "veltrix_v2/ledger/settlement_reconciliation.py"
+      - "tests/veltrix_v2/test_settlement_reconciliation.py"
       - "tests/scripts/test_phase5_collect_5dollar_shadow.py"
       - "veltrix_v2/data/provider_evidence_capture.py"
       - "tests/veltrix_v2/test_provider_evidence_capture.py"
