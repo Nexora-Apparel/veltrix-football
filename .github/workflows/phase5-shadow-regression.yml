@@ -129,6 +129,7 @@ jobs:
           --ignore=tests/providers/odds_api_v4/test_quota_evidence_postgres.py
           --ignore=tests/providers/odds_api_v4/test_capture_state_postgres.py
           --ignore=tests/providers/odds_api_v4/test_capture_request_postgres.py
+          --ignore=tests/providers/odds_api_v4/test_postgres_store_postgres.py
       - name: Run publication, bundle and delivery boundaries
         run: >-
           python -m pytest --import-mode=importlib -q
