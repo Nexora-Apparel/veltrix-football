@@ -203,6 +203,13 @@ def test_source_approval_requires_complete_evidence():
 
 def test_rights_gate_requires_each_use_and_public_attribution():
     rights = approval()
+    personal_rights = approval(commercial_use_allowed=False)
+    assert evaluate_source_use(
+        personal_rights, DataUsePurpose.MODEL_TRAINING, at_utc=NOW, commercial=False
+    ).allowed
+    assert not evaluate_source_use(
+        personal_rights, DataUsePurpose.MODEL_TRAINING, at_utc=NOW, commercial=True
+    ).allowed
     assert evaluate_source_use(rights, DataUsePurpose.MODEL_TRAINING, at_utc=NOW, commercial=True).allowed
     public = evaluate_source_use(
         rights, DataUsePurpose.PUBLIC_DISPLAY, at_utc=NOW, commercial=True, public_facing=True
