@@ -38,8 +38,23 @@ jobs:
               raise SystemExit("REPORT_ID_INVALID")
           report_path = Path("reports") / f"{report_id}.json"
           manifest_path = Path("reports/certification/publication-manifests") / f"{report_id}.json"
-          report = json.loads(report_path.read_text(encoding="utf-8"))
-          manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+          def strict_load(path):
+              def pairs(items):
+                  result = {}
+                  for key, value in items:
+                      if key in result:
+                          raise ValueError("DUPLICATE_JSON_KEY")
+                      result[key] = value
+                  return result
+              def reject_constant(value):
+                  raise ValueError("NONFINITE_JSON_VALUE:" + value)
+              return json.loads(
+                  path.read_text(encoding="utf-8"),
+                  object_pairs_hook=pairs,
+                  parse_constant=reject_constant,
+              )
+          report = strict_load(report_path)
+          manifest = strict_load(manifest_path)
           identity = verify_report_identity(report)
           if identity.report_id != report_id:
               raise SystemExit("REPORT_IDENTITY_MISMATCH")
