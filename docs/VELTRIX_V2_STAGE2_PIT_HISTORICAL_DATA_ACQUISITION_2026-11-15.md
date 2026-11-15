@@ -60,3 +60,38 @@ The Odds API terms reviewed on 2026-11-14 permit model training and indefinite s
 9. Historical archive-proof eligibility is integrated into chronological evaluation without falsifying recorded_at.
 
 No model fitting, public predictions, Telegram delivery, scheduling, value betting or production deployment is authorized by Stage 2.
+
+
+## 7. Independent temporal-semantics audit — 2026-11-15
+
+**Important correction: the current CC0 archive packs are not yet proof of historical point-in-time public availability.**
+
+The collector currently reads GitHub commit metadata `commit.committer.date` and labels it as `source_snapshot_available_at` / `source_published_at`, with `source_timestamp_basis=archival_snapshot_timestamp`. The verifier recomputes the commit SHA, raw snapshot hash, parsed observation set and archive-proof hash. This proves the identity and integrity of the source version and its commit metadata. It does **not**, by itself, prove the date on which that version first became publicly available to a forecaster. Git commit timestamps are commit metadata and are not equivalent to an independently attested provider publication timestamp or immutable provider-side as-of snapshot.
+
+The current OpenFootball and supplemental FootballData parsers also set `point_in_time_certifiable=True`. That flag is too strong for historical-cutoff certification unless the source-availability semantics are independently established. A CC0 licence establishes reuse rights; it does not establish temporal availability.
+
+### Safe current model boundary
+
+- Do not treat the repository commit timestamp as a verified public publication timestamp.
+- Do not use the archive proof to bypass the walk-forward evaluator's `recorded_at <= cutoff` requirement. The current evaluator's recorded-time check correctly prevents data imported in November 2026 from entering a historical training fold whose cutoff predates that import.
+- Do not set historical `available_at` to the commit timestamp as a substitute for first-observed availability.
+- Keep source commit timestamp, actual collector retrieval/import timestamp, and any independently verified source-publication timestamp as separate fields.
+- Keep the archive pack as rights-approved, immutable retrospective source material. It is useful for source reconstruction, result-label comparison and future model inputs only from a defensible first-observed/availability time; it is not admitted as a historical PIT training dataset on the evidence currently available.
+- The GitHub SHA/raw-hash verifier remains useful for content integrity and revision reconstruction, but it is not a temporal-availability attestation.
+
+### Required remediation before any PIT admission
+
+1. Correct both archive parsers and both observation serializers so Git commit time is stored only as `source_commit_timestamp`, never represented as verified `source_published_at`.
+2. Record actual `retrieved_at` / `recorded_at` as the earliest defensible VELTRIX availability time; use that time for any prospective feature eligibility.
+3. Set archive-derived rows to non-historical-PIT status unless an independent provider/publication attestation establishes source availability before the relevant cutoff.
+4. Update independent verifiers and regression tests to reject commit-time-as-publication substitutions and any archive-proof attempt to bypass post-cutoff retrieval/recording.
+5. Keep date-only kickoff precision and unknown timezone explicit; these rows cannot become exact-kickoff historical targets.
+6. Do not import to operational staging until the corrected schema/serializer, append-only evidence links, rights scope, identity crosswalk and independent read-after-write reconciliation are all verified.
+
+### Current Stage 2 decision
+
+**Stage 2 remains OPEN.** The OpenFootball base pack is an immutable, rights-cleared retrospective archive, not a demonstrated historical PIT feed. The supplemental FootballData pack requires its own latest artifact verification. No independently attested pre-match feature snapshots or timestamped historical bookmaker quotes have been demonstrated. The 5Dollar historical result rows remain non-PIT. No historical odds endpoint request has been made.
+
+The latest exact-head CI on commit `9bd078cd741248feb50aadcaf337b37f32dc5db5` reports Phase 2 foundation, Phase 5 shadow regression, historical model audit, certification evidence integrity and PostgreSQL 16/18 acceptance all successful; the daily fixture workflow is intentionally skipped. These are software/integration checks, not evidence that the source archives are PIT or that Stage 2 has passed.
+
+**No-go:** do not mark Stage 2 complete, do not run historical walk-forward evaluation using these archive commit timestamps as pre-match publication times, and do not loosen the temporal evaluator. The next implementation task is the parser/serializer/verifier correction above, followed by a separately qualified genuine PIT source acquisition.
