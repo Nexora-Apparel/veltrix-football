@@ -149,7 +149,7 @@ def test_sigstore_verifier_uses_runtime_python_module_and_pinned_workflow_identi
     assert "--repository" in command and "Nexora-Apparel/veltrix-football" in command
     assert "--ref" in command and "refs/heads/main" in command
     assert "--cert-identity" in command and workflow_identity in command
-    assert "--cert-oidc-issuer" in command and "https://token.actions.githubusercontent.com" in command
+    assert "--cert-oidc-issuer" not in command  # verify github enforces GitHub OIDC issuer itself
     assert kwargs["timeout"] == 90
 
 
