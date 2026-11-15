@@ -42,7 +42,10 @@ def test_certificate_builder_attaches_raw_audit_but_never_unlocks(monkeypatch, t
         "walk_forward_rows": {"rows": []},
         "coverage_audit": {
             "rights_status": "APPROVED_FOR_INTENDED_USE",
-            "commercial_use_eligible": True,
+            "project_use_mode": "NON_COMMERCIAL_ONLY",
+            "noncommercial_use_eligible": True,
+            "commercial_use_eligible": False,
+            "raw_redistribution_allowed": False,
             "approved_source_ids": ["licensed-source"],
         },
         "prospective_ledger": {"rows": []},
