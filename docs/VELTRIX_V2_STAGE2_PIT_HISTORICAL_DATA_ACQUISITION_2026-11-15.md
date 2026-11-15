@@ -1,6 +1,6 @@
 # VELTRIX FOOTBALL 2.0 — Stage 2: Rights-approved PIT historical data acquisition
 
-Status: IN PROGRESS — four CC0 source scopes are documented and a bounded immutable-snapshot collector is implemented. A successful artifact capture, independent hash audit, staging persistence and cross-provider identity resolution remain outstanding.
+Status: IN PROGRESS — the OpenFootball base pack has been captured and independently verified (5,182 unique result versions across 20 source paths, 49 snapshots, 375/500 requests, zero source failures). A separate CC0 FootballData Brazil Serie B supplement is being added. Staging persistence, exact rights-scope records, archive-proof model integration and cross-provider identity resolution remain outstanding.
 
 ## 1. Acceptance boundary
 
@@ -10,17 +10,17 @@ A snapshot fetched today cannot be represented as if it had been captured on the
 
 ## 2. Rights-approved scope
 
-The first pack covers six CC0-1.0 repositories and seven competition scopes: England Premier League, Spain La Liga, Germany Bundesliga, Italy Serie A, France Ligue 1, Brazil Serie A and Brazil Serie B. Three seasons are enumerated for the four European core leagues and France; Brazil Serie A uses 2024, 2025 and 2026 calendar-year files, while Brazil Serie B uses the available 2024 and 2025 files. The collector rechecks each repository's SPDX licence metadata at runtime.
+The OpenFootball base pack covers six CC0-1.0 repositories and seven competition scopes: England Premier League, Spain La Liga, Germany Bundesliga, Italy Serie A, France Ligue 1, Brazil Serie A and Brazil Serie B. Three seasons are enumerated for the four European core leagues and France; Brazil Serie A uses 2024, 2025 and 2026 calendar-year files, while Brazil Serie B uses the available 2024 and 2025 files. The collector rechecks each repository's SPDX licence metadata at runtime.
 
 The detailed scope review is docs/legal/openfootball-cc0-scope-review-2026-11-15.md. It covers text fixture/result facts only. It does not cover logos, media, odds, xG, lineups or player-level data. Competition/team IDs remain source-scoped pending evidence-backed crosswalks.
 
-Nigeria NPFL is separate and must not be mapped to another competition by name or country alone. Brazil Serie B 2026 is absent from the selected archive and remains a season coverage gap.
+Nigeria NPFL is separate and must not be mapped to another competition by name or country alone. The OpenFootball archive has only 57 Brazil Serie B 2025 results and no 2026 file. A supplemental CC0 FootballData archive is being captured separately: 2025 full-season JSON plus a 2026 partial snapshot dated 2026-07-08. The supplemental source's reported clock has no timezone, so kickoff_at remains null.
 
 ## 3. Collector implementation
 
-The manual-only workflow is .github/workflows/phase2-openfootball-pit-snapshot-pack.yml.
+The bounded push/manual workflow is .github/workflows/phase2-openfootball-pit-snapshot-pack.yml. It emits separate OpenFootball and FootballData artifacts; neither writes to staging or production.
 
-The collector:
+The OpenFootball collector:
 - enumerates commit history for every approved source path;
 - downloads each source version by immutable commit SHA;
 - checks CC0-1.0 repository licence metadata;
@@ -32,6 +32,8 @@ The collector:
 - produces JSONL observations, snapshot proofs and a manifest;
 - enforces request and history limits and refuses truncated histories;
 - writes only a workflow artifact, never Neon or production.
+
+The supplemental FootballData parser preserves the reported local clock string but does not infer its timezone. Numeric suffixes after newline team names are normalized only when the clean base name is present in the same snapshot; each normalization is retained in the audit manifest. These source-scoped IDs are not joined to OpenFootball or 5Dollar yet.
 
 ## 4. Model-use boundary
 

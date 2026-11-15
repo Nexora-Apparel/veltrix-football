@@ -103,6 +103,13 @@ PROVIDER_REGISTRY: tuple[ProviderProfile, ...] = (
             (DataDomain.INJURIES, CapabilityState.UNAVAILABLE, "No injury data."),
             (DataDomain.PLAYER_STATS, CapabilityState.UNAVAILABLE, "No player-stat data."),
         ), False, "CC0 historical archive; collection is manual and bounded. No live dispatch. Archive-proof verification and actual retrieval-time checks remain mandatory."),
+    ProviderProfile("FootballData CC0", "ferrerasrp-footballdata-cc0", ProviderState.ARCHIVE_ONLY,
+        _caps(
+            (DataDomain.RESULTS, CapabilityState.AVAILABLE, "Supplemental Brazil Serie B historical scores from immutable CC0 JSON snapshots; date-only eligibility is proven, while reported clock strings have unknown timezone."),
+            (DataDomain.TEAM_FORM, CapabilityState.EXPLORATORY_ONLY, "Do not use in production features until the archive proof, source-scoped team identity and 5Dollar crosswalk gates pass."),
+            (DataDomain.TEAM_STRENGTH, CapabilityState.EXPLORATORY_ONLY, "Do not use in production features until the archive proof, source-scoped team identity and 5Dollar crosswalk gates pass."),
+            (DataDomain.REST_DAYS, CapabilityState.UNAVAILABLE, "Source timezone is undocumented; exact rest-day calculations are prohibited."),
+        ), False, "CC0 supplemental archive only: 2025 has a full-season file and 2026 is a stale partial snapshot. No live collection or production feature dispatch; preserve source-specific IDs and local clock strings without timezone conversion."),
     ProviderProfile("StatsBomb Open Data", "statsbomb-open-data", ProviderState.ARCHIVE_ONLY,
         _caps(
             (DataDomain.FIXTURES, CapabilityState.CONDITIONAL, "Selected historical match lists only; no live fixture feed."),
