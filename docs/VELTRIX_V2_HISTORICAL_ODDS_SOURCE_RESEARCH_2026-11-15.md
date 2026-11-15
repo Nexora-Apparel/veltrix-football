@@ -211,3 +211,46 @@ The approved Spain La Liga pilot reached the historical event and market discove
 - The Brazil Série B discovery was metadata-only and outside the current approval scope. It remains excluded from Veltrix data and model use.
 
 Disposition: The Odds API remains approved for the five European competitions for permitted data uses, but historical closing-price capture is BLOCKED by account-plan entitlement. Historical closing odds remain NOT QUALIFIED; CLV remains NOT CERTIFIED; value betting remains LOCKED.
+
+
+## 8. Historical odds provider screening — 2026-11-15 continuation
+
+### Current The Odds API position
+
+The no-credit account preflight succeeded at workflow run [#43760295591](https://github.com/Nexora-Apparel/veltrix-football/actions/runs/43760295591):
+- 187 sport keys returned.
+- Approved Spain La Liga key available.
+- Brazil Série B key technically available, but outside the existing approval's five-league scope.
+- Quota evidence: 226 used / 274 remaining; last request cost 0; no historical odds calls, no database writes and no raw response artifact.
+- The approved-league historical price pilot failed closed at the provider with HTTP 401: historical odds are only available on paid usage plans. No price response was captured and no odds observation was stored. The current account cannot supply historical snapshots on its existing plan.
+- The pilot's paid-entitlement flag remains false. Do not retry the historical price endpoint unless the account's paid historical entitlement is independently confirmed. Do not spend the remaining free quota attempting a paid-only endpoint.
+- Brazil Série B remains outside the approval even though the sport key is discoverable. No Brazil Série B The Odds API prices may be collected until approval scope is explicitly expanded.
+
+### Alternative provider comparison
+
+| Provider | Evidence and useful capability | Blocking condition / disposition |
+|---|---|---|
+| Odds-API.io | Public historical product documents bookmaker-specific closing 1X2 (ML) prices with per-bookmaker updatedAt timestamps; 450+ bookmakers; closing archive since Dec 2025. The five approved European leagues are listed with dates and typical bookmaker counts: EPL, La Liga, Serie A, Bundesliga, Ligue 1. | Paid plans start at £49/month; new free keys are paused. Brazil Série B is not in the published coverage table. Existing sample dataset is CC BY 4.0 but only EPL, NBA and NHL, and does not supply the required complete five-league timestamped archive. Terms prohibit resale/redistribution; confirm derived public product rights and exact league coverage before onboarding. Candidate for a scoped, no-write coverage pilot only after approval. |
+| ParlayAPI | Public documentation exposes separate historical point-in-time odds, closing-odds and match/results endpoints; free account has 1,000 credits/month. Business tier offers up to 90 days' history and Enterprise up to one year. | Exact Brazil Série B coverage and bookmaker/date depth are not confirmed. Paid self-serve license is internal analysis only; customer-facing/public products and commercial derived products need a separate signed agreement. Line-level pricing persistence is capped at 90 days absent written consent. Not admitted; request exact scope and retention permission before any use. |
+| SockOdds | Recorded bookmaker price changes, observed_at timestamps, opening/closing snapshots and graded results. History is Pro-only; published depth starts 22 Dec 2025 for listed leagues and 8 Oct 2026 for others. | Its published league catalogue includes the five major European leagues but does not list Brazil Série B. Pro history is paid and current archive depth is insufficient for 90 distinct dates in newly added leagues. Not a Brazil Série B solution. |
+| OddsRelay | Event-level price changes and bookmaker-only closing lines with timestamps; daily closing/60-second/change files. | Archive begins 17 Oct 2026 and is UK & Ireland focused. Starter/Pro are personal-use only; any business use, including internal business use, requires Enterprise (from £750/month). Too shallow and rights-incompatible for Veltrix's present requirements. |
+| OddsIntel Data | Derived consensus close with close_ts and at least three independent books. | Does not expose bookmaker identities or bookmaker-specific prices and its terms exclude betting operators/affiliates. Not suitable for bookmaker-specific closing odds/CLV certification. |
+| Odds.School / SharpPick public pages | Public pages indicate Brazil Série B pre-match closing/line-movement coverage. | Public descriptions alone do not establish a licensed API, exact per-bookmaker observation timestamps, full 90-day/1,000-match completeness or Veltrix ingestion rights. Treat as research leads only; no scraping or ingestion. |
+
+### Decision and next gate
+
+1. Do not upgrade, pay for, or subscribe to any provider from this audit. No payment authority was granted.
+2. Keep The Odds API as the currently authorized historical-odds route for its five approved leagues, but historical access is blocked by the current plan. Its Brazil Série B sport-key availability is not permission to collect Brazil prices.
+3. Odds-API.io is the strongest next technical candidate for the five approved European leagues because its public product documents timestamped bookmaker-specific closes and a 366-day bulk window. It is not yet an authorized Veltrix source, and Brazil Série B coverage remains unverified. Before onboarding, require a written confirmation of the five approved leagues, exact 1X2 bookmaker coverage, timestamp semantics, internal model-training and public derived-display rights, storage/retention, and price.
+4. ParlayAPI is a secondary candidate only if it confirms the exact sport keys and provides a signed license covering the intended public product and retention period. Its published 90-day line-level storage cap is a material blocker.
+5. No alternative source is admitted, no API key is requested, and no price rows are ingested by this screening. Historical closing odds and CLV remain NOT CERTIFIED; value betting remains LOCKED.
+
+Public documentation checked 2026-11-15:
+- The Odds API historical scope: https://the-odds-api.com/historical-odds-data/
+- Odds-API.io historical product and coverage: https://odds-api.io/historical-odds-api
+- Odds-API.io terms: https://odds-api.io/terms
+- ParlayAPI historical coverage: https://www.parlay-api.com/historical-coverage
+- ParlayAPI terms: https://api.parlay-api.com/legal/terms
+- SockOdds history and league catalogue: https://sockodds.com/use-cases/historical-odds-data-api/ and https://sockodds.com/leagues/
+- OddsRelay historical product and pricing: https://oddsrelay.io/products/historical-odds and https://oddsrelay.io/pricing
+- OddsIntel Data: https://data.oddsintel.app/football-closing-odds-api
