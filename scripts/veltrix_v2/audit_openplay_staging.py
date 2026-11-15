@@ -14,7 +14,8 @@ if str(ROOT) not in sys.path:
 
 from scripts.veltrix_v2.import_openplay_staging import (
     APPROVAL_ID, EXPECTED_DATABASE, EXPECTED_HOST, PARQUET_ROWS, CSV_FILES,
-    PROVIDER, SOURCE_ID, build_manifest, canonical_json, preflight, sha256,
+    PROVIDER, SOURCE_ID, TIMESTAMP_DICTIONARY_SHA256, TIMESTAMP_EVIDENCE_ID,
+    build_manifest, canonical_json, preflight, sha256,
 )
 
 
@@ -71,10 +72,48 @@ def audit(database_url: str, input_dir: str | Path) -> dict:
                 raise RuntimeError("OPENPLAY_STAGING_ASSET_SET_MISMATCH")
 
             cur.execute("""
+                SELECT count(*),count(DISTINCT provider_entity_id),
+                       count(*) FILTER (WHERE point_in_time_certifiable IS TRUE),
+                       count(*) FILTER (WHERE source_timestamp_basis='documented_guarantee'),
+                       count(*) FILTER (WHERE source_published_at IS NOT NULL
+                                          AND available_at=source_published_at
+                                          AND recorded_at>=source_published_at
+                                          AND rights_approval_id=%s
+                                          AND provider_response_id IS NOT NULL),
+                       min(source_published_at),max(source_published_at)
+                FROM source_observations
+                WHERE provider=%s AND source_id=%s
+                  AND entity_type='match_result_snapshot'
+                  AND endpoint='release-assets/data-v0.1.0/matches.parquet'
+            """, (APPROVAL_ID,PROVIDER,SOURCE_ID))
+            snapshot_rows,unique_snapshots,pit_snapshots,documented_snapshots,valid_chronology,first_saved,last_saved = cur.fetchone()
+            expected_matches = PARQUET_ROWS["matches.parquet"]
+            if not (
+                snapshot_rows == unique_snapshots == pit_snapshots
+                == documented_snapshots == valid_chronology == expected_matches
+                and first_saved is not None and last_saved is not None
+            ):
+                raise RuntimeError("OPENPLAY_MATCH_SNAPSHOT_READBACK_MISMATCH")
+
+            cur.execute("""
+                SELECT payload FROM source_observations
+                WHERE provider=%s AND source_id=%s AND entity_type='match_result_snapshot'
+                LIMIT 1
+            """, (PROVIDER,SOURCE_ID))
+            sample_payload = cur.fetchone()
+            if (
+                not sample_payload
+                or sample_payload[0].get("timestamp_guarantee_evidence_id") != TIMESTAMP_EVIDENCE_ID
+                or sample_payload[0].get("timestamp_guarantee_evidence_sha256") != TIMESTAMP_DICTIONARY_SHA256
+                or sample_payload[0].get("temporal_use_scope") != "only for cutoffs at or after actual VELTRIX recorded_at"
+            ):
+                raise RuntimeError("OPENPLAY_MATCH_SNAPSHOT_TIMESTAMP_EVIDENCE_MISMATCH")
+
+            cur.execute("""
                 SELECT manifest_sha256,capture_manifest_id
                 FROM capture_manifests
                 WHERE manifest_key=%s
-            """, ("openplay-data-v0.1.0-ac0bd9aff52016066433ebebf818bec4278fcf54",))
+            """, ("openplay-data-v0.1.0-ac0bd9aff52016066433ebebf818bec4278fcf54-page-saved-v1",))
             manifest_row = cur.fetchone()
             if not manifest_row or manifest_row[0].strip() != expected_manifest_hash:
                 raise RuntimeError("OPENPLAY_STAGING_MANIFEST_MISMATCH")
@@ -92,6 +131,8 @@ def audit(database_url: str, input_dir: str | Path) -> dict:
         "status":"PASS_INDEPENDENT_STAGING_READBACK",
         "database":EXPECTED_DATABASE,
         "assets":len(rows),
+        "match_page_snapshot_observations":PARQUET_ROWS["matches.parquet"],
+        "timestamp_guarantee_evidence_sha256":TIMESTAMP_DICTIONARY_SHA256,
         "raw_bytes":raw_bytes,
         "parquet_tables":len(PARQUET_ROWS),
         "parquet_rows":sum(PARQUET_ROWS.values()),
