@@ -50,7 +50,14 @@ def _row(**overrides):
                 "valid_until": None,
             },
         },
-        "approval_provenance": {"valid_until": None},
+        "approval_provenance": {
+            "effective_at": "2026-11-15T00:00:00+00:00",
+            "recorded_at": "2026-11-15T12:37:26+00:00",
+            "approval_recorded_at": "2026-11-15T12:37:26+00:00",
+            "valid_until": None,
+        },
+        "source_observation_id": 700,
+        "provider_response_id": 101,
     }
     row.update(overrides)
     row["feature_sha256"] = sha256_hex(canonical_json_bytes(row))
