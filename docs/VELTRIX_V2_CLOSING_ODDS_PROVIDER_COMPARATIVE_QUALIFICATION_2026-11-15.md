@@ -284,3 +284,12 @@ The 788 existing 5Dollar observations remain timestamped OPENING quotes. They ar
 AI Midas remains an authorised historical-statistics and additional-odds source under the user's approval, including the Brazil Série B identity work. The staging audit currently finds 14 dataset-asset observations (7 season-match CSVs, 6 historical-match CSVs, 1 advanced-team-match CSV), all first recorded by VELTRIX at 2026-11-15T19:41:43.265Z. Their source timestamp basis is unknown and their current point_in_time_certifiable flag is false. The identity reconciliation has 369 resolved fixture mappings and 20 resolved team mappings; it does not by itself certify time availability or bookmaker closing odds.
 
 Disposition: retain and use the assets for authorised historical research, but do not silently promote them to PIT_CERTIFIED historical training features or bookmaker-specific closing-odds evidence. A separate prospective-only archive-as-of-import eligibility class could be evaluated for future fixtures, but it must remain distinct from historical walk-forward certification and must preserve the actual VELTRIX import timestamp. The current seven-forecast OpenPlay series does not consume AI Midas data.
+
+
+### The Odds API historical quota economics
+
+The current official V4 documentation specifies a historical sport-odds request cost of 10 credits per region per market; historical event-odds requests are also charged at 10 credits per region per market per event. Empty snapshots may return no data, but the historical endpoint remains paid-plan only. This makes a seven-competition, bookmaker-specific multi-market backfill expensive even before pagination and coverage gaps. The existing 295 live credits are not a historical entitlement and must not be spent on this route.
+
+Public references:
+- https://the-odds-api.com/historical-odds-data/
+- https://the-odds-api.com/liveapi/guides/v4/
