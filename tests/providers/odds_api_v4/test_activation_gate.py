@@ -35,7 +35,7 @@ def test_exact_account_terms_rights_scope_and_fresh_budget_are_required():
     result = evaluate_activation_gate(terms=TERMS, rights=RIGHTS, budget=BUDGET, scope=SCOPE)
     assert result.allowed
     assert result.reason_codes == ()
-    assert result.monthly_credit_headroom == 800
+    assert result.monthly_credit_headroom is None
     assert result.run_credit_headroom == 80
     assert result.provider_credit_headroom == 750
     assert result.request_count_headroom == 47
@@ -78,7 +78,7 @@ def test_exact_competition_market_region_and_use_scope_cannot_expand():
     assert "RIGHTS_REGION_SCOPE_INVALID" in wildcard.reason_codes
 
 
-def test_budget_expiry_billing_period_and_remaining_credits_fail_closed():
+def test_quota_expiry_and_remaining_credits_fail_closed():
     expired = evaluate_activation_gate(
         terms=TERMS, rights=RIGHTS,
         budget=replace(BUDGET, valid_until=NOW),
@@ -93,15 +93,25 @@ def test_budget_expiry_billing_period_and_remaining_credits_fail_closed():
     assert "PROVIDER_REMAINING_CREDITS_INSUFFICIENT" in insufficient.reason_codes
 
 
-def test_monthly_per_run_and_request_count_caps_are_independent():
+def test_per_run_and_request_count_caps_are_independent_without_monthly_billing():
     result = evaluate_activation_gate(
         terms=TERMS, rights=RIGHTS,
-        budget=replace(BUDGET, monthly_hard_cap=105, per_run_hard_cap=25, request_count_cap=3),
-        scope=SCOPE,
+        budget=replace(BUDGET, monthly_allowance=None, monthly_hard_cap=None,
+                       billing_period_start=None, billing_period_end=None,
+                       per_run_hard_cap=5, request_count_cap=2),
+        scope=replace(SCOPE, run_committed_credits=0, request_count_committed=2),
     )
-    assert "MONTHLY_CREDIT_CAP_EXCEEDED" in result.reason_codes
-    assert "PER_RUN_CREDIT_CAP_EXCEEDED" in result.reason_codes
+    assert "MONTHLY_CREDIT_CAP_EXCEEDED" not in result.reason_codes
+    assert "BUDGET_BILLING_PERIOD_INVALID" not in result.reason_codes
     assert "REQUEST_COUNT_CAP_EXCEEDED" in result.reason_codes
+    per_run = evaluate_activation_gate(
+        terms=TERMS, rights=RIGHTS,
+        budget=replace(BUDGET, monthly_allowance=None, monthly_hard_cap=None,
+                       billing_period_start=None, billing_period_end=None,
+                       per_run_hard_cap=5),
+        scope=replace(SCOPE, run_committed_credits=0),
+    )
+    assert "PER_RUN_CREDIT_CAP_EXCEEDED" in per_run.reason_codes
 
 
 def test_unknown_terms_or_budget_hashes_and_naive_timestamps_fail_closed():
@@ -115,14 +125,15 @@ def test_unknown_terms_or_budget_hashes_and_naive_timestamps_fail_closed():
     assert "BUDGET_EVIDENCE_HASH_INVALID" in result.reason_codes
     assert "ACTIVATION_TIME_INVALID" in result.reason_codes
 
-def test_malformed_rights_scope_and_datetime_billing_period_fail_closed_without_crashing():
+def test_malformed_rights_scope_fails_closed_without_billing_metadata():
     malformed = evaluate_activation_gate(
         terms=TERMS, rights=replace(RIGHTS, competitions=None),
-        budget=replace(BUDGET, billing_period_start=NOW),
+        budget=replace(BUDGET, billing_period_start=None, billing_period_end=None,
+                       monthly_allowance=None, monthly_hard_cap=None),
         scope=SCOPE,
     )
     assert "RIGHTS_COMPETITION_SCOPE_INVALID" in malformed.reason_codes
-    assert "BUDGET_BILLING_PERIOD_INVALID" in malformed.reason_codes
+    assert "BUDGET_BILLING_PERIOD_INVALID" not in malformed.reason_codes
 
 
 def test_terms_acceptance_and_rights_effective_ordering_are_enforced():
@@ -137,3 +148,15 @@ def test_terms_acceptance_and_rights_effective_ordering_are_enforced():
         budget=BUDGET, scope=SCOPE,
     )
     assert "RIGHTS_EVIDENCE_NOT_AVAILABLE_AS_OF_RIGHTS_CHECK" in rights_result.reason_codes
+
+
+def test_personal_use_probe_does_not_require_monthly_allowance_or_billing_period():
+    result = evaluate_activation_gate(
+        terms=TERMS, rights=RIGHTS,
+        budget=replace(BUDGET, billing_period_start=None, billing_period_end=None,
+                       monthly_allowance=None, monthly_hard_cap=None),
+        scope=SCOPE,
+    )
+    assert result.allowed
+    assert result.monthly_credit_headroom is None
+    assert result.provider_credit_headroom == 750
