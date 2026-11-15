@@ -23,7 +23,7 @@ API_RELEASE = f"https://api.github.com/repos/{OWNER}/{REPO}/releases/tags/{TAG}"
 API_REF = f"https://api.github.com/repos/{OWNER}/{REPO}/git/ref/tags/{TAG}"
 USER_AGENT = "VELTRIX-FOOTBALL-OPENPLAY-QUALIFIER/2.0"
 AUTHORIZATION_RECORD = Path(__file__).resolve().parents[2] / "docs" / "legal" / "openplay-whoscored-opta-authorization-2026-11-15.md"
-AUTHORIZATION_URI = "https://github.com/Nexora-Apparel/veltrix-football/blob/main/docs/legal/openplay-whoscored-opta-authorization-2026-11-15.md"
+AUTHORIZATION_URI = "https://github.com/Nexora-Apparel/veltrix-football/blob/5bd279544b0cf8a453fbae89638bac29cc51fd07/docs/legal/openplay-whoscored-opta-authorization-2026-11-15.md"
 
 EXPECTED_ROWS = {
     "competitions.parquet": 22,
