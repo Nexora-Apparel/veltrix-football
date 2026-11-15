@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import pytest
+from datetime import date
 
 from scripts.veltrix_v2 import reconcile_aimidas_brazil_serie_b_2026 as audit
 
@@ -151,3 +152,11 @@ def test_team_stat_mismatch_is_quarantined_without_rejecting_match_identity():
     assert result["summary"]["quarantined_team_stat_rows"] == 2
     assert result["matches"][0]["team_stats_quality_status"] == "QUARANTINED_ROW_SCORE_MISMATCH"
     assert {item["source_line_number"] for item in result["row_score_discrepancies"]} == {8, 9}
+
+
+
+def test_missing_fixture_reason_distinguishes_coverage_omission_from_file_cutoff():
+    start = date(2026, 3, 21)
+    end = date(2026, 11, 8)
+    assert audit.classify_missing_fixture_date(date(2026, 9, 3), start, end) == "WITHIN_SOURCE_DATE_RANGE_BUT_MATCH_ROW_ABSENT"
+    assert audit.classify_missing_fixture_date(date(2026, 11, 11), start, end) == "AFTER_SOURCE_FILE_LAST_DATE"
