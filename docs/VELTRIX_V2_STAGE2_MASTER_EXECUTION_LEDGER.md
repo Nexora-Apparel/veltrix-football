@@ -295,3 +295,12 @@ At the time of this ledger:
 - Reviewer status: all 369 candidate identities are evidence-verified but remain REVIEW_REQUIRED; no reviewer acceptance event has been recorded and no crosswalk is marked RESOLVED. No crosswalk, normalized fixture/result or model-feature rows were written.
 - Full report: docs/VELTRIX_V2_AIMIDAS_BRAZIL_SERIE_B_2026_IDENTITY_RECONCILIATION_2026-11-15.md.
 - PIT, historical closing odds and CLV remain unqualified. AI Midas average odds do not satisfy bookmaker-specific closing-price or CLV requirements. Value betting remains LOCKED.
+
+
+### AI Midas Série B team-stat row quarantine correction — 2026-11-15
+
+- Independent recheck found 2/738 team-stat rows inconsistent with the match-label score: source CSV line 8 (CRB) reports 2–0 team goals/conceded while the Match label and canonical result are Náutico 0–3 CRB; line 9 (Náutico) reports 0–2 instead of 0–3.
+- Match-level identity and canonical score remain verified for that fixture. The two team-stat rows are quarantined from advanced-stat feature admission; no values are rewritten or inferred.
+- Correct team-row integrity count: 736/738 consistent, 2 quarantined. Match-level score agreements remain 369/369.
+- The dedicated audit implementation now preserves both discrepancy row IDs and SHA-256 fingerprints in the sanitized artifact and labels the affected match QUARANTINED_ROW_SCORE_MISMATCH.
+- This supersedes the prior 738/738 team-row consistency statement in the immediately preceding AI Midas Série B ledger entry. Full detail: docs/VELTRIX_V2_AIMIDAS_BRAZIL_SERIE_B_2026_IDENTITY_RECONCILIATION_2026-11-15.md.
