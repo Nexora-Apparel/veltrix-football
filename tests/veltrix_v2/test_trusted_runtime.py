@@ -48,6 +48,14 @@ def test_evidence_reader_requires_exact_allowlisted_https_host_and_rejects_redir
     with pytest.raises(DeploymentVerificationError, match="EVIDENCE_URL_NOT_ALLOWLISTED"):
         reader("https://evidence.example/rights.json?token=secret")
 
+    raw_reader = build_hash_checked_evidence_reader(
+        allowed_hosts=frozenset({"raw.githubusercontent.com"}), session=session
+    )
+    with pytest.raises(DeploymentVerificationError, match="EVIDENCE_URL_NOT_ALLOWLISTED"):
+        raw_reader("https://raw.githubusercontent.com/Nexora-Apparel/veltrix-football/main/../other/repo/file.json")
+    with pytest.raises(DeploymentVerificationError, match="EVIDENCE_URL_NOT_ALLOWLISTED"):
+        raw_reader("https://raw.githubusercontent.com/Nexora-Apparel/veltrix-football/main/%2e%2e/other.json")
+
 
 def test_evidence_reader_enforces_body_size_limit():
     session = Mock()
