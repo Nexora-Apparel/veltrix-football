@@ -67,6 +67,7 @@ def _row(**overrides):
             "status": "APPROVED",
             "evidence_sha256": "5e6bd00416f180109751e422521d76910da8b491c62507c4d9836e6700c38c46",
             "effective_at": "2026-11-15T00:00:00+00:00",
+            "valid_from": "2026-11-15T00:00:00+00:00",
             "recorded_at": "2026-11-15T12:37:26+00:00",
             "approval_recorded_at": "2026-11-15T12:37:26+00:00",
             "valid_until": None,
