@@ -104,15 +104,19 @@ class PostgresOddsQuoteStore:
                     raise ValueError("FIXTURE_CROSSWALK_FIXTURE_ID_MISMATCH")
 
                 cur.execute(
-                    """SELECT approval_id, provider, source_id, status, permitted_uses,
-                              valid_from, reviewed_at, valid_until, evidence_sha256
+                    """SELECT approval_id, provider, source_id, competition_scope, data_type,
+                              status, permitted_uses, valid_from, reviewed_at,
+                              valid_until, evidence_sha256
                        FROM source_approvals WHERE approval_id=%s FOR SHARE""",
                     (context.rights_approval_id,),
                 )
                 approval = cur.fetchone()
                 if approval is None:
                     raise ValueError("QUOTE_RIGHTS_APPROVAL_MISSING")
-                permitted = approval[4] if isinstance(approval[4], (list, tuple)) else ()
+                if approval[4] != "odds_quote":
+                    raise ValueError("QUOTE_RIGHTS_DATA_TYPE_MISMATCH")
+                permitted = approval[6] if isinstance(approval[6], (list, tuple)) else ()
+                allowed_sports = set((approval[3] or "").split(","))
                 cur.execute(
                     """SELECT status, effective_at FROM source_approval_status_events
                        WHERE approval_id=%s
@@ -120,16 +124,19 @@ class PostgresOddsQuoteStore:
                     (context.rights_approval_id,),
                 )
                 status_event = cur.fetchone()
-                status = status_event[0] if status_event else approval[3]
-                effective_at = status_event[1] if status_event else approval[5]
+                status = status_event[0] if status_event else approval[5]
+                effective_at = status_event[1] if status_event else approval[7]
                 rights = QuoteRights(
                     approval_id=approval[0], provider=approval[1], source_id=approval[2],
                     status=status, permitted_uses=frozenset(permitted),
-                    effective_at=effective_at, recorded_at=approval[6],
-                    valid_until=approval[7], evidence_sha256=approval[8].strip(),
+                    effective_at=effective_at, recorded_at=approval[8],
+                    valid_until=approval[9], evidence_sha256=approval[10].strip(),
                 )
 
                 for quote in parsed_capture.observations:
+                    if quote.sport_key not in allowed_sports:
+                        rejected += 1
+                        continue
                     admission = evaluate_quote_admission(
                         quote=quote, crosswalk=crosswalk, rights=rights,
                         fixture_id=context.fixture_id,
