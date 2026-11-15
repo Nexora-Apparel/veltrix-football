@@ -116,6 +116,15 @@ def validate_report(report: dict, rows: list[dict]) -> tuple[list[dict], list[di
         canonical_team_ids.add(canonical_id)
 
     row_by_line = {item["source_line_number"]: item for item in rows}
+    if len(row_by_line) != 738:
+        raise RuntimeError("AIMIDAS_CROSSWALK_SOURCE_LINE_NUMBERS_NOT_UNIQUE")
+    discrepant_matches = [m for m in matches if int(m.get("team_stat_discrepancy_count", 0)) > 0]
+    if (
+        len(discrepant_matches) != 1
+        or int(discrepant_matches[0].get("team_stat_discrepancy_count", 0)) != 2
+        or discrepant_matches[0].get("team_stats_quality_status") != "ROW_STATS_INCONSISTENT"
+    ):
+        raise RuntimeError("AIMIDAS_CROSSWALK_TEAM_STAT_QUARANTINE_EVIDENCE_INVALID")
     fixture_ids = set()
     source_match_ids = set()
     fixture_rows = []
@@ -388,6 +397,7 @@ def accept(report_path: Path, input_dir: Path, database_url: str) -> dict:
             or int(row["unique_source_ids"]) != int(row["rows"])
             or int(row["reviewed_rows"]) != int(row["rows"])
             or int(row["evidence_linked_rows"]) != int(row["rows"])
+            or int(row["unique_canonical_ids"]) != int(row["rows"])
             for row in verified
         ):
             raise RuntimeError("AIMIDAS_CROSSWALK_POSTWRITE_VERIFICATION_FAILED")
@@ -416,10 +426,16 @@ def accept(report_path: Path, input_dir: Path, database_url: str) -> dict:
     report["summary"]["database_mutations"] = 1 if inserted else 0
     report["side_effects"]["crosswalk_rows_written"] = inserted
     report["side_effects"]["crosswalk_rows_resolved"] = EXPECTED_CROSSWALKS
+    report["side_effects"]["database_mutations"] = 1 if inserted else 0
     report["side_effects"]["normalized_fixture_rows_written"] = 0
     report["side_effects"]["fixture_result_rows_written"] = 0
     report["side_effects"]["production_writes"] = 0
+    report["side_effects"]["production_written"] = False
     report["side_effects"]["predictions_written"] = 0
+    report["side_effects"]["predictions_changed"] = False
+    report["side_effects"]["deployment_performed"] = False
+    report["side_effects"]["schedule_activated"] = False
+    report["side_effects"]["value_betting_unlocked"] = False
     report["side_effects"]["telegram_sent"] = False
     report["side_effects"]["value_betting"] = "LOCKED"
     report["acceptance_transaction"] = {
