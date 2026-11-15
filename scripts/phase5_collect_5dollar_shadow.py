@@ -460,7 +460,7 @@ def _capture_page(
             current_approval, recorded_at = _refresh_approval(staging_dsn)
             decision = evaluate_source_use(
                 current_approval, DataUsePurpose.STORAGE,
-                at_utc=recorded_at, commercial=True,
+                at_utc=recorded_at, commercial=False,
             )
             if not decision.allowed:
                 raise PermissionError(decision.reason_code)
@@ -520,7 +520,7 @@ def _capture_page(
         current_approval, recorded_at = _refresh_approval(staging_dsn)
         for purpose in (DataUsePurpose.STORAGE, DataUsePurpose.MODEL_TRAINING):
             decision = evaluate_source_use(
-                current_approval, purpose, at_utc=recorded_at, commercial=True
+                current_approval, purpose, at_utc=recorded_at, commercial=False
             )
             if not decision.allowed:
                 raise PermissionError(decision.reason_code)
@@ -567,7 +567,7 @@ def _capture_page(
     current_approval, recorded_at = _refresh_approval(staging_dsn)
     for purpose in (DataUsePurpose.STORAGE, DataUsePurpose.CACHE):
         decision = evaluate_source_use(
-            current_approval, purpose, at_utc=recorded_at, commercial=True
+            current_approval, purpose, at_utc=recorded_at, commercial=False
         )
         if not decision.allowed:
             raise PermissionError(decision.reason_code)
@@ -658,7 +658,7 @@ def run_capture(
     )
     initial_time = datetime.now(timezone.utc)
     for purpose in (DataUsePurpose.COLLECTION, DataUsePurpose.CACHE, DataUsePurpose.MODEL_TRAINING):
-        decision = evaluate_source_use(approval, purpose, at_utc=initial_time, commercial=True)
+        decision = evaluate_source_use(approval, purpose, at_utc=initial_time, commercial=False)
         if not decision.allowed:
             raise PermissionError(decision.reason_code)
 
@@ -683,7 +683,7 @@ def run_capture(
             current, evaluated_at = _refresh_approval(staging_dsn)
             decision = evaluate_source_use(
                 current, DataUsePurpose.COLLECTION,
-                at_utc=evaluated_at, commercial=True,
+                at_utc=evaluated_at, commercial=False,
             )
             if not decision.allowed:
                 raise PermissionError(decision.reason_code)
@@ -723,7 +723,7 @@ def run_capture(
             current, evaluated_at = _refresh_approval(staging_dsn)
             decision = evaluate_source_use(
                 current, DataUsePurpose.COLLECTION,
-                at_utc=evaluated_at, commercial=True,
+                at_utc=evaluated_at, commercial=False,
             )
             if not decision.allowed:
                 raise PermissionError(decision.reason_code)
