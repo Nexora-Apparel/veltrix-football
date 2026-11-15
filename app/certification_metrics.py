@@ -352,7 +352,7 @@ def recompute_raw_certification(manifest_path: str | Path, *, min_walk_forward: 
         or rights_audit.get("raw_redistribution_allowed") is not False
     ):
         raise EvidenceIntegrityError(
-            "coverage_audit does not prove approved non-commercial project rights and raw-redistribution restrictions."
+            "coverage_audit does not prove approved rights for non-commercial project use and raw-redistribution restrictions."
         )
     approved_sources = data["coverage_audit"].get("approved_source_ids")
     if not isinstance(approved_sources, list) or not approved_sources or any(not isinstance(item, str) or not item for item in approved_sources):
