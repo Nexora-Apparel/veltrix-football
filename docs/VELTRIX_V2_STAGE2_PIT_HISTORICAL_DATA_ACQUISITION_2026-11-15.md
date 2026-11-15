@@ -95,3 +95,31 @@ The current OpenFootball and supplemental FootballData parsers also set `point_i
 The latest exact-head CI on commit `9bd078cd741248feb50aadcaf337b37f32dc5db5` reports Phase 2 foundation, Phase 5 shadow regression, historical model audit, certification evidence integrity and PostgreSQL 16/18 acceptance all successful; the daily fixture workflow is intentionally skipped. These are software/integration checks, not evidence that the source archives are PIT or that Stage 2 has passed.
 
 **No-go:** do not mark Stage 2 complete, do not run historical walk-forward evaluation using these archive commit timestamps as pre-match publication times, and do not loosen the temporal evaluator. The next implementation task is the parser/serializer/verifier correction above, followed by a separately qualified genuine PIT source acquisition.
+
+
+## 8. Temporal-semantics remediation implementation — 2026-11-15
+
+The first corrective implementation is now committed on the integration branch:
+
+- OpenFootball parser: `e8745dd6679a005d7a2475768118e6e9bee35cc0`
+- FootballData parser: `863380763133b5d9205a31262b27b7d95194472c`
+- OpenFootball collector: `78ba613965c7678312d3c41f9288be06b0aa8504`
+- OpenFootball independent verifier: `0e891ec19176e84e601878a57216aacf2f209b4f`
+- FootballData collector: `81b6da325a94527616f581f00c0b802f1a92377c`
+- FootballData independent verifier: `685282e8b9f258601e8de37f8f0fc409c3825343`
+- Model prospective-availability allowlist: `6e43e4c3befb49f8e628d9fd95f3034252e1be8c`
+- Archive pack and parser regression assertions: `4f029771b9c0ec5eb7c17c3577d1de4fe80cdd64`, `6e59a9f4d1044053956c8daa5faa425423c47f1b`, `2e88bac3d225ea0f9ce263660ea7a69dbf9d4830`, `20085045a590d6a6a134e7f4b351822aa4ce32af`, `593b3fcd28ba1e0129e781652cb036daff9ca214`.
+
+The corrected contract is:
+- Git commit time remains available as `source_commit_timestamp` / `source_snapshot_available_at` metadata only.
+- Archive rows have `source_published_at=null` and `source_timestamp_basis=unverified_repository_commit_timestamp`.
+- Archive row `available_at` and `recorded_at` now use the actual collector import/retrieval time.
+- Both archive parsers set `point_in_time_certifiable=false`.
+- A distinct `archive_first_observed_at_import_v1` availability basis is recognized only by the explicit prospective-observation path; it does not enter the historical walk-forward training path, which still requires `point_in_time_certifiable=true`.
+- OpenFootball metadata retains the actual source commit timestamp separately from import time.
+
+The first Stage 2 workflow run on the initial parser correction (run 43712824451, commit `48c6e89f1915ef2543ff58d61f8cb5c88c9fc8e3`) failed two legacy assertions that still expected commit-time availability and historical training eligibility. Those assertions were corrected: archive availability must equal import time, and the archive cannot train a historical PIT forecast without independent source-publication evidence.
+
+The updated foundation regression run on commit `593b3fcd28ba1e0129e781652cb036daff9ca214` is in progress at the time of this note. No pass is claimed until the exact-head checks finish. The Stage 2 archive-collection workflow itself has not been rerun on this corrected head.
+
+**Stage 2 remains OPEN.** This correction removes an unsafe PIT claim; it does not create the missing historical as-of data. Staging import, identity crosswalk integration, external historical PIT provider evidence and verified historical odds remain outstanding.
