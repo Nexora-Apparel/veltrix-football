@@ -166,7 +166,7 @@ For the additional 80% high-confidence target, require at least 300 prospective 
 
 - No changes to the legacy prediction system.
 - No production ingestion until source reconciliation and isolated database dry-run pass.
-- No model training until accepted datasets and rights approvals exist.
+- Non-commercial source rights are registered in the project-wide and source-specific approval records. Model training may proceed only with datasets that pass schema, provenance, temporal-eligibility, competition-coverage and leakage controls.
 - No value-bet publication until certification.
 - No Vercel deployment until the quota/build-limit issue is cleared.
 - No Telegram schedule activation until the user-authorized release gate is complete.
@@ -177,9 +177,9 @@ For the additional 80% high-confidence target, require at least 300 prospective 
 1. Fix the 5Dollar EPL catalogue discovery using documented `country=GB-ENG`, `search=Premier League` and `popular=1` discovery paths; retain strict exact identity matching and emit sanitized catalogue diagnostics if no unique EPL row is found.
 2. Rerun paired acquisition; do not accept source download alone as reconciliation.
 3. Add an exact team crosswalk and row-level score/kickoff/status reconciliation.
-4. Qualify OpenPlay historical player/event/xG data and its CC BY 4.0 attribution requirements.
+4. OpenPlay historical player/event/xG structure, hashes, rights and staging persistence are qualified. Continue competition-season coverage checks, feature extraction and temporal-eligibility tests; preserve CC BY 4.0 attribution and the source xG model ID.
 5. Qualify FPL EPL player snapshots as a limited, undocumented source; keep it optional until terms and schema stability are reviewed.
-6. Probe PitchAPI only after provider confirms source lineage, storage, commercial display and model-training rights.
+6. Probe PitchAPI for endpoint access, actual upstream lineage, field coverage, timestamp semantics and schema stability. The project-wide authorization covers non-commercial use; monetisation remains prohibited.
 7. Build point-in-time feature snapshots, then candidate score models and market-specific evaluation.
 
 
