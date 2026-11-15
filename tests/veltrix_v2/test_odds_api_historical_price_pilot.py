@@ -3,13 +3,22 @@ from __future__ import annotations
 from datetime import datetime, timezone
 
 from scripts.veltrix_v2.capture_odds_api_historical_price_pilot import (
-    MARKET, SPORT, _build_url, _market_summary, _normalize, _utc,
+    MARKET, SPORT, PAID_HISTORICAL_ENTITLEMENT_CONFIRMED, _build_url, _market_summary, _normalize, run_capture, _utc,
 )
 
 
 def test_pilot_uses_only_approved_la_liga_sport_key_and_three_way_market():
     assert SPORT == "soccer_spain_la_liga"
     assert MARKET == "h2h_3_way"
+    assert PAID_HISTORICAL_ENTITLEMENT_CONFIRMED is False
+
+
+def test_paid_plan_gate_blocks_before_api_or_database_access():
+    result = run_capture("", "")
+    assert result["status"] == "BLOCKED_PAID_HISTORICAL_PLAN_REQUIRED"
+    assert result["credits_spent_this_run"] == 0
+    assert result["database_writes_this_run"] == 0
+    assert result["raw_prices_in_artifact"] is False
 
 
 def test_historical_api_key_uses_required_query_parameter():
