@@ -66,6 +66,7 @@ class FixtureCandidateRow:
     competition_id: str
     kickoff_at: datetime
     cutoff_at: datetime
+    recorded_at: datetime
     actual_class: str
     predictions: dict[str, ProbabilityVector]
 
@@ -312,7 +313,7 @@ def evaluate_model_challengers(
             pass
         scored.append(FixtureCandidateRow(
             target.fixture_id, target.competition_id, target.kickoff_at, cutoff,
-            _actual(target), predictions,
+            target.recorded_at, _actual(target), predictions,
         ))
 
     names = ("poisson", "elo", "form", "blend_poisson_elo",
@@ -345,36 +346,44 @@ def evaluate_model_challengers(
         calibrated_for_comp: dict[str, CandidateMetrics] = {}
         split = max(50, int(len(subset) * 0.6))
         if split < len(subset):
-            calibration_rows, evaluation_rows = subset[:split], subset[split:]
+            calibration_pool, evaluation_rows = subset[:split], subset[split:]
             for candidate in ("poisson", "dixon_coles"):
-                fit_rows = [row for row in calibration_rows if candidate in row.predictions]
-                test_rows = [row for row in evaluation_rows if candidate in row.predictions]
-                if len(fit_rows) < 50 or not test_rows:
-                    continue
-                labels = [("HOME", "DRAW", "AWAY").index(row.actual_class) for row in fit_rows]
-                probabilities = [
-                    (row.predictions[candidate].home,
-                     row.predictions[candidate].draw,
-                     row.predictions[candidate].away)
-                    for row in fit_rows
-                ]
-                try:
-                    calibrator = fit_multiclass_temperature(probabilities, labels)
-                except (TypeError, ValueError):
-                    continue
                 calibrated_rows = []
+                fit_counts = []
                 key = f"{candidate}_temperature"
-                for row in test_rows:
-                    p = row.predictions[candidate]
+                for target_row in evaluation_rows:
+                    # Only use earlier calibration outcomes actually recorded
+                    # by this target's cutoff; kickoff ordering alone is not
+                    # sufficient to establish label availability.
+                    fit_rows = [row for row in calibration_pool
+                                if candidate in row.predictions
+                                and row.kickoff_at < target_row.cutoff_at
+                                and row.recorded_at <= target_row.cutoff_at]
+                    if len(fit_rows) < 50:
+                        continue
+                    labels = [("HOME", "DRAW", "AWAY").index(row.actual_class) for row in fit_rows]
+                    probabilities = [
+                        (row.predictions[candidate].home,
+                         row.predictions[candidate].draw,
+                         row.predictions[candidate].away)
+                        for row in fit_rows
+                    ]
+                    try:
+                        calibrator = fit_multiclass_temperature(probabilities, labels)
+                    except (TypeError, ValueError):
+                        continue
+                    p = target_row.predictions[candidate]
                     adjusted = apply_multiclass_temperature(
                         (p.home, p.draw, p.away), calibrator
                     )
-                    predictions = dict(row.predictions)
+                    predictions = dict(target_row.predictions)
                     predictions[key] = ProbabilityVector(*adjusted)
-                    calibrated_rows.append(replace(row, predictions=predictions))
-                calibrated_for_comp[key] = _metrics(calibrated_rows, key)
-                calibration_fit_samples[f"{competition}:{candidate}"] = len(fit_rows)
-                calibration_test_samples[f"{competition}:{candidate}"] = len(test_rows)
+                    calibrated_rows.append(replace(target_row, predictions=predictions))
+                    fit_counts.append(len(fit_rows))
+                if calibrated_rows:
+                    calibrated_for_comp[key] = _metrics(calibrated_rows, key)
+                    calibration_fit_samples[f"{competition}:{candidate}"] = min(fit_counts)
+                    calibration_test_samples[f"{competition}:{candidate}"] = len(calibrated_rows)
         calibration_metrics[competition] = calibrated_for_comp
         competition_reports.append(CompetitionReliability(
             competition, len(subset), raw_metrics
