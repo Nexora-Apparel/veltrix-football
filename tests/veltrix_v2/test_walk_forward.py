@@ -268,6 +268,7 @@ def test_walk_forward_exposes_only_cutoff_eligible_openplay_context():
                 "team": {
                     "provider_entity_id": team, "canonical_entity_id": team,
                     "mapping_status": "RESOLVED", "evidence_observation_id": 108,
+                    "mapping_method": "EXACT_NAME_AND_COMPETITION_OVERLAP",
                     "crosswalk_version_id": 20, "valid_from": crosswalk_times,
                     "recorded_at": crosswalk_times, "valid_until": None,
                 },
@@ -280,6 +281,7 @@ def test_walk_forward_exposes_only_cutoff_eligible_openplay_context():
                 "competition": {
                     "provider_entity_id": "league", "canonical_entity_id": "league",
                     "mapping_status": "RESOLVED", "evidence_observation_id": 109,
+                    "mapping_method": "EXPLICIT_REGION_NAME_ALIAS",
                     "crosswalk_version_id": 22, "valid_from": crosswalk_times,
                     "recorded_at": crosswalk_times, "valid_until": None,
                 },
