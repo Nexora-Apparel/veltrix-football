@@ -343,4 +343,16 @@ jobs:
           python -m pip install --disable-pip-version-check -r requirements.txt
           python -m pip install --disable-pip-version-check "psycopg[binary]>=3.2,<4"
       - name: Verify Brazil Serie B sport entitlement and current quota without odds credits
-        run: python scripts/veltrix_v2/probe_odds_api_no_credit.py
+        run: python -m scripts.veltrix_v2.probe_odds_api_no_credit
+      - name: Test capped historical discovery contract
+        run: python -m pytest --import-mode=importlib -q tests/veltrix_v2/test_odds_api_brazil_serie_b_history.py
+      - name: Discover one historical Brazil Serie B event and its bookmaker markets (maximum two credits)
+        run: python -m scripts.veltrix_v2.probe_odds_api_brazil_serie_b_history --output /tmp/odds-api-brazil-serie-b-history-discovery.json
+      - name: Upload sanitized historical coverage discovery
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: veltrix-odds-api-brazil-serie-b-history-discovery
+          path: /tmp/odds-api-brazil-serie-b-history-discovery.json
+          if-no-files-found: warn
+          retention-days: 30
