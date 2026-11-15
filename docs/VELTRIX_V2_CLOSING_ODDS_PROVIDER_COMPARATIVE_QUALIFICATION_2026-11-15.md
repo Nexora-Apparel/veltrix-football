@@ -277,3 +277,10 @@ Result: COMMUNITY / ACTIVE; ULTRA NOT VERIFIED. The status-only probe made no le
 The Odds API owner authorization remains active for the five approved European competitions and the provider sports catalogue previously confirmed all five sport keys. Its last no-cost /v4/sports probe (2026-11-15 13:21 UTC) recorded 295 credits remaining and 205 used. The account plan is undisclosed, monthly allowance is null and billing-period boundaries are NOT ESTABLISHED. Therefore the credit-reservation service has no valid monthly budget snapshot. Do not spend live odds credits until the billing period and hard caps are established and a budget snapshot is recorded.
 
 The 788 existing 5Dollar observations remain timestamped OPENING quotes. They are not closing quotes and are not eligible for CLV. The dedicated odds_quote_observations relation is currently The Odds API-specific and contains zero rows. No new live odds snapshots were collected in this run.
+
+
+### AI Midas temporal-evidence audit — 2026-11-16
+
+AI Midas remains an authorised historical-statistics and additional-odds source under the user's approval, including the Brazil Série B identity work. The staging audit currently finds 14 dataset-asset observations (7 season-match CSVs, 6 historical-match CSVs, 1 advanced-team-match CSV), all first recorded by VELTRIX at 2026-11-15T19:41:43.265Z. Their source timestamp basis is unknown and their current point_in_time_certifiable flag is false. The identity reconciliation has 369 resolved fixture mappings and 20 resolved team mappings; it does not by itself certify time availability or bookmaker closing odds.
+
+Disposition: retain and use the assets for authorised historical research, but do not silently promote them to PIT_CERTIFIED historical training features or bookmaker-specific closing-odds evidence. A separate prospective-only archive-as-of-import eligibility class could be evaluated for future fixtures, but it must remain distinct from historical walk-forward certification and must preserve the actual VELTRIX import timestamp. The current seven-forecast OpenPlay series does not consume AI Midas data.
