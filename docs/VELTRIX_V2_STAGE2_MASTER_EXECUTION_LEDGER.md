@@ -282,3 +282,16 @@ At the time of this ledger:
 - Database transaction was explicitly read-only. No normalized fixtures, results, entity crosswalks, model features or predictions were written. No mapping was marked `RESOLVED`.
 - Full report: `docs/VELTRIX_V2_AIMIDAS_HISTORICAL_IDENTITY_RECONCILIATION_2026-11-15.md`.
 - This identity audit does not supply historical PIT timestamps, closing odds, CLV or certification evidence. AI Midas rows remain non-PIT and model admission remains false.
+
+
+### AI Midas Brazil Série B 2026 fixture identity reconciliation — 2026-11-15
+
+- Dedicated audit target: canonical 5DollarFootballAPI Brazil Série B, provider competition ID 522514093, staging fixture universe 371 finished fixtures for calendar 2026.
+- AI Midas file provenance rechecked: aimidas1/aimidas1@29baca362a34ce5dcd3924b07ec9c7d5139d83fc, advanced stats/Brazil Serie B 2026.csv, Git blob SHA-1 b6bdb94c053d2149e6232fb100e1f158e46e4533, 192,284 bytes; raw provider response ID 1238 / source observation ID 432397; response SHA-256 55b0c00629abd2d4ff3c31659ada950b67ffc2752609284b32c15c99f71152ab.
+- Independent read-only SQL reconciliation: 738/738 source team rows, 369/369 match labels, 20/20 unique team identities; 369/369 unique canonical fixture IDs and 369/369 exact score agreements. All 738 team-level Goals / Goals Conceded fields agree with the source match-label score orientation.
+- Date deltas: 333 same UTC calendar date, 36 canonical kickoff dates one day after the source date. Source date remains date-only; no inferred kickoff time.
+- Two exact canonical fixture omissions: Náutico 1–0 Botafogo SP on 2026-09-03 (fixture 1927 / provider ID 3538579905), an unexplained omission inside the source file's date range; and Londrina 2–1 Náutico on 2026-11-11 (fixture 1807 / provider ID 1878457839), beyond the source file's 2026-11-08 maximum date. No replacements or synthetic mappings.
+- Implementation adds stable per-row source IDs, canonical-row SHA-256 fingerprints, match-key hashes and a read-only audit workflow. Sanitized artifact excludes raw CSV content.
+- Reviewer status: all 369 candidate identities are evidence-verified but remain REVIEW_REQUIRED; no reviewer acceptance event has been recorded and no crosswalk is marked RESOLVED. No crosswalk, normalized fixture/result or model-feature rows were written.
+- Full report: docs/VELTRIX_V2_AIMIDAS_BRAZIL_SERIE_B_2026_IDENTITY_RECONCILIATION_2026-11-15.md.
+- PIT, historical closing odds and CLV remain unqualified. AI Midas average odds do not satisfy bookmaker-specific closing-price or CLV requirements. Value betting remains LOCKED.
