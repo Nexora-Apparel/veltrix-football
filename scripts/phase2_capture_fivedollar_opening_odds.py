@@ -132,7 +132,7 @@ def _load_targets(connection, *, lookback_days: int, limit: int, now: datetime) 
              AND x.canonical_entity_key=f.id::text AND x.mapping_status='RESOLVED'
             WHERE f.provider=%s
               AND f.kickoff_at >= %s AND f.kickoff_at < %s
-              AND f.competition_id::text = ANY(%s::text[])
+              AND c.provider_competition_id::text = ANY(%s::text[])
               AND x.valid_from <= %s AND (x.valid_until IS NULL OR x.valid_until > %s)
               AND NOT EXISTS (
                 SELECT 1 FROM source_observations o
