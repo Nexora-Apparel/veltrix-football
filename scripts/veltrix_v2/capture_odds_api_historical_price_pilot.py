@@ -261,9 +261,9 @@ def _persist_staging(dsn: str, approval, response: ProviderResponse, payload: di
                 PROVIDER, response.endpoint, "odds_snapshot", provider_entity_id,
                 payload_hash, response.fetched_at_utc, metadata, SOURCE_ID,
                 "historical_odds_snapshot", "2026", kickoff, snapshot,
-                "provider_historical_snapshot_timestamp", approval.approval_id,
+                "archival_snapshot_timestamp", approval.approval_id,
                 "veltrix-v2-the-odds-api-historical-snapshot-v1", response_id,
-                now, snapshot.isoformat(), "provider_historical_snapshot_timestamp",
+                now, snapshot.isoformat(), "archival_snapshot_timestamp",
             ),
         )
         source = cur.execute(
@@ -326,6 +326,8 @@ def run_capture(api_key: str, staging_dsn: str) -> dict:
     events_payload, events_body, events_headers, events_env, events_req, events_got = _fetch_json(events_path, api_key)
     if events_env.quota_evidence.requests_last != 1:
         raise RuntimeError("ODDS_API_EVENT_DISCOVERY_COST_NOT_ONE")
+    if events_env.quota_evidence.requests_remaining != quota.requests_remaining - 1:
+        raise RuntimeError("ODDS_API_EVENT_DISCOVERY_QUOTA_DELTA_UNEXPECTED")
     events_data, events_snapshot = _data(events_payload)
     if not isinstance(events_data, list):
         raise RuntimeError("ODDS_API_EVENT_DISCOVERY_DATA_NOT_LIST")
@@ -348,6 +350,8 @@ def run_capture(api_key: str, staging_dsn: str) -> dict:
             "database_writes_this_run": 0,
             "raw_prices_in_artifact": False,
         }
+    if not isinstance(events_snapshot, str) or _utc(events_snapshot) > _utc(KICKOFF_AT):
+        raise RuntimeError("ODDS_API_EVENT_DISCOVERY_SNAPSHOT_NOT_PRE_KICKOFF")
     event = target_events[0]
     event_id = str(event.get("id") or "")
     if not event_id:
@@ -360,6 +364,8 @@ def run_capture(api_key: str, staging_dsn: str) -> dict:
     markets_payload, markets_body, markets_headers, markets_env, markets_req, markets_got = _fetch_json(markets_path, api_key)
     if markets_env.quota_evidence.requests_last != 1:
         raise RuntimeError("ODDS_API_MARKET_DISCOVERY_COST_NOT_ONE")
+    if markets_env.quota_evidence.requests_remaining != events_env.quota_evidence.requests_remaining - 1:
+        raise RuntimeError("ODDS_API_MARKET_DISCOVERY_QUOTA_DELTA_UNEXPECTED")
     markets_data, markets_snapshot = _data(markets_payload)
     if not isinstance(markets_data, dict):
         raise RuntimeError("ODDS_API_MARKET_DISCOVERY_DATA_NOT_OBJECT")
@@ -371,6 +377,8 @@ def run_capture(api_key: str, staging_dsn: str) -> dict:
         for bookmaker in market_bookmakers if isinstance(bookmaker, dict)
         for market in (bookmaker.get("markets") or []) if isinstance(market, dict) and market.get("key")
     }
+    if not isinstance(markets_snapshot, str) or _utc(markets_snapshot) > _utc(KICKOFF_AT):
+        raise RuntimeError("ODDS_API_MARKET_DISCOVERY_SNAPSHOT_NOT_PRE_KICKOFF")
     if MARKET not in available_markets:
         return {
             "status": "APPROVED_LEAGUE_THREE_WAY_MARKET_NOT_AVAILABLE",
@@ -403,6 +411,15 @@ def run_capture(api_key: str, staging_dsn: str) -> dict:
     expected_cost = 10
     if odds_env.quota_evidence.requests_last != expected_cost:
         raise RuntimeError("ODDS_API_HISTORICAL_PRICE_COST_NOT_TEN")
+    if odds_env.quota_evidence.requests_remaining != markets_env.quota_evidence.requests_remaining - expected_cost:
+        raise RuntimeError("ODDS_API_HISTORICAL_PRICE_QUOTA_DELTA_UNEXPECTED")
+    total_credits = (
+        events_env.quota_evidence.requests_last
+        + markets_env.quota_evidence.requests_last
+        + odds_env.quota_evidence.requests_last
+    )
+    if total_credits > MAX_CREDITS:
+        raise RuntimeError("ODDS_API_PILOT_CREDIT_CAP_EXCEEDED")
     odds_data, snapshot_raw = _data(odds_payload)
     if not isinstance(odds_data, dict):
         raise RuntimeError("ODDS_API_HISTORICAL_ODDS_DATA_NOT_OBJECT")
