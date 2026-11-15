@@ -327,3 +327,12 @@ At the time of this ledger:
 - Sanitized artifact 14178319188; ZIP SHA-256 4b8c0ed7489cf82dd48c34ca1ba55f884ae5fe652fb2190c919139721a764500.
 - Row-level evidence: 738 unique source row IDs and SHA-256 fingerprints, 369 unique match-key hashes, 369 unique canonical fixture IDs. Raw CSV content was not uploaded.
 - Final disposition: 369 match-level identity/score candidates verified; 2 missing canonical fixtures unresolved; 2 team-stat rows quarantined; reviewer acceptance pending; 0 crosswalk writes; value betting LOCKED.
+
+
+### The Odds API competition-scope gate — 2026-11-15
+
+- Live staging approval check confirms approval-the-odds-api-v4-owner-authorized-2026-11-14 is APPROVED for collection, storage, benchmarking and model training, but its competition scope is limited to five keys: soccer_epl, soccer_spain_la_liga, soccer_germany_bundesliga, soccer_italy_serie_a and soccer_france_ligue_one. Raw redistribution is prohibited.
+- Brazil Série B is outside this approval. Public technical API coverage does not authorize Veltrix ingestion. No Brazil Série B prices were requested or stored; the two Brazil events/markets discovery exercises were metadata-only, not persisted, and are excluded from admitted data. Do not make further Brazil requests to The Odds API unless the approval scope is formally expanded.
+- Brazil metadata discovery trail: Londrina–Náutico was absent from the 2026-11-11 21:50:36 snapshot (1 credit); Ponte Preta–Operário PR was found in the 2026-11-12 21:50:36 snapshot with 16 providers, 1X2 three-way listed for 16, totals for 13, BTTS for 3; the 16 includes two exchanges. Total discovery credits used including a parser retry: 5. Latest account quota evidence: 210 used / 290 remaining. No price endpoint calls or database writes.
+- Continue historical price pilot only within the five approved European competitions. Candidate fixture: Atletico Madrid vs Barcelona, 2026-11-08 20:00 UTC, canonical fixture ID 1426, Spain La Liga. Require exact event identity and pre-kickoff quote timestamps. Store raw response only in staging; never upload raw price data to public artifacts.
+- Value betting remains LOCKED; historical closing odds and CLV remain NOT CERTIFIED.
