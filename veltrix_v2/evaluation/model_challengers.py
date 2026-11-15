@@ -320,7 +320,7 @@ def evaluate_model_challengers(
              "blend_poisson_form", "blend_elo_form", "blend_all_equal", "dixon_coles")
     metrics = {
         name: _metrics([row for row in scored if name in row.predictions], name)
-        for name in names
+        for name in names if any(name in row.predictions for row in scored)
     }
     paired = {
         name: _paired_improvement([row for row in scored if name in row.predictions], name)
@@ -341,7 +341,7 @@ def evaluate_model_challengers(
         )
         raw_metrics = {
             name: _metrics([row for row in subset if name in row.predictions], name)
-            for name in names
+            for name in names if any(name in row.predictions for row in subset)
         }
         calibrated_for_comp: dict[str, CandidateMetrics] = {}
         split = max(50, int(len(subset) * 0.6))
