@@ -78,3 +78,16 @@ The persistence discrepancy is resolved as an audit-table mismatch; no provider 
 Historical source disposition is unchanged and formally closed for this review cycle: 5Dollar tick history is Ultra-only and account entitlement is not evidenced. The Odds API historical snapshots are technically suitable if paid-plan access, relevant sport keys, UK bookmaker/market availability and returned timestamp coverage are verified; current VELTRIX evidence is catalogue-only and has zero event/historical odds responses. SockOdds and Odds-API.io are research candidates only; no account entitlement, legal/rights scope, exact seven-competition coverage, identity mapping or response evidence is available. Do not count them toward certification.
 
 Latest quota read-back is 16 requests remaining; stop capture until after 17:00 UTC reset and a fresh preflight. No further provider request is made in this update. Stage 2 remains NO-GO: 52.42% is below 98%, no timestamped closing/near-close evidence or CLV exists, and model certification thresholds remain unmet.
+
+
+### Opening-odds acquisition continuation — 2026-11-15 17:55 UTC
+
+- Controlled capture manifests 109–135 are reconciled: 27 batches × 25 requests = 675 requests, 675 HTTP 200 responses, 675 persisted raw `source_observations`, 675 distinct provider fixture IDs and 675 distinct payload hashes.
+- All 675 are PIT-certifiable opening quotes, have the exact approved non-commercial rights ID, resolve to active canonical fixture crosswalks, and pass Bet365 1X2 opening-price and pre-kickoff timestamp checks. Zero retries.
+- The raw capture target is `source_observations`; `odds_quote_observations` is a separate downstream normalized table and is not the raw workflow's persistence target.
+- Frozen 90-day universe: 763 fixtures. Coverage is 675/763 = 88.47%. The 98% gate requires at least 748 valid quotes; 73 additional observations are needed. 88 fixtures remain uncaptured.
+- Last persisted provider quota evidence after manifest 135: limit 300, remaining 14. No further provider calls are permitted until the next quota reset and a fresh quota preflight confirms sufficient headroom for one full batch.
+- Latest completed capture run: 43743516430; manifest 135; artifact 14172798183. Capture job and aggregate artifact upload succeeded.
+- CI on the capture head passed: Phase 2 foundation, PostgreSQL 16/18 acceptance, Phase 5 Shadow Regression, Certification Evidence Integrity and Historical Model Audit. Daily Fixture Predictions was skipped as intended.
+- Historical/closing odds source remains unqualified: 5Dollar history requires Ultra; The Odds API has only catalogue evidence in this account; SockOdds and Odds-API.io remain unverified candidates. No closing-price or CLV evidence is admitted.
+- **Stage 2 remains NO-GO / OPEN / NOT RELEASE-READY.** 88.47% is below 98%; closing odds/CLV and model certification thresholds remain unmet. Stage 3, production deployment, prediction publication, Telegram delivery, schedule activation and value betting remain disabled.
