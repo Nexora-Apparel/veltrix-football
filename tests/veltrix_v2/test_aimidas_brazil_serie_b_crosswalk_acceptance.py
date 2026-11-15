@@ -41,7 +41,7 @@ def _report():
     matches[-1]["team_stat_discrepancy_count"] = 2
     matches[-1]["team_stats_quality_status"] = "ROW_STATS_INCONSISTENT"
     return {
-        "schema_version": "veltrix-aimidas-serieb-identity-audit-v1",
+        "schema_version": "veltrix-aimidas-brazil-serie-b-identity-audit-v1",
         "source": {
             "commit": "29baca362a34ce5dcd3924b07ec9c7d5139d83fc",
             "file_sha256": "55b0c00629abd2d4ff3c31659ada950b67ffc2752609284b32c15c99f71152ab",
