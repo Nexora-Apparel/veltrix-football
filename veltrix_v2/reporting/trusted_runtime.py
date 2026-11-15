@@ -172,6 +172,8 @@ def build_provider_rights_evaluator(evidence_reader):
             checked_at = entitlement.get("checked_at")
             expires_at = entitlement.get("expires_at")
             terms_checked_at = terms.get("checked_at")
+            evaluated_at = evidence.get("evaluated_at")
+            record_evaluated_at = record.get("rights_evaluated_at")
             now = datetime.now(timezone.utc)
             def parse(value):
                 if not isinstance(value, str):
@@ -181,11 +183,16 @@ def build_provider_rights_evaluator(evidence_reader):
                 except ValueError:
                     return None
                 return result if result.tzinfo and result.utcoffset() is not None else None
-            checked, expires, terms_checked = map(parse, (checked_at, expires_at, terms_checked_at))
+            checked, expires, terms_checked, evaluated, record_evaluated = map(
+                parse, (checked_at, expires_at, terms_checked_at, evaluated_at, record_evaluated_at)
+            )
             if (
                 checked is None or expires is None or terms_checked is None
-                or checked > now or terms_checked > now or expires <= now
+                or evaluated is None or record_evaluated is None
+                or evaluated != record_evaluated
+                or checked > now or terms_checked > now or evaluated > now or expires <= now
                 or (now - checked).total_seconds() > 24 * 60 * 60
+                or (now - evaluated).total_seconds() > 24 * 60 * 60
                 or (now - terms_checked).total_seconds() > 365 * 24 * 60 * 60
             ):
                 return False
