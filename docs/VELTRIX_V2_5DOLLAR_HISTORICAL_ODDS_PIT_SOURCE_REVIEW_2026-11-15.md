@@ -111,7 +111,7 @@ Counts are grouped by canonical fixture competition through the active crosswalk
 
 ### Final 90-day opening-odds acquisition — 2026-11-15 18:07 UTC
 
-<badge>COMPLETE — OPENING QUOTE COVERAGE</badge>
+**Opening-quote coverage: COMPLETE.**
 
 - Final manifest 139 captured the 13 residual fixtures; all 13 requests returned HTTP 200 and persisted 13 source observations. Zero retries.
 - Manifests 109–139: 31 controlled batches; 30 × 25 plus the final 13 = **763/763** requests, responses and raw observations.
