@@ -12,6 +12,7 @@ on:
 
 permissions:
   contents: read
+  actions: write
 
 concurrency:
   group: veltrix-stage2-aimidas-snapshot
@@ -31,6 +32,12 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+
+      - name: Remove prior raw-source artifact from this public repository
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api --method DELETE "repos/${GITHUB_REPOSITORY}/actions/artifacts/14176128656"
 
       - name: Compile source snapshot tools
         run: |
@@ -53,6 +60,8 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: veltrix-stage2-aimidas-snapshot-pack
-          path: artifacts/aimidas-snapshot-pack/
+          path: |
+            artifacts/aimidas-snapshot-pack/manifest.json
+            artifacts/aimidas-snapshot-pack/verification.json
           if-no-files-found: error
           retention-days: 90
