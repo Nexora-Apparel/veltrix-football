@@ -203,3 +203,12 @@ Manifests 109–123 have completed and independently reconciled: 375/375 request
 Coverage is 375/763 (49.15%). 388 fixtures remain to full coverage; 373 additional valid observations are required to reach the 98% threshold. Latest completed batch: workflow [#43734702902](https://github.com/Nexora-Apparel/veltrix-football/actions/runs/43734702902), artifact [#14168979796](https://github.com/Nexora-Apparel/veltrix-football/actions/runs/43734702902/artifacts/14168979796), SHA-256 `295114a6c9ee623ef5fa8fb2dba430e9684913925467074450c5fa60d89877b9`.
 
 The definitive Stage 2 decision remains **NO-GO — NOT COMPLETE / NOT RELEASE-READY**; see `docs/VELTRIX_V2_STAGE2_FINAL_EXIT_DECISION_2026-11-15.md`.
+
+
+## 15. Latest acquisition reconciliation — 2026-11-15
+
+Manifests 109–124 have completed and independently reconciled: 400/400 requests, 400/400 provider responses, 400/400 timestamped opening quote observations, 400 distinct fixtures and 400 PIT-eligible rows. All 400 map to canonical fixtures, preserve valid timestamp ordering, use Bet365 1X2 and have active RESOLVED fixture crosswalks. No duplicates or ineligible observations were found.
+
+Coverage is 400/763 (52.42%). 363 fixtures remain to full coverage; 348 additional valid observations are required to reach the 98% threshold. Latest completed batch: workflow [#43734920511](https://github.com/Nexora-Apparel/veltrix-football/actions/runs/43734920511), artifact [#14170381591](https://github.com/Nexora-Apparel/veltrix-football/actions/runs/43734920511/artifacts/14170381591), SHA-256 `e45a5d9b092affa0e6cfd8a70f70c4695c2b81de83b1a5cce837655950490827`.
+
+The latest observed Community quota remaining is 16, below the next batch's required preflight headroom of 26. Further capture must wait until after the 17:00 UTC reset and pass a fresh preflight. The definitive Stage 2 decision remains **NO-GO — NOT COMPLETE / NOT RELEASE-READY**; see `docs/VELTRIX_V2_STAGE2_FINAL_EXIT_DECISION_2026-11-15.md`.
