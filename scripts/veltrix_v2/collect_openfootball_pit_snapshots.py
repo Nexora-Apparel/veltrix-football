@@ -170,6 +170,7 @@ def collect_snapshots(
                     continue
                 proof = {
                     "source_repository": repo, "source_path": source_path,
+                    "competition_id": competition_id,
                     "source_commit_sha": sha,
                     "source_snapshot_available_at": snapshot_at.isoformat(),
                     "source_content_sha256": content_sha,

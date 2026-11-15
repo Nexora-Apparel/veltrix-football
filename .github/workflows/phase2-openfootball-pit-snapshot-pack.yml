@@ -38,7 +38,7 @@ jobs:
 
       - name: Compile collector and run isolated tests
         run: |
-          python -m compileall -q scripts/veltrix_v2/collect_openfootball_pit_snapshots.py
+          python -m compileall -q scripts/veltrix_v2/collect_openfootball_pit_snapshots.py scripts/veltrix_v2/verify_openfootball_pit_snapshot_pack.py
           pytest -q tests/veltrix_v2/test_openfootball_pit_snapshot_pack.py tests/providers/test_openfootball_archive.py
 
       - name: Collect rights-scoped immutable source snapshots
@@ -50,6 +50,10 @@ jobs:
             --output-dir artifacts/openfootball-pit-snapshot-pack \
             --max-requests "\${{ inputs.max_requests }}" \
             --max-commits-per-source "\${{ inputs.max_commits_per_source }}"
+
+      - name: Verify generated archive pack independently
+        if: always() && steps.collect.outcome != 'skipped'
+        run: python scripts/veltrix_v2/verify_openfootball_pit_snapshot_pack.py --input-dir artifacts/openfootball-pit-snapshot-pack
 
       - name: Upload source snapshots, observation versions and manifest
         if: always() && steps.collect.outcome != 'skipped'

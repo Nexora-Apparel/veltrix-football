@@ -29,6 +29,14 @@ def make_transport(commits, raw_by_sha=None, license_id="CC0-1.0"):
         raise AssertionError(url)
     return read_json, read_bytes
 
+def make_pack(tmp_path):
+    commits = [{"sha": SHA1, "commit": {"committer": {"date": "2025-01-06T10:00:00Z"}}}]
+    read_json, read_bytes = make_transport(commits)
+    return collect_snapshots(
+        output_dir=tmp_path, imported_at=IMPORTED, sources=SOURCES,
+        read_json=read_json, read_bytes=read_bytes,
+    )
+
 def test_pack_records_immutable_snapshot_and_actual_retrieval_time(tmp_path):
     commits = [{"sha": SHA1, "commit": {"committer": {"date": "2025-01-06T10:00:00Z"}}}]
     read_json, read_bytes = make_transport(commits)
@@ -78,6 +86,7 @@ def test_pack_preserves_score_corrections_as_separate_versions(tmp_path):
     assert manifest["snapshot_count"] == 2
     assert len(rows) == 2
     assert {row["home_goals"] for row in rows} == {1, 2}
+    assert verify_pack(tmp_path)["status"] == "PASS"
 
 def test_pack_fails_closed_when_commit_history_limit_is_hit(tmp_path):
     commits = [
