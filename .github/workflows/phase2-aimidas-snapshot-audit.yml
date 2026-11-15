@@ -1,0 +1,58 @@
+name: VELTRIX Stage 2 — AI Midas pinned dataset snapshot
+
+on:
+  push:
+    branches:
+      - integration/v2-report-bundle-wiring-20261114
+    paths:
+      - ".github/workflows/phase2-aimidas-snapshot-audit.yml"
+      - "scripts/veltrix_v2/collect_aimidas_snapshot.py"
+      - "scripts/veltrix_v2/verify_aimidas_snapshot.py"
+      - "tests/veltrix_v2/test_aimidas_snapshot.py"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: veltrix-stage2-aimidas-snapshot
+  cancel-in-progress: true
+
+jobs:
+  snapshot-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout exact integration commit
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Compile source snapshot tools
+        run: |
+          python -m compileall -q scripts/veltrix_v2/collect_aimidas_snapshot.py scripts/veltrix_v2/verify_aimidas_snapshot.py
+
+      - name: Run offline collector/verifier regression tests
+        run: python -m pip install --disable-pip-version-check pytest && python -m pytest -q tests/veltrix_v2/test_aimidas_snapshot.py
+
+      - name: Collect pinned AI Midas files without an API key
+        run: |
+          python scripts/veltrix_v2/collect_aimidas_snapshot.py \
+            --output-dir artifacts/aimidas-snapshot-pack
+
+      - name: Independently verify the captured snapshot
+        run: |
+          python scripts/veltrix_v2/verify_aimidas_snapshot.py \
+            --input-dir artifacts/aimidas-snapshot-pack
+
+      - name: Upload immutable source pack and verification summary
+        uses: actions/upload-artifact@v4
+        with:
+          name: veltrix-stage2-aimidas-snapshot-pack
+          path: artifacts/aimidas-snapshot-pack/
+          if-no-files-found: error
+          retention-days: 90
