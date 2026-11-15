@@ -107,7 +107,31 @@ def test_dashboard_api_hides_v2_predictions_without_both_trusted_dependencies():
     result = telegram_api.dashboard_data()
     assert result["status"] == "UNAVAILABLE"
     assert result["predictions"] == []
+    assert result["runtime_configuration"] == {
+        "status": "UNCONFIGURED",
+        "verifier_configured": False,
+        "bundle_reader_configured": True,
+    }
     assert calls == []
+
+
+def test_deployed_unavailable_response_reports_nonsecret_runtime_readiness():
+    telegram_api.configure_publication_verifier(lambda report, identity: False)
+
+    def missing_bundle():
+        raise RuntimeError("canonical bundle not published")
+
+    telegram_api.configure_report_bundle_reader(missing_bundle)
+    telegram_api.app.state.v2_publication_runtime_status = "READY"
+
+    result = telegram_api.dashboard_data()
+    assert result["status"] == "UNAVAILABLE"
+    assert result["predictions"] == []
+    assert result["runtime_configuration"] == {
+        "status": "READY",
+        "verifier_configured": True,
+        "bundle_reader_configured": True,
+    }
 
 
 def test_dashboard_html_has_no_legacy_static_prediction_fallback_or_experimental_labels():
