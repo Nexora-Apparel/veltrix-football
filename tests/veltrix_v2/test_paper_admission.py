@@ -21,7 +21,7 @@ APPROVAL = SourceApproval(
         DataUsePurpose.COLLECTION, DataUsePurpose.CACHE,
         DataUsePurpose.STORAGE, DataUsePurpose.MODEL_TRAINING,
     }),
-    commercial_use_allowed=True, terms_url="https://example.test/terms",
+    commercial_use_allowed=False, terms_url="https://example.test/terms",
     terms_version="v1", evidence_uri="https://example.test/evidence",
     evidence_sha256="a" * 64, rights_basis="WRITTEN_PERMISSION",
     reviewed_at_utc=NOW - timedelta(days=10), reviewer_id="reviewer",
@@ -324,3 +324,17 @@ def test_5dollar_shadow_admission_requires_raw_page_and_provider_scope_evidence(
     )
     assert not rejected.admitted
     assert rejected.rejected[0].reason_code == "TARGET_RESPONSE_CAPTURE_EVIDENCE_MISSING"
+
+
+def test_personal_use_admission_does_not_require_commercial_permission():
+    personal_approval = replace(APPROVAL, commercial_use_allowed=False)
+    report, target, history = _fixture_set(certifiable=False)
+    result = admit_prospective_observed_shadow_forecasts(
+        report, [target], _first_observed_history(history),
+        source_approvals={personal_approval.approval_id: personal_approval},
+        forecasted_at=NOW + timedelta(minutes=1),
+        recorded_at=NOW + timedelta(minutes=2),
+        model_artifact_sha256="d" * 64, feature_set_sha256="e" * 64,
+    )
+    assert len(result.admitted) == 1
+    assert not result.rejected
