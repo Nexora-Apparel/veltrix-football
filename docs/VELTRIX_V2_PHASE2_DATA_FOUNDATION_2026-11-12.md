@@ -1,6 +1,6 @@
 # VELTRIX FOOTBALL 2.0 — Phase 2: Historical Database and Data Foundation
 
-**Status:** IN PROGRESS — 5Dollar historical fixture/result foundation is qualified; project-wide non-commercial source authorization is recorded; OpenPlay release qualification and guarded Neon asset ingestion are implemented on `integration/v2-report-bundle-wiring-20261114`. Final exact-head staging import/read-back and the broader Stage 2 PIT gates remain to be verified.
+**Status:** COMPLETE — the 5Dollar historical fixture/result foundation and the OpenPlay non-commercial source qualification, guarded Neon asset import and independent read-back are accepted on `integration/v2-report-bundle-wiring-20261114`. The separate Stage 2 historical PIT acquisition remains open for genuine as-of observations, cross-provider identity resolution and historical odds.
 
 ## 1. Phase 2 objective
 
@@ -148,6 +148,6 @@ Phase 2 is not complete until all of the following are verified:
 6. The PostgreSQL writer is exercised against an isolated PostgreSQL test database or Neon child branch, proving idempotency, atomicity, append-only evidence and conflict quarantine.
 7. **PASS —** the primary Neon branch remains unchanged; the qualification workflow reported zero database writes and zero imports. No production history rows were inserted.
 
-**Phase 2 core foundation:** COMPLETE for the 5Dollar historical fixture/result lane, including immutable provenance, guarded writer contracts and read-only 365-day qualification. **OpenPlay extension:** source rights are resolved, and the 15-asset qualification/import path is implemented; final Neon staging import and independent read-back are required before marking this extension complete. Historical result labels from 5Dollar and the OpenPlay static archive remain `point_in_time_certifiable=false`; neither is silently promoted to historical pre-match features. The 5Dollar historical odds endpoint remains unavailable on Community (HTTP 403), and sampled timestamp coverage remains 9.09%; this does not pass or relax the later 98% odds gate.
+**Phase 2 core foundation:** COMPLETE for the 5Dollar historical fixture/result lane, including immutable provenance, guarded writer contracts and read-only 365-day qualification. **OpenPlay extension:** source rights, 15-asset qualification, immutable Neon persistence and independent read-back are **PASS**. The 15 original release assets are stored and linked to 15 dataset-asset source observations; row-level feature extraction and temporal admission remain downstream work. Historical result labels from 5Dollar and the OpenPlay static archive remain `point_in_time_certifiable=false`; neither is silently promoted to historical pre-match features. The 5Dollar historical odds endpoint remains unavailable on Community (HTTP 403), and sampled timestamp coverage remains 9.09%; this does not pass or relax the later 98% odds gate.
 
 **Safety:** no prediction model or probability code, no production data import, no Vercel deployment, no Telegram delivery, no schedule activation and no value-bet unlocking.
