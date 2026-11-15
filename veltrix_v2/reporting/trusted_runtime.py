@@ -58,7 +58,7 @@ def _strict_json(raw: bytes) -> Any:
 
 
 def _allowed_hosts(environ: Mapping[str, str]) -> frozenset[str]:
-    raw = environ.get("VELTRIX_V2_EVIDENCE_ALLOWED_HOSTS", "")
+    raw = environ.get("VELTRIX_V2_EVIDENCE_ALLOWED_HOSTS", RAW_HOST)
     hosts = frozenset(part.strip().lower().rstrip(".") for part in raw.split(",") if part.strip())
     if not hosts or any(not re.fullmatch(r"[a-z0-9.-]+", host) for host in hosts):
         raise DeploymentVerificationError("EVIDENCE_HOST_ALLOWLIST_REQUIRED")
