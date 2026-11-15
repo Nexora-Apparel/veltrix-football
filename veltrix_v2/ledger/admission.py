@@ -17,7 +17,10 @@ from veltrix_v2.data.contracts import DataUsePurpose, SourceApproval
 from veltrix_v2.data.rights import evaluate_source_use
 from veltrix_v2.ledger.paper_predictions import PaperPrediction
 from veltrix_v2.models.engine import BatchForecastReport, ForecastRecord, PredictionTarget
-from veltrix_v2.models.poisson import MatchObservation, observation_eligible_as_of
+from veltrix_v2.models.poisson import (
+    MatchObservation, observation_eligible_as_of,
+    observation_prospectively_observed_as_of,
+)
 
 
 _HASH = re.compile(r"^[0-9a-f]{64}$")
@@ -123,9 +126,15 @@ def _training_evidence(
                 raise ValueError("OBSERVED_CAPTURE_EVIDENCE_HASH_MISSING")
         else:
             raise ValueError("PAPER_EVIDENCE_CLASS_INVALID")
-        if not observation_eligible_as_of(
-            row, cutoff_at=forecast.cutoff_at, competition_id=forecast.competition_id
-        ):
+        if evidence_class == "PIT_CERTIFIED":
+            eligible_at_cutoff = observation_eligible_as_of(
+                row, cutoff_at=forecast.cutoff_at, competition_id=forecast.competition_id
+            )
+        else:
+            eligible_at_cutoff = observation_prospectively_observed_as_of(
+                row, cutoff_at=forecast.cutoff_at, competition_id=forecast.competition_id
+            )
+        if not eligible_at_cutoff:
             continue
         if not _valid_hash(row.payload_sha256):
             raise ValueError("TRAINING_OBSERVATION_PAYLOAD_HASH_MISSING")
