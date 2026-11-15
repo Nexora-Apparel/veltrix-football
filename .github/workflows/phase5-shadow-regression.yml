@@ -111,26 +111,30 @@ jobs:
           PREVIEW_URL: https://veltrix-football-commands-git-integration-6168a8-nexora-apparel.vercel.app
         run: |
           set -euo pipefail
-          response="$(mktemp)"
-          code=""
-          for attempt in $(seq 1 30); do
-            code="$(curl --silent --show-error --location --max-time 10 \
-              --output "$response" --write-out '%{http_code}' \
-              "$PREVIEW_URL/api/dashboard-data" || true)"
-            if [ "$code" = "200" ]; then
-              break
-            fi
-            sleep 5
-          done
-          test "$code" = "200"
-          python - "$response" <<'PY'
+          for path in /api/dashboard-data /api/dashboard_data; do
+            response="$(mktemp)"
+            headers="$(mktemp)"
+            code="$(curl --silent --show-error --location --max-time 15 \
+              --dump-header "$headers" --output "$response" --write-out '%{http_code}' \
+              "$PREVIEW_URL$path" || true)"
+            echo "PROBE path=$path status=$code bytes=$(wc -c < "$response")"
+            sed -n '1,12p' "$headers"
+            head -c 500 "$response" || true
+            echo
+            if [ "$path" = "/api/dashboard-data" ]; then
+              test "$code" = "200"
+              python - "$response" <<'PY'
           import json, pathlib, sys
-          payload = json.loads(pathlib.Path(sys.argv[1]).read_text())
+          raw = pathlib.Path(sys.argv[1]).read_bytes()
+          assert raw, "deployed dashboard API returned an empty body"
+          payload = json.loads(raw)
           assert isinstance(payload, dict), "dashboard API must return a JSON object"
           assert payload.get("status") == "UNAVAILABLE", payload
           assert payload.get("predictions") == [], payload
           print("DEPLOYED_RUNTIME_FAIL_CLOSED_OK")
           PY
+            fi
+          done
 
   postgres-integration:
     runs-on: ubuntu-latest
