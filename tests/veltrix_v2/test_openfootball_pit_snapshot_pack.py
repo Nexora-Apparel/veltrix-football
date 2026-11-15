@@ -1,7 +1,9 @@
 import json
+import pytest
 from datetime import datetime, timezone
 
 from scripts.veltrix_v2.collect_openfootball_pit_snapshots import collect_snapshots
+from scripts.veltrix_v2.verify_openfootball_pit_snapshot_pack import verify_pack
 
 SHA1 = "a" * 40
 IMPORTED = datetime(2026, 11, 15, 12, tzinfo=timezone.utc)
@@ -45,6 +47,9 @@ def test_pack_records_immutable_snapshot_and_actual_retrieval_time(tmp_path):
     assert rows[0]["source_timestamp_basis"] == "archival_snapshot_timestamp"
     assert len(rows[0]["archive_proof_id"]) == 64
     assert manifest["database_written"] is False
+    verified = verify_pack(tmp_path)
+    assert verified["status"] == "PASS"
+    assert verified["archive_proof_count"] == 1
 
 def test_pack_rejects_source_without_cc0_rights(tmp_path):
     read_json, read_bytes = make_transport([], license_id="MIT")
@@ -86,3 +91,18 @@ def test_pack_fails_closed_when_commit_history_limit_is_hit(tmp_path):
     )
     assert manifest["all_sources_succeeded"] is False
     assert manifest["failed_sources"][0]["error_code"] == "COMMIT_HISTORY_LIMIT_REACHED_REFUSING_PARTIAL_HISTORY"
+
+def test_verifier_rejects_tampered_source_snapshot(tmp_path):
+    make_pack(tmp_path)
+    snapshot = next((tmp_path / "snapshots").glob("*.txt"))
+    snapshot.write_text("tampered", encoding="utf-8")
+    with pytest.raises(ValueError, match="SNAPSHOT_RAW_CONTENT_HASH_MISMATCH"):
+        verify_pack(tmp_path)
+
+
+def test_verifier_rejects_tampered_observation_jsonl(tmp_path):
+    make_pack(tmp_path)
+    path = tmp_path / "observations.jsonl"
+    path.write_text(path.read_text().replace('"home_goals":2', '"home_goals":3'))
+    with pytest.raises(ValueError, match="OBSERVATIONS_HASH_MISMATCH"):
+        verify_pack(tmp_path)
