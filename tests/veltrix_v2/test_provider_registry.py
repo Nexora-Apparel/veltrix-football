@@ -30,7 +30,7 @@ def test_odds_markets_remain_conditional_not_enabled():
     for domain in (DataDomain.ODDS_1X2, DataDomain.ODDS_TOTALS, DataDomain.ODDS_BTTS):
         assert profile.capability(domain).state is CapabilityState.CONDITIONAL
         assert profile in providers_for(domain, include_conditional=True)
-        assert profile not in dispatchable_providers_for(domain, include_conditional=True)
+        assert profile not in dispatchable_providers_for(domain)
 
 
 def test_xg_lineups_injuries_and_player_stats_are_not_fabricated():

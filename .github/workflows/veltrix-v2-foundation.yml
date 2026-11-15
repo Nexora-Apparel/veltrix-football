@@ -35,6 +35,7 @@ on:
       - "tests/test_publish_command_data.py"
       - "tests/test_telegram_report.py"
       - "tests/providers/odds_api_v4/**"
+      - "tests/providers/test_fivedollar_odds_history.py"
       - "tests/providers/test_openfootball_archive.py"
       - "tests/scripts/test_export_openfootball_archive.py"
       - "scripts/veltrix_v2/**"
@@ -51,6 +52,7 @@ on:
       - "tests/test_v2_advanced_estimators.py"
       - "tests/test_v2_challenger_advanced.py"
       - "tests/providers/odds_api_v4/**"
+      - "tests/providers/test_fivedollar_odds_history.py"
       - "db/migrations/0005_provider_credit_reservation_ledger.sql"
       - "db/migrations/0006_provider_quota_evidence.sql"
       - "db/migrations/0007_provider_capture_state_events.sql"
@@ -137,6 +139,8 @@ jobs:
         run: python -m pytest --import-mode=importlib -q tests/veltrix_v2/test_provider_evidence_capture.py
       - name: Test multi-provider coverage and dispatch policy
         run: python -m pytest --import-mode=importlib -q tests/veltrix_v2/test_provider_registry.py
+      - name: Test strict 5Dollar timestamped odds-history parser
+        run: python -m pytest --import-mode=importlib -q tests/providers/test_fivedollar_odds_history.py
       - name: Test certified multi-provider observation merge
         run: python -m pytest --import-mode=importlib -q tests/veltrix_v2/test_provider_observation_merge.py
       - name: Test competition-level evidence coverage auditor
