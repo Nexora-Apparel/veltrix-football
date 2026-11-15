@@ -474,3 +474,10 @@ The Neon rehearsal branch `veltrix-0011-migration-rehearsal-2026-11-15` reports 
 - Corrected the capture script's completion status and aggregate artifact: duplicate-only replay is now `SHADOW_CAPTURE_COMPLETE_DUPLICATES_ONLY`; zero-new-event admissions cannot be represented as a newly persisted prediction batch. Public summary now exposes new persisted count, duplicate skipped count, ledger-chain verification and rejected first-observed row count while keeping IDs, hashes, odds and probabilities excluded.
 - Added tests for personal-use admission and duplicate-only completion semantics. CI is running on exact head `5d3bc9168e6694cea2e003d8768ee4937e740523`; do not mark these fixes test-passed until exact-head checks finish.
 - Remaining non-code blockers are unchanged: no prospective settlements yet, no PIT-certifiable historical sample, no event-odds quotes, no trusted production verifier/configuration, no live website/report/Telegram parity acceptance. Value betting, public predictions, Telegram delivery, schedule activation and production deploy remain locked.
+
+
+### Follow-up personal-use rights audit — 2026-11-15
+
+- A deeper scan of the actual capture path found one more commercial-use-only check in `veltrix_v2/data/provider_evidence_capture.py`. Corrected it to `commercial=False`, consistent with the project owner's personal-use basis and the earlier fixes in the forecast engine and paper-admission path.
+- Updated `tests/veltrix_v2/test_provider_evidence_capture.py` so both generic and 5Dollar evidence-capture fixtures explicitly have `commercial_use_allowed=False`. The existing positive evidence-capture assertions now prove that collection/storage/model-training under personal-use permission does not depend on commercial permission.
+- New commits: `c7a0f6e370410908c2c59db40a12d9ca2d9d6a94` and `93e9a8f52e086df4b40f168316d6e54819681bb5`. Exact-head CI is required before marking this follow-up tested.
