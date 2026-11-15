@@ -57,16 +57,17 @@ def _load_candidate_rows(cur, now):
             FROM feature_snapshot_eligibility_events
             ORDER BY feature_snapshot_id,recorded_at DESC,eligibility_event_id DESC
         )
-        SELECT fs.feature_snapshot_id,fs.fixture_id,fs.prediction_cutoff_at,
+        SELECT DISTINCT ON (f.id) fs.feature_snapshot_id,fs.fixture_id,fs.prediction_cutoff_at,
                fs.feature_set_sha256,le.evidence_sha256,
                f.provider_fixture_id,f.competition_id,f.home_team_id,f.away_team_id,
                f.kickoff_at,c.provider_competition_id,c.name,ht.name,at.name,
                f.source_observation_id,f.source_payload_sha256,
-               target_obs.entity_type,target_obs.provider_entity_id,
+               target_obs.provider,target_obs.source_id,target_obs.entity_type,target_obs.provider_entity_id,
                target_obs.payload_sha256,target_obs.payload,target_obs.source_published_at,
                target_obs.available_at,target_obs.recorded_at,
                target_obs.point_in_time_certifiable,target_obs.source_timestamp_basis,
-               target_obs.rights_approval_id
+               target_obs.rights_approval_id,target_obs.provider_response_id,
+               target_response.provider,target_response.source_id,target_response.response_sha256
         FROM feature_snapshots fs
         JOIN latest_eligibility le ON le.feature_snapshot_id=fs.feature_snapshot_id
         JOIN fixtures f ON f.id=fs.fixture_id
@@ -74,13 +75,14 @@ def _load_candidate_rows(cur, now):
         JOIN teams ht ON ht.id=f.home_team_id
         JOIN teams at ON at.id=f.away_team_id
         JOIN source_observations target_obs ON target_obs.id=f.source_observation_id
+        JOIN provider_responses target_response ON target_response.id=target_obs.provider_response_id
         WHERE fs.model_build_id=%s
           AND le.eligibility_status='ELIGIBLE'
           AND fs.prediction_cutoff_at<=%s
           AND f.provider='5DollarFootballAPI'
           AND f.status='SCHEDULED'
           AND f.kickoff_at>%s
-        ORDER BY f.kickoff_at,f.id,fs.feature_snapshot_id DESC
+        ORDER BY f.id,fs.prediction_cutoff_at DESC,fs.feature_snapshot_id DESC
         """,
         (FEATURE_BUILD_ID,now,now),
     )
