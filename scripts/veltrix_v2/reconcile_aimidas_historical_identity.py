@@ -213,7 +213,7 @@ def reconcile(rows: list[dict], fixtures: list[dict]) -> dict:
     status_counts = Counter()
     season_counts = Counter()
     for row in rows:
-        identity = (row["competition"], row["source_calendar_date"], row["home_name_normalized"], row["away_name_normalized"])
+        identity = (row["competition"], row["derived_season_key"], row["source_calendar_date"], row["home_name_normalized"], row["away_name_normalized"])
         score_identity = identity + (row["home_score"], row["away_score"])
         exact_duplicate_groups[score_identity].append(row)
         conflict_groups[identity].add((row["home_score"], row["away_score"]))
@@ -224,10 +224,13 @@ def reconcile(rows: list[dict], fixtures: list[dict]) -> dict:
             if normalize_name(f["home_name"]) != row["home_name_normalized"] or normalize_name(f["away_name"]) != row["away_name_normalized"]:
                 continue
             canonical_date = f["kickoff_at"].date()
+            if derived_season_key(row["competition"], canonical_date) != row["derived_season_key"]:
+                continue
             if abs((canonical_date - match_date).days) > 1:
                 continue
+            score_available = f["home_score"] is not None and f["away_score"] is not None
             score_agrees = (
-                f["home_score"] is not None and f["away_score"] is not None
+                score_available
                 and int(f["home_score"]) == row["home_score"]
                 and int(f["away_score"]) == row["away_score"]
             )
@@ -238,12 +241,16 @@ def reconcile(rows: list[dict], fixtures: list[dict]) -> dict:
                 "kickoff_at": f["kickoff_at"].isoformat(),
                 "canonical_season_key": f["season_key"],
                 "canonical_status": f["status"],
-                "score_agrees": score_agrees,
+                "score_available": score_available,\n                "score_agrees": score_agrees,
             })
         team_home = team_names.get((row["competition"], row["home_name_normalized"]), set())
         team_away = team_names.get((row["competition"], row["away_name_normalized"]), set())
-        if len(candidates) == 1 and candidates[0]["score_agrees"]:
+        if len(team_home) > 1 or len(team_away) > 1:
+            status = "AMBIGUOUS_TEAM_IDENTITY"
+        elif len(candidates) == 1 and candidates[0]["score_agrees"]:
             status = "UNIQUE_CANONICAL_CANDIDATE_REVIEW_REQUIRED"
+        elif len(candidates) == 1 and not candidates[0]["score_available"]:
+            status = "CANONICAL_RESULT_MISSING_REVIEW_REQUIRED"
         elif len(candidates) == 1:
             status = "SCORE_MISMATCH_REVIEW_REQUIRED"
         elif len(candidates) > 1:
