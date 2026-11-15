@@ -64,13 +64,33 @@ def apply_crosswalk(database_url: str, candidate_path: str | Path) -> dict:
             if "model_training" not in approvals[OPENPLAY_APPROVAL][3]:
                 raise RuntimeError("OPENPLAY_CROSSWALK_MODEL_TRAINING_NOT_PERMITTED")
 
+            expected_map = {
+                **{("TEAM",str(row["openplay_team_id"])):str(row["candidate_canonical_entity_key"]) for row in teams},
+                **{("COMPETITION",str(row["openplay_comp"])):str(row["canonical_competition_key"]) for row in competitions},
+            }
             cur.execute("""
-                SELECT count(*) FROM entity_crosswalk_versions
+                SELECT entity_type,provider_entity_id,canonical_entity_key,mapping_method,mapping_status
+                FROM entity_crosswalk_versions
                 WHERE provider=%s AND source_id=%s AND entity_type IN ('TEAM','COMPETITION')
             """, (OPENPLAY_PROVIDER,OPENPLAY_SOURCE_ID))
-            existing = cur.fetchone()[0]
-            if existing:
-                raise RuntimeError("OPENPLAY_CROSSWALK_ROWS_ALREADY_EXIST_REVIEW_BEFORE_RETRY")
+            existing_rows = cur.fetchall()
+            if existing_rows:
+                existing_map = {(row[0],row[1]):row[2] for row in existing_rows}
+                methods_ok = all(
+                    row[3] == ("EXACT_NAME_AND_COMPETITION_OVERLAP" if row[0] == "TEAM" else "EXPLICIT_REGION_NAME_ALIAS")
+                    and row[4] == "RESOLVED"
+                    for row in existing_rows
+                )
+                if len(existing_rows) == len(expected_map) and existing_map == expected_map and methods_ok:
+                    return {
+                        "status":"OPENPLAY_EXACT_CROSSWALKS_ALREADY_PRESENT",
+                        "team_mappings":len(teams),
+                        "competition_mappings":len(competitions),
+                        "total_mappings":len(expected_map),
+                        "ambiguous_or_unmatched_entities_written":0,
+                        "commercial_use_allowed":False,
+                    }
+                raise RuntimeError("OPENPLAY_CROSSWALK_PARTIAL_OR_CONFLICTING_STATE")
 
             evidence_ids = {
                 "teams.parquet":teams[0]["evidence_source_observation_id"],
@@ -181,9 +201,9 @@ def apply_crosswalk(database_url: str, candidate_path: str | Path) -> dict:
 
     return {
         "status":"OPENPLAY_EXACT_CROSSWALKS_PERSISTED",
-        "team_mappings":inserted_team_rows,
-        "competition_mappings":inserted_comp_rows,
-        "total_mappings":inserted_team_rows+inserted_comp_rows,
+        "team_mappings":len(teams),
+        "competition_mappings":len(competitions),
+        "total_mappings":len(teams)+len(competitions),
         "ambiguous_or_unmatched_entities_written":0,
         "commercial_use_allowed":False,
     }
