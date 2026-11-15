@@ -134,11 +134,13 @@ def _verify_source_rows(cur, selected: list[Mapping[str, Any]], cutoff_at: datet
         raise ValueError("FEATURE_SOURCE_OBSERVATIONS_EMPTY")
     cur.execute(
         """
-        SELECT id,provider,source_id,entity_type,provider_entity_id,payload_sha256,
-               source_published_at,available_at,recorded_at,point_in_time_certifiable,
-               rights_approval_id,source_timestamp_basis
-        FROM source_observations
-        WHERE id = ANY(%s)
+        SELECT so.id,so.provider,so.source_id,so.entity_type,so.provider_entity_id,
+               so.payload_sha256,so.source_published_at,so.available_at,so.recorded_at,
+               so.point_in_time_certifiable,so.rights_approval_id,so.source_timestamp_basis,
+               so.provider_response_id,pr.provider,pr.source_id,pr.response_sha256
+        FROM source_observations so
+        JOIN provider_responses pr ON pr.id=so.provider_response_id
+        WHERE so.id = ANY(%s)
         """,
         (ids,),
     )
@@ -149,7 +151,8 @@ def _verify_source_rows(cur, selected: list[Mapping[str, Any]], cutoff_at: datet
         if obs is None:
             raise ValueError("FEATURE_SOURCE_OBSERVATION_MISSING")
         (_, provider, source_id, entity_type, provider_entity_id, payload_hash,
-         published_at, available_at, recorded_at, pit, rights_id, timestamp_basis) = obs
+         published_at, available_at, recorded_at, pit, rights_id, timestamp_basis,
+         response_id,response_provider,response_source,response_sha256) = obs
         if (
             provider != OPENPLAY_PROVIDER or source_id != OPENPLAY_SOURCE_ID
             or entity_type != "match_result_snapshot"
@@ -158,6 +161,9 @@ def _verify_source_rows(cur, selected: list[Mapping[str, Any]], cutoff_at: datet
             or published_at is None or available_at is None or recorded_at is None
             or pit is not True or rights_id != APPROVAL_ID
             or timestamp_basis != "documented_guarantee"
+            or int(response_id) != int(feature["provider_response_id"])
+            or response_provider != OPENPLAY_PROVIDER or response_source != OPENPLAY_SOURCE_ID
+            or str(response_sha256).strip() != feature["asset_provenance"]["matches.parquet"]["sha256"]
             or published_at >= cutoff_at or available_at >= cutoff_at or recorded_at >= cutoff_at
             or published_at.astimezone(timezone.utc).isoformat() != parse_time(feature["source_published_at"]).isoformat()
             or available_at.astimezone(timezone.utc).isoformat() != parse_time(feature["available_at"]).isoformat()
