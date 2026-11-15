@@ -170,7 +170,11 @@ def build_provider_rights_evaluator(evidence_reader):
                 return False
             if entitlement.get("status") != "ACTIVE" or terms.get("status") != "ACCEPTED":
                 return False
-            if terms.get("version") != evidence.get("terms_version"):
+            terms_version = evidence.get("terms_version")
+            if (
+                not isinstance(terms_version, str) or not terms_version.strip()
+                or terms.get("version") != terms_version
+            ):
                 return False
             checked_at = entitlement.get("checked_at")
             expires_at = entitlement.get("expires_at")
@@ -361,6 +365,12 @@ def build_deployment_publication_verifier(
                 or manifest.get("status") != "CERTIFIED"
                 or not isinstance(manifest.get("certifications"), list)
                 or not manifest.get("certifications")
+                or any(
+                    not isinstance(row, dict)
+                    or row.get("status") != "CERTIFIED"
+                    or row.get("blockers") != []
+                    for row in manifest.get("certifications", [])
+                )
             ):
                 return False
             return verify_publication_authorization(
