@@ -80,7 +80,7 @@ def _payload_data(payload):
     return payload, None
 
 
-def discover(api_key: str, sports_fetcher=_fetch_sports, request_json=_request_json) -> dict:
+def discover(api_key: str, sports_fetcher=_fetch_sports, request_json=_request_json, *, snapshot_at: str = SNAPSHOT_AT, target_kickoff: str = TARGET_KICKOFF, target_home: str = TARGET_HOME, target_away: str = TARGET_AWAY, region: str = REGION) -> dict:
     if not api_key.strip():
         raise RuntimeError("THE_ODDS_API_KEY_MISSING")
     requested_at, retrieved_at, sports_body, _, envelope, sports = sports_fetcher(api_key)
@@ -99,7 +99,7 @@ def discover(api_key: str, sports_fetcher=_fetch_sports, request_json=_request_j
             "database_writes": 0,
         }
 
-    events_path = "/historical/sports/" + SPORT + "/events?" + urlencode({"date": SNAPSHOT_AT})
+    events_path = "/historical/sports/" + SPORT + "/events?" + urlencode({"date": snapshot_at})
     events_payload, events_quota = request_json(events_path, api_key)
     if events_quota["x-requests-last"] != 1:
         raise RuntimeError("HISTORICAL_EVENTS_COST_NOT_ONE_CREDIT")
@@ -111,14 +111,14 @@ def discover(api_key: str, sports_fetcher=_fetch_sports, request_json=_request_j
     matches = [
         event for event in events_data
         if isinstance(event, dict)
-        and normalize_team(event.get("home_team", "")) == normalize_team(TARGET_HOME)
-        and normalize_team(event.get("away_team", "")) == normalize_team(TARGET_AWAY)
+        and normalize_team(event.get("home_team", "")) == normalize_team(target_home)
+        and normalize_team(event.get("away_team", "")) == normalize_team(target_away)
     ]
     base = {
         "provider": "the_odds_api",
         "sport_key": SPORT,
-        "target_fixture": {"home": TARGET_HOME, "away": TARGET_AWAY, "kickoff": TARGET_KICKOFF},
-        "requested_snapshot_at": SNAPSHOT_AT,
+        "target_fixture": {"home": target_home, "away": target_away, "kickoff": target_kickoff},
+        "requested_snapshot_at": snapshot_at,
         "event_discovery_snapshot_timestamp": events_timestamp,
         "event_discovery_response_sha256": events_quota["response_sha256"],
         "event_discovery_requests_used": events_quota["x-requests-used"],
@@ -137,7 +137,7 @@ def discover(api_key: str, sports_fetcher=_fetch_sports, request_json=_request_j
         return {**base, "status": "AMBIGUOUS_EVENT_MATCH", "credits_spent": 1, "bookmakers": []}
 
     event = matches[0]
-    if event.get("commence_time") != TARGET_KICKOFF:
+    if event.get("commence_time") != target_kickoff:
         return {
             **base,
             "status": "EVENT_KICKOFF_MISMATCH",
@@ -161,7 +161,7 @@ def discover(api_key: str, sports_fetcher=_fetch_sports, request_json=_request_j
         }
     markets_path = (
         "/historical/sports/" + SPORT + "/events/" + event_id + "/markets?"
-        + urlencode({"regions": REGION, "date": SNAPSHOT_AT})
+        + urlencode({"regions": region, "date": snapshot_at})
     )
     markets_payload, markets_quota = request_json(markets_path, api_key)
     if markets_quota["x-requests-last"] != 1:
@@ -205,8 +205,20 @@ def discover(api_key: str, sports_fetcher=_fetch_sports, request_json=_request_j
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--output", required=True)
+    parser.add_argument("--snapshot-at", default=SNAPSHOT_AT)
+    parser.add_argument("--kickoff", default=TARGET_KICKOFF)
+    parser.add_argument("--home", default=TARGET_HOME)
+    parser.add_argument("--away", default=TARGET_AWAY)
+    parser.add_argument("--region", default=REGION)
     args = parser.parse_args()
-    result = discover(os.environ.get("THE_ODDS_API_KEY", ""))
+    result = discover(
+        os.environ.get("THE_ODDS_API_KEY", ""),
+        snapshot_at=args.snapshot_at,
+        target_kickoff=args.kickoff,
+        target_home=args.home,
+        target_away=args.away,
+        region=args.region,
+    )
     path = Path(args.output)
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(result, indent=2, sort_keys=True) + chr(10), encoding="utf-8")
