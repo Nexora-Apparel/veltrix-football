@@ -9,6 +9,8 @@ on:
     paths:
       - "veltrix_v2/**"
       - "tests/veltrix_v2/**"
+      - "tests/test_v2_advanced_estimators.py"
+      - "tests/test_v2_challenger_advanced.py"
       - "scripts/phase5_staging_coverage_audit.py"
       - "scripts/phase5_collect_5dollar_shadow.py"
       - "db/migrations/0008_prospective_paper_ledger.sql"
@@ -46,6 +48,8 @@ on:
       - "tests/test_publish_command_data.py"
       - "tests/test_telegram_report.py"
       - "tests/veltrix_v2/**"
+      - "tests/test_v2_advanced_estimators.py"
+      - "tests/test_v2_challenger_advanced.py"
       - "tests/providers/odds_api_v4/**"
       - "db/migrations/0005_provider_credit_reservation_ledger.sql"
       - "db/migrations/0006_provider_quota_evidence.sql"
