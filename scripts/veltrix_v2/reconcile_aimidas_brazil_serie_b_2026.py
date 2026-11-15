@@ -33,7 +33,7 @@ CANONICAL_PROVIDER = "5DollarFootballAPI"
 CANONICAL_COMPETITION_ID = "522514093"
 CANONICAL_COMPETITION_NAME = "Brazil Serie B"
 EXPECTED_ROLE = "neondb_owner"
-MATCH_RE = re.compile(r"^(?P<home>.+) (?P<hg>\\d+)-(?P<ag>\\d+) (?P<away>.+)$")
+MATCH_RE = re.compile(r"^(?P<home>.+) (?P<hg>[0-9]+)-(?P<ag>[0-9]+) (?P<away>.+)$")
 
 TEAM_ALIASES = {
     "América Mineiro": "America MG",
@@ -59,7 +59,7 @@ def canonical_row_hash(row: dict[str, str]) -> str:
 
 
 def source_match_key(source_date: str, match_label: str) -> str:
-    material = "\\0".join((SOURCE_COMMIT, SOURCE_PATH, source_date, match_label))
+    material = chr(0).join((SOURCE_COMMIT, SOURCE_PATH, source_date, match_label))
     return sha256(material.encode("utf-8"))
 
 
@@ -471,11 +471,11 @@ def main() -> int:
     report = reconcile(rows, registry, source_record)
     output = Path(args.output)
     output.parent.mkdir(parents=True, exist_ok=True)
-    output.write_text(json.dumps(report, indent=2, sort_keys=True, ensure_ascii=False) + "\\n", encoding="utf-8")
+    output.write_text(json.dumps(report, indent=2, sort_keys=True, ensure_ascii=False) + chr(10), encoding="utf-8")
     if args.summary_output:
         summary_path = Path(args.summary_output)
         summary_path.parent.mkdir(parents=True, exist_ok=True)
-        summary_path.write_text(json.dumps(report, indent=2, sort_keys=True, ensure_ascii=False) + "\\n", encoding="utf-8")
+        summary_path.write_text(json.dumps(report, indent=2, sort_keys=True, ensure_ascii=False) + chr(10), encoding="utf-8")
     print(json.dumps({
         "status": report["audit_status"],
         "teams_verified": report["summary"]["source_team_identities_verified"],
