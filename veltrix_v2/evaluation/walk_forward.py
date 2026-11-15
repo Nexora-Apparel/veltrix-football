@@ -9,7 +9,9 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 import math
-from typing import Iterable
+from typing import Iterable, Mapping
+
+from veltrix_v2.data.openplay_feature_bundle import eligible_openplay_features_as_of
 
 from veltrix_v2.models.poisson import (
     InsufficientHistoryError,
@@ -61,6 +63,9 @@ class FixtureEvaluation:
     baseline_over_2_5: float
     model_build_id: str | None = None
     recorded_at: datetime | None = None
+    openplay_home_feature_rows: int = 0
+    openplay_away_feature_rows: int = 0
+    openplay_latest_feature_eligibility_at: datetime | None = None
 
 
 @dataclass(frozen=True)
@@ -164,6 +169,7 @@ def walk_forward_evaluate(
     recency_half_life_days: float | None = None,
     dixon_coles_rho: float = 0.0,
     model_build_id: str | None = None,
+    openplay_features: Iterable[Mapping[str, object]] = (),
 ) -> WalkForwardReport:
     """Evaluate with an expanding chronological window and strict point-in-time cutoffs.
 
@@ -178,6 +184,18 @@ def walk_forward_evaluate(
         raise ValueError("MODEL_BUILD_ID_INVALID")
     if not _aware(evaluation_as_of):
         raise ValueError("EVALUATION_AS_OF_MUST_BE_TIMEZONE_AWARE")
+    # OpenPlay is attached as a strictly cutoff-filtered sidecar context. The
+    # current Poisson probabilities remain unchanged until a feature-aware
+    # challenger is separately trained and validated.
+    openplay_index: dict[tuple[str, str], list[Mapping[str, object]]] = {}
+    for feature in openplay_features:
+        if not isinstance(feature, Mapping):
+            raise ValueError("OPENPLAY_FEATURE_ROW_INVALID")
+        team_key = str(feature.get("canonical_team_id") or "")
+        competition_key = str(feature.get("canonical_competition_id") or "")
+        if not team_key or not competition_key:
+            raise ValueError("OPENPLAY_FEATURE_IDENTITY_MISSING")
+        openplay_index.setdefault((team_key, competition_key), []).append(feature)
     if not isinstance(cutoff_buffer, timedelta) or cutoff_buffer <= timedelta(0):
         raise ValueError("CUTOFF_BUFFER_MUST_BE_POSITIVE")
     if recency_half_life_days is not None and (
@@ -241,6 +259,25 @@ def walk_forward_evaluate(
         if cutoff >= target.kickoff_at:
             skipped_invalid += 1
             continue
+        home_openplay = eligible_openplay_features_as_of(
+            openplay_index.get((str(target.home_team_id), str(target.competition_id)), ()),
+            cutoff_at=cutoff, canonical_team_id=str(target.home_team_id),
+            canonical_competition_id=str(target.competition_id),
+            before_match_date=target.kickoff_at.date(),
+        )
+        away_openplay = eligible_openplay_features_as_of(
+            openplay_index.get((str(target.away_team_id), str(target.competition_id)), ()),
+            cutoff_at=cutoff, canonical_team_id=str(target.away_team_id),
+            canonical_competition_id=str(target.competition_id),
+            before_match_date=target.kickoff_at.date(),
+        )
+        openplay_eligibility_times = [
+            datetime.fromisoformat(str(row["eligibility_at"]).replace("Z", "+00:00"))
+            for row in (*home_openplay, *away_openplay)
+        ]
+        latest_openplay_eligibility = (
+            max(openplay_eligibility_times) if openplay_eligibility_times else None
+        )
         certified_training = [
             m for m in rows if isinstance(m, MatchObservation)
             and m.point_in_time_certifiable is True
@@ -301,6 +338,9 @@ def walk_forward_evaluate(
             model_over_2_5=prediction.over_2_5, baseline_over_2_5=base[4],
             model_build_id=model_build_id,
             recorded_at=target.recorded_at,
+            openplay_home_feature_rows=len(home_openplay),
+            openplay_away_feature_rows=len(away_openplay),
+            openplay_latest_feature_eligibility_at=latest_openplay_eligibility,
         ))
 
     model_1x2 = [(x.model_home_win, x.model_draw, x.model_away_win) for x in scored]
