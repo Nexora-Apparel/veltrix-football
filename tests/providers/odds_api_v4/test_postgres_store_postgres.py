@@ -7,6 +7,7 @@ from __future__ import annotations
 
 from dataclasses import replace
 from datetime import datetime, timedelta, timezone
+from decimal import Decimal
 import hashlib
 import json
 import os
@@ -78,7 +79,7 @@ def postgres_db(monkeypatch):
 
 def seed_evidence(dsn: str, *, competition_scope="soccer_epl",
                   mapping_fixture_id: int | None = None,
-                  status="APPROVED"):
+                  status="APPROVED", persisted_response_hash: str | None = None):
     """Create a fully linked fixture, response, capture request, crosswalk and rights row."""
     digest = hashlib.sha256(RAW).hexdigest()
     with psycopg.connect(dsn) as conn:
@@ -175,7 +176,7 @@ def seed_evidence(dsn: str, *, competition_scope="soccer_epl",
                    'the_odds_api','odds_api_v4','/v4/sports/soccer_epl/odds',
                    'odds-request-1','{}'::jsonb,200,%s,%s,'{}'::jsonb,%s
                ) RETURNING id""",
-            (digest, RAW, RETRIEVED),
+            (persisted_response_hash or digest, RAW, RETRIEVED),
         ).fetchone()[0]
         request_id = conn.execute(
             """INSERT INTO provider_capture_requests(
@@ -283,12 +284,7 @@ def test_real_postgres_rejects_invalid_fixture_crosswalk(postgres_db):
 
 
 def test_real_postgres_rejects_persisted_response_hash_mismatch(postgres_db):
-    seed = seed_evidence(postgres_db)
-    with psycopg.connect(postgres_db) as conn:
-        conn.execute(
-            "UPDATE provider_responses SET response_sha256=%s WHERE id=%s",
-            ("0" * 64, seed["response_id"]),
-        )
+    seed = seed_evidence(postgres_db, persisted_response_hash="0" * 64)
     with pytest.raises(ValueError, match="PERSISTED_RAW_RESPONSE_HASH_OR_BYTES_MISMATCH"):
         store(postgres_db).write_capture(parsed(), write_context(seed))
     with psycopg.connect(postgres_db) as conn:
