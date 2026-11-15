@@ -83,9 +83,16 @@ def _load_candidate_rows(cur, now):
           AND f.provider='5DollarFootballAPI'
           AND f.status='SCHEDULED'
           AND f.kickoff_at>%s
+          AND NOT EXISTS (
+              SELECT 1 FROM paper_ledger_events existing_prediction
+              WHERE existing_prediction.ledger_id=%s
+                AND existing_prediction.fixture_id=('5dollarfootballapi:' || f.provider_fixture_id)
+                AND existing_prediction.model_version=%s
+                AND existing_prediction.event_type IN ('PREDICTION','SHADOW_PREDICTION')
+          )
         ORDER BY f.id,fs.prediction_cutoff_at DESC,fs.feature_snapshot_id DESC
         """,
-        (FEATURE_BUILD_ID,now,now,now),
+        (FEATURE_BUILD_ID,now,now,now,LEDGER_ID,MODEL_VERSION),
     )
     return cur.fetchall()
 
