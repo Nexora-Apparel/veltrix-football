@@ -122,7 +122,7 @@ def validate_report(report: dict, rows: list[dict]) -> tuple[list[dict], list[di
     if (
         len(discrepant_matches) != 1
         or int(discrepant_matches[0].get("team_stat_discrepancy_count", 0)) != 2
-        or discrepant_matches[0].get("team_stats_quality_status") != "ROW_STATS_INCONSISTENT"
+        or discrepant_matches[0].get("team_stats_quality_status") != "QUARANTINED_ROW_SCORE_MISMATCH"
     ):
         raise RuntimeError("AIMIDAS_CROSSWALK_TEAM_STAT_QUARANTINE_EVIDENCE_INVALID")
     fixture_ids = set()
