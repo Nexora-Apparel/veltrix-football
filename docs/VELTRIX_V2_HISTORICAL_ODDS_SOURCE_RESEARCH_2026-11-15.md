@@ -157,3 +157,12 @@ Disposition: does not qualify for bookmaker-specific closing odds. Any use as a 
 - PIT walk-forward: NOT MET.
 - No new historical-odds API requests or paid captures were made in this research.
 - Value betting remains LOCKED.
+
+
+## 5. Existing The Odds API project authorization and credential state
+
+The Odds API is not a new unapproved source. Stage 2 already records source approval ID `approval-the-odds-api-v4-owner-authorized-2026-11-14`. The Phase 1 qualification records that the provider's current Terms permit indefinite storage, commercial display, derived values and statistical/ML model training, while prohibiting raw-feed resale. Preserve the existing attribution and raw-feed restrictions.
+
+The repository already references the configured GitHub secret `THE_ODDS_API_KEY` in its provider-verification and Phase 5 quota workflows. The secret value was not read or exposed during this research. A dedicated no-credit preflight has been added to the Phase 2 validation workflow. It calls only `GET /v4/sports/?all=true`, checks whether `soccer_brazil_serie_b` is returned, validates the zero-credit quota header and reports current request quota. It does not call historical events, historical markets or price endpoints, and it does not write to Neon.
+
+This no-credit preflight is an account/sport-entitlement check only. It does not prove historical event, bookmaker, market or quote-level coverage. A separate 1-credit historical events/markets discovery request remains gated on the fresh quota result and will be evaluated independently.
