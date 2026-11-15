@@ -135,6 +135,43 @@ def observation_eligible_as_of(match: MatchObservation, *, cutoff_at: datetime,
     return kickoff_precedes_cutoff and match.available_at <= cutoff_at and match.recorded_at <= cutoff_at
 
 
+def observation_prospectively_observed_as_of(
+    match: MatchObservation, *, cutoff_at: datetime,
+    competition_id: str | None = None,
+) -> bool:
+    """Eligibility for a prospective shadow forecast, never historical backtests.
+
+    A collector's first-observed timestamp proves only that the result was
+    known by this later forecast cutoff. It does not certify what was knowable
+    at the historical fixture's kickoff, so this path is explicitly separate
+    from observation_eligible_as_of.
+    """
+    if not _aware(cutoff_at) or not _valid_observation(match):
+        return False
+    if match.point_in_time_certifiable is not False:
+        return False
+    if match.availability_basis != "collector_first_observed_v1":
+        return False
+    if not all(isinstance(value, str) and value.strip() for value in (
+        match.rights_approval_id or "", match.provider, match.source_id
+    )):
+        return False
+    for digest in (match.payload_sha256, match.evidence_manifest_sha256,
+                   match.capture_evidence_sha256):
+        if not isinstance(digest, str) or not re.fullmatch(r"[0-9a-fA-F]{64}", digest):
+            return False
+    if competition_id is not None and match.competition_id != competition_id:
+        return False
+    if match.kickoff_at is not None:
+        kickoff_precedes_cutoff = match.kickoff_at < cutoff_at
+    else:
+        safe_boundary = datetime.combine(
+            match.kickoff_date + timedelta(days=2), time.min, tzinfo=timezone.utc
+        )
+        kickoff_precedes_cutoff = cutoff_at.astimezone(timezone.utc) >= safe_boundary
+    return kickoff_precedes_cutoff and match.available_at <= cutoff_at and match.recorded_at <= cutoff_at
+
+
 def _event_time(match: MatchObservation) -> datetime:
     if match.kickoff_at is not None:
         return match.kickoff_at
@@ -144,10 +181,16 @@ def _event_time(match: MatchObservation) -> datetime:
 
 
 def observation_weight_as_of(
-    match: MatchObservation, *, cutoff_at: datetime, half_life_days: float | None
+    match: MatchObservation, *, cutoff_at: datetime, half_life_days: float | None,
+    allow_prospective_observed: bool = False,
 ) -> float:
     """Return exponential recency weight for an eligible observation."""
-    if not observation_eligible_as_of(match, cutoff_at=cutoff_at):
+    eligible = observation_eligible_as_of(match, cutoff_at=cutoff_at)
+    if allow_prospective_observed:
+        eligible = eligible or observation_prospectively_observed_as_of(
+            match, cutoff_at=cutoff_at
+        )
+    if not eligible:
         return 0.0
     if half_life_days is None:
         return 1.0
@@ -177,6 +220,7 @@ def predict_match(
     prior_matches: float = 5.0,
     recency_half_life_days: float | None = None,
     dixon_coles_rho: float = 0.0,
+    allow_prospective_observed: bool = False,
 ) -> PoissonPrediction:
     """Estimate 1X2, BTTS and O/U 2.5 using only results knowable at cutoff.
 
@@ -189,6 +233,8 @@ def predict_match(
         raise ValueError("CUTOFF_AND_KICKOFF_MUST_BE_TIMEZONE_AWARE")
     if kickoff_at <= cutoff_at:
         raise ValueError("TARGET_KICKOFF_MUST_BE_AFTER_CUTOFF")
+    if type(allow_prospective_observed) is not bool:
+        raise ValueError("PROSPECTIVE_OBSERVED_FLAG_INVALID")
     if not all(isinstance(value, str) and value.strip() for value in (
         competition_id, home_team_id, away_team_id
     )) or home_team_id == away_team_id:
@@ -220,7 +266,14 @@ def predict_match(
         # Conflicting or repeated fixture identities are excluded independent of input order.
         if fixture_id_counts.get(match.fixture_id, 0) != 1:
             continue
-        if not observation_eligible_as_of(match, cutoff_at=cutoff_at, competition_id=competition_id):
+        eligible_at_cutoff = observation_eligible_as_of(
+            match, cutoff_at=cutoff_at, competition_id=competition_id
+        )
+        if allow_prospective_observed and not eligible_at_cutoff:
+            eligible_at_cutoff = observation_prospectively_observed_as_of(
+                match, cutoff_at=cutoff_at, competition_id=competition_id
+            )
+        if not eligible_at_cutoff:
             continue
         eligible.append(match)
 
@@ -236,7 +289,8 @@ def predict_match(
 
     weights = {
         m.fixture_id: observation_weight_as_of(
-            m, cutoff_at=cutoff_at, half_life_days=recency_half_life_days
+            m, cutoff_at=cutoff_at, half_life_days=recency_half_life_days,
+            allow_prospective_observed=allow_prospective_observed,
         ) for m in eligible
     }
     total_weight = sum(weights.values())
