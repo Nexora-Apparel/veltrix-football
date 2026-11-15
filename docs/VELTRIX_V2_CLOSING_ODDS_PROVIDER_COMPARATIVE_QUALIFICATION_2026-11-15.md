@@ -258,3 +258,22 @@ Public references:
 7. OddsIntel is a consensus benchmark only; OddsRelay and iSports remain non-admitted due archive, licensing, pricing or coverage gaps.
 
 **No provider is newly approved. No subscription, upgrade, API call, quota spend or data import resulted from this review.**
+
+
+## 7. 5Dollar live entitlement result — 2026-11-16
+
+A one-request status-only probe was executed in GitHub Actions run 43775297650. It called only GET /v1/status. The response was HTTP 200 and the exact plan field was community. The provider reported a 300/hour rate limit, a 20/minute burst limit, and no daily quota value. The response headers reported 299 remaining in the current hourly window.
+
+The raw response and hashes were retained as a workflow artifact and persisted to staging:
+- provider response ID: 1292
+- entitlement observation ID: 5
+- checked_at: 2026-11-15T23:33:27.239Z
+- evidence SHA-256: 93dcca6cc11aa872e48b9651f0806b884ceff7d5c174152639ce6a382ab494b2
+
+Result: COMMUNITY / ACTIVE; ULTRA NOT VERIFIED. The status-only probe made no league, fixture, odds or odds-history calls. The staging provider-response audit confirms zero 5Dollar odds-history requests. No upgrade was purchased or attempted.
+
+### Prospective quote capture — current gate
+
+The Odds API owner authorization remains active for the five approved European competitions and the provider sports catalogue previously confirmed all five sport keys. Its last no-cost /v4/sports probe (2026-11-15 13:21 UTC) recorded 295 credits remaining and 205 used. The account plan is undisclosed, monthly allowance is null and billing-period boundaries are NOT ESTABLISHED. Therefore the credit-reservation service has no valid monthly budget snapshot. Do not spend live odds credits until the billing period and hard caps are established and a budget snapshot is recorded.
+
+The 788 existing 5Dollar observations remain timestamped OPENING quotes. They are not closing quotes and are not eligible for CLV. The dedicated odds_quote_observations relation is currently The Odds API-specific and contains zero rows. No new live odds snapshots were collected in this run.
