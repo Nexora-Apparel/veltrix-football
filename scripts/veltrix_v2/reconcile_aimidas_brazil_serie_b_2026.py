@@ -176,8 +176,8 @@ def read_canonical_registry(database_url: str, source_raw: bytes, source_record:
              retrieved_at, pit, response_id, request_id, response_hash, raw_body, fetched_at) = evidence[0]
             if bytes(raw_body) != source_raw or sha256(bytes(raw_body)) != response_hash.strip():
                 raise RuntimeError("AIMIDAS_SERIE_B_STAGING_RAW_BYTES_MISMATCH")
-            if payload_hash.strip() != sha256(source_raw):
-                raise RuntimeError("AIMIDAS_SERIE_B_STAGING_PAYLOAD_HASH_MISMATCH")
+            if payload.get("bytes") != len(source_raw) or payload.get("response_sha256") != response_hash.strip():
+                raise RuntimeError("AIMIDAS_SERIE_B_STAGING_PAYLOAD_PROVENANCE_MISMATCH")
             if source_id != SOURCE_ID or rights_id != APPROVAL_ID or pit is not False:
                 raise RuntimeError("AIMIDAS_SERIE_B_STAGING_RIGHTS_OR_PIT_MISMATCH")
             if payload.get("git_blob_sha1") != source_record.get("git_blob_sha1"):
