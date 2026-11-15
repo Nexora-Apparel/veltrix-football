@@ -99,15 +99,30 @@ def evaluate_prospective_settlements(
     if not isinstance(ledger, ProspectivePaperLedger):
         raise ValueError("PAPER_LEDGER_REQUIRED")
     ledger.verify_chain()
-    predictions = {
-        (event.fixture_id, event.model_version): event
-        for event in ledger.events
-        if event.event_type in {"PREDICTION", "SHADOW_PREDICTION"}
-    }
-    settlements = {
-        (event.fixture_id, event.model_version): event
-        for event in ledger.events if event.event_type == "SETTLEMENT"
-    }
+    predictions = {}
+    for event in ledger.events:
+        if (
+            event.event_type in {"PREDICTION", "SHADOW_PREDICTION"}
+            and event.payload.get("evidence_class") == "PROSPECTIVE_OBSERVED_ONLY"
+        ):
+            key = (event.fixture_id, event.model_version)
+            if key in predictions:
+                raise ValueError("PROSPECTIVE_SCORE_DUPLICATE_PREDICTION_KEY")
+            predictions[key] = event
+
+    settlements = {}
+    for event in ledger.events:
+        if event.event_type != "SETTLEMENT":
+            continue
+        key = (event.fixture_id, event.model_version)
+        if key in settlements:
+            raise ValueError("PROSPECTIVE_SCORE_DUPLICATE_SETTLEMENT_KEY")
+        prediction = predictions.get(key)
+        if prediction is None:
+            raise ValueError("PROSPECTIVE_SCORE_SETTLEMENT_NOT_PROSPECTIVE")
+        if event.payload.get("prediction_event_sha256") != prediction.event_sha256:
+            raise ValueError("PROSPECTIVE_SCORE_SETTLEMENT_LINK_INVALID")
+        settlements[key] = event
     samples: dict[str, list[tuple[dict, str, datetime]]] = {
         "1X2": [], "BTTS": [], "TOTALS_2_5": [],
     }
