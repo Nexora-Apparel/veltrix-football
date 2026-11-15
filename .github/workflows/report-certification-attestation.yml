@@ -25,6 +25,8 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+      - name: Recompute and verify raw certification evidence
+        run: python scripts/verify_certification_evidence.py --manifest reports/certification/evidence-manifest.json
       - name: Validate report identity and all certification records
         env:
           REPORT_ID: ${{ inputs.report_id }}
