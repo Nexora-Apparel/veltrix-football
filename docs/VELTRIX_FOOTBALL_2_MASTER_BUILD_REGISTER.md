@@ -127,7 +127,7 @@ Rights-related personal-use checks were corrected to use `commercial=False` in:
 - `veltrix_v2/ledger/admission.py`
 - `veltrix_v2/data/provider_evidence_capture.py`
 
-These corrections remove a false commercial-permission prerequisite; they do not broaden the source purpose/scope or grant raw redistribution. Community rights approval/test reconciliation and bounded Community qualification remain outstanding in the Stage 2 queue.
+These corrections remove a false commercial-permission prerequisite; they do not broaden the source purpose/scope or grant raw redistribution. Community rights approval/test reconciliation has now been implemented on the integration branch: source-specific record `docs/legal/5dollar-community-noncommercial-authorization-2026-11-15.md`, approval ID `approval-5dollar-community-fixture-result-benchmarking-2026-11-14`, `commercial_use_allowed=False`, and a focused regression test. The offline test has not yet been run; the bounded Community qualification remains NOT RUN pending test execution and safe workflow dispatch.
 
 ### 3.6 Other data and odds sources
 
