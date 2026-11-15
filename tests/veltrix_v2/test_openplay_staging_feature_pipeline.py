@@ -43,13 +43,13 @@ def _assets():
     }
 
 
-def _crosswalk(canonical_id, evidence_id):
+def _crosswalk(provider_id, canonical_id, evidence_id, method="EXACT_NAME_AND_COMPETITION_OVERLAP"):
     return {
         "canonical_entity_id": canonical_id,
         "crosswalk_version_id": evidence_id,
-        "provider_entity_id": str(evidence_id),
+        "provider_entity_id": str(provider_id),
         "mapping_status": "RESOLVED",
-        "mapping_method": "EXACT_NAME_AND_COMPETITION_OVERLAP",
+        "mapping_method": method,
         "valid_from": CROSSWALKED.isoformat(),
         "valid_until": None,
         "recorded_at": CROSSWALKED.isoformat(),
@@ -199,11 +199,13 @@ def _approval():
 def test_streaming_staging_adapter_builds_provenance_bound_features(tmp_path):
     assets_dir = _make_assets(tmp_path)
     assets = _assets()
-    teams = {"100": _crosswalk("team-home", 101), "200": _crosswalk("team-away", 102)}
-    competitions = {"eng": {
-        **_crosswalk("competition-eng", 103),
-        "mapping_method": "EXPLICIT_REGION_NAME_ALIAS",
-    }}
+    teams = {
+        "100": _crosswalk("100", "team-home", 108),
+        "200": _crosswalk("200", "team-away", 108),
+    }
+    competitions = {
+        "eng": _crosswalk("eng", "competition-eng", 109, "EXPLICIT_REGION_NAME_ALIAS")
+    }
     output_dir = tmp_path / "output"
     manifest = build_feature_rows_from_assets(
         assets_dir, assets=assets, snapshots=_snapshots(),
@@ -237,11 +239,13 @@ def test_streaming_adapter_quarantines_all_duplicate_player_natural_key_rows(tmp
     assets_dir = _make_assets(tmp_path, duplicate_player=True)
     manifest = build_feature_rows_from_assets(
         assets_dir, assets=_assets(), snapshots=_snapshots(),
-        team_crosswalk={"100": _crosswalk("team-home", 101), "200": _crosswalk("team-away", 102)},
-        competition_crosswalk={"eng": {
-            **_crosswalk("competition-eng", 103),
-            "mapping_method": "EXPLICIT_REGION_NAME_ALIAS",
-        }},
+        team_crosswalk={
+            "100": _crosswalk("100", "team-home", 108),
+            "200": _crosswalk("200", "team-away", 108),
+        },
+        competition_crosswalk={
+            "eng": _crosswalk("eng", "competition-eng", 109, "EXPLICIT_REGION_NAME_ALIAS")
+        },
         approval=_approval(), output_dir=tmp_path / "output",
     )
     assert manifest["duplicate_natural_keys"]["player_match_stats.parquet"] == {
