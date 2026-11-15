@@ -7,9 +7,11 @@ from typing import Mapping
 
 @dataclass(frozen=True)
 class CreditBudget:
-    monthly_allowance: int
+    # Optional monthly fields are advisory only; personal-use probes do not
+    # require billing-period or allowance documentation.
+    monthly_allowance: int | None
     provider_remaining: int | None
-    monthly_hard_cap: int
+    monthly_hard_cap: int | None
     per_run_hard_cap: int
     month_committed: int = 0
     run_committed: int = 0
@@ -50,16 +52,21 @@ def plan_request(request: PlannedRequest, budget: CreditBudget) -> BudgetDecisio
         return BudgetDecision(False, None, None, None, "REQUEST_OR_BUDGET_TYPE_INVALID")
     if not isinstance(request.endpoint_class, str) or not request.endpoint_class:
         return BudgetDecision(False, None, None, None, "REQUEST_SHAPE_INVALID")
-    required = (budget.monthly_allowance, budget.monthly_hard_cap,
-                budget.per_run_hard_cap, budget.month_committed, budget.run_committed)
-    if any(not _valid_nonnegative(v) for v in required):
+    required = (budget.per_run_hard_cap, budget.run_committed)
+    optional = (budget.monthly_allowance, budget.monthly_hard_cap, budget.month_committed)
+    if (any(not _valid_nonnegative(v) for v in required)
+            or any(v is not None and not _valid_nonnegative(v) for v in optional)):
         return BudgetDecision(False, None, None, None, "BUDGET_INPUT_INVALID")
-    if budget.monthly_allowance == 0 or budget.monthly_hard_cap == 0 or budget.per_run_hard_cap == 0:
+    if budget.per_run_hard_cap == 0:
         return BudgetDecision(False, None, None, None, "BUDGET_LIMIT_MUST_BE_POSITIVE")
     if budget.provider_remaining is not None and not _valid_nonnegative(budget.provider_remaining):
         return BudgetDecision(False, None, None, None, "PROVIDER_REMAINING_INVALID")
-    if budget.month_committed > budget.monthly_allowance or budget.month_committed > budget.monthly_hard_cap or budget.run_committed > budget.per_run_hard_cap:
+    if budget.run_committed > budget.per_run_hard_cap:
         return BudgetDecision(False, None, None, None, "BUDGET_STATE_INCONSISTENT")
+    monthly_limits = [v for v in (budget.monthly_allowance, budget.monthly_hard_cap) if v is not None]
+    remaining_month = min(monthly_limits) - (budget.month_committed or 0) if monthly_limits else None
+    if remaining_month is not None and remaining_month < 0:
+        return BudgetDecision(False, None, None, remaining_month, "BUDGET_STATE_INCONSISTENT")
     if not isinstance(request.regions, int) or isinstance(request.regions, bool) or request.regions < 1:
         return BudgetDecision(False, None, None, None, "REQUEST_SHAPE_INVALID")
     if request.endpoint_class in {"sports_discovery", "events_discovery"}:
@@ -71,11 +78,15 @@ def plan_request(request: PlannedRequest, budget: CreditBudget) -> BudgetDecisio
         estimate = len(set(request.markets)) * request.regions
     else:
         return BudgetDecision(False, None, None, None, "ENDPOINT_CLASS_UNSUPPORTED")
-    remaining_month = min(budget.monthly_allowance, budget.monthly_hard_cap) - budget.month_committed
     remaining_run = budget.per_run_hard_cap - budget.run_committed
-    limits = [remaining_month, remaining_run]
+    if estimate > 0 and budget.provider_remaining is None:
+        return BudgetDecision(False, estimate, remaining_run, remaining_month,
+                              "PROVIDER_QUOTA_UNKNOWN")
+    limits = [remaining_run]
     if budget.provider_remaining is not None:
         limits.append(budget.provider_remaining)
+    if remaining_month is not None:
+        limits.append(remaining_month)
     if estimate > min(limits):
         reason = ("PROVIDER_ALLOWANCE_EXCEEDED" if budget.provider_remaining is not None
                   and estimate > budget.provider_remaining else
@@ -83,7 +94,8 @@ def plan_request(request: PlannedRequest, budget: CreditBudget) -> BudgetDecisio
                   "MONTHLY_CAP_EXCEEDED")
         return BudgetDecision(False, estimate, remaining_run, remaining_month, reason)
     return BudgetDecision(True, estimate, remaining_run - estimate,
-                          remaining_month - estimate, "BUDGET_APPROVED")
+                          None if remaining_month is None else remaining_month - estimate,
+                          "BUDGET_APPROVED")
 
 
 def reconcile_quota_headers(headers: Mapping[str, str]) -> QuotaEvidence:
