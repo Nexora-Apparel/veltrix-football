@@ -26,7 +26,8 @@ The dedicated workflow `.github/workflows/report-certification-attestation.yml` 
 Every certification record carries `provider_id` and `provider_scope`, in addition to `rights_approval_id`, `rights_evidence_uri` and `rights_evidence_sha256`. The rights evidence object is JSON with schema `VELTRIX_PROVIDER_RIGHTS_EVIDENCE_V1` and must contain:
 
 - `approval_id`, `provider_id`, `permitted_scope`, `status: APPROVED`, `evaluated_at`
-- `allowed_actions` containing the provider's approved `MODEL_TRAINING` and `PUBLIC_DISPLAY` uses
+- `provider_id` must equal a registered provider `source_id`; unregistered providers and providers in `SUSPENDED_CREDITS` state are rejected even if a rights object claims approval
+- `allowed_actions` containing all three explicit uses: `MODEL_TRAINING`, `PUBLIC_DISPLAY` and `PREDICTION_PUBLICATION`
 - `terms_version` and `terms: {status: ACCEPTED, version, checked_at}`
 - `entitlement: {status: ACTIVE, checked_at, quota: {remaining}}`; `expires_at` is optional because some provider plans do not expose an account expiry, but if present it must be timezone-aware and in the future
 
