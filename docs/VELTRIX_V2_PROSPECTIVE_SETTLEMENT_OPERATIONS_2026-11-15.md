@@ -87,4 +87,21 @@ This procedure is staging-only. It must not:
 
 The in-memory settlement validator and PostgreSQL append-only store adapter exist. The personal-use rights check is corrected to evaluate approved collection, storage and benchmarking permissions with `commercial=False`. Regression coverage verifies that a personal-use-only approval can settle a paper result.
 
-The first implementation of the operational collector/reconciler now exists in `scripts/phase5_settle_5dollar_shadow.py` and `veltrix_v2/ledger/settlement_reconciliation.py`. It defaults to a no-I/O dry run; `--execute` is required for bounded provider requests and staging-only writes. It queries only competitions represented by eligible unsettled targets, caps provider pages at 14, preserves each exact finished-response page and manifest in staging, links the response and manifest SHA-256 values into each immutable settlement event, re-resolves rights immediately before settlement, performs exact source fixture/competition/team/kickoff matching (including each eligible model version), and appends settlement events under the PostgreSQL ledger lock. It quarantines mismatches and duplicates, verifies the ledger hash chain after append, and has no production/publication/Telegram/schedule/value-bet path. At the 2026-11-15 audit all 25 target kickoffs are still in the future, so the collector returns `NO_ELIGIBLE_FINISHED_TARGETS` without making provider requests or writing settlements. The exact-head CI regression now includes the reconciliation tests and passed 158 provider/model/settlement tests plus 165 publication/bundle/delivery boundary tests; PostgreSQL 16/18 acceptance and certification-evidence checks also passed. The separate PostgreSQL paper-ledger integration job is tracked independently.
+The first implementation of the operational collector/reconciler now exists in `scripts/phase5_settle_5dollar_shadow.py` and `veltrix_v2/ledger/settlement_reconciliation.py`. It defaults to a no-I/O dry run; `--execute` is required for bounded provider requests and staging-only writes. It queries only competitions represented by eligible unsettled targets, caps provider pages at 14, preserves each exact finished-response page and manifest in staging, links the response and manifest SHA-256 values into each immutable settlement event, re-resolves rights immediately before settlement, performs exact source fixture/competition/team/kickoff matching (including each eligible model version), and appends settlement events under the PostgreSQL ledger lock. It quarantines mismatches and duplicates, verifies the ledger hash chain after append, and has no production/publication/Telegram/schedule/value-bet path. At the 2026-11-15 audit all 25 target kickoffs are still in the future, so the collector returns `NO_ELIGIBLE_FINISHED_TARGETS` without making provider requests or writing settlements. The exact-head CI regression passed 158 provider/model/settlement tests, 165 publication/bundle/delivery boundary tests and 36 PostgreSQL integration tests (including paper-ledger settlement response/manifest persistence); foundation, PostgreSQL 16/18 acceptance, certification-evidence and audit checks also passed. The daily prediction workflow was skipped intentionally.
+
+
+## Operator invocation
+
+Dry run (no database connection, no provider request, no write):
+
+```bash
+python scripts/phase5_settle_5dollar_shadow.py
+```
+
+Execution is staging-only and requires the existing environment variables `FIVEDOLLARFOOTBALL_API_KEY` and `VELTRIX_STAGING_DATABASE_URL`:
+
+```bash
+python scripts/phase5_settle_5dollar_shadow.py --execute
+```
+
+Do not run `--execute` until target fixtures have actually kicked off. The collector itself checks eligibility and returns without provider requests when no unsettled target has kicked off. Provider calls are bounded to 14 pages maximum and paced; no retry loop is enabled.
