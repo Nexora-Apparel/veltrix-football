@@ -1,6 +1,6 @@
 # VELTRIX FOOTBALL 2.0 — Stage 2: Rights-approved PIT historical data acquisition
 
-Status: IN PROGRESS — project-wide non-commercial source authorization is recorded; the pinned OpenPlay release (15 assets, 2,975,394 Parquet rows, 74,460,817 raw bytes) is qualified, imported into isolated Neon staging and independently read back. The OpenFootball archive pack is captured and hash-verified, but remains retrospective/date-only rather than proven historical PIT. Supplemental FootballData artifact verification, OpenFootball staging persistence, evidence-backed cross-provider identity resolution, genuinely PIT historical observations and historical odds access remain outstanding.
+Status: IN PROGRESS — Phase 2 data foundation and OpenPlay match-result snapshot acquisition are accepted. The OpenFootball archive pack is captured and hash-verified but remains retrospective/date-only. Stage 2 still requires row-level player/lineup/shot snapshots, cross-provider identity resolution, supplemental FootballData verification, additional historical PIT evidence and historical odds access.
 
 ## 1. Acceptance boundary
 
@@ -92,11 +92,11 @@ The current OpenFootball and supplemental FootballData parsers also set `point_i
 
 ### Current Stage 2 decision
 
-**Stage 2 remains OPEN.** The OpenFootball base pack is an immutable, rights-cleared retrospective archive, not a demonstrated historical PIT feed. The supplemental FootballData pack requires its own latest artifact verification. No independently attested pre-match feature snapshots or timestamped historical bookmaker quotes have been demonstrated. The 5Dollar historical result rows remain non-PIT. The provider also exposes genuine timestamped odds ticks, but the user account previously verified as Free cannot access the full tick-history endpoint; it requires Ultra. The separate odds_quote rights approval is also absent. No historical odds endpoint request has been made.
+**Stage 2 remains OPEN.** The OpenFootball base pack is an immutable, rights-cleared retrospective archive, not a demonstrated historical PIT feed. The supplemental FootballData pack requires its own latest artifact verification. OpenPlay now provides 26,547 documented match-page save timestamps, suitable for prospective cutoffs after the VELTRIX import; its player/lineup/shot feature families are not yet row-level admitted. The 5Dollar historical result rows remain non-PIT. The 5Dollar tick-history endpoint requires Ultra, while the account was previously verified as Community. The Odds API has an approved non-commercial `odds_quote` rights record, but its current historical-plan entitlement remains unverified. No historical odds endpoint request has been made.
 
 The latest exact-head CI on commit `9bd078cd741248feb50aadcaf337b37f32dc5db5` reports Phase 2 foundation, Phase 5 shadow regression, historical model audit, certification evidence integrity and PostgreSQL 16/18 acceptance all successful; the daily fixture workflow is intentionally skipped. These are software/integration checks, not evidence that the source archives are PIT or that Stage 2 has passed.
 
-**No-go:** do not mark Stage 2 complete, do not run historical walk-forward evaluation using these archive commit timestamps as pre-match publication times, and do not loosen the temporal evaluator. The next implementation task is the parser/serializer/verifier correction above, followed by a separately qualified genuine PIT source acquisition.
+**No-go:** do not mark Stage 2 complete, do not treat OpenFootball commit timestamps as source-page availability, do not use OpenPlay snapshots for cutoffs before the actual VELTRIX import, and do not loosen the temporal evaluator. The OpenPlay match-page timestamp path is now verified for prospective cutoffs; the remaining feature families and other sources must pass their own timestamp and identity gates.
 
 
 ## 8. Temporal-semantics remediation implementation — 2026-11-15
@@ -124,7 +124,7 @@ The first Stage 2 workflow run on the initial parser correction (run 43712824451
 
 The updated foundation regression run on commit `593b3fcd28ba1e0129e781652cb036daff9ca214` is in progress at the time of this note. No pass is claimed until the exact-head checks finish. The Stage 2 archive-collection workflow itself has not been rerun on this corrected head.
 
-**Stage 2 remains OPEN.** This correction removes an unsafe PIT claim; it does not create the missing historical as-of data. Staging import, identity crosswalk integration, external historical PIT provider evidence and verified historical odds remain outstanding.
+**Historical interim assessment (superseded by Sections 11.1–11.2):** this correction removed an unsafe OpenFootball PIT claim. Since then, OpenPlay match-page snapshots have been persisted and qualified for prospective cutoffs after import. OpenFootball staging, identity crosswalk integration, player/lineup/shot temporal adapters and verified historical odds remain outstanding.
 
 
 ## 9. Corrected archive regression outcome — 2026-11-15
@@ -140,7 +140,7 @@ The corrected code head `593b3fcd28ba1e0129e781652cb036daff9ca214` passed the fo
 
 The latest PR head is `bc0a5f053b7e6a10e6b6d9f9e9d0bcaa30f4fbba`; this is a documentation-only commit after the tested code head above. No exact-head code test is claimed for the documentation-only commit.
 
-**Final Stage 2 disposition for this execution window: NOT COMPLETE.** The timestamp misclassification has been corrected and the focused regression/integration checks passed. The actual Stage 2 exit gates remain unmet: a genuinely PIT-qualified historical source, independently verified source availability timestamps, confirmed supplemental artifact evidence, guarded staging import, and exact cross-provider identity resolution are still outstanding. No production data, schedules, Telegram or publication settings were changed.
+**Stage 2 disposition (updated 2026-11-15): NOT COMPLETE.** OpenPlay rights, raw staging persistence, documented match-page timestamp evidence and prospective match-result observations are now accepted. Remaining exit gates are row-level OpenPlay player/lineup/shot feature admission, OpenFootball/FootballData staging and timestamp qualification, evidence-backed cross-provider identity resolution, and historical odds entitlement plus 98% timestamp coverage. No production data, schedules, Telegram or publication settings were changed.
 
 
 ## 10. 5DollarFootballAPI historical odds source qualification — 2026-11-15
