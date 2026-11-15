@@ -264,7 +264,11 @@ def evaluate_model_challengers(
             continue
         # Target labels must obey the same temporal invariants as training rows.
         if (target.available_at < target.kickoff_at
-                or target.recorded_at < target.available_at):
+                or target.recorded_at < target.available_at
+                or not observation_eligible_as_of(
+                    target, cutoff_at=evaluation_as_of,
+                    competition_id=target.competition_id,
+                )):
             skipped_invalid += 1
             continue
         if (not target.fixture_id or not target.competition_id or not target.home_team_id

@@ -336,3 +336,14 @@ def test_challenger_rejects_impossible_target_result_chronology(
     )
     assert report.skipped_invalid_targets == 1
     assert all(row.fixture_id != target.fixture_id for row in report.fixtures)
+
+
+def test_challenger_rejects_target_with_invalid_pit_payload_hash():
+    rows = comparison_rows()
+    target = rows[-1]
+    rows[-1] = replace(target, payload_sha256="not-a-sha256")
+    report = evaluate_model_challengers(
+        rows, evaluation_as_of=BASE + timedelta(days=20)
+    )
+    assert report.skipped_invalid_targets == 1
+    assert all(row.fixture_id != target.fixture_id for row in report.fixtures)

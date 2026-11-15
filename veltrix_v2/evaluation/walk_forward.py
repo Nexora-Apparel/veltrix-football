@@ -83,6 +83,7 @@ class WalkForwardReport:
     competition_calibration: dict[str, dict[str, BinaryMetrics]] = field(default_factory=dict)
     calibration_fit_samples: dict[str, int] = field(default_factory=dict)
     calibration_test_samples: dict[str, int] = field(default_factory=dict)
+    skipped_uncertified_targets: int = 0
 
 
 def _aware(value: datetime) -> bool:
@@ -198,6 +199,7 @@ def walk_forward_evaluate(
     duplicate_ids = {key for key, count in id_counts.items() if count > 1}
     skipped_duplicate = sum(id_counts[key] for key in duplicate_ids)
     skipped_invalid = skipped_no_history = skipped_future = 0
+    skipped_uncertified = 0
     scored: list[FixtureEvaluation] = []
     non_certifiable_input_rows = sum(
         1 for row in rows if isinstance(row, MatchObservation)
@@ -215,6 +217,9 @@ def walk_forward_evaluate(
                     else datetime.max.replace(tzinfo=evaluation_as_of.tzinfo))
 
     for target in valid_rows:
+        if target.point_in_time_certifiable is not True:
+            skipped_uncertified += 1
+            continue
         if not _aware(target.kickoff_at) or not _aware(target.available_at) or not _aware(target.recorded_at):
             skipped_invalid += 1
             continue
@@ -225,7 +230,11 @@ def walk_forward_evaluate(
         # A target result cannot become available before kickoff or be recorded
         # before its availability timestamp. Reject impossible source chronology.
         if (target.available_at < target.kickoff_at
-                or target.recorded_at < target.available_at):
+                or target.recorded_at < target.available_at
+                or not observation_eligible_as_of(
+                    target, cutoff_at=evaluation_as_of,
+                    competition_id=target.competition_id,
+                )):
             skipped_invalid += 1
             continue
         if (not isinstance(target.home_goals, int) or isinstance(target.home_goals, bool)
@@ -383,4 +392,5 @@ def walk_forward_evaluate(
         competition_calibration=competition_calibration,
         calibration_fit_samples=calibration_fit_samples,
         calibration_test_samples=calibration_test_samples,
+        skipped_uncertified_targets=skipped_uncertified,
     )

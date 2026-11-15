@@ -198,3 +198,22 @@ def test_walk_forward_rejects_impossible_target_result_chronology(
     report = walk_forward_evaluate(rows, evaluation_as_of=AS_OF)
     assert report.skipped_invalid_target >= 1
     assert all(row.fixture_id != target.fixture_id for row in report.fixtures)
+
+
+def test_walk_forward_rejects_non_certifiable_target_when_certified_history_exists():
+    rows = history(40)
+    target = rows[-1]
+    rows[-1] = replace(target, point_in_time_certifiable=False)
+    report = walk_forward_evaluate(rows, evaluation_as_of=AS_OF)
+    assert report.non_certifiable_input_rows == 1
+    assert report.skipped_uncertified_targets == 1
+    assert all(row.fixture_id != target.fixture_id for row in report.fixtures)
+
+
+def test_walk_forward_rejects_target_with_invalid_pit_payload_hash():
+    rows = history(40)
+    target = rows[-1]
+    rows[-1] = replace(target, payload_sha256="not-a-sha256")
+    report = walk_forward_evaluate(rows, evaluation_as_of=AS_OF)
+    assert report.skipped_invalid_target >= 1
+    assert all(row.fixture_id != target.fixture_id for row in report.fixtures)
