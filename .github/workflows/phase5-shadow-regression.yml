@@ -13,6 +13,13 @@ on:
       - "tests/veltrix_v2/test_api_publication_verifier_injection.py"
       - "scripts/veltrix_v2/dispatch_public_telegram_bundle.py"
       - "tests/veltrix_v2/test_v2_release_workflow_guards.py"
+      - "veltrix_v2/reporting/trusted_runtime.py"
+      - "tests/veltrix_v2/test_trusted_runtime.py"
+      - "veltrix_v2/evaluation/certification_manifest_builder.py"
+      - "tests/veltrix_v2/test_certification_manifest_builder.py"
+      - "scripts/veltrix_v2/build_verified_public_bundle.py"
+      - ".github/workflows/report-certification-attestation.yml"
+      - "requirements.txt"
       - ".github/workflows/telegram-delivery-recovery.yml"
       - "docs/VELTRIX_V2_ODDS_API_ONE_EVENT_MARKET_PROBE_RUNBOOK_2026-11-15.md"
       - ".github/workflows/phase5-shadow-regression.yml"
@@ -24,6 +31,13 @@ on:
       - "tests/veltrix_v2/test_provider_evidence_capture.py"
       - "api/telegram.py"
       - "tests/veltrix_v2/test_api_publication_verifier_injection.py"
+      - "veltrix_v2/reporting/trusted_runtime.py"
+      - "tests/veltrix_v2/test_trusted_runtime.py"
+      - "veltrix_v2/evaluation/certification_manifest_builder.py"
+      - "tests/veltrix_v2/test_certification_manifest_builder.py"
+      - "scripts/veltrix_v2/build_verified_public_bundle.py"
+      - ".github/workflows/report-certification-attestation.yml"
+      - "requirements.txt"
       - ".github/workflows/phase5-shadow-regression.yml"
   workflow_dispatch:
 
@@ -58,6 +72,8 @@ jobs:
           python -m compileall -q tests/veltrix_v2/test_provider_evidence_capture.py
           python -m compileall -q api/telegram.py
           python -m compileall -q tests/veltrix_v2/test_api_publication_verifier_injection.py
+          python -m compileall -q veltrix_v2/reporting/trusted_runtime.py scripts/veltrix_v2/build_verified_public_bundle.py
+          python -m compileall -q tests/veltrix_v2/test_trusted_runtime.py
       - name: Run provider and model evaluation contracts
         run: >-
           python -m pytest --import-mode=importlib -q
@@ -75,6 +91,7 @@ jobs:
         run: >-
           python -m pytest --import-mode=importlib -q
           tests/veltrix_v2/test_api_publication_verifier_injection.py
+          tests/veltrix_v2/test_trusted_runtime.py
           tests/veltrix_v2/test_publication_certification.py
           tests/veltrix_v2/test_certification_manifest_builder.py
           tests/veltrix_v2/test_certification_manifest_cli.py
