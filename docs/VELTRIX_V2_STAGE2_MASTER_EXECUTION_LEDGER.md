@@ -506,3 +506,10 @@ At the time of this ledger:
 
 - The first prospective target-loader CI attempt [#43768125737](https://github.com/Nexora-Apparel/veltrix-football/actions/runs/43768125737) failed one test before dry-run or provider access: the new mocked-target test used `timedelta` without importing it. The other 34 tests passed.
 - Added the missing local import. The workflow stopped before quota preflight, provider requests or database connection; no API quota or staging writes were consumed by this attempt.
+
+
+### Fixture-only capture output and trigger safety hardening — 2026-11-15
+
+- Fixed the final summary printer's missing `duplicate_predictions_skipped` field by explicitly setting it to zero in fixtures-only mode and added a regression assertion.
+- Changed the fixture-only workflow job to run only on explicit `workflow_dispatch`. Its one-time push-triggered discovery has already run; future source-code or documentation pushes will not silently repeat provider requests. No schedule trigger exists.
+- The initial fixture-only data capture remains independently verified in Neon and in aggregate artifact #14183036801. The workflow's failure was after persistence, at the final summary print; this patch makes the no-model path return a complete, stable summary on future manual runs.

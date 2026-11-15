@@ -289,6 +289,7 @@ def _build_fixtures_only_summary(
         "model_execution": False,
         "forecast_count": 0,
         "admitted_shadow_predictions": 0,
+        "duplicate_predictions_skipped": 0,
         "persisted_shadow_ledger_events": 0,
         "paper_ledger_persisted_to_staging": False,
         "paper_ledger_chain_verified": False,
