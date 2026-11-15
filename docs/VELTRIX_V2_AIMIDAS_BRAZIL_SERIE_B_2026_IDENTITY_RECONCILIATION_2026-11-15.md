@@ -35,7 +35,7 @@ The database stores the source as one immutable file-level observation, not as 7
 | Fixture identities uniquely matched | 369/369 |
 | Distinct canonical fixture IDs | 369 |
 | Independent score agreements | 369/369 |
-| Team-row Goals / Goals Conceded checks | 738/738 |
+| Team-row Goals / Goals Conceded checks | 736/738 consistent; 2 quarantined |
 | Ambiguous fixture candidates | 0 |
 | Score disagreements | 0 |
 | Duplicate source match groups | 0 |
@@ -87,7 +87,21 @@ For each source match, the audit:
 7. Requires exactly one canonical fixture candidate.
 8. Independently compares canonical home and away result scores to the source match-label score.
 
-All 369 matches passed all checks. The fixture IDs are distinct; no source match maps to a reused canonical fixture. All 738 team rows agree with the score orientation in their parent match label.
+All 369 matches passed all checks. The fixture IDs are distinct; no source match maps to a reused canonical fixture. 736/738 team rows agree with the score orientation in their parent match label. Two rows in the Náutico 0–3 CRB match do not agree and are individually quarantined from statistics/features; they do not invalidate the exact match-label-to-canonical fixture identity.
+
+
+### 4.1 Team-stat row discrepancy — quarantine
+
+The canonical result and AI Midas Match label both report **Náutico 0–3 CRB**, and the match-level score agreement passes. Two of the associated team-stat rows contain a conflicting Goals / Goals Conceded pair:
+
+| CSV line | Team row | Stored Goals | Stored Goals Conceded | Match-label expected | Disposition |
+|---:|---|---:|---:|---|---|
+| 8 | CRB | 2 | 0 | 3 goals, 0 conceded | QUARANTINED_TEAM_STAT_ROW |
+| 9 | Náutico | 0 | 2 | 0 goals, 3 conceded | QUARANTINED_TEAM_STAT_ROW |
+
+The two rows appear to reflect a 0–2 team-stat score while the Match label and canonical result are 0–3. The available evidence does not establish which upstream processing step caused the inconsistency. Preserve both original row fingerprints and source line numbers; do not rewrite either row or silently reconcile the values.
+
+Disposition: 736/738 team rows pass the Goals / Goals Conceded check; 2/738 fail. The affected match identity and its 0–3 result remain verified, but both team-stat rows are excluded from feature admission pending source review.
 
 ## 5. Two missing canonical fixtures — exact discrepancy
 
@@ -125,7 +139,7 @@ Each match also receives a stable SHA-256 match key based on the pinned source c
 
 **All 369 identity candidates are independently verified, but none is marked `RESOLVED` in the database.**
 
-The audit artifact records each candidate as `REVIEW_REQUIRED` and includes its source row IDs/fingerprints, canonical fixture ID, provider fixture ID, date delta and score agreement. Reviewer acceptance remains pending because no reviewer identity/acceptance event has been recorded for this complete evidence set.
+The audit artifact records each candidate as `REVIEW_REQUIRED` and includes its source row IDs/fingerprints, canonical fixture ID, provider fixture ID, date delta and score agreement. It also carries a row-level discrepancy list so the two inconsistent team-stat rows are not silently admitted. Reviewer acceptance remains pending because no reviewer identity/acceptance event has been recorded for this complete evidence set.
 
 This is intentional: a verified candidate is not the same thing as a reviewer-approved crosswalk. The two missing canonical fixtures remain `UNRESOLVED_NO_REPLACEMENT_MAPPING`. No `entity_crosswalk_versions`, `fixtures`, `fixture_results` or normalized statistics rows are written by this audit.
 
