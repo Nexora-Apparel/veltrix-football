@@ -118,6 +118,14 @@ ROI and CLV remain explicitly unavailable: the current prediction/settlement led
 The staging-only collector is available through the manual workflow:
 `https://github.com/Nexora-Apparel/veltrix-football/actions/workflows/phase5-5dollar-shadow-settlement.yml`
 
-The workflow performs a no-I/O dry-run first, then executes the existing bounded collector with the approved 5Dollar key and staging DSN. It has no schedule trigger, production database target, publication path or Telegram delivery path. It uploads only `settlement_public_summary.json`; row-level fixture identifiers and quarantine details remain in the private full run output.
+The workflow performs a no-I/O dry-run first, then executes the existing bounded collector with the approved 5Dollar key and staging DSN. It has no schedule trigger, production database target, publication path or Telegram delivery path. It uploads only `settlement_public_summary.json`; row-level fixture identifiers and quarantine details remain only in the ephemeral runner workspace and are not uploaded as artifacts.
 
 The collector now checks quota headroom on every provider page and verifies the full ledger plus exact settlement event hashes from a fresh PostgreSQL connection after the write transaction commits. A missing post-commit event or hash mismatch fails the workflow. The current 25 targets are not due until their kickoffs (18–21 November 2026); running before then returns `NO_ELIGIBLE_FINISHED_TARGETS` without provider requests or settlement writes.
+
+
+## Settlement runner engineering update — 2026-11-15
+
+- Added the manual workflow `.github/workflows/phase5-5dollar-shadow-settlement.yml`. It runs a verified no-I/O dry-run before execution, has only `workflow_dispatch`, uses the approved 5Dollar key and staging DSN, and uploads only the aggregate scorecard.
+- The collector now enforces quota headroom after each provider page, then verifies the full ledger and each appended settlement event hash from a fresh PostgreSQL connection after the write transaction commits.
+- The public scorecard omits row-level fixture IDs and quarantine details. It records the settled count, quarantined count, ledger chain status, post-commit status and prospective metrics. Value betting remains locked.
+- The current target window is 18–21 November 2026. Before a target kickoff, the workflow exits as `NO_ELIGIBLE_FINISHED_TARGETS` without provider calls or settlement writes.
