@@ -20,6 +20,7 @@ from urllib.parse import urlsplit
 
 import requests
 
+from veltrix_v2.data.provider_registry import PROVIDER_REGISTRY, ProviderState
 from veltrix_v2.evaluation.publication_certification import (
     CERTIFICATION_MANIFEST_SCHEMA,
     build_publication_verifier,
@@ -36,6 +37,7 @@ MAX_EVIDENCE_BYTES = 8_000_000
 MAX_ATTESTATION_BYTES = 4_000_000
 _SHA256 = re.compile(r"^[0-9a-f]{64}$")
 _SAFE_REPORT_ID = re.compile(r"^[A-Za-z0-9._-]{1,160}$")
+_PROVIDER_BY_SOURCE_ID = {profile.source_id: profile for profile in PROVIDER_REGISTRY}
 
 
 class DeploymentVerificationError(RuntimeError):
@@ -152,9 +154,14 @@ def build_provider_rights_evaluator(evidence_reader):
                 return False
             provider_id = record.get("provider_id")
             scope = record.get("provider_scope")
+            profile = _PROVIDER_BY_SOURCE_ID.get(provider_id)
             if (
                 not isinstance(provider_id, str) or not provider_id.strip()
+                or profile is None
+                or profile.state is ProviderState.SUSPENDED_CREDITS
                 or not isinstance(scope, str) or not scope.strip()
+                or "*" in scope
+                or scope.strip().lower() in {"all", "all-data", "all-data-redistribution"}
                 or evidence.get("provider_id") != provider_id
                 or evidence.get("approval_id") != record.get("rights_approval_id")
                 or evidence.get("permitted_scope") != scope
@@ -166,6 +173,7 @@ def build_provider_rights_evaluator(evidence_reader):
                 not isinstance(actions, list)
                 or "MODEL_TRAINING" not in actions
                 or "PUBLIC_DISPLAY" not in actions
+                or "PREDICTION_PUBLICATION" not in actions
             ):
                 return False
             entitlement = evidence.get("entitlement")
