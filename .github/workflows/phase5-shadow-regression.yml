@@ -89,6 +89,8 @@ jobs:
       - name: Compile capture and regression test
         run: |
           python -m compileall -q scripts/phase5_collect_5dollar_shadow.py scripts/phase5_settle_5dollar_shadow.py
+          python scripts/phase5_settle_5dollar_shadow.py > /tmp/veltrix-settlement-dry-run.json
+          python -c 'import json; d=json.load(open("/tmp/veltrix-settlement-dry-run.json")); assert d["mode"] == "DRY_RUN" and d["would_connect_to_database"] is False and d["would_call_provider"] is False and d["would_write_database"] is False and d["settlement"] is False'
           python -m compileall -q veltrix_v2/ledger/settlement_reconciliation.py tests/veltrix_v2/test_settlement_reconciliation.py
           python -m compileall -q veltrix_v2/evaluation/prospective_settlement_metrics.py tests/veltrix_v2/test_prospective_settlement_metrics.py
           python -m compileall -q tests/scripts/test_phase5_collect_5dollar_shadow.py
