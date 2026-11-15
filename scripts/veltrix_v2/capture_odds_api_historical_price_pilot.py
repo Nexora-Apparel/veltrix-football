@@ -62,10 +62,17 @@ def _normalize(value: str) -> str:
     return "".join(ch for ch in value if not unicodedata.combining(ch)).casefold().strip()
 
 
+def _build_url(path: str, api_key: str) -> str:
+    separator = "&" if "?" in path else "?"
+    return API_BASE + path + separator + urlencode({"apiKey": api_key})
+
+
 def _fetch_json(path: str, api_key: str):
+    # The Odds API requires apiKey as a query parameter for historical price endpoints.
+    # Never log or persist this request URL; ProviderResponse stores only non-secret params.
     request = Request(
-        API_BASE + path,
-        headers={"x-api-key": api_key, "Accept": "application/json", "User-Agent": USER_AGENT},
+        _build_url(path, api_key),
+        headers={"Accept": "application/json", "User-Agent": USER_AGENT},
         method="GET",
     )
     requested_at = datetime.now(timezone.utc)
@@ -77,7 +84,14 @@ def _fetch_json(path: str, api_key: str):
                        if key.lower() in {"x-requests-used", "x-requests-remaining", "x-requests-last"}}
             status = int(response.status)
     except HTTPError as exc:
-        raise RuntimeError(f"ODDS_API_HISTORICAL_HTTP_{exc.code}_NO_RETRY") from None
+        error_body = exc.read(4096)
+        try:
+            error_payload = json.loads(error_body.decode("utf-8"))
+        except (UnicodeDecodeError, json.JSONDecodeError):
+            error_payload = {}
+        safe_error = str(error_payload.get("error") or error_payload.get("message") or "UNSPECIFIED")
+        safe_error = "".join(ch for ch in safe_error.upper() if ch.isalnum() or ch in "_-")[:80]
+        raise RuntimeError(f"ODDS_API_HISTORICAL_HTTP_{exc.code}_{safe_error}_NO_RETRY") from None
     except URLError:
         raise RuntimeError("ODDS_API_HISTORICAL_NETWORK_ERROR_NO_RETRY") from None
     retrieved_at = datetime.now(timezone.utc)
