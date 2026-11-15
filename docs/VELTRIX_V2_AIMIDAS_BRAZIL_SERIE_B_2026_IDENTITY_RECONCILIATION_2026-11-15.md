@@ -201,3 +201,8 @@ The run's audit job and focused tests passed. PR #120 remains draft/open/unmerge
 - Telegram messages sent: 0.
 - Schedule activation: 0.
 - Value betting unlocked: false.
+
+
+### Replacement-source exclusion
+
+The Odds API's public technical catalogue lists Brazil Série B, but the active Veltrix source approval for that provider is limited to five European competitions and excludes Brazil Série B. The Brazil metadata-only discovery results are therefore not admitted as fixture identity or odds evidence. They were not persisted and cannot be used to create replacement crosswalks. The two absent canonical fixtures remain `UNRESOLVED`; no replacement mapping was invented. Reviewer-backed crosswalk acceptance remains pending.
