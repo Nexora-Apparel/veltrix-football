@@ -140,8 +140,9 @@ def run(*, api_key: str, staging_dsn: str, out_dir: Path) -> dict:
                 if not parsed.has_more:
                     break
                 page += 1
-                time.sleep(max(0.0, MIN_INTERVAL_SECONDS))
 
+        # Re-resolve append-only rights status immediately before settlement.
+        approval, _ = _refresh_approval(staging_dsn)
         recorded_at = datetime.now(timezone.utc)
         # Reconciliation appends to a verified in-memory copy first. Only then
         # are its exact settlement payloads appended under the DB advisory lock.
