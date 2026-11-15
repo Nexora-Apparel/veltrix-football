@@ -7,6 +7,7 @@ from scripts.phase2_capture_fivedollar_opening_odds import (
     MAX_FIXTURES,
     _header_int,
     _validate_fixture_identity,
+    _validate_quota_preflight,
     main,
 )
 
@@ -83,3 +84,57 @@ def test_fixture_identity_must_match_fixture_teams_competition_and_kickoff():
 def test_fixture_identity_mismatch_fails_closed(body, code):
     with pytest.raises(ValueError, match=code):
         _validate_fixture_identity(body, _target())
+
+
+def _status_body(*, plan="community", hourly=300, burst=20):
+    return json.dumps({
+        "success": 1,
+        "data": {
+            "plan": plan,
+            "limits": {"rate_limit": hourly, "burst_per_minute": burst},
+        },
+    }, separators=(",", ":")).encode()
+
+
+def test_quota_preflight_accepts_only_community_profile_and_sufficient_headroom():
+    from datetime import datetime, timezone
+
+    checked_at = datetime(2026, 11, 15, 15, 0, tzinfo=timezone.utc)
+    result = _validate_quota_preflight(
+        _status_body(),
+        {"X-RateLimit-Limit": "300", "X-RateLimit-Remaining": "26",
+         "X-RateLimit-Reset": "1794754800"},
+        planned_requests=25,
+        checked_at=checked_at,
+    )
+    assert result["plan"] == "community"
+    assert result["rate_limit_hour"] == 300
+    assert result["burst_per_minute"] == 20
+    assert result["quota_remaining"] == 26
+    assert result["requests_planned"] == 25
+    assert len(result["response_sha256"]) == 64
+
+
+@pytest.mark.parametrize(
+    "body,headers,planned,code",
+    [
+        (_status_body(plan="free"), {"X-RateLimit-Limit": "300", "X-RateLimit-Remaining": "100"}, 25,
+         "FIVEDOLLAR_QUOTA_PREFLIGHT_PLAN_MISMATCH"),
+        (_status_body(hourly=200), {"X-RateLimit-Limit": "300", "X-RateLimit-Remaining": "100"}, 25,
+         "FIVEDOLLAR_QUOTA_PREFLIGHT_PROFILE_MISMATCH"),
+        (_status_body(burst=10), {"X-RateLimit-Limit": "300", "X-RateLimit-Remaining": "100"}, 25,
+         "FIVEDOLLAR_QUOTA_PREFLIGHT_PROFILE_MISMATCH"),
+        (_status_body(), {"X-RateLimit-Limit": "300"}, 25,
+         "FIVEDOLLAR_QUOTA_PREFLIGHT_HEADERS_INCOMPLETE"),
+        (_status_body(), {"X-RateLimit-Limit": "300", "X-RateLimit-Remaining": "25"}, 25,
+         "FIVEDOLLAR_QUOTA_PREFLIGHT_INSUFFICIENT_HEADROOM"),
+    ],
+)
+def test_quota_preflight_fails_closed_on_profile_or_headroom_mismatch(body, headers, planned, code):
+    from datetime import datetime, timezone
+
+    with pytest.raises(RuntimeError, match=code):
+        _validate_quota_preflight(
+            body, headers, planned_requests=planned,
+            checked_at=datetime(2026, 11, 15, 15, 0, tzinfo=timezone.utc),
+        )
