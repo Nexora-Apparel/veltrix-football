@@ -322,6 +322,7 @@ def admit_shadow_forecasts(
                 target_response_sha256=target.response_sha256,
                 target_capture_manifest_sha256=target.capture_manifest_sha256,
                 market_probabilities=market_probabilities,
+                training_observations=tuple(evidence_rows),
             )
             admitted.append(prediction)
         except (TypeError, ValueError, AttributeError) as exc:
