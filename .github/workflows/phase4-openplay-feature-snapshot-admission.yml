@@ -64,8 +64,7 @@ jobs:
         env:
           VELTRIX_STAGING_DATABASE_URL: ${{ secrets.VELTRIX_STAGING_DATABASE_URL }}
         run: |
-          python -m scripts.veltrix_v2.generate_openplay_v2_forecasts \\
-            --output artifacts/openplay-v2-forecasts/summary.json
+          python -m scripts.veltrix_v2.generate_openplay_v2_forecasts --output artifacts/openplay-v2-forecasts/summary.json
 
       - name: Upload non-raw snapshot and forecast evidence
         if: always()
