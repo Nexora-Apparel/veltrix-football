@@ -85,6 +85,10 @@ def test_openplay_features_keep_canonical_ids_and_xg_model_provenance():
     assert home.canonical_competition_id == "competition-eng"
     assert home.xg_model == OPENPLAY_XG_MODEL
     assert home.metrics["team"]["xg"] == 1.8
+    assert "possession_pct" not in home.metrics["team"]
+    assert home.metrics["excluded_source_metrics"]["possession_pct"] == (
+        "SOURCE_VALUES_VIOLATE_DOCUMENTED_PERCENTAGE_RANGE"
+    )
     assert home.metrics["players"]["starters"] == 1
     assert home.metrics["players"]["minutes_played_total"] == 120
     assert home.metrics["lineup"]["squad_size"] == 2
