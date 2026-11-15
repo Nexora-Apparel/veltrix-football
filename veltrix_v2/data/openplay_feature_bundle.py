@@ -243,7 +243,7 @@ def eligible_openplay_features_as_of(
                 valid_until = mapping.get("valid_until")
                 if valid_until is not None and cutoff >= _aware_utc(valid_until, "CROSSWALK_VALID_UNTIL"):
                     mapping_valid = False
-            for field in ("effective_at", "recorded_at", "approval_recorded_at"):
+            for field in ("effective_at", "valid_from", "recorded_at", "approval_recorded_at"):
                 if cutoff <= _aware_utc(approval.get(field), "APPROVAL_" + field.upper()):
                     mapping_valid = False
             approval_valid_until = approval.get("valid_until")
