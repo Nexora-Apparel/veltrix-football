@@ -4,8 +4,13 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import sys
 from pathlib import Path
 from urllib.parse import urlparse
+
+ROOT = Path(__file__).resolve().parents[2]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 
 from scripts.veltrix_v2.import_openplay_staging import (
     APPROVAL_ID, EXPECTED_DATABASE, EXPECTED_HOST, PARQUET_ROWS, CSV_FILES,
