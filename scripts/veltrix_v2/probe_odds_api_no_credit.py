@@ -18,6 +18,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 from scripts.phase4_odds_account_probe import _fetch_sports
 
+APPROVED_SPORT_KEY = "soccer_spain_la_liga"
 BRAZIL_SERIE_B_KEY = "soccer_brazil_serie_b"
 ENDPOINT = "/v4/sports/?all=true"
 
@@ -28,18 +29,22 @@ def build_report(fetcher=_fetch_sports, api_key: str | None = None) -> dict:
         raise RuntimeError("THE_ODDS_API_KEY_MISSING")
     requested_at, retrieved_at, body, headers, envelope, sports = fetcher(key)
     quota = envelope.quota_evidence
+    approved_available = APPROVED_SPORT_KEY in sports
     brazil_available = BRAZIL_SERIE_B_KEY in sports
     zero_credit = quota.complete and quota.requests_last == 0
     return {
-        "status": "PASS_NO_CREDIT" if brazil_available and zero_credit else "UNVERIFIED",
+        "status": "PASS_NO_CREDIT" if approved_available and zero_credit else "UNVERIFIED",
         "provider": "the_odds_api",
         "endpoint": ENDPOINT,
         "request_started_at": requested_at.isoformat(),
         "response_received_at": retrieved_at.isoformat(),
         "response_sha256": hashlib.sha256(body).hexdigest(),
         "sports_returned": len(sports),
+        "approved_sport_key": APPROVED_SPORT_KEY,
+        "approved_sport_key_available": approved_available,
         "brazil_serie_b_sport_key": BRAZIL_SERIE_B_KEY,
         "brazil_serie_b_available": brazil_available,
+        "brazil_serie_b_authorized_by_current_source_approval": False,
         "quota_headers_complete": quota.complete,
         "quota_requests_used": quota.requests_used,
         "quota_requests_remaining": quota.requests_remaining,
