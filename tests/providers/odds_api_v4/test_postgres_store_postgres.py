@@ -13,7 +13,7 @@ import json
 import os
 from pathlib import Path
 import uuid
-from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
+from urllib.parse import parse_qsl, quote, urlencode, urlsplit, urlunsplit
 
 import psycopg
 from psycopg import sql
@@ -59,7 +59,7 @@ def _database_urls():
         query = parse_qsl(parsed.query, keep_blank_values=True)
         query = [(key, value) for key, value in query if key != "options"]
         query.append(("options", f"-c search_path={name}"))
-        target = urlunsplit((parsed.scheme, parsed.netloc, parsed.path, urlencode(query), parsed.fragment))
+        target = urlunsplit((parsed.scheme, parsed.netloc, parsed.path, urlencode(query, quote_via=quote), parsed.fragment))
         return "schema", name, target
     admin = urlunsplit((parsed.scheme, parsed.netloc, "/postgres", "", ""))
     target = urlunsplit((parsed.scheme, parsed.netloc, f"/{name}", "", ""))
