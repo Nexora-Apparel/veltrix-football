@@ -136,13 +136,36 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", default="artifacts/5dollar-status/evidence.json")
     args = parser.parse_args()
+    output = Path(args.output)
     try:
         evidence = build_evidence(os.environ.get("FIVEDOLLARFOOTBALL_API_KEY", ""))
     except ProbeError as exc:
+        evidence = {
+            "schema_version": 1,
+            "provider": "5DollarFootballAPI",
+            "endpoint": "/v1/status",
+            "checked_at_utc": datetime.now(timezone.utc).isoformat(),
+            "request_count": 0 if str(exc) == "MISSING_SECRET" else 1,
+            "provider_calls_performed": [] if str(exc) == "MISSING_SECRET" else ["/v1/status"],
+            "entitlement_decision": "ULTRA_NOT_CONFIRMED_DO_NOT_CALL_ODDS_HISTORY",
+            "ultra_confirmed": False,
+            "probe_error_code": str(exc),
+            "side_effects": {
+                "database_writes": 0,
+                "odds_requests": 0,
+                "odds_history_requests": 0,
+                "fixture_requests": 0,
+                "league_requests": 0,
+                "prediction_writes": 0,
+                "telegram_messages": 0,
+            },
+        }
+        evidence["evidence_sha256"] = canonical_sha256(evidence)
+        output.parent.mkdir(parents=True, exist_ok=True)
+        output.write_text(json.dumps(evidence, indent=2, sort_keys=True) + "\\n", encoding="utf-8")
         print(f"VELTRIX_5D_STATUS_PROBE: {exc}", file=sys.stderr)
         return 2
 
-    output = Path(args.output)
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(json.dumps(evidence, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     print(
