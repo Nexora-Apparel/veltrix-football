@@ -197,6 +197,7 @@ def _persist_capture(connection, *, manifest_id: int, target: dict, raw: bytes,
     quota_used = _header_int(headers, "x-ratelimit-used")
     observation = parsed.observation
     opened_at = observation.opened_at
+    recorded_at = datetime.now(timezone.utc)
     point_in_time = bool(observation.eligible_pit and opened_at is not None
                          and opened_at < observation.kickoff_at
                          and opened_at <= retrieved_at)
@@ -273,7 +274,7 @@ def _persist_capture(connection, *, manifest_id: int, target: dict, raw: bytes,
             observation.kickoff_at,opened_at,
             "provider_opening_timestamp" if point_in_time else "unknown",
             approval.approval_id,response_id,point_in_time,opened_at,
-            retrieved_at,observation.source_timestamp_raw,
+            recorded_at,observation.source_timestamp_raw,
             "provider_timestamp" if opened_at else "unknown",
         ))
         inserted = cur.fetchone() is not None
