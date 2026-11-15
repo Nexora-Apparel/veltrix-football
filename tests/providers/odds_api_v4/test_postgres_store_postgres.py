@@ -15,9 +15,10 @@ from pathlib import Path
 import uuid
 from urllib.parse import parse_qsl, quote, urlencode, urlsplit, urlunsplit
 
-import psycopg
-from psycopg import sql
 import pytest
+
+psycopg = pytest.importorskip("psycopg")
+from psycopg import sql
 
 from scripts.db_migrate import migrate
 from veltrix_v2.providers.odds_api_v4.parser import parse_bulk_odds
