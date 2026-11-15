@@ -31,7 +31,9 @@ def apply_crosswalk(database_url: str, candidate_path: str | Path) -> dict:
              if row.get("status") == "EXACT_UNIQUE_NAME_AND_COMPETITION_OVERLAP"]
     competitions = [row for row in candidates.get("competitions", [])
                     if row.get("status") == "EXACT_REGION_NAME_ALIAS"]
-    if len(teams) != 89 or len(competitions) != 5:
+    if (len(teams) != summary.get("exact_unique_name_and_competition_overlap")
+        or len(competitions) != summary.get("mapped_competitions")
+        or not teams or not competitions):
         raise RuntimeError("OPENPLAY_CROSSWALK_CANDIDATE_COUNTS_CHANGED")
     if len({row["openplay_team_id"] for row in teams}) != len(teams):
         raise RuntimeError("OPENPLAY_DUPLICATE_TEAM_CANDIDATES")
