@@ -107,3 +107,8 @@ Manifest 120 has completed and independently reconciled, bringing the total to 3
 ## 11. Acquisition continuation update — 2026-11-15
 
 Manifest 121 has completed and independently reconciled, bringing the total to 325/763 (42.60%) opening quotes across 325 distinct fixtures. Manifests 109–121 each have 25/25 requests, responses, observations and PIT-eligible fixtures. The 98% threshold requires at least 423 more valid quotes; full acquisition requires 438. The next batch trigger is being advanced separately and will not be counted until independently reconciled. The Stage 2 decision remains NO-GO.
+
+
+## 12. Acquisition continuation update — 2026-11-15
+
+Manifest 123 has completed and independently reconciled, bringing the total to 375/763 (49.15%) opening quotes across 375 distinct fixtures. Manifests 109–123 each have 25/25 requests, responses, observations and PIT-eligible fixtures. The 98% threshold requires at least 373 more valid quotes; full acquisition requires 388. The next batch trigger is being advanced separately and will not be counted until independently reconciled. The Stage 2 decision remains NO-GO.
