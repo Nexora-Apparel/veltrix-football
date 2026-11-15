@@ -1,7 +1,7 @@
 # VELTRIX FOOTBALL 2.0 — AI Midas Brazil Série B 2026 identity reconciliation
 
 **Audit date:** 2026-11-15  
-**Disposition:** 369/369 fixture identities and score agreements independently verified; reviewer acceptance pending; two canonical fixtures absent from the source file  
+**Disposition:** 389 reviewer-backed staging crosswalks accepted and independently read back (20 teams + 369 fixtures); two canonical fixtures remain unresolved; two contradictory team-stat rows remain quarantined  
 **Canonical competition:** 5DollarFootballAPI Brazil Série B, provider competition ID `522514093`  
 **Staging target:** Neon project `withered-sky-75161174`, branch `br-silent-violet-bc5de88s`, database `veltrix_football_staging`  
 **Source approval:** `approval-aimidas-football-data-noncommercial-2026-11-15`
@@ -137,11 +137,18 @@ Each match also receives a stable SHA-256 match key based on the pinned source c
 
 ## 7. Reviewer-backed crosswalk disposition
 
-**All 369 identity candidates are independently verified, but none is marked `RESOLVED` in the database.**
+**Accepted: 389 RESOLVED crosswalk versions are persisted in Neon staging.** The reviewer is an independent automated reviewer (`automated-independent-reconciliation-v1`), not a named human signatory.
 
-The audit artifact records each candidate as `REVIEW_REQUIRED` and includes its source row IDs/fingerprints, canonical fixture ID, provider fixture ID, date delta and score agreement. It also carries a row-level discrepancy list so the two inconsistent team-stat rows are not silently admitted. Reviewer acceptance remains pending because no reviewer identity/acceptance event has been recorded for this complete evidence set.
+- TEAM: 20/20 resolved (10 exact-name mappings and 10 explicit aliases).
+- FIXTURE: 369/369 resolved using exact ordered team identity, date and score evidence.
+- Every row has the reviewer ID and evidence observation reference `432397`; all 389 evidence foreign keys resolve.
+- Independent read-back confirms 389 rows, 389 unique source IDs and 389 unique canonical IDs; no duplicate or many-to-one mapping violations.
+- The two canonical fixtures absent from the source remain `UNRESOLVED_NO_REPLACEMENT_MAPPING`: fixture `1927` (Náutico–Botafogo SP, 3 September 2026) and fixture `1807` (Londrina–Náutico, 11 November 2026).
+- The two inconsistent team-stat rows (CSV lines 8–9) remain quarantined; fixture identity and match-label score agreement do not admit those row-level statistics.
 
-This is intentional: a verified candidate is not the same thing as a reviewer-approved crosswalk. The two missing canonical fixtures remain `UNRESOLVED_NO_REPLACEMENT_MAPPING`. No `entity_crosswalk_versions`, `fixtures`, `fixture_results` or normalized statistics rows are written by this audit.
+Acceptance workflow: [#43762497871](https://github.com/Nexora-Apparel/veltrix-football/actions/runs/43762497871), accepted at code head `cb30b76ba8446170eb8639fe58789dca7176d8c2`. Sanitized artifact: [#14180892673](https://github.com/Nexora-Apparel/veltrix-football/actions/runs/43762497871/artifacts/14180892673), ZIP SHA-256 `1870fc9066afed1ee0cc0db11911270808408cc77dee34013b3d63e5ce20ac81`. Source snapshot SHA-256: `55b0c00629abd2d4ff3c31659ada950b67ffc2752609284b32c15c99f71152ab`.
+
+The acceptance transaction wrote only `entity_crosswalk_versions` in `veltrix_football_staging`. Independent post-run database checks confirmed zero missing reviewer/evidence references, zero evidence orphans, and no duplicate source/canonical mappings. The Brazil Série B 2026 fixture and result counts remain 371 each; no fixture or result rows were created during the acceptance interval. No production writes, deployments, prediction publication, Telegram delivery, schedule activation or model admission occurred.
 
 ## 8. Temporal, model and odds boundary
 
@@ -205,4 +212,4 @@ The run's audit job and focused tests passed. PR #120 remains draft/open/unmerge
 
 ### Replacement-source exclusion
 
-The Odds API's public technical catalogue lists Brazil Série B, but the active Veltrix source approval for that provider is limited to five European competitions and excludes Brazil Série B. The Brazil metadata-only discovery results are therefore not admitted as fixture identity or odds evidence. They were not persisted and cannot be used to create replacement crosswalks. The two absent canonical fixtures remain `UNRESOLVED`; no replacement mapping was invented. Reviewer-backed crosswalk acceptance remains pending.
+The Odds API's public technical catalogue lists Brazil Série B, but the active Veltrix source approval for that provider is limited to five European competitions and excludes Brazil Série B. The Brazil metadata-only discovery results are therefore not admitted as fixture identity or odds evidence. They were not persisted and cannot be used to create replacement crosswalks. The two absent canonical fixtures remain `UNRESOLVED`; no replacement mapping was invented. Reviewer-backed crosswalk acceptance is complete in staging: 389 RESOLVED crosswalk versions are independently verified; the two source-absent canonical fixtures remain unresolved.
