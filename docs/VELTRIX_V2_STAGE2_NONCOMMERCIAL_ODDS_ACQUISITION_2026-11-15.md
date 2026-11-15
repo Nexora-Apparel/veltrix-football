@@ -23,7 +23,7 @@ The staging database now has a dedicated non-commercial approval:
 The manual workflow `phase2-5dollar-opening-odds-capture.yml` and script `scripts/phase2_capture_fivedollar_opening_odds.py` capture only Bet365 1X2 opening quotes from `GET /v1/fixtures/{id}`. They preserve the provider `opened_at` timestamp separately from retrieval and database-recording clocks. Closing and in-play prices are ignored because this response shape does not give them their own timestamps.
 
 Safety envelope:
-- Manual `workflow_dispatch` only; no cron or automated schedule.
+- Manual `workflow_dispatch` plus a path-filtered push trigger limited to the integration branch and the capture workflow/script/tests; no cron or automated schedule. The first bounded run used the integration-branch push trigger without merging PR #120.
 - Maximum 25 fixture requests per run, 90-day lookback, at least 3.1 seconds between requests.
 - One request per fixture; no retries.
 - Staging only, immutable response bytes and hashes, capture manifest and request lineage.
