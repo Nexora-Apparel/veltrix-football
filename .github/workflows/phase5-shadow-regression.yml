@@ -6,6 +6,7 @@ on:
       - integration/v2-report-bundle-wiring-20261114
     paths:
       - "scripts/phase5_collect_5dollar_shadow.py"
+      - ".github/workflows/phase5-5dollar-shadow-settlement.yml"
       - "scripts/phase5_settle_5dollar_shadow.py"
       - "veltrix_v2/ledger/settlement_reconciliation.py"
       - "veltrix_v2/ledger/paper_predictions.py"
@@ -13,6 +14,7 @@ on:
       - "tests/veltrix_v2/test_settlement_reconciliation.py"
       - "veltrix_v2/evaluation/prospective_settlement_metrics.py"
       - "tests/veltrix_v2/test_prospective_settlement_metrics.py"
+      - "tests/veltrix_v2/test_phase5_settlement_workflow.py"
       - "tests/veltrix_v2/test_paper_ledger_postgres.py"
       - "tests/scripts/test_phase5_collect_5dollar_shadow.py"
       - "veltrix_v2/data/provider_evidence_capture.py"
