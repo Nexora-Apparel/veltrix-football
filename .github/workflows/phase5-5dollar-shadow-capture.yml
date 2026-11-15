@@ -47,7 +47,7 @@ jobs:
           python -m pip install -e . "psycopg[binary]>=3.2,<4"
 
       - name: Validate dry-run mode
-        run: python -m scripts.phase5_collect_5dollar_shadow
+        run: python -m scripts.phase5_collect_5dollar_shadow --persist-staging
 
       - name: Execute bounded first-observed shadow capture
         env:
