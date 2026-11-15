@@ -280,6 +280,7 @@ def reconcile(rows: list[dict], registry: dict, source_record: dict, *,
     for fixture in fixtures:
         canonical_by_identity[(fixture["home_team_id"], fixture["away_team_id"])].append(fixture)
 
+    row_score_discrepancies = []
     match_details = []
     source_fixture_ids = []
     date_deltas = Counter()
@@ -293,12 +294,26 @@ def reconcile(rows: list[dict], registry: dict, source_record: dict, *,
             raise RuntimeError("AIMIDAS_SERIE_B_MATCH_TEAM_NOT_IN_TEAM_MAP")
         if {row["source_team_raw"] for row in group} != {parsed["home_raw"], parsed["away_raw"]}:
             raise RuntimeError(f"AIMIDAS_SERIE_B_MATCH_TEAM_ROWS_DISAGREE:{label}")
+        group_discrepancies = []
         for row in group:
             is_home = row["source_team_raw"] == parsed["home_raw"]
             expected_goals = parsed["home_score"] if is_home else parsed["away_score"]
             expected_conceded = parsed["away_score"] if is_home else parsed["home_score"]
             if row["row_goals"] != expected_goals or row["row_goals_conceded"] != expected_conceded:
-                raise RuntimeError(f"AIMIDAS_SERIE_B_TEAM_ROW_SCORE_MISMATCH:{row['source_line_number']}")
+                discrepancy = {
+                    "source_row_id": row["source_row_id"],
+                    "source_line_number": row["source_line_number"],
+                    "source_row_sha256": row["source_row_sha256"],
+                    "source_match_key_sha256": source_match_key(source_date, label),
+                    "source_team": row["source_team_raw"],
+                    "actual_goals": row["row_goals"],
+                    "actual_goals_conceded": row["row_goals_conceded"],
+                    "match_label_expected_goals": expected_goals,
+                    "match_label_expected_goals_conceded": expected_conceded,
+                    "disposition": "QUARANTINED_TEAM_STAT_ROW",
+                }
+                group_discrepancies.append(discrepancy)
+                row_score_discrepancies.append(discrepancy)
         src_date = date.fromisoformat(source_date)
         candidates = []
         for fixture in canonical_by_identity.get((source_home_id, source_away_id), []):
@@ -329,6 +344,8 @@ def reconcile(rows: list[dict], registry: dict, source_record: dict, *,
             "canonical_kickoff_at": fixture["kickoff_at"],
             "source_to_canonical_utc_date_delta_days": delta,
             "score_agreement": True,
+            "team_stats_quality_status": "QUARANTINED_ROW_SCORE_MISMATCH" if group_discrepancies else "ROW_STATS_CONSISTENT",
+            "team_stat_discrepancy_count": len(group_discrepancies),
             "review_status": "REVIEW_REQUIRED",
             "crosswalk_resolution": "NOT_RESOLVED",
         })
@@ -376,7 +393,7 @@ def reconcile(rows: list[dict], registry: dict, source_record: dict, *,
 
     return {
         "schema_version": "veltrix-aimidas-brazil-serie-b-identity-audit-v1",
-        "audit_status": "PASS_WITH_TWO_SOURCE_COVERAGE_GAPS",
+        "audit_status": "PASS_WITH_SOURCE_COVERAGE_AND_ROW_STAT_QUARANTINES",
         "source": {
             "repository": REPOSITORY,
             "commit": SOURCE_COMMIT,
@@ -417,7 +434,9 @@ def reconcile(rows: list[dict], registry: dict, source_record: dict, *,
             "ambiguous_fixture_candidates": 0,
             "duplicate_source_match_groups": 0,
             "source_row_score_consistency_checks": len(rows),
-            "source_row_score_consistency_failures": 0,
+            "source_row_score_consistency_failures": len(row_score_discrepancies),
+            "quarantined_team_stat_rows": len(row_score_discrepancies),
+            "team_stat_matches_with_discrepancies": len({item["source_match_key_sha256"] for item in row_score_discrepancies}),
             "source_to_canonical_utc_date_delta_counts": dict(sorted(date_deltas.items())),
             "canonical_fixtures_absent_from_source": len(missing),
             "crosswalk_rows_written": 0,
@@ -429,6 +448,7 @@ def reconcile(rows: list[dict], registry: dict, source_record: dict, *,
         "team_mappings": team_mappings,
         "matches": match_details,
         "row_fingerprints": row_fingerprints,
+        "row_score_discrepancies": row_score_discrepancies,
         "missing_canonical_fixtures": missing,
         "review": {
             "reviewer_acceptance": "PENDING",
@@ -482,6 +502,7 @@ def main() -> int:
         "matches_verified": report["summary"]["source_matches_verified"],
         "score_agreements": report["summary"]["independent_score_agreements"],
         "missing_canonical_fixtures": report["summary"]["canonical_fixtures_absent_from_source"],
+        "quarantined_team_stat_rows": report["summary"]["quarantined_team_stat_rows"],
         "database_mutations": 0,
         "crosswalk_rows_written": 0,
         "value_betting": "LOCKED",
