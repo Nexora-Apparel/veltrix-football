@@ -64,3 +64,23 @@ This is a no-credit account/catalogue check only. No live event odds request or 
 5. Run prospective and chronological challenger evaluation using only observations eligible at each cutoff.
 
 No prediction publication, value-bet activation, Telegram delivery, schedule activation, production database write or Vercel deployment is authorized by this Stage 2 acquisition work.
+
+## 5Dollar opening-odds capture query audit — 2026-11-15
+
+A read-only staging audit found and corrected a scope-join defect before any odds API requests were made.
+
+The approval stores the seven provider competition IDs, while the original target query compared them to VELTRIX's internal `fixtures.competition_id`. That mismatch returned zero targets. The query now compares the approval scope against `competitions.provider_competition_id`.
+
+Independent read-only staging count after applying the corrected predicate:
+- 763 fixtures in the 90-day lookback.
+- 763/763 match the seven approved provider competition IDs.
+- 763/763 have a currently valid RESOLVED fixture crosswalk.
+- 763/763 have no prior `odds_opening_quote` observation and are capture candidates.
+
+The correction and regression test are committed on PR #120:
+- Script commit: `58a7c79f052416f9a3fd14eb439b7b731bc7254d`.
+- Regression test commit: `4a9b41ca69c63932bc17184c6e7cb2be0a416233`.
+- Test-fixture context-manager correction: `c0ff02f2b021cf9afbe942056e011e59cc9cbc4a`.
+- Exact-head Phase 2, PostgreSQL 16/18, Phase 5 shadow, historical audit and certification-integrity checks: PASS on `c0ff02f2b021cf9afbe942056e011e59cc9cbc4a`.
+
+No provider odds requests have been made. The 763 count is a fixture-universe count, not a quote-coverage result. The manual workflow is still on the draft PR branch and cannot be dispatched until the workflow exists on the default branch; no merge is authorized here. Once available, execute bounded batches (maximum 25 fixture requests, one request per fixture, no retries) and measure actual timestamped quote coverage from persisted observations.
