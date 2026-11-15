@@ -87,6 +87,8 @@ def iter_openplay_feature_bundle(
                 raise ValueError("OPENPLAY_BUNDLE_ROW_COMMERCIAL_FLAG_MISMATCH")
             if row.get("point_in_time_certifiable") is not True:
                 raise ValueError("OPENPLAY_BUNDLE_ROW_NOT_PIT_CERTIFIABLE")
+            if row.get("source_timestamp_basis") != "documented_guarantee":
+                raise ValueError("OPENPLAY_BUNDLE_ROW_TIMESTAMP_BASIS_INVALID")
             count += 1
             yield row
     if count != manifest.get("feature_count"):
@@ -119,12 +121,27 @@ def eligible_openplay_features_as_of(
             continue
         if cutoff <= _aware_utc(row.get("eligibility_at"), "ELIGIBILITY_AT"):
             continue
-        # Recheck the component clocks rather than trusting a single derived field.
+        # Recheck component clocks rather than trusting a single derived field.
         for field in ("source_published_at", "available_at", "recorded_at"):
             if cutoff <= _aware_utc(row.get(field), field.upper()):
                 break
         else:
-            selected.append(row)
+            crosswalks = row.get("crosswalk_provenance") or {}
+            approval = row.get("approval_provenance") or {}
+            mapping_valid = True
+            for mapping in crosswalks.values():
+                if mapping.get("mapping_status") != "RESOLVED" or not mapping.get("evidence_observation_id"):
+                    mapping_valid = False
+                    break
+                valid_until = mapping.get("valid_until")
+                if valid_until is not None and cutoff >= _aware_utc(valid_until, "CROSSWALK_VALID_UNTIL"):
+                    mapping_valid = False
+                    break
+            approval_valid_until = approval.get("valid_until")
+            if approval_valid_until is not None and cutoff >= _aware_utc(approval_valid_until, "APPROVAL_VALID_UNTIL"):
+                mapping_valid = False
+            if mapping_valid:
+                selected.append(row)
     return tuple(sorted(
         selected,
         key=lambda row: (
