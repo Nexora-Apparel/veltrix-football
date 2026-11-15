@@ -13,7 +13,7 @@ import json
 import os
 from pathlib import Path
 import uuid
-from urllib.parse import urlsplit, urlunsplit
+from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
 import psycopg
 import pytest
@@ -52,8 +52,15 @@ RAW = json.dumps([{
 
 def _database_urls():
     parsed = urlsplit(BASE_DSN)
-    admin = urlunsplit((parsed.scheme, parsed.netloc, "/postgres", "", ""))
     name = f"veltrix_odds_writer_{uuid.uuid4().hex[:12]}"
+    if os.environ.get("VELTRIX_TEST_SCHEMA_MODE") == "1":
+        # Neon branch roles cannot CREATE DATABASE; isolate each test in a schema.
+        query = parse_qsl(parsed.query, keep_blank_values=True)
+        query = [(key, value) for key, value in query if key != "options"]
+        query.append(("options", f"-c search_path={name}"))
+        target = urlunsplit((parsed.scheme, parsed.netloc, parsed.path, urlencode(query), parsed.fragment))
+        return "schema", name, target
+    admin = urlunsplit((parsed.scheme, parsed.netloc, "/postgres", "", ""))
     target = urlunsplit((parsed.scheme, parsed.netloc, f"/{name}", "", ""))
     return admin, name, target
 
@@ -61,19 +68,34 @@ def _database_urls():
 @pytest.fixture
 def postgres_db(monkeypatch):
     admin_dsn, database_name, target_dsn = _database_urls()
+    if admin_dsn == "schema":
+        with psycopg.connect(BASE_DSN) as admin:
+            admin.execute(psycopg.sql.SQL("CREATE SCHEMA {}").format(psycopg.sql.Identifier(database_name)))
+        try:
+            actual_database = urlsplit(BASE_DSN).path.lstrip("/")
+            monkeypatch.setenv("VELTRIX_EXPECTED_DATABASE", actual_database)
+            migrated = migrate(target_dsn, dry_run=False)
+            assert migrated["applied_now"] == migrated["manifest_count"]
+            repeated = migrate(target_dsn, dry_run=False)
+            assert repeated["applied_now"] == 0
+            assert repeated["manifest_count"] == migrated["manifest_count"]
+            yield target_dsn
+        finally:
+            with psycopg.connect(BASE_DSN) as admin:
+                admin.execute(psycopg.sql.SQL("DROP SCHEMA IF EXISTS {} CASCADE").format(psycopg.sql.Identifier(database_name)))
+        return
     with psycopg.connect(admin_dsn, autocommit=True) as admin:
         admin.execute(f'CREATE DATABASE "{database_name}"')
     try:
         monkeypatch.setenv("VELTRIX_EXPECTED_DATABASE", database_name)
         migrated = migrate(target_dsn, dry_run=False)
         assert migrated["applied_now"] == migrated["manifest_count"]
+        repeated = migrate(target_dsn, dry_run=False)
+        assert repeated["applied_now"] == 0
         yield target_dsn
     finally:
         with psycopg.connect(admin_dsn, autocommit=True) as admin:
-            admin.execute(
-                "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname=%s",
-                (database_name,),
-            )
+            admin.execute("SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname=%s", (database_name,))
             admin.execute(f'DROP DATABASE IF EXISTS "{database_name}"')
 
 
