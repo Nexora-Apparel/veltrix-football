@@ -261,3 +261,19 @@ The last persisted provider response reports 16 requests remaining against the 3
 - CI on the capture head passed: Phase 2 foundation, PostgreSQL 16/18 acceptance, Phase 5 Shadow Regression, Certification Evidence Integrity and Historical Model Audit. Daily Fixture Predictions was skipped as intended.
 - Historical/closing odds source remains unqualified: 5Dollar history requires Ultra; The Odds API has only catalogue evidence in this account; SockOdds and Odds-API.io remain unverified candidates. No closing-price or CLV evidence is admitted.
 - **Stage 2 remains NO-GO / OPEN / NOT RELEASE-READY.** 88.47% is below 98%; closing odds/CLV and model certification thresholds remain unmet. Stage 3, production deployment, prediction publication, Telegram delivery, schedule activation and value betting remain disabled.
+
+
+### Competition-level opening-quote reconciliation — manifest 135
+
+| Competition | Frozen universe | Captured | Remaining |
+|---|---:|---:|---:|
+| Brazil Serie A | 115 | 105 | 10 |
+| Brazil Serie B | 151 | 134 | 17 |
+| England Premier League | 100 | 88 | 12 |
+| France Ligue 1 | 90 | 78 | 12 |
+| Germany Bundesliga I | 81 | 71 | 10 |
+| Italy Serie A | 110 | 96 | 14 |
+| Spain La Liga | 116 | 103 | 13 |
+| **Total** | **763** | **675** | **88** |
+
+Counts are grouped by canonical fixture competition through the active crosswalk. No competition is omitted; all 88 remaining fixtures are still in the frozen capture universe.
