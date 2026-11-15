@@ -30,6 +30,7 @@ def test_parse_archive_preserves_date_precision_and_source_provenance():
     assert result.fixture_line_count == 3
     assert result.result_count == 3
     assert result.rejected_result_count == 0
+    assert result.not_yet_eligible_count == 0
     first = result.observations[0]
     assert first.kickoff_at is None
     assert first.kickoff_date == date(2025, 8, 22)
@@ -72,7 +73,8 @@ def test_snapshot_that_cannot_prove_result_was_finished_is_rejected():
         snapshot_commit_sha=SHA, snapshot_available_at=early, imported_at=IMPORTED,
     )
     assert result.result_count == 0
-    assert result.rejected_result_count == 3
+    assert result.rejected_result_count == 0
+    assert result.not_yet_eligible_count == 3
 
 
 def test_invalid_snapshot_identity_and_time_order_fail_closed():

@@ -88,6 +88,7 @@ def main() -> int:
         "fixture_line_count": archive.fixture_line_count,
         "result_count": archive.result_count,
         "rejected_result_count": archive.rejected_result_count,
+        "not_yet_eligible_count": archive.not_yet_eligible_count,
         "rejected_annotations": list(archive.rejected_annotations),
         "kickoff_precision": "date_only",
         "date_only_eligibility": "00:00 UTC on source-local match date + 2 calendar days",

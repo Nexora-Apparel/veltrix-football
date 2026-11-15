@@ -57,6 +57,7 @@ def verify_pack(input_dir: Path) -> dict:
     allowed = set(SOURCE_SPECS)
     expected, proofs = {}, {}
     rejected = 0
+    not_yet_eligible = 0
     for snap in snapshots:
         if not isinstance(snap, dict):
             fail("SNAPSHOT_ROW_INVALID")
@@ -99,9 +100,11 @@ def verify_pack(input_dir: Path) -> dict:
             fail("SNAPSHOT_RAW_FILE_NOT_UTF8")
         if (archive.result_count != snap.get("result_count")
                 or archive.fixture_line_count != snap.get("fixture_line_count")
-                or archive.rejected_result_count != snap.get("rejected_result_count")):
+                or archive.rejected_result_count != snap.get("rejected_result_count")
+                or archive.not_yet_eligible_count != snap.get("not_yet_eligible_count")):
             fail("SNAPSHOT_PARSE_ACCOUNTING_MISMATCH")
         rejected += archive.rejected_result_count
+        not_yet_eligible += archive.not_yet_eligible_count
         proofs[proof_id] = snap
         for item in archive.observations:
             row = {
@@ -161,7 +164,8 @@ def verify_pack(input_dir: Path) -> dict:
         "source_report_count": len(reports), "snapshot_count": len(snapshots),
         "observation_version_count": len(rows),
         "unique_fixture_count": len({r["fixture_id"] for r in rows}),
-        "rejected_result_count": rejected, "archive_proof_count": len(proofs),
+        "rejected_result_count": rejected, "not_yet_eligible_count": not_yet_eligible,
+        "archive_proof_count": len(proofs),
         "all_commit_histories_complete": all(r.get("commit_history_complete") is True for r in reports),
         "observations_sha256": manifest["observations_sha256"],
         "database_written": False, "production_written": False,

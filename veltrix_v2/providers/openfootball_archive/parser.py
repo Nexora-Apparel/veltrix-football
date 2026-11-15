@@ -37,6 +37,7 @@ class OpenFootballArchive:
     fixture_line_count: int
     result_count: int
     rejected_result_count: int
+    not_yet_eligible_count: int
     rejected_annotations: tuple[str, ...]
     observations: tuple[MatchObservation, ...]
 
@@ -95,6 +96,7 @@ def parse_archive(
     fixture_lines = 0
     result_count = 0
     rejected = 0
+    not_yet_eligible = 0
     rejected_annotations: list[str] = []
     observations: list[MatchObservation] = []
     seen_ids: set[str] = set()
@@ -158,7 +160,7 @@ def parse_archive(
             current_date + timedelta(days=2), time.min, tzinfo=timezone.utc
         )
         if snapshot_available_at.astimezone(timezone.utc) < safe_boundary:
-            rejected += 1
+            not_yet_eligible += 1
             continue
         observations.append(MatchObservation(
             fixture_id=fixture_id,
@@ -185,6 +187,7 @@ def parse_archive(
         snapshot_available_at=snapshot_available_at, imported_at=imported_at,
         content_sha256=hashlib.sha256(text.encode("utf-8")).hexdigest(),
         fixture_line_count=fixture_lines, result_count=result_count,
-        rejected_result_count=rejected, rejected_annotations=tuple(rejected_annotations),
+        rejected_result_count=rejected, not_yet_eligible_count=not_yet_eligible,
+        rejected_annotations=tuple(rejected_annotations),
         observations=tuple(observations),
     )

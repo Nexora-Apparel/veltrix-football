@@ -198,6 +198,7 @@ def collect_snapshots(
                     "fixture_line_count": archive.fixture_line_count,
                     "result_count": archive.result_count,
                     "rejected_result_count": archive.rejected_result_count,
+                    "not_yet_eligible_count": archive.not_yet_eligible_count,
                     "rejected_annotations": list(archive.rejected_annotations),
                     "revision_history_complete": history_complete,
                     "source_revision_order": revision_order,

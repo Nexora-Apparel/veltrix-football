@@ -55,6 +55,7 @@ def test_pack_records_immutable_snapshot_and_actual_retrieval_time(tmp_path):
     assert rows[0]["source_timestamp_basis"] == "archival_snapshot_timestamp"
     assert len(rows[0]["archive_proof_id"]) == 64
     assert manifest["database_written"] is False
+    assert "not_yet_eligible_count" in manifest["snapshots"][0]
     verified = verify_pack(tmp_path)
     assert verified["status"] == "PASS"
     assert verified["archive_proof_count"] == 1
