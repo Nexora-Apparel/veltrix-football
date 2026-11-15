@@ -5,7 +5,7 @@
 **Repository:** `Nexora-Apparel/veltrix-football`  
 **Working branch:** `integration/v2-report-bundle-wiring-20261114`  
 **PR:** [#120](https://github.com/Nexora-Apparel/veltrix-football/pull/120) — draft, open, unmerged  
-**Latest AI Midas code-validation commit:** `6a932c00618616a33ac3be3642354717a7465954` — snapshot workflow #43752821538 passed; exact-head PR checks: 11 passed, daily predictions skipped; PR #120 remains draft/open/unmerged.  
+**Latest AI Midas staging-import validation:** commit `27ecf03ff3530b52ff91f8e0b3120af0fabc6551` — workflow [#43753939202](https://github.com/Nexora-Apparel/veltrix-football/actions/runs/43753939202) passed; 14/14 pinned files, 14 immutable responses, 14 file-level observations and independent post-commit readback PASS. Current documentation head `0a1ceec70491e08c30a1f6aa1d1a41d2a31db585`; its exact-head CI is running, daily predictions skipped; PR #120 remains draft/open/unmerged.  
 **Purpose:** Single operational index preventing completed work from being skipped, duplicated or rebuilt unnecessarily.
 
 > This ledger is the navigation and state register, not a replacement for detailed contracts, code, test reports or immutable workflow artifacts. Detailed documents remain authoritative for their specific technical scope. Every status must be backed by a path, commit, workflow run, artifact, test result or explicit blocker.
