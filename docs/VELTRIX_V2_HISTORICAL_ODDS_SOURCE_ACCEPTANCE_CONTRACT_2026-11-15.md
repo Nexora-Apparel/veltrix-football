@@ -38,8 +38,8 @@ Kickoff range: 2026-08-17 through 2026-11-11 UTC.
 Public documentation lists all seven required competition keys with historical coverage beginning before the VELTRIX universe. Featured 1X2/h2h snapshots begin in 2020; snapshots are 10-minute intervals initially and 5-minute intervals since September 2022. The historical endpoint returns the nearest snapshot at or before the requested time and costs 10 credits per region per market. Historical odds require a paid plan.
 
 VELTRIX account evidence is insufficient:
-- Three persisted `GET /v4/sports/?all=true` calls show 205 credits used and 295 remaining (500 total), consistent with the published Free tier, though the account probe records plan code as undisclosed.
-- Zero event-odds and zero historical-odds responses are persisted.
+- Three persisted catalogue calls were previously observed at 205 used / 295 remaining. A later no-credit preflight workflow #43760295591 returned 226 used / 274 remaining, last request cost 0, and 187 sport keys. The approved Spain La Liga key and technically discoverable Brazil Série B key are present, but Brazil Série B remains outside the current five-competition source approval.
+- Zero successful event-odds and zero historical-odds price responses are persisted. A bounded La Liga historical endpoint attempt returned HTTP 401 with the provider error that historical odds are paid-plan-only; the following no-credit preflight confirmed 274 credits remained. No price response or database observation was written.
 - Existing approval `approval-the-odds-api-v4-owner-authorized-2026-11-14` covers five competitions only; Brazil Serie A and B are excluded.
 - Public terms permit storage, derived outputs, model training and commercial user-facing use, but prohibit raw-feed resale/redistribution. Terms do not establish paid entitlement or expand VELTRIX approval scope.
 
@@ -62,7 +62,7 @@ SockOdds and Odds-API.io remain unqualified: no VELTRIX entitlement, complete se
 
 ## Release decision
 
-Opening quotes are complete at 763/763 and remain a separate dataset. Until a provider passes every mandatory gate, historical/closing odds and CLV remain BLOCKED / NOT CERTIFIED. Stage 2 remains NO-GO; Stage 3, production deployment, prediction publication, Telegram delivery, scheduling and value betting remain disabled.
+Timestamped opening quotes are currently 400/763 (52.42%) across 400 distinct fixtures; 363 fixtures remain without a captured opening quote at the latest ledger checkpoint. Opening evidence remains separate from closing-odds evidence. Until a provider passes every mandatory gate, historical/closing odds and CLV remain BLOCKED / NOT CERTIFIED. Stage 2 remains NO-GO; Stage 3, production deployment, prediction publication, Telegram delivery, scheduling and value betting remain disabled.
 
 ## Next execution sequence
 
@@ -80,3 +80,12 @@ A read-only grouping of the frozen 763 fixtures found **589 distinct (competitio
 Bookmaker qualification is still unresolved. The public bookmaker list includes Pinnacle in the EU region and Betfair Exchange in UK/EU, but does not list Bet365 for soccer; the only Bet365 entry shown is Bet365 AU, limited to AFL/NRL h2h, spreads and totals. Therefore The Odds API cannot currently be assumed to supply a Bet365 soccer closing quote. A Pinnacle or Betfair close could be considered only as an explicitly declared benchmark, not same-bookmaker Bet365 CLV, and only after actual seven-competition event responses prove coverage.
 
 Sources: https://the-odds-api.com/historical-odds-data/ ; https://the-odds-api.com/sports-odds-data/bookmaker-apis.html ; https://the-odds-api.com/
+
+
+### Historical entitlement refresh — 15 November 2026
+
+The one-event La Liga historical odds pilot received HTTP 401: historical odds are only available on paid usage plans. The subsequent no-credit account probe (#43760295591) returned 226 used / 274 remaining and confirmed the approved Spain La Liga sport key. This does not prove paid historical entitlement; it confirms the current key can access the catalogue only. No historical odds price response, source observation or normalized quote exists. The pilot remains blocked and must not be retried until paid entitlement is evidenced.
+
+The same no-credit catalogue lists Brazil Série B technically, but the existing The Odds API approval still covers only the five European competitions. Brazil Série A and B remain unauthorized for this provider.
+
+The latest separate 5Dollar Community opening-odds checkpoint is 400/763, not 763/763. This is opening-only evidence and does not contribute to the historical closing/CLV gate.
