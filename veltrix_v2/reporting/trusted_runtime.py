@@ -254,7 +254,7 @@ def build_github_attestation_verifier(
     def verify(manifest_bytes: bytes, digest: str) -> bool:
         if not isinstance(manifest_bytes, bytes) or hashlib.sha256(manifest_bytes).hexdigest() != digest:
             return False
-        url = f"https://api.github.com/repos/{REPOSITORY}/attestations/{digest}"
+        url = f"https://api.github.com/repos/{REPOSITORY}/attestations/sha256:{digest}"
         try:
             response = client.get(
                 url,
