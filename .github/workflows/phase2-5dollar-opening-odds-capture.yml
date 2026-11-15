@@ -1,5 +1,5 @@
-# Controlled continuation: manifests 109–137 reconciled at 25/25 each.
-# This push schedules the next single bounded batch after a fresh quota preflight.
+# Controlled continuation: manifests 109–138 reconciled at 25/25 each.
+# 98% timestamped opening-odds coverage gate is now met (750/763); this push schedules the final residual capture after a fresh quota preflight.
 # workflow_dispatch remains unavailable until this workflow is on the default branch.
 name: VELTRIX Phase 2 — Manual 5Dollar Opening Odds Capture
 
