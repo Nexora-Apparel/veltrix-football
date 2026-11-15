@@ -9,7 +9,9 @@ on:
       - 'scripts/veltrix_v2/import_openplay_staging.py'
       - 'scripts/veltrix_v2/audit_openplay_staging.py'
       - 'scripts/veltrix_v2/build_openplay_identity_crosswalk_candidates.py'
-      - 'tests/veltrix_v2/test_openplay_identity_crosswalk_candidates.py'
+      - 'scripts/veltrix_v2/apply_openplay_exact_identity_crosswalk.py'
+      - 'tests/veltrix_v2/test_openplay_identity_crosswalk_candidates.py tests/veltrix_v2/test_openplay_exact_crosswalk_apply.py'
+      - 'tests/veltrix_v2/test_openplay_exact_crosswalk_apply.py'
       - 'tests/veltrix_v2/test_openplay_staging_import.py'
       - 'docs/legal/openplay-whoscored-opta-authorization-2026-11-15.md'
       - 'tests/veltrix_v2/test_openplay_rights_acceptance.py'
@@ -41,7 +43,7 @@ jobs:
 
       - name: Validate qualification script and rights contract
         run: |
-          python -m py_compile scripts/veltrix_v2/qualify_openplay_release.py scripts/veltrix_v2/import_openplay_staging.py scripts/veltrix_v2/audit_openplay_staging.py scripts/veltrix_v2/build_openplay_identity_crosswalk_candidates.py
+          python -m py_compile scripts/veltrix_v2/qualify_openplay_release.py scripts/veltrix_v2/import_openplay_staging.py scripts/veltrix_v2/audit_openplay_staging.py scripts/veltrix_v2/build_openplay_identity_crosswalk_candidates.py scripts/veltrix_v2/apply_openplay_exact_identity_crosswalk.py
           python -m pip install pytest==8.4.2 "psycopg[binary]>=3.2,<4"
           python -m pytest -q tests/veltrix_v2/test_openplay_rights_acceptance.py tests/veltrix_v2/test_openplay_staging_import.py tests/veltrix_v2/test_openplay_identity_crosswalk_candidates.py
 
@@ -66,6 +68,13 @@ jobs:
         env:
           DATABASE_URL: ${{ secrets.VELTRIX_STAGING_DATABASE_URL }}
         run: python scripts/veltrix_v2/build_openplay_identity_crosswalk_candidates.py --input-dir openplay-audit --output openplay-audit/openplay_identity_crosswalk_candidates.json
+
+      - name: Persist exact OpenPlay team and competition crosswalks
+        if: github.ref == 'refs/heads/integration/v2-report-bundle-wiring-20261114'
+        env:
+          DATABASE_URL: ${{ secrets.VELTRIX_STAGING_DATABASE_URL }}
+          VELTRIX_ENABLE_OPENPLAY_CROSSWALK_WRITE: "YES"
+        run: python scripts/veltrix_v2/apply_openplay_exact_identity_crosswalk.py --candidates openplay-audit/openplay_identity_crosswalk_candidates.json
 
       - name: Upload verified release bundle and audit report
         if: always()
