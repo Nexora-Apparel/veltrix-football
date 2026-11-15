@@ -1,0 +1,90 @@
+# VELTRIX V2 Prospective Paper Settlement Operations — 2026-11-15
+
+## Purpose
+
+Define the controlled, staging-only settlement procedure for V2 shadow predictions. This process appends immutable settlement events to the existing prospective paper ledger. It never edits prediction events and never publishes forecasts.
+
+## Current ledger baseline
+
+At the 2026-11-15 audit:
+- Ledger: `veltrix-v2-prospective-observed`
+- Database: `veltrix_football_staging`
+- Neon project: `withered-sky-75161174`
+- Staging branch: `br-silent-violet-bc5de88s`
+- Shadow predictions: 25 across 25 distinct fixtures
+- Settlements: 0
+- The 25 target kickoffs fall between 2026-11-18 22:30 UTC and 2026-11-21 15:00 UTC.
+
+No target is eligible for settlement before its kickoff and a provider-observed FINISHED result. A future fixture is not to be marked as settled based on a scheduled status, estimated finish time, external score page, or inferred score.
+
+## Required settlement identity
+
+A settlement must match exactly one prediction by:
+- Canonical ledger fixture ID `5dollarfootballapi:<provider_fixture_id>`
+- Model version, where more than one prediction exists for a fixture
+- Provider and source identity
+- Exact provider fixture ID
+- Competition ID
+- Home and away team IDs
+- Exact kickoff timestamp
+
+Ambiguous or missing matches are quarantined for manual reconciliation. Never guess a fixture crosswalk from team names alone.
+
+## Source evidence requirements
+
+For each candidate result:
+1. Retrieve the finished fixture from the approved 5DollarFootballAPI endpoint, within the seven entitled competitions.
+2. Preserve the exact raw response bytes, response SHA-256, request ID, request parameters, retrieval timestamp, recording timestamp and relevant response headers.
+3. Parse the item and require provider status `FINISHED` with non-negative integer home and away scores.
+4. Recompute the item payload hash from the canonical JSON representation and compare it to the parsed fixture hash.
+5. Verify the provider fixture ID, competition, both teams and kickoff against the immutable prediction target metadata and the reviewed provider-to-canonical crosswalk.
+6. Resolve the current append-only source-approval status at the time of use. Require collection, storage and benchmarking permission within the exact competition scope. This project is personal-use; commercial-use permission is not a prerequisite.
+7. Reject a missing or invalid source approval, missing raw response, malformed score, untrusted identity, ambiguous crosswalk, or mismatched payload hash.
+
+The 5Dollar feed does not expose a reliable historical publication clock or complete revision history. For these prospective shadow predictions only, use the collector's exact first-observed retrieval time as the conservative result-availability time:
+- `result_available_at = retrieved_at`
+- `result_retrieved_at = retrieved_at`
+- `result_availability_basis = collector_first_observed_v1`
+
+The first-observed clock must be at or after kickoff and no later than the database recording time. Do not substitute the legacy four-day availability proxy for the actual first-observed clock. Do not backdate the result or promote it to PIT-certified training data.
+
+## Append-only settlement rules
+
+- Load and verify the entire existing hash chain before processing.
+- Settle one exact prediction/model-version pair at most once.
+- Append a new `SETTLEMENT` event linked to the exact prediction event hash.
+- Preserve result payload hash, source identity, rights approval ID and rights evidence hash.
+- Recheck the ledger under the PostgreSQL transaction/advisory lock before insert.
+- If a settlement already exists, report it as a duplicate and do not overwrite it.
+- If a provider later corrects a score, retain the original settlement and create a separate correction/review workflow; never mutate or silently replace the original event.
+- Verify the complete chain after each committed batch.
+- A failed batch must roll back atomically.
+
+## Metrics and certification
+
+After settlements exist, compute market metrics only from eligible prediction/settlement pairs:
+- 1X2: multiclass Brier score and log loss
+- BTTS and totals: market-specific Brier score and log loss
+- ROI only when the matching market selection has a verified, timestamped, pre-kickoff quote and a documented settlement rule
+- CLV only when opening/closing or accepted quote timestamps are independently retained
+
+Keep prospective results separate from any historical archive. Report the number of predictions, settled predictions, distinct settlement dates, odds-covered selections and exclusions for every market. A score result without a timestamped price is not an ROI sample.
+
+No model is certified until all existing market-specific walk-forward and prospective thresholds pass. The current 25 shadow predictions and zero settlements do not qualify any market. Value betting remains locked.
+
+## Safety boundaries
+
+This procedure is staging-only. It must not:
+- write to production databases;
+- invoke the daily prediction workflow;
+- enable the 06:00 WAT schedule;
+- create a public report bundle;
+- send Telegram messages;
+- unlock value betting;
+- alter historical prediction or settlement events.
+
+## Implementation status
+
+The in-memory settlement validator and PostgreSQL append-only store adapter exist. The personal-use rights check is corrected to evaluate approved collection, storage and benchmarking permissions with `commercial=False`. Regression coverage verifies that a personal-use-only approval can settle a paper result.
+
+The operational collector/CLI that joins live 5Dollar result responses to the 25 target predictions remains a separate implementation task. No settlement has been executed.
