@@ -128,7 +128,8 @@ def _write_and_verify_assets(cur, root: Path) -> dict[str, dict[str, Any]]:
         SELECT pr.id,pr.endpoint,pr.response_sha256,pr.raw_body,
                so.id,so.payload,so.payload_sha256,so.recorded_at,so.retrieved_at,
                so.rights_approval_id,so.point_in_time_certifiable,
-               so.source_published_at,so.provider_response_id
+               so.source_published_at,so.provider_response_id,
+               so.available_at,so.availability_basis,so.source_timestamp_basis
         FROM provider_responses pr
         JOIN source_observations so ON so.provider_response_id=pr.id
         WHERE pr.provider=%s AND pr.source_id=%s
@@ -143,7 +144,8 @@ def _write_and_verify_assets(cur, root: Path) -> dict[str, dict[str, Any]]:
         if not batch:
             break
         for (response_id,endpoint,response_hash,raw,observation_id,payload,payload_hash,
-             recorded_at,retrieved_at,rights_id,pit,published_at,linked_response_id) in batch:
+             recorded_at,retrieved_at,rights_id,pit,published_at,linked_response_id,
+             available_at,availability_basis,timestamp_basis) in batch:
             name = endpoint.rsplit("/", 1)[-1]
             if name not in expected or name in assets:
                 raise RuntimeError("OPENPLAY_STAGING_ASSET_SET_INVALID")
@@ -153,6 +155,9 @@ def _write_and_verify_assets(cur, root: Path) -> dict[str, dict[str, Any]]:
                 or sha256(canonical_json(payload)) != payload_hash.strip()
                 or linked_response_id != response_id or rights_id != APPROVAL_ID
                 or pit is not False or published_at is not None
+                or available_at != retrieved_at
+                or availability_basis != "archive_first_observed_at_import_v1"
+                or timestamp_basis != "unknown"
                 or payload.get("tag_commit") != TAG_COMMIT
                 or payload.get("commercial_use_allowed") is not False
                 or payload.get("monetisation_prohibited") is not True):
@@ -174,11 +179,14 @@ def _write_and_verify_assets(cur, root: Path) -> dict[str, dict[str, Any]]:
     return assets
 
 
-def _load_match_snapshots(cur, matches_asset: Mapping[str, Any]) -> dict[str, dict[str, Any]]:
+def _load_match_snapshots(
+    cur, matches_asset: Mapping[str, Any], now: datetime,
+) -> dict[str, dict[str, Any]]:
     cur.execute("""
         SELECT id,provider_entity_id,payload,payload_sha256,source_published_at,
                available_at,recorded_at,source_timestamp_basis,
-               point_in_time_certifiable,rights_approval_id,provider_response_id
+               point_in_time_certifiable,rights_approval_id,provider_response_id,
+               source_timestamp_raw,source_effective_at
         FROM source_observations
         WHERE provider=%s AND source_id=%s AND entity_type='match_result_snapshot'
           AND endpoint='release-assets/data-v0.1.0/matches.parquet'
@@ -203,7 +211,13 @@ def _load_match_snapshots(cur, matches_asset: Mapping[str, Any]) -> dict[str, di
                 or payload.get("timestamp_guarantee_evidence_sha256") != TIMESTAMP_EVIDENCE_SHA256
                 or payload.get("temporal_use_scope") != "only for cutoffs at or after actual VELTRIX recorded_at"
                 or published_at is None or available_at != published_at
-                or recorded_at is None or recorded_at < published_at
+                or recorded_at is None or recorded_at < published_at or recorded_at > now
+                or published_at > now or effective_at is not None
+                or timestamp_raw != payload.get("scraped_at_raw")
+                or parse_aware(payload.get("scraped_at_utc"), "OPENPLAY_MATCH_PAGE_SAVED_AT") != published_at
+                or payload.get("matches_parquet_sha256") != matches_asset["sha256"]
+                or payload.get("rights_approval_id") != APPROVAL_ID
+                or payload.get("commercial_use_allowed") is not False
                 or sha256(canonical_json(payload)) != payload_hash.strip()):
                 raise RuntimeError("OPENPLAY_MATCH_SNAPSHOT_PROVENANCE_INVALID:" + key)
             result[key] = {
@@ -588,7 +602,7 @@ def build_from_staging(database_url: str, output_dir: str | Path) -> dict[str, A
                     raise RuntimeError("OPENPLAY_FEATURE_STAGING_TARGET_MISMATCH")
                 approval = _approval_evidence(cur, now)
                 assets = _write_and_verify_assets(cur, root)
-                snapshots = _load_match_snapshots(cur, assets["matches.parquet"])
+                snapshots = _load_match_snapshots(cur, assets["matches.parquet"], now)
                 teams, competitions = _load_crosswalks(cur, assets, now)
         return build_feature_rows_from_assets(
             root, assets=assets, snapshots=snapshots,
