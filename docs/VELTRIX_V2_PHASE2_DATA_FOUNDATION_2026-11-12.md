@@ -1,6 +1,6 @@
 # VELTRIX FOOTBALL 2.0 — Phase 2: Historical Database and Data Foundation
 
-**Status:** IN PROGRESS — additive provenance schema, source-rights contracts and read-only 365-day acquisition are implemented on `phase2/historical-data-foundation`; CI and the provider dry-run remain to be verified.
+**Status:** IN PROGRESS — 5Dollar historical fixture/result foundation is qualified; project-wide non-commercial source authorization is recorded; OpenPlay release qualification and guarded Neon asset ingestion are implemented on `integration/v2-report-bundle-wiring-20261114`. Final exact-head staging import/read-back and the broader Stage 2 PIT gates remain to be verified.
 
 ## 1. Phase 2 objective
 
@@ -88,14 +88,19 @@ The Phase 1 90-day qualification verified 786 finished fixtures across the seven
 
 The published event dataset is licensed CC BY 4.0 and is suitable for a later independent xG model trained from raw shot locations and event context. Its rights review and attribution wording are recorded in [Wyscout CC BY 4.0 review](legal/wyscout-cc-by-4.0-review-2026-11-12.md). The dataset is not imported by Phase 2; its event ingestion and xG model belong to a later phase.
 
-### 3.3 Explicitly excluded
+### 3.3 Additional authorized source — OpenPlay / WhoScored / Opta
 
-- Legacy Club-Football-Match-Data CSV: source rights unresolved/restrictive; quarantined.
-- OpenPlay / WhoScored / Opta: upstream-rights quarantine superseded on 2026-11-15 by the project owner's explicit confirmation of authorization for non-commercial VELTRIX FOOTBALL use. Monetisation remains prohibited. See [authorization record](legal/openplay-whoscored-opta-authorization-2026-11-15.md). Isolated historical ingestion and non-commercial model research may proceed subject to PIT, coverage and provenance gates.
-- PitchAPI: upstream data provenance and model-training rights unresolved.
-- StrikerAPI: latest account check HTTP 402; no free credits; no paid credits authorised.
-- GOAL API: latest runner blocked by Cloudflare browser-signature HTTP 403; upstream sports-data rights remain unresolved.
-- OddsPapi: provider rights do not expressly grant model training/retention; excluded.
+The project owner has confirmed authorization covering the pinned OpenPlay release and its disclosed WhoScored / Opta / Stats Perform lineage for non-commercial VELTRIX FOOTBALL use. The project-wide condition is recorded in [the source authorization register](legal/veltrix-all-source-noncommercial-authorization-2026-11-15.md), and the source-specific approval is registered in Neon staging as `approval-openplay-whoscored-opta-noncommercial-2026-11-15`. Monetisation is prohibited.
+
+The pinned `data-v0.1.0` release contains 10 Parquet tables and five supporting files. Qualification verifies the release tag commit, SHA-256 digests, table schemas, expected row counts, coverage, known gaps and data-issue inventory. The guarded staging importer stores each exact asset byte stream in immutable `provider_responses` and links it to a `source_observations` dataset-asset record and capture manifest. The importer sets `source_published_at=NULL`, `source_timestamp_basis=unknown`, `available_at=retrieved_at`, and `point_in_time_certifiable=false`; it does not misrepresent the static archive as historical PIT data. Retain `xg_model` identifiers and source attribution. See [OpenPlay qualification](VELTRIX_V2_OPENPLAY_QUALIFICATION_2026-11-11.md) and [authorization record](legal/openplay-whoscored-opta-authorization-2026-11-15.md).
+
+### 3.4 Explicitly excluded or technically unavailable
+
+- Legacy Club-Football-Match-Data CSV: retained as evidence only; not admitted because its underlying dataset rights/terms and point-in-time availability are not established by the project-wide authorization record.
+- PitchAPI: non-commercial project authorization is recorded at project level; endpoint access, provider lineage, retention details and source timestamp semantics still require technical qualification.
+- StrikerAPI: latest account check HTTP 402; no free credits; no paid credits authorized.
+- GOAL API: latest runner blocked by Cloudflare browser-signature HTTP 403; technical access remains unavailable.
+- OddsPapi: no verified live provider response; keep unqualified until endpoint and timestamp evidence are captured.
 - InferSports: current 1X2/totals discovery only; no verified historical archive or quote timestamp completeness.
 - 5Dollar historical odds tick endpoint: HTTP 403 on Community. The sampled market timestamp coverage was 7/77 (9.09%), below the later 98% value-betting gate. The Odds API remains the prospective timestamped odds source.
 
@@ -143,6 +148,6 @@ Phase 2 is not complete until all of the following are verified:
 6. The PostgreSQL writer is exercised against an isolated PostgreSQL test database or Neon child branch, proving idempotency, atomicity, append-only evidence and conflict quarantine.
 7. **PASS —** the primary Neon branch remains unchanged; the qualification workflow reported zero database writes and zero imports. No production history rows were inserted.
 
-**Phase 2 acceptance:** COMPLETE. The historical target labels use the conservative `kickoff + 4 days` availability proxy and remain `point_in_time_certifiable=false`; this qualification establishes historical fixture/result coverage only, not pre-match feature availability. The 5Dollar historical odds endpoint remains unavailable on Community (HTTP 403), and sampled timestamp coverage remains 9.09%; this does not pass or relax the later 98% odds gate.
+**Phase 2 core foundation:** COMPLETE for the 5Dollar historical fixture/result lane, including immutable provenance, guarded writer contracts and read-only 365-day qualification. **OpenPlay extension:** source rights are resolved, and the 15-asset qualification/import path is implemented; final Neon staging import and independent read-back are required before marking this extension complete. Historical result labels from 5Dollar and the OpenPlay static archive remain `point_in_time_certifiable=false`; neither is silently promoted to historical pre-match features. The 5Dollar historical odds endpoint remains unavailable on Community (HTTP 403), and sampled timestamp coverage remains 9.09%; this does not pass or relax the later 98% odds gate.
 
 **Safety:** no prediction model or probability code, no production data import, no Vercel deployment, no Telegram delivery, no schedule activation and no value-bet unlocking.
