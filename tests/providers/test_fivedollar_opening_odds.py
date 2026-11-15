@@ -13,17 +13,19 @@ KICKOFF = datetime(2026, 11, 14, 18, 0, tzinfo=UTC)
 RETRIEVED = datetime(2026, 11, 15, 12, 0, tzinfo=UTC)
 
 
-def _body(*, opening=None, closing=None, fixture_id=481163241):
+def _body(*, opening="DEFAULT", closing=None, fixture_id=481163241):
+    if opening == "DEFAULT":
+        opening = {
+            "home": 2.1, "draw": 3.2, "away": 3.6,
+            "opened_at": "2026-11-14T10:00:00+00:00",
+        }
     return json.dumps({
         "success": 1,
         "data": {
             "id": fixture_id,
             "odds": {
                 "1x2": {
-                    "opening": opening if opening is not None else {
-                        "home": 2.1, "draw": 3.2, "away": 3.6,
-                        "opened_at": "2026-11-14T10:00:00+00:00",
-                    },
+                    "opening": opening,
                     "closing": closing if closing is not None else {
                         "home": 1.9, "draw": 3.4, "away": 4.0,
                     },
