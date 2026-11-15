@@ -11,6 +11,7 @@ from scripts.phase5_collect_5dollar_shadow import (
     _request_page,
     _require_quota_headroom,
     _build_public_summary,
+    _capture_completion_status,
     run_capture,
     main,
 )
@@ -212,6 +213,8 @@ def test_public_summary_is_an_explicit_aggregate_only_allowlist():
         "admitted_shadow_predictions": 15,
         "persisted_capture_pages": 2,
         "persisted_shadow_ledger_events": 15,
+        "new_shadow_predictions_persisted": 15,
+        "rejected_first_observed_rows": 5,
         "paper_ledger_persisted_to_staging": True,
         "paper_ledger_chain_verified": True,
         "duplicate_predictions_skipped": 3,
@@ -234,6 +237,9 @@ def test_public_summary_is_an_explicit_aggregate_only_allowlist():
         assert forbidden not in rendered
     assert summary["admitted_shadow_predictions"] == 15
     assert summary["persisted_shadow_ledger_events"] == 15
+    assert summary["new_shadow_predictions_persisted"] == 15
+    assert summary["duplicate_predictions_skipped"] == 3
+    assert summary["rejected_first_observed_rows"] == 5
     assert summary["public_publication"] is False
     assert summary["paper_ledger_chain_verified"] is True
     assert summary["duplicate_predictions_skipped"] == 3
@@ -450,3 +456,21 @@ def test_empty_finished_page_still_persists_raw_response_and_manifest(monkeypatc
     assert persisted["status_filter"] == "finished"
     assert persisted["fixture_count"] == 0
     assert (tmp_path / "raw" / "3118717965_finished_page_1.json").read_bytes() == raw
+
+
+def test_duplicate_only_capture_is_not_reported_as_new_ledger_admission():
+    assert _capture_completion_status(
+        25, {"events_appended": 0, "duplicate_predictions_skipped": 25, "chain_verified": True},
+        persist_staging=True,
+    ) == "SHADOW_CAPTURE_COMPLETE_DUPLICATES_ONLY"
+    assert _capture_completion_status(
+        25, {"events_appended": 0, "duplicate_predictions_skipped": 0, "chain_verified": True},
+        persist_staging=True,
+    ) == "SHADOW_CAPTURE_ADMITTED_WITHOUT_LEDGER_EVENTS"
+    assert _capture_completion_status(
+        25, {"events_appended": 1, "duplicate_predictions_skipped": 24, "chain_verified": True},
+        persist_staging=True,
+    ) == "SHADOW_CAPTURE_COMPLETE"
+    assert _capture_completion_status(
+        25, None, persist_staging=False,
+    ) == "SHADOW_CAPTURE_ADMITTED_NOT_PERSISTED"
