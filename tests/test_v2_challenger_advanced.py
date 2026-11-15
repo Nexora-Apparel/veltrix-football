@@ -1,7 +1,10 @@
 from datetime import datetime, timedelta, timezone
+import pytest
 
 from veltrix_v2.models.poisson import MatchObservation
-from veltrix_v2.models.dixon_coles import predict_dixon_coles_match
+from veltrix_v2.models.dixon_coles import (
+    build_dixon_coles_rate_history, predict_dixon_coles_match,
+)
 from veltrix_v2.evaluation.model_challengers import evaluate_model_challengers
 from veltrix_v2.evaluation.walk_forward import walk_forward_evaluate
 
@@ -73,3 +76,27 @@ def test_walk_forward_fits_platt_only_on_earlier_competition_rows():
     assert report.calibration_test_samples.get("comp-1:btts", 0) > 0
     assert "btts" in report.competition_calibration["comp-1"]
     assert "over_2_5" in report.competition_calibration["comp-1"]
+
+
+def test_precomputed_dixon_coles_rates_match_independent_pre_kickoff_poisson_rates():
+    from veltrix_v2.models.poisson import predict_match
+    rows = pit_history(100)
+    cutoff = rows[-1].kickoff_at + timedelta(days=2)
+    rate_rows = build_dixon_coles_rate_history(
+        rows, competition_id="comp-1", as_of=cutoff,
+    )
+    assert len(rate_rows) >= 30
+    sample = rate_rows[-1]
+    historical = next(row for row in rows if row.fixture_id == sample.fixture_id)
+    historical_cutoff = historical.kickoff_at - timedelta(seconds=1)
+    prior = [row for row in rows if row.fixture_id != historical.fixture_id
+             and row.kickoff_at < historical_cutoff
+             and row.available_at <= historical_cutoff
+             and row.recorded_at <= historical_cutoff]
+    baseline = predict_match(
+        prior, competition_id="comp-1", home_team_id=historical.home_team_id,
+        away_team_id=historical.away_team_id, kickoff_at=historical.kickoff_at,
+        cutoff_at=historical_cutoff,
+    )
+    assert sample.expected_home_goals == pytest.approx(baseline.expected_home_goals)
+    assert sample.expected_away_goals == pytest.approx(baseline.expected_away_goals)
