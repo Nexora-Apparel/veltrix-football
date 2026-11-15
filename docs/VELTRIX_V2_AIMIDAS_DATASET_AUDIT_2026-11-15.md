@@ -218,3 +218,7 @@ A deeper row-level check of the 738 CSV team rows found two exceptions in the N�
 - Sanitized artifact #14178319188, ZIP SHA-256 4b8c0ed7489cf82dd48c34ca1ba55f884ae5fe652fb2190c919139721a764500.
 - The two quarantined row fingerprints are line 8 / CRB: 78d9492295da1b8dfa9ef735b786f63412089a37640b1f01aa3d57395707abc6; and line 9 / Náutico: ce5bf78a5090a5bef9997ae65c3b5a8e864e117218ed0404e59384b57a62bfb4.
 - No raw CSV body was uploaded; no crosswalk or normalized records were written.
+
+
+- The Odds API is not an eligible replacement source for Brazil Série B under its current five-European-league approval scope. Metadata-only discovery results were not persisted or admitted; the two missing canonical fixtures remain unresolved, with no replacement mappings.
+- Reviewer-backed crosswalk acceptance remains pending; the 369 verified candidates have not been marked resolved or written to the crosswalk table.
