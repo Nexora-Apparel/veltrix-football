@@ -119,6 +119,13 @@ def eligible_openplay_features_as_of(
             continue
         if target_date is not None and _date(row.get("match_date")) >= target_date:
             continue
+        if (row.get("point_in_time_certifiable") is not True
+            or row.get("commercial_use_allowed") is not False
+            or row.get("rights_approval_id") != OPENPLAY_APPROVAL_ID
+            or row.get("source_timestamp_basis") != "documented_guarantee"
+            or not row.get("source_observation_id")
+            or not row.get("provider_response_id")):
+            continue
         if cutoff <= _aware_utc(row.get("eligibility_at"), "ELIGIBILITY_AT"):
             continue
         # Recheck component clocks rather than trusting a single derived field.
@@ -128,15 +135,23 @@ def eligible_openplay_features_as_of(
         else:
             crosswalks = row.get("crosswalk_provenance") or {}
             approval = row.get("approval_provenance") or {}
-            mapping_valid = True
+            mapping_valid = set(crosswalks) == {"team", "opponent", "competition"}
             for mapping in crosswalks.values():
-                if mapping.get("mapping_status") != "RESOLVED" or not mapping.get("evidence_observation_id"):
+                if (mapping.get("mapping_status") != "RESOLVED"
+                    or not mapping.get("evidence_observation_id")
+                    or not mapping.get("crosswalk_version_id")):
                     mapping_valid = False
                     break
+                for field in ("valid_from", "recorded_at"):
+                    if cutoff <= _aware_utc(mapping.get(field), "CROSSWALK_" + field.upper()):
+                        mapping_valid = False
+                        break
                 valid_until = mapping.get("valid_until")
                 if valid_until is not None and cutoff >= _aware_utc(valid_until, "CROSSWALK_VALID_UNTIL"):
                     mapping_valid = False
-                    break
+            for field in ("effective_at", "recorded_at", "approval_recorded_at"):
+                if cutoff <= _aware_utc(approval.get(field), "APPROVAL_" + field.upper()):
+                    mapping_valid = False
             approval_valid_until = approval.get("valid_until")
             if approval_valid_until is not None and cutoff >= _aware_utc(approval_valid_until, "APPROVAL_VALID_UNTIL"):
                 mapping_valid = False
