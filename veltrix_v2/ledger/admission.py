@@ -82,7 +82,7 @@ def _approval_for(
     if not provider_competition or provider_competition not in scope or "*" in scope:
         raise ValueError("SOURCE_APPROVAL_COMPETITION_SCOPE_MISMATCH")
     for purpose in purposes:
-        decision = evaluate_source_use(approval, purpose, at_utc=at, commercial=True)
+        decision = evaluate_source_use(approval, purpose, at_utc=at, commercial=False)
         if not decision.allowed:
             raise ValueError(decision.reason_code)
     return approval
