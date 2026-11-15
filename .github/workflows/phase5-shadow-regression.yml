@@ -19,6 +19,7 @@ on:
       - "tests/veltrix_v2/test_certification_manifest_builder.py"
       - "scripts/veltrix_v2/build_verified_public_bundle.py"
       - "scripts/veltrix_v2/verify_pre_attestation_report.py"
+      - "docs/VELTRIX_V2_DEPLOYMENT_TRUST_VERIFIER.md"
       - ".github/workflows/report-certification-attestation.yml"
       - "requirements.txt"
       - ".github/workflows/telegram-delivery-recovery.yml"
