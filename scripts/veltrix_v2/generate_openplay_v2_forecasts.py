@@ -78,13 +78,14 @@ def _load_candidate_rows(cur, now):
         JOIN provider_responses target_response ON target_response.id=target_obs.provider_response_id
         WHERE fs.model_build_id=%s
           AND le.eligibility_status='ELIGIBLE'
+          AND le.recorded_at<=%s
           AND fs.prediction_cutoff_at<=%s
           AND f.provider='5DollarFootballAPI'
           AND f.status='SCHEDULED'
           AND f.kickoff_at>%s
         ORDER BY f.id,fs.prediction_cutoff_at DESC,fs.feature_snapshot_id DESC
         """,
-        (FEATURE_BUILD_ID,now,now),
+        (FEATURE_BUILD_ID,now,now,now),
     )
     return cur.fetchall()
 
@@ -156,24 +157,30 @@ def _verify_target(row, now):
     (snapshot_id,fixture_id,cutoff_at,feature_set_sha,eligibility_sha,
      provider_fixture_id,competition_id,home_id,away_id,kickoff_at,
      provider_competition_id,competition_name,home_name,away_name,
-     target_obs_id,target_payload_sha,target_entity_type,target_provider_id,
-     target_obs_payload_sha,target_payload,target_published,target_available,
-     target_recorded,target_pit,target_timestamp_basis,target_rights)=row
+     target_obs_id,target_payload_sha,target_obs_provider,target_obs_source,
+     target_entity_type,target_provider_id,target_obs_payload_sha,target_payload,
+     target_published,target_available,target_recorded,target_pit,target_timestamp_basis,
+     target_rights,target_response_id,target_response_provider,target_response_source,
+     target_response_hash)=row
     cutoff_at=_aware(cutoff_at,"CUTOFF")
     kickoff_at=_aware(kickoff_at,"KICKOFF")
     if cutoff_at>now or kickoff_at<=now or kickoff_at<=cutoff_at:
         raise ValueError("OPENPLAY_FORECAST_TARGET_NOT_PROSPECTIVE")
     if (not _valid_sha(str(feature_set_sha).strip()) or not _valid_sha(str(eligibility_sha).strip())
+        or target_obs_provider!="5DollarFootballAPI" or target_obs_source!="5dollarfootballapi"
         or target_entity_type!="odds_opening_quote"
         or str(target_provider_id)!=str(provider_fixture_id)
+        or target_response_provider!="5DollarFootballAPI" or target_response_source!="5dollarfootballapi"
+        or str(target_response_hash).strip()!=str(target_payload.get("response_sha256","")).strip()
+        or str(target_payload_sha).strip()!=str(target_obs_payload_sha).strip()
         or not isinstance(target_payload,dict)
         or str(target_payload.get("fixture_id"))!=str(provider_fixture_id)
         or target_payload.get("kickoff_at") is None
         or _aware(datetime.fromisoformat(str(target_payload["kickoff_at"]).replace("Z","+00:00")),"TARGET_PAYLOAD_KICKOFF")!=kickoff_at
         or target_pit is not True or target_timestamp_basis!="provider_timestamp"
         or target_published is None or target_available is None or target_recorded is None
-        or target_published>now or target_available>now or target_recorded>now
-        or target_rights is None
+        or target_published>cutoff_at or target_available>cutoff_at or target_recorded>cutoff_at
+        or not isinstance(target_rights,str) or not target_rights.strip()
         or not _valid_sha(str(target_obs_payload_sha).strip())
         or not _valid_sha(str(target_payload.get("original_target_manifest_sha256","")))
         or not _valid_sha(str(target_payload.get("original_target_response_sha256","")))):
@@ -187,6 +194,7 @@ def _verify_target(row, now):
         "target_payload_sha256":str(target_obs_payload_sha).strip(),
         "target_response_sha256":str(target_payload["original_target_response_sha256"]),
         "target_manifest_sha256":str(target_payload["original_target_manifest_sha256"]),
+        "target_rights_approval_id":str(target_rights),
         "feature_set_sha256":str(feature_set_sha).strip(),
         "eligibility_evidence_sha256":str(eligibility_sha).strip(),
     }
@@ -255,6 +263,37 @@ def _build_prediction(target, model, training, model_sha, forecasted_at):
     return prediction,detail
 
 
+
+def _verify_target_rights(cur, approval_id: str, now: datetime) -> None:
+    cur.execute(
+        """
+        SELECT status,rights_basis,evidence_sha256,valid_from,valid_until,
+               permitted_uses,commercial_use_allowed
+        FROM source_approvals WHERE approval_id=%s
+        """,
+        (approval_id,),
+    )
+    approval=cur.fetchone()
+    permitted={str(value).upper() for value in approval[5]} if approval else set()
+    if (approval is None or approval[0]!="APPROVED" or approval[1] not in {"TERMS","WRITTEN_PERMISSION"}
+        or approval[3]>now or (approval[4] is not None and approval[4]<=now)
+        or not {"COLLECTION","STORAGE","MODEL_TRAINING"} <= permitted
+        or approval[6] is not False):
+        raise RuntimeError("5DOLLAR_TARGET_RIGHTS_NOT_APPROVED_FOR_MODEL_TRAINING")
+    cur.execute(
+        """
+        SELECT status,effective_at,recorded_at,evidence_sha256
+        FROM source_approval_status_events WHERE approval_id=%s
+        ORDER BY effective_at DESC,recorded_at DESC,event_id DESC LIMIT 1
+        """,
+        (approval_id,),
+    )
+    event=cur.fetchone()
+    if (event is None or event[0]!="APPROVED" or event[1]>now or event[2]>now
+        or str(event[3]).strip()!=str(approval[2]).strip()):
+        raise RuntimeError("5DOLLAR_TARGET_RIGHTS_STATUS_EVENT_INVALID")
+
+
 def generate(database_url: str, output_path: str | Path) -> dict:
     parsed=urlparse(database_url)
     if (parsed.hostname or "").casefold()!=EXPECTED_HOST:
@@ -301,6 +340,7 @@ def generate(database_url: str, output_path: str | Path) -> dict:
             rows=_load_candidate_rows(cur,forecasted_at)
             for row in rows:
                 target=_verify_target(row,forecasted_at)
+                _verify_target_rights(cur,target["target_rights_approval_id"],forecasted_at)
                 home,away,training=_load_feature_links(cur,target["snapshot_id"],target["cutoff_at"])
                 model=predict_from_recent_features(home_features=home,away_features=away)
                 prediction,detail=_build_prediction(target,model,training,model_sha,forecasted_at)
