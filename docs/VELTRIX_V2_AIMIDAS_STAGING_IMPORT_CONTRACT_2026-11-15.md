@@ -1,7 +1,7 @@
 # VELTRIX FOOTBALL 2.0 — AI Midas staging import contract
 
 **Date:** 2026-11-15  
-**Status:** DESIGN COMPLETE — NOT EXECUTED  
+**Status:** EXECUTED IN ISOLATED STAGING — 14/14 FILE-LEVEL RAW EVIDENCE RECORDS AND INDEPENDENT READBACK VERIFIED; NO NORMALIZED ROW OR MODEL ADMISSION  
 **Source approval:** `approval-aimidas-football-data-noncommercial-2026-11-15`  
 **Source pin:** `aimidas1/aimidas1@29baca362a34ce5dcd3924b07ec9c7d5139d83fc`  
 **Target:** isolated Neon staging only; never production
@@ -15,7 +15,7 @@ Permitted execution target:
 - No production branch, production database, Vercel deployment, prediction publication, Telegram delivery, schedule activation or PR merge.
 - No source data files or raw snapshots may be uploaded to the public repository's Actions artifacts. The approved workflow retains only `manifest.json` and `verification.json`; raw files remain ephemeral on the runner until a private staging import is implemented.
 
-No database writes have been performed by the AI Midas audit or snapshot workflow.
+The audit and snapshot workflow are read-only. The subsequent bounded importer wrote only the 14 pinned raw CSV responses, 14 file-level source observations, one source-approval record/status event, and capture-manifest evidence to the isolated staging branch. No production writes were made.
 
 ## 2. Source identity and approval
 
@@ -144,4 +144,4 @@ This contract does not authorize or perform:
 - PR merge or deployment;
 - Telegram delivery or schedule activation.
 
-**Implementation status:** design complete; no Neon writes. Next code task is a staging-only importer and independent read-after-commit verifier that implement this contract without changing the production system.
+**Implementation status:** importer and independent read-after-commit verifier are implemented and executed successfully in isolated staging by workflow #43753939202. The source files are stored as immutable file-level evidence only; normalized match rows, fixture crosswalks, odds quotes, model admission and production writes remain out of scope. Next task is a separate read-only reconciliation of the six historical match archives against canonical fixture identities, followed by reviewer-backed resolution of the Brazil Série B 369/371 candidate mappings.
