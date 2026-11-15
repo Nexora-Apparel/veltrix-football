@@ -73,7 +73,7 @@ The release is a static snapshot through 2025/26. It is not a current 2026/27 pl
 
 - Technical integrity: **PASS**.
 - Historical player/lineup/xG data candidate: **accepted for continued isolated research and feature-contract development**.
-- Rights status: **AUTHORIZED FOR NON-COMMERCIAL VELTRIX FOOTBALL USE**, based on project-owner confirmation; formal evidence metadata remains to be attached.
+- Rights status: **APPROVED FOR NON-COMMERCIAL VELTRIX FOOTBALL USE**; Neon staging approval `approval-openplay-whoscored-opta-noncommercial-2026-11-15` is hash-bound to the project authorization record. The project-wide overlay is `approval-veltrix-all-source-noncommercial-2026-11-15`. Monetisation is prohibited.
 - Isolated technical ingestion: **APPROVED TO PROCEED**, subject to provenance, point-in-time and data-quality controls.
 - Non-commercial model training and evaluation: **APPROVED TO PROCEED**.
 - Commercial use / monetisation: **PROHIBITED**.
@@ -87,5 +87,5 @@ The release is a static snapshot through 2025/26. It is not a current 2026/27 pl
 2. Build a competition-season coverage-aware adapter that keeps source xG model IDs, native player/team IDs, source timestamps and data-issue flags.
 3. Create point-in-time player form, minutes, expected-minutes, shot-quality and team-style features without post-kickoff leakage.
 4. Exclude known gaps and issue rows according to predeclared rules.
-5. Attach the authorization grantor, written evidence URI/hash, effective date and any additional conditions to the source-governance record; do not invent missing metadata.
+5. Preserve the registered source-specific and project-wide authorization records; any new source or changed use must inherit the non-commercial restriction and retain its source-level attribution/provenance.
 6. Find a separate rights-cleared current-season player/lineup provider; this static release does not provide a current 2026/27 feed and FPL automated ingestion remains excluded after terms review.
