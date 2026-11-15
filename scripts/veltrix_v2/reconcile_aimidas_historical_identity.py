@@ -244,7 +244,8 @@ def reconcile(rows: list[dict], fixtures: list[dict]) -> dict:
                 "kickoff_at": f["kickoff_at"].isoformat(),
                 "canonical_season_key": f["season_key"],
                 "canonical_status": f["status"],
-                "score_available": score_available,\n                "score_agrees": score_agrees,
+                "score_available": score_available,
+                "score_agrees": score_agrees,
             })
         team_home = team_names.get((row["competition"], row["home_name_normalized"]), set())
         team_away = team_names.get((row["competition"], row["away_name_normalized"]), set())
