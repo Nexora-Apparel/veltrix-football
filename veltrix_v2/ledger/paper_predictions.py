@@ -258,7 +258,9 @@ class ProspectivePaperLedger:
                           rights_approval_id: str,
                           rights_evidence_sha256: str,
                           result_availability_basis: str = "provider_timestamp",
-                          settlement_delay_basis: str | None = None) -> PaperLedgerEvent:
+                          settlement_delay_basis: str | None = None,
+                          result_response_sha256: str | None = None,
+                          result_capture_manifest_sha256: str | None = None) -> PaperLedgerEvent:
         prediction = next((e for e in self._events
                            if e.event_type in {"PREDICTION", "SHADOW_PREDICTION"}
                            and e.fixture_id == fixture_id
@@ -290,6 +292,14 @@ class ProspectivePaperLedger:
                 char not in "0123456789abcdef" for char in value.lower()
             ):
                 raise ValueError("PAPER_SETTLEMENT_EVIDENCE_HASH_INVALID")
+        if (result_response_sha256 is None) != (result_capture_manifest_sha256 is None):
+            raise ValueError("PAPER_SETTLEMENT_CAPTURE_EVIDENCE_PAIR_REQUIRED")
+        for value in (result_response_sha256, result_capture_manifest_sha256):
+            if value is not None and (
+                not isinstance(value, str) or len(value) != 64
+                or any(char not in "0123456789abcdef" for char in value.casefold())
+            ):
+                raise ValueError("PAPER_SETTLEMENT_CAPTURE_EVIDENCE_HASH_INVALID")
         market_probabilities = prediction.payload.get("market_probabilities")
         if market_probabilities is None:
             market_probabilities = {
@@ -314,6 +324,10 @@ class ProspectivePaperLedger:
             "source_provider": source_provider, "source_id": source_id,
             "source_fixture_id": source_fixture_id,
             "result_payload_sha256": result_payload_sha256.lower(),
+            "result_response_sha256": result_response_sha256.lower() if result_response_sha256 else None,
+            "result_capture_manifest_sha256": (
+                result_capture_manifest_sha256.lower() if result_capture_manifest_sha256 else None
+            ),
             "rights_approval_id": rights_approval_id,
             "rights_evidence_sha256": rights_evidence_sha256.lower(),
             "result_availability_basis": result_availability_basis,
