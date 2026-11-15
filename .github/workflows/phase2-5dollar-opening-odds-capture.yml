@@ -1,4 +1,4 @@
-# Controlled continuation: manifests 109–117 reconciled at 25/25 each.
+# Controlled continuation: manifests 109–118 reconciled at 25/25 each.
 # This push schedules the next single bounded batch after a fresh quota preflight.
 # workflow_dispatch remains unavailable until this workflow is on the default branch.
 name: VELTRIX Phase 2 — Manual 5Dollar Opening Odds Capture
