@@ -7,6 +7,12 @@ evaluation excludes rows whose source contract does not certify PIT eligibility.
 """
 from __future__ import annotations
 
+from datetime import date, datetime, timedelta, timezone
+import re
+from typing import Any, Mapping
+
+UTC = timezone.utc
+
 from veltrix_v2.data.contracts import FixtureStatus, HistoricalFixture
 from veltrix_v2.models.poisson import MatchObservation
 from veltrix_v2.models.engine import PredictionTarget
