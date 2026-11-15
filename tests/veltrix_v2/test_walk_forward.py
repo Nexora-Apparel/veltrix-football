@@ -224,43 +224,83 @@ def test_walk_forward_exposes_only_cutoff_eligible_openplay_context():
     target = rows[-1]
     cutoff = target.kickoff_at - timedelta(seconds=1)
     eligible_at = cutoff - timedelta(hours=1)
-    base = {
-        "canonical_competition_id": "league",
-        "match_date": (target.kickoff_at.date() - timedelta(days=3)).isoformat(),
-        "source_published_at": (eligible_at - timedelta(days=2)).isoformat(),
-        "available_at": (eligible_at - timedelta(days=2)).isoformat(),
-        "recorded_at": (eligible_at - timedelta(hours=1)).isoformat(),
-        "eligibility_at": eligible_at.isoformat(),
-        "point_in_time_certifiable": True,
-        "commercial_use_allowed": False,
-        "rights_approval_id": "approval-openplay-whoscored-opta-noncommercial-2026-11-15",
-        "source_timestamp_basis": "documented_guarantee",
-        "source_observation_id": 700,
-        "provider_response_id": 101,
-        "crosswalk_provenance": {
-            key: {
-                "mapping_status": "RESOLVED", "evidence_observation_id": 10,
-                "crosswalk_version_id": 20,
-                "valid_from": (eligible_at - timedelta(minutes=1)).isoformat(),
-                "recorded_at": (eligible_at - timedelta(minutes=1)).isoformat(),
-                "valid_until": None,
-            }
-            for key in ("team", "opponent", "competition")
-        },
-        "approval_provenance": {
-            "effective_at": (eligible_at - timedelta(days=1)).isoformat(),
-            "recorded_at": (eligible_at - timedelta(days=1)).isoformat(),
-            "approval_recorded_at": (eligible_at - timedelta(days=1)).isoformat(),
-            "valid_until": None,
-        },
+    approval_hash = "5e6bd00416f180109751e422521d76910da8b491c62507c4d9836e6700c38c46"
+    assets = {
+        name: {"provider_response_id": response_id,
+               "source_observation_id": observation_id, "sha256": "a" * 64}
+        for name, response_id, observation_id in (
+            ("matches.parquet", 101, 101),
+            ("team_match_stats.parquet", 102, 102),
+            ("player_match_stats.parquet", 103, 103),
+            ("lineups.parquet", 104, 104),
+            ("shots.parquet", 105, 105),
+            ("cards.parquet", 106, 106),
+            ("formations.parquet", 107, 107),
+            ("teams.parquet", 108, 108),
+            ("competitions.parquet", 109, 109),
+        )
     }
+
+    def feature(team, opponent, match_id, match_date, eligibility=eligible_at):
+        crosswalk_times = (eligibility - timedelta(minutes=1)).isoformat()
+        return {
+            "canonical_team_id": team,
+            "canonical_opponent_id": opponent,
+            "canonical_competition_id": "league",
+            "provider_team_id": team,
+            "provider_opponent_id": opponent,
+            "competition_code": "league",
+            "provider_match_id": match_id,
+            "match_date": match_date,
+            "source_published_at": (eligibility - timedelta(days=2)).isoformat(),
+            "available_at": (eligibility - timedelta(days=2)).isoformat(),
+            "recorded_at": (eligibility - timedelta(hours=1)).isoformat(),
+            "eligibility_at": eligibility.isoformat(),
+            "point_in_time_certifiable": True,
+            "commercial_use_allowed": False,
+            "monetisation_prohibited": True,
+            "rights_approval_id": "approval-openplay-whoscored-opta-noncommercial-2026-11-15",
+            "source_timestamp_basis": "documented_guarantee",
+            "source_observation_id": 700,
+            "provider_response_id": 101,
+            "asset_provenance": assets,
+            "crosswalk_provenance": {
+                "team": {
+                    "provider_entity_id": team, "canonical_entity_id": team,
+                    "mapping_status": "RESOLVED", "evidence_observation_id": 108,
+                    "crosswalk_version_id": 20, "valid_from": crosswalk_times,
+                    "recorded_at": crosswalk_times, "valid_until": None,
+                },
+                "opponent": {
+                    "provider_entity_id": opponent, "canonical_entity_id": opponent,
+                    "mapping_status": "RESOLVED", "evidence_observation_id": 108,
+                    "crosswalk_version_id": 21, "valid_from": crosswalk_times,
+                    "recorded_at": crosswalk_times, "valid_until": None,
+                },
+                "competition": {
+                    "provider_entity_id": "league", "canonical_entity_id": "league",
+                    "mapping_status": "RESOLVED", "evidence_observation_id": 109,
+                    "crosswalk_version_id": 22, "valid_from": crosswalk_times,
+                    "recorded_at": crosswalk_times, "valid_until": None,
+                },
+            },
+            "approval_provenance": {
+                "status": "APPROVED", "evidence_sha256": approval_hash,
+                "effective_at": (eligibility - timedelta(days=1)).isoformat(),
+                "recorded_at": (eligibility - timedelta(days=1)).isoformat(),
+                "approval_recorded_at": (eligibility - timedelta(days=1)).isoformat(),
+                "valid_until": None,
+            },
+        }
+
+    prior_date = (target.kickoff_at.date() - timedelta(days=3)).isoformat()
     features = [
-        {**base, "canonical_team_id": target.home_team_id, "provider_match_id": "prior-home"},
-        {**base, "canonical_team_id": target.away_team_id, "provider_match_id": "prior-away"},
-        {**base, "canonical_team_id": target.home_team_id, "provider_match_id": "same-day",
-         "match_date": target.kickoff_at.date().isoformat()},
-        {**base, "canonical_team_id": target.away_team_id, "provider_match_id": "future",
-         "eligibility_at": (cutoff + timedelta(seconds=1)).isoformat()},
+        feature(target.home_team_id, target.away_team_id, "prior-home", prior_date),
+        feature(target.away_team_id, target.home_team_id, "prior-away", prior_date),
+        feature(target.home_team_id, target.away_team_id, "same-day",
+                target.kickoff_at.date().isoformat()),
+        feature(target.away_team_id, target.home_team_id, "future", prior_date,
+                cutoff + timedelta(seconds=1)),
     ]
     report = walk_forward_evaluate(
         rows, evaluation_as_of=AS_OF, openplay_features=features
@@ -269,7 +309,6 @@ def test_walk_forward_exposes_only_cutoff_eligible_openplay_context():
     assert evaluated.openplay_home_feature_rows == 1
     assert evaluated.openplay_away_feature_rows == 1
     assert evaluated.openplay_latest_feature_eligibility_at == eligible_at
-
 
 def test_walk_forward_openplay_context_is_optional_and_does_not_change_baseline_predictions():
     rows = history(40)
