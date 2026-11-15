@@ -85,3 +85,75 @@ def fit_dixon_coles_rho(
         grid_step=grid_step,
         converged=(best_rho not in (rho_min, rho_min + count * grid_step)),
     )
+
+@dataclass(frozen=True)
+class FittedDixonColesPrediction:
+    prediction: object
+    fit: DixonColesFit
+
+
+def predict_dixon_coles_match(
+    observations: Iterable[object], *,
+    competition_id: str, home_team_id: str, away_team_id: str,
+    kickoff_at, cutoff_at, minimum_fit_rows: int = 30,
+    rho_min: float = -0.2, rho_max: float = 0.2, grid_step: float = 0.001,
+):
+    """Fit rho from rolling, strictly earlier training predictions, then score target.
+
+    For every rho-training match, its independent Poisson rates are estimated
+    from observations available before that match's kickoff. The target's
+    fitted rho is therefore never estimated from target or later outcomes.
+    """
+    from datetime import timedelta
+    from veltrix_v2.models.poisson import (
+        MatchObservation, observation_eligible_as_of, predict_match,
+    )
+
+    source = list(observations)
+    if any(not isinstance(row, MatchObservation) for row in source):
+        raise ValueError("DIXON_COLES_OBSERVATION_TYPE_INVALID")
+    source.sort(key=lambda row: row.kickoff_at or row.available_at)
+    rate_rows = []
+    for historical in source:
+        if historical.competition_id != competition_id:
+            continue
+        if historical.point_in_time_certifiable is not True:
+            continue
+        if historical.kickoff_at is None:
+            continue
+        historical_cutoff = historical.kickoff_at - timedelta(seconds=1)
+        if historical_cutoff >= cutoff_at:
+            continue
+        prior = [
+            row for row in source
+            if row.fixture_id != historical.fixture_id
+            and row.competition_id == competition_id
+            and row.point_in_time_certifiable is True
+            and observation_eligible_as_of(row, cutoff_at=historical_cutoff,
+                                           competition_id=competition_id)
+        ]
+        try:
+            baseline = predict_match(
+                prior, competition_id=competition_id,
+                home_team_id=historical.home_team_id,
+                away_team_id=historical.away_team_id,
+                kickoff_at=historical.kickoff_at,
+                cutoff_at=historical_cutoff,
+            )
+        except (TypeError, ValueError):
+            continue
+        rate_rows.append((
+            baseline.expected_home_goals, baseline.expected_away_goals,
+            historical.home_goals, historical.away_goals,
+        ))
+    fitted = fit_dixon_coles_rho(
+        rate_rows, minimum_rows=minimum_fit_rows, rho_min=rho_min,
+        rho_max=rho_max, grid_step=grid_step,
+    )
+    target_prediction = predict_match(
+        source, competition_id=competition_id,
+        home_team_id=home_team_id, away_team_id=away_team_id,
+        kickoff_at=kickoff_at, cutoff_at=cutoff_at,
+        dixon_coles_rho=fitted.rho,
+    )
+    return FittedDixonColesPrediction(target_prediction, fitted)
