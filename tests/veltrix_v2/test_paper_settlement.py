@@ -18,7 +18,7 @@ UTC = timezone.utc
 BASE = datetime(2026, 11, 14, 8, 0, tzinfo=UTC)
 
 
-def approval(*, scope="comp-1", purposes=None):
+def approval(*, scope="comp-1", purposes=None, commercial_use_allowed=True):
     return SourceApproval(
         approval_id="approval-1", provider="TestProvider", source_id="testsrc",
         competition_scope=scope, data_type="fixtures_and_results",
@@ -27,7 +27,7 @@ def approval(*, scope="comp-1", purposes=None):
             DataUsePurpose.COLLECTION, DataUsePurpose.STORAGE,
             DataUsePurpose.BENCHMARKING,
         }),
-        commercial_use_allowed=True, terms_url="https://example.test/terms",
+        commercial_use_allowed=commercial_use_allowed, terms_url="https://example.test/terms",
         terms_version="v1", evidence_uri="https://example.test/evidence",
         evidence_sha256="a" * 64, rights_basis="WRITTEN_PERMISSION",
         reviewed_at_utc=BASE - timedelta(days=10), reviewer_id="reviewer",
@@ -83,6 +83,20 @@ def test_verified_settlement_appends_result_and_rights_provenance():
     assert event.payload["away_goals"] == 1
     assert event.payload["result_payload_sha256"] == fixture.payload_sha256
     assert event.payload["rights_approval_id"] == "approval-1"
+    assert ledger.verify_chain()
+
+
+
+def test_personal_use_settlement_does_not_require_commercial_permission():
+    ledger = ledger_with_prediction()
+    fixture = source_fixture()
+    personal_use_approval = approval(commercial_use_allowed=False)
+    event = settle_from_verified_fixture(
+        ledger, fixture, personal_use_approval,
+        recorded_at=fixture.retrieved_at_utc + timedelta(hours=1),
+    )
+    assert event.event_type == "SETTLEMENT"
+    assert event.payload["rights_approval_id"] == personal_use_approval.approval_id
     assert ledger.verify_chain()
 
 
