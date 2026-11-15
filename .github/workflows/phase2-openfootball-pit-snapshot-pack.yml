@@ -44,12 +44,12 @@ jobs:
       - name: Collect rights-scoped immutable source snapshots
         id: collect
         env:
-          GITHUB_TOKEN: \${{ github.token }}
+          GITHUB_TOKEN: ${{ github.token }}
         run: |
           python scripts/veltrix_v2/collect_openfootball_pit_snapshots.py \
             --output-dir artifacts/openfootball-pit-snapshot-pack \
-            --max-requests "\${{ inputs.max_requests }}" \
-            --max-commits-per-source "\${{ inputs.max_commits_per_source }}"
+            --max-requests "${{ inputs.max_requests }}" \
+            --max-commits-per-source "${{ inputs.max_commits_per_source }}"
 
       - name: Verify generated archive pack independently
         if: always() && steps.collect.outcome != 'skipped'
