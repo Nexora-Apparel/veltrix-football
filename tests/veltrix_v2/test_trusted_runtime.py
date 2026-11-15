@@ -185,17 +185,19 @@ def test_attestation_verifier_rejects_manifest_digest_mismatch():
     session.get.assert_not_called()
 
 
-def test_deployment_factory_requires_attestation_credentials_and_host_allowlist():
+def test_deployment_factory_requires_evidence_host_allowlist_but_not_public_repo_token():
     from veltrix_v2.reporting.trusted_runtime import build_deployment_publication_verifier
-    with pytest.raises(DeploymentVerificationError, match="GITHUB_ATTESTATION_READ_TOKEN_REQUIRED"):
-        build_deployment_publication_verifier({})
     with pytest.raises(DeploymentVerificationError, match="EVIDENCE_HOST_ALLOWLIST_REQUIRED"):
-        build_deployment_publication_verifier({"GH_TOKEN": "token"})
+        build_deployment_publication_verifier({})
+    verifier = build_deployment_publication_verifier({
+        "VELTRIX_V2_EVIDENCE_ALLOWED_HOSTS": "raw.githubusercontent.com",
+    })
+    assert callable(verifier)
 
 
 def test_application_runtime_uses_default_deployment_factory_when_bundle_url_is_set(monkeypatch):
     from veltrix_v2.reporting.runtime import load_runtime_publication_dependencies
-    monkeypatch.setenv("GH_TOKEN", "test-token")
+    monkeypatch.delenv("GH_TOKEN", raising=False)
     monkeypatch.delenv("GITHUB_TOKEN", raising=False)
     monkeypatch.setenv("VELTRIX_V2_EVIDENCE_ALLOWED_HOSTS", "raw.githubusercontent.com,evidence.example")
     dependencies = load_runtime_publication_dependencies({
@@ -210,18 +212,19 @@ def test_application_runtime_uses_default_deployment_factory_when_bundle_url_is_
     assert dependencies.bundle_url.endswith("/command-data/public-data/v2_report_bundle.json")
 
 
-def test_application_runtime_does_not_construct_trusted_factory_without_credentials(monkeypatch):
+def test_application_runtime_constructs_public_repo_verifier_without_token(monkeypatch):
     from veltrix_v2.reporting.runtime import load_runtime_publication_dependencies
     monkeypatch.delenv("GH_TOKEN", raising=False)
     monkeypatch.delenv("GITHUB_TOKEN", raising=False)
-    with pytest.raises(DeploymentVerificationError, match="GITHUB_ATTESTATION_READ_TOKEN_REQUIRED"):
-        load_runtime_publication_dependencies({
-            "VELTRIX_V2_REPORT_BUNDLE_URL": (
-                "https://raw.githubusercontent.com/Nexora-Apparel/veltrix-football/"
-                "command-data/public-data/v2_report_bundle.json"
-            ),
-            "VELTRIX_V2_EVIDENCE_ALLOWED_HOSTS": "raw.githubusercontent.com",
-        })
+    dependencies = load_runtime_publication_dependencies({
+        "VELTRIX_V2_REPORT_BUNDLE_URL": (
+            "https://raw.githubusercontent.com/Nexora-Apparel/veltrix-football/"
+            "command-data/public-data/v2_report_bundle.json"
+        ),
+        "VELTRIX_V2_EVIDENCE_ALLOWED_HOSTS": "raw.githubusercontent.com",
+    })
+    assert dependencies is not None
+    assert callable(dependencies.verifier)
 
 
 def test_attestation_verifier_fetches_and_verifies_candidate_bundle_for_exact_subject(monkeypatch):
@@ -334,3 +337,15 @@ def test_provider_rights_evaluator_accepts_recent_active_nonexpiring_entitlement
     record["rights_evidence_sha256"] = hashlib.sha256(payload).hexdigest()
     record["rights_evaluated_at"] = raw["evaluated_at"]
     assert build_provider_rights_evaluator(lambda uri: payload)(record) is True
+
+
+def test_public_repository_attestation_lookup_omits_authorization_header():
+    session = Mock()
+    session.get.return_value = Response(payload={"attestations": []})
+    verifier = build_github_attestation_verifier(token=None, session=session)
+    manifest = b"public report manifest"
+    digest = hashlib.sha256(manifest).hexdigest()
+    assert verifier(manifest, digest) is False
+    headers = session.get.call_args.kwargs["headers"]
+    assert "Authorization" not in headers
+    assert f"sha256:{digest}" in session.get.call_args.args[0]
