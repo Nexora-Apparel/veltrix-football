@@ -203,13 +203,15 @@ def validate_report(report: dict, rows: list[dict]) -> tuple[list[dict], list[di
             "provider_entity_id": "team-name:" + source_name,
             "canonical_entity_key": str(item["canonical_team_registry_id"]),
             "mapping_method": item["mapping_method"],
+            "canonical_team_name": item["canonical_team"],
+            "canonical_provider_team_id": item.get("canonical_provider_team_id"),
             "confidence": Decimal("1.0000"),
             "decision_reason": (
                 f"Independent reviewer accepted unique one-to-one source team identity; "
                 f"source_team={item['source_team']}; canonical_team={item['canonical_team']}; "
                 f"canonical_provider_team_id={item.get('canonical_provider_team_id')}; "
-                f"mapping_method={item['mapping_method']}; source_observation_id={SOURCE_OBSERVATION_ID}; "
-                f"source_file_sha256={SOURCE_FILE_SHA256}; source_commit={SOURCE_COMMIT}."
+                f"mapping_method={item['mapping_method']}; source_observation_id={report['source']['source_observation_id']}; "
+                f"source_file_sha256={report['source']['file_sha256']}; source_commit={SOURCE_COMMIT}."
             ),
         })
 
@@ -276,15 +278,20 @@ def accept(report_path: Path, input_dir: Path, database_url: str) -> dict:
         team_db_by_id = {int(row["id"]): row for row in team_db}
         for row in team_rows:
             canonical = team_db_by_id.get(int(row["canonical_entity_key"]))
-            if not canonical or canonical["provider"] != "5DollarFootballAPI":
+            if (
+                not canonical or canonical["provider"] != "5DollarFootballAPI"
+                or canonical["name"] != row["canonical_team_name"]
+                or canonical["provider_team_id"] != row["canonical_provider_team_id"]
+            ):
                 raise RuntimeError("AIMIDAS_CROSSWALK_CANONICAL_TEAM_PROVIDER_MISMATCH")
 
         fixture_ids = [int(row["canonical_entity_key"]) for row in fixture_rows]
         fixture_db = conn.execute(
             """
-            SELECT f.id,f.competition_id,f.home_team_id,f.away_team_id,f.kickoff_at,
-                   fr.home_score,fr.away_score
+            SELECT f.id,f.competition_id,c.name AS competition_name,f.home_team_id,f.away_team_id,f.kickoff_at,
+                   f.provider_fixture_id,fr.home_score,fr.away_score
             FROM fixtures f
+            JOIN competitions c ON c.id=f.competition_id
             LEFT JOIN fixture_results fr ON fr.fixture_id=f.id
             WHERE f.id=ANY(%s)
             """,
@@ -298,7 +305,8 @@ def accept(report_path: Path, input_dir: Path, database_url: str) -> dict:
             if not actual:
                 raise RuntimeError("AIMIDAS_CROSSWALK_CANONICAL_FIXTURE_MISSING")
             if (
-                int(actual["home_team_id"]) != expected_row["canonical_home_team_id"]
+                actual["competition_name"] != "Brazil Serie B"
+                or int(actual["home_team_id"]) != expected_row["canonical_home_team_id"]
                 or int(actual["away_team_id"]) != expected_row["canonical_away_team_id"]
                 or int(actual["home_score"]) != expected_row["source_home_score"]
                 or int(actual["away_score"]) != expected_row["source_away_score"]
@@ -420,7 +428,7 @@ def accept(report_path: Path, input_dir: Path, database_url: str) -> dict:
         "transaction_read_only": "off",
         "inserted_rows": inserted,
         "verified_rows": EXPECTED_CROSSWALKS,
-        "source_snapshot_sha256": SOURCE_FILE_SHA256,
+        "source_snapshot_sha256": report["source"]["file_sha256"],
         "raw_source_rows_uploaded": False,
     }
     report["source"]["crosswalk_reviewer_id"] = REVIEWER_ID
