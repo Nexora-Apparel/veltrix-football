@@ -103,6 +103,14 @@ def iter_openplay_feature_bundle(
             }
             if not required_assets.issubset(assets):
                 raise ValueError("OPENPLAY_BUNDLE_ROW_ASSET_PROVENANCE_INCOMPLETE")
+            if any(
+                not assets[name].get("provider_response_id")
+                or not assets[name].get("source_observation_id")
+                or not isinstance(assets[name].get("sha256"), str)
+                or len(assets[name].get("sha256")) != 64
+                for name in required_assets
+            ):
+                raise ValueError("OPENPLAY_BUNDLE_ROW_ASSET_PROVENANCE_INVALID")
             if assets["matches.parquet"].get("provider_response_id") != row.get("provider_response_id"):
                 raise ValueError("OPENPLAY_BUNDLE_ROW_MATCH_RESPONSE_MISMATCH")
             crosswalks = row.get("crosswalk_provenance") or {}
@@ -115,7 +123,16 @@ def iter_openplay_feature_bundle(
                 or crosswalks["competition"].get("canonical_entity_id") != row.get("canonical_competition_id")
                 or crosswalks["team"].get("evidence_observation_id") != assets["teams.parquet"].get("source_observation_id")
                 or crosswalks["opponent"].get("evidence_observation_id") != assets["teams.parquet"].get("source_observation_id")
-                or crosswalks["competition"].get("evidence_observation_id") != assets["competitions.parquet"].get("source_observation_id")):
+                or crosswalks["competition"].get("evidence_observation_id") != assets["competitions.parquet"].get("source_observation_id")
+                or crosswalks["team"].get("mapping_status") != "RESOLVED"
+                or crosswalks["opponent"].get("mapping_status") != "RESOLVED"
+                or crosswalks["competition"].get("mapping_status") != "RESOLVED"
+                or not crosswalks["team"].get("crosswalk_version_id")
+                or not crosswalks["opponent"].get("crosswalk_version_id")
+                or not crosswalks["competition"].get("crosswalk_version_id")
+                or crosswalks["team"].get("mapping_method") != "EXACT_NAME_AND_COMPETITION_OVERLAP"
+                or crosswalks["opponent"].get("mapping_method") != "EXACT_NAME_AND_COMPETITION_OVERLAP"
+                or crosswalks["competition"].get("mapping_method") != "EXPLICIT_REGION_NAME_ALIAS"):
                 raise ValueError("OPENPLAY_BUNDLE_ROW_CROSSWALK_PROVENANCE_MISMATCH")
             approval = row.get("approval_provenance") or {}
             if (approval.get("status") != "APPROVED"
@@ -202,11 +219,18 @@ def eligible_openplay_features_as_of(
         else:
             crosswalks = row.get("crosswalk_provenance") or {}
             approval = row.get("approval_provenance") or {}
-            mapping_valid = set(crosswalks) == {"team", "opponent", "competition"}
+            mapping_valid = (
+                approval.get("status") == "APPROVED"
+                and approval.get("evidence_sha256") == "5e6bd00416f180109751e422521d76910da8b491c62507c4d9836e6700c38c46"
+                and set(crosswalks) == {"team", "opponent", "competition"}
+            )
             for mapping in crosswalks.values():
                 if (mapping.get("mapping_status") != "RESOLVED"
                     or not mapping.get("evidence_observation_id")
-                    or not mapping.get("crosswalk_version_id")):
+                    or not mapping.get("crosswalk_version_id")
+                    or mapping.get("mapping_method") not in {
+                        "EXACT_NAME_AND_COMPETITION_OVERLAP", "EXPLICIT_REGION_NAME_ALIAS"
+                    }):
                     mapping_valid = False
                     break
                 for field in ("valid_from", "recorded_at"):
