@@ -109,6 +109,8 @@ def settle_from_verified_fixture(
         rights_evidence_sha256=approval.evidence_sha256,
         result_availability_basis=result_basis,
         settlement_delay_basis=fixture.availability_basis if observed_only else None,
+        result_response_sha256=fixture.response_sha256,
+        result_capture_manifest_sha256=fixture.capture_manifest_sha256,
     )
 
 
@@ -157,6 +159,8 @@ def settle_verified_fixture_to_store(
         rights_evidence_sha256=payload["rights_evidence_sha256"],
         result_availability_basis=payload["result_availability_basis"],
         settlement_delay_basis=payload["settlement_delay_basis"],
+        result_response_sha256=payload.get("result_response_sha256"),
+        result_capture_manifest_sha256=payload.get("result_capture_manifest_sha256"),
     )
     if persisted.event_sha256 != verified.event_sha256:
         raise RuntimeError("PAPER_LEDGER_PERSISTED_SETTLEMENT_HASH_MISMATCH")
