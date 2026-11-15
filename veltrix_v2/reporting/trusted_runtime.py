@@ -162,7 +162,11 @@ def build_provider_rights_evaluator(evidence_reader):
             ):
                 return False
             actions = evidence.get("allowed_actions")
-            if not isinstance(actions, list) or "PREDICTION_PUBLICATION" not in actions:
+            if (
+                not isinstance(actions, list)
+                or "MODEL_TRAINING" not in actions
+                or "PUBLIC_DISPLAY" not in actions
+            ):
                 return False
             entitlement = evidence.get("entitlement")
             terms = evidence.get("terms")
@@ -190,14 +194,17 @@ def build_provider_rights_evaluator(evidence_reader):
                 except ValueError:
                     return None
                 return result if result.tzinfo and result.utcoffset() is not None else None
-            checked, expires, terms_checked, evaluated, record_evaluated = map(
-                parse, (checked_at, expires_at, terms_checked_at, evaluated_at, record_evaluated_at)
+            checked, terms_checked, evaluated, record_evaluated = map(
+                parse, (checked_at, terms_checked_at, evaluated_at, record_evaluated_at)
             )
+            expires = parse(expires_at) if expires_at is not None else None
             if (
-                checked is None or expires is None or terms_checked is None
+                checked is None or terms_checked is None
                 or evaluated is None or record_evaluated is None
+                or (expires_at is not None and expires is None)
                 or evaluated != record_evaluated
-                or checked > now or terms_checked > now or evaluated > now or expires <= now
+                or checked > now or terms_checked > now or evaluated > now
+                or (expires is not None and expires <= now)
                 or (now - checked).total_seconds() > 24 * 60 * 60
                 or (now - evaluated).total_seconds() > 24 * 60 * 60
                 or (now - terms_checked).total_seconds() > 365 * 24 * 60 * 60
