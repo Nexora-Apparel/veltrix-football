@@ -21,7 +21,7 @@ def approval(scope="4160026622"):
             DataUsePurpose.COLLECTION, DataUsePurpose.STORAGE,
             DataUsePurpose.MODEL_TRAINING, DataUsePurpose.CACHE,
         }),
-        commercial_use_allowed=True, terms_url="https://5dollarfootballapi.com/terms",
+        commercial_use_allowed=False, terms_url="https://5dollarfootballapi.com/terms",
         terms_version="October 2026", evidence_uri="https://example.org/terms-review",
         evidence_sha256="a" * 64, rights_basis="TERMS",
         reviewed_at_utc=datetime(2026, 11, 12, tzinfo=UTC),
