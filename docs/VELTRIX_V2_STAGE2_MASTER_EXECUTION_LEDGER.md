@@ -31,6 +31,7 @@
 
 | Workstream | Current classification | Existing implementation/evidence | Remaining action |
 |---|---|---|---|
+| AI Midas authorization and source registration | VERIFIED — USER-CONFIRMED NON-COMMERCIAL AUTHORIZATION; TECHNICAL QUALIFICATION PENDING | User confirmation recorded 2026-11-15; intended role: historical match/team statistics and supplementary pre-match odds, including Brazil Serie B where dataset coverage exists | Add source-specific dataset provenance, coverage, timestamp and field-completeness audit before ingestion; average pre-match odds are not bookmaker-specific closing quotes and cannot certify CLV. |
 | OpenPlay rights and immutable raw staging | VERIFIED for approved non-commercial scope and staging capture | `docs/legal/openplay-whoscored-opta-authorization-2026-11-15.md`; `docs/VELTRIX_V2_OPENPLAY_STAGING_FEATURE_PIPELINE_2026-11-15.md`; pinned `data-v0.1.0`; approval `approval-openplay-whoscored-opta-noncommercial-2026-11-15` | No rebuild. Preserve rights limits; only reopen for a concrete issue. |
 | OpenPlay feature bundle | VERIFIED as staging sidecar, not as a trained model input | Workflow [#43723395022](https://github.com/Nexora-Apparel/veltrix-football/actions/runs/43723395022); builder commit `1f56456f893717e26375ab99f999b8e66b533306`; bundle JSONL SHA-256 `9ed328dd7c9ae235c47252e32bde0bb06d2a030ec38d151eeda7de264408bdc1`; artifact SHA-256 `5e101a56f8f68b9b6bc6f9982bc3e282aa76e5f2c96a6b4fd91c31d412a2e3cc` | Keep as sidecar. Do not claim model training or PIT eligibility. |
 | OpenPlay invalid possession metric | VERIFIED exclusion | All 20,178 rows carry `SOURCE_VALUES_VIOLATE_DOCUMENTED_PERCENTAGE_RANGE`; no `team.possession_pct` remains | No action unless regression. |
@@ -65,6 +66,14 @@ Authoritative rights documents:
 - `docs/legal/football-data-cc0-supplemental-rights-review-2026-11-15.md`
 - `docs/legal/5dollar-terms-review-2026-11-12.md`
 - `docs/VELTRIX_V2_STAGE2_NONCOMMERCIAL_ODDS_ACQUISITION_2026-11-15.md`
+
+### AI Midas — user-confirmed source authorization (2026-11-15)
+
+- The project owner confirmed that AI Midas is authorized for VELTRIX FOOTBALL 2.0 project work. Apply the project-wide non-commercial restriction: no monetisation, resale, sublicensing or raw-feed redistribution.
+- Intended research role: historical match/team statistics and supplementary pre-match odds; investigate Brazil Serie B coverage and other target competitions from the actual published files.
+- This is a rights/authorization decision, not a technical qualification. Before ingestion, record the exact repository/release/file URLs, upstream provenance, licence/attribution metadata, retrieval commit/date, hashes, competition/season coverage, field completeness and timestamp semantics.
+- Average pre-match odds must remain labelled as averages. They are not bookmaker-specific closing quotes and do not satisfy timestamped closing-odds, bookmaker-benchmark or CLV gates without separate evidence.
+- No AI Midas data import, database write, model admission or prediction change is implied by this authorization entry.
 
 ## 4. Known manual/external dependencies
 
@@ -101,6 +110,10 @@ Append one entry per meaningful operation. Never replace an earlier entry.
 | 2026-11-15 | [Workflow #43727169566](https://github.com/Nexora-Apparel/veltrix-football/actions/runs/43727169566), commit `c86163a75a8f80914de9eb2fd2bd0b2265fa3ed7` | OpenFootball + FootballData archive capture and independent verification | PASS — OpenFootball 49 snapshots / 5,182 observation versions / 375 requests; FootballData 3 snapshots / 619 observation versions / 6 requests; both verifiers PASS | OpenFootball artifact [#14166223794](https://github.com/Nexora-Apparel/veltrix-football/actions/runs/43727169566/artifacts/14166223794), ZIP SHA-256 `3dd4e89fa9c3d766e3e044efc317a88c6147b232dbb2831402cde26302e7de03`; FootballData artifact [#14166223800](https://github.com/Nexora-Apparel/veltrix-football/actions/runs/43727169566/artifacts/14166223800), ZIP SHA-256 `d8156a30d6b2f49032c157378385508fc8eefad931023ab2845255877c352acf` | Preserve both packs as retrospective evidence only; all rows non-PIT; no database/production writes |
 | 2026-11-15 | [Workflow #43727509783](https://github.com/Nexora-Apparel/veltrix-football/actions/runs/43727509783), job `132852553767`, commit `70b1a8ef1742975464f74dfefcf8dac265d46d86` | Bounded 5Dollar Community Bet365 1X2 opening capture | PASS — 26 tests; 25 fixture requests; 25 observations inserted; 25 timestamped PIT quotes; 26 provider requests including status preflight; quota 299→274 | Artifact [#14166689086](https://github.com/Nexora-Apparel/veltrix-football/actions/runs/43727509783/artifacts/14166689086); ZIP SHA-256 `b8a6b0594294fdd4b6178ebab0e010c2a30fb15b87686c3ba30457dae82fd171`; summary JSON SHA-256 `f519f8c6cb085a1a04afdb8f7582ddb8c2fb1813eb2a4914345cc9e322ccdb54` | Staging manifest 109, 25/25 request rows and observations; 25/763 coverage (3.28%); 738 outstanding; no production writes/publication |
 | 2026-11-15 | Read-only Neon SQL audit, `withered-sky-75161174` / `br-silent-violet-bc5de88s` / `veltrix_football_staging` | Reconcile 5Dollar fixture crosswalk and opening-quote PIT integrity | PASS — 763/763 fixtures exactly one active RESOLVED crosswalk; 25/25 captured quotes match canonical fixture, Bet365 1X2, valid prices, provider opening timestamp < kickoff, retrieved_at >= opening timestamp, HTTP 200 | Manifest `109`; provider response IDs `462–486`; source observation IDs `431621–431645`; 0 historical tick observations | Quote coverage 3.28%; 98% certification gate unmet; no 5Dollar Ultra history or The Odds API event/historical calls; no production writes |
+
+### AI Midas authorization decision — 2026-11-15
+
+| 2026-11-15 | User-confirmed authorization | AI Midas source authorization recorded | AUTHORIZED for non-commercial VELTRIX project work; technical dataset qualification remains pending | This ledger entry; project-wide non-commercial policy in `docs/legal/veltrix-all-source-noncommercial-authorization-2026-11-15.md` | Audit exact dataset provenance, seven-competition coverage, statistics and odds timestamp semantics before ingestion |
 
 ## 7. Per-session update template
 
